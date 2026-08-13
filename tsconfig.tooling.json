@@ -6,16 +6,8 @@
     "declarationMap": false,
     "sourceMap": false,
     "noEmit": true,
-    "types": [
-      "node"
-    ]
+    "types": ["node"]
   },
-  "include": [
-    "scripts/test/**/*.ts",
-    "vitest.config.ts",
-    "packages/*/test/**/*.ts"
-  ],
-  "exclude": [
-    "scripts/test/fixtures/**"
-  ]
+  "include": ["scripts/test/**/*.ts", "vitest.config.ts", "packages/*/test/**/*.ts"],
+  "exclude": ["scripts/test/fixtures/**"]
 }

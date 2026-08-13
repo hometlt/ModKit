@@ -12,9 +12,9 @@ The owner (relaying Sol's recommendation) approved, verbatim scope:
 
 - **Q75 / G9 — root extension dependencies**: normalized `ExtensionManifest` gets optional
   `dependsOn?: readonly ExtensionRequirement[]` with `{ extension: ExtensionId
-  (publisher-qualified); range?: string (SemVer, default '*'); mode: 'required' | 'default'
-  | 'suggested' | 'integrates'; scope: { kind: contribution|offer|operation|intent|variant|
-  profile|projection|slot; id: string } }` — **`scope` is mandatory** (tightened vs the lab
+(publisher-qualified); range?: string (SemVer, default '*'); mode: 'required' | 'default'
+| 'suggested' | 'integrates'; scope: { kind: contribution|offer|operation|intent|variant|
+profile|projection|slot; id: string } }` — **`scope` is mandatory** (tightened vs the lab
   proposal) and it is a separate `ExtensionRequirement` type, not 23 §8's contract-based
   one. In S0–S4 the field is only shape-validated and preserved; no install solver;
   `integrates` creates no install edge; `conflicts`/`replaces`/`provides` deferred to a
@@ -24,7 +24,7 @@ The owner (relaying Sol's recommendation) approved, verbatim scope:
   `modkit.extension.json` must carry its own; duplicates inside `#modkit` = packaging
   error.
 - **Q77 — one wire enum** `ExecutionProfile = 'browser-sandbox' | 'worker-brokered' |
-  'process-brokered' | 'wasm-brokered' | 'trusted-in-process' | 'remote-provider'`; 24 §5
+'process-brokered' | 'wasm-brokered' | 'trusted-in-process' | 'remote-provider'`; 24 §5
   names remain prose mapping. Remote/process/WASM execution not required in S0–S4.
 
 Also ordered: prettier format-only fix + `prettier --check` in the `pnpm check` gate (done
