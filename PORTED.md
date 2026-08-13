@@ -9,4 +9,15 @@ justifications (BRIEF-12 §3.1) are also recorded in this file, one line per dep
 
 `dependency: <name>@<range> in <package> | why needed | why nothing in the closure covers it`
 
-Nothing ported yet.
+## Dev toolchain (workspace root, dev-only; pinned by pnpm-lock.yaml 2026-08-13)
+
+- `dependency: typescript@^5.5.4 (→5.9.3) in root devDependencies | strict typecheck/build — the base toolset BRIEF-12 §7 names (pnpm + tsc/tsx + vitest + eslint) | not runtime code`
+- `dependency: vitest@^2.0.5 (→2.1.9) in root devDependencies | test runner for every slice's acceptance + the legacy-gate regression suite | named in BRIEF-12 §7 base set`
+- `dependency: eslint@^9.9.0 (→9.39.5) + typescript-eslint@^8.2.0 (→8.67.0) in root devDependencies | lint layer of the same base set | dev-only`
+- `dependency: prettier@^3.3.0 (→3.9.6) in root devDependencies | formatting, mirrors modkitx conventions | dev-only`
+- `dependency: @types/node@^22.5.0 (→22.20.1) in root devDependencies | Node typings for tooling tests (child_process/url) | dev-only`
+
+No runtime/package dependencies exist yet; the first candidate (Ajv for schema validation
+in `sdk`) gets its own justification line when S0 code lands (IMPLEMENTATION_NOTES §3.4).
+
+No code ported from `modkitx` yet.

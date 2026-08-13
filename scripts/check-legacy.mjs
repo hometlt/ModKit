@@ -1,35 +1,55 @@
 #!/usr/bin/env node
-// Legacy-vocabulary gate (BRIEF-12 §3.5; lab decision L7 in IMPLEMENTATION_NOTES.md).
+// Legacy-vocabulary gate (BRIEF-12 §3.5; lab decisions L7 + corrective pass 2026-08-13 in
+// IMPLEMENTATION_NOTES.md).
 //
-// Scope: packages/**/src, apps/**/src, packages/**/schemas, plus every workspace
-// package.json (name + exports). Forbidden in new public code and schemas:
+// Scope: <root>/packages/**/{src,schemas}, <root>/apps/**/{src,schemas}, plus every
+// workspace package.json (name, exports and full manifest text). Forbidden in new public
+// code and schemas:
 //   - AssetPlugin (legacy plugin API)
-//   - `capability` as a new runtime interface / schema field (final vocabulary is
-//     traits / operations / offers / permissions / facilities — MK3/02 §1)
+//   - `capability`/`capabilities` as a runtime type name or object/schema key — quoted or
+//     unquoted (schemas live as TS consts, so unquoted keys count) — the final vocabulary
+//     is traits / operations / offers / permissions / facilities (MK3/02 §1)
 //   - `extension.json` as an authored form (only package.json#modkit or
 //     modkit.extension.json exist)
 //   - legacyCodecRoot
-//   - marketplace / codec-host as package names (they are `host` modules)
+//   - marketplace / codec-host in package names or export subpaths (they are `host`
+//     modules, not packages)
 //
 // Exclusions (§3.5: otherwise the negative-test of the old manifest is impossible):
-//   - any path containing /fixtures/legacy/
-//   - files whose first 400 bytes carry the marker @modkit-legacy-input-fixture
+//   - any path containing /fixtures/legacy/ (skipped entirely);
+//   - files under some other /fixtures/ directory carrying the marker
+//     @modkit-legacy-input-fixture in their first 400 bytes.
+//   The marker is honored ONLY under a /fixtures/ path: a marker in ordinary public
+//   source is itself a violation (rule marker-outside-fixtures), so the marker cannot be
+//   used to exempt real code.
 //
 // Known blind spot (recorded, not hidden): "category-as-path" runtime identity cannot be
-// caught by grep; it is enforced by S1 loader tests and review instead.
+// caught by grep; it is enforced by S1 loader tests and review instead. Prose comments
+// that legitimately need the word `capability:` before a colon should be rephrased —
+// strictness over comment convenience is intentional.
+//
+// Usage: node scripts/check-legacy.mjs [--root <dir>] [--quiet]
+// (--root exists so the committed regression suite can point the gate at fixture trees.)
 //
 // Zero dependencies; deterministic order; exit 1 on any finding.
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'
-import { join, relative, sep } from 'node:path'
+import { join, relative, resolve, sep } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import process from 'node:process'
 
-const root = new URL('..', import.meta.url).pathname.replace(/^\/([a-zA-Z]:)/, '$1')
+const args = process.argv.slice(2)
+const rootArgIndex = args.indexOf('--root')
+const defaultRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
+const root = rootArgIndex === -1 ? defaultRoot : resolve(args[rootArgIndex + 1] ?? defaultRoot)
+const quiet = args.includes('--quiet')
 
 const SCAN_ROOTS = ['packages', 'apps']
 const SOURCE_DIR_NAMES = new Set(['src', 'schemas'])
 const TEXT_EXTENSIONS = new Set(['.ts', '.mts', '.cts', '.tsx', '.js', '.mjs', '.cjs', '.json'])
 const LEGACY_MARKER = '@modkit-legacy-input-fixture'
+const LEGACY_PATH_SEGMENT = '/fixtures/legacy/'
+const FIXTURES_SEGMENT = '/fixtures/'
 
 const RULES = [
   {
@@ -40,12 +60,12 @@ const RULES = [
   {
     id: 'capability-runtime-type',
     re: /\bCapability(?:Instance|Requirement|Descriptor|Id)\b|\bCAPABILITY_IDS\b/,
-    why: 'capability as a runtime interface; use traits/operations/offers/permissions/facilities (MK3/02 §1)',
+    why: 'capability as a runtime type; use traits/operations/offers/permissions/facilities (MK3/02 §1)',
   },
   {
-    id: 'capability-schema-field',
-    re: /"capabilit(?:y|ies)"\s*:/,
-    why: 'capability field in a new schema/manifest (legacy-only field name)',
+    id: 'capability-key',
+    re: /(^|[\s{,("'`[])["'`]?capabilit(?:y|ies)["'`]?\s*:/i,
+    why: 'capability(-ies) as an object/schema key (quoted or unquoted) — legacy-only field name',
   },
   {
     id: 'authored-extension-json',
@@ -91,6 +111,78 @@ function hasTextExtension(path) {
   return dot !== -1 && TEXT_EXTENSIONS.has(path.slice(dot))
 }
 
+function scanTextWithRules(text, relPosix, findings) {
+  const lines = text.split('\n')
+  for (const rule of RULES) {
+    for (let i = 0; i < lines.length; i += 1) {
+      if (rule.re.test(lines[i])) {
+        findings.push({ file: relPosix, line: i + 1, rule: rule.id, why: rule.why })
+      }
+    }
+  }
+}
+
+function collectExportPathStrings(exportsValue, out) {
+  if (typeof exportsValue === 'string') {
+    out.push(exportsValue)
+    return
+  }
+  if (Array.isArray(exportsValue)) {
+    for (const item of exportsValue) collectExportPathStrings(item, out)
+    return
+  }
+  if (exportsValue && typeof exportsValue === 'object') {
+    for (const [key, value] of Object.entries(exportsValue)) {
+      out.push(key)
+      collectExportPathStrings(value, out)
+    }
+  }
+}
+
+function checkPackageManifest(file, relPosix, findings) {
+  const text = readFileSync(file, 'utf8')
+  let manifest
+  try {
+    manifest = JSON.parse(text)
+  } catch {
+    findings.push({ file: relPosix, line: 1, rule: 'package-json-parse', why: 'unparseable package.json' })
+    return 1
+  }
+  const name = typeof manifest.name === 'string' ? manifest.name : ''
+  if (FORBIDDEN_PACKAGE_NAME.test(name)) {
+    findings.push({
+      file: relPosix,
+      line: 1,
+      rule: 'package-name',
+      why: `forbidden package name «${name}» (host modules, not packages)`,
+    })
+  }
+  if (name && !name.startsWith('@modkitx-x3/')) {
+    findings.push({
+      file: relPosix,
+      line: 1,
+      rule: 'package-name-scope',
+      why: `lab packages must use @modkitx-x3/* (BRIEF-12 §7.1), got «${name}»`,
+    })
+  }
+  const exportStrings = []
+  collectExportPathStrings(manifest.exports, exportStrings)
+  for (const value of exportStrings) {
+    if (/capabilit/i.test(value) || FORBIDDEN_PACKAGE_NAME.test(value)) {
+      findings.push({
+        file: relPosix,
+        line: 1,
+        rule: 'exports-path',
+        why: `forbidden vocabulary in exports entry «${value}»`,
+      })
+    }
+  }
+  // The full manifest text also goes through the generic rules (catches legacy field
+  // names, extension.json references, etc. anywhere in the manifest).
+  scanTextWithRules(text, relPosix, findings)
+  return 1
+}
+
 const findings = []
 let scannedFiles = 0
 
@@ -111,43 +203,29 @@ for (const scanRoot of SCAN_ROOTS) {
     const relPath = relative(root, file)
     const relPosix = relPath.split(sep).join('/')
 
-    // package manifests: name + exports check
     if (/^(packages|apps)\/[^/]+\/package\.json$/.test(relPosix)) {
-      const text = readFileSync(file, 'utf8')
-      scannedFiles += 1
-      let manifest
-      try {
-        manifest = JSON.parse(text)
-      } catch {
-        findings.push({ file: relPosix, line: 1, rule: 'package-json-parse', why: 'unparseable package.json' })
-        continue
-      }
-      const name = typeof manifest.name === 'string' ? manifest.name : ''
-      if (FORBIDDEN_PACKAGE_NAME.test(name)) {
-        findings.push({ file: relPosix, line: 1, rule: 'package-name', why: `forbidden package name «${name}» (host modules, not packages)` })
-      }
-      if (name && !name.startsWith('@modkitx-x3/')) {
-        findings.push({ file: relPosix, line: 1, rule: 'package-name-scope', why: `lab packages must use @modkitx-x3/* (BRIEF-12 §7.1), got «${name}»` })
-      }
+      scannedFiles += checkPackageManifest(file, relPosix, findings)
       continue
     }
 
     if (!isInScannedTree(relPath)) continue
-    if (relPosix.includes('/fixtures/legacy/')) continue
+    if (relPosix.includes(LEGACY_PATH_SEGMENT)) continue
     if (!hasTextExtension(file)) continue
 
     const text = readFileSync(file, 'utf8')
-    if (text.slice(0, 400).includes(LEGACY_MARKER)) continue
-    scannedFiles += 1
-
-    const lines = text.split('\n')
-    for (const rule of RULES) {
-      for (let i = 0; i < lines.length; i += 1) {
-        if (rule.re.test(lines[i])) {
-          findings.push({ file: relPosix, line: i + 1, rule: rule.id, why: rule.why })
-        }
-      }
+    const hasMarker = text.slice(0, 400).includes(LEGACY_MARKER)
+    if (hasMarker) {
+      if (relPosix.includes(FIXTURES_SEGMENT)) continue // honored only under fixtures/
+      findings.push({
+        file: relPosix,
+        line: 1,
+        rule: 'marker-outside-fixtures',
+        why: `${LEGACY_MARKER} marker outside a fixtures/ directory — the marker cannot exempt public source`,
+      })
+      // fall through: the file stays fully scanned
     }
+    scannedFiles += 1
+    scanTextWithRules(text, relPosix, findings)
   }
 }
 
@@ -159,4 +237,4 @@ if (findings.length > 0) {
   process.exit(1)
 }
 
-console.log(`legacy gate: clean (${scannedFiles} file(s) scanned)`)
+if (!quiet) console.log(`legacy gate: clean (${scannedFiles} file(s) scanned)`)

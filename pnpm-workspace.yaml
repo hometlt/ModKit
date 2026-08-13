@@ -3,3 +3,7 @@
 packages:
   - 'packages/*'
   - 'apps/*'
+# esbuild works through its platform binary package (@esbuild/win32-x64); its postinstall
+# script is only a fallback/validator, so build scripts stay denied (pnpm default-secure).
+allowBuilds:
+  esbuild: false

@@ -1,0 +1,8 @@
+{
+  "comment": "converted legacy input under fixtures/legacy/ — excluded from the gate by path",
+  "source": "extension.json",
+  "capabilities": ["read", "inspect"],
+  "capability": "detect",
+  "plugin": "AssetPlugin",
+  "legacyCodecRoot": "./codecs"
+}

@@ -5,7 +5,13 @@ import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/node_modules/**', '**/*.tsbuildinfo'],
+    ignores: [
+      '**/dist/**',
+      '**/node_modules/**',
+      '**/*.tsbuildinfo',
+      // gate regression fixtures intentionally contain forbidden/legacy shapes
+      'scripts/test/fixtures/**',
+    ],
   },
   ...tseslint.configs.strict,
   ...tseslint.configs.stylistic,

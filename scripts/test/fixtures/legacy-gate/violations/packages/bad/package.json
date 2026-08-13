@@ -1,0 +1,9 @@
+{
+  "name": "@modkitx/marketplace-tools",
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js",
+    "./capabilities": "./dist/capabilities.js"
+  }
+}

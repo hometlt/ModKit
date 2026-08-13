@@ -6,6 +6,111 @@ overrides a canonical or detailed owner.
 
 ---
 
+## X3-S0.0 corrective pass (2026-08-13, after the Sol audit)
+
+The owner-relayed audit accepted the DoR as a draft, returned X3-S0.0 to in-progress and
+ordered a corrective pass. Items below amend the DoR section that follows; where they
+contradict it, this section wins.
+
+### C1. Owner-input baseline made reproducible
+
+The DoR was read against the `modkitx` **working tree**, not a commit: `BRIEF_12` is
+untracked, and `MODKIT_ARCHITECTURE.md` + `MK3/README.md` carry uncommitted edits on top of
+`643abefc`, so «modkitx@643abefc» alone was not reproducible (audit item 1). SHA-256 of the
+exact files read (working tree, 2026-08-13; taken at the corrective pass — text unchanged
+within this session):
+
+| File | sha256 |
+| --- | --- |
+| tasks-active/platform-architecture/BRIEF_12_mk3_clean_core_bootstrap.md (untracked) | `bbc00dcf36e47739bae9db348979994c8865bb97590e7b9ae7dbf71f8e942a6c` |
+| architecture/MODKIT_ARCHITECTURE.md (modified vs 643abefc) | `902a6ece8e964677f81ca61a9e0de606b56d5f51d852c6f6ad4f9c93de8cb5e2` |
+| architecture/ASSET_CAPABILITIES.md | `be3f11b17062dfbb3190546a0d5377581465164d40a0abb52d1625f5125c9164` |
+| architecture/TARGET_ARCHITECTURE_OVERVIEW.md | `6507de8c13c4d7fce179ee52d35b3cd0881cc50478de9efb2ec73357767fd92e` |
+| MK3/README.md (modified vs 643abefc) | `67133f365d9ddc9b2b85e2b122e2ac64e44646467ebfd289ce97b77bbf525643` |
+| MK3/02-capabilities-and-contracts.md | `b97fa113f0c70e2444b0e5c4d734593b6887ee5a00999a2b887f7cfb422f2c3f` |
+| MK3/15-package-boundaries-and-extension-layout.md | `295a9f9f9f4a1881c0ae75911b73707a561f2fe582b4713f98c6ebf30cb0988a` |
+| MK3/23-contract-identity-schema-resolution-and-lock.md | `d8b18f9480286e318a414004ecce83cf9a126e9356ac312bede722ea725f88b3` |
+| MK3/24-extension-security-execution-and-lifecycle.md | `a92034ece263dcbe8ceefb49ed6d43555b3f5c27b7a6e1bdc64dd3f9c815184b` |
+| MK3/25-subject-identity-editing-transactions-and-cache.md | `58b6874311cfd008a57be53eb37b78b9412ae6854a5ec13a2d67edd5064a7a88` |
+| MK3/27-final-target-tree-extension-manifest-and-format-catalog.md | `aed060645c36c79efff0db40c079564495226b19af94f14ab7b6e1193620a143` |
+| tasks-active/platform-architecture/REPORT_6_…simplification.md | `61bd321da5f7b0bde56b73231be3c957bb29768e4fe22c50ffa4c495c30fdc77` |
+| tasks-active/platform-architecture/REPORT_9_…optional_platform_core.md | `5654e2ad0fdba2d346e401c00cc8bae5436acc0abbadf2029f268eb6166c4749` |
+
+Recommendation to owner (lab cannot do it under §8): commit BRIEF-12 and the pending canon /
+MK3-README edits in `modkitx` so future baselines are plain commit hashes.
+
+### C2. Gap register additions (audit item 2) — G9/G10 + G5 escalation
+
+| # | Gap | Blocking? | Resolution / status |
+| --- | --- | --- | --- |
+| G9 | **Root extension dependencies**: canon §5.13 prose requires the extension manifest to carry «dependencies on other extensions» (and its dependency-semantics table covers codec/extension manifests), but the adopted minimal authored form (27 §0.2, decision 64) and the v2 appendix example (27 §5) define no such field; REPORT-6 §6's minimal example has none either. A strict S0 schema must either include the field's exact shape or knowingly reject manifests that carry it | **Yes — blocks X3-S0.3** (ExtensionManifest schema). S0.1/S0.2 unaffected | Proposal filed as **Q75** in `MK3/11-open-questions.md` (recommended: optional `dependsOn` of extension-coordinate Requirements reusing the one-Requirement mode/scope model; shape-only validation in S0–S4, no solving). Owner decides; the DoR's earlier «deferred past S4» wording in §2.1 below is superseded |
+| G10 | **Two `executionProfile` vocabularies inside MK3/24**: §3's typed enum (`browser-sandbox`, `worker-brokered`, `process-brokered`, `wasm-brokered`, `trusted-in-process`) vs §5's profile catalog (`trusted-in-process`, `wasm-sandbox`, `worker-isolated`, `sandboxed-process`, `remote-provider`) — names differ, `remote-provider` missing from the enum | No for S0–S4 (lab S3 minimum uses `trusted-in-process`; REPORT-6 §6 fixtures also use `browser-sandbox`, both inside §3's enum, which is the shape 27 §6 imports) | Proposal filed as **Q77**: unify on §3's enum + `remote-provider`, §5 headings become prose descriptions mapped 1:1. X3 schemas use §3's enum verbatim until the owner answers |
+| G5→Q76 | Standalone container `version`/`license` ambiguity — escalated from a session-report note to a formal proposal per audit item 2 | No | Proposal filed as **Q76** with the same recommended reading as G5 (standalone carries own required fields; `#modkit` block must not duplicate npm fields); fixtures test both directions |
+
+### C3. Benchmark protocol fixed in S0.0 (audit item 3; supersedes L8)
+
+BRIEF-12 §6 requires S0.0 to fix the protocol; deferring it to S0.5 was wrong — S0.5 now
+only *implements* the script against this protocol:
+
+- **Reference environment (recorded 2026-08-13):** Intel Core Ultra 7 155U (12 phys /
+  14 logical cores, laptop-class — AC power assumed for gate runs), 31.5 GB RAM, NVMe SSD
+  (Phison 512 GB), Windows 11 Pro build 26200, Node v24.16.0, pnpm 11.8.0. Numbers are an
+  **absolute target + this-machine baseline**, never cross-machine constants.
+- **Warm-up:** ≥3 discarded runs per scenario (warm FS, JIT); FS-cold numbers are out of
+  scope for the §6 gates.
+- **Run counts:** N=100 measured runs for in-process micro scenarios (inventory, resolve,
+  explain); N=20 for process-level scenarios (CLI validate); N=10 fresh processes for the
+  import-cost scenario. Report **p50 and p95**; p50 gates, p95 is recorded.
+- **Process-startup exclusion:** in-process scenarios time `performance.now()` around the
+  operation only. CLI wall-clock scenarios also measure a bare `node -e ""` baseline (same
+  N/warm-up) and report raw + net (raw − baseline p50); §6 budgets apply to **net**.
+  Import budget: fresh process, `performance.now()` around dynamic `import()` of the built
+  entry — startup excluded by construction.
+- **Timed window:** synthetic corpus/fixture generation is excluded from every window.
+- **Gate policy (per §6):** the gate fails on (a) proven target excess — p50 over the §6
+  target across a full N-run session, confirmed by one repeat session; or (b) baseline
+  regression — p50 worse than the recorded baseline by >20 % across two consecutive full
+  sessions. A single noisy run never gates. Baselines live in the repo next to the bench
+  script and change only with an explanatory commit.
+
+### C4. Legacy gate hardened + committed regression suite (audit item 4)
+
+Fixes to `scripts/check-legacy.mjs`: (1) `package.json` content is no longer skipped after
+the name check — `exports` keys/values are checked (`exports-path` rule) and the whole
+manifest text runs through the generic rules; (2) `capability`/`capabilities` object keys
+are caught **quoted or unquoted** (`capability-key` rule — schemas will live as TS consts);
+(3) the `@modkit-legacy-input-fixture` marker is honored only under a `fixtures/` path —
+outside it the marker itself is a violation (`marker-outside-fixtures`) and the file is
+still scanned; (4) `--root` argument + `fileURLToPath` for testability/robustness.
+Committed regression suite: `scripts/test/check-legacy.test.ts` over committed fixture
+trees `scripts/test/fixtures/legacy-gate/{violations,clean}` — 9 rule classes asserted
+positive, marker-abuse asserted still-scanned, clean tree asserted scanned-and-green,
+`fixtures/legacy/` + marked-fixture exclusions asserted, real repo asserted green. The
+suite runs in `pnpm test` (vitest) and `pnpm check`.
+
+### C5. Toolchain installed and pinned (audit item 6)
+
+`pnpm install` executed; `pnpm-lock.yaml` committed; justifications in `PORTED.md`
+(typescript 5.9.3, vitest 2.1.9, eslint 9.39.5 + typescript-eslint 8.67.0, prettier 3.9.6,
+@types/node 22.20.1 — dev-only). esbuild's postinstall stays denied
+(`pnpm-workspace.yaml#allowBuilds`), its platform binary package suffices. Non-empty
+verification chain green: `pnpm typecheck` (tooling tsconfig over gate tests + vitest
+config), `pnpm lint`, `pnpm test` (5 real tests), `pnpm check:legacy`. The root `tsc -b`
+returns to the `typecheck` script when X3-S0.2 adds the first composite package (empty
+solution is TS18002).
+
+### C6. Accounting corrections (audit items 3/5)
+
+- Board: X3-S0.0 `assignee` removed (allowed only on an active `plan[]` step); corrective
+  pass added as a plan step; X3-S0.1 renamed to its true remainder («toolchain install/pin
+  + non-empty verification»), executed in this pass.
+- The previous `modkitx` commit `68183cb7` swept the planning session's uncommitted edits
+  of the same two files, including register rows (R3/R5, `0/45`) unrelated to X3 —
+  acknowledged as procedural overreach; the content is factually correct (re-measured), so
+  it is retained rather than reverted, and this note plus the session report record it.
+
+---
+
 ## X3-S0.0 — Contract baseline / Definition of Ready (2026-08-13)
 
 Verified against live files of `modkitx@643abefc` (branch `r1-convergence`, working tree of
@@ -72,9 +177,11 @@ contributionManifests readonly string[] — relative patterns; ≤1 shallow `*` 
 ```
 
 Normalization also reports (as diagnostics/metadata, not envelope fields): source container
-kind, and the packaging error when both containers are present. Extension-level dependencies
-and declared-inventory diffing (canon §5.13) are **deferred** past S4 — S0–S4 needs no
-extension-to-extension dependency edge.
+kind, and the packaging error when both containers are present. ~~Extension-level
+dependencies deferred past S4~~ — **superseded by corrective pass G9/Q75**: canon §5.13
+requires the manifest to carry them, the exact field shape awaits the owner's Q75 answer,
+and X3-S0.3 is blocked until then. Declared-inventory diffing (canon §5.13) remains
+deferred past S4.
 
 **2.2 `ContributionManifestV1` envelope (open, transport for every contribution kind):**
 
@@ -193,22 +300,22 @@ proceed under, and none required a lab-side architectural override.
   «LogTape only» (canon §6.1) and even that is added only when diagnostics need it.
 - **L6**: Canonical JSON serialization for emitted schemas/locks: UTF-8, LF, sorted object
   keys where order is not semantic, arrays of IDs unique + UTF-8-byte-sorted (23 §9.9).
-- **L7**: Legacy gate = `scripts/check-legacy.mjs` (zero-dependency): scans
-  `packages/**/src`, `apps/**/src`, `packages/**/schemas`, plus package names/exports;
-  excludes paths under `**/fixtures/legacy/**` and files carrying the
-  `@modkit-legacy-input-fixture` marker (§3.5 requires the exclusion so negative tests of
-  the old manifest stay possible). Category-as-path is NOT grep-detectable and is enforced
-  by S1 loader tests + review instead — recorded here so the gate's blind spot is explicit.
-- **L8**: Bench protocol details (reference environment, warm-up, run count, p50/p95,
-  startup exclusion) are fixed in X3-S0.5 when the bench script lands, per BRIEF-12 §6 —
-  the DoR only pins that numbers become gates via measured baseline, not declaration.
+- **L7** (hardened by corrective pass C4): Legacy gate = `scripts/check-legacy.mjs`
+  (zero-dependency): scans `packages/**/src`, `apps/**/src`, `packages/**/schemas`, package
+  names, `exports` maps and full manifest text; excludes `**/fixtures/legacy/**` paths, and
+  honors the `@modkit-legacy-input-fixture` marker only under a `fixtures/` directory
+  (elsewhere the marker is itself a violation). Committed regression suite:
+  `scripts/test/check-legacy.test.ts`. Category-as-path is NOT grep-detectable and is
+  enforced by S1 loader tests + review instead — recorded here so the gate's blind spot is
+  explicit.
+- **L8** (superseded by corrective pass C3): the protocol is fixed in S0.0 — see C3 above;
+  X3-S0.5 only implements the bench script against it.
 
-### 6. What X3-S0.0 did NOT do (explicit)
+### 6. What X3-S0.0 did NOT do (explicit; amended by the corrective pass)
 
 - No package sources, no `core` types, no schemas yet — first type lands in X3-S0.2+.
-- No `pnpm install` / lockfile: dependency ranges in the scaffold are placeholders until the
-  X3-S0.1 bootstrap slice installs and pins them.
-- No writes to `modkitx` beyond the board/register status updates allowed by BRIEF-12 §8.
-- No entry in `MK3/11-open-questions.md`: no found gap required an owner decision to
-  proceed (G2/G5 carry suggested owner confirmations via the session report; both have
-  non-blocking resolutions inside existing owner text).
+- ~~No `pnpm install` / lockfile~~ — done in corrective pass C5 (2026-08-13).
+- No writes to `modkitx` beyond BRIEF-12 §8 scope (board/register; corrective pass added
+  the Q75–Q77 proposals to `MK3/11-open-questions.md`, also §8-allowed).
+- ~~No entry in `MK3/11-open-questions.md`~~ — superseded: the audit surfaced G9 as a real
+  blocking gap; Q75–Q77 filed in the corrective pass.

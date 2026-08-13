@@ -1,0 +1,9 @@
+{
+  "name": "@modkitx-x3/good",
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js",
+    "./subjects": "./dist/subjects/index.js"
+  }
+}

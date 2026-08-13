@@ -34,8 +34,13 @@ revision, or archive the lab. Long-lived double authority with `modkitx` is forb
 
 ## Status
 
-- **X3-S0.0 (contract baseline / Definition of Ready): done 2026-08-13** — owner matrix,
-  minimal envelope fields, schema/type source-of-truth workflow, and the contract gap
-  register are in [IMPLEMENTATION_NOTES.md](IMPLEMENTATION_NOTES.md). No blocking gaps found.
-- S0.1+ (repo packages, core primitives, schemas) **not started** — awaiting the owner's go
-  after DoR review.
+- **X3-S0.0 (contract baseline / Definition of Ready): delivered 2026-08-13, corrective
+  pass after the Sol audit applied same day** — owner matrix, minimal envelope fields,
+  schema/type source-of-truth workflow, gap register G1–G10 and the fixed benchmark
+  protocol are in [IMPLEMENTATION_NOTES.md](IMPLEMENTATION_NOTES.md).
+- **X3-S0.1 (toolchain install/pin + non-empty verification): done 2026-08-13** —
+  lockfile committed, `pnpm check` green (typecheck / lint / 5 gate-regression tests /
+  legacy gate).
+- **X3-S0.3 is blocked** pending the owner's answer to Q75 (root extension dependencies
+  form) in `modkitx/docs/MK3/11-open-questions.md`; Q76/Q77 await confirmation there too.
+- S0.2+ (first `core` types, schemas, CLI, bench script) **not started**.
