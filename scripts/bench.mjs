@@ -1,20 +1,30 @@
 #!/usr/bin/env node
-// Benchmark harness (protocol: IMPLEMENTATION_NOTES C3, repaired in R7 after the audit
-// showed the first version swinging ~60% between sessions on identical code).
+// Benchmark harness — protocol in IMPLEMENTATION_NOTES C3, corrected twice after audits.
 //
-// What changed and why:
-//  * in-process workloads (inventory, resolve) run warm-up + N iterations inside ONE child
-//    process, so a scenario costs one spawn instead of dozens; cold-import scenarios keep
-//    one process per sample because a cold module graph is exactly what they must measure,
-//    but the timer lives INSIDE that process, so spawn cost never enters the number;
-//  * process-level scenarios subtract a bare-node baseline measured in the same session;
-//  * every result reports p50/p95 AND the interquartile spread, so a noisy session is
-//    visible instead of being silently recorded as a baseline;
-//  * `--gate` fails only on a *stable* signal: p50 over target with IQR/p50 below the
-//    noise ceiling, or a >20% p50 regression that is larger than the measured spread.
+// Measurement rules, and why each exists:
+//
+//  * **Cold-import scenarios** (core, closure) spawn one process per sample but time the
+//    import INSIDE that process, so Windows spawn/AV cost never enters the number.
+//  * **Calibration probes** (probe1, probe9) are committed fixtures that mirror core/dist
+//    in shape and size, and are measured by the *same* code path, same warm-up and N, as
+//    the measurands. The previous floor probe imported a file it had just written itself —
+//    hot page cache, AV already done — so it reported "machine unchanged" while the real
+//    file-read path had become three times more expensive. A probe that runs differently
+//    from the measurand proves nothing.
+//  * **Process-level scenarios** (CLI) interleave bare-node and target runs and report the
+//    distribution of *paired* differences. Measuring all bare runs first and all target
+//    runs afterwards is biased by any load change between the two blocks.
+//  * Every result carries the interquartile spread; a session that is noisy, or whose
+//    calibration probes drifted from the recorded baseline, is INCONCLUSIVE — neither a
+//    pass nor a failure. Silence about uncertainty is how a loud machine "closes" a budget
+//    nobody measured.
+//  * `normalizedP50` is reported for information: the raw value rescaled by how far probe9
+//    has drifted from its baseline. It is NOT the gate — gating stays on raw p50 unless the
+//    owner decides otherwise — but it separates "this machine is slower today" from "this
+//    code got slower" at a glance.
 //
 // Modes: default measures and compares; `--update` rewrites baselines; `--gate` exits 1 on
-// a stable breach; `--json` prints machine-readable results.
+// a stable breach and 2 when the session is not evidence; `--json` prints the raw report.
 
 import { spawnSync } from 'node:child_process'
 import { arch, cpus, platform, release, totalmem } from 'node:os'
@@ -32,6 +42,8 @@ const asJson = process.argv.includes('--json')
 /** A session whose own noise exceeds this is not evidence for anything. */
 const NOISE_CEILING = 0.35 // (p75-p25)/p50
 const REGRESSION_FACTOR = 1.2
+/** A calibration probe this far from its baseline means a different machine state. */
+const PROBE_DRIFT_CEILING = 1.5
 
 function stats(samples) {
   const sorted = [...samples].sort((a, b) => a - b)
@@ -51,57 +63,63 @@ function runWorkload(file, args = []) {
   return JSON.parse(result.stdout.trim())
 }
 
-/**
- * Cold-import scenarios: one fresh process per sample, but the sample itself is measured
- * inside that process (startup excluded). Spawn cost therefore affects how long the bench
- * takes, never the recorded number.
- */
-function coldImportStats(which, n) {
+const IMPORT_WARMUP = 3
+const IMPORT_N = 15
+
+/** Identical for measurands and probes — that identity is the whole point. */
+function coldImportStats(target, n = IMPORT_N) {
   const script = join(root, 'scripts', 'bench', 'import-workload.mjs')
   const samples = []
-  for (let i = 0; i < n + 3; i += 1) {
-    const r = spawnSync(process.execPath, [script, which], { encoding: 'utf8', cwd: root })
-    if (r.status !== 0) throw new Error(`import workload failed: ${r.stderr}`)
-    if (i >= 3) samples.push(Number(r.stdout.trim())) // discard warm-up
+  for (let i = 0; i < n + IMPORT_WARMUP; i += 1) {
+    const r = spawnSync(process.execPath, [script, target], { encoding: 'utf8', cwd: root })
+    if (r.status !== 0) throw new Error(`import workload «${target}» failed: ${r.stderr}`)
+    if (i >= IMPORT_WARMUP) samples.push(Number(r.stdout.trim()))
   }
   return stats(samples)
 }
 
-/** Wall-clock of N spawns of `argv`, minus a bare-node baseline from the same session. */
-function netProcessStats(argv, n) {
-  const measure = args => {
-    const samples = []
-    for (let i = 0; i < n + 3; i += 1) {
-      const t0 = performance.now()
-      const r = spawnSync(process.execPath, args, { encoding: 'utf8', cwd: root })
-      const t1 = performance.now()
-      if (r.status !== 0 && r.status !== 1) throw new Error(`bench target exited ${r.status}`)
-      if (i >= 3) samples.push(t1 - t0) // discard warm-up
+/**
+ * Interleaved paired measurement: bare, target, bare, target… Each pair is subtracted
+ * immediately, so a load change midway shifts both halves of the pair together instead of
+ * biasing the result.
+ */
+function pairedNetStats(argv, n) {
+  const timeOnce = args => {
+    const t0 = performance.now()
+    const r = spawnSync(process.execPath, args, { encoding: 'utf8', cwd: root })
+    const t1 = performance.now()
+    if (r.status !== 0 && r.status !== 1) throw new Error(`bench target exited ${r.status}`)
+    return t1 - t0
+  }
+  const differences = []
+  const rawSamples = []
+  for (let i = 0; i < n + IMPORT_WARMUP; i += 1) {
+    const bare = timeOnce(['-e', ''])
+    const withTarget = timeOnce(argv)
+    if (i >= IMPORT_WARMUP) {
+      differences.push(withTarget - bare)
+      rawSamples.push(withTarget)
     }
-    return stats(samples)
   }
-  const baseline = measure(['-e', ''])
-  const raw = measure(argv)
-  return {
-    p50: raw.p50 - baseline.p50,
-    p95: raw.p95 - baseline.p95,
-    spread: raw.spread,
-    n: raw.n,
-    rawP50: raw.p50,
-    baselineP50: baseline.p50,
-  }
+  const paired = stats(differences)
+  return { ...paired, rawP50: stats(rawSamples).p50 }
 }
 
 const cliMain = join(root, 'apps', 'modkit-cli', 'dist', 'main.js')
 const fixture = join(root, 'apps', 'modkit-cli', 'test', 'fixtures', 'valid-extension')
 const hostBuilt = existsSync(join(root, 'packages', 'host', 'dist'))
 
+// Calibration probes first: they define whether this session is comparable at all.
+const probes = [
+  { id: 'probe1-existing-module', run: () => coldImportStats('probe1') },
+  { id: 'probe9-existing-graph', run: () => coldImportStats('probe9') },
+]
+
 // Gates are the owner's platform-specific p50 budgets (BRIEF-12 §6, G13 decision
-// 2026-08-13, reference machine: Intel Core Ultra 7 155U / Windows x64 / Node 24.16).
-// `aspirationMs` is the older, tighter number: reported for context, never gating.
+// 2026-08-13). `aspirationMs` is the older, tighter number: reported, never gating.
 const scenarios = [
-  { id: 'core-import', targetMs: 15, aspirationMs: 5, run: () => coldImportStats('core', 15) },
-  { id: 'closure-import', targetMs: 50, run: () => coldImportStats('closure', 15) },
+  { id: 'core-import', targetMs: 15, aspirationMs: 5, run: () => coldImportStats('core') },
+  { id: 'closure-import', targetMs: 50, run: () => coldImportStats('closure') },
 ]
 if (hostBuilt) {
   scenarios.push(
@@ -122,12 +140,11 @@ if (existsSync(cliMain)) {
     id: 'cli-validate-net',
     targetMs: 250,
     aspirationMs: 150,
-    run: () => netProcessStats([cliMain, 'validate', fixture], 20),
+    run: () => pairedNetStats([cliMain, 'validate', fixture], 20),
   })
 }
 
-// Read from the machine, never hardcoded: a baseline that claims the wrong environment is
-// worse than no baseline (R10).
+// Read from the machine, never hardcoded (R10).
 const cpuList = cpus()
 const environment = {
   cpu: `${cpuList[0]?.model?.trim() ?? 'unknown'} (${cpuList.length} logical)`,
@@ -138,41 +155,46 @@ const environment = {
 
 const baselines = existsSync(baselinesPath)
   ? JSON.parse(readFileSync(baselinesPath, 'utf8'))
-  : { environment, scenarios: {} }
+  : { environment, probes: {}, scenarios: {} }
 
-// Calibration first: how expensive is one trivial ESM import right now? This is the
-// machine's floor. If it has drifted far from the floor recorded with the baseline, the
-// whole session measures a different machine-state and cannot close or fail a budget.
-const floor = runWorkload('floor-workload.mjs')
-const recordedFloor = baselines.floorMs
-const floorDrift = recordedFloor === undefined ? undefined : floor.p50 / recordedFloor
-if (!asJson) {
-  console.log(
-    `machine floor (1 trivial ESM import)   p50 ${floor.p50.toFixed(2)} ms` +
-      `${recordedFloor === undefined ? '' : ` (baseline ${recordedFloor.toFixed(2)} ms, ×${floorDrift.toFixed(2)})`}`,
-  )
+const probeReport = {}
+const probeProblems = []
+let normalizationFactor = 1
+for (const probe of probes) {
+  const r = probe.run()
+  probeReport[probe.id] = r
+  const recorded = baselines.probes?.[probe.id]
+  const drift = recorded === undefined ? undefined : r.p50 / recorded.p50
+  const noisy = r.spread > NOISE_CEILING
+  const drifted =
+    drift !== undefined && (drift > PROBE_DRIFT_CEILING || drift < 1 / PROBE_DRIFT_CEILING)
+  if (noisy) probeProblems.push(`${probe.id} spread ${(r.spread * 100).toFixed(0)}%`)
+  if (drifted) probeProblems.push(`${probe.id} ×${drift.toFixed(2)} vs baseline`)
+  if (probe.id === 'probe9-existing-graph' && drift !== undefined) normalizationFactor = 1 / drift
+  if (!asJson) {
+    console.log(
+      `${probe.id.padEnd(30)} p50 ${r.p50.toFixed(2)} ms  spread ${(r.spread * 100).toFixed(0)}%` +
+        `${recorded ? `  (baseline ${recorded.p50.toFixed(2)}, ×${drift.toFixed(2)})` : ''}`,
+    )
+  }
 }
 
 const report = {}
 const breaches = []
-const inconclusive = []
-const FLOOR_DRIFT_CEILING = 1.5
-const machineNotComparable = floorDrift !== undefined && floorDrift > FLOOR_DRIFT_CEILING
+const inconclusive = [...probeProblems]
 for (const scenario of scenarios) {
   const r = scenario.run()
   report[scenario.id] = { ...r, targetMs: scenario.targetMs }
   const recorded = baselines.scenarios?.[scenario.id]
-  // Relative spread is meaningless once a scenario sits far under its budget: at 0.01 ms
-  // the jitter is timer resolution, not machine noise. Only scenarios within an order of
-  // magnitude of their target are judged on stability.
+  // Relative spread is meaningless once a scenario sits far under its budget: at 0.01 ms the
+  // jitter is timer resolution. Only scenarios near their budget are judged on stability.
   const material = r.p50 > scenario.targetMs / 10
   const noisy = material && r.spread > NOISE_CEILING
   const overTarget = r.p50 > scenario.targetMs
-  // A regression is only meaningful on a scenario that is anywhere near its budget:
-  // 0.72 -> 2.02 ms against a 100 ms target is jitter, not a regression worth a red gate.
   const regressed = material && recorded !== undefined && r.p50 > recorded.p50 * REGRESSION_FACTOR
   const missedAspiration =
     scenario.aspirationMs !== undefined && r.p50 > scenario.aspirationMs && !overTarget
+  const normalized = r.p50 * normalizationFactor
   const flags = [
     overTarget ? 'OVER-GATE' : '',
     missedAspiration ? `over aspiration ${scenario.aspirationMs} ms (not a gate)` : '',
@@ -185,14 +207,12 @@ for (const scenario of scenarios) {
     console.log(
       `${scenario.id.padEnd(30)} p50 ${r.p50.toFixed(2)} ms  p95 ${r.p95.toFixed(2)} ms  ` +
         `spread ${(r.spread * 100).toFixed(0)}%  (gate ${scenario.targetMs} ms` +
-        `${recorded ? `, baseline ${recorded.p50.toFixed(2)}` : ''}) ${flags}`,
+        `${recorded ? `, baseline ${recorded.p50.toFixed(2)}` : ''}` +
+        `${normalizationFactor === 1 ? '' : `; normalized ${normalized.toFixed(2)}`}) ${flags}`,
     )
   }
-  // A noisy session is not evidence in either direction (C3) — and that cuts both ways:
-  // it must not be reported as a pass either, or a loud machine would silently "close" a
-  // budget it never measured.
-  if (gate && (noisy || (material && machineNotComparable))) inconclusive.push(scenario.id)
-  if (gate && !noisy && !(material && machineNotComparable) && (overTarget || regressed)) {
+  if (gate && noisy) inconclusive.push(scenario.id)
+  if (gate && !noisy && (overTarget || regressed)) {
     breaches.push(
       overTarget
         ? `${scenario.id}: p50 ${r.p50.toFixed(2)} ms over the ${scenario.targetMs} ms gate`
@@ -201,18 +221,23 @@ for (const scenario of scenarios) {
   }
 }
 
-if (asJson) console.log(JSON.stringify({ environment, scenarios: report }, null, 2))
+if (asJson)
+  console.log(JSON.stringify({ environment, probes: probeReport, scenarios: report }, null, 2))
 
 if (update) {
-  // A noisy session must never become a baseline — that is exactly how the first harness
-  // recorded numbers that later "regressed" against their own noise (audit finding D7).
+  if (probeProblems.length > 0) {
+    console.error(
+      `refusing to record baselines — calibration probes say this machine is not in a recordable state: ${probeProblems.join('; ')}`,
+    )
+    process.exit(2)
+  }
   const noisyIds = Object.entries(report)
     .filter(([id, r]) => r.spread > NOISE_CEILING && r.p50 > (report[id]?.targetMs ?? 0) / 10)
     .map(([id]) => id)
   if (noisyIds.length > 0) {
     console.error(
       `refusing to record baselines: ${noisyIds.join(', ')} exceeded the ${(NOISE_CEILING * 100).toFixed(0)}% spread ceiling.\n` +
-        'Re-run on a quiet machine (close other work, let the box settle) — a baseline is evidence, not a snapshot.',
+        'Re-run on a quiet machine — a baseline is evidence, not a snapshot.',
     )
     process.exit(2)
   }
@@ -222,7 +247,7 @@ if (update) {
       {
         environment,
         recordedAt: new Date().toISOString().slice(0, 10),
-        floorMs: floor.p50,
+        probes: probeReport,
         scenarios: report,
       },
       null,
@@ -232,6 +257,16 @@ if (update) {
   )
   console.log(`baselines written to ${baselinesPath}`)
 }
+
+// Calibration failures outrank everything: without a comparable machine there is no verdict.
+if (gate && probeProblems.length > 0) {
+  console.error(
+    `bench gate: INCONCLUSIVE — calibration probes are not comparable: ${probeProblems.join('; ')}.\n` +
+      'This is neither a pass nor a failure. Re-run in a quiet window; only a comparable ' +
+      'session counts towards the two consecutive runs BRIEF-12 §6 requires.',
+  )
+  process.exit(2)
+}
 if (breaches.length > 0) {
   console.error(`bench gate: FAILED\n  ${breaches.join('\n  ')}`)
   console.error('C3: confirm with a second full session before treating this as a verdict.')
@@ -239,15 +274,9 @@ if (breaches.length > 0) {
 }
 if (inconclusive.length > 0) {
   console.error(
-    (machineNotComparable
-      ? `bench gate: INCONCLUSIVE — the machine floor is ×${(floorDrift ?? 0).toFixed(2)} the recorded one, so this box is not in the state the baseline describes.
-`
-      : '') +
-      `bench gate: INCONCLUSIVE — not evidence: ${[...new Set(inconclusive)].join(', ')}.
-` +
-      'This is NOT a pass. Let the machine settle and re-run; only a quiet, comparable ' +
-      'session counts towards the two consecutive runs BRIEF-12 §6 requires.',
+    `bench gate: INCONCLUSIVE — not evidence: ${[...new Set(inconclusive)].join(', ')}.\n` +
+      'This is NOT a pass.',
   )
   process.exit(2)
 }
-if (gate) console.log('bench gate: passed (all material scenarios quiet and within budget)')
+if (gate) console.log('bench gate: passed (probes comparable, all scenarios quiet and in budget)')
