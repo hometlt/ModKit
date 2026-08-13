@@ -34,13 +34,10 @@ revision, or archive the lab. Long-lived double authority with `modkitx` is forb
 
 ## Status
 
-- **X3-S0.0 (contract baseline / Definition of Ready): delivered 2026-08-13, corrective
-  pass after the Sol audit applied same day** — owner matrix, minimal envelope fields,
-  schema/type source-of-truth workflow, gap register G1–G10 and the fixed benchmark
-  protocol are in [IMPLEMENTATION_NOTES.md](IMPLEMENTATION_NOTES.md).
-- **X3-S0.1 (toolchain install/pin + non-empty verification): done 2026-08-13** —
-  lockfile committed, `pnpm check` green (typecheck / lint / 5 gate-regression tests /
-  legacy gate).
-- **X3-S0.3 is blocked** pending the owner's answer to Q75 (root extension dependencies
-  form) in `modkitx/docs/MK3/11-open-questions.md`; Q76/Q77 await confirmation there too.
-- S0.2+ (first `core` types, schemas, CLI, bench script) **not started**.
+- **S0–S4 complete (2026-08-13)**: all five slices green behind the full gate (70 tests,
+  drift gates, legacy gate, emitted schemas, prettier). External packed-tarball extension
+  proof passes (S4/PR-23 shape); bench baselines recorded (closure 30 ms < 50 target;
+  inventory/resolve far under budget; core-import/validate-net over on the reference
+  machine — see IMPLEMENTATION_NOTES).
+- **Stopped for the owner decision: adopt / revise / archive** (BRIEF-12 §5). S4b (.uve
+  packer) not started — it does not start automatically.

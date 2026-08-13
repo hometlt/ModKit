@@ -6,6 +6,49 @@ overrides a canonical or detailed owner.
 
 ---
 
+## Slices S0.2–S4 executed (2026-08-13) — core proven, stop for adopt/revise/archive
+
+All slices closed same day, each behind the full gate (`pnpm check`: build+typecheck with
+drift gates, eslint, prettier, 70 vitest tests, emitted-schema check, legacy gate).
+Commits: S0.2 `f9c5cf4`, S0.3 `b9daaea`+`d8cbe78`, S0.5 `da6d934`, S1 `c3bc38b`,
+S2 `152a2c1`, S3 `d777da9`, S4 `d9a07b2`. S4b (`.uve` packer) NOT started — gated behind
+the owner decision by BRIEF-12 §5.
+
+New lab decisions / gaps found while building:
+
+- **G11 (non-blocking, proposal-worthy):** MK3/23 §8's closed `UnresolvedReason` enum has
+  no value for the explicitly required unsupported-kind rejection (23 §8 text + §15 use
+  the term). Lab: `RejectedCandidate.reason` additionally allows `'unsupported-kind'`;
+  suggested owner fix: add it to the enum in 23 §8.
+- **G12 (observation):** 23 §9's stage order (permissions at stage 4, pin at stage 5)
+  means a pinned-but-ungranted provider yields aggregate reason `pin-unsatisfied` while
+  the `rejected` list carries its `permission-required` diagnostic — tests document this;
+  no change proposed (structured diagnostics are complete).
+- **L9:** envelope-derived offers project the contract version as `${major}.0.0`
+  (contribution has no release version by design, 27 §0.5.1; ranges stay inside the
+  major). Real minor/patch contract versions arrive with codec-v2 specs.
+- **L10:** grant classes feed `RuntimeTarget.grantedPermissions` for resolution (23 §9
+  stage 4) and the activation gate re-checks the same grant before the dynamic import —
+  one grant, two enforcement points (SB-0 dispatch level).
+- **L11:** the host supports only `trusted-in-process` in S0–S4; any other profile is a
+  structured `x3.host/unsupported-execution-profile` refusal, never a downgrade
+  (24 §6.1 rule 1).
+
+Bench (recorded baselines, reference machine of C3; full closure = core+sdk+vfs+host):
+
+| Scenario                  | p50     | §6 target | Verdict                                                                                                                             |
+| ------------------------- | ------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| closure-import (4 pkg)    | 30.2 ms | < 50 ms   | **in budget**                                                                                                                       |
+| inventory-100-synthetic   | 0.75 ms | < 100 ms  | **in budget**                                                                                                                       |
+| resolve+explain /contract | 0.01 ms | < 1 ms    | **in budget**                                                                                                                       |
+| core-import               | 8.8 ms  | < 5 ms    | over — machine floor: a single module file costs ~13 ms fresh (AV/FS per-file overhead), lazy-ajv already applied                   |
+| cli-validate-net          | 257 ms  | < 150 ms  | over — same floor + spawn noise (p95 416 ms); gate = regression-only on this machine pending owner review of targets vs environment |
+
+External example closure: node_modules **1.4 MB**, 5 tarballs, zero deps beyond the lab
+packages + ajv. Full route proven from the example's own cwd, deny path included.
+
+---
+
 ## Owner decisions Q75–Q77 accepted (2026-08-13) — X3-S0.3 unblocked
 
 The owner (relaying Sol's recommendation) approved, verbatim scope:
