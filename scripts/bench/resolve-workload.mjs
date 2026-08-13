@@ -43,4 +43,7 @@ for (let i = 0; i < WARMUP + N; i += 1) {
 samples.sort((a, b) => a - b)
 const pick = p =>
   samples[Math.max(0, Math.min(samples.length - 1, Math.ceil((p / 100) * samples.length) - 1))]
-console.log(JSON.stringify({ p50: pick(50), p95: pick(95), n: N }))
+const p50 = pick(50)
+console.log(
+  JSON.stringify({ p50, p95: pick(95), spread: p50 === 0 ? 0 : (pick(75) - pick(25)) / p50, n: N }),
+)
