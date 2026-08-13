@@ -3,7 +3,13 @@
  * Q76 owner decision 2026-08-13). Data-only: no filesystem access, no execution.
  */
 
-import { diagnostic, hasErrors, parseSemver, type Diagnostic } from '@modkitx-x3/core'
+import {
+  diagnostic,
+  hasErrors,
+  parseSemver,
+  parseVersionRange,
+  type Diagnostic,
+} from '@modkitx-x3/core'
 import { extensionManifestSchema, modkitBlockSchema } from '../schemas/extension-manifest.js'
 import { validateWithSchema } from './validate.js'
 import { validateContributionPattern } from './patterns.js'
@@ -28,6 +34,29 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function patternDiagnostics(manifest: ExtensionManifest): Diagnostic[] {
   return manifest.contributionManifests.flatMap(validateContributionPattern)
+}
+
+/**
+ * Semantic range check on top of the structural schema pattern: the resolver's own
+ * parser is the authority on what a range means, so a manifest that the pattern lets
+ * through but the parser cannot read is still an error (Q75 `dependsOn.range`).
+ */
+function rangeDiagnostics(manifest: ExtensionManifest): Diagnostic[] {
+  const out: Diagnostic[] = []
+  manifest.dependsOn?.forEach((requirement, index) => {
+    if (requirement.range === undefined) return
+    if (parseVersionRange(requirement.range) === undefined) {
+      out.push(
+        diagnostic(
+          'error',
+          'x3.sdk/invalid-version-range',
+          `«${requirement.range}» is not a range this resolver can evaluate (MK3/23 §4 subset)`,
+          ['dependsOn', index, 'range'],
+        ),
+      )
+    }
+  })
+  return out
 }
 
 export async function normalizeExtensionManifest(
@@ -66,7 +95,7 @@ export async function normalizeExtensionManifest(
     const diagnostics = await validateWithSchema(extensionManifestSchema, input.standalone)
     if (hasErrors(diagnostics)) return { container: 'standalone', diagnostics }
     const manifest = input.standalone as ExtensionManifest
-    const all = [...diagnostics, ...patternDiagnostics(manifest)]
+    const all = [...diagnostics, ...patternDiagnostics(manifest), ...rangeDiagnostics(manifest)]
     return hasErrors(all)
       ? { container: 'standalone', diagnostics: all }
       : { container: 'standalone', manifest, diagnostics: all }
@@ -130,6 +159,7 @@ export async function normalizeExtensionManifest(
     ...diagnostics,
     ...(await validateWithSchema(extensionManifestSchema, manifest)),
     ...patternDiagnostics(manifest),
+    ...rangeDiagnostics(manifest),
   ]
   return hasErrors(all)
     ? { container: 'package-json', diagnostics: all }

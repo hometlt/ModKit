@@ -67,10 +67,37 @@ function lockKeyString(key: ProviderLockKey): string {
   return canonicalJsonStringify(key)
 }
 
-/** Canonical byte-stable serialization of a whole policy lock. */
+/**
+ * Canonical byte-stable serialization of a whole policy lock (MK3/23 §11, §16.5).
+ *
+ * Two guarantees, both needed for «lock round-trip deterministic, independent of
+ * object/directory order»:
+ *
+ *  1. one key resolves to one selection — entries sharing a `ProviderLockKey` while
+ *     selecting differently are refused loudly, because the same request cannot have two
+ *     answers (the earlier version silently kept input order here);
+ *  2. ties fall back to the full canonical entry, not just the key, so no pair of entries
+ *     can depend on the input sequence.
+ */
 export function serializePolicyLock(entries: readonly ProviderPolicyLockEntry[]): string {
-  const sorted = [...entries].sort((a, b) =>
-    compareUtf8(lockKeyString(a.key), lockKeyString(b.key)),
-  )
+  const seen = new Map<string, string>()
+  for (const entry of entries) {
+    const key = lockKeyString(entry.key)
+    const rendered = canonicalJsonStringify(entry)
+    const prior = seen.get(key)
+    if (prior !== undefined && prior !== rendered) {
+      throw new ModkitError({
+        code: 'x3.host/conflicting-lock-entries',
+        message:
+          'two policy-lock entries share one key but select differently — one request cannot have two answers',
+        context: { key },
+      })
+    }
+    seen.set(key, rendered)
+  }
+  const sorted = [...entries].sort((a, b) => {
+    const byKey = compareUtf8(lockKeyString(a.key), lockKeyString(b.key))
+    return byKey !== 0 ? byKey : compareUtf8(canonicalJsonStringify(a), canonicalJsonStringify(b))
+  })
   return canonicalJsonStringify({ schemaVersion: 1, entries: sorted })
 }

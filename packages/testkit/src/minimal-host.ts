@@ -10,6 +10,8 @@ import { ModkitError, type Diagnostic } from '@modkitx-x3/core'
 import {
   createSpecSchemaRegistry,
   type ContributionManifestV1,
+  type HostPolicy,
+  type PermissionGrant,
   type ProviderOffer,
   type ProviderRequest,
   type ResolutionResult,
@@ -19,10 +21,10 @@ import {
   activateContribution,
   buildInventory,
   buildLockEntry,
+  issueActivationTicket,
   resolveProvider,
   serializePolicyLock,
   type Activation,
-  type ActivationGrant,
   type Inventory,
 } from '@modkitx-x3/host'
 import { loadExtensionDirectory } from '@modkitx-x3/host/node'
@@ -72,7 +74,9 @@ export interface MinimalHostOptions {
   readonly extensionDirs: readonly string[]
   readonly specSchemas: readonly SpecSchemaEntry[]
   readonly request: ProviderRequest
-  readonly grant: ActivationGrant
+  /** MK3/24 §4 grant the session offers; the gate narrows it, never widens. */
+  readonly grant: PermissionGrant
+  readonly policy?: HostPolicy
   readonly signal?: AbortSignal
 }
 
@@ -121,25 +125,35 @@ export async function runMinimalHost(options: MinimalHostOptions): Promise<Minim
   const providerId = result.selected.offer.providerId
   let manifest: ContributionManifestV1 | undefined
   let baseDir: string | undefined
+  let extensionId: string | undefined
   for (const extension of inventory.extensions) {
     for (const contribution of extension.contributions) {
       if (contribution.manifest?.id === providerId) {
         manifest = contribution.manifest
         baseDir = extension.source
+        extensionId = `${extension.manifest.publisher}/${extension.manifest.id}`
       }
     }
   }
-  if (!manifest || !baseDir) {
+  if (!manifest || !baseDir || !extensionId) {
     throw new ModkitError({
       code: 'x3.testkit/selected-not-in-inventory',
       message: `selected provider «${providerId}» not found in inventory`,
     })
   }
+  // Activation is admitted only by a ticket the resolver issued for this exact target.
+  const ticket = issueActivationTicket(
+    result,
+    request.target,
+    ...(request.operation === undefined ? [] : [request.operation]),
+  )
   const activation = await activateContribution({
+    ticket,
     manifest,
-    variantId: result.selected.offer.runtimeVariant,
+    extensionId,
     baseUrl: pathToFileURL(`${baseDir}/`),
     grant: options.grant,
+    ...(options.policy === undefined ? {} : { policy: options.policy }),
     ...(options.signal === undefined ? {} : { signal: options.signal }),
   })
   return {

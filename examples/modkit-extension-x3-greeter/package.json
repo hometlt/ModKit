@@ -13,6 +13,7 @@
     ]
   },
   "dependencies": {
+    "@modkitx-x3/core": "*",
     "@modkitx-x3/host": "*",
     "@modkitx-x3/sdk": "*",
     "@modkitx-x3/vfs": "*"

@@ -10,8 +10,10 @@ export { resolveProvider, RESOLVER_VERSION } from './resolution/resolver.js'
 export { buildLockEntry, buildLockKey, serializePolicyLock } from './resolution/lock.js'
 export {
   activateContribution,
-  checkGrant,
+  issueActivationTicket,
+  SUPPORTED_EXECUTION_PROFILES,
   type Activation,
-  type ActivationGrant,
   type ActivationRequest,
+  type ActivationTicket,
 } from './security/gate.js'
+export { assertRelativeEntrypoint, resolveContainedEntrypoint } from './security/entrypoint.js'

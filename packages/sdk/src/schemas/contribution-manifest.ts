@@ -7,7 +7,12 @@
  * facts ported from modkitx packages/assets/src/codec-manifest.ts@f10666be (PORTED.md).
  */
 
-import { QUALIFIED_PATTERN, SEGMENT_PATTERN } from './patterns.js'
+import {
+  QUALIFIED_PATTERN,
+  RELATIVE_ENTRYPOINT_PATTERN,
+  SEGMENT_PATTERN,
+  VERSION_RANGE_PATTERN,
+} from './patterns.js'
 import { requirementScopeSchema } from './extension-manifest.js'
 
 export const EXECUTION_PROFILES = [
@@ -67,7 +72,9 @@ export const runtimeVariantDeclarationSchema = {
   required: ['variantId', 'entrypoint', 'target', 'executionProfile', 'requestedPermissionClasses'],
   properties: {
     variantId: { type: 'string', pattern: SEGMENT_PATTERN },
-    entrypoint: { type: 'string', minLength: 1 },
+    // Containment is enforced twice: here (authoring gate) and again by the host before
+    // any import (MK3/24 §8) — the host never trusts that someone validated the input.
+    entrypoint: { type: 'string', pattern: RELATIVE_ENTRYPOINT_PATTERN },
     target: runtimeTargetConstraintSchema,
     executionProfile: { enum: EXECUTION_PROFILES },
     requestedPermissionClasses: { type: 'array', items: { enum: PERMISSION_CLASSES } },
@@ -82,7 +89,7 @@ export const scopedContractRequirementSchema = {
   properties: {
     contract: { type: 'string', pattern: QUALIFIED_PATTERN },
     major: { type: 'integer', minimum: 0 },
-    range: { type: 'string', minLength: 1 },
+    range: { type: 'string', pattern: VERSION_RANGE_PATTERN },
     mode: { enum: ['required', 'default', 'suggested', 'integrates'] },
     scope: requirementScopeSchema,
   },

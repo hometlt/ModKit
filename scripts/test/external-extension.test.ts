@@ -68,19 +68,17 @@ describe('external packed-tarball extension (S4/PR-23 shape)', () => {
         if (!hit) throw new Error(`no tarball for ${pkg} in ${tarballs.join(', ')}`)
         return join(packDest, hit)
       }
+      // One install with every artifact: npm rewrites each declared spec in the section it
+      // already lives in, so the prod/dev split authored by the extension is preserved
+      // (installing them in two passes would make npm try to fetch the not-yet-supplied
+      // half from the registry, and the lab publishes nothing).
       const npmFlags = ['--no-audit', '--no-fund', '--install-links=false']
-      const installProd = sh(
+      const install = sh(
         'npm',
-        ['install', '--save-prod', ...npmFlags, ...['core', 'sdk', 'vfs', 'host'].map(tarballOf)],
+        ['install', ...npmFlags, ...['core', 'sdk', 'vfs', 'host', 'testkit'].map(tarballOf)],
         exampleDir,
       )
-      expect(installProd.status, installProd.stderr).toBe(0)
-      const installDev = sh(
-        'npm',
-        ['install', '--save-dev', ...npmFlags, tarballOf('testkit')],
-        exampleDir,
-      )
-      expect(installDev.status, installDev.stderr).toBe(0)
+      expect(install.status, install.stderr).toBe(0)
 
       // 3. hygiene: no workspace:/deep-dist imports in the example sources;
       //    installed packages came from artifacts, not links
@@ -105,6 +103,7 @@ describe('external packed-tarball extension (S4/PR-23 shape)', () => {
       }
       // canon §6.1: testkit is dev-only and must never sit in the production closure
       expect(Object.keys(installedPkg.dependencies).sort()).toEqual([
+        '@modkitx-x3/core',
         '@modkitx-x3/host',
         '@modkitx-x3/sdk',
         '@modkitx-x3/vfs',

@@ -64,6 +64,18 @@ export {
   type AuthoredContainers,
   type NormalizationResult,
 } from './manifest/normalize.js'
+export {
+  assertNotWider,
+  grantValidity,
+  narrowGrant,
+  type CredentialGrantRef,
+  type GrantValidity,
+  type GrantedNetworkScope,
+  type GrantedPathScope,
+  type HostPolicy,
+  type NarrowRequest,
+  type PermissionGrant,
+} from './security/grant.js'
 export type {
   ContractOffer,
   ContractRequirement,

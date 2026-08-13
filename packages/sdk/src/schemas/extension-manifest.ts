@@ -5,7 +5,12 @@
  * consts; the TypeScript types are pinned by the compile-time drift gate.
  */
 
-import { DOTTED_PATTERN, QUALIFIED_PATTERN, SEMVER_PATTERN } from './patterns.js'
+import {
+  DOTTED_PATTERN,
+  QUALIFIED_PATTERN,
+  SEMVER_PATTERN,
+  VERSION_RANGE_PATTERN,
+} from './patterns.js'
 
 export const REQUIREMENT_SCOPE_KINDS = [
   'contribution',
@@ -35,7 +40,7 @@ export const extensionRequirementSchema = {
   required: ['extension', 'mode', 'scope'],
   properties: {
     extension: { type: 'string', pattern: QUALIFIED_PATTERN },
-    range: { type: 'string', minLength: 1 },
+    range: { type: 'string', pattern: VERSION_RANGE_PATTERN },
     mode: { enum: ['required', 'default', 'suggested', 'integrates'] },
     scope: requirementScopeSchema,
   },
