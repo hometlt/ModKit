@@ -1,107 +1,65 @@
 #!/usr/bin/env node
 /**
- * Thin `modkit` CLI — the application root of canon §11 (BRIEF-12 §3.1): argv, file I/O
- * wiring, stdout and exit codes. Every schema/normalization/expansion decision is an
- * @modkitx-x3/sdk call. No spec registry is built in: every contract is reported as
- * inspectable-unknown here (hosts/testkit supply registries).
+ * Thin `modkit` CLI — the application root of canon §11 (BRIEF-12 §3.1): argv, stdout
+ * and exit codes. Loading is @modkitx-x3/host/node, inventory/validation is
+ * @modkitx-x3/host + @modkitx-x3/sdk. No spec registry is built in: every contract is
+ * reported as inspectable-unknown here (hosts/testkit supply registries).
  *
  * Exit codes: 0 = valid; 1 = validation errors; 2 = usage/IO failure.
  */
 
-import { readdirSync, readFileSync, statSync } from 'node:fs'
-import { join, relative, resolve, sep } from 'node:path'
+import { resolve } from 'node:path'
 import process from 'node:process'
-import { hasErrors, type Diagnostic } from '@modkitx-x3/core'
-import {
-  createSpecSchemaRegistry,
-  expandContributionManifests,
-  normalizeExtensionManifest,
-  validateContributionManifest,
-} from '@modkitx-x3/sdk'
+import { createSpecSchemaRegistry } from '@modkitx-x3/sdk'
+import { buildInventory, inventoryHasErrors, type Inventory } from '@modkitx-x3/host'
+import { loadExtensionDirectory } from '@modkitx-x3/host/node'
 
-function listFiles(root: string): string[] {
-  const out: string[] = []
-  const walk = (dir: string): void => {
-    for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) =>
-      a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
-    )) {
-      if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name === '.git') continue
-      const path = join(dir, entry.name)
-      if (entry.isDirectory()) walk(path)
-      else out.push(relative(root, path).split(sep).join('/'))
-    }
+function render(inventory: Inventory, json: boolean): string {
+  const extension = inventory.extensions[0]
+  const contributions = extension?.contributions ?? []
+  const ok = !inventoryHasErrors(inventory)
+  if (json) {
+    return `${JSON.stringify(
+      {
+        ok,
+        ...(extension === undefined
+          ? {}
+          : {
+              container: extension.container,
+              extension: {
+                publisher: extension.manifest.publisher,
+                id: extension.manifest.id,
+                version: extension.manifest.version,
+              },
+            }),
+        contributions: contributions.map(c => ({
+          path: c.path,
+          specState: c.specState,
+          ...(c.manifest === undefined ? {} : { id: c.manifest.id }),
+        })),
+        diagnostics: [
+          ...inventory.diagnostics,
+          ...contributions.flatMap(c =>
+            c.diagnostics.map(d => ({ ...d, path: [c.path, ...(d.path ?? [])] })),
+          ),
+        ],
+      },
+      null,
+      2,
+    )}\n`
   }
-  walk(root)
-  return out
-}
-
-function readJsonIfExists(path: string): unknown {
-  try {
-    return JSON.parse(readFileSync(path, 'utf8')) as unknown
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
-    throw error
+  const lines: string[] = []
+  const header = extension
+    ? ` ${extension.manifest.publisher}/${extension.manifest.id}@${extension.manifest.version}`
+    : ''
+  lines.push(`${ok ? 'VALID' : 'INVALID'}${header} (${contributions.length} contribution(s))`)
+  for (const c of contributions) {
+    lines.push(`  ${c.path}: ${c.specState}${c.manifest ? ` [${c.manifest.id}]` : ''}`)
   }
-}
-
-interface ValidateReport {
-  readonly ok: boolean
-  readonly container?: string
-  readonly extension?: { publisher: string; id: string; version: string }
-  readonly contributions: { path: string; specState: string; id?: string }[]
-  readonly diagnostics: Diagnostic[]
-}
-
-async function validateDirectory(dir: string): Promise<ValidateReport> {
-  if (!statSync(dir, { throwIfNoEntry: false })?.isDirectory()) {
-    throw new Error(`not a directory: ${dir}`)
+  for (const d of [...inventory.diagnostics, ...contributions.flatMap(c => c.diagnostics)]) {
+    lines.push(`  ${d.severity} ${d.code} ${d.message}${d.path ? ` @ ${d.path.join('/')}` : ''}`)
   }
-  const diagnostics: Diagnostic[] = []
-  const packageJson = readJsonIfExists(join(dir, 'package.json'))
-  const standalone = readJsonIfExists(join(dir, 'modkit.extension.json'))
-  const normalized = await normalizeExtensionManifest({
-    ...(packageJson === undefined ? {} : { packageJson }),
-    ...(standalone === undefined ? {} : { standalone }),
-  })
-  diagnostics.push(...normalized.diagnostics)
-
-  const contributions: ValidateReport['contributions'] = []
-  if (normalized.manifest) {
-    const expansion = expandContributionManifests(
-      normalized.manifest.contributionManifests,
-      listFiles(dir),
-    )
-    diagnostics.push(...expansion.diagnostics)
-    const registry = createSpecSchemaRegistry([])
-    for (const entry of expansion.entries) {
-      const raw = readJsonIfExists(join(dir, entry.path))
-      const result = await validateContributionManifest(raw, registry)
-      diagnostics.push(
-        ...result.diagnostics.map(d => ({ ...d, path: [entry.path, ...(d.path ?? [])] })),
-      )
-      contributions.push({
-        path: entry.path,
-        specState: result.specState,
-        ...(result.manifest === undefined ? {} : { id: result.manifest.id }),
-      })
-    }
-  }
-
-  return {
-    ok: !hasErrors(diagnostics),
-    ...(normalized.container === undefined ? {} : { container: normalized.container }),
-    ...(normalized.manifest === undefined
-      ? {}
-      : {
-          extension: {
-            publisher: normalized.manifest.publisher,
-            id: normalized.manifest.id,
-            version: normalized.manifest.version,
-          },
-        }),
-    contributions,
-    diagnostics,
-  }
+  return `${lines.join('\n')}\n`
 }
 
 async function main(argv: readonly string[]): Promise<number> {
@@ -111,30 +69,16 @@ async function main(argv: readonly string[]): Promise<number> {
     process.stderr.write('usage: modkit validate <dir> [--json]\n')
     return 2
   }
-  let report: ValidateReport
+  let inventory: Inventory
   try {
-    report = await validateDirectory(resolve(target))
+    const input = await loadExtensionDirectory(resolve(target))
+    inventory = await buildInventory([input], createSpecSchemaRegistry([]))
   } catch (error) {
     process.stderr.write(`modkit validate: ${(error as Error).message}\n`)
     return 2
   }
-  if (json) {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
-  } else {
-    const ext = report.extension
-    process.stdout.write(
-      `${report.ok ? 'VALID' : 'INVALID'}${ext ? ` ${ext.publisher}/${ext.id}@${ext.version}` : ''} (${report.contributions.length} contribution(s))\n`,
-    )
-    for (const c of report.contributions) {
-      process.stdout.write(`  ${c.path}: ${c.specState}${c.id ? ` [${c.id}]` : ''}\n`)
-    }
-    for (const d of report.diagnostics) {
-      process.stdout.write(
-        `  ${d.severity} ${d.code} ${d.message}${d.path ? ` @ ${d.path.join('/')}` : ''}\n`,
-      )
-    }
-  }
-  return report.ok ? 0 : 1
+  process.stdout.write(render(inventory, json))
+  return inventoryHasErrors(inventory) ? 1 : 0
 }
 
 process.exitCode = await main(process.argv.slice(2))

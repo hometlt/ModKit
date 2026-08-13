@@ -1,0 +1,27 @@
+{
+  "name": "@modkitx-x3/host",
+  "version": "0.1.0",
+  "description": "MK3 clean-core lab: inventory, resolver, activation gate (BRIEF-12; not a release)",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./node": {
+      "types": "./dist/node/index.d.ts",
+      "default": "./dist/node/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@modkitx-x3/core": "workspace:*",
+    "@modkitx-x3/sdk": "workspace:*"
+  }
+}
