@@ -14,6 +14,10 @@ justifications (BRIEF-12 §3.1) are also recorded in this file, one line per dep
 - `packages/sdk/test/extension-manifest.test.ts (convertedImagesPackageJson) ← extensions/common/images/extension.json@8a21060f | converted to package.json#modkit + contributionManifests; dropped displayName/description/contributes.codecs/metadata (not in normalized v1 minimal) | data-only fixture, checked against the new strict schema`
 - `packages/sdk/test/fixtures/legacy/legacy-extension-manifest.json ← extensions/common/images/extension.json@8a21060f | trimmed to 3 codecs; kept the OLD authored shape verbatim as a negative input | legacy-input fixture under fixtures/legacy/ (excluded from the gate), asserted to FAIL the new schema`
 
+- `packages/sdk/src/schemas/contribution-manifest.ts (RUNTIME_ENVIRONMENTS/OPERATING_SYSTEMS/ARCHITECTURES) ← packages/assets/src/codec-manifest.ts@f10666be | verbatim v1 wire dictionaries (23 §8: RuntimeTarget aliases the existing concrete shape); hostCapabilities/webApis left as open strings pending owner promotion of the closed lists | value lists only, no code`
+- `packages/sdk/test/contribution-manifest.test.ts (convertedDds) ← extensions/common/images/codecs/dds/codec.manifest.json@717e7d38 | converted to ContributionManifestV1: kind/capabilities verbs dropped (MK3/02 §1), entrypoints map → single-entrypoint runtime variant, match/operations moved into contract-specific spec | data-only fixture under a compat test contract`
+- `packages/sdk/test/fixtures/legacy/legacy-codec-manifest.json ← extensions/common/images/codecs/dds/codec.manifest.json@717e7d38 | trimmed verbatim OLD v1 shape as negative input | legacy-input fixture under fixtures/legacy/, asserted to FAIL the envelope schema`
+
 ## Runtime dependencies (published packages)
 
 - `dependency: ajv@^8.17.1 (→8.20.0) in @modkitx-x3/sdk | compiles the authored JSON Schema consts for runtime validation (manifests, envelopes, locks) | hand-writing a JSON Schema validator would be a second drifting authority; nothing in core covers schema validation`

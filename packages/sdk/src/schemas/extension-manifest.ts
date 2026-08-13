@@ -18,7 +18,7 @@ export const REQUIREMENT_SCOPE_KINDS = [
   'slot',
 ] as const
 
-const requirementScopeSchema = {
+export const requirementScopeSchema = {
   type: 'object',
   additionalProperties: false,
   required: ['kind', 'id'],

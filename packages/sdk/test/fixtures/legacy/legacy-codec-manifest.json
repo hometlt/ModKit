@@ -1,0 +1,27 @@
+{
+  "comment": "legacy-input fixture (PORTED.md provenance): trimmed shape of modkitx extensions/common/images/codecs/dds/codec.manifest.json@8a21060f — the OLD v1 codec manifest, negative input only; excluded from the legacy gate by the fixtures/legacy/ path rule",
+  "$schema": "../../../schema/codec-manifest.v1.schema.json",
+  "schemaVersion": 1,
+  "publisher": "org.modkitx",
+  "id": "dds",
+  "version": "0.1.0",
+  "contractVersion": 1,
+  "kind": "image",
+  "displayName": "DirectDraw Surface",
+  "status": "partial",
+  "sourceKinds": ["file", "archive-entry"],
+  "match": { "extensions": [".dds"] },
+  "capabilities": ["detect", "read", "inspect", "write"],
+  "runtimeVariants": [
+    {
+      "id": "node",
+      "environments": ["node", "node-worker"],
+      "entrypoints": { "runtime": "./codec.js" },
+      "operatingSystems": ["any"],
+      "architectures": ["any"],
+      "capabilities": ["detect", "read", "inspect", "write"],
+      "operations": ["image.read", "image.inspect", "image.write"]
+    }
+  ],
+  "operations": ["image.read", "image.inspect", "image.write"]
+}

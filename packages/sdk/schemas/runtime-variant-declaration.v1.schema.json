@@ -1,0 +1,118 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "entrypoint": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "executionProfile": {
+      "enum": [
+        "browser-sandbox",
+        "worker-brokered",
+        "process-brokered",
+        "wasm-brokered",
+        "trusted-in-process",
+        "remote-provider"
+      ]
+    },
+    "requestedPermissionClasses": {
+      "items": {
+        "enum": [
+          "read-source",
+          "write-source",
+          "filesystem-read",
+          "filesystem-write",
+          "network",
+          "process-launch",
+          "native-code",
+          "credentials",
+          "clipboard",
+          "persistent-storage"
+        ]
+      },
+      "type": "array"
+    },
+    "target": {
+      "additionalProperties": false,
+      "properties": {
+        "architectures": {
+          "items": {
+            "enum": [
+              "any",
+              "x86",
+              "x64",
+              "arm32",
+              "arm64",
+              "wasm32"
+            ]
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "environments": {
+          "items": {
+            "enum": [
+              "browser-main",
+              "browser-worker",
+              "node",
+              "node-worker",
+              "wasm",
+              "native",
+              "external-tool"
+            ]
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "externalTools": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "operatingSystems": {
+          "items": {
+            "enum": [
+              "any",
+              "windows",
+              "linux",
+              "darwin",
+              "android",
+              "ios"
+            ]
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "requiredHostCapabilities": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "requiredWebApis": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "variantId": {
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "variantId",
+    "entrypoint",
+    "target",
+    "executionProfile",
+    "requestedPermissionClasses"
+  ],
+  "type": "object"
+}

@@ -1,0 +1,114 @@
+/**
+ * Open `ContributionManifestV1` transport envelope (owner: MK3/27 §6 with §0.5
+ * simplifications: no per-contribution version, `status` optional display hint, security
+ * authored only here in runtime variants). `RuntimeVariantDeclaration` shape belongs to
+ * MK3/24 §3; `ScopedContractRequirement` to MK3/23 §8; `executionProfile` enum is the
+ * Q77 owner decision (2026-08-13). Runtime-target dictionaries are the live v1 wire
+ * facts ported from modkitx packages/assets/src/codec-manifest.ts@f10666be (PORTED.md).
+ */
+
+import { QUALIFIED_PATTERN, SEGMENT_PATTERN } from './patterns.js'
+import { requirementScopeSchema } from './extension-manifest.js'
+
+export const EXECUTION_PROFILES = [
+  'browser-sandbox',
+  'worker-brokered',
+  'process-brokered',
+  'wasm-brokered',
+  'trusted-in-process',
+  'remote-provider',
+] as const
+
+/** Canonical permission taxonomy (MK3/24 §3). */
+export const PERMISSION_CLASSES = [
+  'read-source',
+  'write-source',
+  'filesystem-read',
+  'filesystem-write',
+  'network',
+  'process-launch',
+  'native-code',
+  'credentials',
+  'clipboard',
+  'persistent-storage',
+] as const
+
+export const RUNTIME_ENVIRONMENTS = [
+  'browser-main',
+  'browser-worker',
+  'node',
+  'node-worker',
+  'wasm',
+  'native',
+  'external-tool',
+] as const
+
+export const OPERATING_SYSTEMS = ['any', 'windows', 'linux', 'darwin', 'android', 'ios'] as const
+
+export const ARCHITECTURES = ['any', 'x86', 'x64', 'arm32', 'arm64', 'wasm32'] as const
+
+export const runtimeTargetConstraintSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    environments: { type: 'array', items: { enum: RUNTIME_ENVIRONMENTS }, minItems: 1 },
+    operatingSystems: { type: 'array', items: { enum: OPERATING_SYSTEMS }, minItems: 1 },
+    architectures: { type: 'array', items: { enum: ARCHITECTURES }, minItems: 1 },
+    requiredHostCapabilities: { type: 'array', items: { type: 'string', minLength: 1 } },
+    requiredWebApis: { type: 'array', items: { type: 'string', minLength: 1 } },
+    externalTools: { type: 'array', items: { type: 'string', minLength: 1 } },
+  },
+} as const
+
+/** MK3/24 §3 — the one authored source of requested permissions/targets/profiles. */
+export const runtimeVariantDeclarationSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['variantId', 'entrypoint', 'target', 'executionProfile', 'requestedPermissionClasses'],
+  properties: {
+    variantId: { type: 'string', pattern: SEGMENT_PATTERN },
+    entrypoint: { type: 'string', minLength: 1 },
+    target: runtimeTargetConstraintSchema,
+    executionProfile: { enum: EXECUTION_PROFILES },
+    requestedPermissionClasses: { type: 'array', items: { enum: PERMISSION_CLASSES } },
+  },
+} as const
+
+/** MK3/23 §8 — contract-based requirement with explicit mode/scope. */
+export const scopedContractRequirementSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['contract', 'major', 'mode', 'scope'],
+  properties: {
+    contract: { type: 'string', pattern: QUALIFIED_PATTERN },
+    major: { type: 'integer', minimum: 0 },
+    range: { type: 'string', minLength: 1 },
+    mode: { enum: ['required', 'default', 'suggested', 'integrates'] },
+    scope: requirementScopeSchema,
+  },
+} as const
+
+export const contributionManifestSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['schemaVersion', 'contract', 'id', 'displayName', 'spec'],
+  properties: {
+    schemaVersion: { const: 1 },
+    contract: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['id', 'major'],
+      properties: {
+        id: { type: 'string', pattern: QUALIFIED_PATTERN },
+        major: { type: 'integer', minimum: 0 },
+      },
+    },
+    id: { type: 'string', pattern: QUALIFIED_PATTERN },
+    displayName: { type: 'string', minLength: 1 },
+    status: { enum: ['supported', 'partial', 'unsupported', 'experimental'] },
+    runtimeVariants: { type: 'array', items: runtimeVariantDeclarationSchema },
+    dependsOn: { type: 'array', items: scopedContractRequirementSchema },
+    limitations: { type: 'array', items: { type: 'string', minLength: 1 } },
+    spec: {},
+  },
+} as const

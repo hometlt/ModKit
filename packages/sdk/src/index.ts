@@ -2,8 +2,41 @@ export {
   extensionManifestSchema,
   extensionRequirementSchema,
   modkitBlockSchema,
+  requirementScopeSchema,
   REQUIREMENT_SCOPE_KINDS,
 } from './schemas/extension-manifest.js'
+export {
+  contributionManifestSchema,
+  runtimeVariantDeclarationSchema,
+  runtimeTargetConstraintSchema,
+  scopedContractRequirementSchema,
+  EXECUTION_PROFILES,
+  PERMISSION_CLASSES,
+  RUNTIME_ENVIRONMENTS,
+  OPERATING_SYSTEMS,
+  ARCHITECTURES,
+} from './schemas/contribution-manifest.js'
+export type {
+  Architecture,
+  ContractRef,
+  ContributionManifestV1,
+  ContributionStatus,
+  ExecutionProfile,
+  OperatingSystem,
+  PermissionClass,
+  RuntimeEnvironment,
+  RuntimeTargetConstraint,
+  RuntimeVariantDeclaration,
+  ScopedContractRequirement,
+} from './manifest/contribution-types.js'
+export {
+  createSpecSchemaRegistry,
+  validateContributionManifest,
+  type ContributionValidationResult,
+  type SpecSchemaEntry,
+  type SpecSchemaRegistry,
+  type SpecState,
+} from './manifest/spec-registry.js'
 export {
   DOTTED_PATTERN,
   QUALIFIED_PATTERN,

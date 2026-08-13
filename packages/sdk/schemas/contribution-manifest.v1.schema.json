@@ -1,0 +1,240 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "contract": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+          "type": "string"
+        },
+        "major": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "major"
+      ],
+      "type": "object"
+    },
+    "dependsOn": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "contract": {
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+            "type": "string"
+          },
+          "major": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "mode": {
+            "enum": [
+              "required",
+              "default",
+              "suggested",
+              "integrates"
+            ]
+          },
+          "range": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "scope": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "contribution",
+                  "offer",
+                  "operation",
+                  "intent",
+                  "variant",
+                  "profile",
+                  "projection",
+                  "slot"
+                ]
+              }
+            },
+            "required": [
+              "kind",
+              "id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "contract",
+          "major",
+          "mode",
+          "scope"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "displayName": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "id": {
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+      "type": "string"
+    },
+    "limitations": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "runtimeVariants": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "entrypoint": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "executionProfile": {
+            "enum": [
+              "browser-sandbox",
+              "worker-brokered",
+              "process-brokered",
+              "wasm-brokered",
+              "trusted-in-process",
+              "remote-provider"
+            ]
+          },
+          "requestedPermissionClasses": {
+            "items": {
+              "enum": [
+                "read-source",
+                "write-source",
+                "filesystem-read",
+                "filesystem-write",
+                "network",
+                "process-launch",
+                "native-code",
+                "credentials",
+                "clipboard",
+                "persistent-storage"
+              ]
+            },
+            "type": "array"
+          },
+          "target": {
+            "additionalProperties": false,
+            "properties": {
+              "architectures": {
+                "items": {
+                  "enum": [
+                    "any",
+                    "x86",
+                    "x64",
+                    "arm32",
+                    "arm64",
+                    "wasm32"
+                  ]
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              "environments": {
+                "items": {
+                  "enum": [
+                    "browser-main",
+                    "browser-worker",
+                    "node",
+                    "node-worker",
+                    "wasm",
+                    "native",
+                    "external-tool"
+                  ]
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              "externalTools": {
+                "items": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "operatingSystems": {
+                "items": {
+                  "enum": [
+                    "any",
+                    "windows",
+                    "linux",
+                    "darwin",
+                    "android",
+                    "ios"
+                  ]
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              "requiredHostCapabilities": {
+                "items": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "requiredWebApis": {
+                "items": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "type": "object"
+          },
+          "variantId": {
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "variantId",
+          "entrypoint",
+          "target",
+          "executionProfile",
+          "requestedPermissionClasses"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "spec": {},
+    "status": {
+      "enum": [
+        "supported",
+        "partial",
+        "unsupported",
+        "experimental"
+      ]
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "contract",
+    "id",
+    "displayName",
+    "spec"
+  ],
+  "type": "object"
+}

@@ -10,7 +10,17 @@ import type {
   extensionRequirementSchema,
   modkitBlockSchema,
 } from '../src/schemas/extension-manifest.js'
+import type {
+  contributionManifestSchema,
+  runtimeVariantDeclarationSchema,
+  scopedContractRequirementSchema,
+} from '../src/schemas/contribution-manifest.js'
 import type { ExtensionManifest, ExtensionRequirement, ModkitBlock } from '../src/manifest/types.js'
+import type {
+  ContributionManifestV1,
+  RuntimeVariantDeclaration,
+  ScopedContractRequirement,
+} from '../src/manifest/contribution-types.js'
 
 type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false
@@ -30,4 +40,14 @@ export type ExtensionRequirementDriftGate = Expect<
 >
 export type ModkitBlockDriftGate = Expect<
   Equal<DeepMutable<ModkitBlock>, FromSchema<typeof modkitBlockSchema>>
+>
+
+export type ContributionManifestDriftGate = Expect<
+  Equal<DeepMutable<ContributionManifestV1>, FromSchema<typeof contributionManifestSchema>>
+>
+export type RuntimeVariantDriftGate = Expect<
+  Equal<DeepMutable<RuntimeVariantDeclaration>, FromSchema<typeof runtimeVariantDeclarationSchema>>
+>
+export type ScopedContractRequirementDriftGate = Expect<
+  Equal<DeepMutable<ScopedContractRequirement>, FromSchema<typeof scopedContractRequirementSchema>>
 >

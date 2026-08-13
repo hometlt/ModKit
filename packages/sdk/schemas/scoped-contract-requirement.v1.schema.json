@@ -1,0 +1,58 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "contract": {
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+      "type": "string"
+    },
+    "major": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "mode": {
+      "enum": [
+        "required",
+        "default",
+        "suggested",
+        "integrates"
+      ]
+    },
+    "range": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "scope": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "contribution",
+            "offer",
+            "operation",
+            "intent",
+            "variant",
+            "profile",
+            "projection",
+            "slot"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "id"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "contract",
+    "major",
+    "mode",
+    "scope"
+  ],
+  "type": "object"
+}
