@@ -24,6 +24,7 @@ justifications (BRIEF-12 §3.1) are also recorded in this file, one line per dep
 
 ## Dev toolchain (workspace root, dev-only; pinned by pnpm-lock.yaml 2026-08-13)
 
+- `dependency: esbuild@^0.28.2 (dev) in root devDependencies | bundles each published entry into one deterministic ESM file (owner authorisation 2026-08-14: ~2 ms per-file cold-import tax on the reference machine) | build-time only, never shipped; TypeScript sources stay modular and tsc keeps owning types`
 - `dependency: json-schema-to-ts@^3.1.1 (dev) in @modkitx-x3/sdk | type-level FromSchema for the compile-time schema↔type drift gate | types only, erased at runtime`
 
 - `dependency: typescript@^5.5.4 (→5.9.3) in root devDependencies | strict typecheck/build — the base toolset BRIEF-12 §7 names (pnpm + tsc/tsx + vitest + eslint) | not runtime code`

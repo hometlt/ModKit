@@ -1,0 +1,98 @@
+import { spawnSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { describe, expect, it } from 'vitest'
+
+/**
+ * Properties of the single-file production dist (owner authorisation 2026-08-14).
+ *
+ * These assert the *shape* the authorisation specified, not just that a build ran:
+ * one file per published entry, cross-package boundaries preserved as real imports, the
+ * exports map untouched, testkit unbundled, and two builds byte-identical.
+ */
+
+const root = fileURLToPath(new URL('../..', import.meta.url))
+const bundlePath = (...parts: string[]) => join(root, ...parts)
+
+const PUBLISHED_ENTRIES = [
+  'packages/core/dist/index.js',
+  'packages/sdk/dist/index.js',
+  'packages/sdk/dist/subjects/index.js',
+  'packages/vfs/dist/index.js',
+  'packages/host/dist/index.js',
+  'packages/host/dist/node/index.js',
+]
+
+/**
+ * Every module specifier the file still depends on. Matches `from '…'` (import and export
+ * statements alike, including multi-line ones) and dynamic `import('…')` — in generated ESM
+ * these forms are the only way a specifier appears.
+ */
+function importSpecifiers(source: string): string[] {
+  const statik = [...source.matchAll(/\bfrom\s*['"]([^'"]+)['"]/g)].map(m => m[1] as string)
+  const dynamic = [...source.matchAll(/\bimport\(\s*['"]([^'"]+)['"]\s*\)/g)].map(
+    m => m[1] as string,
+  )
+  return [...statik, ...dynamic]
+}
+
+describe('single-file production dist', () => {
+  it.each(PUBLISHED_ENTRIES)('%s is one self-contained file', entry => {
+    const source = readFileSync(bundlePath(entry), 'utf8')
+    const relative = importSpecifiers(source).filter(s => s.startsWith('.'))
+    expect(relative, `${entry} still imports its own modules`).toEqual([])
+  })
+
+  it('keeps cross-package and third-party imports external', () => {
+    const sdk = readFileSync(bundlePath('packages/sdk/dist/index.js'), 'utf8')
+    // sdk uses core at runtime: that must remain a real package import, never inlined —
+    // inlining would duplicate a sibling package's module state.
+    expect(importSpecifiers(sdk)).toContain('@modkitx-x3/core')
+    // ajv stays a dependency, loaded lazily inside the validator.
+    expect(sdk).toContain('ajv/dist/2020.js')
+
+    const host = readFileSync(bundlePath('packages/host/dist/index.js'), 'utf8')
+    const hostImports = importSpecifiers(host)
+    expect(hostImports).toContain('@modkitx-x3/core')
+    expect(hostImports).toContain('@modkitx-x3/sdk')
+  })
+
+  it('does not bundle the dev-only testkit', () => {
+    const testkit = readFileSync(bundlePath('packages/testkit/dist/index.js'), 'utf8')
+    // testkit stays modular: its entry still re-exports its own files.
+    expect(importSpecifiers(testkit).some(s => s.startsWith('.'))).toBe(true)
+  })
+
+  it('leaves the exports map and the .d.ts API in place', () => {
+    for (const pkg of ['core', 'sdk', 'vfs', 'host']) {
+      const manifest = JSON.parse(
+        readFileSync(bundlePath('packages', pkg, 'package.json'), 'utf8'),
+      ) as { exports: Record<string, { types: string; default: string }> }
+      for (const entry of Object.values(manifest.exports)) {
+        expect(entry.types.endsWith('.d.ts')).toBe(true)
+        // The declaration files come from tsc and are NOT bundled: the type API is unchanged.
+        const declaration = readFileSync(bundlePath('packages', pkg, entry.types.slice(2)), 'utf8')
+        expect(declaration.length).toBeGreaterThan(0)
+      }
+    }
+  })
+
+  it('produces byte-identical output on two consecutive builds', () => {
+    const run = () => {
+      const result = spawnSync(process.execPath, [join(root, 'scripts', 'bundle.mjs')], {
+        cwd: root,
+        encoding: 'utf8',
+      })
+      expect(result.status, result.stderr).toBe(0)
+      return readFileSync(join(root, 'scripts', 'bundle-hashes.json'), 'utf8')
+    }
+    const first = run()
+    const second = run()
+    expect(second).toBe(first)
+    const hashes = JSON.parse(first) as Record<string, string>
+    expect(Object.keys(hashes).sort()).toEqual(
+      [...PUBLISHED_ENTRIES, 'apps/modkit-cli/dist/main.js'].sort(),
+    )
+  })
+})
