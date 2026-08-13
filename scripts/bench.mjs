@@ -96,10 +96,11 @@ const cliMain = join(root, 'apps', 'modkit-cli', 'dist', 'main.js')
 const fixture = join(root, 'apps', 'modkit-cli', 'test', 'fixtures', 'valid-extension')
 const hostBuilt = existsSync(join(root, 'packages', 'host', 'dist'))
 
+// Gates are the owner's platform-specific p50 budgets (BRIEF-12 §6, G13 decision
+// 2026-08-13, reference machine: Intel Core Ultra 7 155U / Windows x64 / Node 24.16).
+// `aspirationMs` is the older, tighter number: reported for context, never gating.
 const scenarios = [
-  // §6: import @modkitx-x3/core < 5 ms — cold module graph, startup excluded.
-  { id: 'core-import', targetMs: 5, run: () => coldImportStats('core', 15) },
-  // §6: full bootstrap closure < 50 ms.
+  { id: 'core-import', targetMs: 15, aspirationMs: 5, run: () => coldImportStats('core', 15) },
   { id: 'closure-import', targetMs: 50, run: () => coldImportStats('closure', 15) },
 ]
 if (hostBuilt) {
@@ -119,7 +120,8 @@ if (hostBuilt) {
 if (existsSync(cliMain)) {
   scenarios.push({
     id: 'cli-validate-net',
-    targetMs: 150,
+    targetMs: 250,
+    aspirationMs: 150,
     run: () => netProcessStats([cliMain, 'validate', fixture], 20),
   })
 }
@@ -140,6 +142,7 @@ const baselines = existsSync(baselinesPath)
 
 const report = {}
 const breaches = []
+const inconclusive = []
 for (const scenario of scenarios) {
   const r = scenario.run()
   report[scenario.id] = { ...r, targetMs: scenario.targetMs }
@@ -153,8 +156,11 @@ for (const scenario of scenarios) {
   // A regression is only meaningful on a scenario that is anywhere near its budget:
   // 0.72 -> 2.02 ms against a 100 ms target is jitter, not a regression worth a red gate.
   const regressed = material && recorded !== undefined && r.p50 > recorded.p50 * REGRESSION_FACTOR
+  const missedAspiration =
+    scenario.aspirationMs !== undefined && r.p50 > scenario.aspirationMs && !overTarget
   const flags = [
-    overTarget ? 'OVER-TARGET' : '',
+    overTarget ? 'OVER-GATE' : '',
+    missedAspiration ? `over aspiration ${scenario.aspirationMs} ms (not a gate)` : '',
     regressed ? 'REGRESSED' : '',
     noisy ? 'NOISY(not evidence)' : '',
   ]
@@ -163,15 +169,18 @@ for (const scenario of scenarios) {
   if (!asJson) {
     console.log(
       `${scenario.id.padEnd(30)} p50 ${r.p50.toFixed(2)} ms  p95 ${r.p95.toFixed(2)} ms  ` +
-        `spread ${(r.spread * 100).toFixed(0)}%  (target ${scenario.targetMs} ms` +
+        `spread ${(r.spread * 100).toFixed(0)}%  (gate ${scenario.targetMs} ms` +
         `${recorded ? `, baseline ${recorded.p50.toFixed(2)}` : ''}) ${flags}`,
     )
   }
-  // A noisy session never gates: it is not evidence in either direction (C3).
+  // A noisy session is not evidence in either direction (C3) — and that cuts both ways:
+  // it must not be reported as a pass either, or a loud machine would silently "close" a
+  // budget it never measured.
+  if (gate && noisy) inconclusive.push(scenario.id)
   if (gate && !noisy && (overTarget || regressed)) {
     breaches.push(
       overTarget
-        ? `${scenario.id}: p50 ${r.p50.toFixed(2)} ms over the ${scenario.targetMs} ms target`
+        ? `${scenario.id}: p50 ${r.p50.toFixed(2)} ms over the ${scenario.targetMs} ms gate`
         : `${scenario.id}: p50 ${r.p50.toFixed(2)} ms regressed past the ${(recorded?.p50 ?? 0).toFixed(2)} ms baseline`,
     )
   }
