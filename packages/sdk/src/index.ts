@@ -64,3 +64,20 @@ export {
   type AuthoredContainers,
   type NormalizationResult,
 } from './manifest/normalize.js'
+export type {
+  ContractOffer,
+  ContractRequirement,
+  OfferHeader,
+  ProviderLockKey,
+  ProviderOffer,
+  ProviderOfferKind,
+  ProviderPolicyLockEntry,
+  ProviderPolicySelection,
+  ProviderRequest,
+  RejectedCandidate,
+  ResolutionResult,
+  ResolvedProvider,
+  RuntimeTarget,
+  UnresolvedReason,
+  WorkloadIntent,
+} from './resolution/types.js'
