@@ -6,6 +6,64 @@ overrides a canonical or detailed owner.
 
 ---
 
+## Post-audit rework R1–R8 (2026-08-13) — security boundary rebuilt
+
+The owner accepted Sol's audit and ordered **revise**. Every finding was reproduced by the
+lab before being fixed (repro script run against the built packages, not taken on faith),
+and re-run afterwards. Statuses on the board were rolled back first, before any code.
+
+### What was actually broken (all reproduced)
+
+| #   | Defect                                                                                                                                                                                                      | Reproduction                                                     |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| D1  | `activateContribution()` accepted a raw manifest and imported whatever `entrypoint` said — an absolute URL simply wins over the base                                                                        | `data:text/javascript,…` executed, `globalThis.__PWNED === true` |
+| D2  | Malformed `expiresAt` passed the check (`Date.parse` → NaN → comparison false)                                                                                                                              | grant with `"not-a-date"` accepted                               |
+| D3  | No runtime-target check at activation                                                                                                                                                                       | `browser-main`/`linux`/`arm64` variant activated on Windows-x64  |
+| D4  | Owner matrix promised `PermissionGrant` scopes + `parent ∩ callee ∩ policy ∩ operation`; only a class list existed                                                                                          | code inspection                                                  |
+| D5  | Policy lock kept input order when two entries shared a key                                                                                                                                                  | `serialize([a,b]) !== serialize([b,a])`                          |
+| D6  | `range`/`license` accepted arbitrary text despite `core` owning a range parser                                                                                                                              | `range: "not a semver range"` → 0 diagnostics                    |
+| D7  | Bench harness measured process spawning; baselines were noise                                                                                                                                               | 8.8→12.4 ms and 257→420 ms across sessions, no code change       |
+| D8  | Raw control bytes in two `host` sources (git saw them as binary); dev-only `testkit` in the example's production closure; blanket `target-incompatible`; lint tolerated warnings; contradictory PORTED tail | byte scan + manifest read                                        |
+
+### What the rework put in place
+
+- **ActivationTicket** (branded, issued only from a `resolved` ResolutionResult) is now the
+  only admission to activation. The gate re-verifies extension/contribution/contract/
+  variant against the inventory manifest, so a manifest swapped after resolution, a
+  foreign extension or a foreign target are refusals — not trust.
+- **Entry-point containment** (`host/security/entrypoint.ts`): URL schemes, absolute
+  POSIX/Windows/UNC paths, backslashes, `..` traversal and control characters are rejected
+  syntactically _and_ by a resolved-URL containment proof, with the same rules mirrored in
+  the schema. Two independent gates; the host never assumes the schema ran.
+- **PermissionGrant** per 24 §3.1/§4 with filesystem/network/credential scopes and
+  `narrowGrant()` implementing `parent ∩ callee request ∩ host policy ∩ operation`;
+  `assertNotWider` makes the «child never widens» invariant testable. Validity is
+  fail-closed: unparseable or past expiry denies.
+- **Honest diagnostic**: `trusted-in-process` activations now carry
+  `x3.host/full-process-authority` stating in words that this is an audit/policy boundary,
+  not a sandbox (24 §5.1) — the earlier silence implied more than the code delivered.
+- **Lock**: conflicting entries under one key are refused; ordering falls back to the full
+  canonical entry, so byte-stability no longer depends on input order.
+- **Schema**: SemVer-range pattern + a semantic re-check through the resolver's own parser.
+- **Security negative suite** (22 cases) proves each refusal happens _before_ the import
+  via a spy counter, including the exact `data:` bypass the audit demonstrated.
+- **Bench harness** rebuilt (see the S4 section below for what this changed in the numbers).
+
+### Lab decisions added
+
+- **L12**: only `trusted-in-process` is honoured; any other profile is
+  `x3.host/unsupported-execution-profile`. Ladder steps SB-1+ arrive with their gates.
+- **L13**: activation admission is a _ticket_, not a manifest. Public API shape:
+  `issueActivationTicket(result, target)` → `activateContribution({ ticket, manifest, … })`.
+- **L14**: a bench session whose interquartile spread exceeds 35% can neither gate nor
+  become a baseline; the rule is scale-aware (a scenario 10× under budget is exempt).
+- **G13** (owner question, non-blocking): §6's `import core < 5 ms` is unreachable on the
+  reference machine without bundling — a single trivial ESM file costs ~1.9 ms cold here
+  and `core` ships 9 modules. Options: accept an environment caveat, pick another
+  reference machine, or allow a bundling step (which BRIEF §7 currently forbids).
+
+---
+
 ## Slices S0.2–S4 executed (2026-08-13) — core proven, stop for adopt/revise/archive
 
 All slices closed same day, each behind the full gate (`pnpm check`: build+typecheck with
@@ -200,6 +258,14 @@ Ownership classes: **canon** (adopted canonical), **AC v1** (normative v1 wire c
 **MK3 owner** (detailed/normative-candidate owner document), **lab detail** (shape delegated
 to the lab within an owner's boundary; promotion needs the owner's gate), **deferred** (not
 in S0–S4).
+
+> **Amendment 2026-08-13 (post-audit).** Row 23 promised the full `PermissionGrant` with
+> scopes and the `parent ∩ callee ∩ policy ∩ operation` intersection for S3, while the
+> first implementation shipped only a permission-class list — the audit was right to call
+> that a contract gap. It is now closed (scopes, `narrowGrant`, `assertNotWider`, plus the
+> `trusted-in-process` full-authority diagnostic), so the row reads true again. Recorded
+> here instead of being silently edited, because the promise/delivery mismatch is itself
+> the finding.
 
 | #   | Public type (X3 slice)                                                                                                                                                                                                     | Owner class                                      | Exact source                                                                                                                                                                                                           | Notes                                                                                                                             |
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
