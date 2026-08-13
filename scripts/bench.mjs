@@ -32,12 +32,24 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import process from 'node:process'
+import { pairedStats } from './bench/paired.mjs'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const baselinesPath = join(root, 'scripts', 'bench-baselines.json')
 const update = process.argv.includes('--update')
 const gate = process.argv.includes('--gate')
 const asJson = process.argv.includes('--json')
+/**
+ * Test seam (never used by a real session): `--samples <json>` supplies pre-recorded
+ * per-scenario stats and an alternate baselines file, so the verdict logic — exit codes,
+ * probe blocking, normalisation scope — can be tested without waiting for real timings.
+ * Measurement code is bypassed; every rule below it runs exactly as in production.
+ */
+const samplesArgIndex = process.argv.indexOf('--samples')
+const injected =
+  samplesArgIndex === -1
+    ? undefined
+    : JSON.parse(readFileSync(process.argv[samplesArgIndex + 1], 'utf8'))
 
 /** A session whose own noise exceeds this is not evidence for anything. */
 const NOISE_CEILING = 0.35 // (p75-p25)/p50
@@ -78,31 +90,17 @@ function coldImportStats(target, n = IMPORT_N) {
   return stats(samples)
 }
 
-/**
- * Interleaved paired measurement: bare, target, bare, target… Each pair is subtracted
- * immediately, so a load change midway shifts both halves of the pair together instead of
- * biasing the result.
- */
+/** Spawn-based timer for paired measurement; the pairing itself lives in ./bench/paired.mjs. */
 function pairedNetStats(argv, n) {
-  const timeOnce = args => {
+  const timeOnce = kind => {
+    const args = kind === 'bare' ? ['-e', ''] : argv
     const t0 = performance.now()
     const r = spawnSync(process.execPath, args, { encoding: 'utf8', cwd: root })
     const t1 = performance.now()
     if (r.status !== 0 && r.status !== 1) throw new Error(`bench target exited ${r.status}`)
     return t1 - t0
   }
-  const differences = []
-  const rawSamples = []
-  for (let i = 0; i < n + IMPORT_WARMUP; i += 1) {
-    const bare = timeOnce(['-e', ''])
-    const withTarget = timeOnce(argv)
-    if (i >= IMPORT_WARMUP) {
-      differences.push(withTarget - bare)
-      rawSamples.push(withTarget)
-    }
-  }
-  const paired = stats(differences)
-  return { ...paired, rawP50: stats(rawSamples).p50 }
+  return pairedStats({ timeOnce, n, warmup: IMPORT_WARMUP })
 }
 
 const cliMain = join(root, 'apps', 'modkit-cli', 'dist', 'main.js')
@@ -110,16 +108,34 @@ const fixture = join(root, 'apps', 'modkit-cli', 'test', 'fixtures', 'valid-exte
 const hostBuilt = existsSync(join(root, 'packages', 'host', 'dist'))
 
 // Calibration probes first: they define whether this session is comparable at all.
+// Owner decision 2026-08-14: probe9 is the blocking calibrator because it mirrors the
+// measurand's shape; probe1 measures ~1.5 ms, where relative noise is too large to gate on,
+// so it is reported and never blocks. (Applies from this window on; earlier sessions are not
+// reclassified retroactively.)
 const probes = [
-  { id: 'probe1-existing-module', run: () => coldImportStats('probe1') },
-  { id: 'probe9-existing-graph', run: () => coldImportStats('probe9') },
+  { id: 'probe1-existing-module', blocking: false, run: () => coldImportStats('probe1') },
+  { id: 'probe9-existing-graph', blocking: true, run: () => coldImportStats('probe9') },
 ]
 
 // Gates are the owner's platform-specific p50 budgets (BRIEF-12 §6, G13 decision
 // 2026-08-13). `aspirationMs` is the older, tighter number: reported, never gating.
 const scenarios = [
-  { id: 'core-import', targetMs: 15, aspirationMs: 5, run: () => coldImportStats('core') },
-  { id: 'closure-import', targetMs: 50, run: () => coldImportStats('closure') },
+  // `normalizable`: only cold-import scenarios share probe9's workload shape, so only they
+  // may be rescaled by its drift. Normalising inventory/resolver/CLI through an ESM import
+  // probe would be methodologically unfounded (owner decision 2026-08-14).
+  {
+    id: 'core-import',
+    targetMs: 15,
+    aspirationMs: 5,
+    normalizable: true,
+    run: () => coldImportStats('core'),
+  },
+  {
+    id: 'closure-import',
+    targetMs: 50,
+    normalizable: true,
+    run: () => coldImportStats('closure'),
+  },
 ]
 if (hostBuilt) {
   scenarios.push(
@@ -153,28 +169,37 @@ const environment = {
   node: process.version,
 }
 
-const baselines = existsSync(baselinesPath)
-  ? JSON.parse(readFileSync(baselinesPath, 'utf8'))
-  : { environment, probes: {}, scenarios: {} }
+const baselines =
+  injected?.baselines ??
+  (existsSync(baselinesPath)
+    ? JSON.parse(readFileSync(baselinesPath, 'utf8'))
+    : { environment, probes: {}, scenarios: {} })
+
+/** In injected mode a measurement is a table lookup; otherwise it is the real run. */
+const measure = (id, run) => injected?.measurements?.[id] ?? run()
 
 const probeReport = {}
 const probeProblems = []
 let normalizationFactor = 1
 for (const probe of probes) {
-  const r = probe.run()
+  const r = measure(probe.id, probe.run)
   probeReport[probe.id] = r
   const recorded = baselines.probes?.[probe.id]
   const drift = recorded === undefined ? undefined : r.p50 / recorded.p50
   const noisy = r.spread > NOISE_CEILING
   const drifted =
     drift !== undefined && (drift > PROBE_DRIFT_CEILING || drift < 1 / PROBE_DRIFT_CEILING)
-  if (noisy) probeProblems.push(`${probe.id} spread ${(r.spread * 100).toFixed(0)}%`)
-  if (drifted) probeProblems.push(`${probe.id} ×${drift.toFixed(2)} vs baseline`)
+  if (probe.blocking) {
+    if (noisy) probeProblems.push(`${probe.id} spread ${(r.spread * 100).toFixed(0)}%`)
+    if (drifted) probeProblems.push(`${probe.id} ×${drift.toFixed(2)} vs baseline`)
+  }
   if (probe.id === 'probe9-existing-graph' && drift !== undefined) normalizationFactor = 1 / drift
   if (!asJson) {
     console.log(
       `${probe.id.padEnd(30)} p50 ${r.p50.toFixed(2)} ms  spread ${(r.spread * 100).toFixed(0)}%` +
-        `${recorded ? `  (baseline ${recorded.p50.toFixed(2)}, ×${drift.toFixed(2)})` : ''}`,
+        `${recorded ? `  (baseline ${recorded.p50.toFixed(2)}, ×${drift.toFixed(2)})` : ''}` +
+        `${probe.blocking ? '' : '  [informational, never gates]'}` +
+        `${probe.blocking && (noisy || drifted) ? '  BLOCKING' : ''}`,
     )
   }
 }
@@ -183,7 +208,7 @@ const report = {}
 const breaches = []
 const inconclusive = [...probeProblems]
 for (const scenario of scenarios) {
-  const r = scenario.run()
+  const r = measure(scenario.id, scenario.run)
   report[scenario.id] = { ...r, targetMs: scenario.targetMs }
   const recorded = baselines.scenarios?.[scenario.id]
   // Relative spread is meaningless once a scenario sits far under its budget: at 0.01 ms the
@@ -194,7 +219,7 @@ for (const scenario of scenarios) {
   const regressed = material && recorded !== undefined && r.p50 > recorded.p50 * REGRESSION_FACTOR
   const missedAspiration =
     scenario.aspirationMs !== undefined && r.p50 > scenario.aspirationMs && !overTarget
-  const normalized = r.p50 * normalizationFactor
+  const normalized = scenario.normalizable === true ? r.p50 * normalizationFactor : undefined
   const flags = [
     overTarget ? 'OVER-GATE' : '',
     missedAspiration ? `over aspiration ${scenario.aspirationMs} ms (not a gate)` : '',
@@ -208,7 +233,7 @@ for (const scenario of scenarios) {
       `${scenario.id.padEnd(30)} p50 ${r.p50.toFixed(2)} ms  p95 ${r.p95.toFixed(2)} ms  ` +
         `spread ${(r.spread * 100).toFixed(0)}%  (gate ${scenario.targetMs} ms` +
         `${recorded ? `, baseline ${recorded.p50.toFixed(2)}` : ''}` +
-        `${normalizationFactor === 1 ? '' : `; normalized ${normalized.toFixed(2)}`}) ${flags}`,
+        `${normalized === undefined || normalizationFactor === 1 ? '' : `; normalized ${normalized.toFixed(2)}`}) ${flags}`,
     )
   }
   if (gate && noisy) inconclusive.push(scenario.id)
