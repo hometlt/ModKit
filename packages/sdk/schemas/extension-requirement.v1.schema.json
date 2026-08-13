@@ -1,0 +1,41 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "extension": {
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+      "type": "string"
+    },
+    "mode": {
+      "enum": ["required", "default", "suggested", "integrates"]
+    },
+    "range": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "scope": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "contribution",
+            "offer",
+            "operation",
+            "intent",
+            "variant",
+            "profile",
+            "projection",
+            "slot"
+          ]
+        }
+      },
+      "required": ["kind", "id"],
+      "type": "object"
+    }
+  },
+  "required": ["extension", "mode", "scope"],
+  "type": "object"
+}

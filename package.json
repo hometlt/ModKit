@@ -14,7 +14,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check:legacy": "node scripts/check-legacy.mjs",
-    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm check:legacy"
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm schemas:check && pnpm check:legacy",
+    "schemas:emit": "node scripts/emit-schemas.mjs",
+    "schemas:check": "node scripts/emit-schemas.mjs --check"
   },
   "devDependencies": {
     "@types/node": "^22.5.0",
@@ -23,6 +25,7 @@
     "typescript": "^5.5.4",
     "typescript-eslint": "^8.2.0",
     "vitest": "^2.0.5",
-    "@modkitx-x3/core": "workspace:*"
+    "@modkitx-x3/core": "workspace:*",
+    "@modkitx-x3/sdk": "workspace:*"
   }
 }

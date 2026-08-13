@@ -1,0 +1,27 @@
+{
+  "name": "@modkitx-x3/sdk",
+  "version": "0.1.0",
+  "description": "MK3 clean-core lab: extension/contribution envelope, schemas, subjects (BRIEF-12; not a release)",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "schemas"
+  ],
+  "dependencies": {
+    "@modkitx-x3/core": "workspace:*",
+    "ajv": "^8.17.1"
+  },
+  "devDependencies": {
+    "json-schema-to-ts": "^3.1.1"
+  }
+}

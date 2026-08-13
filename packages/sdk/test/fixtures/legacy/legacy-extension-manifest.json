@@ -1,0 +1,17 @@
+{
+  "comment": "legacy-input fixture (PORTED.md provenance): shape of modkitx extensions/common/images/extension.json@8a21060f — the OLD authored form, used only as a negative input; excluded from the legacy gate by the fixtures/legacy/ path rule",
+  "$schema": "../../../schema/extension-manifest.v1.schema.json",
+  "schemaVersion": 1,
+  "publisher": "org.modkitx.common",
+  "id": "images",
+  "version": "0.1.0",
+  "displayName": "Standard images",
+  "license": "MIT",
+  "contributes": {
+    "codecs": ["dds", "png", "tga"]
+  },
+  "metadata": {
+    "owner": "modkit",
+    "migrationOrigin": "codecs/images"
+  }
+}

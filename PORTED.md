@@ -9,7 +9,18 @@ justifications (BRIEF-12 §3.1) are also recorded in this file, one line per dep
 
 `dependency: <name>@<range> in <package> | why needed | why nothing in the closure covers it`
 
+## Ported code and fixtures
+
+- `packages/sdk/test/extension-manifest.test.ts (convertedImagesPackageJson) ← extensions/common/images/extension.json@8a21060f | converted to package.json#modkit + contributionManifests; dropped displayName/description/contributes.codecs/metadata (not in normalized v1 minimal) | data-only fixture, checked against the new strict schema`
+- `packages/sdk/test/fixtures/legacy/legacy-extension-manifest.json ← extensions/common/images/extension.json@8a21060f | trimmed to 3 codecs; kept the OLD authored shape verbatim as a negative input | legacy-input fixture under fixtures/legacy/ (excluded from the gate), asserted to FAIL the new schema`
+
+## Runtime dependencies (published packages)
+
+- `dependency: ajv@^8.17.1 (→8.20.0) in @modkitx-x3/sdk | compiles the authored JSON Schema consts for runtime validation (manifests, envelopes, locks) | hand-writing a JSON Schema validator would be a second drifting authority; nothing in core covers schema validation`
+
 ## Dev toolchain (workspace root, dev-only; pinned by pnpm-lock.yaml 2026-08-13)
+
+- `dependency: json-schema-to-ts@^3.1.1 (dev) in @modkitx-x3/sdk | type-level FromSchema for the compile-time schema↔type drift gate | types only, erased at runtime`
 
 - `dependency: typescript@^5.5.4 (→5.9.3) in root devDependencies | strict typecheck/build — the base toolset BRIEF-12 §7 names (pnpm + tsc/tsx + vitest + eslint) | not runtime code`
 - `dependency: vitest@^2.0.5 (→2.1.9) in root devDependencies | test runner for every slice's acceptance + the legacy-gate regression suite | named in BRIEF-12 §7 base set`

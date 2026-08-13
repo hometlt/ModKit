@@ -1,0 +1,77 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "contributionManifests": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "dependsOn": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "extension": {
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+            "type": "string"
+          },
+          "mode": {
+            "enum": ["required", "default", "suggested", "integrates"]
+          },
+          "range": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "scope": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "contribution",
+                  "offer",
+                  "operation",
+                  "intent",
+                  "variant",
+                  "profile",
+                  "projection",
+                  "slot"
+                ]
+              }
+            },
+            "required": ["kind", "id"],
+            "type": "object"
+          }
+        },
+        "required": ["extension", "mode", "scope"],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "id": {
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+      "type": "string"
+    },
+    "license": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "publisher": {
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+      "type": "string"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "version": {
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+      "type": "string"
+    }
+  },
+  "required": ["schemaVersion", "publisher", "id", "version", "license", "contributionManifests"],
+  "type": "object"
+}
