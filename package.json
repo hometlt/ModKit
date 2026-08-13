@@ -31,6 +31,7 @@
     "@modkitx-x3/core": "workspace:*",
     "@modkitx-x3/sdk": "workspace:*",
     "@modkitx-x3/host": "workspace:*",
-    "@modkitx-x3/vfs": "workspace:*"
+    "@modkitx-x3/vfs": "workspace:*",
+    "@modkitx-x3/testkit": "workspace:*"
   }
 }

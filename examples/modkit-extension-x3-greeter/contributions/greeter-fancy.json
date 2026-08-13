@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "x3.demo/greeter", "major": 1 },
+  "id": "org.example/x3-greeter-fancy",
+  "displayName": "Fancy greeter (uses public sdk/vfs exports)",
+  "runtimeVariants": [
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/greeter-fancy.js",
+      "target": { "environments": ["node", "node-worker"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "spec": { "greeting": "Salute", "outputs": ["demo.plain", "demo.fancy"] }
+}

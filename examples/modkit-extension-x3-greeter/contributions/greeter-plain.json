@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "x3.demo/greeter", "major": 1 },
+  "id": "org.example/x3-greeter-plain",
+  "displayName": "Plain greeter",
+  "runtimeVariants": [
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/greeter-plain.js",
+      "target": { "environments": ["node", "node-worker"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": { "greeting": "Hello", "outputs": ["demo.plain"] }
+}

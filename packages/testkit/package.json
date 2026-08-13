@@ -1,0 +1,25 @@
+{
+  "name": "@modkitx-x3/testkit",
+  "version": "0.1.0",
+  "description": "MK3 clean-core lab: minimal host + conformance harness (dev-only closure; BRIEF-12; not a release)",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@modkitx-x3/core": "workspace:*",
+    "@modkitx-x3/host": "workspace:*",
+    "@modkitx-x3/sdk": "workspace:*",
+    "@modkitx-x3/vfs": "workspace:*"
+  }
+}

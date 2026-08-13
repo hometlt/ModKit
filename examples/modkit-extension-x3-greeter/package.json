@@ -1,0 +1,21 @@
+{
+  "name": "modkit-extension-x3-greeter",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "External example extension (BRIEF-12 S4/PR-23 shape): installed only from packed tarballs of the public lab packages; no workspace/deep imports.",
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "org.example",
+    "id": "x3-greeter",
+    "contributionManifests": [
+      "./contributions/*.json"
+    ]
+  },
+  "dependencies": {
+    "@modkitx-x3/host": "*",
+    "@modkitx-x3/sdk": "*",
+    "@modkitx-x3/testkit": "*",
+    "@modkitx-x3/vfs": "*"
+  }
+}

@@ -79,6 +79,28 @@ scenarios.push({
     ),
 })
 
+// §6: inventory of 100 synthetic manifests < 100 ms; resolve+explain < 1 ms/contract.
+function inProcessStats(workload) {
+  const result = spawnSync(process.execPath, [join(root, 'scripts', 'bench', workload)], {
+    encoding: 'utf8',
+    cwd: root,
+  })
+  if (result.status !== 0) throw new Error(`workload ${workload} failed: ${result.stderr}`)
+  return JSON.parse(result.stdout.trim())
+}
+if (existsSync(join(root, 'packages', 'host', 'dist'))) {
+  scenarios.push({
+    id: 'inventory-100-synthetic',
+    targetMs: 100,
+    run: () => inProcessStats('inventory-workload.mjs'),
+  })
+  scenarios.push({
+    id: 'resolve-explain-per-contract',
+    targetMs: 1,
+    run: () => inProcessStats('resolve-workload.mjs'),
+  })
+}
+
 // §6: modkit validate on the example extension < 150 ms (net of bare node startup).
 const cliMain = join(root, 'apps', 'modkit-cli', 'dist', 'main.js')
 const fixture = join(root, 'apps', 'modkit-cli', 'test', 'fixtures', 'valid-extension')
