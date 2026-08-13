@@ -1,0 +1,30 @@
+{
+  "environment": {
+    "cpu": "Intel Core Ultra 7 155U (12C/14T)",
+    "ramGb": 31.5,
+    "os": "Windows 11 Pro build 26200",
+    "node": "v24.16.0",
+    "disk": "NVMe SSD (Phison 512GB)"
+  },
+  "recordedAt": "2026-08-13",
+  "scenarios": {
+    "core-import": {
+      "p50": 12.430100000000003,
+      "p95": 15.192199999999996,
+      "n": 10,
+      "targetMs": 5
+    },
+    "closure-import": {
+      "p50": 23.384000000000004,
+      "p95": 31.3819,
+      "n": 10,
+      "targetMs": 50
+    },
+    "cli-validate-net": {
+      "p50": 191.0933,
+      "p95": 373.5340000000001,
+      "n": 20,
+      "targetMs": 150
+    }
+  }
+}

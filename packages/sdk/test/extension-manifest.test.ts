@@ -32,8 +32,8 @@ const standaloneManifest = {
 }
 
 describe('normalizeExtensionManifest (canon §5.13, 27 §0.2, Q75/Q76)', () => {
-  it('normalizes the npm container, inheriting version/license from package.json', () => {
-    const result = normalizeExtensionManifest({ packageJson: convertedImagesPackageJson })
+  it('normalizes the npm container, inheriting version/license from package.json', async () => {
+    const result = await normalizeExtensionManifest({ packageJson: convertedImagesPackageJson })
     expect(hasErrors([...result.diagnostics])).toBe(false)
     expect(result.container).toBe('package-json')
     expect(result.manifest).toEqual({
@@ -46,15 +46,15 @@ describe('normalizeExtensionManifest (canon §5.13, 27 §0.2, Q75/Q76)', () => {
     })
   })
 
-  it('normalizes the standalone container to the identical contract', () => {
-    const result = normalizeExtensionManifest({ standalone: standaloneManifest })
+  it('normalizes the standalone container to the identical contract', async () => {
+    const result = await normalizeExtensionManifest({ standalone: standaloneManifest })
     expect(hasErrors([...result.diagnostics])).toBe(false)
     expect(result.container).toBe('standalone')
     expect(result.manifest).toEqual(standaloneManifest)
   })
 
-  it('both containers at once = packaging error', () => {
-    const result = normalizeExtensionManifest({
+  it('both containers at once = packaging error', async () => {
+    const result = await normalizeExtensionManifest({
       packageJson: convertedImagesPackageJson,
       standalone: standaloneManifest,
     })
@@ -62,44 +62,44 @@ describe('normalizeExtensionManifest (canon §5.13, 27 §0.2, Q75/Q76)', () => {
     expect(result.diagnostics.some(d => d.code === 'x3.sdk/two-authored-containers')).toBe(true)
   })
 
-  it('neither container = error', () => {
-    const result = normalizeExtensionManifest({ packageJson: { name: 'x' } })
+  it('neither container = error', async () => {
+    const result = await normalizeExtensionManifest({ packageJson: { name: 'x' } })
     expect(result.diagnostics.some(d => d.code === 'x3.sdk/no-authored-container')).toBe(true)
   })
 
-  it('Q76: version/license inside #modkit block are packaging errors', () => {
+  it('Q76: version/license inside #modkit block are packaging errors', async () => {
     const bad = structuredClone(convertedImagesPackageJson) as {
       modkit: Record<string, unknown>
     }
     bad.modkit['version'] = '9.9.9'
     bad.modkit['license'] = 'MIT'
-    const result = normalizeExtensionManifest({ packageJson: bad })
+    const result = await normalizeExtensionManifest({ packageJson: bad })
     const dupes = result.diagnostics.filter(d => d.code === 'x3.sdk/npm-field-duplicated-in-block')
     expect(dupes).toHaveLength(2)
     expect(result.manifest).toBeUndefined()
   })
 
-  it('Q76: standalone without version/license is invalid', () => {
+  it('Q76: standalone without version/license is invalid', async () => {
     const rest: Record<string, unknown> = { ...standaloneManifest }
     delete rest['version']
     delete rest['license']
-    const result = normalizeExtensionManifest({ standalone: rest })
+    const result = await normalizeExtensionManifest({ standalone: rest })
     expect(result.manifest).toBeUndefined()
     expect(hasErrors([...result.diagnostics])).toBe(true)
   })
 
-  it('missing/invalid npm version or license is an error', () => {
+  it('missing/invalid npm version or license is an error', async () => {
     const noVersion = structuredClone(convertedImagesPackageJson) as Record<string, unknown>
     delete noVersion['version']
-    const r1 = normalizeExtensionManifest({ packageJson: noVersion })
+    const r1 = await normalizeExtensionManifest({ packageJson: noVersion })
     expect(r1.diagnostics.some(d => d.code === 'x3.sdk/invalid-npm-version')).toBe(true)
 
     const badLicense = { ...convertedImagesPackageJson, license: '' }
-    const r2 = normalizeExtensionManifest({ packageJson: badLicense })
+    const r2 = await normalizeExtensionManifest({ packageJson: badLicense })
     expect(r2.diagnostics.some(d => d.code === 'x3.sdk/invalid-npm-license')).toBe(true)
   })
 
-  it('Q75: dependsOn validates shape with mandatory scope and is preserved', () => {
+  it('Q75: dependsOn validates shape with mandatory scope and is preserved', async () => {
     const withDeps = {
       ...standaloneManifest,
       dependsOn: [
@@ -111,7 +111,7 @@ describe('normalizeExtensionManifest (canon §5.13, 27 §0.2, Q75/Q76)', () => {
         },
       ],
     }
-    const ok = normalizeExtensionManifest({ standalone: withDeps })
+    const ok = await normalizeExtensionManifest({ standalone: withDeps })
     expect(hasErrors([...ok.diagnostics])).toBe(false)
     expect(ok.manifest?.dependsOn?.[0]?.scope.kind).toBe('contribution')
 
@@ -119,7 +119,7 @@ describe('normalizeExtensionManifest (canon §5.13, 27 §0.2, Q75/Q76)', () => {
       ...standaloneManifest,
       dependsOn: [{ extension: 'org.modkitx.common/archives', mode: 'required' }],
     }
-    const bad = normalizeExtensionManifest({ standalone: missingScope })
+    const bad = await normalizeExtensionManifest({ standalone: missingScope })
     expect(bad.manifest).toBeUndefined()
     expect(hasErrors([...bad.diagnostics])).toBe(true)
   })
@@ -128,7 +128,7 @@ describe('normalizeExtensionManifest (canon §5.13, 27 §0.2, Q75/Q76)', () => {
     const legacy = (
       await import('./fixtures/legacy/legacy-extension-manifest.json', { with: { type: 'json' } })
     ).default
-    const diagnostics = validateWithSchema(extensionManifestSchema, legacy)
+    const diagnostics = await validateWithSchema(extensionManifestSchema, legacy)
     expect(diagnostics.length).toBeGreaterThan(0)
   })
 })
@@ -140,7 +140,7 @@ describe('contributionManifests patterns (27 §5.1)', () => {
     'src/contribution.manifest.json',
   ]
 
-  it('expands deterministically regardless of listing order', () => {
+  it('expands deterministically regardless of listing order', async () => {
     const a = expandContributionManifests(['./contributions/*.json'], files)
     const b = expandContributionManifests(['./contributions/*.json'], [...files].reverse())
     expect(a.entries).toEqual(b.entries)
@@ -150,7 +150,7 @@ describe('contributionManifests patterns (27 §5.1)', () => {
     ])
   })
 
-  it('flags orphans, zero-match patterns, duplicates and forbidden patterns', () => {
+  it('flags orphans, zero-match patterns, duplicates and forbidden patterns', async () => {
     const orphan = expandContributionManifests(['./contributions/*.json'], files)
     expect(orphan.diagnostics.some(d => d.code === 'x3.sdk/orphan-contribution-manifest')).toBe(
       true,

@@ -33,6 +33,15 @@ importers:
         specifier: ^2.0.5
         version: 2.1.9(@types/node@22.20.1)
 
+  apps/modkit-cli:
+    dependencies:
+      '@modkitx-x3/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+
   packages/core: {}
 
   packages/sdk:

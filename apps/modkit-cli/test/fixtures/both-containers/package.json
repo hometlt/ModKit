@@ -1,0 +1,13 @@
+{
+  "name": "@example/broken-fixture",
+  "version": "1.0.0",
+  "license": "MIT",
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "org.example",
+    "id": "broken",
+    "contributionManifests": [
+      "./contributions/*.json"
+    ]
+  }
+}

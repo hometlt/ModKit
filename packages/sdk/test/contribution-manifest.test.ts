@@ -61,38 +61,38 @@ const convertedDds: ContributionManifestV1 = {
 }
 
 describe('ContributionManifestV1 envelope (27 §6 + §0.5)', () => {
-  it('validates a known contract strictly (spec schema selected by contract)', () => {
-    const result = validateContributionManifest(greeterContribution, registry)
+  it('validates a known contract strictly (spec schema selected by contract)', async () => {
+    const result = await validateContributionManifest(greeterContribution, registry)
     expect(result.specState).toBe('validated')
     expect(result.activationEligible).toBe(true)
   })
 
-  it('keeps an unknown contract inspectable but not activatable', () => {
-    const result = validateContributionManifest(convertedDds, registry)
+  it('keeps an unknown contract inspectable but not activatable', async () => {
+    const result = await validateContributionManifest(convertedDds, registry)
     expect(result.specState).toBe('unknown-contract')
     expect(result.activationEligible).toBe(false)
     expect(result.manifest?.id).toBe('org.modkitx/dds') // data preserved for inspection
     expect(result.diagnostics.some(d => d.code === 'x3.sdk/unknown-contract')).toBe(true)
   })
 
-  it('rejects an invalid spec for a known contract', () => {
+  it('rejects an invalid spec for a known contract', async () => {
     const bad = { ...greeterContribution, spec: { greeting: '' } }
-    const result = validateContributionManifest(bad, registry)
+    const result = await validateContributionManifest(bad, registry)
     expect(result.specState).toBe('invalid')
     expect(result.activationEligible).toBe(false)
     expect(result.diagnostics.some(d => d.code === 'x3.sdk/invalid-spec')).toBe(true)
     expect(result.diagnostics.some(d => d.path?.[0] === 'spec')).toBe(true)
   })
 
-  it('status is an optional display hint (27 §0.5.2); no per-contribution version exists', () => {
-    const withoutStatus = validateContributionManifest(greeterContribution, registry)
+  it('status is an optional display hint (27 §0.5.2); no per-contribution version exists', async () => {
+    const withoutStatus = await validateContributionManifest(greeterContribution, registry)
     expect(withoutStatus.specState).toBe('validated')
     const withVersion = { ...greeterContribution, version: '1.0.0' }
-    const result = validateContributionManifest(withVersion, registry)
+    const result = await validateContributionManifest(withVersion, registry)
     expect(result.specState).toBe('invalid') // additionalProperties: false
   })
 
-  it('enforces grammars: qualified ids, segment variant ids, Q77 profiles, 24 §3 classes', () => {
+  it('enforces grammars: qualified ids, segment variant ids, Q77 profiles, 24 §3 classes', async () => {
     const cases: [string, unknown][] = [
       ['plain contribution id', { ...greeterContribution, id: 'dds' }],
       [
@@ -130,11 +130,11 @@ describe('ContributionManifestV1 envelope (27 §6 + §0.5)', () => {
       ],
     ]
     for (const [label, value] of cases) {
-      expect(validateContributionManifest(value, registry).specState, label).toBe('invalid')
+      expect((await validateContributionManifest(value, registry)).specState, label).toBe('invalid')
     }
   })
 
-  it('accepts scoped contract requirements (23 §8) with mandatory mode/scope', () => {
+  it('accepts scoped contract requirements (23 §8) with mandatory mode/scope', async () => {
     const withDeps = {
       ...greeterContribution,
       dependsOn: [
@@ -147,14 +147,14 @@ describe('ContributionManifestV1 envelope (27 §6 + §0.5)', () => {
         },
       ],
     }
-    expect(validateContributionManifest(withDeps, registry).specState).toBe('validated')
+    expect((await validateContributionManifest(withDeps, registry)).specState).toBe('validated')
   })
 
   it('rejects the legacy v1 codec.manifest.json shape as an envelope', async () => {
     const legacy = (
       await import('./fixtures/legacy/legacy-codec-manifest.json', { with: { type: 'json' } })
     ).default
-    const result = validateContributionManifest(legacy, registry)
+    const result = await validateContributionManifest(legacy, registry)
     expect(result.specState).toBe('invalid')
     expect(result.manifest).toBeUndefined()
   })

@@ -1,0 +1,13 @@
+{
+  "name": "@example/modkit-extension-greeter-fixture",
+  "version": "1.2.0",
+  "license": "MIT",
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "org.example",
+    "id": "greeter",
+    "contributionManifests": [
+      "./contributions/*.json"
+    ]
+  }
+}

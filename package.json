@@ -16,7 +16,10 @@
     "check:legacy": "node scripts/check-legacy.mjs",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm schemas:check && pnpm check:legacy",
     "schemas:emit": "node scripts/emit-schemas.mjs",
-    "schemas:check": "node scripts/emit-schemas.mjs --check"
+    "schemas:check": "node scripts/emit-schemas.mjs --check",
+    "bench": "node scripts/bench.mjs",
+    "bench:update": "node scripts/bench.mjs --update",
+    "bench:gate": "node scripts/bench.mjs --gate"
   },
   "devDependencies": {
     "@types/node": "^22.5.0",

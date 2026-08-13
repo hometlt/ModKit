@@ -1,0 +1,26 @@
+{
+  "name": "@modkitx-x3/modkit-cli",
+  "version": "0.1.0",
+  "description": "MK3 clean-core lab: thin modkit CLI (argv/stdout/exit wiring only; BRIEF-12 §3.1)",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "modkit": "./dist/main.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/main.d.ts",
+      "default": "./dist/main.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@modkitx-x3/core": "workspace:*",
+    "@modkitx-x3/sdk": "workspace:*"
+  }
+}

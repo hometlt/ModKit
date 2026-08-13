@@ -36,11 +36,11 @@ export interface ContributionValidationResult {
   readonly diagnostics: readonly Diagnostic[]
 }
 
-export function validateContributionManifest(
+export async function validateContributionManifest(
   value: unknown,
   registry: SpecSchemaRegistry,
-): ContributionValidationResult {
-  const envelopeDiagnostics = validateWithSchema(contributionManifestSchema, value)
+): Promise<ContributionValidationResult> {
+  const envelopeDiagnostics = await validateWithSchema(contributionManifestSchema, value)
   if (hasErrors(envelopeDiagnostics)) {
     return { specState: 'invalid', activationEligible: false, diagnostics: envelopeDiagnostics }
   }
@@ -62,9 +62,9 @@ export function validateContributionManifest(
       ],
     }
   }
-  const specDiagnostics = validateWithSchema(specSchema, manifest.spec, 'x3.sdk/invalid-spec').map(
-    d => ({ ...d, path: ['spec', ...(d.path ?? [])] }),
-  )
+  const specDiagnostics = (
+    await validateWithSchema(specSchema, manifest.spec, 'x3.sdk/invalid-spec')
+  ).map(d => ({ ...d, path: ['spec', ...(d.path ?? [])] }))
   if (hasErrors(specDiagnostics)) {
     return {
       manifest,

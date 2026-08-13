@@ -30,7 +30,9 @@ function patternDiagnostics(manifest: ExtensionManifest): Diagnostic[] {
   return manifest.contributionManifests.flatMap(validateContributionPattern)
 }
 
-export function normalizeExtensionManifest(input: AuthoredContainers): NormalizationResult {
+export async function normalizeExtensionManifest(
+  input: AuthoredContainers,
+): Promise<NormalizationResult> {
   const packageJson = isRecord(input.packageJson) ? input.packageJson : undefined
   const block =
     packageJson !== undefined && isRecord(packageJson['modkit']) ? packageJson['modkit'] : undefined
@@ -61,7 +63,7 @@ export function normalizeExtensionManifest(input: AuthoredContainers): Normaliza
   }
 
   if (hasStandalone) {
-    const diagnostics = validateWithSchema(extensionManifestSchema, input.standalone)
+    const diagnostics = await validateWithSchema(extensionManifestSchema, input.standalone)
     if (hasErrors(diagnostics)) return { container: 'standalone', diagnostics }
     const manifest = input.standalone as ExtensionManifest
     const all = [...diagnostics, ...patternDiagnostics(manifest)]
@@ -85,7 +87,7 @@ export function normalizeExtensionManifest(input: AuthoredContainers): Normaliza
       )
     }
   }
-  diagnostics.push(...validateWithSchema(modkitBlockSchema, blockRecord))
+  diagnostics.push(...(await validateWithSchema(modkitBlockSchema, blockRecord)))
 
   const version = (packageJson as Record<string, unknown>)['version']
   if (typeof version !== 'string' || parseSemver(version) === undefined) {
@@ -126,7 +128,7 @@ export function normalizeExtensionManifest(input: AuthoredContainers): Normaliza
   }
   const all = [
     ...diagnostics,
-    ...validateWithSchema(extensionManifestSchema, manifest),
+    ...(await validateWithSchema(extensionManifestSchema, manifest)),
     ...patternDiagnostics(manifest),
   ]
   return hasErrors(all)

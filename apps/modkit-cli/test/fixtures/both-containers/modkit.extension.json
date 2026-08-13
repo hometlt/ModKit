@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "publisher": "org.example",
+  "id": "broken",
+  "version": "1.0.0",
+  "license": "MIT",
+  "contributionManifests": ["./contributions/*.json"]
+}
