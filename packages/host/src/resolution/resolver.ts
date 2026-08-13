@@ -16,6 +16,25 @@ import type {
 
 export const RESOLVER_VERSION = 1
 
+/**
+ * Runtime provenance of resolution results (R9, post-audit). Every result this resolver
+ * produces is registered here, and the activation issuer refuses anything that is not a
+ * member. A hand-built object of the same *shape* is therefore not a resolution — the
+ * earlier design only branded the ticket, which let a fabricated `{state:'resolved'}` be
+ * laundered through the public issuer into a genuine ticket.
+ */
+const resolverProducts = new WeakSet<object>()
+
+/** Internal: true only for a result this resolver actually returned. */
+export function isResolverProduct(result: object): boolean {
+  return resolverProducts.has(result)
+}
+
+function remember<T extends object>(result: T): T {
+  resolverProducts.add(result)
+  return result
+}
+
 interface Candidate {
   readonly offer: ProviderOffer
   readonly contractOffer: { contract: string; version: string }
@@ -69,7 +88,7 @@ export function resolveProvider(
     candidates.push({ offer, contractOffer: match })
   }
   if (candidates.length === 0) {
-    return { state: 'unresolved', reason: 'no-offer', rejected: sortRejected(rejected) }
+    return remember({ state: 'unresolved', reason: 'no-offer', rejected: sortRejected(rejected) })
   }
 
   // Stage 2: exact offer version against the request range (inside the major).
@@ -87,7 +106,11 @@ export function resolveProvider(
     return true
   })
   if (versionOk.length === 0) {
-    return { state: 'unresolved', reason: 'version-incompatible', rejected: sortRejected(rejected) }
+    return remember({
+      state: 'unresolved',
+      reason: 'version-incompatible',
+      rejected: sortRejected(rejected),
+    })
   }
 
   // Stage 3: concrete target vs target constraints (environment/OS/arch/webApis/caps).
@@ -124,11 +147,11 @@ export function resolveProvider(
     // The aggregate reason must name the actual cause: only when every rejection at this
     // stage was a missing external tool is `external-tool-required` the honest answer.
     const onlyToolRejects = sawToolReject && !rejected.some(r => r.reason === 'target-incompatible')
-    return {
+    return remember({
       state: 'unresolved',
       reason: onlyToolRejects ? 'external-tool-required' : 'target-incompatible',
       rejected: sortRejected(rejected),
-    }
+    })
   }
 
   // Stage 4: granted permissions and required outputs.
@@ -146,11 +169,11 @@ export function resolveProvider(
     return true
   })
   if (permitted.length === 0) {
-    return {
+    return remember({
       state: 'unresolved',
       reason: sawPermissionReject ? 'permission-required' : 'output-missing',
       rejected: sortRejected(rejected),
-    }
+    })
   }
 
   // Stage 5: exact pin.
@@ -165,7 +188,11 @@ export function resolveProvider(
       return hit
     })
     if (pool.length === 0) {
-      return { state: 'unresolved', reason: 'pin-unsatisfied', rejected: sortRejected(rejected) }
+      return remember({
+        state: 'unresolved',
+        reason: 'pin-unsatisfied',
+        rejected: sortRejected(rejected),
+      })
     }
   }
 
@@ -194,19 +221,19 @@ export function resolveProvider(
   const tied = ranked.filter(c => compareTuple(score(c), score(best)) === 0)
   if (tied.length > 1) {
     for (const candidate of tied) reject(candidate.offer, 'ambiguous', 'preference tuple tie')
-    return { state: 'unresolved', reason: 'ambiguous', rejected: sortRejected(rejected) }
+    return remember({ state: 'unresolved', reason: 'ambiguous', rejected: sortRejected(rejected) })
   }
 
   const toResolved = (candidate: Candidate): ResolvedProvider => ({
     offer: candidate.offer,
     resolvedContract: candidate.contractOffer,
   })
-  return {
+  return remember({
     state: 'resolved',
     selected: toResolved(best),
     alternatives: ranked.slice(1).map(toResolved),
     rejected: sortRejected(rejected),
-  }
+  })
 }
 
 function sortRejected(rejected: RejectedCandidate[]): RejectedCandidate[] {

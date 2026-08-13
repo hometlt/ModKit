@@ -10,7 +10,7 @@ export { resolveProvider, RESOLVER_VERSION } from './resolution/resolver.js'
 export { buildLockEntry, buildLockKey, serializePolicyLock } from './resolution/lock.js'
 export {
   activateContribution,
-  issueActivationTicket,
+  resolveForActivation,
   SUPPORTED_EXECUTION_PROFILES,
   type Activation,
   type ActivationRequest,

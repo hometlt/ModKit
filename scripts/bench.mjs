@@ -17,6 +17,7 @@
 // a stable breach; `--json` prints machine-readable results.
 
 import { spawnSync } from 'node:child_process'
+import { arch, cpus, platform, release, totalmem } from 'node:os'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -123,12 +124,14 @@ if (existsSync(cliMain)) {
   })
 }
 
+// Read from the machine, never hardcoded: a baseline that claims the wrong environment is
+// worse than no baseline (R10).
+const cpuList = cpus()
 const environment = {
-  cpu: 'Intel Core Ultra 7 155U (12C/14T)',
-  ramGb: 31.5,
-  os: 'Windows 11 Pro build 26200',
+  cpu: `${cpuList[0]?.model?.trim() ?? 'unknown'} (${cpuList.length} logical)`,
+  ramGb: Number((totalmem() / 1024 ** 3).toFixed(1)),
+  os: `${platform()} ${release()} (${arch()})`,
   node: process.version,
-  disk: 'NVMe SSD (Phison 512GB)',
 }
 
 const baselines = existsSync(baselinesPath)

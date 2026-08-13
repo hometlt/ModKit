@@ -21,8 +21,7 @@ import {
   activateContribution,
   buildInventory,
   buildLockEntry,
-  issueActivationTicket,
-  resolveProvider,
+  resolveForActivation,
   serializePolicyLock,
   type Activation,
   type Inventory,
@@ -112,7 +111,13 @@ export async function runMinimalHost(options: MinimalHostOptions): Promise<Minim
       ],
     },
   }
-  const result = resolveProvider(request, offers)
+  // Resolution and ticket issuing are one host-owned step: there is no public way to
+  // hand a fabricated result to an issuer (R9).
+  const { result, ticket } = resolveForActivation(
+    request,
+    offers,
+    ...(request.operation === undefined ? [] : [request.operation]),
+  )
   if (result.state !== 'resolved') {
     throw new ModkitError({
       code: 'x3.testkit/unresolved',
@@ -141,12 +146,12 @@ export async function runMinimalHost(options: MinimalHostOptions): Promise<Minim
       message: `selected provider «${providerId}» not found in inventory`,
     })
   }
-  // Activation is admitted only by a ticket the resolver issued for this exact target.
-  const ticket = issueActivationTicket(
-    result,
-    request.target,
-    ...(request.operation === undefined ? [] : [request.operation]),
-  )
+  if (!ticket) {
+    throw new ModkitError({
+      code: 'x3.testkit/no-activation-ticket',
+      message: `resolution produced no activation ticket for «${providerId}»`,
+    })
+  }
   const activation = await activateContribution({
     ticket,
     manifest,

@@ -11,10 +11,13 @@ import {
 } from '@modkitx-x3/sdk'
 import {
   activateContribution,
-  issueActivationTicket,
+  resolveForActivation,
   resolveProvider,
   type ActivationTicket,
 } from '@modkitx-x3/host'
+// White-box import: the free issuer is deliberately NOT part of the package surface, so
+// the provenance test reaches it through the module it lives in.
+import { issueActivationTicket } from '../src/security/gate.js'
 
 /**
  * Security negative suite (R4, post-audit): every path that must NOT reach an import.
@@ -75,8 +78,9 @@ function ticketFor(m: ContributionManifestV1, requestTarget: RuntimeTarget = tar
     contract: { contract: m.contract.id, major: m.contract.major },
     target: { ...requestTarget, grantedPermissions: ['read-source'] },
   }
-  const result = resolveProvider(request, [offerFor(m)])
-  return issueActivationTicket(result, request.target)
+  const { ticket } = resolveForActivation(request, [offerFor(m)])
+  if (!ticket) throw new Error('fixture resolution produced no ticket')
+  return ticket
 }
 
 const fullGrant: PermissionGrant = { id: 'g-full', classes: ['read-source'] }
@@ -113,6 +117,47 @@ describe('activation gate — refusals never reach an import (MK3/24 §8)', () =
       'x3.host/invalid-ticket',
       'forged ticket',
     )
+  })
+
+  it('refuses to issue a ticket from a fabricated resolution result (provenance)', () => {
+    // The exact laundering the second audit demonstrated: an object of the right *shape*
+    // handed to the issuer used to come back as a genuine ticket.
+    const fabricated = {
+      state: 'resolved',
+      selected: {
+        offer: offerFor(manifest()),
+        resolvedContract: { contract: 'x3.demo/greeter', version: '1.0.0' },
+      },
+      alternatives: [],
+      rejected: [],
+    } as unknown as ReturnType<typeof resolveProvider>
+    expect(() => issueActivationTicket(fabricated, target)).toThrow(
+      /not produced by the host resolver/,
+    )
+  })
+
+  it('refuses a structural copy of a real ticket, and real tickets are frozen', async () => {
+    const real = ticketFor(manifest())
+    // A spread copy carries every property (including symbols) but is a different object,
+    // so WeakSet membership — the actual check — fails.
+    const copy = { ...real, variantId: 'portable' } as ActivationTicket
+    await expectRefusedWithoutImport(
+      () =>
+        activateContribution({
+          ticket: copy,
+          manifest: manifest(),
+          extensionId: EXTENSION_ID,
+          baseUrl,
+          grant: fullGrant,
+        }),
+      'x3.host/invalid-ticket',
+      'spread-copied ticket',
+    )
+    // …and the issued ticket cannot be edited after the fact (module code is strict mode).
+    expect(() => {
+      ;(real as { variantId: string }).variantId = 'other'
+    }).toThrow(TypeError)
+    expect(real.variantId).toBe('portable')
   })
 
   it('refuses to issue a ticket for an unresolved result', () => {

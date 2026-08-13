@@ -19,6 +19,7 @@
  */
 
 import { diagnostic, ModkitError, throwIfAborted, type Diagnostic } from '@modkitx-x3/core'
+import { isResolverProduct, resolveProvider } from '../resolution/resolver.js'
 import {
   grantValidity,
   narrowGrant,
@@ -26,6 +27,8 @@ import {
   type ExecutionProfile,
   type HostPolicy,
   type PermissionGrant,
+  type ProviderOffer,
+  type ProviderRequest,
   type ResolutionResult,
   type RuntimeTarget,
   type RuntimeVariantDeclaration,
@@ -35,12 +38,19 @@ import { resolveContainedEntrypoint } from './entrypoint.js'
 /** Profiles this host can honestly enforce today (BRIEF-12 S0–S4 scope). */
 export const SUPPORTED_EXECUTION_PROFILES: readonly ExecutionProfile[] = ['trusted-in-process']
 
-const TICKET_BRAND = Symbol('x3.host/activation-ticket')
+declare const TICKET_BRAND: unique symbol
 
 /**
- * Opaque proof that the resolver selected this exact provider for this exact target.
- * Constructible only through `issueActivationTicket`, so an activation cannot be forged
- * by hand-assembling an object literal.
+ * Proof that *this host's* resolver selected this exact provider for this exact target.
+ *
+ * Two mechanisms, because the first alone was not enough (R9, second audit):
+ *  - the type carries a phantom brand so TypeScript refuses object literals;
+ *  - **membership in a private WeakSet is the actual runtime check**. A structural copy
+ *    (`{ ...ticket, variantId: 'other' }`) is a different object and therefore not a
+ *    ticket, and a fabricated `{ state: 'resolved' }` cannot be laundered into one
+ *    because issuing requires a result the resolver itself produced.
+ *
+ * Issued tickets are frozen: what the gate verifies is what activation uses.
  */
 export interface ActivationTicket {
   readonly [TICKET_BRAND]: true
@@ -53,12 +63,39 @@ export interface ActivationTicket {
   readonly operation?: string
 }
 
-/** Issues a ticket from a resolved result; an unresolved result yields nothing. */
+const issuedTickets = new WeakSet<object>()
+
+/**
+ * Resolve and issue in one host-owned step. There is deliberately no public way to hand
+ * an arbitrary `ResolutionResult` to a ticket issuer: provenance is checked against the
+ * resolver's own registry, so only a real resolution can lead to an activation.
+ */
+export function resolveForActivation(
+  request: ProviderRequest,
+  offers: readonly ProviderOffer[],
+  operation?: string,
+): { readonly result: ResolutionResult; readonly ticket?: ActivationTicket } {
+  const result = resolveProvider(request, offers)
+  if (result.state !== 'resolved') return { result }
+  return { result, ticket: issueActivationTicket(result, request.target, operation) }
+}
+
+/**
+ * Internal issuer — exported for the security suite only, never from the package index.
+ * Refuses any result the resolver did not produce.
+ */
 export function issueActivationTicket(
   result: ResolutionResult,
   target: RuntimeTarget,
   operation?: string,
 ): ActivationTicket {
+  if (!isResolverProduct(result)) {
+    throw new ModkitError({
+      code: 'x3.host/foreign-resolution-result',
+      message:
+        'this object was not produced by the host resolver — a ticket can only be issued for a real resolution',
+    })
+  }
   if (result.state !== 'resolved') {
     throw new ModkitError({
       code: 'x3.host/no-ticket-for-unresolved',
@@ -68,16 +105,17 @@ export function issueActivationTicket(
   }
   const offer = result.selected.offer
   const major = Number(result.selected.resolvedContract.version.split('.')[0] ?? Number.NaN)
-  return {
-    [TICKET_BRAND]: true,
+  const ticket = Object.freeze({
     extensionId: offer.extensionId,
     contributionId: offer.providerId,
     contract: result.selected.resolvedContract.contract,
     contractMajor: major,
     variantId: offer.runtimeVariant,
-    target,
+    target: Object.freeze({ ...target }),
     ...(operation === undefined ? {} : { operation }),
-  }
+  }) as unknown as ActivationTicket
+  issuedTickets.add(ticket)
+  return ticket
 }
 
 export interface ActivationRequest {
@@ -138,9 +176,13 @@ export async function activateContribution(request: ActivationRequest): Promise<
   throwIfAborted(request.signal)
   const { ticket, manifest } = request
 
-  // 1–2. the ticket must be a real resolver product and still describe this manifest
-  if (ticket[TICKET_BRAND] !== true) {
-    throw deny('x3.host/invalid-ticket', 'activation requires a resolver-issued ticket')
+  // 1–2. the ticket must be one this host issued (identity, not shape: a spread copy or a
+  // hand-built look-alike is not a member) and must still describe this manifest
+  if (!issuedTickets.has(ticket)) {
+    throw deny(
+      'x3.host/invalid-ticket',
+      'activation requires a ticket issued by this host from a real resolution',
+    )
   }
   const mismatches: string[] = []
   if (ticket.extensionId !== request.extensionId) mismatches.push('extension')
