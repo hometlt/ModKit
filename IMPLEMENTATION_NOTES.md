@@ -49,6 +49,27 @@ and re-run afterwards. Statuses on the board were rolled back first, before any 
   via a spy counter, including the exact `data:` bypass the audit demonstrated.
 - **Bench harness** rebuilt (see the S4 section below for what this changed in the numbers).
 
+### Second audit (2026-08-13) — R9: ticket provenance
+
+The audit disproved a claim I made in this very file: «ActivationTicket … not
+hand-constructible». The brand only stopped a literal from type-checking; the public
+accepted anything _shaped_ like a ResolutionResult, so a
+fabricated came back as a genuine ticket, and the ticket was
+mutable afterwards. Reproduced before fixing (ticket issued for , overwritten by assignment).
+
+Closed three ways, because one mechanism was exactly the problem:
+
+1.  registers every result it returns in a private ; the issuer
+    refuses anything absent ();
+2.  the free issuer is no longer exported from the package — the public entry point is the
+    host-owned ;
+3.  issued tickets are frozen and the gate checks **membership**, not shape, so
+    is not a ticket.
+
+**L15**: identity-based capability objects (WeakSet membership) beat structural brands
+whenever the object is a security token; a brand is a TypeScript convenience, not a
+runtime check. Recorded because I got this wrong once already.
+
 ### Lab decisions added
 
 - **L12**: only `trusted-in-process` is honoured; any other profile is
