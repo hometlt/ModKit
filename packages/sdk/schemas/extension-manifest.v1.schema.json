@@ -17,7 +17,12 @@
             "type": "string"
           },
           "mode": {
-            "enum": ["required", "default", "suggested", "integrates"]
+            "enum": [
+              "required",
+              "default",
+              "suggested",
+              "integrates"
+            ]
           },
           "range": {
             "minLength": 1,
@@ -43,11 +48,18 @@
                 ]
               }
             },
-            "required": ["kind", "id"],
+            "required": [
+              "kind",
+              "id"
+            ],
             "type": "object"
           }
         },
-        "required": ["extension", "mode", "scope"],
+        "required": [
+          "extension",
+          "mode",
+          "scope"
+        ],
         "type": "object"
       },
       "type": "array"
@@ -72,6 +84,13 @@
       "type": "string"
     }
   },
-  "required": ["schemaVersion", "publisher", "id", "version", "license", "contributionManifests"],
+  "required": [
+    "schemaVersion",
+    "publisher",
+    "id",
+    "version",
+    "license",
+    "contributionManifests"
+  ],
   "type": "object"
 }
