@@ -144,12 +144,7 @@ describe('bench verdict logic', () => {
 
 describe('paired CLI measurement', () => {
   it('cancels a mid-run slowdown that a block-wise measurement would absorb', async () => {
-    const { pairedStats } = (await import('../bench/paired.mjs')) as {
-      pairedStats: (o: { timeOnce: (kind: string) => number; n: number; warmup?: number }) => {
-        p50: number
-        n: number
-      }
-    }
+    const { pairedStats } = await import('../bench/paired.mjs')
     // The machine gets steadily slower during the session; the target always costs exactly
     // 50 ms more than bare node at that same moment.
     let call = 0
