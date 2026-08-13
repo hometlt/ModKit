@@ -11,6 +11,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./subjects": {
+      "types": "./dist/subjects/index.d.ts",
+      "default": "./dist/subjects/index.js"
     }
   },
   "files": [

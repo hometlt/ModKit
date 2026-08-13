@@ -17,6 +17,9 @@ importers:
       '@modkitx-x3/sdk':
         specifier: workspace:*
         version: link:packages/sdk
+      '@modkitx-x3/vfs':
+        specifier: workspace:*
+        version: link:packages/vfs
       '@types/node':
         specifier: ^22.5.0
         version: 22.20.1
@@ -58,6 +61,9 @@ importers:
       '@modkitx-x3/sdk':
         specifier: workspace:*
         version: link:../sdk
+      '@modkitx-x3/vfs':
+        specifier: workspace:*
+        version: link:../vfs
 
   packages/sdk:
     dependencies:
@@ -71,6 +77,12 @@ importers:
       json-schema-to-ts:
         specifier: ^3.1.1
         version: 3.1.1
+
+  packages/vfs:
+    dependencies:
+      '@modkitx-x3/core':
+        specifier: workspace:*
+        version: link:../core
 
 packages:
 
