@@ -145,7 +145,12 @@ function checkPackageManifest(file, relPosix, findings) {
   try {
     manifest = JSON.parse(text)
   } catch {
-    findings.push({ file: relPosix, line: 1, rule: 'package-json-parse', why: 'unparseable package.json' })
+    findings.push({
+      file: relPosix,
+      line: 1,
+      rule: 'package-json-parse',
+      why: 'unparseable package.json',
+    })
     return 1
   }
   const name = typeof manifest.name === 'string' ? manifest.name : ''

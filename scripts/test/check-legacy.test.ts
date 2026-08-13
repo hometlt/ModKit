@@ -35,9 +35,7 @@ describe('legacy gate (BRIEF-12 §3.5)', () => {
 
   it('still scans a file that abuses the marker outside fixtures/', () => {
     const { stderr } = runGate(join(fixturesRoot, 'violations'))
-    const markerAbuse = stderr
-      .split('\n')
-      .filter(line => line.includes('marker-abuse.ts'))
+    const markerAbuse = stderr.split('\n').filter(line => line.includes('marker-abuse.ts'))
     expect(markerAbuse.some(line => line.includes('[marker-outside-fixtures]'))).toBe(true)
     expect(markerAbuse.some(line => line.includes('[asset-plugin]'))).toBe(true)
   })

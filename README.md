@@ -10,17 +10,17 @@ revision, or archive the lab. Long-lived double authority with `modkitx` is forb
 
 ## Owner documents (authority lives in `modkitx/docs`, never here)
 
-| Plane | Owner |
-| --- | --- |
+| Plane                                                               | Owner                                                                                                                 |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | Canon: packages, dependency direction, manifests/tree, target-first | `modkitx/docs/architecture/MODKIT_ARCHITECTURE.md` (§6.1 catalog + closure classes, §5.8/§5.13 manifests, §14 policy) |
-| Normative v1 wire contract (descriptor/traits/operations) | `modkitx/docs/architecture/ASSET_CAPABILITIES.md` |
-| Contract identity, resolution, provider-policy lock | `modkitx/docs/MK3/23-contract-identity-schema-resolution-and-lock.md` |
-| Security declarations, permissions, execution, lifecycle | `modkitx/docs/MK3/24-extension-security-execution-and-lifecycle.md` |
-| Subject identity, unknown root, editing | `modkitx/docs/MK3/25-subject-identity-editing-transactions-and-cache.md` |
-| Target tree, extension manifest, contribution envelope | `modkitx/docs/MK3/27-final-target-tree-extension-manifest-and-format-catalog.md` (§0 wins conflicts) |
-| Final vocabulary (traits/operations/offers/permissions/facilities) | `modkitx/docs/MK3/02-capabilities-and-contracts.md` §1 |
-| Workspace rules, divergence register, promotion map | `modkitx/docs/MK3/README.md` |
-| Route S0–S7 / adopted queue | `REPORT_6` §11 / `REPORT_9` §19 (tasks-active/platform-architecture) |
+| Normative v1 wire contract (descriptor/traits/operations)           | `modkitx/docs/architecture/ASSET_CAPABILITIES.md`                                                                     |
+| Contract identity, resolution, provider-policy lock                 | `modkitx/docs/MK3/23-contract-identity-schema-resolution-and-lock.md`                                                 |
+| Security declarations, permissions, execution, lifecycle            | `modkitx/docs/MK3/24-extension-security-execution-and-lifecycle.md`                                                   |
+| Subject identity, unknown root, editing                             | `modkitx/docs/MK3/25-subject-identity-editing-transactions-and-cache.md`                                              |
+| Target tree, extension manifest, contribution envelope              | `modkitx/docs/MK3/27-final-target-tree-extension-manifest-and-format-catalog.md` (§0 wins conflicts)                  |
+| Final vocabulary (traits/operations/offers/permissions/facilities)  | `modkitx/docs/MK3/02-capabilities-and-contracts.md` §1                                                                |
+| Workspace rules, divergence register, promotion map                 | `modkitx/docs/MK3/README.md`                                                                                          |
+| Route S0–S7 / adopted queue                                         | `REPORT_6` §11 / `REPORT_9` §19 (tasks-active/platform-architecture)                                                  |
 
 ## Hard rules (BRIEF-12)
 
