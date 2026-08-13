@@ -15,8 +15,19 @@ const tmp = mkdtempSync(join(tmpdir(), 'x3-external-'))
 
 afterAll(() => rmSync(tmp, { recursive: true, force: true }))
 
+// No `shell: true` (Node DEP0190, and it forces manual quoting of every path). Windows
+// package managers are .cmd shims, so they are invoked through cmd.exe explicitly.
 function sh(cmd: string, args: string[], cwd: string) {
-  const result = spawnSync(cmd, args, { cwd, encoding: 'utf8', shell: true, timeout: 240_000 })
+  const isWindows = process.platform === 'win32'
+  const needsShim = isWindows && (cmd === 'pnpm' || cmd === 'npm')
+  const result = needsShim
+    ? spawnSync(process.env['COMSPEC'] ?? 'cmd.exe', ['/d', '/s', '/c', cmd, ...args], {
+        cwd,
+        encoding: 'utf8',
+        timeout: 240_000,
+        windowsVerbatimArguments: false,
+      })
+    : spawnSync(cmd, args, { cwd, encoding: 'utf8', timeout: 240_000 })
   return { status: result.status, stdout: result.stdout, stderr: result.stderr }
 }
 
@@ -39,7 +50,7 @@ describe('external packed-tarball extension (S4/PR-23 shape)', () => {
       for (const pkg of ['core', 'sdk', 'vfs', 'host', 'testkit']) {
         const res = sh(
           'pnpm',
-          ['pack', '--pack-destination', JSON.stringify(packDest)],
+          ['pack', '--pack-destination', packDest],
           join(repoRoot, 'packages', pkg),
         )
         expect(res.status, `pnpm pack ${pkg}: ${res.stderr}`).toBe(0)
@@ -47,21 +58,29 @@ describe('external packed-tarball extension (S4/PR-23 shape)', () => {
       const tarballs = readdirSync(packDest).filter(f => f.endsWith('.tgz'))
       expect(tarballs).toHaveLength(5)
 
-      // 2. copy the example outside the workspace and install ONLY the artifacts
+      // 2. copy the example outside the workspace and install ONLY the artifacts.
+      //    testkit is the dev-only closure (canon §6.1): it goes in as a devDependency so
+      //    the extension's production closure stays core+sdk+vfs+host.
       const exampleDir = join(tmp, 'example')
       cpSync(exampleSrc, exampleDir, { recursive: true })
-      const install = sh(
+      const tarballOf = (pkg: string) => {
+        const hit = tarballs.find(t => t.startsWith(`modkitx-x3-${pkg}-`))
+        if (!hit) throw new Error(`no tarball for ${pkg} in ${tarballs.join(', ')}`)
+        return join(packDest, hit)
+      }
+      const npmFlags = ['--no-audit', '--no-fund', '--install-links=false']
+      const installProd = sh(
         'npm',
-        [
-          'install',
-          '--no-audit',
-          '--no-fund',
-          '--install-links=false',
-          ...tarballs.map(t => JSON.stringify(join(packDest, t))),
-        ],
+        ['install', '--save-prod', ...npmFlags, ...['core', 'sdk', 'vfs', 'host'].map(tarballOf)],
         exampleDir,
       )
-      expect(install.status, install.stderr).toBe(0)
+      expect(installProd.status, installProd.stderr).toBe(0)
+      const installDev = sh(
+        'npm',
+        ['install', '--save-dev', ...npmFlags, tarballOf('testkit')],
+        exampleDir,
+      )
+      expect(installDev.status, installDev.stderr).toBe(0)
 
       // 3. hygiene: no workspace:/deep-dist imports in the example sources;
       //    installed packages came from artifacts, not links
@@ -72,14 +91,25 @@ describe('external packed-tarball extension (S4/PR-23 shape)', () => {
       }
       const installedPkg = JSON.parse(readFileSync(join(exampleDir, 'package.json'), 'utf8')) as {
         dependencies: Record<string, string>
+        devDependencies?: Record<string, string>
       }
-      for (const [name, ref] of Object.entries(installedPkg.dependencies)) {
+      for (const [name, ref] of Object.entries({
+        ...installedPkg.dependencies,
+        ...(installedPkg.devDependencies ?? {}),
+      })) {
         expect(ref.includes('workspace:'), `${name} ${ref}`).toBe(false)
         if (ref.startsWith('file:'))
           expect(ref.endsWith('.tgz'), `${name} must point at a packed artifact, got ${ref}`).toBe(
             true,
           )
       }
+      // canon §6.1: testkit is dev-only and must never sit in the production closure
+      expect(Object.keys(installedPkg.dependencies).sort()).toEqual([
+        '@modkitx-x3/host',
+        '@modkitx-x3/sdk',
+        '@modkitx-x3/vfs',
+      ])
+      expect(Object.keys(installedPkg.devDependencies ?? {})).toEqual(['@modkitx-x3/testkit'])
       for (const pkg of ['core', 'sdk', 'vfs', 'host', 'testkit']) {
         const stat = statSync(join(exampleDir, 'node_modules', '@modkitx-x3', pkg))
         expect(stat.isDirectory()).toBe(true)
@@ -105,11 +135,16 @@ describe('external packed-tarball extension (S4/PR-23 shape)', () => {
       expect(denied.status).toBe(3)
       expect(denied.stderr).toContain('permission-required')
 
-      // 6. record the closure size (§6 report duty)
-      const sizeMb = dirSizeBytes(join(exampleDir, 'node_modules')) / (1024 * 1024)
-      // eslint-disable-next-line no-console
-      console.log(`external example node_modules: ${sizeMb.toFixed(1)} MB`)
-      expect(sizeMb).toBeGreaterThan(0)
+      // 6. record the closure size (§6 report duty) — production closure separately from
+      //    the dev-only testkit, since the earlier single number silently included it.
+      const nodeModules = join(exampleDir, 'node_modules')
+      const totalMb = dirSizeBytes(nodeModules) / (1024 * 1024)
+      const testkitMb = dirSizeBytes(join(nodeModules, '@modkitx-x3', 'testkit')) / (1024 * 1024)
+      console.log(
+        `external example node_modules: ${totalMb.toFixed(2)} MB total, ` +
+          `${(totalMb - testkitMb).toFixed(2)} MB production closure (testkit ${testkitMb.toFixed(2)} MB, dev-only)`,
+      )
+      expect(totalMb).toBeGreaterThan(0)
     },
   )
 })

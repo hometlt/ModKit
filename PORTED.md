@@ -32,7 +32,9 @@ justifications (BRIEF-12 §3.1) are also recorded in this file, one line per dep
 - `dependency: prettier@^3.3.0 (→3.9.6) in root devDependencies | formatting, mirrors modkitx conventions | dev-only`
 - `dependency: @types/node@^22.5.0 (→22.20.1) in root devDependencies | Node typings for tooling tests (child_process/url) | dev-only`
 
-No runtime/package dependencies exist yet; the first candidate (Ajv for schema validation
-in `sdk`) gets its own justification line when S0 code lands (IMPLEMENTATION_NOTES §3.4).
-
-No code ported from `modkitx` yet.
+Closure summary (kept in sync with the lists above; the stale «nothing ported yet» tail was
+removed 2026-08-13 during the post-audit rework): exactly **one** runtime dependency outside
+the lab packages — `ajv` in `sdk`, loaded lazily so importing the sdk does not pay for it.
+Everything else above is dev-only. Ported material is limited to the value dictionaries and
+fixtures listed under «Ported code and fixtures»; no `modkitx` code is imported at runtime
+in any form.

@@ -10,7 +10,7 @@
   "scripts": {
     "typecheck": "tsc -b && tsc -p tsconfig.tooling.json",
     "test": "vitest run",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check:legacy": "node scripts/check-legacy.mjs",

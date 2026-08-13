@@ -15,7 +15,9 @@
   "dependencies": {
     "@modkitx-x3/host": "*",
     "@modkitx-x3/sdk": "*",
-    "@modkitx-x3/testkit": "*",
     "@modkitx-x3/vfs": "*"
+  },
+  "devDependencies": {
+    "@modkitx-x3/testkit": "*"
   }
 }
