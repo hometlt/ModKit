@@ -140,9 +140,24 @@ const baselines = existsSync(baselinesPath)
   ? JSON.parse(readFileSync(baselinesPath, 'utf8'))
   : { environment, scenarios: {} }
 
+// Calibration first: how expensive is one trivial ESM import right now? This is the
+// machine's floor. If it has drifted far from the floor recorded with the baseline, the
+// whole session measures a different machine-state and cannot close or fail a budget.
+const floor = runWorkload('floor-workload.mjs')
+const recordedFloor = baselines.floorMs
+const floorDrift = recordedFloor === undefined ? undefined : floor.p50 / recordedFloor
+if (!asJson) {
+  console.log(
+    `machine floor (1 trivial ESM import)   p50 ${floor.p50.toFixed(2)} ms` +
+      `${recordedFloor === undefined ? '' : ` (baseline ${recordedFloor.toFixed(2)} ms, ×${floorDrift.toFixed(2)})`}`,
+  )
+}
+
 const report = {}
 const breaches = []
 const inconclusive = []
+const FLOOR_DRIFT_CEILING = 1.5
+const machineNotComparable = floorDrift !== undefined && floorDrift > FLOOR_DRIFT_CEILING
 for (const scenario of scenarios) {
   const r = scenario.run()
   report[scenario.id] = { ...r, targetMs: scenario.targetMs }
@@ -176,8 +191,8 @@ for (const scenario of scenarios) {
   // A noisy session is not evidence in either direction (C3) — and that cuts both ways:
   // it must not be reported as a pass either, or a loud machine would silently "close" a
   // budget it never measured.
-  if (gate && noisy) inconclusive.push(scenario.id)
-  if (gate && !noisy && (overTarget || regressed)) {
+  if (gate && (noisy || (material && machineNotComparable))) inconclusive.push(scenario.id)
+  if (gate && !noisy && !(material && machineNotComparable) && (overTarget || regressed)) {
     breaches.push(
       overTarget
         ? `${scenario.id}: p50 ${r.p50.toFixed(2)} ms over the ${scenario.targetMs} ms gate`
@@ -204,7 +219,12 @@ if (update) {
   writeFileSync(
     baselinesPath,
     `${JSON.stringify(
-      { environment, recordedAt: new Date().toISOString().slice(0, 10), scenarios: report },
+      {
+        environment,
+        recordedAt: new Date().toISOString().slice(0, 10),
+        floorMs: floor.p50,
+        scenarios: report,
+      },
       null,
       2,
     )}\n`,
@@ -217,4 +237,17 @@ if (breaches.length > 0) {
   console.error('C3: confirm with a second full session before treating this as a verdict.')
   process.exit(1)
 }
-if (gate) console.log('bench gate: passed')
+if (inconclusive.length > 0) {
+  console.error(
+    (machineNotComparable
+      ? `bench gate: INCONCLUSIVE — the machine floor is ×${(floorDrift ?? 0).toFixed(2)} the recorded one, so this box is not in the state the baseline describes.
+`
+      : '') +
+      `bench gate: INCONCLUSIVE — not evidence: ${[...new Set(inconclusive)].join(', ')}.
+` +
+      'This is NOT a pass. Let the machine settle and re-run; only a quiet, comparable ' +
+      'session counts towards the two consecutive runs BRIEF-12 §6 requires.',
+  )
+  process.exit(2)
+}
+if (gate) console.log('bench gate: passed (all material scenarios quiet and within budget)')
