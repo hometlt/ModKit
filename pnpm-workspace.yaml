@@ -1,0 +1,5 @@
+# Bootstrap closure only (BRIEF-12 §3.1): core, sdk, vfs, host (+ dev-only testkit)
+# and the single leaf app modkit-cli. No ui/runtime/lsp/xml — not even as stubs.
+packages:
+  - 'packages/*'
+  - 'apps/*'
