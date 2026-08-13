@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      '@modkitx-x3/core':
+        specifier: workspace:*
+        version: link:packages/core
       '@types/node':
         specifier: ^22.5.0
         version: 22.20.1
@@ -26,6 +29,8 @@ importers:
       vitest:
         specifier: ^2.0.5
         version: 2.1.9(@types/node@22.20.1)
+
+  packages/core: {}
 
 packages:
 

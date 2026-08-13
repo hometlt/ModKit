@@ -1,7 +1,4 @@
 {
-  // Solution root. Stays empty until X3-S0.2 adds the first package reference; the
-  // root `typecheck` script switches back to `tsc -b && tsc -p tsconfig.tooling.json`
-  // at that moment (tsc rejects a referencesless empty solution, TS18002).
   "files": [],
-  "references": []
+  "references": [{ "path": "packages/core" }]
 }

@@ -1,0 +1,19 @@
+{
+  "name": "@modkitx-x3/core",
+  "version": "0.1.0",
+  "description": "MK3 clean-core lab: IDs, structured errors/diagnostics, deterministic ordering/serialization, cancellation, lifecycle (BRIEF-12; not a release)",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ]
+}

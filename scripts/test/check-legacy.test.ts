@@ -56,10 +56,14 @@ describe('legacy gate (BRIEF-12 §3.5)', () => {
     expect(stderr).not.toContain('marked-input.ts')
   })
 
-  it('keeps the real repository green', () => {
+  it('keeps the real repository green and scans a non-zero number of sources', () => {
     const { status, stdout, stderr } = runGate(repoRoot)
     expect(stderr).toBe('')
     expect(status).toBe(0)
-    expect(stdout).toContain('legacy gate: clean')
+    const match = /clean \((\d+) file\(s\) scanned\)/.exec(stdout)
+    expect(match).not.toBeNull()
+    // Owner requirement (2026-08-13): once S0.2 lands, the real gate must scan real
+    // package sources, not report an empty green.
+    expect(Number(match?.[1])).toBeGreaterThan(0)
   })
 })

@@ -1,6 +1,4 @@
 {
-  // Typechecks the tooling layer (gate regression tests, vitest config) without emitting.
-  // Package sources get their own composite tsconfigs from X3-S0.2 on.
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "composite": false,
@@ -8,8 +6,16 @@
     "declarationMap": false,
     "sourceMap": false,
     "noEmit": true,
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
-  "include": ["scripts/test/**/*.ts", "vitest.config.ts"],
-  "exclude": ["scripts/test/fixtures/**"]
+  "include": [
+    "scripts/test/**/*.ts",
+    "vitest.config.ts",
+    "packages/*/test/**/*.ts"
+  ],
+  "exclude": [
+    "scripts/test/fixtures/**"
+  ]
 }
