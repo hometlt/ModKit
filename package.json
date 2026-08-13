@@ -18,7 +18,6 @@
     "schemas:emit": "node scripts/emit-schemas.mjs",
     "schemas:check": "node scripts/emit-schemas.mjs --check",
     "bench": "node scripts/bench.mjs",
-    "bench:update": "node scripts/bench.mjs --update",
     "bench:gate": "node scripts/bench.mjs --gate",
     "bundle": "node scripts/bundle.mjs",
     "bundle:check": "node scripts/bundle.mjs --check",

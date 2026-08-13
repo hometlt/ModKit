@@ -6,6 +6,26 @@ overrides a canonical or detailed owner.
 
 ---
 
+## Benchmark policy simplified (2026-08-14)
+
+The calibration experiment below is retained as history, not as the current acceptance path.
+The owner removed local probes, normalization and mutable baselines after they became more complex
+than the performance question they were meant to answer.
+
+- `pnpm check` is the mandatory functional, packaging and boundary gate.
+- `pnpm bench` reports `core-import`, `closure-import` and `cli-validate-net` and always exits 0.
+- `pnpm bench:gate` applies the same three absolute budgets only on a fixed CI runner or dedicated
+  reference machine; a noisy scenario is `INCONCLUSIVE` (exit 2), not a pass.
+- Until such a runner exists, performance numbers are observations and do not block adoption.
+- The single-file production bundles remain: they are a packaging optimization independently
+  justified by smaller public entry graphs, deterministic output and the external tarball proof.
+
+Current verification: `pnpm check` passes 106/106 tests. A local informational run measured
+core 7.78 ms, closure 36.34 ms and CLI validate net 316.62 ms; only the CLI observation exceeded
+its 250 ms target, and it did not gate the run.
+
+---
+
 ## Bundling pass + window (2026-08-14, 00:55–01:08) — no verdict, blocked by my own rule
 
 Bounded bundling pass выполнен по авторизации владельца: каждый published entry

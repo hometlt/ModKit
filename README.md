@@ -34,10 +34,12 @@ revision, or archive the lab. Long-lived double authority with `modkitx` is forb
 
 ## Status
 
-- **S0–S4 complete (2026-08-13)**: all five slices green behind the full gate (70 tests,
-  drift gates, legacy gate, emitted schemas, prettier). External packed-tarball extension
-  proof passes (S4/PR-23 shape); bench baselines recorded (closure 30 ms < 50 target;
-  inventory/resolve far under budget; core-import/validate-net over on the reference
-  machine — see IMPLEMENTATION_NOTES).
+- **S0–S4 implementation complete**: `pnpm check` rebuilds the production bundles and passes
+  strict typecheck, lint, formatting, 106 tests, schema drift, the legacy boundary and the
+  external packed-tarball proof.
+- Local `pnpm bench` is informational and never blocks work. `pnpm bench:gate` keeps only three
+  budgets (core import, bootstrap-closure import, CLI validate) and is reserved for a fixed CI
+  runner or dedicated machine. There are no local calibration probes, normalization or mutable
+  baselines.
 - **Stopped for the owner decision: adopt / revise / archive** (BRIEF-12 §5). S4b (.uve
   packer) not started — it does not start automatically.
