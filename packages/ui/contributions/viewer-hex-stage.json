@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/viewer-contribution", "major": 1 },
+  "id": "org.modkitx.ui/hex-stage",
+  "displayName": "hex stage",
+  "runtimeVariants": [
+    {
+      "variantId": "browser",
+      "entrypoint": "./dist/hex/index.js",
+      "target": { "environments": ["browser-main"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "kind": "stage",
+    "consumesDataSources": [{ "contract": "common.view/byte-range-source", "major": 1 }],
+    "priority": 40,
+    "singletonGroup": "center-stage"
+  }
+}

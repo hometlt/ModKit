@@ -11,6 +11,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./browser": {
+      "types": "./dist/browser/index.d.ts",
+      "default": "./dist/browser/index.js"
     }
   },
   "files": [
@@ -21,5 +25,13 @@
     "@modkitx-x3/host": "workspace:*",
     "@modkitx-x3/sdk": "workspace:*",
     "@modkitx-x3/vfs": "workspace:*"
+  },
+  "peerDependencies": {
+    "@modkitx-x3/ui": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@modkitx-x3/ui": {
+      "optional": true
+    }
   }
 }

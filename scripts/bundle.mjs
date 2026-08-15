@@ -31,7 +31,7 @@ const root = fileURLToPath(new URL('..', import.meta.url))
 const check = process.argv.includes('--check')
 
 /** Packages whose published entries collapse to one file each. testkit is dev-only. */
-const BUNDLED_PACKAGES = ['core', 'sdk', 'vfs', 'host']
+const BUNDLED_PACKAGES = ['core', 'sdk', 'vfs', 'host', 'ui']
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'))

@@ -1,4 +1,10 @@
-import { ModkitError, compareUtf8 } from '@modkitx-x3/core'
+import {
+  ModkitError,
+  compareUtf8,
+  parseSemver,
+  parseVersionRange,
+  satisfiesRange,
+} from '@modkitx-x3/core'
 import {
   definePresentationPlan,
   type AnyDescriptor,
@@ -14,7 +20,96 @@ import {
   type ResolvedBinding,
   type ResolvedPresentationPlan,
   type ViewerSources,
+  type ViewerContributionSpecV1,
+  type ViewerApplicability,
+  isStandardTraitId,
 } from '@modkitx-x3/sdk'
+
+export interface ViewerApplicabilityFacts {
+  readonly interpretation: 'none' | 'codec'
+  readonly sourceBytes?: bigint
+  readonly longestLineBytes?: number | 'unknown'
+}
+
+export interface ViewerContributionEligibility {
+  readonly eligible: boolean
+  readonly missing: readonly string[]
+}
+
+export function evaluateViewerApplicability(
+  rule: ViewerApplicability | undefined,
+  facts: ViewerApplicabilityFacts,
+): ViewerContributionEligibility {
+  const missing: string[] = []
+  if (
+    rule?.interpretation !== undefined &&
+    rule.interpretation !== 'any' &&
+    rule.interpretation !== facts.interpretation
+  ) {
+    missing.push(`interpretation:${rule.interpretation}`)
+  }
+  if (rule?.sourceBytes?.maximum !== undefined) {
+    const maximum = BigInt(rule.sourceBytes.maximum)
+    if (facts.sourceBytes === undefined || facts.sourceBytes > maximum) {
+      missing.push(`source-bytes<=${maximum}`)
+    }
+  }
+  if (rule?.longestLineBytes !== undefined) {
+    const value = facts.longestLineBytes
+    if (
+      value === undefined ||
+      (value === 'unknown' && rule.longestLineBytes.whenUnknown === 'ineligible') ||
+      (value !== 'unknown' && value > rule.longestLineBytes.maximum)
+    ) {
+      missing.push(`longest-line<=${rule.longestLineBytes.maximum}`)
+    }
+  }
+  return Object.freeze({ eligible: missing.length === 0, missing: Object.freeze(missing) })
+}
+
+/** Data-only preflight. Viewer code is not imported or activated by this evaluation. */
+export function evaluateViewerContribution(
+  spec: ViewerContributionSpecV1,
+  descriptor: AnyDescriptor,
+  facts: ViewerApplicabilityFacts,
+): ViewerContributionEligibility {
+  const missing = [...evaluateViewerApplicability(spec.applicability, facts).missing]
+  for (const requirement of spec.requiresTraits ?? []) {
+    const match = descriptor.traits.some(instance => {
+      if (instance.id !== requirement.id) return false
+      if (!(requirement.states ?? ['available']).includes(instance.state)) return false
+      if (isStandardTraitId(instance.id)) {
+        return requirement.definitionRange === undefined && instance.definitionVersion === undefined
+      }
+      const range =
+        requirement.definitionRange === undefined
+          ? undefined
+          : parseVersionRange(requirement.definitionRange)
+      const version =
+        instance.definitionVersion === undefined
+          ? undefined
+          : parseSemver(instance.definitionVersion)
+      return range !== undefined && version !== undefined && satisfiesRange(version, range)
+    })
+    if (!match) missing.push(`trait:${requirement.id}`)
+  }
+  for (const operation of spec.requiresOperations ?? []) {
+    if (!descriptor.operations.some(item => item.id === operation && item.state === 'available')) {
+      missing.push(`operation:${operation}`)
+    }
+  }
+  for (const dataSource of spec.consumesDataSources) {
+    if (
+      !descriptor.dataSources.some(
+        item => item.contract === dataSource.contract && item.major === dataSource.major,
+      )
+    ) {
+      missing.push(`data-source:${dataSource.contract}@${dataSource.major}`)
+    }
+  }
+  const ordered = Object.freeze([...new Set(missing)].sort(compareUtf8))
+  return Object.freeze({ eligible: ordered.length === 0, missing: ordered })
+}
 
 export interface CatalogPresentationCandidate extends PresentationSlot {
   /** Result of data-only catalog applicability evaluation for this descriptor. */
@@ -151,6 +246,11 @@ export async function resolvePresentationPlan<Ticket>(
   const unsatisfied = options.candidates
     .filter(item => !item.eligible || (item.missing?.length ?? 0) > 0)
     .map(item => ({ contributionId: item.contributionId, missing: [...(item.missing ?? [])] }))
+    .sort(
+      (left, right) =>
+        compareUtf8(left.contributionId, right.contributionId) ||
+        compareUtf8(left.missing.join('\0'), right.missing.join('\0')),
+    )
   const selectedStages: CatalogPresentationCandidate[] = []
   const seenGroups = new Set<string>()
   for (const stage of eligible.filter(item => item.kind === 'stage')) {

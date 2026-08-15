@@ -1,0 +1,65 @@
+{
+  "name": "@modkitx-x3/ui",
+  "version": "0.1.0",
+  "description": "Format-neutral MK3 browser viewers over typed data-source leases.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./viewer": {
+      "types": "./dist/viewer/index.d.ts",
+      "default": "./dist/viewer/index.js"
+    },
+    "./code": {
+      "types": "./dist/code/index.d.ts",
+      "default": "./dist/code/index.js"
+    },
+    "./text-virtual": {
+      "types": "./dist/text-virtual/index.d.ts",
+      "default": "./dist/text-virtual/index.js"
+    },
+    "./hex": {
+      "types": "./dist/hex/index.d.ts",
+      "default": "./dist/hex/index.js"
+    },
+    "./tree": {
+      "types": "./dist/tree/index.d.ts",
+      "default": "./dist/tree/index.js"
+    },
+    "./table": {
+      "types": "./dist/table/index.d.ts",
+      "default": "./dist/table/index.js"
+    },
+    "./transport": {
+      "types": "./dist/transport/index.d.ts",
+      "default": "./dist/transport/index.js"
+    },
+    "./namespace": {
+      "types": "./dist/namespace/index.d.ts",
+      "default": "./dist/namespace/index.js"
+    },
+    "./panels": {
+      "types": "./dist/panels/index.d.ts",
+      "default": "./dist/panels/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "contributions",
+    "dist"
+  ],
+  "scripts": {
+    "manifests:emit": "node scripts/generate-manifests.mjs",
+    "manifests:check": "node scripts/generate-manifests.mjs --check"
+  },
+  "dependencies": {
+    "@modkitx-x3/core": "workspace:*",
+    "@modkitx-x3/sdk": "workspace:*"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/viewer-contribution", "major": 1 },
+  "id": "org.modkitx.ui/namespace-tree",
+  "displayName": "namespace tree",
+  "runtimeVariants": [
+    {
+      "variantId": "browser",
+      "entrypoint": "./dist/namespace/index.js",
+      "target": { "environments": ["browser-main"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "kind": "tree",
+    "consumesDataSources": [{ "contract": "common.view/namespace-entry-source", "major": 1 }],
+    "priority": 200,
+    "singletonGroup": "left-tree"
+  }
+}

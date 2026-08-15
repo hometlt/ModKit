@@ -28,6 +28,16 @@ const PUBLISHED_ENTRIES = [
   'packages/vfs/dist/index.js',
   'packages/host/dist/index.js',
   'packages/host/dist/node/index.js',
+  'packages/ui/dist/index.js',
+  'packages/ui/dist/viewer/index.js',
+  'packages/ui/dist/code/index.js',
+  'packages/ui/dist/text-virtual/index.js',
+  'packages/ui/dist/hex/index.js',
+  'packages/ui/dist/tree/index.js',
+  'packages/ui/dist/table/index.js',
+  'packages/ui/dist/transport/index.js',
+  'packages/ui/dist/namespace/index.js',
+  'packages/ui/dist/panels/index.js',
 ]
 
 /**
@@ -62,6 +72,9 @@ describe('single-file production dist', () => {
     const hostImports = importSpecifiers(host)
     expect(hostImports).toContain('@modkitx-x3/core')
     expect(hostImports).toContain('@modkitx-x3/sdk')
+
+    const ui = readFileSync(bundlePath('packages/ui/dist/index.js'), 'utf8')
+    expect(ui).not.toContain('node:')
   })
 
   it('does not bundle the dev-only testkit', () => {
@@ -71,7 +84,7 @@ describe('single-file production dist', () => {
   })
 
   it('leaves the exports map and the .d.ts API in place', () => {
-    for (const pkg of ['core', 'sdk', 'vfs', 'host']) {
+    for (const pkg of ['core', 'sdk', 'vfs', 'host', 'ui']) {
       const manifest = JSON.parse(
         readFileSync(bundlePath('packages', pkg, 'package.json'), 'utf8'),
       ) as { exports: Record<string, string | { types: string; default: string }> }

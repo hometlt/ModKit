@@ -2,13 +2,15 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"]
   },
   "include": ["src/**/*.ts"],
   "references": [
     { "path": "../core" },
     { "path": "../sdk" },
     { "path": "../vfs" },
-    { "path": "../host" }
+    { "path": "../host" },
+    { "path": "../ui" }
   ]
 }

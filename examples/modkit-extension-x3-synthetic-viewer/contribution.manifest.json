@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/viewer-contribution",
+    "major": 1
+  },
+  "id": "org.example/synthetic-browser-viewer",
+  "displayName": "Packed synthetic browser viewer",
+  "runtimeVariants": [
+    {
+      "variantId": "browser",
+      "entrypoint": "./src/viewer.js",
+      "target": {
+        "environments": ["browser-main"]
+      },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "kind": "stage",
+    "requiresOperations": ["asset.validate"],
+    "consumesDataSources": [],
+    "priority": 500,
+    "singletonGroup": "center-stage"
+  }
+}

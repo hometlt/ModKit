@@ -21,6 +21,19 @@ function jsFiles(dir: string): string[] {
   return out
 }
 
+function tsFiles(dir: string): string[] {
+  const out: string[] = []
+  const walk = (d: string): void => {
+    for (const entry of readdirSync(d, { withFileTypes: true })) {
+      const path = join(d, entry.name)
+      if (entry.isDirectory()) walk(path)
+      else if (entry.name.endsWith('.ts')) out.push(path)
+    }
+  }
+  walk(dir)
+  return out
+}
+
 const NODE_SPECIFIER = /(?:from\s*['"]|import\s*\(\s*['"]|require\s*\(\s*['"])node:/
 
 function offenders(dir: string, exclude?: (path: string) => boolean): string[] {
@@ -30,8 +43,8 @@ function offenders(dir: string, exclude?: (path: string) => boolean): string[] {
 }
 
 describe('browser-safety of the portable closure (S2)', () => {
-  it('core, sdk and vfs dist contain no node:* imports', () => {
-    for (const pkg of ['core', 'sdk', 'vfs']) {
+  it('core, sdk, vfs and ui dist contain no node:* imports', () => {
+    for (const pkg of ['core', 'sdk', 'vfs', 'ui']) {
       expect(offenders(join(root, 'packages', pkg, 'dist')), pkg).toEqual([])
     }
   })
@@ -41,5 +54,30 @@ describe('browser-safety of the portable closure (S2)', () => {
     expect(offenders(join(root, 'packages', 'host', 'dist'), p => p.startsWith(nodeDir))).toEqual(
       [],
     )
+  })
+
+  it('viewer sources contain no executable markup or format implementation imports', () => {
+    const sourceFiles = [
+      ...tsFiles(join(root, 'packages', 'ui', 'src')),
+      join(root, 'packages', 'testkit', 'src', 'browser', 'index.ts'),
+    ]
+    expect(sourceFiles.length).toBeGreaterThan(1)
+    for (const path of sourceFiles) {
+      const source = readFileSync(path, 'utf8')
+      expect(source, path).not.toMatch(/\.innerHTML\s*=/u)
+      expect(source, path).not.toContain('unsafe-inline')
+      expect(source, path).not.toContain('unsafe-eval')
+      const specifiers = [...source.matchAll(/(?:from\s*|import\s*\()\s*['"]([^'"]+)['"]/gu)].map(
+        match => match[1] ?? '',
+      )
+      expect(
+        specifiers.filter(specifier =>
+          /(?:^|\/)(?:codec|codecs|provider|providers|formats?|extensions?)(?:\/|$)/u.test(
+            specifier,
+          ),
+        ),
+        path,
+      ).toEqual([])
+    }
   })
 })

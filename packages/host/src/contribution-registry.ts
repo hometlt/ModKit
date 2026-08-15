@@ -171,11 +171,12 @@ function builtins(): readonly ContributionContractRegistration[] {
     {
       contract: { id: viewer.contract, major: viewer.major },
       schema: viewer.schema,
-      mode: 'data-only',
+      mode: 'executable',
       project: (manifest, context) => [
         fact(VIEWER_CONTRIBUTION_INVENTORY_FACT, manifest.spec as JsonValue, context),
       ],
       validateSemantics: viewer.validateSemantics,
+      moduleAbi: { export: 'default', abiVersion: 1 },
       conformanceProfile: 'org.modkitx/viewer-contribution-v1',
     },
     {

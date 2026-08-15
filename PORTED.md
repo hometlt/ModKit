@@ -19,6 +19,8 @@ justifications (BRIEF-12 §3.1) are also recorded in this file, one line per dep
 - `packages/sdk/test/fixtures/legacy/legacy-codec-manifest.json ← extensions/common/images/codecs/dds/codec.manifest.json@717e7d38 | trimmed verbatim OLD v1 shape as negative input | legacy-input fixture under fixtures/legacy/, asserted to FAIL the envelope schema`
 - `extensions/common/text-data/test/fixtures/ini-sc2-parity.json ← modkitx/packages/xml/src/formats.ts::parseSc2Ini@048eb0fd | recorded section/key/value oracle output; no parser code copied | proves ini-sc2 compatibility without putting @modkitx/xml in the X3 closure`
 - `extensions/common/text-data/test/fixtures/csv-rfc4180-parity.json ← csv-parse/sync@6.1.0 | recorded RFC 4180 quoting/CRLF oracle output; no implementation code copied | catches delimiter, quoted-comma and escaped-quote drift`
+- `packages/ui/src/code + packages/ui/src/text-virtual ← modkitx/docs/tasks-active/platform-architecture/subtasks/RUNBOOK_code_hex_viewer.md X0/X1@048eb0fd | retained the bounded-model policy and explicit large-file fallback, but replaced the MK2 Monaco/host implementation with format-neutral text-data-source stages | no MK2 runtime import; real-browser C-01…C-03 and lifecycle gates own the port`
+- `packages/ui/src/hex ← modkitx/docs/tasks-active/platform-architecture/subtasks/RUNBOOK_code_hex_viewer.md X2@048eb0fd | retained bigint random access, bounded windows, cancellation and read-only v1; rebuilt on byte-range-source@1 without format knowledge or custom-element ownership | bigint/boundary/cancel, unknown-binary and real-browser gates own the port`
 
 ## Runtime dependencies (published packages)
 
@@ -38,6 +40,7 @@ justifications (BRIEF-12 §3.1) are also recorded in this file, one line per dep
 - `dependency: eslint@^9.9.0 (→9.39.5) + typescript-eslint@^8.2.0 (→8.67.0) in root devDependencies | lint layer of the same base set | dev-only`
 - `dependency: prettier@^3.3.0 (→3.9.6) in root devDependencies | formatting, mirrors modkitx conventions | dev-only`
 - `dependency: @types/node@^22.5.0 (→22.20.1) in root devDependencies | Node typings for tooling tests (child_process/url) | dev-only`
+- `dependency: playwright-core@^1.62.1 (dev) in root devDependencies | launches an already-installed Chrome/Chromium for production-CSP viewer E2E without downloading a second browser | test-only; browser code receives no Playwright dependency`
 
 Closure summary (kept in sync with the lists above): the bootstrap closure still has exactly
 **one** third-party runtime dependency — `ajv` in `sdk`, loaded lazily. The four syntax-parser

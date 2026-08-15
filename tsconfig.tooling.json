@@ -6,7 +6,8 @@
     "declarationMap": false,
     "sourceMap": false,
     "noEmit": true,
-    "types": ["node"]
+    "types": ["node"],
+    "lib": ["ES2023", "DOM", "DOM.Iterable"]
   },
   "include": ["scripts/test/**/*.ts", "vitest.config.ts", "packages/*/test/**/*.ts"],
   "exclude": ["scripts/test/fixtures/**"]

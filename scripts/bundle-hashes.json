@@ -9,7 +9,17 @@
   "packages/sdk/dist/text-data/index.js": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "packages/sdk/dist/ui-contracts/index.js": "87372d9c336381b3c6cdaa55b9b92132c6684fa6ed92efc1c4337bd26cb7f831",
   "packages/vfs/dist/index.js": "0e4cc77bf46abb06e54318f2b6b1bec22dffdd2db11f02f573a0af0aa7dd08d5",
-  "packages/host/dist/index.js": "b839c65208da608133f4598dd9dee303603c258ef26f2186062e77e4fef2fcd2",
+  "packages/host/dist/index.js": "867c9efb10a3ee71bc92c72c7db497562ba716d974715cc96a19ed3e6b21e67f",
   "packages/host/dist/node/index.js": "59a19de52591196227286f7df98093013b5e867f77deb2d618a6aa1ee957d28b",
+  "packages/ui/dist/index.js": "b3605d22e24affcf11667be5db7911a7217ccc92c2d42f3ea508eb8246207190",
+  "packages/ui/dist/viewer/index.js": "c0e5c9bcede6a2db220020a9fbb45cac95c0e62a110fb995b088c445966132fc",
+  "packages/ui/dist/code/index.js": "062eab06eac2639984e6b6067476d322fa5d61ba68e4a000bc53c60994b84d61",
+  "packages/ui/dist/text-virtual/index.js": "1478775c1ab64554925775d5471b24339c3d7113f28e393f4c8d3e21e91aa389",
+  "packages/ui/dist/hex/index.js": "c9f5ee64fd787389d47994ca75e09859e0d4fa6f6ea75e1498d07f5077ef1100",
+  "packages/ui/dist/tree/index.js": "2c0ca79238ed391a3030dfb63cb0e6b65f3ada059c4384dd1a52f54c5a2aaede",
+  "packages/ui/dist/table/index.js": "1209995e8cf05d4bcb26051d047a1accea8d8d20719fa6522c9cbcd3a1af2b75",
+  "packages/ui/dist/transport/index.js": "d3b511196ff261fc2a7d0efa20f8b392d8c64eb00f20ec909a53d804531641a2",
+  "packages/ui/dist/namespace/index.js": "a04e3a9865f1ed645e70c8d4199a43eec1492ee2a540d5088a61df42dac366bf",
+  "packages/ui/dist/panels/index.js": "cc5553efb1009a02c9fd3142e593fc52e58abacae986507afe0e2b8fb2e8cb15",
   "apps/modkit-cli/dist/main.js": "9457a70d24548b0e00a0a02e68b64488d0f84321adab088a7b7fcf0c377e872a"
 }

@@ -67,9 +67,13 @@ export {
 export {
   createPresentationPlanValidator,
   createViewerSources,
+  evaluateViewerApplicability,
+  evaluateViewerContribution,
   resolvePresentationPlan,
   switchPresentationStage,
   type CatalogPresentationCandidate,
   type PresentationResolverOptions,
   type PresentationValidatorOptions,
+  type ViewerApplicabilityFacts,
+  type ViewerContributionEligibility,
 } from './presentation.js'

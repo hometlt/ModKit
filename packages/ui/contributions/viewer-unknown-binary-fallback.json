@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/viewer-contribution", "major": 1 },
+  "id": "org.modkitx.ui/unknown-binary-fallback",
+  "displayName": "unknown binary fallback",
+  "runtimeVariants": [
+    {
+      "variantId": "browser",
+      "entrypoint": "./dist/hex/index.js",
+      "target": { "environments": ["browser-main"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "kind": "fallback",
+    "consumesDataSources": [{ "contract": "common.view/byte-range-source", "major": 1 }],
+    "applicability": { "interpretation": "none" },
+    "priority": -100,
+    "singletonGroup": "center-stage"
+  }
+}
