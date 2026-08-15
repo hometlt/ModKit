@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { createTextSyntaxProvider } from '../../extensions/common/text-data/src/providers/index.js'
+import { createProvider as createCsvProvider } from '../../extensions/common/text-data/src/formats/csv/provider.js'
 import { VirtualTextModel } from '../../packages/ui/dist/text-virtual/index.js'
 import { HexWindowModel } from '../../packages/ui/dist/hex/index.js'
 
@@ -33,7 +33,7 @@ failures.push(
     async () => {
       const rows = 1_000_000
       const input = 'left,right\n'.repeat(rows)
-      const provider = createTextSyntaxProvider('common.text-data/csv-syntax')
+      const provider = createCsvProvider({ contract: 'common.text-data/csv-syntax' })
       const lease = await provider.dataSource({
         input: { text: input },
         dialect: 'csv-rfc4180',

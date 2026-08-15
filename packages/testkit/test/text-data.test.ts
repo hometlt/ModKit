@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { build } from 'esbuild'
 import { describe, expect, it } from 'vitest'
 import { canonicalJsonStringify, contractId } from '@modkitx-x3/core'
 import {
@@ -42,7 +43,16 @@ const alternateXmlRoot = join(
   'examples',
   'modkit-extension-x3-alternate-xml',
 )
-const providerPath = join(extensionRoot, 'src', 'providers', 'index.js')
+const providerFormatByContract = Object.freeze({
+  'common.text-data/json-syntax': 'json',
+  'common.text-data/jsonc-syntax': 'jsonc',
+  'common.text-data/xml-syntax': 'xml',
+  'common.text-data/yaml-syntax': 'yaml',
+  'common.text-data/toml-syntax': 'toml',
+  'common.text-data/ini-syntax': 'ini',
+  'common.text-data/csv-syntax': 'csv',
+  'common.text-data/tsv-syntax': 'tsv',
+} satisfies Readonly<Record<TextDataContractId, string>>)
 
 const budget: ResourceBudget = {
   maxInputBytes: 10_000_000n,
@@ -58,6 +68,12 @@ interface ProviderModule {
   ): TextSyntaxProvider<Contract>
 }
 
+interface FormatProviderModule {
+  createProvider(selection: {
+    readonly contract: TextDataContractId
+  }): TextSyntaxProvider<TextDataContractId>
+}
+
 interface AlternateProviderModule {
   createProvider(selection: {
     readonly contract: 'common.text-data/xml-syntax'
@@ -65,7 +81,22 @@ interface AlternateProviderModule {
 }
 
 async function providers(): Promise<ProviderModule> {
-  return import(pathToFileURL(providerPath).href) as Promise<ProviderModule>
+  const modules = new Map<TextDataContractId, FormatProviderModule>()
+  await Promise.all(
+    Object.entries(providerFormatByContract).map(async ([contract, format]) => {
+      const module = (await import(
+        pathToFileURL(join(extensionRoot, 'src', 'formats', format, 'provider.js')).href
+      )) as FormatProviderModule
+      modules.set(contract as TextDataContractId, module)
+    }),
+  )
+  return {
+    createTextSyntaxProvider(contract) {
+      const module = modules.get(contract)
+      if (module === undefined) throw new TypeError(`missing provider for ${contract}`)
+      return module.createProvider({ contract }) as TextSyntaxProvider<typeof contract>
+    },
+  }
 }
 
 async function alternateXmlProvider(): Promise<TextSyntaxProvider<'common.text-data/xml-syntax'>> {
@@ -113,10 +144,9 @@ const defaultTextOffers: readonly ProviderOffer[] = [
       contract: 'common.text-data/json-syntax',
       offerId: 'json-syntax-default-v1',
     },
-    {
-      contract: 'common.text-data/jsonc-syntax',
-      offerId: 'jsonc-syntax-default-v1',
-    },
+  ]),
+  providerOffer('org.modkitx/jsonc-syntax-default', [
+    { contract: 'common.text-data/jsonc-syntax', offerId: 'jsonc-syntax-default-v1' },
   ]),
   providerOffer('org.modkitx/xml-syntax-default', [
     { contract: 'common.text-data/xml-syntax', offerId: 'xml-syntax-default-v1' },
@@ -130,8 +160,10 @@ const defaultTextOffers: readonly ProviderOffer[] = [
   providerOffer('org.modkitx/ini-syntax-default', [
     { contract: 'common.text-data/ini-syntax', offerId: 'ini-syntax-default-v1' },
   ]),
-  providerOffer('org.modkitx/delimited-text-default', [
+  providerOffer('org.modkitx/csv-syntax-default', [
     { contract: 'common.text-data/csv-syntax', offerId: 'csv-syntax-default-v1' },
+  ]),
+  providerOffer('org.modkitx/tsv-syntax-default', [
     { contract: 'common.text-data/tsv-syntax', offerId: 'tsv-syntax-default-v1' },
   ]),
 ]
@@ -150,7 +182,7 @@ function requestFor(contract: TextDataContractId): ProviderRequest {
 
 async function codecFor(format: string): Promise<Codec> {
   const module = (await import(
-    pathToFileURL(join(extensionRoot, 'src', 'codecs', `${format}.js`)).href
+    pathToFileURL(join(extensionRoot, 'src', 'formats', format, 'codec.js')).href
   )) as { createCodec(context: ContributionContext): Codec }
   const providerModule = await providers()
   const context: ContributionContext = {
@@ -240,7 +272,7 @@ const cases = [
 ] as const
 
 describe('13B text-data providers and codecs', () => {
-  it('validates all fourteen physical contribution manifests through the A-1 authorities', async () => {
+  it('validates all sixteen isolated contribution manifests through the A-1 authorities', async () => {
     const directory = join(extensionRoot, 'contributions')
     const names = (await import('node:fs/promises')).readdir(directory)
     const manifests = await Promise.all(
@@ -251,8 +283,8 @@ describe('13B text-data providers and codecs', () => {
             JSON.parse(await readFile(join(directory, name), 'utf8')) as ContributionManifestV1Wire,
         ),
     )
-    expect(manifests).toHaveLength(14)
-    expect(new Set(manifests.map(manifest => manifest.id)).size).toBe(14)
+    expect(manifests).toHaveLength(16)
+    expect(new Set(manifests.map(manifest => manifest.id)).size).toBe(16)
     const registry = createSpecSchemaRegistry(A1_SPEC_SCHEMA_ENTRIES)
     for (const manifest of manifests) {
       const result = await validateContributionManifest(manifest, registry)
@@ -267,6 +299,14 @@ describe('13B text-data providers and codecs', () => {
       }
     }
     expect(manifests.filter(manifest => manifest.contract.id.includes('codec'))).toHaveLength(8)
+    expect(
+      manifests.filter(manifest => manifest.contract.id.includes('service-provider')),
+    ).toHaveLength(8)
+    for (const manifest of manifests) {
+      expect(manifest.runtimeVariants?.[0]?.entrypoint).toMatch(
+        /^\.\/src\/formats\/(?:json|jsonc|xml|yaml|toml|ini|csv|tsv)\/(?:codec|provider)\.js$/u,
+      )
+    }
     expect(
       manifests.every(
         manifest => JSON.stringify(manifest).includes('"mutatesSource":true') === false,
@@ -381,7 +421,7 @@ describe('13B text-data providers and codecs', () => {
     expect(csv.state).toBe('resolved')
     expect(json.state).toBe('resolved')
     if (csv.state === 'resolved') {
-      expect(csv.selected.offer.providerId).toBe('org.modkitx/delimited-text-default')
+      expect(csv.selected.offer.providerId).toBe('org.modkitx/csv-syntax-default')
     }
     if (json.state === 'resolved') {
       expect(json.selected.offer.providerId).toBe('org.modkitx/json-syntax-default')
@@ -522,7 +562,7 @@ describe('13B text-data providers and codecs', () => {
     async (contract, dialect, text) => {
       const format = contract.slice('common.text-data/'.length, -'-syntax'.length)
       const module = (await import(
-        pathToFileURL(join(extensionRoot, 'src', 'codecs', `${format}.js`)).href
+        pathToFileURL(join(extensionRoot, 'src', 'formats', format, 'codec.js')).href
       )) as { createCodec(context: ContributionContext): Codec }
       const providerModule = await providers()
       const context: ContributionContext = {
@@ -724,38 +764,89 @@ describe('13B text-data providers and codecs', () => {
     expect(csv).toMatchObject({ state: 'truncated', truncated: { limit: 'maxNodes' } })
   })
 
+  it.each(Object.values(providerFormatByContract))(
+    'keeps the %s codec and provider import graphs isolated',
+    async format => {
+      const parserPackages = ['jsonc-parser', '@rgrove/parse-xml', 'yaml', 'smol-toml'] as const
+      const expectedParser = {
+        json: 'jsonc-parser',
+        jsonc: 'jsonc-parser',
+        xml: '@rgrove/parse-xml',
+        yaml: 'yaml',
+        toml: 'smol-toml',
+        ini: undefined,
+        csv: undefined,
+        tsv: undefined,
+      }[format]
+      const graphFor = async (kind: 'codec' | 'provider') => {
+        const result = await build({
+          absWorkingDir: extensionRoot,
+          entryPoints: [`src/formats/${format}/${kind}.js`],
+          bundle: true,
+          format: 'esm',
+          platform: 'neutral',
+          packages: 'external',
+          write: false,
+          metafile: true,
+          logLevel: 'silent',
+        })
+        const inputs = Object.keys(result.metafile?.inputs ?? {}).map(path =>
+          path.replaceAll('\\', '/'),
+        )
+        const external = Object.values(result.metafile?.outputs ?? {})
+          .flatMap(output => output.imports)
+          .filter(item => item.external)
+          .map(item => item.path)
+        return { inputs, external }
+      }
+      const codecGraph = await graphFor('codec')
+      const providerGraph = await graphFor('provider')
+      for (const other of Object.values(providerFormatByContract)) {
+        if (other === format) continue
+        expect(codecGraph.inputs, `${format} codec imported ${other}`).not.toEqual(
+          expect.arrayContaining([expect.stringContaining(`/formats/${other}/`)]),
+        )
+        expect(providerGraph.inputs, `${format} provider imported ${other}`).not.toEqual(
+          expect.arrayContaining([expect.stringContaining(`/formats/${other}/`)]),
+        )
+      }
+      expect(codecGraph.external.filter(path => parserPackages.includes(path as never))).toEqual([])
+      expect(
+        providerGraph.external.filter(path => parserPackages.includes(path as never)).sort(),
+      ).toEqual(expectedParser === undefined ? [] : [expectedParser])
+    },
+  )
+
   it('keeps the public index provider-free and all portable sources free of node imports', async () => {
     expect(await readFile(join(extensionRoot, 'src', 'index.js'), 'utf8')).not.toMatch(/providers/u)
     const portablePaths = [
       'src/index.js',
-      'src/providers/index.js',
-      'src/codecs/factory.js',
+      'src/formats/index.js',
+      'src/shared/codec-runtime.js',
+      'src/shared/provider-runtime.js',
+      'src/shared/scalars.js',
       'src/shared/text.js',
-      ...cases.map(([, dialect]) => {
-        const format = dialect.startsWith('xml')
-          ? 'xml'
-          : dialect.startsWith('yaml')
-            ? 'yaml'
-            : dialect.startsWith('toml')
-              ? 'toml'
-              : dialect.startsWith('ini')
-                ? 'ini'
-                : dialect.startsWith('csv')
-                  ? 'csv'
-                  : dialect.startsWith('tsv')
-                    ? 'tsv'
-                    : dialect
-        return `src/codecs/${format}.js`
-      }),
+      'src/shared/tree-data-source.js',
+      'src/families/json/detect.js',
+      'src/families/json/provider.js',
+      'src/families/delimited/detect.js',
+      'src/families/delimited/provider.js',
+      ...Object.values(providerFormatByContract).flatMap(format => [
+        `src/formats/${format}/definition.js`,
+        `src/formats/${format}/codec.js`,
+        `src/formats/${format}/provider.js`,
+      ]),
     ]
     for (const path of portablePaths) {
       expect(await readFile(join(extensionRoot, path), 'utf8'), path).not.toMatch(/node:/u)
     }
-    const providerSource = await readFile(
-      join(extensionRoot, 'src', 'providers', 'index.js'),
-      'utf8',
-    )
-    expect(providerSource).not.toMatch(/CUnit|Catalog|GameStrings|ComponentList|SC2/u)
-    expect(providerSource).not.toMatch(/org\.example/u)
+    for (const format of Object.values(providerFormatByContract)) {
+      const providerSource = await readFile(
+        join(extensionRoot, 'src', 'formats', format, 'provider.js'),
+        'utf8',
+      )
+      expect(providerSource).not.toMatch(/CUnit|Catalog|GameStrings|ComponentList|SC2/u)
+      expect(providerSource).not.toMatch(/org\.example/u)
+    }
   })
 })

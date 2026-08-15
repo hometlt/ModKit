@@ -132,13 +132,6 @@ describe('13B packed text-data boundary', () => {
         pathToFileURL(externalRequire.resolve('modkit-extension-x3-text-data')).href
       )) as { contributionManifests: readonly string[] }
       expect(publicEntry.contributionManifests).toEqual(['./contributions/*.json'])
-      const providerModule = (await import(
-        pathToFileURL(externalRequire.resolve('modkit-extension-x3-text-data/providers')).href
-      )) as {
-        createTextSyntaxProvider(contract: string): {
-          parse(request: unknown): Promise<{ state: string }>
-        }
-      }
       const budget = {
         maxInputBytes: 1_000_000n,
         maxDepth: 64,
@@ -147,19 +140,28 @@ describe('13B packed text-data boundary', () => {
         maxDiagnostics: 100,
       }
       const samples = [
-        ['common.text-data/json-syntax', 'json', '{"x":1}'],
-        ['common.text-data/jsonc-syntax', 'jsonc', '{//c\n"x":1}'],
-        ['common.text-data/xml-syntax', 'xml-1.0', '<x/>'],
-        ['common.text-data/yaml-syntax', 'yaml-1.2-core', 'x: 1\n'],
-        ['common.text-data/toml-syntax', 'toml-1.0', 'x = 1\n'],
-        ['common.text-data/ini-syntax', 'ini-basic', '[x]\ny=1\n'],
-        ['common.text-data/csv-syntax', 'csv-rfc4180', 'x,y\n1,2\n'],
-        ['common.text-data/tsv-syntax', 'tsv-iana', 'x\ty\n1\t2\n'],
+        ['json', 'common.text-data/json-syntax', 'json', '{"x":1}'],
+        ['jsonc', 'common.text-data/jsonc-syntax', 'jsonc', '{//c\n"x":1}'],
+        ['xml', 'common.text-data/xml-syntax', 'xml-1.0', '<x/>'],
+        ['yaml', 'common.text-data/yaml-syntax', 'yaml-1.2-core', 'x: 1\n'],
+        ['toml', 'common.text-data/toml-syntax', 'toml-1.0', 'x = 1\n'],
+        ['ini', 'common.text-data/ini-syntax', 'ini-basic', '[x]\ny=1\n'],
+        ['csv', 'common.text-data/csv-syntax', 'csv-rfc4180', 'x,y\n1,2\n'],
+        ['tsv', 'common.text-data/tsv-syntax', 'tsv-iana', 'x\ty\n1\t2\n'],
       ] as const
-      for (const [contract, dialect, text] of samples) {
+      for (const [format, contract, dialect, text] of samples) {
+        const providerModule = (await import(
+          pathToFileURL(
+            externalRequire.resolve(`modkit-extension-x3-text-data/formats/${format}/provider`),
+          ).href
+        )) as {
+          createProvider(selection: { contract: string }): {
+            parse(request: unknown): Promise<{ state: string }>
+          }
+        }
         expect(
           await providerModule
-            .createTextSyntaxProvider(contract)
+            .createProvider({ contract })
             .parse({ input: { text }, dialect, budget }),
           contract,
         ).toMatchObject({ state: 'ok' })

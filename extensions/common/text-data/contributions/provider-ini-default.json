@@ -9,7 +9,7 @@
   "runtimeVariants": [
     {
       "variantId": "portable",
-      "entrypoint": "./src/providers/index.js",
+      "entrypoint": "./src/formats/ini/provider.js",
       "target": {
         "environments": ["browser-worker", "node", "node-worker"]
       },

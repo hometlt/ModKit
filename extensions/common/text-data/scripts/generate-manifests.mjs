@@ -1,55 +1,24 @@
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const output = join(root, 'contributions')
 mkdirSync(output, { recursive: true })
 
-const formats = {
-  json: {
-    extensions: ['json'],
-    mediaType: 'application/json',
-    contract: 'json-syntax',
-    semantic: 'tree',
-  },
-  jsonc: {
-    extensions: ['jsonc'],
-    mediaType: 'application/jsonc',
-    contract: 'jsonc-syntax',
-    semantic: 'tree',
-  },
-  xml: {
-    extensions: ['xml'],
-    mediaType: 'application/xml',
-    contract: 'xml-syntax',
-    semantic: 'tree',
-  },
-  yaml: {
-    extensions: ['yaml', 'yml'],
-    mediaType: 'application/yaml',
-    contract: 'yaml-syntax',
-    semantic: 'tree',
-  },
-  toml: {
-    extensions: ['toml'],
-    mediaType: 'application/toml',
-    contract: 'toml-syntax',
-    semantic: 'tree',
-  },
-  ini: {
-    extensions: ['ini', 'cfg', 'conf'],
-    mediaType: 'text/plain',
-    contract: 'ini-syntax',
-    semantic: 'tree',
-  },
-  csv: { extensions: ['csv'], mediaType: 'text/csv', contract: 'csv-syntax', semantic: 'table' },
-  tsv: {
-    extensions: ['tsv', 'tab'],
-    mediaType: 'text/tab-separated-values',
-    contract: 'tsv-syntax',
-    semantic: 'table',
-  },
+const formatRoot = join(root, 'src', 'formats')
+const formatNames = readdirSync(formatRoot, { withFileTypes: true })
+  .filter(entry => entry.isDirectory())
+  .map(entry => entry.name)
+  .sort()
+const formats = new Map()
+for (const format of formatNames) {
+  const module = await import(pathToFileURL(join(formatRoot, format, 'definition.js')).href)
+  formats.set(format, module.definition)
+}
+
+for (const name of readdirSync(output)) {
+  if (name.endsWith('.json')) unlinkSync(join(output, name))
 }
 
 const budgets = {
@@ -87,7 +56,7 @@ const operations = format =>
     outputKinds: [output],
   }))
 
-for (const [format, config] of Object.entries(formats)) {
+for (const [format, config] of formats) {
   const semanticTrait = config.semantic === 'tree' ? 'structure.hierarchy' : 'table.cells'
   const semanticSource =
     config.semantic === 'tree' ? 'common.view/tree-data-source' : 'common.view/table-data-source'
@@ -96,7 +65,7 @@ for (const [format, config] of Object.entries(formats)) {
     contract: { id: 'org.modkitx/codec-contribution', major: 1 },
     id: `org.modkitx/text-${format}`,
     displayName: `${format.toUpperCase()} text data`,
-    runtimeVariants: runtimeVariant(`./src/codecs/${format}.js`, ['read-source']),
+    runtimeVariants: runtimeVariant(`./src/formats/${format}/codec.js`, ['read-source']),
     spec: {
       formatRefs: [{ formatId: format, label: format.toUpperCase(), mediaType: config.mediaType }],
       roles: ['semantic'],
@@ -107,7 +76,7 @@ for (const [format, config] of Object.entries(formats)) {
       probe: { kind: 'bytes', ranges: [{ from: 'start', length: 8192 }], maxBytes: 8192 },
       requires: [
         {
-          contract: `common.text-data/${config.contract}`,
+          contract: config.contract,
           major: 1,
           range: '^1.0.0',
         },
@@ -132,42 +101,33 @@ for (const [format, config] of Object.entries(formats)) {
         { id: 'content.text', representation: 'source', presence: 'will-expose' },
         { id: 'content.binary', representation: 'source', presence: 'will-expose' },
       ],
-      implementationTier: { claimed: format === 'csv' || format === 'tsv' ? 2 : 1 },
+      implementationTier: { claimed: config.implementationTier },
       budgets,
     },
   }
   writeFileSync(join(output, `codec-${format}.json`), `${JSON.stringify(manifest, null, 2)}\n`)
 }
 
-const providers = {
-  json: ['json-syntax', 'jsonc-syntax'],
-  xml: ['xml-syntax'],
-  yaml: ['yaml-syntax'],
-  toml: ['toml-syntax'],
-  ini: ['ini-syntax'],
-  delimited: ['csv-syntax', 'tsv-syntax'],
-}
-
-for (const [provider, contracts] of Object.entries(providers)) {
+for (const [format, config] of formats) {
   const manifest = {
     schemaVersion: 1,
     contract: { id: 'org.modkitx/service-provider-contribution', major: 1 },
-    id: `org.modkitx/${provider === 'delimited' ? 'delimited-text' : `${provider}-syntax`}-default`,
-    displayName: `${provider} syntax provider`,
-    runtimeVariants: runtimeVariant('./src/providers/index.js', []),
+    id: `org.modkitx/${format}-syntax-default`,
+    displayName: `${format} syntax provider`,
+    runtimeVariants: runtimeVariant(`./src/formats/${format}/provider.js`, []),
     spec: {
-      provides: contracts.map(contract => ({
-        offerId: `${contract}-default-v1`,
-        contract: `common.text-data/${contract}`,
-        major: 1,
-        version: '1.0.0',
-      })),
+      provides: [
+        {
+          offerId: `${format}-syntax-default-v1`,
+          contract: config.contract,
+          major: 1,
+          version: '1.0.0',
+        },
+      ],
       lifecycleScope: 'session',
       outputs: [
         {
-          id: contracts.some(contract => contract === 'csv-syntax' || contract === 'tsv-syntax')
-            ? 'table.cells'
-            : 'structure.hierarchy',
+          id: config.semantic === 'table' ? 'table.cells' : 'structure.hierarchy',
           representation: 'runtime',
           presence: 'will-expose',
         },
@@ -175,7 +135,7 @@ for (const [provider, contracts] of Object.entries(providers)) {
     },
   }
   writeFileSync(
-    join(output, `provider-${provider}-default.json`),
+    join(output, `provider-${format}-default.json`),
     `${JSON.stringify(manifest, null, 2)}\n`,
   )
 }

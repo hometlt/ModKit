@@ -26,8 +26,44 @@ beforeAll(async () => {
         import * as browserHost from '@modkitx-x3/testkit/browser';
         import * as host from '@modkitx-x3/host';
         import { plainTextCodec } from './examples/modkit-extension-x3-plain-text/src/codec.js';
-        import { createTextCodec } from './extensions/common/text-data/src/codecs/factory.js';
-        import { createTextSyntaxProvider } from './extensions/common/text-data/src/providers/index.js';
+        import { createCodec as createJsonCodec } from './extensions/common/text-data/src/formats/json/codec.js';
+        import { createProvider as createJsonProvider } from './extensions/common/text-data/src/formats/json/provider.js';
+        import { createCodec as createJsoncCodec } from './extensions/common/text-data/src/formats/jsonc/codec.js';
+        import { createProvider as createJsoncProvider } from './extensions/common/text-data/src/formats/jsonc/provider.js';
+        import { createCodec as createXmlCodec } from './extensions/common/text-data/src/formats/xml/codec.js';
+        import { createProvider as createXmlProvider } from './extensions/common/text-data/src/formats/xml/provider.js';
+        import { createCodec as createYamlCodec } from './extensions/common/text-data/src/formats/yaml/codec.js';
+        import { createProvider as createYamlProvider } from './extensions/common/text-data/src/formats/yaml/provider.js';
+        import { createCodec as createTomlCodec } from './extensions/common/text-data/src/formats/toml/codec.js';
+        import { createProvider as createTomlProvider } from './extensions/common/text-data/src/formats/toml/provider.js';
+        import { createCodec as createIniCodec } from './extensions/common/text-data/src/formats/ini/codec.js';
+        import { createProvider as createIniProvider } from './extensions/common/text-data/src/formats/ini/provider.js';
+        import { createCodec as createCsvCodec } from './extensions/common/text-data/src/formats/csv/codec.js';
+        import { createProvider as createCsvProvider } from './extensions/common/text-data/src/formats/csv/provider.js';
+        import { createCodec as createTsvCodec } from './extensions/common/text-data/src/formats/tsv/codec.js';
+        import { createProvider as createTsvProvider } from './extensions/common/text-data/src/formats/tsv/provider.js';
+        const codecFactories = {
+          json: createJsonCodec,
+          jsonc: createJsoncCodec,
+          xml: createXmlCodec,
+          yaml: createYamlCodec,
+          toml: createTomlCodec,
+          ini: createIniCodec,
+          csv: createCsvCodec,
+          tsv: createTsvCodec,
+        };
+        const providerFactories = {
+          'common.text-data/json-syntax': createJsonProvider,
+          'common.text-data/jsonc-syntax': createJsoncProvider,
+          'common.text-data/xml-syntax': createXmlProvider,
+          'common.text-data/yaml-syntax': createYamlProvider,
+          'common.text-data/toml-syntax': createTomlProvider,
+          'common.text-data/ini-syntax': createIniProvider,
+          'common.text-data/csv-syntax': createCsvProvider,
+          'common.text-data/tsv-syntax': createTsvProvider,
+        };
+        const createTextCodec = (format, context) => codecFactories[format](context);
+        const createTextSyntaxProvider = contract => providerFactories[contract]({ contract });
         globalThis.modkit = {
           ui,
           browserHost,

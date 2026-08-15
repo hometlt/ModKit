@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/service-provider-contribution",
+    "major": 1
+  },
+  "id": "org.modkitx/tsv-syntax-default",
+  "displayName": "tsv syntax provider",
+  "runtimeVariants": [
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/formats/tsv/provider.js",
+      "target": {
+        "environments": ["browser-worker", "node", "node-worker"]
+      },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "provides": [
+      {
+        "offerId": "tsv-syntax-default-v1",
+        "contract": "common.text-data/tsv-syntax",
+        "major": 1,
+        "version": "1.0.0"
+      }
+    ],
+    "lifecycleScope": "session",
+    "outputs": [
+      {
+        "id": "table.cells",
+        "representation": "runtime",
+        "presence": "will-expose"
+      }
+    ]
+  }
+}

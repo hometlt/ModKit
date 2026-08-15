@@ -4,12 +4,12 @@
     "id": "org.modkitx/service-provider-contribution",
     "major": 1
   },
-  "id": "org.modkitx/delimited-text-default",
-  "displayName": "delimited syntax provider",
+  "id": "org.modkitx/jsonc-syntax-default",
+  "displayName": "jsonc syntax provider",
   "runtimeVariants": [
     {
       "variantId": "portable",
-      "entrypoint": "./src/providers/index.js",
+      "entrypoint": "./src/formats/jsonc/provider.js",
       "target": {
         "environments": ["browser-worker", "node", "node-worker"]
       },
@@ -20,14 +20,8 @@
   "spec": {
     "provides": [
       {
-        "offerId": "csv-syntax-default-v1",
-        "contract": "common.text-data/csv-syntax",
-        "major": 1,
-        "version": "1.0.0"
-      },
-      {
-        "offerId": "tsv-syntax-default-v1",
-        "contract": "common.text-data/tsv-syntax",
+        "offerId": "jsonc-syntax-default-v1",
+        "contract": "common.text-data/jsonc-syntax",
         "major": 1,
         "version": "1.0.0"
       }
@@ -35,7 +29,7 @@
     "lifecycleScope": "session",
     "outputs": [
       {
-        "id": "table.cells",
+        "id": "structure.hierarchy",
         "representation": "runtime",
         "presence": "will-expose"
       }

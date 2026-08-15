@@ -6,8 +6,9 @@
   "description": "External MK3 text-data codecs and replaceable syntax providers.",
   "exports": {
     ".": "./src/index.js",
-    "./providers": "./src/providers/index.js",
-    "./codecs": "./src/codecs/index.js",
+    "./formats": "./src/formats/index.js",
+    "./formats/*/codec": "./src/formats/*/codec.js",
+    "./formats/*/provider": "./src/formats/*/provider.js",
     "./package.json": "./package.json"
   },
   "files": [

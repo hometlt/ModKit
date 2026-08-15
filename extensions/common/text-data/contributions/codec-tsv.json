@@ -9,7 +9,7 @@
   "runtimeVariants": [
     {
       "variantId": "portable",
-      "entrypoint": "./src/codecs/tsv.js",
+      "entrypoint": "./src/formats/tsv/codec.js",
       "target": {
         "environments": ["browser-worker", "node", "node-worker"]
       },
