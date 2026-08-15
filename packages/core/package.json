@@ -11,9 +11,12 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    }
+    },
+    "./schemas/*.schema.json": "./schemas/*.schema.json",
+    "./package.json": "./package.json"
   },
   "files": [
-    "dist"
+    "dist",
+    "schemas"
   ]
 }

@@ -58,6 +58,10 @@ export interface ActivationTicket {
   readonly contributionId: string
   readonly contract: string
   readonly contractMajor: number
+  /** Exact logical offer selected when one provider exposes several offers for one contract. */
+  readonly offerId: string
+  /** Contract-owned canonical non-secret selector; raw facets never enter an activation ticket. */
+  readonly contractSelectionKey?: string
   readonly variantId: string
   readonly target: RuntimeTarget
   readonly operation?: string
@@ -104,12 +108,16 @@ export function issueActivationTicket(
     })
   }
   const offer = result.selected.offer
-  const major = Number(result.selected.resolvedContract.version.split('.')[0] ?? Number.NaN)
+  const major = result.selected.resolvedContract.major
   const ticket = Object.freeze({
     extensionId: offer.extensionId,
     contributionId: offer.providerId,
     contract: result.selected.resolvedContract.contract,
     contractMajor: major,
+    offerId: result.selected.resolvedContract.offerId,
+    ...(result.selected.contractSelectionKey === undefined
+      ? {}
+      : { contractSelectionKey: result.selected.contractSelectionKey }),
     variantId: offer.runtimeVariant,
     target: Object.freeze({ ...target }),
     ...(operation === undefined ? {} : { operation }),

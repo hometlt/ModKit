@@ -1,16 +1,52 @@
 import { describe, expect, it } from 'vitest'
 import {
   compareSemver,
+  contractId,
   isDottedId,
   isQualifiedId,
   isSegment,
+  operationId,
   parseQualifiedId,
   parseSemver,
   parseVersionRange,
   satisfiesRange,
+  versionRangeTargetsMajor,
+  traitId,
 } from '@modkitx-x3/core'
 
 describe('id grammars (MK3/23 §3)', () => {
+  it('constructs branded contract, trait, and owner-scoped operation IDs', () => {
+    expect(contractId('org.modkitx/codec')).toBe('org.modkitx/codec')
+    expect(traitId('content.binary')).toBe('content.binary')
+    expect(operationId('view.inspect', { contributionId: 'org.modkitx/plain-text' })).toBe(
+      'view.inspect',
+    )
+    expect(operationId('document.parse', { contributionId: 'org.modkitx/plain-text' })).toBe(
+      'document.parse',
+    )
+    expect(
+      operationId('org.modkitx/plain-text.decode', {
+        contributionId: 'org.modkitx/plain-text',
+      }),
+    ).toBe('org.modkitx/plain-text.decode')
+  })
+
+  it('rejects malformed runtime values and operation namespace theft', () => {
+    expect(() => contractId('Bad/contract' as never)).toThrow(TypeError)
+    expect(() => traitId('Content' as never)).toThrow(TypeError)
+    expect(() =>
+      operationId('foreign-codec.decode' as never, {
+        contributionId: 'org.modkitx/plain-text',
+      }),
+    ).toThrow(TypeError)
+    expect(operationId('image.decode', { contributionId: 'org.modkitx/plain-text' })).toBe(
+      'image.decode',
+    )
+    expect(() => operationId('a/b.c.d' as never, { contributionId: 'a/b' })).toThrow(TypeError)
+    expect(operationId('a/b.c', { contributionId: 'a/b' })).toBe('a/b.c')
+    expect(operationId('a/b.c.d', { contributionId: 'a/b.c' })).toBe('a/b.c.d')
+  })
+
   it('accepts the spec examples', () => {
     for (const id of [
       'common.image/decoded',
@@ -66,6 +102,8 @@ describe('semver subset (MK3/23 §4)', () => {
     expect(pre && rel && compareSemver(pre, rel)).toBeLessThan(0)
     expect(parseSemver('01.0.0')).toBeUndefined()
     expect(parseSemver('1.0')).toBeUndefined()
+    expect(parseSemver('9007199254740992.0.0')).toBeUndefined()
+    expect(parseSemver('1.0.0-9007199254740992')).toBeUndefined()
   })
 
   it('supports the request range forms', () => {
@@ -89,6 +127,35 @@ describe('semver subset (MK3/23 §4)', () => {
     expect(satisfiesRange(v('2.0.0'), r('1.x'))).toBe(false)
     expect(satisfiesRange(v('0.0.7'), r('*'))).toBe(true)
     expect(parseVersionRange('not a range')).toBeUndefined()
+    expect(parseVersionRange('1')).toBeUndefined()
+    expect(parseVersionRange('1.2')).toBeUndefined()
+    expect(parseVersionRange('=1')).toBeUndefined()
+    expect(parseVersionRange('=1.2')).toBeUndefined()
+    expect(parseVersionRange('1.x.3')).toBeUndefined()
+    expect(parseVersionRange('1.*.999')).toBeUndefined()
+    expect(parseVersionRange('>=1.x')).toBeUndefined()
+    expect(parseVersionRange('=1.x')).toBeUndefined()
+    expect(parseVersionRange('^1.x')).toBeUndefined()
+    expect(parseVersionRange('^1')).toBeUndefined()
+    expect(parseVersionRange('>=01.2')).toBeUndefined()
+    expect(parseVersionRange('9007199254740992.x')).toBeUndefined()
     expect(r('').normalized).toBe('*')
+    expect(versionRangeTargetsMajor(r('*'), 1)).toBe(true)
+    expect(versionRangeTargetsMajor(r('>=1.2 <2'), 1)).toBe(true)
+    expect(versionRangeTargetsMajor(r('^2.0'), 1)).toBe(false)
+    expect(versionRangeTargetsMajor(r('>=1 <2.0.0'), 1)).toBe(true)
+    expect(versionRangeTargetsMajor(r('>=1 <=2.0.0'), 1)).toBe(false)
+    expect(versionRangeTargetsMajor(r('>=1.2'), 1)).toBe(true)
+    expect(versionRangeTargetsMajor(r('>1.2'), 1)).toBe(true)
+    expect(versionRangeTargetsMajor(r('<1.5'), 1)).toBe(true)
+    expect(versionRangeTargetsMajor(r('<=1.9'), 1)).toBe(true)
+    expect(versionRangeTargetsMajor(r('>=2'), 1)).toBe(false)
+    expect(versionRangeTargetsMajor(r('<1'), 1)).toBe(false)
+    expect(r('>=1.2 <2').normalized).toBe(r('<2 >=1.2').normalized)
+    expect(r('>=1.2 >=1.2 <2').normalized).toBe(r('<2 >=1.2').normalized)
+    expect(versionRangeTargetsMajor(r('*'), Number.MAX_SAFE_INTEGER)).toBe(true)
+    expect(
+      versionRangeTargetsMajor(r(`=${Number.MAX_SAFE_INTEGER}.0.0`), Number.MAX_SAFE_INTEGER),
+    ).toBe(true)
   })
 })

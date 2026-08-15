@@ -11,8 +11,9 @@ import {
   SEMVER_PATTERN,
   VERSION_RANGE_PATTERN,
 } from './patterns.js'
+import { deepFreeze } from '@modkitx-x3/core'
 
-export const REQUIREMENT_SCOPE_KINDS = [
+export const REQUIREMENT_SCOPE_KINDS = Object.freeze([
   'contribution',
   'offer',
   'operation',
@@ -21,7 +22,7 @@ export const REQUIREMENT_SCOPE_KINDS = [
   'profile',
   'projection',
   'slot',
-] as const
+] as const)
 
 export const requirementScopeSchema = {
   type: 'object',
@@ -35,6 +36,8 @@ export const requirementScopeSchema = {
 
 /** Q75 (owner decision 2026-08-13): extension-coordinate requirement, mandatory scope. */
 export const extensionRequirementSchema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  $id: 'https://schemas.modkitx.org/x3/extension-requirement.v1.schema.json',
   type: 'object',
   additionalProperties: false,
   required: ['extension', 'mode', 'scope'],
@@ -57,6 +60,8 @@ const contributionManifestsSchema = {
  * container (Q76: standalone carries its own version/license).
  */
 export const extensionManifestSchema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  $id: 'https://schemas.modkitx.org/x3/extension-manifest.v1.schema.json',
   type: 'object',
   additionalProperties: false,
   required: ['schemaVersion', 'publisher', 'id', 'version', 'license', 'contributionManifests'],
@@ -78,6 +83,8 @@ export const extensionManifestSchema = {
  * packaging-error diagnostic first).
  */
 export const modkitBlockSchema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  $id: 'https://schemas.modkitx.org/x3/extension-manifest-modkit-block.v1.schema.json',
   type: 'object',
   additionalProperties: false,
   required: ['schemaVersion', 'publisher', 'id', 'contributionManifests'],
@@ -89,3 +96,8 @@ export const modkitBlockSchema = {
     dependsOn: { type: 'array', items: extensionRequirementSchema },
   },
 } as const
+
+deepFreeze(requirementScopeSchema)
+deepFreeze(extensionRequirementSchema)
+deepFreeze(extensionManifestSchema)
+deepFreeze(modkitBlockSchema)

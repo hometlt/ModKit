@@ -18,7 +18,11 @@ const bundlePath = (...parts: string[]) => join(root, ...parts)
 const PUBLISHED_ENTRIES = [
   'packages/core/dist/index.js',
   'packages/sdk/dist/index.js',
+  'packages/sdk/dist/data-sources.js',
+  'packages/sdk/dist/service-contracts.js',
+  'packages/sdk/dist/formats/index.js',
   'packages/sdk/dist/subjects/index.js',
+  'packages/sdk/dist/ui-contracts/index.js',
   'packages/vfs/dist/index.js',
   'packages/host/dist/index.js',
   'packages/host/dist/node/index.js',
@@ -68,12 +72,17 @@ describe('single-file production dist', () => {
     for (const pkg of ['core', 'sdk', 'vfs', 'host']) {
       const manifest = JSON.parse(
         readFileSync(bundlePath('packages', pkg, 'package.json'), 'utf8'),
-      ) as { exports: Record<string, { types: string; default: string }> }
-      for (const entry of Object.values(manifest.exports)) {
+      ) as { exports: Record<string, string | { types: string; default: string }> }
+      for (const entry of Object.values(manifest.exports).filter(
+        (value): value is { types: string; default: string } => typeof value !== 'string',
+      )) {
         expect(entry.types.endsWith('.d.ts')).toBe(true)
         // The declaration files come from tsc and are NOT bundled: the type API is unchanged.
         const declaration = readFileSync(bundlePath('packages', pkg, entry.types.slice(2)), 'utf8')
         expect(declaration.length).toBeGreaterThan(0)
+      }
+      if (pkg === 'core' || pkg === 'sdk') {
+        expect(manifest.exports['./schemas/*.schema.json']).toBe('./schemas/*.schema.json')
       }
     }
   })

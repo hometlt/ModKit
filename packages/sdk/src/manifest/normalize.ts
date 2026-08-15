@@ -11,7 +11,7 @@ import {
   type Diagnostic,
 } from '@modkitx-x3/core'
 import { extensionManifestSchema, modkitBlockSchema } from '../schemas/extension-manifest.js'
-import { validateWithSchema } from './validate.js'
+import { snapshotJsonWireData, snapshotJsonWireObject, validateWithSchema } from './validate.js'
 import { validateContributionPattern } from './patterns.js'
 import type { AuthoredContainerKind, ExtensionManifest } from './types.js'
 
@@ -59,14 +59,59 @@ function rangeDiagnostics(manifest: ExtensionManifest): Diagnostic[] {
   return out
 }
 
+function exactVersionDiagnostics(manifest: ExtensionManifest): Diagnostic[] {
+  return parseSemver(manifest.version) === undefined
+    ? [
+        diagnostic(
+          'error',
+          'x3.sdk/invalid-extension-version',
+          'extension version must be an exactly evaluable SemVer with safe numeric components',
+          ['version'],
+        ),
+      ]
+    : []
+}
+
 export async function normalizeExtensionManifest(
   input: AuthoredContainers,
 ): Promise<NormalizationResult> {
-  const packageJson = isRecord(input.packageJson) ? input.packageJson : undefined
+  let packageInput: unknown
+  let standaloneInput: unknown
+  try {
+    const descriptors = Object.getOwnPropertyDescriptors(input)
+    for (const key of Object.keys(descriptors)) {
+      if (key !== 'packageJson' && key !== 'standalone') {
+        throw new TypeError(`unknown authored-container field: ${key}`)
+      }
+      const descriptor = descriptors[key]
+      if (descriptor === undefined || !descriptor.enumerable || !('value' in descriptor)) {
+        throw new TypeError(`authored-container field ${key} must be inert data`)
+      }
+    }
+    const packageValue = descriptors['packageJson']?.value
+    const standaloneValue = descriptors['standalone']?.value
+    packageInput = packageValue === undefined ? undefined : snapshotJsonWireData(packageValue)
+    standaloneInput =
+      standaloneValue === undefined ? undefined : snapshotJsonWireData(standaloneValue)
+  } catch (error) {
+    return {
+      diagnostics: [
+        diagnostic(
+          'error',
+          'x3.sdk/non-json-authored-container',
+          `authored container must be inert JSON data: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        ),
+      ],
+    }
+  }
+
+  const packageJson = isRecord(packageInput) ? packageInput : undefined
   const block =
     packageJson !== undefined && isRecord(packageJson['modkit']) ? packageJson['modkit'] : undefined
   const hasBlock = block !== undefined
-  const hasStandalone = input.standalone !== undefined
+  const hasStandalone = standaloneInput !== undefined
 
   if (hasBlock && hasStandalone) {
     return {
@@ -92,10 +137,15 @@ export async function normalizeExtensionManifest(
   }
 
   if (hasStandalone) {
-    const diagnostics = await validateWithSchema(extensionManifestSchema, input.standalone)
+    const diagnostics = await validateWithSchema(extensionManifestSchema, standaloneInput)
     if (hasErrors(diagnostics)) return { container: 'standalone', diagnostics }
-    const manifest = input.standalone as ExtensionManifest
-    const all = [...diagnostics, ...patternDiagnostics(manifest), ...rangeDiagnostics(manifest)]
+    const manifest = standaloneInput as ExtensionManifest
+    const all = [
+      ...diagnostics,
+      ...exactVersionDiagnostics(manifest),
+      ...patternDiagnostics(manifest),
+      ...rangeDiagnostics(manifest),
+    ]
     return hasErrors(all)
       ? { container: 'standalone', diagnostics: all }
       : { container: 'standalone', manifest, diagnostics: all }
@@ -142,7 +192,7 @@ export async function normalizeExtensionManifest(
   }
   if (hasErrors(diagnostics)) return { container: 'package-json', diagnostics }
 
-  const manifest: ExtensionManifest = {
+  const manifest = snapshotJsonWireObject({
     schemaVersion: 1,
     publisher: blockRecord['publisher'] as string,
     id: blockRecord['id'] as string,
@@ -154,10 +204,11 @@ export async function normalizeExtensionManifest(
       : {
           dependsOn: blockRecord['dependsOn'] as NonNullable<ExtensionManifest['dependsOn']>,
         }),
-  }
+  }) as ExtensionManifest
   const all = [
     ...diagnostics,
     ...(await validateWithSchema(extensionManifestSchema, manifest)),
+    ...exactVersionDiagnostics(manifest),
     ...patternDiagnostics(manifest),
     ...rangeDiagnostics(manifest),
   ]

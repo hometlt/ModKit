@@ -17,7 +17,7 @@ const request = {
     operatingSystem: process.platform === 'win32' ? 'windows' : 'linux',
     architecture: 'x64',
   },
-  preferredOutputs: ['demo.fancy'],
+  preferredOutputs: [{ id: 'demo.fancy', definitionRange: '^1.0' }],
   // --deny pins the provider that needs read-source, so the empty grant is refused
   // instead of deterministically falling back to the permissionless provider.
   ...(deny ? { pin: { providerId: 'org.example/x3-greeter-fancy' } } : {}),

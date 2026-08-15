@@ -9,33 +9,51 @@
  * schema/type consumers never pay for the validator.
  */
 
-import { diagnostic, type Diagnostic } from '@modkitx-x3/core'
+import { diagnostic, ModkitError, type Diagnostic } from '@modkitx-x3/core'
 import type { ErrorObject } from 'ajv/dist/2020.js'
 
-interface ValidateFn {
-  (value: unknown): boolean
+type ValidateFn = ((value: unknown) => boolean | Promise<unknown>) & {
   errors?: ErrorObject[] | null
 }
 interface AjvLike {
   compile(schema: object): ValidateFn
 }
+type AjvConstructor = new (options: {
+  readonly allErrors: boolean
+  readonly strict: boolean
+  readonly addUsedSchema: boolean
+}) => AjvLike
 
-let ajvPromise: Promise<AjvLike> | undefined
-const cache = new WeakMap<object, ValidateFn>()
+let ajvConstructorPromise: Promise<AjvConstructor> | undefined
+const cache = new Map<string, Promise<ValidateFn>>()
+const MAX_SCHEMA_CACHE_ENTRIES = 256
 
-async function instance(): Promise<AjvLike> {
-  ajvPromise ??= import('ajv/dist/2020.js').then(
-    mod => new mod.Ajv2020({ allErrors: true, strict: true }) as unknown as AjvLike,
+async function ajvConstructor(): Promise<AjvConstructor> {
+  ajvConstructorPromise ??= import('ajv/dist/2020.js').then(
+    mod => mod.Ajv2020 as unknown as AjvConstructor,
   )
-  return ajvPromise
+  return ajvConstructorPromise
 }
 
-async function compiled(schema: object): Promise<ValidateFn> {
-  const cached = cache.get(schema)
-  if (cached) return cached
-  const validate = (await instance()).compile(schema)
-  cache.set(schema, validate)
-  return validate
+async function compiled(schema: object, cacheKey: string): Promise<ValidateFn> {
+  const cached = cache.get(cacheKey)
+  if (cached !== undefined) return cached
+  const compiling = ajvConstructor().then(Ajv => {
+    // One compiler per schema prevents duplicate `$id` state from leaking across registries.
+    const instance = new Ajv({ allErrors: true, strict: true, addUsedSchema: false })
+    return instance.compile(schema)
+  })
+  cache.set(cacheKey, compiling)
+  if (cache.size > MAX_SCHEMA_CACHE_ENTRIES) {
+    const oldest = cache.keys().next().value as string | undefined
+    if (oldest !== undefined) cache.delete(oldest)
+  }
+  try {
+    return await compiling
+  } catch (error) {
+    cache.delete(cacheKey)
+    throw error
+  }
 }
 
 function toPath(error: ErrorObject): (string | number)[] {
@@ -47,15 +65,11 @@ function toPath(error: ErrorObject): (string | number)[] {
     )
 }
 
-/** Validates `value` against a schema const; returns diagnostics, never throws. */
-export async function validateWithSchema(
-  schema: object,
-  value: unknown,
-  code = 'x3.sdk/schema-violation',
-): Promise<Diagnostic[]> {
-  const validate = await compiled(schema)
-  if (validate(value)) return []
-  return (validate.errors ?? []).map(error =>
+function schemaDiagnostics(
+  errors: readonly ErrorObject[] | null | undefined,
+  code: string,
+): Diagnostic[] {
+  return (errors ?? []).map(error =>
     diagnostic(
       'error',
       code,
@@ -64,4 +78,293 @@ export async function validateWithSchema(
       { keyword: error.keyword, params: error.params },
     ),
   )
+}
+
+function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
+  return (
+    (typeof value === 'object' || typeof value === 'function') &&
+    value !== null &&
+    typeof (value as { then?: unknown }).then === 'function'
+  )
+}
+
+interface PathNode {
+  readonly parent?: PathNode
+  readonly segment?: string | number
+}
+
+interface PendingJsonValue {
+  readonly value?: unknown
+  readonly path: PathNode
+  readonly parent?: unknown[] | Record<string, unknown>
+  readonly key?: string | number
+  readonly exit?: object
+}
+
+interface JsonSnapshotResult {
+  readonly value?: unknown
+  readonly diagnostics: readonly Diagnostic[]
+}
+
+function materializePath(node: PathNode): (string | number)[] {
+  const reversed: (string | number)[] = []
+  for (let current: PathNode | undefined = node; current?.segment !== undefined;) {
+    reversed.push(current.segment)
+    current = current.parent
+  }
+  return reversed.reverse()
+}
+
+function nonJsonDiagnostic(path: readonly (string | number)[], reason: string): Diagnostic {
+  return diagnostic(
+    'error',
+    'x3.sdk/non-json-wire-value',
+    `${path.length === 0 ? '/' : `/${path.join('/')}`} is not JSON-wire-safe: ${reason}`,
+    path,
+    { reason },
+  )
+}
+
+/**
+ * Ajv validates JSON-shaped data, but its JavaScript API also accepts values that JSON can never
+ * carry (for example `bigint`, functions, sparse arrays, accessors and cycles). Reject those before
+ * schema evaluation so every successful validation result is safe to cross a wire unchanged.
+ */
+function assignJsonValue(
+  parent: unknown[] | Record<string, unknown>,
+  key: string | number,
+  value: unknown,
+): void {
+  Object.defineProperty(parent, key, {
+    configurable: true,
+    enumerable: true,
+    writable: true,
+    value,
+  })
+}
+
+/** Synchronously validates and clones inert JSON before any async validation boundary. */
+function snapshotJsonWireValue(root: unknown): JsonSnapshotResult {
+  const holder: { value?: unknown } = {}
+  const rootPath: PathNode = {}
+  const pending: PendingJsonValue[] = [
+    { value: root, path: rootPath, parent: holder, key: 'value' },
+  ]
+  const active = new WeakSet<object>()
+
+  while (pending.length > 0) {
+    const current = pending.pop()
+    if (current === undefined) break
+    if (current.exit !== undefined) {
+      active.delete(current.exit)
+      continue
+    }
+
+    const { value, path, parent, key } = current
+    if (parent === undefined || key === undefined) continue
+    if (value === null || typeof value === 'string' || typeof value === 'boolean') {
+      assignJsonValue(parent, key, value)
+      continue
+    }
+    if (typeof value === 'number') {
+      if (Number.isFinite(value)) {
+        assignJsonValue(parent, key, value)
+        continue
+      }
+      return { diagnostics: [nonJsonDiagnostic(materializePath(path), 'numbers must be finite')] }
+    }
+    if (typeof value !== 'object') {
+      return {
+        diagnostics: [
+          nonJsonDiagnostic(materializePath(path), `unsupported JavaScript type ${typeof value}`),
+        ],
+      }
+    }
+
+    if (active.has(value)) {
+      return { diagnostics: [nonJsonDiagnostic(materializePath(path), 'cyclic object graph')] }
+    }
+    active.add(value)
+    pending.push({ value, path, exit: value })
+
+    if (Object.getOwnPropertySymbols(value).length > 0) {
+      return {
+        diagnostics: [
+          nonJsonDiagnostic(materializePath(path), 'symbol-keyed properties are not JSON fields'),
+        ],
+      }
+    }
+
+    if (Array.isArray(value)) {
+      const ownNames = Object.getOwnPropertyNames(value)
+      if (ownNames.length !== value.length + 1 || !ownNames.includes('length')) {
+        return {
+          diagnostics: [
+            nonJsonDiagnostic(
+              materializePath(path),
+              'arrays must be dense and have no extra properties',
+            ),
+          ],
+        }
+      }
+      const clone: unknown[] = new Array(value.length)
+      assignJsonValue(parent, key, clone)
+      for (let index = value.length - 1; index >= 0; index -= 1) {
+        const descriptor = Object.getOwnPropertyDescriptor(value, index)
+        const childPath: PathNode = { parent: path, segment: index }
+        if (descriptor === undefined) {
+          return {
+            diagnostics: [nonJsonDiagnostic(materializePath(childPath), 'sparse array element')],
+          }
+        }
+        if (!descriptor.enumerable || !('value' in descriptor)) {
+          return {
+            diagnostics: [
+              nonJsonDiagnostic(
+                materializePath(childPath),
+                'elements must be enumerable data values',
+              ),
+            ],
+          }
+        }
+        pending.push({ value: descriptor.value, path: childPath, parent: clone, key: index })
+      }
+      continue
+    }
+
+    const prototype = Object.getPrototypeOf(value)
+    if (prototype !== Object.prototype && prototype !== null) {
+      return {
+        diagnostics: [
+          nonJsonDiagnostic(
+            materializePath(path),
+            'objects must have Object.prototype or a null prototype',
+          ),
+        ],
+      }
+    }
+    const clone: Record<string, unknown> = {}
+    assignJsonValue(parent, key, clone)
+    for (const [key, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(value))) {
+      const childPath: PathNode = { parent: path, segment: key }
+      if (!descriptor.enumerable || !('value' in descriptor)) {
+        return {
+          diagnostics: [
+            nonJsonDiagnostic(
+              materializePath(childPath),
+              'fields must be enumerable data properties',
+            ),
+          ],
+        }
+      }
+      pending.push({ value: descriptor.value, path: childPath, parent: clone, key })
+    }
+  }
+
+  return { value: holder.value, diagnostics: [] }
+}
+
+function deepFreeze<Value>(value: Value): Value {
+  if (value === null || typeof value !== 'object') return value
+  const pending: object[] = [value]
+  const visited = new WeakSet<object>()
+  while (pending.length > 0) {
+    const current = pending.pop()
+    if (current === undefined || visited.has(current)) continue
+    visited.add(current)
+    for (const child of Object.values(current)) {
+      if (child !== null && typeof child === 'object') pending.push(child)
+    }
+    Object.freeze(current)
+  }
+  return value
+}
+
+/** Takes an owned immutable snapshot so schema caches cannot diverge from mutable caller data. */
+export function snapshotJsonWireData<Value>(value: Value): Value {
+  const snapshot = snapshotJsonWireValue(value)
+  if (snapshot.diagnostics.length > 0) {
+    throw new ModkitError({
+      code: 'x3.sdk/non-json-schema-registration',
+      message: 'registered schema must be inert JSON data',
+      context: { diagnostics: snapshot.diagnostics },
+    })
+  }
+  return deepFreeze(snapshot.value as Value)
+}
+
+/** Object-specialized compatibility name used by schema registries. */
+export function snapshotJsonWireObject<Value extends object>(value: Value): Value {
+  return snapshotJsonWireData(value)
+}
+
+/** Validates `value` against a schema const; returns diagnostics, never throws. */
+export async function validateWithSchema(
+  schema: object,
+  value: unknown,
+  code = 'x3.sdk/schema-violation',
+): Promise<Diagnostic[]> {
+  let valueSnapshot: JsonSnapshotResult
+  try {
+    valueSnapshot = snapshotJsonWireValue(value)
+  } catch {
+    valueSnapshot = {
+      diagnostics: [nonJsonDiagnostic([], 'value could not be inspected as inert data')],
+    }
+  }
+  if (valueSnapshot.diagnostics.length > 0) return [...valueSnapshot.diagnostics]
+
+  let schemaSnapshot: object
+  let schemaCacheKey: string
+  try {
+    schemaSnapshot = snapshotJsonWireObject(schema)
+    schemaCacheKey = JSON.stringify(schemaSnapshot)
+  } catch (error) {
+    return [
+      diagnostic(
+        'error',
+        'x3.sdk/invalid-schema-authority',
+        'the selected JSON Schema is not inert JSON data',
+        [],
+        { error: error instanceof Error ? error.message : String(error) },
+      ),
+    ]
+  }
+  let validate: ValidateFn
+  try {
+    validate = await compiled(schemaSnapshot, schemaCacheKey)
+  } catch (error) {
+    return [
+      diagnostic(
+        'error',
+        'x3.sdk/invalid-schema-authority',
+        'the selected JSON Schema could not be compiled',
+        [],
+        { error: error instanceof Error ? error.message : String(error) },
+      ),
+    ]
+  }
+  try {
+    const result = validate(valueSnapshot.value)
+    if (isPromiseLike(result)) {
+      await result
+      return []
+    }
+    if (result) return []
+  } catch (error) {
+    const asyncErrors = (error as { errors?: ErrorObject[] | null } | null)?.errors
+    if (asyncErrors !== undefined && asyncErrors !== null) {
+      return schemaDiagnostics(asyncErrors, code)
+    }
+    return [
+      diagnostic(
+        'error',
+        'x3.sdk/schema-evaluation-failed',
+        'the selected JSON Schema failed while evaluating inert wire data',
+        [],
+        { error: error instanceof Error ? error.message : String(error) },
+      ),
+    ]
+  }
+  return schemaDiagnostics(validate.errors, code)
 }

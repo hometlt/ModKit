@@ -26,14 +26,18 @@ export function compareUtf8(a: string, b: string): number {
     const y = bb[i] as number
     if (x !== y) return x < y ? -1 : 1
   }
-  return ab.length === bb.length ? 0 : ab.length < bb.length ? -1 : 1
+  if (ab.length !== bb.length) return ab.length < bb.length ? -1 : 1
+  if (a === b) return 0
+  // TextEncoder replaces lone surrogates with U+FFFD. Preserve total ordering even for such
+  // hostile/non-scalar JS strings so canonical output never depends on insertion order.
+  return a < b ? -1 : 1
 }
 
-export function sortedUtf8(values: readonly string[]): string[] {
+export function sortedUtf8<Value extends string>(values: readonly Value[]): Value[] {
   return [...values].sort(compareUtf8)
 }
 
 /** Unique + UTF-8-byte-sorted, the canonical form for ID lists in locks (MK3/23 §11). */
-export function uniqueSortedUtf8(values: readonly string[]): string[] {
+export function uniqueSortedUtf8<Value extends string>(values: readonly Value[]): Value[] {
   return sortedUtf8([...new Set(values)])
 }

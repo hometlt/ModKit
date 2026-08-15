@@ -9,6 +9,14 @@
 
 export const DOTTED_PATTERN = '^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$'
 
+/** Trait and operation IDs require at least one namespace separator. */
+export const NAMESPACED_DOTTED_PATTERN =
+  '^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$'
+
+/** Shared/domain IDs are dotted; codec-local IDs retain the full qualified owner before `.`. */
+export const OPERATION_PATTERN =
+  '^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$'
+
 export const QUALIFIED_PATTERN =
   '^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$'
 
@@ -20,11 +28,17 @@ export const SEMVER_PATTERN =
 
 /**
  * The range subset the resolver actually implements (MK3/23 §4, mirrored by
- * `parseVersionRange` in core): `*`/`x`, `1` / `1.x` / `1.2.x`, exact or `=`, caret, and
+ * `parseVersionRange` in core): `*`/`x`, `1.x` / `1.2.x`, exact or `=`, caret, and
  * space-joined comparator conjunctions such as `>=1.2 <2`. Structural gate only —
  * `parseVersionRange` stays the semantic authority, and the manifest validator runs both.
  */
-const RANGE_ATOM = '(?:[<>]=?|=|\\^)?\\d+(?:\\.(?:\\d+|x|\\*))?(?:\\.(?:\\d+|x|\\*))?'
+const RANGE_NUMBER = '(?:0|[1-9]\\d*)'
+const RANGE_NUMERIC = `${RANGE_NUMBER}(?:\\.${RANGE_NUMBER}){0,2}`
+const RANGE_EXACT = `=?${RANGE_NUMBER}\\.${RANGE_NUMBER}\\.${RANGE_NUMBER}`
+const RANGE_WILDCARD = `(?:${RANGE_NUMBER}\\.(?:x|\\*)|${RANGE_NUMBER}\\.${RANGE_NUMBER}\\.(?:x|\\*))`
+const RANGE_CARET = `\\^${RANGE_NUMBER}\\.${RANGE_NUMBER}(?:\\.${RANGE_NUMBER})?`
+const RANGE_COMPARATOR = `[<>]=?${RANGE_NUMERIC}`
+const RANGE_ATOM = `(?:${RANGE_EXACT}|${RANGE_WILDCARD}|${RANGE_CARET}|${RANGE_COMPARATOR})`
 export const VERSION_RANGE_PATTERN = `^(?:\\*|x|${RANGE_ATOM}(?: ${RANGE_ATOM})*)$`
 
 /**

@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { canonicalJsonStringify } from '@modkitx-x3/core'
+import { canonicalJsonStringify, contractId, operationId, traitId } from '@modkitx-x3/core'
 import type { ProviderOffer, ProviderRequest } from '@modkitx-x3/sdk'
 import { buildLockEntry, resolveProvider, serializePolicyLock } from '@modkitx-x3/host'
+
+const GREETER_CONTRACT = contractId('x3.demo/greeter')
+const PLAIN_TRAIT = traitId('demo.plain')
+const FANCY_TRAIT = traitId('demo.fancy')
+const PLAIN_OUTPUT = { id: PLAIN_TRAIT, definitionVersion: '1.0.0' } as const
+const FANCY_OUTPUT = { id: FANCY_TRAIT, definitionVersion: '1.0.0' } as const
+const PLAIN_REQUIREMENT = { id: PLAIN_TRAIT, definitionRange: '^1.0' } as const
+const FANCY_REQUIREMENT = { id: FANCY_TRAIT, definitionRange: '^1.0' } as const
+const GREET_OPERATION = operationId('org.example/demo.greet', {
+  contributionId: 'org.example/demo',
+})
 
 const plain: ProviderOffer = {
   kind: 'primary',
@@ -10,9 +21,9 @@ const plain: ProviderOffer = {
   providerId: 'org.x3lab/greeter-plain',
   runtimeVariant: 'portable',
   target: { environments: ['node', 'node-worker'] },
-  provides: [{ contract: 'x3.demo/greeter', version: '1.2.0' }],
-  outputs: ['demo.plain'],
-  operations: ['demo.greet'],
+  provides: [{ offerId: 'plain', contract: GREETER_CONTRACT, major: 1, version: '1.2.0' }],
+  outputs: [PLAIN_OUTPUT],
+  operations: [GREET_OPERATION],
 }
 
 const fancy: ProviderOffer = {
@@ -22,19 +33,19 @@ const fancy: ProviderOffer = {
   providerId: 'org.x3lab/greeter-fancy',
   runtimeVariant: 'portable',
   target: { environments: ['node'] },
-  provides: [{ contract: 'x3.demo/greeter', version: '1.4.0' }],
-  outputs: ['demo.plain', 'demo.fancy'],
-  operations: ['demo.greet'],
+  provides: [{ offerId: 'fancy', contract: GREETER_CONTRACT, major: 1, version: '1.4.0' }],
+  outputs: [PLAIN_OUTPUT, FANCY_OUTPUT],
+  operations: [GREET_OPERATION],
 }
 
 const request: ProviderRequest = {
-  contract: { contract: 'x3.demo/greeter', major: 1 },
+  contract: { contract: GREETER_CONTRACT, major: 1 },
   target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
 }
 
 describe('staged resolver v1 (23 §9; S3 acceptance)', () => {
   it('selects deterministically by preference and is shuffle-stable byte-for-byte', () => {
-    const preferFancy: ProviderRequest = { ...request, preferredOutputs: ['demo.fancy'] }
+    const preferFancy: ProviderRequest = { ...request, preferredOutputs: [FANCY_REQUIREMENT] }
     const forward = resolveProvider(preferFancy, [plain, fancy])
     const shuffled = resolveProvider(preferFancy, [fancy, plain])
     expect(canonicalJsonStringify(shuffled)).toBe(canonicalJsonStringify(forward))
@@ -59,7 +70,7 @@ describe('staged resolver v1 (23 §9; S3 acceptance)', () => {
   it('gives every incompatible candidate a reason code', () => {
     const rangeReq: ProviderRequest = {
       ...request,
-      contract: { contract: 'x3.demo/greeter', major: 1, range: '^1.3' },
+      contract: { contract: GREETER_CONTRACT, major: 1, range: '^1.3' },
     }
     const ranged = resolveProvider(rangeReq, [plain, fancy])
     expect(ranged.state).toBe('resolved')
@@ -76,7 +87,7 @@ describe('staged resolver v1 (23 §9; S3 acceptance)', () => {
     const workerReq: ProviderRequest = {
       ...request,
       target: { ...request.target, environment: 'node-worker' },
-      preferredOutputs: ['demo.fancy'],
+      preferredOutputs: [FANCY_REQUIREMENT],
     }
     const workerRes = resolveProvider(workerReq, [plain, fancy])
     expect(workerRes.state).toBe('resolved')
@@ -95,7 +106,7 @@ describe('staged resolver v1 (23 §9; S3 acceptance)', () => {
       providerId: 'org.x3lab/greeter-net',
       requiredPermissions: ['network'],
     }
-    const permRes = resolveProvider({ ...request, preferredOutputs: ['demo.fancy'] }, [
+    const permRes = resolveProvider({ ...request, preferredOutputs: [FANCY_REQUIREMENT] }, [
       plain,
       needsNetwork,
     ])
@@ -109,7 +120,7 @@ describe('staged resolver v1 (23 §9; S3 acceptance)', () => {
       )
     }
 
-    const outputReq: ProviderRequest = { ...request, requiredOutputs: ['demo.fancy'] }
+    const outputReq: ProviderRequest = { ...request, requiredOutputs: [FANCY_REQUIREMENT] }
     const outputRes = resolveProvider(outputReq, [plain, fancy])
     expect(outputRes.state).toBe('resolved')
     if (outputRes.state === 'resolved') {
@@ -127,7 +138,7 @@ describe('staged resolver v1 (23 §9; S3 acceptance)', () => {
       providerId: 'org.x3lab/greeter-aug',
       kind: 'augmentation',
     }
-    const augRes = resolveProvider({ ...request, preferredOutputs: ['demo.fancy'] }, [
+    const augRes = resolveProvider({ ...request, preferredOutputs: [FANCY_REQUIREMENT] }, [
       plain,
       fancy,
       augmentation,
@@ -140,6 +151,47 @@ describe('staged resolver v1 (23 §9; S3 acceptance)', () => {
           reason: 'unsupported-kind',
         }),
       )
+    }
+  })
+
+  it('matches custom trait outputs by definition range and rejects version misuse', () => {
+    const compatible = resolveProvider(
+      { ...request, requiredOutputs: [{ ...FANCY_REQUIREMENT }] },
+      [{ ...fancy, outputs: [{ ...PLAIN_OUTPUT }, { ...FANCY_OUTPUT }] }],
+    )
+    expect(compatible.state).toBe('resolved')
+
+    const incompatible = resolveProvider({ ...request, requiredOutputs: [FANCY_REQUIREMENT] }, [
+      { ...fancy, outputs: [PLAIN_OUTPUT, { id: FANCY_TRAIT, definitionVersion: '2.0.0' }] },
+    ])
+    expect(incompatible.state).toBe('unresolved')
+    if (incompatible.state === 'unresolved') expect(incompatible.reason).toBe('output-missing')
+
+    const standard = traitId('content.text')
+    const versionedStandard = resolveProvider({ ...request, requiredOutputs: [{ id: standard }] }, [
+      { ...plain, outputs: [{ id: standard, definitionVersion: '1.0.0' }] },
+    ])
+    expect(versionedStandard.state).toBe('unresolved')
+    if (versionedStandard.state === 'unresolved') {
+      expect(versionedStandard.reason).toBe('output-missing')
+    }
+
+    const invalidRange = resolveProvider(
+      { ...request, requiredOutputs: [{ id: standard, definitionRange: 'garbage' }] },
+      [{ ...plain, outputs: [{ id: standard }] }],
+    )
+    expect(invalidRange.state).toBe('unresolved')
+    if (invalidRange.state === 'unresolved') {
+      expect(invalidRange.reason).toBe('output-missing')
+    }
+
+    const invalidPreference = resolveProvider(
+      { ...request, preferredOutputs: [{ id: standard, definitionRange: 'garbage' }] },
+      [plain],
+    )
+    expect(invalidPreference.state).toBe('unresolved')
+    if (invalidPreference.state === 'unresolved') {
+      expect(invalidPreference.reason).toBe('output-missing')
     }
   })
 
@@ -160,27 +212,69 @@ describe('staged resolver v1 (23 §9; S3 acceptance)', () => {
     if (missing.state === 'unresolved') expect(missing.reason).toBe('pin-unsatisfied')
   })
 
+  it('enumerates every logical offer and retains the exact selected offer', () => {
+    const multi: ProviderOffer = {
+      ...plain,
+      providerId: 'org.x3lab/greeter-multi',
+      provides: [
+        {
+          offerId: 'json',
+          contract: GREETER_CONTRACT,
+          major: 1,
+          version: '1.5.0',
+          facet: { dialect: 'json', options: { comments: false } },
+        },
+        {
+          offerId: 'jsonc',
+          contract: GREETER_CONTRACT,
+          major: 1,
+          version: '1.5.0',
+          facet: { dialect: 'json', options: { comments: true } },
+        },
+      ],
+    }
+
+    const unselected = resolveProvider(request, [multi])
+    const reversed = resolveProvider(request, [
+      { ...multi, provides: [...multi.provides].reverse() },
+    ])
+    expect(unselected.state).toBe('unresolved')
+    if (unselected.state === 'unresolved') expect(unselected.reason).toBe('ambiguous')
+    expect(canonicalJsonStringify(reversed)).toBe(canonicalJsonStringify(unselected))
+  })
+
   it('emits a byte-stable canonical policy lock (23 §11)', () => {
     const preferFancy: ProviderRequest = {
       ...request,
-      preferredOutputs: ['demo.fancy', 'demo.fancy', 'demo.plain'],
+      preferredOutputs: [FANCY_REQUIREMENT, FANCY_REQUIREMENT, PLAIN_REQUIREMENT],
       workload: 'interactive',
     }
-    const result = resolveProvider(preferFancy, [plain, fancy])
-    const otherOrder = resolveProvider(
-      { ...preferFancy, preferredOutputs: ['demo.plain', 'demo.fancy'] },
-      [fancy, plain],
-    )
+    const fancyContract = fancy.provides[0]
+    if (fancyContract === undefined) throw new Error('fixture needs one logical offer')
+    const facetedFancy: ProviderOffer = {
+      ...fancy,
+      provides: [{ ...fancyContract, facet: { dialect: 'default' } }],
+    }
+    const result = resolveProvider(preferFancy, [plain, facetedFancy])
+    const otherRequest: ProviderRequest = {
+      ...preferFancy,
+      preferredOutputs: [PLAIN_REQUIREMENT, FANCY_REQUIREMENT],
+    }
+    const otherOrder = resolveProvider(otherRequest, [facetedFancy, plain])
     const lockA = serializePolicyLock([buildLockEntry(preferFancy, result)])
-    const lockB = serializePolicyLock([buildLockEntry(preferFancy, otherOrder)])
+    const lockB = serializePolicyLock([buildLockEntry(otherRequest, otherOrder)])
     expect(lockA).toBe(lockB)
     const entry = buildLockEntry(preferFancy, result)
     expect(entry.key.normalizedRange).toBe('*')
-    expect(entry.key.preferredOutputs).toEqual(['demo.fancy', 'demo.plain']) // unique + sorted
+    expect(entry.key.preferredOutputs).toEqual([
+      { id: FANCY_TRAIT, definitionRange: '>=1.0.0 <2.0.0' },
+      { id: PLAIN_TRAIT, definitionRange: '>=1.0.0 <2.0.0' },
+    ])
     expect(entry.primary).toEqual({
       extension: 'org.x3lab/greeters',
       contributionId: 'org.x3lab/greeter-fancy',
       contractMajor: 1,
+      offerId: 'fancy',
     })
     // The portable lock never carries OS/arch/variant/artifact/grant facts (23 §11).
     expect(lockA).not.toContain('windows')

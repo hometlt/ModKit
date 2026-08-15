@@ -1,9 +1,13 @@
 {
-  "packages/core/dist/index.js": "ea4c4fd5bbaecd4efabccbedfd565e4499c67939e99dbe8c69ffdd8150d02162",
-  "packages/sdk/dist/index.js": "3751531e09a42d38fae6f0f4aef2aacdc08f451539fa53d48b2c6b151c58e5d1",
-  "packages/sdk/dist/subjects/index.js": "5c33bd20dcdb20bdc8a957bc85b6735681042804d747ff5738584569bd0e1ffd",
+  "packages/core/dist/index.js": "64f401ce8fafba324d259e819636fe5800a25e686c3f1cbb0a7226b5377ed303",
+  "packages/sdk/dist/index.js": "7ce7ff0d6b1db06b330261730a570085726d7ece9064c12b5770acddc1cd5fe6",
+  "packages/sdk/dist/subjects/index.js": "9f881ef6414d8d4b58468899d157aaf3a44cf3357109e85a35c245f2f9e75559",
+  "packages/sdk/dist/formats/index.js": "41898901dedf9e7d4c7c8f0ed377b9ad3220ea357c1fb3db944a6a1734d96955",
+  "packages/sdk/dist/data-sources.js": "9bc67de6a0fd3eb051d067c5c50a5e21cbd38c363f96323091a1f13d86cd19ab",
+  "packages/sdk/dist/service-contracts.js": "9005f4fbf1ec2f0c92989cdd4ed1484f59de2c2eb405fadd72e93c1a94566d82",
+  "packages/sdk/dist/ui-contracts/index.js": "7fc99c9f87915aa65e9b7e6a6f7f379d01d4368afa39764cb3c2f246aee7782f",
   "packages/vfs/dist/index.js": "0e4cc77bf46abb06e54318f2b6b1bec22dffdd2db11f02f573a0af0aa7dd08d5",
-  "packages/host/dist/index.js": "97e6148610818ec5582b2cd8be9a1a8a7c579cbf2c01aa9f39cc18241146c79e",
+  "packages/host/dist/index.js": "855dd3fe8e0d69ed29b7048af26c48224ac3e8da2c416b405b5b806fc70bf4a2",
   "packages/host/dist/node/index.js": "bce325427407373f160ea3190f854af013a777d6c38ba7e0719f3deebe452e50",
   "apps/modkit-cli/dist/main.js": "0012f2e53245f5dc8b9f1eb39700724f7bc547b3bf35ca312893450f6f491d83"
 }

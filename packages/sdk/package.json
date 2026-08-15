@@ -15,7 +15,25 @@
     "./subjects": {
       "types": "./dist/subjects/index.d.ts",
       "default": "./dist/subjects/index.js"
-    }
+    },
+    "./formats": {
+      "types": "./dist/formats/index.d.ts",
+      "default": "./dist/formats/index.js"
+    },
+    "./data-sources": {
+      "types": "./dist/data-sources.d.ts",
+      "default": "./dist/data-sources.js"
+    },
+    "./service-contracts": {
+      "types": "./dist/service-contracts.d.ts",
+      "default": "./dist/service-contracts.js"
+    },
+    "./ui-contracts": {
+      "types": "./dist/ui-contracts/index.d.ts",
+      "default": "./dist/ui-contracts/index.js"
+    },
+    "./schemas/*.schema.json": "./schemas/*.schema.json",
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",

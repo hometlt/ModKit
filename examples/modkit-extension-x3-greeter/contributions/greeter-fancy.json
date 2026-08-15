@@ -12,5 +12,21 @@
       "requestedPermissionClasses": ["read-source"]
     }
   ],
-  "spec": { "greeting": "Salute", "outputs": ["demo.plain", "demo.fancy"] }
+  "spec": {
+    "greeting": "Salute",
+    "outputs": [
+      {
+        "id": "demo.plain",
+        "definitionVersion": "1.0.0",
+        "representation": "runtime",
+        "presence": "will-expose"
+      },
+      {
+        "id": "demo.fancy",
+        "definitionVersion": "1.0.0",
+        "representation": "runtime",
+        "presence": "will-expose"
+      }
+    ]
+  }
 }

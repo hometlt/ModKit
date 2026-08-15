@@ -2,4 +2,5 @@ pnpm-lock.yaml
 dist/
 node_modules/
 # emitted canonical artifacts — owned by scripts/emit-schemas.mjs, byte-stable
+packages/core/schemas/
 packages/sdk/schemas/

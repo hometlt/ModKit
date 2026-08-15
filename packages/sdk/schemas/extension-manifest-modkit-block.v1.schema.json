@@ -1,4 +1,6 @@
 {
+  "$id": "https://schemas.modkitx.org/x3/extension-manifest-modkit-block.v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
     "contributionManifests": {
@@ -10,6 +12,8 @@
     },
     "dependsOn": {
       "items": {
+        "$id": "https://schemas.modkitx.org/x3/extension-requirement.v1.schema.json",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "properties": {
           "extension": {
@@ -25,7 +29,7 @@
             ]
           },
           "range": {
-            "pattern": "^(?:\\*|x|(?:[<>]=?|=|\\^)?\\d+(?:\\.(?:\\d+|x|\\*))?(?:\\.(?:\\d+|x|\\*))?(?: (?:[<>]=?|=|\\^)?\\d+(?:\\.(?:\\d+|x|\\*))?(?:\\.(?:\\d+|x|\\*))?)*)$",
+            "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$",
             "type": "string"
           },
           "scope": {

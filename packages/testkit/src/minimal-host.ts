@@ -6,9 +6,10 @@
  */
 
 import { pathToFileURL } from 'node:url'
-import { ModkitError, type Diagnostic } from '@modkitx-x3/core'
+import { isTraitId, ModkitError, parseSemver, type Diagnostic } from '@modkitx-x3/core'
 import {
   createSpecSchemaRegistry,
+  isStandardTraitId,
   type ContributionManifestV1,
   type HostPolicy,
   type PermissionGrant,
@@ -16,6 +17,7 @@ import {
   type ProviderRequest,
   type ResolutionResult,
   type SpecSchemaEntry,
+  type TraitDefinitionOffer,
 } from '@modkitx-x3/sdk'
 import {
   activateContribution,
@@ -49,7 +51,14 @@ export function offersFromInventory(inventory: Inventory): ProviderOffer[] {
           runtimeVariant: variant.variantId,
           target: variant.target,
           requiredPermissions: variant.requestedPermissionClasses,
-          provides: [{ contract: manifest.contract.id, version: `${manifest.contract.major}.0.0` }],
+          provides: [
+            {
+              offerId: variant.variantId,
+              contract: manifest.contract.id,
+              major: manifest.contract.major,
+              version: `${manifest.contract.major}.0.0`,
+            },
+          ],
           ...(outputs === undefined ? {} : { outputs }),
         })
       }
@@ -58,12 +67,38 @@ export function offersFromInventory(inventory: Inventory): ProviderOffer[] {
   return offers
 }
 
-function specOutputs(manifest: ContributionManifestV1): readonly string[] | undefined {
+function specOutputs(
+  manifest: ContributionManifestV1,
+): readonly TraitDefinitionOffer[] | undefined {
   const spec = manifest.spec
   if (typeof spec === 'object' && spec !== null && 'outputs' in spec) {
     const outputs = (spec as { outputs?: unknown }).outputs
-    if (Array.isArray(outputs) && outputs.every(o => typeof o === 'string')) {
-      return outputs as string[]
+    const guaranteed = Array.isArray(outputs)
+      ? outputs.filter(
+          output =>
+            typeof output === 'object' &&
+            output !== null &&
+            !Array.isArray(output) &&
+            (output as { presence?: unknown }).presence === 'will-expose',
+        )
+      : undefined
+    if (
+      guaranteed !== undefined &&
+      guaranteed.every(
+        output =>
+          typeof output === 'object' &&
+          output !== null &&
+          !Array.isArray(output) &&
+          typeof (output as { id?: unknown }).id === 'string' &&
+          isTraitId((output as { id: string }).id) &&
+          ((isStandardTraitId((output as { id: string }).id) &&
+            (output as { definitionVersion?: unknown }).definitionVersion === undefined) ||
+            (typeof (output as { definitionVersion?: unknown }).definitionVersion === 'string' &&
+              parseSemver((output as { definitionVersion: string }).definitionVersion) !==
+                undefined)),
+      )
+    ) {
+      return guaranteed as TraitDefinitionOffer[]
     }
   }
   return undefined
@@ -125,7 +160,7 @@ export async function runMinimalHost(options: MinimalHostOptions): Promise<Minim
       context: { reason: result.reason, rejected: result.rejected as never },
     })
   }
-  const lockText = serializePolicyLock([buildLockEntry(options.request, result)])
+  const lockText = serializePolicyLock([buildLockEntry(request, result)])
 
   const providerId = result.selected.offer.providerId
   let manifest: ContributionManifestV1 | undefined

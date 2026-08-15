@@ -1,19 +1,25 @@
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { canonicalJsonStringify } from '@modkitx-x3/core'
+import { canonicalJsonStringify, contractId } from '@modkitx-x3/core'
 import { createSpecSchemaRegistry } from '@modkitx-x3/sdk'
 import { buildInventory, inventoryHasErrors, type ExtensionInput } from '@modkitx-x3/host'
 import { loadExtensionDirectory } from '@modkitx-x3/host/node'
 
 const registry = createSpecSchemaRegistry([
   {
-    contract: 'x3.demo/greeter',
+    contract: contractId('x3.demo/greeter'),
     major: 1,
     schema: {
       type: 'object',
       additionalProperties: false,
       properties: { greeting: { type: 'string', minLength: 1 } },
+    },
+    registration: {
+      mode: 'executable',
+      project: () => [],
+      moduleAbi: { export: 'createGreeter', abiVersion: 1 },
+      conformanceProfile: 'x3.demo/greeter-v1',
     },
   },
 ])
@@ -24,6 +30,15 @@ function contribution(id: string, spec: unknown = { greeting: 'hi' }) {
     contract: { id: 'x3.demo/greeter', major: 1 },
     id,
     displayName: id,
+    runtimeVariants: [
+      {
+        variantId: 'portable',
+        entrypoint: './dist/provider.js',
+        target: { environments: ['node'] },
+        executionProfile: 'trusted-in-process',
+        requestedPermissionClasses: [],
+      },
+    ],
     spec,
   }
 }

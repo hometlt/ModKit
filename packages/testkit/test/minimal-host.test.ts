@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { isModkitError } from '@modkitx-x3/core'
+import { contractId, isModkitError, traitId } from '@modkitx-x3/core'
 import type { ProviderRequest } from '@modkitx-x3/sdk'
 import { asGreeterModule, greeterSpecEntry, runMinimalHost } from '@modkitx-x3/testkit'
 
@@ -9,9 +9,9 @@ const exampleDir = fileURLToPath(
 )
 
 const request: ProviderRequest = {
-  contract: { contract: 'x3.demo/greeter', major: 1 },
+  contract: { contract: contractId('x3.demo/greeter'), major: 1 },
   target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
-  preferredOutputs: ['demo.fancy'],
+  preferredOutputs: [{ id: traitId('demo.fancy'), definitionRange: '^1.0' }],
 }
 
 describe('testkit minimal host — the one public route (S4)', () => {

@@ -1,0 +1,2544 @@
+{
+  "$defs": {
+    "jsonValue": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/jsonValue"
+          },
+          "type": "array"
+        },
+        {
+          "additionalProperties": {
+            "$ref": "#/$defs/jsonValue"
+          },
+          "type": "object"
+        }
+      ],
+      "title": "JsonValue"
+    }
+  },
+  "$id": "https://schemas.modkitx.org/x3/subject-descriptor.v2.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "additionalProperties": false,
+      "properties": {
+        "candidates": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "codecId": {
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                "type": "string"
+              },
+              "confidence": {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              "diagnostics": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "category": {
+                      "enum": [
+                        "syntax",
+                        "structure",
+                        "fidelity",
+                        "dependency",
+                        "security",
+                        "performance",
+                        "operation",
+                        "io",
+                        "unknown"
+                      ]
+                    },
+                    "code": {
+                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/jsonValue"
+                    },
+                    "id": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "items": {
+                        "oneOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        ]
+                      },
+                      "type": "array"
+                    },
+                    "range": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "byteLength": {
+                              "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",
+                              "type": "string"
+                            },
+                            "byteOffset": {
+                              "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "byteOffset",
+                            "byteLength"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "column": {
+                              "maximum": 9007199254740991,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "line": {
+                              "maximum": 9007199254740991,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "utf16Length": {
+                              "maximum": 9007199254740991,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "utf16Offset": {
+                              "maximum": 9007199254740991,
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "utf16Offset",
+                            "utf16Length",
+                            "line",
+                            "column"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "byteLength": {
+                              "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",
+                              "type": "string"
+                            },
+                            "byteOffset": {
+                              "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",
+                              "type": "string"
+                            },
+                            "column": {
+                              "maximum": 9007199254740991,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "line": {
+                              "maximum": 9007199254740991,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "utf16Length": {
+                              "maximum": 9007199254740991,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "utf16Offset": {
+                              "maximum": 9007199254740991,
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "byteOffset",
+                            "byteLength",
+                            "utf16Offset",
+                            "utf16Length",
+                            "line",
+                            "column"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "relatedIds": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "severity": {
+                      "enum": [
+                        "error",
+                        "warning",
+                        "information",
+                        "hint"
+                      ]
+                    },
+                    "source": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "contributionId": {
+                          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                          "type": "string"
+                        },
+                        "extensionId": {
+                          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "code",
+                    "category",
+                    "severity",
+                    "message"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "evidence": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "enum": [
+                        "magic",
+                        "structure",
+                        "companion",
+                        "context",
+                        "extension",
+                        "user-override"
+                      ]
+                    },
+                    "note": {
+                      "type": "string"
+                    },
+                    "weight": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "weight"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "requiredRanges": {
+                "items": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "byteLength": {
+                          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",
+                          "type": "string"
+                        },
+                        "byteOffset": {
+                          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "byteOffset",
+                        "byteLength"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "column": {
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "line": {
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "utf16Length": {
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "utf16Offset": {
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "utf16Offset",
+                        "utf16Length",
+                        "line",
+                        "column"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "byteLength": {
+                          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",
+                          "type": "string"
+                        },
+                        "byteOffset": {
+                          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",
+                          "type": "string"
+                        },
+                        "column": {
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "line": {
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "utf16Length": {
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "utf16Offset": {
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "byteOffset",
+                        "byteLength",
+                        "utf16Offset",
+                        "utf16Length",
+                        "line",
+                        "column"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "codecId",
+              "confidence",
+              "evidence",
+              "requiredRanges"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "constraints": {
+          "additionalProperties": false,
+          "properties": {
+            "maxDecodedBytes": {
+              "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",
+              "type": "string"
+            },
+            "randomAccess": {
+              "type": "boolean"
+            },
+            "readOnly": {
+              "type": "boolean"
+            },
+            "seekable": {
+              "type": "boolean"
+            },
+            "trusted": {
+              "type": "boolean"
+            },
+            "unsupportedFeatures": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "readOnly",
+            "seekable",
+            "randomAccess",
+            "trusted"
+          ],
+          "type": "object"
+        },
+        "dataSources": {
+          "items": {
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "contract": {
+                    "enum": [
+                      "common.view/text-data-source",
+                      "common.view/byte-range-source",
+                      "common.view/tree-data-source",
+                      "common.view/table-data-source",
+                      "common.view/transport-source",
+                      "common.view/namespace-entry-source"
+                    ]
+                  },
+                  "major": {
+                    "const": 1
+                  }
+                },
+                "required": [
+                  "contract",
+                  "major"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "contract": {
+                    "not": {
+                      "enum": [
+                        "common.view/text-data-source",
+                        "common.view/byte-range-source",
+                        "common.view/tree-data-source",
+                        "common.view/table-data-source",
+                        "common.view/transport-source",
+                        "common.view/namespace-entry-source"
+                      ]
+                    },
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                    "type": "string"
+                  },
+                  "major": {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "opaque": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "contract",
+                  "major",
+                  "opaque"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "diagnostics": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "category": {
+                "enum": [
+                  "syntax",
+                  "structure",
+                  "fidelity",
+                  "dependency",
+                  "security",
+                  "performance",
+                  "operation",
+                  "io",
+                  "unknown"
+                ]
+              },
+              "code": {
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                "type": "string"
+              },
+              "data": {
+                "$ref": "#/$defs/jsonValue"
+              },
+              "id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "path": {
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              "range": {
+                "oneOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "byteLength": {
+                        "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",
+                        "type": "string"
+                      },
+                      "byteOffset": {
+                        "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "byteOffset",
+                      "byteLength"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "column": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "line": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "utf16Length": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "utf16Offset": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "utf16Offset",
+                      "utf16Length",
+                      "line",
+                      "column"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "byteLength": {
+                        "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",
+                        "type": "string"
+                      },
+                      "byteOffset": {
+                        "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",
+                        "type": "string"
+                      },
+                      "column": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "line": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "utf16Length": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "utf16Offset": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "byteOffset",
+                      "byteLength",
+                      "utf16Offset",
+                      "utf16Length",
+                      "line",
+                      "column"
+                    ],
+                    "type": "object"
+                  }
+                ]
+              },
+              "relatedIds": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "severity": {
+                "enum": [
+                  "error",
+                  "warning",
+                  "information",
+                  "hint"
+                ]
+              },
+              "source": {
+                "additionalProperties": false,
+                "properties": {
+                  "contributionId": {
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                    "type": "string"
+                  },
+                  "extensionId": {
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "required": [
+              "id",
+              "code",
+              "category",
+              "severity",
+              "message"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "interpretation": {
+          "const": "none"
+        },
+        "operations": {
+          "items": {
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "handlerId": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "id": {
+                    "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$",
+                    "type": "string"
+                  },
+                  "inputSchema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "$ref": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "$ref"
+                    ],
+                    "type": "object"
+                  },
+                  "mutatesSource": {
+                    "type": "boolean"
+                  },
+                  "state": {
+                    "const": "available"
+                  }
+                },
+                "required": [
+                  "id",
+                  "handlerId",
+                  "state",
+                  "mutatesSource"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "handlerId": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "id": {
+                    "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$",
+                    "type": "string"
+                  },
+                  "inputSchema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "$ref": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "$ref"
+                    ],
+                    "type": "object"
+                  },
+                  "mutatesSource": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "state": {
+                    "enum": [
+                      "disabled",
+                      "dependency-required"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "handlerId",
+                  "state",
+                  "mutatesSource",
+                  "reason"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "origin": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "binding": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "mediaType": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "ownership": {
+                      "enum": [
+                        "owned",
+                        "companion",
+                        "external"
+                      ]
+                    },
+                    "required": {
+                      "type": "boolean"
+                    },
+                    "revision": {
+                      "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$",
+                      "type": "string"
+                    },
+                    "role": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "source": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "pattern": "\\S",
+                          "type": "string"
+                        },
+                        "parentIds": {
+                          "items": {
+                            "pattern": "\\S",
+                            "type": "string"
+                          },
+                          "minItems": 1,
+                          "type": "array"
+                        },
+                        "uri": {
+                          "pattern": "\\S",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "uri"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "role",
+                    "source",
+                    "required",
+                    "ownership",
+                    "revision"
+                  ],
+                  "type": "object"
+                },
+                "kind": {
+                  "const": "single"
+                }
+              },
+              "required": [
+                "kind",
+                "binding"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "bindings": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "mediaType": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "ownership": {
+                        "enum": [
+                          "owned",
+                          "companion",
+                          "external"
+                        ]
+                      },
+                      "required": {
+                        "type": "boolean"
+                      },
+                      "revision": {
+                        "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$",
+                        "type": "string"
+                      },
+                      "role": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "source": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "pattern": "\\S",
+                            "type": "string"
+                          },
+                          "parentIds": {
+                            "items": {
+                              "pattern": "\\S",
+                              "type": "string"
+                            },
+                            "minItems": 1,
+                            "type": "array"
+                          },
+                          "uri": {
+                            "pattern": "\\S",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "uri"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "role",
+                      "source",
+                      "required",
+                      "ownership",
+                      "revision"
+                    ],
+                    "type": "object"
+                  },
+                  "minItems": 1,
+                  "type": "array"
+                },
+                "kind": {
+                  "const": "bundle"
+                },
+                "primary": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "bindings"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "namespace"
+                },
+                "revision": {
+                  "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$",
+                  "type": "string"
+                },
+                "root": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "pattern": "\\S",
+                      "type": "string"
+                    },
+                    "parentIds": {
+                      "items": {
+                        "pattern": "\\S",
+                        "type": "string"
+                      },
+                      "minItems": 1,
+                      "type": "array"
+                    },
+                    "uri": {
+                      "pattern": "\\S",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "uri"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "kind",
+                "root",
+                "revision"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "inputs": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "bindingId": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "compositionFingerprint": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "revision": {
+                        "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$",
+                        "type": "string"
+                      },
+                      "role": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "subjectUri": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "bindingId",
+                      "role",
+                      "subjectUri",
+                      "revision",
+                      "compositionFingerprint"
+                    ],
+                    "type": "object"
+                  },
+                  "minItems": 1,
+                  "type": "array"
+                },
+                "kind": {
+                  "const": "derived"
+                },
+                "materialization": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "mediaType": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "revision": {
+                      "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$",
+                      "type": "string"
+                    },
+                    "source": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "pattern": "\\S",
+                          "type": "string"
+                        },
+                        "parentIds": {
+                          "items": {
+                            "pattern": "\\S",
+                            "type": "string"
+                          },
+                          "minItems": 1,
+                          "type": "array"
+                        },
+                        "uri": {
+                          "pattern": "\\S",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "uri"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "source",
+                    "revision"
+                  ],
+                  "type": "object"
+                },
+                "recipe": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "contributionId": {
+                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                      "type": "string"
+                    },
+                    "extensionId": {
+                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                      "type": "string"
+                    },
+                    "extensionVersion": {
+                      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+                      "type": "string"
+                    },
+                    "operation": {
+                      "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$",
+                      "type": "string"
+                    },
+                    "parameters": {
+                      "$ref": "#/$defs/jsonValue"
+                    }
+                  },
+                  "required": [
+                    "extensionId",
+                    "extensionVersion",
+                    "contributionId",
+                    "operation"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "kind",
+                "inputs"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "revision": {
+          "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$",
+          "type": "string"
+        },
+        "schemaVersion": {
+          "const": 2
+        },
+        "subjectUri": {
+          "pattern": "\\S",
+          "type": "string"
+        },
+        "traits": {
+          "items": {
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "definitionVersion": {
+                    "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+                    "type": "string"
+                  },
+                  "descriptorVersion": {
+                    "const": 1
+                  },
+                  "id": {
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                    "type": "string"
+                  },
+                  "parameters": {
+                    "$ref": "#/$defs/jsonValue"
+                  },
+                  "state": {
+                    "const": "available"
+                  }
+                },
+                "required": [
+                  "id",
+                  "descriptorVersion",
+                  "state"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "definitionVersion": {
+                    "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+                    "type": "string"
+                  },
+                  "descriptorVersion": {
+                    "const": 1
+                  },
+                  "diagnosticIds": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  "id": {
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                    "type": "string"
+                  },
+                  "parameters": {
+                    "$ref": "#/$defs/jsonValue"
+                  },
+                  "state": {
+                    "enum": [
+                      "partial",
+                      "disabled",
+                      "dependency-required"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "descriptorVersion",
+                  "state",
+                  "diagnosticIds"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "subjectUri",
+        "origin",
+        "traits",
+        "operations",
+        "constraints",
+        "dataSources",
+        "diagnostics",
+        "revision",
+        "interpretation",
+        "candidates"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "companions": {
+          "items": {
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "bindingIds": {
+                    "items": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "maxItems": 1,
+                    "minItems": 1,
+                    "type": "array",
+                    "uniqueItems": true
+                  },
+                  "cardinality": {
+                    "const": "one"
+                  },
+                  "id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "required": {
+                    "const": true
+                  },
+                  "role": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "state": {
+                    "const": "resolved"
+                  }
+                },
+                "required": [
+                  "id",
+                  "role",
+                  "required",
+                  "cardinality",
+                  "state",
+                  "bindingIds"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "bindingIds": {
+                    "items": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "minItems": 1,
+                    "type": "array",
+                    "uniqueItems": true
+                  },
+                  "cardinality": {
+                    "const": "one-or-more"
+                  },
+                  "id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "required": {
+                    "const": true
+                  },
+                  "role": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "state": {
+                    "const": "resolved"
+                  }
+                },
+                "required": [
+                  "id",
+                  "role",
+                  "required",
+                  "cardinality",
+                  "state",
+                  "bindingIds"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "bindingIds": {
+                    "items": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "maxItems": 1,
+                    "minItems": 1,
+                    "type": "array",
+                    "uniqueItems": true
+                  },
+                  "cardinality": {
+                    "const": "zero-or-one"
+                  },
+                  "id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "required": {
+                    "const": false
+                  },
+                  "role": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "state": {
+                    "const": "resolved"
+                  }
+                },
+                "required": [
+                  "id",
+                  "role",
+                  "required",
+                  "cardinality",
+                  "state",
+                  "bindingIds"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "bindingIds": {
+                    "items": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "minItems": 1,
+                    "type": "array",
+                    "uniqueItems": true
+                  },
+                  "cardinality": {
+                    "const": "many"
+                  },
+                  "id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "required": {
+                    "const": false
+                  },
+                  "role": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "state": {
+                    "const": "resolved"
+                  }
+                },
+                "required": [
+                  "id",
+                  "role",
+                  "required",
+                  "cardinality",
+                  "state",
+                  "bindingIds"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "cardinality": {
+                    "enum": [
+                      "one",
+                      "one-or-more"
+                    ]
+                  },
+                  "diagnosticIds": {
+                    "items": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "minItems": 1,
+                    "type": "array",
+                    "uniqueItems": true
+                  },
+                  "id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "required": {
+                    "const": true
+                  },
+                  "role": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "state": {
+                    "const": "missing"
+                  }
+                },
+                "required": [
+                  "id",
+                  "role",
+                  "required",
+                  "cardinality",
+                  "state",
+                  "diagnosticIds"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "cardinality": {
+                    "enum": [
+                      "zero-or-one",
+                      "many"
+                    ]
+                  },
+                  "diagnosticIds": {
+                    "items": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "type": "array",
+                    "uniqueItems": true
+                  },
+                  "id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "required": {
+                    "const": false
+                  },
+                  "role": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "state": {
+                    "const": "missing"
+                  }
+                },
+                "required": [
+                  "id",
+                  "role",
+                  "required",
+                  "cardinality",
+                  "state"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "candidates": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "revision": {
+                          "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$",
+                          "type": "string"
+                        },
+                        "source": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "pattern": "\\S",
+                              "type": "string"
+                            },
+                            "parentIds": {
+                              "items": {
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "minItems": 1,
+                              "type": "array"
+                            },
+                            "uri": {
+                              "pattern": "\\S",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "uri"
+                          ],
+                          "type": "object"
+                        }
+                      },
+                      "required": [
+                        "source",
+                        "revision"
+                      ],
+                      "type": "object"
+                    },
+                    "minItems": 2,
+                    "type": "array",
+                    "uniqueItems": true
+                  },
+                  "cardinality": {
+                    "const": "one"
+                  },
+                  "diagnosticIds": {
+                    "items": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "minItems": 1,
+                    "type": "array",
+                    "uniqueItems": true
+                  },
+                  "id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "required": {
+                    "const": true
+                  },
+                  "role": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "state": {
+                    "const": "ambiguous"
+                  }
+                },
+                "required": [
+                  "id",
+                  "role",
+                  "required",
+                  "cardinality",
+                  "state",
+                  "candidates",
+                  "diagnosticIds"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "candidates": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "revision": {
+                          "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$",
+                          "type": "string"
+                        },
+                        "source": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "pattern": "\\S",
+                              "type": "string"
+                            },
+                            "parentIds": {
+                              "items": {
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "minItems": 1,
+                              "type": "array"
+                            },
+                            "uri": {
+                              "pattern": "\\S",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "uri"
+                          ],
+                          "type": "object"
+                        }
+                      },
+                      "required": [
+                        "source",
+                        "revision"
+                      ],
+                      "type": "object"
+                    },
+                    "minItems": 2,
+                    "type": "array",
+                    "uniqueItems": true
+                  },
+                  "cardinality": {
+                    "const": "zero-or-one"
+                  },
+                  "diagnosticIds": {
+                    "items": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "minItems": 1,
+                    "type": "array",
+                    "uniqueItems": true
+                  },
+                  "id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "required": {
+                    "const": false
+                  },
+                  "role": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "state": {
+                    "const": "ambiguous"
+                  }
+                },
+                "required": [
+                  "id",
+                  "role",
+                  "required",
+                  "cardinality",
+                  "state",
+                  "candidates",
+                  "diagnosticIds"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "constraints": {
+          "additionalProperties": false,
+          "properties": {
+            "maxDecodedBytes": {
+              "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",
+              "type": "string"
+            },
+            "randomAccess": {
+              "type": "boolean"
+            },
+            "readOnly": {
+              "type": "boolean"
+            },
+            "seekable": {
+              "type": "boolean"
+            },
+            "trusted": {
+              "type": "boolean"
+            },
+            "unsupportedFeatures": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "readOnly",
+            "seekable",
+            "randomAccess",
+            "trusted"
+          ],
+          "type": "object"
+        },
+        "dataSources": {
+          "items": {
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "contract": {
+                    "enum": [
+                      "common.view/text-data-source",
+                      "common.view/byte-range-source",
+                      "common.view/tree-data-source",
+                      "common.view/table-data-source",
+                      "common.view/transport-source",
+                      "common.view/namespace-entry-source"
+                    ]
+                  },
+                  "major": {
+                    "const": 1
+                  }
+                },
+                "required": [
+                  "contract",
+                  "major"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "contract": {
+                    "not": {
+                      "enum": [
+                        "common.view/text-data-source",
+                        "common.view/byte-range-source",
+                        "common.view/tree-data-source",
+                        "common.view/table-data-source",
+                        "common.view/transport-source",
+                        "common.view/namespace-entry-source"
+                      ]
+                    },
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                    "type": "string"
+                  },
+                  "major": {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "opaque": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "contract",
+                  "major",
+                  "opaque"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "diagnostics": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "category": {
+                "enum": [
+                  "syntax",
+                  "structure",
+                  "fidelity",
+                  "dependency",
+                  "security",
+                  "performance",
+                  "operation",
+                  "io",
+                  "unknown"
+                ]
+              },
+              "code": {
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                "type": "string"
+              },
+              "data": {
+                "$ref": "#/$defs/jsonValue"
+              },
+              "id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "path": {
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              "range": {
+                "oneOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "byteLength": {
+                        "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",
+                        "type": "string"
+                      },
+                      "byteOffset": {
+                        "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "byteOffset",
+                      "byteLength"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "column": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "line": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "utf16Length": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "utf16Offset": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "utf16Offset",
+                      "utf16Length",
+                      "line",
+                      "column"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "byteLength": {
+                        "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",
+                        "type": "string"
+                      },
+                      "byteOffset": {
+                        "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",
+                        "type": "string"
+                      },
+                      "column": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "line": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "utf16Length": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "utf16Offset": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "byteOffset",
+                      "byteLength",
+                      "utf16Offset",
+                      "utf16Length",
+                      "line",
+                      "column"
+                    ],
+                    "type": "object"
+                  }
+                ]
+              },
+              "relatedIds": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "severity": {
+                "enum": [
+                  "error",
+                  "warning",
+                  "information",
+                  "hint"
+                ]
+              },
+              "source": {
+                "additionalProperties": false,
+                "properties": {
+                  "contributionId": {
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                    "type": "string"
+                  },
+                  "extensionId": {
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "required": [
+              "id",
+              "code",
+              "category",
+              "severity",
+              "message"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "identity": {
+          "additionalProperties": false,
+          "properties": {
+            "codecId": {
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+              "type": "string"
+            },
+            "codecVersion": {
+              "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+              "type": "string"
+            },
+            "confidence": {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            "detection": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "magic",
+                      "structure",
+                      "companion",
+                      "context",
+                      "extension",
+                      "user-override"
+                    ]
+                  },
+                  "note": {
+                    "type": "string"
+                  },
+                  "weight": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "weight"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "formatId": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "formatLabel": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "mediaType": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "codecId",
+            "codecVersion",
+            "formatId",
+            "formatLabel",
+            "confidence",
+            "detection"
+          ],
+          "type": "object"
+        },
+        "interpretation": {
+          "const": "codec"
+        },
+        "metadata": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "entries": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "key": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "value": {
+                      "$ref": "#/$defs/jsonValue"
+                    }
+                  },
+                  "required": [
+                    "key",
+                    "value"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "entries"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "operations": {
+          "items": {
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "handlerId": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "id": {
+                    "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$",
+                    "type": "string"
+                  },
+                  "inputSchema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "$ref": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "$ref"
+                    ],
+                    "type": "object"
+                  },
+                  "mutatesSource": {
+                    "type": "boolean"
+                  },
+                  "state": {
+                    "const": "available"
+                  }
+                },
+                "required": [
+                  "id",
+                  "handlerId",
+                  "state",
+                  "mutatesSource"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "handlerId": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "id": {
+                    "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$",
+                    "type": "string"
+                  },
+                  "inputSchema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "$ref": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "$ref"
+                    ],
+                    "type": "object"
+                  },
+                  "mutatesSource": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "state": {
+                    "enum": [
+                      "disabled",
+                      "dependency-required"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "handlerId",
+                  "state",
+                  "mutatesSource",
+                  "reason"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "origin": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "binding": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "mediaType": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "ownership": {
+                      "enum": [
+                        "owned",
+                        "companion",
+                        "external"
+                      ]
+                    },
+                    "required": {
+                      "type": "boolean"
+                    },
+                    "revision": {
+                      "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$",
+                      "type": "string"
+                    },
+                    "role": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "source": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "pattern": "\\S",
+                          "type": "string"
+                        },
+                        "parentIds": {
+                          "items": {
+                            "pattern": "\\S",
+                            "type": "string"
+                          },
+                          "minItems": 1,
+                          "type": "array"
+                        },
+                        "uri": {
+                          "pattern": "\\S",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "uri"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "role",
+                    "source",
+                    "required",
+                    "ownership",
+                    "revision"
+                  ],
+                  "type": "object"
+                },
+                "kind": {
+                  "const": "single"
+                }
+              },
+              "required": [
+                "kind",
+                "binding"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "bindings": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "mediaType": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "ownership": {
+                        "enum": [
+                          "owned",
+                          "companion",
+                          "external"
+                        ]
+                      },
+                      "required": {
+                        "type": "boolean"
+                      },
+                      "revision": {
+                        "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$",
+                        "type": "string"
+                      },
+                      "role": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "source": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "pattern": "\\S",
+                            "type": "string"
+                          },
+                          "parentIds": {
+                            "items": {
+                              "pattern": "\\S",
+                              "type": "string"
+                            },
+                            "minItems": 1,
+                            "type": "array"
+                          },
+                          "uri": {
+                            "pattern": "\\S",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "uri"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "role",
+                      "source",
+                      "required",
+                      "ownership",
+                      "revision"
+                    ],
+                    "type": "object"
+                  },
+                  "minItems": 1,
+                  "type": "array"
+                },
+                "kind": {
+                  "const": "bundle"
+                },
+                "primary": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "bindings"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "namespace"
+                },
+                "revision": {
+                  "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$",
+                  "type": "string"
+                },
+                "root": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "pattern": "\\S",
+                      "type": "string"
+                    },
+                    "parentIds": {
+                      "items": {
+                        "pattern": "\\S",
+                        "type": "string"
+                      },
+                      "minItems": 1,
+                      "type": "array"
+                    },
+                    "uri": {
+                      "pattern": "\\S",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "uri"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "kind",
+                "root",
+                "revision"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "inputs": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "bindingId": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "compositionFingerprint": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "revision": {
+                        "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$",
+                        "type": "string"
+                      },
+                      "role": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "subjectUri": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "bindingId",
+                      "role",
+                      "subjectUri",
+                      "revision",
+                      "compositionFingerprint"
+                    ],
+                    "type": "object"
+                  },
+                  "minItems": 1,
+                  "type": "array"
+                },
+                "kind": {
+                  "const": "derived"
+                },
+                "materialization": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "mediaType": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "revision": {
+                      "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$",
+                      "type": "string"
+                    },
+                    "source": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "pattern": "\\S",
+                          "type": "string"
+                        },
+                        "parentIds": {
+                          "items": {
+                            "pattern": "\\S",
+                            "type": "string"
+                          },
+                          "minItems": 1,
+                          "type": "array"
+                        },
+                        "uri": {
+                          "pattern": "\\S",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "uri"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "source",
+                    "revision"
+                  ],
+                  "type": "object"
+                },
+                "recipe": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "contributionId": {
+                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                      "type": "string"
+                    },
+                    "extensionId": {
+                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                      "type": "string"
+                    },
+                    "extensionVersion": {
+                      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+                      "type": "string"
+                    },
+                    "operation": {
+                      "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$",
+                      "type": "string"
+                    },
+                    "parameters": {
+                      "$ref": "#/$defs/jsonValue"
+                    }
+                  },
+                  "required": [
+                    "extensionId",
+                    "extensionVersion",
+                    "contributionId",
+                    "operation"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "kind",
+                "inputs"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "revision": {
+          "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$",
+          "type": "string"
+        },
+        "schemaVersion": {
+          "const": 2
+        },
+        "subjectUri": {
+          "pattern": "\\S",
+          "type": "string"
+        },
+        "traits": {
+          "items": {
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "definitionVersion": {
+                    "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+                    "type": "string"
+                  },
+                  "descriptorVersion": {
+                    "const": 1
+                  },
+                  "id": {
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                    "type": "string"
+                  },
+                  "parameters": {
+                    "$ref": "#/$defs/jsonValue"
+                  },
+                  "state": {
+                    "const": "available"
+                  }
+                },
+                "required": [
+                  "id",
+                  "descriptorVersion",
+                  "state"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "definitionVersion": {
+                    "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+                    "type": "string"
+                  },
+                  "descriptorVersion": {
+                    "const": 1
+                  },
+                  "diagnosticIds": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  "id": {
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                    "type": "string"
+                  },
+                  "parameters": {
+                    "$ref": "#/$defs/jsonValue"
+                  },
+                  "state": {
+                    "enum": [
+                      "partial",
+                      "disabled",
+                      "dependency-required"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "descriptorVersion",
+                  "state",
+                  "diagnosticIds"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "subjectUri",
+        "origin",
+        "traits",
+        "operations",
+        "constraints",
+        "dataSources",
+        "diagnostics",
+        "revision",
+        "interpretation",
+        "identity",
+        "metadata"
+      ],
+      "type": "object"
+    }
+  ]
+}

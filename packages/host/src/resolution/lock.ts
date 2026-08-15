@@ -9,17 +9,49 @@ import {
   canonicalJsonStringify,
   compareUtf8,
   ModkitError,
-  parseSemver,
   parseVersionRange,
-  uniqueSortedUtf8,
 } from '@modkitx-x3/core'
 import type {
   ProviderLockKey,
   ProviderPolicyLockEntry,
   ProviderRequest,
   ResolutionResult,
+  TraitDefinitionRequirement,
 } from '@modkitx-x3/sdk'
-import { RESOLVER_VERSION } from './resolver.js'
+import { isStandardTraitId } from '@modkitx-x3/sdk'
+import { isResolutionForRequest, RESOLVER_VERSION } from './resolver.js'
+
+function normalizeTraitRequirements(
+  values: readonly TraitDefinitionRequirement[] | undefined,
+): readonly TraitDefinitionRequirement[] {
+  const normalized = new Map<string, TraitDefinitionRequirement>()
+  for (const value of values ?? []) {
+    let item: TraitDefinitionRequirement
+    if (isStandardTraitId(value.id)) {
+      if (value.definitionRange !== undefined) {
+        throw new ModkitError({
+          code: 'x3.host/invalid-trait-range',
+          message: `standard trait ${value.id} must not declare a definition range`,
+        })
+      }
+      item = { id: value.id }
+    } else {
+      const range =
+        value.definitionRange === undefined ? undefined : parseVersionRange(value.definitionRange)
+      if (range === undefined) {
+        throw new ModkitError({
+          code: 'x3.host/invalid-trait-range',
+          message: `custom trait ${value.id} requires a parseable definition range`,
+        })
+      }
+      item = { id: value.id, definitionRange: range.normalized }
+    }
+    normalized.set(canonicalJsonStringify(item), item)
+  }
+  return [...normalized.entries()]
+    .sort(([left], [right]) => compareUtf8(left, right))
+    .map(([, item]) => item)
+}
 
 export function buildLockKey(request: ProviderRequest): ProviderLockKey {
   const range = parseVersionRange(request.contract.range ?? '*')
@@ -34,8 +66,8 @@ export function buildLockKey(request: ProviderRequest): ProviderLockKey {
     major: request.contract.major,
     normalizedRange: range.normalized,
     ...(request.operation === undefined ? {} : { operation: request.operation }),
-    requiredOutputs: uniqueSortedUtf8(request.requiredOutputs ?? []),
-    preferredOutputs: uniqueSortedUtf8(request.preferredOutputs ?? []),
+    requiredOutputs: normalizeTraitRequirements(request.requiredOutputs),
+    preferredOutputs: normalizeTraitRequirements(request.preferredOutputs),
     ...(request.workload === undefined ? {} : { workload: request.workload }),
   }
 }
@@ -50,14 +82,25 @@ export function buildLockEntry(
       message: `cannot lock an unresolved result (${result.reason})`,
     })
   }
+  if (!isResolutionForRequest(result, request)) {
+    throw new ModkitError({
+      code: 'x3.host/lock-request-mismatch',
+      message: 'resolution result was not produced for this exact request',
+    })
+  }
   const offer = result.selected.offer
-  const major = parseSemver(result.selected.resolvedContract.version)?.major
   return {
-    key: buildLockKey(request),
+    key: {
+      ...buildLockKey(request),
+      ...(result.selected.contractSelectionKey === undefined
+        ? {}
+        : { contractSelectionKey: result.selected.contractSelectionKey }),
+    },
     primary: {
       extension: offer.extensionId,
       contributionId: offer.providerId,
-      contractMajor: major ?? request.contract.major,
+      contractMajor: result.selected.resolvedContract.major,
+      offerId: result.selected.resolvedContract.offerId,
     },
     resolverVersion: RESOLVER_VERSION,
   }

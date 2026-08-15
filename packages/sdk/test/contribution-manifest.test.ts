@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { contractId } from '@modkitx-x3/core'
 import {
   createSpecSchemaRegistry,
   validateContributionManifest,
-  type ContributionManifestV1,
+  type ContributionManifestV1Wire,
 } from '@modkitx-x3/sdk'
 
 // Lab demo contract (used through S3/S4): x3.demo/greeter@1.
@@ -13,10 +14,20 @@ const greeterSpecSchema = {
 } as const
 
 const registry = createSpecSchemaRegistry([
-  { contract: 'x3.demo/greeter', major: 1, schema: greeterSpecSchema },
+  {
+    contract: contractId('x3.demo/greeter'),
+    major: 1,
+    schema: greeterSpecSchema,
+    registration: {
+      mode: 'executable',
+      project: () => [],
+      moduleAbi: { export: 'createGreeter', abiVersion: 1 },
+      conformanceProfile: 'x3.demo/greeter-v1',
+    },
+  },
 ])
 
-const greeterContribution: ContributionManifestV1 = {
+const greeterContribution: ContributionManifestV1Wire = {
   schemaVersion: 1,
   contract: { id: 'x3.demo/greeter', major: 1 },
   id: 'org.x3lab/greeter-plain',
@@ -37,7 +48,7 @@ const greeterContribution: ContributionManifestV1 = {
 // extensions/common/images/codecs/dds/codec.manifest.json@8a21060f — v1 kind/capabilities/
 // entrypoints-map become contract + spec + single-entrypoint runtime variants; the
 // legacy `capabilities` verbs are dropped (final vocabulary MK3/02 §1).
-const convertedDds: ContributionManifestV1 = {
+const convertedDds: ContributionManifestV1Wire = {
   schemaVersion: 1,
   contract: { id: 'x3.compat/codec-v1', major: 1 },
   id: 'org.modkitx/dds',

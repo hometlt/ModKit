@@ -1,0 +1,199 @@
+{
+  "$id": "https://schemas.modkitx.org/x3/contract-definition-spec.v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "additionalProperties": false,
+      "properties": {
+        "conformanceProfile": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "contract": {
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+          "type": "string"
+        },
+        "kind": {
+          "const": "service"
+        },
+        "major": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "matching": {
+          "additionalProperties": false,
+          "properties": {
+            "configuration": {
+              "title": "JsonValue"
+            },
+            "major": {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "profile": {
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "profile",
+            "major"
+          ],
+          "type": "object"
+        },
+        "offerFacet": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "presence": {
+                  "const": "forbidden"
+                }
+              },
+              "required": [
+                "presence"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "presence": {
+                  "enum": [
+                    "optional",
+                    "required"
+                  ]
+                },
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "$ref": {
+                      "minLength": 1,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "$ref"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "presence",
+                "schema"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "requestFacet": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "presence": {
+                  "const": "forbidden"
+                }
+              },
+              "required": [
+                "presence"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "presence": {
+                  "enum": [
+                    "optional",
+                    "required"
+                  ]
+                },
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "$ref": {
+                      "minLength": 1,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "$ref"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "presence",
+                "schema"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "schemaVersion": {
+          "const": 1
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "kind",
+        "contract",
+        "major",
+        "offerFacet",
+        "requestFacet",
+        "matching",
+        "conformanceProfile"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "conformanceProfile": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "contract": {
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+          "type": "string"
+        },
+        "kind": {
+          "const": "data-source"
+        },
+        "major": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "schema": {
+          "additionalProperties": false,
+          "properties": {
+            "$ref": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "$ref"
+          ],
+          "type": "object"
+        },
+        "schemaVersion": {
+          "const": 1
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "kind",
+        "contract",
+        "major",
+        "schema",
+        "conformanceProfile"
+      ],
+      "type": "object"
+    }
+  ]
+}

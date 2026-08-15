@@ -6,6 +6,20 @@ overrides a canonical or detailed owner.
 
 ---
 
+## A‑1 implementation handoff (2026-08-15)
+
+- Production core/SDK schema and ABI surfaces from BRIEF‑13A A‑1 are implemented, emitted and
+  exercised by compile, runtime, adversarial, bundle and packed-consumer gates.
+- `TraitId`/`TraitInstance` are the v2 names; no `Capability*` compatibility re-export is added.
+- Producer trait declarations use exact definition versions and explicit representation/presence;
+  consumers use ranges. Fidelity stays in observed/conformance evidence, not authored claims.
+- Descriptor v2 carries portable single/bundle/namespace/derived origin, exact revisions and
+  resolved/missing/ambiguous companion requirement state.
+- Multiple service offers retain `offerId` and an optional non-secret contract selection key at
+  activation; raw facets do not cross into activation tickets or portable policy locks.
+- This is an implementation handoff, not self-acceptance. A‑2 inventory→fact→offer projection,
+  facet matcher behavior, A‑3 sessions, A‑5 format stress and A‑6 presentation runtime remain open.
+
 ## Owner disposition and A-0 continuation (2026-08-14)
 
 - Owner disposition after S4: **REVISE / CONTINUE**, not adopt or archive.

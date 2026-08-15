@@ -9,6 +9,8 @@ import {
   isModkitError,
   ModkitError,
   OperationCancelledError,
+  OPERATION_DOMAINS,
+  SHARED_OPERATION_IDS,
   sortedUtf8,
   throwIfAborted,
   uniqueSortedUtf8,
@@ -46,6 +48,11 @@ describe('ModkitError + diagnostics', () => {
 })
 
 describe('deterministic ordering (MK3/23 §9.9)', () => {
+  it('keeps exported closed operation vocabularies immutable at runtime', () => {
+    expect(() => (OPERATION_DOMAINS as unknown as string[]).push('evil')).toThrow(TypeError)
+    expect(() => (SHARED_OPERATION_IDS as unknown as string[]).push('evil.run')).toThrow(TypeError)
+  })
+
   it('sorts by UTF-8 bytes, not UTF-16 code units', () => {
     // U+FFFD encodes as EF BF BD; U+1F600 as F0 9F 98 80 — byte order puts FFFD first,
     // while UTF-16 code-unit comparison would put the surrogate pair first.
@@ -69,6 +76,13 @@ describe('canonical JSON (L6)', () => {
     expect(a).toBe(b)
     expect(a.endsWith('\n')).toBe(true)
     expect(a.indexOf('"a"')).toBeLessThan(a.indexOf('"b"'))
+  })
+
+  it('is deterministic for distinct lone-surrogate keys with identical UTF-8 replacement bytes', () => {
+    const first = canonicalJsonStringify({ ['\ud800']: 1, ['\ud801']: 2 })
+    const reversed = canonicalJsonStringify({ ['\ud801']: 2, ['\ud800']: 1 })
+    expect(first).toBe(reversed)
+    expect(compareUtf8('\ud800', '\ud801')).not.toBe(0)
   })
 
   it('drops undefined properties and rejects non-serializable values', () => {

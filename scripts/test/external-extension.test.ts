@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process'
+import { createRequire } from 'node:module'
 import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -20,14 +21,16 @@ afterAll(() => rmSync(tmp, { recursive: true, force: true }))
 function sh(cmd: string, args: string[], cwd: string) {
   const isWindows = process.platform === 'win32'
   const needsShim = isWindows && (cmd === 'pnpm' || cmd === 'npm')
+  const env = { ...process.env, npm_config_cache: join(tmp, 'npm-cache') }
   const result = needsShim
     ? spawnSync(process.env['COMSPEC'] ?? 'cmd.exe', ['/d', '/s', '/c', cmd, ...args], {
         cwd,
+        env,
         encoding: 'utf8',
         timeout: 240_000,
         windowsVerbatimArguments: false,
       })
-    : spawnSync(cmd, args, { cwd, encoding: 'utf8', timeout: 240_000 })
+    : spawnSync(cmd, args, { cwd, env, encoding: 'utf8', timeout: 240_000 })
   return { status: result.status, stdout: result.stdout, stderr: result.stderr }
 }
 
@@ -79,6 +82,13 @@ describe('external packed-tarball extension (S4/PR-23 shape)', () => {
         exampleDir,
       )
       expect(install.status, install.stderr).toBe(0)
+      const resolveFromExample = createRequire(join(exampleDir, 'package.json')).resolve
+      expect(resolveFromExample('@modkitx-x3/core/schemas/source-span.v1.schema.json')).toContain(
+        'source-span.v1.schema.json',
+      )
+      expect(
+        resolveFromExample('@modkitx-x3/sdk/schemas/subject-descriptor.v2.schema.json'),
+      ).toContain('subject-descriptor.v2.schema.json')
 
       // 3. hygiene: no workspace:/deep-dist imports in the example sources;
       //    installed packages came from artifacts, not links

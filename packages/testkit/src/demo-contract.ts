@@ -4,9 +4,11 @@
  * A greeter provider module exports `createGreeter(spec)` → `{ greet(name): string }`.
  */
 
+import { contractId } from '@modkitx-x3/core'
 import type { SpecSchemaEntry } from '@modkitx-x3/sdk'
 
-export const GREETER_CONTRACT = 'x3.demo/greeter'
+/** Declaration-emission proof: inferred branded literals remain nameable to extension authors. */
+export const GREETER_CONTRACT = contractId('x3.demo/greeter')
 export const GREETER_MAJOR = 1
 
 export const greeterSpecSchema = {
@@ -14,7 +16,20 @@ export const greeterSpecSchema = {
   additionalProperties: false,
   properties: {
     greeting: { type: 'string', minLength: 1 },
-    outputs: { type: 'array', items: { type: 'string', minLength: 1 } },
+    outputs: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['id', 'definitionVersion', 'representation', 'presence'],
+        properties: {
+          id: { type: 'string', minLength: 1 },
+          definitionVersion: { type: 'string', minLength: 1 },
+          representation: { enum: ['source', 'compiled', 'runtime'] },
+          presence: { enum: ['may-expose', 'will-expose'] },
+        },
+      },
+    },
   },
 } as const
 
@@ -22,6 +37,13 @@ export const greeterSpecEntry: SpecSchemaEntry = {
   contract: GREETER_CONTRACT,
   major: GREETER_MAJOR,
   schema: greeterSpecSchema,
+  validateSemantics: () => [],
+  registration: {
+    mode: 'executable',
+    project: () => [],
+    moduleAbi: { export: 'createGreeter', abiVersion: 1 },
+    conformanceProfile: 'x3.demo/greeter-v1',
+  },
 }
 
 export interface Greeter {

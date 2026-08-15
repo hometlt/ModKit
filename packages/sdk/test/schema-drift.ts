@@ -15,12 +15,29 @@ import type {
   runtimeVariantDeclarationSchema,
   scopedContractRequirementSchema,
 } from '../src/schemas/contribution-manifest.js'
+import type {
+  codecContributionSpecV1Schema,
+  contractDefinitionSpecV1Schema,
+  dataSourceContributionSpecV1Schema,
+  serviceProviderContributionSpecV1Schema,
+  traitDefinitionSpecV1Schema,
+  viewerContributionSpecV1Schema,
+} from '../src/schemas/contribution-specs.js'
+import type { subjectDescriptorV2InferenceSchema } from '../src/schemas/subject-descriptor.js'
 import type { ExtensionManifest, ExtensionRequirement, ModkitBlock } from '../src/manifest/types.js'
 import type {
-  ContributionManifestV1,
+  ContributionManifestV1Wire,
   RuntimeVariantDeclaration,
-  ScopedContractRequirement,
+  ScopedContractRequirementWire,
 } from '../src/manifest/contribution-types.js'
+import type {
+  CodecContributionSpecV1Wire,
+  ServiceProviderContributionSpecV1Wire,
+  ViewerContributionSpecV1Wire,
+} from '../src/manifest/contribution-spec-types.js'
+import type { DataSourceContributionSpecV1 } from '../src/asset-capabilities/data-sources.js'
+import type { AnyDescriptorWire, JsonValue } from '../src/asset-capabilities/types.js'
+import type { ContractDefinitionSpecV1Wire, TraitDefinitionSpecV1Wire } from '../src/definitions.js'
 
 type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false
@@ -30,6 +47,17 @@ type DeepMutable<T> = T extends readonly (infer U)[]
   ? DeepMutable<U>[]
   : T extends object
     ? { -readonly [K in keyof T]: DeepMutable<T[K]> }
+    : T
+
+/** Avoid recursively expanding JsonValue while normalizing descriptor readonly fields. */
+type DeepMutableDescriptor<T> = T extends readonly (infer U)[]
+  ? DeepMutableDescriptor<U>[]
+  : T extends object
+    ? {
+        -readonly [K in keyof T]: K extends 'parameters' | 'data' | 'value'
+          ? JsonValue
+          : DeepMutableDescriptor<T[K]>
+      }
     : T
 
 export type ExtensionManifestDriftGate = Expect<
@@ -43,11 +71,70 @@ export type ModkitBlockDriftGate = Expect<
 >
 
 export type ContributionManifestDriftGate = Expect<
-  Equal<DeepMutable<ContributionManifestV1>, FromSchema<typeof contributionManifestSchema>>
+  Equal<
+    DeepMutable<ContributionManifestV1Wire>,
+    FromSchema<
+      typeof contributionManifestSchema,
+      { deserialize: [{ pattern: { title: 'JsonValue' }; output: DeepMutable<JsonValue> }] }
+    >
+  >
 >
 export type RuntimeVariantDriftGate = Expect<
   Equal<DeepMutable<RuntimeVariantDeclaration>, FromSchema<typeof runtimeVariantDeclarationSchema>>
 >
 export type ScopedContractRequirementDriftGate = Expect<
-  Equal<DeepMutable<ScopedContractRequirement>, FromSchema<typeof scopedContractRequirementSchema>>
+  Equal<
+    DeepMutable<ScopedContractRequirementWire>,
+    FromSchema<typeof scopedContractRequirementSchema>
+  >
+>
+
+export type CodecContributionSpecDriftGate = Expect<
+  Equal<DeepMutable<CodecContributionSpecV1Wire>, FromSchema<typeof codecContributionSpecV1Schema>>
+>
+export type ServiceProviderContributionSpecDriftGate = Expect<
+  Equal<
+    DeepMutable<ServiceProviderContributionSpecV1Wire>,
+    FromSchema<
+      typeof serviceProviderContributionSpecV1Schema,
+      { deserialize: [{ pattern: { title: 'JsonValue' }; output: DeepMutable<JsonValue> }] }
+    >
+  >
+>
+export type ViewerContributionSpecDriftGate = Expect<
+  Equal<
+    DeepMutable<ViewerContributionSpecV1Wire>,
+    FromSchema<typeof viewerContributionSpecV1Schema>
+  >
+>
+export type DataSourceContributionSpecDriftGate = Expect<
+  Equal<
+    DeepMutable<DataSourceContributionSpecV1>,
+    FromSchema<typeof dataSourceContributionSpecV1Schema>
+  >
+>
+export type TraitDefinitionSpecDriftGate = Expect<
+  Equal<DeepMutable<TraitDefinitionSpecV1Wire>, FromSchema<typeof traitDefinitionSpecV1Schema>>
+>
+export type ContractDefinitionSpecDriftGate = Expect<
+  Equal<
+    DeepMutable<ContractDefinitionSpecV1Wire>,
+    FromSchema<
+      typeof contractDefinitionSpecV1Schema,
+      { deserialize: [{ pattern: { title: 'JsonValue' }; output: DeepMutable<JsonValue> }] }
+    >
+  >
+>
+type SubjectDescriptorV2FromSchema = FromSchema<
+  typeof subjectDescriptorV2InferenceSchema,
+  { deserialize: [{ pattern: { title: 'JsonValue' }; output: JsonValue }] }
+>
+type SubjectDescriptorV2PublicType = DeepMutableDescriptor<AnyDescriptorWire>
+/** Two-way structural equivalence; union/intersection normalization makes `Equal` too strict. */
+export type SubjectDescriptorV2DriftGate = Expect<
+  SubjectDescriptorV2PublicType extends SubjectDescriptorV2FromSchema
+    ? SubjectDescriptorV2FromSchema extends SubjectDescriptorV2PublicType
+      ? true
+      : false
+    : false
 >

@@ -1,0 +1,207 @@
+{
+  "$id": "https://schemas.modkitx.org/x3/service-provider-contribution-spec.v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "applicableVariants": {
+      "items": {
+        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "inputs": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "lifecycleScope": {
+      "enum": [
+        "session",
+        "operation",
+        "process"
+      ]
+    },
+    "outputs": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "definitionVersion": {
+            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+            "type": "string"
+          },
+          "evidenceRefs": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "id": {
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+            "type": "string"
+          },
+          "prerequisites": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "contract": {
+                  "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                  "type": "string"
+                },
+                "major": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "range": {
+                  "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "contract",
+                "major"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "presence": {
+            "enum": [
+              "may-expose",
+              "will-expose"
+            ]
+          },
+          "representation": {
+            "enum": [
+              "source",
+              "compiled",
+              "runtime"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "representation",
+          "presence"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "protocolOperations": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "provides": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "contract": {
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+            "type": "string"
+          },
+          "facet": {
+            "title": "JsonValue"
+          },
+          "major": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "offerId": {
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "version": {
+            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "offerId",
+          "contract",
+          "major",
+          "version"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "replacement": {
+      "additionalProperties": false,
+      "properties": {
+        "compatible": {
+          "type": "boolean"
+        },
+        "target": {
+          "additionalProperties": false,
+          "properties": {
+            "contract": {
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+              "type": "string"
+            },
+            "major": {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "range": {
+              "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "contract",
+            "major"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "target",
+        "compatible"
+      ],
+      "type": "object"
+    },
+    "requires": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "contract": {
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+            "type": "string"
+          },
+          "major": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "range": {
+            "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "contract",
+          "major"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "provides",
+    "lifecycleScope"
+  ],
+  "type": "object"
+}

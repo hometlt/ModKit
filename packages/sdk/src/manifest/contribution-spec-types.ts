@@ -1,0 +1,324 @@
+/**
+ * A-1 wire contracts selected by ContributionManifestV1.contract.
+ *
+ * These are JSON-facing declarations. Runtime-only branded authoring handles belong to A-4;
+ * keeping them out of the wire DTOs lets the schema const remain the exact authority.
+ */
+
+import type { ContractId, TraitId } from '@modkitx-x3/core'
+import type { ConformanceProfileId, DataSourceRefFor } from '../asset-capabilities/data-sources.js'
+import type {
+  AssetOperationId,
+  JsonSchemaRef,
+  JsonValue,
+  TraitQueryRequirementFor,
+} from '../asset-capabilities/types.js'
+import type { PermissionClass } from './contribution-types.js'
+import type { ContractRequirement, ContractRequirementWire } from '../resolution/types.js'
+import type {
+  ForeignServiceContractId,
+  ContractMajor,
+  KnownContractId,
+  ServiceContractOfferFacet,
+} from '../service-contracts.js'
+
+export type JsonSchema = Readonly<Record<string, unknown>>
+
+export type HostId = string
+
+export interface ContributionSpecIdPlane {
+  readonly contract: string
+  readonly trait: string
+  readonly operation: string
+  readonly requirement: ContractRequirementWire
+}
+
+export interface ValidatedContributionSpecIdPlane extends ContributionSpecIdPlane {
+  readonly contract: ContractId
+  readonly trait: TraitId
+  readonly operation: AssetOperationId
+  readonly requirement: ContractRequirement
+}
+
+export interface WireContributionSpecIdPlane extends ContributionSpecIdPlane {
+  readonly contract: string
+  readonly trait: string
+  readonly operation: string
+  readonly requirement: ContractRequirementWire
+}
+
+export interface ResourceBudgetWire {
+  /** Canonical decimal u64. Runtime code receives bigint after validated conversion. */
+  readonly maxInputBytes: string
+  readonly maxDepth: number
+  readonly maxNodes: number
+  readonly maxScalarBytes: number
+  readonly maxDiagnostics: number
+  readonly deadlineMs?: number
+}
+
+export interface FormatRef {
+  readonly formatId: string
+  readonly label: string
+  readonly mediaType?: string
+}
+
+export interface MatchRules {
+  readonly extensions?: readonly string[]
+  readonly mediaTypes?: readonly string[]
+  readonly pathGlobs?: readonly string[]
+}
+
+export type FormatRole = 'container' | 'media' | 'byte-transform' | 'semantic' | 'index' | 'sidecar'
+
+export type SourceTopology = 'single' | 'bundle' | 'namespace' | 'derived'
+export type ArtifactStage = 'authored' | 'compiled' | 'runtime'
+export type OpenIntent = 'probe' | 'inspect' | 'thumbnail' | 'full' | 'stream' | 'export'
+
+export interface ByteProbePlan {
+  readonly kind: 'bytes'
+  readonly ranges: readonly {
+    readonly from: 'start' | 'end'
+    readonly length: number
+  }[]
+  readonly maxBytes: number
+}
+
+export interface NamespaceProbePlan {
+  readonly kind: 'namespace'
+  readonly prefixes?: readonly string[]
+  readonly maxEntries: number
+  readonly maxDepth: number
+  readonly maxPathBytes: number
+}
+
+export interface DerivedProbePlan {
+  readonly kind: 'derived'
+  readonly maxSubjects: number
+  readonly maxRelationDepth: number
+}
+
+export type ProbePlan = ByteProbePlan | NamespaceProbePlan | DerivedProbePlan
+export type TopologyProbePlan =
+  | { readonly sourceTopology: 'single' | 'bundle'; readonly probe: ByteProbePlan }
+  | { readonly sourceTopology: 'namespace'; readonly probe: NamespaceProbePlan }
+  | { readonly sourceTopology: 'derived'; readonly probe: DerivedProbePlan }
+
+export type CompanionSearchScope =
+  | 'sibling-directory'
+  | 'current-mount'
+  | 'enclosing-container'
+  | 'workspace-dependency-layer'
+  | 'explicit-user-selection'
+
+export interface CompanionRule<
+  Ids extends ContributionSpecIdPlane = ValidatedContributionSpecIdPlane,
+> {
+  /** Stable identity reused by `AssetInputRequirement.id` in the resolved planning phase. */
+  readonly id: string
+  readonly role: string
+  /** Static availability requirement; `planInput` refines it to exact cardinality. */
+  readonly required: boolean
+  readonly patterns: readonly string[]
+  readonly expected?: {
+    readonly all?: readonly TraitQueryRequirementFor<Ids['trait']>[]
+    readonly any?: readonly TraitQueryRequirementFor<Ids['trait']>[]
+    readonly none?: readonly TraitQueryRequirementFor<Ids['trait']>[]
+  }
+  readonly searchScopes: readonly CompanionSearchScope[]
+}
+
+export interface RepresentationDecl<
+  Ids extends ContributionSpecIdPlane = ValidatedContributionSpecIdPlane,
+> {
+  readonly id: string
+  readonly contract: Ids['contract']
+  readonly major: number
+  readonly stage: ArtifactStage
+  readonly lossy: boolean
+}
+
+export type OperationOutputKind = 'json' | 'bytes' | 'stream' | 'source' | 'artifact' | 'none'
+
+export interface OperationDecl<
+  Ids extends ContributionSpecIdPlane = ValidatedContributionSpecIdPlane,
+> {
+  readonly id: Ids['operation']
+  readonly handlerId: string
+  readonly mutatesSource: boolean
+  readonly requiredPermissions?: readonly PermissionClass[]
+  readonly requiresContract?: Ids['requirement']
+  readonly inputSchema?: JsonSchemaRef
+  readonly outputKinds?: readonly OperationOutputKind[]
+}
+
+export type TraitPresence = 'may-expose' | 'will-expose'
+export type TraitRepresentation = 'source' | 'compiled' | 'runtime'
+
+/** Authored release metadata only; evidence, probe results and observed instances are separate. */
+export interface TraitDeclaration<
+  Ids extends ContributionSpecIdPlane = ValidatedContributionSpecIdPlane,
+> {
+  readonly id: Ids['trait']
+  /** Exact installed definition selected by a producer; consumers use definitionRange. */
+  readonly definitionVersion?: string
+  readonly representation: TraitRepresentation
+  readonly presence: TraitPresence
+  readonly prerequisites?: readonly Ids['requirement'][]
+  readonly evidenceRefs?: readonly string[]
+}
+
+/** MK3/30 §7 execution tiers; not a read/render/edit capability claim. */
+export type ImplementationTier = 1 | 2 | 3 | 4 | 5
+
+/** Authored contribution data contains only the claimed tier. */
+export interface ImplementationTierClaim {
+  readonly claimed: ImplementationTier
+}
+
+/** Host/conformance-owned projection; never accepted from an authored spec. */
+export interface ImplementationTierRecord extends ImplementationTierClaim {
+  readonly proven: ImplementationTier
+  readonly evidenceId: string
+  readonly conformanceProfile: ConformanceProfileId
+}
+
+interface CodecContributionSpecV1Base<
+  DataSourceContract extends string = string,
+  Ids extends ContributionSpecIdPlane = ValidatedContributionSpecIdPlane,
+> {
+  readonly formatRefs: readonly FormatRef[]
+  readonly roles: readonly FormatRole[]
+  readonly artifactStages: readonly ArtifactStage[]
+  readonly openIntents: readonly OpenIntent[]
+  readonly match: MatchRules
+  readonly companions?: readonly CompanionRule<Ids>[]
+  readonly representations: readonly RepresentationDecl<Ids>[]
+  readonly publishesDataSources: readonly DataSourceRefFor<DataSourceContract>[]
+  readonly requires?: readonly Ids['requirement'][]
+  readonly operations: readonly OperationDecl<Ids>[]
+  readonly traitDeclarations?: readonly TraitDeclaration<Ids>[]
+  readonly implementationTier: ImplementationTierClaim
+  readonly budgets: ResourceBudgetWire
+}
+
+export type CodecContributionSpecV1<
+  DataSourceContract extends string = string,
+  Ids extends ContributionSpecIdPlane = ValidatedContributionSpecIdPlane,
+> = CodecContributionSpecV1Base<DataSourceContract, Ids> & TopologyProbePlan
+
+export type CodecContributionSpecV1Wire = CodecContributionSpecV1<
+  string,
+  WireContributionSpecIdPlane
+>
+
+/**
+ * Authored logical offer. Named separately from the resolver's selected ContractOffer so the
+ * contribution plane and resolution plane cannot be confused in public imports.
+ */
+export interface ServiceContractOfferDeclaration<
+  Contract extends string = ContractId,
+  Facet = JsonValue,
+> {
+  readonly offerId: string
+  readonly contract: Contract
+  readonly major: number
+  readonly version: string
+  /** Contract-specific inventory facet; its selected contract registration validates the value. */
+  readonly facet?: Facet
+}
+
+export type KnownServiceContractOfferDeclaration<
+  Contract extends KnownContractId,
+  Major extends ContractMajor<Contract>,
+> = {
+  readonly offerId: string
+  readonly contract: Contract
+  readonly major: Major
+  readonly version: string
+} & ServiceContractOfferFacet<Contract, Major>
+
+/** A contract unknown to this build has no inferred facet, but its wire data remains JSON-safe. */
+export interface OpaqueServiceContractOfferDeclaration<
+  Contract extends string,
+  Major extends number,
+> {
+  readonly offerId: string
+  readonly contract: ForeignServiceContractId<Contract>
+  readonly major: Major
+  readonly version: string
+  readonly facet?: JsonValue
+}
+
+/**
+ * A literal contract keeps its contract/facet correlation. The default `string` branch is the raw
+ * schema-shaped DTO used after JSON validation; authoring APIs should always retain a literal K.
+ */
+export type ServiceContractOfferFor<
+  Contract extends string,
+  Ids extends ContributionSpecIdPlane = ValidatedContributionSpecIdPlane,
+> = string extends Contract
+  ? ServiceContractOfferDeclaration<Ids['contract'], JsonValue>
+  : Contract extends KnownContractId
+    ? {
+        [Major in ContractMajor<Contract>]: KnownServiceContractOfferDeclaration<Contract, Major>
+      }[ContractMajor<Contract>]
+    : OpaqueServiceContractOfferDeclaration<Contract, number>
+
+export interface ServiceProviderContributionSpecV1<
+  Contract extends string = string,
+  Ids extends ContributionSpecIdPlane = ValidatedContributionSpecIdPlane,
+> {
+  readonly provides: readonly ServiceContractOfferFor<Contract, Ids>[]
+  readonly requires?: readonly Ids['requirement'][]
+  readonly inputs?: readonly string[]
+  readonly outputs?: readonly TraitDeclaration<Ids>[]
+  readonly protocolOperations?: readonly string[]
+  readonly replacement?: {
+    readonly target: Ids['requirement']
+    readonly compatible: boolean
+  }
+  readonly lifecycleScope: 'session' | 'operation' | 'process'
+  readonly applicableVariants?: readonly string[]
+}
+
+export type ServiceProviderContributionSpecV1Wire = ServiceProviderContributionSpecV1<
+  string,
+  WireContributionSpecIdPlane
+>
+
+export type TraitRequirement<
+  Ids extends ContributionSpecIdPlane = ValidatedContributionSpecIdPlane,
+> = TraitQueryRequirementFor<Ids['trait']>
+
+/** Data-only eligibility evaluated before singleton selection; no viewer code is activated. */
+export interface ViewerApplicability {
+  readonly interpretation?: 'none' | 'codec' | 'any'
+  readonly sourceBytes?: {
+    readonly maximum?: string
+  }
+  readonly longestLineBytes?: {
+    readonly maximum: number
+    readonly whenUnknown: 'eligible' | 'ineligible'
+  }
+}
+
+export interface ViewerContributionSpecV1<
+  DataSourceContract extends string = string,
+  Ids extends ContributionSpecIdPlane = ValidatedContributionSpecIdPlane,
+> {
+  readonly kind: 'stage' | 'tree' | 'panel' | 'toolbar' | 'transport' | 'status' | 'fallback'
+  readonly requiresTraits?: readonly TraitRequirement<Ids>[]
+  readonly requiresOperations?: readonly Ids['operation'][]
+  readonly consumesDataSources: readonly DataSourceRefFor<DataSourceContract>[]
+  readonly applicability?: ViewerApplicability
+  readonly hosts?: readonly HostId[]
+  readonly priority: number
+  readonly conflicts?: readonly string[]
+  readonly singletonGroup?: string
+}
+
+export type ViewerContributionSpecV1Wire = ViewerContributionSpecV1<
+  string,
+  WireContributionSpecIdPlane
+>

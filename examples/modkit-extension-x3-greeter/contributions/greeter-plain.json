@@ -12,5 +12,15 @@
       "requestedPermissionClasses": []
     }
   ],
-  "spec": { "greeting": "Hello", "outputs": ["demo.plain"] }
+  "spec": {
+    "greeting": "Hello",
+    "outputs": [
+      {
+        "id": "demo.plain",
+        "definitionVersion": "1.0.0",
+        "representation": "runtime",
+        "presence": "will-expose"
+      }
+    ]
+  }
 }

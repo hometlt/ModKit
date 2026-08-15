@@ -1,0 +1,91 @@
+{
+  "$id": "https://schemas.modkitx.org/x3/trait-definition-spec.v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "documentation": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "id": {
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+      "type": "string"
+    },
+    "imports": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+            "type": "string"
+          },
+          "range": {
+            "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "range"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "parametersSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "$ref": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "$ref"
+      ],
+      "type": "object"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "scope": {
+      "anyOf": [
+        {
+          "enum": [
+            "source",
+            "asset",
+            "subject",
+            "workspace",
+            "service",
+            "operation",
+            "view-session",
+            "representation"
+          ]
+        },
+        {
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+          "type": "string"
+        }
+      ]
+    },
+    "transport": {
+      "enum": [
+        "json",
+        "structured-clone"
+      ]
+    },
+    "version": {
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "id",
+    "version",
+    "scope",
+    "parametersSchema",
+    "transport"
+  ],
+  "type": "object"
+}

@@ -9,7 +9,7 @@
  * list the value; proposed to the owner rather than silently merged into 'no-offer'.
  */
 
-import type { ContractId, ExtensionId, ProviderId, TraitId } from '@modkitx-x3/core'
+import type { ContractId, ExtensionId, OperationId, ProviderId } from '@modkitx-x3/core'
 import type {
   Architecture,
   OperatingSystem,
@@ -17,18 +17,37 @@ import type {
   RuntimeEnvironment,
   RuntimeTargetConstraint,
 } from '../manifest/contribution-types.js'
+import type {
+  JsonValue,
+  TraitDefinitionOffer,
+  TraitDefinitionRequirement,
+} from '../asset-capabilities/types.js'
 
-export interface ContractRequirement {
-  readonly contract: ContractId
+export interface ContractRequirementWire {
+  readonly contract: string
   readonly major: number
   /** Default '*'; must stay inside the major (MK3/23 §8). */
   readonly range?: string
 }
 
-export interface ContractOffer {
+export interface ContractRequirement extends Omit<ContractRequirementWire, 'contract'> {
   readonly contract: ContractId
+}
+
+export interface ContractOfferWire {
+  readonly offerId: string
+  readonly contract: string
+  /** Explicit offered major; must equal the major parsed from `version`. */
+  readonly major: number
   /** Exact SemVer of the offered contract implementation. */
   readonly version: string
+  readonly facet?: JsonValue
+}
+
+export interface ContractOffer extends Omit<ContractOfferWire, 'contract' | 'facet'> {
+  readonly contract: ContractId
+  /** JSON-safe offer discriminator retained through resolution and locks. */
+  readonly facet?: JsonValue
 }
 
 /** Concrete machine/session target (alias of the live v1 shape, 23 §8). */
@@ -58,8 +77,8 @@ export interface ProviderOffer extends OfferHeader {
   readonly kind: ProviderOfferKind
   readonly provides: readonly ContractOffer[]
   readonly requires?: readonly ContractRequirement[]
-  readonly outputs?: readonly TraitId[]
-  readonly operations?: readonly string[]
+  readonly outputs?: readonly TraitDefinitionOffer[]
+  readonly operations?: readonly OperationId[]
   readonly augments?: ContractRequirement
   readonly replaces?: ContractRequirement
   readonly limitations?: readonly string[]
@@ -71,9 +90,9 @@ export type WorkloadIntent =
 export interface ProviderRequest {
   readonly contract: ContractRequirement
   readonly target: RuntimeTarget
-  readonly operation?: string
-  readonly requiredOutputs?: readonly TraitId[]
-  readonly preferredOutputs?: readonly TraitId[]
+  readonly operation?: OperationId
+  readonly requiredOutputs?: readonly TraitDefinitionRequirement[]
+  readonly preferredOutputs?: readonly TraitDefinitionRequirement[]
   readonly workload?: WorkloadIntent
   readonly optional?: boolean
   readonly pin?: {
@@ -95,11 +114,15 @@ export type UnresolvedReason =
 export interface ResolvedProvider {
   readonly offer: ProviderOffer
   readonly resolvedContract: ContractOffer
+  /** Contract-owned, canonical and non-secret selector produced by a facet matcher. */
+  readonly contractSelectionKey?: string
 }
 
 export interface RejectedCandidate {
   readonly providerId: ProviderId
   readonly runtimeVariant: string
+  readonly offerId?: string
+  readonly contractSelectionKey?: string
   readonly reason: UnresolvedReason | 'unsupported-kind'
   readonly detail?: string
 }
@@ -122,9 +145,11 @@ export interface ProviderLockKey {
   readonly contract: ContractId
   readonly major: number
   readonly normalizedRange: string
-  readonly operation?: string
-  readonly requiredOutputs: readonly TraitId[]
-  readonly preferredOutputs: readonly TraitId[]
+  /** Contract-owned, canonical and non-secret facet selection; never the raw request facet. */
+  readonly contractSelectionKey?: string
+  readonly operation?: OperationId
+  readonly requiredOutputs: readonly TraitDefinitionRequirement[]
+  readonly preferredOutputs: readonly TraitDefinitionRequirement[]
   readonly workload?: WorkloadIntent
 }
 
@@ -133,6 +158,7 @@ export interface ProviderPolicySelection {
   readonly releaseRange?: string
   readonly contributionId: string
   readonly contractMajor: number
+  readonly offerId: string
 }
 
 export interface ProviderPolicyLockEntry {

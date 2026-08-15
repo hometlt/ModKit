@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { isModkitError } from '@modkitx-x3/core'
+import { contractId, isModkitError } from '@modkitx-x3/core'
 import {
   assertNotWider,
+  contributionId,
   narrowGrant,
   type ContributionManifestV1,
   type PermissionGrant,
@@ -27,6 +28,7 @@ import { issueActivationTicket } from '../src/security/gate.js'
 
 const baseUrl = new URL('./fixtures/gate-extension/', import.meta.url)
 const EXTENSION_ID = 'org.x3lab/gate-fixture'
+const GREETER_CONTRACT = contractId('x3.demo/greeter')
 const target: RuntimeTarget = {
   environment: 'node',
   operatingSystem: 'windows',
@@ -41,8 +43,8 @@ declare global {
 function manifest(overrides: Partial<ContributionManifestV1> = {}): ContributionManifestV1 {
   return {
     schemaVersion: 1,
-    contract: { id: 'x3.demo/greeter', major: 1 },
-    id: 'org.x3lab/spy-greeter',
+    contract: { id: GREETER_CONTRACT, major: 1 },
+    id: contributionId('org.x3lab/spy-greeter'),
     displayName: 'Spy greeter',
     runtimeVariants: [
       {
@@ -69,7 +71,14 @@ function offerFor(m: ContributionManifestV1): ProviderOffer {
     runtimeVariant: variant.variantId,
     target: variant.target,
     requiredPermissions: variant.requestedPermissionClasses,
-    provides: [{ contract: m.contract.id, version: `${m.contract.major}.0.0` }],
+    provides: [
+      {
+        offerId: variant.variantId,
+        contract: m.contract.id,
+        major: m.contract.major,
+        version: `${m.contract.major}.0.0`,
+      },
+    ],
   }
 }
 
@@ -96,6 +105,14 @@ async function expectRefusedWithoutImport(
 }
 
 describe('activation gate — refusals never reach an import (MK3/24 §8)', () => {
+  it('retains the selected logical offer without carrying raw facets', () => {
+    const ticket = ticketFor(manifest())
+    expect(ticket.offerId).toBe('portable')
+    expect(ticket).not.toHaveProperty('facet')
+    expect(ticket).not.toHaveProperty('requestFacet')
+    expect(ticket).not.toHaveProperty('offerFacet')
+  })
+
   it('refuses a forged ticket (no resolver behind it)', async () => {
     const forged = {
       extensionId: EXTENSION_ID,
@@ -126,7 +143,12 @@ describe('activation gate — refusals never reach an import (MK3/24 §8)', () =
       state: 'resolved',
       selected: {
         offer: offerFor(manifest()),
-        resolvedContract: { contract: 'x3.demo/greeter', version: '1.0.0' },
+        resolvedContract: {
+          offerId: 'portable',
+          contract: 'x3.demo/greeter',
+          major: 1,
+          version: '1.0.0',
+        },
       },
       alternatives: [],
       rejected: [],
@@ -162,7 +184,7 @@ describe('activation gate — refusals never reach an import (MK3/24 §8)', () =
 
   it('refuses to issue a ticket for an unresolved result', () => {
     const unresolved = resolveProvider(
-      { contract: { contract: 'x3.demo/greeter', major: 9 }, target },
+      { contract: { contract: GREETER_CONTRACT, major: 9 }, target },
       [offerFor(manifest())],
     )
     expect(() => issueActivationTicket(unresolved, target)).toThrow()
@@ -170,7 +192,7 @@ describe('activation gate — refusals never reach an import (MK3/24 §8)', () =
 
   it('refuses a manifest swapped after resolution', async () => {
     const ticket = ticketFor(manifest())
-    const swapped = manifest({ id: 'org.evil/other' })
+    const swapped = manifest({ id: contributionId('org.evil/other') })
     await expectRefusedWithoutImport(
       () =>
         activateContribution({

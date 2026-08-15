@@ -13,19 +13,20 @@ import {
   SEGMENT_PATTERN,
   VERSION_RANGE_PATTERN,
 } from './patterns.js'
+import { deepFreeze } from '@modkitx-x3/core'
 import { requirementScopeSchema } from './extension-manifest.js'
 
-export const EXECUTION_PROFILES = [
+export const EXECUTION_PROFILES = Object.freeze([
   'browser-sandbox',
   'worker-brokered',
   'process-brokered',
   'wasm-brokered',
   'trusted-in-process',
   'remote-provider',
-] as const
+] as const)
 
 /** Canonical permission taxonomy (MK3/24 §3). */
-export const PERMISSION_CLASSES = [
+export const PERMISSION_CLASSES = Object.freeze([
   'read-source',
   'write-source',
   'filesystem-read',
@@ -36,9 +37,9 @@ export const PERMISSION_CLASSES = [
   'credentials',
   'clipboard',
   'persistent-storage',
-] as const
+] as const)
 
-export const RUNTIME_ENVIRONMENTS = [
+export const RUNTIME_ENVIRONMENTS = Object.freeze([
   'browser-main',
   'browser-worker',
   'node',
@@ -46,11 +47,25 @@ export const RUNTIME_ENVIRONMENTS = [
   'wasm',
   'native',
   'external-tool',
-] as const
+] as const)
 
-export const OPERATING_SYSTEMS = ['any', 'windows', 'linux', 'darwin', 'android', 'ios'] as const
+export const OPERATING_SYSTEMS = Object.freeze([
+  'any',
+  'windows',
+  'linux',
+  'darwin',
+  'android',
+  'ios',
+] as const)
 
-export const ARCHITECTURES = ['any', 'x86', 'x64', 'arm32', 'arm64', 'wasm32'] as const
+export const ARCHITECTURES = Object.freeze([
+  'any',
+  'x86',
+  'x64',
+  'arm32',
+  'arm64',
+  'wasm32',
+] as const)
 
 export const runtimeTargetConstraintSchema = {
   type: 'object',
@@ -67,6 +82,8 @@ export const runtimeTargetConstraintSchema = {
 
 /** MK3/24 §3 — the one authored source of requested permissions/targets/profiles. */
 export const runtimeVariantDeclarationSchema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  $id: 'https://schemas.modkitx.org/x3/runtime-variant-declaration.v1.schema.json',
   type: 'object',
   additionalProperties: false,
   required: ['variantId', 'entrypoint', 'target', 'executionProfile', 'requestedPermissionClasses'],
@@ -83,12 +100,14 @@ export const runtimeVariantDeclarationSchema = {
 
 /** MK3/23 §8 — contract-based requirement with explicit mode/scope. */
 export const scopedContractRequirementSchema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  $id: 'https://schemas.modkitx.org/x3/scoped-contract-requirement.v1.schema.json',
   type: 'object',
   additionalProperties: false,
   required: ['contract', 'major', 'mode', 'scope'],
   properties: {
     contract: { type: 'string', pattern: QUALIFIED_PATTERN },
-    major: { type: 'integer', minimum: 0 },
+    major: { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
     range: { type: 'string', pattern: VERSION_RANGE_PATTERN },
     mode: { enum: ['required', 'default', 'suggested', 'integrates'] },
     scope: requirementScopeSchema,
@@ -96,6 +115,8 @@ export const scopedContractRequirementSchema = {
 } as const
 
 export const contributionManifestSchema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  $id: 'https://schemas.modkitx.org/x3/contribution-manifest.v1.schema.json',
   type: 'object',
   additionalProperties: false,
   required: ['schemaVersion', 'contract', 'id', 'displayName', 'spec'],
@@ -107,7 +128,7 @@ export const contributionManifestSchema = {
       required: ['id', 'major'],
       properties: {
         id: { type: 'string', pattern: QUALIFIED_PATTERN },
-        major: { type: 'integer', minimum: 0 },
+        major: { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
       },
     },
     id: { type: 'string', pattern: QUALIFIED_PATTERN },
@@ -116,6 +137,11 @@ export const contributionManifestSchema = {
     runtimeVariants: { type: 'array', items: runtimeVariantDeclarationSchema },
     dependsOn: { type: 'array', items: scopedContractRequirementSchema },
     limitations: { type: 'array', items: { type: 'string', minLength: 1 } },
-    spec: {},
+    spec: { title: 'JsonValue' },
   },
 } as const
+
+deepFreeze(runtimeTargetConstraintSchema)
+deepFreeze(runtimeVariantDeclarationSchema)
+deepFreeze(scopedContractRequirementSchema)
+deepFreeze(contributionManifestSchema)
