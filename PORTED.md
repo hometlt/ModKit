@@ -17,10 +17,16 @@ justifications (BRIEF-12 §3.1) are also recorded in this file, one line per dep
 - `packages/sdk/src/schemas/contribution-manifest.ts (RUNTIME_ENVIRONMENTS/OPERATING_SYSTEMS/ARCHITECTURES) ← packages/assets/src/codec-manifest.ts@f10666be | verbatim v1 wire dictionaries (23 §8: RuntimeTarget aliases the existing concrete shape); hostCapabilities/webApis left as open strings pending owner promotion of the closed lists | value lists only, no code`
 - `packages/sdk/test/contribution-manifest.test.ts (convertedDds) ← extensions/common/images/codecs/dds/codec.manifest.json@717e7d38 | converted to ContributionManifestV1: kind/capabilities verbs dropped (MK3/02 §1), entrypoints map → single-entrypoint runtime variant, match/operations moved into contract-specific spec | data-only fixture under a compat test contract`
 - `packages/sdk/test/fixtures/legacy/legacy-codec-manifest.json ← extensions/common/images/codecs/dds/codec.manifest.json@717e7d38 | trimmed verbatim OLD v1 shape as negative input | legacy-input fixture under fixtures/legacy/, asserted to FAIL the envelope schema`
+- `extensions/common/text-data/test/fixtures/ini-sc2-parity.json ← modkitx/packages/xml/src/formats.ts::parseSc2Ini@048eb0fd | recorded section/key/value oracle output; no parser code copied | proves ini-sc2 compatibility without putting @modkitx/xml in the X3 closure`
+- `extensions/common/text-data/test/fixtures/csv-rfc4180-parity.json ← csv-parse/sync@6.1.0 | recorded RFC 4180 quoting/CRLF oracle output; no implementation code copied | catches delimiter, quoted-comma and escaped-quote drift`
 
 ## Runtime dependencies (published packages)
 
 - `dependency: ajv@^8.17.1 (→8.20.0) in @modkitx-x3/sdk | compiles the authored JSON Schema consts for runtime validation (manifests, envelopes, locks) | hand-writing a JSON Schema validator would be a second drifting authority; nothing in core covers schema validation`
+- `dependency: jsonc-parser@^3.3.1 in modkit-extension-x3-text-data | tolerant JSON/JSONC CST with offsets and stable parse codes | the bootstrap closure intentionally owns contracts only and contains no syntax parser`
+- `dependency: @rgrove/parse-xml@^4.2.3 in modkit-extension-x3-text-data | portable generic XML parser with no Node dependency; DTD/entity policy remains in the extension preflight | no XML parser exists in core/sdk/vfs/host and SC2 XML is not a generic replacement`
+- `dependency: yaml@^2.9.0 in modkit-extension-x3-text-data | YAML 1.2 document parser with alias limits and diagnostics | a hand-written YAML parser would be unsafe and outside the platform closure`
+- `dependency: smol-toml@^1.8.0 in modkit-extension-x3-text-data | portable TOML 1.0 parser/serializer | no bootstrap package covers TOML and the dependency remains extension-local`
 
 ## Dev toolchain (workspace root, dev-only; pinned by pnpm-lock.yaml 2026-08-13)
 
@@ -33,9 +39,9 @@ justifications (BRIEF-12 §3.1) are also recorded in this file, one line per dep
 - `dependency: prettier@^3.3.0 (→3.9.6) in root devDependencies | formatting, mirrors modkitx conventions | dev-only`
 - `dependency: @types/node@^22.5.0 (→22.20.1) in root devDependencies | Node typings for tooling tests (child_process/url) | dev-only`
 
-Closure summary (kept in sync with the lists above; the stale «nothing ported yet» tail was
-removed 2026-08-13 during the post-audit rework): exactly **one** runtime dependency outside
-the lab packages — `ajv` in `sdk`, loaded lazily so importing the sdk does not pay for it.
-Everything else above is dev-only. Ported material is limited to the value dictionaries and
-fixtures listed under «Ported code and fixtures»; no `modkitx` code is imported at runtime
-in any form.
+Closure summary (kept in sync with the lists above): the bootstrap closure still has exactly
+**one** third-party runtime dependency — `ajv` in `sdk`, loaded lazily. The four syntax-parser
+dependencies belong only to the external `modkit-extension-x3-text-data` package and are proven
+absent from packed `core/sdk/vfs/host` artifacts. Everything else above is dev-only. Ported
+material is limited to the value dictionaries and fixtures listed under «Ported code and
+fixtures»; no `modkitx` code is imported at runtime in any form.

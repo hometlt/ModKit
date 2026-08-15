@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/service-provider-contribution",
+    "major": 1
+  },
+  "id": "org.modkitx/delimited-text-default",
+  "displayName": "delimited syntax provider",
+  "runtimeVariants": [
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/providers/index.js",
+      "target": {
+        "environments": ["browser-worker", "node", "node-worker"]
+      },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "provides": [
+      {
+        "offerId": "csv-syntax-default-v1",
+        "contract": "common.text-data/csv-syntax",
+        "major": 1,
+        "version": "1.0.0"
+      },
+      {
+        "offerId": "tsv-syntax-default-v1",
+        "contract": "common.text-data/tsv-syntax",
+        "major": 1,
+        "version": "1.0.0"
+      }
+    ],
+    "lifecycleScope": "session",
+    "outputs": [
+      {
+        "id": "table.cells",
+        "representation": "runtime",
+        "presence": "will-expose"
+      }
+    ]
+  }
+}

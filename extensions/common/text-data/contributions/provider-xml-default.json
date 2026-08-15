@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/service-provider-contribution",
+    "major": 1
+  },
+  "id": "org.modkitx/xml-syntax-default",
+  "displayName": "xml syntax provider",
+  "runtimeVariants": [
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/providers/index.js",
+      "target": {
+        "environments": ["browser-worker", "node", "node-worker"]
+      },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "provides": [
+      {
+        "offerId": "xml-syntax-default-v1",
+        "contract": "common.text-data/xml-syntax",
+        "major": 1,
+        "version": "1.0.0"
+      }
+    ],
+    "lifecycleScope": "session",
+    "outputs": [
+      {
+        "id": "structure.hierarchy",
+        "representation": "runtime",
+        "presence": "will-expose"
+      }
+    ]
+  }
+}

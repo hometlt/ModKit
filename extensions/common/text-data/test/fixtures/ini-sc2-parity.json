@@ -1,0 +1,11 @@
+{
+  "input": "; comment\nroot = zero\n[Alpha]\nkey = first\nspaced = value with spaces\n[Empty]\n# comment\n",
+  "sections": [
+    { "name": "", "entries": { "root": "zero" } },
+    {
+      "name": "Alpha",
+      "entries": { "key": "first", "spaced": "value with spaces" }
+    },
+    { "name": "Empty", "entries": {} }
+  ]
+}
