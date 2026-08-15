@@ -21,6 +21,12 @@ export {
 } from './service-definitions.js'
 export { resolveProvider, RESOLVER_VERSION } from './resolution/resolver.js'
 export {
+  explainProviderResolution,
+  renderProviderResolutionExplanation,
+  type ExplainedCandidate,
+  type ProviderResolutionExplanation,
+} from './resolution/explain.js'
+export {
   createContractResolverPort,
   resolveServiceProvider,
   type ContractResolverRuntimeOptions,

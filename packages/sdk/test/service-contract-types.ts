@@ -15,6 +15,7 @@ import type {
 } from '@modkitx-x3/sdk'
 import type { ContributionManifestV1Wire } from '../src/manifest/contribution-types.js'
 import type { ContractOfferWire } from '../src/resolution/types.js'
+import { defineServiceProvider } from '@modkitx-x3/sdk/authoring'
 
 export const nonJsonContributionManifest = {
   schemaVersion: 1,
@@ -155,6 +156,30 @@ export const selectedOfferJsonProof: JsonValue = selectedJsonOffer
 
 declare const serviceProviderModule: ServiceProviderModule<'org.example/json-syntax', 1>
 declare const contributionContext: ContributionContext
+export const authoredJsonProvider = defineServiceProvider({
+  id: 'org.example/json-provider',
+  contribution: {
+    provides: [
+      {
+        offerId: 'json',
+        contract: 'org.example/json-syntax',
+        major: 1,
+        version: '1.0.0',
+        facet: { dialect: 'json', allowComments: false },
+      },
+    ],
+    lifecycleScope: 'session',
+  },
+  module: serviceProviderModule,
+  profile: 'source-reader',
+  targets: [
+    {
+      variantId: 'portable',
+      environments: ['browser-worker', 'node-worker'],
+      entrypoint: './dist/provider.js',
+    },
+  ],
+})
 export const activatedJsonProvider = serviceProviderModule.createProvider(
   selectedJsonOffer,
   contributionContext,

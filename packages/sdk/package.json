@@ -16,6 +16,10 @@
       "types": "./dist/subjects/index.d.ts",
       "default": "./dist/subjects/index.js"
     },
+    "./authoring": {
+      "types": "./dist/authoring/index.d.ts",
+      "default": "./dist/authoring/index.js"
+    },
     "./formats": {
       "types": "./dist/formats/index.d.ts",
       "default": "./dist/formats/index.js"
