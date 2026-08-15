@@ -8,6 +8,10 @@ overrides a canonical or detailed owner.
 
 ## A‑1 implementation handoff (2026-08-15)
 
+- Opus verdict: **ACCEPT A‑1 with one P1**. The P1 is closed: the published core
+  `sourceSpanSchema` now has a real `json-schema-to-ts` exact-union drift assertion. The separate
+  data-source schema name is intentionally a compatibility alias of the published contract-
+  definition data-source arm, not a thirteenth SDK artifact.
 - Production core/SDK schema and ABI surfaces from BRIEF‑13A A‑1 are implemented, emitted and
   exercised by compile, runtime, adversarial, bundle and packed-consumer gates.
 - `TraitId`/`TraitInstance` are the v2 names; no `Capability*` compatibility re-export is added.

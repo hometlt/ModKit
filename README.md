@@ -42,9 +42,9 @@ decision. Long-lived double authority with `modkitx` is forbidden.
 - **S0–S4 implementation complete**: `pnpm check` rebuilds the production bundles and passes
   strict typecheck, lint, formatting, 106 tests, schema drift, the legacy boundary and the
   external packed-tarball proof.
-- **A‑1 implementation complete; independent recheck requested.** S0–S4 evidence is retained and
-  A‑0 governance remains adopted. A‑1 now lands the production core/SDK schema and ABI surfaces;
-  A‑2 host inventory/projection behavior and later runtime slices remain separate work.
+- **A‑1 accepted.** Opus reproduced schemas, typecheck and all 184 tests at `0ead78b9`; its one P1
+  (`source-span.v1` missing a FromSchema drift gate) is closed by the follow-up commit. S0–S4 and
+  A‑0 remain adopted; A‑2 host inventory/projection behavior and later slices remain separate work.
 - Local `pnpm bench` is informational and never blocks work. `pnpm bench:gate` keeps only three
   budgets (core import, bootstrap-closure import, CLI validate) and is reserved for a fixed CI
   runner or dedicated machine. There are no local calibration probes, normalization or mutable

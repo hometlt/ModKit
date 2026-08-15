@@ -5,6 +5,7 @@
  */
 
 import type { FromSchema } from 'json-schema-to-ts'
+import type { SourceSpanWire, sourceSpanSchema } from '@modkitx-x3/core'
 import type {
   extensionManifestSchema,
   extensionRequirementSchema,
@@ -42,6 +43,11 @@ import type { ContractDefinitionSpecV1Wire, TraitDefinitionSpecV1Wire } from '..
 type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false
 type Expect<T extends true> = T
+type KeysOfUnion<T> = T extends unknown ? keyof T : never
+type Simplify<T> = { [K in keyof T]: T[K] }
+type ExclusiveUnion<T, Whole = T> = T extends unknown
+  ? Simplify<T & Partial<Record<Exclude<KeysOfUnion<Whole>, keyof T>, never>>>
+  : never
 
 type DeepMutable<T> = T extends readonly (infer U)[]
   ? DeepMutable<U>[]
@@ -59,6 +65,11 @@ type DeepMutableDescriptor<T> = T extends readonly (infer U)[]
           : DeepMutableDescriptor<T[K]>
       }
     : T
+
+/** Published core schema: the three exclusive coordinate branches must track the wire DTO. */
+export type SourceSpanWireDriftGate = Expect<
+  Equal<DeepMutable<SourceSpanWire>, ExclusiveUnion<FromSchema<typeof sourceSpanSchema>>>
+>
 
 export type ExtensionManifestDriftGate = Expect<
   Equal<DeepMutable<ExtensionManifest>, FromSchema<typeof extensionManifestSchema>>
