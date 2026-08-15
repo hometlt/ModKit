@@ -62,6 +62,8 @@ export interface PresentationSlot {
   readonly contributionId: string
   readonly extensionId: string
   readonly priority: number
+  /** Host-global singleton selection key; at most one stage per group enters a session plan. */
+  readonly singletonGroup?: string
   readonly bindings: readonly BindingRef[]
 }
 
@@ -73,32 +75,51 @@ export type StageSlotId<Slots extends readonly PresentationSlot[] = readonly Pre
 
 export type FallbackSlot = PresentationSlot & { readonly kind: 'fallback' }
 
-export interface PresentationPlan<
+interface PresentationPlanBase<
   Slots extends readonly PresentationSlot[] = readonly PresentationSlot[],
 > {
   readonly subjectUri: string
   readonly revision: RevisionId
   readonly slots: Slots
-  readonly activeStage: StageSlotId<Slots>
-  readonly alternateStages: readonly StageSlotId<Slots>[]
-  readonly fallback?: FallbackSlot
   readonly unsatisfied: readonly {
     readonly contributionId: string
     readonly missing: readonly string[]
   }[]
 }
 
+export type PresentationPlan<
+  Slots extends readonly PresentationSlot[] = readonly PresentationSlot[],
+> = PresentationPlanBase<Slots> &
+  (
+    | {
+        readonly activeStage: StageSlotId<Slots>
+        readonly alternateStages: readonly StageSlotId<Slots>[]
+        readonly fallback?: FallbackSlot
+      }
+    | {
+        readonly activeStage?: never
+        readonly alternateStages: readonly []
+        readonly fallback: FallbackSlot
+      }
+  )
+
 /** Authoring helper; full offer/ticket validation remains host-owned in A-6. */
 export function definePresentationPlan<const Slots extends readonly PresentationSlot[]>(
-  plan: Omit<PresentationPlan<Slots>, 'slots' | 'activeStage' | 'alternateStages'> & {
-    readonly slots: Slots
-    readonly activeStage: StageSlotId<NoInfer<Slots>>
-    readonly alternateStages: readonly StageSlotId<NoInfer<Slots>>[]
-  },
+  plan: PresentationPlan<Slots> & { readonly slots: Slots },
 ): Readonly<PresentationPlan<Slots>> {
   const stageIds = new Set(
     plan.slots.filter(slot => slot.kind === 'stage').map(slot => slot.slotId as string),
   )
+  if (plan.activeStage === undefined) {
+    if (
+      plan.fallback === undefined ||
+      plan.fallback.kind !== 'fallback' ||
+      plan.alternateStages.length !== 0
+    ) {
+      throw new TypeError('a fallback-only presentation plan cannot declare stage alternates')
+    }
+    return snapshotJsonWireData(plan) as Readonly<PresentationPlan<Slots>>
+  }
   if (!stageIds.has(plan.activeStage)) {
     throw new TypeError(`active presentation stage is not declared: ${plan.activeStage}`)
   }
@@ -129,9 +150,11 @@ export type PresentationPlanIssue =
   | 'missing-active-stage'
   | 'missing-alternate-stage'
   | 'duplicate-binding-id'
+  | 'duplicate-singleton-group'
   | 'unresolved-binding'
   | 'unexpected-binding'
   | 'ticket-binding-mismatch'
+  | 'invalid-plan-digest'
   | 'invalid-fallback'
 
 export type PresentationPlanValidation =

@@ -58,3 +58,18 @@ export {
   type ManagedAssetSession,
 } from './session.js'
 export { createV1DescriptorProjectionPort } from './v1-projection.js'
+export {
+  createByteRangeSource,
+  createLazyTableDataSource,
+  createUtf8TextDataSource,
+  type LazyTableOptions,
+} from './data-sources.js'
+export {
+  createPresentationPlanValidator,
+  createViewerSources,
+  resolvePresentationPlan,
+  switchPresentationStage,
+  type CatalogPresentationCandidate,
+  type PresentationResolverOptions,
+  type PresentationValidatorOptions,
+} from './presentation.js'
