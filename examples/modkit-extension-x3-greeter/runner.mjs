@@ -26,7 +26,7 @@ const request = {
 try {
   const run = await runMinimalHost({
     extensionDirs: [here],
-    specSchemas: [greeterSpecEntry],
+    contributionContracts: [greeterSpecEntry],
     request,
     grant: deny
       ? { id: 'deny-all', classes: [] }

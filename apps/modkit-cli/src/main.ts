@@ -10,7 +10,7 @@
 
 import { resolve } from 'node:path'
 import process from 'node:process'
-import { createSpecSchemaRegistry } from '@modkitx-x3/sdk'
+import { createContributionContractRegistry } from '@modkitx-x3/sdk'
 import { buildInventory, inventoryHasErrors, type Inventory } from '@modkitx-x3/host'
 import { loadExtensionDirectory } from '@modkitx-x3/host/node'
 
@@ -72,7 +72,7 @@ async function main(argv: readonly string[]): Promise<number> {
   let inventory: Inventory
   try {
     const input = await loadExtensionDirectory(resolve(target))
-    inventory = await buildInventory([input], createSpecSchemaRegistry([]))
+    inventory = await buildInventory([input], createContributionContractRegistry([]))
   } catch (error) {
     process.stderr.write(`modkit validate: ${(error as Error).message}\n`)
     return 2

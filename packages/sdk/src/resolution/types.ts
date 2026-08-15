@@ -98,6 +98,8 @@ export interface ProviderRequest {
   readonly pin?: {
     readonly providerId: ProviderId
     readonly runtimeVariant?: string
+    /** Exact logical offer used by strict policy-lock replay. */
+    readonly offerId?: string
   }
 }
 

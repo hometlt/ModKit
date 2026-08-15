@@ -18,12 +18,19 @@
  * full-authority diagnostic: this boundary is audit/policy, not a sandbox (24 §5.1/§6).
  */
 
-import { diagnostic, ModkitError, throwIfAborted, type Diagnostic } from '@modkitx-x3/core'
+import {
+  canonicalJsonStringify,
+  diagnostic,
+  ModkitError,
+  throwIfAborted,
+  type Diagnostic,
+} from '@modkitx-x3/core'
 import { isResolverProduct, resolveProvider } from '../resolution/resolver.js'
+import { inventoryBindingForOffer } from '../offers.js'
+import { inventoryRecordFor, type InventoryContribution } from '../inventory.js'
 import {
   grantValidity,
   narrowGrant,
-  type ContributionManifestV1,
   type ExecutionProfile,
   type HostPolicy,
   type PermissionGrant,
@@ -54,12 +61,17 @@ declare const TICKET_BRAND: unique symbol
  */
 export interface ActivationTicket {
   readonly [TICKET_BRAND]: true
+  readonly contributionContract: { readonly id: string; readonly major: number }
+  readonly offeredContract: { readonly id: string; readonly version: string }
+  readonly inventoryRecordId: string
+  readonly manifestDigest: string
+  readonly artifactDigest: string
+  readonly artifactRoot: URL
   readonly extensionId: string
   readonly contributionId: string
-  readonly contract: string
-  readonly contractMajor: number
   /** Exact logical offer selected when one provider exposes several offers for one contract. */
   readonly offerId: string
+  readonly offerFingerprint: string
   /** Contract-owned canonical non-secret selector; raw facets never enter an activation ticket. */
   readonly contractSelectionKey?: string
   readonly variantId: string
@@ -68,6 +80,11 @@ export interface ActivationTicket {
 }
 
 const issuedTickets = new WeakSet<object>()
+interface TicketBinding {
+  readonly contribution: InventoryContribution
+  readonly ticketFingerprint: string
+}
+const ticketBindings = new WeakMap<object, TicketBinding>()
 
 /**
  * Resolve and issue in one host-owned step. There is deliberately no public way to hand
@@ -81,6 +98,8 @@ export function resolveForActivation(
 ): { readonly result: ResolutionResult; readonly ticket?: ActivationTicket } {
   const result = resolveProvider(request, offers)
   if (result.state !== 'resolved') return { result }
+  const binding = inventoryBindingForOffer(result.selected.offer)
+  if (binding === undefined) return { result }
   return { result, ticket: issueActivationTicket(result, request.target, operation) }
 }
 
@@ -108,32 +127,76 @@ export function issueActivationTicket(
     })
   }
   const offer = result.selected.offer
-  const major = result.selected.resolvedContract.major
+  const inventoryBinding = inventoryBindingForOffer(offer)
+  if (inventoryBinding === undefined) {
+    throw new ModkitError({
+      code: 'x3.host/offer-not-in-inventory',
+      message: 'activation tickets can only be issued for production inventory offers',
+    })
+  }
+  const privateRecord = inventoryRecordFor(inventoryBinding.contribution)
+  if (privateRecord === undefined || inventoryBinding.contribution.manifest === undefined) {
+    throw new ModkitError({
+      code: 'x3.host/inventory-record-unavailable',
+      message: 'the selected provider no longer has an attested inventory record',
+    })
+  }
+  const manifest = inventoryBinding.contribution.manifest
   const ticket = Object.freeze({
+    contributionContract: Object.freeze({
+      id: manifest.contract.id,
+      major: manifest.contract.major,
+    }),
+    offeredContract: Object.freeze({
+      id: result.selected.resolvedContract.contract,
+      version: result.selected.resolvedContract.version,
+    }),
+    inventoryRecordId: privateRecord.publicRecord.inventoryRecordId,
+    manifestDigest: privateRecord.publicRecord.manifestDigest,
+    artifactDigest: privateRecord.publicRecord.artifactDigest,
+    artifactRoot: new URL(privateRecord.publicRecord.artifactRoot),
     extensionId: offer.extensionId,
     contributionId: offer.providerId,
-    contract: result.selected.resolvedContract.contract,
-    contractMajor: major,
     offerId: result.selected.resolvedContract.offerId,
+    offerFingerprint: inventoryBinding.offerFingerprint,
     ...(result.selected.contractSelectionKey === undefined
       ? {}
       : { contractSelectionKey: result.selected.contractSelectionKey }),
     variantId: offer.runtimeVariant,
-    target: Object.freeze({ ...target }),
+    target: JSON.parse(canonicalJsonStringify(target)) as RuntimeTarget,
     ...(operation === undefined ? {} : { operation }),
   }) as unknown as ActivationTicket
   issuedTickets.add(ticket)
+  ticketBindings.set(ticket, {
+    contribution: inventoryBinding.contribution,
+    ticketFingerprint: ticketFingerprint(ticket),
+  })
   return ticket
+}
+
+function ticketFingerprint(ticket: ActivationTicket): string {
+  return canonicalJsonStringify({
+    contributionContract: ticket.contributionContract,
+    offeredContract: ticket.offeredContract,
+    inventoryRecordId: ticket.inventoryRecordId,
+    manifestDigest: ticket.manifestDigest,
+    artifactDigest: ticket.artifactDigest,
+    artifactRoot: ticket.artifactRoot.href,
+    extensionId: ticket.extensionId,
+    contributionId: ticket.contributionId,
+    offerId: ticket.offerId,
+    offerFingerprint: ticket.offerFingerprint,
+    ...(ticket.contractSelectionKey === undefined
+      ? {}
+      : { contractSelectionKey: ticket.contractSelectionKey }),
+    variantId: ticket.variantId,
+    target: ticket.target,
+    ...(ticket.operation === undefined ? {} : { operation: ticket.operation }),
+  })
 }
 
 export interface ActivationRequest {
   readonly ticket: ActivationTicket
-  /** The manifest as the inventory holds it — cross-checked against the ticket. */
-  readonly manifest: ContributionManifestV1
-  /** Coordinate of the extension the inventory read this manifest from. */
-  readonly extensionId: string
-  /** Root of the owning artifact; the entry point must resolve inside it. */
-  readonly baseUrl: URL
   readonly grant: PermissionGrant
   readonly policy?: HostPolicy
   readonly signal?: AbortSignal
@@ -182,26 +245,51 @@ function targetSatisfies(variant: RuntimeVariantDeclaration, target: RuntimeTarg
 
 export async function activateContribution(request: ActivationRequest): Promise<Activation> {
   throwIfAborted(request.signal)
-  const { ticket, manifest } = request
+  const { ticket } = request
 
   // 1–2. the ticket must be one this host issued (identity, not shape: a spread copy or a
   // hand-built look-alike is not a member) and must still describe this manifest
-  if (!issuedTickets.has(ticket)) {
+  const ticketBinding = ticketBindings.get(ticket)
+  if (
+    !issuedTickets.has(ticket) ||
+    ticketBinding === undefined ||
+    ticketBinding.ticketFingerprint !== ticketFingerprint(ticket)
+  ) {
     throw deny(
       'x3.host/invalid-ticket',
       'activation requires a ticket issued by this host from a real resolution',
     )
   }
+  const privateRecord = inventoryRecordFor(ticketBinding.contribution)
+  const manifest = ticketBinding.contribution.manifest
+  if (privateRecord === undefined || manifest === undefined) {
+    throw deny('x3.host/inventory-record-unavailable', 'the ticket inventory record is unavailable')
+  }
   const mismatches: string[] = []
-  if (ticket.extensionId !== request.extensionId) mismatches.push('extension')
+  if (ticket.inventoryRecordId !== privateRecord.publicRecord.inventoryRecordId)
+    mismatches.push('inventory record')
+  if (ticket.manifestDigest !== privateRecord.publicRecord.manifestDigest)
+    mismatches.push('manifest digest')
+  if (ticket.artifactDigest !== privateRecord.publicRecord.artifactDigest)
+    mismatches.push('artifact digest')
+  if (ticket.artifactRoot.href !== privateRecord.publicRecord.artifactRoot)
+    mismatches.push('artifact root')
   if (ticket.contributionId !== manifest.id) mismatches.push('contribution')
-  if (ticket.contract !== manifest.contract.id) mismatches.push('contract')
-  if (ticket.contractMajor !== manifest.contract.major) mismatches.push('contract major')
+  if (ticket.contributionContract.id !== manifest.contract.id) mismatches.push('contract')
+  if (ticket.contributionContract.major !== manifest.contract.major)
+    mismatches.push('contract major')
   if (mismatches.length > 0) {
     throw deny(
       'x3.host/ticket-manifest-mismatch',
       `the ticket does not describe this contribution (${mismatches.join(', ')})`,
       { mismatches, ticketContribution: ticket.contributionId, manifestId: manifest.id },
+    )
+  }
+  if (!(await privateRecord.verifyArtifactDigest(ticket.artifactDigest))) {
+    throw deny(
+      'x3.host/artifact-digest-mismatch',
+      'the selected artifact changed after inventory and will not be imported',
+      { inventoryRecordId: ticket.inventoryRecordId },
     )
   }
   const variant = (manifest.runtimeVariants ?? []).find(v => v.variantId === ticket.variantId)
@@ -257,7 +345,7 @@ export async function activateContribution(request: ActivationRequest): Promise<
   }
 
   // 6. entry point contained inside its own artifact
-  const entryUrl = resolveContainedEntrypoint(request.baseUrl, variant.entrypoint)
+  const entryUrl = resolveContainedEntrypoint(privateRecord.artifactRoot, variant.entrypoint)
 
   throwIfAborted(request.signal)
   const module = (await import(entryUrl.href)) as Record<string, unknown>

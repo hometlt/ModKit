@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "contract": { "id": "x3.demo/greeter", "major": 1 },
+  "contract": { "id": "x3.demo/greeter-contribution", "major": 1 },
   "id": "org.example/x3-greeter-plain",
   "displayName": "Plain greeter",
   "runtimeVariants": [

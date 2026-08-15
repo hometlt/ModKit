@@ -1,13 +1,39 @@
 export {
   buildInventory,
   inventoryHasErrors,
+  type ArtifactAttestationInput,
   type ExtensionInput,
   type Inventory,
   type InventoryContribution,
   type InventoryExtension,
+  type InventoryRecord,
 } from './inventory.js'
+export {
+  createHostContributionContractRegistry,
+  PROVIDER_OFFER_INVENTORY_FACT,
+  VIEWER_CONTRIBUTION_INVENTORY_FACT,
+} from './contribution-registry.js'
+export { offersFromInventory } from './offers.js'
+export {
+  createServiceContractDefinitionRegistry,
+  registerServiceContractDefinitionsFromInventory,
+  type ServiceContractDefinitionRegistryOptions,
+} from './service-definitions.js'
 export { resolveProvider, RESOLVER_VERSION } from './resolution/resolver.js'
-export { buildLockEntry, buildLockKey, serializePolicyLock } from './resolution/lock.js'
+export {
+  createContractResolverPort,
+  resolveServiceProvider,
+  type ContractResolverRuntimeOptions,
+  type FacetAwareProviderRequest,
+} from './resolution/service-resolver.js'
+export {
+  buildLockEntry,
+  buildLockKey,
+  parsePolicyLock,
+  replayPolicyLock,
+  serializePolicyLock,
+  type ProviderPolicyLock,
+} from './resolution/lock.js'
 export {
   activateContribution,
   resolveForActivation,

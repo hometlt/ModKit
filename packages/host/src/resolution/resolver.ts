@@ -71,6 +71,12 @@ function remember<T extends object>(result: T, request: ProviderRequest): T {
 interface Candidate {
   readonly offer: ProviderOffer
   readonly contractOffer: ContractOffer
+  readonly contractSelectionKey?: string
+}
+
+export interface ResolutionPreparation {
+  readonly accepts?: (offer: ProviderOffer, contractOffer: ContractOffer) => boolean
+  readonly selectionKey?: (offer: ProviderOffer, contractOffer: ContractOffer) => string | undefined
 }
 
 function candidateSortKey(candidate: Candidate): string {
@@ -142,6 +148,7 @@ function traitRequirementsAreValid(
 export function resolveProvider(
   request: ProviderRequest,
   offers: readonly ProviderOffer[],
+  preparation?: ResolutionPreparation,
 ): ResolutionResult {
   if (
     !traitRequirementsAreValid(request.requiredOutputs) ||
@@ -177,7 +184,11 @@ export function resolveProvider(
         return false
       }
       const version = parseSemver(p.version)
-      return version !== undefined && version.major === p.major
+      return (
+        version !== undefined &&
+        version.major === p.major &&
+        (preparation?.accepts?.(offer, p) ?? true)
+      )
     })
     if (contractMatches.length === 0) {
       reject(
@@ -195,7 +206,14 @@ export function resolveProvider(
       )
       continue
     }
-    for (const match of contractMatches) candidates.push({ offer, contractOffer: match })
+    for (const match of contractMatches) {
+      const selectionKey = preparation?.selectionKey?.(offer, match)
+      candidates.push({
+        offer,
+        contractOffer: match,
+        ...(selectionKey === undefined ? {} : { contractSelectionKey: selectionKey }),
+      })
+    }
   }
   if (candidates.length === 0) {
     return remember(
@@ -306,7 +324,9 @@ export function resolveProvider(
     pool = permitted.filter(candidate => {
       const hit =
         candidate.offer.providerId === pin.providerId &&
-        (pin.runtimeVariant === undefined || candidate.offer.runtimeVariant === pin.runtimeVariant)
+        (pin.runtimeVariant === undefined ||
+          candidate.offer.runtimeVariant === pin.runtimeVariant) &&
+        (pin.offerId === undefined || candidate.contractOffer.offerId === pin.offerId)
       if (!hit) {
         reject(candidate.offer, 'pin-unsatisfied', undefined, candidate.contractOffer.offerId)
       }
@@ -361,6 +381,9 @@ export function resolveProvider(
   const toResolved = (candidate: Candidate): ResolvedProvider => ({
     offer: candidate.offer,
     resolvedContract: candidate.contractOffer,
+    ...(candidate.contractSelectionKey === undefined
+      ? {}
+      : { contractSelectionKey: candidate.contractSelectionKey }),
   })
   return remember(
     {

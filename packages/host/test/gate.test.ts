@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { contractId, isModkitError } from '@modkitx-x3/core'
+import { canonicalJsonStringify, contractId, isModkitError } from '@modkitx-x3/core'
 import {
   assertNotWider,
+  createContributionContractRegistry,
   contributionId,
   narrowGrant,
   type ContributionManifestV1,
@@ -12,6 +13,10 @@ import {
 } from '@modkitx-x3/sdk'
 import {
   activateContribution,
+  buildInventory,
+  offersFromInventory,
+  PROVIDER_OFFER_INVENTORY_FACT,
+  resolveContainedEntrypoint,
   resolveForActivation,
   resolveProvider,
   type ActivationTicket,
@@ -29,6 +34,7 @@ import { issueActivationTicket } from '../src/security/gate.js'
 const baseUrl = new URL('./fixtures/gate-extension/', import.meta.url)
 const EXTENSION_ID = 'org.x3lab/gate-fixture'
 const GREETER_CONTRACT = contractId('x3.demo/greeter')
+const GREETER_CONTRIBUTION_CONTRACT = contractId('x3.demo/greeter-contribution')
 const target: RuntimeTarget = {
   environment: 'node',
   operatingSystem: 'windows',
@@ -43,7 +49,7 @@ declare global {
 function manifest(overrides: Partial<ContributionManifestV1> = {}): ContributionManifestV1 {
   return {
     schemaVersion: 1,
-    contract: { id: GREETER_CONTRACT, major: 1 },
+    contract: { id: GREETER_CONTRIBUTION_CONTRACT, major: 1 },
     id: contributionId('org.x3lab/spy-greeter'),
     displayName: 'Spy greeter',
     runtimeVariants: [
@@ -74,22 +80,89 @@ function offerFor(m: ContributionManifestV1): ProviderOffer {
     provides: [
       {
         offerId: variant.variantId,
-        contract: m.contract.id,
-        major: m.contract.major,
-        version: `${m.contract.major}.0.0`,
+        contract: GREETER_CONTRACT,
+        major: 1,
+        version: '1.0.0',
       },
     ],
   }
 }
 
-function ticketFor(m: ContributionManifestV1, requestTarget: RuntimeTarget = target) {
+async function ticketFixture(
+  m: ContributionManifestV1,
+  requestTarget: RuntimeTarget = target,
+  projectedTarget = m.runtimeVariants?.[0]?.target,
+) {
+  let artifactValid = true
+  const registry = createContributionContractRegistry([
+    {
+      contract: { id: GREETER_CONTRIBUTION_CONTRACT, major: 1 },
+      schema: { type: 'object' },
+      mode: 'executable',
+      validateSemantics: () => [],
+      project: (validated, context) => [
+        {
+          contract: { id: PROVIDER_OFFER_INVENTORY_FACT, major: 1 },
+          value: {
+            ...offerFor(validated),
+            target: projectedTarget,
+          } as never,
+          provenance: context,
+        },
+      ],
+      moduleAbi: { export: 'createGreeter', abiVersion: 1 },
+      conformanceProfile: 'x3.demo/greeter-v1',
+    },
+  ])
+  const documentPath = 'contributions/spy.json'
+  const digest = `sha256:${canonicalJsonStringify(m).length}`
+  const inventory = await buildInventory(
+    [
+      {
+        source: 'gate-fixture',
+        containers: {
+          standalone: {
+            schemaVersion: 1,
+            publisher: 'org.x3lab',
+            id: 'gate-fixture',
+            version: '1.0.0',
+            license: 'MIT',
+            contributionManifests: [documentPath],
+          },
+        },
+        files: [documentPath],
+        documents: new Map([[documentPath, m]]),
+        documentDigests: new Map([[documentPath, digest]]),
+        artifact: {
+          inventoryRecordId: 'artifact:gate-fixture',
+          artifactDigest: 'sha256:gate-fixture',
+          artifactRoot: baseUrl,
+          verifyArtifactDigest: expected => artifactValid && expected === 'sha256:gate-fixture',
+        },
+      },
+    ],
+    registry,
+  )
+  const offers = offersFromInventory(inventory)
   const request: ProviderRequest = {
-    contract: { contract: m.contract.id, major: m.contract.major },
+    contract: { contract: GREETER_CONTRACT, major: 1 },
     target: { ...requestTarget, grantedPermissions: ['read-source'] },
   }
-  const { ticket } = resolveForActivation(request, [offerFor(m)])
-  if (!ticket) throw new Error('fixture resolution produced no ticket')
-  return ticket
+  const { result, ticket } = resolveForActivation(request, offers)
+  if (!ticket) {
+    throw new Error(
+      `fixture resolution produced no ticket: ${canonicalJsonStringify({
+        result,
+        offers,
+        contributions: inventory.extensions.flatMap(extension => extension.contributions),
+      })}`,
+    )
+  }
+  return { ticket, invalidateArtifact: () => (artifactValid = false) }
+}
+
+async function ticketFor(m: ContributionManifestV1, requestTarget: RuntimeTarget = target) {
+  return (await ticketFixture(m, requestTarget)).ticket
 }
 
 const fullGrant: PermissionGrant = { id: 'g-full', classes: ['read-source'] }
@@ -105,8 +178,10 @@ async function expectRefusedWithoutImport(
 }
 
 describe('activation gate — refusals never reach an import (MK3/24 §8)', () => {
-  it('retains the selected logical offer without carrying raw facets', () => {
-    const ticket = ticketFor(manifest())
+  it('retains both contract planes and the selected offer without raw facets', async () => {
+    const ticket = await ticketFor(manifest())
+    expect(ticket.contributionContract.id).toBe(GREETER_CONTRIBUTION_CONTRACT)
+    expect(ticket.offeredContract.id).toBe(GREETER_CONTRACT)
     expect(ticket.offerId).toBe('portable')
     expect(ticket).not.toHaveProperty('facet')
     expect(ticket).not.toHaveProperty('requestFacet')
@@ -123,12 +198,9 @@ describe('activation gate — refusals never reach an import (MK3/24 §8)', () =
       target,
     } as unknown as ActivationTicket
     await expectRefusedWithoutImport(
-      () =>
+      async () =>
         activateContribution({
           ticket: forged,
-          manifest: manifest(),
-          extensionId: EXTENSION_ID,
-          baseUrl,
           grant: fullGrant,
         }),
       'x3.host/invalid-ticket',
@@ -159,17 +231,14 @@ describe('activation gate — refusals never reach an import (MK3/24 §8)', () =
   })
 
   it('refuses a structural copy of a real ticket, and real tickets are frozen', async () => {
-    const real = ticketFor(manifest())
+    const real = await ticketFor(manifest())
     // A spread copy carries every property (including symbols) but is a different object,
     // so WeakSet membership — the actual check — fails.
     const copy = { ...real, variantId: 'portable' } as ActivationTicket
     await expectRefusedWithoutImport(
-      () =>
+      async () =>
         activateContribution({
           ticket: copy,
-          manifest: manifest(),
-          extensionId: EXTENSION_ID,
-          baseUrl,
           grant: fullGrant,
         }),
       'x3.host/invalid-ticket',
@@ -190,36 +259,31 @@ describe('activation gate — refusals never reach an import (MK3/24 §8)', () =
     expect(() => issueActivationTicket(unresolved, target)).toThrow()
   })
 
-  it('refuses a manifest swapped after resolution', async () => {
-    const ticket = ticketFor(manifest())
-    const swapped = manifest({ id: contributionId('org.evil/other') })
+  it('refuses an artifact changed after resolution', async () => {
+    const fixture = await ticketFixture(manifest())
+    fixture.invalidateArtifact()
     await expectRefusedWithoutImport(
-      () =>
+      async () =>
         activateContribution({
-          ticket,
-          manifest: swapped,
-          extensionId: EXTENSION_ID,
-          baseUrl,
+          ticket: fixture.ticket,
           grant: fullGrant,
         }),
-      'x3.host/ticket-manifest-mismatch',
-      'swapped manifest',
+      'x3.host/artifact-digest-mismatch',
+      'changed artifact',
     )
   })
 
-  it('refuses a foreign extension claiming the same contribution', async () => {
-    const ticket = ticketFor(manifest())
+  it('refuses a structural ticket with a substituted artifact root', async () => {
+    const ticket = await ticketFor(manifest())
+    const substituted = { ...ticket, artifactRoot: new URL('file:///foreign/') } as ActivationTicket
     await expectRefusedWithoutImport(
-      () =>
+      async () =>
         activateContribution({
-          ticket,
-          manifest: manifest(),
-          extensionId: 'org.evil/impostor',
-          baseUrl,
+          ticket: substituted,
           grant: fullGrant,
         }),
-      'x3.host/ticket-manifest-mismatch',
-      'foreign extension',
+      'x3.host/invalid-ticket',
+      'substituted artifact root',
     )
   })
 
@@ -235,29 +299,9 @@ describe('activation gate — refusals never reach an import (MK3/24 §8)', () =
     ['parent traversal', '../../outside.mjs'],
     ['nested traversal', 'entry/../../outside.mjs'],
     ['backslash path', 'entry\\spy-greeter.mjs'],
-  ])('refuses a %s entry point', async (label, entrypoint) => {
-    const m = manifest({
-      runtimeVariants: [
-        {
-          variantId: 'portable',
-          entrypoint,
-          target: { environments: ['node'] },
-          executionProfile: 'trusted-in-process',
-          requestedPermissionClasses: ['read-source'],
-        },
-      ],
-    })
-    await expectRefusedWithoutImport(
-      () =>
-        activateContribution({
-          ticket: ticketFor(m),
-          manifest: m,
-          extensionId: EXTENSION_ID,
-          baseUrl,
-          grant: fullGrant,
-        }),
-      'x3.host/entrypoint-not-contained',
-      label,
+  ])('refuses a %s entry point', (label, entrypoint) => {
+    expect(() => resolveContainedEntrypoint(baseUrl, entrypoint), label).toThrow(
+      expect.objectContaining({ code: 'x3.host/entrypoint-not-contained' }),
     )
     expect(globalThis.__x3Pwned, 'no side effect from a rejected entry point').toBeUndefined()
   })
@@ -275,17 +319,14 @@ describe('activation gate — refusals never reach an import (MK3/24 §8)', () =
       ],
     })
     // A ticket issued for THIS machine (windows/x64) against a permissive variant…
-    const localTicket = ticketFor(manifest())
+    const localTicket = (await ticketFixture(m, target, { environments: ['node'] })).ticket
     // …then activation is attempted with a manifest whose same-named variant actually
     // demands linux/arm64. The gate re-checks the target instead of trusting that the
     // resolution stage saw the same variant.
     await expectRefusedWithoutImport(
-      () =>
+      async () =>
         activateContribution({
           ticket: localTicket,
-          manifest: m,
-          extensionId: EXTENSION_ID,
-          baseUrl,
           grant: fullGrant,
         }),
       'x3.host/target-incompatible',
@@ -299,12 +340,9 @@ describe('activation gate — refusals never reach an import (MK3/24 §8)', () =
   ])('refuses a grant with %s (fail-closed)', async (label, expiresAt) => {
     const m = manifest()
     await expectRefusedWithoutImport(
-      () =>
+      async () =>
         activateContribution({
-          ticket: ticketFor(m),
-          manifest: m,
-          extensionId: EXTENSION_ID,
-          baseUrl,
+          ticket: await ticketFor(m),
           grant: { id: 'g-dead', classes: ['read-source'], expiresAt },
         }),
       'x3.host/grant-not-live',
@@ -315,12 +353,9 @@ describe('activation gate — refusals never reach an import (MK3/24 §8)', () =
   it('refuses when the grant does not cover a declared class', async () => {
     const m = manifest()
     await expectRefusedWithoutImport(
-      () =>
+      async () =>
         activateContribution({
-          ticket: ticketFor(m),
-          manifest: m,
-          extensionId: EXTENSION_ID,
-          baseUrl,
+          ticket: await ticketFor(m),
           grant: { id: 'g-empty', classes: [] },
         }),
       'x3.host/permission-denied',
@@ -331,12 +366,9 @@ describe('activation gate — refusals never reach an import (MK3/24 §8)', () =
   it('refuses when host policy narrows the class away, even with a wide grant', async () => {
     const m = manifest()
     await expectRefusedWithoutImport(
-      () =>
+      async () =>
         activateContribution({
-          ticket: ticketFor(m),
-          manifest: m,
-          extensionId: EXTENSION_ID,
-          baseUrl,
+          ticket: await ticketFor(m),
           grant: { id: 'g-wide', classes: ['read-source', 'network'] },
           policy: { allowedClasses: ['network'] },
         }),
@@ -358,12 +390,9 @@ describe('activation gate — refusals never reach an import (MK3/24 §8)', () =
       ],
     })
     await expectRefusedWithoutImport(
-      () =>
+      async () =>
         activateContribution({
-          ticket: ticketFor(m),
-          manifest: m,
-          extensionId: EXTENSION_ID,
-          baseUrl,
+          ticket: await ticketFor(m),
           grant: fullGrant,
         }),
       'x3.host/unsupported-execution-profile',
@@ -379,10 +408,7 @@ describe('activation gate — the granted path', () => {
     const before = globalThis.__x3SpyImports ?? 0
     const m = manifest()
     const activation = await activateContribution({
-      ticket: ticketFor(m),
-      manifest: m,
-      extensionId: EXTENSION_ID,
-      baseUrl,
+      ticket: await ticketFor(m),
       grant: { id: 'g-session', classes: ['read-source', 'network'] },
     })
     expect(globalThis.__x3SpyImports ?? 0).toBe(before + 1)

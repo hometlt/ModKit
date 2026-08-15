@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { canonicalJsonStringify, contractId, operationId, traitId } from '@modkitx-x3/core'
 import type { ProviderOffer, ProviderRequest } from '@modkitx-x3/sdk'
-import { buildLockEntry, resolveProvider, serializePolicyLock } from '@modkitx-x3/host'
+import {
+  buildLockEntry,
+  parsePolicyLock,
+  replayPolicyLock,
+  resolveProvider,
+  serializePolicyLock,
+} from '@modkitx-x3/host'
 
 const GREETER_CONTRACT = contractId('x3.demo/greeter')
 const PLAIN_TRAIT = traitId('demo.plain')
@@ -280,5 +286,24 @@ describe('staged resolver v1 (23 §9; S3 acceptance)', () => {
     expect(lockA).not.toContain('windows')
     expect(lockA).not.toContain('x64')
     expect(lockA).not.toContain('portable')
+
+    expect(parsePolicyLock(lockA).entries).toHaveLength(1)
+    const replayed = replayPolicyLock(otherRequest, [plain, facetedFancy], lockA)
+    expect(replayed.state).toBe('resolved')
+    if (replayed.state === 'resolved') {
+      expect(replayed.selected.offer.providerId).toBe('org.x3lab/greeter-fancy')
+      expect(replayed.selected.resolvedContract.offerId).toBe('fancy')
+    }
+  })
+
+  it('strict lock read rejects noncanonical bytes and unknown fields', () => {
+    const result = resolveProvider(request, [plain])
+    const text = serializePolicyLock([buildLockEntry(request, result)])
+    expect(() => parsePolicyLock(`${text}\n`)).toThrow(/not canonical/)
+    const parsed = JSON.parse(text) as { entries: Record<string, unknown>[] }
+    const first = parsed.entries[0]
+    if (first === undefined) throw new Error('fixture needs a lock entry')
+    first['secretFacet'] = { token: 'must-not-survive' }
+    expect(() => parsePolicyLock(JSON.stringify(parsed))).toThrow(/missing or unknown fields/)
   })
 })

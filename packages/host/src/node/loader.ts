@@ -5,8 +5,10 @@
  * no execution, no globbing beyond the declared patterns (expansion is pure sdk code).
  */
 
+import { createHash } from 'node:crypto'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { throwIfAborted } from '@modkitx-x3/core'
 import { expandContributionManifests, normalizeExtensionManifest } from '@modkitx-x3/sdk'
 import type { ExtensionInput } from '../inventory.js'
@@ -25,6 +27,42 @@ export function listFilesRecursive(root: string): string[] {
   }
   walk(root)
   return out
+}
+
+function listArtifactFiles(root: string): string[] {
+  const out: string[] = []
+  const walk = (dir: string): void => {
+    for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) =>
+      a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
+    )) {
+      if (entry.name === 'node_modules' || entry.name === '.git') continue
+      const path = join(dir, entry.name)
+      if (entry.isDirectory()) walk(path)
+      else out.push(relative(root, path).split(sep).join('/'))
+    }
+  }
+  walk(root)
+  return out
+}
+
+function sha256(value: Uint8Array | string): string {
+  return `sha256:${createHash('sha256').update(value).digest('hex')}`
+}
+
+function artifactDigest(root: string): string {
+  const hash = createHash('sha256')
+  for (const path of listArtifactFiles(root)) {
+    const pathBytes = Buffer.from(path, 'utf8')
+    const contents = readFileSync(join(root, path))
+    hash.update(Buffer.from(String(pathBytes.byteLength)))
+    hash.update(Buffer.from([0]))
+    hash.update(pathBytes)
+    hash.update(Buffer.from([0]))
+    hash.update(Buffer.from(String(contents.byteLength)))
+    hash.update(Buffer.from([0]))
+    hash.update(contents)
+  }
+  return `sha256:${hash.digest('hex')}`
 }
 
 function readJsonIfExists(path: string): unknown {
@@ -53,6 +91,7 @@ export async function loadExtensionDirectory(
   }
   const files = listFilesRecursive(dir)
   const documents = new Map<string, unknown>()
+  const documentDigests = new Map<string, string>()
   // Pre-read only the documents the declared patterns select; the inventory re-runs the
   // same pure expansion, so both sides see one declared set.
   const normalized = await normalizeExtensionManifest(containers)
@@ -60,9 +99,27 @@ export async function loadExtensionDirectory(
     throwIfAborted(signal)
     const expansion = expandContributionManifests(normalized.manifest.contributionManifests, files)
     for (const entry of expansion.entries) {
-      const document = readJsonIfExists(join(dir, entry.path))
-      if (document !== undefined) documents.set(entry.path, document)
+      const documentPath = join(dir, entry.path)
+      const document = readJsonIfExists(documentPath)
+      if (document !== undefined) {
+        documents.set(entry.path, document)
+        documentDigests.set(entry.path, sha256(readFileSync(documentPath)))
+      }
     }
   }
-  return { source: dir.split(sep).join('/'), containers, files, documents }
+  const initialArtifactDigest = artifactDigest(dir)
+  const artifactRoot = pathToFileURL(`${dir}${sep}`)
+  return {
+    source: dir.split(sep).join('/'),
+    containers,
+    files,
+    documents,
+    documentDigests,
+    artifact: {
+      inventoryRecordId: `artifact:${initialArtifactDigest}`,
+      artifactDigest: initialArtifactDigest,
+      artifactRoot,
+      verifyArtifactDigest: expected => artifactDigest(dir) === expected,
+    },
+  }
 }

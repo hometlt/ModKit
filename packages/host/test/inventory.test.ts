@@ -2,25 +2,30 @@ import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { canonicalJsonStringify, contractId } from '@modkitx-x3/core'
-import { createSpecSchemaRegistry } from '@modkitx-x3/sdk'
-import { buildInventory, inventoryHasErrors, type ExtensionInput } from '@modkitx-x3/host'
+import { createContributionContractRegistry } from '@modkitx-x3/sdk'
+import {
+  buildInventory,
+  createHostContributionContractRegistry,
+  inventoryHasErrors,
+  offersFromInventory,
+  type ExtensionInput,
+} from '@modkitx-x3/host'
+import { SERVICE_PROVIDER_CONTRIBUTION_CONTRACT } from '@modkitx-x3/sdk'
 import { loadExtensionDirectory } from '@modkitx-x3/host/node'
 
-const registry = createSpecSchemaRegistry([
+const registry = createContributionContractRegistry([
   {
-    contract: contractId('x3.demo/greeter'),
-    major: 1,
+    contract: { id: contractId('x3.demo/greeter'), major: 1 },
     schema: {
       type: 'object',
       additionalProperties: false,
       properties: { greeting: { type: 'string', minLength: 1 } },
     },
-    registration: {
-      mode: 'executable',
-      project: () => [],
-      moduleAbi: { export: 'createGreeter', abiVersion: 1 },
-      conformanceProfile: 'x3.demo/greeter-v1',
-    },
+    mode: 'executable',
+    project: () => [],
+    validateSemantics: () => [],
+    moduleAbi: { export: 'createGreeter', abiVersion: 1 },
+    conformanceProfile: 'x3.demo/greeter-v1',
   },
 ])
 
@@ -64,6 +69,13 @@ function input(
     },
     files: paths,
     documents: new Map(Object.entries(contributions)),
+    documentDigests: new Map(paths.map(path => [path, `sha256:${source}:${path}`])),
+    artifact: {
+      inventoryRecordId: `artifact:${source}`,
+      artifactDigest: `sha256:${source}`,
+      artifactRoot: new URL(`file:///inventory/${source}/`),
+      verifyArtifactDigest: expected => expected === `sha256:${source}`,
+    },
   }
 }
 
@@ -144,5 +156,50 @@ describe('buildInventory (S1 acceptance)', () => {
     expect(ext?.manifest.id).toBe('greeter')
     expect(ext?.manifest.version).toBe('1.2.0')
     expect(ext?.contributions[0]?.path).toBe('contributions/greeter.json')
+  })
+
+  it('projects logical offers from service spec.provides, not the envelope contract', async () => {
+    const service = input('dir-service', 'org.service', 'pack', {
+      'contributions/provider.json': {
+        schemaVersion: 1,
+        contract: { id: SERVICE_PROVIDER_CONTRIBUTION_CONTRACT, major: 1 },
+        id: 'org.service/provider',
+        displayName: 'Service provider',
+        runtimeVariants: [
+          {
+            variantId: 'portable',
+            entrypoint: './dist/provider.js',
+            target: { environments: ['node'] },
+            executionProfile: 'trusted-in-process',
+            requestedPermissionClasses: [],
+          },
+        ],
+        spec: {
+          provides: [
+            {
+              offerId: 'jsonc',
+              contract: 'x3.demo/greeter',
+              major: 1,
+              version: '1.4.0',
+              facet: { dialect: 'jsonc' },
+            },
+          ],
+          lifecycleScope: 'session',
+        },
+      },
+    })
+    const inventory = await buildInventory([service], createHostContributionContractRegistry())
+    const offers = offersFromInventory(inventory)
+    expect(offers).toHaveLength(1)
+    expect(offers[0]?.provides).toEqual([
+      {
+        offerId: 'jsonc',
+        contract: 'x3.demo/greeter',
+        major: 1,
+        version: '1.4.0',
+        facet: { dialect: 'jsonc' },
+      },
+    ])
+    expect(offers[0]?.provides[0]?.contract).not.toBe(SERVICE_PROVIDER_CONTRIBUTION_CONTRACT)
   })
 })
