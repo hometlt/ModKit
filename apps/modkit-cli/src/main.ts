@@ -127,6 +127,7 @@ async function main(argv: readonly string[]): Promise<number> {
 }
 
 async function scaffoldCodec(root: string, contributionId: string): Promise<readonly string[]> {
+  const startedAt = performance.now()
   await mkdir(root)
   await Promise.all([
     mkdir(resolve(root, 'contributions')),
@@ -208,23 +209,33 @@ async function scaffoldCodec(root: string, contributionId: string): Promise<read
     'src/index.ts': `import { defineCodec } from '@modkitx-x3/sdk/authoring'\n\n// Four concepts: Subject, Contribution, Contract, Operation. Add detail only when needed.\nexport const codec = defineCodec({\n  id: '${contributionId}',\n  displayName: '${basename(root).replace(/'/g, "\\'")}',\n  format: { formatId: '${name}', label: '${basename(root).replace(/'/g, "\\'")}' },\n  roles: ['semantic'], topology: 'single', stages: ['authored'], intents: ['probe', 'inspect'],\n  match: {},\n  probe: { kind: 'bytes', ranges: [], maxBytes: 0, run: async () => ({ codecId: '${contributionId}', confidence: 0, evidence: [], requiredRanges: [] }) },\n  open: async () => { throw new Error('implement open') },\n  operations: [], representations: [],\n  publishesDataSources: [{ contract: 'common.view/byte-range-source', major: 1 }],\n  budgets: { maxInputBytes: 1048576n, maxDepth: 4, maxNodes: 10000, maxScalarBytes: 1048576, maxDiagnostics: 100 },\n  implementationTier: { claimed: 1 },\n  profile: 'source-reader',\n  targets: [{ variantId: 'portable', environments: ['node-worker'], entrypoint: './dist/index.js' }],\n})\n`,
     'test/smoke.test.ts': `import { describe, expect, it } from 'vitest'\nimport { assertAuthoringPackable } from '@modkitx-x3/sdk/authoring'\nimport { codec } from '../src/index.js'\n\ndescribe('authoring target smoke', () => {\n  it('covers every declared environment', () => {\n    expect(() => assertAuthoringPackable(codec, [{ variantId: 'portable', environment: 'node-worker', state: 'passed' }])).not.toThrow()\n  })\n})\n`,
     'fixtures/sample.bin': '',
-    'golden-path.json': `${JSON.stringify(
-      {
-        stepsToFirstGreen: 5,
-        filesTouched: 5,
-        conceptsRequired: ['Subject', 'Contribution', 'Contract', 'Operation'],
-        timeToBadgeMs: null,
-      },
-      null,
-      2,
-    )}\n`,
   }
   await Promise.all(
     Object.entries(files).map(async ([path, contents]) => {
       await writeFile(resolve(root, path), contents, { flag: 'wx' })
     }),
   )
-  return Object.freeze(Object.keys(files).sort())
+  const input = await loadExtensionDirectory(root)
+  const inventory = await buildInventory([input], createContributionContractRegistry([]))
+  if (inventoryHasErrors(inventory)) {
+    throw new TypeError('generated scaffold did not pass its first validation')
+  }
+  const metricsPath = 'golden-path.json'
+  await writeFile(
+    resolve(root, metricsPath),
+    `${JSON.stringify(
+      {
+        stepsToFirstGreen: 5,
+        filesTouched: Object.keys(files).length,
+        conceptsRequired: ['Subject', 'Contribution', 'Contract', 'Operation'],
+        timeToBadgeMs: Math.max(1, Math.ceil(performance.now() - startedAt)),
+      },
+      null,
+      2,
+    )}\n`,
+    { flag: 'wx' },
+  )
+  return Object.freeze([...Object.keys(files), metricsPath].sort())
 }
 
 process.exitCode = await main(process.argv.slice(2))

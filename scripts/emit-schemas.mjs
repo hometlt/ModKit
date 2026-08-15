@@ -41,6 +41,10 @@ const artifacts = new Map([
     sdk.viewerContributionSpecV1Schema,
   ],
   [
+    join(root, 'packages', 'sdk', 'schemas', 'editor-contribution-spec.v1.schema.json'),
+    sdk.editorContributionSpecV1Schema,
+  ],
+  [
     join(root, 'packages', 'sdk', 'schemas', 'trait-definition-spec.v1.schema.json'),
     sdk.traitDefinitionSpecV1Schema,
   ],

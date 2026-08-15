@@ -139,6 +139,42 @@ for (const contribution of contributions) {
   )
 }
 
+const editorManifest = {
+  schemaVersion: 1,
+  contract: { id: 'org.modkitx/editor-contribution', major: 1 },
+  id: 'org.modkitx.ui/bounded-text-editor',
+  displayName: 'bounded text editor',
+  runtimeVariants: [
+    {
+      variantId: 'browser',
+      entrypoint: './dist/editor/index.js',
+      target: { environments: ['browser-main'] },
+      executionProfile: 'trusted-in-process',
+      requestedPermissionClasses: [],
+    },
+  ],
+  spec: {
+    sessionModel: 'single-subject',
+    selectionKinds: ['text-range'],
+    semanticLocationKinds: ['source-range'],
+    requiresTransactions: true,
+    requiresOperations: ['edit.content', 'source.save'],
+    consumesDataSources: [dataSource('common.view/text-data-source')],
+    writer: {
+      formatId: 'text',
+      representationId: 'source',
+      mutationMode: 'mutate',
+      minimumRoundTrip: 'byte-identical',
+    },
+    priority: 100,
+    scaleLimits: { maximumSourceBytes: '16777216' },
+  },
+}
+expected.set(
+  'editor-bounded-text.json',
+  await format(JSON.stringify(editorManifest), { ...prettierConfig, parser: 'json' }),
+)
+
 if (check) {
   const stale = []
   for (const [name, text] of expected) {
@@ -146,14 +182,18 @@ if (check) {
     if (!existsSync(path) || readFileSync(path, 'utf8') !== text) stale.push(name)
   }
   for (const name of readdirSync(output)) {
-    if (name.startsWith('viewer-') && name.endsWith('.json') && !expected.has(name))
+    if (
+      (name.startsWith('viewer-') || name.startsWith('editor-')) &&
+      name.endsWith('.json') &&
+      !expected.has(name)
+    )
       stale.push(name)
   }
   if (stale.length > 0) {
     console.error(`viewer manifests are stale: ${[...new Set(stale)].sort().join(', ')}`)
     process.exitCode = 1
-  } else console.log(`${expected.size} viewer manifests up to date`)
+  } else console.log(`${expected.size} UI contribution manifests up to date`)
 } else {
   for (const [name, text] of expected) writeFileSync(join(output, name), text)
-  console.log(`emitted ${expected.size} viewer manifests`)
+  console.log(`emitted ${expected.size} UI contribution manifests`)
 }

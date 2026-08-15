@@ -48,6 +48,10 @@
       "types": "./dist/panels/index.d.ts",
       "default": "./dist/panels/index.js"
     },
+    "./editor": {
+      "types": "./dist/editor/index.d.ts",
+      "default": "./dist/editor/index.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

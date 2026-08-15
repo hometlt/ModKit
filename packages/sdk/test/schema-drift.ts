@@ -20,6 +20,7 @@ import type {
   codecContributionSpecV1Schema,
   contractDefinitionSpecV1Schema,
   dataSourceContributionSpecV1Schema,
+  editorContributionSpecV1Schema,
   serviceProviderContributionSpecV1Schema,
   traitDefinitionSpecV1Schema,
   viewerContributionSpecV1Schema,
@@ -39,6 +40,7 @@ import type {
 import type { DataSourceContributionSpecV1 } from '../src/asset-capabilities/data-sources.js'
 import type { AnyDescriptorWire, JsonValue } from '../src/asset-capabilities/types.js'
 import type { ContractDefinitionSpecV1Wire, TraitDefinitionSpecV1Wire } from '../src/definitions.js'
+import type { EditorContributionSpecV1Wire } from '../src/editing.js'
 
 type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false
@@ -116,6 +118,12 @@ export type ViewerContributionSpecDriftGate = Expect<
   Equal<
     DeepMutable<ViewerContributionSpecV1Wire>,
     FromSchema<typeof viewerContributionSpecV1Schema>
+  >
+>
+export type EditorContributionSpecDriftGate = Expect<
+  Equal<
+    DeepMutable<EditorContributionSpecV1Wire>,
+    FromSchema<typeof editorContributionSpecV1Schema>
   >
 >
 export type DataSourceContributionSpecDriftGate = Expect<

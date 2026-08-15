@@ -36,6 +36,10 @@
       "types": "./dist/text-data/index.d.ts",
       "default": "./dist/text-data/index.js"
     },
+    "./editing": {
+      "types": "./dist/editing.d.ts",
+      "default": "./dist/editing.js"
+    },
     "./ui-contracts": {
       "types": "./dist/ui-contracts/index.d.ts",
       "default": "./dist/ui-contracts/index.js"

@@ -1,17 +1,18 @@
 {
   "packages/core/dist/index.js": "64f401ce8fafba324d259e819636fe5800a25e686c3f1cbb0a7226b5377ed303",
-  "packages/sdk/dist/index.js": "a6a71d0df8c72ad060c219d45ba41a218623260b2bf11a9ba68a6fbc5576738a",
-  "packages/sdk/dist/subjects/index.js": "9f881ef6414d8d4b58468899d157aaf3a44cf3357109e85a35c245f2f9e75559",
+  "packages/sdk/dist/index.js": "4570da8901ac4fa0da30603fc6f6705c66265d9a73855ad9cd5a941d14a0ff8b",
+  "packages/sdk/dist/subjects/index.js": "eafde4d309f6d4774bfc50e6a4ab1fa5b985b500e25119841661f34ea18d2cfb",
   "packages/sdk/dist/authoring/index.js": "483615930b74b4131e14e57e3555b8c4512c7af9c19eba5eb06355df26781cb6",
-  "packages/sdk/dist/formats/index.js": "41898901dedf9e7d4c7c8f0ed377b9ad3220ea357c1fb3db944a6a1734d96955",
-  "packages/sdk/dist/data-sources.js": "9bc67de6a0fd3eb051d067c5c50a5e21cbd38c363f96323091a1f13d86cd19ab",
+  "packages/sdk/dist/formats/index.js": "d27544f645a1deefe7081a2bcc8a9bd63830477e836d3c1fcfd5c6034fcf6274",
+  "packages/sdk/dist/data-sources.js": "864ffcc6bbd5a2e951aa668adbc1f3c3e72e233847e21150b194d841d45d9150",
   "packages/sdk/dist/service-contracts.js": "9005f4fbf1ec2f0c92989cdd4ed1484f59de2c2eb405fadd72e93c1a94566d82",
   "packages/sdk/dist/text-data/index.js": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "packages/sdk/dist/ui-contracts/index.js": "87372d9c336381b3c6cdaa55b9b92132c6684fa6ed92efc1c4337bd26cb7f831",
+  "packages/sdk/dist/editing.js": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "packages/sdk/dist/ui-contracts/index.js": "3ed9d25d9b87555990a69269bf4876ea1ab6d65239948ca78278caf3dcae1e34",
   "packages/vfs/dist/index.js": "0e4cc77bf46abb06e54318f2b6b1bec22dffdd2db11f02f573a0af0aa7dd08d5",
-  "packages/host/dist/index.js": "867c9efb10a3ee71bc92c72c7db497562ba716d974715cc96a19ed3e6b21e67f",
+  "packages/host/dist/index.js": "639b35bf99f5bc9aa84e14fb744a9ad122e3c14876c793345dac0723396b7747",
   "packages/host/dist/node/index.js": "59a19de52591196227286f7df98093013b5e867f77deb2d618a6aa1ee957d28b",
-  "packages/ui/dist/index.js": "b3605d22e24affcf11667be5db7911a7217ccc92c2d42f3ea508eb8246207190",
+  "packages/ui/dist/index.js": "efd06d4814b448e0da0c43ecc9e4f22e40240dc5daca5994c325f871cfc53cbc",
   "packages/ui/dist/viewer/index.js": "c0e5c9bcede6a2db220020a9fbb45cac95c0e62a110fb995b088c445966132fc",
   "packages/ui/dist/code/index.js": "062eab06eac2639984e6b6067476d322fa5d61ba68e4a000bc53c60994b84d61",
   "packages/ui/dist/text-virtual/index.js": "1478775c1ab64554925775d5471b24339c3d7113f28e393f4c8d3e21e91aa389",
@@ -21,5 +22,6 @@
   "packages/ui/dist/transport/index.js": "d3b511196ff261fc2a7d0efa20f8b392d8c64eb00f20ec909a53d804531641a2",
   "packages/ui/dist/namespace/index.js": "a04e3a9865f1ed645e70c8d4199a43eec1492ee2a540d5088a61df42dac366bf",
   "packages/ui/dist/panels/index.js": "cc5553efb1009a02c9fd3142e593fc52e58abacae986507afe0e2b8fb2e8cb15",
-  "apps/modkit-cli/dist/main.js": "9457a70d24548b0e00a0a02e68b64488d0f84321adab088a7b7fcf0c377e872a"
+  "packages/ui/dist/editor/index.js": "fb2b4e48a4444ae3aa9fbc539b802d506e9085324de9e3f80fac7b573e9bfb52",
+  "apps/modkit-cli/dist/main.js": "1c6ca0a6d1fa7f4437fd88aa321d4e13e017126bd65a9b19c75a9f685dcb563d"
 }

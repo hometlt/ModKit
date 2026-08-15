@@ -58,13 +58,15 @@ describe('modkit validate (S0 acceptance)', () => {
       stepsToFirstGreen: number
       filesTouched: number
       conceptsRequired: string[]
+      timeToBadgeMs: number
     }
-    expect(metrics).toEqual({
+    expect(metrics).toMatchObject({
       stepsToFirstGreen: 5,
       filesTouched: 5,
       conceptsRequired: ['Subject', 'Contribution', 'Contract', 'Operation'],
-      timeToBadgeMs: null,
     })
+    expect(metrics.timeToBadgeMs).toBeGreaterThan(0)
+    expect(metrics.timeToBadgeMs).toBeLessThanOrEqual(20 * 60 * 1000)
     expect(run(['validate', target]).status).toBe(0)
     expect(run(['create', 'codec', target, '--id', 'org.example/plain-text']).status).toBe(2)
   })

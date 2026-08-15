@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/editor-contribution", "major": 1 },
+  "id": "org.example/synthetic-text-editor",
+  "displayName": "Packed synthetic text editor",
+  "runtimeVariants": [
+    {
+      "variantId": "browser",
+      "entrypoint": "./src/editor.js",
+      "target": { "environments": ["browser-main"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "sessionModel": "single-subject",
+    "selectionKinds": ["text-range"],
+    "semanticLocationKinds": ["source-range"],
+    "requiresTransactions": true,
+    "requiresOperations": ["edit.content", "source.save"],
+    "consumesDataSources": [{ "contract": "common.view/text-data-source", "major": 1 }],
+    "writer": {
+      "formatId": "text",
+      "representationId": "source",
+      "mutationMode": "mutate",
+      "minimumRoundTrip": "byte-identical"
+    },
+    "priority": 500,
+    "scaleLimits": { "maximumSourceBytes": "16777216" }
+  }
+}

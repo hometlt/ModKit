@@ -138,7 +138,8 @@ export interface RepresentationDecl<
   readonly lossy: boolean
 }
 
-export type OperationOutputKind = 'json' | 'bytes' | 'stream' | 'source' | 'artifact' | 'none'
+export type OperationOutputKind =
+  'json' | 'bytes' | 'stream' | 'source' | 'artifact' | 'none' | 'edit-plan' | 'transaction'
 
 export interface OperationDecl<
   Ids extends ContributionSpecIdPlane = ValidatedContributionSpecIdPlane,

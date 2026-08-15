@@ -77,3 +77,12 @@ export {
   type ViewerApplicabilityFacts,
   type ViewerContributionEligibility,
 } from './presentation.js'
+export {
+  createCommitCoordinator,
+  createEditSession,
+  createGrantSnapshot,
+  type EditingBackend,
+  type EditingBackendApplyResult,
+  type HostCommitCoordinatorOptions,
+  type ManagedEditSession,
+} from './editing.js'

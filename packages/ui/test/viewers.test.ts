@@ -106,7 +106,7 @@ async function viewerManifests(): Promise<ContributionManifestV1Wire[]> {
   const directory = join(packageRoot, 'contributions')
   return Promise.all(
     (await readdir(directory))
-      .filter(name => name.endsWith('.json'))
+      .filter(name => name.startsWith('viewer-') && name.endsWith('.json'))
       .sort()
       .map(async name => JSON.parse(await readFile(join(directory, name), 'utf8'))),
   )

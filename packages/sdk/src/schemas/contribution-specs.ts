@@ -228,7 +228,9 @@ const operationDeclSchema = {
     inputSchema: jsonSchemaRefSchema,
     outputKinds: {
       type: 'array',
-      items: { enum: ['json', 'bytes', 'stream', 'source', 'artifact', 'none'] },
+      items: {
+        enum: ['json', 'bytes', 'stream', 'source', 'artifact', 'none', 'edit-plan', 'transaction'],
+      },
     },
   },
 } as const
@@ -411,6 +413,55 @@ export const viewerContributionSpecV1Schema = {
   },
 } as const
 
+const writerRequirementSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['formatId', 'representationId', 'mutationMode', 'minimumRoundTrip'],
+  properties: {
+    formatId: nonEmptyString,
+    representationId: nonEmptyString,
+    mutationMode: { enum: ['export-only', 'mutate'] },
+    minimumRoundTrip: { enum: ['byte-identical', 'semantic', 'lossy', 'none'] },
+  },
+} as const
+
+export const editorContributionSpecV1Schema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  $id: 'https://schemas.modkitx.org/x3/editor-contribution-spec.v1.schema.json',
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'sessionModel',
+    'selectionKinds',
+    'semanticLocationKinds',
+    'requiresTransactions',
+    'requiresOperations',
+    'consumesDataSources',
+    'writer',
+    'priority',
+  ],
+  properties: {
+    sessionModel: { enum: ['single-subject', 'multi-subject', 'workspace'] },
+    selectionKinds: { type: 'array', items: nonEmptyString, uniqueItems: true },
+    semanticLocationKinds: { type: 'array', items: nonEmptyString, uniqueItems: true },
+    requiresTransactions: { type: 'boolean' },
+    requiresOperations: { type: 'array', items: operationId, uniqueItems: true },
+    consumesDataSources: { type: 'array', items: dataSourceRefWireSchema, uniqueItems: true },
+    writer: writerRequirementSchema,
+    hosts: { type: 'array', items: nonEmptyString, uniqueItems: true },
+    priority: { type: 'number' },
+    scaleLimits: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        maximumSubjects: { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        maximumRows: { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        maximumSourceBytes: decimalU64,
+      },
+    },
+  },
+} as const
+
 export const traitDefinitionSpecV1Schema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   $id: 'https://schemas.modkitx.org/x3/trait-definition-spec.v1.schema.json',
@@ -555,6 +606,7 @@ deepFreeze(dataSourceRefWireSchema)
 deepFreeze(codecContributionSpecV1Schema)
 deepFreeze(serviceProviderContributionSpecV1Schema)
 deepFreeze(viewerContributionSpecV1Schema)
+deepFreeze(editorContributionSpecV1Schema)
 deepFreeze(traitDefinitionSpecV1Schema)
 deepFreeze(serviceContractDefinitionSpecV1Schema)
 deepFreeze(dataSourceContractDefinitionSpecV1Schema)

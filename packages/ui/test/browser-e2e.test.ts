@@ -1228,4 +1228,243 @@ describe('13C real-browser viewer host', () => {
         ).transportNamespaceCounters().invoked === 2,
     )
   })
+
+  it('edits, commits, reports conflicts, and replays undo/redo through host-owned ports', async () => {
+    await reset()
+    await page.evaluate(async () => {
+      const { ui, host } = (
+        globalThis as unknown as {
+          modkit: { ui: Record<string, unknown>; host: Record<string, unknown> }
+        }
+      ).modkit
+      const root = document.querySelector('#app') as HTMLElement
+      const initial = {
+        bindings: { content: 'content-hash.sha256:initial' },
+        compositionFingerprint: 'composition:initial',
+      }
+      let current = initial
+      let text = 'before'
+      let releases = 0
+      const beforeByTransaction = new Map<string, { revision: typeof initial; text: string }>()
+      const target = {
+        targetId: 'document',
+        subjectUri: 'memory://document',
+        ownerSource: { id: 'document', uri: 'memory://document' },
+        semanticPath: ['root'],
+        expectedRevision: initial,
+      }
+      const fidelity = {
+        roundTrip: 'byte-identical',
+        preservesUnknownData: true,
+        evidenceId: 'browser-editor-v1',
+        corpusId: 'org.modkitx/browser-editor',
+        corpusDigest: 'sha256:corpus',
+        conformanceProfile: 'org.modkitx/browser-editor-v1',
+        writer: {
+          providerId: 'org.modkitx/browser-writer',
+          providerVersion: '1.0.0',
+          artifactDigest: 'sha256:writer',
+          formatId: 'text',
+          representationId: 'source',
+        },
+        optionsFingerprint: 'default',
+        inputClass: 'plain-text',
+        provenAt: '2026-08-15T00:00:00.000Z',
+      }
+      let next = 0
+      const commit = (
+        host['createCommitCoordinator'] as (options: Record<string, unknown>) => {
+          prepare(plan: unknown, options: unknown): Promise<unknown>
+          commit(prepared: unknown, options: unknown): Promise<unknown>
+          undo(transactionId: string, options: unknown): Promise<unknown>
+          redo(transactionId: string, options: unknown): Promise<unknown>
+        }
+      )({
+        payloads: {
+          async open() {
+            throw new Error('not staged')
+          },
+        },
+        backendFor: () => ({
+          profile: {
+            backendId: 'browser-memory',
+            guarantees: ['atomic', 'transactional', 'recoverable', 'best-effort'],
+            supportsPrepare: true,
+            supportsRollback: true,
+            supportsJournal: true,
+            supportsRename: true,
+          },
+          writable: true,
+          async currentRevision() {
+            return current
+          },
+          async apply(edit: { payload: { text?: string } }, options: { transactionId: string }) {
+            beforeByTransaction.set(options.transactionId, { revision: current, text })
+            text = edit.payload.text ?? text
+            current = {
+              bindings: { content: `content-hash.sha256:${String(++next)}` },
+              compositionFingerprint: `composition:${next}`,
+            }
+            return { after: current }
+          },
+          async rollback(transactionId: string, _edit: unknown, before: typeof initial) {
+            const saved = beforeByTransaction.get(transactionId)
+            current = saved?.revision ?? before
+            text = saved?.text ?? 'before'
+            return current
+          },
+        }),
+        evidenceFor: () => fidelity,
+        isGrantValid: () => true,
+        digest: (value: unknown) =>
+          JSON.stringify(value, (_key, item: unknown) =>
+            typeof item === 'bigint' ? item.toString(10) : item,
+          ),
+        now: () => '2026-08-15T00:00:00.000Z',
+      })
+      const writer = {
+        identity: fidelity.writer,
+        offer: {
+          providerId: fidelity.writer.providerId,
+          fidelityEvidenceId: fidelity.evidenceId,
+          formatId: 'text',
+          representationId: 'source',
+          mutationMode: 'mutate',
+          minimumRoundTrip: 'byte-identical',
+        },
+        async validate(change: { edits: readonly unknown[] }) {
+          return { valid: change.edits.length === 1, diagnostics: [] }
+        },
+        async plan(change: { targets: readonly unknown[]; edits: readonly unknown[] }) {
+          return {
+            planId: `browser-plan-${String(++next)}`,
+            targets: change.targets,
+            edits: change.edits,
+            semantics: { mutationMode: 'mutate', minimumGuarantee: 'transactional' },
+            fidelity: { roundTrip: 'byte-identical', preservesUnknownData: true },
+            diagnostics: [],
+          }
+        },
+      }
+      const edit = (host['createEditSession'] as (options: Record<string, unknown>) => unknown)({
+        revision: initial,
+        targets: [target],
+        writer,
+      })
+      const authorization = {
+        async request() {
+          return {
+            grant: (host['createGrantSnapshot'] as (value: Record<string, unknown>) => unknown)({
+              snapshotId: `browser-grant-${String(++next)}`,
+              permissions: ['write-source'],
+              sourceIds: ['document'],
+            }),
+          }
+        },
+      }
+      const mount = await (
+        ui['textEditor'] as { mount(args: Record<string, unknown>): Promise<unknown> }
+      ).mount({
+        container: root,
+        descriptor: { revision: 'content-hash.sha256:initial', operations: [], diagnostics: [] },
+        edit,
+        commit,
+        payloads: {
+          async open() {
+            throw new Error('not staged')
+          },
+        },
+        sources: {
+          async get() {
+            return {
+              value: {
+                async info() {
+                  return {
+                    bytes: BigInt(new TextEncoder().encode(text).byteLength),
+                    encoding: 'utf-8',
+                    bom: false,
+                    newline: 'none',
+                    lines: 1,
+                    longestLineBytes: text.length,
+                  }
+                },
+                async slice() {
+                  return { complete: true, text, fromLine: 0, lineCount: 1 }
+                },
+                async *search() {},
+              },
+              async release() {
+                releases += 1
+              },
+            }
+          },
+        },
+        authorization,
+      })
+      ;(globalThis as unknown as Record<string, unknown>)['editorState'] = () => ({
+        text,
+        revision: current.compositionFingerprint,
+        releases,
+      })
+      ;(globalThis as unknown as Record<string, unknown>)['editorExternalChange'] = () => {
+        current = {
+          bindings: { content: 'content-hash.sha256:external' },
+          compositionFingerprint: 'composition:external',
+        }
+      }
+      ;(globalThis as unknown as Record<string, unknown>)['currentEditorMount'] = mount
+    })
+
+    const editor = page.getByRole('textbox', { name: 'Editable text' })
+    expect(await editor.inputValue()).toBe('before')
+    await editor.fill('after')
+    await page.getByRole('button', { name: 'Save' }).click()
+    await page.waitForFunction(() => document.querySelector('output')?.textContent === 'Saved')
+    expect(
+      await page.evaluate(() =>
+        (globalThis as unknown as { editorState: () => { text: string } }).editorState(),
+      ),
+    ).toMatchObject({ text: 'after' })
+
+    await page.getByRole('button', { name: 'Undo' }).click()
+    await page.waitForFunction(() => document.querySelector('output')?.textContent === 'Undone')
+    expect(
+      await page.evaluate(
+        () => (globalThis as unknown as { editorState: () => { text: string } }).editorState().text,
+      ),
+    ).toBe('before')
+    await page.getByRole('button', { name: 'Redo' }).click()
+    await page.waitForFunction(() => document.querySelector('output')?.textContent === 'Redone')
+    expect(
+      await page.evaluate(
+        () => (globalThis as unknown as { editorState: () => { text: string } }).editorState().text,
+      ),
+    ).toBe('after')
+
+    await page.evaluate(() =>
+      (globalThis as unknown as { editorExternalChange: () => void }).editorExternalChange(),
+    )
+    await editor.fill('conflicting')
+    await page.getByRole('button', { name: 'Save' }).click()
+    await page.waitForFunction(() =>
+      document.querySelector('output')?.textContent?.startsWith('Conflict'),
+    )
+    expect(
+      await page.evaluate(
+        () => (globalThis as unknown as { editorState: () => { text: string } }).editorState().text,
+      ),
+    ).toBe('after')
+    await page.evaluate(async () => {
+      await (
+        globalThis as unknown as { currentEditorMount: { unmount(): Promise<void> } }
+      ).currentEditorMount.unmount()
+    })
+    expect(
+      await page.evaluate(
+        () =>
+          (globalThis as unknown as { editorState: () => { releases: number } }).editorState()
+            .releases,
+      ),
+    ).toBe(1)
+  })
 })

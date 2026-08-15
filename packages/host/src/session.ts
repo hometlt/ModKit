@@ -85,6 +85,23 @@ function snapshotInput(input: JsonValue): JsonValue | undefined {
   }
 }
 
+function snapshotStructured<Value>(value: Value): Value {
+  if (value instanceof Uint8Array) return value.slice() as Value
+  if (Array.isArray(value))
+    return Object.freeze(value.map(item => snapshotStructured(item))) as Value
+  if (typeof value === 'object' && value !== null) {
+    return Object.freeze(
+      Object.fromEntries(
+        Reflect.ownKeys(value).map(key => [
+          key,
+          snapshotStructured((value as Record<PropertyKey, unknown>)[key]),
+        ]),
+      ),
+    ) as Value
+  }
+  return value
+}
+
 function snapshotOutput(output: OperationOutput): OperationOutput {
   switch (output.kind) {
     case 'json': {
@@ -120,6 +137,10 @@ function snapshotOutput(output: OperationOutput): OperationOutput {
       return Object.freeze({ kind: 'none' })
     case 'stream':
       return Object.freeze({ kind: 'stream', stream: output.stream })
+    case 'edit-plan':
+      return Object.freeze({ kind: 'edit-plan', plan: snapshotStructured(output.plan) })
+    case 'transaction':
+      return Object.freeze({ kind: 'transaction', receipt: snapshotStructured(output.receipt) })
   }
 }
 

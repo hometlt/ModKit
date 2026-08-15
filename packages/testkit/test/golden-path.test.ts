@@ -7,7 +7,7 @@ describe('A-4 golden-path metric gate', () => {
       stepsToFirstGreen: 5,
       filesTouched: 5,
       conceptsRequired: GOLDEN_PATH_CONCEPTS,
-      timeToBadgeMs: null,
+      timeToBadgeMs: 1,
     }
     expect(() => assertGoldenPathMetrics(baseline)).not.toThrow()
     expect(() => assertGoldenPathMetrics({ ...baseline, stepsToFirstGreen: 6 })).toThrow(

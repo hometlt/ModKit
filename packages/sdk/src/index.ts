@@ -22,6 +22,7 @@ export {
   dataSourceContractDefinitionSpecV1Schema,
   dataSourceContributionSpecV1Schema,
   dataSourceRefWireSchema,
+  editorContributionSpecV1Schema,
   jsonSchemaRefSchema,
   resourceBudgetWireSchema,
   serviceProviderContributionSpecV1Schema,
@@ -29,6 +30,7 @@ export {
   traitDefinitionSpecV1Schema,
   viewerContributionSpecV1Schema,
 } from './schemas/contribution-specs.js'
+export * from './editing.js'
 export { anyDescriptorV2Schema, subjectDescriptorV2Schema } from './schemas/subject-descriptor.js'
 export type {
   Architecture,
@@ -67,10 +69,13 @@ export {
   CODEC_CONTRIBUTION_CONTRACT,
   CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT,
   CONTRACT_DEFINITION_FACT,
+  EDITOR_CONTRIBUTION_CONTRACT,
+  EDITOR_CONTRIBUTION_FACT,
   SERVICE_PROVIDER_CONTRIBUTION_CONTRACT,
   TRAIT_DEFINITION_CONTRIBUTION_CONTRACT,
   TRAIT_DEFINITION_FACT,
   VIEWER_CONTRIBUTION_CONTRACT,
+  validateEditorContributionSemantics,
   createContributionContractRegistry,
   type ContributionContractRegistration,
   type ContributionContractRegistry,

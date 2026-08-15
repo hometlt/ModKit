@@ -5,6 +5,8 @@ import {
   A1_SPEC_SCHEMA_ENTRIES,
   CODEC_CONTRIBUTION_CONTRACT,
   CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT,
+  EDITOR_CONTRIBUTION_CONTRACT,
+  EDITOR_CONTRIBUTION_FACT,
   SERVICE_PROVIDER_CONTRIBUTION_CONTRACT,
   TRAIT_DEFINITION_CONTRIBUTION_CONTRACT,
   VIEWER_CONTRIBUTION_CONTRACT,
@@ -144,6 +146,7 @@ function builtins(): readonly ContributionContractRegistration[] {
   const codec = entry(CODEC_CONTRIBUTION_CONTRACT)
   const service = entry(SERVICE_PROVIDER_CONTRIBUTION_CONTRACT)
   const viewer = entry(VIEWER_CONTRIBUTION_CONTRACT)
+  const editor = entry(EDITOR_CONTRIBUTION_CONTRACT)
   const trait = entry(TRAIT_DEFINITION_CONTRIBUTION_CONTRACT)
   const definition = entry(CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT)
   if (trait.registration === undefined || definition.registration === undefined) {
@@ -178,6 +181,17 @@ function builtins(): readonly ContributionContractRegistration[] {
       validateSemantics: viewer.validateSemantics,
       moduleAbi: { export: 'default', abiVersion: 1 },
       conformanceProfile: 'org.modkitx/viewer-contribution-v1',
+    },
+    {
+      contract: { id: editor.contract, major: editor.major },
+      schema: editor.schema,
+      mode: 'executable',
+      project: (manifest, context) => [
+        fact(EDITOR_CONTRIBUTION_FACT, manifest.spec as JsonValue, context),
+      ],
+      validateSemantics: editor.validateSemantics,
+      moduleAbi: { export: 'default', abiVersion: 1 },
+      conformanceProfile: 'org.modkitx/editor-contribution-v1',
     },
     {
       contract: { id: trait.contract, major: trait.major },

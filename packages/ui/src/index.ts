@@ -7,5 +7,6 @@ export { tableViewer, LazyTableModel } from './table/index.js'
 export { transportViewer, TransportModel } from './transport/index.js'
 export { namespaceViewer, NamespaceModel, normalizeNamespacePath } from './namespace/index.js'
 export { diagnosticsPanel, operationToolbar } from './panels/index.js'
+export { textEditor, createTextEditorModule, defineEditorModule } from './editor/index.js'
 
 export const contributionManifests = Object.freeze(['./contributions/*.json'])

@@ -25,6 +25,7 @@ export const GOLDEN_PATH_BASELINE: GoldenPathBudget = Object.freeze({
   maxStepsToFirstGreen: 5,
   maxFilesTouched: 5,
   maxConceptsRequired: 4,
+  maxTimeToBadgeMs: 20 * 60 * 1000,
 })
 
 /** Build-breaking regression gate used by scaffolds and packed-extension tests. */

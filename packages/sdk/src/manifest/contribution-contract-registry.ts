@@ -17,6 +17,7 @@ import {
 } from '@modkitx-x3/core'
 import {
   codecContributionSpecV1Schema,
+  editorContributionSpecV1Schema,
   serviceProviderContributionSpecV1Schema,
   contractDefinitionSpecV1Schema,
   traitDefinitionSpecV1Schema,
@@ -44,6 +45,7 @@ import type { InventoryFact } from './spec-registry.js'
 import type { JsonValue } from '../asset-capabilities/types.js'
 import { isStandardTraitId } from '../asset-capabilities/standard-traits.js'
 import type { ContractDefinitionSpecV1Wire, TraitDefinitionSpecV1Wire } from '../definitions.js'
+import type { EditorContributionSpecV1Wire } from '../editing.js'
 import type { ContractRequirementWire } from '../resolution/types.js'
 import { snapshotJsonWireObject } from './validate.js'
 
@@ -53,6 +55,9 @@ export const SERVICE_PROVIDER_CONTRIBUTION_CONTRACT: ContractId = contractId(
 )
 export const VIEWER_CONTRIBUTION_CONTRACT: ContractId = contractId(
   'org.modkitx/viewer-contribution',
+)
+export const EDITOR_CONTRIBUTION_CONTRACT: ContractId = contractId(
+  'org.modkitx/editor-contribution',
 )
 export const TRAIT_DEFINITION_CONTRIBUTION_CONTRACT: ContractId = contractId(
   'org.modkitx/trait-definition',
@@ -66,6 +71,9 @@ export const TRAIT_DEFINITION_FACT: ContractId = contractId(
 )
 export const CONTRACT_DEFINITION_FACT: ContractId = contractId(
   'org.modkitx.inventory/contract-definition',
+)
+export const EDITOR_CONTRIBUTION_FACT: ContractId = contractId(
+  'org.modkitx.inventory/editor-contribution',
 )
 
 export type ContributionModuleAbiDeclaration = SpecModuleAbiDeclaration
@@ -403,6 +411,77 @@ export const validateViewerContributionSemantics: SpecSemanticValidator = manife
       ]),
     )
   })
+  return diagnostics
+}
+
+const EDITING_OPERATION_IDS = Object.freeze([
+  'edit.content',
+  'edit.structure',
+  'edit.field',
+  'edit.undo-redo',
+  'source.save',
+  'source.save-as',
+])
+
+export const validateEditorContributionSemantics: SpecSemanticValidator = manifest => {
+  const spec = manifest.spec as unknown as EditorContributionSpecV1Wire
+  const diagnostics: Diagnostic[] = [
+    ...duplicateFieldDiagnostics(
+      spec.requiresOperations,
+      ['spec', 'requiresOperations'],
+      'operation',
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.consumesDataSources.map(source => `${source.contract}@${source.major}`),
+      ['spec', 'consumesDataSources'],
+      'data-source requirement',
+    ),
+  ]
+  spec.requiresOperations.forEach((id, index) => {
+    if (!(EDITING_OPERATION_IDS as readonly string[]).includes(id)) {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'x3.sdk/invalid-editor-operation',
+          `editor operation ${id} is not one of the shared editing operations`,
+          ['spec', 'requiresOperations', index],
+        ),
+      )
+    }
+  })
+  if (!spec.requiresOperations.some(id => id.startsWith('edit.'))) {
+    diagnostics.push(
+      diagnostic(
+        'error',
+        'x3.sdk/editor-edit-operation-missing',
+        'an editor contribution requires an explicit edit operation',
+        ['spec', 'requiresOperations'],
+      ),
+    )
+  }
+  if (
+    spec.requiresTransactions &&
+    !spec.requiresOperations.some(id => id === 'source.save' || id === 'source.save-as')
+  ) {
+    diagnostics.push(
+      diagnostic(
+        'error',
+        'x3.sdk/editor-save-operation-missing',
+        'a transactional editor requires source.save or source.save-as',
+        ['spec', 'requiresOperations'],
+      ),
+    )
+  }
+  if (spec.requiresTransactions && spec.writer.mutationMode !== 'mutate') {
+    diagnostics.push(
+      diagnostic(
+        'error',
+        'x3.sdk/editor-writer-mode-mismatch',
+        'a transactional editor requires a mutating writer',
+        ['spec', 'writer', 'mutationMode'],
+      ),
+    )
+  }
   return diagnostics
 }
 
@@ -762,6 +841,12 @@ export const A1_SPEC_SCHEMA_ENTRIES: readonly SpecSchemaEntry[] = [
     major: 1,
     schema: viewerContributionSpecV1Schema,
     validateSemantics: validateViewerContributionSemantics,
+  },
+  {
+    contract: EDITOR_CONTRIBUTION_CONTRACT,
+    major: 1,
+    schema: editorContributionSpecV1Schema,
+    validateSemantics: validateEditorContributionSemantics,
   },
   {
     contract: TRAIT_DEFINITION_CONTRIBUTION_CONTRACT,
