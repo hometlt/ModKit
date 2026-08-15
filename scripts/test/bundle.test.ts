@@ -21,6 +21,7 @@ const PUBLISHED_ENTRIES = [
   'packages/sdk/dist/authoring/index.js',
   'packages/sdk/dist/data-sources.js',
   'packages/sdk/dist/service-contracts.js',
+  'packages/sdk/dist/text-data/index.js',
   'packages/sdk/dist/formats/index.js',
   'packages/sdk/dist/subjects/index.js',
   'packages/sdk/dist/ui-contracts/index.js',

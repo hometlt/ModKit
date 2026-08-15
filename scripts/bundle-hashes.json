@@ -6,6 +6,7 @@
   "packages/sdk/dist/formats/index.js": "41898901dedf9e7d4c7c8f0ed377b9ad3220ea357c1fb3db944a6a1734d96955",
   "packages/sdk/dist/data-sources.js": "9bc67de6a0fd3eb051d067c5c50a5e21cbd38c363f96323091a1f13d86cd19ab",
   "packages/sdk/dist/service-contracts.js": "9005f4fbf1ec2f0c92989cdd4ed1484f59de2c2eb405fadd72e93c1a94566d82",
+  "packages/sdk/dist/text-data/index.js": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "packages/sdk/dist/ui-contracts/index.js": "87372d9c336381b3c6cdaa55b9b92132c6684fa6ed92efc1c4337bd26cb7f831",
   "packages/vfs/dist/index.js": "0e4cc77bf46abb06e54318f2b6b1bec22dffdd2db11f02f573a0af0aa7dd08d5",
   "packages/host/dist/index.js": "b839c65208da608133f4598dd9dee303603c258ef26f2186062e77e4fef2fcd2",

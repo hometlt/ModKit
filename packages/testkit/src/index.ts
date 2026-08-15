@@ -17,3 +17,9 @@ export {
   type Greeter,
   type GreeterModule,
 } from './demo-contract.js'
+export {
+  runTextDataConformance,
+  type TextDataConformanceCase,
+  type TextDataConformanceFailure,
+  type TextDataConformanceReport,
+} from './text-data-conformance.js'
