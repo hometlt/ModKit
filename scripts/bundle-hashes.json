@@ -7,7 +7,7 @@
   "packages/sdk/dist/service-contracts.js": "9005f4fbf1ec2f0c92989cdd4ed1484f59de2c2eb405fadd72e93c1a94566d82",
   "packages/sdk/dist/ui-contracts/index.js": "7fc99c9f87915aa65e9b7e6a6f7f379d01d4368afa39764cb3c2f246aee7782f",
   "packages/vfs/dist/index.js": "0e4cc77bf46abb06e54318f2b6b1bec22dffdd2db11f02f573a0af0aa7dd08d5",
-  "packages/host/dist/index.js": "6b988a3703d96020c636aeeb103215468cc10676b765942f5b670e598db6fb62",
+  "packages/host/dist/index.js": "4e5248995d89992ca3a315c4d65d4d991013076a05afb35011f506386c55a748",
   "packages/host/dist/node/index.js": "59a19de52591196227286f7df98093013b5e867f77deb2d618a6aa1ee957d28b",
   "apps/modkit-cli/dist/main.js": "2556fcc00eb80ac75f15ac1d7aca3975783a968407e53be86249e28de220bf36"
 }

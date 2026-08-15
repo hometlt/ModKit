@@ -43,3 +43,12 @@ export {
   type ActivationTicket,
 } from './security/gate.js'
 export { assertRelativeEntrypoint, resolveContainedEntrypoint } from './security/entrypoint.js'
+export {
+  assembleSubjectDescriptor,
+  createAssetSession,
+  type AssetSessionOptions,
+  type HostOperationContext,
+  type HostOperationHandler,
+  type ManagedAssetSession,
+} from './session.js'
+export { createV1DescriptorProjectionPort } from './v1-projection.js'
