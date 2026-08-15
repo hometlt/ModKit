@@ -5,9 +5,9 @@ MK3 clean-core lab, not a release; owner decision: REVISE / CONTINUE (BRIEF-12 �
 Temporary laboratory that builds the minimal Modkit bootstrap closure (`core`, `sdk`, `vfs`,
 `host`, dev-only `testkit`) from scratch against the MK3 contracts. S0–S4 of
 `modkitx/docs/tasks-active/platform-architecture/BRIEF_12_mk3_clean_core_bootstrap.md` are retained
-as proof. The owner chose **REVISE / CONTINUE** into A-0…A-8 of `BRIEF-13A`; the lab stays under
-`@modkitx-x3/*`, MK2 is unchanged, and promotion requires successful A-8 plus a separate owner
-decision. Long-lived double authority with `modkitx` is forbidden.
+as proof. The owner chose **REVISE / CONTINUE** into A-0…A-8 of `BRIEF-13A`; those slices are now
+implemented and gated. The lab stays under `@modkitx-x3/*`, MK2 is unchanged, and promotion still
+requires a separate owner decision. Long-lived double authority with `modkitx` is forbidden.
 
 ## Owner documents (authority lives in `modkitx/docs`, never here)
 
@@ -39,15 +39,16 @@ decision. Long-lived double authority with `modkitx` is forbidden.
 
 ## Status
 
-- **S0–S4 implementation complete**: `pnpm check` rebuilds the production bundles and passes
-  strict typecheck, lint, formatting, 106 tests, schema drift, the legacy boundary and the
-  external packed-tarball proof.
-- **A‑1 accepted.** Opus reproduced schemas, typecheck and all 184 tests at `0ead78b9`; its one P1
-  (`source-span.v1` missing a FromSchema drift gate) is closed by the follow-up commit. S0–S4 and
-  A‑0 remain adopted; A‑2 host inventory/projection behavior and later slices remain separate work.
+- **S0–S4 and A‑0…A‑8 implementation complete.** `pnpm check` rebuilds production bundles and
+  verifies strict typecheck, lint, formatting, schema drift, the legacy boundary, the external
+  plain-text vertical slice and both packed-consumer routes.
+- **A‑1 independently accepted.** Opus reproduced schemas, typecheck and all 184 tests at
+  `0ead78b9`; its one P1 (`source-span.v1` missing a FromSchema drift gate) is closed by `286b674`.
+- **A‑2…A‑8 are implementation-complete and reported for owner review.** This status does not
+  promote `@modkitx-x3/*`, alter MK2, or claim the separate 13B/13C/13D implementations.
 - Local `pnpm bench` is informational and never blocks work. `pnpm bench:gate` keeps only three
   budgets (core import, bootstrap-closure import, CLI validate) and is reserved for a fixed CI
   runner or dedicated machine. There are no local calibration probes, normalization or mutable
   baselines.
-- No promotion before successful A-8 and a separate owner decision. S4b (`.uve` packer) remains
-  a separate candidate and does not start automatically.
+- A‑8 success only opens the owner decision; it does not promote automatically. S4b (`.uve`
+  packer) remains a separate candidate and does not start automatically.

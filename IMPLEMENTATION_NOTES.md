@@ -6,6 +6,27 @@ overrides a canonical or detailed owner.
 
 ---
 
+## A‑2…A‑8 implementation handoff (2026-08-15)
+
+- A‑2 closes inventory → contract-owned projection → resolution → artifact-bound activation,
+  including deterministic lock replay, service facets and owner-atomic definition inventory.
+- A‑3 provides descriptor assembly, read-only asset/operation sessions, all rejection states,
+  stale-revision handling, idempotent disposal and the catalog-only v2→v1 adapter.
+- A‑4 provides authoring builders/profiles, target smoke evidence, explain output and the
+  four-concept codec scaffold; A‑5 carries the eight-family schema stress gate.
+- A‑6 implements bounded byte/text/table data sources and deterministic presentation resolution,
+  validation, singleton/fallback behavior and session-preserving stage changes.
+- A‑7 is the external `common/plain-text` vertical slice: bounded structural detection, stable
+  subject identity, read-only sessions, text/byte sources and platform-viewer routing without
+  format strings. Its public index does not import executable implementation before activation.
+- A‑8 installs packed platform and extension artifacts in clean directories. The host-free
+  `./direct` surface runs without `@modkitx-x3/host`; the `./runtime` boundary fails closed when
+  host is absent and loads when the packed host closure is installed.
+- Successful A‑8 is a handoff, not promotion. Package names remain `@modkitx-x3/*`, MK2 remains
+  unchanged, and 13B/13C/13D remain separately owned implementation tracks.
+
+---
+
 ## A‑1 implementation handoff (2026-08-15)
 
 - Opus verdict: **ACCEPT A‑1 with one P1**. The P1 is closed: the published core
