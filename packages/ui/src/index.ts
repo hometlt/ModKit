@@ -139,7 +139,6 @@ export {
 export {
   createCodecPreview,
   type CodecPreviewOptions,
-  type PreviewFormat,
   type PreviewSession,
   type PreviewStage,
 } from './explorer/preview.js'

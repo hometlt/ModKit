@@ -361,7 +361,6 @@ async function boot(): Promise<void> {
   }
 
   const preview = createCodecPreview({
-    formats: [],
     supported: profile.supportedExtensions,
     stages: PREVIEW_STAGES,
     fallback: PREVIEW_FALLBACK,

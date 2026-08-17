@@ -1,30 +1,18 @@
 /**
- * Codec-driven preview resolver.
+ * Host-session-driven preview resolver.
  *
- * Bytes in, mounted viewer out. The explorer knows nothing about codecs and the codecs know nothing
- * about the explorer; this is the seam between them.
+ * Bytes in, mounted viewer out. The explorer knows nothing about codecs: a host opens the subject
+ * and returns a lazy session, while this module only mounts viewers over its published sources.
  *
- * Resolution is trait-driven, not extension-driven: the file name only picks the codec, and what
- * the codec then *publishes* decides which stages appear. A codec that grows a new data source gets
- * a new tab here without this file changing.
+ * Resolution is trait-driven, not extension-driven: what the host session *publishes* decides
+ * which stages appear. A codec that grows a new data source gets a new tab here without this file
+ * changing.
  */
 import type { PresentationPlan, ViewerModule } from '@modkitx-x3/sdk'
 
 import type { ExplorerEntry, PreviewHandle, PreviewResolver } from './index.js'
 import { builtinByteRangeSource, builtinTextSource, looksTextual } from './builtin.js'
 import { setPart } from '../viewer/index.js'
-
-/** What a host registers for one format. */
-export interface PreviewFormat {
-  /** Lowercase extensions without the dot. */
-  readonly extensions: readonly string[]
-  /** The codec's `createCodec` factory. */
-  readonly createCodec: (options: unknown) => unknown
-  /** Optional syntax/provider factory the codec resolves through its contract port. */
-  readonly createProvider?: (options: unknown) => unknown
-  /** Contract id the provider satisfies. Required when `createProvider` is present. */
-  readonly providerContract?: string
-}
 
 /** A stage the host is willing to show, keyed by the data source it needs. */
 export interface PreviewStage {
@@ -44,7 +32,6 @@ export interface PreviewStage {
 }
 
 export interface CodecPreviewOptions {
-  readonly formats: readonly PreviewFormat[]
   readonly stages: readonly PreviewStage[]
   /**
    * Extensions exposed by an external host-owned opener. These are registration hints only; the
@@ -52,16 +39,15 @@ export interface CodecPreviewOptions {
    */
   readonly supported?: readonly string[]
   /**
-   * Host/session boundary for Electron, VS Code, or a worker broker. When present, the previewer
-   * never instantiates a codec or provider itself; it only mounts viewers over the returned lazy
-   * session. Returning `undefined` selects the explicit text/hex fallback.
+   * Host/session boundary for Electron, VS Code, or a worker broker. The previewer only mounts
+   * viewers over the returned lazy session. Returning `undefined`, or omitting the opener in a
+   * fallback-only host, selects the explicit text/hex fallback.
    */
   readonly openSession?: (
     entry: ExplorerEntry,
     bytes: Uint8Array,
     signal?: AbortSignal,
   ) => Promise<PreviewSession | undefined>
-  readonly maximumBytes?: number
   /**
    * Viewers for the built-in fallback, used when no codec claims the file. Without these a file
    * with no codec shows nothing; with them it always shows at least its bytes.
@@ -86,15 +72,12 @@ export interface CodecPreviewOptions {
 }
 
 export interface PreviewSession {
-  /** Host-resolved immutable stage plan. Direct/legacy sessions may omit it. */
+  /** Host-resolved immutable stage plan. Hosts without presentation resolution may omit it. */
   readonly presentation?: PresentationPlan
   descriptor(): Promise<Record<string, unknown>>
   dataSource(contract: string, major: number): Promise<{ value: unknown }>
   dispose(): Promise<void>
 }
-
-const budget = (maximumBytes: number) =>
-  Object.freeze({ maxBytes: maximumBytes, deadlineMs: 30_000 })
 
 /** Traits and data sources sit at the top level of the descriptor, each as `{ id }` / `{ contract }`. */
 const traitsOf = (descriptor: Record<string, unknown>): readonly string[] => {
@@ -112,33 +95,20 @@ const publishedContracts = (descriptor: Record<string, unknown>): readonly strin
 const stageId = (stage: PreviewStage): string => stage.id ?? stage.contract
 
 export function createCodecPreview(options: CodecPreviewOptions): PreviewResolver {
-  const maximumBytes = options.maximumBytes ?? 64 * 1024 * 1024
-  const byExtension = new Map<string, PreviewFormat>()
-  for (const format of options.formats) {
-    for (const extension of format.extensions) byExtension.set(extension.toLowerCase(), format)
-  }
   const supported = [
-    ...new Set([
-      ...byExtension.keys(),
-      ...(options.supported ?? []).map(extension => extension.replace(/^\./u, '').toLowerCase()),
-    ]),
+    ...new Set(
+      (options.supported ?? []).map(extension => extension.replace(/^\./u, '').toLowerCase()),
+    ),
   ]
 
   return {
     supported,
 
     async open(container, entry, bytes, signal): Promise<PreviewHandle | undefined> {
-      const extension = entry.name.slice(entry.name.lastIndexOf('.') + 1).toLowerCase()
-      const format = byExtension.get(extension)
-
       const externallyOpened = await options.openSession?.(entry, bytes, signal)
-      const resolved = externallyOpened !== undefined || format !== undefined
-      // No selected codec: fall back to the raw bytes rather than showing nothing.
-      const session =
-        externallyOpened ??
-        (format === undefined
-          ? builtinSession(bytes, options.fallback)
-          : await openCodec(format, entry, bytes, maximumBytes))
+      const resolved = externallyOpened !== undefined
+      // No selected host session: fall back to raw bytes rather than showing nothing.
+      const session = externallyOpened ?? builtinSession(bytes, options.fallback)
 
       const descriptor = await session.descriptor()
       const traits = new Set(traitsOf(descriptor))
@@ -254,135 +224,6 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
           await active?.unmount()
           await session.dispose()
           container.replaceChildren()
-        },
-      }
-    },
-  }
-}
-
-/** Drive the codec exactly as a host would: contracts port, budget, then `open`. */
-async function openCodec(
-  format: PreviewFormat,
-  entry: ExplorerEntry,
-  bytes: Uint8Array,
-  maximumBytes: number,
-): Promise<PreviewSession> {
-  const createdProvider =
-    format.createProvider === undefined || format.providerContract === undefined
-      ? undefined
-      : format.createProvider({
-          offerId: 'direct-preview',
-          contract: format.providerContract,
-          major: 1,
-          contractSelectionKey: 'facetless:v1',
-        })
-  const providerLease =
-    typeof createdProvider === 'object' &&
-    createdProvider !== null &&
-    'value' in createdProvider &&
-    typeof (createdProvider as { release?: unknown }).release === 'function'
-      ? (createdProvider as { readonly value: unknown; release(): Promise<void> })
-      : undefined
-  const provider = providerLease?.value ?? createdProvider
-
-  const codec = format.createCodec({
-    budgets: budget(maximumBytes),
-    diagnostics: {
-      report() {
-        // Codec diagnostics reach the UI through the descriptor, not this channel.
-      },
-    },
-    contracts: {
-      async resolve() {
-        if (provider === undefined) throw new Error('no provider is configured for this codec')
-        return {
-          value: provider,
-          async release() {
-            // The provider lives as long as the codec that resolved it.
-          },
-        }
-      },
-      async resolveUnknown() {
-        throw new Error('foreign contract is unavailable')
-      },
-    },
-  }) as {
-    open(input: unknown, intent: string, budget: unknown): Promise<PreviewSession>
-  }
-
-  const session = await codec.open(await inputFor(entry, bytes), 'full', budget(maximumBytes))
-  if (providerLease === undefined) return session
-  return {
-    descriptor: () => session.descriptor(),
-    dataSource: (contract, major) => session.dataSource(contract, major),
-    async dispose() {
-      try {
-        await session.dispose()
-      } finally {
-        await providerLease.release()
-      }
-    },
-  }
-}
-
-/**
- * Build the composition input a codec's `open` expects.
- *
- * A codec does not take bytes: it takes a binding topology it can ask for sources. `originKind:
- * 'single'` with one `content` binding is the shape for "one file on disk", which is exactly what
- * the explorer has.
- */
-async function inputFor(entry: ExplorerEntry, bytes: Uint8Array): Promise<unknown> {
-  const uri = `file:///${encodeURIComponent(entry.name)}`
-  /*
-   * The descriptor schema constrains revisions to a named scheme (`content-hash.<algo>:<value>`
-   * among others), so an invented string fails validation. Hashing the bytes is also the honest
-   * answer: it is what makes the revision change when the file changes.
-   */
-  const digest = await crypto.subtle.digest('SHA-256', bytes.slice().buffer as ArrayBuffer)
-  const revision = `content-hash.sha256:${[...new Uint8Array(digest)]
-    .map(byte => byte.toString(16).padStart(2, '0'))
-    .join('')}`
-  const source = {
-    kind: 'bytes',
-    ref: { id: uri, uri },
-    revision,
-    size: BigInt(bytes.byteLength),
-    async read(offset: bigint, length: number) {
-      return bytes.slice(Number(offset), Number(offset) + length)
-    },
-    async *stream() {
-      yield bytes
-    },
-  }
-
-  const binding = {
-    sourceKind: 'candidate',
-    bindingId: 'content',
-    role: 'content',
-    ownership: 'owned',
-    source: source.ref,
-    revision,
-  }
-
-  return {
-    originKind: 'single',
-    bindings: [binding],
-    primaryBindingId: binding.bindingId,
-    revisions: {
-      topology: 'single',
-      revision,
-      bindings: [{ bindingId: binding.bindingId, revision }],
-      compositionFingerprint: `explorer:${uri}`,
-    },
-    bindingsFor() {
-      return []
-    },
-    async openBinding() {
-      return {
-        value: source,
-        async release() {
-          return Promise.resolve()
         },
       }
     },

@@ -1,9 +1,13 @@
+import { createRequire } from 'node:module'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { bindingId, presentationSlotId, revisionId, type ArtifactByteSource } from '@modkitx-x3/sdk'
+import { revisionId, type ArtifactByteSource, type PresentationSlot } from '@modkitx-x3/sdk'
 import { createElectronSubjectServices, resolveElectronPresentationPlan } from '../src/index.js'
 
 const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
+const presentationCatalog = createRequire(import.meta.url)(
+  '../generated/presentation-catalog.cjs',
+) as readonly PresentationSlot[]
 
 function memorySource(text: string): ArtifactByteSource {
   const bytes = new TextEncoder().encode(text)
@@ -50,43 +54,14 @@ describe('Electron host-owned subject services', () => {
     })
     const presentation = await resolveElectronPresentationPlan(
       result.descriptor,
-      [
-        {
-          slotId: presentationSlotId('tree'),
-          kind: 'stage',
-          contributionId: 'org.modkitx.ui/tree',
-          extensionId: 'org.modkitx/ui',
-          priority: 600,
-          bindings: [
-            {
-              bindingId: bindingId('tree-content'),
-              contract: 'common.view/tree-data-source',
-              major: 1,
-            },
-          ],
-        },
-        {
-          slotId: presentationSlotId('hex'),
-          kind: 'stage',
-          contributionId: 'org.modkitx.ui/hex',
-          extensionId: 'org.modkitx/ui',
-          priority: 100,
-          bindings: [
-            {
-              bindingId: bindingId('hex-content'),
-              contract: 'common.view/byte-range-source',
-              major: 1,
-            },
-          ],
-        },
-      ],
+      presentationCatalog,
       {
         sessionId: 'electron-session',
         contributionId: result.selected.contributionId,
         variantId: result.selected.variantId,
       },
     )
-    expect(presentation).toMatchObject({ activeStage: 'tree', alternateStages: ['hex'] })
+    expect(presentation).toMatchObject({ activeStage: 'code', alternateStages: ['tree'] })
     const tree = await result.session.dataSource('common.view/tree-data-source', 1)
     await expect(tree.value.root()).resolves.toMatchObject({ id: 'root', hasChildren: true })
     await tree.release()

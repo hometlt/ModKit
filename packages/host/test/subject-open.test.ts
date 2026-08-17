@@ -2,24 +2,38 @@ import { Buffer } from 'node:buffer'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { canonicalJsonStringify, traitId } from '@modkitx-x3/core'
 import {
   buildInventory,
   createHostContributionContractRegistry,
   createServiceContractDefinitionRegistry,
   createServiceFacetMatcherProfileRegistry,
+  evaluateViewerContribution,
   offersFromInventory,
   openSubject,
   parsePolicyLock,
   registerServiceContractDefinitionsFromInventory,
   replayPolicyLock,
+  resolvePresentationPlan,
 } from '@modkitx-x3/host'
 import { loadExtensionDirectory } from '@modkitx-x3/host/node'
-import { revisionId, type ArtifactByteSource, type ResourceBudget } from '@modkitx-x3/sdk'
+import {
+  bindingId,
+  presentationSlotId,
+  revisionId,
+  type ArtifactByteSource,
+  type PresentationPlan,
+  type RasterImageSource,
+  type ResolvedBinding,
+  type ResourceBudget,
+} from '@modkitx-x3/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
+const imagesDir = join(repoRoot, 'extensions', 'common', 'images')
 const modelsDir = join(repoRoot, 'extensions', 'common', 'models')
 const textJsonDir = join(repoRoot, 'extensions', 'common', 'text-json')
 const hostileProbeDir = join(import.meta.dirname, 'fixtures', 'subject-open-extension')
+const pngFixture = join(repoRoot, 'apps', 'web', 'public', 'favicon-32.png')
 const uvmFixture = join(
   repoRoot,
   'packages',
@@ -72,6 +86,146 @@ async function bundledInventory(directory: string) {
 }
 
 describe('host-owned subject opening pipeline', () => {
+  it('opens PNG through the real image inventory and resolves a bounded raster presentation', async () => {
+    const bytes = new Uint8Array(await readFile(pngFixture))
+    const base = byteSource(bytes, 'favicon-32.png')
+    const reads: { readonly offset: bigint; readonly length: number }[] = []
+    const source: ArtifactByteSource = {
+      ...base,
+      async read(offset, length, signal) {
+        reads.push({ offset, length })
+        return base.read(offset, length, signal)
+      },
+    }
+    const result = await openSubject({
+      inventory: await bundledInventory(imagesDir),
+      source,
+      path: 'favicon-32.png',
+      mediaType: 'image/png',
+      intent: 'full',
+      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+      grant: { id: 'subject-open-png', classes: ['read-source'] },
+      budget,
+    })
+
+    if (result.state !== 'opened') {
+      throw new TypeError(`unexpected ${result.reason}: ${JSON.stringify(result)}`)
+    }
+    expect(result.selected).toEqual({
+      extensionId: 'org.modkitx/images',
+      contributionId: 'org.modkitx/image-png',
+      variantId: 'trusted-node',
+      offerId: 'raster-metadata',
+      confidence: 0.999,
+    })
+    expect(result.descriptor).toMatchObject({
+      schemaVersion: 2,
+      interpretation: 'codec',
+      subjectUri: source.ref.uri,
+      revision: source.revision,
+      identity: { codecId: 'org.modkitx/image-png', formatId: 'png' },
+      traits: expect.arrayContaining([
+        expect.objectContaining({ id: 'image.raster', state: 'available' }),
+      ]),
+      dataSources: expect.arrayContaining([
+        expect.objectContaining({ contract: 'common.view/raster-image-source', major: 1 }),
+      ]),
+    })
+    // Detection stays inside the declared 32-byte probe before the selected codec performs its
+    // separately budgeted full-input read.
+    expect(reads).toEqual([
+      { offset: 0n, length: 32 },
+      { offset: 0n, length: bytes.byteLength },
+    ])
+
+    const rasterLease = await result.session.dataSource('common.view/raster-image-source', 1)
+    const raster = rasterLease.value as RasterImageSource
+    expect(await raster.info()).toMatchObject({
+      width: 32,
+      height: 32,
+      frames: 1,
+      decodedAccess: true,
+    })
+    const encoded = await raster.encoded()
+    expect(await encoded.read(0n, 8)).toEqual(
+      new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    )
+    const readRegion = raster.readRegion
+    if (readRegion === undefined) throw new TypeError('PNG must expose bounded decoded regions')
+    await expect(
+      readRegion({ x: 0, y: 0, width: 1, height: 1, pixelFormat: 'rgba8', maxBytes: 3 }),
+    ).rejects.toThrow(/maxBytes/u)
+
+    const imageBinding = {
+      bindingId: bindingId('image-content'),
+      contract: 'common.view/raster-image-source' as const,
+      major: 1 as const,
+    }
+    const imageSpec = {
+      kind: 'stage' as const,
+      requiresTraits: [{ id: traitId('image.raster'), states: ['available' as const] }],
+      consumesDataSources: [{ contract: imageBinding.contract, major: imageBinding.major }],
+      priority: 360,
+      singletonGroup: 'center-stage',
+    }
+    const eligibility = evaluateViewerContribution(imageSpec, result.descriptor, {
+      interpretation: 'codec',
+      sourceBytes: BigInt(bytes.byteLength),
+    })
+    expect(eligibility).toEqual({ eligible: true, missing: [] })
+
+    interface PresentationTicket {
+      readonly bindingId: string
+    }
+    const digest = (plan: PresentationPlan) => `canonical:${canonicalJsonStringify(plan)}`
+    const presentation = await resolvePresentationPlan<PresentationTicket>({
+      descriptor: result.descriptor,
+      candidates: [
+        {
+          slotId: presentationSlotId('image'),
+          kind: imageSpec.kind,
+          contributionId: 'org.modkitx.ui/image-stage',
+          extensionId: 'org.modkitx/ui',
+          priority: imageSpec.priority,
+          singletonGroup: imageSpec.singletonGroup,
+          bindings: [imageBinding],
+          ...eligibility,
+        },
+      ],
+      digest,
+      ticketMatches: binding => binding.ticket.bindingId === binding.bindingId,
+      async resolveBinding(binding) {
+        return {
+          ...binding,
+          offerId: `session:${binding.bindingId}`,
+          providerId: result.selected.contributionId,
+          variantId: result.selected.variantId,
+          ticket: { bindingId: binding.bindingId },
+        } as ResolvedBinding<PresentationTicket>
+      },
+    })
+    expect(presentation.plan).toMatchObject({
+      activeStage: 'image',
+      alternateStages: [],
+      slots: [
+        expect.objectContaining({
+          contributionId: 'org.modkitx.ui/image-stage',
+          bindings: [imageBinding],
+        }),
+      ],
+    })
+    expect(presentation.bindings).toEqual([
+      expect.objectContaining({
+        bindingId: imageBinding.bindingId,
+        providerId: 'org.modkitx/image-png',
+        variantId: 'trusted-node',
+      }),
+    ])
+
+    await rasterLease.release()
+    await result.session.dispose()
+  })
+
   it('opens a real UVM artifact through inventory, ticket, bounded probe and session', async () => {
     const encoded = (await readFile(uvmFixture, 'utf8')).replace(/\s+/gu, '')
     const source = byteSource(new Uint8Array(Buffer.from(encoded, 'base64')), 'triangle.uvm.glb')

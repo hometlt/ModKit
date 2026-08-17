@@ -1534,6 +1534,96 @@ describe('13C real-browser viewer host', () => {
     ).toBe(1)
   })
 
+  it('mounts a host-owned session once while switching its resolved stages', async () => {
+    await reset()
+    const result = await page.evaluate(async () => {
+      const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
+      const typed = ui as unknown as typeof import('@modkitx-x3/ui')
+      const root = document.querySelector('#app') as HTMLElement
+      const state = { opens: 0, descriptors: 0, mounts: 0, unmounts: 0, disposes: 0 }
+      const viewer = (label: string) =>
+        ({
+          abiVersion: 1,
+          async mount(args: { container: unknown }) {
+            state.mounts += 1
+            ;(args.container as HTMLElement).textContent = label
+            return {
+              async update() {},
+              async unmount() {
+                state.unmounts += 1
+              },
+            }
+          },
+        }) as const
+      const preview = typed.createCodecPreview({
+        supported: ['.JSON', 'json'],
+        stages: [
+          { id: 'primary', label: 'Primary', contract: 'test.view/primary', module: viewer('one') },
+          {
+            id: 'alternate',
+            label: 'Alternate',
+            contract: 'test.view/alternate',
+            module: viewer('two'),
+          },
+        ],
+        async openSession() {
+          state.opens += 1
+          return {
+            async descriptor() {
+              state.descriptors += 1
+              return {
+                traits: [],
+                dataSources: [
+                  { contract: 'test.view/primary' },
+                  { contract: 'test.view/alternate' },
+                ],
+              }
+            },
+            async dataSource() {
+              return { value: {} }
+            },
+            async dispose() {
+              state.disposes += 1
+            },
+          }
+        },
+      })
+
+      const handle = await preview.open(
+        root,
+        { id: 'fixture', name: 'fixture.json', directory: false },
+        new Uint8Array(),
+      )
+      if (handle === undefined) throw new Error('host session did not produce a preview')
+      await handle.show('alternate')
+      const beforeUnmount = {
+        supported: preview.supported,
+        views: handle.views,
+        activeView: handle.activeView,
+        text: root.textContent,
+        ...state,
+      }
+      await handle.unmount()
+      return { beforeUnmount, afterUnmount: state }
+    })
+
+    expect(result.beforeUnmount).toMatchObject({
+      supported: ['json'],
+      views: [
+        { id: 'primary', label: 'Primary' },
+        { id: 'alternate', label: 'Alternate' },
+      ],
+      activeView: 'alternate',
+      text: 'two',
+      opens: 1,
+      descriptors: 1,
+      mounts: 2,
+      unmounts: 1,
+      disposes: 0,
+    })
+    expect(result.afterUnmount).toMatchObject({ opens: 1, unmounts: 2, disposes: 1 })
+  })
+
   it('falls back to bounded Text/Hex views and lets the explorer switch views', async () => {
     await reset()
     await page.evaluate(async () => {
@@ -1542,7 +1632,6 @@ describe('13C real-browser viewer host', () => {
       const root = document.querySelector('#app') as HTMLElement
       const text = new TextEncoder().encode('fallback text')
       const preview = typed.createCodecPreview({
-        formats: [],
         stages: [],
         fallback: { text: typed.boundedTextViewer, hex: typed.hexViewer },
       })
