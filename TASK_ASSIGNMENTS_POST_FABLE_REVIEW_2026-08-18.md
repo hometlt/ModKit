@@ -179,7 +179,8 @@ idempotent release activation/provider/session scopes и cleanup всех losing
 
 Осталось в ROOT-03/NXT-101B после согласования wire authority с Fable NXT-103:
 
-- explicit universal-match + bounded data-only signature index (`.dat` PNG);
+- explicit universal-match + bounded data-only signature index (`.dat` PNG); implicit empty-match
+  wildcard уже удалён (`05f518f`);
 - отдельный probe grant/lifecycle seam;
 - worker termination/conformance proof после FABLE-NXT-105.
 

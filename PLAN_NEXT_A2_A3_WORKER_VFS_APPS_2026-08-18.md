@@ -200,7 +200,8 @@ resolver выбирает `portable`; probe failure, ambiguity, losing candidate
 
 Открытая часть NXT-101B:
 
-- заменить текущую ошибочную семантику «пустой `match` = universal» на явную data-only authority;
+- добавить явную data-only universal-match authority. Host fail-closed часть уже закрыта в
+  `05f518f`: пустой `match` не создаёт candidate и не импортирует codec module;
 - добавить bounded signature/magic index, чтобы renamed PNG `.dat` попадал в shortlist без
   brute-force activation;
 - отделить probe grant от open/session grant. Текущий `ContributionContext` создаётся один раз на
