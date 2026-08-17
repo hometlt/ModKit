@@ -531,23 +531,25 @@ gate и запрет расширять public ABI без review.
 
 ### Распределение после review Fable
 
-| Работа                               | Исполнитель                    | Статус / scope                                                                                         |
-| ------------------------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| NXT‑106 app catalog generator        | отдельный implementation agent | завершено; emitter, drift gate и manifest-derived Electron catalogs                                    |
-| F‑07 PNG product proof               | отдельный test agent           | завершено; реальный PNG проходит inventory, bounded probe, session/data source и presentation          |
-| NXT‑107 UI legacy path removal       | отдельный UI agent             | завершено; UI принимает только host-owned session или явный Text/Hex fallback                          |
-| NXT‑100/101 ExecutionBackend SPI     | Root/Sol                       | exclusive host activation/openSubject scope                                                            |
-| NXT‑104 lock/selection split         | Root/Sol                       | exclusive host resolution/session/provenance scope                                                     |
-| NXT‑103/105 surface + capability-RPC | Fable, после SPI types         | новые `packages/host/src/execution/**` и hostile tests; public SDK surface только после owner decision |
-| UX states/extension manager          | Opus, после NXT‑107            | design + UI-only scope, без security/lock authority                                                    |
+| Работа                           | Исполнитель                    | Статус / scope                                                                                |
+| -------------------------------- | ------------------------------ | --------------------------------------------------------------------------------------------- |
+| NXT‑106 app catalog generator    | отдельный implementation agent | завершено; emitter, drift gate и manifest-derived Electron catalogs                           |
+| F‑07 PNG product proof           | отдельный test agent           | завершено; реальный PNG проходит inventory, bounded probe, session/data source и presentation |
+| NXT‑107 UI legacy path removal   | отдельный UI agent             | завершено; UI принимает только host-owned session или явный Text/Hex fallback                 |
+| NXT‑100/101 ExecutionBackend SPI | Root/Sol                       | exclusive host activation/openSubject scope                                                   |
+| NXT‑104 lock/selection split     | Root/Sol                       | exclusive host resolution/session/provenance scope                                            |
+| NXT‑103 method-surface authority | Root + Fable review            | Root владеет public SDK/schema change; Fable проверяет frozen adapter contract                |
+| NXT‑105 capability-RPC           | Fable, после SPI/surface types | новые `packages/host/src/execution/**` и hostile tests; public SDK surface менять запрещено   |
+| UX states/extension manager      | Opus, после NXT‑107            | design + UI-only scope, без security/lock authority                                           |
 
 ## 12. Рекомендуемое немедленное действие
 
 1. Review Fable сохранён рядом с планом; D‑1…D‑9 приняты как рабочие defaults.
 2. NXT‑106, NXT‑107 и реальный PNG proof завершены и включены в repository gates.
 3. Следующий exclusive slice Root — NXT‑104 lock/selection split, затем минимальные NXT‑100/101
-   SPI types.
-4. После owner confirmation D‑7 поручить Fable NXT‑103/105 как одну bounded задачу.
+   SPI types и owner-approved NXT‑103 public method-surface authority.
+4. После заморозки NXT‑100/103 типов поручить Fable NXT‑105 как bounded capability-RPC задачу без
+   права самостоятельно расширять public SDK ABI.
 5. Root подключает Electron IPC к capability-RPC, затем реализует NXT‑114/115 transports.
 6. Adoption идёт Electron → CLI/server → PWA → VS Code.
 

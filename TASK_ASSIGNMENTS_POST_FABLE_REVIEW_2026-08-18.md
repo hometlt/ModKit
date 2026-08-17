@@ -156,10 +156,16 @@ Root интегрировал `package.json`, app callers и generated checks. �
 - probe grant, candidate cap, explicit universal match;
 - release losing candidates.
 
+### ROOT-03B — NXT-103 public method-surface authority
+
+- Root владеет SDK type/schema/registry change и drift gates;
+- Fable проводит focused review frozen adapter contract;
+- только после этого NXT-105 может потреблять surface, не изобретая вторую allowlist.
+
 ### ROOT-04 — Fable handoff
 
-После ROOT‑03 передать Fable exact SPI types и окончательный surface adapter port. Во время Fable
-работы root не редактирует его новые `execution/{protocol,handles,surface}.ts`.
+После ROOT‑03/03B передать Fable exact SPI types и окончательный surface adapter port. Во время
+Fable работы root не редактирует его новые `execution/{protocol,handles,surface}.ts`.
 
 ### ROOT-05 — transports and apps
 
