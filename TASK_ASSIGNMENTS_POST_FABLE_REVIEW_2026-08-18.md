@@ -35,12 +35,14 @@ Root принимает F‑01…F‑07 и рабочие defaults D‑1…D‑9
 Agents создают commit только по прямому указанию root. Shared worktree требует непересекающихся
 files и немедленного сообщения о найденном overlap.
 
-## 3. Fable — queued specialized task
+## 3. Fable — parallel specialized tasks
 
 ### FABLE-NXT-105 — capability-RPC core v1
 
-Статус: **queued**. Старт после того, как root приземлит минимальные NXT‑100 backend SPI types и
-подтвердит форму NXT‑103 surface adapter.
+Статус: **ready in parallel with NXT‑104**. Protocol core не ждёт полного NXT‑100/103. Он зависит
+только от `core` и от внутреннего порта
+`SurfaceRegistry.surfaceFor(contract, major) -> { methods }`, принадлежащего этому же slice.
+Root позднее подключает adapter стандартных surfaces; Fable не авторит их как production SDK data.
 
 Почему Fable: это самый рискованный state-machine/security/lifecycle seam; он требует строгих
 validators, hostile inputs и доказательства cleanup при гонках.
@@ -55,6 +57,13 @@ validators, hostile inputs и доказательства cleanup при гон
 
 Public SDK surface — только отдельным patch после согласования root; apps/transports/openSubject/
 resolver/lock запрещены.
+
+### FABLE-NXT-103-P — method-surface proposal
+
+Статус: **ready, proposal only**. Fable подготавливает фрагмент JSON Schema, TS shape, правила
+`value | lease | iterable | events`, pagination и ссылки args/returns, а также таблицу 13
+стандартных surfaces как review data. Root правит и приземляет production SDK/schema/registry с
+drift gates; proposal не становится второй wire authority.
 
 #### Требуемый результат
 
@@ -120,7 +129,9 @@ resolver/lock запрещены.
 #### Граница
 
 Opus не определяет trust, permission widening, lock identity, protocol frames или public schemas.
-Его документ потребляет уже принятые результаты Root/Fable.
+Его документ потребляет уже принятые результаты Root/Fable. Терминология берётся только из
+`OpenSubjectResult`, `UnresolvedSubject.reason`, `OperationRejection` и существующих `x3.host/*`
+кодов; новые параллельные названия состояний запрещены.
 
 ## 5. Завершённые bounded implementation tasks
 
@@ -154,18 +165,34 @@ Root интегрировал `package.json`, app callers и generated checks. �
 - trusted backend как текущая реализация;
 - backend availability привязана к target, без resolver preference;
 - probe grant, candidate cap, explicit universal match;
-- release losing candidates.
+- data-only magic/signature candidate index для renamed extensions без probe всех кодеков;
+- probe-owned lease scope и deterministic release losing candidates.
 
 ### ROOT-03B — NXT-103 public method-surface authority
 
-- Root владеет SDK type/schema/registry change и drift gates;
-- Fable проводит focused review frozen adapter contract;
-- только после этого NXT-105 может потреблять surface, не изобретая вторую allowlist.
+- Fable сначала готовит NXT‑103‑P proposal;
+- Root владеет SDK type/schema/registry change, таблицей стандартных surfaces и drift gates;
+- capability-RPC подключается к adapter после landing, не блокируя protocol state machine.
 
 ### ROOT-04 — Fable handoff
 
-После ROOT‑03/03B передать Fable exact SPI types и окончательный surface adapter port. Во время
-Fable работы root не редактирует его новые `execution/{protocol,handles,surface}.ts`.
+Fable начинает NXT‑105 сразу с внутренним `SurfaceRegistry` port. После ROOT‑03/03B Root добавляет
+отдельный standard-surface adapter. Во время Fable работы root не редактирует его новые
+`execution/{protocol,handles,surface}.ts`.
+
+### ROOT-04B — оставшийся hygiene/debt
+
+- F‑10: **закрыто** — gallery generator пишет только relative imports, tracked output проверяется на
+  отсутствие абсолютных путей;
+- NXT‑108: **закрыто** — generated import exemption требует generator marker, Electron emitter
+  отклоняет unknown files, UI compile proof удерживает host-only preview API;
+- NXT‑109: `ui-graph-3d` должен получить реальную contribution authority либо перестать
+  притворяться extension; Root принимает owner decision, UI agent реализует;
+- renamed PNG `.dat`: обязательная acceptance из Asset Capabilities §7/§12, реализуется в
+  NXT‑101 через bounded data-only signature candidates, а не brute-force activation.
+
+Verification для закрытого hygiene slice: `pnpm check` — 67 test files / 483 tests, все repository
+gates зелёные.
 
 ### ROOT-05 — transports and apps
 
@@ -204,9 +231,9 @@ Fable работы root не редактирует его новые `execution
 
 1. Review + updated plan.
 2. PNG proof, UI dual-path removal, app catalog emitter.
-3. Root NXT‑104.
-4. Root NXT‑100/101.
-5. Fable NXT‑105.
+3. Параллельно: Root NXT‑104; Fable NXT‑105 protocol core + NXT‑103‑P proposal.
+4. Root NXT‑100/101 и production NXT‑103 authority/adapter.
+5. Интеграция Fable NXT‑105 с standard surface adapter.
 6. Electron capability-RPC adapter.
 7. Node worker backend + CLI/server proof.
 8. VFS/container + bundle resolver.
