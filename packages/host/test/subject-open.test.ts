@@ -635,6 +635,7 @@ describe('host-owned subject opening pipeline', () => {
 
   it('releases every activated candidate before returning an ambiguous result', async () => {
     const execution = countingTrustedBackends()
+    const emptyMatchImports = globalThis.__x3EmptyMatchImports ?? 0
     const source = byteSource(new Uint8Array([1, 2, 3, 4]), 'payload.ambiguous')
     const result = await openSubject({
       inventory: await bundledInventory(ambiguousProbeDir),
@@ -654,5 +655,6 @@ describe('host-owned subject opening pipeline', () => {
       expect.objectContaining({ variantId: 'trusted-b', state: 'detected', confidence: 0.8 }),
     ])
     expect(execution.releases()).toBe(2)
+    expect(globalThis.__x3EmptyMatchImports ?? 0).toBe(emptyMatchImports)
   })
 })

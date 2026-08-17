@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/codec-contribution",
+    "major": 1
+  },
+  "id": "org.example/empty-match-codec",
+  "displayName": "Empty match must not be universal",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted",
+      "entrypoint": "./codec-empty.mjs",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "empty-match", "label": "Empty match fixture" }],
+    "roles": ["semantic"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored"],
+    "openIntents": ["probe", "full"],
+    "match": {},
+    "probe": {
+      "kind": "bytes",
+      "ranges": [{ "from": "start", "length": 4 }],
+      "maxBytes": 4
+    },
+    "representations": [
+      {
+        "id": "empty-match",
+        "contract": "org.example/empty-match",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [{ "contract": "common.view/byte-range-source", "major": 1 }],
+    "operations": [],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1024",
+      "maxDepth": 8,
+      "maxNodes": 8,
+      "maxScalarBytes": 1024,
+      "maxDiagnostics": 8
+    }
+  }
+}

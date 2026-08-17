@@ -297,7 +297,9 @@ function matchesSpec(spec: CodecContributionSpecV1Wire, path: string, mediaType?
     (spec.match.extensions?.length ?? 0) > 0 ||
     (spec.match.mediaTypes?.length ?? 0) > 0 ||
     (spec.match.pathGlobs?.length ?? 0) > 0
-  return !declaresMatch || extensionMatch || mediaMatch || pathMatch
+  // An empty rule set is not a wildcard. Universal detection needs an explicit, schema-owned
+  // declaration; otherwise an installed codec could force activation for every opened artifact.
+  return declaresMatch && (extensionMatch || mediaMatch || pathMatch)
 }
 
 function runtimeBudget(host: ResourceBudget, spec: CodecContributionSpecV1Wire): ResourceBudget {
