@@ -50,9 +50,9 @@ import {
   activateContribution,
   issueActivationTicket,
   resolveForActivation,
-  SUPPORTED_EXECUTION_PROFILES,
   type ActivationTicket,
 } from './security/gate.js'
+import { DEFAULT_EXECUTION_BACKENDS, type ExecutionBackendRegistry } from './execution/backend.js'
 import { assembleSubjectDescriptor } from './session.js'
 
 const DEFAULT_MINIMUM_CONFIDENCE = 0.5
@@ -91,6 +91,7 @@ export interface OpenSubjectOptions {
   readonly target: RuntimeTarget
   readonly grant: PermissionGrant
   readonly policy?: HostPolicy
+  readonly executionBackends?: ExecutionBackendRegistry
   readonly budget: ResourceBudget
   readonly serviceDefinitions?: ServiceContractDefinitionRegistry
   readonly resolveInput?: SubjectInputResolver
@@ -148,6 +149,91 @@ interface DetectedCandidate extends RunnableCandidate {
   readonly effectiveBudget: ResourceBudget
   readonly activationDiagnostics: readonly Diagnostic[]
   readonly nestedLocks: ProviderPolicyLockEntry[]
+  readonly resources: AsyncReleaseScope
+}
+
+interface AsyncReleaseScope {
+  add(release: () => void | Promise<void>): void
+  release(): Promise<void>
+}
+
+function createReleaseScope(): AsyncReleaseScope {
+  const releases: (() => void | Promise<void>)[] = []
+  let released = false
+  return {
+    add(release): void {
+      if (released) {
+        throw new ModkitError({
+          code: 'x3.host/resource-scope-closed',
+          message: 'cannot retain a resource after its host scope was released',
+        })
+      }
+      releases.push(release)
+    },
+    async release(): Promise<void> {
+      if (released) return
+      released = true
+      let firstError: unknown
+      for (const release of releases.reverse()) {
+        try {
+          await release()
+        } catch (error) {
+          firstError ??= error
+        }
+      }
+      if (firstError !== undefined) throw firstError
+    },
+  }
+}
+
+function trackedLease<Value>(scope: AsyncReleaseScope, lease: Lease<Value>): Lease<Value> {
+  let released = false
+  const release = async (): Promise<void> => {
+    if (released) return
+    released = true
+    await lease.release()
+  }
+  scope.add(release)
+  return Object.freeze({ value: lease.value, release })
+}
+
+async function releaseCandidate(
+  candidate: DetectedCandidate,
+  diagnostics: Diagnostic[],
+): Promise<void> {
+  try {
+    await candidate.resources.release()
+  } catch (error) {
+    diagnostics.push(caughtDiagnostic('cleanup', error))
+  }
+}
+
+function sessionWithResources(session: AssetSession, resources: AsyncReleaseScope): AssetSession {
+  let disposed = false
+  return Object.freeze({
+    revision: session.revision,
+    state: () => session.state(),
+    descriptor: () => session.descriptor(),
+    dataSource: session.dataSource.bind(session) as AssetSession['dataSource'],
+    operations: () => session.operations(),
+    events: (signal?: AbortSignal) => session.events(signal),
+    async dispose(): Promise<void> {
+      if (disposed) return
+      disposed = true
+      let firstError: unknown
+      try {
+        await session.dispose()
+      } catch (error) {
+        firstError = error
+      }
+      try {
+        await resources.release()
+      } catch (error) {
+        firstError ??= error
+      }
+      if (firstError !== undefined) throw firstError
+    },
+  })
 }
 
 function errorDiagnostic(code: string, message: string, error?: unknown): Diagnostic {
@@ -580,6 +666,7 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
   const explanations: SubjectOpenCandidateExplanation[] = []
   const detected: DetectedCandidate[] = []
   const offers = offersFromInventory(options.inventory)
+  const executionBackends = options.executionBackends ?? DEFAULT_EXECUTION_BACKENDS
   const candidates = runnableCandidates(options, offers)
   if (candidates.length > maxCandidates) {
     diagnostics.push(
@@ -592,6 +679,7 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
     const target = normalizeTarget(options.target, options.grant)
     for (const candidate of candidates) {
       const local: Diagnostic[] = []
+      const resources = createReleaseScope()
       const privateRecord = inventoryRecordFor(candidate.contribution)
       const variant = candidate.contribution.manifest?.runtimeVariants?.find(
         item => item.variantId === candidate.offer.runtimeVariant,
@@ -599,7 +687,7 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
       if (
         privateRecord === undefined ||
         variant === undefined ||
-        !SUPPORTED_EXECUTION_PROFILES.includes(variant.executionProfile) ||
+        !executionBackends.supports(variant.executionProfile, target, variant) ||
         (variant.executionProfile === 'trusted-in-process' &&
           privateRecord.execution.allowTrustedInProcess !== true)
       ) {
@@ -654,9 +742,11 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
         const activation = await activateContribution({
           ticket: resolved.ticket,
           grant: options.grant,
+          executionBackends,
           ...(options.policy === undefined ? {} : { policy: options.policy }),
           ...(options.signal === undefined ? {} : { signal: options.signal }),
         })
+        resources.add(activation.release)
         local.push(...activation.diagnostics)
         const effectiveBudget = runtimeBudget(options.budget, candidate.spec)
         const nestedLocks: ProviderPolicyLockEntry[] = []
@@ -690,9 +780,11 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
                     const nested = await activateContribution({
                       ticket,
                       grant,
+                      executionBackends,
                       ...(options.policy === undefined ? {} : { policy: options.policy }),
                       ...(signal === undefined ? {} : { signal }),
                     })
+                    resources.add(nested.release)
                     diagnostics.push(...nested.diagnostics)
                     if (
                       nested.module['abiVersion'] !== 1 ||
@@ -722,7 +814,7 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
                         message: `provider ${result.selected.offer.providerId} returned an invalid lease`,
                       })
                     }
-                    return lease
+                    return trackedLease(resources, lease)
                   },
                 })
           return Object.freeze({
@@ -767,6 +859,7 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
           effectiveBudget,
           activationDiagnostics: Object.freeze(local),
           nestedLocks,
+          resources,
         })
         explanations.push({
           contributionId: candidate.contributionId,
@@ -779,6 +872,11 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
         })
       } catch (error) {
         local.push(caughtDiagnostic('probe', error))
+        try {
+          await resources.release()
+        } catch (cleanupError) {
+          local.push(caughtDiagnostic('cleanup', cleanupError))
+        }
         explanations.push({
           contributionId: candidate.contributionId,
           extensionId: candidate.extensionId,
@@ -805,6 +903,7 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
       ? []
       : eligible.filter(candidate => candidate.detection.confidence === best.detection.confidence)
   if (best === undefined || tied.length !== 1) {
+    for (const candidate of detected) await releaseCandidate(candidate, diagnostics)
     const descriptor = await unresolvedDescriptor(
       options,
       detected.map(candidate => candidate.detection),
@@ -828,6 +927,10 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
     })
   }
 
+  for (const candidate of detected) {
+    if (candidate !== best) await releaseCandidate(candidate, diagnostics)
+  }
+  let openedSession: AssetSession | undefined
   try {
     const rawPlan = best.codec.planInput
       ? await best.codec.planInput(options.source, best.detection, options.signal)
@@ -843,12 +946,13 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
       detection: best.detection,
       ...(options.signal === undefined ? {} : { signal: options.signal }),
     })
-    const session = await best.codec.open(
+    openedSession = await best.codec.open(
       input,
       options.intent,
       best.effectiveBudget,
       options.signal,
     )
+    const session = openedSession
     const descriptor = await assembleSubjectDescriptor(
       (await session.descriptor()) as AnyDescriptorWire,
     )
@@ -858,7 +962,6 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
       descriptor.subjectUri !== options.source.ref.uri ||
       descriptor.revision !== options.source.revision
     ) {
-      await session.dispose()
       throw new ModkitError({
         code: 'x3.host/subject-session-identity-mismatch',
         message: 'opened codec session does not describe the selected source and codec',
@@ -876,7 +979,6 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
     }
     const record = inventoryRecordFor(best.contribution)?.publicRecord
     if (record === undefined) {
-      await session.dispose()
       throw new ModkitError({
         code: 'x3.host/detection-selection-unattested',
         message: 'selected codec has no attested inventory record',
@@ -896,9 +998,11 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
       }),
     )
     const lockText = serializePolicyLock(best.nestedLocks)
+    const managedSession = sessionWithResources(session, best.resources)
+    openedSession = undefined
     return Object.freeze({
       state: 'opened' as const,
-      session,
+      session: managedSession,
       descriptor,
       ticket: best.ticket,
       detectionSelectionText,
@@ -914,6 +1018,14 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
       diagnostics: Object.freeze([...diagnostics, ...best.activationDiagnostics]),
     })
   } catch (error) {
+    if (openedSession !== undefined) {
+      try {
+        await openedSession.dispose()
+      } catch (disposeError) {
+        diagnostics.push(caughtDiagnostic('session-dispose', disposeError))
+      }
+    }
+    await releaseCandidate(best, diagnostics)
     diagnostics.push(caughtDiagnostic('input-open', error))
     const descriptor = await unresolvedDescriptor(
       options,

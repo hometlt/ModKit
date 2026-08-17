@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/codec-contribution",
+    "major": 1
+  },
+  "id": "org.example/ambiguous-codec",
+  "displayName": "Ambiguous lifecycle fixture",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-a",
+      "entrypoint": "./codec.mjs",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
+      "variantId": "trusted-b",
+      "entrypoint": "./codec.mjs",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "ambiguous", "label": "Ambiguous fixture" }],
+    "roles": ["semantic"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored"],
+    "openIntents": ["probe", "full"],
+    "match": { "extensions": ["ambiguous"] },
+    "probe": {
+      "kind": "bytes",
+      "ranges": [{ "from": "start", "length": 4 }],
+      "maxBytes": 4
+    },
+    "representations": [
+      {
+        "id": "ambiguous",
+        "contract": "org.example/ambiguous",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [{ "contract": "common.view/byte-range-source", "major": 1 }],
+    "operations": [],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1024",
+      "maxDepth": 8,
+      "maxNodes": 8,
+      "maxScalarBytes": 1024,
+      "maxDiagnostics": 8
+    }
+  }
+}

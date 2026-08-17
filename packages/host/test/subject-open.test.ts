@@ -6,6 +6,7 @@ import { canonicalJsonStringify, traitId } from '@modkitx-x3/core'
 import {
   buildInventory,
   createHostContributionContractRegistry,
+  createExecutionBackendRegistry,
   createServiceContractDefinitionRegistry,
   createServiceFacetMatcherProfileRegistry,
   evaluateViewerContribution,
@@ -35,6 +36,7 @@ const imagesDir = join(repoRoot, 'extensions', 'common', 'images')
 const modelsDir = join(repoRoot, 'extensions', 'common', 'models')
 const textJsonDir = join(repoRoot, 'extensions', 'common', 'text-json')
 const hostileProbeDir = join(import.meta.dirname, 'fixtures', 'subject-open-extension')
+const ambiguousProbeDir = join(import.meta.dirname, 'fixtures', 'subject-open-ambiguous-extension')
 const pngFixture = join(repoRoot, 'apps', 'web', 'public', 'favicon-32.png')
 const uvmFixture = join(
   repoRoot,
@@ -92,9 +94,89 @@ async function bundledInventory(directory: string) {
   )
 }
 
+function countingTrustedBackends() {
+  let releases = 0
+  return {
+    registry: createExecutionBackendRegistry([
+      {
+        profile: 'trusted-in-process',
+        supports: (_target, variant) => variant.executionProfile === 'trusted-in-process',
+        async activate(context) {
+          return {
+            module: (await import(context.entrypoint.href)) as Record<string, unknown>,
+            async release() {
+              releases += 1
+            },
+          }
+        },
+      },
+    ]),
+    releases: () => releases,
+  }
+}
+
 describe('host-owned subject opening pipeline', () => {
+  it('selects a portable variant only when its execution backend is present', async () => {
+    const inventory = await bundledInventory(imagesDir)
+    const bytes = new Uint8Array(await readFile(pngFixture))
+    const source = byteSource(bytes, 'favicon-32.png')
+    const request = {
+      inventory,
+      source,
+      path: 'favicon-32.png',
+      intent: 'full' as const,
+      target: {
+        environment: 'node-worker' as const,
+        operatingSystem: 'windows' as const,
+        architecture: 'x64' as const,
+      },
+      grant: { id: 'subject-open-portable-png', classes: ['read-source'] as const },
+      budget,
+    }
+
+    const unavailable = await openSubject(request)
+    expect(unavailable.state).toBe('unresolved')
+    expect(unavailable.candidates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          contributionId: 'org.modkitx/image-png',
+          variantId: 'portable',
+          state: 'rejected',
+          diagnostics: [expect.objectContaining({ code: 'x3.host/codec-execution-unavailable' })],
+        }),
+      ]),
+    )
+
+    let releases = 0
+    const workerBackends = createExecutionBackendRegistry([
+      {
+        profile: 'worker-brokered',
+        supports: (target, variant) =>
+          target.environment === 'node-worker' && variant.executionProfile === 'worker-brokered',
+        async activate(context) {
+          return {
+            module: (await import(context.entrypoint.href)) as Record<string, unknown>,
+            async release() {
+              releases += 1
+            },
+          }
+        },
+      },
+    ])
+    const opened = await openSubject({ ...request, executionBackends: workerBackends })
+    expect(opened.state).toBe('opened')
+    if (opened.state !== 'opened') throw new Error('portable PNG backend did not open')
+    expect(opened.ticket.variantId).toBe('portable')
+    expect(opened.diagnostics).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'x3.host/full-process-authority' })]),
+    )
+    await opened.session.dispose()
+    expect(releases).toBe(1)
+  })
+
   it('opens PNG through the real image inventory and resolves a bounded raster presentation', async () => {
     const inventory = await bundledInventory(imagesDir)
+    const execution = countingTrustedBackends()
     const bytes = new Uint8Array(await readFile(pngFixture))
     const base = byteSource(bytes, 'favicon-32.png')
     const reads: { readonly offset: bigint; readonly length: number }[] = []
@@ -113,6 +195,7 @@ describe('host-owned subject opening pipeline', () => {
       intent: 'full',
       target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
       grant: { id: 'subject-open-png', classes: ['read-source'] },
+      executionBackends: execution.registry,
       budget,
     })
 
@@ -266,6 +349,7 @@ describe('host-owned subject opening pipeline', () => {
       intent: 'full',
       target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
       grant: { id: 'subject-open-jpeg', classes: ['read-source'] },
+      executionBackends: execution.registry,
       budget,
     })
     if (jpeg.state !== 'opened') {
@@ -279,8 +363,11 @@ describe('host-owned subject opening pipeline', () => {
     expect(jpeg.detectionSelectionText).not.toBe(result.detectionSelectionText)
 
     await jpeg.session.dispose()
+    expect(execution.releases()).toBe(1)
     await rasterLease.release()
     await result.session.dispose()
+    await result.session.dispose()
+    expect(execution.releases()).toBe(2)
   })
 
   it('opens a real UVM artifact through inventory, ticket, bounded probe and session', async () => {
@@ -544,5 +631,28 @@ describe('host-owned subject opening pipeline', () => {
     // The 9-byte hostile request was stopped by the wrapper. Only the host's explicit
     // 16-byte UTF-8 fallback sniff reached the underlying source.
     expect(reads).toEqual([16])
+  })
+
+  it('releases every activated candidate before returning an ambiguous result', async () => {
+    const execution = countingTrustedBackends()
+    const source = byteSource(new Uint8Array([1, 2, 3, 4]), 'payload.ambiguous')
+    const result = await openSubject({
+      inventory: await bundledInventory(ambiguousProbeDir),
+      source,
+      path: 'payload.ambiguous',
+      intent: 'full',
+      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+      grant: { id: 'subject-open-ambiguous', classes: ['read-source'] },
+      executionBackends: execution.registry,
+      budget,
+    })
+
+    expect(result.state).toBe('unresolved')
+    expect(result).toMatchObject({ reason: 'ambiguous' })
+    expect(result.candidates).toEqual([
+      expect.objectContaining({ variantId: 'trusted-a', state: 'detected', confidence: 0.8 }),
+      expect.objectContaining({ variantId: 'trusted-b', state: 'detected', confidence: 0.8 }),
+    ])
+    expect(execution.releases()).toBe(2)
   })
 })

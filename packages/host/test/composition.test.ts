@@ -57,5 +57,6 @@ describe('host composition root', () => {
     expect(composition.inventory.extensions).toEqual([])
     expect(composition.target.hostCapabilities).toEqual(['gpu.webgl2'])
     expect(composition.target.hostCapabilities).not.toContain('process.launch')
+    expect(composition.executionBackends.profiles).toEqual(['trusted-in-process'])
   })
 })

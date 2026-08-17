@@ -363,6 +363,7 @@ export async function createElectronSubjectServices(
         inventory: application.main.inventory,
         serviceDefinitions: definitions,
         target: application.main.target,
+        executionBackends: application.main.executionBackends,
         ...options,
       }),
   }

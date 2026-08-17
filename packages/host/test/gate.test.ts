@@ -14,6 +14,7 @@ import {
 import {
   activateContribution,
   buildInventory,
+  createExecutionBackendRegistry,
   offersFromInventory,
   PROVIDER_OFFER_INVENTORY_FACT,
   resolveContainedEntrypoint,
@@ -414,9 +415,92 @@ describe('activation gate — refusals never reach an import (MK3/24 §8)', () =
           ticket: await ticketFor(m),
           grant: fullGrant,
         }),
-      'x3.host/unsupported-execution-profile',
+      'x3.host/execution-backend-unavailable',
       'unsupported profile',
     )
+  })
+
+  it('refuses a structurally forged backend registry before executing a module', async () => {
+    const m = manifest({
+      runtimeVariants: [
+        {
+          variantId: 'portable',
+          entrypoint: './entry/spy-greeter.mjs',
+          target: { environments: ['node'] },
+          executionProfile: 'wasm-brokered',
+          requestedPermissionClasses: ['read-source'],
+        },
+      ],
+    })
+    await expectRefusedWithoutImport(
+      async () =>
+        activateContribution({
+          ticket: await ticketFor(m),
+          grant: fullGrant,
+          executionBackends: {
+            profiles: ['wasm-brokered'],
+            supports: () => true,
+          },
+        }),
+      'x3.host/invalid-execution-backend',
+      'forged backend registry',
+    )
+  })
+
+  it('snapshots backend callbacks, rejects duplicates and cleans malformed leases', async () => {
+    const backend = {
+      profile: 'wasm-brokered' as const,
+      supports: () => true,
+      activate: () => ({ module: {}, release: async () => undefined }),
+    }
+    const captured = createExecutionBackendRegistry([backend])
+    backend.supports = () => false
+    expect(
+      captured.supports('wasm-brokered', target, {
+        variantId: 'portable',
+        entrypoint: './entry/spy-greeter.mjs',
+        target: { environments: ['node'] },
+        executionProfile: 'wasm-brokered',
+        requestedPermissionClasses: ['read-source'],
+      }),
+    ).toBe(true)
+    expect(() => createExecutionBackendRegistry([backend, backend])).toThrow(/more than once/u)
+
+    let releases = 0
+    const malformed = createExecutionBackendRegistry([
+      {
+        profile: 'wasm-brokered',
+        supports: () => true,
+        activate: () => ({
+          module: [] as unknown as Record<string, unknown>,
+          async release() {
+            releases += 1
+          },
+        }),
+      },
+    ])
+    const m = manifest({
+      runtimeVariants: [
+        {
+          variantId: 'portable',
+          entrypoint: './entry/spy-greeter.mjs',
+          target: { environments: ['node'] },
+          executionProfile: 'wasm-brokered',
+          requestedPermissionClasses: ['read-source'],
+        },
+      ],
+    })
+    await expectRefusedWithoutImport(
+      async () =>
+        activateContribution({
+          ticket: await ticketFor(m),
+          grant: fullGrant,
+          executionBackends: malformed,
+        }),
+      'x3.host/invalid-execution-backend',
+      'malformed backend lease',
+    )
+    expect(releases).toBe(1)
   })
 })
 
@@ -444,6 +528,67 @@ describe('activation gate — the granted path', () => {
       activation.diagnostics.some(d => d.code === 'x3.host/full-process-authority'),
       'trusted-in-process must admit it is not a sandbox',
     ).toBe(true)
+    await activation.release()
+  })
+
+  it('dispatches a validated ticket through a host-composed backend and releases it once', async () => {
+    const before = globalThis.__x3SpyImports ?? 0
+    const contexts: { readonly grant: PermissionGrant; readonly entrypoint: string }[] = []
+    let releases = 0
+    const backends = createExecutionBackendRegistry([
+      {
+        profile: 'wasm-brokered',
+        supports: (runtimeTarget, variant) =>
+          runtimeTarget.environment === 'node' && variant.executionProfile === 'wasm-brokered',
+        activate(context) {
+          contexts.push({ grant: context.grant, entrypoint: context.entrypoint.href })
+          return {
+            module: {
+              createGreeter: (spec: { readonly greeting: string }) => ({
+                greet: (name: string) => `${spec.greeting}, ${name}!`,
+              }),
+            },
+            async release() {
+              releases += 1
+            },
+          }
+        },
+      },
+    ])
+    const m = manifest({
+      runtimeVariants: [
+        {
+          variantId: 'portable',
+          entrypoint: './entry/spy-greeter.mjs',
+          target: { environments: ['node'] },
+          executionProfile: 'wasm-brokered',
+          requestedPermissionClasses: ['read-source'],
+        },
+      ],
+    })
+    const activation = await activateContribution({
+      ticket: await ticketFor(m),
+      grant: { id: 'g-wasm', classes: ['read-source', 'network'] },
+      executionBackends: backends,
+    })
+    expect(globalThis.__x3SpyImports ?? 0).toBe(before)
+    expect(contexts).toEqual([
+      {
+        grant: expect.objectContaining({
+          id: 'g-wasm/org.x3lab/spy-greeter#portable',
+          classes: ['read-source'],
+        }),
+        entrypoint: expect.stringMatching(/entry\/spy-greeter\.mjs$/u),
+      },
+    ])
+    const factory = activation.module['createGreeter'] as (spec: { readonly greeting: string }) => {
+      greet(name: string): string
+    }
+    expect(factory({ greeting: 'Privet' }).greet('MK3')).toBe('Privet, MK3!')
+    expect(activation.diagnostics).toEqual([])
+    await activation.release()
+    await activation.release()
+    expect(releases).toBe(1)
   })
 })
 

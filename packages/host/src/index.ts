@@ -71,11 +71,18 @@ export {
 export {
   activateContribution,
   resolveForActivation,
-  SUPPORTED_EXECUTION_PROFILES,
   type Activation,
   type ActivationRequest,
   type ActivationTicket,
 } from './security/gate.js'
+export {
+  createExecutionBackendRegistry,
+  DEFAULT_EXECUTION_BACKENDS,
+  type ExecutionBackend,
+  type ExecutionBackendActivation,
+  type ExecutionBackendRegistry,
+  type ExecutionModuleLease,
+} from './execution/backend.js'
 export { assertRelativeEntrypoint, resolveContainedEntrypoint } from './security/entrypoint.js'
 export {
   assembleSubjectDescriptor,

@@ -31,7 +31,6 @@ import { inventoryRecordFor, type InventoryContribution } from '../inventory.js'
 import {
   grantValidity,
   narrowGrant,
-  type ExecutionProfile,
   type HostPolicy,
   type PermissionGrant,
   type ProviderOffer,
@@ -41,9 +40,11 @@ import {
   type RuntimeVariantDeclaration,
 } from '@modkitx-x3/sdk'
 import { resolveContainedEntrypoint } from './entrypoint.js'
-
-/** Profiles this host can honestly enforce today (BRIEF-12 S0–S4 scope). */
-export const SUPPORTED_EXECUTION_PROFILES: readonly ExecutionProfile[] = ['trusted-in-process']
+import {
+  activateExecutionBackend,
+  DEFAULT_EXECUTION_BACKENDS,
+  type ExecutionBackendRegistry,
+} from '../execution/backend.js'
 
 declare const TICKET_BRAND: unique symbol
 
@@ -199,6 +200,7 @@ export interface ActivationRequest {
   readonly ticket: ActivationTicket
   readonly grant: PermissionGrant
   readonly policy?: HostPolicy
+  readonly executionBackends?: ExecutionBackendRegistry
   readonly signal?: AbortSignal
 }
 
@@ -209,6 +211,8 @@ export interface Activation {
   readonly effectiveGrant: PermissionGrant
   /** Honest statements about what this boundary does and does not enforce. */
   readonly diagnostics: readonly Diagnostic[]
+  /** Releases the selected execution realm; idempotent for every backend. */
+  release(): Promise<void>
 }
 
 function deny(code: string, message: string, context?: Record<string, unknown>): ModkitError {
@@ -310,12 +314,13 @@ export async function activateContribution(request: ActivationRequest): Promise<
     )
   }
 
-  // 4. execution profile — refuse, never downgrade
-  if (!SUPPORTED_EXECUTION_PROFILES.includes(variant.executionProfile)) {
+  // 4. execution profile — concrete composition availability, never a global claim or downgrade
+  const executionBackends = request.executionBackends ?? DEFAULT_EXECUTION_BACKENDS
+  if (!executionBackends.supports(variant.executionProfile, ticket.target, variant)) {
     throw deny(
-      'x3.host/unsupported-execution-profile',
-      `profile «${variant.executionProfile}» cannot be honoured by this host — refusing rather than running under a weaker boundary (24 §6.1 rule 1)`,
-      { profile: variant.executionProfile },
+      'x3.host/execution-backend-unavailable',
+      `profile «${variant.executionProfile}» has no backend for ${ticket.target.environment} — refusing rather than running under a weaker boundary (24 §6.1 rule 1)`,
+      { profile: variant.executionProfile, environment: ticket.target.environment },
     )
   }
 
@@ -361,7 +366,15 @@ export async function activateContribution(request: ActivationRequest): Promise<
   const entryUrl = resolveContainedEntrypoint(privateRecord.artifactRoot, variant.entrypoint)
 
   throwIfAborted(request.signal)
-  const module = (await import(entryUrl.href)) as Record<string, unknown>
+  const backendLease = await activateExecutionBackend(executionBackends, {
+    ticket,
+    entrypoint: entryUrl,
+    artifactRoot: privateRecord.artifactRoot,
+    variant,
+    target: ticket.target,
+    grant: child,
+    ...(request.signal === undefined ? {} : { signal: request.signal }),
+  })
 
   const diagnostics: Diagnostic[] = []
   if (variant.executionProfile === 'trusted-in-process') {
@@ -375,5 +388,11 @@ export async function activateContribution(request: ActivationRequest): Promise<
       ),
     )
   }
-  return { module, variant, effectiveGrant: child, diagnostics }
+  return {
+    module: backendLease.module,
+    variant,
+    effectiveGrant: child,
+    diagnostics,
+    release: backendLease.release,
+  }
 }

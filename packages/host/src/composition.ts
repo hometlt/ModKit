@@ -10,12 +10,14 @@ import {
 } from '@modkitx-x3/sdk'
 import { createHostContributionContractRegistry } from './contribution-registry.js'
 import { buildInventory, type ExtensionInput, type Inventory } from './inventory.js'
+import { DEFAULT_EXECUTION_BACKENDS, type ExecutionBackendRegistry } from './execution/backend.js'
 
 export interface HostCompositionOptions {
   readonly topology: HostTopology
   readonly realmId: string
   readonly extensions?: readonly ExtensionInput[]
   readonly contributionContracts?: ContributionContractRegistry
+  readonly executionBackends?: ExecutionBackendRegistry
 }
 
 export interface HostComposition {
@@ -24,6 +26,8 @@ export interface HostComposition {
   readonly target: RuntimeTarget
   readonly profileCacheKey: string
   readonly inventory: Inventory
+  /** Realm-specific mechanisms; availability is no longer inferred from a global profile list. */
+  readonly executionBackends: ExecutionBackendRegistry
 }
 
 /**
@@ -52,5 +56,6 @@ export async function createHostComposition(
     target: runtimeTargetForHostRealm(profile),
     profileCacheKey: hostRealmCacheKey(profile),
     inventory,
+    executionBackends: options.executionBackends ?? DEFAULT_EXECUTION_BACKENDS,
   })
 }
