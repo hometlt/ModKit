@@ -164,12 +164,24 @@ Root интегрировал `package.json`, app callers и generated checks. �
 
 ### ROOT-03 — NXT-100/101 backend SPI
 
+Статус: **NXT-100 и NXT-101A завершены** (`88a957d`); **NXT-101B открыт**.
+
 - internal `ExecutionBackendRegistry`;
 - trusted backend как текущая реализация;
 - backend availability привязана к target, без resolver preference;
 - probe grant, candidate cap, explicit universal match;
 - data-only magic/signature candidate index для renamed extensions без probe всех кодеков;
 - probe-owned lease scope и deterministic release losing candidates.
+
+Закрыто в `88a957d`: realm-owned backend registry, trusted backend, gate-to-backend dispatch,
+availability перед resolution, forged/malformed backend rejection, disjoint portable/trusted proof,
+idempotent release activation/provider/session scopes и cleanup всех losing/ambiguous candidates.
+
+Осталось в ROOT-03/NXT-101B после согласования wire authority с Fable NXT-103:
+
+- explicit universal-match + bounded data-only signature index (`.dat` PNG);
+- отдельный probe grant/lifecycle seam;
+- worker termination/conformance proof после FABLE-NXT-105.
 
 ### ROOT-03B — NXT-103 public method-surface authority
 

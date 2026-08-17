@@ -153,6 +153,8 @@ Verdict: `REVISE`; P0 нет. Приняты findings F‑01…F‑07 и patch-l
 
 ### NXT-100 — отделить policy gate от механизма исполнения
 
+Статус: **завершено** 2026-08-18 (`88a957d`).
+
 Ввести внутренний `ExecutionBackend`/`ExecutionBackendRegistry` в host:
 
 - `profile`, поддерживаемые realms/targets и feature availability;
@@ -164,7 +166,16 @@ Verdict: `REVISE`; P0 нет. Приняты findings F‑01…F‑07 и patch-l
 `SUPPORTED_EXECUTION_PROFILES` перестаёт быть глобальной декларацией возможностей. Доступность
 определяет конкретная host composition. Resolver не получает preference по profile.
 
+Реализация сохраняет admission checks в activation gate, а импорт/worker/process mechanism
+передаёт registry, созданному host composition. Registry fail-closed, захватывает callback identity
+при создании, не принимает structural forgery и возвращает idempotent module lease. Текущий
+`trusted-in-process` import является первым backend; Electron передаёт registry своего main realm в
+единственный `openSubject` path.
+
 ### NXT-101 — связать resolution с backend availability
+
+Статус: **частично завершено** (`88a957d` закрывает backend availability и lifecycle; signature
+authority и отдельный probe grant остаются открыты).
 
 - До выбора кандидата host знает, может ли target выполнить profile.
 - Два variants одного contribution не должны становиться ambiguous для одного target.
@@ -182,7 +193,28 @@ Verdict: `REVISE`; P0 нет. Приняты findings F‑01…F‑07 и patch-l
   запрещается conformance profile. Добавление lifecycle method требует отдельного owner-approved
   public ABI patch.
 
+Уже доказано: disjoint trusted/portable variants не создают ambiguity; worker-only candidate на
+`node-worker` получает structured rejection без backend, а после подключения backend тот же
+resolver выбирает `portable`; probe failure, ambiguity, losing candidates и session disposal
+освобождают backend/provider leases детерминированно и идемпотентно.
+
+Открытая часть NXT-101B:
+
+- заменить текущую ошибочную семантику «пустой `match` = universal» на явную data-only authority;
+- добавить bounded signature/magic index, чтобы renamed PNG `.dat` попадал в shortlist без
+  brute-force activation;
+- отделить probe grant от open/session grant. Текущий `ContributionContext` создаётся один раз на
+  codec activation, поэтому нельзя честно заявить строго более узкий probe grant без owner-approved
+  lifecycle/context seam либо повторной selected-candidate activation;
+- зафиксировать conformance rule для pre-open state и реальные worker termination proofs после
+  NXT-105 transport landing.
+
+NXT-101B не меняется параллельно с Fable NXT-103 production schema: signature/universal-match поля
+должны иметь одного владельца wire authority и drift gates.
+
 ### NXT-102 — acceptance
+
+Backend-часть acceptance: **завершена** (`88a957d`, 39 focused tests).
 
 - trusted backend сохраняет все текущие тесты;
 - worker-only + node без worker backend → unresolved с объяснением;
