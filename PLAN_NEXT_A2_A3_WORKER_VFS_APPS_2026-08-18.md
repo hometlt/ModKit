@@ -2,8 +2,11 @@
 
 Дата: 2026-08-18  
 Базовая ветка: `spec/mk3-extension-reference`  
-Проверенная база: `74b7976`  
-Runtime-коммиты: `ad6f0cc`, `f510b3b`
+Проверенная база: `e92c2b1`
+Runtime-коммиты: `ad6f0cc`, `f510b3b`, `84cdd1c`
+
+Независимый review: `REVIEW_FABLE_NEXT_A2_A3_2026-08-18.md` — `REVISE`, P0 нет, семь P1
+приняты в этот план.
 
 ## 0. Назначение и границы
 
@@ -72,35 +75,38 @@ cases.
 
 ```mermaid
 flowchart LR
-  R["R0: Fable architectural review"] --> E["R1: ExecutionBackend SPI"]
-  E --> P["R2: Worker protocol + handle runtime"]
-  P --> N["R3: Node worker backend"]
-  P --> B["R4: Browser worker backend"]
-  E --> V["R5: VFS/container authority"]
-  V --> I["R6: bundle/namespace input resolver"]
-  N --> A["R7: Electron/CLI/server adoption"]
-  B --> W["R8: PWA/VS Code adoption"]
+  R["R0: Fable review + owner defaults"] --> H["R1: authority/dual-path fixes"]
+  H --> E["R2: ExecutionBackend SPI"]
+  E --> P["R3: shared capability-RPC core"]
+  P --> N["R4: Node worker backend"]
+  P --> B["R5: Browser worker backend"]
+  H --> V["R6: VFS/container authority"]
+  V --> I["R7: bundle/namespace input resolver"]
+  N --> A["R8: Electron/CLI/server adoption"]
+  B --> W["R9: PWA/VS Code adoption"]
   I --> A
   I --> W
-  A --> X["R9: installed/linked extension lifecycle"]
+  A --> X["R10: installed/linked extension lifecycle"]
   W --> X
-  X --> C["R10: cross-app corpus and release gate"]
+  X --> C["R11: cross-app corpus and release gate"]
 ```
 
-Архитектурное исследование R0 и тестовые fixtures можно делать параллельно. Production integration
-не начинается до решения R0 по backend registry, protocol envelope и VFS ownership.
+Review R0 завершён с verdict `REVISE`. Production integration начинается с устранения найденных
+двойных authority: method surface, capability-RPC, lock/selection, generated catalogs и legacy UI
+codec path. Тестовые fixtures можно готовить параллельно в непересекающихся scopes.
 
 ## 4. Этап R0 — независимый review и owner decisions
 
 ### NXT-000 — зафиксировать baseline
 
-- Считать `74b7976` исходной точкой review.
+- Считать `e92c2b1` проверенной точкой review (`74b7976` — проверенная runtime/docs база до плана).
 - Воспроизводить `pnpm check`, Electron subject-services test и app matrix.
 - Любая находка должна указывать exact file/contract и отличать production defect от owner-doc drift.
 
-### NXT-001 — Fable review
+### NXT-001 — Fable review — завершено
 
-Fable проводит read-only аудит этого плана и файлов из отдельного request-документа. Результат:
+Fable провёл read-only аудит. Результат сохранён в
+`REVIEW_FABLE_NEXT_A2_A3_2026-08-18.md`:
 
 - `ACCEPT`, `REVISE` или `BLOCK`;
 - P0/P1/P2 findings с доказательством;
@@ -108,6 +114,8 @@ Fable проводит read-only аудит этого плана и файло�
 - список owner decisions;
 - один рекомендуемый bounded implementation slice для Fable;
 - список безопасных параллельных задач для остальных агентов.
+
+Verdict: `REVISE`; P0 нет. Приняты findings F‑01…F‑07 и patch-list NXT‑103…107.
 
 ### NXT-002 — обязательные owner decisions
 
@@ -119,6 +127,19 @@ Fable проводит read-only аудит этого плана и файло�
 4. Владелец bigint byte-source contract: `vfs` с SDK re-export либо сохранение checked bridge.
 5. `common.vfs/mount@1` и `common.vfs/container@1`: service contracts или иной owner-approved seam.
 6. Installed/linked provenance, digest policy и запрет trusted execution по умолчанию.
+7. Data-source method surface — публичная contract-definition authority, а не app allowlist.
+8. Probe-time activation — только с probe grant, cap кандидатов, явным universal-match и
+   disposable/pooled worker lifecycle.
+9. Codec detection selection не является provider-policy lock entry; это отдельная provenance
+   запись.
+
+Рабочие defaults D‑1…D‑9 принимаются по рекомендациям Fable до owner-promotion. Особенно:
+
+- `vfs` владеет bigint byte/namespace source contract, SDK его реэкспортирует;
+- `surface.methods` описывает `value | lease | iterable | events` и schemas args/returns;
+- bundled trusted разрешён policy по умолчанию, installed требует явного host-side решения,
+  linked разрешён только в dev с diagnostic;
+- SB‑1 означает crash/cancellation isolation, brokered I/O и Node `resourceLimits`, но не sandbox.
 
 ### Exit R0
 
@@ -147,6 +168,10 @@ Fable проводит read-only аудит этого плана и файло�
 - Два variants одного contribution не должны становиться ambiguous для одного target.
 - Backend не может заменить выбранный variant другим после ticket issuance.
 - Ticket, digest, entrypoint и runtime variant остаются связаны до import/spawn.
+- Probe использует отдельный grant, строго уже open grant, и только bounded source reads.
+- Отсутствие match rules больше не означает universal match; universal codec декларирует это явно.
+- Число probe candidates bounded; worker probes disposable или pooled с доказанной очисткой.
+- Проигравшие candidates освобождают activation/module/worker resources до возврата результата.
 
 ### NXT-102 — acceptance
 
@@ -156,14 +181,70 @@ Fable проводит read-only аудит этого плана и файло�
 - forged backend/profile/target mismatch fail-closed;
 - никакого import contribution module до финальной activation проверки.
 
+### NXT-103 — data-source method surface authority
+
+После owner approval D‑7 расширить contract-definition schema/runtime registry:
+
+- `surface.methods[method] = { args, returns, kind }`;
+- `kind`: `value | lease | iterable | events`;
+- schemas args/returns artifact-bound и проходят существующие schema gates;
+- стандартные surfaces принадлежат SDK contract definitions;
+- foreign definition добавляет новый contract без ручной правки host/app allowlist.
+
+Нужны schema drift, hostile malformed surface tests и packed external proof. Это public ABI change и
+поэтому остаётся эксклюзивным root/Fable review seam.
+
+### NXT-104 — разделить provider policy lock и codec detection selection
+
+- Policy lock содержит только service/provider decisions.
+- Выбор codec хранится отдельной session/descriptor provenance записью: contribution, variant,
+  offer, confidence, match evidence/topology и artifact digest.
+- PNG и JPEG с одной representation не конфликтуют в агрегированном policy lock.
+- Replay provider lock и replay codec detection проверяются разными APIs/fixtures.
+- Selection record не содержит raw source bytes, credentials или arbitrary facets.
+
+### NXT-105 — единый capability-RPC core
+
+Транспорт-агностичное ядро в `packages/host/src/execution/` обслуживает worker transports и Electron
+IPC. Оно включает NXT‑110/111 как детализированные части:
+
+- exact-key protocol validators и resource limits;
+- generation-aware handle/lease/iterator/event state machine;
+- method surfaces из NXT‑103;
+- errors, cancellation, progress и deterministic cleanup;
+- hostile suite из review Fable.
+
+Electron `DATA_SOURCE_METHODS`, private handle table и eager iterable materialization удаляются после
+подключения к core; новый data-source contract не требует изменения Electron main.
+
+### NXT-106 — детерминированный генератор app catalogs
+
+Статус: **завершено** 2026-08-18.
+
+- `scripts/emit-app-catalogs.mjs` выводит bundled/viewer/presentation catalogs из inventory и 16 UI
+  contribution manifests.
+- `--check` обнаруживает drift, unexpected files, absolute paths и нестабильный порядок.
+- `generated/` исключение import-gate разрешено только для файлов, воспроизводимых этим gate.
+- Подключить к `pnpm check` до добавления следующих generated catalogs.
+
+### NXT-107 — удалить legacy UI codec path
+
+Статус: **завершено** 2026-08-18.
+
+- Удалить `formats`, `PreviewFormat.createCodec` и `byExtension` из UI preview API.
+- UI принимает только host-owned `openSession` и явный bounded Text/Hex fallback.
+- Test-only direct codec helpers принадлежат testkit, не production UI.
+- Gate/compile proof запрещает возвращение codec-instantiation option в `packages/ui`.
+
 ## 6. Этап R2 — worker protocol и object runtime
 
-### NXT-110 — protocol v1
+### NXT-110 — protocol v1 (часть NXT‑105)
 
 Private protocol envelope должен иметь:
 
 - domain/version, worker/session ID, monotonic message ID;
-- `load`, `call`, `return`, `throw`, `cancel`, `release`, `terminate`;
+- `load`, `ready`, `call`, `return`, `throw`, `cancel`, `next`, `done`, `subscribe`, `event`,
+  `unsubscribe`, `progress`, `release`, `terminate`;
 - exact-key runtime validators на обеих сторонах;
 - upper bounds для depth/nodes/string/array/transfer bytes;
 - запрет prototype-bearing/host objects;
@@ -173,7 +254,7 @@ Private protocol envelope должен иметь:
 opaque handles. Functions, arbitrary class instances, raw paths, credentials и `AbortSignal` не
 пересылаются напрямую.
 
-### NXT-111 — handle table и proxies
+### NXT-111 — handle table и proxies (часть NXT‑105)
 
 - Worker-owned `Codec`, `AssetSession`, providers, data sources и iterators получают opaque handle.
 - Host proxy знает разрешённый method surface для contract@major.
@@ -181,6 +262,8 @@ opaque handles. Functions, arbitrary class instances, raw paths, credentials и 
 - `Lease.release()` идемпотентен и удаляет handle с обеих сторон.
 - Worker exit освобождает host sources, nested providers, iterators и pending calls.
 - Unknown method/contract/major/handle → structured protocol violation + fail-closed termination.
+- Handle ID содержит session generation; replies/handles предыдущего worker generation отвергаются.
+- Лимиты pending calls, handles, iterators, subscriptions и transfer bytes применяются per session.
 
 ### NXT-112 — cancellation, deadlines и failure semantics
 
@@ -204,6 +287,9 @@ opaque handles. Functions, arbitrary class instances, raw paths, credentials и 
 - Entry module загружается только после ticket/digest/entrypoint checks.
 - Один reusable protocol core; Node transport не попадает в browser-safe entrypoints.
 - Явный diagnostic сообщает: процесс изолирован от crash/hang, но ambient Node API не sandboxed.
+- Использовать `worker_threads.resourceLimits` как enforceable memory boundary.
+- После worker `ready/load` host повторно хеширует загруженный artifact; digest mismatch завершает
+  worker, закрывая verify-before-spawn TOCTOU.
 
 ### NXT-115 — Browser worker backend
 
@@ -214,9 +300,11 @@ opaque handles. Functions, arbitrary class instances, raw paths, credentials и 
 
 ### Exit R2
 
-Adversarial gate обязан включать crash, hang, abort during page, oversize transfer, malformed reply,
-unknown handle/method, double release, worker exit with live iterators, out-of-scope source read,
-nested provider grant widening и unavailable-backend refusal.
+Adversarial gate обязан включать crash, hang, abort during page, oversize/deep/prototype-polluting
+frames, `SharedArrayBuffer`/oversized typed-array views, malformed/late/duplicate reply,
+cross-generation/unknown handle, unknown method/contract/major, double release, worker exit with live
+iterators/events/leases, pending-call/handle/transfer limit, out-of-scope source read, nested provider
+grant widening и unavailable-backend refusal.
 
 ## 7. Этап R3 — VFS/container и составные assets
 
@@ -301,6 +389,9 @@ Security decision хранится host-side и не принимается rend
 
 ## 9. Этап R5 — один product-open путь во всех приложениях
 
+Порядок реализации: Electron → CLI/server → PWA → VS Code. Headless Node proof не ждёт browser
+backend и раньше создаёт reusable corpus/fault gates.
+
 ### NXT-400 — общий application adapter
 
 Вынести из Electron только reusable host orchestration port, не Electron IPC:
@@ -341,11 +432,14 @@ Security decision хранится host-side и не принимается rend
 
 Заменить/дополнить декларативный `apps:check` runtime cases:
 
-- JSON, PNG, UVM, ZIP+nested asset, unknown, malicious fixture;
+- JSON (+nested provider), PNG, UVM, ZIP→PNG, unknown и malicious fixture;
+- renamed PNG (`.dat` с PNG magic) выбирается по content evidence, а не suffix-only;
+- source > 64 MiB, symlink/junction escape, file-changed-under-session и update при live session;
+- CUE + два BIN одного requirement/role и missing/ambiguous companion;
 - Electron main, PWA worker, VS Code desktop/web, CLI/server;
 - одинаковый selected contribution/descriptor/presentation при одинаковом policy target;
 - renderer/webview bundles не содержат codec implementation;
-- shuffle/reload сохраняет lock replay;
+- shuffle/reload отдельно сохраняет provider-policy replay и codec detection selection;
 - no available backend даёт одинаково объяснимый unresolved result.
 
 ## 10. Этап R6 — стресс и release closure
@@ -435,13 +529,27 @@ Pin:
 Каждая задача получает: baseline commit, разрешённые файлы, forbidden files, exact tests, команду
 gate и запрет расширять public ABI без review.
 
+### Распределение после review Fable
+
+| Работа                               | Исполнитель                    | Статус / scope                                                                                         |
+| ------------------------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| NXT‑106 app catalog generator        | отдельный implementation agent | завершено; emitter, drift gate и manifest-derived Electron catalogs                                    |
+| F‑07 PNG product proof               | отдельный test agent           | завершено; реальный PNG проходит inventory, bounded probe, session/data source и presentation          |
+| NXT‑107 UI legacy path removal       | отдельный UI agent             | завершено; UI принимает только host-owned session или явный Text/Hex fallback                          |
+| NXT‑100/101 ExecutionBackend SPI     | Root/Sol                       | exclusive host activation/openSubject scope                                                            |
+| NXT‑104 lock/selection split         | Root/Sol                       | exclusive host resolution/session/provenance scope                                                     |
+| NXT‑103/105 surface + capability-RPC | Fable, после SPI types         | новые `packages/host/src/execution/**` и hostile tests; public SDK surface только после owner decision |
+| UX states/extension manager          | Opus, после NXT‑107            | design + UI-only scope, без security/lock authority                                                    |
+
 ## 12. Рекомендуемое немедленное действие
 
-1. Передать Fable `REQUEST_FABLE_REVIEW_NEXT_A2_A3_2026-08-18.md`.
-2. До его verdict разрешить только read-only review и подготовку hostile fixtures без production API.
-3. После `ACCEPT/REVISE` обновить этот план одним commit.
-4. Первым production slice сделать NXT-100…102.
-5. Затем поручить Fable NXT-110/111 как отдельную bounded задачу; root интегрирует NXT-114/115.
+1. Review Fable сохранён рядом с планом; D‑1…D‑9 приняты как рабочие defaults.
+2. NXT‑106, NXT‑107 и реальный PNG proof завершены и включены в repository gates.
+3. Следующий exclusive slice Root — NXT‑104 lock/selection split, затем минимальные NXT‑100/101
+   SPI types.
+4. После owner confirmation D‑7 поручить Fable NXT‑103/105 как одну bounded задачу.
+5. Root подключает Electron IPC к capability-RPC, затем реализует NXT‑114/115 transports.
+6. Adoption идёт Electron → CLI/server → PWA → VS Code.
 
 Такой порядок оставляет единственную точку композиции, не замораживает транспорт в SDK ABI и не
 повторяет ошибку «декларативный gate зелёный, а реальный пользовательский путь другой».

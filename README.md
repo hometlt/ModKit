@@ -77,6 +77,9 @@ requires a separate owner decision. Long-lived double authority with `modkitx` i
   sequences the execution-backend SPI, worker runtime, VFS/container convergence, extension
   lifecycle and cross-app product-open gates. Its independent review brief is
   [`REQUEST_FABLE_REVIEW_NEXT_A2_A3_2026-08-18.md`](./REQUEST_FABLE_REVIEW_NEXT_A2_A3_2026-08-18.md).
+  Fable returned `REVISE` with no P0; the accepted findings and live ownership map are in
+  [`REVIEW_FABLE_NEXT_A2_A3_2026-08-18.md`](./REVIEW_FABLE_NEXT_A2_A3_2026-08-18.md) and
+  [`TASK_ASSIGNMENTS_POST_FABLE_REVIEW_2026-08-18.md`](./TASK_ASSIGNMENTS_POST_FABLE_REVIEW_2026-08-18.md).
 - Local `pnpm bench` is informational and never blocks work. `pnpm bench:gate` keeps only three
   budgets (core import, bootstrap-closure import, CLI validate) and is reserved for a fixed CI
   runner or dedicated machine. There are no local calibration probes, normalization or mutable
