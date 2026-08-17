@@ -133,6 +133,7 @@ export {
   type FileAccess,
   type PreviewHandle,
   type PreviewResolver,
+  type PreviewView,
 } from './explorer/index.js'
 export {
   createCodecPreview,
@@ -140,3 +141,27 @@ export {
   type PreviewFormat,
   type PreviewStage,
 } from './explorer/preview.js'
+export {
+  createEditorArea,
+  type EditorArea,
+  type EditorAreaOptions,
+  type EditorStatus,
+} from './explorer/editors.js'
+export {
+  createSettingsUi,
+  createMemorySettingsStore,
+  DEFAULT_SETTINGS,
+  enabledExtensions,
+  normalizeSettings,
+  serializeSettings,
+  SETTINGS_SCHEMA_VERSION,
+  type AppearanceSettings,
+  type Density,
+  type ExtensionSetting,
+  type NormalizedSettings,
+  type SettingsDocument,
+  type SettingsStore,
+  type SettingsUi,
+  type SettingsUiOptions,
+  type ThemeChoice,
+} from './settings/index.js'

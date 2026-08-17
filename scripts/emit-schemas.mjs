@@ -108,14 +108,16 @@ function renderStandaloneValidators() {
     })
     const key = `modkitx-precompiled:${name}`
     ajv.addSchema(schema, key)
-    const compiled = standaloneCode(ajv, { [name]: key }).replace(
-      /const ([A-Za-z_$][A-Za-z0-9_$]*) = require\("([^"]+)"\)\.default;/gu,
-      (_match, binding, specifier) => {
-        const moduleSpecifier = specifier.endsWith('.js') ? specifier : `${specifier}.js`
-        return `import * as ${binding}Module from "${moduleSpecifier}";
+    const compiled = standaloneCode(ajv, { [name]: key })
+      .replace(
+        /const ([A-Za-z_$][A-Za-z0-9_$]*) = require\("([^"]+)"\)\.default;/gu,
+        (_match, binding, specifier) => {
+          const moduleSpecifier = specifier.endsWith('.js') ? specifier : `${specifier}.js`
+          return `import * as ${binding}Module from "${moduleSpecifier}";
 const ${binding} = ${binding}Module.default?.default ?? ${binding}Module.default;`
-      },
-    ).trimEnd()
+        },
+      )
+      .trimEnd()
     generated.set(
       join(validatorDirectory, `${name}.ts`),
       `// @ts-nocheck

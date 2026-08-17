@@ -7,11 +7,12 @@
  *
  * CommonJS on purpose: Electron's main entry is loaded as CJS, and the package is `type: module`.
  */
-const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron')
+const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = require('electron')
 const fs = require('node:fs')
 const fsp = require('node:fs/promises')
 const path = require('node:path')
 const { pathToFileURL } = require('node:url')
+const { readSettings, writeSettings } = require('./settings-store.cjs')
 
 const RENDERER = path.join(__dirname, '..', 'dist-app', 'index.html')
 
@@ -286,6 +287,61 @@ async function createWindow() {
   // renderer asks only when the user activates the action.
   ipcMain.handle('modkit.register-file-types', async (_event, extensions) =>
     registerFileTypes(Array.isArray(extensions) ? extensions : []),
+  )
+
+  // Settings live in a JSON file the renderer never touches directly — it has no filesystem access.
+  ipcMain.handle('modkit.settings.read', () => readSettings(app))
+  ipcMain.handle('modkit.settings.write', async (_event, text) => {
+    if (typeof text !== 'string' || text.length > 1_000_000) {
+      throw new TypeError('settings payload must be a bounded JSON string')
+    }
+    const parsed = JSON.parse(text)
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      throw new TypeError('settings payload must contain a JSON object')
+    }
+    return { location: await writeSettings(app, text) }
+  })
+
+  /*
+   * Native menu. The actions live here rather than as toolbar buttons because this is a desktop
+   * app: File/Open Folder is where a user looks for it, and the accelerators come for free.
+   * Each item only signals the renderer; the renderer owns what the UI then does.
+   */
+  const send = channel => () => {
+    window.webContents.send(channel)
+  }
+  Menu.setApplicationMenu(
+    Menu.buildFromTemplate([
+      {
+        label: 'File',
+        submenu: [
+          {
+            label: 'Open Folder…',
+            accelerator: 'CmdOrCtrl+K',
+            click: send('modkit.menu.open-folder'),
+          },
+          { label: 'Open File…', accelerator: 'CmdOrCtrl+O', click: send('modkit.menu.open-file') },
+          { type: 'separator' },
+          { label: 'Settings', accelerator: 'CmdOrCtrl+,', click: send('modkit.menu.settings') },
+          { type: 'separator' },
+          { role: 'quit' },
+        ],
+      },
+      {
+        label: 'View',
+        submenu: [
+          { label: 'Split Editor', accelerator: 'CmdOrCtrl+\\', click: send('modkit.menu.split') },
+          { type: 'separator' },
+          { role: 'reload' },
+          { role: 'toggleDevTools' },
+          { type: 'separator' },
+          { role: 'resetZoom' },
+          { role: 'zoomIn' },
+          { role: 'zoomOut' },
+          { role: 'togglefullscreen' },
+        ],
+      },
+    ]),
   )
 
   // Renderer findings belong in the same log as the main process ones, otherwise verifying the

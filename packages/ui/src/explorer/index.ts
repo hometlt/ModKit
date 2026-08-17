@@ -32,7 +32,17 @@ export interface FileAccess {
   read(entryId: string, maxBytes: number, signal?: AbortSignal): Promise<Uint8Array>
 }
 
+/** One rendering of an opened file. The explorer draws the picker; the resolver owns the stages. */
+export interface PreviewView {
+  readonly id: string
+  readonly label: string
+}
+
 export interface PreviewHandle {
+  /** Views this file can be shown as, in preferred order. */
+  readonly views: readonly PreviewView[]
+  readonly activeView: string
+  show(viewId: string): Promise<void>
   /** Called before the next preview mounts. */
   unmount(): void | Promise<void>
 }
@@ -67,6 +77,16 @@ export interface ExplorerOptions {
   ): Promise<{ readonly access?: FileAccess; readonly entry?: ExplorerEntry } | undefined>
   /** Offered as an action only when the host can actually register file associations. */
   registerFileTypes?(): Promise<string>
+  /**
+   * Hide the built-in toolbar. A desktop host with a native menu turns this off rather than
+   * showing the same commands twice.
+   */
+  readonly showToolbar?: boolean
+  /**
+   * Take over opening. When present the explorer browses but does not preview: the host routes the
+   * entry to its own editor area, which is what lets tabs and split groups exist above the tree.
+   */
+  onOpen?(entry: ExplorerEntry): void
 }
 
 export interface Explorer {
@@ -99,9 +119,17 @@ export function createExplorer(document: Document, options: ExplorerOptions): Ex
 
   const toolbar = element(root, 'div', { part: 'explorer.toolbar', role: 'toolbar' })
   toolbar.setAttribute('aria-label', 'Explorer actions')
+  if (options.showToolbar === false) toolbar.hidden = true
 
   const sidebar = element(root, 'div', { part: 'explorer.sidebar' })
   const previewPane = element(root, 'div', { part: 'explorer.preview' })
+  const previewHeader = element(previewPane, 'div', { part: 'explorer.header' })
+  const breadcrumb = element(previewHeader, 'div', { part: 'explorer.breadcrumb' })
+  const viewPicker = element(previewHeader, 'select', {
+    part: 'explorer.viewpicker',
+  }) as HTMLSelectElement
+  viewPicker.setAttribute('aria-label', 'Preview view')
+  previewHeader.hidden = true
   const stage = element(previewPane, 'div', { part: 'explorer.stage' })
   const status = element(root, 'output', { part: 'explorer.status' })
 
@@ -196,23 +224,30 @@ export function createExplorer(document: Document, options: ExplorerOptions): Ex
     const previous = mounted
     mounted = undefined
     await previous.unmount()
+    previewHeader.hidden = true
+    breadcrumb.textContent = ''
+    viewPicker.replaceChildren()
   }
+
+  viewPicker.addEventListener('change', () => {
+    const current = mounted
+    if (current === undefined) return
+    const selected = viewPicker.value
+    say(`Opening ${breadcrumb.textContent ?? 'view'}…`, 'loading')
+    void current
+      .show(selected)
+      .then(() => {
+        if (mounted === current) say(`${breadcrumb.textContent ?? ''} · ${selected}`)
+      })
+      .catch(error => {
+        if (mounted === current) say(`Could not change view: ${describe(error)}`, 'error')
+      })
+  })
 
   async function preview(entry: ExplorerEntry): Promise<void> {
     if (access === undefined) return
     await unmountPrevious()
     stage.replaceChildren()
-
-    const extension = extensionOf(entry.name)
-    if (!supported.has(extension)) {
-      // Not a failure — the host simply has no codec contributed for this format.
-      placeholder(
-        `No codec is installed for “.${extension || entry.name}”. ` +
-          `This host can preview: ${[...supported].sort().join(', ')}.`,
-      )
-      say(`${entry.name} — no codec`)
-      return
-    }
 
     if (entry.size !== undefined && entry.size > maximumBytes) {
       placeholder(
@@ -234,11 +269,26 @@ export function createExplorer(document: Document, options: ExplorerOptions): Ex
         return
       }
       if (handle === undefined) {
-        placeholder(`Nothing claimed “${entry.name}” after decoding.`)
+        placeholder(
+          `Nothing could render “${entry.name}”. The host publishes no codec for it and no ` +
+            'built-in text or hex viewer was configured.',
+        )
         say(`${entry.name} — no viewer`)
         return
       }
       mounted = handle
+      breadcrumb.textContent = safeViewerText(entry.name, 300)
+      viewPicker.replaceChildren(
+        ...handle.views.map(view => {
+          const option = document.createElement('option')
+          option.value = view.id
+          option.textContent = view.label
+          return option
+        }),
+      )
+      viewPicker.value = handle.activeView
+      viewPicker.hidden = handle.views.length <= 1
+      previewHeader.hidden = false
       say(`${entry.name} · ${formatBytes(bytes.length)}`)
     } catch (error) {
       if (run.signal.aborted) return
@@ -277,7 +327,9 @@ export function createExplorer(document: Document, options: ExplorerOptions): Ex
       },
       onActivate(node) {
         if (node.kind === 'directory') return
-        void preview(nodeToEntry(node))
+        const entry = nodeToEntry(node)
+        if (options.onOpen !== undefined) options.onOpen(entry)
+        else void preview(entry)
       },
       matches(node) {
         return query === undefined ? true : matches(node.label, query)

@@ -1,0 +1,326 @@
+/**
+ * Editor area — VS Code's tabs and split groups, over any `PreviewResolver`.
+ *
+ * A group is a column with its own tab strip, breadcrumb and view picker. Splitting adds a group
+ * beside the current one, so two files — or two views of the same file — sit side by side. Opening a
+ * file targets the focused group, which is what makes "split, then click another file" behave the
+ * way it does in an editor.
+ *
+ * Deliberately separate from the tree: the explorer owns browsing, this owns what is open. Hosts
+ * that only need a single pane never construct it, and hosts that need tabs get them without the
+ * tree component growing a second responsibility.
+ *
+ * Nothing here knows about codecs or filesystems. It asks a `PreviewResolver` to turn bytes into
+ * views and a reader callback to produce the bytes, which is why the same area serves Electron's
+ * broker, the web app's file handles and VS Code's workspace fs.
+ */
+import { element, setPart, setState, safeViewerText } from '../viewer/index.js'
+import type { ExplorerEntry, PreviewHandle, PreviewResolver } from './index.js'
+
+export interface EditorAreaOptions {
+  readonly preview: PreviewResolver
+  /** Produce the bytes for an entry. The host owns caching and limits. */
+  read(entry: ExplorerEntry, signal?: AbortSignal): Promise<Uint8Array>
+  /** Reports the focused tab so a host can drive its own status bar. */
+  onStatus?(status: EditorStatus): void
+}
+
+export interface EditorStatus {
+  readonly path?: string
+  readonly view?: string
+  readonly detail: string
+  readonly severity: 'info' | 'error' | 'busy'
+}
+
+export interface EditorArea {
+  readonly root: HTMLElement
+  /** Open (or focus) a file in the currently focused group. */
+  open(entry: ExplorerEntry): Promise<void>
+  /** Add a group beside the focused one and make it the target for the next open. */
+  split(): void
+  /** Number of groups, for hosts that expose "close split" affordances. */
+  readonly groupCount: number
+  destroy(): void
+}
+
+interface OpenTab {
+  readonly entry: ExplorerEntry
+  readonly button: HTMLElement
+  readonly content: HTMLElement
+  handle?: PreviewHandle
+  /** Aborts this tab's in-flight load so a fast switch cannot mount two stages. */
+  run?: AbortController
+}
+
+interface Group {
+  readonly root: HTMLElement
+  readonly strip: HTMLElement
+  readonly breadcrumb: HTMLElement
+  readonly picker: HTMLSelectElement
+  readonly stage: HTMLElement
+  readonly tabs: OpenTab[]
+  active?: OpenTab | undefined
+}
+
+const describe = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error)
+
+const formatBytes = (bytes: number): string => {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KiB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`
+}
+
+export function createEditorArea(document: Document, options: EditorAreaOptions): EditorArea {
+  const root = document.createElement('div')
+  setPart(root, 'explorer.editors')
+
+  const groups: Group[] = []
+  let focused: Group
+  let destroyed = false
+
+  const report = (status: EditorStatus): void => {
+    options.onStatus?.(status)
+  }
+
+  // ------------------------------------------------------------------ breadcrumb
+  function drawBreadcrumb(group: Group, entry: ExplorerEntry | undefined): void {
+    group.breadcrumb.replaceChildren()
+    if (entry === undefined) return
+    // Split on both separators: a host may hand back POSIX or Windows paths.
+    const parts = entry.id.split(/[\\/]/u).filter(Boolean)
+    // Only the tail is useful; a full absolute path pushes the filename off the row.
+    for (const [index, part] of parts.slice(-4).entries()) {
+      if (index > 0) element(group.breadcrumb, 'span', { part: 'explorer.crumb', text: '›' })
+      element(group.breadcrumb, 'span', {
+        part: 'explorer.crumb',
+        text: safeViewerText(part, 120),
+      })
+    }
+  }
+
+  function syncPicker(group: Group): void {
+    const handle = group.active?.handle
+    group.picker.replaceChildren()
+    if (handle === undefined || handle.views.length === 0) {
+      group.picker.disabled = true
+      return
+    }
+    for (const view of handle.views) {
+      const option = document.createElement('option')
+      option.value = view.id
+      option.textContent = view.label
+      group.picker.append(option)
+    }
+    group.picker.value = handle.activeView
+    // One view is not a choice; leaving the control enabled invites a pointless click.
+    group.picker.disabled = handle.views.length < 2
+  }
+
+  function placeholder(group: Group, message: string): void {
+    group.stage.replaceChildren()
+    element(group.stage, 'p', { part: 'explorer.placeholder', text: message })
+  }
+
+  // ------------------------------------------------------------------ tabs
+  async function activate(group: Group, tab: OpenTab): Promise<void> {
+    for (const other of group.tabs) {
+      const selected = other === tab
+      other.button.setAttribute('aria-selected', String(selected))
+      setState(other.button, selected ? ['selected'] : [])
+      other.content.hidden = !selected
+    }
+    group.active = tab
+    drawBreadcrumb(group, tab.entry)
+
+    if (tab.handle === undefined) {
+      await load(group, tab)
+      return
+    }
+    syncPicker(group)
+    report({
+      path: tab.entry.id,
+      view: group.picker.selectedOptions[0]?.textContent ?? '',
+      detail: tab.entry.name,
+      severity: 'info',
+    })
+  }
+
+  async function load(group: Group, tab: OpenTab): Promise<void> {
+    tab.run?.abort()
+    const run = new AbortController()
+    tab.run = run
+    tab.content.replaceChildren()
+    report({ path: tab.entry.id, detail: `Opening ${tab.entry.name}…`, severity: 'busy' })
+
+    try {
+      const bytes = await options.read(tab.entry, run.signal)
+      if (run.signal.aborted) return
+      const handle = await options.preview.open(tab.content, tab.entry, bytes, run.signal)
+      if (run.signal.aborted) {
+        await handle?.unmount()
+        return
+      }
+      if (handle === undefined) {
+        placeholder({ ...group, stage: tab.content }, `Nothing could render “${tab.entry.name}”.`)
+        report({ path: tab.entry.id, detail: 'no viewer', severity: 'error' })
+        return
+      }
+      tab.handle = handle
+      syncPicker(group)
+      report({
+        path: tab.entry.id,
+        view: handle.views.find(view => view.id === handle.activeView)?.label ?? '',
+        detail: formatBytes(bytes.length),
+        severity: 'info',
+      })
+    } catch (error) {
+      if (run.signal.aborted) return
+      placeholder(
+        { ...group, stage: tab.content },
+        `Could not preview ${tab.entry.name}: ${describe(error)}`,
+      )
+      report({ path: tab.entry.id, detail: describe(error), severity: 'error' })
+    }
+  }
+
+  async function closeTab(group: Group, tab: OpenTab): Promise<void> {
+    tab.run?.abort()
+    await tab.handle?.unmount()
+    const index = group.tabs.indexOf(tab)
+    if (index !== -1) group.tabs.splice(index, 1)
+    tab.button.remove()
+    tab.content.remove()
+
+    if (group.active === tab) {
+      group.active = undefined
+      group.stage.replaceChildren()
+      const next = group.tabs[Math.max(0, index - 1)]
+      if (next !== undefined) {
+        await activate(group, next)
+      } else {
+        drawBreadcrumb(group, undefined)
+        syncPicker(group)
+        placeholder(group, 'No file open in this group.')
+      }
+    }
+
+    // An emptied extra group is noise. The first group always stays so the area is never blank.
+    if (group.tabs.length === 0 && groups.length > 1 && group !== groups[0]) {
+      groups.splice(groups.indexOf(group), 1)
+      group.root.remove()
+      const first = groups[0]
+      if (first !== undefined) focus(first)
+    }
+  }
+
+  // ------------------------------------------------------------------ groups
+  function focus(group: Group): void {
+    focused = group
+    for (const item of groups) setState(item.root, item === group ? ['active'] : [])
+  }
+
+  function createGroup(): Group {
+    const groupRoot = element(root, 'div', { part: 'explorer.group' })
+
+    const strip = element(groupRoot, 'div', { part: 'explorer.tabstrip', role: 'tablist' })
+    strip.setAttribute('aria-label', 'Open files')
+
+    const header = element(groupRoot, 'div', { part: 'explorer.header' })
+    const breadcrumb = element(header, 'nav', { part: 'explorer.breadcrumb' })
+    breadcrumb.setAttribute('aria-label', 'File path')
+    const picker = element(header, 'select', { part: 'explorer.viewpicker' }) as HTMLSelectElement
+    picker.setAttribute('aria-label', 'View')
+    picker.disabled = true
+
+    const stage = element(groupRoot, 'div', { part: 'explorer.stage' })
+
+    const group: Group = { root: groupRoot, strip, breadcrumb, picker, stage, tabs: [] }
+
+    // Pointer-down rather than click: the next open should target whichever group the user is
+    // interacting with, even if the click lands on a viewer that stops propagation.
+    groupRoot.addEventListener('pointerdown', () => {
+      focus(group)
+    })
+
+    picker.addEventListener('change', () => {
+      const handle = group.active?.handle
+      if (handle === undefined) return
+      void handle.show(picker.value).then(() => {
+        report({
+          ...(group.active === undefined ? {} : { path: group.active.entry.id }),
+          view: picker.selectedOptions[0]?.textContent ?? picker.value,
+          detail: group.active?.entry.name ?? '',
+          severity: 'info',
+        })
+      })
+    })
+
+    groups.push(group)
+    placeholder(group, 'No file open in this group.')
+    return group
+  }
+
+  focused = createGroup()
+  focus(focused)
+
+  const area: EditorArea = {
+    root,
+
+    get groupCount() {
+      return groups.length
+    },
+
+    async open(entry) {
+      const group = focused
+      const existing = group.tabs.find(tab => tab.entry.id === entry.id)
+      if (existing !== undefined) {
+        await activate(group, existing)
+        return
+      }
+
+      const button = element(group.strip, 'div', { part: 'explorer.filetab' })
+      button.setAttribute('role', 'tab')
+      button.title = entry.id
+
+      if (group.tabs.length === 0) group.stage.replaceChildren()
+      const content = element(group.stage, 'div', { part: 'explorer.tabcontent' })
+      const tab: OpenTab = { entry, button, content }
+
+      const label = element(button, 'span', { text: safeViewerText(entry.name, 120) })
+      label.addEventListener('click', () => {
+        focus(group)
+        void activate(group, tab)
+      })
+
+      const close = element(button, 'button', { part: 'explorer.filetab-close', text: '×' })
+      close.setAttribute('type', 'button')
+      close.setAttribute('aria-label', `Close ${entry.name}`)
+      close.addEventListener('click', event => {
+        event.stopPropagation()
+        void closeTab(group, tab)
+      })
+
+      group.tabs.push(tab)
+      await activate(group, tab)
+    },
+
+    split() {
+      focus(createGroup())
+    },
+
+    destroy() {
+      if (destroyed) return
+      destroyed = true
+      for (const group of groups) {
+        for (const tab of group.tabs) {
+          tab.run?.abort()
+          void tab.handle?.unmount()
+        }
+      }
+      root.remove()
+    },
+  }
+
+  return area
+}

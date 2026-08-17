@@ -2333,6 +2333,30 @@
     pointer-events: none;
   }
 
+  [data-mk-part='explorer.header'] {
+    display: flex;
+    flex: 0 0 auto;
+    gap: var(--mk-space-3);
+    align-items: center;
+    min-height: var(--mk-size-control);
+    padding: var(--mk-space-1) var(--mk-space-3);
+    border-bottom: 1px solid var(--mk-color-border);
+    background: var(--mk-color-raised);
+  }
+
+  [data-mk-part='explorer.breadcrumb'] {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--mk-color-fg-muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  [data-mk-part='explorer.viewpicker'] {
+    min-width: 9rem;
+    margin-inline-start: auto;
+  }
+
   [data-mk-part='explorer.tabs'] {
     display: flex;
     flex: 0 0 auto;
@@ -2383,6 +2407,251 @@
 
   [data-mk-part='explorer.status'][data-mk-state~='error'] {
     color: var(--mk-status-error);
+  }
+}
+
+@layer mk.components {
+  /* Editor area: groups sit side by side and share the width evenly, as a split editor does. */
+  [data-mk-part='explorer.editors'] {
+    display: flex;
+    flex: 1 1 auto;
+    gap: 1px;
+    min-width: 0;
+    min-height: 0;
+    background: var(--mk-color-separator);
+  }
+
+  [data-mk-part='explorer.group'] {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    background: var(--mk-color-bg);
+  }
+
+  /* The focused group takes the next opened file, so it needs a visible marker. */
+  [data-mk-part='explorer.group'][data-mk-state~='active'] [data-mk-part='explorer.tabstrip'] {
+    border-bottom-color: var(--mk-color-accent);
+  }
+
+  [data-mk-part='explorer.tabstrip'] {
+    display: flex;
+    flex: 0 0 auto;
+    min-height: var(--mk-size-control);
+    overflow-x: auto;
+    border-bottom: 2px solid var(--mk-color-border);
+    background: var(--mk-color-raised);
+    scrollbar-width: none;
+  }
+
+  [data-mk-part='explorer.filetab'] {
+    display: inline-flex;
+    flex: 0 0 auto;
+    gap: var(--mk-space-2);
+    align-items: center;
+    padding: var(--mk-space-1) var(--mk-space-3);
+    border-right: 1px solid var(--mk-color-border);
+    color: var(--mk-color-fg-muted);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  [data-mk-part='explorer.filetab']:hover {
+    background: var(--mk-color-hover);
+  }
+
+  [data-mk-part='explorer.filetab'][data-mk-state~='selected'] {
+    color: var(--mk-color-fg);
+    background: var(--mk-color-surface);
+  }
+
+  [data-mk-part='explorer.filetab-close'] {
+    padding: 0 var(--mk-space-1);
+    border: 0;
+    border-radius: var(--mk-radius-sm);
+    color: inherit;
+    background: none;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  [data-mk-part='explorer.filetab-close']:hover {
+    background: var(--mk-color-active);
+  }
+
+  [data-mk-part='explorer.tabcontent'] {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  /* Breadcrumb on the left, view picker pinned right — the VS Code arrangement. */
+  [data-mk-part='explorer.header'] {
+    display: flex;
+    flex: 0 0 auto;
+    gap: var(--mk-space-3);
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--mk-space-1) var(--mk-space-3);
+    border-bottom: 1px solid var(--mk-color-border);
+  }
+
+  [data-mk-part='explorer.breadcrumb'] {
+    display: flex;
+    flex: 1 1 auto;
+    gap: var(--mk-space-1);
+    align-items: center;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-xs);
+    white-space: nowrap;
+  }
+
+  [data-mk-part='explorer.crumb']:last-child {
+    color: var(--mk-color-fg);
+  }
+
+  [data-mk-part='explorer.viewpicker'] {
+    flex: 0 0 auto;
+  }
+
+  /* ---------------------------------------------------------------- settings */
+  [data-mk-part='settings'] {
+    display: grid;
+    grid-template: 1fr auto / minmax(160px, 14rem) 1fr;
+    height: 100%;
+    min-height: 0;
+    background: var(--mk-color-bg);
+  }
+
+  [data-mk-part='settings.groups'] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--mk-space-1);
+    padding: var(--mk-space-3);
+    border-right: 1px solid var(--mk-color-border);
+    overflow: auto;
+  }
+
+  [data-mk-part='settings.group'] {
+    padding: var(--mk-space-2) var(--mk-space-3);
+    border: 0;
+    border-radius: var(--mk-radius-md);
+    color: var(--mk-color-fg-muted);
+    background: none;
+    text-align: start;
+    cursor: pointer;
+  }
+
+  [data-mk-part='settings.group']:hover {
+    background: var(--mk-color-hover);
+  }
+
+  [data-mk-part='settings.group'][data-mk-state~='selected'] {
+    color: var(--mk-color-selection-fg);
+    background: var(--mk-color-selection);
+  }
+
+  [data-mk-part='settings.pane'] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--mk-space-5);
+    padding: var(--mk-space-5);
+    overflow: auto;
+  }
+
+  [data-mk-part='settings.row'] {
+    display: flex;
+    max-width: 70ch;
+    flex-direction: column;
+    gap: var(--mk-space-1);
+  }
+
+  [data-mk-part='settings.label'] {
+    font-weight: var(--mk-font-weight-medium);
+  }
+
+  [data-mk-part='settings.description'] {
+    max-width: 70ch;
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-sm);
+  }
+
+  [data-mk-part='settings.control'] {
+    margin-top: var(--mk-space-1);
+  }
+
+  [data-mk-part='settings.list'] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--mk-space-2);
+  }
+
+  [data-mk-part='settings.extension'] {
+    display: flex;
+    gap: var(--mk-space-3);
+    align-items: center;
+    padding: var(--mk-space-3);
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-md);
+    background: var(--mk-color-surface);
+  }
+
+  [data-mk-part='settings.extension-text'] {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  [data-mk-part='settings.adder'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--mk-space-2);
+    align-items: center;
+  }
+
+  [data-mk-part='settings.add'],
+  [data-mk-part='settings.remove'] {
+    height: var(--mk-size-control);
+    padding-inline: var(--mk-space-3);
+    color: var(--mk-color-fg);
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-md);
+    background: var(--mk-color-raised);
+    cursor: pointer;
+  }
+
+  [data-mk-part='settings.status'] {
+    grid-column: 1 / -1;
+    padding: var(--mk-space-1) var(--mk-space-3);
+    border-top: 1px solid var(--mk-color-border);
+    color: var(--mk-color-fg-muted);
+    background: var(--mk-color-raised);
+    font-size: var(--mk-font-size-xs);
+  }
+
+  [data-mk-part='settings.status'][data-mk-state~='error'] {
+    color: var(--mk-status-error);
+  }
+
+  @media (width <= 48rem) {
+    [data-mk-part='settings'] {
+      grid-template: auto minmax(0, 1fr) auto / 1fr;
+    }
+
+    [data-mk-part='settings.groups'] {
+      flex-direction: row;
+      border-right: 0;
+      border-bottom: 1px solid var(--mk-color-border);
+    }
+
+    [data-mk-part='settings.extension'],
+    [data-mk-part='settings.adder'] {
+      align-items: stretch;
+      flex-direction: column;
+    }
   }
 }
 

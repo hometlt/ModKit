@@ -1515,4 +1515,142 @@ describe('13C real-browser viewer host', () => {
       ),
     ).toBe(1)
   })
+
+  it('falls back to bounded Text/Hex views and lets the explorer switch views', async () => {
+    await reset()
+    await page.evaluate(async () => {
+      const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
+      const typed = ui as unknown as typeof import('@modkitx-x3/ui')
+      const root = document.querySelector('#app') as HTMLElement
+      const text = new TextEncoder().encode('fallback text')
+      const preview = typed.createCodecPreview({
+        formats: [],
+        stages: [],
+        fallback: { text: typed.boundedTextViewer, hex: typed.hexViewer },
+      })
+      const explorer = typed.createExplorer(document, { preview })
+      root.replaceChildren(explorer.root)
+      await explorer.setAccess({
+        label: 'memory',
+        async list() {
+          return []
+        },
+        async read() {
+          return text
+        },
+      })
+      await explorer.open({ id: 'unknown', name: 'fixture.unknown', directory: false })
+      ;(globalThis as unknown as { currentExplorer?: typeof explorer }).currentExplorer = explorer
+    })
+
+    const picker = page.getByRole('combobox', { name: 'Preview view' })
+    await expect(picker.locator('option').allTextContents()).resolves.toEqual(['Text', 'Hex'])
+    expect(await picker.inputValue()).toBe('common.view/text-data-source')
+    expect(await page.getByText('fallback text', { exact: true }).count()).toBe(1)
+
+    await picker.selectOption('common.view/byte-range-source')
+    await page.waitForFunction(
+      () =>
+        document.querySelector('[data-mk-part="explorer.viewpicker"]')?.getAttribute('value') ===
+          'common.view/byte-range-source' ||
+        (document.querySelector('[data-mk-part="explorer.viewpicker"]') as HTMLSelectElement | null)
+          ?.value === 'common.view/byte-range-source',
+    )
+    expect(await page.locator('[data-mk-part="hex.content"]').count()).toBe(1)
+
+    await page.evaluate(() => {
+      ;(
+        globalThis as unknown as { currentExplorer?: { destroy(): void } }
+      ).currentExplorer?.destroy()
+    })
+  })
+
+  it('keeps tab mounts alive across switches and opens a focused split group', async () => {
+    await reset()
+    await page.evaluate(async () => {
+      const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
+      const typed = ui as unknown as typeof import('@modkitx-x3/ui')
+      const root = document.querySelector('#app') as HTMLElement
+      let unmounts = 0
+      const preview: import('@modkitx-x3/ui').PreviewResolver = {
+        supported: [],
+        async open(container, entry) {
+          let active = 'text'
+          const render = (view: string): void => {
+            active = view
+            container.textContent = `${entry.name}:${view}`
+          }
+          render(active)
+          return {
+            views: [
+              { id: 'text', label: 'Text' },
+              { id: 'hex', label: 'Hex' },
+            ],
+            get activeView() {
+              return active
+            },
+            async show(view) {
+              render(view)
+            },
+            async unmount() {
+              unmounts += 1
+              container.replaceChildren()
+            },
+          }
+        },
+      }
+      const area = typed.createEditorArea(document, {
+        preview,
+        async read() {
+          return new Uint8Array()
+        },
+      })
+      root.replaceChildren(area.root)
+      await area.open({ id: '/a.txt', name: 'a.txt', directory: false })
+      await area.open({ id: '/b.txt', name: 'b.txt', directory: false })
+      ;(globalThis as unknown as Record<string, unknown>)['editorAreaFixture'] = {
+        area,
+        unmounts: () => unmounts,
+      }
+    })
+
+    expect(await page.getByRole('tab').allTextContents()).toEqual(['a.txt×', 'b.txt×'])
+    await page.getByText('a.txt', { exact: true }).click()
+    expect(await page.getByText('a.txt:text', { exact: true }).count()).toBe(1)
+    expect(
+      await page.evaluate(() =>
+        (
+          globalThis as unknown as { editorAreaFixture: { unmounts(): number } }
+        ).editorAreaFixture.unmounts(),
+      ),
+    ).toBe(0)
+
+    await page.getByRole('combobox', { name: 'View' }).selectOption('hex')
+    expect(await page.getByText('a.txt:hex', { exact: true }).count()).toBe(1)
+
+    await page.evaluate(async () => {
+      const fixture = (
+        globalThis as unknown as {
+          editorAreaFixture: { area: import('@modkitx-x3/ui').EditorArea }
+        }
+      ).editorAreaFixture
+      fixture.area.split()
+      await fixture.area.open({ id: '/c.txt', name: 'c.txt', directory: false })
+    })
+    expect(await page.locator('[data-mk-part="explorer.group"]').count()).toBe(2)
+    expect(await page.getByText('c.txt:text', { exact: true }).count()).toBe(1)
+
+    await page.evaluate(() => {
+      ;(
+        globalThis as unknown as { editorAreaFixture: { area: { destroy(): void } } }
+      ).editorAreaFixture.area.destroy()
+    })
+    expect(
+      await page.evaluate(() =>
+        (
+          globalThis as unknown as { editorAreaFixture: { unmounts(): number } }
+        ).editorAreaFixture.unmounts(),
+      ),
+    ).toBe(3)
+  })
 })

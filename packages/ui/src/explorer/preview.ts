@@ -11,7 +11,8 @@
 import type { ViewerModule } from '@modkitx-x3/sdk'
 
 import type { ExplorerEntry, PreviewHandle, PreviewResolver } from './index.js'
-import { element, setPart, setState } from '../viewer/index.js'
+import { builtinByteRangeSource, builtinTextSource, looksTextual } from './builtin.js'
+import { setPart } from '../viewer/index.js'
 
 /** What a host registers for one format. */
 export interface PreviewFormat {
@@ -38,6 +39,14 @@ export interface CodecPreviewOptions {
   readonly formats: readonly PreviewFormat[]
   readonly stages: readonly PreviewStage[]
   readonly maximumBytes?: number
+  /**
+   * Viewers for the built-in fallback, used when no codec claims the file. Without these a file
+   * with no codec shows nothing; with them it always shows at least its bytes.
+   */
+  readonly fallback?: {
+    readonly text?: ViewerModule
+    readonly hex?: ViewerModule
+  }
 }
 
 interface CodecSession {
@@ -75,14 +84,19 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
     async open(container, entry, bytes, signal): Promise<PreviewHandle | undefined> {
       const extension = entry.name.slice(entry.name.lastIndexOf('.') + 1).toLowerCase()
       const format = byExtension.get(extension)
-      if (format === undefined) return undefined
 
-      const session = await openCodec(format, entry, bytes, maximumBytes)
+      // No codec: fall back to the raw bytes rather than showing nothing.
+      const session =
+        format === undefined
+          ? builtinSession(bytes, options.fallback)
+          : await openCodec(format, entry, bytes, maximumBytes)
+
       const descriptor = await session.descriptor()
       const traits = new Set(traitsOf(descriptor))
       const published = new Set(publishedContracts(descriptor))
 
-      const usable = options.stages.filter(
+      const candidates = format === undefined ? fallbackStages(options.fallback) : options.stages
+      const usable = candidates.filter(
         stage =>
           published.has(stage.contract) && (stage.trait === undefined || traits.has(stage.trait)),
       )
@@ -91,22 +105,16 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
         return undefined
       }
 
-      const tabs = element(container, 'div', { part: 'explorer.tabs', role: 'tablist' })
-      const host = element(container, 'div', { part: 'explorer.stage' })
-
       let active: { unmount(): Promise<void> | void } | undefined
-      let activeButton: HTMLElement | undefined
+      let activeId = usable[0]?.contract ?? ''
 
-      const show = async (stage: PreviewStage, button: HTMLElement): Promise<void> => {
+      const show = async (viewId: string): Promise<void> => {
+        const stage = usable.find(item => item.contract === viewId)
+        if (stage === undefined) throw new Error(`unknown view: ${viewId}`)
         await active?.unmount()
-        host.replaceChildren()
-        if (activeButton !== undefined) {
-          activeButton.setAttribute('aria-selected', 'false')
-          setState(activeButton, [])
-        }
-        button.setAttribute('aria-selected', 'true')
-        setState(button, ['selected'])
-        activeButton = button
+        active = undefined
+        container.replaceChildren()
+        activeId = viewId
 
         /*
          * A viewer resolves its data through `bindingFor(slot, contract)`, so the slot has to carry
@@ -122,8 +130,8 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
           bindings: [{ bindingId: 'content', contract: stage.contract, major: 1 }],
         }
 
-        active = await stage.module.mount({
-          container: host,
+        const mounted = await stage.module.mount({
+          container,
           descriptor: descriptor as never,
           slot: slot as never,
           sources: {
@@ -132,7 +140,7 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
               return {
                 value: lease.value,
                 async release() {
-                  // The codec session owns the source; releasing a lease here would be premature.
+                  // The codec session owns the source; releasing here would be premature.
                 },
               }
             },
@@ -149,33 +157,22 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
           operations: undefined as never,
           ...(signal === undefined ? {} : { signal }),
         } as never)
+        active = mounted
+        activeId = viewId
       }
 
-      for (const stage of usable) {
-        const button = element(tabs, 'button', {
-          part: 'explorer.tab',
-          text: stage.label,
-        }) as HTMLButtonElement
-        button.type = 'button'
-        button.setAttribute('role', 'tab')
-        button.setAttribute('aria-selected', 'false')
-        button.addEventListener('click', () => {
-          void show(stage, button)
-        })
-      }
-
-      const first = usable[0]
-      const firstButton = tabs.firstElementChild
-      if (first !== undefined && firstButton instanceof HTMLElement) {
-        await show(first, firstButton)
-      }
+      await show(activeId)
 
       return {
+        views: usable.map(stage => ({ id: stage.contract, label: stage.label })),
+        get activeView() {
+          return activeId
+        },
+        show,
         async unmount() {
           await active?.unmount()
           await session.dispose()
-          tabs.remove()
-          host.remove()
+          container.replaceChildren()
         },
       }
     },
@@ -292,3 +289,55 @@ export function fallbackHexStage(module: ViewerModule): PreviewStage {
 }
 
 export { setPart }
+
+/** Stage list for a file no codec claimed: whatever fallback viewers the host supplied. */
+function fallbackStages(fallback: CodecPreviewOptions['fallback']): readonly PreviewStage[] {
+  const stages: PreviewStage[] = []
+  if (fallback?.text !== undefined) {
+    stages.push({ label: 'Text', contract: 'common.view/text-data-source', module: fallback.text })
+  }
+  if (fallback?.hex !== undefined) {
+    stages.push({ label: 'Hex', contract: 'common.view/byte-range-source', module: fallback.hex })
+  }
+  return stages
+}
+
+/**
+ * A session that publishes the built-in sources without involving a codec.
+ *
+ * It answers the same three questions a codec session does, so nothing downstream needs to know
+ * whether structure came from a codec or from this.
+ */
+function builtinSession(
+  bytes: Uint8Array,
+  fallback: CodecPreviewOptions['fallback'],
+): CodecSession {
+  const textual = fallback?.text !== undefined && looksTextual(bytes)
+  const sources: Record<string, unknown> = {}
+  if (textual) sources['common.view/text-data-source'] = builtinTextSource(bytes)
+  if (fallback?.hex !== undefined) {
+    sources['common.view/byte-range-source'] = builtinByteRangeSource(bytes)
+  }
+
+  return {
+    async descriptor() {
+      return {
+        subjectUri: 'memory://explorer/builtin',
+        revision: `content-hash.sha256:builtin-${bytes.length}`,
+        operations: [],
+        diagnostics: [],
+        // `content.text` only when the bytes really decode: a binary must not claim to be text.
+        traits: textual ? [{ id: 'content.text' }] : [],
+        dataSources: Object.keys(sources).map(contract => ({ contract })),
+      }
+    },
+    async dataSource(contract: string) {
+      const value = sources[contract]
+      if (value === undefined) throw new Error(`built-in preview has no ${contract}`)
+      return { value }
+    },
+    async dispose() {
+      // Nothing to release: the sources close over an in-memory buffer.
+    },
+  }
+}

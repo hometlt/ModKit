@@ -11,6 +11,7 @@
  * Normalisation never throws on bad input. A settings file is user-editable by design, so a typo
  * must degrade to "that entry was ignored, here is why" rather than refusing to start the app.
  */
+import { compareUtf8 } from '@modkitx-x3/core'
 
 export type Density = 'compact' | 'comfortable'
 
@@ -142,7 +143,7 @@ export function serializeSettings(document: SettingsDocument): string {
       schemaVersion: document.schemaVersion,
       appearance: { theme: document.appearance.theme, density: document.appearance.density },
       extensions: [...document.extensions]
-        .sort((a, b) => a.id.localeCompare(b.id))
+        .sort((a, b) => compareUtf8(a.id, b.id))
         .map(entry => ({
           id: entry.id,
           path: entry.path,
@@ -168,7 +169,9 @@ export interface SettingsStore {
 }
 
 /** Non-persistent store, for a host with nowhere to write yet (and for tests). */
-export function createMemorySettingsStore(initial: SettingsDocument = DEFAULT_SETTINGS): SettingsStore {
+export function createMemorySettingsStore(
+  initial: SettingsDocument = DEFAULT_SETTINGS,
+): SettingsStore {
   let current = initial
   return {
     location: 'memory',

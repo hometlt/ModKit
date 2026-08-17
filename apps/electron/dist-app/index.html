@@ -23,6 +23,38 @@
         height: 100vh;
         overflow: hidden;
       }
+      /* Shell: body fills, footer is a fixed strip — the VS Code status bar arrangement. */
+      .modkit-shell {
+        display: flex;
+        height: 100%;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .modkit-body {
+        display: flex;
+        flex: 1 1 auto;
+        min-height: 0;
+      }
+      .modkit-body > * {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+      .modkit-footer {
+        display: flex;
+        flex: 0 0 auto;
+        gap: 12px;
+        align-items: center;
+        padding: 2px 12px;
+        border-top: 1px solid var(--mk-color-border);
+        background: var(--mk-color-raised);
+        font-size: var(--mk-font-size-xs);
+      }
+      .modkit-footer .muted {
+        color: var(--mk-color-fg-muted);
+      }
+      .modkit-footer.bad {
+        color: var(--mk-status-error);
+      }
       .report {
         display: flex;
         flex-direction: column;

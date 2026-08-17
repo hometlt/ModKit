@@ -60,3 +60,12 @@ export const PREVIEW_STAGES = Object.freeze([
   { label: 'Text', contract: 'common.view/text-data-source', module: boundedTextViewer },
   { label: 'Hex', contract: 'common.view/byte-range-source', module: hexViewer },
 ])
+
+/**
+ * Viewers used when no codec claims a file. Any byte sequence is viewable as hex, and a UTF-8 one
+ * as text, so "no codec" never means "nothing to look at".
+ */
+export const PREVIEW_FALLBACK = Object.freeze({
+  text: boundedTextViewer,
+  hex: hexViewer,
+})

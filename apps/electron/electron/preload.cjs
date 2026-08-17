@@ -52,6 +52,20 @@ contextBridge.exposeInMainWorld('modkitFiles', {
   },
 })
 
+/** Menu commands arrive as one-way signals; the renderer decides what each one does. */
+contextBridge.exposeInMainWorld('modkitMenu', {
+  on: (command, handler) => {
+    const channel = `modkit.menu.${command}`
+    // Wrapped so the renderer never receives the IpcRendererEvent, which carries `sender`.
+    ipcRenderer.on(channel, () => handler())
+  },
+})
+
+contextBridge.exposeInMainWorld('modkitSettings', {
+  read: () => ipcRenderer.invoke('modkit.settings.read'),
+  write: text => ipcRenderer.invoke('modkit.settings.write', text),
+})
+
 contextBridge.exposeInMainWorld('modkitHost', {
   profile: () => ipcRenderer.invoke('modkit.profile'),
   /** A file handed to us on the command line, e.g. by a double-click in Explorer. */

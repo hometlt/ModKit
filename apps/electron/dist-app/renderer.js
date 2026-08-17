@@ -36546,6 +36546,37 @@ var PARTS = Object.freeze([
   "explorer.tab",
   "explorer.stage",
   "explorer.placeholder",
+  // preview header and view picker
+  "explorer.header",
+  "explorer.breadcrumb",
+  "explorer.crumb",
+  "explorer.viewpicker",
+  // editor area: one or more groups, each with its own tab strip
+  "explorer.editors",
+  "explorer.group",
+  "explorer.tabstrip",
+  "explorer.filetab",
+  "explorer.filetab-close",
+  "explorer.split",
+  // settings surface
+  "settings",
+  "settings.groups",
+  "settings.group",
+  "settings.pane",
+  "settings.row",
+  "settings.label",
+  "settings.description",
+  "settings.control",
+  "settings.select",
+  "settings.input",
+  "settings.list",
+  "settings.extension",
+  "settings.extension-text",
+  "settings.toggle",
+  "settings.remove",
+  "settings.adder",
+  "settings.add",
+  "settings.status",
   // collapsible property sections
   "accordion",
   "accordion.section",
@@ -37049,10 +37080,10 @@ var LazyTreeModel = class {
     this.#facts.set(node.id, value);
     return value;
   }
-  children(node, cursor2, signal) {
+  children(node, cursor22, signal) {
     return this.source.children(
       node,
-      { limit: 200, ...cursor2 === void 0 ? {} : { cursor: cursor2 } },
+      { limit: 200, ...cursor22 === void 0 ? {} : { cursor: cursor22 } },
       signal
     );
   }
@@ -37281,11 +37312,11 @@ var NamespaceModel = class {
   }
   source;
   #identities = /* @__PURE__ */ new Map();
-  async list(prefix, cursor2, signal) {
+  async list(prefix, cursor22, signal) {
     const normalized = normalizeNamespacePath(prefix);
     const page = await this.source.list(
       normalized,
-      { limit: 200, ...cursor2 === void 0 ? {} : { cursor: cursor2 } },
+      { limit: 200, ...cursor22 === void 0 ? {} : { cursor: cursor22 } },
       signal
     );
     for (const entry of page.items) {
@@ -38593,7 +38624,7 @@ var audioViewer = defineViewerModule({
     if (lease2 === void 0) throw new TypeError("audio binding is unavailable");
     scope.lease(lease2);
     let model;
-    let cursor2 = 0;
+    let cursor22 = 0;
     const context = canvas.getContext("2d");
     if (context === null) throw new TypeError("2d canvas context is unavailable");
     const paint = () => {
@@ -38624,19 +38655,19 @@ var audioViewer = defineViewerModule({
         const bottom = (1 - minimum) * (height / 2);
         context.fillRect(x, top, 1, Math.max(1, bottom - top));
       }
-      if (cursor2 > 0 && model.duration > 0) {
+      if (cursor22 > 0 && model.duration > 0) {
         context.fillStyle = styles.getPropertyValue("--mk-color-accent").trim() || "#0078d4";
-        context.fillRect(Math.round(cursor2 / model.duration * width), 0, 2, height);
+        context.fillRect(Math.round(cursor22 / model.duration * width), 0, 2, height);
       }
       setViewerText(
         readout,
-        `${clock(cursor2)} / ${clock(model.duration)} \xB7 ${model.channels}ch \xB7 ${(model.sampleRate / 1e3).toFixed(1)} kHz \xB7 ${(model.bytes / 1024).toFixed(0)} KiB`
+        `${clock(cursor22)} / ${clock(model.duration)} \xB7 ${model.channels}ch \xB7 ${(model.sampleRate / 1e3).toFixed(1)} kHz \xB7 ${(model.bytes / 1024).toFixed(0)} KiB`
       );
     };
     canvas.addEventListener("click", (event) => {
       if (model === void 0) return;
       const box = canvas.getBoundingClientRect();
-      cursor2 = (event.clientX - box.left) / box.width * model.duration;
+      cursor22 = (event.clientX - box.left) / box.width * model.duration;
       paint();
     });
     setState(stage, ["loading"]);
@@ -39101,11 +39132,11 @@ function drawPrimitive(canvas, primitive, basis, distanceScale) {
   const triangle = (first, second, third) => {
     const a = point(first);
     const b = point(second);
-    const c2 = point(third);
+    const c22 = point(third);
     context.beginPath();
     context.moveTo(a[0], a[1]);
     context.lineTo(b[0], b[1]);
-    context.lineTo(c2[0], c2[1]);
+    context.lineTo(c22[0], c22[1]);
     context.closePath();
     context.stroke();
   };
@@ -39888,58 +39919,6 @@ function createSearchField(document2, options) {
     }
   };
 }
-function createWorkbench(document2, options) {
-  const root = document2.createElement("div");
-  root.className = "modkit-viewer modkit-workbench";
-  setPart(root, "workbench");
-  const titlebar = document2.createElement("header");
-  titlebar.textContent = safeViewerText(options.title, 256);
-  setPart(titlebar, "workbench.titlebar");
-  const activitybar = document2.createElement("nav");
-  activitybar.setAttribute("aria-label", "Workbench activities");
-  setPart(activitybar, "workbench.activitybar");
-  const sidebar = document2.createElement("aside");
-  setPart(sidebar, "workbench.sidebar");
-  const main = document2.createElement("main");
-  setPart(main, "workbench.main");
-  const panel = document2.createElement("section");
-  setPart(panel, "workbench.panel");
-  const statusbar = document2.createElement("footer");
-  setPart(statusbar, "workbench.statusbar");
-  const hostStatus = document2.createElement("span");
-  setPart(hostStatus, "workbench.host-status");
-  statusbar.append(hostStatus);
-  root.append(titlebar, activitybar, sidebar, main, panel, statusbar);
-  const setHostState = (state) => {
-    const reasons = state.degradedReasons ?? [];
-    hostStatus.textContent = `${safeViewerText(state.label, 128)} \xB7 ${state.facilities.length} facilities`;
-    hostStatus.title = reasons.length === 0 ? state.facilities.join(", ") : reasons.join("\n");
-    const states = reasons.length === 0 ? [] : ["degraded"];
-    setState(hostStatus, states);
-  };
-  const replace = (target, content) => {
-    target.replaceChildren(...content === void 0 ? [] : [content]);
-  };
-  setHostState(
-    options.host ?? {
-      label: "Host unavailable",
-      facilities: [],
-      degradedReasons: ["No host profile"]
-    }
-  );
-  return Object.freeze({
-    root,
-    activitybar,
-    sidebar,
-    main,
-    panel,
-    setHostState,
-    setSidebar: (content) => replace(sidebar, content),
-    setMain: (content) => replace(main, content),
-    setPanel: (content) => replace(panel, content),
-    dispose: () => root.remove()
-  });
-}
 var EXPLORER_MAXIMUM_BYTES = 64 * 1024 * 1024;
 var extensionOf = (name) => {
   const dot = name.lastIndexOf(".");
@@ -39958,8 +39937,16 @@ function createExplorer(document2, options) {
   setPart(root, "explorer");
   const toolbar = element(root, "div", { part: "explorer.toolbar", role: "toolbar" });
   toolbar.setAttribute("aria-label", "Explorer actions");
+  if (options.showToolbar === false) toolbar.hidden = true;
   const sidebar = element(root, "div", { part: "explorer.sidebar" });
   const previewPane = element(root, "div", { part: "explorer.preview" });
+  const previewHeader = element(previewPane, "div", { part: "explorer.header" });
+  const breadcrumb = element(previewHeader, "div", { part: "explorer.breadcrumb" });
+  const viewPicker = element(previewHeader, "select", {
+    part: "explorer.viewpicker"
+  });
+  viewPicker.setAttribute("aria-label", "Preview view");
+  previewHeader.hidden = true;
   const stage = element(previewPane, "div", { part: "explorer.stage" });
   const status = element(root, "output", { part: "explorer.status" });
   let access;
@@ -40040,19 +40027,25 @@ function createExplorer(document2, options) {
     const previous = mounted;
     mounted = void 0;
     await previous.unmount();
+    previewHeader.hidden = true;
+    breadcrumb.textContent = "";
+    viewPicker.replaceChildren();
   }
+  viewPicker.addEventListener("change", () => {
+    const current = mounted;
+    if (current === void 0) return;
+    const selected = viewPicker.value;
+    say(`Opening ${breadcrumb.textContent ?? "view"}\u2026`, "loading");
+    void current.show(selected).then(() => {
+      if (mounted === current) say(`${breadcrumb.textContent ?? ""} \xB7 ${selected}`);
+    }).catch((error) => {
+      if (mounted === current) say(`Could not change view: ${describe2(error)}`, "error");
+    });
+  });
   async function preview(entry) {
     if (access === void 0) return;
     await unmountPrevious();
     stage.replaceChildren();
-    const extension = extensionOf(entry.name);
-    if (!supported.has(extension)) {
-      placeholder(
-        `No codec is installed for \u201C.${extension || entry.name}\u201D. This host can preview: ${[...supported].sort().join(", ")}.`
-      );
-      say(`${entry.name} \u2014 no codec`);
-      return;
-    }
     if (entry.size !== void 0 && entry.size > maximumBytes) {
       placeholder(
         `${entry.name} is ${formatBytes(entry.size)}, over the ${formatBytes(maximumBytes)} preview limit.`
@@ -40072,11 +40065,25 @@ function createExplorer(document2, options) {
         return;
       }
       if (handle === void 0) {
-        placeholder(`Nothing claimed \u201C${entry.name}\u201D after decoding.`);
+        placeholder(
+          `Nothing could render \u201C${entry.name}\u201D. The host publishes no codec for it and no built-in text or hex viewer was configured.`
+        );
         say(`${entry.name} \u2014 no viewer`);
         return;
       }
       mounted = handle;
+      breadcrumb.textContent = safeViewerText(entry.name, 300);
+      viewPicker.replaceChildren(
+        ...handle.views.map((view) => {
+          const option = document2.createElement("option");
+          option.value = view.id;
+          option.textContent = view.label;
+          return option;
+        })
+      );
+      viewPicker.value = handle.activeView;
+      viewPicker.hidden = handle.views.length <= 1;
+      previewHeader.hidden = false;
       say(`${entry.name} \xB7 ${formatBytes(bytes.length)}`);
     } catch (error) {
       if (run.signal.aborted) return;
@@ -40100,14 +40107,18 @@ function createExplorer(document2, options) {
           id: entry.id,
           label: entry.name,
           hasChildren: entry.directory,
-          icon: entry.directory ? "\u25B8" : supported.has(extensionOf(entry.name)) ? "\u25C6" : "\xB7",
+          // No arrow here: the tree draws its own twisty for `hasChildren`, and a second
+          // chevron in the icon slot reads as two arrows on every folder.
+          icon: entry.directory ? "\u{1F5C0}" : supported.has(extensionOf(entry.name)) ? "\u25C6" : "\xB7",
           ...entry.size === void 0 || entry.directory ? {} : { badge: formatBytes(entry.size) },
           kind: entry.directory ? "directory" : extensionOf(entry.name)
         }));
       },
       onActivate(node) {
         if (node.kind === "directory") return;
-        void preview(nodeToEntry(node));
+        const entry = nodeToEntry(node);
+        if (options.onOpen !== void 0) options.onOpen(entry);
+        else void preview(entry);
       },
       matches(node) {
         return query === void 0 ? true : matches2(node.label, query);
@@ -40187,6 +40198,179 @@ function createExplorer(document2, options) {
 function describe2(error) {
   return error instanceof Error ? error.message : String(error);
 }
+var encoder2 = new TextEncoder();
+function decodeUtf8(bytes) {
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return void 0;
+  }
+}
+function looksTextual(bytes) {
+  return !bytes.includes(0) && decodeUtf8(bytes) !== void 0;
+}
+function indexText(text) {
+  const lineStarts = [0];
+  const kinds = /* @__PURE__ */ new Set();
+  for (const match of text.matchAll(/\r\n|\r|\n/gu)) {
+    const value = match[0];
+    kinds.add(value === "\r\n" ? "crlf" : value === "\r" ? "cr" : "lf");
+    lineStarts.push((match.index ?? 0) + value.length);
+  }
+  let longestLineBytes = 0;
+  for (let line = 0; line < lineStarts.length; line += 1) {
+    const start = lineStarts[line] ?? text.length;
+    const next = lineStarts[line + 1] ?? text.length;
+    const withoutNewline = text.slice(start, next).replace(/\r\n$|\r$|\n$/u, "");
+    longestLineBytes = Math.max(longestLineBytes, encoder2.encode(withoutNewline).byteLength);
+  }
+  const values = [...kinds];
+  return Object.freeze({
+    lineStarts: Object.freeze(lineStarts),
+    newline: values.length > 1 ? "mixed" : values[0] ?? "lf",
+    longestLineBytes
+  });
+}
+function ensurePositivePage(value, name) {
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new RangeError(`${name} must be a positive safe integer`);
+  }
+}
+function ensureLine(value) {
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new RangeError("text line must be a non-negative safe integer");
+  }
+}
+var cursor = (character, line) => `c${character}-l${line}`;
+function parseCursor(value) {
+  const match = /^c(0|[1-9][0-9]*)-l(0|[1-9][0-9]*)$/u.exec(value);
+  const character = Number(match?.[1]);
+  const line = Number(match?.[2]);
+  if (match === null || !Number.isSafeInteger(character) || !Number.isSafeInteger(line)) {
+    throw new RangeError("invalid built-in text cursor");
+  }
+  return { character, line };
+}
+function truncateUtf8(value, maximumBytes) {
+  if (encoder2.encode(value).byteLength <= maximumBytes) return value;
+  let result = "";
+  let used = 0;
+  for (const character of value) {
+    const size = encoder2.encode(character).byteLength;
+    if (used + size > maximumBytes) {
+      if (result === "") throw new RangeError("text page maxBytes cannot fit the next code point");
+      break;
+    }
+    result += character;
+    used += size;
+  }
+  return result;
+}
+function cursorLine(index, character) {
+  let result = 0;
+  for (let line = 1; line < index.lineStarts.length; line += 1) {
+    if ((index.lineStarts[line] ?? Number.MAX_SAFE_INTEGER) > character) break;
+    result = line;
+  }
+  return result;
+}
+function linesInRange(index, fromLine, endCharacter) {
+  let last = fromLine;
+  for (let line = fromLine + 1; line < index.lineStarts.length; line += 1) {
+    if ((index.lineStarts[line] ?? Number.MAX_SAFE_INTEGER) >= endCharacter) break;
+    last = line;
+  }
+  return last - fromLine + 1;
+}
+function builtinTextSource(bytes) {
+  const text = decodeUtf8(bytes);
+  if (text === void 0 || bytes.includes(0)) {
+    throw new TypeError("built-in text source requires complete NUL-free UTF-8 input");
+  }
+  const index = indexText(text);
+  const slice = async (request, signal) => {
+    signal?.throwIfAborted();
+    ensurePositivePage(request.maxBytes, "text page maxBytes");
+    let fromLine;
+    let start;
+    let requestedEnd;
+    if (request.kind === "from-line") {
+      ensureLine(request.line);
+      ensurePositivePage(request.lineCount, "text page lineCount");
+      fromLine = request.line;
+      start = index.lineStarts[fromLine] ?? text.length;
+      requestedEnd = index.lineStarts[fromLine + request.lineCount] ?? text.length;
+    } else {
+      const parsed = parseCursor(request.cursor);
+      if (parsed.character > text.length || parsed.line >= index.lineStarts.length) {
+        throw new RangeError("built-in text cursor points beyond the source");
+      }
+      fromLine = parsed.line;
+      start = parsed.character;
+      requestedEnd = text.length;
+    }
+    const page = truncateUtf8(text.slice(start, requestedEnd), request.maxBytes);
+    const actualEnd = start + page.length;
+    const nextLine = cursorLine(index, actualEnd);
+    const lineCount = page === "" ? 0 : linesInRange(index, fromLine, actualEnd);
+    if (actualEnd >= text.length) {
+      return { complete: true, text: page, fromLine, lineCount };
+    }
+    return {
+      complete: false,
+      text: page,
+      fromLine,
+      lineCount,
+      nextCursor: cursor(actualEnd, nextLine)
+    };
+  };
+  return Object.freeze({
+    async info() {
+      return {
+        bytes: BigInt(bytes.byteLength),
+        encoding: "utf-8",
+        bom: bytes[0] === 239 && bytes[1] === 187 && bytes[2] === 191,
+        newline: index.newline,
+        lines: index.lineStarts.length,
+        longestLineBytes: index.longestLineBytes
+      };
+    },
+    slice,
+    async *search(query, signal) {
+      signal?.throwIfAborted();
+      const flags = query.caseSensitive === true ? "gu" : "giu";
+      const pattern = query.regex === true ? query.pattern : query.pattern.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+      const expression = new RegExp(pattern, flags);
+      for (const match of text.matchAll(expression)) {
+        signal?.throwIfAborted();
+        const character = match.index ?? 0;
+        const byteOffset = encoder2.encode(text.slice(0, character)).byteLength;
+        const byteLength = encoder2.encode(match[0]).byteLength;
+        yield Object.freeze({
+          byteOffset: uint64(BigInt(byteOffset)),
+          byteLength: uint64(BigInt(byteLength))
+        });
+        if (match[0] === "") expression.lastIndex += 1;
+      }
+    }
+  });
+}
+function builtinByteRangeSource(bytes) {
+  return Object.freeze({
+    async size() {
+      return BigInt(bytes.byteLength);
+    },
+    async read(offset, length, signal) {
+      signal?.throwIfAborted();
+      if (offset < 0n || !Number.isSafeInteger(length) || length < 0) {
+        throw new RangeError("byte range must use a non-negative offset and safe length");
+      }
+      if (offset >= BigInt(bytes.byteLength)) return new Uint8Array();
+      const start = Number(offset);
+      return bytes.slice(start, Math.min(start + length, bytes.byteLength));
+    }
+  });
+}
 var budget = (maximumBytes) => Object.freeze({ maxBytes: maximumBytes, deadlineMs: 3e4 });
 var traitsOf = (descriptor) => {
   const traits = descriptor["traits"];
@@ -40209,32 +40393,27 @@ function createCodecPreview(options) {
     async open(container, entry, bytes, signal) {
       const extension = entry.name.slice(entry.name.lastIndexOf(".") + 1).toLowerCase();
       const format2 = byExtension.get(extension);
-      if (format2 === void 0) return void 0;
-      const session = await openCodec(format2, entry, bytes, maximumBytes);
+      const session = format2 === void 0 ? builtinSession(bytes, options.fallback) : await openCodec(format2, entry, bytes, maximumBytes);
       const descriptor = await session.descriptor();
       const traits = new Set(traitsOf(descriptor));
       const published = new Set(publishedContracts(descriptor));
-      const usable = options.stages.filter(
+      const candidates = format2 === void 0 ? fallbackStages(options.fallback) : options.stages;
+      const usable = candidates.filter(
         (stage) => published.has(stage.contract) && (stage.trait === void 0 || traits.has(stage.trait))
       );
       if (usable.length === 0) {
         await session.dispose();
         return void 0;
       }
-      const tabs = element(container, "div", { part: "explorer.tabs", role: "tablist" });
-      const host2 = element(container, "div", { part: "explorer.stage" });
       let active;
-      let activeButton;
-      const show = async (stage, button) => {
+      let activeId = usable[0]?.contract ?? "";
+      const show = async (viewId) => {
+        const stage = usable.find((item) => item.contract === viewId);
+        if (stage === void 0) throw new Error(`unknown view: ${viewId}`);
         await active?.unmount();
-        host2.replaceChildren();
-        if (activeButton !== void 0) {
-          activeButton.setAttribute("aria-selected", "false");
-          setState(activeButton, []);
-        }
-        button.setAttribute("aria-selected", "true");
-        setState(button, ["selected"]);
-        activeButton = button;
+        active = void 0;
+        container.replaceChildren();
+        activeId = viewId;
         const slot = {
           slotId: `explorer:${stage.contract}`,
           kind: "primary",
@@ -40243,8 +40422,8 @@ function createCodecPreview(options) {
           priority: 100,
           bindings: [{ bindingId: "content", contract: stage.contract, major: 1 }]
         };
-        active = await stage.module.mount({
-          container: host2,
+        const mounted = await stage.module.mount({
+          container,
           descriptor,
           slot,
           sources: {
@@ -40268,30 +40447,20 @@ function createCodecPreview(options) {
           operations: void 0,
           ...signal === void 0 ? {} : { signal }
         });
+        active = mounted;
+        activeId = viewId;
       };
-      for (const stage of usable) {
-        const button = element(tabs, "button", {
-          part: "explorer.tab",
-          text: stage.label
-        });
-        button.type = "button";
-        button.setAttribute("role", "tab");
-        button.setAttribute("aria-selected", "false");
-        button.addEventListener("click", () => {
-          void show(stage, button);
-        });
-      }
-      const first = usable[0];
-      const firstButton = tabs.firstElementChild;
-      if (first !== void 0 && firstButton instanceof HTMLElement) {
-        await show(first, firstButton);
-      }
+      await show(activeId);
       return {
+        views: usable.map((stage) => ({ id: stage.contract, label: stage.label })),
+        get activeView() {
+          return activeId;
+        },
+        show,
         async unmount() {
           await active?.unmount();
           await session.dispose();
-          tabs.remove();
-          host2.remove();
+          container.replaceChildren();
         }
       };
     }
@@ -40368,7 +40537,1304 @@ async function inputFor(entry, bytes) {
     }
   };
 }
+function fallbackStages(fallback) {
+  const stages = [];
+  if (fallback?.text !== void 0) {
+    stages.push({ label: "Text", contract: "common.view/text-data-source", module: fallback.text });
+  }
+  if (fallback?.hex !== void 0) {
+    stages.push({ label: "Hex", contract: "common.view/byte-range-source", module: fallback.hex });
+  }
+  return stages;
+}
+function builtinSession(bytes, fallback) {
+  const textual = fallback?.text !== void 0 && looksTextual(bytes);
+  const sources = {};
+  if (textual) sources["common.view/text-data-source"] = builtinTextSource(bytes);
+  if (fallback?.hex !== void 0) {
+    sources["common.view/byte-range-source"] = builtinByteRangeSource(bytes);
+  }
+  return {
+    async descriptor() {
+      return {
+        subjectUri: "memory://explorer/builtin",
+        revision: `content-hash.sha256:builtin-${bytes.length}`,
+        operations: [],
+        diagnostics: [],
+        // `content.text` only when the bytes really decode: a binary must not claim to be text.
+        traits: textual ? [{ id: "content.text" }] : [],
+        dataSources: Object.keys(sources).map((contract) => ({ contract }))
+      };
+    },
+    async dataSource(contract) {
+      const value = sources[contract];
+      if (value === void 0) throw new Error(`built-in preview has no ${contract}`);
+      return { value };
+    },
+    async dispose() {
+    }
+  };
+}
+var describe3 = (error) => error instanceof Error ? error.message : String(error);
+var formatBytes2 = (bytes) => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KiB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
+};
+function createEditorArea(document2, options) {
+  const root = document2.createElement("div");
+  setPart(root, "explorer.editors");
+  const groups = [];
+  let focused;
+  let destroyed = false;
+  const report = (status) => {
+    options.onStatus?.(status);
+  };
+  function drawBreadcrumb(group, entry) {
+    group.breadcrumb.replaceChildren();
+    if (entry === void 0) return;
+    const parts = entry.id.split(/[\\/]/u).filter(Boolean);
+    for (const [index, part] of parts.slice(-4).entries()) {
+      if (index > 0) element(group.breadcrumb, "span", { part: "explorer.crumb", text: "\u203A" });
+      element(group.breadcrumb, "span", {
+        part: "explorer.crumb",
+        text: safeViewerText(part, 120)
+      });
+    }
+  }
+  function syncPicker(group) {
+    const handle = group.active?.handle;
+    group.picker.replaceChildren();
+    if (handle === void 0 || handle.views.length === 0) {
+      group.picker.disabled = true;
+      return;
+    }
+    for (const view of handle.views) {
+      const option = document2.createElement("option");
+      option.value = view.id;
+      option.textContent = view.label;
+      group.picker.append(option);
+    }
+    group.picker.value = handle.activeView;
+    group.picker.disabled = handle.views.length < 2;
+  }
+  function placeholder(group, message) {
+    group.stage.replaceChildren();
+    element(group.stage, "p", { part: "explorer.placeholder", text: message });
+  }
+  async function activate(group, tab) {
+    for (const other of group.tabs) {
+      const selected = other === tab;
+      other.button.setAttribute("aria-selected", String(selected));
+      setState(other.button, selected ? ["selected"] : []);
+    }
+    group.active = tab;
+    drawBreadcrumb(group, tab.entry);
+    if (tab.handle === void 0) {
+      await load(group, tab);
+      return;
+    }
+    group.stage.replaceChildren();
+    await tab.handle.show(tab.handle.activeView);
+    syncPicker(group);
+    report({
+      path: tab.entry.id,
+      view: group.picker.selectedOptions[0]?.textContent ?? "",
+      detail: tab.entry.name,
+      severity: "info"
+    });
+  }
+  async function load(group, tab) {
+    tab.run?.abort();
+    const run = new AbortController();
+    tab.run = run;
+    group.stage.replaceChildren();
+    report({ path: tab.entry.id, detail: `Opening ${tab.entry.name}\u2026`, severity: "busy" });
+    try {
+      const bytes = await options.read(tab.entry, run.signal);
+      if (run.signal.aborted) return;
+      const handle = await options.preview.open(group.stage, tab.entry, bytes, run.signal);
+      if (run.signal.aborted) {
+        await handle?.unmount();
+        return;
+      }
+      if (handle === void 0) {
+        placeholder(group, `Nothing could render \u201C${tab.entry.name}\u201D.`);
+        report({ path: tab.entry.id, detail: "no viewer", severity: "error" });
+        return;
+      }
+      tab.handle = handle;
+      syncPicker(group);
+      report({
+        path: tab.entry.id,
+        view: handle.views.find((view) => view.id === handle.activeView)?.label ?? "",
+        detail: formatBytes2(bytes.length),
+        severity: "info"
+      });
+    } catch (error) {
+      if (run.signal.aborted) return;
+      placeholder(group, `Could not preview ${tab.entry.name}: ${describe3(error)}`);
+      report({ path: tab.entry.id, detail: describe3(error), severity: "error" });
+    }
+  }
+  async function closeTab(group, tab) {
+    tab.run?.abort();
+    await tab.handle?.unmount();
+    const index = group.tabs.indexOf(tab);
+    if (index !== -1) group.tabs.splice(index, 1);
+    tab.button.remove();
+    if (group.active === tab) {
+      group.active = void 0;
+      group.stage.replaceChildren();
+      const next = group.tabs[Math.max(0, index - 1)];
+      if (next !== void 0) {
+        await activate(group, next);
+      } else {
+        drawBreadcrumb(group, void 0);
+        syncPicker(group);
+        placeholder(group, "No file open in this group.");
+      }
+    }
+    if (group.tabs.length === 0 && groups.length > 1 && group !== groups[0]) {
+      groups.splice(groups.indexOf(group), 1);
+      group.root.remove();
+      const first = groups[0];
+      if (first !== void 0) focus(first);
+    }
+  }
+  function focus(group) {
+    focused = group;
+    for (const item of groups) setState(item.root, item === group ? ["active"] : []);
+  }
+  function createGroup() {
+    const groupRoot = element(root, "div", { part: "explorer.group" });
+    const strip = element(groupRoot, "div", { part: "explorer.tabstrip", role: "tablist" });
+    strip.setAttribute("aria-label", "Open files");
+    const header = element(groupRoot, "div", { part: "explorer.header" });
+    const breadcrumb = element(header, "nav", { part: "explorer.breadcrumb" });
+    breadcrumb.setAttribute("aria-label", "File path");
+    const picker = element(header, "select", { part: "explorer.viewpicker" });
+    picker.setAttribute("aria-label", "View");
+    picker.disabled = true;
+    const stage = element(groupRoot, "div", { part: "explorer.stage" });
+    const group = { root: groupRoot, strip, breadcrumb, picker, stage, tabs: [] };
+    groupRoot.addEventListener("pointerdown", () => {
+      focus(group);
+    });
+    picker.addEventListener("change", () => {
+      const handle = group.active?.handle;
+      if (handle === void 0) return;
+      void handle.show(picker.value).then(() => {
+        report({
+          ...group.active === void 0 ? {} : { path: group.active.entry.id },
+          view: picker.selectedOptions[0]?.textContent ?? picker.value,
+          detail: group.active?.entry.name ?? "",
+          severity: "info"
+        });
+      });
+    });
+    groups.push(group);
+    placeholder(group, "No file open in this group.");
+    return group;
+  }
+  focused = createGroup();
+  focus(focused);
+  const area = {
+    root,
+    get groupCount() {
+      return groups.length;
+    },
+    async open(entry) {
+      const group = focused;
+      const existing = group.tabs.find((tab2) => tab2.entry.id === entry.id);
+      if (existing !== void 0) {
+        await activate(group, existing);
+        return;
+      }
+      const button = element(group.strip, "div", { part: "explorer.filetab" });
+      button.setAttribute("role", "tab");
+      button.title = entry.id;
+      const tab = { entry, button };
+      const label = element(button, "span", { text: safeViewerText(entry.name, 120) });
+      label.addEventListener("click", () => {
+        focus(group);
+        void activate(group, tab);
+      });
+      const close = element(button, "button", { part: "explorer.filetab-close", text: "\xD7" });
+      close.setAttribute("type", "button");
+      close.setAttribute("aria-label", `Close ${entry.name}`);
+      close.addEventListener("click", (event) => {
+        event.stopPropagation();
+        void closeTab(group, tab);
+      });
+      group.tabs.push(tab);
+      await activate(group, tab);
+    },
+    split() {
+      focus(createGroup());
+    },
+    destroy() {
+      if (destroyed) return;
+      destroyed = true;
+      for (const group of groups) {
+        for (const tab of group.tabs) {
+          tab.run?.abort();
+          void tab.handle?.unmount();
+        }
+      }
+      root.remove();
+    }
+  };
+  return area;
+}
+var SETTINGS_SCHEMA_VERSION = 1;
+var DEFAULT_SETTINGS = Object.freeze({
+  schemaVersion: SETTINGS_SCHEMA_VERSION,
+  appearance: Object.freeze({ theme: "modkit-dark", density: "compact" }),
+  extensions: Object.freeze([])
+});
+var isRecord = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var asText = (value) => typeof value === "string" && value.trim() !== "" ? value.trim() : void 0;
+function normalizeSettings(value) {
+  const problems = [];
+  if (!isRecord(value)) {
+    return {
+      document: DEFAULT_SETTINGS,
+      problems: value === void 0 ? [] : ["settings root is not an object; defaults were used"]
+    };
+  }
+  const version = value["schemaVersion"];
+  if (version !== void 0 && version !== SETTINGS_SCHEMA_VERSION) {
+    problems.push(
+      `unknown schemaVersion ${String(version)}; expected ${SETTINGS_SCHEMA_VERSION}. Unrecognised fields were ignored.`
+    );
+  }
+  const appearanceInput = isRecord(value["appearance"]) ? value["appearance"] : {};
+  const theme = asText(appearanceInput["theme"]) ?? DEFAULT_SETTINGS.appearance.theme;
+  const densityInput = appearanceInput["density"];
+  const density = densityInput === "compact" || densityInput === "comfortable" ? densityInput : DEFAULT_SETTINGS.appearance.density;
+  if (densityInput !== void 0 && densityInput !== density) {
+    problems.push(`appearance.density "${String(densityInput)}" is not valid; used "${density}"`);
+  }
+  const extensions = [];
+  const seen = /* @__PURE__ */ new Map();
+  const listInput = value["extensions"];
+  if (listInput !== void 0 && !Array.isArray(listInput)) {
+    problems.push("extensions must be an array; it was ignored");
+  } else {
+    for (const [index, item] of (listInput ?? []).entries()) {
+      if (!isRecord(item)) {
+        problems.push(`extensions[${index}] is not an object; ignored`);
+        continue;
+      }
+      const id = asText(item["id"]);
+      const path = asText(item["path"]);
+      if (id === void 0 || path === void 0) {
+        problems.push(`extensions[${index}] needs both "id" and "path"; ignored`);
+        continue;
+      }
+      const entry = {
+        id,
+        path,
+        // Absent means enabled: adding a path to the file is how a user asks for an extension.
+        enabled: item["enabled"] !== false,
+        ...isRecord(item["options"]) ? { options: Object.freeze({ ...item["options"] }) } : {}
+      };
+      const existing = seen.get(id);
+      if (existing === void 0) {
+        seen.set(id, extensions.length);
+        extensions.push(entry);
+      } else {
+        problems.push(`extensions[${index}] duplicates id "${id}"; the later entry won`);
+        extensions[existing] = entry;
+      }
+    }
+  }
+  return {
+    document: Object.freeze({
+      schemaVersion: SETTINGS_SCHEMA_VERSION,
+      appearance: Object.freeze({ theme, density }),
+      extensions: Object.freeze(extensions)
+    }),
+    problems: Object.freeze(problems)
+  };
+}
+function serializeSettings(document2) {
+  return `${JSON.stringify(
+    {
+      schemaVersion: document2.schemaVersion,
+      appearance: { theme: document2.appearance.theme, density: document2.appearance.density },
+      extensions: [...document2.extensions].sort((a, b) => compareUtf8(a.id, b.id)).map((entry) => ({
+        id: entry.id,
+        path: entry.path,
+        enabled: entry.enabled,
+        ...entry.options === void 0 ? {} : { options: entry.options }
+      }))
+    },
+    null,
+    2
+  )}
+`;
+}
+function createSettingsUi(document2, options) {
+  const root = document2.createElement("div");
+  root.className = "modkit-viewer modkit-settings";
+  setPart(root, "settings");
+  const groupList = element(root, "nav", { part: "settings.groups" });
+  groupList.setAttribute("aria-label", "Settings groups");
+  const pane = element(root, "div", { part: "settings.pane" });
+  const status = element(root, "output", { part: "settings.status" });
+  let current = DEFAULT_SETTINGS;
+  let activeGroup = "appearance";
+  const say = (message, bad = false) => {
+    status.textContent = message;
+    setState(status, bad ? ["error"] : []);
+  };
+  const persist = async (next) => {
+    try {
+      await options.store.write(next);
+      current = next;
+      options.onChange?.(next);
+      say(`Saved to ${options.store.location}`);
+    } catch (error) {
+      say(`Could not save: ${error instanceof Error ? error.message : String(error)}`, true);
+    }
+  };
+  const row = (host2, label, description) => {
+    const wrapper = element(host2, "div", { part: "settings.row" });
+    element(wrapper, "div", { part: "settings.label", text: label });
+    element(wrapper, "div", { part: "settings.description", text: description });
+    return element(wrapper, "div", { part: "settings.control" });
+  };
+  const appearanceGroup = {
+    id: "appearance",
+    label: "Appearance",
+    render(host2) {
+      if (options.themes.length > 0) {
+        const control = row(host2, "Color theme", "Applies immediately and to every viewer surface.");
+        const select = element(control, "select", { part: "settings.select" });
+        select.setAttribute("aria-label", "Color theme");
+        for (const theme of options.themes) {
+          const option = document2.createElement("option");
+          option.value = theme.id;
+          option.textContent = theme.label;
+          select.append(option);
+        }
+        select.value = current.appearance.theme;
+        select.addEventListener("change", () => {
+          const appearance = { ...current.appearance, theme: select.value };
+          options.onAppearance?.(appearance);
+          void persist({ ...current, appearance });
+        });
+      }
+      const densityControl = row(
+        host2,
+        "Density",
+        "Compact matches VS Code list metrics; comfortable suits touch and larger displays."
+      );
+      const density = element(densityControl, "select", {
+        part: "settings.select"
+      });
+      density.setAttribute("aria-label", "Density");
+      for (const value of ["compact", "comfortable"]) {
+        const option = document2.createElement("option");
+        option.value = value;
+        option.textContent = value[0]?.toUpperCase() + value.slice(1);
+        density.append(option);
+      }
+      density.value = current.appearance.density;
+      density.addEventListener("change", () => {
+        const appearance = {
+          ...current.appearance,
+          density: density.value
+        };
+        options.onAppearance?.(appearance);
+        void persist({ ...current, appearance });
+      });
+    }
+  };
+  const extensionsGroup = {
+    id: "extensions",
+    label: "Extensions",
+    render(host2) {
+      const intro = element(host2, "p", { part: "settings.description" });
+      intro.textContent = `Extensions are listed in ${options.store.location}. Each entry is an id, a path the host loads from, and whether it is enabled. The same file is read by the desktop app, the web app and a headless run.`;
+      const list = element(host2, "div", { part: "settings.list" });
+      const draw = () => {
+        list.replaceChildren();
+        if (current.extensions.length === 0) {
+          element(list, "p", {
+            part: "settings.description",
+            text: "No extensions are configured yet."
+          });
+        }
+        for (const entry of current.extensions) {
+          const item = element(list, "div", { part: "settings.extension" });
+          const toggle = element(item, "input", {
+            part: "settings.toggle"
+          });
+          toggle.type = "checkbox";
+          toggle.checked = entry.enabled;
+          toggle.setAttribute("aria-label", `Enable ${entry.id}`);
+          toggle.addEventListener("change", () => {
+            void persist({
+              ...current,
+              extensions: current.extensions.map(
+                (other) => other.id === entry.id ? { ...other, enabled: toggle.checked } : other
+              )
+            }).then(draw);
+          });
+          const text = element(item, "div", { part: "settings.extension-text" });
+          element(text, "div", { part: "settings.label", text: safeViewerText(entry.id, 200) });
+          element(text, "div", {
+            part: "settings.description",
+            text: safeViewerText(entry.path, 400)
+          });
+          const remove = element(item, "button", {
+            part: "settings.remove",
+            text: "Remove"
+          });
+          remove.type = "button";
+          remove.addEventListener("click", () => {
+            void persist({
+              ...current,
+              extensions: current.extensions.filter((other) => other.id !== entry.id)
+            }).then(draw);
+          });
+        }
+      };
+      draw();
+      const adder = element(host2, "div", { part: "settings.adder" });
+      const id = element(adder, "input", { part: "settings.input" });
+      id.placeholder = "publisher/name";
+      id.setAttribute("aria-label", "Extension id");
+      const path = element(adder, "input", { part: "settings.input" });
+      path.placeholder = "path, package or URL";
+      path.setAttribute("aria-label", "Extension location");
+      const add = (entry) => {
+        void persist({
+          ...current,
+          extensions: [...current.extensions.filter((other) => other.id !== entry.id), entry]
+        }).then(draw);
+      };
+      const addButton = element(adder, "button", {
+        part: "settings.add",
+        text: "Add"
+      });
+      addButton.type = "button";
+      addButton.addEventListener("click", () => {
+        const entryId = id.value.trim();
+        const entryPath = path.value.trim();
+        if (entryId === "" || entryPath === "") {
+          say("An extension needs both an id and a location.", true);
+          return;
+        }
+        add({ id: entryId, path: entryPath, enabled: true });
+        id.value = "";
+        path.value = "";
+      });
+      if (options.browseForExtension !== void 0) {
+        const browse = element(adder, "button", {
+          part: "settings.add",
+          text: "Browse\u2026"
+        });
+        browse.type = "button";
+        browse.addEventListener("click", () => {
+          void (async () => {
+            const picked = await options.browseForExtension?.();
+            if (picked !== void 0) add({ ...picked, enabled: true });
+          })();
+        });
+      }
+    }
+  };
+  const groups = [appearanceGroup, extensionsGroup];
+  const showGroup = (group) => {
+    activeGroup = group.id;
+    pane.replaceChildren();
+    for (const node of groupList.querySelectorAll('[data-mk-part="settings.group"]')) {
+      const selected = node.getAttribute("data-group") === group.id;
+      node.setAttribute("aria-selected", String(selected));
+      setState(node, selected ? ["selected"] : []);
+    }
+    group.render(pane);
+  };
+  for (const group of groups) {
+    const button = element(groupList, "button", {
+      part: "settings.group",
+      text: group.label
+    });
+    button.type = "button";
+    button.dataset["group"] = group.id;
+    button.setAttribute("role", "tab");
+    button.addEventListener("click", () => {
+      showGroup(group);
+    });
+  }
+  const ui = {
+    root,
+    async reload() {
+      const { document: loaded, problems } = await options.store.read();
+      current = loaded;
+      options.onAppearance?.(loaded.appearance);
+      const group = groups.find((item) => item.id === activeGroup) ?? groups[0];
+      if (group !== void 0) showGroup(group);
+      say(
+        problems.length === 0 ? `Loaded from ${options.store.location}` : `Loaded with ${problems.length} problem(s): ${problems.join("; ")}`,
+        problems.length > 0
+      );
+    },
+    destroy() {
+      root.remove();
+    }
+  };
+  return ui;
+}
 var contributionManifests = Object.freeze(["./contributions/*.json"]);
+
+// packages/ui/dist/tokens/index.js
+var t2 = (name, tier, type, description, extra = {}) => ({ name, tier, type, isPublic: true, description, ...extra });
+var PALETTE_STEPS2 = [
+  "050",
+  "100",
+  "200",
+  "300",
+  "400",
+  "500",
+  "600",
+  "700",
+  "800",
+  "900"
+];
+var PALETTE_HUES2 = ["neutral", "accent", "ok", "warn", "error", "info"];
+var tier12 = PALETTE_HUES2.flatMap(
+  (hue) => PALETTE_STEPS2.map((step) => t2(`palette.${hue}.${step}`, 1, "color", `${hue} ramp step ${step}`))
+);
+var tier22 = [
+  // surfaces
+  t2("color.bg", 2, "color", "window ground behind everything"),
+  t2("color.surface", 2, "color", "default component surface"),
+  t2("color.raised", 2, "color", "surface above the default plane"),
+  t2("color.sunken", 2, "color", "inset surface such as an input well"),
+  t2("color.overlay", 2, "color", "floating surface: menu, popover, dialog"),
+  t2("color.scrim", 2, "color", "dimming layer behind a modal"),
+  // text
+  t2("color.fg", 2, "color", "primary text"),
+  t2("color.fg-muted", 2, "color", "secondary text"),
+  t2("color.fg-subtle", 2, "color", "tertiary text and placeholders"),
+  t2("color.fg-inverse", 2, "color", "text on an accent fill"),
+  t2("color.fg-disabled", 2, "color", "disabled text"),
+  t2("color.fg-link", 2, "color", "hyperlink text"),
+  t2("color.fg-destructive", 2, "color", "destructive action text"),
+  // lines
+  t2("color.border", 2, "color", "default separator and component border"),
+  t2("color.border-strong", 2, "color", "emphasised border"),
+  t2("color.separator", 2, "color", "hairline between list sections"),
+  // interaction
+  t2("color.accent", 2, "color", "primary action fill"),
+  t2("color.accent-fg", 2, "color", "text on the accent fill"),
+  t2("color.accent-muted", 2, "color", "low-emphasis accent wash"),
+  t2("color.focus", 2, "color", "focus ring"),
+  t2("color.hover", 2, "color", "hover wash"),
+  t2("color.active", 2, "color", "pressed wash"),
+  t2("color.selection", 2, "color", "active selection fill"),
+  t2("color.selection-inactive", 2, "color", "selection fill when the surface is unfocused"),
+  t2("color.selection-fg", 2, "color", "text on a selection fill"),
+  t2("color.match-highlight", 2, "color", "search match highlight"),
+  t2("color.drop-target", 2, "color", "drag-and-drop target indicator"),
+  t2("color.readonly", 2, "color", "read-only field wash"),
+  // status
+  ...["ok", "warn", "error", "info"].flatMap((s) => [
+    t2(`status.${s}`, 2, "color", `${s} indicator colour`),
+    t2(`status.${s}-fg`, 2, "color", `text on a ${s} fill`),
+    t2(`status.${s}-bg`, 2, "color", `${s} background wash`),
+    t2(`status.${s}-border`, 2, "color", `${s} border`)
+  ]),
+  // scrollbars
+  t2("color.scrollbar-track", 2, "color", "scrollbar trough"),
+  t2("color.scrollbar-thumb", 2, "color", "scrollbar thumb"),
+  t2("color.scrollbar-thumb-hover", 2, "color", "scrollbar thumb, hovered"),
+  t2("color.scrollbar-thumb-active", 2, "color", "scrollbar thumb while dragging"),
+  t2("color.scrollbar-shadow", 2, "color", "hairline separating a scrolled pane from its content"),
+  // canvas / GPU surfaces — these are not UI chrome and need their own roles
+  t2("color.canvas-bg", 2, "color", "canvas or WebGL scene ground"),
+  t2("color.canvas-grid", 2, "color", "scene grid lines"),
+  t2("color.canvas-gizmo", 2, "color", "scene gizmo and axis handles"),
+  // Axis identity is a convention users read at a glance (X red, Y green, Z blue), so the three
+  // get their own roles rather than borrowing from the categorical ramp, which a theme may reorder.
+  t2("color.axis-x", 2, "color", "X axis handle and line"),
+  t2("color.axis-y", 2, "color", "Y axis handle and line"),
+  t2("color.axis-z", 2, "color", "Z axis handle and line"),
+  t2("color.canvas-selection", 2, "color", "selected geometry outline"),
+  // graph / chart categorical ramp
+  ...["1", "2", "3", "4", "5", "6"].map(
+    (n) => t2(`chart.categorical-${n}`, 2, "color", `categorical series ${n}`)
+  ),
+  t2("color.graph-node", 2, "color", "relation-graph node fill"),
+  t2("color.graph-edge", 2, "color", "relation-graph edge stroke"),
+  t2("color.graph-edge-dead", 2, "color", "unresolved reference edge"),
+  // diff
+  t2("color.diff-added", 2, "color", "added line or cell wash"),
+  t2("color.diff-removed", 2, "color", "removed line or cell wash"),
+  t2("color.diff-changed", 2, "color", "changed line or cell wash"),
+  // space
+  ...["0", "1", "2", "3", "4", "5", "6", "7", "8"].map(
+    (n) => t2(`space.${n}`, 2, "length", `spacing step ${n}`)
+  ),
+  // radius
+  ...["none", "sm", "md", "lg", "pill"].map(
+    (r) => t2(`radius.${r}`, 2, "length", `corner radius ${r}`)
+  ),
+  // type
+  t2("font.sans", 2, "font-family", "UI typeface stack"),
+  t2("font.mono", 2, "font-family", "monospace stack for IDs, code, offsets"),
+  ...["xs", "sm", "md", "lg", "xl"].map((s) => t2(`font.size-${s}`, 2, "length", `font size ${s}`)),
+  ...["normal", "medium", "bold"].map((w) => t2(`font.weight-${w}`, 2, "number", `font weight ${w}`)),
+  ...["tight", "normal", "loose"].map((l) => t2(`line.${l}`, 2, "number", `line height ${l}`)),
+  // metrics
+  t2("size.row", 2, "length", "list and table row height"),
+  t2("size.control", 2, "length", "default control height"),
+  t2("size.icon", 2, "length", "default icon box"),
+  t2("size.touch", 2, "length", "minimum touch target"),
+  t2("size.scrollbar", 2, "length", "scrollbar thickness"),
+  t2("size.scrollbar-thin", 2, "length", "scrollbar thickness inside dense panes"),
+  // layering
+  ...["base", "sticky", "dropdown", "overlay", "modal", "toast"].map(
+    (z) => t2(`z.${z}`, 2, "z-index", `stacking band: ${z}`)
+  ),
+  // motion
+  ...["fast", "normal", "slow"].map(
+    (d) => t2(`motion.${d}`, 2, "duration", `transition duration ${d}`)
+  ),
+  t2("motion.ease", 2, "easing", "default easing curve"),
+  // elevation
+  ...["1", "2", "3"].map((e) => t2(`elevation.${e}`, 2, "shadow", `elevation level ${e}`)),
+  t2("shadow.focus-ring", 2, "shadow", "focus ring shadow")
+];
+var c2 = (name, component, type, derivesFrom, description) => t2(name, 3, type, description, { component, derivesFrom });
+var runtime2 = (name, component, type, runtimeDefault, description) => t2(name, 3, type, description, { component, runtimeDefault });
+var tier32 = [
+  runtime2("tree.indent-level", "tree", "number", "0", "nesting depth of the current tree row"),
+  runtime2("card.grid-columns", "card", "number", "5", "column count of the current card grid"),
+  c2("table.row-height", "table", "length", "size.row", "table row height"),
+  c2("table.header-bg", "table", "color", "color.raised", "table header background"),
+  c2("table.cell-padding-x", "table", "length", "space.2", "table cell horizontal padding"),
+  c2("tree.indent", "tree", "length", "space.4", "tree nesting indent per level"),
+  c2("tree.row-height", "tree", "length", "size.row", "tree row height"),
+  c2("hex.byte-gap", "hex", "length", "space.1", "gap between hex byte columns"),
+  c2("hex.gutter-fg", "hex", "color", "color.fg-subtle", "hex offset gutter text"),
+  c2("text.line-height", "text", "number", "line.normal", "text stage line height"),
+  c2("shell.rail-width", "shell", "length", "space.8", "default side rail width"),
+  c2("shell.splitter-size", "shell", "length", "space.1", "splitter hit area thickness"),
+  c2("toolbar.height", "toolbar", "length", "size.control", "toolbar height"),
+  c2("panel.padding", "panel", "length", "space.3", "panel content padding"),
+  c2("transport.track-height", "transport", "length", "space.2", "transport scrub track height")
+];
+var TOKENS2 = Object.freeze([...tier12, ...tier22, ...tier32]);
+var TOKENS_BY_NAME2 = new Map(
+  TOKENS2.map((token) => [token.name, token])
+);
+var TOKEN_NAMES2 = Object.freeze([
+  "palette.neutral.050",
+  "palette.neutral.100",
+  "palette.neutral.200",
+  "palette.neutral.300",
+  "palette.neutral.400",
+  "palette.neutral.500",
+  "palette.neutral.600",
+  "palette.neutral.700",
+  "palette.neutral.800",
+  "palette.neutral.900",
+  "palette.accent.050",
+  "palette.accent.100",
+  "palette.accent.200",
+  "palette.accent.300",
+  "palette.accent.400",
+  "palette.accent.500",
+  "palette.accent.600",
+  "palette.accent.700",
+  "palette.accent.800",
+  "palette.accent.900",
+  "palette.ok.050",
+  "palette.ok.100",
+  "palette.ok.200",
+  "palette.ok.300",
+  "palette.ok.400",
+  "palette.ok.500",
+  "palette.ok.600",
+  "palette.ok.700",
+  "palette.ok.800",
+  "palette.ok.900",
+  "palette.warn.050",
+  "palette.warn.100",
+  "palette.warn.200",
+  "palette.warn.300",
+  "palette.warn.400",
+  "palette.warn.500",
+  "palette.warn.600",
+  "palette.warn.700",
+  "palette.warn.800",
+  "palette.warn.900",
+  "palette.error.050",
+  "palette.error.100",
+  "palette.error.200",
+  "palette.error.300",
+  "palette.error.400",
+  "palette.error.500",
+  "palette.error.600",
+  "palette.error.700",
+  "palette.error.800",
+  "palette.error.900",
+  "palette.info.050",
+  "palette.info.100",
+  "palette.info.200",
+  "palette.info.300",
+  "palette.info.400",
+  "palette.info.500",
+  "palette.info.600",
+  "palette.info.700",
+  "palette.info.800",
+  "palette.info.900",
+  "color.bg",
+  "color.surface",
+  "color.raised",
+  "color.sunken",
+  "color.overlay",
+  "color.scrim",
+  "color.fg",
+  "color.fg-muted",
+  "color.fg-subtle",
+  "color.fg-inverse",
+  "color.fg-disabled",
+  "color.fg-link",
+  "color.fg-destructive",
+  "color.border",
+  "color.border-strong",
+  "color.separator",
+  "color.accent",
+  "color.accent-fg",
+  "color.accent-muted",
+  "color.focus",
+  "color.hover",
+  "color.active",
+  "color.selection",
+  "color.selection-inactive",
+  "color.selection-fg",
+  "color.match-highlight",
+  "color.drop-target",
+  "color.readonly",
+  "status.ok",
+  "status.ok-fg",
+  "status.ok-bg",
+  "status.ok-border",
+  "status.warn",
+  "status.warn-fg",
+  "status.warn-bg",
+  "status.warn-border",
+  "status.error",
+  "status.error-fg",
+  "status.error-bg",
+  "status.error-border",
+  "status.info",
+  "status.info-fg",
+  "status.info-bg",
+  "status.info-border",
+  "color.scrollbar-track",
+  "color.scrollbar-thumb",
+  "color.scrollbar-thumb-hover",
+  "color.scrollbar-thumb-active",
+  "color.scrollbar-shadow",
+  "color.canvas-bg",
+  "color.canvas-grid",
+  "color.canvas-gizmo",
+  "color.axis-x",
+  "color.axis-y",
+  "color.axis-z",
+  "color.canvas-selection",
+  "chart.categorical-1",
+  "chart.categorical-2",
+  "chart.categorical-3",
+  "chart.categorical-4",
+  "chart.categorical-5",
+  "chart.categorical-6",
+  "color.graph-node",
+  "color.graph-edge",
+  "color.graph-edge-dead",
+  "color.diff-added",
+  "color.diff-removed",
+  "color.diff-changed",
+  "space.0",
+  "space.1",
+  "space.2",
+  "space.3",
+  "space.4",
+  "space.5",
+  "space.6",
+  "space.7",
+  "space.8",
+  "radius.none",
+  "radius.sm",
+  "radius.md",
+  "radius.lg",
+  "radius.pill",
+  "font.sans",
+  "font.mono",
+  "font.size-xs",
+  "font.size-sm",
+  "font.size-md",
+  "font.size-lg",
+  "font.size-xl",
+  "font.weight-normal",
+  "font.weight-medium",
+  "font.weight-bold",
+  "line.tight",
+  "line.normal",
+  "line.loose",
+  "size.row",
+  "size.control",
+  "size.icon",
+  "size.touch",
+  "size.scrollbar",
+  "size.scrollbar-thin",
+  "z.base",
+  "z.sticky",
+  "z.dropdown",
+  "z.overlay",
+  "z.modal",
+  "z.toast",
+  "motion.fast",
+  "motion.normal",
+  "motion.slow",
+  "motion.ease",
+  "elevation.1",
+  "elevation.2",
+  "elevation.3",
+  "shadow.focus-ring",
+  "tree.indent-level",
+  "card.grid-columns",
+  "table.row-height",
+  "table.header-bg",
+  "table.cell-padding-x",
+  "tree.indent",
+  "tree.row-height",
+  "hex.byte-gap",
+  "hex.gutter-fg",
+  "text.line-height",
+  "shell.rail-width",
+  "shell.splitter-size",
+  "toolbar.height",
+  "panel.padding",
+  "transport.track-height"
+]);
+var RAMPS2 = {
+  neutral: [
+    "#fafafa",
+    "#f0f0f0",
+    "#e0e0e0",
+    "#c6c6c6",
+    "#9a9a9a",
+    "#6e6e6e",
+    "#4a4a4a",
+    "#333333",
+    "#232323",
+    "#141414"
+  ],
+  accent: [
+    "#e8f2fc",
+    "#c7e0f7",
+    "#9ccaf0",
+    "#6bafe6",
+    "#3b93db",
+    "#0078d4",
+    "#005fb8",
+    "#004a93",
+    "#00376e",
+    "#002649"
+  ],
+  ok: [
+    "#e6f5e9",
+    "#c3e7cb",
+    "#97d5a5",
+    "#6bc27f",
+    "#4fb265",
+    "#2ea043",
+    "#238636",
+    "#1a6b2a",
+    "#13501f",
+    "#0c3514"
+  ],
+  warn: [
+    "#fcf3d8",
+    "#f7e3a6",
+    "#f0cf6e",
+    "#e5ba3c",
+    "#d9a520",
+    "#bf8700",
+    "#9a6d00",
+    "#7a5600",
+    "#5a3f00",
+    "#3b2900"
+  ],
+  error: [
+    "#fde8e8",
+    "#fac7c7",
+    "#f49b9b",
+    "#ec6f6f",
+    "#e14b4b",
+    "#cf2222",
+    "#a81b1b",
+    "#851515",
+    "#620f0f",
+    "#400a0a"
+  ],
+  info: [
+    "#e6f4fb",
+    "#c0e3f5",
+    "#8ecdec",
+    "#5cb6e2",
+    "#33a2d8",
+    "#0f8bc7",
+    "#0b6e9e",
+    "#085576",
+    "#063d54",
+    "#042634"
+  ]
+};
+var STEPS2 = ["050", "100", "200", "300", "400", "500", "600", "700", "800", "900"];
+function rampValues2(overrides = {}) {
+  const out = {};
+  for (const [hue, ramp] of Object.entries({ ...RAMPS2, ...overrides })) {
+    ramp.forEach((value, index) => {
+      out[`palette.${hue}.${STEPS2[index]}`] = value;
+    });
+  }
+  return out;
+}
+var STRUCTURE2 = {
+  "space.0": "0",
+  "space.1": "2px",
+  "space.2": "4px",
+  "space.3": "8px",
+  "space.4": "12px",
+  "space.5": "16px",
+  "space.6": "24px",
+  "space.7": "32px",
+  "space.8": "48px",
+  "radius.none": "0",
+  "radius.sm": "2px",
+  "radius.md": "4px",
+  "radius.lg": "8px",
+  "radius.pill": "9999px",
+  "font.sans": "'Segoe UI Variable Text', 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+  "font.mono": "ui-monospace, 'Cascadia Mono', 'JetBrains Mono', Consolas, 'Courier New', monospace",
+  "font.size-xs": "11px",
+  "font.size-sm": "12px",
+  "font.size-md": "13px",
+  "font.size-lg": "15px",
+  "font.size-xl": "19px",
+  "font.weight-normal": "400",
+  "font.weight-medium": "600",
+  "font.weight-bold": "700",
+  "line.tight": "1.2",
+  "line.normal": "1.45",
+  "line.loose": "1.7",
+  "size.row": "22px",
+  "size.control": "26px",
+  "size.icon": "16px",
+  "size.touch": "44px",
+  "size.scrollbar": "10px",
+  "size.scrollbar-thin": "6px",
+  "z.base": "0",
+  "z.sticky": "10",
+  "z.dropdown": "20",
+  "z.overlay": "30",
+  "z.modal": "40",
+  "z.toast": "50",
+  "motion.fast": "80ms",
+  "motion.normal": "140ms",
+  "motion.slow": "240ms",
+  "motion.ease": "cubic-bezier(0.2, 0, 0.13, 1)"
+};
+var CHART_DARK2 = {
+  "chart.categorical-1": "#4daafc",
+  "chart.categorical-2": "#89d185",
+  "chart.categorical-3": "#e5ba3c",
+  "chart.categorical-4": "#f49b9b",
+  "chart.categorical-5": "#c58af9",
+  "chart.categorical-6": "#4ec9b0"
+};
+var CHART_LIGHT2 = {
+  "chart.categorical-1": "#005fb8",
+  "chart.categorical-2": "#238636",
+  "chart.categorical-3": "#9a6d00",
+  "chart.categorical-4": "#a81b1b",
+  "chart.categorical-5": "#7a3fb5",
+  "chart.categorical-6": "#0b6e9e"
+};
+var PALETTES2 = Object.freeze([
+  {
+    id: "modkit-dark",
+    displayName: "Modkit Dark",
+    appearance: "dark",
+    isDefaultFor: "dark",
+    values: Object.freeze({
+      ...rampValues2(),
+      ...STRUCTURE2,
+      ...CHART_DARK2,
+      "color.bg": "#1f1f1f",
+      "color.surface": "#1f1f1f",
+      "color.raised": "#252526",
+      "color.sunken": "#181818",
+      "color.overlay": "#2c2c2d",
+      "color.scrim": "rgba(0, 0, 0, 0.55)",
+      "color.fg": "#cccccc",
+      "color.fg-muted": "#9d9d9d",
+      "color.fg-subtle": "#7a7a7a",
+      "color.fg-inverse": "#ffffff",
+      "color.fg-disabled": "#5a5a5a",
+      "color.fg-link": "#4daafc",
+      "color.fg-destructive": "#f14c4c",
+      "color.border": "#2b2b2b",
+      "color.border-strong": "#3c3c3c",
+      "color.separator": "#2b2b2b",
+      "color.accent": "#0078d4",
+      "color.accent-fg": "#ffffff",
+      "color.accent-muted": "#04395e",
+      "color.focus": "#0078d4",
+      "color.hover": "#2a2d2e",
+      "color.active": "#37373d",
+      "color.selection": "#04395e",
+      "color.selection-inactive": "#2e2e2e",
+      "color.selection-fg": "#ffffff",
+      "color.match-highlight": "#623315",
+      "color.drop-target": "#0078d4",
+      "color.readonly": "#262626",
+      "status.ok": "#89d185",
+      "status.ok-fg": "#0c3514",
+      "status.ok-bg": "#143620",
+      "status.ok-border": "#2ea043",
+      "status.warn": "#cca700",
+      "status.warn-fg": "#3b2900",
+      "status.warn-bg": "#3a2f00",
+      "status.warn-border": "#bf8700",
+      "status.error": "#f14c4c",
+      "status.error-fg": "#400a0a",
+      "status.error-bg": "#3a1414",
+      "status.error-border": "#cf2222",
+      "status.info": "#3794ff",
+      "status.info-fg": "#042634",
+      "status.info-bg": "#10293d",
+      "status.info-border": "#0f8bc7",
+      "color.scrollbar-track": "rgba(0, 0, 0, 0.16)",
+      "color.scrollbar-thumb": "rgba(121, 121, 121, 0.4)",
+      "color.scrollbar-thumb-hover": "rgba(150, 150, 150, 0.7)",
+      "color.scrollbar-thumb-active": "rgba(180, 180, 180, 0.9)",
+      "color.scrollbar-shadow": "rgba(0, 0, 0, 0.36)",
+      "color.canvas-bg": "#141414",
+      "color.canvas-grid": "#2b2b2b",
+      "color.canvas-gizmo": "#9d9d9d",
+      "color.axis-x": "#ff3366",
+      "color.axis-y": "#33ff88",
+      "color.axis-z": "#3388ff",
+      "color.canvas-selection": "#f5a623",
+      "color.graph-node": "#3c3c3c",
+      "color.graph-edge": "#5a5a5a",
+      "color.graph-edge-dead": "#f14c4c",
+      "color.diff-added": "#1b3a24",
+      "color.diff-removed": "#3a1d1d",
+      "color.diff-changed": "#2e2a17",
+      "elevation.1": "0 1px 2px rgba(0, 0, 0, 0.4)",
+      "elevation.2": "0 2px 8px rgba(0, 0, 0, 0.5)",
+      "elevation.3": "0 8px 24px rgba(0, 0, 0, 0.6)",
+      "shadow.focus-ring": "0 0 0 1px #0078d4"
+    })
+  },
+  {
+    id: "modkit-light",
+    displayName: "Modkit Light",
+    appearance: "light",
+    isDefaultFor: "light",
+    values: Object.freeze({
+      ...rampValues2(),
+      ...STRUCTURE2,
+      ...CHART_LIGHT2,
+      "color.bg": "#ffffff",
+      "color.surface": "#ffffff",
+      "color.raised": "#f8f8f8",
+      "color.sunken": "#f0f0f0",
+      "color.overlay": "#ffffff",
+      "color.scrim": "rgba(0, 0, 0, 0.3)",
+      "color.fg": "#3b3b3b",
+      "color.fg-muted": "#616161",
+      "color.fg-subtle": "#8b8b8b",
+      "color.fg-inverse": "#ffffff",
+      "color.fg-disabled": "#a6a6a6",
+      "color.fg-link": "#005fb8",
+      "color.fg-destructive": "#cf2222",
+      "color.border": "#e0e0e0",
+      "color.border-strong": "#c6c6c6",
+      "color.separator": "#ececec",
+      "color.accent": "#005fb8",
+      "color.accent-fg": "#ffffff",
+      "color.accent-muted": "#cfe4fa",
+      "color.focus": "#005fb8",
+      "color.hover": "#e8e8e8",
+      "color.active": "#dcdcdc",
+      "color.selection": "#cfe4fa",
+      "color.selection-inactive": "#e4e6f1",
+      "color.selection-fg": "#1a1a1a",
+      "color.match-highlight": "#fdea9b",
+      "color.drop-target": "#005fb8",
+      "color.readonly": "#f5f5f5",
+      "status.ok": "#238636",
+      "status.ok-fg": "#0c3514",
+      "status.ok-bg": "#e6f5e9",
+      "status.ok-border": "#97d5a5",
+      "status.warn": "#9a6d00",
+      "status.warn-fg": "#3b2900",
+      "status.warn-bg": "#fcf3d8",
+      "status.warn-border": "#f0cf6e",
+      "status.error": "#cf2222",
+      "status.error-fg": "#400a0a",
+      "status.error-bg": "#fde8e8",
+      "status.error-border": "#f49b9b",
+      "status.info": "#0b6e9e",
+      "status.info-fg": "#042634",
+      "status.info-bg": "#e6f4fb",
+      "status.info-border": "#8ecdec",
+      "color.scrollbar-track": "rgba(0, 0, 0, 0.05)",
+      "color.scrollbar-thumb": "rgba(100, 100, 100, 0.4)",
+      "color.scrollbar-thumb-hover": "rgba(80, 80, 80, 0.6)",
+      "color.scrollbar-thumb-active": "rgba(60, 60, 60, 0.8)",
+      "color.scrollbar-shadow": "rgba(0, 0, 0, 0.12)",
+      "color.canvas-bg": "#f4f4f4",
+      "color.canvas-grid": "#e0e0e0",
+      "color.canvas-gizmo": "#616161",
+      "color.axis-x": "#c02047",
+      "color.axis-y": "#1f8f4d",
+      "color.axis-z": "#1f6fd0",
+      "color.canvas-selection": "#c96a00",
+      "color.graph-node": "#e0e0e0",
+      "color.graph-edge": "#9a9a9a",
+      "color.graph-edge-dead": "#cf2222",
+      "color.diff-added": "#e2f6e7",
+      "color.diff-removed": "#fbe6e6",
+      "color.diff-changed": "#fbf3d6",
+      "elevation.1": "0 1px 2px rgba(0, 0, 0, 0.12)",
+      "elevation.2": "0 2px 8px rgba(0, 0, 0, 0.16)",
+      "elevation.3": "0 8px 24px rgba(0, 0, 0, 0.2)",
+      "shadow.focus-ring": "0 0 0 1px #005fb8"
+    })
+  },
+  {
+    id: "modkit-high-contrast",
+    displayName: "Modkit High Contrast",
+    appearance: "dark",
+    values: Object.freeze({
+      ...rampValues2({
+        neutral: [
+          "#ffffff",
+          "#ffffff",
+          "#e0e0e0",
+          "#c6c6c6",
+          "#9a9a9a",
+          "#6e6e6e",
+          "#4a4a4a",
+          "#333333",
+          "#1a1a1a",
+          "#000000"
+        ]
+      }),
+      ...STRUCTURE2,
+      ...CHART_DARK2,
+      "color.bg": "#000000",
+      "color.surface": "#000000",
+      "color.raised": "#0d0d0d",
+      "color.sunken": "#000000",
+      "color.overlay": "#000000",
+      "color.scrim": "rgba(0, 0, 0, 0.8)",
+      "color.fg": "#ffffff",
+      "color.fg-muted": "#ffffff",
+      "color.fg-subtle": "#d6d6d6",
+      "color.fg-inverse": "#000000",
+      "color.fg-disabled": "#a6a6a6",
+      "color.fg-link": "#3794ff",
+      "color.fg-destructive": "#f48771",
+      "color.border": "#6fc3df",
+      "color.border-strong": "#ffffff",
+      "color.separator": "#6fc3df",
+      "color.accent": "#0078d4",
+      "color.accent-fg": "#ffffff",
+      "color.accent-muted": "#000000",
+      "color.focus": "#f38518",
+      "color.hover": "#0d0d0d",
+      "color.active": "#1a1a1a",
+      "color.selection": "#000000",
+      "color.selection-inactive": "#000000",
+      "color.selection-fg": "#ffffff",
+      "color.match-highlight": "#000000",
+      "color.drop-target": "#f38518",
+      "color.readonly": "#0d0d0d",
+      "status.ok": "#89d185",
+      "status.ok-fg": "#000000",
+      "status.ok-bg": "#000000",
+      "status.ok-border": "#89d185",
+      "status.warn": "#ffd700",
+      "status.warn-fg": "#000000",
+      "status.warn-bg": "#000000",
+      "status.warn-border": "#ffd700",
+      "status.error": "#f48771",
+      "status.error-fg": "#000000",
+      "status.error-bg": "#000000",
+      "status.error-border": "#f48771",
+      "status.info": "#3794ff",
+      "status.info-fg": "#000000",
+      "status.info-bg": "#000000",
+      "status.info-border": "#3794ff",
+      "color.scrollbar-track": "#000000",
+      "color.scrollbar-thumb": "#6fc3df",
+      "color.scrollbar-thumb-hover": "#ffffff",
+      "color.scrollbar-thumb-active": "#f38518",
+      "color.scrollbar-shadow": "#6fc3df",
+      "color.canvas-bg": "#000000",
+      "color.canvas-grid": "#6fc3df",
+      "color.canvas-gizmo": "#ffffff",
+      "color.axis-x": "#ff6b8a",
+      "color.axis-y": "#4dff9e",
+      "color.axis-z": "#6bb6ff",
+      "color.canvas-selection": "#f38518",
+      "color.graph-node": "#000000",
+      "color.graph-edge": "#6fc3df",
+      "color.graph-edge-dead": "#f48771",
+      "color.diff-added": "#000000",
+      "color.diff-removed": "#000000",
+      "color.diff-changed": "#000000",
+      "elevation.1": "0 0 0 1px #6fc3df",
+      "elevation.2": "0 0 0 1px #6fc3df",
+      "elevation.3": "0 0 0 1px #ffffff",
+      "shadow.focus-ring": "0 0 0 2px #f38518"
+    })
+  }
+]);
+var PALETTES_BY_ID2 = new Map(
+  PALETTES2.map((palette) => [palette.id, palette])
+);
+var THEME_ATTRIBUTE = "data-mk-theme";
+var DENSITY_ATTRIBUTE = "data-mk-density";
+function requireElement2(value) {
+  if (typeof value !== "object" || value === null || !("style" in value) || typeof value.style !== "object") {
+    throw new TypeError("token target must be a DOM element");
+  }
+  return value;
+}
+function applyTheme(root, theme) {
+  const target = requireElement2(root);
+  if (theme === void 0) target.removeAttribute(THEME_ATTRIBUTE);
+  else target.setAttribute(THEME_ATTRIBUTE, theme);
+}
+function applyDensity(root, density) {
+  requireElement2(root).setAttribute(DENSITY_ATTRIBUTE, density);
+}
 
 // packages/host/dist/index.js
 var PROVIDER_OFFER_INVENTORY_FACT = contractId(
@@ -40667,10 +42133,10 @@ async function readBounded(source, offset, length, chunkBytes, signal) {
   }
   return written === total ? result : result.slice(0, written);
 }
-function cursor(offset, line) {
+function cursor2(offset, line) {
   return `v1:${offset}:${line}`;
 }
-function parseCursor(value) {
+function parseCursor2(value) {
   const match = /^v1:(0|[1-9][0-9]*):(0|[1-9][0-9]*)$/.exec(value);
   if (match === null) {
     throw new ModkitError({
@@ -40782,7 +42248,7 @@ function createUtf8TextDataSource(source, options = {}) {
       start = facts.lineStarts[fromLine] ?? facts.size;
       requestedEnd = facts.lineStarts[fromLine + request.lineCount] ?? facts.size;
     } else {
-      const parsed = parseCursor(request.cursor);
+      const parsed = parseCursor2(request.cursor);
       fromLine = parsed.line;
       start = parsed.offset;
       requestedEnd = facts.size;
@@ -40811,7 +42277,7 @@ function createUtf8TextDataSource(source, options = {}) {
       text,
       fromLine,
       lineCount: nextLine - fromLine + (text === "" ? 0 : 1),
-      nextCursor: cursor(actualEnd, nextLine)
+      nextCursor: cursor2(actualEnd, nextLine)
     };
   };
   return Object.freeze({
@@ -43227,9 +44693,9 @@ function getAliasCount(doc, node, anchors) {
   } else if (isCollection(node)) {
     let count = 0;
     for (const item of node.items) {
-      const c2 = getAliasCount(doc, item, anchors);
-      if (c2 > count)
-        count = c2;
+      const c3 = getAliasCount(doc, item, anchors);
+      if (c3 > count)
+        count = c3;
     }
     return count;
   } else if (isPair(node)) {
@@ -43264,13 +44730,13 @@ Scalar.QUOTE_SINGLE = "QUOTE_SINGLE";
 var defaultTagPrefix = "tag:yaml.org,2002:";
 function findTagObject(value, tagName, tags) {
   if (tagName) {
-    const match = tags.filter((t2) => t2.tag === tagName);
-    const tagObj = match.find((t2) => !t2.format) ?? match[0];
+    const match = tags.filter((t3) => t3.tag === tagName);
+    const tagObj = match.find((t3) => !t3.format) ?? match[0];
     if (!tagObj)
       throw new Error(`Tag ${tagName} not found`);
     return tagObj;
   }
-  return tags.find((t2) => t2.identify?.(value) && !t2.format);
+  return tags.find((t3) => t3.identify?.(value) && !t3.format);
 }
 function createNode(value, tagName, ctx) {
   if (isDocument(value))
@@ -43861,10 +45327,10 @@ function stringifyString(item, ctx, onComment, onChompKeep) {
   let res = _stringify(type);
   if (res === null) {
     const { defaultKeyType, defaultStringType } = ctx.options;
-    const t2 = implicitKey && defaultKeyType || defaultStringType;
-    res = _stringify(t2);
+    const t3 = implicitKey && defaultKeyType || defaultStringType;
+    res = _stringify(t3);
     if (res === null)
-      throw new Error(`Unsupported default string type ${t2}`);
+      throw new Error(`Unsupported default string type ${t3}`);
   }
   return res;
 }
@@ -43914,24 +45380,24 @@ function createStringifyContext(doc, options) {
 }
 function getTagObject(tags, item) {
   if (item.tag) {
-    const match = tags.filter((t2) => t2.tag === item.tag);
+    const match = tags.filter((t3) => t3.tag === item.tag);
     if (match.length > 0)
-      return match.find((t2) => t2.format === item.format) ?? match[0];
+      return match.find((t3) => t3.format === item.format) ?? match[0];
   }
   let tagObj = void 0;
   let obj;
   if (isScalar(item)) {
     obj = item.value;
-    let match = tags.filter((t2) => t2.identify?.(obj));
+    let match = tags.filter((t3) => t3.identify?.(obj));
     if (match.length > 1) {
-      const testMatch = match.filter((t2) => t2.test);
+      const testMatch = match.filter((t3) => t3.test);
       if (testMatch.length > 0)
         match = testMatch;
     }
-    tagObj = match.find((t2) => t2.format === item.format) ?? match.find((t2) => !t2.format);
+    tagObj = match.find((t3) => t3.format === item.format) ?? match.find((t3) => !t3.format);
   } else {
     obj = item;
-    tagObj = tags.find((t2) => t2.nodeClass && obj instanceof t2.nodeClass);
+    tagObj = tags.find((t3) => t3.nodeClass && obj instanceof t3.nodeClass);
   }
   if (!tagObj) {
     const name = obj?.constructor?.name ?? (obj === null ? "null" : typeof obj);
@@ -46432,7 +47898,7 @@ function composeCollection(CN2, ctx, token, props, onError) {
   if (!tagToken || !tagName || tagName === "!" || tagName === YAMLMap.tagName && expType === "map" || tagName === YAMLSeq.tagName && expType === "seq") {
     return resolveCollection(CN2, ctx, token, onError, tagName);
   }
-  let tag = ctx.schema.tags.find((t2) => t2.tag === tagName && t2.collection === expType);
+  let tag = ctx.schema.tags.find((t3) => t3.tag === tagName && t3.collection === expType);
   if (!tag) {
     const kt = ctx.schema.knownTags[tagName];
     if (kt?.collection === expType) {
@@ -49107,14 +50573,14 @@ function indexOfNewline(str, start = 0) {
 }
 function skipComment(ctx) {
   for (; ctx.p < ctx.s.length; ctx.p++) {
-    let c2 = ctx.s.charCodeAt(ctx.p);
-    if (c2 === 10)
+    let c3 = ctx.s.charCodeAt(ctx.p);
+    if (c3 === 10)
       break;
-    if (c2 === 13 && ctx.s.charCodeAt(ctx.p + 1) === 10) {
+    if (c3 === 13 && ctx.s.charCodeAt(ctx.p + 1) === 10) {
       ctx.p++;
       break;
     }
-    if (c2 < 32 && c2 !== 9 || c2 === 127) {
+    if (c3 < 32 && c3 !== 9 || c3 === 127) {
       throw new TomlError("control characters are not allowed in comments", {
         toml: ctx.s,
         ptr: ctx.p
@@ -49123,11 +50589,11 @@ function skipComment(ctx) {
   }
 }
 function skipVoid(ctx, banNewLines, banComments) {
-  let c2;
+  let c3;
   while (1) {
-    while ((c2 = ctx.s.charCodeAt(ctx.p)) === 32 || c2 === 9 || !banNewLines && (c2 === 10 || c2 === 13 && ctx.s.charCodeAt(ctx.p + 1) === 10))
+    while ((c3 = ctx.s.charCodeAt(ctx.p)) === 32 || c3 === 9 || !banNewLines && (c3 === 10 || c3 === 13 && ctx.s.charCodeAt(ctx.p + 1) === 10))
       ctx.p++;
-    if (banComments || c2 !== 35)
+    if (banComments || c3 !== 35)
       break;
     skipComment(ctx);
   }
@@ -49140,10 +50606,10 @@ function skipUntil(ctx, sep, end) {
     return;
   }
   for (; ctx.p < ctx.s.length; ctx.p++) {
-    let c2 = ctx.s.charCodeAt(ctx.p);
-    if (c2 === 35) {
+    let c3 = ctx.s.charCodeAt(ctx.p);
+    if (c3 === 35) {
       skipComment(ctx);
-    } else if (c2 === end || c2 === sep) {
+    } else if (c3 === end || c3 === sep) {
       return;
     }
   }
@@ -49159,29 +50625,29 @@ var FLOAT_REGEX = /^[+-]?\d(_?\d)*(\.\d(_?\d)*)?([eE][+-]?\d(_?\d)*)?$/;
 var LEADING_ZERO = /^[+-]?0[0-9_]/;
 function parseString(ctx) {
   let start = ctx.p;
-  let c2 = ctx.s.charCodeAt(ctx.p++);
-  let first = c2;
-  let isLiteral = c2 === 39;
-  let isMultiline = c2 === ctx.s.charCodeAt(ctx.p) && c2 === ctx.s.charCodeAt(ctx.p + 1);
+  let c3 = ctx.s.charCodeAt(ctx.p++);
+  let first = c3;
+  let isLiteral = c3 === 39;
+  let isMultiline = c3 === ctx.s.charCodeAt(ctx.p) && c3 === ctx.s.charCodeAt(ctx.p + 1);
   if (isMultiline) {
-    if ((c2 = ctx.s.charCodeAt(ctx.p += 2)) === 10)
+    if ((c3 = ctx.s.charCodeAt(ctx.p += 2)) === 10)
       ctx.p++;
-    else if (c2 === 13 && ctx.s.charCodeAt(ctx.p + 1) === 10)
+    else if (c3 === 13 && ctx.s.charCodeAt(ctx.p + 1) === 10)
       ctx.p += 2;
   }
   let parsed = "";
   let sliceStart = ctx.p;
   let state = 0;
   for (; ctx.p < ctx.s.length; ctx.p++) {
-    c2 = ctx.s.charCodeAt(ctx.p);
-    if (isMultiline && (c2 === 10 || c2 === 13 && ctx.s.charCodeAt(ctx.p + 1) === 10)) {
+    c3 = ctx.s.charCodeAt(ctx.p);
+    if (isMultiline && (c3 === 10 || c3 === 13 && ctx.s.charCodeAt(ctx.p + 1) === 10)) {
       state = state && 3;
-    } else if (c2 < 32 && c2 !== 9 || c2 === 127) {
+    } else if (c3 < 32 && c3 !== 9 || c3 === 127) {
       throw new TomlError("control characters are not allowed in strings", {
         toml: ctx.s,
         ptr: ctx.p
       });
-    } else if ((!state || state === 3) && c2 === first && (!isMultiline || ctx.s.charCodeAt(ctx.p + 1) === first && ctx.s.charCodeAt(ctx.p + 2) === first)) {
+    } else if ((!state || state === 3) && c3 === first && (!isMultiline || ctx.s.charCodeAt(ctx.p + 1) === first && ctx.s.charCodeAt(ctx.p + 2) === first)) {
       if (isMultiline) {
         if (ctx.s.charCodeAt(ctx.p + 3) === first)
           ctx.p++;
@@ -49193,14 +50659,14 @@ function parseString(ctx) {
       ctx.p += isMultiline ? 3 : 1;
       return parsed;
     } else if (!state) {
-      if (!isLiteral && c2 === 92) {
+      if (!isLiteral && c3 === 92) {
         parsed += ctx.s.slice(sliceStart, sliceStart = ctx.p);
         state = 1;
       }
     } else if (state === 1) {
-      if (c2 === 120 || c2 === 117 || c2 === 85) {
+      if (c3 === 120 || c3 === 117 || c3 === 85) {
         let value = 0;
-        let len = c2 === 120 ? 2 : c2 === 117 ? 4 : 8;
+        let len = c3 === 120 ? 2 : c3 === 117 ? 4 : 8;
         for (let j = 0; j < len; j++, ctx.p++) {
           let hex = ctx.s.charCodeAt(ctx.p + 1);
           let digit = (
@@ -49223,38 +50689,38 @@ function parseString(ctx) {
         parsed += String.fromCodePoint(value);
         sliceStart = ctx.p + 1;
         state = 0;
-      } else if (c2 === 32 || c2 === 9) {
+      } else if (c3 === 32 || c3 === 9) {
         state = 2;
       } else {
-        if (c2 === 98)
+        if (c3 === 98)
           parsed += "\b";
-        else if (c2 === 116)
+        else if (c3 === 116)
           parsed += "	";
-        else if (c2 === 110)
+        else if (c3 === 110)
           parsed += "\n";
-        else if (c2 === 102)
+        else if (c3 === 102)
           parsed += "\f";
-        else if (c2 === 114)
+        else if (c3 === 114)
           parsed += "\r";
-        else if (c2 === 101)
+        else if (c3 === 101)
           parsed += "\x1B";
-        else if (c2 === 34)
+        else if (c3 === 34)
           parsed += '"';
-        else if (c2 === 92)
+        else if (c3 === 92)
           parsed += "\\";
         else
           throw new TomlError("unrecognized escape sequence", { toml: ctx.s, ptr: ctx.p });
         sliceStart = ctx.p + 1;
         state = 0;
       }
-    } else if (c2 !== 32 && c2 !== 9) {
+    } else if (c3 !== 32 && c3 !== 9) {
       if (state === 2) {
         throw new TomlError("invalid escape: only line-ending whitespace may be escaped", {
           toml: ctx.s,
           ptr: sliceStart
         });
       }
-      state = !isLiteral && c2 === 92 ? 1 : 0;
+      state = !isLiteral && c3 === 92 ? 1 : 0;
       sliceStart = ctx.p;
     }
   }
@@ -49312,28 +50778,28 @@ function parseValue(ctx, integersAsBigInt, end) {
 // node_modules/.pnpm/smol-toml@1.8.0/node_modules/smol-toml/dist/extract.js
 function extractValue(ctx, end, integersAsBigInt) {
   let ptr = ctx.p;
-  let c2 = ctx.s.charCodeAt(ptr);
-  if (c2 === 91 || c2 === 123) {
+  let c3 = ctx.s.charCodeAt(ptr);
+  if (c3 === 91 || c3 === 123) {
     if (!ctx.d--) {
       throw new TomlError("document contains excessively nested structures. aborting.", {
         toml: ctx.s,
         ptr
       });
     }
-    let value = c2 === 91 ? parseArray(ctx, integersAsBigInt) : parseInlineTable(ctx, integersAsBigInt);
+    let value = c3 === 91 ? parseArray(ctx, integersAsBigInt) : parseInlineTable(ctx, integersAsBigInt);
     ctx.d++;
     return value;
   }
-  if (c2 === 34 || c2 === 39) {
+  if (c3 === 34 || c3 === 39) {
     return parseString(ctx);
   }
-  if (c2 === 116) {
+  if (c3 === 116) {
     if (ctx.s.charCodeAt(++ctx.p) !== 114 || ctx.s.charCodeAt(++ctx.p) !== 117 || ctx.s.charCodeAt(++ctx.p) !== 101)
       throw new TomlError("invalid value", { toml: ctx.s, ptr });
     ctx.p++;
     return true;
   }
-  if (c2 === 102) {
+  if (c3 === 102) {
     if (ctx.s.charCodeAt(++ctx.p) !== 97 || ctx.s.charCodeAt(++ctx.p) !== 108 || ctx.s.charCodeAt(++ctx.p) !== 115 || ctx.s.charCodeAt(++ctx.p) !== 101)
       throw new TomlError("invalid value", { toml: ctx.s, ptr });
     ctx.p++;
@@ -49356,10 +50822,10 @@ function parseKey(ctx, end = "=") {
     });
   }
   do {
-    let c2 = ctx.s.charCodeAt(ctx.p = ++dot);
-    if (c2 !== 32 && c2 !== 9) {
-      if (c2 === 34 || c2 === 39) {
-        if (c2 === ctx.s.charCodeAt(ctx.p + 1) && c2 === ctx.s.charCodeAt(ctx.p + 2)) {
+    let c3 = ctx.s.charCodeAt(ctx.p = ++dot);
+    if (c3 !== 32 && c3 !== 9) {
+      if (c3 === 34 || c3 === 39) {
+        if (c3 === ctx.s.charCodeAt(ctx.p + 1) && c3 === ctx.s.charCodeAt(ctx.p + 2)) {
           throw new TomlError("multiline strings are not allowed in keys", {
             toml: ctx.s,
             ptr: ctx.p
@@ -49411,31 +50877,31 @@ function parseKey(ctx, end = "=") {
 function parseInlineTable(ctx, integersAsBigInt) {
   let res = {};
   let seen = /* @__PURE__ */ new Set();
-  let c2;
+  let c3;
   ctx.p++;
   while (ctx.p < ctx.s.length) {
     skipVoid(ctx);
-    if ((c2 = ctx.s.charCodeAt(ctx.p)) === 125) {
+    if ((c3 = ctx.s.charCodeAt(ctx.p)) === 125) {
       ctx.p++;
       return res;
     }
     let k;
-    let t2 = res;
+    let t3 = res;
     let hasOwn = false;
     let p = ctx.p;
     let key = parseKey(ctx);
     for (let i = 0; i < key.length; i++) {
       if (i)
-        t2 = hasOwn ? t2[k] : t2[k] = {};
+        t3 = hasOwn ? t3[k] : t3[k] = {};
       k = key[i];
-      if ((hasOwn = Object.hasOwn(t2, k)) && (typeof t2[k] !== "object" || seen.has(t2[k]))) {
+      if ((hasOwn = Object.hasOwn(t3, k)) && (typeof t3[k] !== "object" || seen.has(t3[k]))) {
         throw new TomlError("trying to redefine an already defined value", {
           toml: ctx.s,
           ptr: p
         });
       }
       if (!hasOwn && k === "__proto__") {
-        Object.defineProperty(t2, k, { enumerable: true, configurable: true, writable: true });
+        Object.defineProperty(t3, k, { enumerable: true, configurable: true, writable: true });
       }
     }
     if (hasOwn) {
@@ -49445,12 +50911,12 @@ function parseInlineTable(ctx, integersAsBigInt) {
       });
     }
     let value = extractValue(ctx, 125, integersAsBigInt);
-    seen.add(t2[k] = value);
+    seen.add(t3[k] = value);
     skipVoid(ctx);
-    if ((c2 = ctx.s.charCodeAt(ctx.p++)) === 125) {
+    if ((c3 = ctx.s.charCodeAt(ctx.p++)) === 125) {
       return res;
     }
-    if (c2 !== 44) {
+    if (c3 !== 44) {
       throw new TomlError("expected comma or end of structure", { toml: ctx.s, ptr: ctx.p - 1 });
     }
   }
@@ -49461,20 +50927,20 @@ function parseInlineTable(ctx, integersAsBigInt) {
 }
 function parseArray(ctx, integersAsBigInt) {
   let res = [];
-  let c2;
+  let c3;
   ctx.p++;
   while (ctx.p < ctx.s.length) {
     skipVoid(ctx);
-    if ((c2 = ctx.s.charCodeAt(ctx.p)) === 93) {
+    if ((c3 = ctx.s.charCodeAt(ctx.p)) === 93) {
       ctx.p++;
       return res;
     }
     res.push(extractValue(ctx, 93, integersAsBigInt));
     skipVoid(ctx);
-    if ((c2 = ctx.s.charCodeAt(ctx.p++)) === 93) {
+    if ((c3 = ctx.s.charCodeAt(ctx.p++)) === 93) {
       return res;
     }
-    if (c2 !== 44) {
+    if (c3 !== 44) {
       throw new TomlError("expected comma or end of structure", { toml: ctx.s, ptr: ctx.p - 1 });
     }
   }
@@ -49486,31 +50952,31 @@ function parseArray(ctx, integersAsBigInt) {
 
 // node_modules/.pnpm/smol-toml@1.8.0/node_modules/smol-toml/dist/parse.js
 function peekTable(key, table, meta, type) {
-  let t2 = table;
+  let t3 = table;
   let m = meta;
   let k;
   let hasOwn = false;
   let state;
   for (let i = 0; i < key.length; i++) {
     if (i) {
-      t2 = hasOwn ? t2[k] : t2[k] = {};
+      t3 = hasOwn ? t3[k] : t3[k] = {};
       m = (state = m[k]).c;
       if (type === 0 && (state.t === 1 || state.t === 2)) {
         return null;
       }
       if (state.t === 2) {
-        let l = t2.length - 1;
-        t2 = t2[l];
+        let l = t3.length - 1;
+        t3 = t3[l];
         m = m[l].c;
       }
     }
     k = key[i];
-    if ((hasOwn = Object.hasOwn(t2, k)) && m[k]?.t === 0 && m[k]?.d) {
+    if ((hasOwn = Object.hasOwn(t3, k)) && m[k]?.t === 0 && m[k]?.d) {
       return null;
     }
     if (!hasOwn) {
       if (k === "__proto__") {
-        Object.defineProperty(t2, k, { enumerable: true, configurable: true, writable: true });
+        Object.defineProperty(t3, k, { enumerable: true, configurable: true, writable: true });
         Object.defineProperty(m, k, { enumerable: true, configurable: true, writable: true });
       }
       m[k] = {
@@ -49528,9 +50994,9 @@ function peekTable(key, table, meta, type) {
   if (type === 2) {
     if (!state.d) {
       state.d = true;
-      t2[k] = [];
+      t3[k] = [];
     }
-    t2[k].push(t2 = {});
+    t3[k].push(t3 = {});
     state.c[state.i++] = state = { t: 1, d: false, i: 0, c: {} };
   }
   if (state.d) {
@@ -49538,11 +51004,11 @@ function peekTable(key, table, meta, type) {
   }
   state.d = true;
   if (type === 1) {
-    t2 = hasOwn ? t2[k] : t2[k] = {};
+    t3 = hasOwn ? t3[k] : t3[k] = {};
   } else if (type === 0 && hasOwn) {
     return null;
   }
-  return [k, t2, state.c];
+  return [k, t3, state.c];
 }
 function parse3(toml, { maxDepth = 1e3, integersAsBigInt } = {}) {
   let ctx = { s: toml, p: 0, d: maxDepth };
@@ -50128,10 +51594,10 @@ function simpleLease2(value) {
     isReleased: () => released
   });
 }
-function pageStart(cursor2) {
-  if (cursor2 === void 0) return 0;
-  if (!/^(?:0|[1-9][0-9]*)$/u.test(cursor2)) throw new TypeError("invalid page cursor");
-  const value = Number(cursor2);
+function pageStart(cursor3) {
+  if (cursor3 === void 0) return 0;
+  if (!/^(?:0|[1-9][0-9]*)$/u.test(cursor3)) throw new TypeError("invalid page cursor");
+  const value = Number(cursor3);
   if (!Number.isSafeInteger(value)) throw new TypeError("page cursor exceeds safe integer range");
   return value;
 }
@@ -50525,12 +51991,12 @@ function parsePng(bytes, maxChunks) {
     frames
   });
 }
-function paeth(a, b, c2) {
-  const value = a + b - c2;
+function paeth(a, b, c3) {
+  const value = a + b - c3;
   const distanceA = Math.abs(value - a);
   const distanceB = Math.abs(value - b);
-  const distanceC = Math.abs(value - c2);
-  return distanceA <= distanceB && distanceA <= distanceC ? a : distanceB <= distanceC ? b : c2;
+  const distanceC = Math.abs(value - c3);
+  return distanceA <= distanceB && distanceA <= distanceC ? a : distanceB <= distanceC ? b : c3;
 }
 async function inflateBounded(compressed, expectedBytes, signal) {
   if (typeof DecompressionStream !== "function") {
@@ -50581,9 +52047,9 @@ async function decodeRgba8(bytes, png, signal) {
     for (let x = 0; x < rowBytes; x += 1) {
       const a = x >= png.channels ? rowOut[x - png.channels] ?? 0 : 0;
       const b = previous?.[x] ?? 0;
-      const c2 = x >= png.channels ? previous?.[x - png.channels] ?? 0 : 0;
+      const c3 = x >= png.channels ? previous?.[x - png.channels] ?? 0 : 0;
       const input = rowIn[x] ?? 0;
-      const value = filter === 0 ? input : filter === 1 ? input + a : filter === 2 ? input + b : filter === 3 ? input + Math.floor((a + b) / 2) : filter === 4 ? input + paeth(a, b, c2) : void 0;
+      const value = filter === 0 ? input : filter === 1 ? input + a : filter === 2 ? input + b : filter === 3 ? input + Math.floor((a + b) / 2) : filter === 4 ? input + paeth(a, b, c3) : void 0;
       if (value === void 0) throw new TypeError(`PNG filter ${filter} is unsupported`);
       rowOut[x] = value & 255;
     }
@@ -50901,11 +52367,18 @@ var PREVIEW_STAGES = Object.freeze([
   { label: "Text", contract: "common.view/text-data-source", module: boundedTextViewer },
   { label: "Hex", contract: "common.view/byte-range-source", module: hexViewer }
 ]);
+var PREVIEW_FALLBACK = Object.freeze({
+  text: boundedTextViewer,
+  hex: hexViewer
+});
 
 // apps/electron/src/renderer.ts
+var MAXIMUM_BYTES = 64 * 1024 * 1024;
 var broker = globalThis.modkitBroker;
 var host = globalThis.modkitHost;
 var files = globalThis.modkitFiles;
+var menu = globalThis.modkitMenu;
+var settingsBridge = globalThis.modkitSettings;
 function requireRoot() {
   const node = document.querySelector("#root");
   if (node === null) throw new Error("missing #root");
@@ -50920,9 +52393,7 @@ function accessFor(rootPath) {
   return {
     label: basename(rootPath) || rootPath,
     async list(entryId) {
-      const result = await broker.request("directory.list", {
-        path: entryId ?? rootPath
-      });
+      const result = await broker.request("directory.list", { path: entryId ?? rootPath });
       return result.entries;
     },
     async read(entryId, maxBytes) {
@@ -50934,34 +52405,81 @@ function accessFor(rootPath) {
     }
   };
 }
+function settingsStore(bridge) {
+  let location = "settings";
+  return {
+    get location() {
+      return location;
+    },
+    async read() {
+      const response = await bridge.read();
+      location = response.location;
+      const normalized = normalizeSettings(response.raw);
+      return response.problem === void 0 ? normalized : { document: normalized.document, problems: [response.problem, ...normalized.problems] };
+    },
+    async write(document2) {
+      const response = await bridge.write(serializeSettings(document2));
+      location = response.location;
+    }
+  };
+}
 async function boot() {
-  if (host === void 0 || broker === void 0) {
-    throw new Error("preload bridge is missing: modkitHost/modkitBroker are undefined");
+  if (host === void 0 || broker === void 0 || menu === void 0 || settingsBridge === void 0) {
+    throw new Error("preload bridge is missing: host, broker, menu or settings is undefined");
   }
+  const bridge = broker;
   const profile5 = await host.profile();
-  const workbench = createWorkbench(document, {
-    title: "Modkit MK3",
-    host: { label: profile5.renderer.realmId, facilities: profile5.renderer.facilities }
+  const shell = document.createElement("div");
+  shell.className = "modkit-shell";
+  const body = document.createElement("div");
+  body.className = "modkit-body";
+  const footer = document.createElement("footer");
+  footer.className = "modkit-footer";
+  shell.append(body, footer);
+  requireRoot().replaceChildren(shell);
+  const footerPath = document.createElement("span");
+  const footerDetail = document.createElement("span");
+  footerDetail.className = "muted";
+  footer.append(footerPath, footerDetail);
+  const setFooter = (path, detail, bad = false) => {
+    footerPath.textContent = path;
+    footerDetail.textContent = detail;
+    footer.classList.toggle("bad", bad);
+  };
+  const preview = createCodecPreview({
+    formats: PREVIEW_FORMATS,
+    stages: PREVIEW_STAGES,
+    fallback: PREVIEW_FALLBACK
   });
-  requireRoot().replaceChildren(workbench.root);
-  const preview = createCodecPreview({ formats: PREVIEW_FORMATS, stages: PREVIEW_STAGES });
+  let access;
+  const editors = createEditorArea(document, {
+    preview,
+    async read(entry, signal) {
+      if (access === void 0) throw new Error("no folder is open");
+      return access.read(entry.id, MAXIMUM_BYTES, signal);
+    },
+    onStatus(status) {
+      setFooter(
+        status.path ?? "",
+        [status.view, status.detail].filter(Boolean).join(" \xB7 "),
+        status.severity === "error"
+      );
+    }
+  });
   const explorer = createExplorer(document, {
     preview,
+    // The desktop app uses the native menu; a second row of buttons would duplicate it.
+    showToolbar: false,
+    // The tree browses; the editor area owns what is open, so opening is delegated to it.
+    onOpen(entry) {
+      void editors.open(entry);
+    },
     async openFolder() {
-      const result = await broker.request("dialog.open-directory", {
-        requestId: crypto.randomUUID()
-      });
-      if (result.canceled || result.root === void 0) return void 0;
-      return accessFor(result.root);
+      return openFolder();
     },
     async openFile() {
-      const result = await broker.request("dialog.open-file", {
-        requestId: crypto.randomUUID()
-      });
-      if (result.canceled || result.root === void 0 || result.entry === void 0) {
-        return void 0;
-      }
-      return { access: accessFor(result.root), entry: result.entry };
+      const picked = await pickFile();
+      return picked;
     },
     /*
      * A native drop carries real paths, which the preload reads with `webUtils.getPathForFile`.
@@ -50977,45 +52495,115 @@ async function boot() {
       const result = await broker.request("dialog.accept-drop", { paths });
       const first = result.accepted[0];
       if (first === void 0) return void 0;
-      return {
-        access: accessFor(first.root),
-        ...first.entry === void 0 ? {} : { entry: first.entry }
-      };
+      access = accessFor(first.root);
+      if (first.entry !== void 0) void editors.open(first.entry);
+      return { access };
     },
     async registerFileTypes() {
-      const response = await host.registerFileTypes(preview.supported);
-      return response.message;
+      return (await host.registerFileTypes(preview.supported)).message;
     }
   });
-  workbench.setMain(explorer.root);
+  const singlePane = explorer.root.querySelector('[data-mk-part="explorer.preview"]');
+  if (singlePane === null) throw new Error("explorer has no preview pane to replace");
+  singlePane.replaceWith(editors.root);
+  body.append(explorer.root);
+  const store = settingsStore(settingsBridge);
+  const settingsUi = createSettingsUi(document, {
+    store,
+    themes: [
+      { id: "modkit-dark", label: "Modkit Dark" },
+      { id: "modkit-light", label: "Modkit Light" },
+      { id: "modkit-high-contrast", label: "High contrast" }
+    ],
+    onAppearance(appearance) {
+      applyTheme(document.documentElement, appearance.theme);
+      applyDensity(document.documentElement, appearance.density);
+    }
+  });
+  await settingsUi.reload();
+  let settingsOpen = false;
+  function toggleSettings(open = !settingsOpen) {
+    settingsOpen = open;
+    body.replaceChildren(settingsOpen ? settingsUi.root : explorer.root);
+    setFooter(
+      settingsOpen ? "Settings" : "",
+      settingsOpen ? `${store.location} \xB7 realm ${profile5.renderer.realmId}` : "Ready"
+    );
+    if (settingsOpen) void settingsUi.reload();
+  }
+  async function openFolder() {
+    const result = await bridge.request("dialog.open-directory", {
+      requestId: crypto.randomUUID()
+    });
+    if (result.canceled || result.root === void 0) return void 0;
+    access = accessFor(result.root);
+    if (settingsOpen) toggleSettings(false);
+    return access;
+  }
+  async function pickFile() {
+    const result = await bridge.request("dialog.open-file", {
+      requestId: crypto.randomUUID()
+    });
+    if (result.canceled || result.root === void 0 || result.entry === void 0) return void 0;
+    access = accessFor(result.root);
+    if (settingsOpen) toggleSettings(false);
+    return { access, entry: result.entry };
+  }
+  menu?.on("open-folder", () => {
+    void (async () => {
+      const next = await openFolder();
+      if (next !== void 0) await explorer.setAccess(next);
+    })();
+  });
+  menu?.on("open-file", () => {
+    void (async () => {
+      const picked = await pickFile();
+      if (picked === void 0) return;
+      await explorer.setAccess(picked.access);
+      await editors.open(picked.entry);
+    })();
+  });
+  menu?.on("settings", () => {
+    toggleSettings();
+  });
+  menu?.on("split", () => {
+    if (settingsOpen) toggleSettings(false);
+    editors.split();
+  });
+  setFooter("", "Ready");
   const initial = await host.initialFile();
   if (initial.present && initial.root !== void 0) {
-    await explorer.setAccess(accessFor(initial.root));
-    if (initial.entry !== void 0) await explorer.open(initial.entry);
-    if (initial.selfTest === true) await selfTest(accessFor(initial.root), preview, explorer);
+    access = accessFor(initial.root);
+    await explorer.setAccess(access);
+    if (initial.entry !== void 0) await editors.open(initial.entry);
+    if (initial.selfTest === true) await selfTest(access, preview, editors, settingsUi.root);
   }
 }
-async function selfTest(access, preview, explorer) {
+async function selfTest(access, preview, editors, settingsRoot) {
   const entries = await access.list(void 0);
   console.log(`selftest: ${entries.length} entries in ${access.label}`);
   console.log(`selftest: supported extensions ${preview.supported.join(", ")}`);
   for (const entry of entries) {
     if (entry.directory) continue;
     try {
-      await explorer.open(entry);
-      const stage = document.querySelector('[data-mk-part="explorer.stage"]');
-      const tabs = [...document.querySelectorAll('[data-mk-part="explorer.tab"]')].map(
-        (node) => node.textContent
-      );
-      const mounted = stage?.querySelector('[data-mk-part="viewer"]') !== null;
-      const note = document.querySelector('[data-mk-part="explorer.placeholder"]')?.textContent;
+      await editors.open(entry);
+      const picker = editors.root.querySelector('[data-mk-part="explorer.viewpicker"]');
+      const views = picker instanceof HTMLSelectElement ? [...picker.options].map((item) => item.textContent) : [];
+      const mounted = editors.root.querySelector('[data-mk-part="explorer.stage"] [data-mk-part]');
       console.log(
-        `selftest: ${entry.name} -> tabs [${tabs.join(", ")}] viewer=${mounted ? "mounted" : "none"}` + (note === void 0 || note === null ? "" : ` note="${note}"`)
+        `selftest: ${entry.name} -> views [${views.join(", ")}] mounted=${mounted !== null}`
       );
     } catch (error) {
       console.log(`selftest: ${entry.name} -> FAILED ${String(error)}`);
     }
   }
+  const tabs = editors.root.querySelectorAll('[data-mk-part="explorer.filetab"]').length;
+  console.log(`selftest: ${tabs} tabs open in ${editors.groupCount} group(s)`);
+  editors.split();
+  const groups = editors.root.querySelectorAll('[data-mk-part="explorer.group"]').length;
+  console.log(`selftest: after split groups=${editors.groupCount}, rendered=${groups}`);
+  const settingsGroups = settingsRoot.querySelectorAll('[data-mk-part="settings.group"]').length;
+  console.log(`selftest: settings groups=${settingsGroups}`);
   console.log("selftest: done");
 }
 boot().catch((error) => {

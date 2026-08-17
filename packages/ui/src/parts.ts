@@ -185,6 +185,38 @@ export const PARTS = Object.freeze([
   'explorer.tab',
   'explorer.stage',
   'explorer.placeholder',
+  // preview header and view picker
+  'explorer.header',
+  'explorer.breadcrumb',
+  'explorer.crumb',
+  'explorer.viewpicker',
+  // editor area: one or more groups, each with its own tab strip
+  'explorer.editors',
+  'explorer.group',
+  'explorer.tabstrip',
+  'explorer.filetab',
+  'explorer.filetab-close',
+  'explorer.tabcontent',
+
+  // settings surface
+  'settings',
+  'settings.groups',
+  'settings.group',
+  'settings.pane',
+  'settings.row',
+  'settings.label',
+  'settings.description',
+  'settings.control',
+  'settings.select',
+  'settings.input',
+  'settings.list',
+  'settings.extension',
+  'settings.extension-text',
+  'settings.toggle',
+  'settings.remove',
+  'settings.adder',
+  'settings.add',
+  'settings.status',
 
   // collapsible property sections
   'accordion',

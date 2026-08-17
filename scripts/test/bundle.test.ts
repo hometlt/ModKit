@@ -48,6 +48,7 @@ const PUBLISHED_ENTRIES = [
   'packages/ui/dist/card/index.js',
   'packages/ui/dist/graph/index.js',
   'packages/ui/dist/workbench/index.js',
+  'packages/ui/dist/settings/index.js',
   'packages/ui/dist/metadata/index.js',
   'packages/ui/dist/image/index.js',
   'packages/ui/dist/audio/index.js',
