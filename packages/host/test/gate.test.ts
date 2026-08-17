@@ -20,6 +20,7 @@ import {
   resolveForActivation,
   resolveProvider,
   type ActivationTicket,
+  type ExtensionExecutionPolicy,
 } from '@modkitx-x3/host'
 // White-box import: the free issuer is deliberately NOT part of the package surface, so
 // the provenance test reaches it through the module it lives in.
@@ -92,6 +93,10 @@ async function ticketFixture(
   m: ContributionManifestV1,
   requestTarget: RuntimeTarget = target,
   projectedTarget = m.runtimeVariants?.[0]?.target,
+  execution: ExtensionExecutionPolicy = {
+    origin: 'bundled',
+    allowTrustedInProcess: true,
+  },
 ) {
   let artifactValid = true
   const registry = createContributionContractRegistry([
@@ -140,6 +145,7 @@ async function ticketFixture(
           artifactRoot: baseUrl,
           verifyArtifactDigest: expected => artifactValid && expected === 'sha256:gate-fixture',
         },
+        execution,
       },
     ],
     registry,
@@ -179,6 +185,18 @@ async function expectRefusedWithoutImport(
 }
 
 describe('activation gate — refusals never reach an import (MK3/24 §8)', () => {
+  it('refuses trusted-in-process unless the host explicitly authorized the artifact', async () => {
+    const { ticket } = await ticketFixture(manifest(), target, undefined, {
+      origin: 'installed',
+      allowTrustedInProcess: false,
+    })
+    await expectRefusedWithoutImport(
+      () => activateContribution({ ticket, grant: fullGrant }),
+      'x3.host/trusted-in-process-not-authorized',
+      'installed extension without host trust',
+    )
+  })
+
   it('retains both contract planes and the selected offer without raw facets', async () => {
     const ticket = await ticketFor(manifest())
     expect(ticket.contributionContract.id).toBe(GREETER_CONTRIBUTION_CONTRACT)

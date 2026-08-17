@@ -319,6 +319,19 @@ export async function activateContribution(request: ActivationRequest): Promise<
     )
   }
 
+  // `trusted-in-process` is never inferred from a contribution manifest or publisher string.
+  // The host loader must explicitly attach an execution decision to this exact attested artifact.
+  if (
+    variant.executionProfile === 'trusted-in-process' &&
+    privateRecord.execution.allowTrustedInProcess !== true
+  ) {
+    throw deny(
+      'x3.host/trusted-in-process-not-authorized',
+      `extension «${ticket.extensionId}» came from ${privateRecord.execution.origin} inventory without an explicit host decision allowing full process authority`,
+      { extensionId: ticket.extensionId, origin: privateRecord.execution.origin },
+    )
+  }
+
   // 5. grant: fail-closed validity, then narrowing intersection
   const validity = grantValidity(request.grant)
   if (validity.state !== 'valid') {

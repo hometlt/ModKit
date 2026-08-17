@@ -23,12 +23,15 @@ import {
   resolveForActivation,
   serializePolicyLock,
   type Activation,
+  type ExtensionExecutionPolicy,
   type Inventory,
 } from '@modkitx-x3/host'
 import { loadExtensionDirectory } from '@modkitx-x3/host/node'
 
 export interface MinimalHostOptions {
   readonly extensionDirs: readonly string[]
+  /** Explicit host decision; omitted means linked/restricted and cannot run in-process. */
+  readonly extensionExecution?: ExtensionExecutionPolicy
   readonly contributionContracts?: readonly ContributionContractRegistration[]
   readonly request: ProviderRequest
   /** MK3/24 §4 grant the session offers; the gate narrows it, never widens. */
@@ -50,7 +53,12 @@ export interface MinimalHostRun {
 export async function runMinimalHost(options: MinimalHostOptions): Promise<MinimalHostRun> {
   const inputs = []
   for (const dir of options.extensionDirs) {
-    inputs.push(await loadExtensionDirectory(dir, options.signal))
+    const loaded = await loadExtensionDirectory(dir, options.signal)
+    inputs.push(
+      options.extensionExecution === undefined
+        ? loaded
+        : { ...loaded, execution: options.extensionExecution },
+    )
   }
   const registry = createHostContributionContractRegistry(options.contributionContracts)
   const inventory = await buildInventory(inputs, registry)

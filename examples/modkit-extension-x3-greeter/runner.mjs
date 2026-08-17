@@ -26,6 +26,9 @@ const request = {
 try {
   const run = await runMinimalHost({
     extensionDirs: [here],
+    // Explicit host opt-in: installed/linked extensions never gain process authority merely by
+    // declaring `trusted-in-process` in their own manifest.
+    extensionExecution: { origin: 'installed', allowTrustedInProcess: true },
     contributionContracts: [greeterSpecEntry],
     request,
     grant: deny

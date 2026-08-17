@@ -369,7 +369,12 @@ describe('UVM convergence through A-2 inventory and A-3 sessions', () => {
         },
       ],
     })
-    const run = await runMinimalHost({ extensionDirs: [modelsDir], request, grant })
+    const run = await runMinimalHost({
+      extensionDirs: [modelsDir],
+      extensionExecution: { origin: 'bundled', allowTrustedInProcess: true },
+      request,
+      grant,
+    })
     expect(run.result.state).toBe('resolved')
     if (run.result.state !== 'resolved') throw new TypeError('UVM provider did not resolve')
     expect(run.result.selected.offer).toMatchObject({
@@ -396,7 +401,12 @@ describe('UVM convergence through A-2 inventory and A-3 sessions', () => {
       ),
     ).toMatchObject({ inventoryEligible: true, activationEligible: true })
 
-    const again = await runMinimalHost({ extensionDirs: [modelsDir], request, grant })
+    const again = await runMinimalHost({
+      extensionDirs: [modelsDir],
+      extensionExecution: { origin: 'bundled', allowTrustedInProcess: true },
+      request,
+      grant,
+    })
     expect(again.lockText).toBe(run.lockText)
 
     const codec = asCodecModule(run.activation.module).createCodec(context)

@@ -3,6 +3,8 @@ export {
   inventoryHasErrors,
   type ArtifactAttestationInput,
   type ExtensionInput,
+  type ExtensionExecutionPolicy,
+  type ExtensionOrigin,
   type Inventory,
   type InventoryContribution,
   type InventoryExtension,
@@ -14,6 +16,10 @@ export {
   VIEWER_CONTRIBUTION_INVENTORY_FACT,
 } from './contribution-registry.js'
 export { offersFromInventory } from './offers.js'
+export {
+  artifactByteSourceFromRandomAccess,
+  type ArtifactByteSourceBridgeOptions,
+} from './source-bridge.js'
 export {
   createServiceContractDefinitionRegistry,
   registerServiceContractDefinitionsFromInventory,

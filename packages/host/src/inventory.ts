@@ -39,6 +39,19 @@ export interface ArtifactAttestationInput {
   readonly verifyArtifactDigest: (expected: string) => boolean | Promise<boolean>
 }
 
+/** Host-owned installation provenance. Extension-authored manifests cannot set this policy. */
+export type ExtensionOrigin = 'bundled' | 'installed' | 'linked'
+
+export interface ExtensionExecutionPolicy {
+  /** How this host obtained the extension; informational unless paired with an explicit grant. */
+  readonly origin: ExtensionOrigin
+  /**
+   * Explicit host decision to admit this exact artifact to the unsandboxed process boundary.
+   * Missing/false always denies `trusted-in-process`; it is never inferred from publisher text.
+   */
+  readonly allowTrustedInProcess: boolean
+}
+
 export interface ExtensionInput {
   /** Diagnostic label for the artifact (directory, archive id, …) — not an identity. */
   readonly source: string
@@ -50,6 +63,8 @@ export interface ExtensionInput {
   /** Digests of the exact contribution-manifest bytes read by the loader. */
   readonly documentDigests: ReadonlyMap<string, string>
   readonly artifact: ArtifactAttestationInput
+  /** Missing means a linked/restricted artifact. This value is supplied by the host loader. */
+  readonly execution?: ExtensionExecutionPolicy
 }
 
 export interface InventoryRecord {
@@ -77,6 +92,7 @@ export interface InventoryContribution {
 
 export interface InventoryExtension {
   readonly source: string
+  readonly origin: ExtensionOrigin
   readonly container: AuthoredContainerKind
   readonly manifest: ExtensionManifest
   readonly contributions: readonly InventoryContribution[]
@@ -93,6 +109,7 @@ export interface PrivateInventoryRecord {
   readonly manifest: ContributionManifestV1
   readonly verifyArtifactDigest: ArtifactAttestationInput['verifyArtifactDigest']
   readonly artifactRoot: URL
+  readonly execution: ExtensionExecutionPolicy
 }
 
 const privateRecords = new WeakMap<InventoryContribution, PrivateInventoryRecord>()
@@ -114,6 +131,31 @@ function coordinate(manifest: ExtensionManifest): string {
   return `${manifest.publisher}/${manifest.id}`
 }
 
+const RESTRICTED_LINKED_EXECUTION: ExtensionExecutionPolicy = Object.freeze({
+  origin: 'linked',
+  allowTrustedInProcess: false,
+})
+
+function snapshotExecutionPolicy(value: ExtensionInput['execution']): {
+  readonly policy: ExtensionExecutionPolicy
+  readonly valid: boolean
+} {
+  if (value === undefined) return { policy: RESTRICTED_LINKED_EXECUTION, valid: true }
+  const origin = value.origin
+  const allowTrustedInProcess = value.allowTrustedInProcess
+  const allowedOrigin = origin === 'bundled' || origin === 'installed' || origin === 'linked'
+  if (!allowedOrigin || typeof allowTrustedInProcess !== 'boolean') {
+    return { policy: RESTRICTED_LINKED_EXECUTION, valid: false }
+  }
+  return {
+    policy: Object.freeze({
+      origin,
+      allowTrustedInProcess,
+    }),
+    valid: true,
+  }
+}
+
 export async function buildInventory(
   inputs: readonly ExtensionInput[],
   registry: ContributionContractRegistry,
@@ -122,6 +164,19 @@ export async function buildInventory(
   const extensions: InventoryExtension[] = []
 
   for (const input of inputs) {
+    // Capture this security-sensitive host decision before the first await. A caller cannot
+    // mutate an authored/input object while validation is suspended and gain process authority.
+    const execution = snapshotExecutionPolicy(input.execution)
+    if (!execution.valid) {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'x3.host/invalid-extension-execution-policy',
+          'the host loader supplied malformed extension execution provenance; activation is disabled',
+          [input.source],
+        ),
+      )
+    }
     const normalized = await normalizeExtensionManifest(input.containers)
     diagnostics.push(
       ...normalized.diagnostics.map(d => ({ ...d, path: [input.source, ...(d.path ?? [])] })),
@@ -161,7 +216,7 @@ export async function buildInventory(
       const manifestDigest = input.documentDigests.get(entry.path)
       const localDiagnostics = [...result.diagnostics]
       let inventoryEligible = result.inventoryEligible
-      let activationEligible = result.activationEligible
+      let activationEligible = result.activationEligible && execution.valid
       let facts: readonly InventoryFact[] = []
       let record: InventoryRecord | undefined
       if (ownedManifest !== undefined && result.inventoryEligible) {
@@ -232,6 +287,7 @@ export async function buildInventory(
           manifest: ownedManifest,
           verifyArtifactDigest: input.artifact.verifyArtifactDigest,
           artifactRoot: new URL(input.artifact.artifactRoot.href),
+          execution: execution.policy,
         })
       }
       contributions.push(contribution)
@@ -239,6 +295,7 @@ export async function buildInventory(
 
     extensions.push({
       source: input.source,
+      origin: execution.policy.origin,
       container: normalized.container,
       manifest: normalized.manifest,
       contributions,

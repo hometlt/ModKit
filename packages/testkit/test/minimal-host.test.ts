@@ -18,6 +18,7 @@ describe('testkit minimal host — the one public route (S4)', () => {
   it('load → inventory → resolve → grant → import → execute, deterministically', async () => {
     const run = await runMinimalHost({
       extensionDirs: [exampleDir],
+      extensionExecution: { origin: 'installed', allowTrustedInProcess: true },
       contributionContracts: [greeterSpecEntry],
       request,
       grant: { id: 'test-grant', classes: ['read-source'] },
@@ -37,6 +38,7 @@ describe('testkit minimal host — the one public route (S4)', () => {
 
     const again = await runMinimalHost({
       extensionDirs: [exampleDir],
+      extensionExecution: { origin: 'installed', allowTrustedInProcess: true },
       contributionContracts: [greeterSpecEntry],
       request,
       grant: { id: 'test-grant', classes: ['read-source'] },
@@ -48,6 +50,7 @@ describe('testkit minimal host — the one public route (S4)', () => {
     await expect(
       runMinimalHost({
         extensionDirs: [exampleDir],
+        extensionExecution: { origin: 'installed', allowTrustedInProcess: true },
         contributionContracts: [greeterSpecEntry],
         request: { ...request, pin: { providerId: 'org.example/x3-greeter-fancy' } },
         grant: { id: 'deny', classes: [] }, // fancy requests read-source → not granted
@@ -71,6 +74,7 @@ describe('testkit minimal host — the one public route (S4)', () => {
   it('without a pin, an empty grant deterministically falls to the permissionless provider', async () => {
     const run = await runMinimalHost({
       extensionDirs: [exampleDir],
+      extensionExecution: { origin: 'installed', allowTrustedInProcess: true },
       contributionContracts: [greeterSpecEntry],
       request,
       grant: { id: 'deny', classes: [] },
