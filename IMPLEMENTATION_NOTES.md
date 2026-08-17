@@ -6,6 +6,28 @@ overrides a canonical or detailed owner.
 
 ---
 
+## Integrated codec, UI and application verification (2026-08-17)
+
+- Text codecs are installable by dependency closure: JSON/JSONC and CSV/TSV share only their syntax
+  families; INI, XML, YAML and TOML remain independent. Documents, archives, image, audio, video,
+  vector and model providers are separate extension packages, and their indexes do not eagerly
+  import sibling implementations.
+- The format-neutral explorer always has a bounded view: valid NUL-free UTF-8 offers Text and Hex,
+  arbitrary bytes offer Hex. Tabs preserve mounted preview leases while hidden, split groups target
+  subsequent opens independently, and view selection never imports another codec.
+- Settings use one canonical JSON-safe model across hosts. Electron stores it under `userData`
+  through bounded preload IPC, serializes overlapping writes per profile, and commits with an atomic
+  temporary-file rename. The renderer keeps Node disabled and all file access inside granted roots.
+- The final integrated `CI=true; pnpm check` passed: deterministic 40-entry bundle, universal-data
+  budgets, zero-warning lint/format gates, 59 test files / 445 tests, 14 schemas, 16 UI manifests,
+  190 tokens, 29 facility IDs, 16 application/realm cases and a clean 178-file legacy scan.
+- The authoritative handoff is
+  `REPORT_A0_A8_CODECS_UI_APPS_COMPLETION_2026-08-17.md`. It records explicit non-claims for owner
+  promotion, UV wire freeze, heavy optional providers, multi-file companion resolution and final
+  installer/process-launch E2E.
+
+---
+
 ## Assets Capabilities media layer and codec boundaries (2026-08-16)
 
 - The standard data-source registry now owns five presentation-neutral media contracts:

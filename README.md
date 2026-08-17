@@ -53,8 +53,13 @@ requires a separate owner decision. Long-lived double authority with `modkitx` i
   document, media, model/archive, editor and full-codec sets into the headless, PWA, VS Code and
   Electron composition roots. It checks exact inventory isolation, contribution eligibility and
   realm/target selection (codecs execute in Node or workers, never in a renderer/webview). The X3
-  VS Code and Electron packages are still composition adapters rather than independently packaged
-  executable processes; process-launch E2E begins when those distribution shells are added.
+  Electron now has a native-menu/preload/renderer shell with tabs, splits, bounded Text/Hex
+  fallback and portable settings. Independently packaged installer/process-launch E2E remains a
+  distribution task rather than an A‑0…A‑8 blocker.
+- **Completion report:**
+  [`REPORT_A0_A8_CODECS_UI_APPS_COMPLETION_2026-08-17.md`](./REPORT_A0_A8_CODECS_UI_APPS_COMPLETION_2026-08-17.md)
+  records the delivered slices, codec dependency boundaries, application matrix, exact gates and
+  honest next-layer boundaries.
 - Local `pnpm bench` is informational and never blocks work. `pnpm bench:gate` keeps only three
   budgets (core import, bootstrap-closure import, CLI validate) and is reserved for a fixed CI
   runner or dedicated machine. There are no local calibration probes, normalization or mutable
