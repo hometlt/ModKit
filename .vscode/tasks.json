@@ -1,0 +1,86 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Modkit X3: Build",
+      "type": "shell",
+      "command": "pnpm build",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Modkit X3: PWA Server",
+      "type": "shell",
+      "command": "node scripts/debug/pwa-server.mjs --set ${input:extensionSet} --port 4173",
+      "options": { "cwd": "${workspaceFolder}" },
+      "dependsOn": "Modkit X3: Build",
+      "dependsOrder": "sequence",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "modkit-pwa",
+        "pattern": {
+          "regexp": "^(debug-pwa: .*)$",
+          "message": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^debug-pwa: starting",
+          "endsPattern": "^debug-pwa: ready"
+        }
+      }
+    },
+    {
+      "label": "Modkit X3: Build Electron Shell",
+      "type": "shell",
+      "command": "node apps/electron/scripts/build-app.mjs",
+      "options": { "cwd": "${workspaceFolder}" },
+      "dependsOn": "Modkit X3: Build",
+      "dependsOrder": "sequence",
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Modkit X3: Build VS Code Extension",
+      "type": "shell",
+      "command": "node apps/modkit-vscode/scripts/build-extension.mjs",
+      "options": { "cwd": "${workspaceFolder}" },
+      "dependsOn": "Modkit X3: Build",
+      "dependsOrder": "sequence",
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Modkit X3: Application Matrix",
+      "type": "shell",
+      "command": "pnpm apps:check",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "Modkit X3: Full Check",
+      "type": "shell",
+      "command": "pnpm check",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": [],
+      "group": "test"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "extensionSet",
+      "type": "pickString",
+      "description": "Extension set for the PWA debug server",
+      "default": "structured-text",
+      "options": [
+        "structured-text",
+        "documents",
+        "media",
+        "models-and-archives",
+        "editor-and-documents",
+        "full-codecs"
+      ]
+    }
+  ]
+}

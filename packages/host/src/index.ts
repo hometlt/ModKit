@@ -86,3 +86,8 @@ export {
   type HostCommitCoordinatorOptions,
   type ManagedEditSession,
 } from './editing.js'
+export {
+  createHostComposition,
+  type HostComposition,
+  type HostCompositionOptions,
+} from './composition.js'

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/viewer-contribution", "major": 1 },
+  "id": "org.modkitx.ui/video-stage",
+  "displayName": "video stage",
+  "runtimeVariants": [
+    {
+      "variantId": "browser",
+      "entrypoint": "./dist/video/index.js",
+      "target": { "environments": ["browser-main"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "kind": "stage",
+    "requiresTraits": [{ "id": "video.streams", "states": ["available"] }],
+    "consumesDataSources": [{ "contract": "common.view/video-media-source", "major": 1 }],
+    "priority": 370,
+    "singletonGroup": "center-stage"
+  }
+}

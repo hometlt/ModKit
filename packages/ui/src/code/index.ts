@@ -57,14 +57,18 @@ export const boundedTextViewer: ViewerModule = defineViewerModule({
     if (lease === undefined) throw new TypeError('bounded text binding is unavailable')
     scope.lease(lease)
     const model = new BoundedTextModel(lease.value as TextDataSource)
-    const toolbar = element(root, 'div', { className: 'modkit-viewer__toolbar', role: 'search' })
+    const toolbar = element(root, 'div', {
+      className: 'modkit-viewer__toolbar',
+      role: 'search',
+      part: 'viewer.toolbar',
+    })
     const search = element(toolbar, 'input') as HTMLInputElement
     search.type = 'search'
     search.setAttribute('aria-label', 'Search text')
     const searchButton = element(toolbar, 'button', { text: 'Search' }) as HTMLButtonElement
     searchButton.type = 'button'
-    const status = element(toolbar, 'output', { text: 'Ready' })
-    const content = element(root, 'pre', { className: 'modkit-viewer__code' })
+    const status = element(toolbar, 'output', { text: 'Ready', part: 'viewer.status' })
+    const content = element(root, 'pre', { className: 'modkit-viewer__code', part: 'text' })
     content.tabIndex = 0
     content.setAttribute('aria-label', 'Text content')
     setViewerText(content, await model.load(scope.signal), MAX_MATERIALIZED_BYTES)

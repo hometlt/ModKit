@@ -18,10 +18,16 @@ import {
   type Diagnostic,
 } from '@modkitx-x3/core'
 import { contributionManifestSchema } from '../schemas/contribution-manifest.js'
-import { snapshotJsonWireData, snapshotJsonWireObject, validateWithSchema } from './validate.js'
+import {
+  snapshotJsonWireData,
+  snapshotJsonWireObject,
+  validateWithSchema,
+  type PrecompiledSchemaValidator,
+} from './validate.js'
 import type { ContributionManifestV1 } from './contribution-types.js'
 import type { ContributionManifestV1Wire } from './contribution-types.js'
 import { contributionId, type JsonValue } from '../asset-capabilities/types.js'
+import { hostFacilityDiagnostics } from '../host-profile.js'
 
 export interface SpecModuleAbiDeclaration {
   readonly export: string
@@ -78,6 +84,8 @@ export interface SpecSchemaEntry {
   readonly contract: ContractId
   readonly major: number
   readonly schema: object
+  /** Required for open schemas that are not part of the platform's generated validator set. */
+  readonly validator?: PrecompiledSchemaValidator
   /** Optional contract-owned semantics run before a full inventory registration exists. */
   readonly validateSemantics?: SpecSemanticValidator
   /** Omitted for schema-only registrations that remain inspectable but not inventory-ready. */
@@ -175,6 +183,7 @@ export function createSpecSchemaRegistry(entries: readonly SpecSchemaEntry[]): S
     }
     const coordinate = validatedCoordinate(authoredEntry.contract, authoredEntry.major)
     const schema = authoredEntry.schema
+    const validator = authoredEntry.validator
     const validateSemantics = authoredEntry.validateSemantics
     const authoredRegistration = authoredEntry.registration as unknown
     let registration: SpecInventoryRegistration | undefined
@@ -226,6 +235,11 @@ export function createSpecSchemaRegistry(entries: readonly SpecSchemaEntry[]): S
       contract: coordinate.contract,
       major: coordinate.major,
       schema: snapshotJsonWireObject(schema),
+      ...(validator === undefined
+        ? {}
+        : typeof validator === 'function'
+          ? { validator }
+          : invalidRegistration('precompiled schema validator must be a function', coordinate)),
       ...(validateSemantics === undefined
         ? {}
         : typeof validateSemantics === 'function'
@@ -308,6 +322,17 @@ function envelopeRangeDiagnostics(manifest: ContributionManifestV1): Diagnostic[
     }
   })
   return diagnostics
+}
+
+function runtimeFacilityDiagnostics(manifest: ContributionManifestV1): Diagnostic[] {
+  return (manifest.runtimeVariants ?? []).flatMap((variant, index) =>
+    hostFacilityDiagnostics(variant.target.requiredHostCapabilities, [
+      'runtimeVariants',
+      index,
+      'target',
+      'requiredHostCapabilities',
+    ]),
+  )
 }
 
 async function runSemanticValidator(
@@ -410,6 +435,20 @@ export async function validateContributionManifest(
     }
   }
   const manifest = normalizeContributionManifest(candidate as ContributionManifestV1Wire)
+  const manifestDiagnostics = [
+    ...duplicateVariantDiagnostics(manifest),
+    ...envelopeRangeDiagnostics(manifest),
+    ...runtimeFacilityDiagnostics(manifest),
+  ]
+  if (hasErrors(manifestDiagnostics)) {
+    return {
+      manifest,
+      specState: 'invalid',
+      inventoryEligible: false,
+      activationEligible: false,
+      diagnostics: [...envelopeDiagnostics, ...manifestDiagnostics],
+    }
+  }
   const registration = registry.getEntry(manifest.contract.id, manifest.contract.major)
   if (registration === undefined) {
     return {
@@ -419,6 +458,7 @@ export async function validateContributionManifest(
       activationEligible: false,
       diagnostics: [
         ...envelopeDiagnostics,
+        ...manifestDiagnostics,
         diagnostic(
           'warning',
           'x3.sdk/unknown-contract',
@@ -429,7 +469,12 @@ export async function validateContributionManifest(
     }
   }
   const specDiagnostics = (
-    await validateWithSchema(registration.schema, manifest.spec, 'x3.sdk/invalid-spec')
+    await validateWithSchema(
+      registration.schema,
+      manifest.spec,
+      'x3.sdk/invalid-spec',
+      registration.validator,
+    )
   ).map(d => ({ ...d, path: ['spec', ...(d.path ?? [])] }))
   if (hasErrors(specDiagnostics)) {
     return {
@@ -437,12 +482,11 @@ export async function validateContributionManifest(
       specState: 'invalid',
       inventoryEligible: false,
       activationEligible: false,
-      diagnostics: [...envelopeDiagnostics, ...specDiagnostics],
+      diagnostics: [...envelopeDiagnostics, ...manifestDiagnostics, ...specDiagnostics],
     }
   }
   const semanticDiagnostics = [
-    ...duplicateVariantDiagnostics(manifest),
-    ...envelopeRangeDiagnostics(manifest),
+    ...manifestDiagnostics,
     ...(await runSemanticValidator(registration.validateSemantics, manifest)),
   ]
   if (hasErrors(semanticDiagnostics)) {

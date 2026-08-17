@@ -52,15 +52,72 @@
       "types": "./dist/editor/index.d.ts",
       "default": "./dist/editor/index.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./tokens": {
+      "types": "./dist/tokens/index.d.ts",
+      "default": "./dist/tokens/index.js"
+    },
+    "./styles/modkit-ui.css": "./styles/modkit-ui.css",
+    "./search": {
+      "types": "./dist/search/matcher.d.ts",
+      "default": "./dist/search/matcher.js"
+    },
+    "./primitives": {
+      "types": "./dist/primitives/search-field.d.ts",
+      "default": "./dist/primitives/search-field.js"
+    },
+    "./metadata": {
+      "types": "./dist/metadata/index.d.ts",
+      "default": "./dist/metadata/index.js"
+    },
+    "./image": {
+      "types": "./dist/image/index.d.ts",
+      "default": "./dist/image/index.js"
+    },
+    "./audio": {
+      "types": "./dist/audio/index.d.ts",
+      "default": "./dist/audio/index.js"
+    },
+    "./vector": {
+      "types": "./dist/vector/index.d.ts",
+      "default": "./dist/vector/index.js"
+    },
+    "./video": {
+      "types": "./dist/video/index.d.ts",
+      "default": "./dist/video/index.js"
+    },
+    "./model": {
+      "types": "./dist/model/index.d.ts",
+      "default": "./dist/model/index.js"
+    },
+    "./shell": {
+      "types": "./dist/shell/chrome.d.ts",
+      "default": "./dist/shell/chrome.js"
+    },
+    "./card": {
+      "types": "./dist/card/index.d.ts",
+      "default": "./dist/card/index.js"
+    },
+    "./graph": {
+      "types": "./dist/graph/index.d.ts",
+      "default": "./dist/graph/index.js"
+    },
+    "./workbench": {
+      "types": "./dist/workbench/index.d.ts",
+      "default": "./dist/workbench/index.js"
+    }
   },
   "files": [
     "contributions",
-    "dist"
+    "dist",
+    "generated",
+    "styles"
   ],
   "scripts": {
     "manifests:emit": "node scripts/generate-manifests.mjs",
-    "manifests:check": "node scripts/generate-manifests.mjs --check"
+    "manifests:check": "node scripts/generate-manifests.mjs --check",
+    "tokens:emit": "node scripts/generate-tokens.mjs",
+    "tokens:check": "node scripts/generate-tokens.mjs --check"
   },
   "dependencies": {
     "@modkitx-x3/core": "workspace:*",

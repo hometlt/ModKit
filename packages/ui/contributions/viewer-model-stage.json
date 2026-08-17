@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/viewer-contribution", "major": 1 },
+  "id": "org.modkitx.ui/model-stage",
+  "displayName": "model stage",
+  "runtimeVariants": [
+    {
+      "variantId": "browser",
+      "entrypoint": "./dist/model/index.js",
+      "target": { "environments": ["browser-main"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "kind": "stage",
+    "requiresTraits": [{ "id": "model.geometry", "states": ["available"] }],
+    "consumesDataSources": [{ "contract": "common.view/model-scene-source", "major": 1 }],
+    "priority": 350,
+    "singletonGroup": "center-stage"
+  }
+}

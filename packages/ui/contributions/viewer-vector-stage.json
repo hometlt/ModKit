@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/viewer-contribution", "major": 1 },
+  "id": "org.modkitx.ui/vector-stage",
+  "displayName": "vector stage",
+  "runtimeVariants": [
+    {
+      "variantId": "browser",
+      "entrypoint": "./dist/vector/index.js",
+      "target": { "environments": ["browser-main"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "kind": "stage",
+    "requiresTraits": [{ "id": "vector.scene", "states": ["available"] }],
+    "consumesDataSources": [{ "contract": "common.view/vector-scene-source", "major": 1 }],
+    "priority": 350,
+    "singletonGroup": "center-stage"
+  }
+}

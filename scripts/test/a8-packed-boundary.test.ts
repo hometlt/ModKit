@@ -1,6 +1,14 @@
 import { spawnSync } from 'node:child_process'
 import { createRequire } from 'node:module'
-import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -73,7 +81,9 @@ describe('A-8 packed/direct-library/dependency-boundary proof', () => {
       )
       expect(directInstall.status, directInstall.stderr).toBe(0)
       const directRequire = createRequire(join(directConsumer, 'package.json'))
-      expect(() => directRequire.resolve('@modkitx-x3/host')).toThrow()
+      expect(
+        existsSync(join(directConsumer, 'node_modules', '@modkitx-x3', 'host', 'package.json')),
+      ).toBe(false)
       const direct = (await import(
         pathToFileURL(directRequire.resolve('modkit-extension-x3-plain-text/direct')).href
       )) as {

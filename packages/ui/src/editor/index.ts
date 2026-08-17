@@ -86,17 +86,22 @@ export function createTextEditorModule(options: TextEditorModuleOptions = {}): E
       if (lease === undefined) throw new TypeError('text editor data-source binding is unavailable')
       scope.lease(lease)
 
-      const toolbar = element(root, 'div', { className: 'modkit-editor__toolbar', role: 'toolbar' })
+      const toolbar = element(root, 'div', {
+        className: 'modkit-editor__toolbar',
+        role: 'toolbar',
+        part: 'editor.toolbar',
+      })
       toolbar.setAttribute('aria-label', 'Editing actions')
       const save = element(toolbar, 'button', { text: 'Save' }) as HTMLButtonElement
       const undo = element(toolbar, 'button', { text: 'Undo' }) as HTMLButtonElement
       const redo = element(toolbar, 'button', { text: 'Redo' }) as HTMLButtonElement
-      const status = element(toolbar, 'output', { text: 'Ready' })
+      const status = element(toolbar, 'output', { text: 'Ready', part: 'viewer.status' })
       save.type = undo.type = redo.type = 'button'
       undo.disabled = true
       redo.disabled = true
       const input = element(root, 'textarea', {
         className: 'modkit-editor__text',
+        part: 'editor.text',
       }) as HTMLTextAreaElement
       input.setAttribute('aria-label', 'Editable text')
       input.spellcheck = false

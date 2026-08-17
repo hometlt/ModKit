@@ -4,6 +4,7 @@ import {
   createSpecSchemaRegistry,
   validateContributionManifest,
   type ContributionManifestV1Wire,
+  type PrecompiledSchemaValidator,
 } from '@modkitx-x3/sdk'
 
 // Lab demo contract (used through S3/S4): x3.demo/greeter@1.
@@ -13,11 +14,34 @@ const greeterSpecSchema = {
   properties: { greeting: { type: 'string', minLength: 1 } },
 } as const
 
+const greeterSpecValidator = ((value: unknown) => {
+  const valid =
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.keys(value).length === 1 &&
+    typeof (value as { readonly greeting?: unknown }).greeting === 'string' &&
+    (value as { readonly greeting: string }).greeting.length > 0
+  greeterSpecValidator.errors = valid
+    ? null
+    : [
+        {
+          instancePath: '/greeting',
+          keyword: 'minLength',
+          message: 'must be a non-empty string and the only property',
+          params: { limit: 1 },
+        },
+      ]
+  return valid
+}) as PrecompiledSchemaValidator
+greeterSpecValidator.errors = null
+
 const registry = createSpecSchemaRegistry([
   {
     contract: contractId('x3.demo/greeter'),
     major: 1,
     schema: greeterSpecSchema,
+    validator: greeterSpecValidator,
     registration: {
       mode: 'executable',
       project: () => [],
@@ -72,6 +96,32 @@ const convertedDds: ContributionManifestV1Wire = {
 }
 
 describe('ContributionManifestV1 envelope (27 §6 + §0.5)', () => {
+  it('rejects unknown unqualified facilities but preserves extension-owned qualified IDs', async () => {
+    const withFacilities = (
+      requiredHostCapabilities: readonly string[],
+    ): ContributionManifestV1Wire => ({
+      ...greeterContribution,
+      runtimeVariants: (greeterContribution.runtimeVariants ?? []).map(variant => ({
+        ...variant,
+        target: { ...variant.target, requiredHostCapabilities },
+      })),
+    })
+    const invalid = withFacilities(['custom.broker'])
+    const invalidResult = await validateContributionManifest(invalid, registry)
+    expect(invalidResult.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'x3.sdk/unknown-host-facility', severity: 'error' }),
+      ]),
+    )
+
+    const extensionOwned = withFacilities(['example.vendor/custom-broker'])
+    const validResult = await validateContributionManifest(extensionOwned, registry)
+    expect(validResult.specState).toBe('validated')
+    expect(validResult.diagnostics).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'x3.sdk/unknown-host-facility' })]),
+    )
+  })
+
   it('validates a known contract strictly (spec schema selected by contract)', async () => {
     const result = await validateContributionManifest(greeterContribution, registry)
     expect(result.specState).toBe('validated')

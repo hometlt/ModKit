@@ -12,21 +12,70 @@ import type {
   ViewerModule,
   ViewerSources,
 } from '@modkitx-x3/sdk'
+import { setPart, setState, type PartName, type StateName } from '../parts.js'
+
+export {
+  setPart,
+  setState,
+  auditParts,
+  PARTS,
+  STATES,
+  PART_ATTRIBUTE,
+  STATE_ATTRIBUTE,
+} from '../parts.js'
+export type { PartName, StateName, PartAudit } from '../parts.js'
 
 export const VIEWER_CSP = Object.freeze({
   defaultSrc: "'none'",
   scriptSrc: "'self'",
   styleSrc: "'self'",
+  // C1 in ADR-UI-001. `style-src-attr` does not inherit from `style-src`, so the ban on the
+  // `style` attribute has to be stated here or it is not enforced at all. Components set dynamic
+  // values through CSSOM (`style.setProperty`), which this does not block.
+  styleSrcAttr: "'none'",
   imgSrc: "'self' blob: data:",
+  // The audio and video stages hand a codec-owned encoded representation to the platform player
+  // as a blob; without this the policy falls through to default-src 'none' and playback dies.
+  mediaSrc: "'self' blob:",
   fontSrc: "'self'",
   connectSrc: "'self'",
   workerSrc: "'self' blob:",
   frameSrc: "'none'",
 })
 
-export const VIEWER_CSP_TEXT = Object.entries(VIEWER_CSP)
-  .map(([name, value]) => `${name.replace(/[A-Z]/gu, match => `-${match.toLowerCase()}`)} ${value}`)
-  .join('; ')
+/**
+ * Policy for a host that embeds the trusted in-process code editor.
+ *
+ * Measured, not assumed: Monaco creates and renders under the strict policy, but its runtime
+ * injected stylesheet (~140 KB of theme, token and decoration rules) is refused, leaving the
+ * editor unthemed — transparent background, no token colours. It needs `style-src 'unsafe-inline'`.
+ * It does **not** need `script-src 'unsafe-eval'`: the editor constructs fine without it.
+ *
+ * Use this only for the application host that ships the editor. Untrusted third-party viewers keep
+ * `VIEWER_CSP` and run in a restricted frame (BRIEF-13C §6), so the relaxation does not reach them.
+ */
+export const VIEWER_CSP_TRUSTED_EDITOR = Object.freeze({
+  ...VIEWER_CSP,
+  styleSrc: "'self' 'unsafe-inline'",
+  // Measured: the editor renders each visible line as markup carrying a `style` attribute with its
+  // computed `top` and `height`. Under `style-src-attr 'none'` those attributes are refused, the
+  // lines never reach their positions, and the text visibly jumps as the view scrolls. This is the
+  // C1 exclusion the ADR anticipates for a trusted in-process editor, scoped to that host only.
+  styleSrcAttr: "'unsafe-inline'",
+  // The editor's icon font is inlined as a data URI by the bundler; `font-src 'self'` alone
+  // rejects it and the glyphs fall back to tofu.
+  fontSrc: "'self' data:",
+})
+
+const policyText = (policy: Readonly<Record<string, string>>): string =>
+  Object.entries(policy)
+    .map(
+      ([name, value]) => `${name.replace(/[A-Z]/gu, match => `-${match.toLowerCase()}`)} ${value}`,
+    )
+    .join('; ')
+
+export const VIEWER_CSP_TEXT = policyText(VIEWER_CSP)
+export const VIEWER_CSP_TRUSTED_EDITOR_TEXT = policyText(VIEWER_CSP_TRUSTED_EDITOR)
 
 const HOSTILE_TEXT =
   /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/gu
@@ -66,6 +115,7 @@ export function createSurface(container: unknown, label: string): HTMLElement {
   root.setAttribute('role', 'region')
   root.setAttribute('aria-label', label)
   root.dataset['modkitViewer'] = label
+  setPart(root, 'viewer')
   host.replaceChildren(root)
   return root
 }
@@ -73,12 +123,21 @@ export function createSurface(container: unknown, label: string): HTMLElement {
 export function element(
   parent: HTMLElement,
   tag: keyof HTMLElementTagNameMap,
-  options: { readonly className?: string; readonly role?: string; readonly text?: unknown } = {},
+  options: {
+    readonly className?: string
+    readonly role?: string
+    readonly text?: unknown
+    /** Public styling hook; see `../parts.ts`. */
+    readonly part?: PartName
+    readonly state?: readonly StateName[]
+  } = {},
 ): HTMLElement {
   const node = parent.ownerDocument.createElement(tag)
   if (options.className !== undefined) node.className = options.className
   if (options.role !== undefined) node.setAttribute('role', options.role)
   if (options.text !== undefined) setViewerText(node, options.text)
+  if (options.part !== undefined) setPart(node, options.part)
+  if (options.state !== undefined) setState(node, options.state)
   parent.append(node)
   return node
 }

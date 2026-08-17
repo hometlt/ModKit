@@ -25,7 +25,50 @@ export {
   type StandardDataSourceId,
   type StandardDataSourceRef,
 } from './data-source-ids.js'
-import type { AssetDiagnostic, AssetOperationId, AssetSourceRef, RevisionId } from './types.js'
+import type {
+  AssetDiagnostic,
+  AssetOperationId,
+  AssetSourceRef,
+  JsonValue,
+  RevisionId,
+} from './types.js'
+import type {
+  AudioMediaSource,
+  ModelSceneSource,
+  RasterImageSource,
+  VectorSceneSource,
+  VideoMediaSource,
+} from './media-data-sources.js'
+export type {
+  AudioMediaInfo,
+  AudioMediaSource,
+  AudioPcmBlock,
+  AudioPcmRequest,
+  AudioTrackInfo,
+  EncodedMediaDescriptor,
+  EncodedMediaSource,
+  ModelBounds,
+  ModelMesh,
+  ModelNode,
+  ModelPrimitive,
+  ModelPrimitiveRequest,
+  ModelPrimitiveTopology,
+  ModelSceneInfo,
+  ModelSceneSource,
+  RasterImageInfo,
+  RasterImageSource,
+  RasterPixelFormat,
+  RasterRegion,
+  RasterRegionRequest,
+  VectorSceneDocument,
+  VectorSceneInfo,
+  VectorSceneSource,
+  VideoFrame,
+  VideoFrameRequest,
+  VideoMediaInfo,
+  VideoMediaSource,
+  VideoTrackInfo,
+} from './media-data-sources.js'
 
 export interface Lease<T> {
   readonly value: T
@@ -222,6 +265,109 @@ export interface NamespaceEntrySource {
   openEntry(entryId: string, signal?: AbortSignal): Promise<Lease<AssetSourceRef>>
 }
 
+export interface RelationGraphNode {
+  readonly id: string
+  readonly label: string
+  readonly type: string
+}
+
+export interface RelationGraphEdge {
+  readonly from: string
+  readonly to: string
+  readonly role?: string
+  /** The target is a typed placeholder for a reference the producer could not resolve. */
+  readonly dead?: boolean
+}
+
+export interface RelationGraphTypeBucket {
+  readonly id: string
+  readonly label: string
+  /** Count over the complete logical graph, never merely the currently loaded page. */
+  readonly count: number
+  readonly tone: number
+}
+
+export type RelationGraphCompleteness = 'complete' | 'capped' | 'partial'
+
+export interface RelationGraphSummary {
+  /** Stable for every page served from this source snapshot. */
+  readonly snapshotId: string
+  readonly totalNodes: number
+  readonly totalEdges: number
+  readonly types: readonly RelationGraphTypeBucket[]
+  readonly completeness: RelationGraphCompleteness
+  readonly reason?: string
+}
+
+/**
+ * Presentation-neutral, independently pageable graph facts. Consumers must use summary counts for
+ * type filters and disclose any producer or consumer cap instead of treating a page as complete.
+ */
+export interface RelationGraphSource {
+  summary(signal?: AbortSignal): Promise<RelationGraphSummary>
+  nodes(page: PageRequest, signal?: AbortSignal): Promise<Page<RelationGraphNode>>
+  edges(page: PageRequest, signal?: AbortSignal): Promise<Page<RelationGraphEdge>>
+}
+
+export interface SubjectFactProvenance {
+  readonly label: string
+  readonly source?: AssetSourceRef
+  readonly range?: SourceSpan
+  readonly semanticPath?: readonly string[]
+}
+
+export interface SubjectFactsIdentity {
+  readonly subjectId: string
+  readonly label: string
+  readonly kind: string
+  readonly type?: string
+  readonly origins: readonly SubjectFactProvenance[]
+}
+
+export interface SubjectFactGroup {
+  readonly id: string
+  readonly label: string
+  /** Count over the complete group, not the current page. */
+  readonly factCount: number
+}
+
+export interface SubjectFact {
+  readonly id: string
+  readonly label: string
+  readonly value: JsonValue
+  readonly provenance: readonly SubjectFactProvenance[]
+}
+
+export interface RelatedSubjectFact {
+  readonly role: string
+  readonly subjectId: string
+  readonly label: string
+  readonly kind: string
+  readonly provenance?: readonly SubjectFactProvenance[]
+}
+
+export interface SubjectPreviewResource {
+  readonly source: AssetSourceRef
+  readonly mediaType?: string
+  readonly label?: string
+}
+
+export interface SubjectFactsSummary {
+  readonly snapshotId: string
+  readonly identity: SubjectFactsIdentity
+  readonly groupCount: number
+  readonly relationCount: number
+  readonly preview?: SubjectPreviewResource
+}
+
+/** Facts only. Hosts own the mapping to cards and extensions may provide another projection. */
+export interface SubjectFactsSource {
+  summary(signal?: AbortSignal): Promise<SubjectFactsSummary>
+  groups(page: PageRequest, signal?: AbortSignal): Promise<Page<SubjectFactGroup>>
+  facts(groupId: string, page: PageRequest, signal?: AbortSignal): Promise<Page<SubjectFact>>
+  relations(page: PageRequest, signal?: AbortSignal): Promise<Page<RelatedSubjectFact>>
+}
+
 /** Open compile-time registry. Extensions may augment it without changing host code. */
 export interface DataSourceContractMap {
   'common.view/text-data-source': { 1: TextDataSource }
@@ -230,6 +376,13 @@ export interface DataSourceContractMap {
   'common.view/table-data-source': { 1: TableDataSource }
   'common.view/transport-source': { 1: TransportSource }
   'common.view/namespace-entry-source': { 1: NamespaceEntrySource }
+  'common.view/raster-image-source': { 1: RasterImageSource }
+  'common.view/vector-scene-source': { 1: VectorSceneSource }
+  'common.view/audio-media-source': { 1: AudioMediaSource }
+  'common.view/video-media-source': { 1: VideoMediaSource }
+  'common.view/model-scene-source': { 1: ModelSceneSource }
+  'common.view/relation-graph-source': { 1: RelationGraphSource }
+  'common.view/subject-facts-source': { 1: SubjectFactsSource }
 }
 
 export type KnownDataSourceId = keyof DataSourceContractMap

@@ -13,6 +13,7 @@ import {
   type ContributionContractRegistration,
   type ContributionManifestV1Wire,
   type DataSourceContributionSpecV1,
+  type PrecompiledSchemaValidator,
   type ServiceProviderContributionSpecV1Wire,
   type SpecSchemaEntry,
   type ViewerContributionSpecV1Wire,
@@ -99,6 +100,46 @@ const dataSourceSpec: DataSourceContributionSpecV1 = {
   schema: { $ref: './schemas/raster-source.v2.schema.json' },
   conformanceProfile: 'org.example/raster-source-v2',
 }
+
+const emptyObjectValidator = ((value: unknown) => {
+  const valid =
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.keys(value).length === 0
+  emptyObjectValidator.errors = valid
+    ? null
+    : [
+        {
+          instancePath: '/',
+          keyword: 'additionalProperties',
+          message: 'must not have additional properties',
+          params: {},
+        },
+      ]
+  return valid
+}) as PrecompiledSchemaValidator
+emptyObjectValidator.errors = null
+
+const asyncOkValidator = (async (value: unknown) => {
+  const valid =
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.keys(value).length === 1 &&
+    (value as { readonly ok?: unknown }).ok === true
+  if (valid) return true
+  throw Object.assign(new Error('async schema validation failed'), {
+    errors: [
+      {
+        instancePath: '/ok',
+        keyword: 'const',
+        message: 'must be equal to constant',
+        params: { allowedValue: true },
+      },
+    ],
+  })
+}) as PrecompiledSchemaValidator
 
 function manifest<T>(
   contract: string,
@@ -443,6 +484,7 @@ describe('A-1 contribution spec schemas', () => {
         contract: CODEC_CONTRIBUTION_CONTRACT,
         major: 1,
         schema: { type: 'object' },
+        validator: emptyObjectValidator,
         validateSemantics: (() => 'ok') as unknown as NonNullable<
           SpecSchemaEntry['validateSemantics']
         >,
@@ -603,7 +645,12 @@ describe('A-1 contribution spec schemas', () => {
       additionalProperties: false,
     }
     const snapshotted = createSpecSchemaRegistry([
-      { contract: CODEC_CONTRIBUTION_CONTRACT, major: 1, schema: mutableSchema },
+      {
+        contract: CODEC_CONTRIBUTION_CONTRACT,
+        major: 1,
+        schema: mutableSchema,
+        validator: emptyObjectValidator,
+      },
     ])
     mutableSchema.additionalProperties = true
     const result = await validateContributionManifest(
@@ -633,7 +680,7 @@ describe('A-1 contribution spec schemas', () => {
     ).toBe(true)
   })
 
-  it('awaits async Ajv schemas instead of treating their Promise as successful validation', async () => {
+  it('awaits async precompiled validators instead of treating their Promise as success', async () => {
     const asyncRegistry = createSpecSchemaRegistry([
       {
         contract: CODEC_CONTRIBUTION_CONTRACT,
@@ -645,6 +692,7 @@ describe('A-1 contribution spec schemas', () => {
           required: ['ok'],
           properties: { ok: { const: true } },
         },
+        validator: asyncOkValidator,
       },
     ])
     const valid = await validateContributionManifest(

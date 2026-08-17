@@ -1,62 +1,32 @@
 /**
- * Runtime validation: the same schema consts compiled with Ajv (2020-12 dialect).
- * Justification for the single external dependency: PORTED.md (a hand-written JSON
- * Schema validator would itself be a second, drifting authority).
+ * CSP-safe runtime validation over build-time AJV standalone validators.
  *
- * Ajv's ~250-file CJS graph loads lazily through a browser-safe dynamic import on the
- * first validation, which is why the validation API is async: importing the sdk stays
- * cheap (the static import cost ~700 ms on the reference machine, bench C3), and pure
- * schema/type consumers never pay for the validator.
+ * The JSON Schema const remains the single wire authority. `scripts/emit-schemas.mjs` compiles
+ * every platform-owned schema and drift-checks both the published JSON and generated validator
+ * source. Runtime code never imports AJV's compiler and never relies on `eval`/`new Function`.
  */
 
-import { diagnostic, ModkitError, type Diagnostic } from '@modkitx-x3/core'
-import type { ErrorObject } from 'ajv/dist/2020.js'
+import { canonicalJsonStringify, diagnostic, ModkitError, type Diagnostic } from '@modkitx-x3/core'
+import { PRECOMPILED_SCHEMA_VALIDATORS } from './validators.generated.js'
 
-type ValidateFn = ((value: unknown) => boolean | Promise<unknown>) & {
-  errors?: ErrorObject[] | null
-}
-interface AjvLike {
-  compile(schema: object): ValidateFn
-}
-type AjvConstructor = new (options: {
-  readonly allErrors: boolean
-  readonly strict: boolean
-  readonly addUsedSchema: boolean
-}) => AjvLike
-
-let ajvConstructorPromise: Promise<AjvConstructor> | undefined
-const cache = new Map<string, Promise<ValidateFn>>()
-const MAX_SCHEMA_CACHE_ENTRIES = 256
-
-async function ajvConstructor(): Promise<AjvConstructor> {
-  ajvConstructorPromise ??= import('ajv/dist/2020.js').then(
-    mod => mod.Ajv2020 as unknown as AjvConstructor,
-  )
-  return ajvConstructorPromise
+export interface JsonSchemaEvaluationError {
+  readonly instancePath: string
+  readonly keyword: string
+  readonly message?: string
+  readonly params: Record<string, unknown>
 }
 
-async function compiled(schema: object, cacheKey: string): Promise<ValidateFn> {
-  const cached = cache.get(cacheKey)
-  if (cached !== undefined) return cached
-  const compiling = ajvConstructor().then(Ajv => {
-    // One compiler per schema prevents duplicate `$id` state from leaking across registries.
-    const instance = new Ajv({ allErrors: true, strict: true, addUsedSchema: false })
-    return instance.compile(schema)
-  })
-  cache.set(cacheKey, compiling)
-  if (cache.size > MAX_SCHEMA_CACHE_ENTRIES) {
-    const oldest = cache.keys().next().value as string | undefined
-    if (oldest !== undefined) cache.delete(oldest)
-  }
-  try {
-    return await compiling
-  } catch (error) {
-    cache.delete(cacheKey)
-    throw error
-  }
+/** A validator emitted by trusted build tooling and paired with one immutable schema authority. */
+export type PrecompiledSchemaValidator = ((value: unknown) => boolean | Promise<unknown>) & {
+  errors?: readonly JsonSchemaEvaluationError[] | null
 }
 
-function toPath(error: ErrorObject): (string | number)[] {
+const platformValidators = PRECOMPILED_SCHEMA_VALIDATORS as ReadonlyMap<
+  string,
+  PrecompiledSchemaValidator
+>
+
+function toPath(error: JsonSchemaEvaluationError): (string | number)[] {
   return error.instancePath
     .split('/')
     .filter(part => part.length > 0)
@@ -66,7 +36,7 @@ function toPath(error: ErrorObject): (string | number)[] {
 }
 
 function schemaDiagnostics(
-  errors: readonly ErrorObject[] | null | undefined,
+  errors: readonly JsonSchemaEvaluationError[] | null | undefined,
   code: string,
 ): Diagnostic[] {
   return (errors ?? []).map(error =>
@@ -303,6 +273,7 @@ export async function validateWithSchema(
   schema: object,
   value: unknown,
   code = 'x3.sdk/schema-violation',
+  suppliedValidator?: PrecompiledSchemaValidator,
 ): Promise<Diagnostic[]> {
   let valueSnapshot: JsonSnapshotResult
   try {
@@ -318,7 +289,7 @@ export async function validateWithSchema(
   let schemaCacheKey: string
   try {
     schemaSnapshot = snapshotJsonWireObject(schema)
-    schemaCacheKey = JSON.stringify(schemaSnapshot)
+    schemaCacheKey = canonicalJsonStringify(schemaSnapshot)
   } catch (error) {
     return [
       diagnostic(
@@ -330,17 +301,15 @@ export async function validateWithSchema(
       ),
     ]
   }
-  let validate: ValidateFn
-  try {
-    validate = await compiled(schemaSnapshot, schemaCacheKey)
-  } catch (error) {
+  const validate = suppliedValidator ?? platformValidators.get(schemaCacheKey)
+  if (validate === undefined) {
     return [
       diagnostic(
         'error',
         'x3.sdk/invalid-schema-authority',
-        'the selected JSON Schema could not be compiled',
+        'the selected JSON Schema has no CSP-safe precompiled validator',
         [],
-        { error: error instanceof Error ? error.message : String(error) },
+        { reason: 'precompiled-validator-missing' },
       ),
     ]
   }
@@ -352,17 +321,19 @@ export async function validateWithSchema(
     }
     if (result) return []
   } catch (error) {
-    const asyncErrors = (error as { errors?: ErrorObject[] | null } | null)?.errors
+    const asyncErrors = (error as { errors?: readonly JsonSchemaEvaluationError[] | null } | null)
+      ?.errors
     if (asyncErrors !== undefined && asyncErrors !== null) {
       return schemaDiagnostics(asyncErrors, code)
     }
+    const reason = error instanceof Error ? error.message : String(error)
     return [
       diagnostic(
         'error',
         'x3.sdk/schema-evaluation-failed',
-        'the selected JSON Schema failed while evaluating inert wire data',
+        `the selected JSON Schema failed while evaluating inert wire data: ${reason}`,
         [],
-        { error: error instanceof Error ? error.message : String(error) },
+        { error: reason },
       ),
     ]
   }

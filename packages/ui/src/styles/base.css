@@ -1,0 +1,228 @@
+/* Authored. Reset and base element styling. Every colour comes from a token — no literals. */
+
+@layer mk.reset {
+  .modkit-viewer *,
+  .modkit-viewer *::before,
+  .modkit-viewer *::after {
+    box-sizing: border-box;
+  }
+
+  .modkit-viewer :where(ul, ol) {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .modkit-viewer :where(h1, h2, h3, h4, p, figure) {
+    margin: 0;
+  }
+
+  .modkit-viewer :where(button) {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: 0;
+  }
+}
+
+@layer mk.base {
+  [data-mk-part='viewer'] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--mk-space-2);
+    min-width: 0;
+    height: 100%;
+    padding: var(--mk-panel-padding);
+    overflow: auto;
+    color: var(--mk-color-fg);
+    background: var(--mk-color-surface);
+    font-family: var(--mk-font-sans);
+    font-size: var(--mk-font-size-md);
+    line-height: var(--mk-line-normal);
+  }
+
+  /* The surface is focusable for keyboard entry; it must not paint a ring on mouse focus. */
+  [data-mk-part='viewer']:focus {
+    outline: none;
+  }
+
+  .modkit-viewer :where(a, button, input, select, textarea, [tabindex]):focus-visible,
+  [data-mk-part='viewer']:focus-visible {
+    outline: 2px solid var(--mk-color-focus);
+    outline-offset: -1px;
+  }
+
+  /*
+   * One base for every text-entry control. Before this, inputs were styled ad hoc per component
+   * (or not at all) and inherited UA colours, which is how a light theme ended up with dark fields.
+   * Components may override metrics through tokens; they must not restate colours.
+   */
+  .modkit-viewer :where(input, select, textarea),
+  [data-mk-part='search.input'],
+  [data-mk-part='hex.offset-input'],
+  [data-mk-part='card.locale'],
+  [data-mk-part='viewpicker.select'] {
+    min-width: 0;
+    height: var(--mk-size-control);
+    padding-inline: var(--mk-space-2);
+    color: var(--mk-color-fg);
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-md);
+    background: var(--mk-color-sunken);
+    font: inherit;
+    font-size: var(--mk-font-size-sm);
+  }
+
+  .modkit-viewer :where(textarea) {
+    height: auto;
+    padding-block: var(--mk-space-2);
+    line-height: var(--mk-line-normal);
+  }
+
+  .modkit-viewer :where(input, select, textarea):hover:not(:disabled) {
+    border-color: var(--mk-color-border-strong);
+  }
+
+  .modkit-viewer :where(input, select, textarea):focus-visible {
+    border-color: var(--mk-color-focus);
+    outline: none;
+    box-shadow: var(--mk-shadow-focus-ring);
+  }
+
+  .modkit-viewer :where(input, select, textarea):disabled {
+    color: var(--mk-color-fg-disabled);
+    background: var(--mk-color-readonly);
+    cursor: default;
+  }
+
+  .modkit-viewer :where(input, textarea)[readonly] {
+    background: var(--mk-color-readonly);
+  }
+
+  .modkit-viewer :where(input, textarea)::placeholder {
+    color: var(--mk-color-fg-subtle);
+  }
+
+  .modkit-viewer :where(input[type='checkbox'], input[type='radio']) {
+    width: auto;
+    height: auto;
+    padding: 0;
+    accent-color: var(--mk-color-accent);
+  }
+
+  /* The search field owns its own frame, so its input sits flush inside it. */
+  [data-mk-part='search'] [data-mk-part='search.input'] {
+    height: var(--mk-size-control);
+    border: 0;
+    background: transparent;
+  }
+
+  /* Density. Compact matches VS Code list metrics; comfortable suits web and Electron. */
+  [data-mk-density='compact'] {
+    --mk-size-row: 22px;
+    --mk-size-control: 24px;
+    --mk-panel-padding: var(--mk-space-2);
+  }
+
+  [data-mk-density='comfortable'] {
+    --mk-size-row: 28px;
+    --mk-size-control: 32px;
+    --mk-panel-padding: var(--mk-space-4);
+  }
+
+  /*
+   * Scrollbars. The standard properties come first so Firefox is styled at all; the WebKit
+   * pseudo-elements then refine Chromium and Safari. Both paths read the same tokens, so a theme
+   * restyles every engine at once.
+   */
+  .modkit-viewer,
+  .modkit-viewer :where(*) {
+    scrollbar-width: thin;
+    scrollbar-color: var(--mk-color-scrollbar-thumb) var(--mk-color-scrollbar-track);
+  }
+
+  .modkit-viewer :where(*)::-webkit-scrollbar {
+    width: var(--mk-size-scrollbar);
+    height: var(--mk-size-scrollbar);
+  }
+
+  .modkit-viewer :where(*)::-webkit-scrollbar-track {
+    background: var(--mk-color-scrollbar-track);
+  }
+
+  .modkit-viewer :where(*)::-webkit-scrollbar-thumb {
+    background: var(--mk-color-scrollbar-thumb);
+    background-clip: padding-box;
+    border: 2px solid transparent;
+    border-radius: var(--mk-radius-pill);
+  }
+
+  .modkit-viewer :where(*)::-webkit-scrollbar-thumb:hover {
+    background: var(--mk-color-scrollbar-thumb-hover);
+    background-clip: padding-box;
+  }
+
+  .modkit-viewer :where(*)::-webkit-scrollbar-thumb:active {
+    background: var(--mk-color-scrollbar-thumb-active);
+    background-clip: padding-box;
+  }
+
+  /* Where both axes scroll, the corner must not fall back to the UA's own grey. */
+  .modkit-viewer :where(*)::-webkit-scrollbar-corner {
+    background: var(--mk-color-scrollbar-track);
+  }
+
+  /* No stepper buttons: they cost a hit target and never match a themed surface. */
+  .modkit-viewer :where(*)::-webkit-scrollbar-button {
+    display: none;
+  }
+
+  /* Dense panes (trees, tables, hex) get the thin track so rows keep their width. */
+  [data-mk-density='compact'] .modkit-viewer :where(*)::-webkit-scrollbar {
+    width: var(--mk-size-scrollbar-thin);
+    height: var(--mk-size-scrollbar-thin);
+  }
+
+  /*
+   * A scrolled pane needs an edge, otherwise content bleeds into the surface behind it.
+   * `scroll-shadow` would need JS; a sticky hairline on the scroll container is enough and free.
+   */
+  [data-mk-part='hex.content'],
+  [data-mk-part='text'],
+  [data-mk-part='virtual-text'] {
+    border-block-start: 1px solid var(--mk-color-scrollbar-shadow);
+  }
+
+  @media (forced-colors: active) {
+    .modkit-viewer,
+    .modkit-viewer :where(*) {
+      scrollbar-color: CanvasText Canvas;
+    }
+
+    .modkit-viewer :where(*)::-webkit-scrollbar-thumb {
+      background: CanvasText;
+      border-color: Canvas;
+    }
+
+    .modkit-viewer :where(*)::-webkit-scrollbar-track,
+    .modkit-viewer :where(*)::-webkit-scrollbar-corner {
+      background: Canvas;
+    }
+  }
+
+  .modkit-viewer ::selection {
+    color: var(--mk-color-selection-fg);
+    background: var(--mk-color-selection);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .modkit-viewer *,
+    .modkit-viewer *::before,
+    .modkit-viewer *::after {
+      transition-duration: 1ms !important;
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

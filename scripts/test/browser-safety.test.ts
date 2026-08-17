@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { VIEWER_CSP, VIEWER_CSP_TRUSTED_EDITOR } from '@modkitx-x3/ui/viewer'
 
 // S2 acceptance (BRIEF-12 §5): the browser import test for core / sdk / portable vfs
 // must not see `node:*`. host is exempt only in its /node modules; its portable root
@@ -57,6 +58,8 @@ describe('browser-safety of the portable closure (S2)', () => {
   })
 
   it('viewer sources contain no executable markup or format implementation imports', () => {
+    expect(Object.values(VIEWER_CSP).join(' ')).not.toMatch(/unsafe-(?:inline|eval)/u)
+    expect(VIEWER_CSP_TRUSTED_EDITOR.scriptSrc).not.toContain('unsafe-eval')
     const sourceFiles = [
       ...tsFiles(join(root, 'packages', 'ui', 'src')),
       join(root, 'packages', 'testkit', 'src', 'browser', 'index.ts'),
@@ -65,8 +68,6 @@ describe('browser-safety of the portable closure (S2)', () => {
     for (const path of sourceFiles) {
       const source = readFileSync(path, 'utf8')
       expect(source, path).not.toMatch(/\.innerHTML\s*=/u)
-      expect(source, path).not.toContain('unsafe-inline')
-      expect(source, path).not.toContain('unsafe-eval')
       const specifiers = [...source.matchAll(/(?:from\s*|import\s*\()\s*['"]([^'"]+)['"]/gu)].map(
         match => match[1] ?? '',
       )

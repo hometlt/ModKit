@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en" data-mk-theme="modkit-dark" data-mk-density="compact">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Modkit MK3 — application smoke</title>
+    <link rel="stylesheet" href="./modkit-ui.css" />
+    <link rel="stylesheet" href="./smoke.css" />
+  </head>
+  <body>
+    <header class="page-head">
+      <h1>Modkit MK3 — application smoke</h1>
+      <p class="muted">
+        Every panel below is a real composition root booted in this page. Nothing is stubbed: the
+        web app runs its own runtime probes, and the workbench is the shipped
+        <code>@modkitx-x3/ui/workbench</code> mounted through <code>mountWebWorkbench</code>.
+      </p>
+      <label class="theme">
+        Theme
+        <select id="theme">
+          <option value="modkit-dark">Modkit Dark</option>
+          <option value="modkit-light">Modkit Light</option>
+          <option value="modkit-high-contrast">High contrast</option>
+        </select>
+      </label>
+    </header>
+
+    <section class="panel">
+      <h2>Web / PWA — live workbench</h2>
+      <p class="muted" id="web-summary">Booting…</p>
+      <div id="workbench" class="workbench-host"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Realm composition</h2>
+      <p class="muted">
+        Facilities are what the realm actually published after probing, not what it hopes for.
+      </p>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Realm</th>
+            <th>Environment</th>
+            <th>Facilities</th>
+            <th>Extensions</th>
+            <th>Errors</th>
+          </tr>
+        </thead>
+        <tbody id="realms"></tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <h2>Probed facilities</h2>
+      <p class="muted">
+        A facility appears here only when its API is present in this browser. Absent ones are
+        reported as unavailable rather than promised and then failed.
+      </p>
+      <div id="facilities" class="pills"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Isolation claims</h2>
+      <p class="muted">
+        Checked against what composed, not against the source meant to produce it.
+      </p>
+      <ul id="claims" class="claims"></ul>
+    </section>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

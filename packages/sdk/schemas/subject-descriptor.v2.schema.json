@@ -417,7 +417,14 @@
                       "common.view/tree-data-source",
                       "common.view/table-data-source",
                       "common.view/transport-source",
-                      "common.view/namespace-entry-source"
+                      "common.view/namespace-entry-source",
+                      "common.view/raster-image-source",
+                      "common.view/vector-scene-source",
+                      "common.view/audio-media-source",
+                      "common.view/video-media-source",
+                      "common.view/model-scene-source",
+                      "common.view/relation-graph-source",
+                      "common.view/subject-facts-source"
                     ]
                   },
                   "major": {
@@ -441,7 +448,14 @@
                         "common.view/tree-data-source",
                         "common.view/table-data-source",
                         "common.view/transport-source",
-                        "common.view/namespace-entry-source"
+                        "common.view/namespace-entry-source",
+                        "common.view/raster-image-source",
+                        "common.view/vector-scene-source",
+                        "common.view/audio-media-source",
+                        "common.view/video-media-source",
+                        "common.view/model-scene-source",
+                        "common.view/relation-graph-source",
+                        "common.view/subject-facts-source"
                       ]
                     },
                     "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
@@ -1661,7 +1675,14 @@
                       "common.view/tree-data-source",
                       "common.view/table-data-source",
                       "common.view/transport-source",
-                      "common.view/namespace-entry-source"
+                      "common.view/namespace-entry-source",
+                      "common.view/raster-image-source",
+                      "common.view/vector-scene-source",
+                      "common.view/audio-media-source",
+                      "common.view/video-media-source",
+                      "common.view/model-scene-source",
+                      "common.view/relation-graph-source",
+                      "common.view/subject-facts-source"
                     ]
                   },
                   "major": {
@@ -1685,7 +1706,14 @@
                         "common.view/tree-data-source",
                         "common.view/table-data-source",
                         "common.view/transport-source",
-                        "common.view/namespace-entry-source"
+                        "common.view/namespace-entry-source",
+                        "common.view/raster-image-source",
+                        "common.view/vector-scene-source",
+                        "common.view/audio-media-source",
+                        "common.view/video-media-source",
+                        "common.view/model-scene-source",
+                        "common.view/relation-graph-source",
+                        "common.view/subject-facts-source"
                       ]
                     },
                     "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",

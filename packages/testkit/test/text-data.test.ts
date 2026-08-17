@@ -34,7 +34,27 @@ import type {
 } from '@modkitx-x3/sdk/text-data'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const extensionRoot = join(here, '..', '..', '..', 'extensions', 'common', 'text-data')
+const repositoryRoot = join(here, '..', '..', '..')
+const extensionNameByFormat: Readonly<Record<string, string>> = Object.freeze({
+  json: 'text-json',
+  jsonc: 'text-json',
+  csv: 'text-delimited',
+  tsv: 'text-delimited',
+  ini: 'text-ini',
+  xml: 'text-xml',
+  yaml: 'text-yaml',
+  toml: 'text-toml',
+})
+const textExtensionRoots = Object.freeze(
+  [...new Set(Object.values(extensionNameByFormat))].map(name =>
+    join(repositoryRoot, 'extensions', 'common', name),
+  ),
+)
+const extensionRootFor = (format: string): string => {
+  const extension = extensionNameByFormat[format]
+  if (extension === undefined) throw new TypeError(`unknown text format ${format}`)
+  return join(repositoryRoot, 'extensions', 'common', extension)
+}
 const alternateXmlRoot = join(
   here,
   '..',
@@ -53,6 +73,27 @@ const providerFormatByContract = Object.freeze({
   'common.text-data/csv-syntax': 'csv',
   'common.text-data/tsv-syntax': 'tsv',
 } satisfies Readonly<Record<TextDataContractId, string>>)
+
+const familyByFormat: Readonly<Partial<Record<string, string>>> = Object.freeze({
+  json: 'json',
+  jsonc: 'json',
+  csv: 'delimited',
+  tsv: 'delimited',
+})
+
+function sourceEntrypoint(format: string, kind: 'codec' | 'provider'): string {
+  const family = familyByFormat[format]
+  return family === undefined
+    ? `src/formats/${format}/${kind}.js`
+    : `src/families/${family}/entrypoints/${format}-${kind}.js`
+}
+
+function sourceProfile(format: string): string {
+  const family = familyByFormat[format]
+  return family === undefined
+    ? `src/formats/${format}/definition.js`
+    : `src/families/${family}/profiles/${format}.js`
+}
 
 const budget: ResourceBudget = {
   maxInputBytes: 10_000_000n,
@@ -85,7 +126,7 @@ async function providers(): Promise<ProviderModule> {
   await Promise.all(
     Object.entries(providerFormatByContract).map(async ([contract, format]) => {
       const module = (await import(
-        pathToFileURL(join(extensionRoot, 'src', 'formats', format, 'provider.js')).href
+        pathToFileURL(join(extensionRootFor(format), sourceEntrypoint(format, 'provider'))).href
       )) as FormatProviderModule
       modules.set(contract as TextDataContractId, module)
     }),
@@ -182,7 +223,7 @@ function requestFor(contract: TextDataContractId): ProviderRequest {
 
 async function codecFor(format: string): Promise<Codec> {
   const module = (await import(
-    pathToFileURL(join(extensionRoot, 'src', 'formats', format, 'codec.js')).href
+    pathToFileURL(join(extensionRootFor(format), sourceEntrypoint(format, 'codec'))).href
   )) as { createCodec(context: ContributionContext): Codec }
   const providerModule = await providers()
   const context: ContributionContext = {
@@ -273,27 +314,34 @@ const cases = [
 
 describe('13B text-data providers and codecs', () => {
   it('validates all sixteen isolated contribution manifests through the A-1 authorities', async () => {
-    const directory = join(extensionRoot, 'contributions')
-    const names = (await import('node:fs/promises')).readdir(directory)
-    const manifests = await Promise.all(
-      (await names)
-        .sort()
-        .map(
-          async name =>
-            JSON.parse(await readFile(join(directory, name), 'utf8')) as ContributionManifestV1Wire,
-        ),
-    )
+    const manifestsWithRoots = (
+      await Promise.all(
+        textExtensionRoots.map(async root => {
+          const directory = join(root, 'contributions')
+          const names = await (await import('node:fs/promises')).readdir(directory)
+          return Promise.all(
+            names.sort().map(async name => ({
+              root,
+              manifest: JSON.parse(
+                await readFile(join(directory, name), 'utf8'),
+              ) as ContributionManifestV1Wire,
+            })),
+          )
+        }),
+      )
+    ).flat()
+    const manifests = manifestsWithRoots.map(item => item.manifest)
     expect(manifests).toHaveLength(16)
     expect(new Set(manifests.map(manifest => manifest.id)).size).toBe(16)
     const registry = createSpecSchemaRegistry(A1_SPEC_SCHEMA_ENTRIES)
-    for (const manifest of manifests) {
+    for (const { manifest, root } of manifestsWithRoots) {
       const result = await validateContributionManifest(manifest, registry)
       expect(result.specState, `${manifest.id}: ${JSON.stringify(result.diagnostics)}`).toBe(
         'validated',
       )
       for (const variant of manifest.runtimeVariants ?? []) {
         await expect(
-          readFile(join(extensionRoot, variant.entrypoint.replace(/^\.\//u, ''))),
+          readFile(join(root, variant.entrypoint.replace(/^\.\//u, ''))),
           `${manifest.id}: ${variant.entrypoint}`,
         ).resolves.toBeInstanceOf(Buffer)
       }
@@ -302,10 +350,14 @@ describe('13B text-data providers and codecs', () => {
     expect(
       manifests.filter(manifest => manifest.contract.id.includes('service-provider')),
     ).toHaveLength(8)
+    const expectedEntrypoints = new Set(
+      Object.values(providerFormatByContract).flatMap(format => [
+        `./${sourceEntrypoint(format, 'codec')}`,
+        `./${sourceEntrypoint(format, 'provider')}`,
+      ]),
+    )
     for (const manifest of manifests) {
-      expect(manifest.runtimeVariants?.[0]?.entrypoint).toMatch(
-        /^\.\/src\/formats\/(?:json|jsonc|xml|yaml|toml|ini|csv|tsv)\/(?:codec|provider)\.js$/u,
-      )
+      expect(expectedEntrypoints.has(manifest.runtimeVariants?.[0]?.entrypoint ?? '')).toBe(true)
     }
     expect(
       manifests.every(
@@ -562,7 +614,7 @@ describe('13B text-data providers and codecs', () => {
     async (contract, dialect, text) => {
       const format = contract.slice('common.text-data/'.length, -'-syntax'.length)
       const module = (await import(
-        pathToFileURL(join(extensionRoot, 'src', 'formats', format, 'codec.js')).href
+        pathToFileURL(join(extensionRootFor(format), sourceEntrypoint(format, 'codec'))).href
       )) as { createCodec(context: ContributionContext): Codec }
       const providerModule = await providers()
       const context: ContributionContext = {
@@ -639,7 +691,10 @@ describe('13B text-data providers and codecs', () => {
   it('matches the recorded parseSc2Ini and csv-parse oracle fixtures', async () => {
     const { createTextSyntaxProvider } = await providers()
     const iniFixture = JSON.parse(
-      await readFile(join(extensionRoot, 'test', 'fixtures', 'ini-sc2-parity.json'), 'utf8'),
+      await readFile(
+        join(extensionRootFor('ini'), 'test', 'fixtures', 'ini-sc2-parity.json'),
+        'utf8',
+      ),
     ) as {
       input: string
       sections: readonly { name: string; entries: Readonly<Record<string, string>> }[]
@@ -659,7 +714,10 @@ describe('13B text-data providers and codecs', () => {
     ).toEqual(iniFixture.sections)
 
     const csvFixture = JSON.parse(
-      await readFile(join(extensionRoot, 'test', 'fixtures', 'csv-rfc4180-parity.json'), 'utf8'),
+      await readFile(
+        join(extensionRootFor('csv'), 'test', 'fixtures', 'csv-rfc4180-parity.json'),
+        'utf8',
+      ),
     ) as { input: string; rows: readonly (readonly string[])[] }
     const csv = await createTextSyntaxProvider('common.text-data/csv-syntax').parse({
       input: { text: csvFixture.input },
@@ -780,8 +838,8 @@ describe('13B text-data providers and codecs', () => {
       }[format]
       const graphFor = async (kind: 'codec' | 'provider') => {
         const result = await build({
-          absWorkingDir: extensionRoot,
-          entryPoints: [`src/formats/${format}/${kind}.js`],
+          absWorkingDir: extensionRootFor(format),
+          entryPoints: [sourceEntrypoint(format, kind)],
           bundle: true,
           format: 'esm',
           platform: 'neutral',
@@ -804,10 +862,10 @@ describe('13B text-data providers and codecs', () => {
       for (const other of Object.values(providerFormatByContract)) {
         if (other === format) continue
         expect(codecGraph.inputs, `${format} codec imported ${other}`).not.toEqual(
-          expect.arrayContaining([expect.stringContaining(`/formats/${other}/`)]),
+          expect.arrayContaining([expect.stringContaining(sourceProfile(other))]),
         )
         expect(providerGraph.inputs, `${format} provider imported ${other}`).not.toEqual(
-          expect.arrayContaining([expect.stringContaining(`/formats/${other}/`)]),
+          expect.arrayContaining([expect.stringContaining(sourceProfile(other))]),
         )
       }
       expect(codecGraph.external.filter(path => parserPackages.includes(path as never))).toEqual([])
@@ -818,31 +876,31 @@ describe('13B text-data providers and codecs', () => {
   )
 
   it('keeps the public index provider-free and all portable sources free of node imports', async () => {
-    expect(await readFile(join(extensionRoot, 'src', 'index.js'), 'utf8')).not.toMatch(/providers/u)
-    const portablePaths = [
-      'src/index.js',
-      'src/formats/index.js',
-      'src/shared/codec-runtime.js',
-      'src/shared/provider-runtime.js',
-      'src/shared/scalars.js',
-      'src/shared/text.js',
-      'src/shared/tree-data-source.js',
-      'src/families/json/detect.js',
-      'src/families/json/provider.js',
-      'src/families/delimited/detect.js',
-      'src/families/delimited/provider.js',
-      ...Object.values(providerFormatByContract).flatMap(format => [
-        `src/formats/${format}/definition.js`,
-        `src/formats/${format}/codec.js`,
-        `src/formats/${format}/provider.js`,
-      ]),
-    ]
-    for (const path of portablePaths) {
-      expect(await readFile(join(extensionRoot, path), 'utf8'), path).not.toMatch(/node:/u)
+    for (const root of textExtensionRoots) {
+      expect(await readFile(join(root, 'src', 'index.js'), 'utf8'), root).not.toMatch(/providers/u)
+    }
+    for (const format of Object.values(providerFormatByContract)) {
+      for (const kind of ['codec', 'provider'] as const) {
+        const path = sourceEntrypoint(format, kind)
+        expect(await readFile(join(extensionRootFor(format), path), 'utf8'), path).not.toMatch(
+          /node:/u,
+        )
+      }
+    }
+    const sharedRoot = join(repositoryRoot, 'extensions', '_shared', 'codec-kit', 'src', 'text')
+    for (const path of [
+      'index.js',
+      'codec-runtime.js',
+      'provider-runtime.js',
+      'scalars.js',
+      'text.js',
+      'tree-data-source.js',
+    ]) {
+      expect(await readFile(join(sharedRoot, path), 'utf8'), path).not.toMatch(/node:/u)
     }
     for (const format of Object.values(providerFormatByContract)) {
       const providerSource = await readFile(
-        join(extensionRoot, 'src', 'formats', format, 'provider.js'),
+        join(extensionRootFor(format), sourceEntrypoint(format, 'provider')),
         'utf8',
       )
       expect(providerSource).not.toMatch(/CUnit|Catalog|GameStrings|ComponentList|SC2/u)

@@ -1,8 +1,25 @@
-# Bootstrap closure only (BRIEF-12 §3.1): core, sdk, vfs, host (+ dev-only testkit)
-# and the single leaf app modkit-cli. No ui/runtime/lsp/xml — not even as stubs.
+# The production bootstrap dependency closure remains core, sdk, vfs and host. Workspace membership
+# is intentionally broader so optional UI/reference extensions can run conformance and pack tests;
+# none of the entries below becomes a bootstrap dependency merely by being workspace-linked.
 packages:
   - 'packages/*'
   - 'apps/*'
+  # Optional reference extensions are workspace-linked for conformance tests only. They are not
+  # dependencies of core/sdk/vfs/host and therefore do not enter the bootstrap import closure.
+  - 'extensions/_shared/*'
+  - 'extensions/common/archives'
+  - 'extensions/common/audio'
+  - 'extensions/common/images'
+  - 'extensions/common/vector'
+  - 'extensions/common/models'
+  - 'extensions/common/video'
+  - 'extensions/common/text-json'
+  - 'extensions/common/text-delimited'
+  - 'extensions/common/text-ini'
+  - 'extensions/common/text-xml'
+  - 'extensions/common/text-yaml'
+  - 'extensions/common/text-toml'
+  - 'extensions/common/documents'
 # esbuild works through its platform binary package (@esbuild/win32-x64); its postinstall
 # script is only a fallback/validator, so build scripts stay denied (pnpm default-secure).
 allowBuilds:

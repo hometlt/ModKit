@@ -17,18 +17,22 @@ justifications (BRIEF-12 §3.1) are also recorded in this file, one line per dep
 - `packages/sdk/src/schemas/contribution-manifest.ts (RUNTIME_ENVIRONMENTS/OPERATING_SYSTEMS/ARCHITECTURES) ← packages/assets/src/codec-manifest.ts@f10666be | verbatim v1 wire dictionaries (23 §8: RuntimeTarget aliases the existing concrete shape); hostCapabilities/webApis left as open strings pending owner promotion of the closed lists | value lists only, no code`
 - `packages/sdk/test/contribution-manifest.test.ts (convertedDds) ← extensions/common/images/codecs/dds/codec.manifest.json@717e7d38 | converted to ContributionManifestV1: kind/capabilities verbs dropped (MK3/02 §1), entrypoints map → single-entrypoint runtime variant, match/operations moved into contract-specific spec | data-only fixture under a compat test contract`
 - `packages/sdk/test/fixtures/legacy/legacy-codec-manifest.json ← extensions/common/images/codecs/dds/codec.manifest.json@717e7d38 | trimmed verbatim OLD v1 shape as negative input | legacy-input fixture under fixtures/legacy/, asserted to FAIL the envelope schema`
-- `extensions/common/text-data/test/fixtures/ini-sc2-parity.json ← modkitx/packages/xml/src/formats.ts::parseSc2Ini@048eb0fd | recorded section/key/value oracle output; no parser code copied | proves ini-sc2 compatibility without putting @modkitx/xml in the X3 closure`
-- `extensions/common/text-data/test/fixtures/csv-rfc4180-parity.json ← csv-parse/sync@6.1.0 | recorded RFC 4180 quoting/CRLF oracle output; no implementation code copied | catches delimiter, quoted-comma and escaped-quote drift`
+- `extensions/common/text-ini/test/fixtures/ini-sc2-parity.json ← modkitx/packages/xml/src/formats.ts::parseSc2Ini@048eb0fd | recorded section/key/value oracle output; no parser code copied | proves ini-sc2 compatibility without putting @modkitx/xml in the X3 closure`
+- `extensions/common/text-delimited/test/fixtures/csv-rfc4180-parity.json ← csv-parse/sync@6.1.0 | recorded RFC 4180 quoting/CRLF oracle output; no implementation code copied | catches delimiter, quoted-comma and escaped-quote drift`
 - `packages/ui/src/code + packages/ui/src/text-virtual ← modkitx/docs/tasks-active/platform-architecture/subtasks/RUNBOOK_code_hex_viewer.md X0/X1@048eb0fd | retained the bounded-model policy and explicit large-file fallback, but replaced the MK2 Monaco/host implementation with format-neutral text-data-source stages | no MK2 runtime import; real-browser C-01…C-03 and lifecycle gates own the port`
 - `packages/ui/src/hex ← modkitx/docs/tasks-active/platform-architecture/subtasks/RUNBOOK_code_hex_viewer.md X2@048eb0fd | retained bigint random access, bounded windows, cancellation and read-only v1; rebuilt on byte-range-source@1 without format knowledge or custom-element ownership | bigint/boundary/cancel, unknown-binary and real-browser gates own the port`
+- `packages/ui/src/search/matcher.ts ← modkitx/apps/modkit-vscode/src/webview/text-filter.ts + src/strings-search.ts (plainSearchRanges) + src/archive-search.ts@048eb0fd | same semantics: empty query matches everything, invalid regex matches nothing, whole-word plain scanning continues past a rejected hit, whole-word regex uses the (?<![A-Za-z0-9_]) lookarounds; the onError callback became a typed `invalid` result and glob/plain/regex became one mode union | pure string logic, no MK2 runtime import; parity asserted by packages/ui/test/search.test.ts`
+- `extensions/common/images/src/formats/png/codec.js (bounded RGBA8 decode) ← modkitx/extensions/common/images/codecs/dds/src/png.ts::decodePngRgba@048eb0fd | retained channel expansion, PNG row filters and Paeth selection; replaced eager fflate unzlib with a lazy platform DecompressionStream reader capped at the exact declared scanline size and viewer maxBytes | no MK2/runtime dependency copied; supported subset and bomb/budget behavior are tested through raster-image-source`
+- `extensions/common/models/src/formats/obj/codec.js + packages/sdk/src/asset-capabilities/media-data-sources.ts ← modkitx/packages/models-processing/src/index.ts::RenderModel@048eb0fd | retained the neutral scene/mesh/primitive separation and typed geometry buffers; reduced it to the A-5 read-only source ABI and added explicit metadata-only state for unresolved glTF buffers | no MK2 registry, renderer or processing package imported`
+- `packages/ui/src/audio + packages/ui/src/image ← modkitx audioPreview/assetsTextureViewer concepts@048eb0fd | retained waveform reduction, image channel inspection and browser-native fallback; rebuilt against neutral leased media sources with hard materialization budgets and separate entrypoints | no format codec or MK2 UI module imported`
 
 ## Runtime dependencies (published packages)
 
 - `dependency: ajv@^8.17.1 (→8.20.0) in @modkitx-x3/sdk | compiles the authored JSON Schema consts for runtime validation (manifests, envelopes, locks) | hand-writing a JSON Schema validator would be a second drifting authority; nothing in core covers schema validation`
-- `dependency: jsonc-parser@^3.3.1 in modkit-extension-x3-text-data | tolerant JSON/JSONC CST with offsets and stable parse codes | the bootstrap closure intentionally owns contracts only and contains no syntax parser`
-- `dependency: @rgrove/parse-xml@^4.2.3 in modkit-extension-x3-text-data | portable generic XML parser with no Node dependency; DTD/entity policy remains in the extension preflight | no XML parser exists in core/sdk/vfs/host and SC2 XML is not a generic replacement`
-- `dependency: yaml@^2.9.0 in modkit-extension-x3-text-data | YAML 1.2 document parser with alias limits and diagnostics | a hand-written YAML parser would be unsafe and outside the platform closure`
-- `dependency: smol-toml@^1.8.0 in modkit-extension-x3-text-data | portable TOML 1.0 parser/serializer | no bootstrap package covers TOML and the dependency remains extension-local`
+- `dependency: jsonc-parser@^3.3.1 in modkit-extension-x3-text-json | tolerant JSON/JSONC CST with offsets and stable parse codes | JSON and JSONC share the parser, while no other text extension installs it`
+- `dependency: @rgrove/parse-xml@^4.2.3 in modkit-extension-x3-text-xml | portable generic XML parser with no Node dependency; DTD/entity policy remains in the extension preflight | XML is independently installable and SC2 XML is not a generic replacement`
+- `dependency: yaml@^2.9.0 in modkit-extension-x3-text-yaml | YAML 1.2 document parser with alias limits and diagnostics | a hand-written YAML parser would be unsafe and unrelated formats do not install it`
+- `dependency: smol-toml@^1.8.0 in modkit-extension-x3-text-toml | portable TOML 1.0 parser/serializer | no bootstrap package covers TOML and the dependency remains TOML-local`
 
 ## Dev toolchain (workspace root, dev-only; pinned by pnpm-lock.yaml 2026-08-13)
 
@@ -44,7 +48,7 @@ justifications (BRIEF-12 §3.1) are also recorded in this file, one line per dep
 
 Closure summary (kept in sync with the lists above): the bootstrap closure still has exactly
 **one** third-party runtime dependency — `ajv` in `sdk`, loaded lazily. The four syntax-parser
-dependencies belong only to the external `modkit-extension-x3-text-data` package and are proven
-absent from packed `core/sdk/vfs/host` artifacts. Everything else above is dev-only. Ported
+dependencies belong only to their independently installable text extensions and are proven absent
+from packed `core/sdk/vfs/host` artifacts and from sibling text-extension installs. Everything else above is dev-only. Ported
 material is limited to the value dictionaries and fixtures listed under «Ported code and
 fixtures»; no `modkitx` code is imported at runtime in any form.

@@ -29,8 +29,11 @@ export const transportViewer: ViewerModule = defineViewerModule({
     if (lease === undefined) throw new TypeError('transport binding is unavailable')
     scope.lease(lease)
     const model = new TransportModel(lease.value as TransportSource)
-    const status = element(root, 'output', { text: 'Loading' })
-    const controls = element(root, 'div', { className: 'modkit-viewer__transport' })
+    const status = element(root, 'output', { text: 'Loading', part: 'transport.status' })
+    const controls = element(root, 'div', {
+      className: 'modkit-viewer__transport',
+      part: 'transport.controls',
+    })
     let descriptor = args.descriptor
     let snapshot: TransportSnapshot
 
@@ -45,7 +48,10 @@ export const transportViewer: ViewerModule = defineViewerModule({
       ] as const
       for (const [label, operation, input] of commands) {
         if (operation === undefined) continue
-        const button = element(controls, 'button', { text: label }) as HTMLButtonElement
+        const button = element(controls, 'button', {
+          text: label,
+          part: 'transport.button',
+        }) as HTMLButtonElement
         button.type = 'button'
         const invoke = async () => {
           const result = await invokeOperation(descriptor, args.operations, operation, input, {
@@ -57,7 +63,10 @@ export const transportViewer: ViewerModule = defineViewerModule({
         scope.cleanup(() => button.removeEventListener('click', invoke))
       }
       for (const track of value.tracks) {
-        const item = element(controls, 'span', { text: track.label ?? track.id })
+        const item = element(controls, 'span', {
+          text: track.label ?? track.id,
+          part: 'transport.track',
+        })
         item.setAttribute('role', 'status')
         item.dataset['selected'] = String(track.selected)
       }

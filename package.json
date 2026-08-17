@@ -14,9 +14,14 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check:legacy": "node scripts/check-legacy.mjs",
-    "check": "pnpm build && pnpm bench:universal:gate && pnpm lint && pnpm format:check && pnpm test && pnpm schemas:check && pnpm manifests:check && pnpm check:legacy",
+    "check": "pnpm build && pnpm bench:universal:gate && pnpm lint && pnpm format:check && pnpm test && pnpm schemas:check && pnpm manifests:check && pnpm tokens:check && pnpm facilities:check && pnpm apps:check && pnpm check:legacy",
     "schemas:emit": "node scripts/emit-schemas.mjs",
     "schemas:check": "node scripts/emit-schemas.mjs --check",
+    "facilities:emit": "node scripts/emit-host-facilities.mjs",
+    "facilities:check": "node scripts/emit-host-facilities.mjs --check",
+    "apps:check": "node scripts/check-apps.mjs",
+    "debug:app": "node scripts/debug/app-runner.mjs",
+    "debug:pwa": "node scripts/debug/pwa-server.mjs",
     "manifests:check": "pnpm --filter @modkitx-x3/ui manifests:check",
     "bench": "node scripts/bench.mjs",
     "bench:gate": "node scripts/bench.mjs --gate",
@@ -24,7 +29,8 @@
     "bench:universal:gate": "node --expose-gc scripts/bench/universal-data.mjs --gate",
     "bundle": "node scripts/bundle.mjs",
     "bundle:check": "node scripts/bundle.mjs --check",
-    "build": "pnpm typecheck && pnpm bundle"
+    "build": "pnpm typecheck && pnpm bundle",
+    "tokens:check": "pnpm --filter @modkitx-x3/ui tokens:check"
   },
   "devDependencies": {
     "@modkitx-x3/core": "workspace:*",

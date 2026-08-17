@@ -1,0 +1,541 @@
+/* Authored. Subject card composition and the relation graph. */
+
+@layer mk.components {
+  /* ---------------------------------------------------------------- subject card */
+  [data-mk-part='card'] {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: auto;
+    background: var(--mk-color-surface);
+  }
+
+  [data-mk-part='card.header'] {
+    display: flex;
+    gap: var(--mk-space-4);
+    align-items: flex-start;
+    padding: var(--mk-space-4);
+  }
+
+  [data-mk-part='card.portrait'] {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 72px;
+    height: 72px;
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-md);
+    background: var(--mk-color-sunken);
+    font-size: var(--mk-font-size-xl);
+  }
+
+  [data-mk-part='card.identity'] {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: var(--mk-space-2);
+    min-width: 0;
+  }
+
+  [data-mk-part='card.title'] {
+    margin: 0;
+    font-size: var(--mk-font-size-xl);
+    font-weight: var(--mk-font-weight-medium);
+    line-height: var(--mk-line-tight);
+  }
+
+  [data-mk-part='card.subtitle'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--mk-space-1);
+    align-items: baseline;
+  }
+
+  [data-mk-part='card.ref'] {
+    padding: 0;
+    color: var(--mk-color-fg-link);
+    border: 0;
+    background: none;
+    font-family: var(--mk-font-mono);
+    font-size: var(--mk-font-size-xs);
+    cursor: pointer;
+  }
+
+  [data-mk-part='card.ref']:hover {
+    text-decoration: underline;
+  }
+
+  /* Dot separator between refs, generated so the markup stays semantic. */
+  [data-mk-part='card.ref'] + [data-mk-part='card.ref']::before {
+    margin-inline-end: var(--mk-space-1);
+    color: var(--mk-color-fg-subtle);
+    content: '\00B7';
+  }
+
+  [data-mk-part='card.chips'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--mk-space-1);
+  }
+
+  [data-mk-part='card.chip'] {
+    padding: 1px var(--mk-space-2);
+    color: var(--mk-color-accent-fg);
+    border-radius: var(--mk-radius-pill);
+    background: var(--mk-color-accent);
+    font-size: var(--mk-font-size-xs);
+  }
+
+  [data-mk-part='card.chip'][data-tone='neutral'] {
+    color: var(--mk-color-fg-muted);
+    border: 1px solid var(--mk-color-border);
+    background: none;
+  }
+
+  [data-mk-part='card.chip'][data-tone='ok'] {
+    color: var(--mk-status-ok-fg);
+    background: var(--mk-status-ok);
+  }
+
+  [data-mk-part='card.chip'][data-tone='warn'] {
+    color: var(--mk-status-warn-fg);
+    background: var(--mk-status-warn);
+  }
+
+  [data-mk-part='card.chip'][data-tone='error'] {
+    color: var(--mk-status-error-fg);
+    background: var(--mk-status-error);
+  }
+
+  [data-mk-part='card.description'] {
+    margin: 0;
+    color: var(--mk-color-fg);
+    font-size: var(--mk-font-size-sm);
+  }
+
+  [data-mk-part='card.note'] {
+    margin: 0;
+    color: var(--mk-status-info);
+    font-size: var(--mk-font-size-sm);
+  }
+
+  [data-mk-part='card.statrow'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--mk-space-4);
+    align-items: center;
+    margin-top: var(--mk-space-1);
+  }
+
+  [data-mk-part='card.stat'] {
+    display: inline-flex;
+    gap: var(--mk-space-1);
+    align-items: baseline;
+  }
+
+  [data-mk-part='card.stat-icon'] {
+    color: var(--mk-color-fg-muted);
+  }
+
+  [data-mk-part='card.stat-value'] {
+    font-family: var(--mk-font-mono);
+    font-size: var(--mk-font-size-sm);
+    font-variant-numeric: tabular-nums;
+  }
+
+  [data-mk-part='card.stat-delta'] {
+    color: var(--mk-color-fg-subtle);
+    font-family: var(--mk-font-mono);
+    font-size: 10px;
+  }
+
+  [data-mk-part='card.locale'] {
+    height: var(--mk-size-control);
+    padding-inline: var(--mk-space-2);
+    color: var(--mk-color-fg);
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-md);
+    background: var(--mk-color-surface);
+    font: inherit;
+    font-size: var(--mk-font-size-xs);
+  }
+
+  /* ---------------------------------------------------------------- card sections */
+  [data-mk-part='card.fields'] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  [data-mk-part='card.field'] {
+    display: grid;
+    grid-template-columns: minmax(12ch, 22ch) 1fr auto;
+    gap: var(--mk-space-3);
+    align-items: baseline;
+    min-height: var(--mk-table-row-height);
+    padding-inline: var(--mk-space-1);
+  }
+
+  [data-mk-part='card.field']:hover {
+    background: var(--mk-color-hover);
+  }
+
+  [data-mk-part='card.field-name'] {
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-sm);
+  }
+
+  [data-mk-part='card.field-value'] {
+    overflow-wrap: anywhere;
+    font-size: var(--mk-font-size-sm);
+    font-variant-numeric: tabular-nums;
+  }
+
+  [data-mk-part='card.links'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--mk-space-2);
+    align-items: baseline;
+  }
+
+  [data-mk-part='card.link-item'] {
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-sm);
+  }
+
+  /* The command card: a fixed grid of ability slots, empty cells included. */
+  [data-mk-part='card.grid'] {
+    display: grid;
+    grid-template-columns: repeat(var(--mk-card-grid-columns, 5), 44px);
+    gap: var(--mk-space-1);
+  }
+
+  [data-mk-part='card.grid-cell'] {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    color: var(--mk-color-fg);
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-sm);
+    background: var(--mk-color-sunken);
+    font-size: var(--mk-font-size-lg);
+    cursor: pointer;
+  }
+
+  [data-mk-part='card.grid-cell']:hover:not(:disabled) {
+    border-color: var(--mk-color-accent);
+    background: var(--mk-color-hover);
+  }
+
+  [data-mk-part='card.grid-cell']:disabled {
+    background: none;
+    cursor: default;
+  }
+
+  [data-mk-part='card.grid-hotkey'] {
+    position: absolute;
+    inset-block-start: 1px;
+    inset-inline-start: 3px;
+    color: var(--mk-color-fg-subtle);
+    font-family: var(--mk-font-mono);
+    font-size: 9px;
+  }
+
+  [data-mk-part='card.subcards'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--mk-space-3);
+  }
+
+  [data-mk-part='card.subcard'] {
+    display: flex;
+    flex: 1 1 260px;
+    flex-direction: column;
+    gap: var(--mk-space-2);
+    padding: var(--mk-space-3);
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-md);
+    background: var(--mk-color-raised);
+  }
+
+  [data-mk-part='card.subcard-head'] {
+    display: flex;
+    gap: var(--mk-space-2);
+    align-items: baseline;
+  }
+
+  /* ---------------------------------------------------------------- relation graph */
+  [data-mk-part='graph'] {
+    display: grid;
+    grid-template-areas: 'sidebar main' 'footer footer';
+    grid-template-columns: minmax(160px, 220px) 1fr;
+    grid-template-rows: 1fr auto;
+    gap: var(--mk-space-3);
+    min-height: 0;
+  }
+
+  [data-mk-part='graph.sidebar'] {
+    display: flex;
+    grid-area: sidebar;
+    flex-direction: column;
+    gap: var(--mk-space-2);
+    min-height: 0;
+  }
+
+  [data-mk-part='graph.sidebar-head'] {
+    display: flex;
+    gap: var(--mk-space-2);
+    align-items: baseline;
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  [data-mk-part='graph.sidebar-head'] button {
+    padding: 0;
+    color: var(--mk-color-fg-link);
+    border: 0;
+    background: none;
+    font-size: var(--mk-font-size-xs);
+    text-transform: none;
+    cursor: pointer;
+  }
+
+  [data-mk-part='graph.types'] {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 1px;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  [data-mk-part='graph.type'] {
+    display: flex;
+    gap: var(--mk-space-2);
+    align-items: center;
+    padding: 2px var(--mk-space-2);
+    color: var(--mk-color-fg);
+    border: 0;
+    border-radius: var(--mk-radius-sm);
+    background: none;
+    font-size: var(--mk-font-size-xs);
+    text-align: start;
+    cursor: pointer;
+  }
+
+  [data-mk-part='graph.type']:hover {
+    background: var(--mk-color-hover);
+  }
+
+  [data-mk-part='graph.type'][data-mk-state~='disabled'] {
+    color: var(--mk-color-fg-disabled);
+    pointer-events: auto;
+  }
+
+  [data-mk-part='graph.type-swatch'] {
+    flex: 0 0 auto;
+    width: 8px;
+    height: 8px;
+    border-radius: var(--mk-radius-pill);
+    background: var(--mk-chart-categorical-1);
+  }
+
+  [data-mk-part='graph.type'][data-tone='1'] [data-mk-part='graph.type-swatch'] {
+    background: var(--mk-chart-categorical-2);
+  }
+  [data-mk-part='graph.type'][data-tone='2'] [data-mk-part='graph.type-swatch'] {
+    background: var(--mk-chart-categorical-3);
+  }
+  [data-mk-part='graph.type'][data-tone='3'] [data-mk-part='graph.type-swatch'] {
+    background: var(--mk-chart-categorical-4);
+  }
+  [data-mk-part='graph.type'][data-tone='4'] [data-mk-part='graph.type-swatch'] {
+    background: var(--mk-chart-categorical-5);
+  }
+  [data-mk-part='graph.type'][data-tone='5'] [data-mk-part='graph.type-swatch'] {
+    background: var(--mk-chart-categorical-6);
+  }
+
+  [data-mk-part='graph.type-count'] {
+    margin-inline-start: auto;
+    color: var(--mk-color-fg-subtle);
+    font-family: var(--mk-font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  [data-mk-part='graph.main'] {
+    display: flex;
+    grid-area: main;
+    flex-direction: column;
+    gap: var(--mk-space-2);
+    min-height: 0;
+  }
+
+  [data-mk-part='graph.controls'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--mk-space-3);
+    align-items: center;
+  }
+
+  [data-mk-part='graph.control'] {
+    display: inline-flex;
+    gap: var(--mk-space-1);
+    align-items: center;
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-xs);
+  }
+
+  [data-mk-part='graph.control'] select {
+    height: var(--mk-size-control);
+    padding-inline: var(--mk-space-1);
+    color: var(--mk-color-fg);
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-sm);
+    background: var(--mk-color-surface);
+    font: inherit;
+    font-size: var(--mk-font-size-xs);
+  }
+
+  [data-mk-part='graph.status'] {
+    margin-inline-end: auto;
+    color: var(--mk-color-fg-subtle);
+    font-family: var(--mk-font-mono);
+    font-size: var(--mk-font-size-xs);
+    font-variant-numeric: tabular-nums;
+  }
+
+  [data-mk-part='graph.canvas'] {
+    display: block;
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 240px;
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-sm);
+    background: var(--mk-color-canvas-bg);
+    cursor: grab;
+    touch-action: none;
+  }
+
+  [data-mk-part='graph.canvas']:active {
+    cursor: grabbing;
+  }
+
+  [data-mk-part='graph.hint'] {
+    margin: 0;
+    color: var(--mk-color-fg-subtle);
+    font-size: var(--mk-font-size-xs);
+  }
+
+  [data-mk-part='graph.footer'] {
+    display: flex;
+    grid-area: footer;
+    flex-wrap: wrap;
+    gap: var(--mk-space-6);
+    padding-top: var(--mk-space-2);
+    border-top: 1px solid var(--mk-color-separator);
+  }
+
+  [data-mk-part='graph.footer-group'] h4 {
+    margin: 0 0 var(--mk-space-1);
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  [data-mk-part='graph.footer-item'] {
+    color: var(--mk-color-fg);
+    font-size: var(--mk-font-size-xs);
+  }
+}
+
+@layer mk.components {
+  /* ---------------------------------------------------------------- editable hex */
+  [data-mk-part='hex.row'] {
+    display: flex;
+    gap: var(--mk-space-2);
+    align-items: center;
+    font-family: var(--mk-font-mono);
+    font-size: var(--mk-font-size-xs);
+    line-height: 1.5;
+    white-space: pre;
+  }
+
+  [data-mk-part='hex.gutter'] {
+    color: var(--mk-hex-gutter-fg);
+    user-select: none;
+  }
+
+  [data-mk-part='hex.cell'] {
+    min-width: 2ch;
+    padding-inline: 1px;
+    border-radius: var(--mk-radius-sm);
+    font-variant-numeric: tabular-nums;
+    caret-color: var(--mk-color-accent);
+  }
+
+  [data-mk-part='hex.cell']:hover {
+    background: var(--mk-color-hover);
+  }
+
+  [data-mk-part='hex.cell']:focus-visible {
+    outline: 1px solid var(--mk-color-focus);
+    outline-offset: 0;
+  }
+
+  [data-mk-part='hex.cell'][data-mk-state~='mutating'] {
+    color: var(--mk-status-warn-fg);
+    background: var(--mk-status-warn);
+  }
+
+  [data-mk-part='hex.ascii'] {
+    color: var(--mk-color-fg-muted);
+    user-select: none;
+  }
+}
+
+@layer mk.components {
+  /* The code stage owns its own scrolling and must fill the slot, or Monaco lays out at zero. */
+  /*
+   * Monaco measures its container and re-lays out on every change. If that container can grow with
+   * its own content — or if an ancestor scrolls — the measurement feeds back into the size and the
+   * lines visibly jump. So the editor gets a definite box it cannot influence:
+   *   - the surface stops scrolling (Monaco owns its own scrollbars),
+   *   - the host takes the remaining space with `flex: 1 1 0` and `min-height: 0`,
+   *     never a min-height that can exceed the surface and force an ancestor scrollbar,
+   *   - `contain: strict` cuts the last feedback path from content back to layout.
+   */
+  [data-mk-part='viewer']:has(> [data-mk-part='editor.text'] .monaco-editor) {
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  [data-mk-part='editor.text']:has(.monaco-editor) {
+    flex: 1 1 0;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    contain: strict;
+    resize: none;
+  }
+}
+
+@layer mk.components {
+  /* An external renderer fills the same slot as the built-in canvas. */
+  .modkit-graph__external {
+    flex: 1 1 auto;
+    min-height: 240px;
+    overflow: hidden;
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-sm);
+    background: var(--mk-color-canvas-bg);
+  }
+}

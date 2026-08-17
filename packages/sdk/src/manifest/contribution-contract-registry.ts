@@ -84,6 +84,8 @@ interface ContributionContractRegistrationBase {
     readonly major: number
   }
   readonly schema: JsonSchema
+  /** CSP-safe validator emitted by the contract owner's build tooling for non-platform schemas. */
+  readonly validator?: SpecSchemaEntry['validator']
   /** Pure host-owned projection to open inventory facts; it never executes extension code. */
   readonly project: SpecInventoryProjector
   readonly validateSemantics: SpecSemanticValidator
@@ -723,6 +725,7 @@ export function createContributionContractRegistry(
     const conformanceProfileValue = authoredEntry.conformanceProfile
     const project = authoredEntry.project
     const validateSemantics = authoredEntry.validateSemantics
+    const validator = authoredEntry.validator
     if (mode !== 'data-only' && mode !== 'executable') {
       invalidOpenRegistration('contribution contract registration mode is invalid', {
         contract: coordinate.id,
@@ -742,6 +745,12 @@ export function createContributionContractRegistry(
         major: coordinate.major,
       })
     }
+    if (validator !== undefined && typeof validator !== 'function') {
+      invalidOpenRegistration('precompiled schema validator must be a function', {
+        contract: coordinate.id,
+        major: coordinate.major,
+      })
+    }
     const conformanceProfile = validatedRegistrationProfile(
       conformanceProfileValue,
       coordinate.id,
@@ -750,6 +759,7 @@ export function createContributionContractRegistry(
     const base = {
       contract: coordinate,
       schema: snapshotJsonWireObject(authoredEntry.schema),
+      ...(validator === undefined ? {} : { validator }),
       project,
       validateSemantics,
       conformanceProfile,
@@ -788,6 +798,7 @@ export function createContributionContractRegistry(
       contract: entry.contract.id,
       major: entry.contract.major,
       schema: entry.schema,
+      ...(entry.validator === undefined ? {} : { validator: entry.validator }),
       validateSemantics: entry.validateSemantics,
       registration:
         entry.mode === 'executable'

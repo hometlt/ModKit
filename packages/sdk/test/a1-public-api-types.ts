@@ -34,8 +34,15 @@ import type {
   SingleAssetInput,
   SingleOrBundleAssetInput,
   NamespaceAssetInput,
+  StandardTraitInstance,
 } from '@modkitx-x3/sdk'
-import type { DataSourceOf, DataSourceRef, DataSourceRefWire } from '@modkitx-x3/sdk/data-sources'
+import type {
+  DataSourceOf,
+  DataSourceRef,
+  DataSourceRefWire,
+  ModelSceneSource,
+  RasterImageSource,
+} from '@modkitx-x3/sdk/data-sources'
 import { foreignDataSource } from '@modkitx-x3/sdk/data-sources'
 
 interface RasterSource {
@@ -50,6 +57,29 @@ declare module '@modkitx-x3/sdk/data-sources' {
 
 export type RasterSourceLookup = DataSourceOf<'org.example/raster-source', 2>
 export type RasterSourceLookupProof = RasterSourceLookup extends RasterSource ? true : never
+export type StandardRasterSourceLookup = DataSourceOf<'common.view/raster-image-source', 1>
+export type StandardRasterSourceProof = StandardRasterSourceLookup extends RasterImageSource
+  ? true
+  : never
+export type StandardModelSourceLookup = DataSourceOf<'common.view/model-scene-source', 1>
+export type StandardModelSourceProof = StandardModelSourceLookup extends ModelSceneSource
+  ? true
+  : never
+
+export const typedRasterTrait = {
+  id: 'image.raster',
+  descriptorVersion: 1,
+  state: 'available',
+  parameters: { width: 1920, height: 1080, bitDepth: 8 },
+} as const satisfies StandardTraitInstance<'image.raster'>
+
+export const invalidRasterTrait = {
+  id: 'image.raster',
+  descriptorVersion: 1,
+  state: 'available',
+  // @ts-expect-error A raster capability must carry both dimensions.
+  parameters: { width: 1920 },
+} as const satisfies StandardTraitInstance<'image.raster'>
 
 export const typedRasterRef = {
   contract: 'org.example/raster-source',

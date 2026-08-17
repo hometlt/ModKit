@@ -51,6 +51,34 @@ importers:
         specifier: ^2.0.5
         version: 2.1.9(@types/node@22.20.1)
 
+  apps/automation-host:
+    dependencies:
+      '@modkitx-x3/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+
+  apps/electron:
+    dependencies:
+      '@modkitx-x3/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+    devDependencies:
+      electron:
+        specifier: ^43.4.0
+        version: 43.4.0
+
   apps/modkit-cli:
     dependencies:
       '@modkitx-x3/core':
@@ -62,6 +90,247 @@ importers:
       '@modkitx-x3/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
+
+  apps/modkit-vscode:
+    dependencies:
+      '@modkitx-x3/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+    devDependencies:
+      '@types/vscode':
+        specifier: ^1.125.0
+        version: 1.125.0
+
+  apps/server:
+    dependencies:
+      '@modkitx-x3/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+
+  apps/web:
+    dependencies:
+      '@modkitx-x3/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+      '@modkitx-x3/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+
+  extensions/_shared/codec-kit:
+    dependencies:
+      '@modkitx-x3/core':
+        specifier: workspace:*
+        version: link:../../../packages/core
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../../packages/sdk
+
+  extensions/common/archives:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../_shared/codec-kit
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../../packages/sdk
+
+  extensions/common/audio:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../_shared/codec-kit
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../../packages/sdk
+
+  extensions/common/documents:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../_shared/codec-kit
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../../packages/sdk
+
+  extensions/common/images:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../_shared/codec-kit
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../../packages/sdk
+
+  extensions/common/models:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../_shared/codec-kit
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../../packages/sdk
+
+  extensions/common/text-delimited:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../_shared/codec-kit
+      '@modkitx-x3/core':
+        specifier: workspace:*
+        version: link:../../../packages/core
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../../packages/sdk
+
+  extensions/common/text-ini:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../_shared/codec-kit
+      '@modkitx-x3/core':
+        specifier: workspace:*
+        version: link:../../../packages/core
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../../packages/sdk
+
+  extensions/common/text-json:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../_shared/codec-kit
+      '@modkitx-x3/core':
+        specifier: workspace:*
+        version: link:../../../packages/core
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../../packages/sdk
+      jsonc-parser:
+        specifier: ^3.3.1
+        version: 3.3.1
+
+  extensions/common/text-toml:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../_shared/codec-kit
+      '@modkitx-x3/core':
+        specifier: workspace:*
+        version: link:../../../packages/core
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../../packages/sdk
+      smol-toml:
+        specifier: ^1.8.0
+        version: 1.8.0
+
+  extensions/common/text-xml:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../_shared/codec-kit
+      '@modkitx-x3/core':
+        specifier: workspace:*
+        version: link:../../../packages/core
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../../packages/sdk
+      '@rgrove/parse-xml':
+        specifier: ^4.2.3
+        version: 4.2.3
+
+  extensions/common/text-yaml:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../_shared/codec-kit
+      '@modkitx-x3/core':
+        specifier: workspace:*
+        version: link:../../../packages/core
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../../packages/sdk
+      yaml:
+        specifier: ^2.9.0
+        version: 2.9.0
+
+  extensions/common/vector:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../_shared/codec-kit
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../../packages/sdk
+
+  extensions/common/video:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../_shared/codec-kit
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../../packages/sdk
 
   packages/core: {}
 
@@ -128,6 +397,14 @@ packages:
   '@babel/runtime@7.29.7':
     resolution: {integrity: sha512-Nq8OhGWiZIZGV6hLHoyAKLLcJihP/xFeBMGJoUrxTX2psI8dCifzLhZISFb+VWS3wFMRDmCGw5R+dOySCqPLhw==}
     engines: {node: '>=6.9.0'}
+
+  '@electron-internal/extract-zip@1.0.5':
+    resolution: {integrity: sha512-+bqFCP98pLI0Tt0XQo1TmlXtwjWchISndDOxCkEcIuUgXWpBnLyRI+2DU+mesvnMMX6L1XDqYNA0lXNDHd/yiA==}
+    engines: {node: '>=22.12.0'}
+
+  '@electron/get@5.1.0':
+    resolution: {integrity: sha512-3kSBtG8ObcTVfXanm5vVJ6UnBLEVmVsRk1M+vGqCuMBV+XLCbJYuWQful+yIy0GQDsSlK0kHEriEHn7SPk4EnA==}
+    engines: {node: '>=22.12.0'}
 
   '@esbuild/aix-ppc64@0.21.5':
     resolution: {integrity: sha512-1SDgH6ZSPTlggy1yI6+Dbkiz8xzpHJEVAlF/AM1tHPLsf5STom9rwtjE4hKAF20FfXXNTFqEYXyJNWh1GiZedQ==}
@@ -491,6 +768,10 @@ packages:
     os: [linux]
     libc: [glibc]
 
+  '@rgrove/parse-xml@4.2.3':
+    resolution: {integrity: sha512-Jhlb+0zYez1T1yXUQs3F1qAtFuJljBVNdy9TKmLDauAXkxsOXopKYOyQ5Wm6SvP3fycav0GviX4Y15WWhGetMw==}
+    engines: {node: '>=14.0.0'}
+
   '@rollup/rollup-android-arm-eabi@4.62.4':
     resolution: {integrity: sha512-RrPokAb7dmbxFoeO3TloqHyOjgye8RkBhSqmp4aJMIex4c9r46ZstPnleDQOq1t46VOVjwIuwNogIqbodV1Vvg==}
     cpu: [arm]
@@ -637,6 +918,12 @@ packages:
 
   '@types/node@22.20.1':
     resolution: {integrity: sha512-EANqOCF9QFyra+4pfxUcX9STKJpCLjMbObVzljIJomAWSnuSIEAvyzEU53GaajbXJEgdh0iEcPL+DGvpUd4k1Q==}
+
+  '@types/node@24.13.3':
+    resolution: {integrity: sha512-Dh8vAsV36ig5wa9OX4pXvMc9D3Veibfw2wix0CUwYODLD8nkj9UsLjASr49nPg+2eKzxhBV+v7L8pXvT4e639Q==}
+
+  '@types/vscode@1.125.0':
+    resolution: {integrity: sha512-0icm/ZQAaism87P0ekHqi4/Ju9du+Tm0RUW+y7vqRsxY2cY0FNRX1nAnaW7nT6npPt2tfHiheZ55Zm9UhqonFA==}
 
   '@typescript-eslint/eslint-plugin@8.67.0':
     resolution: {integrity: sha512-Un7Heoyj65NREbKAyIrFxeM143NZpExWmy1Nep4DLeQOeLlTeumPjoNKnBrU5D5moWXbPJgRa5Uwcdu0faVNGQ==}
@@ -817,6 +1104,15 @@ packages:
   deep-is@0.1.4:
     resolution: {integrity: sha512-oIPzksmTg4/MriiaYGO+okXDT7ztn/w3Eptv/+gSIdMdKsJo0u4CfYNFJPy+4SKMuCqGw2wxnA+URMg3t8a/bQ==}
 
+  electron@43.4.0:
+    resolution: {integrity: sha512-3qxGF0CeQbiox5oWV1JlbWGQ1VerbmDhTFqW4sJ8h7uqTHniFYPObXJcDna0DMh32et0fFyKzz0YY8lJv3t5jg==}
+    engines: {node: '>= 22.12.0'}
+    hasBin: true
+
+  env-paths@3.0.0:
+    resolution: {integrity: sha512-dtJUTepzMW3Lm/NPxRf3wP4642UWhjL2sQxc+ym2YMj1m/H2zDNQOlezafzkHwn6sMstjHTwG6iQQsctDW/b1A==}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+
   es-module-lexer@1.7.0:
     resolution: {integrity: sha512-jEQoCwk8hyb2AZziIOLhDqpm5+2ww5uIE6lkO/6jcOCusfk6LhMHpXXfBLXTZ7Ydyt0j4VoUQv6uGNYbdW+kBA==}
 
@@ -936,6 +1232,9 @@ packages:
     resolution: {integrity: sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ==}
     engines: {node: '>=18'}
 
+  graceful-fs@4.2.11:
+    resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
+
   has-flag@4.0.0:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
     engines: {node: '>=8'}
@@ -986,6 +1285,9 @@ packages:
 
   json-stable-stringify-without-jsonify@1.0.1:
     resolution: {integrity: sha512-Bdboy+l7tA3OGW6FjyFHWkP5LuByj1Tk33Ljyq0axyzdk9//JSi2u3fP1QSmd1KNwq6VOKYGlAu87CisVir6Pw==}
+
+  jsonc-parser@3.3.1:
+    resolution: {integrity: sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==}
 
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
@@ -1081,6 +1383,10 @@ packages:
     engines: {node: '>=14'}
     hasBin: true
 
+  progress@2.0.3:
+    resolution: {integrity: sha512-7PiHtLll5LdnKIMw100I+8xJXR5gW2QwWYkT6iJva0bXitZKa/XMrSbdmg3r2Xnaidz9Qumd0VPaMrZlF9V9sA==}
+    engines: {node: '>=0.4.0'}
+
   punycode@2.3.1:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
@@ -1114,6 +1420,10 @@ packages:
   siginfo@2.0.0:
     resolution: {integrity: sha512-ybx0WO1/8bSBLEWXZvEd7gMW3Sn3JFlW3TvX1nREbDLRNQNaeNN8WK0meBwPdAaOI7TtRRRJn/Es1zhrrCHu7g==}
 
+  smol-toml@1.8.0:
+    resolution: {integrity: sha512-kCZr2V3ch9i00x8zXRhjUNVcjG9ijES5dDudkXvUVCT5QlJNQWElSJdZqyPemffHoLNUYwOcou0Fy+ojN0uHSQ==}
+    engines: {node: '>= 18'}
+
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
@@ -1127,6 +1437,10 @@ packages:
   strip-json-comments@3.1.1:
     resolution: {integrity: sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig==}
     engines: {node: '>=8'}
+
+  sumchecker@3.0.1:
+    resolution: {integrity: sha512-MvjXzkz/BOfyVDkG0oFOtBxHX2u3gKbMHIF/dXblZsgD3BWOFLmHovIpZY7BykJdAjcqRCBi1WYBNdEC9yI7vg==}
+    engines: {node: '>= 8.0'}
 
   supports-color@7.2.0:
     resolution: {integrity: sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==}
@@ -1181,6 +1495,13 @@ packages:
 
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
+
+  undici-types@7.18.2:
+    resolution: {integrity: sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w==}
+
+  undici@7.29.0:
+    resolution: {integrity: sha512-IDxfleLmmbSskfWSUATiN1nfn2rDuvnMOqb5CWR92iIfojA0Ud+ulOAAEQ57LPr9rWmsreUyf5lwyao+7GNNVw==}
+    engines: {node: '>=20.18.1'}
 
   uri-js@4.4.1:
     resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
@@ -1260,6 +1581,11 @@ packages:
     resolution: {integrity: sha512-BN22B5eaMMI9UMtjrGd5g5eCYPpCPDUy0FJXbYsaT5zYxjFOckS53SQDE3pWkVoWpHXVb3BrYcEN4Twa55B5cA==}
     engines: {node: '>=0.10.0'}
 
+  yaml@2.9.0:
+    resolution: {integrity: sha512-2AvhNX3mb8zd6Zy7INTtSpl1F15HW6Wnqj0srWlkKLcpYl/gMIMJiyuGq2KeI2YFxUPjdlB+3Lc10seMLtL4cA==}
+    engines: {node: '>= 14.6'}
+    hasBin: true
+
   yocto-queue@0.1.0:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
@@ -1267,6 +1593,21 @@ packages:
 snapshots:
 
   '@babel/runtime@7.29.7': {}
+
+  '@electron-internal/extract-zip@1.0.5': {}
+
+  '@electron/get@5.1.0':
+    dependencies:
+      debug: 4.4.3
+      env-paths: 3.0.0
+      graceful-fs: 4.2.11
+      progress: 2.0.3
+      semver: 7.8.5
+      sumchecker: 3.0.1
+    optionalDependencies:
+      undici: 7.29.0
+    transitivePeerDependencies:
+      - supports-color
 
   '@esbuild/aix-ppc64@0.21.5':
     optional: true
@@ -1482,6 +1823,8 @@ snapshots:
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     optional: true
 
+  '@rgrove/parse-xml@4.2.3': {}
+
   '@rollup/rollup-android-arm-eabi@4.62.4':
     optional: true
 
@@ -1564,6 +1907,12 @@ snapshots:
   '@types/node@22.20.1':
     dependencies:
       undici-types: 6.21.0
+
+  '@types/node@24.13.3':
+    dependencies:
+      undici-types: 7.18.2
+
+  '@types/vscode@1.125.0': {}
 
   '@typescript-eslint/eslint-plugin@8.67.0(@typescript-eslint/parser@8.67.0(eslint@9.39.5)(typescript@5.9.3))(eslint@9.39.5)(typescript@5.9.3)':
     dependencies:
@@ -1778,6 +2127,16 @@ snapshots:
 
   deep-is@0.1.4: {}
 
+  electron@43.4.0:
+    dependencies:
+      '@electron-internal/extract-zip': 1.0.5
+      '@electron/get': 5.1.0
+      '@types/node': 24.13.3
+    transitivePeerDependencies:
+      - supports-color
+
+  env-paths@3.0.0: {}
+
   es-module-lexer@1.7.0: {}
 
   esbuild@0.21.5:
@@ -1948,6 +2307,8 @@ snapshots:
 
   globals@14.0.0: {}
 
+  graceful-fs@4.2.11: {}
+
   has-flag@4.0.0: {}
 
   ignore@5.3.2: {}
@@ -1985,6 +2346,8 @@ snapshots:
   json-schema-traverse@1.0.0: {}
 
   json-stable-stringify-without-jsonify@1.0.1: {}
+
+  jsonc-parser@3.3.1: {}
 
   keyv@4.5.4:
     dependencies:
@@ -2066,6 +2429,8 @@ snapshots:
 
   prettier@3.9.6: {}
 
+  progress@2.0.3: {}
+
   punycode@2.3.1: {}
 
   require-from-string@2.0.2: {}
@@ -2114,6 +2479,8 @@ snapshots:
 
   siginfo@2.0.0: {}
 
+  smol-toml@1.8.0: {}
+
   source-map-js@1.2.1: {}
 
   stackback@0.0.2: {}
@@ -2121,6 +2488,12 @@ snapshots:
   std-env@3.10.0: {}
 
   strip-json-comments@3.1.1: {}
+
+  sumchecker@3.0.1:
+    dependencies:
+      debug: 4.4.3
+    transitivePeerDependencies:
+      - supports-color
 
   supports-color@7.2.0:
     dependencies:
@@ -2165,6 +2538,11 @@ snapshots:
   typescript@5.9.3: {}
 
   undici-types@6.21.0: {}
+
+  undici-types@7.18.2: {}
+
+  undici@7.29.0:
+    optional: true
 
   uri-js@4.4.1:
     dependencies:
@@ -2242,5 +2620,7 @@ snapshots:
       stackback: 0.0.2
 
   word-wrap@1.2.5: {}
+
+  yaml@2.9.0: {}
 
   yocto-queue@0.1.0: {}

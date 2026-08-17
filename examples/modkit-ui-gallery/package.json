@@ -1,0 +1,15 @@
+{
+  "name": "modkit-ui-gallery",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "UK-1 conformance harness: mounts the shipped MK3 viewers against real in-memory data sources under the production CSP.",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "serve": "node scripts/build.mjs --serve"
+  },
+  "dependencies": {
+    "modkit-extension-x3-ui-monaco": "file:../../extensions/common/ui-monaco"
+  }
+}

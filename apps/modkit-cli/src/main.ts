@@ -12,19 +12,17 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { basename, resolve } from 'node:path'
 import process from 'node:process'
 import { isQualifiedId } from '@modkitx-x3/core'
+import { type ProviderOffer, type ProviderRequest } from '@modkitx-x3/sdk'
 import {
-  createContributionContractRegistry,
-  type ProviderOffer,
-  type ProviderRequest,
-} from '@modkitx-x3/sdk'
-import {
-  buildInventory,
   explainProviderResolution,
   inventoryHasErrors,
   renderProviderResolutionExplanation,
   type Inventory,
 } from '@modkitx-x3/host'
 import { loadExtensionDirectory } from '@modkitx-x3/host/node'
+import { createModkitCliComposition, createModkitCliTopology } from './profile.js'
+
+export { createModkitCliComposition, createModkitCliTopology } from './profile.js'
 
 function render(inventory: Inventory, json: boolean): string {
   const extension = inventory.extensions[0]
@@ -77,6 +75,10 @@ function render(inventory: Inventory, json: boolean): string {
 async function main(argv: readonly string[]): Promise<number> {
   const [command, target, ...rest] = argv
   const json = rest.includes('--json') || target === '--json'
+  if (command === 'host-profile') {
+    process.stdout.write(`${JSON.stringify(createModkitCliTopology(), null, json ? 2 : 0)}\n`)
+    return 0
+  }
   if (command === 'create' && target === 'codec') {
     const directory = rest.find(item => !item.startsWith('--'))
     const idIndex = rest.indexOf('--id')
@@ -110,14 +112,14 @@ async function main(argv: readonly string[]): Promise<number> {
   }
   if (command !== 'validate' || target === undefined || target.startsWith('--')) {
     process.stderr.write(
-      'usage: modkit validate <dir> [--json] | modkit explain <fixture.json> [--json] | modkit create codec <dir> --id <qualified-id>\n',
+      'usage: modkit validate <dir> [--json] | modkit explain <fixture.json> [--json] | modkit host-profile [--json] | modkit create codec <dir> --id <qualified-id>\n',
     )
     return 2
   }
   let inventory: Inventory
   try {
     const input = await loadExtensionDirectory(resolve(target))
-    inventory = await buildInventory([input], createContributionContractRegistry([]))
+    inventory = (await createModkitCliComposition([input])).inventory
   } catch (error) {
     process.stderr.write(`modkit validate: ${(error as Error).message}\n`)
     return 2
@@ -216,7 +218,7 @@ async function scaffoldCodec(root: string, contributionId: string): Promise<read
     }),
   )
   const input = await loadExtensionDirectory(root)
-  const inventory = await buildInventory([input], createContributionContractRegistry([]))
+  const inventory = (await createModkitCliComposition([input])).inventory
   if (inventoryHasErrors(inventory)) {
     throw new TypeError('generated scaffold did not pass its first validation')
   }

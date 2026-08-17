@@ -1,0 +1,26 @@
+{
+  "name": "modkit-extension-x3-ui-monaco",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "Monaco code-editor backend for the MK3 code stage. Trusted in-process only.",
+  "exports": {
+    ".": "./src/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "contributions",
+    "src"
+  ],
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "org.modkitx",
+    "id": "ui-monaco",
+    "contributionManifests": [
+      "./contributions/*.json"
+    ]
+  },
+  "dependencies": {
+    "monaco-editor": "^0.56.0"
+  }
+}

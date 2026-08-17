@@ -1,0 +1,47 @@
+{
+  "name": "modkit-extension-x3-text-yaml",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "Independent MK3 YAML codec and syntax provider.",
+  "exports": {
+    ".": "./src/index.js",
+    "./formats": "./src/formats/index.js",
+    "./formats/yaml/codec": "./src/formats/yaml/codec.js",
+    "./formats/yaml/provider": "./src/formats/yaml/provider.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "contributions",
+    "src",
+    "README.md"
+  ],
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "org.modkitx",
+    "id": "text-yaml",
+    "contributionManifests": [
+      "./contributions/*.json"
+    ]
+  },
+  "dependencies": {
+    "@modkitx-x3/codec-kit": "workspace:*",
+    "yaml": "^2.9.0"
+  },
+  "peerDependencies": {
+    "@modkitx-x3/core": "workspace:*",
+    "@modkitx-x3/host": "workspace:*",
+    "@modkitx-x3/sdk": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@modkitx-x3/core": {
+      "optional": true
+    },
+    "@modkitx-x3/host": {
+      "optional": true
+    },
+    "@modkitx-x3/sdk": {
+      "optional": true
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/viewer-contribution", "major": 1 },
+  "id": "org.modkitx.ui-monaco/code-stage",
+  "displayName": "Monaco code stage",
+  "runtimeVariants": [
+    {
+      "variantId": "browser",
+      "entrypoint": "./src/index.js",
+      "target": {
+        "environments": ["browser-main"],
+        "requiredHostCapabilities": ["editor.monaco"]
+      },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "kind": "stage",
+    "requiresTraits": [{ "id": "content.text", "states": ["available"] }],
+    "consumesDataSources": [{ "contract": "common.view/text-data-source", "major": 1 }],
+    "applicability": { "interpretation": "any", "sourceBytes": { "maximum": "8388608" } },
+    "priority": 400,
+    "singletonGroup": "stage.code"
+  }
+}

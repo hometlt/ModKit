@@ -1,0 +1,124 @@
+/* Page chrome only. Every colour is a Modkit token so the page follows the theme selector. */
+
+body {
+  margin: 0;
+  padding: 24px;
+  color: var(--mk-color-fg);
+  background: var(--mk-color-bg);
+  font-family: var(--mk-font-sans);
+  font-size: var(--mk-font-size-md);
+  line-height: var(--mk-line-normal);
+}
+
+.page-head {
+  margin-bottom: 20px;
+}
+
+h1 {
+  margin: 0 0 6px;
+  font-size: var(--mk-font-size-xl);
+}
+
+h2 {
+  margin: 0 0 6px;
+  font-size: var(--mk-font-size-lg);
+}
+
+.muted {
+  margin: 0 0 12px;
+  max-width: 90ch;
+  color: var(--mk-color-fg-muted);
+  font-size: var(--mk-font-size-sm);
+}
+
+code {
+  font-family: var(--mk-font-mono);
+  font-size: var(--mk-font-size-sm);
+}
+
+.theme {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  font-size: var(--mk-font-size-sm);
+}
+
+.theme select {
+  height: var(--mk-size-control);
+  padding-inline: var(--mk-space-2);
+  color: var(--mk-color-fg);
+  border: 1px solid var(--mk-color-border);
+  border-radius: var(--mk-radius-md);
+  background: var(--mk-color-sunken);
+  font: inherit;
+}
+
+.panel {
+  margin-bottom: 20px;
+  padding: 16px;
+  border: 1px solid var(--mk-color-border);
+  border-radius: var(--mk-radius-lg);
+  background: var(--mk-color-surface);
+}
+
+/* The workbench fills its own box; without a definite height it would collapse to its content. */
+.workbench-host {
+  height: 340px;
+  overflow: hidden;
+  border: 1px solid var(--mk-color-border);
+  border-radius: var(--mk-radius-md);
+}
+
+.grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--mk-font-size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.grid th,
+.grid td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--mk-color-separator);
+  text-align: start;
+}
+
+.grid th {
+  color: var(--mk-color-fg-muted);
+  font-weight: var(--mk-font-weight-medium);
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pill {
+  padding: 3px 10px;
+  border: 1px solid var(--mk-color-border);
+  border-radius: var(--mk-radius-pill);
+  background: var(--mk-color-raised);
+  font-family: var(--mk-font-mono);
+  font-size: var(--mk-font-size-xs);
+}
+
+.claims {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--mk-font-size-sm);
+}
+
+.claims li {
+  padding: 3px 0;
+}
+
+.ok {
+  color: var(--mk-status-ok);
+}
+
+.bad {
+  color: var(--mk-status-error);
+  font-weight: var(--mk-font-weight-medium);
+}

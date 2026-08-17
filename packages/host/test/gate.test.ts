@@ -98,6 +98,7 @@ async function ticketFixture(
     {
       contract: { id: GREETER_CONTRIBUTION_CONTRACT, major: 1 },
       schema: { type: 'object' },
+      validator: value => typeof value === 'object' && value !== null && !Array.isArray(value),
       mode: 'executable',
       validateSemantics: () => [],
       project: (validated, context) => [

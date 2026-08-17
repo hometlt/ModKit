@@ -44,20 +44,23 @@ export const treeViewer: ViewerModule = defineViewerModule({
     if (lease === undefined) throw new TypeError('tree binding is unavailable')
     scope.lease(lease)
     const model = new LazyTreeModel(lease.value as TreeDataSource)
-    const list = element(root, 'ul', { className: 'modkit-viewer__tree' })
+    const list = element(root, 'ul', { className: 'modkit-viewer__tree', part: 'tree.list' })
     list.setAttribute('role', 'group')
 
     const renderNode = async (node: TreeNodeRef, parent: HTMLElement) => {
       const facts = await model.facts(node)
-      const item = element(parent, 'li')
+      const item = element(parent, 'li', { part: 'tree.item' })
       item.setAttribute('role', 'treeitem')
       item.dataset['nodeId'] = node.id
       item.setAttribute('aria-expanded', node.hasChildren ? 'false' : 'undefined')
-      const label = element(item, 'button', { text: facts.label }) as HTMLButtonElement
+      const label = element(item, 'button', {
+        text: facts.label,
+        part: 'tree.label',
+      }) as HTMLButtonElement
       label.type = 'button'
       label.disabled = !node.hasChildren
       if (facts.preview !== undefined) label.title = facts.preview
-      const children = element(item, 'ul')
+      const children = element(item, 'ul', { part: 'tree.children' })
       children.hidden = true
       children.setAttribute('role', 'group')
       let loaded = false

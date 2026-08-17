@@ -6,6 +6,39 @@ overrides a canonical or detailed owner.
 
 ---
 
+## Assets Capabilities media layer and codec boundaries (2026-08-16)
+
+- The standard data-source registry now owns five presentation-neutral media contracts:
+  raster-image, vector-scene, audio-media, video-media and model-scene. They are bounded/lazy and
+  browser-neutral; viewers no longer infer a format from raw bytes.
+- Native codecs remain authoritative for parsing. UVG/UVA/UVV/UVM are interchange/cache targets,
+  not mandatory eager copies on every open. This preserves native source bytes, provenance and
+  round-trip evidence while still allowing a converter provider to materialize a UV asset.
+- The extension split follows dependency closures, not filename count: archives, images, audio,
+  video, vector, models and common documents are separate packages. Text syntax is split further
+  into JSON/JSONC, CSV/TSV, INI, XML, YAML and TOML install units so one parser dependency never
+  arrives with an unrelated format. Zero-dependency siblings may share one family package, but each
+  codec has its own entrypoint. A dependency-heavy decoder/renderer must be a separate provider
+  extension/package rather than entering a family index or `@modkitx-x3/ui`.
+- PNG/JPEG publish raster sources; PNG additionally exposes a bounded lazy RGBA8 region decoder for
+  supported 8-bit non-interlaced images. MP3/Ogg publish audio sources; MP4/WebM publish video
+  sources. SVG publishes only the rejected-on-active-content `uvg.secure-static.v1` profile. OBJ
+  publishes decoded triangle geometry; glTF publishes a metadata-only scene until its artifact-
+  bound external buffers are resolved.
+- UI image, audio, video, vector and model stages are independent public entrypoints. The root UI
+  export may aggregate declarations, but activation imports only the selected contribution
+  entrypoint. The lightweight viewers use browser decoders/2D rendering; WebGL/Three.js, FFmpeg,
+  Basis/KTX2 and native codecs remain optional providers.
+- `StandardTraitParameterMap` gives media traits typed parameter profiles while preserving
+  `JsonValue` fallback for standard traits that do not yet have a specialized profile.
+
+Open owner/spec work remains explicit: UVT/UVA/UVV/UVG wire drafts are not frozen; glTF external
+buffer/image companion resolution belongs to the host artifact planner; full JPEG/MP3/Ogg/video
+decode and GPU model rendering require separately selected providers. None of those gaps merge the
+reference codec packages or weaken the source contracts.
+
+---
+
 ## A‑2…A‑8 implementation handoff (2026-08-15)
 
 - A‑2 closes inventory → contract-owned projection → resolution → artifact-bound activation,

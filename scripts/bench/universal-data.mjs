@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { createProvider as createCsvProvider } from '../../extensions/common/text-data/src/formats/csv/provider.js'
+import { createProvider as createCsvProvider } from '../../extensions/common/text-delimited/src/families/delimited/entrypoints/csv-provider.js'
 import { VirtualTextModel } from '../../packages/ui/dist/text-virtual/index.js'
 import { HexWindowModel } from '../../packages/ui/dist/hex/index.js'
 

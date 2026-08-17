@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.modkitx/audio-ogg",
+  "displayName": "Ogg media",
+  "runtimeVariants": [
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/formats/ogg/codec.js",
+      "target": { "environments": ["browser-worker", "node", "node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "ogg", "label": "Ogg media", "mediaType": "audio/ogg" }],
+    "roles": ["container", "media"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored", "compiled"],
+    "openIntents": ["probe", "inspect", "stream", "export"],
+    "match": {
+      "extensions": ["ogg", "oga", "opus"],
+      "mediaTypes": ["audio/ogg", "audio/opus", "application/ogg"]
+    },
+    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 8192 }], "maxBytes": 8192 },
+    "representations": [
+      {
+        "id": "logical-stream-metadata",
+        "contract": "common.audio/ogg-stream-metadata",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      { "contract": "common.view/audio-media-source", "major": 1 },
+      { "contract": "common.view/transport-source", "major": 1 },
+      { "contract": "common.view/tree-data-source", "major": 1 },
+      { "contract": "common.view/byte-range-source", "major": 1 }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "media.play-pause",
+        "handlerId": "transport-play-pause",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "media.set-rate",
+        "handlerId": "transport-set-rate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "media.select-track",
+        "handlerId": "transport-select-track",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      }
+    ],
+    "traitDeclarations": [
+      { "id": "audio.streams", "representation": "source", "presence": "may-expose" },
+      { "id": "media.duration", "representation": "source", "presence": "may-expose" },
+      { "id": "container.entries", "representation": "source", "presence": "will-expose" },
+      { "id": "content.binary", "representation": "source", "presence": "will-expose" }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1073741824",
+      "maxDepth": 64,
+      "maxNodes": 1000000,
+      "maxScalarBytes": 104857600,
+      "maxDiagnostics": 1000
+    }
+  }
+}

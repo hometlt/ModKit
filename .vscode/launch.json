@@ -1,0 +1,107 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Modkit X3: Headless",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/debug/app-runner.mjs",
+      "args": ["--app", "headless", "--set", "${input:extensionSet}", "--stay-open"],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "Modkit X3: Build",
+      "console": "integratedTerminal",
+      "sourceMaps": true,
+      "outFiles": ["${workspaceFolder}/**/dist/**/*.js"],
+      "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"]
+    },
+    {
+      "name": "Modkit X3: PWA (Chrome)",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "url": "http://127.0.0.1:4173/",
+      "webRoot": "${workspaceFolder}",
+      "preLaunchTask": "Modkit X3: PWA Server",
+      "sourceMaps": true,
+      "sourceMapPathOverrides": {
+        "webpack:///*": "${webRoot}/*",
+        "../*": "${webRoot}/*"
+      }
+    },
+    {
+      "name": "Modkit X3: Electron Adapter",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/debug/app-runner.mjs",
+      "args": ["--app", "electron", "--set", "${input:extensionSet}", "--stay-open"],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "Modkit X3: Build",
+      "console": "integratedTerminal",
+      "sourceMaps": true,
+      "outFiles": ["${workspaceFolder}/**/dist/**/*.js"],
+      "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"]
+    },
+    {
+      "name": "Modkit X3: VS Code Adapter",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/debug/app-runner.mjs",
+      "args": ["--app", "vscode", "--set", "${input:extensionSet}", "--stay-open"],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "Modkit X3: Build",
+      "console": "integratedTerminal",
+      "sourceMaps": true,
+      "outFiles": ["${workspaceFolder}/**/dist/**/*.js"],
+      "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"]
+    },
+    {
+      "name": "Modkit X3: Electron App (real window)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "${workspaceFolder}/apps/electron/node_modules/electron/dist/electron.exe",
+      "runtimeArgs": ["${workspaceFolder}/apps/electron/electron/main.cjs"],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "Modkit X3: Build Electron Shell",
+      "console": "integratedTerminal",
+      "sourceMaps": true,
+      "outFiles": ["${workspaceFolder}/apps/electron/dist*/**/*.js"],
+      "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"]
+    },
+    {
+      "name": "Modkit X3: VS Code Extension (Extension Host)",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}/apps/modkit-vscode"],
+      "preLaunchTask": "Modkit X3: Build VS Code Extension",
+      "outFiles": ["${workspaceFolder}/apps/modkit-vscode/dist-app/**/*.cjs"]
+    },
+    {
+      "name": "Modkit X3: Web Composition (Node)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/debug/app-runner.mjs",
+      "args": ["--app", "web", "--set", "${input:extensionSet}", "--stay-open"],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "Modkit X3: Build",
+      "console": "integratedTerminal",
+      "sourceMaps": true,
+      "outFiles": ["${workspaceFolder}/**/dist/**/*.js"],
+      "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "extensionSet",
+      "type": "pickString",
+      "description": "Extension set to load",
+      "default": "structured-text",
+      "options": [
+        "structured-text",
+        "documents",
+        "media",
+        "models-and-archives",
+        "editor-and-documents",
+        "full-codecs"
+      ]
+    }
+  ]
+}

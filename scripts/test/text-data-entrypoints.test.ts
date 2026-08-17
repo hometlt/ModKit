@@ -1,0 +1,53 @@
+import { mkdtempSync, mkdirSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterEach, describe, expect, it } from 'vitest'
+import { discoverTextDataEntrypoints } from '../text-data-entrypoints.mjs'
+
+const temporary: string[] = []
+
+afterEach(() => {
+  for (const directory of temporary.splice(0)) rmSync(directory, { recursive: true, force: true })
+})
+
+function contribution(root: string, packageName: string, kind: 'codec' | 'provider') {
+  const extension = join(root, 'extensions', 'common', packageName)
+  const contributions = join(extension, 'contributions')
+  const implementation = join(extension, 'src', 'moved-family')
+  mkdirSync(contributions, { recursive: true })
+  mkdirSync(implementation, { recursive: true })
+  const entrypoint = join(implementation, `${kind}.js`)
+  writeFileSync(entrypoint, 'export const createCodec = () => ({})\n')
+  const manifest = {
+    contract: {
+      id:
+        kind === 'codec'
+          ? 'org.modkitx/codec-contribution'
+          : 'org.modkitx/service-provider-contribution',
+    },
+    runtimeVariants: [{ entrypoint: `./src/moved-family/${kind}.js` }],
+    spec:
+      kind === 'codec'
+        ? { formatRefs: [{ formatId: 'json' }] }
+        : { provides: [{ contract: 'common.text-data/json-syntax' }] },
+  }
+  writeFileSync(join(contributions, `${kind}.json`), JSON.stringify(manifest))
+}
+
+describe('text-data contribution entrypoint discovery', () => {
+  it('continues to resolve entrypoints after the extension directory is renamed', () => {
+    const root = mkdtempSync(join(tmpdir(), 'modkit-entrypoints-'))
+    temporary.push(root)
+    contribution(root, 'original-name', 'codec')
+    contribution(root, 'original-name', 'provider')
+    renameSync(
+      join(root, 'extensions', 'common', 'original-name'),
+      join(root, 'extensions', 'common', 'renamed-extension'),
+    )
+
+    const result = discoverTextDataEntrypoints(root, ['json'])
+    expect(result).toHaveLength(2)
+    expect(result.every(entry => entry.absolute?.includes('renamed-extension'))).toBe(true)
+    expect(result.every(entry => entry.reason === undefined)).toBe(true)
+  })
+})

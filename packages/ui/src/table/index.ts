@@ -2,6 +2,7 @@ import type { Page, Row, TableDataSource, ViewerModule } from '@modkitx-x3/sdk'
 import {
   createSurface,
   createViewerMount,
+  setPart,
   defineViewerModule,
   element,
   setViewerText,
@@ -45,22 +46,35 @@ export const tableViewer: ViewerModule = defineViewerModule({
     if (lease === undefined) throw new TypeError('table binding is unavailable')
     scope.lease(lease)
     const model = new LazyTableModel(lease.value as TableDataSource)
-    const table = element(root, 'table', { className: 'modkit-viewer__table' }) as HTMLTableElement
+    const table = element(root, 'table', {
+      className: 'modkit-viewer__table',
+      part: 'table',
+    }) as HTMLTableElement
     const caption = table.createCaption()
+    setPart(caption, 'table.caption')
     const shape = await model.shape()
     setViewerText(caption, `${shape.rows} rows, ${shape.columns} columns`)
     const body = table.createTBody()
+    setPart(body, 'table.body')
     const render = (rows: readonly Row[]) => {
       body.replaceChildren()
       for (const row of rows) {
         const tr = body.insertRow()
+        setPart(tr, 'table.row')
         tr.dataset['row'] = String(row.index)
-        for (const value of row.cells) setViewerText(tr.insertCell(), value)
+        for (const value of row.cells) {
+          const cell = tr.insertCell()
+          setPart(cell, 'table.cell')
+          setViewerText(cell, value)
+        }
       }
     }
     const first = await model.first(0, scope.signal)
     render(first.items)
-    const next = element(root, 'button', { text: 'Next rows' }) as HTMLButtonElement
+    const next = element(root, 'button', {
+      text: 'Next rows',
+      part: 'table.next',
+    }) as HTMLButtonElement
     next.type = 'button'
     next.disabled = first.nextCursor === undefined
     const advance = async () => {

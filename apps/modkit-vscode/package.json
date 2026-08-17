@@ -1,0 +1,85 @@
+{
+  "name": "@modkitx-x3/modkit-vscode",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "dist-app",
+    "contributes.generated.json"
+  ],
+  "scripts": {
+    "contributes:emit": "node scripts/generate-contributes.mjs",
+    "contributes:check": "node scripts/generate-contributes.mjs --check",
+    "ext:build": "node scripts/build-extension.mjs"
+  },
+  "dependencies": {
+    "@modkitx-x3/core": "workspace:*",
+    "@modkitx-x3/host": "workspace:*",
+    "@modkitx-x3/sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.125.0"
+  },
+  "displayName": "Modkit MK3",
+  "description": "Modkit MK3 host for StarCraft II mod assets.",
+  "publisher": "modkitx",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "main": "./dist-app/extension.cjs",
+  "categories": [
+    "Other"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "modkit.explainResolution",
+        "title": "Modkit: Explain Resolution"
+      },
+      {
+        "command": "modkit.openWith",
+        "title": "Modkit: Open With…"
+      },
+      {
+        "command": "modkit.showHostProfile",
+        "title": "Modkit: Show Host Profile"
+      }
+    ],
+    "customEditors": [
+      {
+        "viewType": "modkit.genericAssetPreview",
+        "displayName": "Modkit Asset Preview",
+        "selector": [
+          {
+            "filenamePattern": "*"
+          }
+        ],
+        "priority": "option"
+      }
+    ],
+    "views": {
+      "modkit": [
+        {
+          "id": "modkit.assets",
+          "name": "Assets"
+        },
+        {
+          "id": "modkit.extensions",
+          "name": "Extensions"
+        }
+      ]
+    }
+  },
+  "activationEvents": [
+    "onCommand:modkit.explainResolution",
+    "onCommand:modkit.openWith",
+    "onCommand:modkit.showHostProfile"
+  ]
+}

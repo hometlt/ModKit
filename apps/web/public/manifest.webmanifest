@@ -1,0 +1,9 @@
+{
+  "name": "Modkit MK3",
+  "short_name": "Modkit",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#1f1f1f",
+  "theme_color": "#0078d4",
+  "icons": []
+}

@@ -57,7 +57,7 @@ export const namespaceViewer: ViewerModule = defineViewerModule({
     scope.lease(lease)
     const source = lease.value as NamespaceEntrySource
     const model = new NamespaceModel(source)
-    const list = element(root, 'ul')
+    const list = element(root, 'ul', { part: 'namespace.list' })
     list.setAttribute('role', 'group')
 
     const renderPrefix = async (prefix: string, parent: HTMLElement) => {
@@ -66,17 +66,20 @@ export const namespaceViewer: ViewerModule = defineViewerModule({
       for (const entry of page.items) {
         if (seen.has(entry.id)) throw new TypeError(`duplicate namespace entry id: ${entry.id}`)
         seen.add(entry.id)
-        const item = element(parent, 'li')
+        const item = element(parent, 'li', { part: 'namespace.item' })
         item.setAttribute('role', 'treeitem')
         item.dataset['entryId'] = entry.id
         item.dataset['revision'] = entry.revision
-        const button = element(item, 'button', { text: entry.name }) as HTMLButtonElement
+        const button = element(item, 'button', {
+          text: entry.name,
+          part: 'namespace.label',
+        }) as HTMLButtonElement
         button.type = 'button'
         const activate = async () => {
           if (entry.kind === 'directory') {
             let nested = item.querySelector(':scope > ul') as HTMLElement | null
             if (nested === null) {
-              nested = element(item, 'ul')
+              nested = element(item, 'ul', { part: 'namespace.children' })
               nested.setAttribute('role', 'group')
               await renderPrefix(entry.path, nested)
             }

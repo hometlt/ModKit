@@ -1,0 +1,26 @@
+{
+  "name": "modkit-extension-x3-ui-graph-3d",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "Three.js graph renderer for the MK3 relation graph. Optional GPU backend.",
+  "exports": {
+    ".": "./src/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "contributions",
+    "src"
+  ],
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "org.modkitx",
+    "id": "ui-graph-3d",
+    "contributionManifests": [
+      "./contributions/*.json"
+    ]
+  },
+  "dependencies": {
+    "three": "^0.180.0"
+  }
+}

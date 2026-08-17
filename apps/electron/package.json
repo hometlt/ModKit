@@ -1,0 +1,29 @@
+{
+  "name": "@modkitx-x3/electron-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "dist-app",
+    "electron"
+  ],
+  "dependencies": {
+    "@modkitx-x3/core": "workspace:*",
+    "@modkitx-x3/host": "workspace:*",
+    "@modkitx-x3/sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "electron": "^43.4.0"
+  },
+  "scripts": {
+    "app:build": "node scripts/build-app.mjs",
+    "start": "node scripts/build-app.mjs && electron electron/main.cjs"
+  }
+}

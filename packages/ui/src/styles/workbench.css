@@ -1,0 +1,69 @@
+/* Authored. Host-neutral application shell; every visual value comes from shared tokens. */
+
+@layer mk.components {
+  [data-mk-part='workbench'] {
+    display: grid;
+    grid-template:
+      'title title title' var(--mk-toolbar-height)
+      'activity sidebar main' minmax(0, 1fr)
+      'activity panel panel' minmax(0, auto)
+      'status status status' var(--mk-size-control)
+      / var(--mk-shell-rail-width) minmax(calc(var(--mk-space-8) * 4), 25%) minmax(0, 1fr);
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    color: var(--mk-color-fg);
+    background: var(--mk-color-canvas-bg);
+  }
+
+  [data-mk-part='workbench.titlebar'] {
+    grid-area: title;
+    display: flex;
+    align-items: center;
+    padding-inline: var(--mk-space-3);
+    border-bottom: 1px solid var(--mk-color-border);
+    background: var(--mk-color-raised);
+  }
+
+  [data-mk-part='workbench.activitybar'] {
+    grid-area: activity;
+    border-right: 1px solid var(--mk-color-border);
+    background: var(--mk-color-raised);
+  }
+
+  [data-mk-part='workbench.sidebar'] {
+    grid-area: sidebar;
+    min-width: 0;
+    overflow: auto;
+    border-right: 1px solid var(--mk-color-border);
+    background: var(--mk-color-sunken);
+  }
+
+  [data-mk-part='workbench.main'] {
+    grid-area: main;
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  [data-mk-part='workbench.panel'] {
+    grid-area: panel;
+    max-height: 40%;
+    overflow: auto;
+    border-top: 1px solid var(--mk-color-border);
+  }
+
+  [data-mk-part='workbench.statusbar'] {
+    grid-area: status;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    padding-inline: var(--mk-space-2);
+    color: var(--mk-color-accent-fg);
+    background: var(--mk-color-accent);
+  }
+
+  [data-mk-part='workbench.host-status'][data-mk-state~='degraded'] {
+    color: var(--mk-status-warn);
+  }
+}

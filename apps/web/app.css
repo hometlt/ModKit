@@ -1,0 +1,65 @@
+/* Shell chrome only — the workbench brings its own styling from the shipped stylesheet. */
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--mk-color-fg);
+  background: var(--mk-color-bg);
+  font-family: var(--mk-font-sans);
+  font-size: var(--mk-font-size-md);
+}
+
+/* The workbench is a grid that fills its container; without a definite height it collapses. */
+.app-root {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.booting {
+  margin: 0;
+  padding: 24px;
+  color: var(--mk-color-fg-muted);
+}
+
+.boot-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  overflow: auto;
+}
+
+.boot-summary {
+  color: var(--mk-color-fg-muted);
+  font-size: var(--mk-font-size-xs);
+  line-height: var(--mk-line-loose);
+}
+
+.facility-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--mk-font-mono);
+  font-size: var(--mk-font-size-xs);
+}
+
+.facility-list li {
+  padding: 2px 4px;
+  border-radius: var(--mk-radius-sm);
+}
+
+.facility-list li:nth-child(odd) {
+  background: var(--mk-color-raised);
+}
+
+.placeholder {
+  max-width: 60ch;
+  margin: auto;
+  padding: 24px;
+  color: var(--mk-color-fg-subtle);
+  text-align: center;
+}

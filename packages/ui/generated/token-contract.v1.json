@@ -1,0 +1,1576 @@
+{
+  "$schema": "https://schemas.modkitx.org/x3/ui-token-contract.v1.schema.json",
+  "contract": {
+    "id": "org.modkitx.ui/token-contract",
+    "major": 1
+  },
+  "tokens": [
+    {
+      "name": "palette.neutral.050",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-neutral-050",
+      "description": "neutral ramp step 050"
+    },
+    {
+      "name": "palette.neutral.100",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-neutral-100",
+      "description": "neutral ramp step 100"
+    },
+    {
+      "name": "palette.neutral.200",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-neutral-200",
+      "description": "neutral ramp step 200"
+    },
+    {
+      "name": "palette.neutral.300",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-neutral-300",
+      "description": "neutral ramp step 300"
+    },
+    {
+      "name": "palette.neutral.400",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-neutral-400",
+      "description": "neutral ramp step 400"
+    },
+    {
+      "name": "palette.neutral.500",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-neutral-500",
+      "description": "neutral ramp step 500"
+    },
+    {
+      "name": "palette.neutral.600",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-neutral-600",
+      "description": "neutral ramp step 600"
+    },
+    {
+      "name": "palette.neutral.700",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-neutral-700",
+      "description": "neutral ramp step 700"
+    },
+    {
+      "name": "palette.neutral.800",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-neutral-800",
+      "description": "neutral ramp step 800"
+    },
+    {
+      "name": "palette.neutral.900",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-neutral-900",
+      "description": "neutral ramp step 900"
+    },
+    {
+      "name": "palette.accent.050",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-accent-050",
+      "description": "accent ramp step 050"
+    },
+    {
+      "name": "palette.accent.100",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-accent-100",
+      "description": "accent ramp step 100"
+    },
+    {
+      "name": "palette.accent.200",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-accent-200",
+      "description": "accent ramp step 200"
+    },
+    {
+      "name": "palette.accent.300",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-accent-300",
+      "description": "accent ramp step 300"
+    },
+    {
+      "name": "palette.accent.400",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-accent-400",
+      "description": "accent ramp step 400"
+    },
+    {
+      "name": "palette.accent.500",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-accent-500",
+      "description": "accent ramp step 500"
+    },
+    {
+      "name": "palette.accent.600",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-accent-600",
+      "description": "accent ramp step 600"
+    },
+    {
+      "name": "palette.accent.700",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-accent-700",
+      "description": "accent ramp step 700"
+    },
+    {
+      "name": "palette.accent.800",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-accent-800",
+      "description": "accent ramp step 800"
+    },
+    {
+      "name": "palette.accent.900",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-accent-900",
+      "description": "accent ramp step 900"
+    },
+    {
+      "name": "palette.ok.050",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-ok-050",
+      "description": "ok ramp step 050"
+    },
+    {
+      "name": "palette.ok.100",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-ok-100",
+      "description": "ok ramp step 100"
+    },
+    {
+      "name": "palette.ok.200",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-ok-200",
+      "description": "ok ramp step 200"
+    },
+    {
+      "name": "palette.ok.300",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-ok-300",
+      "description": "ok ramp step 300"
+    },
+    {
+      "name": "palette.ok.400",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-ok-400",
+      "description": "ok ramp step 400"
+    },
+    {
+      "name": "palette.ok.500",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-ok-500",
+      "description": "ok ramp step 500"
+    },
+    {
+      "name": "palette.ok.600",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-ok-600",
+      "description": "ok ramp step 600"
+    },
+    {
+      "name": "palette.ok.700",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-ok-700",
+      "description": "ok ramp step 700"
+    },
+    {
+      "name": "palette.ok.800",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-ok-800",
+      "description": "ok ramp step 800"
+    },
+    {
+      "name": "palette.ok.900",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-ok-900",
+      "description": "ok ramp step 900"
+    },
+    {
+      "name": "palette.warn.050",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-warn-050",
+      "description": "warn ramp step 050"
+    },
+    {
+      "name": "palette.warn.100",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-warn-100",
+      "description": "warn ramp step 100"
+    },
+    {
+      "name": "palette.warn.200",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-warn-200",
+      "description": "warn ramp step 200"
+    },
+    {
+      "name": "palette.warn.300",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-warn-300",
+      "description": "warn ramp step 300"
+    },
+    {
+      "name": "palette.warn.400",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-warn-400",
+      "description": "warn ramp step 400"
+    },
+    {
+      "name": "palette.warn.500",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-warn-500",
+      "description": "warn ramp step 500"
+    },
+    {
+      "name": "palette.warn.600",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-warn-600",
+      "description": "warn ramp step 600"
+    },
+    {
+      "name": "palette.warn.700",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-warn-700",
+      "description": "warn ramp step 700"
+    },
+    {
+      "name": "palette.warn.800",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-warn-800",
+      "description": "warn ramp step 800"
+    },
+    {
+      "name": "palette.warn.900",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-warn-900",
+      "description": "warn ramp step 900"
+    },
+    {
+      "name": "palette.error.050",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-error-050",
+      "description": "error ramp step 050"
+    },
+    {
+      "name": "palette.error.100",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-error-100",
+      "description": "error ramp step 100"
+    },
+    {
+      "name": "palette.error.200",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-error-200",
+      "description": "error ramp step 200"
+    },
+    {
+      "name": "palette.error.300",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-error-300",
+      "description": "error ramp step 300"
+    },
+    {
+      "name": "palette.error.400",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-error-400",
+      "description": "error ramp step 400"
+    },
+    {
+      "name": "palette.error.500",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-error-500",
+      "description": "error ramp step 500"
+    },
+    {
+      "name": "palette.error.600",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-error-600",
+      "description": "error ramp step 600"
+    },
+    {
+      "name": "palette.error.700",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-error-700",
+      "description": "error ramp step 700"
+    },
+    {
+      "name": "palette.error.800",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-error-800",
+      "description": "error ramp step 800"
+    },
+    {
+      "name": "palette.error.900",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-error-900",
+      "description": "error ramp step 900"
+    },
+    {
+      "name": "palette.info.050",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-info-050",
+      "description": "info ramp step 050"
+    },
+    {
+      "name": "palette.info.100",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-info-100",
+      "description": "info ramp step 100"
+    },
+    {
+      "name": "palette.info.200",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-info-200",
+      "description": "info ramp step 200"
+    },
+    {
+      "name": "palette.info.300",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-info-300",
+      "description": "info ramp step 300"
+    },
+    {
+      "name": "palette.info.400",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-info-400",
+      "description": "info ramp step 400"
+    },
+    {
+      "name": "palette.info.500",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-info-500",
+      "description": "info ramp step 500"
+    },
+    {
+      "name": "palette.info.600",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-info-600",
+      "description": "info ramp step 600"
+    },
+    {
+      "name": "palette.info.700",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-info-700",
+      "description": "info ramp step 700"
+    },
+    {
+      "name": "palette.info.800",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-info-800",
+      "description": "info ramp step 800"
+    },
+    {
+      "name": "palette.info.900",
+      "tier": 1,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-palette-info-900",
+      "description": "info ramp step 900"
+    },
+    {
+      "name": "color.bg",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-bg",
+      "description": "window ground behind everything"
+    },
+    {
+      "name": "color.surface",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-surface",
+      "description": "default component surface"
+    },
+    {
+      "name": "color.raised",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-raised",
+      "description": "surface above the default plane"
+    },
+    {
+      "name": "color.sunken",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-sunken",
+      "description": "inset surface such as an input well"
+    },
+    {
+      "name": "color.overlay",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-overlay",
+      "description": "floating surface: menu, popover, dialog"
+    },
+    {
+      "name": "color.scrim",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-scrim",
+      "description": "dimming layer behind a modal"
+    },
+    {
+      "name": "color.fg",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-fg",
+      "description": "primary text"
+    },
+    {
+      "name": "color.fg-muted",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-fg-muted",
+      "description": "secondary text"
+    },
+    {
+      "name": "color.fg-subtle",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-fg-subtle",
+      "description": "tertiary text and placeholders"
+    },
+    {
+      "name": "color.fg-inverse",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-fg-inverse",
+      "description": "text on an accent fill"
+    },
+    {
+      "name": "color.fg-disabled",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-fg-disabled",
+      "description": "disabled text"
+    },
+    {
+      "name": "color.fg-link",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-fg-link",
+      "description": "hyperlink text"
+    },
+    {
+      "name": "color.fg-destructive",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-fg-destructive",
+      "description": "destructive action text"
+    },
+    {
+      "name": "color.border",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-border",
+      "description": "default separator and component border"
+    },
+    {
+      "name": "color.border-strong",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-border-strong",
+      "description": "emphasised border"
+    },
+    {
+      "name": "color.separator",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-separator",
+      "description": "hairline between list sections"
+    },
+    {
+      "name": "color.accent",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-accent",
+      "description": "primary action fill"
+    },
+    {
+      "name": "color.accent-fg",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-accent-fg",
+      "description": "text on the accent fill"
+    },
+    {
+      "name": "color.accent-muted",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-accent-muted",
+      "description": "low-emphasis accent wash"
+    },
+    {
+      "name": "color.focus",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-focus",
+      "description": "focus ring"
+    },
+    {
+      "name": "color.hover",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-hover",
+      "description": "hover wash"
+    },
+    {
+      "name": "color.active",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-active",
+      "description": "pressed wash"
+    },
+    {
+      "name": "color.selection",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-selection",
+      "description": "active selection fill"
+    },
+    {
+      "name": "color.selection-inactive",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-selection-inactive",
+      "description": "selection fill when the surface is unfocused"
+    },
+    {
+      "name": "color.selection-fg",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-selection-fg",
+      "description": "text on a selection fill"
+    },
+    {
+      "name": "color.match-highlight",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-match-highlight",
+      "description": "search match highlight"
+    },
+    {
+      "name": "color.drop-target",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-drop-target",
+      "description": "drag-and-drop target indicator"
+    },
+    {
+      "name": "color.readonly",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-readonly",
+      "description": "read-only field wash"
+    },
+    {
+      "name": "status.ok",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-status-ok",
+      "description": "ok indicator colour"
+    },
+    {
+      "name": "status.ok-fg",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-status-ok-fg",
+      "description": "text on a ok fill"
+    },
+    {
+      "name": "status.ok-bg",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-status-ok-bg",
+      "description": "ok background wash"
+    },
+    {
+      "name": "status.ok-border",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-status-ok-border",
+      "description": "ok border"
+    },
+    {
+      "name": "status.warn",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-status-warn",
+      "description": "warn indicator colour"
+    },
+    {
+      "name": "status.warn-fg",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-status-warn-fg",
+      "description": "text on a warn fill"
+    },
+    {
+      "name": "status.warn-bg",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-status-warn-bg",
+      "description": "warn background wash"
+    },
+    {
+      "name": "status.warn-border",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-status-warn-border",
+      "description": "warn border"
+    },
+    {
+      "name": "status.error",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-status-error",
+      "description": "error indicator colour"
+    },
+    {
+      "name": "status.error-fg",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-status-error-fg",
+      "description": "text on a error fill"
+    },
+    {
+      "name": "status.error-bg",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-status-error-bg",
+      "description": "error background wash"
+    },
+    {
+      "name": "status.error-border",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-status-error-border",
+      "description": "error border"
+    },
+    {
+      "name": "status.info",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-status-info",
+      "description": "info indicator colour"
+    },
+    {
+      "name": "status.info-fg",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-status-info-fg",
+      "description": "text on a info fill"
+    },
+    {
+      "name": "status.info-bg",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-status-info-bg",
+      "description": "info background wash"
+    },
+    {
+      "name": "status.info-border",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-status-info-border",
+      "description": "info border"
+    },
+    {
+      "name": "color.scrollbar-track",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-scrollbar-track",
+      "description": "scrollbar trough"
+    },
+    {
+      "name": "color.scrollbar-thumb",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-scrollbar-thumb",
+      "description": "scrollbar thumb"
+    },
+    {
+      "name": "color.scrollbar-thumb-hover",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-scrollbar-thumb-hover",
+      "description": "scrollbar thumb, hovered"
+    },
+    {
+      "name": "color.scrollbar-thumb-active",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-scrollbar-thumb-active",
+      "description": "scrollbar thumb while dragging"
+    },
+    {
+      "name": "color.scrollbar-shadow",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-scrollbar-shadow",
+      "description": "hairline separating a scrolled pane from its content"
+    },
+    {
+      "name": "color.canvas-bg",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-canvas-bg",
+      "description": "canvas or WebGL scene ground"
+    },
+    {
+      "name": "color.canvas-grid",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-canvas-grid",
+      "description": "scene grid lines"
+    },
+    {
+      "name": "color.canvas-gizmo",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-canvas-gizmo",
+      "description": "scene gizmo and axis handles"
+    },
+    {
+      "name": "color.axis-x",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-axis-x",
+      "description": "X axis handle and line"
+    },
+    {
+      "name": "color.axis-y",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-axis-y",
+      "description": "Y axis handle and line"
+    },
+    {
+      "name": "color.axis-z",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-axis-z",
+      "description": "Z axis handle and line"
+    },
+    {
+      "name": "color.canvas-selection",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-canvas-selection",
+      "description": "selected geometry outline"
+    },
+    {
+      "name": "chart.categorical-1",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-chart-categorical-1",
+      "description": "categorical series 1"
+    },
+    {
+      "name": "chart.categorical-2",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-chart-categorical-2",
+      "description": "categorical series 2"
+    },
+    {
+      "name": "chart.categorical-3",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-chart-categorical-3",
+      "description": "categorical series 3"
+    },
+    {
+      "name": "chart.categorical-4",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-chart-categorical-4",
+      "description": "categorical series 4"
+    },
+    {
+      "name": "chart.categorical-5",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-chart-categorical-5",
+      "description": "categorical series 5"
+    },
+    {
+      "name": "chart.categorical-6",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-chart-categorical-6",
+      "description": "categorical series 6"
+    },
+    {
+      "name": "color.graph-node",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-graph-node",
+      "description": "relation-graph node fill"
+    },
+    {
+      "name": "color.graph-edge",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-graph-edge",
+      "description": "relation-graph edge stroke"
+    },
+    {
+      "name": "color.graph-edge-dead",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-graph-edge-dead",
+      "description": "unresolved reference edge"
+    },
+    {
+      "name": "color.diff-added",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-diff-added",
+      "description": "added line or cell wash"
+    },
+    {
+      "name": "color.diff-removed",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-diff-removed",
+      "description": "removed line or cell wash"
+    },
+    {
+      "name": "color.diff-changed",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-diff-changed",
+      "description": "changed line or cell wash"
+    },
+    {
+      "name": "space.0",
+      "tier": 2,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-space-0",
+      "description": "spacing step 0"
+    },
+    {
+      "name": "space.1",
+      "tier": 2,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-space-1",
+      "description": "spacing step 1"
+    },
+    {
+      "name": "space.2",
+      "tier": 2,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-space-2",
+      "description": "spacing step 2"
+    },
+    {
+      "name": "space.3",
+      "tier": 2,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-space-3",
+      "description": "spacing step 3"
+    },
+    {
+      "name": "space.4",
+      "tier": 2,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-space-4",
+      "description": "spacing step 4"
+    },
+    {
+      "name": "space.5",
+      "tier": 2,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-space-5",
+      "description": "spacing step 5"
+    },
+    {
+      "name": "space.6",
+      "tier": 2,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-space-6",
+      "description": "spacing step 6"
+    },
+    {
+      "name": "space.7",
+      "tier": 2,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-space-7",
+      "description": "spacing step 7"
+    },
+    {
+      "name": "space.8",
+      "tier": 2,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-space-8",
+      "description": "spacing step 8"
+    },
+    {
+      "name": "radius.none",
+      "tier": 2,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-radius-none",
+      "description": "corner radius none"
+    },
+    {
+      "name": "radius.sm",
+      "tier": 2,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-radius-sm",
+      "description": "corner radius sm"
+    },
+    {
+      "name": "radius.md",
+      "tier": 2,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-radius-md",
+      "description": "corner radius md"
+    },
+    {
+      "name": "radius.lg",
+      "tier": 2,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-radius-lg",
+      "description": "corner radius lg"
+    },
+    {
+      "name": "radius.pill",
+      "tier": 2,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-radius-pill",
+      "description": "corner radius pill"
+    },
+    {
+      "name": "font.sans",
+      "tier": 2,
+      "type": "font-family",
+      "public": true,
+      "cssVariable": "--mk-font-sans",
+      "description": "UI typeface stack"
+    },
+    {
+      "name": "font.mono",
+      "tier": 2,
+      "type": "font-family",
+      "public": true,
+      "cssVariable": "--mk-font-mono",
+      "description": "monospace stack for IDs, code, offsets"
+    },
+    {
+      "name": "font.size-xs",
+      "tier": 2,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-font-size-xs",
+      "description": "font size xs"
+    },
+    {
+      "name": "font.size-sm",
+      "tier": 2,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-font-size-sm",
+      "description": "font size sm"
+    },
+    {
+      "name": "font.size-md",
+      "tier": 2,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-font-size-md",
+      "description": "font size md"
+    },
+    {
+      "name": "font.size-lg",
+      "tier": 2,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-font-size-lg",
+      "description": "font size lg"
+    },
+    {
+      "name": "font.size-xl",
+      "tier": 2,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-font-size-xl",
+      "description": "font size xl"
+    },
+    {
+      "name": "font.weight-normal",
+      "tier": 2,
+      "type": "number",
+      "public": true,
+      "cssVariable": "--mk-font-weight-normal",
+      "description": "font weight normal"
+    },
+    {
+      "name": "font.weight-medium",
+      "tier": 2,
+      "type": "number",
+      "public": true,
+      "cssVariable": "--mk-font-weight-medium",
+      "description": "font weight medium"
+    },
+    {
+      "name": "font.weight-bold",
+      "tier": 2,
+      "type": "number",
+      "public": true,
+      "cssVariable": "--mk-font-weight-bold",
+      "description": "font weight bold"
+    },
+    {
+      "name": "line.tight",
+      "tier": 2,
+      "type": "number",
+      "public": true,
+      "cssVariable": "--mk-line-tight",
+      "description": "line height tight"
+    },
+    {
+      "name": "line.normal",
+      "tier": 2,
+      "type": "number",
+      "public": true,
+      "cssVariable": "--mk-line-normal",
+      "description": "line height normal"
+    },
+    {
+      "name": "line.loose",
+      "tier": 2,
+      "type": "number",
+      "public": true,
+      "cssVariable": "--mk-line-loose",
+      "description": "line height loose"
+    },
+    {
+      "name": "size.row",
+      "tier": 2,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-size-row",
+      "description": "list and table row height"
+    },
+    {
+      "name": "size.control",
+      "tier": 2,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-size-control",
+      "description": "default control height"
+    },
+    {
+      "name": "size.icon",
+      "tier": 2,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-size-icon",
+      "description": "default icon box"
+    },
+    {
+      "name": "size.touch",
+      "tier": 2,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-size-touch",
+      "description": "minimum touch target"
+    },
+    {
+      "name": "size.scrollbar",
+      "tier": 2,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-size-scrollbar",
+      "description": "scrollbar thickness"
+    },
+    {
+      "name": "size.scrollbar-thin",
+      "tier": 2,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-size-scrollbar-thin",
+      "description": "scrollbar thickness inside dense panes"
+    },
+    {
+      "name": "z.base",
+      "tier": 2,
+      "type": "z-index",
+      "public": true,
+      "cssVariable": "--mk-z-base",
+      "description": "stacking band: base"
+    },
+    {
+      "name": "z.sticky",
+      "tier": 2,
+      "type": "z-index",
+      "public": true,
+      "cssVariable": "--mk-z-sticky",
+      "description": "stacking band: sticky"
+    },
+    {
+      "name": "z.dropdown",
+      "tier": 2,
+      "type": "z-index",
+      "public": true,
+      "cssVariable": "--mk-z-dropdown",
+      "description": "stacking band: dropdown"
+    },
+    {
+      "name": "z.overlay",
+      "tier": 2,
+      "type": "z-index",
+      "public": true,
+      "cssVariable": "--mk-z-overlay",
+      "description": "stacking band: overlay"
+    },
+    {
+      "name": "z.modal",
+      "tier": 2,
+      "type": "z-index",
+      "public": true,
+      "cssVariable": "--mk-z-modal",
+      "description": "stacking band: modal"
+    },
+    {
+      "name": "z.toast",
+      "tier": 2,
+      "type": "z-index",
+      "public": true,
+      "cssVariable": "--mk-z-toast",
+      "description": "stacking band: toast"
+    },
+    {
+      "name": "motion.fast",
+      "tier": 2,
+      "type": "duration",
+      "public": true,
+      "cssVariable": "--mk-motion-fast",
+      "description": "transition duration fast"
+    },
+    {
+      "name": "motion.normal",
+      "tier": 2,
+      "type": "duration",
+      "public": true,
+      "cssVariable": "--mk-motion-normal",
+      "description": "transition duration normal"
+    },
+    {
+      "name": "motion.slow",
+      "tier": 2,
+      "type": "duration",
+      "public": true,
+      "cssVariable": "--mk-motion-slow",
+      "description": "transition duration slow"
+    },
+    {
+      "name": "motion.ease",
+      "tier": 2,
+      "type": "easing",
+      "public": true,
+      "cssVariable": "--mk-motion-ease",
+      "description": "default easing curve"
+    },
+    {
+      "name": "elevation.1",
+      "tier": 2,
+      "type": "shadow",
+      "public": true,
+      "cssVariable": "--mk-elevation-1",
+      "description": "elevation level 1"
+    },
+    {
+      "name": "elevation.2",
+      "tier": 2,
+      "type": "shadow",
+      "public": true,
+      "cssVariable": "--mk-elevation-2",
+      "description": "elevation level 2"
+    },
+    {
+      "name": "elevation.3",
+      "tier": 2,
+      "type": "shadow",
+      "public": true,
+      "cssVariable": "--mk-elevation-3",
+      "description": "elevation level 3"
+    },
+    {
+      "name": "shadow.focus-ring",
+      "tier": 2,
+      "type": "shadow",
+      "public": true,
+      "cssVariable": "--mk-shadow-focus-ring",
+      "description": "focus ring shadow"
+    },
+    {
+      "name": "tree.indent-level",
+      "tier": 3,
+      "type": "number",
+      "public": true,
+      "cssVariable": "--mk-tree-indent-level",
+      "component": "tree",
+      "description": "nesting depth of the current tree row"
+    },
+    {
+      "name": "card.grid-columns",
+      "tier": 3,
+      "type": "number",
+      "public": true,
+      "cssVariable": "--mk-card-grid-columns",
+      "component": "card",
+      "description": "column count of the current card grid"
+    },
+    {
+      "name": "table.row-height",
+      "tier": 3,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-table-row-height",
+      "component": "table",
+      "derivesFrom": "size.row",
+      "description": "table row height"
+    },
+    {
+      "name": "table.header-bg",
+      "tier": 3,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-table-header-bg",
+      "component": "table",
+      "derivesFrom": "color.raised",
+      "description": "table header background"
+    },
+    {
+      "name": "table.cell-padding-x",
+      "tier": 3,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-table-cell-padding-x",
+      "component": "table",
+      "derivesFrom": "space.2",
+      "description": "table cell horizontal padding"
+    },
+    {
+      "name": "tree.indent",
+      "tier": 3,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-tree-indent",
+      "component": "tree",
+      "derivesFrom": "space.4",
+      "description": "tree nesting indent per level"
+    },
+    {
+      "name": "tree.row-height",
+      "tier": 3,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-tree-row-height",
+      "component": "tree",
+      "derivesFrom": "size.row",
+      "description": "tree row height"
+    },
+    {
+      "name": "hex.byte-gap",
+      "tier": 3,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-hex-byte-gap",
+      "component": "hex",
+      "derivesFrom": "space.1",
+      "description": "gap between hex byte columns"
+    },
+    {
+      "name": "hex.gutter-fg",
+      "tier": 3,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-hex-gutter-fg",
+      "component": "hex",
+      "derivesFrom": "color.fg-subtle",
+      "description": "hex offset gutter text"
+    },
+    {
+      "name": "text.line-height",
+      "tier": 3,
+      "type": "number",
+      "public": true,
+      "cssVariable": "--mk-text-line-height",
+      "component": "text",
+      "derivesFrom": "line.normal",
+      "description": "text stage line height"
+    },
+    {
+      "name": "shell.rail-width",
+      "tier": 3,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-shell-rail-width",
+      "component": "shell",
+      "derivesFrom": "space.8",
+      "description": "default side rail width"
+    },
+    {
+      "name": "shell.splitter-size",
+      "tier": 3,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-shell-splitter-size",
+      "component": "shell",
+      "derivesFrom": "space.1",
+      "description": "splitter hit area thickness"
+    },
+    {
+      "name": "toolbar.height",
+      "tier": 3,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-toolbar-height",
+      "component": "toolbar",
+      "derivesFrom": "size.control",
+      "description": "toolbar height"
+    },
+    {
+      "name": "panel.padding",
+      "tier": 3,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-panel-padding",
+      "component": "panel",
+      "derivesFrom": "space.3",
+      "description": "panel content padding"
+    },
+    {
+      "name": "transport.track-height",
+      "tier": 3,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-transport-track-height",
+      "component": "transport",
+      "derivesFrom": "space.2",
+      "description": "transport scrub track height"
+    }
+  ],
+  "themes": [
+    {
+      "id": "modkit-dark",
+      "displayName": "Modkit Dark",
+      "appearance": "dark",
+      "isDefaultFor": "dark"
+    },
+    {
+      "id": "modkit-light",
+      "displayName": "Modkit Light",
+      "appearance": "light",
+      "isDefaultFor": "light"
+    },
+    {
+      "id": "modkit-high-contrast",
+      "displayName": "Modkit High Contrast",
+      "appearance": "dark"
+    }
+  ]
+}

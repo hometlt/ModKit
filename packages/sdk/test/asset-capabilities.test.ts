@@ -66,6 +66,21 @@ function registryOptions() {
 
 describe('descriptor-v2 wire facts', () => {
   it('keeps the standard data-source vocabulary immutable at runtime', () => {
+    expect(STANDARD_DATA_SOURCE_CONTRACTS).toEqual([
+      'common.view/text-data-source',
+      'common.view/byte-range-source',
+      'common.view/tree-data-source',
+      'common.view/table-data-source',
+      'common.view/transport-source',
+      'common.view/namespace-entry-source',
+      'common.view/raster-image-source',
+      'common.view/vector-scene-source',
+      'common.view/audio-media-source',
+      'common.view/video-media-source',
+      'common.view/model-scene-source',
+      'common.view/relation-graph-source',
+      'common.view/subject-facts-source',
+    ])
     expect(() =>
       (STANDARD_DATA_SOURCE_CONTRACTS as unknown as string[]).push('evil/unsafe-source'),
     ).toThrow(TypeError)

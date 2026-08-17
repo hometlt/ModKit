@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs'
 import { build } from 'esbuild'
 import { chromium, type Browser, type Page } from 'playwright-core'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { discoverTextDataEntrypoints } from '../../../scripts/text-data-entrypoints.mjs'
 
 const chromeCandidates = [
   process.env['CHROME_PATH'],
@@ -19,6 +20,31 @@ let page: Page
 let origin = ''
 
 beforeAll(async () => {
+  const formats = ['json', 'jsonc', 'xml', 'yaml', 'toml', 'ini', 'csv', 'tsv'] as const
+  const entrypoints = discoverTextDataEntrypoints(process.cwd(), formats)
+  const broken = entrypoints.filter(entry => entry.absolute === undefined)
+  if (broken.length > 0)
+    throw new Error(
+      `text-data contribution entrypoint resolution failed: ${broken.map(entry => `${entry.kind}:${entry.id} (${entry.reason})`).join(', ')}`,
+    )
+  const name = (kind: string, id: string) => `${kind}_${id.replaceAll('-', '_')}`
+  const imports = entrypoints
+    .map(
+      entry =>
+        `import { ${entry.kind === 'codec' ? 'createCodec' : 'createProvider'} as ${name(entry.kind, entry.id)} } from ${JSON.stringify(entry.absolute?.replaceAll('\\', '/'))};`,
+    )
+    .join('\n')
+  const codecFactories = entrypoints
+    .filter(entry => entry.kind === 'codec')
+    .map(entry => `${JSON.stringify(entry.id)}: ${name(entry.kind, entry.id)},`)
+    .join('\n')
+  const providerFactories = entrypoints
+    .filter(entry => entry.kind === 'provider')
+    .map(
+      entry =>
+        `${JSON.stringify(`common.text-data/${entry.id}-syntax`)}: ${name(entry.kind, entry.id)},`,
+    )
+    .join('\n')
   const built = await build({
     stdin: {
       contents: `
@@ -26,41 +52,12 @@ beforeAll(async () => {
         import * as browserHost from '@modkitx-x3/testkit/browser';
         import * as host from '@modkitx-x3/host';
         import { plainTextCodec } from './examples/modkit-extension-x3-plain-text/src/codec.js';
-        import { createCodec as createJsonCodec } from './extensions/common/text-data/src/formats/json/codec.js';
-        import { createProvider as createJsonProvider } from './extensions/common/text-data/src/formats/json/provider.js';
-        import { createCodec as createJsoncCodec } from './extensions/common/text-data/src/formats/jsonc/codec.js';
-        import { createProvider as createJsoncProvider } from './extensions/common/text-data/src/formats/jsonc/provider.js';
-        import { createCodec as createXmlCodec } from './extensions/common/text-data/src/formats/xml/codec.js';
-        import { createProvider as createXmlProvider } from './extensions/common/text-data/src/formats/xml/provider.js';
-        import { createCodec as createYamlCodec } from './extensions/common/text-data/src/formats/yaml/codec.js';
-        import { createProvider as createYamlProvider } from './extensions/common/text-data/src/formats/yaml/provider.js';
-        import { createCodec as createTomlCodec } from './extensions/common/text-data/src/formats/toml/codec.js';
-        import { createProvider as createTomlProvider } from './extensions/common/text-data/src/formats/toml/provider.js';
-        import { createCodec as createIniCodec } from './extensions/common/text-data/src/formats/ini/codec.js';
-        import { createProvider as createIniProvider } from './extensions/common/text-data/src/formats/ini/provider.js';
-        import { createCodec as createCsvCodec } from './extensions/common/text-data/src/formats/csv/codec.js';
-        import { createProvider as createCsvProvider } from './extensions/common/text-data/src/formats/csv/provider.js';
-        import { createCodec as createTsvCodec } from './extensions/common/text-data/src/formats/tsv/codec.js';
-        import { createProvider as createTsvProvider } from './extensions/common/text-data/src/formats/tsv/provider.js';
+        ${imports}
         const codecFactories = {
-          json: createJsonCodec,
-          jsonc: createJsoncCodec,
-          xml: createXmlCodec,
-          yaml: createYamlCodec,
-          toml: createTomlCodec,
-          ini: createIniCodec,
-          csv: createCsvCodec,
-          tsv: createTsvCodec,
+          ${codecFactories}
         };
         const providerFactories = {
-          'common.text-data/json-syntax': createJsonProvider,
-          'common.text-data/jsonc-syntax': createJsoncProvider,
-          'common.text-data/xml-syntax': createXmlProvider,
-          'common.text-data/yaml-syntax': createYamlProvider,
-          'common.text-data/toml-syntax': createTomlProvider,
-          'common.text-data/ini-syntax': createIniProvider,
-          'common.text-data/csv-syntax': createCsvProvider,
-          'common.text-data/tsv-syntax': createTsvProvider,
+          ${providerFactories}
         };
         const createTextCodec = (format, context) => codecFactories[format](context);
         const createTextSyntaxProvider = contract => providerFactories[contract]({ contract });
@@ -110,6 +107,16 @@ beforeAll(async () => {
   if (executablePath === undefined) throw new Error('Chrome/Chromium is required for C-18')
   browser = await chromium.launch({ executablePath, headless: true, args: ['--no-sandbox'] })
   page = await browser.newPage({ reducedMotion: 'reduce', colorScheme: 'dark' })
+  await page.addInitScript(() => {
+    const violations: string[] = []
+    Object.defineProperty(globalThis, '__modkitCspViolations', {
+      configurable: true,
+      value: violations,
+    })
+    document.addEventListener('securitypolicyviolation', event => {
+      violations.push(`${event.violatedDirective}:${event.blockedURI || 'inline'}`)
+    })
+  })
   await page.goto(origin)
   await page.waitForFunction(() => 'modkit' in globalThis)
 }, 60_000)
@@ -944,6 +951,11 @@ describe('13C real-browser viewer host', () => {
       fallback: 'org.modkitx.ui/unknown-binary-fallback',
     })
     expect(result.unknown.rendered).toContain('00 ff 10 20')
+    const cspViolations = await page.evaluate(
+      () =>
+        (globalThis as unknown as { __modkitCspViolations?: string[] }).__modkitCspViolations ?? [],
+    )
+    expect(cspViolations).toEqual([])
   })
 
   it('routes diagnostics and toolbar state without exposing markup or invoking disabled operations', async () => {

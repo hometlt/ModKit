@@ -7,6 +7,13 @@ export const STANDARD_DATA_SOURCE_CONTRACTS = Object.freeze([
   'common.view/table-data-source',
   'common.view/transport-source',
   'common.view/namespace-entry-source',
+  'common.view/raster-image-source',
+  'common.view/vector-scene-source',
+  'common.view/audio-media-source',
+  'common.view/video-media-source',
+  'common.view/model-scene-source',
+  'common.view/relation-graph-source',
+  'common.view/subject-facts-source',
 ] as const)
 
 export type StandardDataSourceId = (typeof STANDARD_DATA_SOURCE_CONTRACTS)[number]

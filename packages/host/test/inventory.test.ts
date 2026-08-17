@@ -21,6 +21,14 @@ const registry = createContributionContractRegistry([
       additionalProperties: false,
       properties: { greeting: { type: 'string', minLength: 1 } },
     },
+    validator: value =>
+      typeof value === 'object' &&
+      value !== null &&
+      !Array.isArray(value) &&
+      Object.keys(value).every(key => key === 'greeting') &&
+      ((value as { readonly greeting?: unknown }).greeting === undefined ||
+        (typeof (value as { readonly greeting?: unknown }).greeting === 'string' &&
+          (value as { readonly greeting: string }).greeting.length > 0)),
     mode: 'executable',
     project: () => [],
     validateSemantics: () => [],

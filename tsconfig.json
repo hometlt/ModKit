@@ -20,6 +20,21 @@
       "path": "apps/modkit-cli"
     },
     {
+      "path": "apps/server"
+    },
+    {
+      "path": "apps/automation-host"
+    },
+    {
+      "path": "apps/web"
+    },
+    {
+      "path": "apps/electron"
+    },
+    {
+      "path": "apps/modkit-vscode"
+    },
+    {
       "path": "packages/testkit"
     }
   ]

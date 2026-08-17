@@ -7,14 +7,25 @@ export default tseslint.config(
   {
     ignores: [
       '**/dist/**',
+      // bundled application output, not authored source
+      '**/dist-app/**',
       '**/node_modules/**',
       '**/*.tsbuildinfo',
+      '**/validators.generated.ts',
+      '**/validators.generated/**',
       // gate regression fixtures intentionally contain forbidden/legacy shapes
       'scripts/test/fixtures/**',
     ],
   },
   ...tseslint.configs.strict,
   ...tseslint.configs.stylistic,
+  {
+    // Electron loads its main and preload entry points as CommonJS; `require` is the contract
+    // there, not a style choice.
+    files: ['apps/electron/electron/**/*.cjs'],
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
+  },
+
   {
     files: ['packages/*/src/**/*.ts'],
     rules: {

@@ -44,7 +44,10 @@ export const virtualTextViewer: ViewerModule = defineViewerModule({
     if (lease === undefined) throw new TypeError('virtual text binding is unavailable')
     scope.lease(lease)
     const model = new VirtualTextModel(lease.value as TextDataSource)
-    const viewport = element(root, 'pre', { className: 'modkit-viewer__virtual-text' })
+    const viewport = element(root, 'pre', {
+      className: 'modkit-viewer__virtual-text',
+      part: 'virtual-text',
+    })
     viewport.tabIndex = 0
     viewport.setAttribute('aria-live', 'polite')
     const more = element(root, 'button', { text: 'Load next page' }) as HTMLButtonElement

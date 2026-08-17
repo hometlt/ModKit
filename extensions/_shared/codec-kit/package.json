@@ -1,0 +1,35 @@
+{
+  "name": "@modkitx-x3/codec-kit",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "Optional dependency-neutral runtime kit for small MK3 inspection codecs.",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./text": "./src/text/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "@modkitx-x3/core": "workspace:*",
+    "@modkitx-x3/host": "workspace:*",
+    "@modkitx-x3/sdk": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@modkitx-x3/core": {
+      "optional": true
+    },
+    "@modkitx-x3/host": {
+      "optional": true
+    },
+    "@modkitx-x3/sdk": {
+      "optional": true
+    }
+  }
+}

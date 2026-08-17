@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en" data-mk-theme="modkit-dark" data-mk-density="compact">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- The production viewer policy is sent by the server. -->
+    <title>Modkit UI gallery</title>
+    <link rel="stylesheet" href="./modkit-ui.css" />
+    <link rel="stylesheet" href="./gallery.css" />
+    <!-- Monaco CSS, extracted by esbuild so it loads as `self` instead of being injected. -->
+    <link rel="stylesheet" href="./main.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <strong>Modkit UI gallery</strong>
+        <span class="muted">UK-1 conformance harness</span>
+      </div>
+      <div class="controls">
+        <label
+          >Theme
+          <select id="control-theme"></select
+        ></label>
+        <label>
+          Density
+          <select id="control-density">
+            <option value="compact" selected>compact</option>
+            <option value="comfortable">comfortable</option>
+          </select>
+        </label>
+        <label>
+          Direction
+          <select id="control-dir">
+            <option value="ltr" selected>LTR</option>
+            <option value="rtl">RTL</option>
+          </select>
+        </label>
+        <label>
+          Zoom
+          <select id="control-zoom">
+            <option value="100" selected>100%</option>
+            <option value="200">200%</option>
+          </select>
+        </label>
+        <label class="check">
+          <input type="checkbox" id="control-motion" />
+          reduced motion
+        </label>
+      </div>
+      <output class="readout" id="state-readout"></output>
+    </header>
+
+    <main>
+      <section class="panel" aria-labelledby="csp-title">
+        <h2 id="csp-title">CSP violations <span class="badge" id="csp-count">0</span></h2>
+        <p class="muted">
+          This page runs the production policy. ADR-UI-001 C1 forbids the style attribute, C2
+          forbids runtime stylesheet injection, C3 allows validated custom properties only.
+        </p>
+        <p>
+          <button type="button" id="csp-probe-run">Run the forbidden-mechanism probe</button>
+          <span id="csp-probe-target" class="probe-target">probe target</span>
+          <output id="csp-probe-result" class="muted"></output>
+        </p>
+        <p id="csp-mode" class="muted"></p>
+        <ul id="csp-log" class="log"></ul>
+      </section>
+
+      <section class="panel" aria-labelledby="viewers-title">
+        <h2 id="viewers-title">
+          Shipped viewers <output class="badge" id="boot-status">booting…</output>
+        </h2>
+        <p class="muted">
+          Each card mounts the real <code>ViewerModule</code> through the
+          <code>mount/update/unmount</code> ABI against an in-memory data source. Nothing here is a
+          screenshot or a re-implementation.
+        </p>
+        <div id="viewers" class="cards"></div>
+        <h3>Operation log</h3>
+        <ul id="operation-log" class="log"></ul>
+      </section>
+
+      <section class="panel" aria-labelledby="mk2-title">
+        <h2 id="mk2-title">Viewer window (MK2 layout)</h2>
+        <p class="muted">
+          Header breadcrumb, view picker, filtered archive tree and collapsible property sections,
+          assembled only from <code>@modkitx-x3/ui</code> primitives. The filter carries the MK2
+          toggles: match case, whole word, regular expression, plus glob.
+        </p>
+        <div id="mk2-shell"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="card-title">
+        <h2 id="card-title">Subject card</h2>
+        <p class="muted">
+          A unit owns no file — its card is assembled from data spread across many. The card is a
+          list of section specs, not format-specific code: header, a custom command-card template,
+          links, nested weapon cards and a stats table, all in the same collapsible chrome. Any
+          subject, a file included, composes a different list and reuses the same renderer.
+        </p>
+        <div id="subject-card" class="card-host"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="graph-title">
+        <h2 id="graph-title">Relations</h2>
+        <p class="muted">
+          The relation graph as its own component: node-type buckets with counts, capped rendering
+          on a canvas, and uses / used-by groups. Format-neutral — it takes nodes, edges and type
+          buckets and knows nothing about units or upgrades.
+        </p>
+        <div id="relation-graph" class="graph-host"></div>
+        <h3>Card and graph log</h3>
+        <ul id="card-log" class="log"></ul>
+      </section>
+
+      <section class="panel" aria-labelledby="assets-title">
+        <h2 id="assets-title">Asset viewers (MK2 parity)</h2>
+        <p class="muted">
+          The panes the MK2 assets viewer had, rebuilt on the six existing data-source contracts.
+          The image and audio stages take raw bytes from <code>byte-range-source</code> and hand
+          them to the platform decoder, so they need no codec and no new contract.
+        </p>
+        <div id="assets" class="cards"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="formats-title">
+        <h2 id="formats-title">text-data formats</h2>
+        <p class="muted">
+          Every independently installable text extension, opened through its own codec and syntax
+          provider. The tabs switch between the semantic data source the codec publishes (tree or
+          table), the text source, and the byte source — all three come from one session.
+        </p>
+        <div id="formats" class="cards"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="editor-title">
+        <h2 id="editor-title">Code editor</h2>
+        <p class="muted">
+          The shipped text editor over the JSON sample. It never saves directly: every change goes
+          through propose → plan → prepare → authorize → commit, and the log below records each
+          host-owned step.
+        </p>
+        <div id="editor-surface" class="surface tall"></div>
+        <h3>Editor port log</h3>
+        <ul id="editor-log" class="log"></ul>
+      </section>
+
+      <section class="panel" aria-labelledby="imageedit-title">
+        <h2 id="imageedit-title">Image editing (MK2 texture-viewer parity)</h2>
+        <p class="muted">
+          The MK2 tool set over a generated test texture: paint onto a scratch mask, blend into
+          pixels, isolate a channel so a write touches one byte, select and crop. History is bounded
+          at 100 patches. The surface owns pixels only — commit is wired by the host.
+        </p>
+        <div class="imageedit-demo">
+          <canvas id="imageedit-canvas" width="256" height="256"></canvas>
+          <div id="imageedit-panel"></div>
+        </div>
+        <ul id="imageedit-log" class="log"></ul>
+      </section>
+
+      <section class="panel" aria-labelledby="inspector-title">
+        <h2 id="inspector-title">
+          Token inspector <span class="badge" id="inspector-count"></span>
+        </h2>
+        <p class="muted">
+          Live computed values for the current theme, read through <code>readToken()</code>.
+        </p>
+        <div id="inspector-search" class="filter"></div>
+        <div class="table-scroll">
+          <table class="inspector">
+            <thead>
+              <tr>
+                <th>Tier</th>
+                <th>Token</th>
+                <th>Type</th>
+                <th></th>
+                <th>Computed</th>
+                <th>Custom property</th>
+              </tr>
+            </thead>
+            <tbody id="inspector-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="vocab-title">
+        <h2 id="vocab-title">Public styling vocabulary</h2>
+        <p class="muted">
+          Themes select these. Private <code>modkit-viewer__*</code> classes are not part of the
+          contract.
+        </p>
+        <h3>Parts</h3>
+        <div id="parts-list" class="pills"></div>
+        <h3>States</h3>
+        <div id="states-list" class="pills"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="catalog-title">
+        <h2 id="catalog-title">Component catalog status</h2>
+        <p class="muted" id="catalog-note"></p>
+        <div class="table-scroll">
+          <table class="inspector">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Kind</th>
+                <th>Status</th>
+                <th>In this harness</th>
+              </tr>
+            </thead>
+            <tbody id="catalog-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

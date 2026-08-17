@@ -1,0 +1,12 @@
+{
+  "name": "modkit-app-smoke",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "Boots the browser application root for real and reports what it composed.",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "serve": "node scripts/build.mjs --serve"
+  }
+}

@@ -14,12 +14,20 @@ function renderDiagnostics(root: HTMLElement, descriptor: AnyDescriptor): void {
   root.replaceChildren()
   const grouped = diagnosticsBySeverity(descriptor.diagnostics)
   for (const severity of ['error', 'warning', 'information', 'hint'] as const) {
-    const section = element(root, 'section')
-    element(section, 'h2', { text: `${severity} (${grouped[severity].length})` })
-    const list = element(section, 'ul')
+    const section = element(root, 'section', { part: 'diagnostics.group' })
+    section.dataset['severity'] = severity
+    element(section, 'h2', {
+      text: `${severity} (${grouped[severity].length})`,
+      part: 'diagnostics.heading',
+    })
+    const list = element(section, 'ul', { part: 'diagnostics.list' })
     for (const diagnostic of grouped[severity]) {
-      const item = element(list, 'li')
-      const button = element(item, 'button', { text: diagnostic.message }) as HTMLButtonElement
+      const item = element(list, 'li', { part: 'diagnostics.item' })
+      item.dataset['severity'] = severity
+      const button = element(item, 'button', {
+        text: diagnostic.message,
+        part: 'diagnostics.message',
+      }) as HTMLButtonElement
       button.type = 'button'
       button.dataset['diagnosticId'] = diagnostic.id
       button.addEventListener('click', () => {
@@ -53,9 +61,12 @@ function renderToolbar(
   signal: AbortSignal,
 ): void {
   root.replaceChildren()
-  const status = element(root, 'output', { text: 'Ready' })
+  const status = element(root, 'output', { text: 'Ready', part: 'operations.status' })
   for (const operation of descriptor.operations) {
-    const button = element(root, 'button', { text: operation.id }) as HTMLButtonElement
+    const button = element(root, 'button', {
+      text: operation.id,
+      part: 'operations.button',
+    }) as HTMLButtonElement
     button.type = 'button'
     button.disabled = operation.state !== 'available'
     if (operation.state !== 'available') {

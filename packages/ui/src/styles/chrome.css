@@ -1,0 +1,371 @@
+/* Authored. Shell chrome: file tree, accordion, header/footer, view picker. */
+
+@layer mk.components {
+  /* ---------------------------------------------------------------- file tree */
+  [data-mk-part='filetree'] {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  [data-mk-part='filetree.toolbar'] {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 2px;
+    align-items: center;
+    padding: var(--mk-space-1) var(--mk-space-2);
+    border-bottom: 1px solid var(--mk-color-border);
+  }
+
+  [data-mk-part='filetree.toolbar'] button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--mk-size-control);
+    height: var(--mk-size-control);
+    color: var(--mk-color-fg-muted);
+    border: 1px solid transparent;
+    border-radius: var(--mk-radius-sm);
+    background: none;
+    cursor: pointer;
+  }
+
+  [data-mk-part='filetree.toolbar'] button:hover {
+    color: var(--mk-color-fg);
+    background: var(--mk-color-hover);
+  }
+
+  [data-mk-part='filetree.list'] {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding-block: var(--mk-space-1);
+    overflow: auto;
+  }
+
+  [data-mk-part='filetree.list']:focus-visible {
+    outline: 1px solid var(--mk-color-focus);
+    outline-offset: -1px;
+  }
+
+  /* Indent guides read like the VS Code explorer without a per-row wrapper element. */
+  [data-mk-part='filetree.row'] {
+    display: flex;
+    gap: var(--mk-space-1);
+    align-items: center;
+    height: var(--mk-tree-row-height);
+    padding-inline: calc(var(--mk-tree-indent) * var(--mk-tree-indent-level, 0) + var(--mk-space-2))
+      var(--mk-space-2);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  [data-mk-part='filetree.row']:hover {
+    background: var(--mk-color-hover);
+  }
+
+  [data-mk-part='filetree.node'][data-mk-state~='selected'] > [data-mk-part='filetree.row'] {
+    color: var(--mk-color-selection-fg);
+    background: var(--mk-color-selection);
+  }
+
+  [data-mk-part='filetree.node']:focus-visible > [data-mk-part='filetree.row'] {
+    outline: 1px solid var(--mk-color-focus);
+    outline-offset: -1px;
+  }
+
+  /* One chevron everywhere: the tree, the accordion and any future disclosure share this shape. */
+  [data-mk-part='filetree.twisty'] {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    color: var(--mk-color-fg-subtle);
+    font-size: var(--mk-font-size-sm);
+    transition: transform var(--mk-motion-fast) var(--mk-motion-ease);
+  }
+
+  /* A leaf keeps the slot so labels stay on one optical column. */
+  [data-mk-part='filetree.node']:not([aria-expanded])
+    > [data-mk-part='filetree.row']
+    > [data-mk-part='filetree.twisty'] {
+    visibility: hidden;
+  }
+
+  [data-mk-part='filetree.node'][aria-expanded='true']
+    > [data-mk-part='filetree.row']
+    > [data-mk-part='filetree.twisty'] {
+    transform: rotate(90deg);
+  }
+
+  [data-mk-part='filetree.icon'] {
+    flex: 0 0 auto;
+    width: var(--mk-size-icon);
+    color: var(--mk-color-fg-muted);
+    text-align: center;
+  }
+
+  [data-mk-part='filetree.label'] {
+    flex: 1 1 auto;
+    overflow: hidden;
+    font-size: var(--mk-font-size-sm);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  [data-mk-part='filetree.badge'] {
+    flex: 0 0 auto;
+    color: var(--mk-color-fg-subtle);
+    font-family: var(--mk-font-mono);
+    font-size: var(--mk-font-size-xs);
+    font-variant-numeric: tabular-nums;
+  }
+
+  [data-mk-part='filetree.empty'] {
+    padding: var(--mk-space-4);
+    color: var(--mk-color-fg-subtle);
+    font-size: var(--mk-font-size-sm);
+    text-align: center;
+  }
+
+  /* ---------------------------------------------------------------- accordion */
+  [data-mk-part='accordion'] {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  [data-mk-part='accordion.header'] {
+    display: flex;
+    gap: var(--mk-space-2);
+    align-items: center;
+    width: 100%;
+    height: var(--mk-size-control);
+    padding-inline: var(--mk-space-2);
+    color: var(--mk-color-fg);
+    border-bottom: 1px solid var(--mk-color-separator);
+    background: none;
+    font-size: var(--mk-font-size-xs);
+    font-weight: var(--mk-font-weight-medium);
+    letter-spacing: 0.06em;
+    text-align: start;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  [data-mk-part='accordion.header']:hover {
+    background: var(--mk-color-hover);
+  }
+
+  [data-mk-part='accordion.twisty'] {
+    flex: 0 0 auto;
+    width: 12px;
+    color: var(--mk-color-fg-subtle);
+    text-align: center;
+    transition: transform var(--mk-motion-fast) var(--mk-motion-ease);
+  }
+
+  [data-mk-part='accordion.header'][aria-expanded='true'] > [data-mk-part='accordion.twisty'] {
+    transform: rotate(90deg);
+  }
+
+  [data-mk-part='accordion.title'] {
+    flex: 1 1 auto;
+  }
+
+  [data-mk-part='accordion.hint'] {
+    color: var(--mk-color-fg-subtle);
+    font-weight: var(--mk-font-weight-normal);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: normal;
+    text-transform: none;
+  }
+
+  [data-mk-part='accordion.body'] {
+    padding: var(--mk-space-2) var(--mk-space-3);
+    border-bottom: 1px solid var(--mk-color-separator);
+  }
+
+  [data-mk-part='accordion.field'] {
+    display: grid;
+    grid-template-columns: minmax(9ch, 16ch) 1fr;
+    gap: var(--mk-space-3);
+    padding-block: 1px;
+  }
+
+  [data-mk-part='accordion.field-name'] {
+    color: var(--mk-color-fg-muted);
+    font-family: var(--mk-font-mono);
+    font-size: var(--mk-font-size-xs);
+  }
+
+  [data-mk-part='accordion.field-value'] {
+    overflow-wrap: anywhere;
+    color: var(--mk-color-fg);
+    font-family: var(--mk-font-mono);
+    font-size: var(--mk-font-size-xs);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------------------------------------------------------------- shell chrome */
+  [data-mk-part='shell.header'] {
+    display: flex;
+    flex: 0 0 auto;
+    gap: var(--mk-space-2);
+    align-items: center;
+    height: var(--mk-size-control);
+    padding-inline: var(--mk-space-2);
+    border-bottom: 1px solid var(--mk-color-border);
+    background: var(--mk-color-raised);
+  }
+
+  [data-mk-part='shell.breadcrumb'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    align-items: center;
+    min-width: 0;
+  }
+
+  [data-mk-part='shell.crumb'],
+  [data-mk-part='shell.crumb-more'] {
+    display: inline-flex;
+    gap: var(--mk-space-1);
+    align-items: center;
+    max-width: 24ch;
+    padding-inline: var(--mk-space-2);
+    overflow: hidden;
+    color: var(--mk-color-fg-muted);
+    border: 1px solid transparent;
+    border-radius: var(--mk-radius-sm);
+    background: none;
+    font-size: var(--mk-font-size-xs);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    cursor: pointer;
+  }
+
+  [data-mk-part='shell.crumb'] > span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  [data-mk-part='shell.crumb-icon'] {
+    flex: 0 0 auto;
+    color: var(--mk-color-fg-subtle);
+  }
+
+  [data-mk-part='shell.crumb-more']:hover {
+    color: var(--mk-color-fg);
+    background: var(--mk-color-hover);
+  }
+
+  [data-mk-part='shell.crumb']:hover {
+    color: var(--mk-color-fg);
+    background: var(--mk-color-hover);
+  }
+
+  /* The tail is the subject itself: framed, not merely a different colour. */
+  [data-mk-part='shell.crumb'][data-mk-state~='active'] {
+    max-width: 36ch;
+    color: var(--mk-color-fg);
+    border-color: var(--mk-color-border);
+    background: var(--mk-color-sunken);
+    cursor: default;
+  }
+
+  /* The separator is generated, so the crumb list carries no presentational nodes. */
+  [data-mk-part='shell.crumb'] + [data-mk-part='shell.crumb']::before {
+    margin-inline-end: var(--mk-space-1);
+    color: var(--mk-color-fg-subtle);
+    content: '\203A';
+  }
+
+  [data-mk-part='shell.footer'] {
+    display: flex;
+    flex: 0 0 auto;
+    gap: var(--mk-space-3);
+    align-items: center;
+    justify-content: space-between;
+    height: var(--mk-toolbar-height);
+    padding-inline: var(--mk-space-2);
+    border-top: 1px solid var(--mk-color-border);
+    background: var(--mk-color-raised);
+  }
+
+  [data-mk-part='shell.footer-start'],
+  [data-mk-part='shell.footer-end'] {
+    display: flex;
+    gap: var(--mk-space-3);
+    align-items: center;
+  }
+
+  [data-mk-part='shell.status-item'] {
+    color: var(--mk-color-fg-muted);
+    font-family: var(--mk-font-mono);
+    font-size: var(--mk-font-size-xs);
+    font-variant-numeric: tabular-nums;
+  }
+
+  [data-mk-part='shell.status-item'][data-severity='error'] {
+    color: var(--mk-status-error);
+  }
+
+  [data-mk-part='shell.status-item'][data-severity='warn'] {
+    color: var(--mk-status-warn);
+  }
+
+  [data-mk-part='shell.status-item'][data-severity='ok'] {
+    color: var(--mk-status-ok);
+  }
+
+  /* ---------------------------------------------------------------- view picker */
+  [data-mk-part='viewpicker'] {
+    display: flex;
+    gap: var(--mk-space-2);
+    align-items: center;
+  }
+
+  [data-mk-part='viewpicker.modes'] {
+    display: flex;
+    gap: 2px;
+  }
+
+  [data-mk-part='viewpicker.mode'] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--mk-size-control);
+    height: var(--mk-size-control);
+    color: var(--mk-color-fg-muted);
+    border: 1px solid transparent;
+    border-radius: var(--mk-radius-sm);
+    background: none;
+    cursor: pointer;
+  }
+
+  [data-mk-part='viewpicker.mode']:hover {
+    color: var(--mk-color-fg);
+    background: var(--mk-color-hover);
+  }
+
+  [data-mk-part='viewpicker.mode'][data-mk-state~='active'] {
+    color: var(--mk-color-accent-fg);
+    border-color: var(--mk-color-accent);
+    background: var(--mk-color-accent);
+  }
+
+  [data-mk-part='viewpicker.select'] {
+    height: var(--mk-size-control);
+    padding-inline: var(--mk-space-2);
+    color: var(--mk-color-fg);
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-md);
+    background: var(--mk-color-surface);
+    font: inherit;
+    font-size: var(--mk-font-size-xs);
+  }
+}

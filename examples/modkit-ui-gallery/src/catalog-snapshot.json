@@ -1,0 +1,791 @@
+{
+  "source": "modkitx/docs/MK3/uk-a/component-catalog.md",
+  "rows": [
+    {
+      "id": "F1",
+      "name": "tokens.css",
+      "kind": "artifact",
+      "status": "NEW"
+    },
+    {
+      "id": "F5",
+      "name": "viewer.css",
+      "kind": "artifact",
+      "status": "NEW"
+    },
+    {
+      "id": "F6",
+      "name": "density modifier",
+      "kind": "artifact",
+      "status": "NEW"
+    },
+    {
+      "id": "F2",
+      "name": "theme-vscode",
+      "kind": "adapter",
+      "status": "NEW"
+    },
+    {
+      "id": "F3",
+      "name": "theme-web",
+      "kind": "adapter",
+      "status": "NEW"
+    },
+    {
+      "id": "F4",
+      "name": "theme-electron",
+      "kind": "adapter",
+      "status": "NEW"
+    },
+    {
+      "id": "PR1",
+      "name": "Icon + IconRegistry",
+      "kind": "primitive",
+      "status": "NEW"
+    },
+    {
+      "id": "PR2",
+      "name": "Button family",
+      "kind": "primitive",
+      "status": "NEW"
+    },
+    {
+      "id": "PR3",
+      "name": "Text input family",
+      "kind": "primitive",
+      "status": "NEW"
+    },
+    {
+      "id": "PR4",
+      "name": "Choice family",
+      "kind": "primitive",
+      "status": "NEW"
+    },
+    {
+      "id": "PR5",
+      "name": "Selection family",
+      "kind": "primitive",
+      "status": "NEW"
+    },
+    {
+      "id": "PR6",
+      "name": "FormField + schema-form",
+      "kind": "primitive",
+      "status": "NEW"
+    },
+    {
+      "id": "PR7",
+      "name": "Navigation family",
+      "kind": "primitive",
+      "status": "NEW"
+    },
+    {
+      "id": "PR8",
+      "name": "Overlay menu family",
+      "kind": "primitive",
+      "status": "NEW"
+    },
+    {
+      "id": "PR9",
+      "name": "Dialog family",
+      "kind": "primitive",
+      "status": "NEW"
+    },
+    {
+      "id": "PR10",
+      "name": "Label family",
+      "kind": "primitive",
+      "status": "NEW"
+    },
+    {
+      "id": "PR11",
+      "name": "Progress family",
+      "kind": "primitive",
+      "status": "NEW"
+    },
+    {
+      "id": "PR12",
+      "name": "Layout family",
+      "kind": "primitive",
+      "status": "NEW"
+    },
+    {
+      "id": "PR13",
+      "name": "Collection family",
+      "kind": "primitive",
+      "status": "NEW"
+    },
+    {
+      "id": "PR14",
+      "name": "A11y infrastructure",
+      "kind": "primitive",
+      "status": "NEW"
+    },
+    {
+      "id": "PR15",
+      "name": "State family",
+      "kind": "primitive",
+      "status": "NEW"
+    },
+    {
+      "id": "S1",
+      "name": "ShellLayout",
+      "kind": "primitive",
+      "status": "PORT-MK2"
+    },
+    {
+      "id": "S2",
+      "name": "SlotHost",
+      "kind": "primitive",
+      "status": "PORT-MK2"
+    },
+    {
+      "id": "S3",
+      "name": "StageSwitcher",
+      "kind": "primitive",
+      "status": "NEW"
+    },
+    {
+      "id": "S4",
+      "name": "FallbackSurface",
+      "kind": "primitive",
+      "status": "EXISTS-X3"
+    },
+    {
+      "id": "S7",
+      "name": "CursorPager",
+      "kind": "primitive",
+      "status": "NEW"
+    },
+    {
+      "id": "S8",
+      "name": "SubjectHeader",
+      "kind": "primitive",
+      "status": "NEW"
+    },
+    {
+      "id": "S9",
+      "name": "FilterBar",
+      "kind": "primitive",
+      "status": "NEW"
+    },
+    {
+      "id": "S11",
+      "name": "BudgetGuard",
+      "kind": "primitive",
+      "status": "NEW"
+    },
+    {
+      "id": "S14",
+      "name": "ModeBadge",
+      "kind": "primitive",
+      "status": "NEW"
+    },
+    {
+      "id": "PT1",
+      "name": "StructuredRecordInspector",
+      "kind": "pattern",
+      "status": "NEW"
+    },
+    {
+      "id": "PT2",
+      "name": "OutputLogPanel",
+      "kind": "pattern",
+      "status": "NEW"
+    },
+    {
+      "id": "PT3",
+      "name": "SearchResultsPanel",
+      "kind": "pattern",
+      "status": "NEW"
+    },
+    {
+      "id": "PT4",
+      "name": "SymbolAndReferencesPanel",
+      "kind": "pattern",
+      "status": "NEW"
+    },
+    {
+      "id": "PT5",
+      "name": "DiffAndChangeReview",
+      "kind": "pattern",
+      "status": "NEW"
+    },
+    {
+      "id": "PT6",
+      "name": "DocumentEditorShell",
+      "kind": "pattern",
+      "status": "NEW"
+    },
+    {
+      "id": "PT7",
+      "name": "OperationFormDialog",
+      "kind": "pattern",
+      "status": "NEW"
+    },
+    {
+      "id": "PT8",
+      "name": "BatchOperationQueue",
+      "kind": "pattern",
+      "status": "NEW"
+    },
+    {
+      "id": "PT9",
+      "name": "ImageTransformPanel",
+      "kind": "pattern",
+      "status": "NEW"
+    },
+    {
+      "id": "PT10",
+      "name": "CacheStorageManager",
+      "kind": "pattern",
+      "status": "NEW"
+    },
+    {
+      "id": "PT11",
+      "name": "RuntimeCapabilityPanel",
+      "kind": "pattern",
+      "status": "NEW"
+    },
+    {
+      "id": "PT12",
+      "name": "UpdateAndReloadPrompt",
+      "kind": "pattern",
+      "status": "NEW"
+    },
+    {
+      "id": "C1",
+      "name": "SubjectCard",
+      "kind": "pattern",
+      "status": "PORT-MK2"
+    },
+    {
+      "id": "C2",
+      "name": "ThumbnailTile",
+      "kind": "pattern",
+      "status": "NEW"
+    },
+    {
+      "id": "C3",
+      "name": "NestedViewerFrame",
+      "kind": "pattern",
+      "status": "NEW"
+    },
+    {
+      "id": "C4",
+      "name": "ArchiveExplorer",
+      "kind": "pattern",
+      "status": "PORT-MK2"
+    },
+    {
+      "id": "C5",
+      "name": "AssetGridBrowser",
+      "kind": "pattern",
+      "status": "NEW"
+    },
+    {
+      "id": "C6",
+      "name": "OpenWithPicker",
+      "kind": "pattern",
+      "status": "NEW"
+    },
+    {
+      "id": "P1",
+      "name": "OperationToolbar",
+      "kind": "viewer",
+      "status": "EXISTS-X3"
+    },
+    {
+      "id": "P2",
+      "name": "DiagnosticsPanel",
+      "kind": "viewer",
+      "status": "EXISTS-X3"
+    },
+    {
+      "id": "P3",
+      "name": "TransportBar",
+      "kind": "viewer",
+      "status": "EXISTS-X3"
+    },
+    {
+      "id": "P4",
+      "name": "StatusStrip",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "P5",
+      "name": "MetadataPanel",
+      "kind": "viewer",
+      "status": "PORT-MK2"
+    },
+    {
+      "id": "P6",
+      "name": "ProvenancePanel",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "P7",
+      "name": "CompanionsPanel",
+      "kind": "viewer",
+      "status": "PORT-MK2"
+    },
+    {
+      "id": "P8",
+      "name": "DetectionEvidencePanel",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "P9",
+      "name": "InterpretationSwitcher",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "P10",
+      "name": "HelpPanel",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V1",
+      "name": "TextStage",
+      "kind": "viewer",
+      "status": "EXISTS-X3"
+    },
+    {
+      "id": "V2",
+      "name": "VirtualTextStage",
+      "kind": "viewer",
+      "status": "EXISTS-X3"
+    },
+    {
+      "id": "V3",
+      "name": "HexStage",
+      "kind": "viewer",
+      "status": "EXISTS-X3"
+    },
+    {
+      "id": "V4",
+      "name": "TreeStage",
+      "kind": "viewer",
+      "status": "EXISTS-X3"
+    },
+    {
+      "id": "V5",
+      "name": "TableStage",
+      "kind": "viewer",
+      "status": "EXISTS-X3"
+    },
+    {
+      "id": "V6",
+      "name": "NamespaceTree",
+      "kind": "viewer",
+      "status": "EXISTS-X3"
+    },
+    {
+      "id": "V7",
+      "name": "UnknownBinaryFallback",
+      "kind": "viewer",
+      "status": "EXISTS-X3"
+    },
+    {
+      "id": "V8",
+      "name": "CodeStage",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V9",
+      "name": "ImageStage",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V10",
+      "name": "ImageSubresourceRail",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V11",
+      "name": "ImageFrameStrip",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V12",
+      "name": "AtlasRegionOverlay",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V13",
+      "name": "VectorStage",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V14",
+      "name": "ModelStage",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V15",
+      "name": "SceneOutliner",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V16",
+      "name": "AnimationTimeline",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V17",
+      "name": "MaterialPanel",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V18",
+      "name": "PropertyGrid",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V19",
+      "name": "RelationGraph",
+      "kind": "viewer",
+      "status": "PORT-MK2"
+    },
+    {
+      "id": "V20",
+      "name": "SheetWorkbook",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V21",
+      "name": "CatalogBrowserStage",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V22",
+      "name": "DocumentPagesStage",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V23",
+      "name": "OutlinePanel",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V24",
+      "name": "AnnotationsPanel",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V25",
+      "name": "MarkupPreview",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V26",
+      "name": "SlideDeckStage",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V27",
+      "name": "NotebookStage",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V28",
+      "name": "AudioStage",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V29",
+      "name": "AudioBankBrowser",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V30",
+      "name": "VideoStage",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V31",
+      "name": "SubtitleTrackPanel",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V32",
+      "name": "FontStage",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V33",
+      "name": "MapStage",
+      "kind": "viewer",
+      "status": "PORT-MK2"
+    },
+    {
+      "id": "V34",
+      "name": "NodeGraphStage",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V35",
+      "name": "UiLayoutStage",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V36",
+      "name": "UiBindingsInspector",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V37",
+      "name": "TimelineScrubberStage",
+      "kind": "viewer",
+      "status": "PORT-MK2"
+    },
+    {
+      "id": "V38",
+      "name": "StateSnapshotStage",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V39",
+      "name": "LocalizationTableStage",
+      "kind": "viewer",
+      "status": "PORT-MK2"
+    },
+    {
+      "id": "V40",
+      "name": "EffectsStage",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V41",
+      "name": "MessageDocumentStage",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V42",
+      "name": "MailboxBrowserStage",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V43",
+      "name": "CadDocumentStage",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "V44",
+      "name": "GeospatialStage",
+      "kind": "viewer",
+      "status": "NEW"
+    },
+    {
+      "id": "H1",
+      "name": "AppFrame",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "H2",
+      "name": "TitleBar",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "H3",
+      "name": "ActivityBar",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "H4",
+      "name": "SideBarContainer",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "H5",
+      "name": "EditorTabStrip",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "H6",
+      "name": "EditorGrid",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "H7",
+      "name": "CommandPalette",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "H8",
+      "name": "QuickPick",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "H9",
+      "name": "WorkspaceExplorer",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "H10",
+      "name": "WorkspaceSearchPanel",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "H11",
+      "name": "ProblemsPanel",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "H12",
+      "name": "SettingsEditor",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "H13",
+      "name": "KeybindingsEditor",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "H14",
+      "name": "NotificationCenter",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "H15",
+      "name": "WorkbenchStatusBar",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "H16",
+      "name": "ProgressTaskCenter",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "H18",
+      "name": "WelcomeView",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "X1",
+      "name": "ExtensionCatalogBrowser",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "X2",
+      "name": "ExtensionCard",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "X3",
+      "name": "InstallPlanReview",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "X4",
+      "name": "LockReview",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "X5",
+      "name": "PermissionGrantDialog",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "X6",
+      "name": "ProviderPolicyEditor",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "X7",
+      "name": "ProductDiscoveryPanel",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "X8",
+      "name": "SourceConnectionPanel",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "X9",
+      "name": "SourceAuthPrompt",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "X10",
+      "name": "SyncStatusIndicator",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "X11",
+      "name": "LaunchPanel",
+      "kind": "workbench-surface",
+      "status": "NEW"
+    },
+    {
+      "id": "X12",
+      "name": "ModTreePanel",
+      "kind": "workbench-surface",
+      "status": "PORT-MK2"
+    }
+  ]
+}

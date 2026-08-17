@@ -5,7 +5,11 @@
  */
 
 import { contractId } from '@modkitx-x3/core'
-import type { ContributionContractRegistration, JsonValue } from '@modkitx-x3/sdk'
+import type {
+  ContributionContractRegistration,
+  JsonValue,
+  PrecompiledSchemaValidator,
+} from '@modkitx-x3/sdk'
 import { PROVIDER_OFFER_INVENTORY_FACT } from '@modkitx-x3/host'
 
 /** Declaration-emission proof: inferred branded literals remain nameable to extension authors. */
@@ -35,9 +39,57 @@ export const greeterSpecSchema = {
   },
 } as const
 
+export const greeterSpecValidator = ((value: unknown): boolean => {
+  const record =
+    typeof value === 'object' && value !== null && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : undefined
+  const keys = record === undefined ? [] : Object.keys(record)
+  const greetingValid =
+    record?.['greeting'] === undefined ||
+    (typeof record['greeting'] === 'string' && record['greeting'].length > 0)
+  const outputs = record?.['outputs']
+  const outputsValid =
+    outputs === undefined ||
+    (Array.isArray(outputs) &&
+      outputs.every(output => {
+        if (typeof output !== 'object' || output === null || Array.isArray(output)) return false
+        const item = output as Record<string, unknown>
+        return (
+          Object.keys(item).every(key =>
+            ['id', 'definitionVersion', 'representation', 'presence'].includes(key),
+          ) &&
+          typeof item['id'] === 'string' &&
+          item['id'].length > 0 &&
+          typeof item['definitionVersion'] === 'string' &&
+          item['definitionVersion'].length > 0 &&
+          ['source', 'compiled', 'runtime'].includes(String(item['representation'])) &&
+          ['may-expose', 'will-expose'].includes(String(item['presence']))
+        )
+      }))
+  const valid =
+    record !== undefined &&
+    keys.every(key => key === 'greeting' || key === 'outputs') &&
+    greetingValid &&
+    outputsValid
+  greeterSpecValidator.errors = valid
+    ? null
+    : [
+        {
+          instancePath: '',
+          keyword: 'greeterSpec',
+          message: 'must satisfy the greeter contribution schema',
+          params: {},
+        },
+      ]
+  return valid
+}) as PrecompiledSchemaValidator
+greeterSpecValidator.errors = null
+
 export const greeterSpecEntry: ContributionContractRegistration = {
   contract: { id: GREETER_CONTRIBUTION_CONTRACT, major: GREETER_MAJOR },
   schema: greeterSpecSchema,
+  validator: greeterSpecValidator,
   mode: 'executable',
   validateSemantics: () => [],
   project: (manifest, context) => {

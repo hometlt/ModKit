@@ -64,6 +64,61 @@ const contributions = [
     },
   },
   {
+    id: 'image-stage',
+    entrypoint: './dist/image/index.js',
+    spec: {
+      kind: 'stage',
+      requiresTraits: [trait('image.raster')],
+      consumesDataSources: [dataSource('common.view/raster-image-source')],
+      priority: 360,
+      singletonGroup: 'center-stage',
+    },
+  },
+  {
+    id: 'vector-stage',
+    entrypoint: './dist/vector/index.js',
+    spec: {
+      kind: 'stage',
+      requiresTraits: [trait('vector.scene')],
+      consumesDataSources: [dataSource('common.view/vector-scene-source')],
+      priority: 350,
+      singletonGroup: 'center-stage',
+    },
+  },
+  {
+    id: 'audio-stage',
+    entrypoint: './dist/audio/index.js',
+    spec: {
+      kind: 'stage',
+      requiresTraits: [trait('audio.streams')],
+      consumesDataSources: [dataSource('common.view/audio-media-source')],
+      priority: 360,
+      singletonGroup: 'center-stage',
+    },
+  },
+  {
+    id: 'video-stage',
+    entrypoint: './dist/video/index.js',
+    spec: {
+      kind: 'stage',
+      requiresTraits: [trait('video.streams')],
+      consumesDataSources: [dataSource('common.view/video-media-source')],
+      priority: 370,
+      singletonGroup: 'center-stage',
+    },
+  },
+  {
+    id: 'model-stage',
+    entrypoint: './dist/model/index.js',
+    spec: {
+      kind: 'stage',
+      requiresTraits: [trait('model.geometry')],
+      consumesDataSources: [dataSource('common.view/model-scene-source')],
+      priority: 350,
+      singletonGroup: 'center-stage',
+    },
+  },
+  {
     id: 'hex-stage',
     entrypoint: './dist/hex/index.js',
     spec: {

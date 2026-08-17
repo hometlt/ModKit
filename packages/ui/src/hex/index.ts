@@ -51,15 +51,18 @@ export const hexViewer: ViewerModule = defineViewerModule({
     if (lease === undefined) throw new TypeError('hex binding is unavailable')
     scope.lease(lease)
     const model = new HexWindowModel(lease.value as ByteRangeSource)
-    const controls = element(root, 'div', { className: 'modkit-viewer__toolbar' })
-    const offset = element(controls, 'input') as HTMLInputElement
+    const controls = element(root, 'div', {
+      className: 'modkit-viewer__toolbar',
+      part: 'hex.toolbar',
+    })
+    const offset = element(controls, 'input', { part: 'hex.offset-input' }) as HTMLInputElement
     offset.type = 'text'
     offset.inputMode = 'numeric'
     offset.value = '0'
     offset.setAttribute('aria-label', 'Byte offset')
-    const go = element(controls, 'button', { text: 'Go' }) as HTMLButtonElement
+    const go = element(controls, 'button', { text: 'Go', part: 'hex.go' }) as HTMLButtonElement
     go.type = 'button'
-    const content = element(root, 'pre', { className: 'modkit-viewer__hex' })
+    const content = element(root, 'pre', { className: 'modkit-viewer__hex', part: 'hex.content' })
     content.tabIndex = 0
 
     const render = async () => {

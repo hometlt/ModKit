@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "commands": [
+    { "command": "modkit.explainResolution", "title": "Modkit: Explain Resolution" },
+    { "command": "modkit.openWith", "title": "Modkit: Open With…" },
+    { "command": "modkit.showHostProfile", "title": "Modkit: Show Host Profile" }
+  ],
+  "customEditors": [
+    {
+      "viewType": "modkit.genericAssetPreview",
+      "displayName": "Modkit Asset Preview",
+      "selector": [{ "filenamePattern": "*" }],
+      "priority": "option"
+    }
+  ],
+  "views": {
+    "modkit": [
+      { "id": "modkit.assets", "name": "Assets" },
+      { "id": "modkit.extensions", "name": "Extensions" }
+    ]
+  }
+}

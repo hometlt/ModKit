@@ -29,6 +29,7 @@ const PUBLISHED_ENTRIES = [
   'packages/vfs/dist/index.js',
   'packages/host/dist/index.js',
   'packages/host/dist/node/index.js',
+  'packages/host/dist/browser/index.js',
   'packages/ui/dist/index.js',
   'packages/ui/dist/viewer/index.js',
   'packages/ui/dist/code/index.js',
@@ -40,6 +41,19 @@ const PUBLISHED_ENTRIES = [
   'packages/ui/dist/transport/index.js',
   'packages/ui/dist/namespace/index.js',
   'packages/ui/dist/panels/index.js',
+  'packages/ui/dist/tokens/index.js',
+  'packages/ui/dist/search/matcher.js',
+  'packages/ui/dist/primitives/search-field.js',
+  'packages/ui/dist/shell/chrome.js',
+  'packages/ui/dist/card/index.js',
+  'packages/ui/dist/graph/index.js',
+  'packages/ui/dist/workbench/index.js',
+  'packages/ui/dist/metadata/index.js',
+  'packages/ui/dist/image/index.js',
+  'packages/ui/dist/audio/index.js',
+  'packages/ui/dist/vector/index.js',
+  'packages/ui/dist/video/index.js',
+  'packages/ui/dist/model/index.js',
 ]
 
 /**
@@ -67,8 +81,11 @@ describe('single-file production dist', () => {
     // sdk uses core at runtime: that must remain a real package import, never inlined —
     // inlining would duplicate a sibling package's module state.
     expect(importSpecifiers(sdk)).toContain('@modkitx-x3/core')
-    // ajv stays a dependency, loaded lazily inside the validator.
-    expect(sdk).toContain('ajv/dist/2020.js')
+    // JSON Schema validators are emitted at build time. Runtime compilation would violate the
+    // production viewer CSP and break every codec.open() in browser hosts.
+    expect(sdk).not.toContain('ajv/dist/2020.js')
+    expect(sdk).not.toContain('new Function')
+    expect(sdk).not.toContain('unsafe-eval')
 
     const host = readFileSync(bundlePath('packages/host/dist/index.js'), 'utf8')
     const hostImports = importSpecifiers(host)

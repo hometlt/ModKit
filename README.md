@@ -46,6 +46,15 @@ requires a separate owner decision. Long-lived double authority with `modkitx` i
   `0ead78b9`; its one P1 (`source-span.v1` missing a FromSchema drift gate) is closed by `286b674`.
 - **A‑2…A‑8 are implementation-complete and reported for owner review.** This status does not
   promote `@modkitx-x3/*`, alter MK2, or claim the separate 13B/13C/13D implementations.
+- **Assets Capabilities media stress is implemented.** Five neutral raster/vector/audio/video/model
+  sources connect twelve isolated reference codecs to separately loaded UI viewers. Heavy decoder
+  and renderer dependencies remain optional provider extensions; see `REPORT_REFERENCE_CODECS.md`.
+- **Application extension-set composition is gated.** `pnpm apps:check` loads structured-text,
+  document, media, model/archive, editor and full-codec sets into the headless, PWA, VS Code and
+  Electron composition roots. It checks exact inventory isolation, contribution eligibility and
+  realm/target selection (codecs execute in Node or workers, never in a renderer/webview). The X3
+  VS Code and Electron packages are still composition adapters rather than independently packaged
+  executable processes; process-launch E2E begins when those distribution shells are added.
 - Local `pnpm bench` is informational and never blocks work. `pnpm bench:gate` keeps only three
   budgets (core import, bootstrap-closure import, CLI validate) and is reserved for a fixed CI
   runner or dedicated machine. There are no local calibration probes, normalization or mutable
