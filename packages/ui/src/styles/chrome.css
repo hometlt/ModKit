@@ -48,7 +48,24 @@
     outline-offset: -1px;
   }
 
-  /* Indent guides read like the VS Code explorer without a per-row wrapper element. */
+  /*
+   * Indent guides, VS Code style: one vertical hairline per nesting level.
+   *
+   * Drawn as a repeating background on the row rather than as elements, so a deep tree costs no
+   * extra DOM. The stripe repeats every indent step and is inset by half a step so it lands under
+   * the parent's chevron, which is what makes the line read as "belonging to" that folder.
+   */
+  [data-mk-part='filetree.row'] {
+    background-image: repeating-linear-gradient(
+      to right,
+      var(--mk-color-border) 0 1px,
+      transparent 1px var(--mk-tree-indent)
+    );
+    background-repeat: no-repeat;
+    background-size: calc(var(--mk-tree-indent) * var(--mk-tree-indent-level, 0)) 100%;
+    background-position: calc(var(--mk-space-2) + var(--mk-tree-indent) / 2) 0;
+  }
+
   [data-mk-part='filetree.row'] {
     display: flex;
     gap: var(--mk-space-1);
@@ -74,16 +91,21 @@
     outline-offset: -1px;
   }
 
-  /* One chevron everywhere: the tree, the accordion and any future disclosure share this shape. */
+  /*
+   * One chevron everywhere: the tree, the accordion and any future disclosure share this shape.
+   * Sized well above the label: at 12px the glyph reads as punctuation rather than a control, and
+   * it is also the row's hit target for expanding.
+   */
   [data-mk-part='filetree.twisty'] {
     display: inline-flex;
     flex: 0 0 auto;
     align-items: center;
     justify-content: center;
-    width: 16px;
-    height: 16px;
-    color: var(--mk-color-fg-subtle);
-    font-size: var(--mk-font-size-sm);
+    width: var(--mk-size-icon);
+    height: var(--mk-size-icon);
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-lg);
+    line-height: 1;
     transition: transform var(--mk-motion-fast) var(--mk-motion-ease);
   }
 

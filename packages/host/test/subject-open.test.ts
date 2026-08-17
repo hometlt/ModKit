@@ -7,8 +7,11 @@ import {
   createHostContributionContractRegistry,
   createServiceContractDefinitionRegistry,
   createServiceFacetMatcherProfileRegistry,
+  offersFromInventory,
   openSubject,
+  parsePolicyLock,
   registerServiceContractDefinitionsFromInventory,
+  replayPolicyLock,
 } from '@modkitx-x3/host'
 import { loadExtensionDirectory } from '@modkitx-x3/host/node'
 import { revisionId, type ArtifactByteSource, type ResourceBudget } from '@modkitx-x3/sdk'
@@ -149,6 +152,44 @@ describe('host-owned subject opening pipeline', () => {
     })
   })
 
+  it('does not silently run a worker-only path on node or trust an unapproved install', async () => {
+    const encoded = (await readFile(uvmFixture, 'utf8')).replace(/\s+/gu, '')
+    const source = byteSource(new Uint8Array(Buffer.from(encoded, 'base64')), 'triangle.uvm.glb')
+    const inventory = await buildInventory(
+      [await loadExtensionDirectory(modelsDir)],
+      createHostContributionContractRegistry(),
+    )
+    const result = await openSubject({
+      inventory,
+      source,
+      path: 'triangle.uvm.glb',
+      intent: 'full',
+      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+      grant: { id: 'subject-open-untrusted', classes: ['read-source'] },
+      budget,
+    })
+
+    expect(result.state).toBe('unresolved')
+    expect(result.candidates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          variantId: 'portable',
+          state: 'rejected',
+          diagnostics: expect.arrayContaining([
+            expect.objectContaining({ code: 'x3.host/codec-execution-unavailable' }),
+          ]),
+        }),
+        expect.objectContaining({
+          variantId: 'trusted-node',
+          state: 'rejected',
+          diagnostics: expect.arrayContaining([
+            expect.objectContaining({ code: 'x3.host/codec-execution-unavailable' }),
+          ]),
+        }),
+      ]),
+    )
+  })
+
   it('opens JSON through a separately ticketed syntax provider under a child grant', async () => {
     const inventory = await bundledInventory(textJsonDir)
     const definitions = createServiceContractDefinitionRegistry({
@@ -196,6 +237,44 @@ describe('host-owned subject opening pipeline', () => {
     expect(
       result.diagnostics.filter(item => item.code === 'x3.host/full-process-authority'),
     ).toHaveLength(2)
+    expect(
+      result.diagnostics
+        .filter(item => item.code === 'x3.host/full-process-authority')
+        .map(item =>
+          item.data !== null && typeof item.data === 'object' && !Array.isArray(item.data)
+            ? Reflect.get(item.data, 'classes')
+            : undefined,
+        ),
+    ).toEqual(expect.arrayContaining([['read-source'], []]))
+
+    const shuffledOffers = [...offersFromInventory(inventory)].reverse()
+    for (const entry of parsePolicyLock(result.lockText).entries) {
+      const replayed = replayPolicyLock(
+        {
+          contract: {
+            contract: entry.key.contract,
+            major: entry.key.major,
+            range: entry.key.normalizedRange,
+          },
+          target: {
+            environment: 'node',
+            operatingSystem: 'windows',
+            architecture: 'x64',
+            grantedPermissions: ['read-source'],
+          },
+          requiredOutputs: entry.key.requiredOutputs,
+          preferredOutputs: entry.key.preferredOutputs,
+          ...(entry.key.operation === undefined ? {} : { operation: entry.key.operation }),
+          ...(entry.key.workload === undefined ? {} : { workload: entry.key.workload }),
+        },
+        shuffledOffers,
+        result.lockText,
+      )
+      expect(replayed).toMatchObject({
+        state: 'resolved',
+        selected: { offer: { providerId: entry.primary.contributionId } },
+      })
+    }
 
     const tree = await result.session.dataSource('common.view/tree-data-source', 1)
     const root = await tree.value.root()

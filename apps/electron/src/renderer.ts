@@ -21,15 +21,30 @@ import {
   createSettingsUi,
   normalizeSettings,
   serializeSettings,
+  withRecent,
+  type RecentEntry,
   type EditorArea,
   type ExplorerEntry,
   type FileAccess,
+  type PreviewSession,
   type SettingsDocument,
   type SettingsStore,
 } from '@modkitx-x3/ui'
 import { applyDensity, applyTheme } from '@modkitx-x3/ui/tokens'
 
-import { PREVIEW_FALLBACK, PREVIEW_FORMATS, PREVIEW_STAGES } from './codecs.js'
+import { PREVIEW_FALLBACK, PREVIEW_STAGES } from '../generated/viewer-catalog.js'
+import { createFileEditorPorts } from './editing.js'
+
+/**
+ * Hand Monaco its language workers. Monaco reads this the first time an editor asks for one, which
+ * is always after module init, so declaring it here is early enough. Same-origin scripts satisfy
+ * `worker-src 'self' blob:` — no relaxation needed.
+ */
+;(globalThis as { MonacoEnvironment?: unknown }).MonacoEnvironment = {
+  getWorkerUrl(_workerId: string, label: string): string {
+    return label === 'json' ? './json.worker.js' : './editor.worker.js'
+  },
+}
 
 const MAXIMUM_BYTES = 64 * 1024 * 1024
 
@@ -41,6 +56,7 @@ interface Broker {
 interface HostBridge {
   profile(): Promise<{
     readonly renderer: { readonly realmId: string; readonly facilities: readonly string[] }
+    readonly supportedExtensions: readonly string[]
   }>
   initialFile(): Promise<{
     readonly present: boolean
@@ -49,10 +65,56 @@ interface HostBridge {
     readonly selfTest?: boolean
   }>
   registerFileTypes(extensions: readonly string[]): Promise<{ readonly message: string }>
+  confirmClose(name: string): Promise<'save' | 'discard' | 'cancel'>
+}
+
+interface SubjectBridge {
+  open(path: string): Promise<
+    | {
+        readonly state: 'opened'
+        readonly sessionId: string
+        readonly descriptor: Record<string, unknown>
+        readonly presentation: NonNullable<PreviewSession['presentation']>
+        readonly selected: {
+          readonly contributionId: string
+          readonly variantId: string
+          readonly confidence: number
+        }
+        readonly candidates: readonly unknown[]
+        readonly diagnostics: readonly { readonly code: string; readonly message: string }[]
+      }
+    | {
+        readonly state: 'unresolved'
+        readonly reason: string
+        readonly candidates: readonly unknown[]
+        readonly diagnostics: readonly { readonly code: string; readonly message: string }[]
+      }
+  >
+  call(
+    sessionId: string,
+    contract: string,
+    major: number,
+    method: string,
+    args: readonly unknown[],
+    handleId?: string,
+  ): Promise<unknown>
+  close(sessionId: string): Promise<{ readonly state: 'closed' }>
 }
 
 interface MenuBridge {
-  on(command: 'open-folder' | 'open-file' | 'settings' | 'split', run: () => void): void
+  on(
+    command:
+      | 'open-folder'
+      | 'open-file'
+      | 'settings'
+      | 'split'
+      | 'default-app'
+      | 'open-recent'
+      | 'clear-recent',
+    run: (payload?: unknown) => void,
+  ): void
+  /** Recent entries live in the settings file, so the renderer pushes them into the native menu. */
+  setRecent(recent: readonly RecentEntry[]): Promise<void>
 }
 
 interface SettingsBridge {
@@ -65,6 +127,64 @@ const host = (globalThis as { modkitHost?: HostBridge }).modkitHost
 const files = (globalThis as { modkitFiles?: { pathFor(file: File): string } }).modkitFiles
 const menu = (globalThis as { modkitMenu?: MenuBridge }).modkitMenu
 const settingsBridge = (globalThis as { modkitSettings?: SettingsBridge }).modkitSettings
+const subjects = (globalThis as { modkitSubjects?: SubjectBridge }).modkitSubjects
+const windowBridge = (
+  globalThis as {
+    modkitWindow?: {
+      send(command: string): Promise<{ state: string }>
+      onState(handler: (state: { maximized: boolean; fullscreen: boolean }) => void): void
+    }
+  }
+).modkitWindow
+
+/**
+ * The app's own title bar, drawn because the native frame is hidden so a theme can style it.
+ *
+ * The bar is the drag region; the buttons opt out with `-webkit-app-region: no-drag`, otherwise a
+ * click on Close would start a window drag instead of firing. Labels are glyphs with real
+ * `aria-label`s — a screen reader must not read "✕".
+ */
+function createTitleBar(document: Document, title: string): HTMLElement {
+  const bar = document.createElement('header')
+  bar.dataset['mkPart'] = 'titlebar'
+
+  const drag = document.createElement('div')
+  drag.dataset['mkPart'] = 'titlebar.drag'
+  const label = document.createElement('span')
+  label.dataset['mkPart'] = 'titlebar.title'
+  label.textContent = title
+  drag.append(label)
+
+  const controls = document.createElement('div')
+  controls.dataset['mkPart'] = 'titlebar.controls'
+
+  const button = (glyph: string, name: string, command: string): void => {
+    const node = document.createElement('button')
+    node.type = 'button'
+    node.dataset['mkPart'] = 'titlebar.button'
+    node.dataset['command'] = command
+    node.textContent = glyph
+    node.setAttribute('aria-label', name)
+    node.title = name
+    node.addEventListener('click', () => {
+      void windowBridge?.send(command)
+    })
+    controls.append(node)
+  }
+
+  button('—', 'Minimise', 'minimize')
+  button('▢', 'Maximise or restore', 'toggle-maximize')
+  button('✕', 'Close', 'close')
+
+  windowBridge?.onState(state => {
+    bar.dataset['mkState'] = state.maximized ? 'active' : ''
+    const maximise = controls.querySelector('[data-command="toggle-maximize"]')
+    if (maximise !== null) maximise.textContent = state.maximized ? '❐' : '▢'
+  })
+
+  bar.append(drag, controls)
+  return bar
+}
 
 function requireRoot(): Element {
   const node = document.querySelector('#root')
@@ -121,17 +241,102 @@ function settingsStore(bridge: SettingsBridge): SettingsStore {
   }
 }
 
+const REMOTE_ITERABLE_METHODS = new Set(['search'])
+
+function serializableArguments(args: readonly unknown[]): readonly unknown[] {
+  return args.filter(argument => !(argument instanceof AbortSignal))
+}
+
+function remoteDataSource(
+  bridge: SubjectBridge,
+  sessionId: string,
+  contract: string,
+  major: number,
+  handleId?: string,
+): unknown {
+  return new Proxy(Object.create(null) as Record<string, unknown>, {
+    get(_target, property) {
+      if (property === 'then') return undefined
+      if (typeof property !== 'string') return undefined
+      if (REMOTE_ITERABLE_METHODS.has(property)) {
+        return (...args: readonly unknown[]) => ({
+          async *[Symbol.asyncIterator]() {
+            const values = (await bridge.call(
+              sessionId,
+              contract,
+              major,
+              property,
+              serializableArguments(args),
+              handleId,
+            )) as readonly unknown[]
+            for (const value of values) yield value
+          },
+        })
+      }
+      return async (...args: readonly unknown[]) => {
+        const result = await bridge.call(
+          sessionId,
+          contract,
+          major,
+          property,
+          serializableArguments(args),
+          handleId,
+        )
+        if (
+          typeof result === 'object' &&
+          result !== null &&
+          (result as { kind?: unknown }).kind === 'remote-data-source-value' &&
+          typeof (result as { handleId?: unknown }).handleId === 'string'
+        ) {
+          return remoteDataSource(
+            bridge,
+            sessionId,
+            contract,
+            major,
+            (result as { handleId: string }).handleId,
+          )
+        }
+        return result
+      }
+    },
+  })
+}
+
+function remotePreviewSession(
+  bridge: SubjectBridge,
+  sessionId: string,
+  descriptor: Record<string, unknown>,
+  presentation: NonNullable<PreviewSession['presentation']>,
+): PreviewSession {
+  return {
+    presentation,
+    async descriptor() {
+      return descriptor
+    },
+    async dataSource(contract, major) {
+      return { value: remoteDataSource(bridge, sessionId, contract, major) }
+    },
+    async dispose() {
+      await bridge.close(sessionId)
+    },
+  }
+}
+
 async function boot(): Promise<void> {
   if (
     host === undefined ||
     broker === undefined ||
     menu === undefined ||
-    settingsBridge === undefined
+    settingsBridge === undefined ||
+    subjects === undefined
   ) {
-    throw new Error('preload bridge is missing: host, broker, menu or settings is undefined')
+    throw new Error(
+      'preload bridge is missing: host, broker, menu, settings or subjects is undefined',
+    )
   }
   // Bound locally: the narrowing above does not reach the nested helpers declared later.
   const bridge = broker
+  const subjectBridge = subjects
   const profile = await host.profile()
 
   const shell = document.createElement('div')
@@ -140,7 +345,8 @@ async function boot(): Promise<void> {
   body.className = 'modkit-body'
   const footer = document.createElement('footer')
   footer.className = 'modkit-footer'
-  shell.append(body, footer)
+  const titleBar = createTitleBar(document, 'Modkit MK3')
+  shell.append(titleBar, body, footer)
   requireRoot().replaceChildren(shell)
 
   const footerPath = document.createElement('span')
@@ -155,12 +361,52 @@ async function boot(): Promise<void> {
   }
 
   const preview = createCodecPreview({
-    formats: PREVIEW_FORMATS,
+    formats: [],
+    supported: profile.supportedExtensions,
     stages: PREVIEW_STAGES,
     fallback: PREVIEW_FALLBACK,
+    async openSession(entry) {
+      const result = await subjectBridge.open(entry.id)
+      if (result.state === 'unresolved') {
+        const detail =
+          result.diagnostics[0]?.message ?? `${result.reason}; using the explicit text/hex fallback`
+        setFooter(entry.id, detail, result.reason !== 'no-candidate')
+        return undefined
+      }
+      const authority = result.diagnostics.some(
+        item => item.code === 'x3.host/full-process-authority',
+      )
+      setFooter(
+        entry.id,
+        `${result.selected.contributionId}/${result.selected.variantId} · ${Math.round(
+          result.selected.confidence * 100,
+        )}%${authority ? ' · full process authority' : ''}`,
+      )
+      return remotePreviewSession(
+        subjectBridge,
+        result.sessionId,
+        result.descriptor,
+        result.presentation,
+      )
+    },
+    // Editable stages get a real save path: bytes go through the broker to an atomic write.
+    editorPorts: (entry, bytes) => {
+      const ports = createFileEditorPorts(
+        bridge,
+        entry,
+        bytes,
+        line => setFooter(entry.id, line),
+        dirty => editors.markDirty(entry.id, dirty),
+      )
+      // Kept so "save before closing" can commit the very ports the editor is holding.
+      openPorts.set(entry.id, ports)
+      return ports
+    },
   })
 
   let access: FileAccess | undefined
+  /** Live editor ports per open file, so a close prompt can save through the same session. */
+  const openPorts = new Map<string, { save(): Promise<void> }>()
 
   // ---------------------------------------------------------------- editors
   const editors: EditorArea = createEditorArea(document, {
@@ -168,6 +414,12 @@ async function boot(): Promise<void> {
     async read(entry, signal) {
       if (access === undefined) throw new Error('no folder is open')
       return access.read(entry.id, MAXIMUM_BYTES, signal)
+    },
+    async confirmClose(entry) {
+      return host.confirmClose(entry.name)
+    },
+    async save(entry) {
+      await openPorts.get(entry.id)?.save()
     },
     onStatus(status) {
       setFooter(
@@ -236,10 +488,20 @@ async function boot(): Promise<void> {
       { id: 'modkit-dark', label: 'Modkit Dark' },
       { id: 'modkit-light', label: 'Modkit Light' },
       { id: 'modkit-high-contrast', label: 'High contrast' },
+      // An installed theme is just an id plus a stylesheet; nothing about it is special-cased.
+      { id: 'sc2', label: 'StarCraft II' },
     ],
     onAppearance(appearance: SettingsDocument['appearance']) {
       applyTheme(document.documentElement, appearance.theme as never)
       applyDensity(document.documentElement, appearance.density)
+    },
+    // Offer exactly the formats the loaded codecs can open — never advertise for what we cannot read.
+    associableTypes: preview.supported,
+    async registerFileTypes(extensions) {
+      return (await host.registerFileTypes(extensions)).message
+    },
+    onClose() {
+      toggleSettings(false)
     },
   })
   await settingsUi.reload()
@@ -263,6 +525,7 @@ async function boot(): Promise<void> {
     if (result.canceled || result.root === undefined) return undefined
     access = accessFor(result.root)
     if (settingsOpen) toggleSettings(false)
+    await remember({ path: result.root, kind: 'folder' })
     return access
   }
 
@@ -275,17 +538,26 @@ async function boot(): Promise<void> {
     if (result.canceled || result.root === undefined || result.entry === undefined) return undefined
     access = accessFor(result.root)
     if (settingsOpen) toggleSettings(false)
+    await remember({ path: result.entry.id, kind: 'file' })
     return { access, entry: result.entry }
   }
 
   // ---------------------------------------------------------------- menu
-  menu?.on('open-folder', () => {
+  const commands: Record<string, (payload?: unknown) => void> = {}
+  /** Mirror of the recent list, so opening the File menu never has to await the settings file. */
+  let recentCache: readonly RecentEntry[] = []
+  const on = (command: string, run: (payload?: unknown) => void): void => {
+    commands[command] = run
+    menu?.on(command as 'settings', run)
+  }
+
+  on('open-folder', () => {
     void (async () => {
       const next = await openFolder()
       if (next !== undefined) await explorer.setAccess(next)
     })()
   })
-  menu?.on('open-file', () => {
+  on('open-file', () => {
     void (async () => {
       const picked = await pickFile()
       if (picked === undefined) return
@@ -293,13 +565,181 @@ async function boot(): Promise<void> {
       await editors.open(picked.entry)
     })()
   })
-  menu?.on('settings', () => {
+  on('settings', () => {
     toggleSettings()
   })
-  menu?.on('split', () => {
+  on('split', () => {
     if (settingsOpen) toggleSettings(false)
     editors.split()
   })
+  on('default-app', () => {
+    // The full picker lives in settings; the menu item is a shortcut to it, not a second flow.
+    toggleSettings(true)
+  })
+
+  on('open-recent', payload => {
+    const entry = payload as RecentEntry | undefined
+    if (entry === undefined) return
+    void (async () => {
+      try {
+        if (settingsOpen) toggleSettings(false)
+        /*
+         * Re-grant before listing. Filesystem grants are per-session and live in the main process,
+         * so a path picked from Recent after a restart has no grant and `directory.list` rejects
+         * it — which is exactly why Open Recent did nothing. Main re-grants only paths it finds in
+         * its own copy of the recent list, so this cannot widen access to anything else.
+         */
+        const granted = (await bridge.request('dialog.reopen-recent', { path: entry.path })) as {
+          root: string
+          entry?: ExplorerEntry
+        }
+        access = accessFor(granted.root)
+        await explorer.setAccess(access)
+        if (granted.entry !== undefined) await editors.open(granted.entry)
+        else setFooter(granted.root, 'folder')
+        await remember(entry)
+      } catch (error) {
+        // A recent path can be deleted or on an unplugged drive; say so instead of failing silently.
+        setFooter(entry.path, `unavailable: ${error instanceof Error ? error.message : ''}`, true)
+      }
+    })()
+  })
+
+  on('clear-recent', () => {
+    void (async () => {
+      const { document: current } = await store.read()
+      await store.write({ ...current, recent: [] })
+      recentCache = []
+      await menu?.setRecent([])
+    })()
+  })
+
+  /** Record an opened path and push the new list into the native menu. */
+  async function remember(entry: RecentEntry): Promise<void> {
+    const { document: current } = await store.read()
+    const next = withRecent(current, entry)
+    await store.write(next)
+    recentCache = next.recent
+    await menu?.setRecent(next.recent)
+  }
+
+  /*
+   * The menu bar lives in our own title bar.
+   *
+   * Hiding the native frame to style the window also removes the native menu, so the application
+   * has to draw one. It dispatches through the same command table as the native menu signals, so
+   * the two can never offer different sets of actions.
+   */
+  const menuBar = document.createElement('nav')
+  menuBar.dataset['mkPart'] = 'titlebar.menu'
+  menuBar.setAttribute('aria-label', 'Application menu')
+
+  let openMenu: HTMLElement | undefined
+  const closeMenu = (): void => {
+    openMenu?.remove()
+    openMenu = undefined
+  }
+  document.addEventListener('pointerdown', event => {
+    if (event.target instanceof Node && menuBar.contains(event.target)) return
+    closeMenu()
+  })
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closeMenu()
+  })
+
+  const addMenu = (
+    label: string,
+    items: readonly (
+      | { readonly label: string; readonly command: string; readonly hint?: string }
+      | { readonly separator: true }
+      | { readonly recent: true }
+    )[],
+  ): void => {
+    const trigger = document.createElement('button')
+    trigger.type = 'button'
+    trigger.dataset['mkPart'] = 'titlebar.menu-item'
+    trigger.textContent = label
+    trigger.addEventListener('click', () => {
+      const wasOpen = openMenu !== undefined
+      closeMenu()
+      if (wasOpen) return
+
+      const panel = document.createElement('div')
+      panel.dataset['mkPart'] = 'titlebar.menu-panel'
+      panel.setAttribute('role', 'menu')
+
+      const entry = (text: string, run: () => void, enabled = true): void => {
+        const node = document.createElement('button')
+        node.type = 'button'
+        node.dataset['mkPart'] = 'titlebar.menu-entry'
+        node.setAttribute('role', 'menuitem')
+        node.textContent = text
+        if (!enabled) node.setAttribute('disabled', '')
+        else
+          node.addEventListener('click', () => {
+            closeMenu()
+            run()
+          })
+        panel.append(node)
+      }
+
+      for (const item of items) {
+        if ('separator' in item) {
+          const rule = document.createElement('div')
+          rule.dataset['mkPart'] = 'titlebar.menu-separator'
+          panel.append(rule)
+          continue
+        }
+        if ('recent' in item) {
+          const list = recentCache
+          if (list.length === 0) entry('No recent items', () => undefined, false)
+          for (const recent of list) {
+            entry(`${recent.kind === 'file' ? 'File' : 'Folder'} — ${recent.path}`, () =>
+              commands['open-recent']?.(recent),
+            )
+          }
+          continue
+        }
+        entry(item.hint === undefined ? item.label : `${item.label} ${item.hint}`, () =>
+          commands[item.command]?.(),
+        )
+      }
+
+      trigger.append(panel)
+      openMenu = panel
+    })
+    menuBar.append(trigger)
+  }
+
+  addMenu('File', [
+    { label: 'Open Folder…', command: 'open-folder', hint: 'Ctrl+K' },
+    { label: 'Open File…', command: 'open-file', hint: 'Ctrl+O' },
+    { separator: true },
+    { recent: true },
+    { separator: true },
+    { label: 'Clear Recent', command: 'clear-recent' },
+    { separator: true },
+    { label: 'Set as Default App…', command: 'default-app' },
+    { label: 'Settings', command: 'settings', hint: 'Ctrl+,' },
+  ])
+  addMenu('View', [{ label: 'Split Editor', command: 'split', hint: 'Ctrl+Backslash' }])
+
+  titleBar.prepend(menuBar)
+
+  // Keyboard shortcuts, which the native menu used to provide and a hidden frame no longer does.
+  document.addEventListener('keydown', event => {
+    if (!event.ctrlKey && !event.metaKey) return
+    const key = event.key.toLowerCase()
+    const command =
+      key === 'k' ? 'open-folder' : key === 'o' ? 'open-file' : key === ',' ? 'settings' : undefined
+    if (command === undefined) return
+    event.preventDefault()
+    commands[command]?.()
+  })
+
+  // Populate the menu from whatever the settings file already holds.
+  recentCache = (await store.read()).document.recent
+  await menu?.setRecent(recentCache)
 
   setFooter('', 'Ready')
 
@@ -309,7 +749,10 @@ async function boot(): Promise<void> {
     access = accessFor(initial.root)
     await explorer.setAccess(access)
     if (initial.entry !== undefined) await editors.open(initial.entry)
-    if (initial.selfTest === true) await selfTest(access, preview, editors, settingsUi.root)
+    if (initial.selfTest === true)
+      await selfTest(access, preview, editors, settingsUi.root, (entry, bytes) =>
+        createFileEditorPorts(bridge, entry, bytes, line => setFooter(entry.id, line)),
+      )
   }
 }
 
@@ -322,6 +765,13 @@ async function selfTest(
   preview: ReturnType<typeof createCodecPreview>,
   editors: EditorArea,
   settingsRoot: HTMLElement,
+  saveProbe?: (
+    entry: ExplorerEntry,
+    bytes: Uint8Array,
+  ) => {
+    readonly session: unknown
+    readonly commit: unknown
+  },
 ): Promise<void> {
   const entries = await access.list(undefined)
   console.log(`selftest: ${entries.length} entries in ${access.label}`)
@@ -351,6 +801,97 @@ async function selfTest(
 
   const settingsGroups = settingsRoot.querySelectorAll('[data-mk-part="settings.group"]').length
   console.log(`selftest: settings groups=${settingsGroups}`)
+
+  // Prove the save path reaches disk: write through the same ports an editor uses.
+  const target = entries.find(item => item.name === 'savetest.txt')
+  if (target !== undefined && saveProbe !== undefined) {
+    try {
+      const ports = saveProbe(target, new TextEncoder().encode('original text'))
+      const edits = [{ payload: { kind: 'text', text: 'SAVED BY SELFTEST' } }]
+      await (ports.session as { plan(c: unknown): Promise<unknown> }).plan({ edits })
+      const plan = { edits }
+      await (ports.commit as { prepare(p: unknown): Promise<unknown> }).prepare(plan)
+      await (ports.commit as { commit(): Promise<unknown> }).commit()
+      const after = await access.read(target.id, 1024)
+      console.log(`selftest: save -> ${JSON.stringify(new TextDecoder().decode(after))}`)
+    } catch (error) {
+      console.log(`selftest: save FAILED ${String(error)}`)
+    }
+  }
+  // An installed theme must reach the tokens, not just the picker.
+  const before = getComputedStyle(document.documentElement).getPropertyValue('--mk-color-accent')
+  document.documentElement.setAttribute('data-mk-theme', 'sc2')
+  const after = getComputedStyle(document.documentElement).getPropertyValue('--mk-color-accent')
+  const scan = getComputedStyle(document.body, '::before').animationName
+  console.log(`selftest: theme accent ${before.trim()} -> ${after.trim()}, background ${scan}`)
+
+  const bar = document.querySelector('[data-mk-part="titlebar"]')
+  const buttons = [...document.querySelectorAll('[data-mk-part="titlebar.button"]')].map(node =>
+    node.getAttribute('data-command'),
+  )
+  const railed = bar === null ? '' : getComputedStyle(bar, '::after').animationName
+  const sheen = getComputedStyle(document.body, '::after').animationName
+  console.log(
+    `selftest: titlebar=${bar !== null} controls=[${buttons.join(', ')}] rail=${railed} sheen=${sheen}`,
+  )
+  const sheets = [...document.styleSheets].map(sheet => sheet.href?.split('/').pop() ?? 'inline')
+  let sheenRule = 'not found'
+  for (const sheet of document.styleSheets) {
+    try {
+      for (const rule of sheet.cssRules) {
+        const text = rule.cssText
+        if (text.includes('mk-sc2-sheen') && text.includes('body')) sheenRule = text.slice(0, 90)
+      }
+    } catch {
+      sheenRule = 'unreadable sheet'
+    }
+  }
+  console.log(`selftest: sheets=[${sheets.join(', ')}] sheenRule=${sheenRule.length} chars`)
+
+  const menus = [...document.querySelectorAll('[data-mk-part="titlebar.menu-item"]')].map(
+    node => node.textContent,
+  )
+  const fileMenu = document.querySelector('[data-mk-part="titlebar.menu-item"]')
+  ;(fileMenu as HTMLElement | null)?.click()
+  const menuEntries = [...document.querySelectorAll('[data-mk-part="titlebar.menu-entry"]')].map(
+    node => (node.textContent ?? '').split(' ')[0],
+  )
+  console.log(`selftest: menus=[${menus.join(', ')}] fileEntries=${menuEntries.length}`)
+
+  // The dirty marker must appear on edit and clear on save.
+  if (target !== undefined) {
+    editors.markDirty(target.id, true)
+    const marked = document.querySelectorAll(
+      '[data-mk-part="explorer.filetab"][data-mk-state~="mutating"]',
+    ).length
+    const unsaved = editors.hasUnsaved()
+    editors.markDirty(target.id, false)
+    const cleared = document.querySelectorAll(
+      '[data-mk-part="explorer.filetab"][data-mk-state~="mutating"]',
+    ).length
+    console.log(`selftest: dirty marked=${marked} hasUnsaved=${unsaved} cleared=${cleared}`)
+  }
+
+  // Hex: edit a cell and check the ASCII twin follows and the tab is marked.
+  const bin = entries.find(item => item.name === 'unknown.bin')
+  if (bin !== undefined) {
+    await editors.open(bin)
+    const cell = document.querySelector('[data-mk-part="hex.cell"]') as HTMLElement | null
+    const twin = document.querySelector('[data-mk-part="hex.ascii"] > span') as HTMLElement | null
+    if (cell !== null && twin !== null) {
+      const asciiBefore = twin.textContent
+      cell.textContent = '41'
+      cell.dispatchEvent(new FocusEvent('blur'))
+      await new Promise(resolve => setTimeout(resolve, 120))
+      const marked = document.querySelectorAll(
+        '[data-mk-part="explorer.filetab"][data-mk-state~="mutating"]',
+      ).length
+      console.log(
+        `selftest: hex ascii ${JSON.stringify(asciiBefore)} -> ${JSON.stringify(twin.textContent)} tabMarked=${marked}`,
+      )
+    }
+  }
+
   console.log('selftest: done')
 }
 

@@ -2,9 +2,12 @@
 // Legacy-vocabulary gate (BRIEF-12 §3.5; lab decisions L7 + corrective pass 2026-08-13 in
 // IMPLEMENTATION_NOTES.md).
 //
-// Scope: <root>/packages/**/{src,schemas}, <root>/apps/**/{src,schemas}, plus every
-// workspace package.json (name, exports and full manifest text). Forbidden in new public
-// code and schemas:
+// Scope (extended 2026-08-17, gap G-APP-1 in IMPLEMENTATION_NOTES): every package directory
+// under <root>/packages/*, <root>/apps/*, <root>/examples/* and <root>/extensions/*/* —
+// its {src,schemas,contributions} trees, a root-level contribution.manifest.json /
+// modkit.extension.json, and its package.json (name, exports and full manifest text).
+// Contribution manifests are wire documents, so they are scanned like schemas.
+// Forbidden in new public code and schemas:
 //   - AssetPlugin (legacy plugin API)
 //   - `capability`/`capabilities` as a runtime type name or object/schema key — quoted or
 //     unquoted (schemas live as TS consts, so unquoted keys count) — the final vocabulary
@@ -14,6 +17,8 @@
 //   - legacyCodecRoot
 //   - marketplace / codec-host in package names or export subpaths (they are `host`
 //     modules, not packages)
+//   - the `@modkitx-x3/*` name scope is required for platform packages/apps only
+//     (BRIEF-12 §7.1); extension/example package names follow MK3/27 §0.2 and are free.
 //
 // Exclusions (§3.5: otherwise the negative-test of the old manifest is impossible):
 //   - any path containing /fixtures/legacy/ (skipped entirely);
@@ -44,8 +49,20 @@ const defaultRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const root = rootArgIndex === -1 ? defaultRoot : resolve(args[rootArgIndex + 1] ?? defaultRoot)
 const quiet = args.includes('--quiet')
 
-const SCAN_ROOTS = ['packages', 'apps']
-const SOURCE_DIR_NAMES = new Set(['src', 'schemas'])
+/**
+ * Scan roots and how deep a package directory sits under each: `packages/<pkg>` and
+ * `apps/<app>` are one level; `examples/<ext>` one level; `extensions/<group>/<ext>` two
+ * (`common/images`, `_shared/codec-kit`). Only platform packages/apps must use the lab scope.
+ */
+const SCAN_ROOTS = [
+  { name: 'packages', packageDepth: 1, requireLabScope: true },
+  { name: 'apps', packageDepth: 1, requireLabScope: true },
+  { name: 'examples', packageDepth: 1, requireLabScope: false },
+  { name: 'extensions', packageDepth: 2, requireLabScope: false },
+]
+const SOURCE_DIR_NAMES = new Set(['src', 'schemas', 'contributions'])
+/** Authored wire documents that may sit directly in a package root. */
+const ROOT_MANIFEST_NAMES = new Set(['contribution.manifest.json', 'modkit.extension.json'])
 const TEXT_EXTENSIONS = new Set(['.ts', '.mts', '.cts', '.tsx', '.js', '.mjs', '.cjs', '.json'])
 const LEGACY_MARKER = '@modkit-legacy-input-fixture'
 const LEGACY_PATH_SEGMENT = '/fixtures/legacy/'
@@ -100,10 +117,24 @@ function walk(dir, out) {
   }
 }
 
-function isInScannedTree(relPath) {
+/**
+ * Classifies a path relative to the scan root: the package manifest itself, a file inside
+ * one of the scanned trees (`<pkg>/(src|schemas|contributions)/**`), an authored root
+ * manifest, or nothing of interest.
+ */
+function classify(relPath, scanRoot) {
   const parts = relPath.split(sep)
-  // packages/<pkg>/(src|schemas)/** or apps/<app>/(src|schemas)/**
-  return parts.length >= 3 && SOURCE_DIR_NAMES.has(parts[2])
+  const packageDirDepth = 1 + scanRoot.packageDepth // scan root + package segments
+  if (parts.length === packageDirDepth + 1 && parts[packageDirDepth] === 'package.json') {
+    return 'package-json'
+  }
+  if (parts.length > packageDirDepth + 1 && SOURCE_DIR_NAMES.has(parts[packageDirDepth])) {
+    return 'source'
+  }
+  if (parts.length === packageDirDepth + 1 && ROOT_MANIFEST_NAMES.has(parts[packageDirDepth])) {
+    return 'root-manifest'
+  }
+  return undefined
 }
 
 function hasTextExtension(path) {
@@ -139,7 +170,7 @@ function collectExportPathStrings(exportsValue, out) {
   }
 }
 
-function checkPackageManifest(file, relPosix, findings) {
+function checkPackageManifest(file, relPosix, findings, requireLabScope) {
   const text = readFileSync(file, 'utf8')
   let manifest
   try {
@@ -162,7 +193,7 @@ function checkPackageManifest(file, relPosix, findings) {
       why: `forbidden package name «${name}» (host modules, not packages)`,
     })
   }
-  if (name && !name.startsWith('@modkitx-x3/')) {
+  if (requireLabScope && name && !name.startsWith('@modkitx-x3/')) {
     findings.push({
       file: relPosix,
       line: 1,
@@ -192,7 +223,7 @@ const findings = []
 let scannedFiles = 0
 
 for (const scanRoot of SCAN_ROOTS) {
-  const rootDir = join(root, scanRoot)
+  const rootDir = join(root, scanRoot.name)
   let exists = false
   try {
     exists = statSync(rootDir).isDirectory()
@@ -207,13 +238,14 @@ for (const scanRoot of SCAN_ROOTS) {
   for (const file of files) {
     const relPath = relative(root, file)
     const relPosix = relPath.split(sep).join('/')
+    const kind = classify(relPath, scanRoot)
 
-    if (/^(packages|apps)\/[^/]+\/package\.json$/.test(relPosix)) {
-      scannedFiles += checkPackageManifest(file, relPosix, findings)
+    if (kind === 'package-json') {
+      scannedFiles += checkPackageManifest(file, relPosix, findings, scanRoot.requireLabScope)
       continue
     }
 
-    if (!isInScannedTree(relPath)) continue
+    if (kind === undefined) continue
     if (relPosix.includes(LEGACY_PATH_SEGMENT)) continue
     if (!hasTextExtension(file)) continue
 

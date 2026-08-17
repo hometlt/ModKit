@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "x3.demo/unknown-kind", "major": 1 },
+  "id": "org.example/demo",
+  "displayName": "demo contract the production registry does not know",
+  "spec": {}
+}

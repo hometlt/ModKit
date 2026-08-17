@@ -1,0 +1,219 @@
+#!/usr/bin/env node
+// Extension-implementation import gate (MK3/27 §7, §11, §12.5; gap G-APP-1 in
+// IMPLEMENTATION_NOTES, 2026-08-17).
+//
+// Rule: a platform package or a leaf application never carries an *authored* dependency on
+// a concrete extension implementation. The only permitted edges to extension entrypoints
+// are scope-local *generated* lazy loaders (27 §7: «Единственные разрешённые зависимости на
+// concrete extension entrypoints находятся в scope-local generated app/installed lazy
+// loaders»), and at runtime the host reaches an entrypoint only through an activation
+// ticket (24 §8).
+//
+// What is checked (zero dependencies, deterministic order):
+//   scan roots  packages/<pkg>/src/**  apps/<app>/{src,electron,scripts}/**
+//   forms       import … from '…' · export … from '…' · import '…' · import('…') · require('…')
+//   violations  [extension-path-import]     relative specifier resolving under <root>/extensions/
+//                                           or <root>/examples/
+//               [extension-package-import]  bare specifier `modkit-extension-*` or
+//                                           `@modkitx-x3/codec-kit` (extension-side library,
+//                                           outside the bootstrap closure by design)
+//   exemptions  any path segment named `generated` (scope-local generated loader; it must be
+//               produced from inventory, never hand-authored — reviewed, not grep-checked)
+//
+// Known debt is a *ratchet*, not a baseline: an entry allows the listed file to violate today,
+// names the owner slice that removes it, and — the important half — the gate FAILS when the
+// entry goes stale (file gone or clean), so the debt cannot outlive the fix. New violations
+// anywhere else fail immediately.
+//
+// Usage: node scripts/check-app-imports.mjs [--root <dir>] [--debt-file <json>] [--quiet]
+//   --debt-file overrides the built-in KNOWN_DEBT list (used by the regression suite).
+
+import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { dirname, join, relative, resolve, sep } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import process from 'node:process'
+
+const args = process.argv.slice(2)
+const argValue = flag => {
+  const index = args.indexOf(flag)
+  return index === -1 ? undefined : args[index + 1]
+}
+const defaultRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
+const root = argValue('--root') === undefined ? defaultRoot : resolve(argValue('--root'))
+const quiet = args.includes('--quiet')
+
+/**
+ * Files that are allowed to violate today. Each entry must disappear together with the
+ * fix it names; a stale entry fails the gate.
+ */
+const KNOWN_DEBT = []
+
+const SCAN_ROOTS = [
+  { name: 'packages', dirs: ['src'] },
+  { name: 'apps', dirs: ['src', 'electron', 'scripts'] },
+]
+const TEXT_EXTENSIONS = new Set(['.ts', '.mts', '.cts', '.tsx', '.js', '.mjs', '.cjs'])
+const SKIP_DIRS = new Set(['node_modules', 'dist', 'dist-app', '.git'])
+const FORBIDDEN_TREES = ['extensions', 'examples']
+const FORBIDDEN_BARE = [/^modkit-extension-/, /^@modkitx-x3\/codec-kit(?:\/|$)/]
+
+function walk(dir, out) {
+  let entries
+  try {
+    entries = readdirSync(dir, { withFileTypes: true })
+  } catch {
+    return
+  }
+  entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+  for (const entry of entries) {
+    const path = join(dir, entry.name)
+    if (entry.isDirectory()) {
+      if (SKIP_DIRS.has(entry.name)) continue
+      walk(path, out)
+    } else if (entry.isFile()) {
+      out.push(path)
+    }
+  }
+}
+
+function hasTextExtension(path) {
+  const dot = path.lastIndexOf('.')
+  return dot !== -1 && TEXT_EXTENSIONS.has(path.slice(dot))
+}
+
+/** Crude but sufficient comment stripping so a commented-out import does not count. */
+function stripComments(text) {
+  return text
+    .replace(/\/\*[\s\S]*?\*\//g, match => match.replace(/[^\n]/g, ' '))
+    .replace(
+      /(^|[^:'"`])\/\/[^\n]*/g,
+      (match, prefix) => prefix + ' '.repeat(match.length - prefix.length),
+    )
+}
+
+const SPECIFIER_FORMS = [
+  /\bimport\s+(?:[^'"`;]*?\s+from\s+)?['"]([^'"\n]+)['"]/g, // import x from '…' / import '…'
+  /\bexport\s+[^'"`;]*?\s+from\s+['"]([^'"\n]+)['"]/g, // export … from '…'
+  /\bimport\s*\(\s*['"]([^'"\n]+)['"]\s*\)/g, // import('…')
+  /\brequire\s*\(\s*['"]([^'"\n]+)['"]\s*\)/g, // require('…')
+]
+
+function* specifiers(text) {
+  const lines = text.split('\n')
+  for (let i = 0; i < lines.length; i += 1) {
+    for (const form of SPECIFIER_FORMS) {
+      form.lastIndex = 0
+      let match
+      while ((match = form.exec(lines[i])) !== null) {
+        yield { specifier: match[1], line: i + 1 }
+      }
+    }
+  }
+}
+
+function toPosix(path) {
+  return path.split(sep).join('/')
+}
+
+function classifySpecifier(specifier, fileDir) {
+  if (specifier.startsWith('.')) {
+    const target = resolve(fileDir, specifier)
+    const rel = toPosix(relative(root, target))
+    if (rel.startsWith('..')) return undefined
+    const head = rel.split('/')[0]
+    if (FORBIDDEN_TREES.includes(head)) {
+      return { rule: 'extension-path-import', detail: rel }
+    }
+    return undefined
+  }
+  if (FORBIDDEN_BARE.some(re => re.test(specifier))) {
+    return { rule: 'extension-package-import', detail: specifier }
+  }
+  return undefined
+}
+
+/** Built-in debt describes this repository only; a foreign --root starts with none. */
+function loadDebt() {
+  const override = argValue('--debt-file')
+  if (override === undefined) return root === defaultRoot ? KNOWN_DEBT : []
+  const parsed = JSON.parse(readFileSync(resolve(override), 'utf8'))
+  if (!Array.isArray(parsed)) throw new Error('--debt-file must contain a JSON array')
+  return parsed
+}
+
+const debt = loadDebt()
+const debtByFile = new Map(debt.map(entry => [entry.file, entry]))
+const violations = [] // { file, line, rule, detail }
+const debtHits = new Set()
+let scannedFiles = 0
+
+for (const scanRoot of SCAN_ROOTS) {
+  const rootDir = join(root, scanRoot.name)
+  let entries
+  try {
+    entries = readdirSync(rootDir, { withFileTypes: true })
+  } catch {
+    continue
+  }
+  entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue
+    for (const dirName of scanRoot.dirs) {
+      const dir = join(rootDir, entry.name, dirName)
+      let isDir = false
+      try {
+        isDir = statSync(dir).isDirectory()
+      } catch {
+        isDir = false
+      }
+      if (!isDir) continue
+      const files = []
+      walk(dir, files)
+      for (const file of files) {
+        if (!hasTextExtension(file)) continue
+        const relPosix = toPosix(relative(root, file))
+        if (relPosix.split('/').includes('generated')) continue
+        scannedFiles += 1
+        const text = stripComments(readFileSync(file, 'utf8'))
+        for (const { specifier, line } of specifiers(text)) {
+          const found = classifySpecifier(specifier, dirname(file))
+          if (found === undefined) continue
+          if (debtByFile.has(relPosix)) {
+            debtHits.add(relPosix)
+            continue
+          }
+          violations.push({ file: relPosix, line, rule: found.rule, detail: found.detail })
+        }
+      }
+    }
+  }
+}
+
+const stale = debt.filter(entry => !debtHits.has(entry.file))
+const failed = violations.length > 0 || stale.length > 0
+
+if (failed) {
+  if (violations.length > 0) {
+    console.error(
+      `app-import gate: ${violations.length} violation(s) in ${scannedFiles} scanned file(s):`,
+    )
+    for (const v of violations) {
+      console.error(`  ${v.file}:${v.line}  [${v.rule}] ${v.detail}`)
+    }
+  }
+  if (stale.length > 0) {
+    console.error(`app-import gate: ${stale.length} stale known-debt entr(y/ies) — remove them:`)
+    for (const entry of stale) {
+      console.error(
+        `  ${entry.file}  [stale-known-debt] no violation left (or file gone): ${entry.reason}`,
+      )
+    }
+  }
+  process.exit(1)
+}
+
+if (!quiet) {
+  const debtNote =
+    debtHits.size === 0 ? '' : `; ${debtHits.size} known-debt file(s) still violating (tracked)`
+  console.log(`app-import gate: clean (${scannedFiles} file(s) scanned${debtNote})`)
+}

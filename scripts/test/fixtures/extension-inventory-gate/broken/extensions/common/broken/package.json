@@ -1,0 +1,14 @@
+{
+  "name": "modkit-extension-x3-fixture-broken",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "org.example",
+    "id": "fixture-broken",
+    "contributionManifests": [
+      "./contributions/*.json"
+    ]
+  }
+}

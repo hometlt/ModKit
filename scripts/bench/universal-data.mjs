@@ -33,25 +33,32 @@ failures.push(
     async () => {
       const rows = 1_000_000
       const input = 'left,right\n'.repeat(rows)
-      const provider = createCsvProvider({ contract: 'common.text-data/csv-syntax' })
-      const lease = await provider.dataSource({
-        input: { text: input },
-        dialect: 'csv-rfc4180',
-        budget: {
-          maxInputBytes: 20_000_000n,
-          maxDepth: 128,
-          maxNodes: 2,
-          maxScalarBytes: 1_000_000,
-          maxDiagnostics: 100,
-        },
-      })
-      const first = await lease.value.rows({ kind: 'range', from: 0, count: 2 })
-      const last = await lease.value.rows({ kind: 'range', from: rows - 1, count: 1 })
-      await lease.release()
-      if (first.items.length !== 2 || last.items[0]?.index !== rows - 1) {
-        throw new Error('million-row paging returned the wrong bounded windows')
+      const providerLease = await createCsvProvider({ contract: 'common.text-data/csv-syntax' })
+      try {
+        const sourceLease = await providerLease.value.dataSource({
+          input: { text: input },
+          dialect: 'csv-rfc4180',
+          budget: {
+            maxInputBytes: 20_000_000n,
+            maxDepth: 128,
+            maxNodes: 2,
+            maxScalarBytes: 1_000_000,
+            maxDiagnostics: 100,
+          },
+        })
+        try {
+          const first = await sourceLease.value.rows({ kind: 'range', from: 0, count: 2 })
+          const last = await sourceLease.value.rows({ kind: 'range', from: rows - 1, count: 1 })
+          if (first.items.length !== 2 || last.items[0]?.index !== rows - 1) {
+            throw new Error('million-row paging returned the wrong bounded windows')
+          }
+          return { logicalRows: rows, materializedRows: first.items.length + last.items.length }
+        } finally {
+          await sourceLease.release()
+        }
+      } finally {
+        await providerLease.release()
       }
-      return { logicalRows: rows, materializedRows: first.items.length + last.items.length }
     },
   )),
 )

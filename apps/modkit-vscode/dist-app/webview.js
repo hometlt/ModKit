@@ -142,6 +142,54 @@ var PARTS = Object.freeze([
   "filetree.badge",
   "filetree.children",
   "filetree.empty",
+  // explorer: tree + preview shell shared by every host that browses real files
+  "explorer",
+  "explorer.toolbar",
+  "explorer.action",
+  "explorer.sidebar",
+  "explorer.preview",
+  "explorer.dropzone",
+  "explorer.status",
+  "explorer.tabs",
+  "explorer.tab",
+  "explorer.stage",
+  "explorer.placeholder",
+  // preview header and view picker
+  "explorer.header",
+  "explorer.breadcrumb",
+  "explorer.crumb",
+  "explorer.viewpicker",
+  // editor area: one or more groups, each with its own tab strip
+  "explorer.editors",
+  "explorer.group",
+  "explorer.tabstrip",
+  "explorer.filetab",
+  "explorer.filetab-close",
+  "explorer.tabcontent",
+  "explorer.split",
+  // right-click menu on a tab: Close / Close Others / Close to the Right / Close All
+  "explorer.tabmenu",
+  "explorer.tabmenu-item",
+  // settings surface
+  "settings",
+  "settings.groups",
+  "settings.group",
+  "settings.pane",
+  "settings.row",
+  "settings.label",
+  "settings.description",
+  "settings.control",
+  "settings.select",
+  "settings.input",
+  "settings.list",
+  "settings.extension",
+  "settings.extension-text",
+  "settings.toggle",
+  "settings.remove",
+  "settings.adder",
+  "settings.add",
+  "settings.close",
+  "settings.status",
   // collapsible property sections
   "accordion",
   "accordion.section",
@@ -251,7 +299,9 @@ var STATES = Object.freeze([
   "mutating",
   "invalid",
   "no-match",
-  "selected"
+  "selected",
+  /** A drop is hovering over this surface and would be accepted. */
+  "drop-target"
 ]);
 var STATE_SET = new Set(STATES);
 function setPart(element, part) {

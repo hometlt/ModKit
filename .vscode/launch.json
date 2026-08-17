@@ -61,7 +61,7 @@
       "runtimeArgs": ["${workspaceFolder}/apps/electron/electron/main.cjs"],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "Modkit X3: Build Electron Shell",
-      "console": "integratedTerminal",
+      "console": "internalConsole",
       "sourceMaps": true,
       "outFiles": ["${workspaceFolder}/apps/electron/dist*/**/*.js"],
       "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"]

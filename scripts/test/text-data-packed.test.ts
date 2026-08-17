@@ -208,16 +208,20 @@ describe('13B packed text extension boundaries', () => {
               externalRequire.resolve(`${group.packageName}/formats/${format}/provider`),
             ).href
           )) as {
-            createProvider(selection: { contract: string }): {
-              parse(request: unknown): Promise<{ state: string }>
-            }
+            createProvider(selection: { contract: string }): Promise<{
+              readonly value: { parse(request: unknown): Promise<{ state: string }> }
+              release(): Promise<void>
+            }>
           }
-          expect(
-            await providerModule
-              .createProvider({ contract })
-              .parse({ input: { text }, dialect, budget }),
-            contract,
-          ).toMatchObject({ state: 'ok' })
+          const providerLease = await providerModule.createProvider({ contract })
+          try {
+            expect(
+              await providerLease.value.parse({ input: { text }, dialect, budget }),
+              contract,
+            ).toMatchObject({ state: 'ok' })
+          } finally {
+            await providerLease.release()
+          }
         }
 
         const installed = JSON.parse(

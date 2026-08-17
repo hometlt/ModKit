@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.example/bad",
+  "displayName": "legacy field smuggled into a contribution manifest",
+  "spec": {
+    "capabilities": ["detect", "read"]
+  }
+}

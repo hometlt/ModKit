@@ -1424,6 +1424,24 @@
       "description": "column count of the current card grid"
     },
     {
+      "name": "explorer.menu-x",
+      "tier": 3,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-explorer-menu-x",
+      "component": "explorer",
+      "description": "context menu left offset"
+    },
+    {
+      "name": "explorer.menu-y",
+      "tier": 3,
+      "type": "length",
+      "public": true,
+      "cssVariable": "--mk-explorer-menu-y",
+      "component": "explorer",
+      "description": "context menu top offset"
+    },
+    {
       "name": "table.row-height",
       "tier": 3,
       "type": "length",

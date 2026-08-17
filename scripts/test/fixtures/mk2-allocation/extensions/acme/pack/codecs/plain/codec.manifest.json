@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "publisher": "org.acme",
+  "id": "plain",
+  "version": "0.1.0",
+  "contractVersion": 1,
+  "kind": "image",
+  "displayName": "Plain fixture",
+  "status": "supported",
+  "sourceKinds": ["file", "archive-entry"],
+  "match": {
+    "extensions": [".pln"],
+    "magic": [{ "offset": 0, "bytes": "PLN", "encoding": "ascii" }]
+  },
+  "capabilities": ["detect", "read", "inspect"],
+  "runtimeVariants": [
+    {
+      "id": "portable",
+      "environments": ["node", "node-worker", "browser-worker"],
+      "entrypoints": { "runtime": "./codec.js" },
+      "operatingSystems": ["any"],
+      "architectures": ["any"],
+      "capabilities": ["detect", "read", "inspect"],
+      "operations": ["image.read", "image.inspect"]
+    }
+  ],
+  "operations": ["image.read", "image.inspect"],
+  "limitations": []
+}

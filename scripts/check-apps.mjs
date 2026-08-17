@@ -239,13 +239,13 @@ await checkApplicationSet(
   'headless',
   'structured-text',
   async extensions => ({ main: (await createAutomationHost(extensions)).composition }),
-  { main: { offers: 'all', active: 'all' } },
+  { main: { offers: 16, active: 16 } },
 )
 await checkApplicationSet(
   'headless',
   'full-codecs',
   async extensions => ({ main: (await createAutomationHost(extensions)).composition }),
-  { main: { offers: 'all', active: 'all' } },
+  { main: { offers: 29, active: 29 } },
 )
 await checkApplicationSet(
   'pwa',
@@ -260,7 +260,7 @@ await checkApplicationSet(
   },
   {
     main: { offers: 'none', active: 'none' },
-    worker: { offers: 'all', active: 'all' },
+    worker: { offers: 16, active: 16 },
   },
 )
 await checkApplicationSet(
@@ -276,7 +276,7 @@ await checkApplicationSet(
   },
   {
     main: { offers: 'none', active: 'none' },
-    worker: { offers: 'all', active: 'all' },
+    worker: { offers: 7, active: 7 },
   },
 )
 await checkApplicationSet(
@@ -292,7 +292,7 @@ await checkApplicationSet(
   },
   {
     main: { offers: 'none', active: 1 },
-    worker: { offers: 'all', active: 6 },
+    worker: { offers: 6, active: 6 },
   },
 )
 await checkApplicationSet(
@@ -303,7 +303,7 @@ await checkApplicationSet(
     return { extensionHost: app.extensionHost, webview: app.webview }
   },
   {
-    extensionHost: { offers: 'all', active: 'all' },
+    extensionHost: { offers: 2, active: 2 },
     webview: { offers: 'none', active: 'none' },
   },
 )
@@ -315,7 +315,7 @@ await checkApplicationSet(
     return { extensionHost: app.extensionHost, webview: app.webview }
   },
   {
-    extensionHost: { offers: 'all', active: 'all' },
+    extensionHost: { offers: 7, active: 7 },
     webview: { offers: 'none', active: 'none' },
   },
 )
@@ -327,7 +327,7 @@ await checkApplicationSet(
     return { main: app.main, renderer: app.renderer }
   },
   {
-    main: { offers: 'all', active: 'all' },
+    main: { offers: 4, active: 4 },
     renderer: { offers: 'none', active: 'none' },
   },
 )
@@ -339,7 +339,7 @@ await checkApplicationSet(
     return { main: app.main, renderer: app.renderer }
   },
   {
-    main: { offers: 'all', active: 'all' },
+    main: { offers: 29, active: 29 },
     renderer: { offers: 'none', active: 'none' },
   },
 )

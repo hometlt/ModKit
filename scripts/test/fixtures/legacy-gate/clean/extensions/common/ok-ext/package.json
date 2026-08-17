@@ -1,0 +1,14 @@
+{
+  "name": "modkit-extension-x3-ok-ext",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "org.example",
+    "id": "ok-ext",
+    "contributionManifests": [
+      "./contributions/*.json"
+    ]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.example/ok",
+  "displayName": "clean contribution",
+  "runtimeVariants": [
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/index.js",
+      "target": { "requiredHostCapabilities": ["worker.module"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "spec": {}
+}

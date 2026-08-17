@@ -31,11 +31,21 @@ export interface AppearanceSettings {
   readonly density: Density
 }
 
+/** A folder or file the user opened before. Most recent first. */
+export interface RecentEntry {
+  readonly path: string
+  readonly kind: 'folder' | 'file'
+}
+
 export interface SettingsDocument {
   readonly schemaVersion: 1
   readonly appearance: AppearanceSettings
   readonly extensions: readonly ExtensionSetting[]
+  readonly recent: readonly RecentEntry[]
 }
+
+/** Bounded so the menu stays readable and the file cannot grow without limit. */
+export const RECENT_LIMIT = 10
 
 export const SETTINGS_SCHEMA_VERSION = 1
 
@@ -43,6 +53,7 @@ export const DEFAULT_SETTINGS: SettingsDocument = Object.freeze({
   schemaVersion: SETTINGS_SCHEMA_VERSION,
   appearance: Object.freeze({ theme: 'modkit-dark', density: 'compact' as Density }),
   extensions: Object.freeze([]),
+  recent: Object.freeze([]),
 })
 
 export interface NormalizedSettings {
@@ -126,14 +137,42 @@ export function normalizeSettings(value: unknown): NormalizedSettings {
     }
   }
 
+  const recent: RecentEntry[] = []
+  const recentInput = value['recent']
+  if (recentInput !== undefined && !Array.isArray(recentInput)) {
+    problems.push('recent must be an array; it was ignored')
+  } else {
+    const seenPaths = new Set<string>()
+    for (const item of recentInput ?? []) {
+      if (!isRecord(item)) continue
+      const path = asText(item['path'])
+      if (path === undefined || seenPaths.has(path)) continue
+      seenPaths.add(path)
+      recent.push({ path, kind: item['kind'] === 'file' ? 'file' : 'folder' })
+      if (recent.length >= RECENT_LIMIT) break
+    }
+  }
+
   return {
     document: Object.freeze({
       schemaVersion: SETTINGS_SCHEMA_VERSION,
       appearance: Object.freeze({ theme, density }),
       extensions: Object.freeze(extensions),
+      recent: Object.freeze(recent),
     }),
     problems: Object.freeze(problems),
   }
+}
+
+/**
+ * Put `entry` at the front, dropping any earlier mention of the same path.
+ *
+ * Reopening a folder should move it up the list, not add a duplicate — which is the behaviour every
+ * "recent files" menu has and the reason this is a function rather than an array push.
+ */
+export function withRecent(document: SettingsDocument, entry: RecentEntry): SettingsDocument {
+  const rest = document.recent.filter(item => item.path !== entry.path)
+  return { ...document, recent: Object.freeze([entry, ...rest].slice(0, RECENT_LIMIT)) }
 }
 
 /** Serialize canonically so two hosts writing the same settings produce the same bytes. */
@@ -142,6 +181,8 @@ export function serializeSettings(document: SettingsDocument): string {
     {
       schemaVersion: document.schemaVersion,
       appearance: { theme: document.appearance.theme, density: document.appearance.density },
+      // Recency is meaningful order, so this list is written as-is rather than sorted.
+      recent: document.recent.map(entry => ({ path: entry.path, kind: entry.kind })),
       extensions: [...document.extensions]
         .sort((a, b) => compareUtf8(a.id, b.id))
         .map(entry => ({

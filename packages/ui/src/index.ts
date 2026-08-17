@@ -51,6 +51,7 @@ export {
   type ViewGizmoOptions,
 } from './model/gizmo.js'
 export { textEditor, createTextEditorModule, defineEditorModule } from './editor/index.js'
+export { hexEditor } from './hex-editor/index.js'
 export {
   compileSearch,
   matches,
@@ -139,6 +140,7 @@ export {
   createCodecPreview,
   type CodecPreviewOptions,
   type PreviewFormat,
+  type PreviewSession,
   type PreviewStage,
 } from './explorer/preview.js'
 export {
@@ -154,11 +156,14 @@ export {
   enabledExtensions,
   normalizeSettings,
   serializeSettings,
+  RECENT_LIMIT,
   SETTINGS_SCHEMA_VERSION,
+  withRecent,
   type AppearanceSettings,
   type Density,
   type ExtensionSetting,
   type NormalizedSettings,
+  type RecentEntry,
   type SettingsDocument,
   type SettingsStore,
   type SettingsUi,

@@ -184,6 +184,9 @@ const runtime = (
 const tier3: TokenDefinition[] = [
   runtime('tree.indent-level', 'tree', 'number', '0', 'nesting depth of the current tree row'),
   runtime('card.grid-columns', 'card', 'number', '5', 'column count of the current card grid'),
+  // Context-menu placement is per-instance pixel geometry, which C3 routes through tokens.
+  runtime('explorer.menu-x', 'explorer', 'length', '0px', 'context menu left offset'),
+  runtime('explorer.menu-y', 'explorer', 'length', '0px', 'context menu top offset'),
   c('table.row-height', 'table', 'length', 'size.row', 'table row height'),
   c('table.header-bg', 'table', 'color', 'color.raised', 'table header background'),
   c('table.cell-padding-x', 'table', 'length', 'space.2', 'table cell horizontal padding'),

@@ -35,6 +35,15 @@ export interface SettingsUiOptions {
    * only accept a typed path — which is still enough to edit the same settings file.
    */
   browseForExtension?(): Promise<{ readonly id: string; readonly path: string } | undefined>
+  /**
+   * File types this host can preview right now, derived from the loaded codecs. The associations
+   * group offers exactly these — a host must never advertise itself for a format it cannot open.
+   */
+  readonly associableTypes?: readonly string[]
+  /** Register the app for the chosen extensions. Absent hides the group entirely. */
+  registerFileTypes?(extensions: readonly string[]): Promise<string>
+  /** Shown as a close affordance. Absent means the host closes the panel its own way. */
+  onClose?(): void
 }
 
 export interface SettingsUi {
@@ -56,6 +65,22 @@ export function createSettingsUi(document: Document, options: SettingsUiOptions)
 
   const groupList = element(root, 'nav', { part: 'settings.groups' })
   groupList.setAttribute('aria-label', 'Settings groups')
+
+  // A panel that can only be dismissed from a menu is a trap for anyone who opened it by accident.
+  if (options.onClose !== undefined) {
+    const close = element(groupList, 'button', {
+      part: 'settings.close',
+      text: '← Back',
+    }) as HTMLButtonElement
+    close.type = 'button'
+    close.title = 'Close settings (Esc)'
+    close.addEventListener('click', () => options.onClose?.())
+    root.addEventListener('keydown', event => {
+      if (event.key === 'Escape') options.onClose?.()
+    })
+    // Focusable so Escape reaches the handler without the user clicking first.
+    root.tabIndex = -1
+  }
   const pane = element(root, 'div', { part: 'settings.pane' })
   const status = element(root, 'output', { part: 'settings.status' })
 
@@ -245,7 +270,103 @@ export function createSettingsUi(document: Document, options: SettingsUiOptions)
     },
   }
 
-  const groups: readonly Group[] = [appearanceGroup, extensionsGroup]
+  // ------------------------------------------------------------------ file associations
+  // Bound once: the option is optional, and the group only exists when the host supplied it.
+  const registerFileTypes = options.registerFileTypes
+
+  const associationsGroup: Group = {
+    id: 'associations',
+    label: 'File associations',
+    render(host) {
+      const types = [...(options.associableTypes ?? [])].sort()
+      element(host, 'p', {
+        part: 'settings.description',
+        text:
+          'Make this app the default for the formats its codecs can open. Registration is per-user ' +
+          'and reversible from the operating system, and nothing is written until you apply it.',
+      })
+
+      if (types.length === 0) {
+        element(host, 'p', {
+          part: 'settings.description',
+          text: 'No codecs are loaded, so there is nothing to associate.',
+        })
+        return
+      }
+
+      const chosen = new Set(types)
+      const list = element(host, 'div', { part: 'settings.list' })
+      for (const type of types) {
+        const item = element(list, 'div', { part: 'settings.extension' })
+        const toggle = element(item, 'input', { part: 'settings.toggle' }) as HTMLInputElement
+        toggle.type = 'checkbox'
+        toggle.checked = true
+        toggle.setAttribute('aria-label', `Associate .${type}`)
+        toggle.addEventListener('change', () => {
+          if (toggle.checked) chosen.add(type)
+          else chosen.delete(type)
+        })
+        const text = element(item, 'div', { part: 'settings.extension-text' })
+        element(text, 'div', { part: 'settings.label', text: `.${type}` })
+      }
+
+      const actions = element(host, 'div', { part: 'settings.adder' })
+      const all = element(actions, 'button', {
+        part: 'settings.add',
+        text: 'Select all',
+      }) as HTMLButtonElement
+      all.type = 'button'
+      all.addEventListener('click', () => {
+        for (const node of list.querySelectorAll('input')) {
+          node.checked = true
+          node.dispatchEvent(new Event('change'))
+        }
+      })
+
+      const none = element(actions, 'button', {
+        part: 'settings.add',
+        text: 'Select none',
+      }) as HTMLButtonElement
+      none.type = 'button'
+      none.addEventListener('click', () => {
+        for (const node of list.querySelectorAll('input')) {
+          node.checked = false
+          node.dispatchEvent(new Event('change'))
+        }
+      })
+
+      const apply = element(actions, 'button', {
+        part: 'settings.add',
+        text: 'Set as default app',
+      }) as HTMLButtonElement
+      apply.type = 'button'
+      apply.addEventListener('click', () => {
+        void (async () => {
+          if (chosen.size === 0) {
+            say('Pick at least one file type first.', true)
+            return
+          }
+          try {
+            apply.disabled = true
+            say((await registerFileTypes?.([...chosen])) ?? 'Nothing to register.')
+          } catch (error) {
+            say(
+              `Could not register: ${error instanceof Error ? error.message : String(error)}`,
+              true,
+            )
+          } finally {
+            apply.disabled = false
+          }
+        })()
+      })
+    },
+  }
+
+  const groups: readonly Group[] = [
+    appearanceGroup,
+    extensionsGroup,
+    ...(options.registerFileTypes === undefined ? [] : [associationsGroup]),
+  ]
 
   const showGroup = (group: Group): void => {
     activeGroup = group.id
@@ -301,12 +422,15 @@ export {
   DEFAULT_SETTINGS,
   enabledExtensions,
   normalizeSettings,
+  RECENT_LIMIT,
   serializeSettings,
   SETTINGS_SCHEMA_VERSION,
+  withRecent,
   type AppearanceSettings,
   type Density,
   type ExtensionSetting,
   type NormalizedSettings,
+  type RecentEntry,
   type SettingsDocument,
   type SettingsStore,
 } from './model.js'

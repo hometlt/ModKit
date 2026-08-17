@@ -397,7 +397,9 @@ export function createExplorer(document: Document, options: ExplorerOptions): Ex
     async setAccess(next) {
       access = next
       await buildTree()
-      say(`Browsing ${safeViewerText(next.label, 200)}`)
+      // No "Browsing …" line: the footer's job is the active file, and the root is already the
+      // tree's own label right above it.
+      say('')
     },
 
     async open(entry) {

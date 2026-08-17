@@ -12,7 +12,8 @@
   "files": [
     "dist",
     "dist-app",
-    "electron"
+    "electron",
+    "generated"
   ],
   "dependencies": {
     "@modkitx-x3/core": "workspace:*",

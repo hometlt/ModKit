@@ -197,6 +197,22 @@ export const PARTS = Object.freeze([
   'explorer.filetab',
   'explorer.filetab-close',
   'explorer.tabcontent',
+  'explorer.split',
+  // right-click menu on a tab: Close / Close Others / Close to the Right / Close All
+  'explorer.tabmenu',
+  'explorer.tabmenu-item',
+
+  // custom window chrome, drawn by the app when the native frame is hidden
+  'titlebar',
+  'titlebar.drag',
+  'titlebar.title',
+  'titlebar.controls',
+  'titlebar.button',
+  'titlebar.menu',
+  'titlebar.menu-item',
+  'titlebar.menu-panel',
+  'titlebar.menu-entry',
+  'titlebar.menu-separator',
 
   // settings surface
   'settings',
@@ -216,6 +232,7 @@ export const PARTS = Object.freeze([
   'settings.remove',
   'settings.adder',
   'settings.add',
+  'settings.close',
   'settings.status',
 
   // collapsible property sections

@@ -14,7 +14,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check:legacy": "node scripts/check-legacy.mjs",
-    "check": "pnpm build && pnpm bench:universal:gate && pnpm lint && pnpm format:check && pnpm test && pnpm schemas:check && pnpm manifests:check && pnpm tokens:check && pnpm facilities:check && pnpm apps:check && pnpm check:legacy",
+    "check:imports": "node scripts/check-app-imports.mjs",
+    "check:extensions": "node scripts/check-extension-inventory.mjs",
+    "check": "pnpm build && pnpm bench:universal:gate && pnpm lint && pnpm format:check && pnpm test && pnpm schemas:check && pnpm manifests:check && pnpm tokens:check && pnpm icons:check && pnpm facilities:check && pnpm apps:check && pnpm check:legacy && pnpm check:imports && pnpm check:extensions",
     "schemas:emit": "node scripts/emit-schemas.mjs",
     "schemas:check": "node scripts/emit-schemas.mjs --check",
     "facilities:emit": "node scripts/emit-host-facilities.mjs",
@@ -30,7 +32,9 @@
     "bundle": "node scripts/bundle.mjs",
     "bundle:check": "node scripts/bundle.mjs --check",
     "build": "pnpm typecheck && pnpm bundle",
-    "tokens:check": "pnpm --filter @modkitx-x3/ui tokens:check"
+    "tokens:check": "pnpm --filter @modkitx-x3/ui tokens:check",
+    "icons:emit": "node scripts/generate-icons.mjs",
+    "icons:check": "node scripts/generate-icons.mjs --check"
   },
   "devDependencies": {
     "@modkitx-x3/core": "workspace:*",

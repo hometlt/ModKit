@@ -4,6 +4,7 @@ import {
   type PathTools,
   ELECTRON_SECURE_WEB_PREFERENCES,
   assertElectronBrokerRequest,
+  assertElectronSubjectRequest,
   createElectronApp,
   isAllowedElectronNavigation,
 } from '../src/index.js'
@@ -31,6 +32,32 @@ describe('Electron composition security', () => {
         payload: { handleId: 'a', offset: -1, length: 4 },
       }),
     ).toThrow(/malformed/)
+  })
+
+  it('accepts only bounded subject-session RPC messages', () => {
+    expect(() =>
+      assertElectronSubjectRequest({ operation: 'open', path: win('C:', 'data', 'a.json') }),
+    ).not.toThrow()
+    expect(() =>
+      assertElectronSubjectRequest({
+        operation: 'call',
+        sessionId: 'session-1',
+        contract: 'common.view/tree-data-source',
+        major: 1,
+        method: 'children',
+        args: [{ id: 'root', hasChildren: true }, { limit: 200 }],
+      }),
+    ).not.toThrow()
+    expect(() =>
+      assertElectronSubjectRequest({
+        operation: 'call',
+        sessionId: 'session-1',
+        contract: 'not-qualified',
+        major: 1,
+        method: '__proto__',
+        args: [],
+      }),
+    ).toThrow(/malformed Electron subject request/u)
   })
 
   it('allows navigation only inside the exact application origin', () => {

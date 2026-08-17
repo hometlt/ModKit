@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "publisher": "org.acme",
+  "id": "pack",
+  "version": "0.1.0",
+  "displayName": "Acme pack",
+  "description": "fixture",
+  "license": "MIT",
+  "contributes": { "codecs": ["plain", "rich"], "games": ["game-a"] },
+  "dependsOn": [{ "id": "org.modkitx.common/images", "range": "^0.1.0" }]
+}

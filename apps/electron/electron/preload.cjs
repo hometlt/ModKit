@@ -17,8 +17,10 @@ const CHANNELS = Object.freeze([
   'dialog.open-file',
   'dialog.open-directory',
   'dialog.accept-drop',
+  'dialog.reopen-recent',
   'directory.list',
   'filesystem.read-file',
+  'filesystem.write-file',
   'process.launch',
 ])
 
@@ -56,9 +58,11 @@ contextBridge.exposeInMainWorld('modkitFiles', {
 contextBridge.exposeInMainWorld('modkitMenu', {
   on: (command, handler) => {
     const channel = `modkit.menu.${command}`
-    // Wrapped so the renderer never receives the IpcRendererEvent, which carries `sender`.
-    ipcRenderer.on(channel, () => handler())
+    // The event is dropped on purpose: it carries `sender`, which the renderer must never hold.
+    ipcRenderer.on(channel, (_event, payload) => handler(payload))
   },
+  /** Recent entries live in the settings file, so the renderer pushes them into the menu. */
+  setRecent: recent => ipcRenderer.invoke('modkit.menu.rebuild', recent),
 })
 
 contextBridge.exposeInMainWorld('modkitSettings', {
@@ -66,10 +70,36 @@ contextBridge.exposeInMainWorld('modkitSettings', {
   write: text => ipcRenderer.invoke('modkit.settings.write', text),
 })
 
+/** Window chrome. Separate from the broker: this touches the window, never the user's files. */
+contextBridge.exposeInMainWorld('modkitWindow', {
+  send: command => ipcRenderer.invoke('modkit.window', command),
+  onState: handler => {
+    ipcRenderer.on('modkit.window.state', (_event, state) => handler(state))
+  },
+})
+
 contextBridge.exposeInMainWorld('modkitHost', {
   profile: () => ipcRenderer.invoke('modkit.profile'),
+  /** Native save/discard/cancel prompt, asked before closing a tab with unsaved changes. */
+  confirmClose: name => ipcRenderer.invoke('modkit.confirm-close', name),
   /** A file handed to us on the command line, e.g. by a double-click in Explorer. */
   initialFile: () => ipcRenderer.invoke('modkit.initial-file'),
   /** User-initiated only; writes per-user registry keys in the main process. */
   registerFileTypes: extensions => ipcRenderer.invoke('modkit.register-file-types', extensions),
+})
+
+/** Lazy subject/session RPC. Codec and provider modules stay in main; only inert values cross. */
+contextBridge.exposeInMainWorld('modkitSubjects', {
+  open: path => ipcRenderer.invoke('modkit.subject', { operation: 'open', path }),
+  call: (sessionId, contract, major, method, args, handleId) =>
+    ipcRenderer.invoke('modkit.subject', {
+      operation: 'call',
+      sessionId,
+      contract,
+      major,
+      method,
+      args,
+      ...(handleId === undefined ? {} : { handleId }),
+    }),
+  close: sessionId => ipcRenderer.invoke('modkit.subject', { operation: 'close', sessionId }),
 })

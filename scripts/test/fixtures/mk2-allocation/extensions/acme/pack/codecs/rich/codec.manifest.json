@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "publisher": "org.acme",
+  "id": "rich",
+  "version": "0.1.0",
+  "contractVersion": 1,
+  "kind": "archive",
+  "displayName": "Rich fixture",
+  "status": "partial",
+  "sourceKinds": ["file", "directory"],
+  "match": { "extensions": [".rch"] },
+  "capabilities": ["detect", "read", "write", "language"],
+  "runtimeVariants": [
+    {
+      "id": "node",
+      "environments": ["node"],
+      "entrypoints": { "runtime": "./codec.js", "viewer": "./viewer.js" },
+      "operatingSystems": ["any"],
+      "architectures": ["any"],
+      "capabilities": ["detect", "read", "write"],
+      "operations": ["archive.list", "rich.custom.op"],
+      "permissions": ["launch-process", "filesystem"]
+    }
+  ],
+  "operations": ["archive.list", "rich.custom.op"],
+  "limitations": []
+}

@@ -8,3 +8,5 @@ node_modules/
 # emitted canonical artifacts — owned by scripts/emit-schemas.mjs, byte-stable
 packages/core/schemas/
 packages/sdk/schemas/
+# generated allocation report — owned by scripts/report-mk2-allocation.mjs, re-run to update
+REPORT_MK2_ALLOCATION_*.md

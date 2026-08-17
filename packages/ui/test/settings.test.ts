@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest'
 
 import {
   createMemorySettingsStore,
+  DEFAULT_SETTINGS,
   enabledExtensions,
   normalizeSettings,
+  RECENT_LIMIT,
   serializeSettings,
+  withRecent,
 } from '@modkitx-x3/ui/settings'
 
 describe('portable settings', () => {
@@ -50,5 +53,54 @@ describe('portable settings', () => {
       'org.example/a',
       'org.example/z',
     ])
+  })
+})
+
+describe('recent entries', () => {
+  it('moves a reopened path to the front instead of duplicating it', () => {
+    let document = DEFAULT_SETTINGS
+    document = withRecent(document, { path: '/a', kind: 'folder' })
+    document = withRecent(document, { path: '/b', kind: 'file' })
+    document = withRecent(document, { path: '/a', kind: 'folder' })
+    expect(document.recent.map(entry => entry.path)).toEqual(['/a', '/b'])
+  })
+
+  it('keeps the list bounded so the menu stays readable', () => {
+    let document = DEFAULT_SETTINGS
+    for (let index = 0; index < RECENT_LIMIT + 5; index += 1) {
+      document = withRecent(document, { path: `/p${index}`, kind: 'folder' })
+    }
+    expect(document.recent).toHaveLength(RECENT_LIMIT)
+    // Most recent first: the last write is at the front and the oldest fell off.
+    expect(document.recent[0]?.path).toBe(`/p${RECENT_LIMIT + 4}`)
+    expect(document.recent.some(entry => entry.path === '/p0')).toBe(false)
+  })
+
+  it('survives a hand-edited file with junk entries and preserves order', () => {
+    const { document } = normalizeSettings({
+      recent: [
+        { path: '/keep', kind: 'file' },
+        { nonsense: true },
+        { path: '/keep', kind: 'folder' },
+        { path: '/second', kind: 'nonsense' },
+      ],
+    })
+    // Duplicates collapse, unknown kinds fall back to folder, and recency order is not sorted away.
+    expect(document.recent).toEqual([
+      { path: '/keep', kind: 'file' },
+      { path: '/second', kind: 'folder' },
+    ])
+  })
+
+  it('round-trips recency through serialize without reordering', () => {
+    const document = {
+      ...DEFAULT_SETTINGS,
+      recent: [
+        { path: '/z', kind: 'folder' as const },
+        { path: '/a', kind: 'file' as const },
+      ],
+    }
+    const restored = normalizeSettings(JSON.parse(serializeSettings(document))).document
+    expect(restored.recent.map(entry => entry.path)).toEqual(['/z', '/a'])
   })
 })

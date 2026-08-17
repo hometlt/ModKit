@@ -4,10 +4,13 @@
     <meta charset="utf-8" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:;"
+      content="default-src 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'unsafe-inline'; script-src 'self'; img-src 'self' data:; font-src 'self' data:; worker-src 'self' blob:;"
     />
     <title>Modkit MK3</title>
     <link rel="stylesheet" href="./modkit-ui.css" />
+    <!-- Monaco CSS, extracted by esbuild so it loads from self rather than being injected. -->
+    <link rel="stylesheet" href="./renderer.css" />
+    <link rel="stylesheet" href="./theme-sc2.css" />
     <style>
       html,
       body {

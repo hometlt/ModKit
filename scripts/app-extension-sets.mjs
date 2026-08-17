@@ -22,25 +22,37 @@ export const READY_APP_EXTENSIONS = Object.freeze({
   }),
   models: Object.freeze({
     coordinate: 'org.modkitx/models',
-    contributions: Object.freeze(['org.modkitx/model-gltf', 'org.modkitx/model-obj']),
+    contributions: Object.freeze([
+      'org.modkitx/model-gltf',
+      'org.modkitx/model-obj',
+      'org.modkitx/model-uvm',
+    ]),
   }),
   'text-delimited': Object.freeze({
     coordinate: 'org.modkitx/text-delimited',
     contributions: Object.freeze([
+      'org.modkitx/csv-syntax-contract',
       'org.modkitx/csv-syntax-default',
       'org.modkitx/text-csv',
       'org.modkitx/text-tsv',
+      'org.modkitx/tsv-syntax-contract',
       'org.modkitx/tsv-syntax-default',
     ]),
   }),
   'text-ini': Object.freeze({
     coordinate: 'org.modkitx/text-ini',
-    contributions: Object.freeze(['org.modkitx/ini-syntax-default', 'org.modkitx/text-ini']),
+    contributions: Object.freeze([
+      'org.modkitx/ini-syntax-contract',
+      'org.modkitx/ini-syntax-default',
+      'org.modkitx/text-ini',
+    ]),
   }),
   'text-json': Object.freeze({
     coordinate: 'org.modkitx/text-json',
     contributions: Object.freeze([
+      'org.modkitx/json-syntax-contract',
       'org.modkitx/json-syntax-default',
+      'org.modkitx/jsonc-syntax-contract',
       'org.modkitx/jsonc-syntax-default',
       'org.modkitx/text-json',
       'org.modkitx/text-jsonc',
@@ -48,15 +60,27 @@ export const READY_APP_EXTENSIONS = Object.freeze({
   }),
   'text-toml': Object.freeze({
     coordinate: 'org.modkitx/text-toml',
-    contributions: Object.freeze(['org.modkitx/text-toml', 'org.modkitx/toml-syntax-default']),
+    contributions: Object.freeze([
+      'org.modkitx/text-toml',
+      'org.modkitx/toml-syntax-contract',
+      'org.modkitx/toml-syntax-default',
+    ]),
   }),
   'text-xml': Object.freeze({
     coordinate: 'org.modkitx/text-xml',
-    contributions: Object.freeze(['org.modkitx/text-xml', 'org.modkitx/xml-syntax-default']),
+    contributions: Object.freeze([
+      'org.modkitx/text-xml',
+      'org.modkitx/xml-syntax-contract',
+      'org.modkitx/xml-syntax-default',
+    ]),
   }),
   'text-yaml': Object.freeze({
     coordinate: 'org.modkitx/text-yaml',
-    contributions: Object.freeze(['org.modkitx/text-yaml', 'org.modkitx/yaml-syntax-default']),
+    contributions: Object.freeze([
+      'org.modkitx/text-yaml',
+      'org.modkitx/yaml-syntax-contract',
+      'org.modkitx/yaml-syntax-default',
+    ]),
   }),
   vector: Object.freeze({
     coordinate: 'org.modkitx/vector',

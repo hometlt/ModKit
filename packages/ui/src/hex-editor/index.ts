@@ -10,15 +10,29 @@
  * one-byte change in a 1 TiB source produces a one-byte edit, never a whole-file rewrite.
  */
 import type { ByteRangeSource, EditorModule, EditorMount } from '@modkitx-x3/sdk'
+import { bindingId } from '@modkitx-x3/sdk'
+
 import {
   createSurface,
   element,
   setState,
   setViewerText,
-  unknownSourceLease,
   ViewerMountScope,
 } from '../viewer/index.js'
 import { HexWindowModel, HEX_WINDOW_BYTES } from '../hex/index.js'
+
+/**
+ * The binding this editor reads.
+ *
+ * An `EditorModule` mount carries no presentation slot — only a viewer gets one — so an editor
+ * names its binding directly instead of looking one up. The previous code passed an empty slot to
+ * `unknownSourceLease`, whose search therefore never matched and the editor failed for every host.
+ */
+const BYTE_RANGE_SOURCE = Object.freeze({
+  bindingId: bindingId('editor-hex'),
+  contract: 'common.view/byte-range-source' as const,
+  major: 1 as const,
+})
 
 const HEX_BYTE = /^[0-9a-f]{1,2}$/iu
 
@@ -50,11 +64,8 @@ export const hexEditor: EditorModule = {
   async mount(args): Promise<EditorMount> {
     const scope = new ViewerMountScope(args.signal)
     const root = createSurface(args.container, 'Hex editor')
-    const lease = await unknownSourceLease(
-      args.sources,
-      { bindings: [] } as never,
-      'common.view/byte-range-source',
-    )
+    const lease = (await args.sources.get(BYTE_RANGE_SOURCE)) as
+      { value: ByteRangeSource; release(): Promise<void> } | undefined
     if (lease === undefined) throw new TypeError('hex editor binding is unavailable')
     scope.lease(lease)
 
@@ -89,6 +100,53 @@ export const hexEditor: EditorModule = {
     let windowOffset = 0n
     let original: Uint8Array<ArrayBufferLike> = new Uint8Array()
     const pending = new Map<string, HexEdit>()
+    /** Live cell elements per offset, so a hex edit can repaint its ASCII twin and vice versa. */
+    const hexCells = new Map<string, HTMLElement>()
+    const asciiCells = new Map<string, HTMLElement>()
+
+    const printable = (value: number): string =>
+      value >= 0x20 && value <= 0x7e ? String.fromCharCode(value) : '.'
+
+    /**
+     * Announce that the buffer differs from disk.
+     *
+     * The host learns about unsaved work through `propose`, which is what marks the tab. Without
+     * this a byte could sit edited in the grid while the tab still looked saved.
+     */
+    const announce = (): void => {
+      if (pending.size === 0) return
+      const runs = coalesceHexEdits([...pending.values()])
+      void args.edit.propose({
+        baseRevisions: { content: args.descriptor.revision },
+        edits: runs.map(run => ({
+          kind: 'bytes' as const,
+          bindingId: 'content',
+          range: { kind: 'bytes' as const, offset: run.offset, length: BigInt(run.bytes.length) },
+          payload: { kind: 'inline' as const, bytes: run.bytes },
+        })),
+        provenance: { origin: 'hex-editor' },
+      } as never)
+    }
+
+    /** Apply a new value for one offset and keep both columns in step. */
+    const setByte = (absolute: bigint, base: number, next: number): void => {
+      const key = absolute.toString(10)
+      if (next === base) pending.delete(key)
+      else pending.set(key, { offset: absolute, before: base, after: next })
+
+      const hex = hexCells.get(key)
+      if (hex !== undefined) {
+        hex.textContent = next.toString(16).padStart(2, '0')
+        setState(hex, next === base ? [] : ['mutating'])
+      }
+      const ascii = asciiCells.get(key)
+      if (ascii !== undefined) {
+        ascii.textContent = printable(next)
+        setState(ascii, next === base ? [] : ['mutating'])
+      }
+      syncDirty()
+      announce()
+    }
 
     const syncDirty = (): void => {
       const dirty = pending.size > 0
@@ -123,29 +181,66 @@ export const hexEditor: EditorModule = {
           cell.textContent = value.toString(16).padStart(2, '0')
           cell.setAttribute('aria-label', `byte at ${absolute}`)
 
+          hexCells.set(absolute.toString(10), cell)
+
+          /*
+           * Reject non-hex keys at the source rather than cleaning up afterwards: a cell that
+           * briefly shows `zz` and then snaps back is worse than one that never accepted `z`.
+           * Navigation, deletion and shortcuts stay allowed.
+           */
+          cell.addEventListener('beforeinput', event => {
+            const data = (event as InputEvent).data
+            if (data === null) return
+            const current = (cell.textContent ?? '').replace(/\s/gu, '')
+            if (!/^[0-9a-f]$/iu.test(data) || current.length >= 2) event.preventDefault()
+          })
+
           cell.addEventListener('blur', () => {
             const text = (cell.textContent ?? '').trim()
-            const key = absolute.toString(10)
             if (!HEX_BYTE.test(text)) {
-              // Reject the edit rather than write a guess; restore what the source actually holds.
-              cell.textContent = value.toString(16).padStart(2, '0')
-              setState(cell, [])
-              pending.delete(key)
-              syncDirty()
+              // Restore what the source holds rather than writing a guess.
+              const key = absolute.toString(10)
+              const known = pending.get(key)?.after ?? value
+              setByte(absolute, value, known)
               return
             }
-            const next = Number.parseInt(text, 16)
-            cell.textContent = next.toString(16).padStart(2, '0')
-            if (next === value) pending.delete(key)
-            else pending.set(key, { offset: absolute, before: value, after: next })
-            setState(cell, next === value ? [] : ['mutating'])
-            syncDirty()
+            setByte(absolute, value, Number.parseInt(text, 16))
           })
         }
-        const ascii = [...chunk]
-          .map(value => (value >= 0x20 && value <= 0x7e ? String.fromCharCode(value) : '.'))
-          .join('')
-        element(line, 'span', { text: ascii, part: 'hex.ascii' })
+        /*
+         * The ASCII column is editable too, and edits flow both ways: typing a character rewrites
+         * its byte, and editing the byte repaints the character. One value, two views of it.
+         */
+        const ascii = element(line, 'span', { part: 'hex.ascii' })
+        for (const [column, value] of [...chunk].entries()) {
+          const absolute = windowOffset + BigInt(row + column)
+          const glyph = element(ascii, 'span') as HTMLSpanElement
+          glyph.contentEditable = 'true'
+          glyph.spellcheck = false
+          glyph.textContent = printable(value)
+          glyph.setAttribute('aria-label', `character at ${absolute}`)
+          asciiCells.set(absolute.toString(10), glyph)
+
+          // One printable character per cell; anything else would not map to a single byte.
+          glyph.addEventListener('beforeinput', event => {
+            const data = (event as InputEvent).data
+            if (data === null) return
+            if (data.length !== 1 || data.charCodeAt(0) < 0x20 || data.charCodeAt(0) > 0x7e) {
+              event.preventDefault()
+            }
+          })
+
+          glyph.addEventListener('blur', () => {
+            const text = glyph.textContent ?? ''
+            const code = text.length === 1 ? text.charCodeAt(0) : Number.NaN
+            if (Number.isNaN(code) || code < 0x20 || code > 0x7e) {
+              const known = pending.get(absolute.toString(10))?.after ?? value
+              setByte(absolute, value, known)
+              return
+            }
+            setByte(absolute, value, code)
+          })
+        }
       }
       syncDirty()
     }

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-function -- browser-side protocol stubs intentionally do no work */
 import { createServer, type Server } from 'node:http'
+import { readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { build } from 'esbuild'
 import { chromium, type Browser, type Page } from 'playwright-core'
@@ -60,7 +61,15 @@ beforeAll(async () => {
           ${providerFactories}
         };
         const createTextCodec = (format, context) => codecFactories[format](context);
-        const createTextSyntaxProvider = contract => providerFactories[contract]({ contract });
+        const createTextSyntaxProvider = contract => {
+          const created = providerFactories[contract]({
+            offerId: 'browser-e2e',
+            contract,
+            major: 1,
+            contractSelectionKey: 'facetless:v1',
+          });
+          return created?.value ?? created;
+        };
         globalThis.modkit = {
           ui,
           browserHost,
@@ -86,11 +95,20 @@ beforeAll(async () => {
       <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; font-src 'self'; connect-src 'self'; worker-src 'self' blob:; frame-src blob:">
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <title>Modkit viewer E2E</title>
+      <link rel="stylesheet" href="/modkit-ui.css">
     </head><body><main id="app"></main><script type="module" src="/app.js"></script></body></html>`
+  // Served from the same origin rather than injected: the harness runs `style-src 'self'`, so an
+  // injected <style> is refused (C2) — which is the policy working, not an obstacle to route around.
+  const stylesheet = await readFile('packages/ui/styles/modkit-ui.css')
   server = createServer((request, response) => {
     if (request.url === '/app.js') {
       response.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' })
       response.end(bundle)
+      return
+    }
+    if (request.url === '/modkit-ui.css') {
+      response.writeHead(200, { 'content-type': 'text/css; charset=utf-8' })
+      response.end(stylesheet)
       return
     }
     response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
@@ -1562,6 +1580,78 @@ describe('13C real-browser viewer host', () => {
       ;(
         globalThis as unknown as { currentExplorer?: { destroy(): void } }
       ).currentExplorer?.destroy()
+    })
+  })
+
+  it('gives the editor area the full pane even when the host hides the toolbar', async () => {
+    await reset()
+    // Layout is the claim here, and the page links the shipped stylesheet, so the measurement
+    // reflects what a host actually renders.
+    await page.setViewportSize({ width: 1000, height: 700 })
+    await page.evaluate(async () => {
+      const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
+      const typed = ui as unknown as typeof import('@modkitx-x3/ui')
+      const root = document.querySelector('#app') as HTMLElement
+      root.style.setProperty('height', '600px')
+
+      const preview: import('@modkitx-x3/ui').PreviewResolver = {
+        supported: [],
+        async open(container, entry) {
+          container.textContent = entry.name
+          return {
+            views: [{ id: 'text', label: 'Text' }],
+            activeView: 'text',
+            async show() {},
+            async unmount() {
+              container.replaceChildren()
+            },
+          }
+        },
+      }
+      const explorer = typed.createExplorer(document, {
+        preview,
+        // The desktop host hides the toolbar because it has a native menu.
+        showToolbar: false,
+        onOpen() {},
+      })
+      const area = typed.createEditorArea(document, {
+        preview,
+        async read() {
+          return new Uint8Array()
+        },
+      })
+      const pane = explorer.root.querySelector('[data-mk-part="explorer.preview"]')
+      pane?.replaceWith(area.root)
+      root.replaceChildren(explorer.root)
+      // The explorer fills whatever box the host gives it; a host that supplies none gets a
+      // content-sized grid, which is why the desktop shell sets a definite height.
+      explorer.root.style.setProperty('height', '600px')
+      await area.open({ id: '/only.txt', name: 'only.txt', directory: false })
+      ;(globalThis as unknown as Record<string, unknown>)['layoutFixture'] = { explorer, area }
+    })
+
+    const explorerBox = await page.locator('[data-mk-part="explorer"]').boundingBox()
+    const editorsBox = await page.locator('[data-mk-part="explorer.editors"]').boundingBox()
+    const sidebarBox = await page.locator('[data-mk-part="explorer.sidebar"]').boundingBox()
+    if (explorerBox === null || editorsBox === null || sidebarBox === null) {
+      throw new Error('explorer layout did not render')
+    }
+
+    // The regression: with the toolbar hidden the editor landed in the `auto` row and collapsed
+    // to a short band while the free space went to the row below it.
+    expect(editorsBox.height).toBeGreaterThan(explorerBox.height * 0.7)
+    // And it must sit beside the tree, not under it.
+    expect(editorsBox.x).toBeGreaterThan(sidebarBox.x + sidebarBox.width - 2)
+    expect(Math.abs(editorsBox.y - sidebarBox.y)).toBeLessThan(2)
+
+    await page.evaluate(() => {
+      const fixture = (
+        globalThis as unknown as {
+          layoutFixture: { explorer: { destroy(): void }; area: { destroy(): void } }
+        }
+      ).layoutFixture
+      fixture.area.destroy()
+      fixture.explorer.destroy()
     })
   })
 

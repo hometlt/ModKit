@@ -14,6 +14,7 @@
  * views and a reader callback to produce the bytes, which is why the same area serves Electron's
  * broker, the web app's file handles and VS Code's workspace fs.
  */
+import { setToken } from '../tokens/index.js'
 import { element, setPart, setState, safeViewerText } from '../viewer/index.js'
 import type { ExplorerEntry, PreviewHandle, PreviewResolver } from './index.js'
 
@@ -23,6 +24,14 @@ export interface EditorAreaOptions {
   read(entry: ExplorerEntry, signal?: AbortSignal): Promise<Uint8Array>
   /** Reports the focused tab so a host can drive its own status bar. */
   onStatus?(status: EditorStatus): void
+  /**
+   * Asked before a tab with unsaved changes is closed. Resolving `'cancel'` keeps it open.
+   * Absent means the host has no way to ask, and closing discards silently — which is why every
+   * host that can edit should supply it.
+   */
+  confirmClose?(entry: ExplorerEntry): Promise<'save' | 'discard' | 'cancel'>
+  /** Save the file behind a tab. Required for `confirmClose` to be able to offer "save". */
+  save?(entry: ExplorerEntry): Promise<void>
 }
 
 export interface EditorStatus {
@@ -34,6 +43,10 @@ export interface EditorStatus {
 
 export interface EditorArea {
   readonly root: HTMLElement
+  /** Mark an open file as having unsaved changes, which shows on its tab. */
+  markDirty(entryId: string, dirty: boolean): void
+  /** True while any open tab has unsaved changes. */
+  hasUnsaved(): boolean
   /** Open (or focus) a file in the currently focused group. */
   open(entry: ExplorerEntry): Promise<void>
   /** Add a group beside the focused one and make it the target for the next open. */
@@ -46,6 +59,7 @@ export interface EditorArea {
 interface OpenTab {
   readonly entry: ExplorerEntry
   readonly button: HTMLElement
+  dirty?: boolean
   readonly content: HTMLElement
   handle?: PreviewHandle
   /** Aborts this tab's in-flight load so a fast switch cannot mount two stages. */
@@ -78,6 +92,8 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
   const groups: Group[] = []
   let focused: Group
   let destroyed = false
+  // Named `element`, not `node`: the browser-bundle gate greps for the substring `node:`.
+  let openMenu: { element: HTMLElement; dismiss: (event: Event) => void } | undefined
 
   const report = (status: EditorStatus): void => {
     options.onStatus?.(status)
@@ -185,6 +201,15 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
   }
 
   async function closeTab(group: Group, tab: OpenTab): Promise<void> {
+    /*
+     * Unsaved work is never discarded without asking. The decision belongs to the host, which owns
+     * the dialog and the save path; this component only refuses to proceed on `cancel`.
+     */
+    if (tab.dirty === true && options.confirmClose !== undefined) {
+      const answer = await options.confirmClose(tab.entry)
+      if (answer === 'cancel') return
+      if (answer === 'save') await options.save?.(tab.entry)
+    }
     tab.run?.abort()
     await tab.handle?.unmount()
     const index = group.tabs.indexOf(tab)
@@ -212,6 +237,77 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
       const first = groups[0]
       if (first !== undefined) focus(first)
     }
+  }
+
+  // ------------------------------------------------------------------ tab menu
+  /**
+   * VS Code's tab context menu. Rendered in-document rather than as a native menu so the same code
+   * serves the web and VS Code hosts, where no native menu is available.
+   */
+  function openTabMenu(group: Group, tab: OpenTab, x: number, y: number): void {
+    closeTabMenu()
+    const menu = element(root, 'div', { part: 'explorer.tabmenu' })
+    menu.setAttribute('role', 'menu')
+    // Position is per-instance and pixel-valued, so it goes through registered tokens (C3).
+    setToken(menu, 'explorer.menu-x', `${Math.round(x)}px`)
+    setToken(menu, 'explorer.menu-y', `${Math.round(y)}px`)
+
+    const item = (label: string, enabled: boolean, run: () => void): void => {
+      const node = element(menu, 'button', { part: 'explorer.tabmenu-item', text: label })
+      node.setAttribute('type', 'button')
+      node.setAttribute('role', 'menuitem')
+      if (!enabled) {
+        node.setAttribute('disabled', '')
+        setState(node, ['disabled'])
+        return
+      }
+      node.addEventListener('click', () => {
+        closeTabMenu()
+        run()
+      })
+    }
+
+    const index = group.tabs.indexOf(tab)
+    const others = group.tabs.filter(other => other !== tab)
+    const toRight = group.tabs.slice(index + 1)
+
+    item('Close', true, () => void closeTab(group, tab))
+    item('Close Others', others.length > 0, () => {
+      void (async () => {
+        for (const other of [...others]) await closeTab(group, other)
+      })()
+    })
+    item('Close to the Right', toRight.length > 0, () => {
+      void (async () => {
+        for (const other of [...toRight]) await closeTab(group, other)
+      })()
+    })
+    item('Close All', group.tabs.length > 0, () => {
+      void (async () => {
+        for (const other of [...group.tabs]) await closeTab(group, other)
+      })()
+    })
+
+    // Dismiss on the next interaction anywhere, the way a context menu is expected to behave.
+    const dismiss = (event: Event): void => {
+      if (event.target instanceof Node && menu.contains(event.target)) return
+      closeTabMenu()
+    }
+    root.ownerDocument.addEventListener('pointerdown', dismiss, { capture: true })
+    root.ownerDocument.addEventListener('keydown', escapeMenu, true)
+    openMenu = { element: menu, dismiss }
+  }
+
+  function escapeMenu(event: KeyboardEvent): void {
+    if (event.key === 'Escape') closeTabMenu()
+  }
+
+  function closeTabMenu(): void {
+    if (openMenu === undefined) return
+    root.ownerDocument.removeEventListener('pointerdown', openMenu.dismiss, { capture: true })
+    root.ownerDocument.removeEventListener('keydown', escapeMenu, true)
+    openMenu.element.remove()
+    openMenu = undefined
   }
 
   // ------------------------------------------------------------------ groups
@@ -293,6 +389,12 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
         void activate(group, tab)
       })
 
+      button.addEventListener('contextmenu', event => {
+        event.preventDefault()
+        focus(group)
+        openTabMenu(group, tab, event.clientX, event.clientY)
+      })
+
       const close = element(button, 'button', { part: 'explorer.filetab-close', text: '×' })
       close.setAttribute('type', 'button')
       close.setAttribute('aria-label', `Close ${entry.name}`)
@@ -305,6 +407,22 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
       await activate(group, tab)
     },
 
+    markDirty(entryId, dirty) {
+      for (const group of groups) {
+        for (const tab of group.tabs) {
+          if (tab.entry.id !== entryId) continue
+          tab.dirty = dirty
+          // `mutating` is the registered state for "changed but not committed".
+          setState(tab.button, dirty ? ['mutating'] : tab === group.active ? ['selected'] : [])
+          if (dirty && tab === group.active) setState(tab.button, ['selected', 'mutating'])
+        }
+      }
+    },
+
+    hasUnsaved() {
+      return groups.some(group => group.tabs.some(tab => tab.dirty === true))
+    },
+
     split() {
       focus(createGroup())
     },
@@ -312,6 +430,7 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
     destroy() {
       if (destroyed) return
       destroyed = true
+      closeTabMenu()
       for (const group of groups) {
         for (const tab of group.tabs) {
           tab.run?.abort()

@@ -8,7 +8,7 @@
  * the codec then *publishes* decides which stages appear. A codec that grows a new data source gets
  * a new tab here without this file changing.
  */
-import type { ViewerModule } from '@modkitx-x3/sdk'
+import type { PresentationPlan, ViewerModule } from '@modkitx-x3/sdk'
 
 import type { ExplorerEntry, PreviewHandle, PreviewResolver } from './index.js'
 import { builtinByteRangeSource, builtinTextSource, looksTextual } from './builtin.js'
@@ -28,16 +28,39 @@ export interface PreviewFormat {
 
 /** A stage the host is willing to show, keyed by the data source it needs. */
 export interface PreviewStage {
+  /** Stable presentation slot id. Defaults to `contract` for legacy callers. */
+  readonly id?: string
   readonly label: string
   readonly contract: string
   readonly module: ViewerModule
   /** Only offered when the descriptor carries this trait. */
   readonly trait?: string
+  /**
+   * This module is an `EditorModule`, not a viewer: it also needs the four host-owned ports. The
+   * host supplies them through `editorPorts`, and a stage marked editable is skipped when it does
+   * not — a read-only host must not mount an editor that can never save.
+   */
+  readonly editable?: boolean
 }
 
 export interface CodecPreviewOptions {
   readonly formats: readonly PreviewFormat[]
   readonly stages: readonly PreviewStage[]
+  /**
+   * Extensions exposed by an external host-owned opener. These are registration hints only; the
+   * opener still detects from inventory and bytes, and may reject a matching suffix.
+   */
+  readonly supported?: readonly string[]
+  /**
+   * Host/session boundary for Electron, VS Code, or a worker broker. When present, the previewer
+   * never instantiates a codec or provider itself; it only mounts viewers over the returned lazy
+   * session. Returning `undefined` selects the explicit text/hex fallback.
+   */
+  readonly openSession?: (
+    entry: ExplorerEntry,
+    bytes: Uint8Array,
+    signal?: AbortSignal,
+  ) => Promise<PreviewSession | undefined>
   readonly maximumBytes?: number
   /**
    * Viewers for the built-in fallback, used when no codec claims the file. Without these a file
@@ -47,9 +70,24 @@ export interface CodecPreviewOptions {
     readonly text?: ViewerModule
     readonly hex?: ViewerModule
   }
+  /**
+   * Ports for editable stages: propose/plan/prepare/authorize/commit. Absent means this host is
+   * read-only, and every `editable` stage is dropped rather than shown without a save path.
+   */
+  editorPorts?(
+    entry: ExplorerEntry,
+    bytes: Uint8Array,
+  ): {
+    readonly session: unknown
+    readonly commit: unknown
+    readonly payloads: unknown
+    readonly authorization: unknown
+  }
 }
 
-interface CodecSession {
+export interface PreviewSession {
+  /** Host-resolved immutable stage plan. Direct/legacy sessions may omit it. */
+  readonly presentation?: PresentationPlan
   descriptor(): Promise<Record<string, unknown>>
   dataSource(contract: string, major: number): Promise<{ value: unknown }>
   dispose(): Promise<void>
@@ -71,34 +109,56 @@ const publishedContracts = (descriptor: Record<string, unknown>): readonly strin
   return sources.map(item => String((item as { contract?: unknown }).contract ?? ''))
 }
 
+const stageId = (stage: PreviewStage): string => stage.id ?? stage.contract
+
 export function createCodecPreview(options: CodecPreviewOptions): PreviewResolver {
   const maximumBytes = options.maximumBytes ?? 64 * 1024 * 1024
   const byExtension = new Map<string, PreviewFormat>()
   for (const format of options.formats) {
     for (const extension of format.extensions) byExtension.set(extension.toLowerCase(), format)
   }
+  const supported = [
+    ...new Set([
+      ...byExtension.keys(),
+      ...(options.supported ?? []).map(extension => extension.replace(/^\./u, '').toLowerCase()),
+    ]),
+  ]
 
   return {
-    supported: [...byExtension.keys()],
+    supported,
 
     async open(container, entry, bytes, signal): Promise<PreviewHandle | undefined> {
       const extension = entry.name.slice(entry.name.lastIndexOf('.') + 1).toLowerCase()
       const format = byExtension.get(extension)
 
-      // No codec: fall back to the raw bytes rather than showing nothing.
+      const externallyOpened = await options.openSession?.(entry, bytes, signal)
+      const resolved = externallyOpened !== undefined || format !== undefined
+      // No selected codec: fall back to the raw bytes rather than showing nothing.
       const session =
-        format === undefined
+        externallyOpened ??
+        (format === undefined
           ? builtinSession(bytes, options.fallback)
-          : await openCodec(format, entry, bytes, maximumBytes)
+          : await openCodec(format, entry, bytes, maximumBytes))
 
       const descriptor = await session.descriptor()
       const traits = new Set(traitsOf(descriptor))
       const published = new Set(publishedContracts(descriptor))
 
-      const candidates = format === undefined ? fallbackStages(options.fallback) : options.stages
-      const usable = candidates.filter(
+      const candidates = resolved ? options.stages : fallbackStages(options.fallback)
+      const planned =
+        session.presentation === undefined
+          ? candidates
+          : session.presentation.slots.flatMap(slot => {
+              if (slot.kind !== 'stage') return []
+              const stage = candidates.find(candidate => stageId(candidate) === slot.slotId)
+              return stage === undefined ? [] : [stage]
+            })
+      const usable = planned.filter(
         stage =>
-          published.has(stage.contract) && (stage.trait === undefined || traits.has(stage.trait)),
+          published.has(stage.contract) &&
+          (stage.trait === undefined || traits.has(stage.trait)) &&
+          // An editable stage without ports could never save; offering it would be a lie.
+          (stage.editable !== true || options.editorPorts !== undefined),
       )
       if (usable.length === 0) {
         await session.dispose()
@@ -106,10 +166,16 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
       }
 
       let active: { unmount(): Promise<void> | void } | undefined
-      let activeId = usable[0]?.contract ?? ''
+      const plannedActive = session.presentation?.activeStage
+      let activeId =
+        plannedActive !== undefined && usable.some(stage => stageId(stage) === plannedActive)
+          ? plannedActive
+          : usable[0] === undefined
+            ? ''
+            : stageId(usable[0])
 
       const show = async (viewId: string): Promise<void> => {
-        const stage = usable.find(item => item.contract === viewId)
+        const stage = usable.find(item => stageId(item) === viewId)
         if (stage === undefined) throw new Error(`unknown view: ${viewId}`)
         await active?.unmount()
         active = undefined
@@ -122,7 +188,7 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
          * undefined and the mount fails inside the viewer.
          */
         const slot = {
-          slotId: `explorer:${stage.contract}`,
+          slotId: `explorer:${stageId(stage)}`,
           kind: 'primary',
           contributionId: 'org.modkitx.ui/explorer',
           extensionId: 'org.modkitx.ui',
@@ -130,10 +196,25 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
           bindings: [{ bindingId: 'content', contract: stage.contract, major: 1 }],
         }
 
+        /*
+         * An editable stage is an `EditorModule`: besides the viewer arguments it needs the four
+         * host-owned ports, and it calls `edit.propose()` during mount. Passing them only for
+         * `editable` stages keeps a plain viewer from ever seeing a write path.
+         */
+        const ports = stage.editable === true ? options.editorPorts?.(entry, bytes) : undefined
+
         const mounted = await stage.module.mount({
           container,
           descriptor: descriptor as never,
           slot: slot as never,
+          ...(ports === undefined
+            ? {}
+            : {
+                edit: ports.session as never,
+                commit: ports.commit as never,
+                payloads: ports.payloads as never,
+                authorization: ports.authorization as never,
+              }),
           sources: {
             async get(binding: { contract: string; major?: number }) {
               const lease = await session.dataSource(binding.contract, binding.major ?? 1)
@@ -164,7 +245,7 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
       await show(activeId)
 
       return {
-        views: usable.map(stage => ({ id: stage.contract, label: stage.label })),
+        views: usable.map(stage => ({ id: stageId(stage), label: stage.label })),
         get activeView() {
           return activeId
         },
@@ -185,11 +266,24 @@ async function openCodec(
   entry: ExplorerEntry,
   bytes: Uint8Array,
   maximumBytes: number,
-): Promise<CodecSession> {
-  const provider =
+): Promise<PreviewSession> {
+  const createdProvider =
     format.createProvider === undefined || format.providerContract === undefined
       ? undefined
-      : format.createProvider({ contract: format.providerContract })
+      : format.createProvider({
+          offerId: 'direct-preview',
+          contract: format.providerContract,
+          major: 1,
+          contractSelectionKey: 'facetless:v1',
+        })
+  const providerLease =
+    typeof createdProvider === 'object' &&
+    createdProvider !== null &&
+    'value' in createdProvider &&
+    typeof (createdProvider as { release?: unknown }).release === 'function'
+      ? (createdProvider as { readonly value: unknown; release(): Promise<void> })
+      : undefined
+  const provider = providerLease?.value ?? createdProvider
 
   const codec = format.createCodec({
     budgets: budget(maximumBytes),
@@ -213,10 +307,22 @@ async function openCodec(
       },
     },
   }) as {
-    open(input: unknown, intent: string, budget: unknown): Promise<CodecSession>
+    open(input: unknown, intent: string, budget: unknown): Promise<PreviewSession>
   }
 
-  return codec.open(await inputFor(entry, bytes), 'full', budget(maximumBytes))
+  const session = await codec.open(await inputFor(entry, bytes), 'full', budget(maximumBytes))
+  if (providerLease === undefined) return session
+  return {
+    descriptor: () => session.descriptor(),
+    dataSource: (contract, major) => session.dataSource(contract, major),
+    async dispose() {
+      try {
+        await session.dispose()
+      } finally {
+        await providerLease.release()
+      }
+    },
+  }
 }
 
 /**
@@ -311,7 +417,7 @@ function fallbackStages(fallback: CodecPreviewOptions['fallback']): readonly Pre
 function builtinSession(
   bytes: Uint8Array,
   fallback: CodecPreviewOptions['fallback'],
-): CodecSession {
+): PreviewSession {
   const textual = fallback?.text !== undefined && looksTextual(bytes)
   const sources: Record<string, unknown> = {}
   if (textual) sources['common.view/text-data-source'] = builtinTextSource(bytes)

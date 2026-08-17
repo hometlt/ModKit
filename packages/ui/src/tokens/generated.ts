@@ -179,6 +179,8 @@ export type TokenName =
   | 'shadow.focus-ring'
   | 'tree.indent-level'
   | 'card.grid-columns'
+  | 'explorer.menu-x'
+  | 'explorer.menu-y'
   | 'table.row-height'
   | 'table.header-bg'
   | 'table.cell-padding-x'
@@ -371,6 +373,8 @@ export const TOKEN_NAMES: readonly TokenName[] = Object.freeze([
   'shadow.focus-ring',
   'tree.indent-level',
   'card.grid-columns',
+  'explorer.menu-x',
+  'explorer.menu-y',
   'table.row-height',
   'table.header-bg',
   'table.cell-padding-x',

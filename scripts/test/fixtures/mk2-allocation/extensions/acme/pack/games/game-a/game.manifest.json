@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "publisher": "org.acme",
+  "id": "game-a",
+  "version": "0.1.0",
+  "contractVersion": 1,
+  "kind": "game",
+  "displayName": "Game A",
+  "status": "unsupported",
+  "sourceKinds": ["directory", "installation-root"],
+  "match": { "pathGlobs": ["**/*.ga"] },
+  "capabilities": [],
+  "runtimeVariants": [
+    {
+      "id": "desktop",
+      "availability": "unavailable",
+      "unavailableReason": "fixture",
+      "environments": ["node"],
+      "entrypoints": {},
+      "operatingSystems": ["windows"],
+      "architectures": ["x64"],
+      "capabilities": []
+    }
+  ],
+  "testedGames": ["game-a"],
+  "featureGroups": { "core": { "requires": [{ "id": "org.acme/plain", "range": "^0.1.0" }] } },
+  "limitations": []
+}

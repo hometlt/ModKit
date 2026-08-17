@@ -19,11 +19,55 @@ const dist = join(appRoot, 'dist-app')
 
 mkdirSync(dist, { recursive: true })
 
-await build({
+const rendererBuild = await build({
   entryPoints: [join(appRoot, 'src', 'renderer.ts')],
   outfile: join(dist, 'renderer.js'),
   bundle: true,
   format: 'esm',
+  platform: 'browser',
+  target: ['chrome120'],
+  absWorkingDir: repoRoot,
+  // Monaco ships an icon font and stylesheets. The CSS is extracted to a sibling file the page
+  // links, which is what lets the editor render under `style-src 'self'` instead of injecting.
+  loader: { '.ttf': 'dataurl', '.css': 'css' },
+  metafile: true,
+  logLevel: 'warning',
+})
+
+const codecInputs = Object.keys(rendererBuild.metafile.inputs).filter(input =>
+  /(?:^|\/)extensions\/.*\/src\/(?:codecs|families|formats)\//u.test(input.replaceAll('\\', '/')),
+)
+if (codecInputs.length > 0) {
+  console.error(
+    `Electron renderer imports codec implementation modules:\n${codecInputs
+      .toSorted()
+      .map(input => `  ${input}`)
+      .join('\n')}`,
+  )
+  process.exit(1)
+}
+
+// Monaco runs its language services in workers and asks the host for them through
+// `MonacoEnvironment`. Bundled separately because a worker is its own entry point.
+const monacoRoot = resolve(
+  repoRoot,
+  'extensions/common/ui-monaco/node_modules/monaco-editor/esm/vs',
+)
+const workerEntries = {
+  'editor.worker': join(monacoRoot, 'editor', 'editor.worker.js'),
+  'json.worker': join(monacoRoot, 'language', 'json', 'json.worker.js'),
+}
+for (const [name, path] of Object.entries(workerEntries)) {
+  if (!existsSync(path)) {
+    console.error(`missing Monaco worker entry for ${name}: ${path}`)
+    process.exit(1)
+  }
+}
+await build({
+  entryPoints: workerEntries,
+  outdir: dist,
+  bundle: true,
+  format: 'iife',
   platform: 'browser',
   target: ['chrome120'],
   absWorkingDir: repoRoot,
@@ -38,6 +82,9 @@ if (!existsSync(stylesheet)) {
   process.exit(1)
 }
 cpSync(stylesheet, join(dist, 'modkit-ui.css'))
+// Installable themes ship as plain stylesheets: token overrides under their own
+// `[data-mk-theme]` selector, no component code. Copied beside the app so the page can link them.
+cpSync(join(repoRoot, 'assets', 'themes', 'sc2', 'theme.css'), join(dist, 'theme-sc2.css'))
 
 // The renderer runs from file://, so its CSP is declared in the document itself.
 writeFileSync(
@@ -48,10 +95,13 @@ writeFileSync(
     <meta charset="utf-8" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:;"
+      content="default-src 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'unsafe-inline'; script-src 'self'; img-src 'self' data:; font-src 'self' data:; worker-src 'self' blob:;"
     />
     <title>Modkit MK3</title>
     <link rel="stylesheet" href="./modkit-ui.css" />
+    <!-- Monaco CSS, extracted by esbuild so it loads from self rather than being injected. -->
+    <link rel="stylesheet" href="./renderer.css" />
+    <link rel="stylesheet" href="./theme-sc2.css" />
     <style>
       html,
       body {

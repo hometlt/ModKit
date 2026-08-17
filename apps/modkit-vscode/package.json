@@ -10,9 +10,10 @@
     }
   },
   "files": [
+    "contributes.generated.json",
     "dist",
     "dist-app",
-    "contributes.generated.json"
+    "media"
   ],
   "scripts": {
     "contributes:emit": "node scripts/generate-contributes.mjs",
@@ -81,5 +82,6 @@
     "onCommand:modkit.explainResolution",
     "onCommand:modkit.openWith",
     "onCommand:modkit.showHostProfile"
-  ]
+  ],
+  "icon": "media/icon-128.png"
 }

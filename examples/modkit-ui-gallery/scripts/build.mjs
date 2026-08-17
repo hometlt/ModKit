@@ -174,6 +174,8 @@ if (!existsSync(stylesheet)) {
   process.exit(1)
 }
 cpSync(stylesheet, join(dist, 'modkit-ui.css'))
+// The gallery shares the application mark so a pinned tab is recognisable next to the real apps.
+cpSync(join(repoRoot, 'apps', 'web', 'public', 'favicon-32.png'), join(dist, 'favicon-32.png'))
 // ---------------------------------------------------------------- C1/C2 static gate
 // The page policy is relaxed for the trusted editor, so it can no longer prove that our own
 // components avoid the forbidden mechanisms. Prove it at the source instead, where the editor's
