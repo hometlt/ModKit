@@ -209,12 +209,16 @@ SDK/schema/registry landing и drift gates.
 
 ### NXT-104 — разделить provider policy lock и codec detection selection
 
+Статус: **завершено** 2026-08-18 (`7ce98ad`).
+
 - Policy lock содержит только service/provider decisions.
 - Выбор codec хранится отдельной session/descriptor provenance записью: contribution, variant,
   offer, confidence, match evidence/topology и artifact digest.
 - PNG и JPEG с одной representation не конфликтуют в агрегированном policy lock.
 - Replay provider lock и replay codec detection проверяются разными APIs/fixtures.
 - Selection record не содержит raw source bytes, credentials или arbitrary facets.
+- Host API публикует отдельные canonical build/parse/serialize/replay операции; replay связывает
+  source revision с attested manifest/artifact digests из текущего inventory.
 
 ### NXT-105 — единый capability-RPC core
 

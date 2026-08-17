@@ -154,10 +154,13 @@ Root интегрировал `package.json`, app callers и generated checks. �
 
 ### ROOT-02 — NXT-104 lock/selection split
 
-- убрать codec selection из provider-policy lock;
-- ввести отдельную canonical non-secret detection-selection provenance;
-- доказать PNG/JPEG same-representation aggregation;
-- отдельно тестировать provider replay и codec selection replay.
+Статус: **завершено** (`7ce98ad`).
+
+- codec selection удалён из provider-policy lock;
+- отдельная canonical non-secret detection-selection provenance связывает source revision,
+  attested artifact/manifest digests, variant/offer, topology, confidence и evidence;
+- PNG/JPEG same-representation дают одинаковый provider lock и разные detection records;
+- provider replay и codec detection replay проверяются разными API/tests.
 
 ### ROOT-03 — NXT-100/101 backend SPI
 
