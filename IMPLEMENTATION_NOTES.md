@@ -6,6 +6,195 @@ overrides a canonical or detailed owner.
 
 ---
 
+## G-APP-1 — the product open path bypassed the host (closed 2026-08-17; review by Fable, implementation by Sol)
+
+**Gap (reproduced, not inferred).** The A‑2/A‑3 primitives exist in production `host`
+(deterministic inventory, `offersFromInventory`, resolver, artifact-bound tickets, digest/entrypoint
+verification, grant narrowing, activation gate, descriptor assembly, presentation-plan resolver) but
+are **not assembled into the path a user's file takes**:
+
+- `apps/electron/electron/main.cjs:105` composes `createElectronApp()` with no extension inputs —
+  the shipping inventory is empty;
+- `apps/electron/src/codecs.js` statically imports every common codec/provider and hands the
+  explorer a file-extension table; `packages/ui/src/explorer/preview.ts` picks a codec by extension
+  and calls `codec.open()` with no inventory, probe, resolver, lock or ticket; the codecs are bundled
+  into and executed in the renderer realm (`dist-app/renderer.js` contains `org.modkitx/image-png`);
+- every common manifest declared only a `worker-brokered` variant while `gate.ts:46` honours only
+  `trusted-in-process`, so the host gate could not activate a single bundled codec;
+- `enabledExtensions` (settings) is exported but consumed by no app; `pnpm apps:check` proves the
+  declarative plane (inventory/eligibility/resolvability per realm), not file opening.
+
+Consequences: the declared security model is decorative on that path (no grant, no full-authority
+diagnostic, no isolation — a `worker-brokered` declaration executed in-process is the silent
+downgrade 24 §6.1 rule 1 forbids); users cannot install/enable/disable formats; lock/determinism do
+not apply; README/`REPORT_A0_A8…` overclaimed «never in a renderer» (both corrected today).
+
+**Decision (Sol/Fable, accepted 2026-08-17).** One host-owned `subject-open` vertical slice
+assembles the existing primitives (`ExtensionInput → Inventory → bounded probe → resolver → ticket →
+activation → planInput → AssetInput → codec.open → descriptor → presentation plan → leased sources`),
+first proven on UVM (trusted Node variant) and JSON + unknown Text/Hex, then wired into Electron main
+with a generated bundled catalog, renderer receiving only leases through the preload broker,
+`codecs.js` removed and stages taken from `resolvePresentationPlan`. Owner: Sol. Not a blanket
+`trusted-in-process` downgrade: manifests keep the portable `worker-brokered` variant and add a
+`trusted-node` variant for bundled/verified codecs (UVM pattern), always with the full-authority
+diagnostic.
+
+**Closure.** `ad6f0cc` assembled and tested the reusable host pipeline; `f510b3b` connected Electron
+main to a generated bundled catalog, moved all session/data-source ownership behind validated
+preload IPC, deleted the renderer codec table, consumed host presentation plans, and added permanent
+app-import/bundle/inventory gates. The full gate on the latter commit's tree passed: 66 test files /
+476 tests, 14 emitted schemas, 16 UI manifests, exact 16-row application matrix, legacy/import/
+extension-inventory gates, and all universal-data budgets. Real Electron self-tests opened JSON,
+PNG and UVM through selected `trusted-node` variants and surfaced an unknown binary through the
+explicit Hex fallback. Browser E2E switches stages 100 times while retaining the same asset session
+and releases every lease. The implementation does not claim worker isolation: SB-1 and the unified
+VFS/container plane remain the next design slices below.
+
+**Rules that fall out of the code (recorded so nobody rediscovers them):**
+
+- **R-A1 disjoint variant targets.** `offersFromInventory` emits one offer per runtime variant and
+  the resolver ignores execution profiles (23 §8: profile is an activation-host concern), so two
+  variants matching one target tie in the preference tuple → `ambiguous`. Adding `trusted-node` on
+  `node` therefore requires removing `node` from `portable` (as UVM does).
+- **R-A2 target selects the variant, not a resolver preference.** Without a worker adapter the host
+  resolves for environment `node`; with one it resolves for `node-worker`/`browser-worker` and the
+  portable variant is chosen naturally — no resolver change, no self-declared priority.
+- **R-A3 provenance gate for `trusted-in-process`.** 24 §16 forbids a restricted contribution from
+  taking `trusted-in-process` without explicit host policy; inventory carries no provenance today,
+  so the slice needs a bundled/first-party vs installed/linked marker feeding `HostPolicy`.
+- **R-A4 checked bridge first.** `RandomAccessSource<number> → ArtifactByteSource<bigint>` as a
+  strict adapter (bounds, `> MAX_SAFE_INTEGER` refused, cancellation propagated); the owner question
+  of a single bigint `vfs` contract (27 §0.1) is filed, not blocking.
+
+**Gates added by this pass (Fable; ratchets with stale-entry failure, no mutable baselines):**
+
+- `scripts/check-app-imports.mjs` (`pnpm check:imports`): no authored `apps/**`/`packages/**`
+  import of `extensions/**`/`examples/**` implementations or `modkit-extension-*`/codec-kit
+  packages; a `generated/` path segment is the one permitted (generated) edge (27 §7). The initial
+  known-debt entry (`apps/electron/src/codecs.js`) was retired the same day by the subject-open
+  slice, which deleted the file — the ratchet did its job on its first day; the list is empty.
+- `scripts/check-extension-inventory.mjs` (`pnpm check:extensions`): every authored container under
+  `extensions/*/*` and `examples/*` builds an error-free inventory; bundled `common` units must be
+  inventory-eligible. Known debt: `extensions/common/ui-graph-3d` (pattern-without-matches).
+- `scripts/check-legacy.mjs` now scans `extensions/*/*` and `examples/*` ({src,schemas,contributions}
+  - root manifests); the `@modkitx-x3/*` name scope stays a platform/apps rule (27 §0.2 names are free).
+- Removed the empty post-refactor `extensions/common/text-data/` tree (dirs + node_modules, untracked).
+
+**MK2 allocation report (Fable, read-only over the sibling `modkitx`, 27 §12.19).**
+`node scripts/report-mk2-allocation.mjs --out REPORT_MK2_ALLOCATION_<date>.md [--json …]` classifies
+every v1 manifest against the current X3 contracts; the vocabulary it restates
+(`scripts/lib/mk3-vocabulary.mjs`) is pinned to `@modkitx-x3/core`/`sdk` by
+`scripts/test/report-mk2-allocation.test.ts`. Snapshot 2026-08-17: 206 codec manifests → 103
+mechanical / 24 convertible with rework / 79 need a contract X3 does not have; 31 game manifests →
+all need a `game` contribution kind; 45 `extension.json` → `package.json#modkit` (5 `dependsOn`
+need Q75 mode+scope). Dominant blockers: `write`/`edit` verbs (v1 read-only, 44 manifests),
+language/runtime/launch planes (absent), viewer entrypoints → separate 13C contributions (16),
+detect-only variants (15), mixed single+namespace `sourceKinds` (14), 22 catalog-only unavailable
+variants → data-only `FormatDefinition` (30 §2). Every variant needs an `executionProfile` decision
+(R-A1/R-A2). Operation-id renames: `image.compressed.read → image.compressed-read` (7) and
+`sc2-*.<verb>` → `org.modkitx/sc2-*.<verb>`. This is input for the migration converter, not a
+migration; MK2 stays untouched (BRIEF-12 §3).
+
+**Acceptance for the subject-open slice (met by `ad6f0cc` + `f510b3b`):** one `openSubject` entry
+and no `byExtension` path; Electron main composed with real inputs and a non-empty inventory;
+renderer bundle free of codec code; E2E on PNG/JSON/UVM/unknown showing explain, ticket,
+full-authority diagnostic (trusted-node), validated descriptor, plan from `resolvePresentationPlan`,
+stage switch without session recreation; JSON proves nested `json-syntax` provider activation under
+a child grant (`assertNotWider`); a `worker-brokered`-only contribution on a `node` target is
+`unresolved` and surfaced (fallback declared, not silent); policy lock replay stable under shuffle;
+detection reads ≤ `probe.maxBytes`.
+
+**Owner questions filed as text (to move to MK3/11 on the owner's word):** (1) bundled `common`
+before SB‑1 — `trusted-node` variant with diagnostic (24 §6.1 п.4) confirmed?; (2) owner of
+`ArtifactSource`: move to `vfs` (27 §0.1) or amend §0.1/§5.9; (3) 27 §0.7 — record the text-data
+split by dependency closure and the location of `plain-text` (BRIEF‑13A §13 says
+`extensions/common/plain-text`); (4) 23 §8/§11 — `ContractOffer.offerId/facet`, position of
+`contractSelectionKey`, `unsupported-kind`; (5) MK2 strategy — domain-interface adapters as a
+«real boundary» (decision 54) or per-codec rewrite to the `Codec` ABI.
+
+### Design notes (Fable, 2026-08-17): `worker-brokered` adapter and VFS contracts — not implemented
+
+Sequencing agreed with Sol: nothing below starts before the subject-open slice is stable; the
+adapter's only consumer is the host `openSubject` port, so it cannot be designed against a path that
+does not exist yet. These notes fix the interfaces so the later slice does not reopen the
+architecture; they add no code.
+
+**W1 — what the worker adapter is (24 §6.1 SB‑1).** A new _available_ execution profile behind the
+same activation gate: after ticket/target/grant/entrypoint checks pass, the host does not
+`import()` the module in-process but posts `{load: artifactRoot, entrypoint, contributionId,
+variantId}` to a fresh worker (Node `worker_threads` for CLI/server/Electron main; Web `Worker` for
+PWA/webview). One protocol over `MessagePort` in both realms; the transport is the only difference.
+Honest promise (24 §6 row «Node worker»): crash/cancellation isolation, brokered I/O through passed
+handles, **no** protection from ambient `node:*`/Web APIs inside the worker — SB‑2 territory. Every
+activation still emits an honest diagnostic naming that boundary.
+
+**W2 — object model over the boundary.** The runtime ABI is capability-shaped (`Codec` →
+`AssetSession` → `Lease<DataSource>` → methods), so the adapter is a _handle table_, not a
+serializer: every object the worker returns that has methods becomes `{handle: id}`; the host builds
+a proxy implementing the same TypeScript interface (`AssetSession`, `TextDataSource`,
+`ByteRangeSource`, `RasterImageSource`, …); each method call is `{call, id, handle, method, args}`;
+`Lease.release()` and `dispose()` map to `{release, handle}` and drop the entry on both sides. Values
+crossing: JSON-safe data, `bigint` (structured-clone-safe), `Uint8Array` (transferred by buffer, never
+copied twice), `AsyncIterable` → pull protocol (`{next, iterator}` / `{done}`), `events()` → push
+messages, `Progress` → push, `AbortSignal` → `{cancel, id}` (worker checks `throwIfAborted`),
+`ModkitError` → `toJSON()` + rehydration on the host (`code`/`context`/`retryability` preserved;
+`OperationCancelledError` stays a cancellation). Budgets: `ResourceBudget` travels with `open`;
+`deadlineMs` is enforced twice — inside the worker (existing checks) and by the host `terminate()` on
+overrun/hang, which is the actual SB‑1 gain.
+
+**W3 — bytes are brokered back to the host, not read ambiently.** The worker never receives a
+path or `RandomAccessSource`; its `ArtifactByteSource.read/stream` is an RPC stub whose callbacks
+are answered by the host under the activation grant (`sourceScope`/`filesystem` scopes,
+`PermissionGrant` narrowing already implemented). That is exactly SB‑0 item 3 («broker checks in
+real I/O providers») and it makes source access broker-enforced (level 3) even before SB‑2; a
+worker-side read cache/prefetch keeps probe/inspect cheap (chunked transfers, bounded by
+`probe.maxBytes` / `ResourceBudget`). Same for nested providers (`ContractResolverPort` inside the
+worker → resolve/activate on the host → child grant `assertNotWider` → provider proxied into the
+worker, or co-located when both variants target the same worker).
+
+**W4 — realms and target selection (R‑A2).** The host decides where codecs run by choosing the
+target it resolves for: `node` → `trusted-node` variants in-process; `node-worker`/`browser-worker`
+→ portable variants through the adapter. In Electron the codec workers live in **main**; the
+renderer keeps receiving only leases through the preload broker (two hops, renderer ↔ main ↔
+worker), which is what keeps codecs out of the renderer realm without a policy exception. A
+`browser-worker` inside the renderer is possible by manifest but a policy choice, not a default.
+
+**W5 — gates the step must ship with (24 §6.1 rule 2).** Fixtures: crash in `open()` → structured
+failure + released leases + host alive; hang → `deadlineMs` terminate; cancellation mid-page →
+`OperationCancelledError` on the host; byte reads outside `sourceScope` → denied by the host broker
+(not by the worker); no `node:*` in browser-worker bundles (existing browser-safety gate reused);
+`worker-brokered` selected only when the adapter is present, else `unresolved` (never in-process,
+24 §6.1 rule 1). Owner doc: a new row is _not_ needed — the §6 table already carries the honest
+worker line; SB‑1 acceptance fixtures land in 24 §16.
+
+**V1 — VFS contracts (13 §3) sized for X3.** One byte contract (bigint offsets, `read`/`stream`,
+owner `vfs`, `sdk` re-exports; `RandomAccessSource` retired or kept as the checked bridge R‑A4).
+Service contracts, resolved like any provider (`common.vfs/*` are `service-provider-contribution`
+offers, scheme/topology as non-secret facets so the facet matcher already selects by scheme):
+
+- `common.vfs/mount@1` — `mount(request: {address: StructuredAddress, credentials?: CredentialGrantRef,
+options?}, ctx) → Lease<VfsMount>`; `VfsMount { id, revision: RevisionId, access:
+ReadonlySet<SourceAccess>, stat(path), list(path, page), open(path) → Lease<ArtifactSource>,
+watch?(path, sink), beginWrite?(opts) → VfsWriteTransaction, dispose() }` — 13 §3 verbatim, plus
+  `RevisionId` from `sdk/subjects` so mounts feed revision vectors directly.
+- `common.vfs/container@1` — `openContainer(source: ArtifactByteSource, ctx) → Lease<AssetNamespace>`:
+  a container codec (zip today, MPQ/CASC later) publishes this beside its `codec-contribution` in the
+  same package; the host input planner uses it to turn an archive into a `namespace` origin, which is
+  what makes «archive entry as subject» and directory-shaped MK2 formats (SC2Map, CASC roots) work
+  through the existing `ArtifactNamespaceSource.openNamespace()`.
+- Host owns (13 §3): normalized virtual paths + traversal protection, mount table/routing, overlays,
+  cache/credential brokers; credentials only as `CredentialGrantRef` handles (24 §3.1/§12), never
+  in URIs, locks, cache keys or diagnostics.
+
+**V2 — first implementations and their proofs.** Local directory mount (host/node + browser
+directory handle), memory, zip container (from the existing archives extension), OPFS/HTTP-range
+adapters re-homed onto the one byte contract. Gates: read outside grant refused _by the provider_;
+archive opened as a namespace without materializing the whole file; mount revision changes flip
+open sessions to `stale-revision`; a Git/GitHub/CASC provider can be added as an extension without
+touching `core/sdk/vfs/host` (13 §12).
+
+---
+
 ## Integrated codec, UI and application verification (2026-08-17)
 
 - Text codecs are installable by dependency closure: JSON/JSONC and CSV/TSV share only their syntax

@@ -4,12 +4,30 @@ Date: 2026-08-17
 Repository: `modkitX3` clean-core laboratory  
 Integration commit: `5d7dd06` (`feat: integrate modular codecs ui and application profiles`)
 Final UI/Electron implementation commit: `77dc5f8` (`feat(ui): add editor fallback settings and desktop shell`)
+Host subject-open composition: `ad6f0cc` (`feat(host): open subjects through extension inventory`)
+Product-path closure: `f510b3b` (`feat(apps): route previews through host subject sessions`)
 
 ## Verdict
 
 **Implementation-complete and green in the laboratory; ready for owner review.** This is not a
 promotion decision. Package names remain `@modkitx-x3/*`, MK2 is unchanged, and the owning
 `modkitx` documentation/status register must only be advanced by a separate owner decision.
+
+> **Correction and closure 2026-08-17 (post-report review, gap G-APP-1).** The sentence «Codecs execute in
+> Node or worker realms and are not imported into renderer or webview realms» below described the
+> declarative plane checked by `pnpm apps:check`, not the then-current shipping desktop shell. In the Electron
+> app the composition root receives no extension inputs, `apps/electron/src/codecs.js` statically
+> imports the common codecs into the renderer bundle, and `packages/ui/src/explorer/preview.ts`
+> opens files by file extension without inventory, probe, resolver, lock or activation ticket. The
+> A‑2/A‑3 host primitives were implemented but not yet assembled into the product open path; the
+> host gate honours only `trusted-in-process`, so bundled `worker-brokered` codecs cannot be
+> activated through it either. That historical gap is closed by `ad6f0cc` (host pipeline) and
+> `f510b3b` (Electron composition, leased IPC, generated catalogs and architectural gates): the
+> renderer imports no codec/provider implementations, trusted variants execute only in Electron
+> main under explicit bundled provenance, and unknown input takes a declared Text/Hex fallback.
+> Details and the deliberately deferred worker/VFS layer are recorded in `IMPLEMENTATION_NOTES.md`
+> («G-APP-1»). The final repository gate passed 66 test files / 476 tests, 14 schemas, 16 UI
+> manifests and all app/import/inventory/performance checks.
 
 The completed line contains:
 
@@ -99,8 +117,12 @@ atomically behind preload IPC and exposes native File/View actions without enabl
 renderer.
 
 `pnpm apps:check` validates sixteen extension-set/realm combinations, exact inventory isolation and
-target selection. Codecs execute in Node or worker realms and are not imported into renderer or
-webview realms. Electron now has a real native-menu/preload/renderer shell and reproducible app
+target selection. ~~Codecs execute in Node or worker realms and are not imported into renderer or
+webview realms.~~ _(The original blanket claim was struck because the declarative gate did not prove
+the product path. The corrected, narrower claim is now enforced: Electron codecs run in main and
+the renderer bundle contains no codec/provider implementation; other realms remain governed by
+their declared target and available activation adapter.)_
+Electron now has a real native-menu/preload/renderer shell and reproducible app
 build; independently packaged installer/process-launch E2E remains the next distribution layer,
 not an A‑0…A‑8 blocker.
 

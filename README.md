@@ -49,13 +49,25 @@ requires a separate owner decision. Long-lived double authority with `modkitx` i
 - **Assets Capabilities media stress is implemented.** Five neutral raster/vector/audio/video/model
   sources connect twelve isolated reference codecs to separately loaded UI viewers. Heavy decoder
   and renderer dependencies remain optional provider extensions; see `REPORT_REFERENCE_CODECS.md`.
-- **Application extension-set composition is gated.** `pnpm apps:check` loads structured-text,
-  document, media, model/archive, editor and full-codec sets into the headless, PWA, VS Code and
-  Electron composition roots. It checks exact inventory isolation, contribution eligibility and
-  realm/target selection (codecs execute in Node or workers, never in a renderer/webview). The X3
-  Electron now has a native-menu/preload/renderer shell with tabs, splits, bounded Text/Hex
-  fallback and portable settings. Independently packaged installer/process-launch E2E remains a
-  distribution task rather than an A‑0…A‑8 blocker.
+- **Application extension-set composition is gated — declaratively.** `pnpm apps:check` loads
+  structured-text, document, media, model/archive, editor and full-codec sets into the headless,
+  PWA, VS Code and Electron composition roots and checks exact inventory isolation, contribution
+  eligibility and realm/target resolvability. It does **not** prove how a user's file is opened.
+- **Gap G-APP-1 is closed (`ad6f0cc` + `f510b3b`, 2026-08-17).** The desktop shell now opens files
+  through one host-owned `openSubject` pipeline: generated first-party inventory → bounded probe →
+  resolver/lock → policy ticket/grant → activation → validated descriptor → presentation plan →
+  leased data sources. Electron runs explicitly approved `trusted-node` variants in main and sends
+  only bounded source calls/values through its preload broker; its renderer no longer imports codec
+  or provider implementations. Portable variants remain disjoint (`node-worker`/`browser-worker`)
+  and are never silently executed in-process when the worker adapter is unavailable. PNG, JSON,
+  UVM and unknown-file fallback are exercised through the product path; stage switching reuses the
+  opened session. The exact evidence and the still-open worker/VFS design layer are recorded under
+  «G-APP-1» in `IMPLEMENTATION_NOTES.md`.
+- **New ratchet gates.** `pnpm check:imports` (no authored `apps/**`/`packages/**` edge to
+  `extensions/**`/`examples/**` implementations, MK3/27 §7) and `pnpm check:extensions` (every
+  authored extension container under `extensions/*/*` and `examples/*` builds an error-free
+  inventory) run in `pnpm check`. Both carry an explicit known-debt list that fails when an entry
+  goes stale; `pnpm check:legacy` now also scans `extensions/**` and `examples/**`.
 - **Completion report:**
   [`REPORT_A0_A8_CODECS_UI_APPS_COMPLETION_2026-08-17.md`](./REPORT_A0_A8_CODECS_UI_APPS_COMPLETION_2026-08-17.md)
   records the delivered slices, codec dependency boundaries, application matrix, exact gates and
