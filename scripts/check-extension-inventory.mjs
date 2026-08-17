@@ -32,15 +32,7 @@ const root = argValue('--root') === undefined ? defaultRoot : resolve(argValue('
 const quiet = args.includes('--quiet')
 
 /** Directories allowed to fail today; a stale entry (directory gone or clean) fails the gate. */
-const KNOWN_DEBT = [
-  {
-    dir: 'extensions/common/ui-graph-3d',
-    reason:
-      'declares contributionManifests ["./contributions/*.json"] but has no contributions/ ' +
-      '(x3.sdk/pattern-without-matches, 27 §5.1). Needs a real render-backend contribution ' +
-      'or must become a plain library without a modkit block (decision 72). Owner: UI slice.',
-  },
-]
+const KNOWN_DEBT = []
 
 /** Scan groups: [directory prefix, package depth, strict eligibility?]. */
 const SCAN_GROUPS = [

@@ -201,8 +201,8 @@ Fable начинает NXT‑105 сразу с внутренним `SurfaceRegi
   отсутствие абсолютных путей;
 - NXT‑108: **закрыто** — generated import exemption требует generator marker, Electron emitter
   отклоняет unknown files, UI compile proof удерживает host-only preview API;
-- NXT‑109: `ui-graph-3d` должен получить реальную contribution authority либо перестать
-  притворяться extension; Root принимает owner decision, UI agent реализует;
+- NXT‑109: **закрыто** — `ui-graph-3d` является отдельной optional renderer library без ложного
+  `modkit` container; настоящий extension возможен после появления render-provider contract;
 - renamed PNG `.dat`: обязательная acceptance из Asset Capabilities §7/§12, реализуется в
   NXT‑101 через bounded data-only signature candidates, а не brute-force activation.
 

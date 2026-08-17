@@ -302,10 +302,17 @@ Electron `DATA_SOURCE_METHODS`, private handle table и eager iterable materiali
 
 ### NXT-109 — закрыть `ui-graph-3d` inventory debt
 
+Статус: **завершено** 2026-08-18.
+
 Root принимает одно owner decision: либо extension публикует настоящую renderer/viewer
 contribution и conformance evidence, либо modkit container удаляется и код получает честного
 library owner. UI implementation agent выполняет решение; known-debt entry удаляется только вместе
 с зелёным inventory gate.
+
+Owner decision: существующий код является `GraphRendererFactory`, а не `ViewerModule` и не
+service-provider ABI. До появления отдельного render-provider contract он остаётся изолированной
+optional library `@modkitx-x3/ui-graph-3d`; `modkit` container и known-debt exception удалены. Это
+сохраняет lazy dependency boundary для `three` и не публикует ложную activation authority.
 
 ## 6. Этап R2 — worker protocol и object runtime
 
