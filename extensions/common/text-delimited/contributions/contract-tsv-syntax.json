@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/contract-definition", "major": 1 },
+  "id": "org.modkitx/tsv-syntax-contract",
+  "displayName": "TSV syntax service contract",
+  "spec": {
+    "schemaVersion": 1,
+    "kind": "service",
+    "contract": "common.text-data/tsv-syntax",
+    "major": 1,
+    "offerFacet": { "presence": "forbidden" },
+    "requestFacet": { "presence": "forbidden" },
+    "matching": { "profile": "org.modkitx/facetless-matcher", "major": 1 },
+    "conformanceProfile": "common.text-data/tsv-syntax-v1"
+  }
+}

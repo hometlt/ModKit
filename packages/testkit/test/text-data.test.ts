@@ -20,6 +20,7 @@ import {
   type Codec,
   type ContributionContext,
   type ContributionManifestV1Wire,
+  type Lease,
   type ProviderOffer,
   type ProviderRequest,
   type ResourceBudget,
@@ -112,7 +113,7 @@ interface ProviderModule {
 interface FormatProviderModule {
   createProvider(selection: {
     readonly contract: TextDataContractId
-  }): TextSyntaxProvider<TextDataContractId>
+  }): TextSyntaxProvider<TextDataContractId> | Lease<TextSyntaxProvider<TextDataContractId>>
 }
 
 interface AlternateProviderModule {
@@ -135,7 +136,10 @@ async function providers(): Promise<ProviderModule> {
     createTextSyntaxProvider(contract) {
       const module = modules.get(contract)
       if (module === undefined) throw new TypeError(`missing provider for ${contract}`)
-      return module.createProvider({ contract }) as TextSyntaxProvider<typeof contract>
+      const selected = module.createProvider({ contract })
+      return ('value' in selected ? selected.value : selected) as TextSyntaxProvider<
+        typeof contract
+      >
     },
   }
 }
@@ -313,7 +317,7 @@ const cases = [
 ] as const
 
 describe('13B text-data providers and codecs', () => {
-  it('validates all sixteen isolated contribution manifests through the A-1 authorities', async () => {
+  it('validates all isolated contribution manifests through the A-1 authorities', async () => {
     const manifestsWithRoots = (
       await Promise.all(
         textExtensionRoots.map(async root => {
@@ -331,8 +335,8 @@ describe('13B text-data providers and codecs', () => {
       )
     ).flat()
     const manifests = manifestsWithRoots.map(item => item.manifest)
-    expect(manifests).toHaveLength(16)
-    expect(new Set(manifests.map(manifest => manifest.id)).size).toBe(16)
+    expect(manifests).toHaveLength(24)
+    expect(new Set(manifests.map(manifest => manifest.id)).size).toBe(24)
     const registry = createSpecSchemaRegistry(A1_SPEC_SCHEMA_ENTRIES)
     for (const { manifest, root } of manifestsWithRoots) {
       const result = await validateContributionManifest(manifest, registry)
@@ -350,14 +354,19 @@ describe('13B text-data providers and codecs', () => {
     expect(
       manifests.filter(manifest => manifest.contract.id.includes('service-provider')),
     ).toHaveLength(8)
+    expect(
+      manifests.filter(manifest => manifest.contract.id.includes('contract-definition')),
+    ).toHaveLength(8)
     const expectedEntrypoints = new Set(
       Object.values(providerFormatByContract).flatMap(format => [
         `./${sourceEntrypoint(format, 'codec')}`,
         `./${sourceEntrypoint(format, 'provider')}`,
       ]),
     )
-    for (const manifest of manifests) {
-      expect(expectedEntrypoints.has(manifest.runtimeVariants?.[0]?.entrypoint ?? '')).toBe(true)
+    for (const manifest of manifests.filter(item => item.runtimeVariants !== undefined)) {
+      expect(
+        manifest.runtimeVariants?.every(variant => expectedEntrypoints.has(variant.entrypoint)),
+      ).toBe(true)
     }
     expect(
       manifests.every(

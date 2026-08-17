@@ -1,0 +1,914 @@
+/** Host-owned file opening pipeline. No application or codec may bypass this composition root. */
+
+import {
+  canonicalJsonStringify,
+  compareUtf8,
+  diagnostic,
+  isModkitError,
+  ModkitError,
+  throwIfAborted,
+  type Diagnostic,
+} from '@modkitx-x3/core'
+import {
+  CODEC_CONTRIBUTION_CONTRACT,
+  type AnyDescriptor,
+  type AnyDescriptorWire,
+  type ArtifactByteSource,
+  type AssetInput,
+  type AssetInputPlan,
+  type AssetSession,
+  type Codec,
+  type CodecContributionSpecV1Wire,
+  type ContributionContext,
+  type ContractResolverPort,
+  type DetectionResult,
+  type DetectionResultWire,
+  type HostPolicy,
+  type Lease,
+  type OpenIntent,
+  type PermissionGrant,
+  type ProviderOffer,
+  type ProviderPolicyLockEntry,
+  type ProviderRequest,
+  type ResourceBudget,
+  type RuntimeTarget,
+  type ServiceContractDefinitionRegistry,
+  type SelectedServiceOffer,
+} from '@modkitx-x3/sdk'
+import { inventoryRecordFor, type Inventory, type InventoryContribution } from './inventory.js'
+import { offersFromInventory } from './offers.js'
+import { buildLockEntry, serializePolicyLock } from './resolution/lock.js'
+import {
+  createContractResolverPort,
+  type FacetAwareProviderRequest,
+} from './resolution/service-resolver.js'
+import {
+  activateContribution,
+  issueActivationTicket,
+  resolveForActivation,
+  SUPPORTED_EXECUTION_PROFILES,
+  type ActivationTicket,
+} from './security/gate.js'
+import { assembleSubjectDescriptor } from './session.js'
+
+const DEFAULT_MINIMUM_CONFIDENCE = 0.5
+const DEFAULT_MAX_CANDIDATES = 64
+
+export type SubjectOpenCandidateState = 'rejected' | 'detected' | 'selected'
+
+export interface SubjectOpenCandidateExplanation {
+  readonly contributionId: string
+  readonly extensionId: string
+  readonly variantId: string
+  readonly offerId?: string
+  readonly state: SubjectOpenCandidateState
+  readonly confidence?: number
+  readonly diagnostics: readonly Diagnostic[]
+}
+
+export interface SubjectInputResolutionContext {
+  readonly source: ArtifactByteSource
+  readonly plan: AssetInputPlan
+  readonly detection: DetectionResult
+  readonly signal?: AbortSignal
+}
+
+/** Host-owned companion/namespace resolver. The default implementation accepts single files only. */
+export type SubjectInputResolver = (
+  context: SubjectInputResolutionContext,
+) => AssetInput | Promise<AssetInput>
+
+export interface OpenSubjectOptions {
+  readonly inventory: Inventory
+  readonly source: ArtifactByteSource
+  readonly path?: string
+  readonly mediaType?: string
+  readonly intent: Exclude<OpenIntent, 'probe'>
+  readonly target: RuntimeTarget
+  readonly grant: PermissionGrant
+  readonly policy?: HostPolicy
+  readonly budget: ResourceBudget
+  readonly serviceDefinitions?: ServiceContractDefinitionRegistry
+  readonly resolveInput?: SubjectInputResolver
+  readonly minimumConfidence?: number
+  readonly maxCandidates?: number
+  readonly signal?: AbortSignal
+}
+
+export interface OpenedSubject {
+  readonly state: 'opened'
+  readonly session: AssetSession
+  readonly descriptor: AnyDescriptor
+  readonly ticket: ActivationTicket
+  readonly lockText: string
+  readonly selected: {
+    readonly extensionId: string
+    readonly contributionId: string
+    readonly variantId: string
+    readonly offerId: string
+    readonly confidence: number
+  }
+  readonly candidates: readonly SubjectOpenCandidateExplanation[]
+  readonly diagnostics: readonly Diagnostic[]
+}
+
+export interface UnresolvedSubject {
+  readonly state: 'unresolved'
+  readonly reason: 'no-candidate' | 'no-match' | 'ambiguous' | 'input-unresolved'
+  readonly descriptor: AnyDescriptor
+  readonly fallback: {
+    readonly preferred: 'text' | 'hex'
+    readonly available: readonly ('text' | 'hex')[]
+  }
+  readonly candidates: readonly SubjectOpenCandidateExplanation[]
+  readonly diagnostics: readonly Diagnostic[]
+}
+
+export type OpenSubjectResult = OpenedSubject | UnresolvedSubject
+
+interface RunnableCandidate {
+  readonly contribution: InventoryContribution
+  readonly extensionId: string
+  readonly contributionId: string
+  readonly spec: CodecContributionSpecV1Wire
+  readonly offer: ProviderOffer
+  readonly logicalOffer: ProviderOffer['provides'][number]
+}
+
+interface DetectedCandidate extends RunnableCandidate {
+  readonly request: ProviderRequest
+  readonly result: Extract<ReturnType<typeof resolveForActivation>['result'], { state: 'resolved' }>
+  readonly ticket: ActivationTicket
+  readonly codec: Codec
+  readonly detection: DetectionResult
+  readonly effectiveBudget: ResourceBudget
+  readonly activationDiagnostics: readonly Diagnostic[]
+  readonly nestedLocks: ProviderPolicyLockEntry[]
+}
+
+function errorDiagnostic(code: string, message: string, error?: unknown): Diagnostic {
+  return diagnostic('error', code, message, [], {
+    ...(error === undefined
+      ? {}
+      : { error: error instanceof Error ? error.message : String(error) }),
+  })
+}
+
+function caughtDiagnostic(stage: string, error: unknown): Diagnostic {
+  return errorDiagnostic(
+    isModkitError(error) ? error.code : `x3.host/subject-${stage}-failed`,
+    isModkitError(error) ? error.message : `subject ${stage} failed closed`,
+    error,
+  )
+}
+
+function normalizeTarget(target: RuntimeTarget, grant: PermissionGrant): RuntimeTarget {
+  return JSON.parse(
+    canonicalJsonStringify({
+      ...target,
+      grantedPermissions: [
+        ...new Set([...(target.grantedPermissions ?? []), ...grant.classes]),
+      ].sort(compareUtf8),
+    }),
+  ) as RuntimeTarget
+}
+
+function matchesGlob(path: string, glob: string): boolean {
+  let pattern = '^'
+  for (let index = 0; index < glob.length; index += 1) {
+    const character = glob[index]
+    if (character === '*') {
+      if (glob[index + 1] === '*') {
+        pattern += '.*'
+        index += 1
+      } else {
+        pattern += '[^/]*'
+      }
+    } else if (character === '?') {
+      pattern += '[^/]'
+    } else {
+      pattern += character?.replace(/[\\^$.*+?()[\]{}|]/gu, '\\$&') ?? ''
+    }
+  }
+  return new RegExp(`${pattern}$`, 'u').test(path)
+}
+
+function matchesSpec(spec: CodecContributionSpecV1Wire, path: string, mediaType?: string): boolean {
+  const normalizedPath = path.replaceAll('\\', '/').split(/[?#]/u, 1)[0]?.toLocaleLowerCase() ?? ''
+  const extensionMatch = (spec.match.extensions ?? []).some(extension => {
+    const suffix = extension.toLocaleLowerCase().replace(/^\.+/u, '')
+    return normalizedPath.endsWith(`.${suffix}`) || normalizedPath === suffix
+  })
+  const mediaMatch =
+    mediaType !== undefined &&
+    (spec.match.mediaTypes ?? []).some(candidate => candidate === mediaType)
+  const pathMatch = (spec.match.pathGlobs ?? []).some(glob => matchesGlob(normalizedPath, glob))
+  const declaresMatch =
+    (spec.match.extensions?.length ?? 0) > 0 ||
+    (spec.match.mediaTypes?.length ?? 0) > 0 ||
+    (spec.match.pathGlobs?.length ?? 0) > 0
+  return !declaresMatch || extensionMatch || mediaMatch || pathMatch
+}
+
+function runtimeBudget(host: ResourceBudget, spec: CodecContributionSpecV1Wire): ResourceBudget {
+  const deadline =
+    host.deadlineMs === undefined
+      ? spec.budgets.deadlineMs
+      : spec.budgets.deadlineMs === undefined
+        ? host.deadlineMs
+        : Math.min(host.deadlineMs, spec.budgets.deadlineMs)
+  return Object.freeze({
+    maxInputBytes:
+      host.maxInputBytes < BigInt(spec.budgets.maxInputBytes)
+        ? host.maxInputBytes
+        : BigInt(spec.budgets.maxInputBytes),
+    maxDepth: Math.min(host.maxDepth, spec.budgets.maxDepth),
+    maxNodes: Math.min(host.maxNodes, spec.budgets.maxNodes),
+    maxScalarBytes: Math.min(host.maxScalarBytes, spec.budgets.maxScalarBytes),
+    maxDiagnostics: Math.min(host.maxDiagnostics, spec.budgets.maxDiagnostics),
+    ...(deadline === undefined ? {} : { deadlineMs: deadline }),
+  })
+}
+
+function boundedProbeSource(
+  source: ArtifactByteSource,
+  plan: Extract<CodecContributionSpecV1Wire['probe'], { kind: 'bytes' }>,
+): ArtifactByteSource {
+  let consumed = 0n
+  const maximum = BigInt(plan.maxBytes)
+  const ranges = plan.ranges.map(range => {
+    const length = BigInt(range.length)
+    if (range.from === 'start') return { start: 0n, end: length }
+    if (source.size === undefined) {
+      throw new ModkitError({
+        code: 'x3.host/end-relative-probe-requires-size',
+        message: 'an end-relative probe range requires a sized source',
+      })
+    }
+    return { start: source.size > length ? source.size - length : 0n, end: source.size }
+  })
+  const authorize = (offset: bigint, length: bigint) => {
+    if (offset < 0n || length < 0n) {
+      throw new ModkitError({
+        code: 'x3.host/probe-range-violation',
+        message: 'codec requested a negative probe range',
+      })
+    }
+    const end = offset + length
+    if (!ranges.some(range => offset >= range.start && end <= range.end)) {
+      throw new ModkitError({
+        code: 'x3.host/probe-range-violation',
+        message: 'codec read outside its declared probe ranges',
+        context: { offset: offset.toString(), length: length.toString() },
+      })
+    }
+    if (consumed + length > maximum) {
+      throw new ModkitError({
+        code: 'x3.host/probe-budget-exceeded',
+        message: `codec exceeded its declared ${plan.maxBytes}-byte probe budget`,
+      })
+    }
+    consumed += length
+  }
+  return Object.freeze({
+    ...source,
+    async read(offset: bigint, length: number, signal?: AbortSignal) {
+      if (!Number.isSafeInteger(length) || length < 0) {
+        throw new ModkitError({
+          code: 'x3.host/probe-range-violation',
+          message: 'codec requested a non-safe probe length',
+        })
+      }
+      authorize(offset, BigInt(length))
+      return source.read(offset, length, signal)
+    },
+    async *stream(
+      range?: { readonly offset: bigint; readonly length?: bigint },
+      signal?: AbortSignal,
+    ) {
+      if (range?.length === undefined) {
+        throw new ModkitError({
+          code: 'x3.host/unbounded-probe-stream',
+          message: 'codec probe streams require an explicit bounded range',
+        })
+      }
+      authorize(range.offset, range.length)
+      let received = 0n
+      for await (const chunk of source.stream(range, signal)) {
+        received += BigInt(chunk.byteLength)
+        if (received > range.length) {
+          throw new ModkitError({
+            code: 'x3.host/probe-stream-overrun',
+            message: 'probe source returned more bytes than the requested range',
+          })
+        }
+        yield chunk
+      }
+    },
+  })
+}
+
+function snapshotDetection(value: DetectionResult, contributionId: string): DetectionResult {
+  const owned = JSON.parse(canonicalJsonStringify(value)) as DetectionResultWire
+  if (
+    owned.codecId !== contributionId ||
+    typeof owned.confidence !== 'number' ||
+    !Number.isFinite(owned.confidence) ||
+    owned.confidence < 0 ||
+    owned.confidence > 1 ||
+    !Array.isArray(owned.evidence) ||
+    !Array.isArray(owned.requiredRanges)
+  ) {
+    throw new ModkitError({
+      code: 'x3.host/invalid-detection-result',
+      message: `codec ${contributionId} returned a malformed or mismatched detection result`,
+    })
+  }
+  return Object.freeze(owned) as DetectionResult
+}
+
+function snapshotPlan(value: AssetInputPlan): AssetInputPlan {
+  return Object.freeze(JSON.parse(canonicalJsonStringify(value)) as AssetInputPlan)
+}
+
+function defaultResolveInput(context: SubjectInputResolutionContext): AssetInput {
+  const plan = context.plan
+  if (plan.originKind !== 'single' || plan.requirements.length !== 0) {
+    throw new ModkitError({
+      code: 'x3.host/input-resolver-required',
+      message: `the default subject input resolver cannot satisfy ${plan.originKind} topology`,
+    })
+  }
+  const candidate = plan.candidate
+  if (
+    candidate.bindingId.trim().length === 0 ||
+    candidate.role.trim().length === 0 ||
+    (candidate.ownership !== 'owned' && candidate.ownership !== 'external')
+  ) {
+    throw new ModkitError({
+      code: 'x3.host/invalid-asset-input-plan',
+      message: 'codec returned an invalid single-file candidate binding',
+    })
+  }
+  const binding = Object.freeze({
+    sourceKind: 'candidate' as const,
+    bindingId: candidate.bindingId,
+    role: candidate.role,
+    ownership: candidate.ownership,
+    source: context.source.ref,
+    revision: context.source.revision,
+  })
+  const compositionFingerprint = canonicalJsonStringify({
+    topology: 'single',
+    bindingId: binding.bindingId,
+    source: binding.source,
+    revision: binding.revision,
+  })
+  return Object.freeze({
+    originKind: 'single' as const,
+    bindings: Object.freeze([binding] as const),
+    primaryBindingId: binding.bindingId,
+    revisions: Object.freeze({
+      topology: 'single' as const,
+      revision: context.source.revision,
+      bindings: Object.freeze([
+        Object.freeze({ bindingId: binding.bindingId, revision: binding.revision }),
+      ] as const),
+      compositionFingerprint,
+    }),
+    bindingsFor: () => Object.freeze([]),
+    async openBinding(bindingId: string, signal?: AbortSignal): Promise<Lease<ArtifactByteSource>> {
+      throwIfAborted(signal)
+      if (bindingId !== binding.bindingId) {
+        throw new ModkitError({
+          code: 'x3.host/unknown-asset-input-binding',
+          message: `asset input has no binding ${bindingId}`,
+        })
+      }
+      return Object.freeze({ value: context.source, release: async () => undefined })
+    },
+  })
+}
+
+function codecModule(
+  module: Record<string, unknown>,
+  contributionId: string,
+): {
+  readonly createCodec: (context: ContributionContext) => Codec
+} {
+  if (module['abiVersion'] !== 1 || typeof module['createCodec'] !== 'function') {
+    throw new ModkitError({
+      code: 'x3.host/invalid-codec-module',
+      message: `activated contribution ${contributionId} does not implement CodecModule ABI v1`,
+    })
+  }
+  return module as unknown as { readonly createCodec: (context: ContributionContext) => Codec }
+}
+
+function assertCodec(value: Codec, contributionId: string): Codec {
+  if (
+    typeof value !== 'object' ||
+    value === null ||
+    typeof value.probe !== 'function' ||
+    typeof value.open !== 'function'
+  ) {
+    throw new ModkitError({
+      code: 'x3.host/invalid-codec-instance',
+      message: `contribution ${contributionId} returned an invalid codec instance`,
+    })
+  }
+  return value
+}
+
+function noServiceResolver(): ContractResolverPort {
+  const unavailable = (contract: string, major: number): never => {
+    throw new ModkitError({
+      code: 'x3.host/service-contract-unregistered',
+      message: `service contract ${contract}@${major} is unavailable in this composition`,
+    })
+  }
+  return {
+    async resolve(request) {
+      return unavailable(request.contract, request.major)
+    },
+    async resolveUnknown(request) {
+      return unavailable(request.contract, request.major)
+    },
+  }
+}
+
+function runnableCandidates(
+  options: OpenSubjectOptions,
+  offers: readonly ProviderOffer[],
+): readonly RunnableCandidate[] {
+  const candidates: RunnableCandidate[] = []
+  const path = options.path ?? options.source.ref.uri
+  for (const extension of options.inventory.extensions) {
+    for (const contribution of extension.contributions) {
+      const manifest = contribution.manifest
+      if (
+        !contribution.activationEligible ||
+        manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT ||
+        manifest.contract.major !== 1
+      ) {
+        continue
+      }
+      const spec = manifest.spec as unknown as CodecContributionSpecV1Wire
+      if (
+        !spec.openIntents.includes(options.intent) ||
+        (spec.sourceTopology !== 'single' && spec.sourceTopology !== 'bundle') ||
+        spec.probe.kind !== 'bytes' ||
+        !matchesSpec(spec, path, options.mediaType)
+      ) {
+        continue
+      }
+      for (const offer of offers) {
+        if (offer.providerId !== manifest.id) continue
+        const logicalOffer = [...offer.provides].sort((left, right) =>
+          compareUtf8(canonicalJsonStringify(left), canonicalJsonStringify(right)),
+        )[0]
+        if (logicalOffer === undefined) continue
+        candidates.push({
+          contribution,
+          extensionId: offer.extensionId,
+          contributionId: manifest.id,
+          spec,
+          offer,
+          logicalOffer,
+        })
+      }
+    }
+  }
+  return Object.freeze(
+    candidates.sort(
+      (left, right) =>
+        compareUtf8(left.contributionId, right.contributionId) ||
+        compareUtf8(left.offer.runtimeVariant, right.offer.runtimeVariant) ||
+        compareUtf8(left.logicalOffer.offerId, right.logicalOffer.offerId),
+    ),
+  )
+}
+
+async function unresolvedDescriptor(
+  options: OpenSubjectOptions,
+  detections: readonly DetectionResult[],
+): Promise<AnyDescriptor> {
+  return assembleSubjectDescriptor({
+    schemaVersion: 2,
+    subjectUri: options.source.ref.uri,
+    origin: {
+      kind: 'single',
+      binding: {
+        id: 'content',
+        role: 'content',
+        source: options.source.ref,
+        required: true,
+        ownership: 'owned',
+        revision: options.source.revision,
+        ...(options.mediaType === undefined ? {} : { mediaType: options.mediaType }),
+      },
+    },
+    interpretation: 'none',
+    candidates: detections,
+    traits: [
+      {
+        id: 'content.binary',
+        descriptorVersion: 1,
+        state: 'available',
+        ...(options.source.size === undefined
+          ? {}
+          : { parameters: { bytes: options.source.size.toString(10) } }),
+      },
+    ],
+    operations: [],
+    constraints: {
+      readOnly: true,
+      seekable: true,
+      randomAccess: true,
+      trusted: false,
+      ...(options.source.size === undefined
+        ? {}
+        : { maxDecodedBytes: options.source.size.toString(10) }),
+    },
+    dataSources: [{ contract: 'common.view/byte-range-source', major: 1 }],
+    diagnostics: [],
+    revision: options.source.revision,
+  } as AnyDescriptorWire)
+}
+
+async function textFallbackAvailable(
+  source: ArtifactByteSource,
+  signal?: AbortSignal,
+): Promise<boolean> {
+  if (source.size === undefined) return false
+  const length = Number(source.size > 65_536n ? 65_536n : source.size)
+  try {
+    const bytes = await source.read(0n, length, signal)
+    new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * One public host route from an attested inventory plus a pinned byte source to a session.
+ * Unknown or ambiguous content returns a validated unresolved descriptor and explicit fallback.
+ */
+export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubjectResult> {
+  throwIfAborted(options.signal)
+  const minimumConfidence = options.minimumConfidence ?? DEFAULT_MINIMUM_CONFIDENCE
+  const maxCandidates = options.maxCandidates ?? DEFAULT_MAX_CANDIDATES
+  if (
+    !Number.isFinite(minimumConfidence) ||
+    minimumConfidence < 0 ||
+    minimumConfidence > 1 ||
+    !Number.isSafeInteger(maxCandidates) ||
+    maxCandidates <= 0
+  ) {
+    throw new ModkitError({
+      code: 'x3.host/invalid-subject-open-policy',
+      message: 'subject-open confidence and candidate limits are invalid',
+    })
+  }
+
+  const diagnostics: Diagnostic[] = []
+  const explanations: SubjectOpenCandidateExplanation[] = []
+  const detected: DetectedCandidate[] = []
+  const offers = offersFromInventory(options.inventory)
+  const candidates = runnableCandidates(options, offers)
+  if (candidates.length > maxCandidates) {
+    diagnostics.push(
+      errorDiagnostic(
+        'x3.host/subject-candidate-limit',
+        `subject matched ${candidates.length} codecs, exceeding the host limit ${maxCandidates}`,
+      ),
+    )
+  } else {
+    const target = normalizeTarget(options.target, options.grant)
+    for (const candidate of candidates) {
+      const local: Diagnostic[] = []
+      const privateRecord = inventoryRecordFor(candidate.contribution)
+      const variant = candidate.contribution.manifest?.runtimeVariants?.find(
+        item => item.variantId === candidate.offer.runtimeVariant,
+      )
+      if (
+        privateRecord === undefined ||
+        variant === undefined ||
+        !SUPPORTED_EXECUTION_PROFILES.includes(variant.executionProfile) ||
+        (variant.executionProfile === 'trusted-in-process' &&
+          privateRecord.execution.allowTrustedInProcess !== true)
+      ) {
+        local.push(
+          errorDiagnostic(
+            'x3.host/codec-execution-unavailable',
+            `codec ${candidate.contributionId}#${candidate.offer.runtimeVariant} has no executable boundary in this host`,
+          ),
+        )
+        explanations.push({
+          contributionId: candidate.contributionId,
+          extensionId: candidate.extensionId,
+          variantId: candidate.offer.runtimeVariant,
+          offerId: candidate.logicalOffer.offerId,
+          state: 'rejected',
+          diagnostics: Object.freeze(local),
+        })
+        continue
+      }
+      const request: ProviderRequest = {
+        contract: {
+          contract: candidate.logicalOffer.contract,
+          major: candidate.logicalOffer.major,
+          range: '*',
+        },
+        target,
+        pin: {
+          providerId: candidate.offer.providerId,
+          runtimeVariant: candidate.offer.runtimeVariant,
+          offerId: candidate.logicalOffer.offerId,
+        },
+      }
+      const resolved = resolveForActivation(request, offers)
+      if (resolved.result.state !== 'resolved' || resolved.ticket === undefined) {
+        local.push(
+          errorDiagnostic(
+            'x3.host/codec-resolution-unresolved',
+            `codec candidate did not resolve: ${resolved.result.state === 'resolved' ? 'ticket unavailable' : resolved.result.reason}`,
+          ),
+        )
+        explanations.push({
+          contributionId: candidate.contributionId,
+          extensionId: candidate.extensionId,
+          variantId: candidate.offer.runtimeVariant,
+          offerId: candidate.logicalOffer.offerId,
+          state: 'rejected',
+          diagnostics: Object.freeze(local),
+        })
+        continue
+      }
+      try {
+        const activation = await activateContribution({
+          ticket: resolved.ticket,
+          grant: options.grant,
+          ...(options.policy === undefined ? {} : { policy: options.policy }),
+          ...(options.signal === undefined ? {} : { signal: options.signal }),
+        })
+        local.push(...activation.diagnostics)
+        const effectiveBudget = runtimeBudget(options.budget, candidate.spec)
+        const nestedLocks: ProviderPolicyLockEntry[] = []
+        const makeContext = (
+          grant: PermissionGrant,
+          chain: readonly string[],
+        ): ContributionContext => {
+          const contracts =
+            options.serviceDefinitions === undefined
+              ? noServiceResolver()
+              : createContractResolverPort({
+                  offers,
+                  definitions: options.serviceDefinitions,
+                  target,
+                  onResolved(request: FacetAwareProviderRequest, result) {
+                    nestedLocks.push(buildLockEntry(request, result))
+                  },
+                  async activate(
+                    selection: SelectedServiceOffer,
+                    result,
+                    signal,
+                  ): Promise<Lease<unknown>> {
+                    const key = `${selection.contract}@${selection.major}:${result.selected.offer.providerId}:${selection.offerId}`
+                    if (chain.includes(key)) {
+                      throw new ModkitError({
+                        code: 'x3.host/service-dependency-cycle',
+                        message: `service activation cycle detected at ${key}`,
+                      })
+                    }
+                    const ticket = issueActivationTicket(result, target)
+                    const nested = await activateContribution({
+                      ticket,
+                      grant,
+                      ...(options.policy === undefined ? {} : { policy: options.policy }),
+                      ...(signal === undefined ? {} : { signal }),
+                    })
+                    diagnostics.push(...nested.diagnostics)
+                    if (
+                      nested.module['abiVersion'] !== 1 ||
+                      typeof nested.module['createProvider'] !== 'function'
+                    ) {
+                      throw new ModkitError({
+                        code: 'x3.host/invalid-service-provider-module',
+                        message: `provider ${result.selected.offer.providerId} does not implement ServiceProviderModule ABI v1`,
+                      })
+                    }
+                    const createProvider = nested.module['createProvider'] as (
+                      selected: SelectedServiceOffer,
+                      context: ContributionContext,
+                    ) => Promise<Lease<unknown>> | Lease<unknown>
+                    const lease = await createProvider(
+                      selection,
+                      makeContext(nested.effectiveGrant, [...chain, key]),
+                    )
+                    if (
+                      typeof lease !== 'object' ||
+                      lease === null ||
+                      !('value' in lease) ||
+                      typeof lease.release !== 'function'
+                    ) {
+                      throw new ModkitError({
+                        code: 'x3.host/invalid-service-provider-lease',
+                        message: `provider ${result.selected.offer.providerId} returned an invalid lease`,
+                      })
+                    }
+                    return lease
+                  },
+                })
+          return Object.freeze({
+            contracts,
+            budgets: effectiveBudget,
+            diagnostics: {
+              report(item: Diagnostic) {
+                diagnostics.push(item)
+              },
+            },
+            ...(options.signal === undefined ? {} : { signal: options.signal }),
+          })
+        }
+        const codec = assertCodec(
+          codecModule(activation.module, candidate.contributionId).createCodec(
+            makeContext(activation.effectiveGrant, [candidate.contributionId]),
+          ),
+          candidate.contributionId,
+        )
+        const probeSource = boundedProbeSource(
+          options.source,
+          candidate.spec.probe as Extract<CodecContributionSpecV1Wire['probe'], { kind: 'bytes' }>,
+        )
+        const detection = snapshotDetection(
+          await codec.probe(
+            {
+              source: probeSource,
+              plan: candidate.spec.probe as Extract<
+                CodecContributionSpecV1Wire['probe'],
+                { kind: 'bytes' }
+              >,
+            },
+            options.signal,
+          ),
+          candidate.contributionId,
+        )
+        detected.push({
+          ...candidate,
+          request,
+          result: resolved.result,
+          ticket: resolved.ticket,
+          codec,
+          detection,
+          effectiveBudget,
+          activationDiagnostics: Object.freeze(local),
+          nestedLocks,
+        })
+        explanations.push({
+          contributionId: candidate.contributionId,
+          extensionId: candidate.extensionId,
+          variantId: candidate.offer.runtimeVariant,
+          offerId: candidate.logicalOffer.offerId,
+          state: 'detected',
+          confidence: detection.confidence,
+          diagnostics: Object.freeze(local),
+        })
+      } catch (error) {
+        local.push(caughtDiagnostic('probe', error))
+        explanations.push({
+          contributionId: candidate.contributionId,
+          extensionId: candidate.extensionId,
+          variantId: candidate.offer.runtimeVariant,
+          offerId: candidate.logicalOffer.offerId,
+          state: 'rejected',
+          diagnostics: Object.freeze(local),
+        })
+      }
+    }
+  }
+
+  const eligible = detected
+    .filter(candidate => candidate.detection.confidence >= minimumConfidence)
+    .sort(
+      (left, right) =>
+        right.detection.confidence - left.detection.confidence ||
+        compareUtf8(left.contributionId, right.contributionId) ||
+        compareUtf8(left.offer.runtimeVariant, right.offer.runtimeVariant),
+    )
+  const best = eligible[0]
+  const tied =
+    best === undefined
+      ? []
+      : eligible.filter(candidate => candidate.detection.confidence === best.detection.confidence)
+  if (best === undefined || tied.length !== 1) {
+    const descriptor = await unresolvedDescriptor(
+      options,
+      detected.map(candidate => candidate.detection),
+    )
+    const text = await textFallbackAvailable(options.source, options.signal)
+    return Object.freeze({
+      state: 'unresolved' as const,
+      reason:
+        candidates.length === 0
+          ? ('no-candidate' as const)
+          : best === undefined
+            ? ('no-match' as const)
+            : ('ambiguous' as const),
+      descriptor,
+      fallback: Object.freeze({
+        preferred: text ? ('text' as const) : ('hex' as const),
+        available: Object.freeze(text ? (['text', 'hex'] as const) : (['hex'] as const)),
+      }),
+      candidates: Object.freeze(explanations),
+      diagnostics: Object.freeze(diagnostics),
+    })
+  }
+
+  try {
+    const rawPlan = best.codec.planInput
+      ? await best.codec.planInput(options.source, best.detection, options.signal)
+      : {
+          originKind: 'single' as const,
+          candidate: { bindingId: 'content', role: 'content', ownership: 'owned' as const },
+          requirements: [] as const,
+        }
+    const plan = snapshotPlan(rawPlan)
+    const input = await (options.resolveInput ?? defaultResolveInput)({
+      source: options.source,
+      plan,
+      detection: best.detection,
+      ...(options.signal === undefined ? {} : { signal: options.signal }),
+    })
+    const session = await best.codec.open(
+      input,
+      options.intent,
+      best.effectiveBudget,
+      options.signal,
+    )
+    const descriptor = await assembleSubjectDescriptor(
+      (await session.descriptor()) as AnyDescriptorWire,
+    )
+    if (
+      descriptor.interpretation !== 'codec' ||
+      descriptor.identity.codecId !== best.contributionId ||
+      descriptor.subjectUri !== options.source.ref.uri ||
+      descriptor.revision !== options.source.revision
+    ) {
+      await session.dispose()
+      throw new ModkitError({
+        code: 'x3.host/subject-session-identity-mismatch',
+        message: 'opened codec session does not describe the selected source and codec',
+      })
+    }
+    const selectedExplanation = explanations.find(
+      item =>
+        item.contributionId === best.contributionId &&
+        item.variantId === best.offer.runtimeVariant &&
+        item.offerId === best.logicalOffer.offerId,
+    )
+    if (selectedExplanation !== undefined) {
+      const index = explanations.indexOf(selectedExplanation)
+      explanations[index] = Object.freeze({ ...selectedExplanation, state: 'selected' })
+    }
+    const lockText = serializePolicyLock([
+      buildLockEntry(best.request, best.result),
+      ...best.nestedLocks,
+    ])
+    return Object.freeze({
+      state: 'opened' as const,
+      session,
+      descriptor,
+      ticket: best.ticket,
+      lockText,
+      selected: Object.freeze({
+        extensionId: best.extensionId,
+        contributionId: best.contributionId,
+        variantId: best.offer.runtimeVariant,
+        offerId: best.logicalOffer.offerId,
+        confidence: best.detection.confidence,
+      }),
+      candidates: Object.freeze(explanations),
+      diagnostics: Object.freeze([...diagnostics, ...best.activationDiagnostics]),
+    })
+  } catch (error) {
+    diagnostics.push(caughtDiagnostic('input-open', error))
+    const descriptor = await unresolvedDescriptor(
+      options,
+      detected.map(candidate => candidate.detection),
+    )
+    const text = await textFallbackAvailable(options.source, options.signal)
+    return Object.freeze({
+      state: 'unresolved' as const,
+      reason: 'input-unresolved' as const,
+      descriptor,
+      fallback: Object.freeze({
+        preferred: text ? ('text' as const) : ('hex' as const),
+        available: Object.freeze(text ? (['text', 'hex'] as const) : (['hex'] as const)),
+      }),
+      candidates: Object.freeze(explanations),
+      diagnostics: Object.freeze(diagnostics),
+    })
+  }
+}

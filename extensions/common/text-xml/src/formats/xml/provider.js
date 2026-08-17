@@ -4,6 +4,7 @@ import {
   createTextSyntaxProvider as createRuntimeProvider,
   encodeText,
   failure,
+  lease,
   span,
 } from '@modkitx-x3/codec-kit/text'
 import { definition } from './definition.js'
@@ -82,6 +83,7 @@ function createXmlSyntaxProvider() {
 }
 
 export const abiVersion = 1
+export const provides = Object.freeze([definition.contract])
 export const createTextSyntaxProvider = createXmlSyntaxProvider
 export const createProvider = selection =>
-  createSelectedProvider(definition, selection, createXmlSyntaxProvider)
+  lease(createSelectedProvider(definition, selection, createXmlSyntaxProvider))

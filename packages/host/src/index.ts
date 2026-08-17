@@ -21,7 +21,20 @@ export {
   type ArtifactByteSourceBridgeOptions,
 } from './source-bridge.js'
 export {
+  openSubject,
+  type OpenedSubject,
+  type OpenSubjectOptions,
+  type OpenSubjectResult,
+  type SubjectInputResolutionContext,
+  type SubjectInputResolver,
+  type SubjectOpenCandidateExplanation,
+  type SubjectOpenCandidateState,
+  type UnresolvedSubject,
+} from './subject-open.js'
+export {
+  createServiceFacetMatcherProfileRegistry,
   createServiceContractDefinitionRegistry,
+  FACETLESS_SERVICE_MATCHER_PROFILE,
   registerServiceContractDefinitionsFromInventory,
   type ServiceContractDefinitionRegistryOptions,
 } from './service-definitions.js'

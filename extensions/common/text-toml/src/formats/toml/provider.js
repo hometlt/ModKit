@@ -4,6 +4,7 @@ import {
   createTextSyntaxProvider as createRuntimeProvider,
   encodeText,
   failure,
+  lease,
   scalar,
   span,
 } from '@modkitx-x3/codec-kit/text'
@@ -73,6 +74,7 @@ function createTomlSyntaxProvider() {
 }
 
 export const abiVersion = 1
+export const provides = Object.freeze([definition.contract])
 export const createTextSyntaxProvider = createTomlSyntaxProvider
 export const createProvider = selection =>
-  createSelectedProvider(definition, selection, createTomlSyntaxProvider)
+  lease(createSelectedProvider(definition, selection, createTomlSyntaxProvider))

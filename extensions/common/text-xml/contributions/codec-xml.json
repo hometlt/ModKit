@@ -8,10 +8,17 @@
   "displayName": "XML text data",
   "runtimeVariants": [
     {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/formats/xml/codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
       "variantId": "portable",
       "entrypoint": "./src/formats/xml/codec.js",
       "target": {
-        "environments": ["browser-worker", "node", "node-worker"]
+        "environments": ["browser-worker", "node-worker"]
       },
       "executionProfile": "worker-brokered",
       "requestedPermissionClasses": ["read-source"]

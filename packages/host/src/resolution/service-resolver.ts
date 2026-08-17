@@ -68,6 +68,11 @@ export interface ContractResolverRuntimeOptions {
     result: Extract<ResolutionResult, { state: 'resolved' }>,
     signal?: AbortSignal,
   ) => Promise<Lease<unknown>>
+  /** Observe the exact resolver-owned request/result pair before activation (locks/audit). */
+  readonly onResolved?: (
+    request: FacetAwareProviderRequest,
+    result: Extract<ResolutionResult, { state: 'resolved' }>,
+  ) => void | Promise<void>
 }
 
 /** Runtime implementation of the A-1 interface; typed and opaque requests share one gate. */
@@ -89,16 +94,17 @@ export function createContractResolverPort(
         message: `service contract ${request.contract}@${request.major} is not registered`,
       })
     }
+    const providerRequest: FacetAwareProviderRequest = {
+      contract: { contract, major: request.major },
+      target: options.target,
+      ...(request.facet === undefined ? {} : { requestFacet: request.facet }),
+      ...(request.requiredOutputs === undefined
+        ? {}
+        : { requiredOutputs: request.requiredOutputs }),
+      ...(request.operation === undefined ? {} : { operation: request.operation }),
+    }
     const result = await resolveServiceProvider(
-      {
-        contract: { contract, major: request.major },
-        target: options.target,
-        ...(request.facet === undefined ? {} : { requestFacet: request.facet }),
-        ...(request.requiredOutputs === undefined
-          ? {}
-          : { requiredOutputs: request.requiredOutputs }),
-        ...(request.operation === undefined ? {} : { operation: request.operation }),
-      },
+      providerRequest,
       options.offers,
       options.definitions,
     )
@@ -117,6 +123,7 @@ export function createContractResolverPort(
         ? {}
         : { contractSelectionKey: result.selected.contractSelectionKey }),
     } as SelectedServiceOffer
+    await options.onResolved?.(providerRequest, result)
     return options.activate(selection, result, request.signal)
   }
 

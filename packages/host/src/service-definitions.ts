@@ -21,6 +21,7 @@ import type {
   ServiceContractDefinitionSpecV1Wire,
   ServiceFacetMatchContext,
   ServiceFacetMatchResult,
+  ServiceFacetMatcherProfile,
   ServiceFacetMatcherProfileRegistry,
   ServiceFacetValidationContext,
 } from '@modkitx-x3/sdk'
@@ -42,6 +43,46 @@ export interface ServiceContractDefinitionRegistryOptions {
     schema: JsonSchemaRef,
     configuration: JsonValue | undefined,
   ) => readonly Diagnostic[] | Promise<readonly Diagnostic[]>
+}
+
+/** Standard profile for contracts whose offer and request facets are both forbidden. */
+export const FACETLESS_SERVICE_MATCHER_PROFILE = contractId('org.modkitx/facetless-matcher')
+
+const facetlessMatcher: ServiceFacetMatcherProfile = Object.freeze({
+  profile: FACETLESS_SERVICE_MATCHER_PROFILE,
+  major: 1,
+  match(context: ServiceFacetMatchContext): ServiceFacetMatchResult {
+    return context.offerFacet === undefined && context.requestFacet === undefined
+      ? { state: 'match', selectionKey: 'facetless:v1' }
+      : { state: 'no-match' }
+  },
+})
+
+/** Host-owned immutable matcher catalog with the portable facetless v1 profile built in. */
+export function createServiceFacetMatcherProfileRegistry(
+  additional: readonly ServiceFacetMatcherProfile[] = [],
+): ServiceFacetMatcherProfileRegistry {
+  const profiles = new Map<string, ServiceFacetMatcherProfile>()
+  for (const profile of [facetlessMatcher, ...additional]) {
+    if (!Number.isSafeInteger(profile.major) || profile.major < 0) {
+      throw new TypeError('service facet matcher major must be a safe non-negative integer')
+    }
+    const profileKey = `${profile.profile}@${profile.major}`
+    if (profiles.has(profileKey)) {
+      throw new TypeError(`duplicate service facet matcher ${profileKey}`)
+    }
+    profiles.set(profileKey, Object.freeze({ ...profile }))
+  }
+  const registry: ServiceFacetMatcherProfileRegistry = {
+    lookup: (profile, major) => profiles.get(`${profile}@${major}`),
+    list: () =>
+      Object.freeze(
+        [...profiles.values()].sort(
+          (left, right) => compareUtf8(left.profile, right.profile) || left.major - right.major,
+        ),
+      ),
+  }
+  return Object.freeze(registry)
 }
 
 function ownedJson<Value>(value: Value): Value {

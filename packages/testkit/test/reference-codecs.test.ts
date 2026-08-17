@@ -360,6 +360,18 @@ describe('reference codec specification stress suite', () => {
       ) as ContributionManifestV1Wire
       const result = await validateContributionManifest(manifest, registry)
       expect(result.specState, `${format}: ${JSON.stringify(result.diagnostics)}`).toBe('validated')
+      expect(manifest.runtimeVariants, `${format}: disjoint execution variants`).toEqual([
+        expect.objectContaining({
+          variantId: 'trusted-node',
+          executionProfile: 'trusted-in-process',
+          target: { environments: ['node'] },
+        }),
+        expect.objectContaining({
+          variantId: 'portable',
+          executionProfile: 'worker-brokered',
+          target: { environments: ['browser-worker', 'node-worker'] },
+        }),
+      ])
       await expect(readFile(join(codecRoots[format], entrypoints[format]))).resolves.toBeInstanceOf(
         Buffer,
       )

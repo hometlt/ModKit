@@ -3,6 +3,7 @@ import {
   createTextSyntaxProvider as createRuntimeProvider,
   encodeText,
   failure,
+  lease,
   span,
 } from '@modkitx-x3/codec-kit/text'
 import { definition } from './definition.js'
@@ -76,6 +77,7 @@ function createIniSyntaxProvider() {
 }
 
 export const abiVersion = 1
+export const provides = Object.freeze([definition.contract])
 export const createTextSyntaxProvider = createIniSyntaxProvider
 export const createProvider = selection =>
-  createSelectedProvider(definition, selection, createIniSyntaxProvider)
+  lease(createSelectedProvider(definition, selection, createIniSyntaxProvider))

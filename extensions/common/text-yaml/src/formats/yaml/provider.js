@@ -4,6 +4,7 @@ import {
   createTextSyntaxProvider as createRuntimeProvider,
   encodeText,
   failure,
+  lease,
   plainNode,
 } from '@modkitx-x3/codec-kit/text'
 import { definition } from './definition.js'
@@ -54,6 +55,7 @@ function createYamlSyntaxProvider() {
 }
 
 export const abiVersion = 1
+export const provides = Object.freeze([definition.contract])
 export const createTextSyntaxProvider = createYamlSyntaxProvider
 export const createProvider = selection =>
-  createSelectedProvider(definition, selection, createYamlSyntaxProvider)
+  lease(createSelectedProvider(definition, selection, createYamlSyntaxProvider))

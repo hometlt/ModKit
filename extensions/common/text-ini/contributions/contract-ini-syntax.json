@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/contract-definition", "major": 1 },
+  "id": "org.modkitx/ini-syntax-contract",
+  "displayName": "INI syntax service contract",
+  "spec": {
+    "schemaVersion": 1,
+    "kind": "service",
+    "contract": "common.text-data/ini-syntax",
+    "major": 1,
+    "offerFacet": { "presence": "forbidden" },
+    "requestFacet": { "presence": "forbidden" },
+    "matching": { "profile": "org.modkitx/facetless-matcher", "major": 1 },
+    "conformanceProfile": "common.text-data/ini-syntax-v1"
+  }
+}

@@ -8,10 +8,17 @@
   "displayName": "CSV text data",
   "runtimeVariants": [
     {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/families/delimited/entrypoints/csv-codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
       "variantId": "portable",
       "entrypoint": "./src/families/delimited/entrypoints/csv-codec.js",
       "target": {
-        "environments": ["browser-worker", "node", "node-worker"]
+        "environments": ["browser-worker", "node-worker"]
       },
       "executionProfile": "worker-brokered",
       "requestedPermissionClasses": ["read-source"]
