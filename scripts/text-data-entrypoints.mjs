@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 
 function contributionFiles(root) {
   const files = []
@@ -24,6 +24,16 @@ function formatIds(manifest, kind) {
   return (manifest.spec?.provides ?? [])
     .map(offer => /^common\.text-data\/([a-z0-9-]+)-syntax$/u.exec(offer?.contract)?.[1])
     .filter(Boolean)
+}
+
+/** Emit a portable ESM specifier from a generated module to a discovered entrypoint. */
+export function relativeEntrypointSpecifier(generatedFile, entrypoint) {
+  const relativePath = relative(dirname(resolve(generatedFile)), resolve(entrypoint))
+  if (isAbsolute(relativePath)) {
+    throw new Error('generated module and entrypoint must share a portable filesystem root')
+  }
+  const path = relativePath.replaceAll('\\', '/')
+  return path.startsWith('.') ? path : `./${path}`
 }
 
 /** Discover text-data modules from contribution facts; directory names never carry authority. */

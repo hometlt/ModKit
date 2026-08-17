@@ -7,6 +7,8 @@ export interface TextDataEntrypoint {
   readonly reason?: string
 }
 
+export function relativeEntrypointSpecifier(generatedFile: string, entrypoint: string): string
+
 export function discoverTextDataEntrypoints(
   repoRoot: string,
   requestedFormatIds: readonly string[],

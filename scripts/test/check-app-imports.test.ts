@@ -41,13 +41,20 @@ describe('extension-implementation import gate (MK3/27 §7/§11/§12.5)', () => 
     ).toBe(true)
     // a commented-out import is not an edge
     expect(lines.some(l => l.includes('packages/ui/src/index.ts:3'))).toBe(false)
+    expect(
+      lines.some(
+        l =>
+          l.includes('apps/desktop/generated/handwritten-catalog.js:1') &&
+          l.includes('[extension-path-import]'),
+      ),
+    ).toBe(true)
   })
 
   it('passes a clean tree and exempts scope-local generated loaders', () => {
     const { status, stdout, stderr } = runGate(['--root', join(fixturesRoot, 'clean')])
     expect(stderr).toBe('')
     expect(status).toBe(0)
-    // generated/bundled-catalog.js imports an extension entrypoint and is NOT counted
+    // generated/bundled-catalog.js has a generator authority marker and is not counted
     expect(stdout).toMatch(/app-import gate: clean \(\d+ file\(s\) scanned\)/)
   })
 

@@ -100,6 +100,24 @@ describe('deterministic Electron app catalog emission', () => {
     )
   })
 
+  it('rejects unexpected generated files instead of exempting handwritten app code', () => {
+    const root = fixtureRoot()
+    expect(run(root).status).toBe(0)
+    const generated = join(root, 'apps', 'electron', 'generated')
+    writeFileSync(join(generated, 'handwritten-loader.js'), 'export const unsafe = true\n', 'utf8')
+
+    const checked = run(root, '--check')
+    expect(checked.status).toBe(1)
+    expect(checked.stderr).toBe(
+      'Electron app catalogs contain unexpected files: handwritten-loader.js\n',
+    )
+    const emitted = run(root)
+    expect(emitted.status).toBe(1)
+    expect(emitted.stderr).toBe(
+      'Electron app catalogs contain unexpected files: handwritten-loader.js\n',
+    )
+  })
+
   it('reflects manifest priority changes instead of retaining handwritten presentation data', () => {
     const root = fixtureRoot()
     const manifestPath = join(root, 'packages', 'ui', 'contributions', 'viewer-image-stage.json')

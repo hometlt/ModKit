@@ -1,8 +1,11 @@
-import { mkdtempSync, mkdirSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { discoverTextDataEntrypoints } from '../text-data-entrypoints.mjs'
+import {
+  discoverTextDataEntrypoints,
+  relativeEntrypointSpecifier,
+} from '../text-data-entrypoints.mjs'
 
 const temporary: string[] = []
 
@@ -49,5 +52,30 @@ describe('text-data contribution entrypoint discovery', () => {
     expect(result).toHaveLength(2)
     expect(result.every(entry => entry.absolute?.includes('renamed-extension'))).toBe(true)
     expect(result.every(entry => entry.reason === undefined)).toBe(true)
+  })
+
+  it('emits portable gallery specifiers and keeps the tracked generated module path-independent', () => {
+    const checkout = join(tmpdir(), 'portable-modkit-checkout')
+    expect(
+      relativeEntrypointSpecifier(
+        join(checkout, 'examples', 'gallery', 'src', 'generated.ts'),
+        join(checkout, 'extensions', 'common', 'text-json', 'codec.js'),
+      ),
+    ).toBe('../../../extensions/common/text-json/codec.js')
+
+    const tracked = readFileSync(
+      join(
+        import.meta.dirname,
+        '..',
+        '..',
+        'examples',
+        'modkit-ui-gallery',
+        'src',
+        'text-data-entrypoints.generated.ts',
+      ),
+      'utf8',
+    )
+    expect(tracked).not.toMatch(/[A-Za-z]:[\\/]/u)
+    expect(tracked).toContain("from '../../../extensions/common/text-json/")
   })
 })

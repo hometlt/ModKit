@@ -11,6 +11,8 @@ const outputNames = Object.freeze([
   'viewer-catalog.d.ts',
   'viewer-catalog.js',
 ])
+const outputNameSet = new Set(outputNames)
+const absolutePathPattern = /(?:[A-Za-z]:[\\/]|(?:from\s+|require\(\s*)['"]\/)/u
 
 /**
  * App-owned selection policy. Contribution metadata is read from the manifests below; this table
@@ -295,9 +297,32 @@ export async function buildAppCatalogs(root = defaultRoot) {
   )
 }
 
+function validateCatalogContents(catalogs) {
+  const absolute = [...catalogs]
+    .filter(([, content]) => absolutePathPattern.test(content))
+    .map(([name]) => name)
+    .sort()
+  if (absolute.length > 0) {
+    throw new Error(`Electron app catalogs contain absolute paths: ${absolute.join(', ')}`)
+  }
+}
+
+function unexpectedOutputNames(output) {
+  if (!existsSync(output)) return []
+  return readdirSync(output, { withFileTypes: true })
+    .map(entry => entry.name)
+    .filter(name => !outputNameSet.has(name))
+    .sort()
+}
+
 export async function emitAppCatalogs({ root = defaultRoot, check = false } = {}) {
   const output = join(resolve(root), 'apps', 'electron', 'generated')
   const expected = await buildAppCatalogs(root)
+  validateCatalogContents(expected)
+  const unexpected = unexpectedOutputNames(output)
+  if (unexpected.length > 0) {
+    throw new Error(`Electron app catalogs contain unexpected files: ${unexpected.join(', ')}`)
+  }
   if (check) {
     const stale = outputNames.filter(name => {
       const path = join(output, name)
