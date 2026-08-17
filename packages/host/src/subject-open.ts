@@ -37,6 +37,10 @@ import {
 } from '@modkitx-x3/sdk'
 import { inventoryRecordFor, type Inventory, type InventoryContribution } from './inventory.js'
 import { offersFromInventory } from './offers.js'
+import {
+  buildCodecDetectionSelection,
+  serializeCodecDetectionSelection,
+} from './detection-selection.js'
 import { buildLockEntry, serializePolicyLock } from './resolution/lock.js'
 import {
   createContractResolverPort,
@@ -100,6 +104,8 @@ export interface OpenedSubject {
   readonly session: AssetSession
   readonly descriptor: AnyDescriptor
   readonly ticket: ActivationTicket
+  /** Codec detection provenance is not a provider-policy lock entry. */
+  readonly detectionSelectionText: string
   readonly lockText: string
   readonly selected: {
     readonly extensionId: string
@@ -136,8 +142,6 @@ interface RunnableCandidate {
 }
 
 interface DetectedCandidate extends RunnableCandidate {
-  readonly request: ProviderRequest
-  readonly result: Extract<ReturnType<typeof resolveForActivation>['result'], { state: 'resolved' }>
   readonly ticket: ActivationTicket
   readonly codec: Codec
   readonly detection: DetectionResult
@@ -757,8 +761,6 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
         )
         detected.push({
           ...candidate,
-          request,
-          result: resolved.result,
           ticket: resolved.ticket,
           codec,
           detection,
@@ -872,15 +874,34 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
       const index = explanations.indexOf(selectedExplanation)
       explanations[index] = Object.freeze({ ...selectedExplanation, state: 'selected' })
     }
-    const lockText = serializePolicyLock([
-      buildLockEntry(best.request, best.result),
-      ...best.nestedLocks,
-    ])
+    const record = inventoryRecordFor(best.contribution)?.publicRecord
+    if (record === undefined) {
+      await session.dispose()
+      throw new ModkitError({
+        code: 'x3.host/detection-selection-unattested',
+        message: 'selected codec has no attested inventory record',
+      })
+    }
+    const detectionSelectionText = serializeCodecDetectionSelection(
+      buildCodecDetectionSelection({
+        sourceRevision: options.source.revision,
+        extensionId: best.extensionId,
+        contributionId: best.contributionId,
+        variantId: best.offer.runtimeVariant,
+        offerId: best.logicalOffer.offerId,
+        artifactDigest: record.artifactDigest,
+        manifestDigest: record.manifestDigest,
+        sourceTopology: best.spec.sourceTopology,
+        detection: best.detection,
+      }),
+    )
+    const lockText = serializePolicyLock(best.nestedLocks)
     return Object.freeze({
       state: 'opened' as const,
       session,
       descriptor,
       ticket: best.ticket,
+      detectionSelectionText,
       lockText,
       selected: Object.freeze({
         extensionId: best.extensionId,

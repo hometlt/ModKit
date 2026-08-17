@@ -10,7 +10,7 @@
   "packages/sdk/dist/editing.js": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "packages/sdk/dist/ui-contracts/index.js": "56ea69f6fa5f7165d36c166e70bf1ca1401a2060796098f1b6520eea0e599904",
   "packages/vfs/dist/index.js": "0e4cc77bf46abb06e54318f2b6b1bec22dffdd2db11f02f573a0af0aa7dd08d5",
-  "packages/host/dist/index.js": "d08162217c425af259ab410d43a417984ef734d269fcc0947de07ed8595b7a68",
+  "packages/host/dist/index.js": "097331d5230764055521ce68056a37f0640eb18c3d189034aa0b96d39f2138ff",
   "packages/host/dist/node/index.js": "5f1bde4288e42734c54197214b5f569dc8158cf75b220210fbf365fd0d3ce970",
   "packages/host/dist/browser/index.js": "1094acc780c056db43bc6a8cf02bb1a8dd955c66b494ed4426c5c89c0b02adb8",
   "packages/ui/dist/index.js": "06972703b4f94a2cf45d4d0bd44336cc46585b865fdf4076fd11ac1c4d4dc7c6",

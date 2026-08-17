@@ -11,7 +11,9 @@ import {
   evaluateViewerContribution,
   offersFromInventory,
   openSubject,
+  parseCodecDetectionSelection,
   parsePolicyLock,
+  replayCodecDetectionSelection,
   registerServiceContractDefinitionsFromInventory,
   replayPolicyLock,
   resolvePresentationPlan,
@@ -72,6 +74,11 @@ function byteSource(bytes: Uint8Array, name: string): ArtifactByteSource {
   }
 }
 
+function minimalJpeg(): Uint8Array {
+  const frame = new Uint8Array([8, 0, 3, 0, 2, 3, 1, 0x11, 0, 2, 0x11, 0, 3, 0x11, 0])
+  return new Uint8Array([0xff, 0xd8, 0xff, 0xc0, 0, 17, ...frame, 0xff, 0xd9])
+}
+
 async function bundledInventory(directory: string) {
   const input = await loadExtensionDirectory(directory)
   return buildInventory(
@@ -87,6 +94,7 @@ async function bundledInventory(directory: string) {
 
 describe('host-owned subject opening pipeline', () => {
   it('opens PNG through the real image inventory and resolves a bounded raster presentation', async () => {
+    const inventory = await bundledInventory(imagesDir)
     const bytes = new Uint8Array(await readFile(pngFixture))
     const base = byteSource(bytes, 'favicon-32.png')
     const reads: { readonly offset: bigint; readonly length: number }[] = []
@@ -98,7 +106,7 @@ describe('host-owned subject opening pipeline', () => {
       },
     }
     const result = await openSubject({
-      inventory: await bundledInventory(imagesDir),
+      inventory,
       source,
       path: 'favicon-32.png',
       mediaType: 'image/png',
@@ -118,6 +126,31 @@ describe('host-owned subject opening pipeline', () => {
       offerId: 'raster-metadata',
       confidence: 0.999,
     })
+    expect(parsePolicyLock(result.lockText).entries).toEqual([])
+    const detectionSelection = parseCodecDetectionSelection(result.detectionSelectionText)
+    expect(detectionSelection).toMatchObject({
+      schemaVersion: 1,
+      sourceRevision: source.revision,
+      selected: {
+        extensionId: 'org.modkitx/images',
+        contributionId: 'org.modkitx/image-png',
+        variantId: 'trusted-node',
+        offerId: 'raster-metadata',
+        sourceTopology: 'single',
+        confidence: 0.999,
+        evidence: [expect.objectContaining({ kind: 'magic' })],
+      },
+    })
+    expect(
+      replayCodecDetectionSelection(inventory, source.revision, result.detectionSelectionText),
+    ).toEqual(detectionSelection)
+    expect(() =>
+      replayCodecDetectionSelection(
+        inventory,
+        revisionId('content-hash.sha256:different-source'),
+        result.detectionSelectionText,
+      ),
+    ).toThrow(/different source revision/u)
     expect(result.descriptor).toMatchObject({
       schemaVersion: 2,
       interpretation: 'codec',
@@ -222,6 +255,30 @@ describe('host-owned subject opening pipeline', () => {
       }),
     ])
 
+    // Two codecs publishing the same raster representation do not collide in the provider lock:
+    // their independently replayable detection selections carry the distinction.
+    const jpegSource = byteSource(minimalJpeg(), 'sample.jpeg')
+    const jpeg = await openSubject({
+      inventory,
+      source: jpegSource,
+      path: 'sample.jpeg',
+      mediaType: 'image/jpeg',
+      intent: 'full',
+      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+      grant: { id: 'subject-open-jpeg', classes: ['read-source'] },
+      budget,
+    })
+    if (jpeg.state !== 'opened') {
+      throw new TypeError(`unexpected JPEG ${jpeg.reason}: ${JSON.stringify(jpeg)}`)
+    }
+    expect(jpeg.lockText).toBe(result.lockText)
+    expect(parseCodecDetectionSelection(jpeg.detectionSelectionText).selected).toMatchObject({
+      contributionId: 'org.modkitx/image-jpeg',
+      offerId: 'raster-metadata',
+    })
+    expect(jpeg.detectionSelectionText).not.toBe(result.detectionSelectionText)
+
+    await jpeg.session.dispose()
     await rasterLease.release()
     await result.session.dispose()
   })
@@ -273,7 +330,12 @@ describe('host-owned subject opening pipeline', () => {
         }),
       ]),
     )
-    expect(result.lockText).toContain('org.modkitx/model-uvm')
+    expect(parsePolicyLock(result.lockText).entries).toEqual([])
+    expect(parseCodecDetectionSelection(result.detectionSelectionText).selected).toMatchObject({
+      contributionId: 'org.modkitx/model-uvm',
+      variantId: 'trusted-node',
+      offerId: 'uvm-scene',
+    })
     expect(result.diagnostics).toEqual(
       expect.arrayContaining([expect.objectContaining({ code: 'x3.host/full-process-authority' })]),
     )
@@ -386,8 +448,18 @@ describe('host-owned subject opening pipeline', () => {
         expect.objectContaining({ id: 'structure.hierarchy', state: 'available' }),
       ]),
     })
-    expect(result.lockText).toContain('org.modkitx/text-json')
-    expect(result.lockText).toContain('org.modkitx/json-syntax-default')
+    expect(parsePolicyLock(result.lockText).entries).toEqual([
+      expect.objectContaining({
+        primary: expect.objectContaining({
+          contributionId: 'org.modkitx/json-syntax-default',
+          offerId: 'json-syntax-default-v1',
+        }),
+      }),
+    ])
+    expect(parseCodecDetectionSelection(result.detectionSelectionText).selected).toMatchObject({
+      contributionId: 'org.modkitx/text-json',
+      offerId: 'syntax-document',
+    })
     expect(
       result.diagnostics.filter(item => item.code === 'x3.host/full-process-authority'),
     ).toHaveLength(2)

@@ -17,6 +17,15 @@ export {
 } from './contribution-registry.js'
 export { offersFromInventory } from './offers.js'
 export {
+  buildCodecDetectionSelection,
+  parseCodecDetectionSelection,
+  replayCodecDetectionSelection,
+  serializeCodecDetectionSelection,
+  type CodecDetectionSelection,
+  type CodecDetectionSelectionInput,
+  type CodecSourceTopology,
+} from './detection-selection.js'
+export {
   artifactByteSourceFromRandomAccess,
   type ArtifactByteSourceBridgeOptions,
 } from './source-bridge.js'
