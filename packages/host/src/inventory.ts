@@ -37,6 +37,12 @@ export interface ArtifactAttestationInput {
   readonly artifactRoot: URL
   /** Recompute/verify immediately before import; false means the artifact changed. */
   readonly verifyArtifactDigest: (expected: string) => boolean | Promise<boolean>
+  /**
+   * Per-file digests (posix path relative to `artifactRoot` → `sha256:…`) taken in the same walk
+   * as `artifactDigest`. Optional for sources that cannot enumerate files; a worker backend then
+   * falls back to hashing only the entrypoint at activation.
+   */
+  readonly fileDigests?: Readonly<Record<string, string>>
 }
 
 /** Host-owned installation provenance. Extension-authored manifests cannot set this policy. */
@@ -108,6 +114,7 @@ export interface PrivateInventoryRecord {
   readonly publicRecord: InventoryRecord
   readonly manifest: ContributionManifestV1
   readonly verifyArtifactDigest: ArtifactAttestationInput['verifyArtifactDigest']
+  readonly fileDigests?: Readonly<Record<string, string>>
   readonly artifactRoot: URL
   readonly execution: ExtensionExecutionPolicy
 }
@@ -286,6 +293,9 @@ export async function buildInventory(
           publicRecord: record,
           manifest: ownedManifest,
           verifyArtifactDigest: input.artifact.verifyArtifactDigest,
+          ...(input.artifact.fileDigests === undefined
+            ? {}
+            : { fileDigests: Object.freeze({ ...input.artifact.fileDigests }) }),
           artifactRoot: new URL(input.artifact.artifactRoot.href),
           execution: execution.policy,
         })

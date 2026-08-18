@@ -103,9 +103,28 @@ and no worker survives; entrypoint outside the root → `execution-load-rejected
 `artifact-not-pinned`; `https:` entrypoint refused before spawn; policy ceilings; `release()`
 idempotent and calls afterwards → `endpoint-closed`.
 
-**Honest gaps (R3b).** (1) The entrypoint digest is taken by the backend at activation: a window
-remains between the gate's `verifyArtifactDigest` and this read — closing it means the inventory
-recording per-file digests and the gate handing the entrypoint's digest to the backend. (2)
+**R3b-1 (same day) — verified multi-file loading, real extensions in the worker.** The node
+inventory loader records per-file digests in the same walk as the artifact digest
+(`ArtifactAttestationInput.fileDigests`, kept in the private inventory record); the gate hands them
+to the backend (`ExecutionBackendActivation.fileDigests`) — still valid because the gate re-verified
+the artifact digest just before — and also emits the product-facing `x3.host/worker-shared-process`
+diagnostic next to the trusted one. The worker bootstrap now installs synchronous module hooks
+(`module.registerHooks`): every module under the artifact root (`node_modules` excluded) is read
+once, verified against the map (`x3.host/artifact-digest-mismatch` on change,
+`x3.host/execution-load-rejected` for a file the inventory never listed) and handed to the evaluator
+as those bytes — no `data:` trick, `import.meta.url` intact, no window between check and
+evaluation; relative/absolute imports that escape the artifact are refused, bare specifiers
+resolved by Node from inside the artifact (its `node_modules`, workspace links included) and a
+dependency's own internal imports load normally but unverified — SB-1 honesty, dependency
+digests are SB-4. Without a digest map the entrypoint alone is verified (`entrypointDigest`) and its
+imports are `x3.host/artifact-not-pinned`. Proof: the real bundled **`text-json` codec** — inventoried
+through `loadExtensionDirectory`, multi-file entrypoint + `@modkitx-x3/codec-kit`/sdk/core
+dependencies — activates in a worker through the backend SPI and its probe detects JSON; a tampered
+helper is refused, an unlisted file is refused, a dependency through `node_modules` loads, an
+in-artifact `../outside.mjs` escape is refused (12 tests, 3/3 stable).
+
+**Honest gaps (R3b-2…).** (1) A source that cannot enumerate files (no `fileDigests`) still gets
+the activation-time entrypoint hash with its small window. (2)
 `ContributionContext.contracts` and `AssetSession.operations().invoke` options (`signal`,
 `onProgress`) do not cross yet. (3) `AssetInput`/`ArtifactSource` marshalling covers the single/
 bundle/namespace shapes' fields listed in the ABI surfaces; derived inputs and `openMaterialized`

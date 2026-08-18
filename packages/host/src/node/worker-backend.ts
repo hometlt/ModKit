@@ -94,6 +94,14 @@ interface ActiveWorker {
 }
 
 const sha256 = (bytes: Uint8Array) => `sha256:${createHash('sha256').update(bytes).digest('hex')}`
+
+/** Posix path of `entrypoint` relative to `artifactRoot` (the key of the inventory digest map). */
+function artifactRelative(artifactRoot: URL, entrypoint: URL): string {
+  const root = artifactRoot.href.endsWith('/') ? artifactRoot.href : `${artifactRoot.href}/`
+  return entrypoint.href.startsWith(root)
+    ? decodeURIComponent(entrypoint.href.slice(root.length))
+    : ''
+}
 const delay = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms).unref())
 
 function framePortOver(port: import('node:worker_threads').MessagePort): FramePort {
@@ -144,6 +152,7 @@ export function createNodeWorkerBackend(options: NodeWorkerBackendOptions = {}):
         port: channel.port2,
         limits,
         artifactRoot: context.artifactRoot.href,
+        ...(context.fileDigests === undefined ? {} : { fileDigests: { ...context.fileDigests } }),
         foreignSurfaces: foreignSurfaces.map(item => ({
           contract: item.contract,
           major: item.major,
@@ -268,9 +277,12 @@ export function createNodeWorkerBackend(options: NodeWorkerBackendOptions = {}):
         message: `the worker backend loads file: entrypoints only, received ${context.entrypoint.protocol}`,
       })
     }
-    // the gate verified the artifact; hash the exact bytes of the entrypoint now so the worker can
+    // the inventory's per-file digest of the entrypoint (still valid: the gate re-verified the
+    // artifact digest just now) — or, without a map, the exact bytes hashed here so the worker can
     // refuse anything that changes between here and evaluation
-    const entrypointDigest = sha256(await readFile(fileURLToPath(context.entrypoint)))
+    const entrypointDigest =
+      context.fileDigests?.[artifactRelative(context.artifactRoot, context.entrypoint)] ??
+      sha256(await readFile(fileURLToPath(context.entrypoint)))
     await options.afterEntrypointDigest?.(entrypointDigest)
     const active = await spawn(context)
     report({

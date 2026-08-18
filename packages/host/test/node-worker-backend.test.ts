@@ -4,10 +4,11 @@
  * inputs, verify-after-load, one-load/containment rules, policy ceilings and release semantics
  * (THREAT_MODEL_WORKER_BOUNDARY acc-1, acc-6, acc-7, acc-9, acc-11).
  */
-import { mkdtempSync, copyFileSync, writeFileSync, rmSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { Diagnostic } from '@modkitx-x3/core'
 import type { AssetInput, ContributionContext, ResourceBudget } from '@modkitx-x3/sdk'
@@ -23,6 +24,7 @@ import {
   WORKER_SHARED_PROCESS_DIAGNOSTIC,
 } from '../src/node/worker-backend.js'
 import type { ActivationTicket } from '../src/security/gate.js'
+import { loadExtensionDirectory } from '../src/node/loader.js'
 
 // the bootstrap is a published entry: tests run the backend from source but the worker needs the
 // built file (pnpm build), exactly like the testkit demo-worker fixture
@@ -329,4 +331,144 @@ describe('node worker backend — verify-after-load, containment and policy', ()
       code: 'x3.host/rpc-endpoint-closed',
     })
   }, 20_000)
+})
+
+describe('node worker backend — verified multi-file loading through module hooks', () => {
+  const sha256 = (bytes: Uint8Array) => `sha256:${createHash('sha256').update(bytes).digest('hex')}`
+  function digestsOf(dir: string, files: readonly string[]): Record<string, string> {
+    const out: Record<string, string> = {}
+    for (const file of files) out[file] = sha256(readFileSync(join(dir, file)))
+    return out
+  }
+  function tempArtifact(files: Record<string, string | URL>): { root: URL; dir: string } {
+    const dir = mkdtempSync(join(tmpdir(), 'x3-worker-multi-'))
+    tempDirs.push(dir)
+    for (const [name, content] of Object.entries(files)) {
+      mkdirSync(join(dir, name, '..'), { recursive: true })
+      if (content instanceof URL) copyFileSync(content, join(dir, name))
+      else writeFileSync(join(dir, name), content, 'utf8')
+    }
+    return { root: pathToFileURL(`${dir}/`), dir }
+  }
+  async function activateWith(
+    root: URL,
+    entrypoint: string,
+    fileDigests: Record<string, string> | undefined,
+  ): Promise<ExecutionModuleLease> {
+    const registry = createExecutionBackendRegistry([backend()])
+    const lease = await activateExecutionBackend(registry, {
+      ...activation(new URL(entrypoint, root), root),
+      ...(fileDigests === undefined ? {} : { fileDigests }),
+    })
+    leases.push(lease)
+    return lease
+  }
+  const probeOf = (lease: ExecutionModuleLease) =>
+    (
+      lease.module['createCodec'] as (c: ContributionContext) => {
+        probe(r: unknown): Promise<{ confidence: number }>
+      }
+    )(context([]))
+
+  it('a multi-file entrypoint loads when every artifact file is verified against the inventory digests', async () => {
+    const { root, dir } = tempArtifact({
+      'entry.mjs': new URL('imports-neighbour.mjs', fixtureRoot),
+      'helper.mjs': new URL('helper.mjs', fixtureRoot),
+    })
+    const lease = await activateWith(root, 'entry.mjs', digestsOf(dir, ['entry.mjs', 'helper.mjs']))
+    expect((await probeOf(lease).probe({ source: byteSource([1]), plan: {} })).confidence).toBe(0)
+  }, 20_000)
+
+  it('a helper modified after the inventory is refused with a digest mismatch; a file the inventory never listed is refused too', async () => {
+    const tampered = tempArtifact({
+      'entry.mjs': new URL('imports-neighbour.mjs', fixtureRoot),
+      'helper.mjs': new URL('helper.mjs', fixtureRoot),
+    })
+    const digests = digestsOf(tampered.dir, ['entry.mjs', 'helper.mjs'])
+    writeFileSync(
+      join(tampered.dir, 'helper.mjs'),
+      'export const helper = () => ({ confidence: 9 })\n',
+      'utf8',
+    )
+    await expect(activateWith(tampered.root, 'entry.mjs', digests)).rejects.toMatchObject({
+      code: 'x3.host/artifact-digest-mismatch',
+    })
+
+    const unlisted = tempArtifact({
+      'entry.mjs': new URL('imports-neighbour.mjs', fixtureRoot),
+      'helper.mjs': new URL('helper.mjs', fixtureRoot),
+    })
+    await expect(
+      activateWith(unlisted.root, 'entry.mjs', digestsOf(unlisted.dir, ['entry.mjs'])),
+    ).rejects.toMatchObject({ code: 'x3.host/execution-load-rejected' })
+  }, 20_000)
+
+  it('dependencies resolved through the artifact node_modules load (unverified, SB-1); other escapes are refused', async () => {
+    const { root, dir } = tempArtifact({
+      'entry.mjs':
+        "import { helper } from 'dep'\nexport const abiVersion = 1\nexport function createCodec() { return { probe: async () => helper() } }\n",
+      'node_modules/dep/package.json':
+        '{ "name": "dep", "type": "module", "exports": "./index.mjs" }\n',
+      'node_modules/dep/index.mjs': 'export const helper = () => ({ confidence: 0.5 })\n',
+    })
+    const lease = await activateWith(root, 'entry.mjs', digestsOf(dir, ['entry.mjs']))
+    expect((await probeOf(lease).probe({ source: byteSource([1]), plan: {} })).confidence).toBe(0.5)
+
+    const escaping = tempArtifact({
+      'entry.mjs':
+        "import '../outside.mjs'\nexport const abiVersion = 1\nexport function createCodec() { return {} }\n",
+    })
+    writeFileSync(join(escaping.dir, '..', 'outside.mjs'), 'export const x = 1\n', 'utf8')
+    await expect(
+      activateWith(escaping.root, 'entry.mjs', digestsOf(escaping.dir, ['entry.mjs'])),
+    ).rejects.toMatchObject({ code: 'x3.host/execution-load-rejected' })
+    rmSync(join(escaping.dir, '..', 'outside.mjs'), { force: true })
+  }, 20_000)
+})
+
+describe('node worker backend — a real bundled extension codec runs in the worker', () => {
+  it('text-json: inventoried through loadExtensionDirectory, its multi-file entrypoint and workspace dependencies load, probe detects JSON', async () => {
+    const extensionDir = fileURLToPath(
+      new URL('../../../extensions/common/text-json/', import.meta.url),
+    )
+    const loaded = await loadExtensionDirectory(extensionDir)
+    const artifact = loaded.artifact
+    expect(artifact.fileDigests).toBeDefined()
+    const registry = createExecutionBackendRegistry([backend()])
+    const entrypoint = new URL(
+      './src/families/json/entrypoints/json-codec.js',
+      artifact.artifactRoot,
+    )
+    const lease = await activateExecutionBackend(registry, {
+      ...activation(entrypoint, artifact.artifactRoot),
+      ...(artifact.fileDigests === undefined ? {} : { fileDigests: artifact.fileDigests }),
+    })
+    leases.push(lease)
+    const codec = (
+      lease.module['createCodec'] as (c: ContributionContext) => {
+        probe(
+          request: unknown,
+          signal?: AbortSignal,
+        ): Promise<{ codecId: string; confidence: number }>
+      }
+    )(context([]))
+    const json = new TextEncoder().encode('{"hello": ["world", 1, true]}')
+    const source = {
+      ref: { uri: 'file:///demo.json' },
+      revision: 'rev-1',
+      kind: 'bytes',
+      size: BigInt(json.length),
+      read: async (offset: bigint, length: number) =>
+        json.slice(Number(offset), Number(offset) + length),
+      stream: async function* () {
+        yield json
+      },
+    }
+    const detection = await codec.probe({
+      source,
+      plan: { kind: 'bytes', ranges: [{ from: 'start', length: 4096 }], maxBytes: 4096 },
+    })
+    expect(detection.codecId).toBe('org.modkitx/text-json')
+    expect(detection.confidence).toBeGreaterThan(0.5)
+  }, 30_000)
 })

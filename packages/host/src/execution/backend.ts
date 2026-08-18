@@ -14,6 +14,12 @@ export interface ExecutionBackendActivation {
   readonly ticket: ActivationTicket
   readonly entrypoint: URL
   readonly artifactRoot: URL
+  /**
+   * Per-file digests of the artifact as inventoried (posix path relative to `artifactRoot` →
+   * `sha256:…`), still valid because the gate re-verified the artifact digest just now. A backend
+   * that evaluates files elsewhere verifies each one against this map right before evaluation.
+   */
+  readonly fileDigests?: Readonly<Record<string, string>>
   readonly variant: RuntimeVariantDeclaration
   readonly target: RuntimeTarget
   readonly grant: PermissionGrant

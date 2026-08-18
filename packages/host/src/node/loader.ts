@@ -49,8 +49,20 @@ function sha256(value: Uint8Array | string): string {
   return `sha256:${createHash('sha256').update(value).digest('hex')}`
 }
 
-function artifactDigest(root: string): string {
+interface ArtifactDigests {
+  readonly artifactDigest: string
+  /** Every artifact file (posix path relative to the root) → `sha256:…` of its contents. */
+  readonly fileDigests: Readonly<Record<string, string>>
+}
+
+/**
+ * One walk yields both the tree digest (paths + contents, the inventory identity) and per-file
+ * digests: an execution backend that evaluates files inside a worker verifies each one against
+ * this map right before evaluation, closing the window between the gate's check and the load.
+ */
+function artifactDigests(root: string): ArtifactDigests {
   const hash = createHash('sha256')
+  const fileDigests: Record<string, string> = {}
   for (const path of listArtifactFiles(root)) {
     const pathBytes = Buffer.from(path, 'utf8')
     const contents = readFileSync(join(root, path))
@@ -61,8 +73,13 @@ function artifactDigest(root: string): string {
     hash.update(Buffer.from(String(contents.byteLength)))
     hash.update(Buffer.from([0]))
     hash.update(contents)
+    fileDigests[path] = sha256(contents)
   }
-  return `sha256:${hash.digest('hex')}`
+  return { artifactDigest: `sha256:${hash.digest('hex')}`, fileDigests: Object.freeze(fileDigests) }
+}
+
+function artifactDigest(root: string): string {
+  return artifactDigests(root).artifactDigest
 }
 
 function readJsonIfExists(path: string): unknown {
@@ -107,7 +124,8 @@ export async function loadExtensionDirectory(
       }
     }
   }
-  const initialArtifactDigest = artifactDigest(dir)
+  const initial = artifactDigests(dir)
+  const initialArtifactDigest = initial.artifactDigest
   const artifactRoot = pathToFileURL(`${dir}${sep}`)
   return {
     source: dir.split(sep).join('/'),
@@ -119,6 +137,7 @@ export async function loadExtensionDirectory(
       inventoryRecordId: `artifact:${initialArtifactDigest}`,
       artifactDigest: initialArtifactDigest,
       artifactRoot,
+      fileDigests: initial.fileDigests,
       verifyArtifactDigest: expected => artifactDigest(dir) === expected,
     },
   }

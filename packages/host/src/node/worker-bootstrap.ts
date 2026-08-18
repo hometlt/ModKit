@@ -6,11 +6,16 @@
  *    surface registry the host built (standard data-source surfaces + runtime-ABI surfaces + the
  *    foreign definition surfaces handed over as data);
  *  - serves exactly one `load`: the module URL must be a `file:` URL whose real path stays inside
- *    the artifact root, the entrypoint bytes are read once, re-hashed against `entrypointDigest`
- *    and evaluated *from those bytes* (a `data:` module) — never a second read from disk, so the
- *    gate's digest check and the evaluation cannot disagree; a module that needs relative imports
- *    is refused with `x3.host/artifact-not-pinned` instead of falling back to a `file:` import
- *    (§8 decision 3: no silent downgrade);
+ *    the artifact root; every module of the graph that lives inside the artifact is loaded through
+ *    synchronous module hooks (`module.registerHooks`) that read the file once, verify its bytes
+ *    against the per-file digest the inventory recorded (`fileDigests`) and hand *those bytes* to
+ *    the evaluator — never a second read from disk, so the gate's digest check and the evaluation
+ *    cannot disagree; a file the inventory does not know is refused, a modified one is
+ *    `x3.host/artifact-digest-mismatch`. Bare dependencies resolved through the artifact's
+ *    `node_modules` and `node:` builtins load normally but unverified (SB-1 honesty: the worker
+ *    shares the process anyway; a digest map that covers dependencies is SB-4 territory). Without a
+ *    digest map only the entrypoint is verified (`entrypointDigest`) and its imports are refused as
+ *    `x3.host/artifact-not-pinned` (§8 decision 3: no silent downgrade);
  *  - re-assembles the ABI objects the module expects from what crosses the wire: the
  *    `ContributionContext` (`budgets` copied, `diagnostics` a host capability, `contracts` a port
  *    that refuses — service resolution from a worker is not in v1), an `AssetInput` (fields +
@@ -22,7 +27,9 @@
  */
 
 import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import { readFile, realpath } from 'node:fs/promises'
+import { registerHooks } from 'node:module'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { workerData, type MessagePort } from 'node:worker_threads'
 import { ModkitError, type Diagnostic } from '@modkitx-x3/core'
@@ -46,6 +53,8 @@ interface BootstrapData {
   readonly limits: ProtocolLimits
   readonly artifactRoot: string
   readonly foreignSurfaces: readonly DataSourceSurfaceSource[]
+  /** Per-file digests of the artifact as inventoried; absent → entrypoint-only verification. */
+  readonly fileDigests?: Readonly<Record<string, string>>
 }
 
 const data = workerData as BootstrapData
@@ -63,7 +72,19 @@ function framePort(port: MessagePort): FramePort {
 
 const sha256 = (bytes: Uint8Array) => `sha256:${createHash('sha256').update(bytes).digest('hex')}`
 
-async function containedRealPath(moduleUrl: string, artifactRoot: string): Promise<string> {
+// ---------------------------------------------------------------------------------------------
+// verified loading
+
+const rootPath = fileURLToPath(new URL(data.artifactRoot))
+let rootReal: string | undefined
+const rootRealPath = async (): Promise<string> => {
+  rootReal ??= await realpath(rootPath)
+  return rootReal
+}
+const rootHref = (real: string) =>
+  pathToFileURL(real.endsWith('/') || real.endsWith('\\') ? real : `${real}/`).href
+
+async function containedRealPath(moduleUrl: string): Promise<string> {
   const url = new URL(moduleUrl)
   if (url.protocol !== 'file:') {
     throw new ModkitError({
@@ -71,19 +92,121 @@ async function containedRealPath(moduleUrl: string, artifactRoot: string): Promi
       message: `worker loads file: modules only, received ${url.protocol}`,
     })
   }
-  const rootPath = await realpath(fileURLToPath(new URL(artifactRoot)))
   const modulePath = await realpath(fileURLToPath(url))
-  const rootUrl = pathToFileURL(
-    rootPath.endsWith('/') || rootPath.endsWith('\\') ? rootPath : `${rootPath}/`,
-  ).href
-  const moduleHref = pathToFileURL(modulePath).href
-  if (!moduleHref.startsWith(rootUrl)) {
+  if (!pathToFileURL(modulePath).href.startsWith(rootHref(await rootRealPath()))) {
     throw new ModkitError({
       code: 'x3.host/execution-load-rejected',
       message: 'module real path escapes the artifact root',
     })
   }
   return modulePath
+}
+
+/** Posix path of a file URL relative to the artifact root, or undefined when outside/node_modules. */
+function artifactRelativePath(url: string): string | undefined {
+  if (!url.startsWith('file:')) return undefined
+  const rootUrl = rootHref(rootPath)
+  const realRoot = rootReal === undefined ? undefined : rootHref(rootReal)
+  const base = url.startsWith(rootUrl)
+    ? rootUrl
+    : realRoot !== undefined && url.startsWith(realRoot)
+      ? realRoot
+      : undefined
+  if (base === undefined) return undefined
+  const relative = decodeURIComponent(url.slice(base.length))
+  if (relative.split('/').includes('node_modules')) return undefined
+  return relative
+}
+
+/** Relative (`./`, `../`), absolute (`/`, drive letter) or `file:` specifiers — as opposed to bare package names. */
+function isPathSpecifier(specifier: string): boolean {
+  return (
+    specifier === '.' ||
+    specifier === '..' ||
+    specifier.startsWith('./') ||
+    specifier.startsWith('../') ||
+    specifier.startsWith('/') ||
+    specifier.startsWith('file:') ||
+    /^[a-zA-Z]:[\\/]/.test(specifier)
+  )
+}
+
+const verified = new Set<string>()
+let hooksInstalled = false
+let entrypointRelative: string | undefined
+
+/**
+ * Module hooks: everything under the artifact root (except `node_modules`) is served from bytes
+ * that were verified against the inventory's per-file digests; a file the map does not list is
+ * refused. Other URLs (`node:`, dependencies under `node_modules`) take the default path.
+ */
+function installHooks(): void {
+  if (hooksInstalled) return
+  hooksInstalled = true
+  registerHooks({
+    resolve(specifier, context, nextResolve) {
+      const resolved = nextResolve(specifier, context)
+      const url = resolved.url
+      if (url.startsWith('node:') || url.startsWith('data:')) return resolved
+      if (!url.startsWith('file:')) {
+        throw new ModkitError({
+          code: 'x3.host/execution-load-rejected',
+          message: `worker refuses ${url.split(':')[0] ?? '?'}: imports`,
+        })
+      }
+      const relative = artifactRelativePath(url)
+      if (relative === undefined) {
+        // outside the artifact. Allowed when it is a dependency: a bare specifier resolved by
+        // Node's algorithm from inside the artifact (its node_modules, workspace links included),
+        // or anything imported by a module that itself lives outside the artifact (a dependency's
+        // own files). A relative/absolute import from inside the artifact that lands outside it is
+        // an escape and is refused.
+        const bare = !isPathSpecifier(specifier)
+        const parentInside =
+          context.parentURL !== undefined && artifactRelativePath(context.parentURL) !== undefined
+        if (parentInside && !bare) {
+          throw new ModkitError({
+            code: 'x3.host/execution-load-rejected',
+            message: 'import escapes the artifact root and is not a declared dependency',
+            context: { specifier },
+          })
+        }
+        return resolved
+      }
+      if (data.fileDigests === undefined && relative !== entrypointRelative) {
+        throw new ModkitError({
+          code: 'x3.host/artifact-not-pinned',
+          message:
+            'the entrypoint imports other artifact files but the inventory recorded no per-file digests',
+          context: { specifier },
+        })
+      }
+      return resolved
+    },
+    load(url, context, nextLoad) {
+      const relative = artifactRelativePath(url)
+      if (relative === undefined) return nextLoad(url, context)
+      const bytes = readFileSync(fileURLToPath(url))
+      const expected = data.fileDigests?.[relative]
+      if (data.fileDigests !== undefined) {
+        if (expected === undefined) {
+          throw new ModkitError({
+            code: 'x3.host/execution-load-rejected',
+            message: `${relative} is not part of the inventoried artifact`,
+          })
+        }
+        if (sha256(bytes) !== expected) {
+          throw new ModkitError({
+            code: 'x3.host/artifact-digest-mismatch',
+            message: `${relative} changed after the inventory recorded it and will not be evaluated`,
+          })
+        }
+      }
+      verified.add(relative)
+      // hand the verified bytes to the evaluator: no second read, no window
+      return { format: 'module', shortCircuit: true, source: bytes }
+    },
+  })
 }
 
 let loads = 0
@@ -96,7 +219,11 @@ async function loader(request: LoadRequest): Promise<LoadedModule> {
       message: 'a worker serves exactly one load',
     })
   }
-  const modulePath = await containedRealPath(request.moduleUrl, data.artifactRoot)
+  const modulePath = await containedRealPath(request.moduleUrl)
+  const moduleUrl = pathToFileURL(modulePath).href
+  entrypointRelative = artifactRelativePath(moduleUrl)
+  // the entrypoint's own bytes are verified against the digest the host took (or the inventory
+  // map, whichever the hooks see first); read once here for the explicit entrypoint check
   const bytes = await readFile(modulePath)
   if (request.entrypointDigest !== undefined && sha256(bytes) !== request.entrypointDigest) {
     throw new ModkitError({
@@ -104,30 +231,8 @@ async function loader(request: LoadRequest): Promise<LoadedModule> {
       message: 'the entrypoint changed after the host verified it and will not be evaluated',
     })
   }
-  // evaluate exactly the verified bytes; relative imports cannot resolve from a data: module and
-  // are refused rather than re-read from disk
-  let module: Record<string, unknown>
-  try {
-    module = (await import(`data:text/javascript;base64,${bytes.toString('base64')}`)) as Record<
-      string,
-      unknown
-    >
-  } catch (error) {
-    const code = (error as { code?: string }).code
-    if (
-      code === 'ERR_UNSUPPORTED_RESOLVE_REQUEST' ||
-      code === 'ERR_MODULE_NOT_FOUND' ||
-      code === 'ERR_INVALID_URL'
-    ) {
-      throw new ModkitError({
-        code: 'x3.host/artifact-not-pinned',
-        message:
-          'the entrypoint imports other files; the worker backend evaluates verified bytes only',
-        context: { reason: code },
-      })
-    }
-    throw error
-  }
+  installHooks()
+  const module = (await import(moduleUrl)) as Record<string, unknown>
   return {
     module: wrapModule(module),
     surface: ABI_CODEC_MODULE,

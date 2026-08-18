@@ -370,6 +370,7 @@ export async function activateContribution(request: ActivationRequest): Promise<
     ticket,
     entrypoint: entryUrl,
     artifactRoot: privateRecord.artifactRoot,
+    ...(privateRecord.fileDigests === undefined ? {} : { fileDigests: privateRecord.fileDigests }),
     variant,
     target: ticket.target,
     grant: child,
@@ -377,6 +378,17 @@ export async function activateContribution(request: ActivationRequest): Promise<
   })
 
   const diagnostics: Diagnostic[] = []
+  if (variant.executionProfile === 'worker-brokered') {
+    diagnostics.push(
+      diagnostic(
+        'information',
+        'x3.host/worker-shared-process',
+        `«${manifest.id}» runs worker-brokered: a crash, hang or protocol violation of this code is isolated from the host, but the worker shares the process — it is not a security sandbox (24 §6.1 SB-1).`,
+        [manifest.id],
+        { grant: child.id, classes: child.classes },
+      ),
+    )
+  }
   if (variant.executionProfile === 'trusted-in-process') {
     diagnostics.push(
       diagnostic(
