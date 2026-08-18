@@ -6,6 +6,31 @@ overrides a canonical or detailed owner.
 
 ---
 
+## MK3 docs moved into the lab + execution-boundary decisions recorded (Root/Fable, 2026-08-18)
+
+**What changed.** `modkitx/docs/MK3` (39 files: 00–31, `adr/`, `uk-a/`) is copied to
+`docs/MK3` in this repository; from now on the lab copy is the working place and the owner copy is
+a frozen snapshot dated 2026-08-14 (nothing was deleted or edited in `modkitx`; the owner repository
+stays read-only for the lab). The copy is prettier-normalized (`format:check .` covers it: LF line
+endings, aligned tables, embedded code samples formatted) — `diff -w` against the snapshot shows
+only the intentional edits below. Links of the form `../architecture/*` and `../tasks-active/*`
+still point at the `modkitx` repository (17 targets; stated in the README banner). New:
+`docs/MK3/32-execution-boundary-and-method-surfaces.md` (capability-RPC, method surfaces, ABI
+surfaces, Node worker backend, acceptance, open questions, evidence) and
+`docs/MK3/adr/ADR-HOST-001-capability-rpc-and-method-surfaces.md` (Accepted). Dated «Принято
+2026‑08‑18» additions: 02 §11.1 (method surface), 23 §5.1 + §16 invariant, 24 §5 profile names per
+the Q77 enum + §6.1.1 rung status + §8 activation chain + §17 status, 27 §0.8/§6/§7, 10 §22,
+11 (Q86–Q91 resolved), 09 §14 (next stages), 22 §8, 29 §13; README move banner and `Updated`;
+`adr/README.md` index row. The `DATA_SOURCE_METHODS`/`REMOTE_VALUE_METHODS` allowlist in
+`apps/electron/electron/main.cjs` is described honestly as still present until R6 — it lost its
+authority status, not its bytes.
+
+**Not done here.** No owner-doc write-back; the `../architecture` and `../tasks-active` trees were
+not copied (they are not MK3 and the owner keeps them); the roadmap after this slice is in
+`docs/MK3/09-development-roadmap.md` §14 and `PLAN_FABLE_NEXT_2026-08-18.md`.
+
+---
+
 ## F1/F4b follow-ups — in-process hostile kit cases, big transfers, acc-8/acc-9/acc-10 (Agent, 2026-08-18)
 
 **What exists.** Four new in-process hostile cases in the conformance kit
