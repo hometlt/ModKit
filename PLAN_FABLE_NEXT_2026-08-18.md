@@ -61,8 +61,11 @@ owner‑документы; каждый пункт имеет свой file sco
   spawn path `spawnWorkerRealm`, единый `framePortFromMessagePort` в `host/execution`, T6 fixture
   `env-report`). **S1b** — worker backend подключён во все Node composition roots (realm
   `node-worker`, `createNodeExecutionBackends`, Electron открывает subjects для worker‑realm'а,
-  провайдеры в worker'ах через `x3.abi/service-provider-module@1`). Дальше: S2 остаток протокола 1.1,
-  S3 R4/R5 (NXT‑101B, probe grant), S4 R6 (Electron IPC → capability‑RPC).
+  провайдеры в worker'ах через `x3.abi/service-provider-module@1`). Затем **S2** (протокол 1.1: `has`,
+  opt‑in `nextBatch`, invoke placements, derived inputs), **S3** (NXT‑101B сигнатурный индекс +
+  probe‑grant seam + detection‑hostile fixtures), **S4/R6** (Electron subject‑IPC на capability‑RPC,
+  allowlist'ы удалены, kit `electron:MessagePortMain-shape`). Дальше: browser worker backend,
+  VFS/container (NXT‑200/201), `process-brokered` по gate.
 - **Состояние гейтов после F1** (та же последовательность, что `pnpm check`, но lint/format без
   `NexusForgeUI/`): build 41 entries, bench gate, eslint, prettier, **71 test files / 551 tests**,
   schemas/manifests/tokens/icons/facilities, `apps:check` 16 cases, `legacy gate` clean (380),

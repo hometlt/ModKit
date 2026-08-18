@@ -18,10 +18,10 @@ SB‑0…SB‑5), 27 (envelope/target tree), 10 (acceptance), ADR‑HOST‑001.
 2. **Method surface — данные contract definition, не код.** Какие методы у объекта контракта, что
    каждый возвращает и где лежит `AbortSignal` — это поле `surface` в `contract-definition-spec.v1`
    (обе ветки: `data-source` и `service`). Host, транспорты и приложения выводят прокси из surface;
-   ни один из них не держит свой список методов как authority. Единственный остаток —
-   `DATA_SOURCE_METHODS`/`REMOTE_VALUE_METHODS` в `apps/electron/electron/main.cjs`: временный
-   allowlist старого IPC, лишённый статуса authority; удаляется при переводе Electron IPC на
-   capability‑RPC (R6, документ 09 §14).
+   ни один из них не держит списка методов. **R6 закрыт (S4, 2026‑08‑18):** Electron subject‑IPC
+   переведён на capability‑RPC (`x3.app/subject-services@1` над `MessageChannelMain`),
+   `DATA_SOURCE_METHODS`/`REMOTE_VALUE_METHODS` удалены физически; renderer потребляет
+   материализованные прокси стандартных surfaces.
 3. **`worker-brokered` под node — ступень SB‑1: изоляция отказов и протокола, не security sandbox.**
    Backend честно публикует это диагностикой `x3.host/worker-shared-process`; тихого понижения к
    `trusted-in-process` нет (правило 1 §6.1 документа 24).

@@ -14,6 +14,7 @@
  * and a renderer able to run that would need the Node access `nodeIntegration: false` denies. The
  * bundle failing to resolve `node:fs` is the guard doing its job.
  */
+import { connectElectronSubjectRpc } from './subject-rpc.js'
 import {
   createCodecPreview,
   createEditorArea,
@@ -26,7 +27,6 @@ import {
   type EditorArea,
   type ExplorerEntry,
   type FileAccess,
-  type PreviewSession,
   type SettingsDocument,
   type SettingsStore,
 } from '@modkitx-x3/ui'
@@ -68,37 +68,13 @@ interface HostBridge {
   confirmClose(name: string): Promise<'save' | 'discard' | 'cancel'>
 }
 
+/**
+ * R6: the preload no longer forwards subject methods — it mints a capability-RPC port. The
+ * renderer connects a host-role endpoint over it and consumes materialized proxies whose methods
+ * come from the contract-owned surfaces.
+ */
 interface SubjectBridge {
-  open(path: string): Promise<
-    | {
-        readonly state: 'opened'
-        readonly sessionId: string
-        readonly descriptor: Record<string, unknown>
-        readonly presentation: NonNullable<PreviewSession['presentation']>
-        readonly selected: {
-          readonly contributionId: string
-          readonly variantId: string
-          readonly confidence: number
-        }
-        readonly candidates: readonly unknown[]
-        readonly diagnostics: readonly { readonly code: string; readonly message: string }[]
-      }
-    | {
-        readonly state: 'unresolved'
-        readonly reason: string
-        readonly candidates: readonly unknown[]
-        readonly diagnostics: readonly { readonly code: string; readonly message: string }[]
-      }
-  >
-  call(
-    sessionId: string,
-    contract: string,
-    major: number,
-    method: string,
-    args: readonly unknown[],
-    handleId?: string,
-  ): Promise<unknown>
-  close(sessionId: string): Promise<{ readonly state: 'closed' }>
+  requestPort(): Promise<{ readonly session: string }>
 }
 
 interface MenuBridge {
@@ -241,85 +217,29 @@ function settingsStore(bridge: SettingsBridge): SettingsStore {
   }
 }
 
-const REMOTE_ITERABLE_METHODS = new Set(['search'])
-
-function serializableArguments(args: readonly unknown[]): readonly unknown[] {
-  return args.filter(argument => !(argument instanceof AbortSignal))
-}
-
-function remoteDataSource(
-  bridge: SubjectBridge,
-  sessionId: string,
-  contract: string,
-  major: number,
-  handleId?: string,
-): unknown {
-  return new Proxy(Object.create(null) as Record<string, unknown>, {
-    get(_target, property) {
-      if (property === 'then') return undefined
-      if (typeof property !== 'string') return undefined
-      if (REMOTE_ITERABLE_METHODS.has(property)) {
-        return (...args: readonly unknown[]) => ({
-          async *[Symbol.asyncIterator]() {
-            const values = (await bridge.call(
-              sessionId,
-              contract,
-              major,
-              property,
-              serializableArguments(args),
-              handleId,
-            )) as readonly unknown[]
-            for (const value of values) yield value
-          },
-        })
-      }
-      return async (...args: readonly unknown[]) => {
-        const result = await bridge.call(
-          sessionId,
-          contract,
-          major,
-          property,
-          serializableArguments(args),
-          handleId,
-        )
-        if (
-          typeof result === 'object' &&
-          result !== null &&
-          (result as { kind?: unknown }).kind === 'remote-data-source-value' &&
-          typeof (result as { handleId?: unknown }).handleId === 'string'
-        ) {
-          return remoteDataSource(
-            bridge,
-            sessionId,
-            contract,
-            major,
-            (result as { handleId: string }).handleId,
-          )
-        }
-        return result
-      }
-    },
+/**
+ * Receive the DOM MessagePort the preload forwards after `requestPort()`. The listener is armed
+ * before the request so the handover cannot race the response.
+ */
+async function acquireSubjectPort(bridge: SubjectBridge): Promise<{
+  readonly port: MessagePort
+  readonly session: string
+}> {
+  const arrival = new Promise<{ port: MessagePort; session: string }>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('the subject RPC port did not arrive')), 10_000)
+    const listener = (event: MessageEvent) => {
+      const data = event.data as { type?: unknown; session?: unknown } | null
+      if (data?.type !== 'modkit-subject-port') return
+      const port = event.ports[0]
+      if (port === undefined || typeof data.session !== 'string') return
+      clearTimeout(timer)
+      window.removeEventListener('message', listener)
+      resolve({ port, session: data.session })
+    }
+    window.addEventListener('message', listener)
   })
-}
-
-function remotePreviewSession(
-  bridge: SubjectBridge,
-  sessionId: string,
-  descriptor: Record<string, unknown>,
-  presentation: NonNullable<PreviewSession['presentation']>,
-): PreviewSession {
-  return {
-    presentation,
-    async descriptor() {
-      return descriptor
-    },
-    async dataSource(contract, major) {
-      return { value: remoteDataSource(bridge, sessionId, contract, major) }
-    },
-    async dispose() {
-      await bridge.close(sessionId)
-    },
-  }
+  await bridge.requestPort()
+  return arrival
 }
 
 async function boot(): Promise<void> {
@@ -336,7 +256,13 @@ async function boot(): Promise<void> {
   }
   // Bound locally: the narrowing above does not reach the nested helpers declared later.
   const bridge = broker
-  const subjectBridge = subjects
+  const { port: subjectPort, session: subjectSession } = await acquireSubjectPort(subjects)
+  const subjectClient = await connectElectronSubjectRpc({
+    port: subjectPort,
+    session: subjectSession,
+    onDiagnostic: diagnostic =>
+      console.warn(`[subject-rpc] ${diagnostic.code}: ${diagnostic.message}`),
+  })
   const profile = await host.profile()
 
   const shell = document.createElement('div')
@@ -365,28 +291,29 @@ async function boot(): Promise<void> {
     stages: PREVIEW_STAGES,
     fallback: PREVIEW_FALLBACK,
     async openSession(entry) {
-      const result = await subjectBridge.open(entry.id)
+      const result = await subjectClient.open(entry.id)
       if (result.state === 'unresolved') {
         const detail =
-          result.diagnostics[0]?.message ?? `${result.reason}; using the explicit text/hex fallback`
-        setFooter(entry.id, detail, result.reason !== 'no-candidate')
+          result.snapshot.diagnostics[0]?.message ??
+          `${result.snapshot.reason}; using the explicit text/hex fallback`
+        setFooter(entry.id, detail, result.snapshot.reason !== 'no-candidate')
         return undefined
       }
-      const authority = result.diagnostics.some(
+      const snapshot = result.snapshot
+      const boundary = snapshot.diagnostics.some(
         item => item.code === 'x3.host/full-process-authority',
       )
+        ? ' · full process authority'
+        : snapshot.diagnostics.some(item => item.code === 'x3.host/worker-shared-process')
+          ? ' · worker'
+          : ''
       setFooter(
         entry.id,
-        `${result.selected.contributionId}/${result.selected.variantId} · ${Math.round(
-          result.selected.confidence * 100,
-        )}%${authority ? ' · full process authority' : ''}`,
+        `${snapshot.selected.contributionId}/${snapshot.selected.variantId} · ${Math.round(
+          snapshot.selected.confidence * 100,
+        )}%${boundary}`,
       )
-      return remotePreviewSession(
-        subjectBridge,
-        result.sessionId,
-        result.descriptor,
-        result.presentation,
-      )
+      return result.session
     },
     // Editable stages get a real save path: bytes go through the broker to an atomic write.
     editorPorts: (entry, bytes) => {

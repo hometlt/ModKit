@@ -1,13 +1,14 @@
 /**
  * Electron main process.
  *
- * The window is created from `ELECTRON_SECURE_WEB_PREFERENCES` and every IPC message is checked with
- * `assertElectronBrokerRequest` — both already defined and unit tested in the composition root. This
- * file is the adapter that makes those contracts real at runtime rather than a second copy of them.
+ * The window is created from `ELECTRON_SECURE_WEB_PREFERENCES` and every broker IPC message is
+ * checked with `assertElectronBrokerRequest` — both defined and unit tested in the composition
+ * root. Subject sessions speak capability-RPC over a dedicated MessagePort pair (R6): the surface
+ * authority is the contract definitions, so this file carries no method lists at all.
  *
  * CommonJS on purpose: Electron's main entry is loaded as CJS, and the package is `type: module`.
  */
-const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = require('electron')
+const { app, BrowserWindow, Menu, MessageChannelMain, dialog, ipcMain, shell } = require('electron')
 const fs = require('node:fs')
 const fsp = require('node:fs/promises')
 const { randomUUID } = require('node:crypto')
@@ -22,25 +23,12 @@ const RENDERER = path.join(__dirname, '..', 'dist-app', 'index.html')
 /** The composition root is ESM; main is CJS, so it is loaded through a dynamic import. */
 const root = import(pathToFileURL(path.join(__dirname, '..', 'dist', 'index.js')).href)
 
-const DATA_SOURCE_METHODS = Object.freeze({
-  'common.view/text-data-source': new Set(['info', 'slice', 'search']),
-  'common.view/byte-range-source': new Set(['size', 'read']),
-  'common.view/tree-data-source': new Set(['root', 'children', 'facts', 'search']),
-  'common.view/table-data-source': new Set(['shape', 'rows', 'cell', 'search']),
-  // Live transport events need a cancellable streaming RPC; the bounded bridge exposes snapshots
-  // only until that adapter exists.
-  'common.view/transport-source': new Set(['snapshot']),
-  'common.view/namespace-entry-source': new Set(['list']),
-  'common.view/raster-image-source': new Set(['info', 'encoded', 'readRegion']),
-  'common.view/vector-scene-source': new Set(['info', 'document']),
-  'common.view/audio-media-source': new Set(['info', 'encoded', 'readPcm']),
-  'common.view/video-media-source': new Set(['info', 'encoded', 'readFrame']),
-  'common.view/model-scene-source': new Set(['info', 'nodes', 'meshes', 'primitive']),
-  'common.view/relation-graph-source': new Set(['summary', 'nodes', 'edges']),
-  'common.view/subject-facts-source': new Set(['summary', 'groups', 'facts', 'relations']),
-})
-const ITERABLE_SOURCE_METHODS = new Set(['search'])
-const REMOTE_VALUE_METHODS = Object.freeze({ encoded: new Set(['descriptor', 'read']) })
+/*
+ * R6: no method allowlists live here any more. The renderer speaks capability-RPC to a
+ * per-window endpoint (see `exposeElectronSubjectRpc`); which methods exist on a session or a
+ * data source is decided by the contract-owned method surfaces, the same authority every other
+ * execution boundary uses.
+ */
 const MAXIMUM_SUBJECT_BYTES = 64 * 1024 * 1024
 
 const sameFileRevision = (left, right) =>
@@ -180,7 +168,7 @@ async function createWindow() {
     createElectronSubjectServices,
     resolveElectronPresentationPlan,
     createGrantedRoots,
-    assertElectronSubjectRequest,
+    exposeElectronSubjectRpc,
   } = await root
 
   const repositoryRoot = path.resolve(__dirname, '..', '..', '..')
@@ -284,130 +272,76 @@ async function createWindow() {
     }
   }
 
-  /** Live codec sessions and their leased lazy data sources; all are main-process owned. */
-  const subjectSessions = new Map()
-
-  const closeSubjectSession = async sessionId => {
-    const record = subjectSessions.get(sessionId)
-    if (record === undefined) return
-    subjectSessions.delete(sessionId)
-    const releases = [...record.leases.values()].map(lease => lease.release())
-    await Promise.allSettled(releases)
-    await record.session.dispose()
-  }
-
-  const invokeSubjectMethod = async (record, request) => {
-    let target
-    let allowed
-    if (request.handleId !== undefined) {
-      const remote = record.values.get(request.handleId)
-      if (remote === undefined) throw new Error('remote data-source value is unavailable')
-      target = remote.value
-      allowed = remote.methods
-    } else {
-      allowed = DATA_SOURCE_METHODS[request.contract]
-      if (allowed === undefined) throw new Error(`unsupported data-source ${request.contract}`)
-      const key = `${request.contract}@${request.major}`
-      let lease = record.leases.get(key)
-      if (lease === undefined) {
-        lease = await record.session.dataSource(request.contract, request.major)
-        record.leases.set(key, lease)
-      }
-      target = lease.value
-    }
-    if (!allowed.has(request.method)) throw new Error('data-source method is not allowlisted')
-    const method = target?.[request.method]
-    if (typeof method !== 'function') throw new Error('data-source method is unavailable')
-    const result = await Reflect.apply(method, target, request.args)
-
-    if (ITERABLE_SOURCE_METHODS.has(request.method)) {
-      if (result?.[Symbol.asyncIterator] === undefined) {
-        throw new TypeError('data-source iterable method returned a non-iterable result')
-      }
-      const items = []
-      for await (const item of result) {
-        if (items.length >= 1000) throw new RangeError('data-source iterable exceeded IPC limit')
-        items.push(item)
-      }
-      return structuredClone(items)
-    }
-
-    const remoteMethods = REMOTE_VALUE_METHODS[request.method]
-    if (remoteMethods !== undefined) {
-      if (typeof result !== 'object' || result === null) {
-        throw new TypeError('data-source method did not return a remote value')
-      }
-      const handleId = randomUUID()
-      record.values.set(handleId, { value: result, methods: remoteMethods })
-      return { kind: 'remote-data-source-value', handleId }
-    }
-    return structuredClone(result)
-  }
-
-  ipcMain.handle('modkit.subject', async (_event, value) => {
-    const request = assertElectronSubjectRequest(value)
-    if (request.operation === 'open') {
-      const file = roots.require(request.path)
-      const source = await fileByteSource(file)
-      const result = await subjectServices.open({
-        source,
-        path: file,
-        intent: 'full',
-        grant: { id: `electron:${randomUUID()}`, classes: ['read-source'] },
-        budget: {
-          maxInputBytes: BigInt(MAXIMUM_SUBJECT_BYTES),
-          maxDepth: 256,
-          maxNodes: 1_000_000,
-          maxScalarBytes: MAXIMUM_SUBJECT_BYTES,
-          maxDiagnostics: 10_000,
-          deadlineMs: 30_000,
-        },
-      })
-      if (result.state === 'unresolved') {
-        console.log(
-          `[main] subject ${path.basename(file)} unresolved (${result.reason}): ` +
-            result.diagnostics.map(item => item.code).join(', ') +
-            `; candidates=${result.candidates
-              .map(
-                item =>
-                  `${item.contributionId}/${item.variantId}:${item.state}:${item.confidence ?? '-'}:` +
-                  item.diagnostics
-                    .map(
-                      diagnostic =>
-                        `${diagnostic.code}(${diagnostic.message};${JSON.stringify(diagnostic.data)})`,
-                    )
-                    .join('|'),
-              )
-              .join(',')}`,
-        )
-        return result
-      }
+  /**
+   * R6: open a subject the way the old IPC branch did, but return the session as an object for
+   * the RPC endpoint to lease — no session table, no method dispatch, no allowlists here.
+   */
+  const openSubjectForRpc = async (requestedPath, signal) => {
+    const file = roots.require(requestedPath)
+    const source = await fileByteSource(file)
+    const result = await subjectServices.open({
+      source,
+      path: file,
+      intent: 'full',
+      grant: { id: `electron:${randomUUID()}`, classes: ['read-source'] },
+      budget: {
+        maxInputBytes: BigInt(MAXIMUM_SUBJECT_BYTES),
+        maxDepth: 256,
+        maxNodes: 1_000_000,
+        maxScalarBytes: MAXIMUM_SUBJECT_BYTES,
+        maxDiagnostics: 10_000,
+        deadlineMs: 30_000,
+      },
+      ...(signal === undefined ? {} : { signal }),
+    })
+    if (result.state === 'unresolved') {
       console.log(
-        `[main] subject ${path.basename(file)} -> ${result.selected.contributionId}/` +
-          `${result.selected.variantId} (${Math.round(result.selected.confidence * 100)}%)`,
+        `[main] subject ${path.basename(file)} unresolved (${result.reason}): ` +
+          result.diagnostics.map(item => item.code).join(', ') +
+          `; candidates=${result.candidates
+            .map(
+              item =>
+                `${item.contributionId}/${item.variantId}:${item.state}:${item.confidence ?? '-'}:` +
+                item.diagnostics
+                  .map(
+                    diagnostic =>
+                      `${diagnostic.code}(${diagnostic.message};${JSON.stringify(diagnostic.data)})`,
+                  )
+                  .join('|'),
+            )
+            .join(',')}`,
       )
-      const sessionId = randomUUID()
-      let presentation
-      try {
-        presentation = await resolveElectronPresentationPlan(
-          result.descriptor,
-          PRESENTATION_CATALOG,
-          {
-            sessionId,
-            contributionId: result.selected.contributionId,
-            variantId: result.selected.variantId,
-          },
-        )
-      } catch (error) {
-        await result.session.dispose()
-        throw error
-      }
-      subjectSessions.set(sessionId, {
-        session: result.session,
-        leases: new Map(),
-        values: new Map(),
-      })
       return {
+        snapshot: {
+          state: result.state,
+          reason: result.reason,
+          candidates: result.candidates,
+          diagnostics: result.diagnostics,
+        },
+      }
+    }
+    console.log(
+      `[main] subject ${path.basename(file)} -> ${result.selected.contributionId}/` +
+        `${result.selected.variantId} (${Math.round(result.selected.confidence * 100)}%)`,
+    )
+    const sessionId = randomUUID()
+    let presentation
+    try {
+      presentation = await resolveElectronPresentationPlan(
+        result.descriptor,
+        PRESENTATION_CATALOG,
+        {
+          sessionId,
+          contributionId: result.selected.contributionId,
+          variantId: result.selected.variantId,
+        },
+      )
+    } catch (error) {
+      await result.session.dispose()
+      throw error
+    }
+    return {
+      snapshot: {
         state: result.state,
         sessionId,
         descriptor: result.descriptor,
@@ -415,20 +349,32 @@ async function createWindow() {
         selected: result.selected,
         candidates: result.candidates,
         diagnostics: result.diagnostics,
-        lockText: result.lockText,
-      }
+      },
+      session: result.session,
     }
-    if (request.operation === 'close') {
-      await closeSubjectSession(request.sessionId)
-      return { state: 'closed' }
-    }
-    const record = subjectSessions.get(request.sessionId)
-    if (record === undefined) throw new Error('subject session is unavailable')
-    return invokeSubjectMethod(record, request)
+  }
+
+  /** One capability-RPC endpoint per handed-out port; closed with the window. */
+  const subjectEndpoints = new Set()
+  ipcMain.handle('modkit.subject.port', event => {
+    const channel = new MessageChannelMain()
+    const session = randomUUID()
+    const exposure = exposeElectronSubjectRpc({
+      port: channel.port1,
+      listener: 'emitter-event',
+      session,
+      open: openSubjectForRpc,
+      onDiagnostic: diagnostic =>
+        console.log(`[subject-rpc] ${diagnostic.code}: ${diagnostic.message}`),
+    })
+    subjectEndpoints.add(exposure)
+    event.sender.postMessage('modkit.subject.port', { session }, [channel.port2])
+    return { session }
   })
 
   window.on('closed', () => {
-    for (const sessionId of subjectSessions.keys()) void closeSubjectSession(sessionId)
+    for (const exposure of subjectEndpoints) void exposure.close('window closed')
+    subjectEndpoints.clear()
   })
 
   // One handler for the whole allowlist. A channel outside it is never registered, so the renderer

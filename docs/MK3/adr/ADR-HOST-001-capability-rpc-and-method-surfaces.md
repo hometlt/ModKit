@@ -4,9 +4,9 @@ Status: **Accepted** (2026-08-18, lab Root = Fable by owner decision)
 Applies to: `modkitX3/packages/host` (execution, node worker backend, gate), `packages/sdk`
 (contract-definition `surface`), every transport and application adapter, `packages/testkit`
 Supersedes: the per-application method allowlists (`DATA_SOURCE_METHODS`/`REMOTE_VALUE_METHODS`
-in the Electron main realm) as the authority for what crosses an execution boundary — they still
-exist in `apps/electron/electron/main.cjs` as a temporary allowlist of the old IPC and are removed
-when that IPC moves onto capability-RPC (R6, document 09 §14)
+in the Electron main realm) — deleted on 2026-08-18 (R6/S4): the Electron subject IPC now speaks
+capability-RPC over a `MessageChannelMain` pair (`x3.app/subject-services@1`), and the renderer
+consumes materialized proxies of the contract-owned surfaces
 
 ## Context
 

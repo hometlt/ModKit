@@ -88,18 +88,20 @@ contextBridge.exposeInMainWorld('modkitHost', {
   registerFileTypes: extensions => ipcRenderer.invoke('modkit.register-file-types', extensions),
 })
 
-/** Lazy subject/session RPC. Codec and provider modules stay in main; only inert values cross. */
+/*
+ * R6: the subject bridge is capability-RPC over a dedicated MessagePort pair. Main creates the
+ * channel and posts one end here; the preload forwards the DOM port into the main world with
+ * `window.postMessage` (the documented Electron pattern for context-isolated pages). No method
+ * names cross this file any more — the surface authority lives with the contract definitions.
+ */
+ipcRenderer.on('modkit.subject.port', (event, message) => {
+  window.postMessage(
+    { type: 'modkit-subject-port', session: message?.session ?? null },
+    '*',
+    event.ports,
+  )
+})
 contextBridge.exposeInMainWorld('modkitSubjects', {
-  open: path => ipcRenderer.invoke('modkit.subject', { operation: 'open', path }),
-  call: (sessionId, contract, major, method, args, handleId) =>
-    ipcRenderer.invoke('modkit.subject', {
-      operation: 'call',
-      sessionId,
-      contract,
-      major,
-      method,
-      args,
-      ...(handleId === undefined ? {} : { handleId }),
-    }),
-  close: sessionId => ipcRenderer.invoke('modkit.subject', { operation: 'close', sessionId }),
+  /** Ask main to mint the RPC channel; the port itself arrives via the message event above. */
+  requestPort: () => ipcRenderer.invoke('modkit.subject.port'),
 })

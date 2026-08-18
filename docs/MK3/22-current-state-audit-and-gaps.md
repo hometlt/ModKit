@@ -300,8 +300,8 @@ baseline всегда берётся из generator/report scripts, а не из
 `IMPLEMENTATION_NOTES.md`): второй продуктовый путь открытия (G‑APP‑1) удалён — один
 `openSubject`; execution backend SPI с trusted backend и честной диагностикой; capability‑RPC как
 единая граница исполнения с conformance kit; method surfaces как authority contract definitions
-(allowlist `DATA_SOURCE_METHODS`/`REMOTE_VALUE_METHODS` в Electron‑main лишён статуса authority,
-физически удаляется в R6); Node worker backend с verified multi‑file loading — реальные
-bundled‑расширения выполняются brokered. Открыто: wiring backend'а в приложения, browser worker
-backend, `process-brokered`, Electron IPC на capability‑RPC (R6), VFS/container, MK2‑конвертер
-(документ 09 §14).
+(allowlist `DATA_SOURCE_METHODS`/`REMOTE_VALUE_METHODS` **удалён** 2026‑08‑18 вместе с переводом
+Electron subject‑IPC на capability‑RPC — R6/S4); Node worker backend с verified multi‑file loading
+— реальные bundled‑расширения выполняются brokered, и все Node composition roots резолвят открытие
+для realm'а `node-worker` (S1b). Открыто: browser worker backend, `process-brokered`,
+VFS/container, MK2‑конвертер (документ 09 §14).

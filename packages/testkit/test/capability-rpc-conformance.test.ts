@@ -58,6 +58,47 @@ describe('capability-rpc conformance kit — reference transports pass', () => {
     expect(report.observations['transfer']).toBe('detached')
   }, 60_000)
 
+  it('the Electron MessagePortMain event shape passes (emitter-event: listeners receive { data }) — the R6 main-side adapter', async () => {
+    const report = await runFramePortConformance((): ConformancePair => {
+      const channel = new MessageChannel()
+      // MessagePortMain delivers events whose payload sits under .data; wrap a Node port to
+      // that exact shape so the kit proves the adapter style the Electron main process uses
+      const mainShape = (port: InstanceType<typeof MessageChannel>['port1']) => {
+        const wrapped = new Map<(payload: unknown) => void, (value: unknown) => void>()
+        return {
+          postMessage: (message: unknown, transfer?: readonly ArrayBuffer[]) =>
+            port.postMessage(message, transfer === undefined ? [] : [...transfer]),
+          on(_event: 'message', listener: (payload: unknown) => void) {
+            const translated = (value: unknown) => listener({ data: value })
+            wrapped.set(listener, translated)
+            port.on('message', translated)
+            return this
+          },
+          off(_event: 'message', listener: (payload: unknown) => void) {
+            const translated = wrapped.get(listener)
+            if (translated !== undefined) port.off('message', translated)
+            wrapped.delete(listener)
+            return this
+          },
+          start: () => port.start(),
+          close: () => port.close(),
+        }
+      }
+      return {
+        transport: 'electron:MessagePortMain-shape',
+        host: framePortFromMessagePort(channel.port1, { listener: 'event-target' }),
+        worker: framePortFromMessagePort(mainShape(channel.port2), { listener: 'emitter-event' }),
+        close() {
+          channel.port1.close()
+          channel.port2.close()
+        },
+      }
+    })
+    expectConformant(report)
+    expect(report.transport).toBe('electron:MessagePortMain-shape')
+    expect(report.observations['transfer']).toBe('detached')
+  }, 60_000)
+
   it('the emitter-style MessagePort listener works too (Node `on("message")`)', async () => {
     const report = await runFramePortConformance(
       (): ConformancePair => {

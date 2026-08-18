@@ -664,8 +664,13 @@ NXT‑114/R3 (Node worker backend с verified loading; реальный `text-js
    пере‑активируется под грантом вызывающего перед open; hostile fixtures: renamed PNG, polyglot
    PNG+ZIP (проверен обоими детекторами, не открыт никем), magic collision, bounded reads.
    Открыто: плавающий EOCD (ZIP с комментарием), probe pooling.
-4. **R6 — Electron IPC → capability‑RPC:** preload как `FramePort` над `MessagePort`; renderer без
-   кодеков; kit против Electron‑пары; удаление остатков allowlist'ов.
+4. **R6 — Electron IPC → capability‑RPC** — _сделано 2026‑08‑18 (S4)_: main отдаёт
+   `x3.app/subject-services@1` по `MessageChannelMain` (worker‑role endpoint, `emitter-event`);
+   preload только пересылает порт; renderer — host‑role endpoint (`event-target`), прокси из
+   стандартных surfaces; kit проходит `electron:MessagePortMain-shape` (25 кейсов);
+   `DATA_SOURCE_METHODS`/`REMOTE_VALUE_METHODS`/`assertElectronSubjectRequest` удалены. Открыто:
+   UX словаря состояний (OPUS‑UX‑01); broker‑каналы файловой системы остаются узким allowlist'ом
+   эффектов намеренно.
 5. **Browser worker backend (`browser-sandbox`)** на том же ядре; PWA, затем VS Code.
 6. **VFS/container + bundle resolver (NXT‑200/201)** и MK2‑конвертер/parity‑harness по
    `REPORT_MK2_ALLOCATION_*` — после стабилизации worker/VFS.

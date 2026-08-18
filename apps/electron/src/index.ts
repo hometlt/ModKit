@@ -1,10 +1,4 @@
-import {
-  canonicalJsonStringify,
-  isQualifiedId,
-  ModkitError,
-  uint64,
-  type Diagnostic,
-} from '@modkitx-x3/core'
+import { canonicalJsonStringify, ModkitError, uint64, type Diagnostic } from '@modkitx-x3/core'
 import {
   createHostTopology,
   type ArtifactByteSource,
@@ -38,6 +32,21 @@ import {
   type DataSourceSurfaceSource,
   type WorkerBackendPolicy,
 } from '@modkitx-x3/host/node'
+
+export {
+  connectElectronSubjectRpc,
+  exposeElectronSubjectRpc,
+  ELECTRON_SUBJECT_SERVICES,
+  ELECTRON_SUBJECT_SERVICES_URL,
+  type ElectronSubjectOpener,
+  type SubjectClientOpenResult,
+  type SubjectOpenSnapshot,
+  type SubjectOpenedSnapshot,
+  type SubjectPreviewSession,
+  type SubjectRpcClient,
+  type SubjectRpcExposure,
+  type SubjectUnresolvedSnapshot,
+} from './subject-rpc.js'
 
 export const ELECTRON_MAIN_REALM = 'org.modkitx.app.electron/main'
 export const ELECTRON_RENDERER_REALM = 'org.modkitx.app.electron/renderer'
@@ -475,74 +484,10 @@ export async function createElectronSubjectServices(
   return Object.freeze(services)
 }
 
-export type ElectronSubjectRequest =
-  | { readonly operation: 'open'; readonly path: string }
-  | {
-      readonly operation: 'call'
-      readonly sessionId: string
-      readonly contract: string
-      readonly major: number
-      readonly method: string
-      readonly args: readonly unknown[]
-      readonly handleId?: string
-    }
-  | { readonly operation: 'close'; readonly sessionId: string }
-
-function boundedCloneValue(value: unknown, depth = 0, nodes = { count: 0 }): boolean {
-  nodes.count += 1
-  if (nodes.count > 10_000 || depth > 16) return false
-  if (
-    value === undefined ||
-    value === null ||
-    typeof value === 'boolean' ||
-    typeof value === 'bigint'
-  ) {
-    return true
-  }
-  if (typeof value === 'number') return Number.isFinite(value)
-  if (typeof value === 'string') return value.length <= 65_536
-  if (ArrayBuffer.isView(value)) return value.byteLength <= 64 * 1024 * 1024
-  if (value instanceof ArrayBuffer) return value.byteLength <= 64 * 1024 * 1024
-  if (Array.isArray(value)) {
-    return value.length <= 10_000 && value.every(item => boundedCloneValue(item, depth + 1, nodes))
-  }
-  if (!record(value)) return false
-  const entries = Object.entries(value)
-  return (
-    entries.length <= 1_000 &&
-    entries.every(([key, item]) => key.length <= 1024 && boundedCloneValue(item, depth + 1, nodes))
-  )
-}
-
-/** Main-process validation for the narrow subject-session RPC exposed by preload. */
-export function assertElectronSubjectRequest(value: unknown): ElectronSubjectRequest {
-  if (!record(value) || !text(value['operation'])) {
-    throw new ModkitError({
-      code: 'x3.app/invalid-electron-subject-request',
-      message: 'renderer sent a malformed Electron subject request',
-    })
-  }
-  const valid =
-    (value['operation'] === 'open' && text(value['path'])) ||
-    (value['operation'] === 'close' && text(value['sessionId'])) ||
-    (value['operation'] === 'call' &&
-      text(value['sessionId']) &&
-      typeof value['contract'] === 'string' &&
-      isQualifiedId(value['contract']) &&
-      Number.isSafeInteger(value['major']) &&
-      Number(value['major']) >= 0 &&
-      typeof value['method'] === 'string' &&
-      /^[a-z][a-zA-Z0-9]*(?:\.[a-z][a-zA-Z0-9]*)?$/u.test(value['method']) &&
-      (value['handleId'] === undefined || text(value['handleId'])) &&
-      Array.isArray(value['args']) &&
-      boundedCloneValue(value['args']))
-  if (!valid) {
-    throw new ModkitError({
-      code: 'x3.app/invalid-electron-subject-request',
-      message: 'renderer sent a malformed Electron subject request',
-    })
-  }
-  return value as unknown as ElectronSubjectRequest
-}
+/*
+ * R6: the renderer's subject traffic is capability-RPC (see ./subject-rpc.ts). The old
+ * `ElectronSubjectRequest` validator and its bounded-clone walker are gone with the IPC they
+ * guarded — frame validation now happens in the protocol core on both sides of the port.
+ */
 
 export { createGrantedRoots, type GrantedRoots, type PathTools } from './roots.js'

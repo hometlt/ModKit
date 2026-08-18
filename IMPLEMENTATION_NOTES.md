@@ -6,6 +6,45 @@ overrides a canonical or detailed owner.
 
 ---
 
+## S4 (R6) — Electron subject IPC is capability-RPC; the last method allowlists are deleted (Root/Fable, 2026-08-18)
+
+**What exists.** `apps/electron/src/subject-rpc.ts`: main exposes one root capability per window —
+`x3.app/subject-services@1` (`open(path)` → inert snapshot; `attach(sessionId)` → the live session
+under `x3.abi/asset-session@1`) — over an Electron `MessageChannelMain` pair, worker-role endpoint
+behind the production `framePortFromMessagePort` (`emitter-event` for `MessagePortMain`); the
+renderer connects a host-role endpoint (`event-target` over the DOM port the preload forwards via
+`window.postMessage` transfer) and consumes materialized proxies. Below the root everything comes
+from the surface authority: `dataSource(contract, major)` resolves the leased surface from the
+standard registry, iterables are real pull streams (the old 1000-item materialization is gone),
+`encoded()` is the auxiliary `common.view/encoded-media@1` capability (the old
+`REMOTE_VALUE_METHODS` hand-rolled handle table is gone), dispose cascades through the lease.
+
+**Deleted.** `DATA_SOURCE_METHODS`, `ITERABLE_SOURCE_METHODS`, `REMOTE_VALUE_METHODS`,
+`invokeSubjectMethod`, the `subjectSessions` map and the `modkit.subject` channel in `main.cjs`;
+`assertElectronSubjectRequest` + `ElectronSubjectRequest` + `boundedCloneValue` in the composition
+root (frame validation lives in the protocol core on both sides); the preload's method-forwarding
+`modkitSubjects` bridge (now it mints the port: `requestPort()` + a `modkit.subject.port`
+forwarder). Adding a data-source contract to the standard table (or a definition surface) now
+crosses the Electron boundary with zero Electron changes — invariant 2 of the plan holds in code.
+
+**Proof.** `apps/electron/test/subject-rpc.test.ts` — the production pair without the binary
+(same adapters, surfaces, endpoints; `MessagePortMain` shape emulated over a Node port): text-json
+opens end to end (worker-brokered codec in main's worker realm, the shared-process notice crosses
+the wire), tree pages + label search pulled through surfaces, a method the surface does not
+declare simply does not exist, dispose cascades and a second use answers structurally; unresolved
+snapshots cross inert; a never-attached session is disposed when the exposure closes; a forged
+session id fails the endpoint closed before any dispatch. The conformance kit gained the
+`electron:MessagePortMain-shape` run — all 25 cases over the exact main-side event shape.
+`security.test.ts` drops the deleted validator and keeps the two-hop renderer ↔ main ↔ worker
+topology pins.
+
+**Not done here.** Renderer UX for lifecycle states (OPUS-UX-01); moving the _broker_ channels
+(filesystem/dialog) onto capability-RPC — they are effects on main-owned facilities, not contract
+objects, and keep their allowlist by design; a real Electron binary smoke run (the pair is
+adapter-faithful; the binary path is exercised manually).
+
+---
+
 ## S3 — NXT-101B signature index + R5 probe grant seam + detection-hostile acceptance (Root/Fable, 2026-08-18)
 
 **R4 — bounded, data-only signature index.** `contract-definition` codec specs may declare
