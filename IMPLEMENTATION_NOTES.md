@@ -65,14 +65,16 @@ are optional and only appear when a surface declares the new features):**
   appended (`encoded(trackId?, signal?)`).
 - `optional` on a method (data only for now; proxies still define the method, an absent
   implementation answers `x3.host/rpc-method-unavailable`; `has[]` presence remains v1.1).
-- `fields` on a capability surface: data properties copied with the handle (`ready.data`,
-  `return.data` beside the handle ref, validated as handle-free wire values), exposed on the consumer
-  as own read-only properties of the materialized object and as `RemoteCapability.data`. This is
-  how data+method hybrids (`AssetSession.revision`, `ArtifactByteSource.size`, an `AssetInput`'s
-  bindings, a module's `abiVersion`) cross without a second marshalling layer.
+- `fields` on a capability surface: data properties copied **inside the handle ref**
+  (`{ '@x3.handle': { id, kind, contract, major, data } }`, `data` a handle-free wire object) by
+  whichever side creates the handle — lease results, `ready.root`, and capabilities passed as
+  arguments (`expose()` snapshots the fields) — and exposed on the consumer as own read-only
+  properties of the materialized object and as `RemoteCapability.data`. This is how data+method
+  hybrids (`AssetSession.revision`, `ArtifactByteSource.size`, an `AssetInput`'s bindings, a
+  module's `abiVersion`) cross without a second marshalling layer, wherever the ref travels.
 - Frame grammar: `return` gains optional `lease` (must be a `lease` ref; a leased value cannot itself
-  be a handle) and `data`; `ready` gains optional `data`. Hostile tests cover a non-lease `lease` ref
-  and handles hidden inside `data` (both fail closed).
+  be a handle). Hostile tests cover a non-lease `lease` ref and handles smuggled inside a ref's
+  `data` at the top level and nested (all fail closed with `handle-not-allowed`).
 
 **Adapter (`surface-adapter.ts`).** `capabilitySurfaceFromDataSource(contract, major, surface)`
 maps NXT-103 surfaces 1:1; declared `limits` become validators (`maxStringLength` on arguments and

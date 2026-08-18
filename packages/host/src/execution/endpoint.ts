@@ -375,6 +375,7 @@ class EndpointImpl implements Endpoint {
         message: `cannot expose a capability with unregistered surface ${surface.contract}@${surface.major}`,
       })
     }
+    const data = this.fieldData(target, surface)
     const record = this.table.allocate({
       kind: 'lease',
       target,
@@ -384,7 +385,7 @@ class EndpointImpl implements Endpoint {
     })
     return new LocalCapabilityImpl(
       this,
-      handleRef(record.id, 'lease', surface),
+      handleRef(record.id, 'lease', surface, data),
       surface.contract,
       surface.major,
     )
@@ -407,16 +408,11 @@ class EndpointImpl implements Endpoint {
       readonly abiVersion: 1
       readonly exports: readonly string[]
       readonly root: HandleRef
-      readonly data?: Readonly<Record<string, WireValue>>
     }
-    return Object.freeze({
-      abiVersion: 1,
-      exports: ready.exports,
-      root: this.proxy(ready.root, ready.data),
-    })
+    return Object.freeze({ abiVersion: 1, exports: ready.exports, root: this.proxy(ready.root) })
   }
 
-  proxy(ref: HandleRef, data?: Readonly<Record<string, WireValue>>): RemoteCapability {
+  proxy(ref: HandleRef): RemoteCapability {
     const inner = ref[HANDLE_MARKER]
     if (this.table.owns(inner.id)) {
       throw new ModkitError({
@@ -445,7 +441,7 @@ class EndpointImpl implements Endpoint {
       ref,
       inner.contract,
       inner.major,
-      Object.freeze({ ...(data ?? {}) }),
+      Object.freeze({ ...(inner.data ?? {}) }),
     )
     this.remoteProxies.set(inner.id, capability)
     return capability
@@ -890,7 +886,7 @@ class EndpointImpl implements Endpoint {
             message: `lease method «${method}» returned unregistered surface ${inner.contract}@${inner.major}`,
           })
         }
-        return { kind: 'lease', remote: this.proxy(ref, outcome.data) }
+        return { kind: 'lease', remote: this.proxy(ref) }
       }
       case 'iterable': {
         if (inner.kind !== 'iterator')
@@ -1115,12 +1111,7 @@ class EndpointImpl implements Endpoint {
       | PendingOutcome
       | {
           readonly kind: 'ready'
-          readonly value: {
-            abiVersion: 1
-            exports: readonly string[]
-            root: HandleRef
-            data?: Readonly<Record<string, WireValue>>
-          }
+          readonly value: { abiVersion: 1; exports: readonly string[]; root: HandleRef }
         },
   ): void {
     if (this.state !== 'open') return
@@ -1135,12 +1126,7 @@ class EndpointImpl implements Endpoint {
           })
           break
         case 'handle':
-          this.send({
-            t: 'return',
-            inReplyTo,
-            value: outcome.value as HandleRef,
-            ...(outcome.data === undefined ? {} : { data: outcome.data }),
-          })
+          this.send({ t: 'return', inReplyTo, value: outcome.value as HandleRef })
           break
         case 'throw':
           this.send({ t: 'throw', inReplyTo, error: outcome.error })
@@ -1150,7 +1136,6 @@ class EndpointImpl implements Endpoint {
             t: 'ready',
             inReplyTo,
             abiVersion: 1,
-            ...(outcome.value.data === undefined ? {} : { data: outcome.value.data }),
             exports: outcome.value.exports,
             root: outcome.value.root,
           })
@@ -1177,11 +1162,7 @@ class EndpointImpl implements Endpoint {
         return this.handleSettle(
           frame.inReplyTo,
           isHandleRef(frame.value)
-            ? {
-                kind: 'handle',
-                value: frame.value,
-                ...(frame.data === undefined ? {} : { data: frame.data }),
-              }
+            ? { kind: 'handle', value: frame.value }
             : {
                 kind: 'return',
                 value: frame.value,
@@ -1310,15 +1291,9 @@ class EndpointImpl implements Endpoint {
       const exports = Object.keys(loaded.module)
         .filter(key => key.length <= 256)
         .sort()
-      const data = this.fieldData(loaded.module, loaded.surface)
       this.reply(frame.id, {
         kind: 'ready',
-        value: {
-          abiVersion: 1,
-          exports,
-          root: capability.ref,
-          ...(data === undefined ? {} : { data }),
-        },
+        value: { abiVersion: 1, exports, root: capability.ref },
       })
     } catch (error) {
       this.reply(frame.id, { kind: 'throw', error: toErrorDto(error, this.limits) })
@@ -1335,12 +1310,7 @@ class EndpointImpl implements Endpoint {
     }
     const result = this.pending.settle(frame.inReplyTo, {
       kind: 'handle',
-      value: {
-        abiVersion: 1,
-        exports: frame.exports,
-        root: frame.root,
-        ...(frame.data === undefined ? {} : { data: frame.data }),
-      },
+      value: { abiVersion: 1, exports: frame.exports, root: frame.root },
     })
     if (result === 'unknown') {
       this.fail({
@@ -1583,8 +1553,7 @@ class EndpointImpl implements Endpoint {
           })
           this.reply(frame.id, {
             kind: 'handle',
-            value: handleRef(child.id, 'lease', resultSurface),
-            ...(data === undefined ? {} : { data }),
+            value: handleRef(child.id, 'lease', resultSurface, data),
           })
         } catch (error) {
           if (lease !== undefined) await lease.release()

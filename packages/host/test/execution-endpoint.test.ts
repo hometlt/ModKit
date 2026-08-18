@@ -915,7 +915,7 @@ describe('capability-rpc endpoints — leased values, dynamic lease results, ari
     expect(Object.keys(session)).toContain('revision')
   })
 
-  it('a peer that returns a leased-value with a non-lease handle or handles inside data fails closed', async () => {
+  it('a peer that returns a leased-value with a non-lease handle or handles inside ref data fails closed', async () => {
     const p = pair()
     const { session } = await openSession(p)
     const remote = (session as unknown as Record<symbol, RemoteCapability>)[CAPABILITY_OF]
@@ -964,8 +964,15 @@ describe('capability-rpc endpoints — leased values, dynamic lease results, ari
       id: 5_000,
       t: 'return',
       inReplyTo: call2.frame.id,
-      value: { '@x3.handle': { id: 'w1-9', kind: 'lease', contract: 'x3.demo/text', major: 1 } },
-      data: { nested: { '@x3.handle': { id: 'w1-10', kind: 'lease' } } },
+      value: {
+        '@x3.handle': {
+          id: 'w1-9',
+          kind: 'lease',
+          contract: 'x3.demo/text',
+          major: 1,
+          data: { nested: { '@x3.handle': { id: 'w1-10', kind: 'lease' } } },
+        },
+      },
     })
     await settle()
     expect(q.host.state).toBe('failed')

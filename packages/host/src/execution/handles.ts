@@ -245,12 +245,7 @@ export type PendingOutcome =
       /** `leased-value`: the release-only handle owning `value`. */
       readonly lease?: HandleRef
     }
-  | {
-      readonly kind: 'handle'
-      readonly value: unknown
-      /** `lease`: data fields copied off the leased object (surface `fields`). */
-      readonly data?: Readonly<Record<string, WireValue>>
-    }
+  | { readonly kind: 'handle'; readonly value: unknown }
   | { readonly kind: 'throw'; readonly error: ErrorDto }
   | { readonly kind: 'done' }
 

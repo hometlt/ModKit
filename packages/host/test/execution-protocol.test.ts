@@ -128,6 +128,37 @@ describe('capability-rpc protocol v1 — wire values', () => {
     expect(malformed.ok).toBe(false)
     if (malformed.ok) throw new Error('unexpected')
     expect(malformed.violation.code).toBe('bad-handle')
+    // a ref may carry copied data fields; that data is a handle-free wire object wherever the ref is
+    const withData = handleRef(
+      'w1-4',
+      'lease',
+      { contract: 'x3.demo/thing', major: 1 },
+      {
+        revision: 'r1',
+        size: 4n,
+      },
+    )
+    expect(isHandleRef(withData)).toBe(true)
+    expect(validateWireValue(withData, limits, 'top').ok).toBe(true)
+    expect(validateWireValue({ inner: withData }, limits, 'nested').ok).toBe(true)
+    const smuggled = {
+      '@x3.handle': {
+        id: 'w1-5',
+        kind: 'lease',
+        data: { nested: { '@x3.handle': { id: 'w1-6', kind: 'lease' } } },
+      },
+    }
+    for (const mode of ['top', 'nested'] as const) {
+      const checked = validateWireValue(
+        mode === 'top' ? smuggled : { inner: smuggled },
+        limits,
+        mode,
+      )
+      expect(checked.ok).toBe(false)
+      if (checked.ok) throw new Error('unexpected')
+      expect(checked.violation.code).toBe('handle-not-allowed')
+    }
+    expect(isHandleRef({ '@x3.handle': { id: 'w1-5', kind: 'lease', data: 'nope' } })).toBe(false)
   })
 })
 
