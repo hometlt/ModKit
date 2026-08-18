@@ -131,6 +131,14 @@ for (const pkg of BUNDLED_PACKAGES) {
   }
   const removed = pruneUnreferenced(pkgDir, keep)
   pruned += removed.length
+  // Pruning invalidates tsc's incremental view of dist: with the .tsbuildinfo left in place a later
+  // `tsc -b` believes the modular files still exist and re-emits only changed ones, leaving a
+  // modular index.js that imports pruned siblings. Dropping the build info makes the next `tsc -b`
+  // re-emit the whole package (consistent modular dist), and `pnpm build` re-bundles on top.
+  if (!check && removed.length > 0) {
+    const buildInfo = join(pkgDir, 'tsconfig.tsbuildinfo')
+    if (existsSync(buildInfo)) rmSync(buildInfo)
+  }
 }
 
 // The CLI is an application: its own modules are inlined, lab packages stay external so the
