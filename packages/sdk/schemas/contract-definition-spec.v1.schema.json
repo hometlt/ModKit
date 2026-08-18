@@ -183,6 +183,156 @@
         },
         "schemaVersion": {
           "const": 1
+        },
+        "surface": {
+          "additionalProperties": false,
+          "properties": {
+            "methods": {
+              "additionalProperties": {
+                "oneOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "arity": {
+                        "maximum": 16,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "kind": {
+                        "const": "lease"
+                      },
+                      "limits": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "maxBytes": {
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "maxPageItems": {
+                            "maximum": 9007199254740991,
+                            "minimum": 1,
+                            "type": "integer"
+                          },
+                          "maxStringLength": {
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "optional": {
+                        "type": "boolean"
+                      },
+                      "result": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "contract": {
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                            "type": "string"
+                          },
+                          "major": {
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "contract",
+                          "major"
+                        ],
+                        "type": "object"
+                      },
+                      "signal": {
+                        "enum": [
+                          "last",
+                          "none"
+                        ]
+                      },
+                      "wrapper": {
+                        "enum": [
+                          "lease",
+                          "bare"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "result"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "arity": {
+                        "maximum": 16,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "kind": {
+                        "enum": [
+                          "value",
+                          "leased-value",
+                          "iterable",
+                          "events"
+                        ]
+                      },
+                      "limits": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "maxBytes": {
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "maxPageItems": {
+                            "maximum": 9007199254740991,
+                            "minimum": 1,
+                            "type": "integer"
+                          },
+                          "maxStringLength": {
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "optional": {
+                        "type": "boolean"
+                      },
+                      "signal": {
+                        "enum": [
+                          "last",
+                          "none"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "kind"
+                    ],
+                    "type": "object"
+                  }
+                ]
+              },
+              "minProperties": 1,
+              "propertyNames": {
+                "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "releaseVia": {
+              "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "methods"
+          ],
+          "type": "object"
         }
       },
       "required": [

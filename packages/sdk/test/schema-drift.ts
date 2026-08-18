@@ -20,6 +20,8 @@ import type {
   codecContributionSpecV1Schema,
   contractDefinitionSpecV1Schema,
   dataSourceContributionSpecV1Schema,
+  dataSourceMethodSurfaceV1Schema,
+  dataSourceSurfaceV1Schema,
   editorContributionSpecV1Schema,
   serviceProviderContributionSpecV1Schema,
   traitDefinitionSpecV1Schema,
@@ -39,7 +41,12 @@ import type {
 } from '../src/manifest/contribution-spec-types.js'
 import type { DataSourceContributionSpecV1 } from '../src/asset-capabilities/data-sources.js'
 import type { AnyDescriptorWire, JsonValue } from '../src/asset-capabilities/types.js'
-import type { ContractDefinitionSpecV1Wire, TraitDefinitionSpecV1Wire } from '../src/definitions.js'
+import type {
+  ContractDefinitionSpecV1Wire,
+  DataSourceMethodSurfaceV1Wire,
+  DataSourceSurfaceV1Wire,
+  TraitDefinitionSpecV1Wire,
+} from '../src/definitions.js'
 import type { EditorContributionSpecV1Wire } from '../src/editing.js'
 
 type Equal<A, B> =
@@ -131,6 +138,20 @@ export type DataSourceContributionSpecDriftGate = Expect<
     DeepMutable<DataSourceContributionSpecV1>,
     FromSchema<typeof dataSourceContributionSpecV1Schema>
   >
+>
+/**
+ * NXT-103: the method-surface schema is a `oneOf` of two arms and the hand-written wire type is
+ * the same two-arm union — `lease` carries `result`/`wrapper`, nothing else does — so the
+ * kind ↔ result correlation is a structural fact on both sides, not a comment.
+ */
+export type DataSourceMethodSurfaceDriftGate = Expect<
+  Equal<
+    DeepMutable<DataSourceMethodSurfaceV1Wire>,
+    FromSchema<typeof dataSourceMethodSurfaceV1Schema>
+  >
+>
+export type DataSourceSurfaceDriftGate = Expect<
+  Equal<DeepMutable<DataSourceSurfaceV1Wire>, FromSchema<typeof dataSourceSurfaceV1Schema>>
 >
 export type TraitDefinitionSpecDriftGate = Expect<
   Equal<DeepMutable<TraitDefinitionSpecV1Wire>, FromSchema<typeof traitDefinitionSpecV1Schema>>

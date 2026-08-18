@@ -19,6 +19,8 @@ export {
 export {
   codecContributionSpecV1Schema,
   contractDefinitionSpecV1Schema,
+  dataSourceMethodSurfaceV1Schema,
+  dataSourceSurfaceV1Schema,
   dataSourceContractDefinitionSpecV1Schema,
   dataSourceContributionSpecV1Schema,
   dataSourceRefWireSchema,
@@ -383,6 +385,16 @@ export {
   type TreeNodeRef,
   type TreeQuery,
 } from './asset-capabilities/data-sources.js'
+export {
+  AUXILIARY_DATA_SOURCE_SURFACES,
+  ENCODED_MEDIA_SURFACE_CONTRACT,
+  ENCODED_MEDIA_SURFACE_ID,
+  STANDARD_DATA_SOURCE_SURFACES,
+  standardDataSourceSurfaceFor,
+  type EncodedMediaSurfaceId,
+  type StandardSurfaceId,
+  type SurfaceOf,
+} from './asset-capabilities/data-source-surfaces.js'
 export type {
   AnyDescriptor,
   AnyDescriptorWire,
@@ -505,6 +517,17 @@ export type {
   ContractDefinitionSpecV1Wire,
   DataSourceContractDefinitionSpecV1,
   DataSourceContractDefinitionSpecV1Wire,
+  DataSourceLeaseMethodSurfaceV1,
+  DataSourceLeaseMethodSurfaceV1Wire,
+  DataSourceMethodKindV1,
+  DataSourceMethodLimitsV1,
+  DataSourceMethodSurfaceV1,
+  DataSourceMethodSurfaceV1Wire,
+  DataSourcePlainMethodSurfaceV1Wire,
+  DataSourceSurfaceRef,
+  DataSourceSurfaceRefWire,
+  DataSourceSurfaceV1,
+  DataSourceSurfaceV1Wire,
   DefinitionInventoryProvenance,
   DefinitionInventoryResult,
   DefinitionRegistrationRejection,

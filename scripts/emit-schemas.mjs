@@ -98,6 +98,9 @@ function renderStandaloneValidators() {
       name: 'dataSourceContractDefinitionV1',
       schema: sdk.dataSourceContractDefinitionSpecV1Schema,
     },
+    // NXT-103: method surfaces are validated on their own by the host surface registry and tests
+    { name: 'dataSourceSurfaceV1', schema: sdk.dataSourceSurfaceV1Schema },
+    { name: 'dataSourceMethodSurfaceV1', schema: sdk.dataSourceMethodSurfaceV1Schema },
   ]
   for (const { name, schema } of validators) {
     const ajv = new Ajv2020({

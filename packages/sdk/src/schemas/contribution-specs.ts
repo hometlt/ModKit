@@ -3,6 +3,7 @@
 import { deepFreeze, UINT64_DECIMAL_PATTERN } from '@modkitx-x3/core'
 import { STANDARD_DATA_SOURCE_CONTRACTS } from '../asset-capabilities/data-source-ids.js'
 import {
+  METHOD_NAME_PATTERN,
   NAMESPACED_DOTTED_PATTERN,
   OPERATION_PATTERN,
   QUALIFIED_PATTERN,
@@ -577,6 +578,93 @@ export const serviceContractDefinitionSpecV1Schema = {
   },
 } as const
 
+/**
+ * Data-source method surface (NXT-103): the contract-definition-owned description of *how* a
+ * data-source object is called across an execution boundary — method names, what each returns
+ * (a value, a leased capability, a leased plain value, a pull iterator, a push event stream), where
+ * the trailing `AbortSignal` goes, which methods are optional on the ABI, and bounded limits. It is
+ * data about the contract, never executable authority: the host capability-RPC core turns it into
+ * proxies; no transport or application keeps a method allowlist of its own.
+ */
+const methodName = { type: 'string', pattern: METHOD_NAME_PATTERN } as const
+
+const dataSourceSurfaceRefSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['contract', 'major'],
+  properties: {
+    contract: qualifiedId,
+    major: { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+  },
+} as const
+
+const dataSourceMethodLimitsSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    maxPageItems: { type: 'integer', minimum: 1, maximum: Number.MAX_SAFE_INTEGER },
+    maxBytes: { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    maxStringLength: { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+  },
+} as const
+
+const dataSourceMethodSurfaceCommon = {
+  /** Where the executing side appends an `AbortSignal`: last argument, or nowhere. */
+  signal: { enum: ['last', 'none'] },
+  /**
+   * Positional argument count before the signal. The executing side pads omitted trailing
+   * arguments with `undefined` up to `arity` before appending the signal, so
+   * `encoded(trackId?, signal?)` called as `encoded()` still receives its signal last.
+   */
+  arity: { type: 'integer', minimum: 0, maximum: 16 },
+  /** The ABI declares the method with `?`; an implementation may lack it. */
+  optional: { type: 'boolean' },
+  limits: dataSourceMethodLimitsSchema,
+} as const
+
+/** `lease` names the surface of what it leases; every other kind is result-free by construction. */
+export const dataSourceMethodSurfaceV1Schema = {
+  oneOf: [
+    {
+      type: 'object',
+      additionalProperties: false,
+      required: ['kind', 'result'],
+      properties: {
+        kind: { const: 'lease' },
+        result: dataSourceSurfaceRefSchema,
+        /** `'lease'` materializes `{ value, release }`; `'bare'` (default) the capability object itself. */
+        wrapper: { enum: ['lease', 'bare'] },
+        ...dataSourceMethodSurfaceCommon,
+      },
+    },
+    {
+      type: 'object',
+      additionalProperties: false,
+      required: ['kind'],
+      properties: {
+        kind: { enum: ['value', 'leased-value', 'iterable', 'events'] },
+        ...dataSourceMethodSurfaceCommon,
+      },
+    },
+  ],
+} as const
+
+export const dataSourceSurfaceV1Schema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['methods'],
+  properties: {
+    /** A `value` method whose completion also releases the capability (`dispose`-style ABIs). */
+    releaseVia: methodName,
+    methods: {
+      type: 'object',
+      minProperties: 1,
+      propertyNames: methodName,
+      additionalProperties: dataSourceMethodSurfaceV1Schema,
+    },
+  },
+} as const
+
 export const dataSourceContractDefinitionSpecV1Schema = {
   type: 'object',
   additionalProperties: false,
@@ -588,6 +676,7 @@ export const dataSourceContractDefinitionSpecV1Schema = {
     major: { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
     schema: jsonSchemaRefSchema,
     conformanceProfile: nonEmptyString,
+    surface: dataSourceSurfaceV1Schema,
   },
 } as const
 
@@ -609,5 +698,7 @@ deepFreeze(viewerContributionSpecV1Schema)
 deepFreeze(editorContributionSpecV1Schema)
 deepFreeze(traitDefinitionSpecV1Schema)
 deepFreeze(serviceContractDefinitionSpecV1Schema)
+deepFreeze(dataSourceMethodSurfaceV1Schema)
+deepFreeze(dataSourceSurfaceV1Schema)
 deepFreeze(dataSourceContractDefinitionSpecV1Schema)
 deepFreeze(contractDefinitionSpecV1Schema)

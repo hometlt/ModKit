@@ -8,7 +8,6 @@ import { snapshotJsonWireData } from '../manifest/validate.js'
 import { validateWithSchema } from '../manifest/validate.js'
 import { dataSourceContractDefinitionSpecV1Schema } from '../schemas/contribution-specs.js'
 import type {
-  DataSourceContractDefinitionSpecV1,
   DataSourceContractDefinitionSpecV1Wire,
   DefinitionInventoryProvenance,
 } from '../definitions.js'
@@ -505,7 +504,7 @@ export interface DataSourceInventoryEntry {
 export interface DataSourceRegistration<
   K extends string = string,
   M extends number = number,
-> extends Omit<DataSourceContractDefinitionSpecV1, 'contract' | 'major'> {
+> extends Omit<DataSourceContractDefinitionSpecV1Wire, 'contract' | 'major'> {
   readonly contract: K
   readonly major: M
   readonly ownerExtensionId: string

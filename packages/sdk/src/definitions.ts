@@ -69,6 +69,90 @@ export type FacetDefinitionWire =
       readonly schema: JsonSchemaRef
     }
 
+// ---------------------------------------------------------------------------------------------
+// Data-source method surface (NXT-103) — data about how a data-source object is called across an
+// execution boundary. Owned by the contract definition; consumed by the host capability-RPC core.
+
+/**
+ * What a method hands back across the boundary:
+ *  - `value`        — a bounded structured-clone value (JSON data, `bigint`, `Uint8Array`);
+ *  - `lease`        — a capability object with its own surface (`result`), released explicitly;
+ *  - `leased-value` — `Lease<T>` of a plain value: the value crosses by copy, the lease is a
+ *                     release-only handle (`NamespaceEntrySource.openEntry`);
+ *  - `iterable`     — an `AsyncIterable` pulled item by item;
+ *  - `events`       — a live push stream consumed as an `AsyncIterable`.
+ */
+export type DataSourceMethodKindV1 = 'value' | 'lease' | 'leased-value' | 'iterable' | 'events'
+
+export interface DataSourceMethodLimitsV1 {
+  /** Upper bound on `Page.items.length` the executing side may return. */
+  readonly maxPageItems?: number
+  /** Upper bound on the bytes carried by one result (`Uint8Array` payloads, nested included). */
+  readonly maxBytes?: number
+  /** Upper bound on any single string inside arguments or results. */
+  readonly maxStringLength?: number
+}
+
+export interface DataSourceSurfaceRefWire {
+  readonly contract: string
+  readonly major: number
+}
+
+interface DataSourceMethodSurfaceCommonV1 {
+  /** Where the executing side appends an `AbortSignal`: last argument (`'last'`) or nowhere. */
+  readonly signal?: 'last' | 'none'
+  /**
+   * Positional argument count before the signal. The executing side pads omitted trailing
+   * arguments with `undefined` up to `arity` before appending the signal, so
+   * `encoded(trackId?, signal?)` called as `encoded()` still receives its signal last.
+   */
+  readonly arity?: number
+  /** The ABI declares the method with `?`; an implementation may lack it. */
+  readonly optional?: boolean
+  readonly limits?: DataSourceMethodLimitsV1
+}
+
+export interface DataSourceLeaseMethodSurfaceV1Wire extends DataSourceMethodSurfaceCommonV1 {
+  readonly kind: 'lease'
+  readonly result: DataSourceSurfaceRefWire
+  /** `'lease'` materializes `{ value, release }`; `'bare'` (default) the capability object itself. */
+  readonly wrapper?: 'lease' | 'bare'
+}
+
+export interface DataSourcePlainMethodSurfaceV1Wire extends DataSourceMethodSurfaceCommonV1 {
+  readonly kind: Exclude<DataSourceMethodKindV1, 'lease'>
+}
+
+/** Exclusive by construction: only `lease` carries `result`/`wrapper` (schema `oneOf`). */
+export type DataSourceMethodSurfaceV1Wire =
+  DataSourceLeaseMethodSurfaceV1Wire | DataSourcePlainMethodSurfaceV1Wire
+
+export interface DataSourceSurfaceV1Wire {
+  readonly methods: Readonly<Record<string, DataSourceMethodSurfaceV1Wire>>
+  /** A `value` method whose completion also releases the capability (`dispose`-style ABIs). */
+  readonly releaseVia?: string
+}
+
+export interface DataSourceSurfaceRef {
+  readonly contract: ContractId
+  readonly major: number
+}
+
+export interface DataSourceLeaseMethodSurfaceV1 extends Omit<
+  DataSourceLeaseMethodSurfaceV1Wire,
+  'result'
+> {
+  readonly result: DataSourceSurfaceRef
+}
+
+export type DataSourceMethodSurfaceV1 =
+  DataSourceLeaseMethodSurfaceV1 | DataSourcePlainMethodSurfaceV1Wire
+
+export interface DataSourceSurfaceV1 {
+  readonly methods: Readonly<Record<string, DataSourceMethodSurfaceV1>>
+  readonly releaseVia?: string
+}
+
 export interface DataSourceContractDefinitionSpecV1Wire {
   readonly schemaVersion: 1
   readonly kind: 'data-source'
@@ -76,6 +160,8 @@ export interface DataSourceContractDefinitionSpecV1Wire {
   readonly major: number
   readonly schema: JsonSchemaRef
   readonly conformanceProfile: string
+  /** Method surface of the data-source objects this contract describes (NXT-103). */
+  readonly surface?: DataSourceSurfaceV1Wire
 }
 
 export type ContractDefinitionSpecV1Wire =
@@ -95,9 +181,10 @@ export interface ServiceContractDefinitionSpecV1 extends Omit<
 
 export interface DataSourceContractDefinitionSpecV1 extends Omit<
   DataSourceContractDefinitionSpecV1Wire,
-  'contract'
+  'contract' | 'surface'
 > {
   readonly contract: ContractId
+  readonly surface?: DataSourceSurfaceV1
 }
 
 export type ContractDefinitionSpecV1 =

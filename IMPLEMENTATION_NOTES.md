@@ -6,6 +6,103 @@ overrides a canonical or detailed owner.
 
 ---
 
+## F1/F4b follow-ups — in-process hostile kit cases, big transfers, acc-8/acc-9/acc-10 (Agent, 2026-08-18)
+
+**What exists.** Four new in-process hostile cases in the conformance kit
+(`packages/testkit/src/capability-rpc/conformance.ts`, `CASES` 21 → **25**), each mirroring a
+worker fixture on the raw-injection path and each flagged `hostile: true, needsLocalWorker: true`
+so host-only pairs report them as `skipped`: `hs-proto-pollution-reply` (an _own_ `__proto__` key
+inside a forged `return`, produced with `JSON.parse` — `forbidden-key`, `Object.prototype`
+untouched, parked call rejected `x3.host/rpc-protocol-violation`), `hs-bad-values-reply` (five
+probes on fresh pairs: `NaN` → `bad-value`, a partial `Uint8Array` view → `partial-typed-array`,
+`SharedArrayBuffer`-backed bytes → `shared-buffer`, 40-deep nesting → `depth-exceeded`, an extra
+frame key → `unknown-key`), `hs-event-unknown-subscription` (a stray `event` is counted in
+`droppedEvents`, endpoint stays open, no failure) and `hs-progress-after-settle` (progress after a
+call settled is noise; progress for a call that never existed is `unknown-reply-target`). Two
+helpers carry them: `lastHostCallId(ctx, method)` and `parkPendingHang(ctx)`. Acceptance
+(`packages/testkit/test/hostile-worker.test.ts`, 14 → **18** tests): an 8 MiB `echo` both ways over
+`worker_threads` (bytes intact, sender detached, 200 concurrent `checked(i)` in order, exit 0);
+`release()` idempotence (acc-9 — three concurrent calls and a later one resolve with the _same_
+`end` object, zero terminations for `demo-worker`, exactly one for `ignore-terminate`); a new
+`noisy` fixture (1 MiB to `stdout` _and_ `stderr` in 64 KiB chunks) proving the harness caps
+captured output at `outputCapBytes` and flags `truncated` (acc-10); a `previous-generation`
+variant of `wrong-session` plus a restart test (acc-8 — session `restart-1` at generation 1 →
+`release` → generation 2 serves the same session, the pre-restart remote is
+`x3.host/rpc-endpoint-closed`, no handles travel across the restart). `packages/testkit/README.md`
+is new: how a transport plugs into the kit, how to read the report, how to run the fixtures.
+
+**What is proven.** The endpoint fails closed on every forged reply shape at the _frame_ boundary
+(the value never reaches user code — no prototype pollution, no partial views, no shared memory),
+and it distinguishes the three noise classes it must tolerate (stray events, late progress, late
+replies after cancel) from the violations it must die on. Transfers up to `maxTransferBytes` cross
+a real thread boundary zero-copy and in order. The reference supervisor's `release()` is a real
+idempotent latch, not a lucky race, and the harness — not the worker — bounds captured output.
+
+**Not in scope / not done.** `packages/host/**` was not touched: every case here matches the
+endpoint's existing behaviour, no core defect was found. The kit's docstring gained the case count
+(it never carried one before); the older F1/F4b entries below still quote "21 cases" as the record
+of what those tasks delivered. `pnpm build`, `prettier --check`, `pnpm test` (73 files / 591 tests)
+and the three `check:*` gates are green; `eslint .` reports 3 errors, all in the in-flight NXT-103
+`packages/sdk/src/asset-capabilities/data-source-surfaces.ts` (`consistent-type-definitions`,
+`consistent-indexed-object-style`) — outside this scope and left alone.
+
+---
+
+## NXT-103 — data-source method surface is a contract-definition authority (Root/Fable, 2026-08-18)
+
+**What landed (`packages/sdk`).** The `kind: 'data-source'` arm of `contract-definition-spec.v1`
+gains an optional `surface`: `{ methods: Record<name, MethodSurface>, releaseVia? }` where a method
+surface is a two-arm `oneOf` — `{ kind: 'lease', result: {contract, major}, wrapper?: 'lease'|'bare' }`
+or `{ kind: 'value' | 'leased-value' | 'iterable' | 'events' }` — with the shared optional fields
+`signal: 'last'|'none'`, `arity` (positional args before the signal; the executing side pads omitted
+trailing args with `undefined` so `encoded(trackId?, signal?)` called as `encoded()` still gets its
+signal last), `optional` (the ABI declares the method with `?`) and `limits`
+(`maxPageItems`/`maxBytes`/`maxStringLength`). Method names follow `METHOD_NAME_PATTERN`
+(`^[a-z][a-zA-Z0-9]{0,63}$`, the same grammar as the host protocol's `isMethodName`). Types:
+`DataSourceSurfaceV1Wire`/`DataSourceMethodSurfaceV1Wire` (string contracts) and the branded
+`DataSourceSurfaceV1`/`DataSourceMethodSurfaceV1`; `DataSourceRegistration` is now typed against
+the wire spec (registrations carry data as registered). Semantic rules the schema cannot express
+run in `validateContractDefinitionSemantics`: `releaseVia` must name a declared `value` method
+(`x3.sdk/surface-release-via-unknown` / `-kind`). Standalone CSP-safe validators are emitted for
+`dataSourceSurfaceV1` and `dataSourceMethodSurfaceV1` next to the definition validator.
+
+**Drift gate.** No "recursive exclusive-union normalisation" was needed: the hand-written wire type
+is the same two-arm union the `oneOf` produces, so `Equal<DeepMutable<…>, FromSchema<…>>` holds
+for the method surface, the surface and the whole contract-definition union
+(`packages/sdk/test/schema-drift.ts`). The kind ↔ result correlation is a structural fact on both
+sides — a single interface with `result?` would have weakened it, exactly the trap Sol flagged.
+
+**Standard table.** `STANDARD_DATA_SOURCE_SURFACES` (13 contracts, all major 1) +
+`AUXILIARY_DATA_SOURCE_SURFACES` (`common.view/encoded-media@1` — `EncodedMediaSource` is a
+capability object returned by `encoded()`, not a data-source contract; it needs a surface id for the
+`lease` result and is released by cascade from its parent) + `standardDataSourceSurfaceFor(contract,
+major)` (undefined for foreign contracts: their surface comes from their own definition, never a host
+guess), exported from `@modkitx-x3/sdk` and `@modkitx-x3/sdk/data-sources`. Every entry is pinned to
+its ABI interface at compile time by `SurfaceOf<T>` (`RequiredMethodKeys`/`OptionalMethodKeys`
+mapped types): missing, extra or unflagged-optional methods do not compile
+(`packages/sdk/test/data-source-surfaces-types.ts` proves the negatives with `@ts-expect-error`).
+Kinds mirror the ABI: `Promise<X>` → `value`; `Promise<EncodedMediaSource>` → `lease`/`bare`;
+`Promise<Lease<AssetSourceRef>>` (`openEntry`) → **`leased-value`** — a new kind: the value crosses
+by copy, the lease is a release-only handle (proposal §5.2 option (б), no ABI change);
+`AsyncIterable` → `iterable` (`search`) or `events` (`TransportSource.events`, live push);
+`readRegion?`/`readPcm?`/`readFrame?`/`primitive?` → `optional: true`; `AudioMediaSource.encoded`
+→ `arity: 1`. No `limits` in the standard table: bounds are owner policy per contract; the wire
+already enforces the endpoint's global limits.
+
+**Decisions taken here (Root, lab scope).** (1) `leased-value` instead of redefining `openEntry`
+on the ABI. (2) The auxiliary surface lives in the standard table under `common.view/encoded-media`
+rather than a host-internal exception. (3) `optional` is data now; the protocol's `has[]` presence
+list on handle refs is still v1.1 — until then a materialized proxy defines optional methods and an
+absent implementation answers `x3.host/rpc-method-unavailable`. (4) `arity` replaces the proposal's
+`args` schemas for v1; `args`/`returns` JSON-schema refs remain a possible later addition. Owner-doc
+sync (`docs/MK3/02` vocabulary, `27` §6 envelope) is the owner's to record; this entry is the lab
+record.
+
+**Not here.** The host adapter (`DataSourceSurfaceV1 → CapabilitySurface`), the ABI surfaces
+(module/codec/session/provider) and the standard surface registry are R2 in `packages/host`.
+
+---
+
 ## F4b — hostile-worker fixtures, Node worker harness and acceptance over real threads (Fable, 2026-08-18)
 
 **What exists.** `packages/testkit/src/capability-rpc/node/worker-harness.ts` (exported from

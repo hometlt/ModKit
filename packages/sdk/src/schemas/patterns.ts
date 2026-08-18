@@ -49,3 +49,10 @@ export const VERSION_RANGE_PATTERN = `^(?:\\*|x|${RANGE_ATOM}(?: ${RANGE_ATOM})*
  */
 export const RELATIVE_ENTRYPOINT_PATTERN =
   '^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$'
+
+/**
+ * Method names on a data-source method surface (NXT-103): lowerCamel, ≤ 64 chars. Mirrors
+ * `isMethodName` in the host capability-RPC protocol so a surface the schema accepts is a
+ * surface the wire can carry.
+ */
+export const METHOD_NAME_PATTERN = '^[a-z][a-zA-Z0-9]{0,63}$'

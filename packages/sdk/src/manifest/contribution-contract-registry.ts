@@ -44,7 +44,11 @@ import type {
 import type { InventoryFact } from './spec-registry.js'
 import type { JsonValue } from '../asset-capabilities/types.js'
 import { isStandardTraitId } from '../asset-capabilities/standard-traits.js'
-import type { ContractDefinitionSpecV1Wire, TraitDefinitionSpecV1Wire } from '../definitions.js'
+import type {
+  ContractDefinitionSpecV1Wire,
+  DataSourceSurfaceV1Wire,
+  TraitDefinitionSpecV1Wire,
+} from '../definitions.js'
 import type { EditorContributionSpecV1Wire } from '../editing.js'
 import type { ContractRequirementWire } from '../resolution/types.js'
 import { snapshotJsonWireObject } from './validate.js'
@@ -550,7 +554,46 @@ export const validateContractDefinitionSemantics: SpecSemanticValidator = manife
       ),
     ]
   }
+  if (spec.kind === 'data-source' && spec.surface !== undefined) {
+    return dataSourceSurfaceDiagnostics(spec.surface, ['spec', 'surface'])
+  }
   return []
+}
+
+/**
+ * Surface rules the JSON schema cannot express (NXT-103): `releaseVia` must name a declared
+ * `value` method, and a `lease` must not lease itself through a wrapper it cannot release.
+ * Cross-definition facts (does the leased surface exist?) are checked where surfaces meet — the
+ * host surface registry — not here.
+ */
+function dataSourceSurfaceDiagnostics(
+  surface: DataSourceSurfaceV1Wire,
+  path: readonly (string | number)[],
+): Diagnostic[] {
+  const diagnostics: Diagnostic[] = []
+  if (surface.releaseVia !== undefined) {
+    const target = surface.methods[surface.releaseVia]
+    if (target === undefined) {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'x3.sdk/surface-release-via-unknown',
+          `releaseVia «${surface.releaseVia}» does not name a declared method`,
+          [...path, 'releaseVia'],
+        ),
+      )
+    } else if (target.kind !== 'value') {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'x3.sdk/surface-release-via-kind',
+          `releaseVia «${surface.releaseVia}» must name a value method, found ${target.kind}`,
+          [...path, 'releaseVia'],
+        ),
+      )
+    }
+  }
+  return diagnostics
 }
 
 export const validateServiceProviderContributionSemantics: SpecSemanticValidator = manifest => {
