@@ -1,0 +1,917 @@
+/**
+ * Capability-RPC protocol v1 — wire vocabulary and validators (NXT-105, plan §6; owners:
+ * MK3/24 §6.1 SB-1 boundary, §13 budgets/cancellation, §12 secrets; MK3/23 §3 grammars).
+ *
+ * This is the transport-agnostic *private* protocol between a host endpoint and an execution
+ * endpoint (Node worker, browser worker, Electron preload/IPC). It is not part of the public SDK
+ * ABI: extensions never see frames — they see the runtime ABI objects a proxy reconstructs.
+ *
+ * Design rules fixed here (review REVIEW_FABLE_NEXT_A2_A3 F-01/F-02/F-12):
+ *  - every frame carries an exact-key envelope `{domain, version, session, generation, id}`;
+ *    generation increments on worker restart so a stale reply can never satisfy a live call;
+ *  - values crossing the boundary are JSON-safe data, `bigint`, whole `Uint8Array`s (transferred,
+ *    never a view over a larger/shared buffer) and opaque handle refs — nothing else; functions,
+ *    class instances, prototypes, paths, credentials and `AbortSignal` never cross;
+ *  - validators are exact-key and prototype-safe (`__proto__`, `constructor`, `prototype` are
+ *    rejected as keys) and enforce depth/node/string/array/transfer limits;
+ *  - a handle ref is only meaningful where the method surface says a handle is expected; the
+ *    marker key is `@x3.handle` and any other object carrying that key is a violation;
+ *  - errors travel as a bounded DTO built from `ModkitError.toJSON()`; cancellation stays a
+ *    distinct outcome (`cancelled: true`) and never turns into a generic failure; stacks never
+ *    cross the boundary.
+ *
+ * Nothing in this file touches a transport, a worker or the public SDK surface.
+ */
+
+import {
+  isModkitError,
+  isQualifiedId,
+  isSegment,
+  ModkitError,
+  OperationCancelledError,
+  type Retryability,
+} from '@modkitx-x3/core'
+
+// ---------------------------------------------------------------------------------------------
+// constants and grammars
+
+export const CAPABILITY_RPC_DOMAIN = 'x3.host/rpc'
+export const CAPABILITY_RPC_VERSION = 1
+
+/** Marker key of an opaque handle reference inside a wire value. */
+export const HANDLE_MARKER = '@x3.handle'
+
+/**
+ * Handle ids are `<owner><generation>-<sequence>` where owner is `h` (allocated by the host
+ * endpoint) or `w` (allocated by the executing/worker endpoint); decimal, no leading zeros. The
+ * owner prefix is what lets an endpoint tell its own handles from the peer's without a table.
+ */
+const HANDLE_ID = /^[hw](?:0|[1-9]\d*)-(?:0|[1-9]\d*)$/u
+/** Subscription ids are `<owner>s<generation>-<sequence>`, allocated by the pushing side. */
+const SUBSCRIPTION_ID = /^[hw]s(?:0|[1-9]\d*)-(?:0|[1-9]\d*)$/u
+/** Method names: lowerCamel, no dots (dots would look like operation ids). */
+const METHOD_NAME = /^[a-z][a-zA-Z0-9]{0,63}$/u
+const FORBIDDEN_KEYS: ReadonlySet<string> = new Set(['__proto__', 'constructor', 'prototype'])
+const FRAME_TYPES = [
+  'load',
+  'ready',
+  'call',
+  'return',
+  'throw',
+  'cancel',
+  'next',
+  'done',
+  'subscribe',
+  'event',
+  'unsubscribe',
+  'progress',
+  'release',
+  'terminate',
+] as const
+
+export type FrameType = (typeof FRAME_TYPES)[number]
+export type HandleKind = 'lease' | 'iterator' | 'events'
+const HANDLE_KINDS: readonly HandleKind[] = ['lease', 'iterator', 'events']
+
+export function isHandleId(value: string): boolean {
+  return HANDLE_ID.test(value)
+}
+
+export function isSubscriptionId(value: string): boolean {
+  return SUBSCRIPTION_ID.test(value)
+}
+
+export function isMethodName(value: string): boolean {
+  return METHOD_NAME.test(value)
+}
+
+// ---------------------------------------------------------------------------------------------
+// wire values
+
+export type WireScalar = null | boolean | number | string | bigint
+export type WireValue =
+  WireScalar | Uint8Array | readonly WireValue[] | { readonly [key: string]: WireValue }
+
+/** Opaque reference to a capability living on the other side of the boundary. */
+export interface HandleRef {
+  readonly [HANDLE_MARKER]: {
+    readonly id: string
+    readonly kind: HandleKind
+    /** Surface identity of the leased capability (absent for iterators/events). */
+    readonly contract?: string
+    readonly major?: number
+  }
+}
+
+export function handleRef(
+  id: string,
+  kind: HandleKind,
+  contract?: { readonly contract: string; readonly major: number },
+): HandleRef {
+  return Object.freeze({
+    [HANDLE_MARKER]: Object.freeze({
+      id,
+      kind,
+      ...(contract === undefined ? {} : { contract: contract.contract, major: contract.major }),
+    }),
+  })
+}
+
+export function isHandleRef(value: unknown): value is HandleRef {
+  if (!isPlainObject(value)) return false
+  const keys = Object.keys(value)
+  if (keys.length !== 1 || keys[0] !== HANDLE_MARKER) return false
+  const inner = (value as Record<string, unknown>)[HANDLE_MARKER]
+  if (!isPlainObject(inner)) return false
+  const innerKeys = Object.keys(inner).sort()
+  const record = inner as Record<string, unknown>
+  const base = ['id', 'kind']
+  const withContract = ['contract', 'id', 'kind', 'major']
+  const shape =
+    innerKeys.join(',') === base.join(',') || innerKeys.join(',') === withContract.join(',')
+  if (!shape) return false
+  if (typeof record['id'] !== 'string' || !isHandleId(record['id'])) return false
+  if (typeof record['kind'] !== 'string' || !HANDLE_KINDS.includes(record['kind'] as HandleKind))
+    return false
+  if (innerKeys.length === 4) {
+    if (typeof record['contract'] !== 'string' || !isQualifiedId(record['contract'])) return false
+    if (!Number.isSafeInteger(record['major']) || (record['major'] as number) < 0) return false
+  }
+  return true
+}
+
+/** A plain data object: `Object.prototype` or null prototype, nothing else. */
+export function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+  const proto = Object.getPrototypeOf(value) as unknown
+  return proto === Object.prototype || proto === null
+}
+
+// ---------------------------------------------------------------------------------------------
+// limits
+
+export interface ProtocolLimits {
+  /** Maximum nesting depth of a wire value (arrays/objects). */
+  readonly maxDepth: number
+  /** Maximum number of nodes (scalars + containers) in one wire value. */
+  readonly maxNodes: number
+  readonly maxStringLength: number
+  readonly maxArrayLength: number
+  readonly maxObjectKeys: number
+  /** Maximum total `Uint8Array` bytes carried by one frame. */
+  readonly maxTransferBytes: number
+  /** Maximum number of call arguments. */
+  readonly maxArgs: number
+  /** Concurrency/lifecycle limits enforced by the endpoints (per session/generation). */
+  readonly maxPendingCalls: number
+  readonly maxHandles: number
+  readonly maxIterators: number
+  readonly maxSubscriptions: number
+  readonly maxQueuedEvents: number
+  /** Default per-call deadline when the caller passes none; 0 disables. */
+  readonly defaultCallDeadlineMs: number
+}
+
+export const DEFAULT_PROTOCOL_LIMITS: ProtocolLimits = Object.freeze({
+  maxDepth: 32,
+  maxNodes: 200_000,
+  maxStringLength: 4 * 1024 * 1024,
+  maxArrayLength: 100_000,
+  maxObjectKeys: 10_000,
+  maxTransferBytes: 64 * 1024 * 1024,
+  maxArgs: 16,
+  maxPendingCalls: 256,
+  maxHandles: 4096,
+  maxIterators: 256,
+  maxSubscriptions: 64,
+  maxQueuedEvents: 1024,
+  defaultCallDeadlineMs: 30_000,
+})
+
+export function protocolLimits(overrides: Partial<ProtocolLimits> = {}): ProtocolLimits {
+  const merged = { ...DEFAULT_PROTOCOL_LIMITS, ...overrides }
+  for (const [key, value] of Object.entries(merged)) {
+    if (!Number.isSafeInteger(value) || value < 0) {
+      throw new ModkitError({
+        code: 'x3.host/rpc-invalid-limits',
+        message: `protocol limit ${key} must be a non-negative safe integer`,
+        context: { key },
+      })
+    }
+  }
+  return Object.freeze(merged)
+}
+
+// ---------------------------------------------------------------------------------------------
+// violations
+
+export type ProtocolViolationCode =
+  | 'not-an-object'
+  | 'unknown-key'
+  | 'missing-key'
+  | 'bad-envelope'
+  | 'bad-type'
+  | 'bad-id'
+  | 'bad-handle'
+  | 'bad-subscription'
+  | 'bad-method'
+  | 'bad-value'
+  | 'forbidden-key'
+  | 'reserved-key'
+  | 'depth-exceeded'
+  | 'nodes-exceeded'
+  | 'string-too-long'
+  | 'array-too-long'
+  | 'too-many-keys'
+  | 'transfer-too-large'
+  | 'partial-typed-array'
+  | 'shared-buffer'
+  | 'too-many-args'
+  | 'bad-error'
+  | 'bad-progress'
+  | 'non-monotonic-id'
+  | 'unknown-reply-target'
+  | 'duplicate-reply'
+  | 'unknown-handle'
+  | 'stale-generation'
+  | 'released-handle'
+  | 'wrong-handle-kind'
+  | 'iterator-busy'
+  | 'unknown-subscription'
+  | 'events-overflow'
+  | 'limit-exceeded'
+  | 'unexpected-frame'
+  | 'unknown-method'
+  | 'unknown-surface'
+  | 'bad-argument'
+  | 'bad-return'
+  | 'handle-not-allowed'
+  | 'endpoint-closed'
+
+export interface ProtocolViolation {
+  readonly code: ProtocolViolationCode
+  readonly message: string
+  /** JSON-pointer-like path into the offending frame/value; never carries payload bytes. */
+  readonly path?: readonly (string | number)[]
+}
+
+export type Validated<T> =
+  | { readonly ok: true; readonly value: T }
+  | { readonly ok: false; readonly violation: ProtocolViolation }
+
+export function violation(
+  code: ProtocolViolationCode,
+  message: string,
+  path?: readonly (string | number)[],
+): { readonly ok: false; readonly violation: ProtocolViolation } {
+  return {
+    ok: false,
+    violation: Object.freeze({ code, message, ...(path === undefined ? {} : { path }) }),
+  }
+}
+
+/** Structured error a caller receives when a protocol violation aborts an endpoint. */
+export function protocolViolationError(item: ProtocolViolation): ModkitError {
+  return new ModkitError({
+    code: 'x3.host/rpc-protocol-violation',
+    message: `capability-rpc protocol violation: ${item.message}`,
+    context: {
+      violation: item.code,
+      ...(item.path === undefined ? {} : { path: [...item.path] }),
+    },
+  })
+}
+
+// ---------------------------------------------------------------------------------------------
+// wire value validation
+
+export interface WireValueMeasure {
+  readonly nodes: number
+  readonly transferBytes: number
+  /** Whole `Uint8Array` buffers found; a transport moves them instead of copying. */
+  readonly transferables: readonly ArrayBuffer[]
+}
+
+interface Measure {
+  nodes: number
+  bytes: number
+  buffers: ArrayBuffer[]
+}
+
+const SHARED = typeof SharedArrayBuffer === 'function' ? SharedArrayBuffer : undefined
+
+function validateInner(
+  value: unknown,
+  limits: ProtocolLimits,
+  measure: Measure,
+  depth: number,
+  path: (string | number)[],
+  handles: 'forbid' | 'allow',
+): ProtocolViolation | undefined {
+  measure.nodes += 1
+  if (measure.nodes > limits.maxNodes) {
+    return { code: 'nodes-exceeded', message: `value has more than ${limits.maxNodes} nodes` }
+  }
+  if (depth > limits.maxDepth) {
+    return { code: 'depth-exceeded', message: `value nests deeper than ${limits.maxDepth}`, path }
+  }
+  switch (typeof value) {
+    case 'boolean':
+    case 'bigint':
+      return undefined
+    case 'number':
+      return Number.isFinite(value)
+        ? undefined
+        : { code: 'bad-value', message: 'non-finite number', path }
+    case 'string':
+      return value.length <= limits.maxStringLength
+        ? undefined
+        : { code: 'string-too-long', message: `string longer than ${limits.maxStringLength}`, path }
+    case 'object':
+      break
+    default:
+      return { code: 'bad-value', message: `${typeof value} is not a wire value`, path }
+  }
+  if (value === null) return undefined
+  if (value instanceof Uint8Array) {
+    if (SHARED !== undefined && value.buffer instanceof SHARED) {
+      return {
+        code: 'shared-buffer',
+        message: 'SharedArrayBuffer-backed bytes are not transferable',
+        path,
+      }
+    }
+    if (value.byteOffset !== 0 || value.byteLength !== value.buffer.byteLength) {
+      return {
+        code: 'partial-typed-array',
+        message: 'a Uint8Array must own its whole buffer (slice() before sending)',
+        path,
+      }
+    }
+    measure.bytes += value.byteLength
+    if (measure.bytes > limits.maxTransferBytes) {
+      return {
+        code: 'transfer-too-large',
+        message: `frame carries more than ${limits.maxTransferBytes} bytes`,
+        path,
+      }
+    }
+    measure.buffers.push(value.buffer as ArrayBuffer)
+    return undefined
+  }
+  if (ArrayBuffer.isView(value) || value instanceof ArrayBuffer) {
+    return { code: 'bad-value', message: 'only Uint8Array binary payloads are allowed', path }
+  }
+  if (Array.isArray(value)) {
+    if (value.length > limits.maxArrayLength) {
+      return { code: 'array-too-long', message: `array longer than ${limits.maxArrayLength}`, path }
+    }
+    for (let index = 0; index < value.length; index += 1) {
+      const found = validateInner(
+        value[index],
+        limits,
+        measure,
+        depth + 1,
+        [...path, index],
+        handles,
+      )
+      if (found !== undefined) return found
+    }
+    return undefined
+  }
+  if (!isPlainObject(value)) {
+    return { code: 'bad-value', message: 'only plain data objects may cross the boundary', path }
+  }
+  if (Object.hasOwn(value, HANDLE_MARKER)) {
+    if (handles === 'forbid') {
+      return {
+        code: 'handle-not-allowed',
+        message: 'a handle ref is not allowed at this position',
+        path,
+      }
+    }
+    return isHandleRef(value)
+      ? undefined
+      : { code: 'bad-handle', message: 'malformed handle ref', path }
+  }
+  const keys = Object.keys(value)
+  if (keys.length > limits.maxObjectKeys) {
+    return {
+      code: 'too-many-keys',
+      message: `object has more than ${limits.maxObjectKeys} keys`,
+      path,
+    }
+  }
+  for (const key of keys) {
+    if (FORBIDDEN_KEYS.has(key)) {
+      return { code: 'forbidden-key', message: `key «${key}» is forbidden`, path: [...path, key] }
+    }
+    if (key.length > limits.maxStringLength) {
+      return { code: 'string-too-long', message: 'object key too long', path: [...path, key] }
+    }
+    const found = validateInner(value[key], limits, measure, depth + 1, [...path, key], handles)
+    if (found !== undefined) return found
+  }
+  return undefined
+}
+
+/**
+ * Validates one wire value against the limits. `handles: 'forbid'` (default) rejects any handle
+ * ref inside; `'top'` allows a handle ref only as the whole value; `'nested'` allows refs at any
+ * depth (used only by the endpoints for surfaces that return handle-bearing structures — none in
+ * v1, kept for the state machine's own frames).
+ */
+export function validateWireValue(
+  value: unknown,
+  limits: ProtocolLimits,
+  handles: 'forbid' | 'top' | 'nested' = 'forbid',
+  path: readonly (string | number)[] = [],
+): Validated<WireValueMeasure> {
+  const measure: Measure = { nodes: 0, bytes: 0, buffers: [] }
+  if (handles === 'top' && isHandleRef(value)) {
+    return { ok: true, value: Object.freeze({ nodes: 1, transferBytes: 0, transferables: [] }) }
+  }
+  const found = validateInner(
+    value,
+    limits,
+    measure,
+    0,
+    [...path],
+    handles === 'nested' ? 'allow' : 'forbid',
+  )
+  if (found !== undefined) return { ok: false, violation: Object.freeze(found) }
+  return {
+    ok: true,
+    value: Object.freeze({
+      nodes: measure.nodes,
+      transferBytes: measure.bytes,
+      transferables: Object.freeze(measure.buffers),
+    }),
+  }
+}
+
+// ---------------------------------------------------------------------------------------------
+// error DTO
+
+export interface ErrorDto {
+  readonly code: string
+  readonly message: string
+  readonly retryability: Retryability
+  readonly context?: Readonly<Record<string, WireValue>>
+  /** True only for `OperationCancelledError`; rehydrates as cancellation, never as failure. */
+  readonly cancelled?: true
+  /** The original context was not a bounded wire value and was dropped rather than sent. */
+  readonly contextDropped?: true
+}
+
+const RETRYABILITIES: readonly Retryability[] = ['never', 'safe', 'conditional']
+const MAX_ERROR_MESSAGE = 8 * 1024
+
+/**
+ * Converts any thrown value into a bounded DTO. Stack traces, causes and non-wire context never
+ * cross the boundary; a foreign (non-Modkit) error becomes `x3.host/rpc-foreign-error`.
+ */
+export function toErrorDto(error: unknown, limits: ProtocolLimits): ErrorDto {
+  const clip = (text: string) =>
+    text.length > MAX_ERROR_MESSAGE ? `${text.slice(0, MAX_ERROR_MESSAGE)}…` : text
+  if (error instanceof OperationCancelledError) {
+    return Object.freeze({
+      code: error.code,
+      message: clip(error.message),
+      retryability: error.retryability,
+      cancelled: true,
+    })
+  }
+  if (isModkitError(error)) {
+    let context: ErrorDto['context'] | undefined
+    let dropped = false
+    if (error.context !== undefined) {
+      const checked = validateWireValue(error.context, limits, 'forbid')
+      if (checked.ok && isPlainObject(error.context)) {
+        context = error.context as Readonly<Record<string, WireValue>>
+      } else {
+        dropped = true
+      }
+    }
+    return Object.freeze({
+      code: error.code,
+      message: clip(error.message),
+      retryability: error.retryability,
+      ...(context === undefined ? {} : { context }),
+      ...(dropped ? { contextDropped: true as const } : {}),
+    })
+  }
+  const message = error instanceof Error ? error.message : String(error)
+  return Object.freeze({
+    code: 'x3.host/rpc-foreign-error',
+    message: clip(message.length === 0 ? 'unknown error' : message),
+    retryability: 'never',
+  })
+}
+
+/** Rehydrates a DTO into a structured error; a malformed DTO is itself a structured error. */
+export function fromErrorDto(dto: ErrorDto): ModkitError {
+  if (dto.cancelled === true) return new OperationCancelledError(dto.message)
+  return new ModkitError({
+    code: dto.code,
+    message: dto.message,
+    retryability: dto.retryability,
+    ...(dto.context === undefined ? {} : { context: dto.context }),
+  })
+}
+
+export function validateErrorDto(
+  value: unknown,
+  limits: ProtocolLimits,
+  path: readonly (string | number)[] = [],
+): Validated<ErrorDto> {
+  if (!isPlainObject(value)) return violation('bad-error', 'error must be an object', path)
+  const record = value
+  const keys = Object.keys(record)
+  const allowed = new Set([
+    'code',
+    'message',
+    'retryability',
+    'context',
+    'cancelled',
+    'contextDropped',
+  ])
+  for (const key of keys) {
+    if (!allowed.has(key))
+      return violation('bad-error', `unknown error key «${key}»`, [...path, key])
+  }
+  const code = record['code']
+  if (typeof code !== 'string' || !isQualifiedId(code)) {
+    return violation('bad-error', 'error code must be a qualified id', [...path, 'code'])
+  }
+  const message = record['message']
+  if (typeof message !== 'string' || message.length > MAX_ERROR_MESSAGE + 1) {
+    return violation('bad-error', 'error message must be a bounded string', [...path, 'message'])
+  }
+  const retryability = record['retryability']
+  if (typeof retryability !== 'string' || !RETRYABILITIES.includes(retryability as Retryability)) {
+    return violation('bad-error', 'error retryability is invalid', [...path, 'retryability'])
+  }
+  for (const flag of ['cancelled', 'contextDropped'] as const) {
+    if (record[flag] !== undefined && record[flag] !== true) {
+      return violation('bad-error', `error ${flag} must be true or absent`, [...path, flag])
+    }
+  }
+  if (record['context'] !== undefined) {
+    if (!isPlainObject(record['context'])) {
+      return violation('bad-error', 'error context must be an object', [...path, 'context'])
+    }
+    const checked = validateWireValue(record['context'], limits, 'forbid', [...path, 'context'])
+    if (!checked.ok) return checked
+  }
+  return { ok: true, value: Object.freeze({ ...(record as unknown as ErrorDto) }) }
+}
+
+// ---------------------------------------------------------------------------------------------
+// frames
+
+export interface Envelope {
+  readonly domain: typeof CAPABILITY_RPC_DOMAIN
+  readonly version: typeof CAPABILITY_RPC_VERSION
+  /** Opaque session id (segment grammar). */
+  readonly session: string
+  /** Worker generation; restarts increment it and invalidate everything before. */
+  readonly generation: number
+  /** Monotonic per sender direction, starts at 1. */
+  readonly id: number
+}
+
+export interface ProgressDto {
+  readonly completed: number
+  readonly total?: number
+  readonly message?: string
+}
+
+export type Frame =
+  | (Envelope & {
+      readonly t: 'load'
+      /** Host-verified, artifact-contained module URL (24 §8: verified before spawn). */
+      readonly moduleUrl: string
+      readonly contributionId: string
+      readonly variantId: string
+      readonly artifactDigest: string
+    })
+  | (Envelope & {
+      readonly t: 'ready'
+      readonly inReplyTo: number
+      readonly abiVersion: 1
+      readonly exports: readonly string[]
+      /** Handle of the loaded module object (surface: the module surface of its contract). */
+      readonly root: HandleRef
+    })
+  | (Envelope & {
+      readonly t: 'call'
+      readonly handle: string
+      readonly method: string
+      readonly args: readonly WireValue[]
+      readonly deadlineMs?: number
+    })
+  | (Envelope & {
+      readonly t: 'return'
+      readonly inReplyTo: number
+      readonly value?: WireValue | HandleRef
+    })
+  | (Envelope & { readonly t: 'throw'; readonly inReplyTo: number; readonly error: ErrorDto })
+  | (Envelope & { readonly t: 'cancel'; readonly target: number })
+  | (Envelope & { readonly t: 'next'; readonly handle: string })
+  | (Envelope & {
+      readonly t: 'done'
+      /** Reply to a `next` (iterator exhausted) or unsolicited for an event stream. */
+      readonly inReplyTo?: number
+      readonly handle: string
+      /** An event stream that ended by failing; iterators report failures with `throw`. */
+      readonly error?: ErrorDto
+    })
+  | (Envelope & { readonly t: 'subscribe'; readonly handle: string })
+  | (Envelope & { readonly t: 'event'; readonly subscription: string; readonly value: WireValue })
+  | (Envelope & { readonly t: 'unsubscribe'; readonly subscription: string })
+  | (Envelope & {
+      readonly t: 'progress'
+      readonly inReplyTo: number
+      readonly progress: ProgressDto
+    })
+  | (Envelope & { readonly t: 'release'; readonly handle: string })
+  | (Envelope & { readonly t: 'terminate'; readonly reason: string })
+
+export type FrameOf<T extends FrameType> = Extract<Frame, { readonly t: T }>
+
+const ENVELOPE_KEYS = ['domain', 'version', 'session', 'generation', 'id', 't'] as const
+const FRAME_KEYS: Readonly<
+  Record<FrameType, { required: readonly string[]; optional: readonly string[] }>
+> = {
+  load: { required: ['moduleUrl', 'contributionId', 'variantId', 'artifactDigest'], optional: [] },
+  ready: { required: ['inReplyTo', 'abiVersion', 'exports', 'root'], optional: [] },
+  call: { required: ['handle', 'method', 'args'], optional: ['deadlineMs'] },
+  return: { required: ['inReplyTo'], optional: ['value'] },
+  throw: { required: ['inReplyTo', 'error'], optional: [] },
+  cancel: { required: ['target'], optional: [] },
+  next: { required: ['handle'], optional: [] },
+  done: { required: ['handle'], optional: ['inReplyTo', 'error'] },
+  subscribe: { required: ['handle'], optional: [] },
+  event: { required: ['subscription', 'value'], optional: [] },
+  unsubscribe: { required: ['subscription'], optional: [] },
+  progress: { required: ['inReplyTo', 'progress'], optional: [] },
+  release: { required: ['handle'], optional: [] },
+  terminate: { required: ['reason'], optional: [] },
+}
+
+export interface FrameExpectation {
+  readonly session: string
+  readonly generation: number
+}
+
+function isMessageId(value: unknown): value is number {
+  return Number.isSafeInteger(value) && (value as number) >= 1
+}
+
+function checkExactKeys(
+  record: Record<string, unknown>,
+  required: readonly string[],
+  optional: readonly string[],
+): ProtocolViolation | undefined {
+  for (const key of required) {
+    if (!Object.hasOwn(record, key))
+      return { code: 'missing-key', message: `missing key «${key}»`, path: [key] }
+  }
+  const allowed = new Set([...ENVELOPE_KEYS, ...required, ...optional])
+  for (const key of Object.keys(record)) {
+    if (FORBIDDEN_KEYS.has(key))
+      return { code: 'forbidden-key', message: `key «${key}» is forbidden`, path: [key] }
+    if (!allowed.has(key))
+      return { code: 'unknown-key', message: `unknown key «${key}»`, path: [key] }
+  }
+  return undefined
+}
+
+/**
+ * Validates one incoming frame: plain object, exact envelope, exact keys for its type, grammar of
+ * every id/method/handle, and every embedded wire value against the limits. Monotonic ids and
+ * reply targets are checked by the endpoint (they need state); this function is pure.
+ */
+export function validateFrame(
+  input: unknown,
+  limits: ProtocolLimits,
+  expect: FrameExpectation,
+): Validated<Frame> {
+  if (!isPlainObject(input)) return violation('not-an-object', 'frame must be a plain object')
+  const record = input
+  if (record['domain'] !== CAPABILITY_RPC_DOMAIN || record['version'] !== CAPABILITY_RPC_VERSION) {
+    return violation('bad-envelope', 'frame domain/version mismatch')
+  }
+  if (record['session'] !== expect.session)
+    return violation('bad-envelope', 'frame session mismatch', ['session'])
+  if (record['generation'] !== expect.generation) {
+    return violation('stale-generation', 'frame generation does not match the live generation', [
+      'generation',
+    ])
+  }
+  if (!isMessageId(record['id']))
+    return violation('bad-id', 'frame id must be a positive safe integer', ['id'])
+  const type = record['t']
+  if (typeof type !== 'string' || !(FRAME_TYPES as readonly string[]).includes(type)) {
+    return violation('bad-type', 'unknown frame type', ['t'])
+  }
+  const t = type as FrameType
+  const keys = FRAME_KEYS[t]
+  const keyViolation = checkExactKeys(record, keys.required, keys.optional)
+  if (keyViolation !== undefined) return { ok: false, violation: keyViolation }
+
+  const str = (
+    key: string,
+    test?: (value: string) => boolean,
+    code: ProtocolViolationCode = 'bad-value',
+  ) =>
+    typeof record[key] === 'string' &&
+    (record[key] as string).length > 0 &&
+    (test?.(record[key] as string) ?? true)
+      ? undefined
+      : violation(code, `«${key}» is malformed`, [key])
+  const replyId = (key: string) =>
+    isMessageId(record[key])
+      ? undefined
+      : violation('bad-id', `«${key}» must be a positive safe integer`, [key])
+
+  switch (t) {
+    case 'load': {
+      for (const key of ['moduleUrl', 'artifactDigest'] as const) {
+        const bad = str(key, value => value.length <= limits.maxStringLength)
+        if (bad) return bad
+      }
+      const bad = str('contributionId', isQualifiedId) ?? str('variantId', isSegment)
+      if (bad) return bad
+      break
+    }
+    case 'ready': {
+      const bad = replyId('inReplyTo')
+      if (bad) return bad
+      if (record['abiVersion'] !== 1)
+        return violation('bad-value', 'abiVersion must be 1', ['abiVersion'])
+      const exports = record['exports']
+      if (
+        !Array.isArray(exports) ||
+        exports.length > limits.maxArrayLength ||
+        !exports.every(item => typeof item === 'string' && item.length > 0 && item.length <= 256)
+      ) {
+        return violation('bad-value', 'exports must be an array of short strings', ['exports'])
+      }
+      if (!isHandleRef(record['root']))
+        return violation('bad-handle', 'root must be a handle ref', ['root'])
+      break
+    }
+    case 'call': {
+      const bad =
+        str('handle', isHandleId, 'bad-handle') ?? str('method', isMethodName, 'bad-method')
+      if (bad) return bad
+      const args = record['args']
+      if (!Array.isArray(args)) return violation('bad-value', 'args must be an array', ['args'])
+      if (args.length > limits.maxArgs)
+        return violation('too-many-args', `more than ${limits.maxArgs} args`, ['args'])
+      const checked = validateWireValue(args, limits, 'nested', ['args'])
+      if (!checked.ok) return checked
+      if (
+        record['deadlineMs'] !== undefined &&
+        (!Number.isSafeInteger(record['deadlineMs']) || (record['deadlineMs'] as number) < 0)
+      ) {
+        return violation('bad-value', 'deadlineMs must be a non-negative safe integer', [
+          'deadlineMs',
+        ])
+      }
+      break
+    }
+    case 'return': {
+      const bad = replyId('inReplyTo')
+      if (bad) return bad
+      if (record['value'] !== undefined) {
+        const checked = validateWireValue(record['value'], limits, 'top', ['value'])
+        if (!checked.ok) return checked
+      }
+      break
+    }
+    case 'throw': {
+      const bad = replyId('inReplyTo')
+      if (bad) return bad
+      const checked = validateErrorDto(record['error'], limits, ['error'])
+      if (!checked.ok) return checked
+      break
+    }
+    case 'cancel':
+      {
+        const bad = replyId('target')
+        if (bad) return bad
+      }
+      break
+    case 'next':
+    case 'subscribe':
+    case 'release': {
+      const bad = str('handle', isHandleId, 'bad-handle')
+      if (bad) return bad
+      break
+    }
+    case 'done': {
+      const bad = str('handle', isHandleId, 'bad-handle')
+      if (bad) return bad
+      if (record['inReplyTo'] !== undefined) {
+        const badReply = replyId('inReplyTo')
+        if (badReply) return badReply
+      }
+      if (record['error'] !== undefined) {
+        const checked = validateErrorDto(record['error'], limits, ['error'])
+        if (!checked.ok) return checked
+      }
+      break
+    }
+    case 'event': {
+      const bad = str('subscription', isSubscriptionId, 'bad-subscription')
+      if (bad) return bad
+      const checked = validateWireValue(record['value'], limits, 'forbid', ['value'])
+      if (!checked.ok) return checked
+      break
+    }
+    case 'unsubscribe': {
+      const bad = str('subscription', isSubscriptionId, 'bad-subscription')
+      if (bad) return bad
+      break
+    }
+    case 'progress': {
+      const bad = replyId('inReplyTo')
+      if (bad) return bad
+      const progress = record['progress']
+      if (!isPlainObject(progress))
+        return violation('bad-progress', 'progress must be an object', ['progress'])
+      const progressKeys = Object.keys(progress)
+      if (progressKeys.some(key => !['completed', 'total', 'message'].includes(key))) {
+        return violation('bad-progress', 'progress has unknown keys', ['progress'])
+      }
+      if (
+        typeof progress['completed'] !== 'number' ||
+        !Number.isFinite(progress['completed']) ||
+        progress['completed'] < 0
+      ) {
+        return violation('bad-progress', 'progress.completed must be a non-negative number', [
+          'progress',
+          'completed',
+        ])
+      }
+      if (
+        progress['total'] !== undefined &&
+        (typeof progress['total'] !== 'number' ||
+          !Number.isFinite(progress['total']) ||
+          progress['total'] < 0)
+      ) {
+        return violation('bad-progress', 'progress.total must be a non-negative number', [
+          'progress',
+          'total',
+        ])
+      }
+      if (
+        progress['message'] !== undefined &&
+        (typeof progress['message'] !== 'string' || progress['message'].length > 1024)
+      ) {
+        return violation('bad-progress', 'progress.message must be a short string', [
+          'progress',
+          'message',
+        ])
+      }
+      break
+    }
+    case 'terminate': {
+      const bad = str('reason', value => value.length <= 1024)
+      if (bad) return bad
+      break
+    }
+  }
+  return { ok: true, value: record as unknown as Frame }
+}
+
+/** Payload-free description for diagnostics/logs (never echoes values, args or bytes). */
+export function describeFrame(frame: Frame): string {
+  switch (frame.t) {
+    case 'call':
+      return `call#${frame.id} ${frame.handle}.${frame.method}(${frame.args.length} args)`
+    case 'return':
+      return `return#${frame.id}→${frame.inReplyTo}`
+    case 'throw':
+      return `throw#${frame.id}→${frame.inReplyTo} ${frame.error.code}`
+    case 'event':
+      return `event#${frame.id} ${frame.subscription}`
+    case 'progress':
+      return `progress#${frame.id}→${frame.inReplyTo}`
+    case 'done':
+      return `done#${frame.id} ${frame.handle}`
+    case 'load':
+      return `load#${frame.id} ${frame.contributionId}#${frame.variantId}`
+    case 'ready':
+      return `ready#${frame.id}→${frame.inReplyTo}`
+    case 'cancel':
+      return `cancel#${frame.id}→${frame.target}`
+    case 'terminate':
+      return `terminate#${frame.id}`
+    default:
+      return `${frame.t}#${frame.id}`
+  }
+}

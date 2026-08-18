@@ -6,6 +6,71 @@ overrides a canonical or detailed owner.
 
 ---
 
+## NXT-105 — capability-RPC core v1 landed (Fable, 2026-08-18; not wired, not exported)
+
+**What exists.** `packages/host/src/execution/{protocol,surface,handles,endpoint,index}.ts` +
+`packages/host/test/execution-{protocol,handles,endpoint}.test.ts` (51 tests, hostile suite included).
+Transport-agnostic: no worker, no port, no module loading, no public SDK change, **no standard
+surface data** — a `SurfaceRegistry` port and an injected `loader` are the only seams. Not exported
+from `packages/host/src/index.ts` and not bundled until Root composes it (NXT-100 backend SPI,
+NXT-114/115 transports, NXT-401 Electron IPC). `execution/backend.ts` in the same directory is Root's
+NXT-100 file, not part of this slice.
+
+**Protocol (`protocol.ts`).** Envelope `{domain 'x3.host/rpc', version 1, session,
+generation, id}`; frames `load ready call return throw cancel next done subscribe event
+unsubscribe progress release terminate` with exact-key validators; wire values = JSON-safe data,
+`bigint`, whole `Uint8Array` (owning its buffer; views over larger/shared buffers refused) and
+handle refs `{ '@x3.handle': {id, kind, contract?, major?} }`; prototype-safe (`__proto__`,
+`constructor`, `prototype` refused as keys); limits (depth/nodes/string/array/keys/transfer/args +
+pending/handles/iterators/subscriptions/queued events/default deadline). Handle ids carry the
+allocating side (`h…` host, `w…` worker) so an endpoint tells its own from the peer's without a
+table; subscription ids `[hw]s<gen>-<n>` are allocated by the pusher. Error DTO from
+`ModkitError.toJSON()` (context validated as wire value or dropped with `contextDropped`), no stacks,
+`OperationCancelledError` stays a cancellation (`cancelled: true`) on rehydration.
+
+**State machine (`endpoint.ts`) — decisions the code fixes:**
+
+- exactly **one reply per request, always** — also after `cancel`; the caller marks the entry
+  cancelled, drops the late reply as `late-after-cancel` (counted, non-fatal) and, if a handle came
+  back late, sends `release` for it; the executing side releases a lease/iterator it produced after
+  cancel before replying `throw` cancelled — nothing leaks and no id stays pending;
+- reply for an id that was opened before and is not pending → `duplicate-reply` (fatal); for an id
+  never opened → `unknown-reply-target` (fatal); `progress` after settlement is ignored;
+- calling a **released** handle is a structured error (`x3.host/rpc-released-handle`), not a
+  violation (legitimate races); calling an **unknown/foreign-generation/wrong-kind** handle or an
+  unknown method is a violation → endpoint fails closed: pending rejected with
+  `x3.host/rpc-protocol-violation`, active calls aborted, local targets released (reverse order),
+  subscriptions closed, `terminate` sent, `onFailure(violation)`;
+- iterators: one `next` in flight per iterator (`iterator-busy` is fatal), `done` releases;
+  events: pusher-side pump, consumer-side bounded queue, overflow ends _that_ stream with
+  `x3.host/rpc-events-overflow` and `unsubscribe` (endpoint stays open), `done` may carry an
+  error; queued events are drained before a closed stream finishes;
+- releases cascade parent → children on both sides; `releaseVia` (e.g. `dispose`) releases the
+  handle when the ABI method completes; `wrapper: 'lease'` materializes `{ value, release }`;
+- deadlines are per request (default `defaultCallDeadlineMs`, `deadlineMs` override, 0 = off;
+  `subscribe` waits are exempt) → `x3.host/rpc-deadline-exceeded` (`retryability: 'conditional'`);
+  a hang watchdog that _terminates_ the worker belongs to the backend (NXT-112).
+
+**Materialized proxies.** `endpoint.materialize(capability)` builds a plain object with one method
+per surface entry: trailing `AbortSignal` is stripped into the call's cancellation, `lease` results
+materialize recursively, `iterable`/`events` return `AsyncIterable`s; the object carries its
+`RemoteCapability` under `CAPABILITY_OF` so it can be passed back as an argument. Handle refs are
+allowed nested in call args (`{ source: <ref> }`), only at top level in returns.
+
+**Vocabulary.** «capability‑RPC» is the prose name only: the wire domain is `x3.host/rpc`, the
+lease outcome field is `remote`, and no wire key or schema key spells `capability` — the legacy
+gate (`check:legacy`) covers `packages/host/src/execution/**` and flagged the first draft, which is
+exactly what it is for.
+
+**Deliberately not here (waits for owners/other slices):** standard data-source and ABI surfaces
+(NXT-103 / Root, proposal in `PROPOSAL_NXT103_DATA_SOURCE_SURFACE_2026-08-18.md`), `optional`
+methods + `has[]` presence on handle refs (proposal §5.1), a `leasedValue` kind for
+`openEntry(): Lease<AssetSourceRef>` (§5.2), progress _emission_ API on the executing side
+(frames validated/delivered; ABI needs an options-object convention first), batching for
+`iterable` (§5.4), any transport.
+
+---
+
 ## G-APP-1 — the product open path bypassed the host (closed 2026-08-17; review by Fable, implementation by Sol)
 
 **Gap (reproduced, not inferred).** The A‑2/A‑3 primitives exist in production `host`

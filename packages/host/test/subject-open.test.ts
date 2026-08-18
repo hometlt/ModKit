@@ -31,6 +31,11 @@ import {
   type ResourceBudget,
 } from '@modkitx-x3/sdk'
 
+declare global {
+  /** Bumped by the empty-match fixture entry point; proves it was never imported. */
+  var __x3EmptyMatchImports: number | undefined
+}
+
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const imagesDir = join(repoRoot, 'extensions', 'common', 'images')
 const modelsDir = join(repoRoot, 'extensions', 'common', 'models')
