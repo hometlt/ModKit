@@ -1,0 +1,27 @@
+{
+  "$comment": "@modkit-legacy-input-fixture — inert MK2 v1 codec manifest, converter input only",
+  "schemaVersion": 1,
+  "publisher": "org.acme",
+  "id": "writer",
+  "version": "0.1.0",
+  "contractVersion": 1,
+  "kind": "image",
+  "displayName": "Acme writable image",
+  "status": "supported",
+  "sourceKinds": ["file"],
+  "match": { "extensions": [".acmew"] },
+  "capabilities": ["detect", "read", "write"],
+  "runtimeVariants": [
+    {
+      "id": "portable",
+      "environments": ["node", "node-worker"],
+      "entrypoints": { "runtime": "./index.js" },
+      "operatingSystems": ["any"],
+      "architectures": ["any"],
+      "capabilities": ["detect", "read", "write"],
+      "operations": ["image.read"]
+    }
+  ],
+  "operations": ["image.read"],
+  "limitations": []
+}

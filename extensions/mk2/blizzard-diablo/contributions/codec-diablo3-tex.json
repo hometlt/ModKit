@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.modkitx/diablo3-tex",
+  "displayName": "Diablo III TEX texture",
+  "status": "partial",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/diablo3-tex/codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/diablo3-tex/codec.js",
+      "target": { "environments": ["browser-worker", "node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "limitations": [
+    "The parser is scoped to Diablo III TEX version 47 with the implemented fixed header, mip table, frame table, and known pixel formats.",
+    "Decode covers A8R8G8B8, A4R4G4B4, L8, A8, and the implemented unshuffled BC1, BC2, BC3, and BC5 payloads; other pixel formats are not claimed.",
+    "The .tex extension is shared with unrelated formats such as Earth 2150 TEX, so hosts must run the structural Diablo III header detector.",
+    "Generated manifest routing is extension-only because manifest v1 cannot express the handwritten registry's extension-or-structural-sniff fallback without conjunctive evidence.",
+    "The runtime is conservatively exposed to Node hosts because compressed payload decode reaches the shared external WASM-backed GPU path.",
+    "Writing Diablo III TEX containers is not implemented."
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "diablo3-tex", "label": "Diablo III TEX texture" }],
+    "roles": ["media"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored", "compiled", "runtime"],
+    "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
+    "match": {
+      "extensions": ["tex"],
+      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "efbeadde2f000000" }]
+    },
+    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
+    "representations": [
+      {
+        "id": "raster-metadata",
+        "contract": "common.image/raster-metadata",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      { "contract": "common.view/raster-image-source", "major": 1 },
+      { "contract": "common.view/tree-data-source", "major": 1 },
+      { "contract": "common.view/byte-range-source", "major": 1 }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1073741824",
+      "maxDepth": 64,
+      "maxNodes": 100000,
+      "maxScalarBytes": 104857600,
+      "maxDiagnostics": 1000
+    }
+  }
+}

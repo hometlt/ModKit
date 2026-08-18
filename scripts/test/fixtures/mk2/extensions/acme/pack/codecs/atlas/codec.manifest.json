@@ -1,0 +1,27 @@
+{
+  "$comment": "@modkit-legacy-input-fixture — inert MK2 v1 codec manifest, converter input only",
+  "schemaVersion": 1,
+  "publisher": "org.acme",
+  "id": "atlas",
+  "version": "0.1.0",
+  "contractVersion": 1,
+  "kind": "map",
+  "displayName": "Acme campaign map",
+  "status": "supported",
+  "sourceKinds": ["file"],
+  "match": { "extensions": [".acmemap"] },
+  "capabilities": ["detect", "read", "inspect"],
+  "runtimeVariants": [
+    {
+      "id": "portable",
+      "environments": ["node", "node-worker"],
+      "entrypoints": { "runtime": "./index.js" },
+      "operatingSystems": ["any"],
+      "architectures": ["any"],
+      "capabilities": ["detect", "read", "inspect"],
+      "operations": ["map.inspect"]
+    }
+  ],
+  "operations": ["map.inspect"],
+  "limitations": []
+}

@@ -1,0 +1,19 @@
+{
+  "name": "modkit-extension-mk2-new-world-computing-heroes-4",
+  "version": "0.1.0",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "description": "MK2 → MK3 converted contributions of org.modkitx.new-world-computing/heroes-4 (generated; see REPORT_MK2_CONVERSION).",
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "org.modkitx.new-world-computing",
+    "id": "heroes-4",
+    "contributionManifests": [
+      "./contributions/*.json"
+    ]
+  },
+  "dependencies": {
+    "@modkitx-x3/codec-kit": "workspace:*"
+  }
+}

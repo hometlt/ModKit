@@ -18,6 +18,20 @@ export {
   type GreeterModule,
 } from './demo-contract.js'
 export {
+  formatMk2AcceptanceTable,
+  loadMk2Corpus,
+  mk2ExtensionsRoot,
+  resolveMk2Root,
+  runMk2Acceptance,
+  runMk2AcceptanceCase,
+  tallyMk2Conversion,
+  type Mk2AcceptanceOptions,
+  type Mk2AcceptanceOutcome,
+  type Mk2AcceptanceState,
+  type Mk2ConversionTally,
+  type Mk2CorpusEntry,
+} from './mk2-acceptance.js'
+export {
   runTextDataConformance,
   type TextDataConformanceCase,
   type TextDataConformanceFailure,

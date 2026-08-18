@@ -1,0 +1,53 @@
+{
+  "$comment": "Acceptance corpus for the MK2 → MK3 converted extensions (OPUS-MK2-01 task B). Paths are relative to the MK2 checkout (MODKITX_MK2_ROOT, default ../modkitx) and are READ ONLY — no sample is ever copied into this repository. Every case is skipped when that checkout is absent, so CI without MK2 stays green.",
+  "entries": [
+    {
+      "extension": "common-images",
+      "contributionId": "org.modkitx/webp",
+      "sample": "-references/website/crossover/uploads/kane.webp",
+      "minimumConfidence": 0.9,
+      "dataSource": "tree",
+      "note": "RIFF/WEBP container: simple, no native decoder, VP8/VP8L/VP8X chunk walk"
+    },
+    {
+      "extension": "common-audio",
+      "contributionId": "org.modkitx/mp3",
+      "sample": "-references/website/crossover/uploads/welcome-back-commander.mp3",
+      "minimumConfidence": 0.8,
+      "dataSource": "tree",
+      "note": "MPEG-1 layer III frame header; v1 manifest routes on extension only"
+    },
+    {
+      "extension": "common-models",
+      "contributionId": "org.modkitx/glb",
+      "sample": "-references/website/old-wiki/src/app/js-3d-model-viewer-master/original/duck.glb",
+      "minimumConfidence": 0.9,
+      "dataSource": "tree",
+      "note": "glTF 2.0 binary container; JSON chunk only, no buffer decoding"
+    },
+    {
+      "extension": "ea-archives",
+      "contributionId": "org.modkitx/mix",
+      "sample": "-references/Mixer/ccmix/test_files/ts/tem.mix",
+      "minimumConfidence": 0.6,
+      "dataSource": "tree",
+      "note": "Tiberian Sun MIX with an unencrypted (checksummed) header"
+    },
+    {
+      "extension": "common-vector",
+      "contributionId": "org.modkitx/svg",
+      "sample": "-references/m3/packages/three-m3-loader/docs/favicon.svg",
+      "minimumConfidence": 0.6,
+      "dataSource": "tree",
+      "note": "SVG root element; v1 manifest has no magic, so probe parses structure"
+    },
+    {
+      "extension": "adobe-flash",
+      "contributionId": "org.modkitx/swf",
+      "sample": "-references/old-modkit-ts/sc2/core.sc2mod/base.sc2data/ui/flash/gameui/ipistol.swf",
+      "minimumConfidence": 0.9,
+      "dataSource": "tree",
+      "note": "CWS (zlib) SWF; the v1 codec claims header fields only, and so does this port"
+    }
+  ]
+}

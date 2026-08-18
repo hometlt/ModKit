@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.modkitx/unreal-uasset-video",
+  "displayName": "Unreal Engine Media Asset",
+  "status": "partial",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/unreal-uasset-video/codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/unreal-uasset-video/codec.js",
+      "target": { "environments": ["browser-worker", "node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "limitations": [
+    "The codec recognizes supported Unreal media exports and delegates embedded Bink, MP4, WebM, Ogg Theora, Smacker, AVI, ASF/WMV, FLV, MPEG, or SWF payloads to their registered codecs; unsupported or encrypted package layouts remain unresolved.",
+    "The current adapter reaches Node-only code through the public models-processing package entry point, so no browser runtime is declared until that dependency has a browser-safe Unreal parser subpath.",
+    "UEXP and UBULK data are resolved as same-codec sidecars; manifest v1 companions name other codec IDs and cannot express same-codec path roles.",
+    "Declarative routing is extension-first so UEXP and UBULK sidecars remain candidates. Manifest v1 cannot express the legacy extension-or-package-signature fallback without making the evidence conjunctive, and runtime parsing validates Unreal package structure and media-bearing exports.",
+    "Playable conversion and thumbnail extraction may require a separately injected decoder or host runtime and are not declared as codec operations."
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "unreal-uasset-video", "label": "Unreal Engine Media Asset" }],
+    "roles": ["media"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored", "compiled", "runtime"],
+    "openIntents": ["probe", "inspect", "thumbnail", "full", "stream", "export"],
+    "match": { "extensions": ["uasset", "uexp", "ubulk"] },
+    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
+    "representations": [
+      {
+        "id": "video-container",
+        "contract": "common.video/container-metadata",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      { "contract": "common.view/video-media-source", "major": 1 },
+      { "contract": "common.view/tree-data-source", "major": 1 },
+      { "contract": "common.view/byte-range-source", "major": 1 }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1073741824",
+      "maxDepth": 64,
+      "maxNodes": 100000,
+      "maxScalarBytes": 104857600,
+      "maxDiagnostics": 1000
+    }
+  }
+}

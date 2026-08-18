@@ -1,0 +1,27 @@
+{
+  "$comment": "@modkit-legacy-input-fixture — inert MK2 v1 codec manifest, converter input only",
+  "schemaVersion": 1,
+  "publisher": "org.acme",
+  "id": "exotic",
+  "version": "0.1.0",
+  "contractVersion": 1,
+  "kind": "image",
+  "displayName": "Acme compressed texture",
+  "status": "partial",
+  "sourceKinds": ["file"],
+  "match": { "extensions": [".acmex"] },
+  "capabilities": ["detect", "read", "inspect"],
+  "runtimeVariants": [
+    {
+      "id": "portable",
+      "environments": ["browser-worker", "node-worker"],
+      "entrypoints": { "runtime": "./index.js", "viewer": "./viewer.js" },
+      "operatingSystems": ["any"],
+      "architectures": ["any"],
+      "capabilities": ["detect", "read", "inspect"],
+      "operations": ["image.compressed.read"]
+    }
+  ],
+  "operations": ["image.compressed.read"],
+  "limitations": []
+}

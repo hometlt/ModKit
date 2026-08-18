@@ -1,0 +1,38 @@
+{
+  "$comment": "@modkit-legacy-input-fixture — inert MK2 v1 codec manifest, converter input only",
+  "schemaVersion": 1,
+  "publisher": "org.acme",
+  "id": "tile",
+  "version": "0.3.1",
+  "contractVersion": 1,
+  "kind": "image",
+  "displayName": "Acme tile image",
+  "status": "supported",
+  "sourceKinds": ["file", "archive-entry"],
+  "match": {
+    "extensions": [".TIL", ".tile"],
+    "magic": [
+      { "offset": 0, "bytes": "TILE", "encoding": "ascii" },
+      { "offset": 4, "bytes": "0a0d", "encoding": "hex" }
+    ]
+  },
+  "capabilities": ["detect", "read", "inspect", "export"],
+  "runtimeVariants": [
+    {
+      "id": "portable",
+      "environments": ["browser-main", "browser-worker", "node", "node-worker"],
+      "entrypoints": { "detect": "./detect.js", "runtime": "./index.js" },
+      "operatingSystems": ["any"],
+      "architectures": ["any"],
+      "capabilities": ["detect", "read", "inspect", "export"],
+      "operations": ["image.read", "image.inspect"]
+    }
+  ],
+  "operations": ["image.read", "image.inspect"],
+  "traits": [
+    { "id": "image.raster", "representations": ["source"] },
+    { "id": "content.binary", "representations": ["source"], "state": "partial" }
+  ],
+  "standards": ["acme-tile"],
+  "limitations": ["Palette animation is inventoried but not applied."]
+}

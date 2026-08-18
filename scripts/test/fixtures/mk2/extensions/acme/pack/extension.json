@@ -1,0 +1,11 @@
+{
+  "$comment": "@modkit-legacy-input-fixture — inert MK2 v1 extension container, converter input only",
+  "schemaVersion": 1,
+  "publisher": "org.acme",
+  "id": "pack",
+  "version": "2.4.0",
+  "displayName": "Acme pack",
+  "description": "converter fixture",
+  "license": "Apache-2.0",
+  "contributes": { "codecs": ["atlas", "exotic", "namespaced", "tile", "writer"] }
+}

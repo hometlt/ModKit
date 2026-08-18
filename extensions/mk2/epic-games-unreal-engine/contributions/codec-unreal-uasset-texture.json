@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.modkitx/unreal-uasset-texture",
+  "displayName": "Unreal UTexture2D package",
+  "status": "partial",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/unreal-uasset-texture/codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/unreal-uasset-texture/codec.js",
+      "target": { "environments": ["browser-worker", "node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "limitations": [
+    "Cooked texture layouts are version-gated to the implemented UE4.18, UE4.27, and UE5.0 paths; UE5.1+ streamed resources, virtual textures, arrays, cubes, volumes, and uncommon PF_* formats are not claimed.",
+    "UEXP and UBULK bytes are same-codec sidecars resolved through the owning UASSET package; manifest v1 companions name codec IDs rather than same-codec path roles.",
+    "Standalone non-empty sidecar payloads pass the codec-level hint gate, but authoritative package detection requires the Unreal package tag and owning UASSET metadata.",
+    "Manifest v1 cannot express the handwritten registry's extension-or-signature fallback without conjunctive evidence, so generated routing is extension-only.",
+    "The runtime is Node-only because it imports the Node-classified @modkitx/models-processing package root and the WASM-backed GPU decode path.",
+    "Writing Unreal packages or texture sidecars is not implemented."
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "unreal-uasset-texture", "label": "Unreal UTexture2D package" }],
+    "roles": ["media"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored", "compiled", "runtime"],
+    "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
+    "match": {
+      "extensions": ["uasset", "uexp", "ubulk"],
+      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "c1832a9e" }]
+    },
+    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
+    "representations": [
+      {
+        "id": "raster-metadata",
+        "contract": "common.image/raster-metadata",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      { "contract": "common.view/raster-image-source", "major": 1 },
+      { "contract": "common.view/tree-data-source", "major": 1 },
+      { "contract": "common.view/byte-range-source", "major": 1 }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1073741824",
+      "maxDepth": 64,
+      "maxNodes": 100000,
+      "maxScalarBytes": 104857600,
+      "maxDiagnostics": 1000
+    }
+  }
+}

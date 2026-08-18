@@ -449,9 +449,17 @@ function originFrom(input, primary) {
   throw new TypeError('inspection codec requires a physical byte input')
 }
 
-function probeLength(plan) {
+/**
+ * The declared probe window is a ceiling, not a demand: a source shorter than the plan must be
+ * probed with what it has. `ArtifactByteSource.read` treats a range past EOF as an error, not a
+ * short read, so an unclamped plan makes every file smaller than the window unprobeable
+ * (`x3.host/source-range-unrepresentable` before `detect()` ever runs).
+ */
+function probeLength(plan, size) {
   const first = plan.ranges[0]
-  return Math.max(0, Math.min(plan.maxBytes, first?.length ?? plan.maxBytes))
+  const declared = Math.min(plan.maxBytes, first?.length ?? plan.maxBytes)
+  const available = size === undefined ? declared : Number(size)
+  return Math.max(0, Math.min(declared, available))
 }
 
 /**
@@ -469,7 +477,11 @@ export function createInspectionCodec(definition) {
       if (request.source.kind !== 'bytes' || request.plan.kind !== 'bytes') {
         throw new TypeError(`${definition.id} requires a byte probe`)
       }
-      const bytes = await request.source.read(0n, probeLength(request.plan), signal)
+      const bytes = await request.source.read(
+        0n,
+        probeLength(request.plan, request.source.size),
+        signal,
+      )
       const detected = await definition.detect(bytes, request.source.ref.uri)
       return Object.freeze({
         codecId: definition.id,

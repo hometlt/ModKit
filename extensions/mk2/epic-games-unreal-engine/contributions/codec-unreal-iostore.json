@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.modkitx/unreal-iostore",
+  "displayName": "Unreal IoStore",
+  "status": "supported",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/unreal-iostore/codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["filesystem-read", "read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/unreal-iostore/codec.js",
+      "target": { "environments": ["browser-worker", "node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["filesystem-read", "read-source"]
+    }
+  ],
+  "limitations": [
+    "The current inspection/extraction implementation imports Node filesystem, crypto, and zlib modules; no browser runtime is declared.",
+    "Header inspection can run from bytes in Node, while real-container extraction requires native filesystem access to discover .utoc/.ucas partitions; the sidecar roles are not separate codec IDs.",
+    "Declarative routing uses the .utoc/.ucas extensions so real .ucas payload partitions are not rejected for lacking a header signature; extensionless UTOC data can still be inspected through the direct codec API.",
+    "AES-256-ECB indexes and payloads require a caller-supplied 32-byte key. Stored, zlib, and gzip payloads decode internally; Oodle-class methods require an optional host decompressor.",
+    "Writing or repacking IoStore containers is not implemented."
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "unreal-iostore", "label": "Unreal IoStore" }],
+    "roles": ["container"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored", "compiled"],
+    "openIntents": ["probe", "inspect", "full", "export"],
+    "match": { "extensions": ["utoc", "ucas"] },
+    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
+    "representations": [
+      {
+        "id": "archive-namespace",
+        "contract": "common.archive/entry-namespace",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      { "contract": "common.view/namespace-entry-source", "major": 1 },
+      { "contract": "common.view/tree-data-source", "major": 1 },
+      { "contract": "common.view/byte-range-source", "major": 1 }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1073741824",
+      "maxDepth": 64,
+      "maxNodes": 100000,
+      "maxScalarBytes": 104857600,
+      "maxDiagnostics": 1000
+    }
+  }
+}
