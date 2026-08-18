@@ -27,6 +27,16 @@ import { isMethodName, type WireValue } from './protocol.js'
  */
 export type MethodKind = 'value' | 'lease' | 'leased-value' | 'iterable' | 'events'
 
+/**
+ * A place inside the positional arguments: the argument itself (`number`) or a top-level key of
+ * an object argument (`{ arg, key }`) — where a request object carries `contract`/`major`, or its
+ * own `signal`/`onProgress` (`ParseRequest.signal`, `OperationSession.invoke(…, { signal })`).
+ */
+export type ArgRef = number | { readonly arg: number; readonly key: string }
+
+/** Where the executing side places the `AbortSignal` derived from `cancel` frames. */
+export type SignalPlacement = 'last' | 'none' | { readonly arg: number; readonly key: string }
+
 export interface MethodSurface {
   readonly kind: MethodKind
   /**
@@ -39,7 +49,7 @@ export interface MethodSurface {
    * arguments (`AssetSession.dataSource(contract, major)`). The executing side resolves the
    * surface from the decoded arguments and refuses unknown ones with `x3.host/rpc-bad-argument`.
    */
-  readonly resultFromArgs?: { readonly contract: number; readonly major: number }
+  readonly resultFromArgs?: { readonly contract: ArgRef; readonly major: ArgRef }
   /**
    * Positional argument count before the signal. The executing side pads omitted trailing
    * arguments with `undefined` up to `arity` before appending the signal, so
@@ -54,8 +64,18 @@ export interface MethodSurface {
    * object itself whose `releaseVia` method releases the handle (`Codec.open()` → session).
    */
   readonly wrapper?: 'lease' | 'bare'
-  /** Where the executing side appends an `AbortSignal` derived from `cancel` frames. */
-  readonly signal?: 'last' | 'none'
+  /**
+   * Where the executing side places the `AbortSignal` derived from `cancel` frames: appended last,
+   * nowhere, or as a key of an object argument (the consumer strips that key before sending, the
+   * executor re-creates it — the argument object itself stays a plain wire value).
+   */
+  readonly signal?: SignalPlacement
+  /**
+   * Where a progress callback lives inside an object argument. The consumer strips the function
+   * and routes it to the call's `onProgress`; the executor places a function there that emits
+   * `progress` frames for the in-flight call.
+   */
+  readonly progress?: { readonly arg: number; readonly key: string }
   /** Optional argument validator run on both sides; returns a violation message or undefined. */
   readonly validateArgs?: (args: readonly WireValue[]) => string | undefined
   /** Optional return validator for `value` methods (items for `iterable`/`events`). */
@@ -89,6 +109,34 @@ export function surfaceKey(contract: string, major: number): string {
   return `${contract}@${major}`
 }
 
+function isKeyRef(value: unknown): value is { readonly arg: number; readonly key: string } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    Number.isSafeInteger((value as { arg?: unknown }).arg) &&
+    ((value as { arg: number }).arg as number) >= 0 &&
+    typeof (value as { key?: unknown }).key === 'string' &&
+    isMethodName((value as { key: string }).key)
+  )
+}
+
+function isArgRef(value: unknown): value is ArgRef {
+  return (typeof value === 'number' && Number.isSafeInteger(value) && value >= 0) || isKeyRef(value)
+}
+
+const argRefKey = (ref: ArgRef) => (typeof ref === 'number' ? `${ref}` : `${ref.arg}.${ref.key}`)
+const freezeArgRef = (ref: ArgRef): ArgRef =>
+  typeof ref === 'number' ? ref : Object.freeze({ ...ref })
+
+/** Reads an `ArgRef` off decoded positional arguments (undefined when absent). */
+export function readArgRef(args: readonly unknown[], ref: ArgRef): unknown {
+  if (typeof ref === 'number') return args[ref]
+  const holder = args[ref.arg]
+  return typeof holder === 'object' && holder !== null
+    ? (holder as Record<string, unknown>)[ref.key]
+    : undefined
+}
+
 function invalidSurface(message: string, context?: Record<string, unknown>): never {
   throw new ModkitError({
     code: 'x3.host/rpc-invalid-surface',
@@ -110,6 +158,7 @@ function snapshotMethod(
   const resultFromArgs = raw.resultFromArgs
   const wrapper = raw.wrapper
   const signal = raw.signal
+  const progress = raw.progress
   const arity = raw.arity
   const optional = raw.optional
   const validateArgs = raw.validateArgs
@@ -133,11 +182,9 @@ function snapshotMethod(
     resultFromArgs !== undefined &&
     (typeof resultFromArgs !== 'object' ||
       resultFromArgs === null ||
-      !Number.isSafeInteger(resultFromArgs.contract) ||
-      !Number.isSafeInteger(resultFromArgs.major) ||
-      resultFromArgs.contract < 0 ||
-      resultFromArgs.major < 0 ||
-      resultFromArgs.contract === resultFromArgs.major)
+      !isArgRef(resultFromArgs.contract) ||
+      !isArgRef(resultFromArgs.major) ||
+      argRefKey(resultFromArgs.contract) === argRefKey(resultFromArgs.major))
   ) {
     return invalidSurface(`method «${name}» has invalid resultFromArgs positions`, { surface })
   }
@@ -147,8 +194,21 @@ function snapshotMethod(
   if (wrapper !== undefined && kind !== 'lease') {
     return invalidSurface(`only lease method «${name}» may declare a wrapper`, { surface })
   }
-  if (signal !== undefined && signal !== 'last' && signal !== 'none') {
+  if (signal !== undefined && signal !== 'last' && signal !== 'none' && !isKeyRef(signal)) {
     return invalidSurface(`method «${name}» has an invalid signal placement`, { surface })
+  }
+  if (progress !== undefined && !isKeyRef(progress)) {
+    return invalidSurface(`method «${name}» has an invalid progress placement`, { surface })
+  }
+  if (
+    isKeyRef(signal) &&
+    progress !== undefined &&
+    signal.arg === progress.arg &&
+    signal.key === progress.key
+  ) {
+    return invalidSurface(`method «${name}» places signal and progress on the same key`, {
+      surface,
+    })
   }
   if (validateArgs !== undefined && typeof validateArgs !== 'function') {
     return invalidSurface(`method «${name}» has a non-function argument validator`, { surface })
@@ -185,12 +245,15 @@ function snapshotMethod(
       ? {}
       : {
           resultFromArgs: Object.freeze({
-            contract: resultFromArgs.contract,
-            major: resultFromArgs.major,
+            contract: freezeArgRef(resultFromArgs.contract),
+            major: freezeArgRef(resultFromArgs.major),
           }),
         }),
     ...(wrapper === undefined ? {} : { wrapper }),
-    ...(signal === undefined ? {} : { signal }),
+    ...(signal === undefined
+      ? {}
+      : { signal: typeof signal === 'string' ? signal : Object.freeze({ ...signal }) }),
+    ...(progress === undefined ? {} : { progress: Object.freeze({ ...progress }) }),
     ...(arity === undefined ? {} : { arity }),
     ...(optional === undefined ? {} : { optional }),
     ...(validateArgs === undefined ? {} : { validateArgs }),

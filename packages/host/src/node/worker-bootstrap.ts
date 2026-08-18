@@ -17,9 +17,9 @@
  *    digest map only the entrypoint is verified (`entrypointDigest`) and its imports are refused as
  *    `x3.host/artifact-not-pinned` (§8 decision 3: no silent downgrade);
  *  - re-assembles the ABI objects the module expects from what crosses the wire: the
- *    `ContributionContext` (`budgets` copied, `diagnostics` a host capability, `contracts` a port
- *    that refuses — service resolution from a worker is not in v1), an `AssetInput` (fields +
- *    host-executed openers + locally derived `bindingsFor`);
+ *    `ContributionContext` (`budgets` copied, `diagnostics` and `contracts` host capabilities —
+ *    a resolved provider arrives as a proxy carrying the surface of its contract definition), an
+ *    `AssetInput` (fields + host-executed openers + locally derived `bindingsFor`);
  *  - exits 0 on `terminate`, 2 on a protocol failure (the host has already torn down).
  *
  * The bootstrap is a published entry (`@modkitx-x3/host/node/worker-bootstrap`) so it survives
@@ -246,7 +246,26 @@ async function loader(request: LoadRequest): Promise<LoadedModule> {
 interface WireContext {
   readonly budgets: ResourceBudget
   readonly diagnostics?: { report(diagnostic: Diagnostic): Promise<unknown> }
+  /** Host-executed contract resolver (materialized proxy of `x3.abi/contract-resolver@1`). */
+  readonly contracts?: ContributionContext['contracts']
 }
+
+const unavailableResolver = {
+  resolve: () =>
+    Promise.reject(
+      new ModkitError({
+        code: 'x3.host/execution-backend-unavailable',
+        message: 'the host did not hand this worker a contract resolver',
+      }),
+    ),
+  resolveUnknown: () =>
+    Promise.reject(
+      new ModkitError({
+        code: 'x3.host/execution-backend-unavailable',
+        message: 'the host did not hand this worker a contract resolver',
+      }),
+    ),
+} as ContributionContext['contracts']
 
 function contributionContext(wire: WireContext): ContributionContext {
   const sink = wire.diagnostics
@@ -257,22 +276,7 @@ function contributionContext(wire: WireContext): ContributionContext {
         if (sink !== undefined) void sink.report(diagnostic).catch(() => undefined)
       },
     },
-    contracts: {
-      resolve: () =>
-        Promise.reject(
-          new ModkitError({
-            code: 'x3.host/execution-backend-unavailable',
-            message: 'service contract resolution from a worker is not available in v1',
-          }),
-        ),
-      resolveUnknown: () =>
-        Promise.reject(
-          new ModkitError({
-            code: 'x3.host/execution-backend-unavailable',
-            message: 'service contract resolution from a worker is not available in v1',
-          }),
-        ),
-    } as ContributionContext['contracts'],
+    contracts: wire.contracts ?? unavailableResolver,
   }
 }
 

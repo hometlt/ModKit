@@ -135,58 +135,19 @@
         },
         "schemaVersion": {
           "const": 1
-        }
-      },
-      "required": [
-        "schemaVersion",
-        "kind",
-        "contract",
-        "major",
-        "offerFacet",
-        "requestFacet",
-        "matching",
-        "conformanceProfile"
-      ],
-      "type": "object"
-    },
-    {
-      "additionalProperties": false,
-      "properties": {
-        "conformanceProfile": {
-          "minLength": 1,
-          "type": "string"
-        },
-        "contract": {
-          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
-          "type": "string"
-        },
-        "kind": {
-          "const": "data-source"
-        },
-        "major": {
-          "maximum": 9007199254740991,
-          "minimum": 0,
-          "type": "integer"
-        },
-        "schema": {
-          "additionalProperties": false,
-          "properties": {
-            "$ref": {
-              "minLength": 1,
-              "type": "string"
-            }
-          },
-          "required": [
-            "$ref"
-          ],
-          "type": "object"
-        },
-        "schemaVersion": {
-          "const": 1
         },
         "surface": {
           "additionalProperties": false,
           "properties": {
+            "fields": {
+              "items": {
+                "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",
+                "type": "string"
+              },
+              "maxItems": 64,
+              "type": "array",
+              "uniqueItems": true
+            },
             "methods": {
               "additionalProperties": {
                 "oneOf": [
@@ -225,6 +186,25 @@
                       "optional": {
                         "type": "boolean"
                       },
+                      "progress": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "arg": {
+                            "maximum": 16,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "key": {
+                            "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "arg",
+                          "key"
+                        ],
+                        "type": "object"
+                      },
                       "result": {
                         "additionalProperties": false,
                         "properties": {
@@ -245,9 +225,32 @@
                         "type": "object"
                       },
                       "signal": {
-                        "enum": [
-                          "last",
-                          "none"
+                        "anyOf": [
+                          {
+                            "enum": [
+                              "last",
+                              "none"
+                            ]
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "arg": {
+                                "maximum": 16,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "key": {
+                                "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "arg",
+                              "key"
+                            ],
+                            "type": "object"
+                          }
                         ]
                       },
                       "wrapper": {
@@ -303,10 +306,343 @@
                       "optional": {
                         "type": "boolean"
                       },
+                      "progress": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "arg": {
+                            "maximum": 16,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "key": {
+                            "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "arg",
+                          "key"
+                        ],
+                        "type": "object"
+                      },
                       "signal": {
+                        "anyOf": [
+                          {
+                            "enum": [
+                              "last",
+                              "none"
+                            ]
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "arg": {
+                                "maximum": 16,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "key": {
+                                "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "arg",
+                              "key"
+                            ],
+                            "type": "object"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "kind"
+                    ],
+                    "type": "object"
+                  }
+                ]
+              },
+              "minProperties": 1,
+              "propertyNames": {
+                "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "releaseVia": {
+              "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "methods"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "kind",
+        "contract",
+        "major",
+        "offerFacet",
+        "requestFacet",
+        "matching",
+        "conformanceProfile"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "conformanceProfile": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "contract": {
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+          "type": "string"
+        },
+        "kind": {
+          "const": "data-source"
+        },
+        "major": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "schema": {
+          "additionalProperties": false,
+          "properties": {
+            "$ref": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "$ref"
+          ],
+          "type": "object"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "surface": {
+          "additionalProperties": false,
+          "properties": {
+            "fields": {
+              "items": {
+                "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",
+                "type": "string"
+              },
+              "maxItems": 64,
+              "type": "array",
+              "uniqueItems": true
+            },
+            "methods": {
+              "additionalProperties": {
+                "oneOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "arity": {
+                        "maximum": 16,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "kind": {
+                        "const": "lease"
+                      },
+                      "limits": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "maxBytes": {
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "maxPageItems": {
+                            "maximum": 9007199254740991,
+                            "minimum": 1,
+                            "type": "integer"
+                          },
+                          "maxStringLength": {
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "optional": {
+                        "type": "boolean"
+                      },
+                      "progress": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "arg": {
+                            "maximum": 16,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "key": {
+                            "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "arg",
+                          "key"
+                        ],
+                        "type": "object"
+                      },
+                      "result": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "contract": {
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                            "type": "string"
+                          },
+                          "major": {
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "contract",
+                          "major"
+                        ],
+                        "type": "object"
+                      },
+                      "signal": {
+                        "anyOf": [
+                          {
+                            "enum": [
+                              "last",
+                              "none"
+                            ]
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "arg": {
+                                "maximum": 16,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "key": {
+                                "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "arg",
+                              "key"
+                            ],
+                            "type": "object"
+                          }
+                        ]
+                      },
+                      "wrapper": {
                         "enum": [
-                          "last",
-                          "none"
+                          "lease",
+                          "bare"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "result"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "arity": {
+                        "maximum": 16,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "kind": {
+                        "enum": [
+                          "value",
+                          "leased-value",
+                          "iterable",
+                          "events"
+                        ]
+                      },
+                      "limits": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "maxBytes": {
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "maxPageItems": {
+                            "maximum": 9007199254740991,
+                            "minimum": 1,
+                            "type": "integer"
+                          },
+                          "maxStringLength": {
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "optional": {
+                        "type": "boolean"
+                      },
+                      "progress": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "arg": {
+                            "maximum": 16,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "key": {
+                            "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "arg",
+                          "key"
+                        ],
+                        "type": "object"
+                      },
+                      "signal": {
+                        "anyOf": [
+                          {
+                            "enum": [
+                              "last",
+                              "none"
+                            ]
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "arg": {
+                                "maximum": 16,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "key": {
+                                "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "arg",
+                              "key"
+                            ],
+                            "type": "object"
+                          }
                         ]
                       }
                     },

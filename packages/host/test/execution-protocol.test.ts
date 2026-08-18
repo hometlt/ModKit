@@ -45,6 +45,17 @@ describe('capability-rpc protocol v1 — wire values', () => {
     expect(checked.value.transferBytes).toBe(4)
     expect(checked.value.transferables).toEqual([bytes.buffer])
     expect(checked.value.nodes).toBeGreaterThan(5)
+    // an absent optional property is tolerated inside objects/arrays (structured clone keeps it)
+    expect(validateWireValue({ truncation: undefined, items: [1, undefined] }, limits).ok).toBe(
+      true,
+    )
+    // a detached buffer (already transferred) cannot cross again
+    const moved = new Uint8Array([1, 2])
+    structuredClone(moved, { transfer: [moved.buffer] })
+    const detached = validateWireValue(moved, limits)
+    expect(detached.ok).toBe(false)
+    if (detached.ok) throw new Error('unexpected')
+    expect(detached.violation.code).toBe('bad-value')
   })
 
   it.each([
@@ -61,7 +72,7 @@ describe('capability-rpc protocol v1 — wire values', () => {
     ['NaN', Number.NaN, 'bad-value'],
     ['Infinity', [Number.POSITIVE_INFINITY], 'bad-value'],
     ['symbol', Symbol('x'), 'bad-value'],
-    ['undefined in object', { a: undefined }, 'bad-value'],
+    ['undefined at the top', undefined, 'bad-value'],
     ['prototype key', JSON.parse('{"__proto__": {"polluted": true}}'), 'forbidden-key'],
     ['constructor key', { constructor: 1 }, 'forbidden-key'],
     ['prototype key literal', { prototype: 1 }, 'forbidden-key'],

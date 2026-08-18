@@ -123,10 +123,44 @@ dependencies — activates in a worker through the backend SPI and its probe det
 helper is refused, an unlisted file is refused, a dependency through `node_modules` loads, an
 in-artifact `../outside.mjs` escape is refused (12 tests, 3/3 stable).
 
-**Honest gaps (R3b-2…).** (1) A source that cannot enumerate files (no `fileDigests`) still gets
+**R3b-2 (same day) — signals/progress inside argument objects, contract resolution from the
+worker, service-arm surfaces; a real codec `open()` in the worker.** The surface model gained
+placements: `signal: 'last' | 'none' | { arg, key }` and `progress: { arg, key }` — the consumer's
+proxy lifts an `AbortSignal`/callback out of the declared key of an object argument (the object
+stays a plain wire value), the executor re-creates a signal there and a progress emitter that sends
+`progress` frames for the in-flight call (bounded to the wire DTO); `resultFromArgs` accepts
+`ArgRef = number | { arg, key }`, so `contracts.resolve({ contract, major, signal })` leases a
+provider whose surface is named by the request. The SDK schema/types/drift gate follow (`signal`
+`anyOf`, `progress`, `fields`), and the **service arm** of contract-definition-spec.v1 gains the
+same optional `surface` (semantic rule: a field cannot also be a method); `ServiceContractDefinitionRegistration`
+carries the wire surface. New ABI surface `x3.abi/contract-resolver@1` (`resolve`/`resolveUnknown`,
+result from `{ arg: 0, key }`); `x3.abi/operation-session@1.invoke` now declares its options-object
+signal/progress. The backend exposes `context.contracts` as that capability; the bootstrap hands
+the codec a proxy resolver (a resolved provider arrives as a proxy carrying its definition's
+surface). The eight bundled text-data service contract definitions (`contract-*-syntax.json`) now
+carry the provider surface (`fields: ['contract']`; `parse`/`serialize` value with
+`signal: { arg: 0, key: 'signal' }`; `dataSource` lease of the tree/table data-source surface) —
+they validate through the production registry (`check:extensions`).
+
+Two wire rules changed on evidence from the real codec: (a) **arguments are copied, results and
+events are transferred** — ABI code written for in-process calls reuses a buffer it passed
+(`parse` then `dataSource` with the same `bytes`); transferring detached it under the caller and the
+second call died with `DataCloneError`; a `Uint8Array` over a detached buffer is now refused
+explicitly; (b) `undefined` is tolerated inside objects/arrays (an absent optional property as ABI
+objects routinely carry — `ParseResult.truncation`), still refused as a top-level value.
+
+**Proof:** the real bundled `text-json` codec **opens a session inside the worker**: its
+`contracts.resolve` crosses to the host, the real JSON provider (host-side) is proxied by its
+definition surface, `parse`/`dataSource` run on the host with the bytes crossing by copy, the
+worker assembles and validates the subject descriptor, and the session comes back with revision,
+descriptor and a tree data source (`root`/`children`) — end to end through the backend SPI
+(`node-worker-backend.test.ts`, 13 tests). Endpoint tests cover object-carried signal (incl. cancel
+through it), progress forwarding and request-named lease surfaces.
+
+**Honest gaps (R3b-3…).** (1) A source that cannot enumerate files (no `fileDigests`) still gets
 the activation-time entrypoint hash with its small window. (2)
-`ContributionContext.contracts` and `AssetSession.operations().invoke` options (`signal`,
-`onProgress`) do not cross yet. (3) `AssetInput`/`ArtifactSource` marshalling covers the single/
+`AssetSession.operations().invoke` progress/signal placements are declared but the host-side
+session adapter's lazy `operations()` does not yet forward them per call. (3) `AssetInput`/`ArtifactSource` marshalling covers the single/
 bundle/namespace shapes' fields listed in the ABI surfaces; derived inputs and `openMaterialized`
 are not wired. (4) Not wired into the composition roots yet: `DEFAULT_EXECUTION_BACKENDS` still
 holds only `trusted-in-process`; the CLI/Electron roots choose the policy and register the backend

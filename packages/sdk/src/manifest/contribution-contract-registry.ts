@@ -554,7 +554,7 @@ export const validateContractDefinitionSemantics: SpecSemanticValidator = manife
       ),
     ]
   }
-  if (spec.kind === 'data-source' && spec.surface !== undefined) {
+  if (spec.surface !== undefined) {
     return dataSourceSurfaceDiagnostics(spec.surface, ['spec', 'surface'])
   }
   return []
@@ -589,6 +589,18 @@ function dataSourceSurfaceDiagnostics(
           'x3.sdk/surface-release-via-kind',
           `releaseVia «${surface.releaseVia}» must name a value method, found ${target.kind}`,
           [...path, 'releaseVia'],
+        ),
+      )
+    }
+  }
+  for (const field of surface.fields ?? []) {
+    if (Object.hasOwn(surface.methods, field)) {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'x3.sdk/surface-field-is-method',
+          `«${field}» cannot be both a field and a method`,
+          [...path, 'fields'],
         ),
       )
     }

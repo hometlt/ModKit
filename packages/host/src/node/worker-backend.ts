@@ -44,6 +44,7 @@ import type {
 import {
   ABI_ARTIFACT_SOURCE,
   ABI_ASSET_INPUT,
+  ABI_CONTRACT_RESOLVER,
   ABI_DIAGNOSTIC_SINK,
   createEndpoint,
   createStandardSurfaceRegistry,
@@ -349,8 +350,11 @@ function moduleAdapter(
         { report: (diagnostic: Diagnostic) => context.diagnostics.report(diagnostic) },
         ABI_DIAGNOSTIC_SINK,
       )
+      // the host executes contract resolution; the worker gets a proxy whose leased providers
+      // carry the surface of the requested contract's definition
+      const contracts = endpoint.expose(context.contracts, ABI_CONTRACT_RESOLVER)
       const codec = watch(() =>
-        root.call('createCodec', [{ budgets: context.budgets, diagnostics: sink }]),
+        root.call('createCodec', [{ budgets: context.budgets, diagnostics: sink, contracts }]),
       ).then(outcome => {
         if (outcome.kind !== 'lease') {
           throw new ModkitError({

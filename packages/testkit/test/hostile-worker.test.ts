@@ -124,7 +124,7 @@ describe('hostile workers — positive control across a real thread boundary', (
     expect(source.isReleased).toBe(true)
   }, 20_000)
 
-  it('demo-worker: 8 MiB transfer both ways keeps bytes intact and detaches the sender', async () => {
+  it('demo-worker: 8 MiB round trip keeps bytes intact; arguments are copied, results transferred', async () => {
     const s = supervise('demo-worker')
     const { session } = await openSession(s.endpoint)
     const size = 8 * 1024 * 1024 // well inside the default maxTransferBytes (64 MiB)
@@ -137,7 +137,7 @@ describe('hostile workers — positive control across a real thread boundary', (
     expect(back[0]).toBe(1)
     expect(back[back.length - 1]).toBe(2)
     expect(back[size >> 1]).toBe(0xab)
-    expect(big.byteLength).toBe(0) // detached: the buffer was transferred, not copied
+    expect(big.byteLength).toBe(size) // arguments are copied: the caller keeps its buffer usable
     const checked = session['checked'] as (n: number) => Promise<number>
     const results = await Promise.all(Array.from({ length: 200 }, (_, i) => checked(i)))
     expect(results).toEqual(Array.from({ length: 200 }, (_, i) => i * 2))

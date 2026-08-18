@@ -60,6 +60,8 @@ export interface ServiceContractDefinitionSpecV1Wire {
     readonly configuration?: JsonValue
   }
   readonly conformanceProfile: string
+  /** Method surface of the provider objects this contract describes (NXT-103, service arm). */
+  readonly surface?: DataSourceSurfaceV1Wire
 }
 
 export type FacetDefinitionWire =
@@ -98,9 +100,20 @@ export interface DataSourceSurfaceRefWire {
   readonly major: number
 }
 
+/** A top-level key of an object argument (`{ arg: 0, key: 'signal' }`). */
+export interface ArgKeyRefWire {
+  readonly arg: number
+  readonly key: string
+}
+
 interface DataSourceMethodSurfaceCommonV1 {
-  /** Where the executing side appends an `AbortSignal`: last argument (`'last'`) or nowhere. */
-  readonly signal?: 'last' | 'none'
+  /**
+   * Where the executing side places the `AbortSignal`: appended last, nowhere, or as a key of an
+   * object argument (the consumer strips that key before sending, the executor re-creates it).
+   */
+  readonly signal?: 'last' | 'none' | ArgKeyRefWire
+  /** Where a progress callback lives inside an object argument (`invoke(…, { onProgress })`). */
+  readonly progress?: ArgKeyRefWire
   /**
    * Positional argument count before the signal. The executing side pads omitted trailing
    * arguments with `undefined` up to `arity` before appending the signal, so
@@ -131,6 +144,8 @@ export interface DataSourceSurfaceV1Wire {
   readonly methods: Readonly<Record<string, DataSourceMethodSurfaceV1Wire>>
   /** A `value` method whose completion also releases the capability (`dispose`-style ABIs). */
   readonly releaseVia?: string
+  /** Data properties copied to the consumer with the handle, exposed as read-only properties. */
+  readonly fields?: readonly string[]
 }
 
 export interface DataSourceSurfaceRef {
@@ -151,6 +166,7 @@ export type DataSourceMethodSurfaceV1 =
 export interface DataSourceSurfaceV1 {
   readonly methods: Readonly<Record<string, DataSourceMethodSurfaceV1>>
   readonly releaseVia?: string
+  readonly fields?: readonly string[]
 }
 
 export interface DataSourceContractDefinitionSpecV1Wire {
@@ -169,7 +185,7 @@ export type ContractDefinitionSpecV1Wire =
 
 export interface ServiceContractDefinitionSpecV1 extends Omit<
   ServiceContractDefinitionSpecV1Wire,
-  'contract' | 'matching'
+  'contract' | 'matching' | 'surface'
 > {
   readonly contract: ContractId
   readonly matching: {
@@ -177,6 +193,7 @@ export interface ServiceContractDefinitionSpecV1 extends Omit<
     readonly major: number
     readonly configuration?: JsonValue
   }
+  readonly surface?: DataSourceSurfaceV1
 }
 
 export interface DataSourceContractDefinitionSpecV1 extends Omit<
@@ -255,7 +272,12 @@ export interface TraitDefinitionRegistry {
   ): Promise<readonly Diagnostic[]>
 }
 
-export interface ServiceContractDefinitionRegistration extends ServiceContractDefinitionSpecV1 {
+export interface ServiceContractDefinitionRegistration extends Omit<
+  ServiceContractDefinitionSpecV1,
+  'surface'
+> {
+  /** Registrations carry the surface as registered (wire form). */
+  readonly surface?: DataSourceSurfaceV1Wire
   readonly provenance: DefinitionInventoryProvenance
 }
 

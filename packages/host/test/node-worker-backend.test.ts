@@ -11,7 +11,12 @@ import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { Diagnostic } from '@modkitx-x3/core'
-import type { AssetInput, ContributionContext, ResourceBudget } from '@modkitx-x3/sdk'
+import type {
+  AssetInput,
+  ContributionContext,
+  DataSourceSurfaceV1Wire,
+  ResourceBudget,
+} from '@modkitx-x3/sdk'
 import {
   activateExecutionBackend,
   createExecutionBackendRegistry,
@@ -470,5 +475,125 @@ describe('node worker backend — a real bundled extension codec runs in the wor
     })
     expect(detection.codecId).toBe('org.modkitx/text-json')
     expect(detection.confidence).toBeGreaterThan(0.5)
+  }, 30_000)
+})
+
+describe('node worker backend — a real codec opens a session with a host-resolved provider', () => {
+  it('text-json open(): contracts.resolve crosses to the host, the provider is proxied by its definition surface, parse/dataSource run on the host', async () => {
+    const extensionDir = fileURLToPath(
+      new URL('../../../extensions/common/text-json/', import.meta.url),
+    )
+    const loaded = await loadExtensionDirectory(extensionDir)
+    const artifact = loaded.artifact
+    // the provider runs on the host, in-process (as the trusted-in-process path activates it)
+    const providerModule = (await import(
+      new URL('./src/families/json/entrypoints/json-provider.js', artifact.artifactRoot).href
+    )) as { createProvider(selection: unknown): { value: unknown; release(): Promise<void> } }
+    // the JSON syntax contract definition (service arm) carries the provider's method surface
+    const definition = JSON.parse(
+      readFileSync(join(extensionDir, 'contributions', 'contract-json-syntax.json'), 'utf8'),
+    ) as { spec: { contract: string; major: number; surface: DataSourceSurfaceV1Wire } }
+    const b = createNodeWorkerBackend({
+      bootstrapUrl,
+      policy: workerBackendPolicy({ loadDeadlineMs: 10_000, graceMs: 300 }),
+      foreignSurfaces: [
+        {
+          contract: definition.spec.contract,
+          major: definition.spec.major,
+          surface: definition.spec.surface,
+        },
+      ],
+    })
+    const registry = createExecutionBackendRegistry([b])
+    const entrypoint = new URL(
+      './src/families/json/entrypoints/json-codec.js',
+      artifact.artifactRoot,
+    )
+    const lease = await activateExecutionBackend(registry, {
+      ...activation(entrypoint, artifact.artifactRoot),
+      ...(artifact.fileDigests === undefined ? {} : { fileDigests: artifact.fileDigests }),
+    })
+    leases.push(lease)
+    const resolved: string[] = []
+    const codec = (
+      lease.module['createCodec'] as (c: ContributionContext) => {
+        open(
+          input: unknown,
+          intent: string,
+          budget: ResourceBudget,
+          signal?: AbortSignal,
+        ): Promise<Record<string, unknown>>
+      }
+    )({
+      budgets: budget,
+      diagnostics: { report: () => undefined },
+      contracts: {
+        resolve: async (request: { contract: string; major: number }) => {
+          resolved.push(`${request.contract}@${request.major}`)
+          return providerModule.createProvider({ contract: request.contract, major: request.major })
+        },
+        resolveUnknown: async () => {
+          throw new Error('not expected')
+        },
+      } as unknown as ContributionContext['contracts'],
+    })
+    const json = new TextEncoder().encode('{"greeting": "hello", "n": [1, 2, 3]}')
+    const input = {
+      originKind: 'single',
+      primaryBindingId: 'content',
+      bindings: [
+        {
+          bindingId: 'content',
+          role: 'content',
+          ownership: 'owned',
+          sourceKind: 'candidate',
+          source: { id: 'src-1', uri: 'file:///demo.json' },
+          revision: 'content-hash:demo',
+        },
+      ],
+      revisions: {
+        topology: 'single',
+        revision: 'content-hash:demo',
+        bindings: [],
+        compositionFingerprint: 'f',
+      },
+      bindingsFor: () => [],
+      openBinding: async () => ({
+        value: {
+          ref: { id: 'src-1', uri: 'file:///demo.json' },
+          revision: 'content-hash:demo',
+          kind: 'bytes',
+          size: BigInt(json.length),
+          read: async (offset: bigint, length: number) =>
+            json.slice(Number(offset), Number(offset) + length),
+          stream: async function* () {
+            yield json
+          },
+        },
+        release: async () => undefined,
+      }),
+    }
+    const session = (await codec.open(input, 'inspect', budget)) as {
+      revision: string
+      descriptor(): Promise<Record<string, unknown>>
+      dataSource(
+        c: string,
+        m: number,
+      ): Promise<{ value: Record<string, unknown>; release(): Promise<void> }>
+      dispose(): Promise<void>
+    }
+    expect(resolved).toEqual(['common.text-data/json-syntax@1'])
+    expect(session.revision).toBe('content-hash:demo')
+    const descriptor = await session.descriptor()
+    expect(descriptor['schemaVersion']).toBe(2)
+    const tree = await session.dataSource('common.view/tree-data-source', 1)
+    const root = await (tree.value['root'] as () => Promise<{ id: string }>)()
+    expect(typeof root.id).toBe('string')
+    const children = await (
+      tree.value['children'] as (n: unknown, p: unknown) => Promise<{ items: { id: string }[] }>
+    )(root, { limit: 10 })
+    expect(children.items.length).toBeGreaterThan(0)
+    await tree.release()
+    await session.dispose()
   }, 30_000)
 })

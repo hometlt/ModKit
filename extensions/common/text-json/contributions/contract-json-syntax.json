@@ -11,12 +11,47 @@
     "kind": "service",
     "contract": "common.text-data/json-syntax",
     "major": 1,
-    "offerFacet": { "presence": "forbidden" },
-    "requestFacet": { "presence": "forbidden" },
+    "offerFacet": {
+      "presence": "forbidden"
+    },
+    "requestFacet": {
+      "presence": "forbidden"
+    },
     "matching": {
       "profile": "org.modkitx/facetless-matcher",
       "major": 1
     },
-    "conformanceProfile": "common.text-data/json-syntax-v1"
+    "conformanceProfile": "common.text-data/json-syntax-v1",
+    "surface": {
+      "fields": ["contract"],
+      "methods": {
+        "parse": {
+          "kind": "value",
+          "signal": {
+            "arg": 0,
+            "key": "signal"
+          }
+        },
+        "serialize": {
+          "kind": "value",
+          "signal": {
+            "arg": 0,
+            "key": "signal"
+          }
+        },
+        "dataSource": {
+          "kind": "lease",
+          "wrapper": "lease",
+          "result": {
+            "contract": "common.view/tree-data-source",
+            "major": 1
+          },
+          "signal": {
+            "arg": 0,
+            "key": "signal"
+          }
+        }
+      }
+    }
   }
 }

@@ -31,6 +31,7 @@ import {
   Subscriptions,
   type PendingOutcome,
 } from './handles.js'
+import { readArgRef } from './surface.js'
 import {
   CAPABILITY_RPC_DOMAIN,
   CAPABILITY_RPC_VERSION,
@@ -271,6 +272,22 @@ class LocalCapabilityImpl implements LocalCapability {
 
 const noopRelease = (): void => undefined
 
+/** Bounds a target-supplied progress report to the wire `ProgressDto` shape. */
+function normalizeProgress(value: unknown): ProgressDto | undefined {
+  if (typeof value !== 'object' || value === null) return undefined
+  const record = value as Record<string, unknown>
+  const completed = record['completed']
+  if (typeof completed !== 'number' || !Number.isFinite(completed) || completed < 0)
+    return undefined
+  const total = record['total']
+  const message = record['message']
+  return {
+    completed,
+    ...(typeof total === 'number' && Number.isFinite(total) && total >= 0 ? { total } : {}),
+    ...(typeof message === 'string' ? { message: message.slice(0, 1024) } : {}),
+  }
+}
+
 function isAbortSignal(value: unknown): value is AbortSignal {
   return typeof AbortSignal !== 'undefined' && value instanceof AbortSignal
 }
@@ -465,12 +482,38 @@ class EndpointImpl implements Endpoint {
       object[name] = async (...rawArgs: unknown[]) => {
         const args = [...rawArgs]
         let signal: AbortSignal | undefined
+        let onProgress: ((progress: ProgressDto) => void) | undefined
         const last = args[args.length - 1]
         if (isAbortSignal(last)) {
           signal = last
           args.pop()
         }
-        const outcome = await remote.call(name, args, signal === undefined ? {} : { signal })
+        // declared placements inside an object argument: lift them out so the object stays a plain
+        // wire value and the executor can re-create them on its side
+        const lift = (ref: { arg: number; key: string }, expect: 'signal' | 'function') => {
+          const holder = args[ref.arg]
+          if (typeof holder !== 'object' || holder === null || !Object.hasOwn(holder, ref.key))
+            return undefined
+          const value = (holder as Record<string, unknown>)[ref.key]
+          const matches = expect === 'signal' ? isAbortSignal(value) : typeof value === 'function'
+          if (!matches && value !== undefined) return undefined
+          args[ref.arg] = Object.fromEntries(
+            Object.entries(holder as Record<string, unknown>).filter(([key]) => key !== ref.key),
+          )
+          return value
+        }
+        if (typeof method.signal === 'object') {
+          const lifted = lift(method.signal, 'signal')
+          if (isAbortSignal(lifted)) signal = lifted
+        }
+        if (method.progress !== undefined) {
+          const lifted = lift(method.progress, 'function')
+          if (typeof lifted === 'function') onProgress = lifted as (progress: ProgressDto) => void
+        }
+        const outcome = await remote.call(name, args, {
+          ...(signal === undefined ? {} : { signal }),
+          ...(onProgress === undefined ? {} : { onProgress }),
+        })
         switch (outcome.kind) {
           case 'value':
             return outcome.value
@@ -624,11 +667,19 @@ class EndpointImpl implements Endpoint {
     } as Frame
   }
 
-  /** Sends a frame; outbound values are validated with our own limits before they leave. */
+  /**
+   * Sends a frame; outbound values are validated with our own limits before they leave.
+   *
+   * Transfer policy: **arguments are copied, results and events are transferred.** ABI code is
+   * written for in-process calls and freely reuses a buffer it passed as an argument (a codec hands
+   * the same `bytes` to `parse` and then to `dataSource`); transferring would detach it under the
+   * caller's feet. Results are one-shot values the executor produced for this reply, so moving them
+   * is safe and keeps large reads cheap.
+   */
   private send(body: FrameBody): Frame {
     const frame = this.buildFrame(body)
     const transfer: ArrayBuffer[] = []
-    const measure = (value: unknown, handles: 'forbid' | 'top' | 'nested') => {
+    const measure = (value: unknown, handles: 'forbid' | 'top' | 'nested', move: boolean) => {
       const checked = validateWireValue(value, this.limits, handles)
       if (!checked.ok) {
         throw new ModkitError({
@@ -637,11 +688,11 @@ class EndpointImpl implements Endpoint {
           context: { violation: checked.violation.code },
         })
       }
-      transfer.push(...checked.value.transferables)
+      if (move) transfer.push(...checked.value.transferables)
     }
-    if (frame.t === 'call') measure(frame.args, 'nested')
-    else if (frame.t === 'return' && frame.value !== undefined) measure(frame.value, 'top')
-    else if (frame.t === 'event') measure(frame.value, 'forbid')
+    if (frame.t === 'call') measure(frame.args, 'nested', false)
+    else if (frame.t === 'return' && frame.value !== undefined) measure(frame.value, 'top', true)
+    else if (frame.t === 'event') measure(frame.value, 'forbid', true)
     this.port.post(frame, transfer)
     return frame
   }
@@ -1410,8 +1461,8 @@ class EndpointImpl implements Endpoint {
     // a `lease` whose surface is named by the call itself (`dataSource(contract, major)`)
     let dynamicResult: { readonly contract: string; readonly major: number } | undefined
     if (decl.kind === 'lease' && decl.resultFromArgs !== undefined) {
-      const contract = args[decl.resultFromArgs.contract]
-      const major = args[decl.resultFromArgs.major]
+      const contract = readArgRef(args, decl.resultFromArgs.contract)
+      const major = readArgRef(args, decl.resultFromArgs.major)
       if (
         typeof contract !== 'string' ||
         typeof major !== 'number' ||
@@ -1434,6 +1485,17 @@ class EndpointImpl implements Endpoint {
     const active = this.active.begin(frame.id)
     if (decl.arity !== undefined) while (args.length < decl.arity) args.push(undefined)
     if (decl.signal === 'last') args.push(active.controller.signal)
+    else if (typeof decl.signal === 'object') {
+      this.placeInArg(args, decl.signal, active.controller.signal)
+    }
+    if (decl.progress !== undefined) {
+      const callId = frame.id
+      this.placeInArg(args, decl.progress, (progress: unknown) => {
+        const dto = normalizeProgress(progress)
+        if (dto !== undefined && this.state === 'open')
+          this.trySend({ t: 'progress', inReplyTo: callId, progress: dto })
+      })
+    }
     let result: unknown
     try {
       result = await Reflect.apply(fn, target, args)
@@ -1821,6 +1883,19 @@ class EndpointImpl implements Endpoint {
       if (record.handle === frame.handle) this.closeSubscription(id, error)
     }
     this.markRemoteReleased(frame.handle)
+  }
+
+  /** Puts a host-created value (signal, progress emitter) at a declared key of an object argument. */
+  private placeInArg(
+    args: unknown[],
+    ref: { readonly arg: number; readonly key: string },
+    value: unknown,
+  ): void {
+    while (args.length <= ref.arg) args.push(undefined)
+    const holder = args[ref.arg]
+    const base =
+      typeof holder === 'object' && holder !== null ? (holder as Record<string, unknown>) : {}
+    args[ref.arg] = { ...base, [ref.key]: value }
   }
 
   /**

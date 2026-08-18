@@ -12,10 +12,13 @@
  * Sync ABI methods that only derive from those fields (`AssetInput.bindingsFor`,
  * `DerivedAssetInput.subjectsFor`) are not proxied — a worker bootstrap computes them locally.
  *
- * Known v1 gap: `OperationSession.invoke(handlerId, input, { signal, onProgress })` takes its
- * signal and progress sink inside an options object; the proxy cannot translate those yet, so
- * `invoke` crosses as a plain `value` call without in-flight cancellation or progress (protocol
- * v1.1, plan F3).
+ * Signals and progress callbacks that the ABI puts *inside* request/options objects
+ * (`ParseRequest.signal`, `OperationSession.invoke(…, { signal, onProgress })`) are declared as
+ * placements (`signal: { arg, key }`, `progress: { arg, key }`): the consumer lifts them out before
+ * sending, the executor re-creates them on its side. `ContributionContext.contracts` resolves the
+ * leased provider's surface from the request (`resultFromArgs` on `{ arg: 0, key }`), so a codec in
+ * a worker can call `contracts.resolve({ contract, major })` and get a proxied provider whose
+ * surface comes from that contract's definition.
  */
 
 import type {
@@ -25,6 +28,7 @@ import type {
   AssetSession,
   Codec,
   CodecModule,
+  ContractResolverPort,
   DiagnosticSink,
   NamespaceAssetInput,
   OperationSession,
@@ -71,6 +75,8 @@ export const ABI_ASSET_NAMESPACE = { contract: 'x3.abi/asset-namespace', major: 
 /** Union surface for `AssetInput` topologies: consumers read `originKind` first. */
 export const ABI_ASSET_INPUT = { contract: 'x3.abi/asset-input', major: 1 } as const
 export const ABI_DIAGNOSTIC_SINK = { contract: 'x3.abi/diagnostic-sink', major: 1 } as const
+/** `ContributionContext.contracts`: the leased provider's surface is named by the request itself. */
+export const ABI_CONTRACT_RESOLVER = { contract: 'x3.abi/contract-resolver', major: 1 } as const
 
 const sig = { signal: 'last' } as const
 
@@ -118,8 +124,11 @@ const operationSessionSurface = {
   ...ABI_OPERATION_SESSION,
   releaseVia: 'dispose',
   methods: {
-    /** v1 gap: options-object signal/progress do not cross yet (see file header). */
-    invoke: { kind: 'value', signal: 'none' },
+    invoke: {
+      kind: 'value',
+      signal: { arg: 2, key: 'signal' },
+      progress: { arg: 2, key: 'onProgress' },
+    },
     dispose: { kind: 'value' },
   },
 } as const satisfies AbiSurfaceOf<OperationSession>
@@ -187,6 +196,24 @@ const assetInputSurface = {
   },
 } as const satisfies AbiSurfaceOf<AssetInputPin>
 
+const contractResolverSurface = {
+  ...ABI_CONTRACT_RESOLVER,
+  methods: {
+    resolve: {
+      kind: 'lease',
+      wrapper: 'lease',
+      resultFromArgs: { contract: { arg: 0, key: 'contract' }, major: { arg: 0, key: 'major' } },
+      signal: { arg: 0, key: 'signal' },
+    },
+    resolveUnknown: {
+      kind: 'lease',
+      wrapper: 'lease',
+      resultFromArgs: { contract: { arg: 0, key: 'contract' }, major: { arg: 0, key: 'major' } },
+      signal: { arg: 0, key: 'signal' },
+    },
+  },
+} as const satisfies AbiSurfaceOf<ContractResolverPort>
+
 const diagnosticSinkSurface = {
   ...ABI_DIAGNOSTIC_SINK,
   methods: {
@@ -204,4 +231,5 @@ export const RUNTIME_ABI_SURFACES: readonly CapabilitySurface[] = Object.freeze(
   assetNamespaceSurface,
   assetInputSurface,
   diagnosticSinkSurface,
+  contractResolverSurface,
 ])

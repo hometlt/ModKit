@@ -1,6 +1,9 @@
 {
   "schemaVersion": 1,
-  "contract": { "id": "org.modkitx/contract-definition", "major": 1 },
+  "contract": {
+    "id": "org.modkitx/contract-definition",
+    "major": 1
+  },
   "id": "org.modkitx/tsv-syntax-contract",
   "displayName": "TSV syntax service contract",
   "spec": {
@@ -8,9 +11,47 @@
     "kind": "service",
     "contract": "common.text-data/tsv-syntax",
     "major": 1,
-    "offerFacet": { "presence": "forbidden" },
-    "requestFacet": { "presence": "forbidden" },
-    "matching": { "profile": "org.modkitx/facetless-matcher", "major": 1 },
-    "conformanceProfile": "common.text-data/tsv-syntax-v1"
+    "offerFacet": {
+      "presence": "forbidden"
+    },
+    "requestFacet": {
+      "presence": "forbidden"
+    },
+    "matching": {
+      "profile": "org.modkitx/facetless-matcher",
+      "major": 1
+    },
+    "conformanceProfile": "common.text-data/tsv-syntax-v1",
+    "surface": {
+      "fields": ["contract"],
+      "methods": {
+        "parse": {
+          "kind": "value",
+          "signal": {
+            "arg": 0,
+            "key": "signal"
+          }
+        },
+        "serialize": {
+          "kind": "value",
+          "signal": {
+            "arg": 0,
+            "key": "signal"
+          }
+        },
+        "dataSource": {
+          "kind": "lease",
+          "wrapper": "lease",
+          "result": {
+            "contract": "common.view/table-data-source",
+            "major": 1
+          },
+          "signal": {
+            "arg": 0,
+            "key": "signal"
+          }
+        }
+      }
+    }
   }
 }

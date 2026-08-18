@@ -513,6 +513,7 @@ export {
   type ViewerSources,
 } from './asset-capabilities/presentation.js'
 export type {
+  ArgKeyRefWire,
   ContractDefinitionSpecV1,
   ContractDefinitionSpecV1Wire,
   DataSourceContractDefinitionSpecV1,

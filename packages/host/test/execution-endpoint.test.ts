@@ -103,6 +103,17 @@ const surfaces = createSurfaceRegistry([
       sourceFor: { kind: 'lease', resultFromArgs: { contract: 0, major: 1 }, wrapper: 'lease' },
       padded: { kind: 'value', signal: 'last', arity: 2 },
       badLeasedValue: { kind: 'leased-value' },
+      parseLike: {
+        kind: 'value',
+        signal: { arg: 0, key: 'signal' },
+        progress: { arg: 0, key: 'onProgress' },
+      },
+      resolveLike: {
+        kind: 'lease',
+        wrapper: 'lease',
+        resultFromArgs: { contract: { arg: 0, key: 'contract' }, major: { arg: 0, key: 'major' } },
+        signal: { arg: 0, key: 'signal' },
+      },
       dataSource: {
         kind: 'lease',
         result: { contract: 'x3.demo/text', major: 1 },
@@ -170,6 +181,33 @@ function workerWorld(): WorkerWorld {
       lastIsSignal: all[all.length - 1] instanceof AbortSignal,
     }),
     badLeasedValue: async () => ({ notALease: true }),
+    parseLike: (request: {
+      signal?: AbortSignal
+      onProgress?: (p: unknown) => void
+      hang?: boolean
+      x?: number
+    }) =>
+      new Promise((resolve, reject) => {
+        request.onProgress?.({ completed: 1, total: 2, message: 'half' })
+        request.onProgress?.({ completed: 'nope' }) // malformed: dropped, never sent
+        if (request.hang === true) {
+          request.signal?.addEventListener('abort', () =>
+            reject(new OperationCancelledError('parse cancelled')),
+          )
+          return
+        }
+        resolve({
+          hasSignal: request.signal instanceof AbortSignal,
+          keys: Object.keys(request).sort(),
+        })
+      }),
+    resolveLike: async (request: { contract: string; signal?: AbortSignal }) => ({
+      value:
+        request.contract === 'x3.demo/text'
+          ? text
+          : { size: async () => 3, read: async () => new Uint8Array([1, 2, 3]) },
+      release: async () => void (released.text += 1),
+    }),
     dataSource: async (contract: string) => {
       log.push(`dataSource:${contract}`)
       return { value: text, release: async () => void (released.text += 1) }
@@ -978,5 +1016,54 @@ describe('capability-rpc endpoints — leased values, dynamic lease results, ari
     expect(q.host.state).toBe('failed')
     expect((q.failures.host[0] as ProtocolViolation).code).toBe('handle-not-allowed')
     expect(await pending2).toMatchObject({ code: 'x3.host/rpc-protocol-violation' })
+  })
+})
+
+describe('capability-rpc endpoints — signal and progress inside argument objects, results named by request fields', () => {
+  it('lifts a declared signal/onProgress out of the request object, re-creates them on the executor, and forwards progress', async () => {
+    const p = pair()
+    const { session } = await openSession(p)
+    const parseLike = session['parseLike'] as (request: unknown) => Promise<unknown>
+    const progress: unknown[] = []
+    const controller = new AbortController()
+    const result = await parseLike({
+      x: 1,
+      signal: controller.signal,
+      onProgress: (item: unknown) => progress.push(item),
+    })
+    // the object crossed as plain data; the executor saw a real AbortSignal at the declared key
+    expect(result).toEqual({ hasSignal: true, keys: ['onProgress', 'signal', 'x'] })
+    expect(progress).toEqual([{ completed: 1, total: 2, message: 'half' }])
+    // and cancellation through the object-carried signal reaches the executor
+    const hanging = parseLike({ hang: true, signal: controller.signal })
+    await settle()
+    controller.abort()
+    await expect(hanging).rejects.toBeInstanceOf(OperationCancelledError)
+    expect(p.host.state).toBe('open')
+    expect(p.failures.host).toEqual([])
+  })
+
+  it('a lease whose surface is named by request fields resolves per call, like a contract resolver', async () => {
+    const p = pair()
+    const { session } = await openSession(p)
+    const resolveLike = session['resolveLike'] as (request: {
+      contract: string
+      major: number
+      signal?: AbortSignal
+    }) => Promise<{ value: Record<string, unknown>; release(): Promise<void> }>
+    const text = await resolveLike({ contract: 'x3.demo/text', major: 1 })
+    expect(await (text.value['size'] as () => Promise<number>)()).toBe(11)
+    const source = await resolveLike({
+      contract: 'x3.demo/source',
+      major: 1,
+      signal: new AbortController().signal,
+    })
+    expect(await (source.value['size'] as () => Promise<number>)()).toBe(3)
+    await expect(resolveLike({ contract: 'x3.demo/nope', major: 1 })).rejects.toMatchObject({
+      code: 'x3.host/rpc-bad-argument',
+    })
+    await text.release()
+    await source.release()
+    expect(p.host.state).toBe('open')
   })
 })

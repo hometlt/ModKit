@@ -89,6 +89,7 @@ export function isMethodName(value: string): boolean {
 // wire values
 
 export type WireScalar = null | boolean | number | string | bigint
+/** Inside objects/arrays `undefined` is tolerated as "absent" (structured-clone preserves it). */
 export type WireValue =
   WireScalar | Uint8Array | readonly WireValue[] | { readonly [key: string]: WireValue }
 
@@ -330,6 +331,12 @@ function validateInner(
     case 'boolean':
     case 'bigint':
       return undefined
+    case 'undefined':
+      // an absent optional property (`{ truncation: undefined }`) as ABI objects routinely carry;
+      // structured clone preserves it, JSON would drop it — either reading is harmless
+      return depth === 0
+        ? { code: 'bad-value', message: 'undefined is not a wire value', path }
+        : undefined
     case 'number':
       return Number.isFinite(value)
         ? undefined
@@ -349,6 +356,13 @@ function validateInner(
       return {
         code: 'shared-buffer',
         message: 'SharedArrayBuffer-backed bytes are not transferable',
+        path,
+      }
+    }
+    if ((value.buffer as { detached?: boolean }).detached === true) {
+      return {
+        code: 'bad-value',
+        message: 'a Uint8Array over a detached buffer cannot cross (it was transferred already)',
         path,
       }
     }

@@ -116,6 +116,7 @@ function methodSurfaceFrom(method: DataSourceMethodSurfaceV1Wire): MethodSurface
         }
       : {}),
     ...(method.signal === undefined ? {} : { signal: method.signal }),
+    ...(method.progress === undefined ? {} : { progress: method.progress }),
     ...(method.arity === undefined ? {} : { arity: method.arity }),
     ...(method.optional === undefined ? {} : { optional: method.optional }),
     ...(method.limits === undefined ? {} : limitValidators(method.limits)),
@@ -137,6 +138,7 @@ export function capabilitySurfaceFromDataSource(
     major,
     methods,
     ...(surface.releaseVia === undefined ? {} : { releaseVia: surface.releaseVia }),
+    ...(surface.fields === undefined ? {} : { fields: [...surface.fields] }),
   }
 }
 

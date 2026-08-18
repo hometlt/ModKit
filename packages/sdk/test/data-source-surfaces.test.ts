@@ -74,8 +74,61 @@ describe('NXT-103 — data-source method surface schema', () => {
     ).toEqual([])
   })
 
+  it('accepts signal/progress placements inside an object argument, fields, and a surface on the service arm', async () => {
+    const surface: DataSourceSurfaceV1Wire = {
+      fields: ['contract'],
+      methods: {
+        parse: { kind: 'value', signal: { arg: 0, key: 'signal' } },
+        invoke: {
+          kind: 'value',
+          signal: { arg: 2, key: 'signal' },
+          progress: { arg: 2, key: 'onProgress' },
+        },
+        dataSource: {
+          kind: 'lease',
+          wrapper: 'lease',
+          result: { contract: 'common.view/tree-data-source', major: 1 },
+          signal: { arg: 0, key: 'signal' },
+        },
+      },
+    }
+    expect(await validateWithSchema(dataSourceSurfaceV1Schema, surface)).toEqual([])
+    const service = {
+      schemaVersion: 1,
+      kind: 'service',
+      contract: 'org.example/thing-syntax',
+      major: 1,
+      offerFacet: { presence: 'forbidden' },
+      requestFacet: { presence: 'forbidden' },
+      matching: { profile: 'org.modkitx/facetless-matcher', major: 1 },
+      conformanceProfile: 'org.example/thing-syntax-v1',
+      surface,
+    }
+    const registry = createSpecSchemaRegistry(A1_SPEC_SCHEMA_ENTRIES)
+    const result = await validateContributionManifest(
+      {
+        schemaVersion: 1,
+        contract: { id: CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT, major: 1 },
+        id: 'org.example/thing-syntax-definition',
+        displayName: 'Thing syntax definition',
+        spec: service,
+      } as unknown as ContributionManifestV1Wire,
+      registry,
+    )
+    expect(result.specState).toBe('validated')
+    // a field that is also a method is refused by the semantic rule
+    const clash = await validateContributionManifest(
+      manifestWith({ fields: ['info'], methods: { info: { kind: 'value' } } }),
+      registry,
+    )
+    expect(clash.specState).toBe('invalid')
+    expect(clash.diagnostics.map(d => d.code)).toContain('x3.sdk/surface-field-is-method')
+  })
+
   it.each([
     ['lease without result', { kind: 'lease' }],
+    ['bad signal placement key', { kind: 'value', signal: { arg: 0, key: 'Bad-Key' } }],
+    ['bad progress placement', { kind: 'value', progress: { arg: -1, key: 'onProgress' } }],
     ['value with result', { kind: 'value', result: { contract: 'a/b', major: 1 } }],
     ['value with wrapper', { kind: 'value', wrapper: 'bare' }],
     ['unknown kind', { kind: 'stream' }],

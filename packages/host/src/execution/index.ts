@@ -49,9 +49,12 @@ export {
   composeSurfaceRegistries,
   createSurfaceRegistry,
   surfaceKey,
+  readArgRef,
+  type ArgRef,
   type CapabilitySurface,
   type MethodKind,
   type MethodSurface,
+  type SignalPlacement,
   type SurfaceRegistry,
 } from './surface.js'
 export {
@@ -93,6 +96,7 @@ export {
   ABI_ASSET_SESSION,
   ABI_CODEC,
   ABI_CODEC_MODULE,
+  ABI_CONTRACT_RESOLVER,
   ABI_DIAGNOSTIC_SINK,
   ABI_OPERATION_SESSION,
   RUNTIME_ABI_SURFACES,
