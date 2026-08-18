@@ -1286,7 +1286,9 @@ class EndpointImpl implements Endpoint {
           contributionId: frame.contributionId,
           variantId: frame.variantId,
           artifactDigest: frame.artifactDigest,
-          ...(frame.entrypointDigest === undefined ? {} : { entrypointDigest: frame.entrypointDigest }),
+          ...(frame.entrypointDigest === undefined
+            ? {}
+            : { entrypointDigest: frame.entrypointDigest }),
         },
         active.controller.signal,
       )
