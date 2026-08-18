@@ -52,7 +52,10 @@ owner‑документы; каждый пункт имеет свой file sco
 - **Root = Fable (с 2026‑08‑18, по решению владельца).** Закоммичено как Root: F1/F4b handoff
   (`357c520`, `172a255`, `09b1e61`), gate‑ignore для `NexusForgeUI/` (`9dea937`), **R1** NXT‑103 в SDK
   (`004206f`), **R2** adapter + ABI surfaces + protocol v1.1 kinds (`6456fc1`, `f76c173`), **R3a** Node
-  worker backend — в этом коммите. Opus параллельно ведёт `REQUEST_AGENT_TESTKIT_FOLLOWUPS` в
+  worker backend (`b68f58a`), **R3b‑1** verified multi‑file loading — реальный `text-json` codec в worker'е
+  (`4fed319`), **R3b‑2** signal/progress в объектах‑аргументах, `contracts.resolve` из worker'а, service‑arm
+  surfaces, реальный `open()` в worker'е (`aa5e59b`); follow‑ups Opus приняты (`745a7f6`), fix bundle
+  tsbuildinfo (`221cc09`). Opus параллельно ведёт `REQUEST_AGENT_TESTKIT_FOLLOWUPS` в
   `packages/testkit/**` (не коммичу его файлы). Дальше: R3b (per‑file digests в inventory → gate
   передаёт entrypoint digest; `contracts`/`operations` marshalling; wiring backend в composition roots
   с policy; acc‑8/acc‑12), затем R4/R5 (NXT‑101B, probe grant), R6 (Electron IPC → capability‑RPC).
