@@ -32,11 +32,8 @@ import { readFile, realpath } from 'node:fs/promises'
 import { registerHooks } from 'node:module'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { workerData, type MessagePort } from 'node:worker_threads'
-import { ModkitError, type Diagnostic } from '@modkitx-x3/core'
-import type { ContributionContext, ResourceBudget } from '@modkitx-x3/sdk'
+import { ModkitError } from '@modkitx-x3/core'
 import {
-  ABI_CODEC_MODULE,
-  ABI_SERVICE_PROVIDER_MODULE,
   createEndpoint,
   createStandardSurfaceRegistry,
   protocolLimits,
@@ -46,6 +43,7 @@ import {
   type LoadedModule,
   type ProtocolLimits,
 } from '../execution/index.js'
+import { wrapLoadedModule } from '../execution/module-reassembly.js'
 
 interface BootstrapData {
   readonly session: string
@@ -234,122 +232,8 @@ async function loader(request: LoadRequest): Promise<LoadedModule> {
   }
   installHooks()
   const module = (await import(moduleUrl)) as Record<string, unknown>
-  // the root's surface follows the module's ABI shape: a service-provider module leases
-  // providers by the contract the selection names; anything else is exposed as a codec module
-  const isServiceModule =
-    typeof module['createProvider'] === 'function' && typeof module['createCodec'] !== 'function'
-  return {
-    module: isServiceModule ? wrapServiceModule(module) : wrapModule(module),
-    surface: isServiceModule ? ABI_SERVICE_PROVIDER_MODULE : ABI_CODEC_MODULE,
-    release: () => undefined,
-  }
-}
-
-// ---------------------------------------------------------------------------------------------
-// ABI re-assembly
-
-interface WireContext {
-  readonly budgets: ResourceBudget
-  readonly diagnostics?: { report(diagnostic: Diagnostic): Promise<unknown> }
-  /** Host-executed contract resolver (materialized proxy of `x3.abi/contract-resolver@1`). */
-  readonly contracts?: ContributionContext['contracts']
-}
-
-const unavailableResolver = {
-  resolve: () =>
-    Promise.reject(
-      new ModkitError({
-        code: 'x3.host/execution-backend-unavailable',
-        message: 'the host did not hand this worker a contract resolver',
-      }),
-    ),
-  resolveUnknown: () =>
-    Promise.reject(
-      new ModkitError({
-        code: 'x3.host/execution-backend-unavailable',
-        message: 'the host did not hand this worker a contract resolver',
-      }),
-    ),
-} as ContributionContext['contracts']
-
-function contributionContext(wire: WireContext): ContributionContext {
-  const sink = wire.diagnostics
-  return {
-    budgets: wire.budgets,
-    diagnostics: {
-      report(diagnostic) {
-        if (sink !== undefined) void sink.report(diagnostic).catch(() => undefined)
-      },
-    },
-    contracts: wire.contracts ?? unavailableResolver,
-  }
-}
-
-interface WireInput extends Record<string, unknown> {
-  readonly bindings?: readonly { readonly sourceKind?: string; readonly requirementId?: string }[]
-  readonly subjects?: readonly { readonly requirementId?: string }[]
-}
-
-/**
- * Derives the sync helpers the ABI declares from the copied fields, so a codec sees a real
- * `AssetInput`: `bindingsFor` over the physical bindings and `subjectsFor` over a derived
- * input's subject list. The async openers (`openBinding`/`openNamespace`/`openSubject`/
- * `openMaterialized`) are the host‑executed proxy methods already on `wire`.
- */
-function assetInput(wire: WireInput): Record<string, unknown> {
-  const bindings = wire.bindings ?? []
-  const subjects = wire.subjects ?? []
-  return Object.assign(Object.create(null) as Record<string, unknown>, wire, {
-    bindingsFor: (requirementId: string) =>
-      bindings.filter(
-        binding => binding.sourceKind === 'requirement' && binding.requirementId === requirementId,
-      ),
-    subjectsFor: (requirementId: string) =>
-      subjects.filter(subject => subject.requirementId === requirementId),
-  })
-}
-
-/** `ServiceProviderModule`: `createProvider(selection, context)` with the context re-assembled. */
-function wrapServiceModule(module: Record<string, unknown>): Record<string, unknown> {
-  const createProvider = module['createProvider'] as (
-    selection: unknown,
-    context: ContributionContext,
-  ) => unknown
-  return {
-    abiVersion: module['abiVersion'],
-    provides: module['provides'],
-    createProvider: (selection: unknown, wire: WireContext) =>
-      createProvider.call(module, selection, contributionContext(wire)),
-  }
-}
-
-function wrapModule(module: Record<string, unknown>): Record<string, unknown> {
-  const createCodec = module['createCodec']
-  return {
-    abiVersion: module['abiVersion'],
-    createCodec:
-      typeof createCodec !== 'function'
-        ? undefined
-        : (wire: WireContext) => {
-            const codec = (
-              createCodec as (context: ContributionContext) => Record<string, unknown>
-            )(contributionContext(wire))
-            const open = codec['open']
-            return {
-              ...codec,
-              ...(typeof open !== 'function'
-                ? {}
-                : {
-                    open: (input: WireInput, ...rest: unknown[]) =>
-                      (open as (...args: unknown[]) => unknown).call(
-                        codec,
-                        assetInput(input),
-                        ...rest,
-                      ),
-                  }),
-            }
-          },
-  }
+  const wrapped = wrapLoadedModule(module)
+  return { ...wrapped, release: () => undefined }
 }
 
 // ---------------------------------------------------------------------------------------------

@@ -218,7 +218,9 @@ Host‑side module adapter сохраняет **синхронный** `createCo
    per‑contract `limits` как политика — ABI‑конвенции владельца (`has`/`nextBatch`‑механизм и
    `operations().invoke`/derived inputs приземлены S2, 2026‑08‑18; сигнатурный индекс NXT‑101B и
    probe‑grant seam — S3, 2026‑08‑18: см. IMPLEMENTATION_NOTES «S3»).
-2. Browser worker backend (`browser-sandbox`) на том же ядре; Electron IPC → capability‑RPC (R6).
+2. Browser worker backend: ядро приземлено (S5, 2026‑08‑18 — verify‑then‑snapshot loader,
+   bootstrap‑core, backend на общих consumer‑адаптерах); открыт wiring `new Worker` + module map
+   в web/PWA. Electron IPC → capability‑RPC закрыт (S4).
 3. `process-brokered` до первого installed/linked native codec внешнего publisher'а (SB‑3).
 4. Digests зависимостей (SB‑4); политика `limits` по контрактам.
 5. Wiring worker backend'а в composition roots приложений с policy; restart generation.

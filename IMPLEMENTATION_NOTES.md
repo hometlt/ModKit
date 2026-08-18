@@ -6,6 +6,49 @@ overrides a canonical or detailed owner.
 
 ---
 
+## S5 — browser worker backend: verify-then-snapshot loading, the same RPC core and consumer adapters (Root/Fable, 2026-08-18)
+
+**What exists.** `packages/host/src/browser/verified-loader.ts` — the browser has no
+`node:module` hooks, so verification happens **before** URLs exist instead of at evaluation:
+every artifact file is fetched once, checked against the inventory per-file digests, its static
+import specifiers rewritten (children first), and the verified source minted as an immutable
+module URL (`blob:` in the browser, `data:` in tests) — what evaluation imports _is_ the verified
+snapshot, so there is no TOCTOU window at all. Rules mirror the Node ladder: tampered file →
+`artifact-digest-mismatch`; unlisted file or root escape → `execution-load-rejected` (the escape
+is refused before any fetch); no digest map → entrypoint-only + `artifact-not-pinned`; bare
+specifiers only through the app's module map, reported `unverified` (SB-1 like `node_modules`;
+digests are SB-4); non-literal dynamic `import()` refused; import cycles refused; ceilings
+(files/bytes) refused. The specifier scanner is conservative by contract: a mis-parse can only
+produce a fetch refusal or a base-less module-resolution error — never unverified execution.
+
+`browser/worker-bootstrap-core.ts` (runtime-agnostic executor half: one load, exactly the spawned
+snapshot URL, module wrapped by the shared re-assembly) and `browser/worker-backend.ts`
+(`createBrowserWorkerBackend`: `worker-brokered` × `browser-worker`, injected realm factory —
+the web app will supply the DOM `Worker`, tests inject the production bootstrap core over a real
+`MessageChannel` — deadline/grace watchdog, `x3.host/worker-shared-origin` per activation; no V8
+resource-limit API in browsers, said so instead of pretended).
+
+**Shared, not copied.** Extracted from the Node side so both backends run identical code:
+`execution/module-reassembly.ts` (context/asset-input/codec/service-module wrapping — the Node
+bootstrap now imports it) and `execution/consumer-adapters.ts` (module → codec → session adapters
+with the invoke placements, parameterized by `ConsumerRealm`/`ConsumerWatch`; the Node backend's
+restart indirection plugs in unchanged).
+
+**Proof.** `browser-verified-loader.test.ts` (6 tests, real `data:`-URL evaluation: multi-file
+graph works, tamper/unlisted/escape/cycle/dynamic/ceiling refusals, bare map + refusal,
+entrypoint-only mode); `browser-worker-backend.test.ts` (3: the fixture codec activates from
+fetched+verified bytes and probes through a host-executed source with the diagnostic naming the
+snapshot; tamper refuses before the realm is ever spawned; a released lease answers structurally).
+Node backend suite unchanged and green after the extraction.
+
+**Not done here.** The real `new Worker` wiring + module map in the web app (its composition root
+must serve artifact files and dependency bundles over its origin — next slice, with the browser
+conformance-kit pair run in a real browser harness); events/watchdog parity with the Node
+supervisor for worker death (`Worker.onerror`) lands with that wiring; `process-brokered` stays
+behind its SB-2/3 gate.
+
+---
+
 ## S4 (R6) — Electron subject IPC is capability-RPC; the last method allowlists are deleted (Root/Fable, 2026-08-18)
 
 **What exists.** `apps/electron/src/subject-rpc.ts`: main exposes one root capability per window —

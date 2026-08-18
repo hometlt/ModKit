@@ -671,7 +671,11 @@ NXT‑114/R3 (Node worker backend с verified loading; реальный `text-js
    `DATA_SOURCE_METHODS`/`REMOTE_VALUE_METHODS`/`assertElectronSubjectRequest` удалены. Открыто:
    UX словаря состояний (OPUS‑UX‑01); broker‑каналы файловой системы остаются узким allowlist'ом
    эффектов намеренно.
-5. **Browser worker backend (`browser-sandbox`)** на том же ядре; PWA, затем VS Code.
+5. **Browser worker backend** — _ядро сделано 2026‑08‑18 (S5)_: verify‑then‑snapshot загрузка
+   (fetch → digest → перепись импортов → immutable module URL; bare‑зависимости через module map,
+   честно unverified), bootstrap‑core + backend на общем RPC‑ядре и общих consumer‑адаптерах,
+   диагностика `x3.host/worker-shared-origin`. Осталось: реальный `new Worker` + module map в
+   web/PWA composition root, браузерный прогон conformance kit, затем VS Code webview.
 6. **VFS/container + bundle resolver (NXT‑200/201)** и MK2‑конвертер/parity‑harness по
    `REPORT_MK2_ALLOCATION_*` — после стабилизации worker/VFS.
 7. **SB‑2/SB‑3/SB‑4** по своим gates: `process-brokered` до первого native codec внешнего
