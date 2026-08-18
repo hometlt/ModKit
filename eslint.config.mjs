@@ -15,6 +15,9 @@ export default tseslint.config(
       '**/validators.generated/**',
       // gate regression fixtures intentionally contain forbidden/legacy shapes
       'scripts/test/fixtures/**',
+      // external UI mockup drop (Nexus IDE `.dc.html` + support scripts): not lab source, not
+      // authored against these rules; kept out of lint/format until it gets a real home
+      'NexusForgeUI/**',
     ],
   },
   ...tseslint.configs.strict,

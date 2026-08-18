@@ -10,3 +10,5 @@ packages/core/schemas/
 packages/sdk/schemas/
 # generated allocation report — owned by scripts/report-mk2-allocation.mjs, re-run to update
 REPORT_MK2_ALLOCATION_*.md
+# external UI mockup drop (Nexus IDE .dc.html + support scripts) — not lab source
+NexusForgeUI/
