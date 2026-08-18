@@ -216,7 +216,8 @@ Host‑side module adapter сохраняет **синхронный** `createCo
 
 1. `nextBatch`‑конвенция для стандартных surfaces (какие data sources батчатся, размер) и
    per‑contract `limits` как политика — ABI‑конвенции владельца (`has`/`nextBatch`‑механизм и
-   `operations().invoke`/derived inputs приземлены S2, 2026‑08‑18).
+   `operations().invoke`/derived inputs приземлены S2, 2026‑08‑18; сигнатурный индекс NXT‑101B и
+   probe‑grant seam — S3, 2026‑08‑18: см. IMPLEMENTATION_NOTES «S3»).
 2. Browser worker backend (`browser-sandbox`) на том же ядре; Electron IPC → capability‑RPC (R6).
 3. `process-brokered` до первого installed/linked native codec внешнего publisher'а (SB‑3).
 4. Digests зависимостей (SB‑4); политика `limits` по контрактам.

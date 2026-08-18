@@ -32,6 +32,7 @@ import {
   grantValidity,
   narrowGrant,
   type HostPolicy,
+  type PermissionClass,
   type PermissionGrant,
   type ProviderOffer,
   type ProviderRequest,
@@ -196,6 +197,17 @@ function ticketFingerprint(ticket: ActivationTicket): string {
   })
 }
 
+/**
+ * R5 (NXT-101): the detection probe is its own operation. An activation whose ticket carries
+ * `operation: PROBE_OPERATION` runs under a probe-scoped child grant: the variant's requested
+ * classes are clamped to `PROBE_PERMISSION_CLASSES` before narrowing, and the same set is applied
+ * as an operation ceiling even when the caller supplied no policy — a probe can read the source
+ * it is probing and nothing else, whatever the variant would request for a real open. The child
+ * grant id is suffixed `#probe` so probe and open grants of one contribution stay distinct.
+ */
+export const PROBE_OPERATION = 'probe'
+export const PROBE_PERMISSION_CLASSES: readonly PermissionClass[] = Object.freeze(['read-source'])
+
 export interface ActivationRequest {
   readonly ticket: ActivationTicket
   readonly grant: PermissionGrant
@@ -348,11 +360,33 @@ export async function activateContribution(request: ActivationRequest): Promise<
       { grant: request.grant.id, validity: validity.state },
     )
   }
+  const probeScoped = ticket.operation === PROBE_OPERATION
+  const requestedClasses = probeScoped
+    ? variant.requestedPermissionClasses.filter(item =>
+        (PROBE_PERMISSION_CLASSES as readonly string[]).includes(item),
+      )
+    : variant.requestedPermissionClasses
+  // the probe ceiling holds even without a caller policy, and a caller policy can only narrow it
+  const callerProbeCeiling = request.policy?.operationClasses?.[PROBE_OPERATION]
+  const policy = probeScoped
+    ? {
+        ...request.policy,
+        operationClasses: {
+          ...request.policy?.operationClasses,
+          [PROBE_OPERATION]:
+            callerProbeCeiling === undefined
+              ? PROBE_PERMISSION_CLASSES
+              : callerProbeCeiling.filter(item =>
+                  (PROBE_PERMISSION_CLASSES as readonly string[]).includes(item),
+                ),
+        },
+      }
+    : request.policy
   const { child, missing } = narrowGrant(request.grant, {
-    requestedClasses: variant.requestedPermissionClasses,
-    childId: `${request.grant.id}/${manifest.id}#${variant.variantId}`,
+    requestedClasses,
+    childId: `${request.grant.id}/${manifest.id}#${variant.variantId}${probeScoped ? '#probe' : ''}`,
     ...(ticket.operation === undefined ? {} : { operation: ticket.operation }),
-    ...(request.policy === undefined ? {} : { policy: request.policy }),
+    ...(policy === undefined ? {} : { policy }),
   })
   if (missing.length > 0) {
     throw deny(

@@ -1,32 +1,69 @@
 {
   "schemaVersion": 1,
-  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "contract": {
+    "id": "org.modkitx/codec-contribution",
+    "major": 1
+  },
   "id": "org.modkitx/archive-zip",
   "displayName": "ZIP archive",
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
       "entrypoint": "./src/formats/zip/codec.js",
-      "target": { "environments": ["node"] },
+      "target": {
+        "environments": ["node"]
+      },
       "executionProfile": "trusted-in-process",
       "requestedPermissionClasses": ["read-source"]
     },
     {
       "variantId": "portable",
       "entrypoint": "./src/formats/zip/codec.js",
-      "target": { "environments": ["browser-worker", "node-worker"] },
+      "target": {
+        "environments": ["browser-worker", "node-worker"]
+      },
       "executionProfile": "worker-brokered",
       "requestedPermissionClasses": ["read-source"]
     }
   ],
   "spec": {
-    "formatRefs": [{ "formatId": "zip", "label": "ZIP archive", "mediaType": "application/zip" }],
+    "formatRefs": [
+      {
+        "formatId": "zip",
+        "label": "ZIP archive",
+        "mediaType": "application/zip"
+      }
+    ],
     "roles": ["container"],
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled"],
     "openIntents": ["probe", "inspect", "full", "export"],
-    "match": { "extensions": ["zip"], "mediaTypes": ["application/zip"] },
-    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4 }], "maxBytes": 4 },
+    "match": {
+      "extensions": ["zip"],
+      "mediaTypes": ["application/zip"],
+      "signatures": [
+        {
+          "from": "start",
+          "offset": 0,
+          "bytesHex": "504b0304"
+        },
+        {
+          "from": "end",
+          "offset": 22,
+          "bytesHex": "504b0506"
+        }
+      ]
+    },
+    "probe": {
+      "kind": "bytes",
+      "ranges": [
+        {
+          "from": "start",
+          "length": 4
+        }
+      ],
+      "maxBytes": 4
+    },
     "representations": [
       {
         "id": "archive-namespace",
@@ -37,9 +74,18 @@
       }
     ],
     "publishesDataSources": [
-      { "contract": "common.view/namespace-entry-source", "major": 1 },
-      { "contract": "common.view/tree-data-source", "major": 1 },
-      { "contract": "common.view/byte-range-source", "major": 1 }
+      {
+        "contract": "common.view/namespace-entry-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/tree-data-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/byte-range-source",
+        "major": 1
+      }
     ],
     "operations": [
       {
@@ -72,12 +118,30 @@
       }
     ],
     "traitDeclarations": [
-      { "id": "container.entries", "representation": "source", "presence": "will-expose" },
-      { "id": "container.directories", "representation": "source", "presence": "will-expose" },
-      { "id": "container.compression", "representation": "source", "presence": "will-expose" },
-      { "id": "content.binary", "representation": "source", "presence": "will-expose" }
+      {
+        "id": "container.entries",
+        "representation": "source",
+        "presence": "will-expose"
+      },
+      {
+        "id": "container.directories",
+        "representation": "source",
+        "presence": "will-expose"
+      },
+      {
+        "id": "container.compression",
+        "representation": "source",
+        "presence": "will-expose"
+      },
+      {
+        "id": "content.binary",
+        "representation": "source",
+        "presence": "will-expose"
+      }
     ],
-    "implementationTier": { "claimed": 1 },
+    "implementationTier": {
+      "claimed": 1
+    },
     "budgets": {
       "maxInputBytes": "1073741824",
       "maxDepth": 128,

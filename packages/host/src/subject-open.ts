@@ -19,6 +19,7 @@ import {
   type AssetSession,
   type Codec,
   type CodecContributionSpecV1Wire,
+  type SignatureRule,
   type ContributionContext,
   type ContractResolverPort,
   type DetectionResult,
@@ -49,10 +50,13 @@ import {
 import {
   activateContribution,
   issueActivationTicket,
+  PROBE_OPERATION,
+  PROBE_PERMISSION_CLASSES,
   resolveForActivation,
   type ActivationTicket,
 } from './security/gate.js'
 import { DEFAULT_EXECUTION_BACKENDS, type ExecutionBackendRegistry } from './execution/backend.js'
+import { matchesSignatures, signatureNeeds, type SignatureWindows } from './detection-index.js'
 import { assembleSubjectDescriptor } from './session.js'
 
 const DEFAULT_MINIMUM_CONFIDENCE = 0.5
@@ -140,16 +144,28 @@ interface RunnableCandidate {
   readonly spec: CodecContributionSpecV1Wire
   readonly offer: ProviderOffer
   readonly logicalOffer: ProviderOffer['provides'][number]
+  /** NXT-101B: admitted by a declared byte signature (name/media/path rules did not match). */
+  readonly viaSignature: boolean
 }
 
 interface DetectedCandidate extends RunnableCandidate {
-  readonly ticket: ActivationTicket
-  readonly codec: Codec
+  /** Mutable across the probe → open re-activation (R5): the open phase swaps these. */
+  ticket: ActivationTicket
+  codec: Codec
+  resources: AsyncReleaseScope
+  activationDiagnostics: readonly Diagnostic[]
   readonly detection: DetectionResult
   readonly effectiveBudget: ResourceBudget
-  readonly activationDiagnostics: readonly Diagnostic[]
   readonly nestedLocks: ProviderPolicyLockEntry[]
-  readonly resources: AsyncReleaseScope
+  /** The pinned request that resolved this candidate; the open phase re-resolves with it. */
+  readonly request: ProviderRequest
+  /** Builds a ContributionContext bound to this candidate's *current* resource scope. */
+  readonly makeContext: (grant: PermissionGrant, chain: readonly string[]) => ContributionContext
+  /**
+   * R5: the variant requests classes beyond the probe set, so the probe ran under a narrower
+   * child grant and the winner must be re-activated under the caller grant before open.
+   */
+  readonly probeScoped: boolean
 }
 
 interface AsyncReleaseScope {
@@ -300,6 +316,50 @@ function matchesSpec(spec: CodecContributionSpecV1Wire, path: string, mediaType?
   // An empty rule set is not a wildcard. Universal detection needs an explicit, schema-owned
   // declaration; otherwise an installed codec could force activation for every opened artifact.
   return declaresMatch && (extensionMatch || mediaMatch || pathMatch)
+}
+
+/** R5: does the variant request anything beyond what a probe may hold? */
+function variantRequestsBeyondProbe(requested: readonly string[]): boolean {
+  return requested.some(item => !(PROBE_PERMISSION_CLASSES as readonly string[]).includes(item))
+}
+
+/**
+ * NXT-101B: the two bounded reads that feed the signature shortlist. Sized by the declared needs
+ * of the inventory's codec contributions; nothing is read when nothing is declared.
+ */
+async function readSignatureWindows(
+  options: OpenSubjectOptions,
+): Promise<SignatureWindows | undefined> {
+  const ruleSets: (readonly SignatureRule[])[] = []
+  for (const extension of options.inventory.extensions) {
+    for (const contribution of extension.contributions) {
+      const manifest = contribution.manifest
+      if (
+        !contribution.activationEligible ||
+        manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT ||
+        manifest.contract.major !== 1
+      ) {
+        continue
+      }
+      const signatures = (manifest.spec as unknown as CodecContributionSpecV1Wire).match.signatures
+      if (signatures !== undefined && signatures.length > 0) ruleSets.push(signatures)
+    }
+  }
+  const needs = signatureNeeds(ruleSets)
+  if (needs.prefix === 0 && needs.suffix === 0) return undefined
+  const size = options.source.size
+  // a source that does not know its size cannot anchor end signatures and gets no windows —
+  // candidates still enter through their name/media/path rules, nothing regresses
+  if (size === undefined) return undefined
+  const headLength = Number(size < BigInt(needs.prefix) ? size : BigInt(needs.prefix))
+  const head =
+    headLength === 0 ? new Uint8Array(0) : await options.source.read(0n, headLength, options.signal)
+  const tailLength = Number(size < BigInt(needs.suffix) ? size : BigInt(needs.suffix))
+  const tail =
+    tailLength === 0
+      ? new Uint8Array(0)
+      : await options.source.read(size - BigInt(tailLength), tailLength, options.signal)
+  return { head, tail, size }
 }
 
 function runtimeBudget(host: ResourceBudget, spec: CodecContributionSpecV1Wire): ResourceBudget {
@@ -532,6 +592,7 @@ function noServiceResolver(): ContractResolverPort {
 function runnableCandidates(
   options: OpenSubjectOptions,
   offers: readonly ProviderOffer[],
+  signatureWindows: SignatureWindows | undefined,
 ): readonly RunnableCandidate[] {
   const candidates: RunnableCandidate[] = []
   const path = options.path ?? options.source.ref.uri
@@ -549,9 +610,17 @@ function runnableCandidates(
       if (
         !spec.openIntents.includes(options.intent) ||
         (spec.sourceTopology !== 'single' && spec.sourceTopology !== 'bundle') ||
-        spec.probe.kind !== 'bytes' ||
-        !matchesSpec(spec, path, options.mediaType)
+        spec.probe.kind !== 'bytes'
       ) {
+        continue
+      }
+      // name/media/path rules first; a declared byte signature admits a renamed file (NXT-101B)
+      const byName = matchesSpec(spec, path, options.mediaType)
+      const viaSignature =
+        !byName &&
+        signatureWindows !== undefined &&
+        matchesSignatures(spec.match.signatures, signatureWindows)
+      if (!byName && !viaSignature) {
         continue
       }
       for (const offer of offers) {
@@ -567,6 +636,7 @@ function runnableCandidates(
           spec,
           offer,
           logicalOffer,
+          viaSignature,
         })
       }
     }
@@ -669,7 +739,10 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
   const detected: DetectedCandidate[] = []
   const offers = offersFromInventory(options.inventory)
   const executionBackends = options.executionBackends ?? DEFAULT_EXECUTION_BACKENDS
-  const candidates = runnableCandidates(options, offers)
+  // NXT-101B: one bounded head/tail read per open, sized by the declared signature needs of the
+  // inventory (nothing is read when no codec declares signatures); no extension code runs here
+  const signatureWindows = await readSignatureWindows(options)
+  const candidates = runnableCandidates(options, offers, signatureWindows)
   if (candidates.length > maxCandidates) {
     diagnostics.push(
       errorDiagnostic(
@@ -722,7 +795,16 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
           offerId: candidate.logicalOffer.offerId,
         },
       }
-      const resolved = resolveForActivation(request, offers)
+      if (candidate.viaSignature) {
+        local.push({
+          code: 'x3.host/signature-match',
+          severity: 'information',
+          message: `${candidate.contributionId} matched by its declared byte signature; name/media/path rules did not match this subject`,
+        })
+      }
+      // R5: detection probes activate as their own operation — the gate narrows the child grant
+      // to the probe classes; the winning candidate is re-activated under the caller grant below
+      const resolved = resolveForActivation(request, offers, PROBE_OPERATION)
       if (resolved.result.state !== 'resolved' || resolved.ticket === undefined) {
         local.push(
           errorDiagnostic(
@@ -740,6 +822,10 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
         })
         continue
       }
+      const record = {
+        resources,
+        nestedLocks: [] as ProviderPolicyLockEntry[],
+      }
       try {
         const activation = await activateContribution({
           ticket: resolved.ticket,
@@ -748,10 +834,10 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
           ...(options.policy === undefined ? {} : { policy: options.policy }),
           ...(options.signal === undefined ? {} : { signal: options.signal }),
         })
-        resources.add(activation.release)
+        record.resources.add(activation.release)
         local.push(...activation.diagnostics)
         const effectiveBudget = runtimeBudget(options.budget, candidate.spec)
-        const nestedLocks: ProviderPolicyLockEntry[] = []
+        const nestedLocks = record.nestedLocks
         const makeContext = (
           grant: PermissionGrant,
           chain: readonly string[],
@@ -786,7 +872,7 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
                       ...(options.policy === undefined ? {} : { policy: options.policy }),
                       ...(signal === undefined ? {} : { signal }),
                     })
-                    resources.add(nested.release)
+                    record.resources.add(nested.release)
                     diagnostics.push(...nested.diagnostics)
                     if (
                       nested.module['abiVersion'] !== 1 ||
@@ -816,7 +902,7 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
                         message: `provider ${result.selected.offer.providerId} returned an invalid lease`,
                       })
                     }
-                    return trackedLease(resources, lease)
+                    return trackedLease(record.resources, lease)
                   },
                 })
           return Object.freeze({
@@ -853,16 +939,23 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
           ),
           candidate.contributionId,
         )
-        detected.push({
-          ...candidate,
-          ticket: resolved.ticket,
-          codec,
-          detection,
-          effectiveBudget,
-          activationDiagnostics: Object.freeze(local),
-          nestedLocks,
-          resources,
-        })
+        detected.push(
+          Object.assign(record, {
+            ...candidate,
+            ticket: resolved.ticket,
+            codec,
+            detection,
+            effectiveBudget,
+            activationDiagnostics: Object.freeze(local) as readonly Diagnostic[],
+            request,
+            makeContext,
+            probeScoped: variantRequestsBeyondProbe(
+              candidate.contribution.manifest?.runtimeVariants?.find(
+                item => item.variantId === candidate.offer.runtimeVariant,
+              )?.requestedPermissionClasses ?? [],
+            ),
+          }),
+        )
         explanations.push({
           contributionId: candidate.contributionId,
           extensionId: candidate.extensionId,
@@ -875,7 +968,7 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
       } catch (error) {
         local.push(caughtDiagnostic('probe', error))
         try {
-          await resources.release()
+          await record.resources.release()
         } catch (cleanupError) {
           local.push(caughtDiagnostic('cleanup', cleanupError))
         }
@@ -934,6 +1027,55 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
   }
   let openedSession: AssetSession | undefined
   try {
+    if (best.probeScoped) {
+      // R5: the probe ran under the probe-scoped child grant; the open runs under the caller
+      // grant, so the winner is re-activated (a fresh ticket, no probe operation) and only then
+      // is the probe-phase realm released — never a moment without an attested activation
+      const reResolved = resolveForActivation(best.request, offers)
+      if (reResolved.result.state !== 'resolved' || reResolved.ticket === undefined) {
+        throw new ModkitError({
+          code: 'x3.host/codec-resolution-unresolved',
+          message: 'the selected codec did not re-resolve for open',
+        })
+      }
+      const openScope = createReleaseScope()
+      const probeScope = best.resources
+      try {
+        const activation = await activateContribution({
+          ticket: reResolved.ticket,
+          grant: options.grant,
+          executionBackends,
+          ...(options.policy === undefined ? {} : { policy: options.policy }),
+          ...(options.signal === undefined ? {} : { signal: options.signal }),
+        })
+        openScope.add(activation.release)
+        best.resources = openScope
+        best.codec = assertCodec(
+          codecModule(activation.module, best.contributionId).createCodec(
+            best.makeContext(activation.effectiveGrant, [best.contributionId]),
+          ),
+          best.contributionId,
+        )
+        best.ticket = reResolved.ticket
+        best.activationDiagnostics = Object.freeze([
+          ...best.activationDiagnostics,
+          ...activation.diagnostics,
+        ])
+      } catch (error) {
+        best.resources = probeScope
+        try {
+          await openScope.release()
+        } catch (cleanupError) {
+          diagnostics.push(caughtDiagnostic('cleanup', cleanupError))
+        }
+        throw error
+      }
+      try {
+        await probeScope.release()
+      } catch (cleanupError) {
+        diagnostics.push(caughtDiagnostic('cleanup', cleanupError))
+      }
+    }
     const rawPlan = best.codec.planInput
       ? await best.codec.planInput(options.source, best.detection, options.signal)
       : {

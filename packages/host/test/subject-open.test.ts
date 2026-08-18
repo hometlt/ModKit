@@ -34,13 +34,17 @@ import {
 declare global {
   /** Bumped by the empty-match fixture entry point; proves it was never imported. */
   var __x3EmptyMatchImports: number | undefined
+  /** Written by the grants fixture: counts createCodec calls (probe + open activations, R5). */
+  var __x3GrantsFixture: { createCodecCalls: number } | undefined
 }
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const imagesDir = join(repoRoot, 'extensions', 'common', 'images')
+const archivesDir = join(repoRoot, 'extensions', 'common', 'archives')
 const modelsDir = join(repoRoot, 'extensions', 'common', 'models')
 const textJsonDir = join(repoRoot, 'extensions', 'common', 'text-json')
 const hostileProbeDir = join(import.meta.dirname, 'fixtures', 'subject-open-extension')
+const grantsProbeDir = join(import.meta.dirname, 'fixtures', 'subject-open-grants-extension')
 const ambiguousProbeDir = join(import.meta.dirname, 'fixtures', 'subject-open-ambiguous-extension')
 const pngFixture = join(repoRoot, 'apps', 'web', 'public', 'favicon-32.png')
 const uvmFixture = join(
@@ -252,9 +256,11 @@ describe('host-owned subject opening pipeline', () => {
         expect.objectContaining({ contract: 'common.view/raster-image-source', major: 1 }),
       ]),
     })
-    // Detection stays inside the declared 32-byte probe before the selected codec performs its
+    // One bounded signature-window read (sized by the PNG signature declaration, NXT-101B), then
+    // detection stays inside the declared 32-byte probe before the selected codec performs its
     // separately budgeted full-input read.
     expect(reads).toEqual([
+      { offset: 0n, length: 8 },
       { offset: 0n, length: 32 },
       { offset: 0n, length: bytes.byteLength },
     ])
@@ -661,5 +667,235 @@ describe('host-owned subject opening pipeline', () => {
     ])
     expect(execution.releases()).toBe(2)
     expect(globalThis.__x3EmptyMatchImports ?? 0).toBe(emptyMatchImports)
+  })
+})
+
+describe('detection-hostile: the bounded data-only signature index (NXT-101B / F6)', () => {
+  /** PNG magic + IHDR — the same shape favicon-32.png starts with; content after does not matter for the shortlist. */
+  async function pngBytes(): Promise<Uint8Array> {
+    return new Uint8Array(await readFile(pngFixture))
+  }
+  /** A comment-free ZIP end-of-central-directory record: 'PK' + 18 zero bytes = 22 bytes. */
+  function zipEocd(): Uint8Array {
+    const eocd = new Uint8Array(22)
+    eocd.set([0x50, 0x4b, 0x05, 0x06], 0)
+    return eocd
+  }
+  async function inventoryOf(...dirs: string[]) {
+    const inputs = await Promise.all(dirs.map(directory => loadExtensionDirectory(directory)))
+    return buildInventory(
+      inputs.map(input => ({
+        ...input,
+        execution: { origin: 'bundled' as const, allowTrustedInProcess: true },
+      })),
+      createHostContributionContractRegistry(),
+    )
+  }
+  function countingSource(bytes: Uint8Array, name: string) {
+    const reads: { offset: bigint; length: number }[] = []
+    const base = byteSource(bytes, name)
+    const source: ArtifactByteSource = {
+      ...base,
+      async read(offset, length, signal) {
+        reads.push({ offset, length })
+        return base.read(offset, length, signal)
+      },
+    }
+    return { source, reads }
+  }
+
+  it('a renamed PNG (.dat) reaches the PNG probe through its declared signature and opens; the reads stay bounded', async () => {
+    const inventory = await inventoryOf(imagesDir)
+    const bytes = await pngBytes()
+    const { source, reads } = countingSource(bytes, 'renamed.dat')
+    const result = await openSubject({
+      inventory,
+      source,
+      path: 'renamed.dat', // no extension/media/path rule matches this
+      intent: 'full',
+      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+      grant: { id: 'sig-renamed', classes: ['read-source'] },
+      budget,
+    })
+    expect(result.state).toBe('opened')
+    if (result.state !== 'opened') throw new Error(result.reason)
+    expect(result.selected.contributionId).toBe('org.modkitx/image-png')
+    // the shortlist admission is explained, not silent
+    const selected = result.candidates.find(item => item.state === 'selected')
+    expect(selected?.diagnostics.map(item => item.code)).toContain('x3.host/signature-match')
+    // window read (8 bytes: the PNG signature need), probe (32), then the codec's own full read
+    expect(reads[0]).toEqual({ offset: 0n, length: 8 })
+    expect(reads[1]).toEqual({ offset: 0n, length: 32 })
+    expect(reads.length).toBeLessThanOrEqual(3)
+    await result.session.dispose()
+  })
+
+  it('a PNG+ZIP polyglot shortlists both codecs (start and end signatures); the probes decide, nothing is bypassed', async () => {
+    const inventory = await inventoryOf(imagesDir, archivesDir)
+    const png = await pngBytes()
+    const polyglot = new Uint8Array(png.length + 22)
+    polyglot.set(png, 0)
+    polyglot.set(zipEocd(), png.length)
+    const { source, reads } = countingSource(polyglot, 'polyglot.bin')
+    const result = await openSubject({
+      inventory,
+      source,
+      path: 'polyglot.bin',
+      intent: 'full',
+      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+      grant: { id: 'sig-polyglot', classes: ['read-source'] },
+      budget,
+    })
+    // both codecs were admitted and probed — the polyglot cannot dodge either detector
+    const probedIds = new Set(
+      result.candidates.filter(item => item.state !== 'rejected').map(item => item.contributionId),
+    )
+    expect(probedIds.has('org.modkitx/image-png')).toBe(true)
+    expect(probedIds.has('org.modkitx/archive-zip')).toBe(true)
+    // the signature windows are two bounded reads: head (max prefix need) + tail (EOCD window)
+    expect(reads[0]?.offset).toBe(0n)
+    expect(Number(reads[0]?.length)).toBeLessThanOrEqual(4096 + 64)
+    expect(reads[1]?.offset).toBe(BigInt(polyglot.length - 22))
+    expect(reads[1]?.length).toBe(22)
+    // deterministic outcome: the PNG probe wins detection (0.999 vs the ZIP probe's floor), and
+    // then the PNG codec's own open() refuses the trailing ZIP bytes — the polyglot is probed by
+    // both detectors and opened by neither
+    expect(result.state).toBe('unresolved')
+    if (result.state === 'unresolved') {
+      expect(result.reason).toBe('input-unresolved')
+      const png = result.candidates.find(
+        item =>
+          item.contributionId === 'org.modkitx/image-png' && item.variantId === 'trusted-node',
+      )
+      const zip = result.candidates.find(
+        item =>
+          item.contributionId === 'org.modkitx/archive-zip' && item.variantId === 'trusted-node',
+      )
+      expect(png?.confidence).toBeGreaterThan(0.9)
+      expect(zip?.confidence).toBeLessThan(0.1)
+    }
+  })
+
+  it('a magic collision (PNG signature, corrupt body) is probed and rejected honestly — shortlisting is not detection', async () => {
+    const inventory = await inventoryOf(imagesDir)
+    const collision = new Uint8Array(64)
+    collision.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 0) // magic, then zeros: no IHDR
+    const { source } = countingSource(collision, 'collision.bin')
+    const result = await openSubject({
+      inventory,
+      source,
+      path: 'collision.bin',
+      intent: 'full',
+      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+      grant: { id: 'sig-collision', classes: ['read-source'] },
+      budget,
+    })
+    // the PNG codec was shortlisted by its signature; its probe is the authority and refuses
+    expect(result.state).toBe('unresolved')
+    if (result.state !== 'unresolved') throw new Error('collision must not open')
+    const png = result.candidates.find(item => item.contributionId === 'org.modkitx/image-png')
+    expect(png).toBeDefined()
+    expect(png?.state).not.toBe('selected')
+  })
+
+  it('a subject with no matching name and no matching signature stays no-candidate and pays at most the two window reads', async () => {
+    const inventory = await inventoryOf(imagesDir)
+    const noise = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    const { source, reads } = countingSource(noise, 'noise.qqq')
+    const result = await openSubject({
+      inventory,
+      source,
+      path: 'noise.qqq',
+      intent: 'full',
+      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+      grant: { id: 'sig-noise', classes: ['read-source'] },
+      budget,
+    })
+    expect(result.state).toBe('unresolved')
+    if (result.state === 'unresolved') expect(result.reason).toBe('no-candidate')
+    // one head window (clamped by the PNG signature need); the only other read is the
+    // pre-existing text/hex fallback sniff — no probe ever ran
+    expect(reads[0]).toEqual({ offset: 0n, length: 8 })
+    expect(reads.length).toBeLessThanOrEqual(2)
+  })
+})
+
+describe('detection probes run under the probe grant; the open re-activates under the caller grant (R5)', () => {
+  const grantsBytes = () => new Uint8Array([0x47, 0x52, 0x41, 0x4e, 1, 2, 3, 4]) // "GRAN…"
+  // read via a function so TS control-flow narrowing of the global assignment does not stick
+  const createCodecCalls = () => globalThis.__x3GrantsFixture?.createCodecCalls
+
+  function activationCounter() {
+    let activations = 0
+    return {
+      registry: createExecutionBackendRegistry([
+        {
+          profile: 'trusted-in-process',
+          supports: (_target, variant) => variant.executionProfile === 'trusted-in-process',
+          async activate(context) {
+            activations += 1
+            return {
+              module: (await import(context.entrypoint.href)) as Record<string, unknown>,
+              release: async () => undefined,
+            }
+          },
+        },
+      ]),
+      activations: () => activations,
+    }
+  }
+
+  it('a codec requesting write-source probes under read-source only, then opens under a second activation with the full grant', async () => {
+    const inventory = await bundledInventory(grantsProbeDir)
+    const execution = activationCounter()
+    globalThis.__x3GrantsFixture = undefined
+    const result = await openSubject({
+      inventory,
+      source: byteSource(grantsBytes(), 'demo.grants'),
+      path: 'demo.grants',
+      intent: 'full',
+      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+      grant: { id: 'g-grants-full', classes: ['read-source', 'write-source'] },
+      executionBackends: execution.registry,
+      budget,
+    })
+    expect(result.state).toBe('opened')
+    if (result.state !== 'opened') throw new Error(result.reason)
+    // one activation for the probe (probe-scoped child grant), one for the open (caller grant)
+    expect(execution.activations()).toBe(2)
+    expect(createCodecCalls()).toBe(2)
+    await result.session.dispose()
+  })
+
+  it('the same codec under a read-only grant is refused at resolution — no probe, no activation, no partial open', async () => {
+    // The resolver's permission stage is earlier than the probe seam: an offer whose variant
+    // requires write-source cannot serve a read-only grant at all, so the host does not spend a
+    // probe on a codec the caller could never open (the seam's clamp is proven at the gate).
+    const inventory = await bundledInventory(grantsProbeDir)
+    const execution = activationCounter()
+    globalThis.__x3GrantsFixture = { createCodecCalls: 0 }
+    const result = await openSubject({
+      inventory,
+      source: byteSource(grantsBytes(), 'demo.grants'),
+      path: 'demo.grants',
+      intent: 'full',
+      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+      grant: { id: 'g-grants-read', classes: ['read-source'] },
+      executionBackends: execution.registry,
+      budget,
+    })
+    expect(result.state).toBe('unresolved')
+    if (result.state !== 'unresolved') throw new Error('read-only grant must not open')
+    expect(result.reason).toBe('no-match')
+    expect(execution.activations()).toBe(0)
+    expect(createCodecCalls()).toBe(0)
+    expect(
+      result.candidates.some(
+        item =>
+          item.contributionId === 'org.example/grants-codec' &&
+          item.state === 'rejected' &&
+          item.diagnostics.some(d => d.code === 'x3.host/codec-resolution-unresolved'),
+      ),
+    ).toBe(true)
   })
 })

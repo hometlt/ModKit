@@ -1,32 +1,64 @@
 {
   "schemaVersion": 1,
-  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "contract": {
+    "id": "org.modkitx/codec-contribution",
+    "major": 1
+  },
   "id": "org.modkitx/image-png",
   "displayName": "PNG image",
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
       "entrypoint": "./src/formats/png/codec.js",
-      "target": { "environments": ["node"] },
+      "target": {
+        "environments": ["node"]
+      },
       "executionProfile": "trusted-in-process",
       "requestedPermissionClasses": ["read-source"]
     },
     {
       "variantId": "portable",
       "entrypoint": "./src/formats/png/codec.js",
-      "target": { "environments": ["browser-worker", "node-worker"] },
+      "target": {
+        "environments": ["browser-worker", "node-worker"]
+      },
       "executionProfile": "worker-brokered",
       "requestedPermissionClasses": ["read-source"]
     }
   ],
   "spec": {
-    "formatRefs": [{ "formatId": "png", "label": "PNG image", "mediaType": "image/png" }],
+    "formatRefs": [
+      {
+        "formatId": "png",
+        "label": "PNG image",
+        "mediaType": "image/png"
+      }
+    ],
     "roles": ["media"],
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
-    "match": { "extensions": ["png"], "mediaTypes": ["image/png"] },
-    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 32 }], "maxBytes": 32 },
+    "match": {
+      "extensions": ["png"],
+      "mediaTypes": ["image/png"],
+      "signatures": [
+        {
+          "from": "start",
+          "offset": 0,
+          "bytesHex": "89504e470d0a1a0a"
+        }
+      ]
+    },
+    "probe": {
+      "kind": "bytes",
+      "ranges": [
+        {
+          "from": "start",
+          "length": 32
+        }
+      ],
+      "maxBytes": 32
+    },
     "representations": [
       {
         "id": "raster-metadata",
@@ -37,9 +69,18 @@
       }
     ],
     "publishesDataSources": [
-      { "contract": "common.view/raster-image-source", "major": 1 },
-      { "contract": "common.view/tree-data-source", "major": 1 },
-      { "contract": "common.view/byte-range-source", "major": 1 }
+      {
+        "contract": "common.view/raster-image-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/tree-data-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/byte-range-source",
+        "major": 1
+      }
     ],
     "operations": [
       {
@@ -65,13 +106,35 @@
       }
     ],
     "traitDeclarations": [
-      { "id": "image.raster", "representation": "source", "presence": "will-expose" },
-      { "id": "image.channels", "representation": "source", "presence": "will-expose" },
-      { "id": "image.palette", "representation": "source", "presence": "may-expose" },
-      { "id": "image.frames", "representation": "source", "presence": "may-expose" },
-      { "id": "content.binary", "representation": "source", "presence": "will-expose" }
+      {
+        "id": "image.raster",
+        "representation": "source",
+        "presence": "will-expose"
+      },
+      {
+        "id": "image.channels",
+        "representation": "source",
+        "presence": "will-expose"
+      },
+      {
+        "id": "image.palette",
+        "representation": "source",
+        "presence": "may-expose"
+      },
+      {
+        "id": "image.frames",
+        "representation": "source",
+        "presence": "may-expose"
+      },
+      {
+        "id": "content.binary",
+        "representation": "source",
+        "presence": "will-expose"
+      }
     ],
-    "implementationTier": { "claimed": 1 },
+    "implementationTier": {
+      "claimed": 1
+    },
     "budgets": {
       "maxInputBytes": "1073741824",
       "maxDepth": 64,

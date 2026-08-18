@@ -86,6 +86,25 @@ const formatRefSchema = {
   },
 } as const
 
+/**
+ * NXT-101B: a declared, data-only byte signature. `from: 'start'` anchors the pattern at
+ * `offset` from the beginning; `from: 'end'` anchors it `offset` bytes before EOF (the pattern
+ * occupies `[size - offset, size - offset + bytes)`, so `offset ≥ pattern length`). `maskHex`
+ * (same length) ANDs both sides before comparing. Bounds keep the host's candidate index
+ * reads bounded: offset ≤ 4096, pattern ≤ 64 bytes, ≤ 8 signatures per codec.
+ */
+const signatureRuleSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['from', 'offset', 'bytesHex'],
+  properties: {
+    from: { enum: ['start', 'end'] },
+    offset: { type: 'integer', minimum: 0, maximum: 4096 },
+    bytesHex: { type: 'string', pattern: '^(?:[0-9a-f]{2}){1,64}$' },
+    maskHex: { type: 'string', pattern: '^(?:[0-9a-f]{2}){1,64}$' },
+  },
+} as const
+
 const matchRulesSchema = {
   type: 'object',
   additionalProperties: false,
@@ -93,6 +112,7 @@ const matchRulesSchema = {
     extensions: { type: 'array', items: nonEmptyString },
     mediaTypes: { type: 'array', items: nonEmptyString },
     pathGlobs: { type: 'array', items: nonEmptyString },
+    signatures: { type: 'array', items: signatureRuleSchema, maxItems: 8 },
   },
 } as const
 

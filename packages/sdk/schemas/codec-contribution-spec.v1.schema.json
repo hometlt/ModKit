@@ -278,6 +278,40 @@
                 "type": "string"
               },
               "type": "array"
+            },
+            "signatures": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "bytesHex": {
+                    "pattern": "^(?:[0-9a-f]{2}){1,64}$",
+                    "type": "string"
+                  },
+                  "from": {
+                    "enum": [
+                      "start",
+                      "end"
+                    ]
+                  },
+                  "maskHex": {
+                    "pattern": "^(?:[0-9a-f]{2}){1,64}$",
+                    "type": "string"
+                  },
+                  "offset": {
+                    "maximum": 4096,
+                    "minimum": 0,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "from",
+                  "offset",
+                  "bytesHex"
+                ],
+                "type": "object"
+              },
+              "maxItems": 8,
+              "type": "array"
             }
           },
           "type": "object"
@@ -957,6 +991,40 @@
                 "type": "string"
               },
               "type": "array"
+            },
+            "signatures": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "bytesHex": {
+                    "pattern": "^(?:[0-9a-f]{2}){1,64}$",
+                    "type": "string"
+                  },
+                  "from": {
+                    "enum": [
+                      "start",
+                      "end"
+                    ]
+                  },
+                  "maskHex": {
+                    "pattern": "^(?:[0-9a-f]{2}){1,64}$",
+                    "type": "string"
+                  },
+                  "offset": {
+                    "maximum": 4096,
+                    "minimum": 0,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "from",
+                  "offset",
+                  "bytesHex"
+                ],
+                "type": "object"
+              },
+              "maxItems": 8,
+              "type": "array"
             }
           },
           "type": "object"
@@ -1626,6 +1694,40 @@
                 "minLength": 1,
                 "type": "string"
               },
+              "type": "array"
+            },
+            "signatures": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "bytesHex": {
+                    "pattern": "^(?:[0-9a-f]{2}){1,64}$",
+                    "type": "string"
+                  },
+                  "from": {
+                    "enum": [
+                      "start",
+                      "end"
+                    ]
+                  },
+                  "maskHex": {
+                    "pattern": "^(?:[0-9a-f]{2}){1,64}$",
+                    "type": "string"
+                  },
+                  "offset": {
+                    "maximum": 4096,
+                    "minimum": 0,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "from",
+                  "offset",
+                  "bytesHex"
+                ],
+                "type": "object"
+              },
+              "maxItems": 8,
               "type": "array"
             }
           },

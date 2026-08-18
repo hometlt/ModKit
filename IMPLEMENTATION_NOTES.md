@@ -6,6 +6,49 @@ overrides a canonical or detailed owner.
 
 ---
 
+## S3 — NXT-101B signature index + R5 probe grant seam + detection-hostile acceptance (Root/Fable, 2026-08-18)
+
+**R4 — bounded, data-only signature index.** `contract-definition` codec specs may declare
+`match.signatures` (schema-bounded: `from: start|end`, offset ≤ 4096, pattern 1–64 bytes hex,
+optional same-length AND-mask, ≤ 8 rules; `packages/sdk/src/schemas/contribution-specs.ts` +
+manual type + drift gate). The host (`packages/host/src/detection-index.ts`) computes the
+inventory's declared needs and reads **one head window and one tail window per opened subject**
+(nothing when nothing is declared; each ≤ 4160 bytes; a size-less source reads nothing);
+`runnableCandidates` admits a candidate when its name/media/path rules OR one of its signatures
+match — the admission is explained by an information diagnostic `x3.host/signature-match` on the
+candidate. No extension code runs for the shortlist; the codec's bounded probe stays the detection
+authority. Bundled declarations: PNG (`89504e470d0a1a0a` at 0), ZIP (local header at 0 **and** the
+comment-free EOCD 22 bytes before EOF). A renamed `.dat` PNG now reaches the PNG probe and opens.
+
+**R5 — the probe grant seam.** `security/gate.ts` exports `PROBE_OPERATION` /
+`PROBE_PERMISSION_CLASSES` (`['read-source']`): an activation whose ticket carries the probe
+operation clamps the variant's requested classes to the probe set, applies the same set as an
+operation ceiling (a caller policy can narrow it, never widen), and suffixes the child grant id
+`#probe`. `subject-open` resolves detection candidates with the probe operation and, when the
+winning variant requests anything beyond the probe set, **re-activates it under the caller grant
+before open** (fresh ticket, second activation; nested service leases follow the candidate's
+current scope; the probe realm is released only after the open activation stands). Variants that
+request only probe classes (every bundled codec today) keep the single activation — zero change.
+The resolver's earlier permission stage still refuses an offer whose full request the grant can
+never cover: the host does not spend a probe on a codec the caller could never open.
+
+**F6 — detection-hostile acceptance.** `subject-open.test.ts`: renamed PNG opens via signature
+with reads pinned (8-byte window, 32-byte probe, then the codec's own read); a PNG+ZIP polyglot is
+shortlisted by both detectors (head + EOCD windows pinned), the PNG probe wins detection and the
+PNG codec's own `open()` refuses the trailing bytes — probed by both, opened by neither; a magic
+collision (PNG signature, corrupt body) is probed and rejected; a no-match subject pays at most
+the window read + the pre-existing text/hex fallback sniff. Two-phase fixture
+`subject-open-grants-extension` (requests read+write): 2 activations / 2 `createCodec` on open
+with a full grant; resolution-level refusal with a read-only grant (0 activations).
+`gate.test.ts` (+3): probe ticket → `['read-source']` child `#probe`; open ticket → full set;
+probing possible under a grant that could never open; caller probe ceiling cannot widen.
+
+**Not done here.** Suffix-anchored signatures with floating offsets (ZIP EOCD with a comment);
+per-format signature registries outside contributions (the contribution stays the only authority);
+worker-brokered probe pooling (NXT-101 disposable probes stand).
+
+---
+
 ## S2 — protocol 1.1 completed: has[] feature detection, opt-in nextBatch, operations().invoke placements, derived asset inputs (Root/Fable, 2026-08-18)
 
 **What exists (additive, wire `version` stays 1 — a 1.0 peer interoperates).**

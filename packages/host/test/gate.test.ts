@@ -25,7 +25,7 @@ import {
 } from '@modkitx-x3/host'
 // White-box import: the free issuer is deliberately NOT part of the package surface, so
 // the provenance test reaches it through the module it lives in.
-import { issueActivationTicket } from '../src/security/gate.js'
+import { issueActivationTicket, PROBE_OPERATION } from '../src/security/gate.js'
 
 /**
  * Security negative suite (R4, post-audit): every path that must NOT reach an import.
@@ -98,6 +98,7 @@ async function ticketFixture(
     origin: 'bundled',
     allowTrustedInProcess: true,
   },
+  operation?: string,
 ) {
   let artifactValid = true
   const registry = createContributionContractRegistry([
@@ -154,9 +155,9 @@ async function ticketFixture(
   const offers = offersFromInventory(inventory)
   const request: ProviderRequest = {
     contract: { contract: GREETER_CONTRACT, major: 1 },
-    target: { ...requestTarget, grantedPermissions: ['read-source'] },
+    target: { grantedPermissions: ['read-source'], ...requestTarget },
   }
-  const { result, ticket } = resolveForActivation(request, offers)
+  const { result, ticket } = resolveForActivation(request, offers, operation)
   if (!ticket) {
     throw new Error(
       `fixture resolution produced no ticket: ${canonicalJsonStringify({
@@ -589,6 +590,72 @@ describe('activation gate — the granted path', () => {
     await activation.release()
     await activation.release()
     expect(releases).toBe(1)
+  })
+})
+
+describe('probe grant seam (R5, MK3/24 §4)', () => {
+  const rwVariant = {
+    variantId: 'portable',
+    entrypoint: './entry/spy-greeter.mjs',
+    target: { environments: ['node'] as ['node'] },
+    executionProfile: 'trusted-in-process' as const,
+    requestedPermissionClasses: ['read-source', 'write-source'] as ['read-source', 'write-source'],
+  }
+  const rwTarget: RuntimeTarget = {
+    ...target,
+    grantedPermissions: ['read-source', 'write-source'],
+  }
+  const rwManifest = () => manifest({ runtimeVariants: [rwVariant] })
+
+  it('a probe-operation ticket activates under the probe-scoped child grant; the open ticket keeps the full request', async () => {
+    const grant: PermissionGrant = { id: 'g-rw', classes: ['read-source', 'write-source'] }
+    const probe = await activateContribution({
+      ticket: (await ticketFixture(rwManifest(), rwTarget, undefined, undefined, PROBE_OPERATION))
+        .ticket,
+      grant,
+    })
+    // the variant requests write-source for open; the probe child holds read-source only
+    expect(probe.effectiveGrant.classes).toEqual(['read-source'])
+    expect(probe.effectiveGrant.id).toContain('#probe')
+    await probe.release()
+
+    const open = await activateContribution({
+      ticket: (await ticketFixture(rwManifest(), rwTarget)).ticket,
+      grant,
+    })
+    expect([...open.effectiveGrant.classes].sort()).toEqual(['read-source', 'write-source'])
+    expect(open.effectiveGrant.id).not.toContain('#probe')
+    await open.release()
+  })
+
+  it('probing stays possible under a grant that could never open: the clamp narrows the request, the open path still fails closed', async () => {
+    const readOnly: PermissionGrant = { id: 'g-read-only', classes: ['read-source'] }
+    const probe = await activateContribution({
+      ticket: (await ticketFixture(rwManifest(), rwTarget, undefined, undefined, PROBE_OPERATION))
+        .ticket,
+      grant: readOnly,
+    })
+    expect(probe.effectiveGrant.classes).toEqual(['read-source'])
+    await probe.release()
+    await expect(
+      activateContribution({
+        ticket: (await ticketFixture(rwManifest(), rwTarget)).ticket,
+        grant: readOnly,
+      }),
+    ).rejects.toMatchObject({ code: 'x3.host/permission-denied' })
+  })
+
+  it('a caller probe ceiling can only narrow the host probe set, never widen it', async () => {
+    const grant: PermissionGrant = { id: 'g-rw2', classes: ['read-source', 'write-source'] }
+    const widened = await activateContribution({
+      ticket: (await ticketFixture(rwManifest(), rwTarget, undefined, undefined, PROBE_OPERATION))
+        .ticket,
+      grant,
+      policy: { operationClasses: { [PROBE_OPERATION]: ['read-source', 'write-source'] } },
+    })
+    // the caller asked to allow write-source during probe; the host set wins
+    expect(widened.effectiveGrant.classes).toEqual(['read-source'])
+    await widened.release()
   })
 })
 

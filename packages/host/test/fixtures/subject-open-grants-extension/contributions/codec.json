@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/codec-contribution",
+    "major": 1
+  },
+  "id": "org.example/grants-codec",
+  "displayName": "Grants two-phase fixture",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./codec.mjs",
+      "target": {
+        "environments": ["node"]
+      },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source", "write-source"]
+    }
+  ],
+  "spec": {
+    "formatRefs": [
+      {
+        "formatId": "grants",
+        "label": "Grants fixture"
+      }
+    ],
+    "roles": ["semantic"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored"],
+    "openIntents": ["probe", "full"],
+    "match": {
+      "extensions": ["grants"]
+    },
+    "probe": {
+      "kind": "bytes",
+      "ranges": [
+        {
+          "from": "start",
+          "length": 4
+        }
+      ],
+      "maxBytes": 4
+    },
+    "representations": [
+      {
+        "id": "grants",
+        "contract": "org.example/grants",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      {
+        "contract": "common.view/byte-range-source",
+        "major": 1
+      }
+    ],
+    "operations": [],
+    "implementationTier": {
+      "claimed": 1
+    },
+    "budgets": {
+      "maxInputBytes": "1024",
+      "maxDepth": 8,
+      "maxNodes": 8,
+      "maxScalarBytes": 1024,
+      "maxDiagnostics": 8
+    }
+  }
+}

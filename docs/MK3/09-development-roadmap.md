@@ -657,9 +657,13 @@ NXT‑114/R3 (Node worker backend с verified loading; реальный `text-js
    placements в session‑адаптере, derived inputs (`openSubject`/`openMaterialized`,
    `subjectsFor` локально). Открыто: `nextBatch`‑конвенция стандартных surfaces и per‑contract
    `limits` как политика.
-3. **R4/R5 (NXT‑101B, probe grant):** bounded data‑only signature index (renamed PNG `.dat`),
-   отдельный probe grant через brokered execution seam; hostile detection fixtures (polyglot,
-   magic collision).
+3. **R4/R5 (NXT‑101B, probe grant)** — _сделано 2026‑08‑18 (S3)_: `match.signatures` в codec
+   spec (schema‑bounded), host читает ≤ 2 ограниченных окна на открытие, renamed PNG `.dat`
+   доходит до PNG probe (`x3.host/signature-match`); probe — собственная операция
+   (`PROBE_OPERATION`), child‑grant пробы ограничен `read-source` (`#probe`), победитель
+   пере‑активируется под грантом вызывающего перед open; hostile fixtures: renamed PNG, polyglot
+   PNG+ZIP (проверен обоими детекторами, не открыт никем), magic collision, bounded reads.
+   Открыто: плавающий EOCD (ZIP с комментарием), probe pooling.
 4. **R6 — Electron IPC → capability‑RPC:** preload как `FramePort` над `MessagePort`; renderer без
    кодеков; kit против Electron‑пары; удаление остатков allowlist'ов.
 5. **Browser worker backend (`browser-sandbox`)** на том же ядре; PWA, затем VS Code.

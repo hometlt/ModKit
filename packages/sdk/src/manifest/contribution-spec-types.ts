@@ -63,10 +63,23 @@ export interface FormatRef {
   readonly mediaType?: string
 }
 
+/** NXT-101B declared byte signature (data only; the host never derives one). */
+export interface SignatureRule {
+  readonly from: 'start' | 'end'
+  /** Bytes from the anchor to the pattern start; for 'end' the pattern ends at `size - offset + length`. */
+  readonly offset: number
+  /** Lowercase hex, 1–64 bytes. */
+  readonly bytesHex: string
+  /** Optional AND-mask over both sides, same length as `bytesHex`. */
+  readonly maskHex?: string
+}
+
 export interface MatchRules {
   readonly extensions?: readonly string[]
   readonly mediaTypes?: readonly string[]
   readonly pathGlobs?: readonly string[]
+  /** Byte signatures that admit a candidate when name/media/path rules do not (renamed files). */
+  readonly signatures?: readonly SignatureRule[]
 }
 
 export type FormatRole = 'container' | 'media' | 'byte-transform' | 'semantic' | 'index' | 'sidecar'

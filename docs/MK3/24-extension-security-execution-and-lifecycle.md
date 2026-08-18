@@ -575,6 +575,12 @@ identity и не разрешает automatic fallback для mutation/determini
 10. Добавить consent/redaction tests для generic installed-product inventory и доказать, что matching
     не активирует extension code.
 
+**Probe grant (R5, 2026‑08‑18).** Detection‑проба — собственная операция активации: ticket с
+`operation: 'probe'` получает child‑grant, ограниченный `read-source` (id `…#probe`); политика
+вызывающего может сузить probe‑набор, но не расширить; победитель detection пере‑активируется под
+полным грантом перед open. Сигнатурный shortlist (NXT‑101B) не исполняет код расширения: host
+читает ≤ 2 ограниченных окна байтов и сравнивает с задекларированными в contribution сигнатурами.
+
 **Статус Принято 2026‑08‑18 (лаборатория modkitX3, Root = Fable):** пункты 3, 4 (host), worker‑часть 5 (Node worker backend, документ [32](32-execution-boundary-and-method-surfaces.md) §6) и
 7 (conformance kit + hostile‑worker acceptance, документ 10 §22) — выполнены; 1, 2, 8, 10 — SB‑0
 hygiene, открыты; 6, 9 — за своими gates.

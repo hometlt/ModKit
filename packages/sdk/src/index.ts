@@ -99,6 +99,7 @@ export type {
   ImplementationTierRecord,
   JsonSchema,
   MatchRules,
+  SignatureRule,
   OpenIntent,
   OperationDecl,
   OperationOutputKind,
