@@ -226,7 +226,13 @@ describe('node worker backend — activation, probe and open through the backend
         c: string,
         m: number,
       ): Promise<{ value: Record<string, unknown>; release(): Promise<void> }>
-      operations(): { invoke(id: string, v: unknown): Promise<unknown> }
+      operations(): {
+        invoke(
+          id: string,
+          v: unknown,
+          options?: { signal?: AbortSignal; onProgress?: (p: unknown) => void },
+        ): Promise<unknown>
+      }
       events(): Promise<AsyncIterable<unknown>>
       dispose(): Promise<void>
     }
@@ -246,16 +252,126 @@ describe('node worker backend — activation, probe and open through the backend
       'ell',
     )
     await text.release()
-    expect(await session.operations().invoke('h', { a: 1 })).toEqual({
+    // operations().invoke placements: the signal and onProgress live inside the third argument,
+    // stay a plain wire value on the way out, and are re-created in the worker
+    const progress: unknown[] = []
+    const controller = new AbortController()
+    expect(
+      await session
+        .operations()
+        .invoke('h', { a: 1 }, { signal: controller.signal, onProgress: p => progress.push(p) }),
+    ).toEqual({
       kind: 'ok',
       handlerId: 'h',
       value: { a: 1 },
+      sawSignal: true,
+      aborted: false,
     })
+    await new Promise(resolve => setTimeout(resolve, 30))
+    expect(progress).toEqual([
+      { completed: 1, total: 2, message: 'half' },
+      { completed: 2, total: 2 },
+    ])
     const events: unknown[] = []
     for await (const event of await session.events()) events.push(event)
     expect(events).toEqual([{ kind: 'state', state: 'live' }])
     await session.dispose()
     expect(session.state()).toBe('disposed')
+  }, 20_000)
+
+  it('opens a derived asset input: subjectsFor is derived locally, openSubject and openMaterialized run on the host (S2)', async () => {
+    const lease = await activate([], new URL('derived.mjs', fixtureRoot))
+    const createCodec = lease.module['createCodec'] as (c: ContributionContext) => {
+      open(
+        input: AssetInput,
+        intent: string,
+        budget: ResourceBudget,
+      ): Promise<Record<string, unknown>>
+    }
+    const codec = createCodec(context([]))
+    const openedSubjects: string[] = []
+    let materializedRead = false
+    const innerSession = {
+      revision: 'inner-rev',
+      state: () => 'live',
+      descriptor: async () => ({ id: 'inner' }),
+      dataSource: async () => ({ value: {}, release: async () => undefined }),
+      operations: () => ({ invoke: async () => ({ kind: 'ok' }), dispose: async () => undefined }),
+      events: async function* () {
+        yield* []
+      },
+      dispose: async () => undefined,
+    }
+    const input = {
+      originKind: 'derived',
+      subjects: [
+        {
+          bindingId: 's1',
+          requirementId: 'a',
+          role: 'primary',
+          subjectUri: 'sub://a',
+          revision: 'r',
+          compositionFingerprint: 'f',
+        },
+        {
+          bindingId: 's2',
+          requirementId: 'b',
+          role: 'aux',
+          subjectUri: 'sub://b',
+          revision: 'r',
+          compositionFingerprint: 'f',
+        },
+      ],
+      revisions: {
+        topology: 'derived',
+        revision: 'derived-rev',
+        bindings: [],
+        compositionFingerprint: 'f',
+      },
+      materialized: {
+        bindingId: 'm',
+        requirementId: 'mat',
+        role: 'materialized',
+        ownership: 'owned',
+      },
+      // host-executed openers (the surface's proxy methods)
+      openSubject: async (bindingId: string) => {
+        openedSubjects.push(bindingId)
+        return { value: innerSession, release: async () => undefined }
+      },
+      openMaterialized: async () => ({
+        value: {
+          ref: { id: 'm', uri: 'file:///m.bin' },
+          revision: 'r',
+          kind: 'bytes',
+          size: 3n,
+          read: async (offset: bigint, length: number) => {
+            materializedRead = true
+            return new Uint8Array([7, 8, 9]).slice(Number(offset), Number(offset) + length)
+          },
+          stream: async function* () {
+            yield new Uint8Array([7, 8, 9])
+          },
+        },
+        release: async () => undefined,
+      }),
+    } as unknown as AssetInput
+    const session = (await codec.open(input, 'inspect', budget)) as {
+      revision: string
+      descriptor(): Promise<Record<string, unknown>>
+      dispose(): Promise<void>
+    }
+    expect(session.revision).toBe('derived-rev')
+    expect(await session.descriptor()).toEqual({
+      originKind: 'derived',
+      subjectCount: 2,
+      forA: 1, // subjectsFor('a') derived locally from the copied subjects
+      innerDescriptor: { id: 'inner' }, // openSubject leased a real session on the host
+      materializedHead: [7, 8, 9], // openMaterialized leased the host artifact source
+    })
+    expect(openedSubjects).toEqual(['s1'])
+    expect(materializedRead).toBe(true)
+    await session.dispose()
   }, 20_000)
 })
 

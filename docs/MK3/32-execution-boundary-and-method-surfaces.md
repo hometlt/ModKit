@@ -106,12 +106,21 @@ throw cancel next done subscribe event unsubscribe progress release terminate` �
 - лимиты endpoint'а: depth/nodes/string/array/keys/transfer/args + pending/handles/iterators/
   subscriptions/queued events/deadline; `x3.host/rpc-*` коды — structured errors, не violations;
 - error DTO без stack/cause; `OperationCancelledError` остаётся отменой;
-- v1.1 (обратно совместимо, появляется только по декларации surface): `leased-value`,
-  `resultFromArgs` (`ArgRef = number | {arg,key}`), `arity`, `optional` (пока только данные),
-  `fields` внутри handle ref, `signal`/`progress` placements, `load.entrypointDigest`.
+- v1.1 (обратно совместимо, wire `version` = 1, 1.0‑peer работает): `leased-value`,
+  `resultFromArgs` (`ArgRef = number | {arg,key}`), `arity`, `fields` внутри handle ref,
+  `signal`/`progress` placements, `load.entrypointDigest`;
+- **`has`** — optional‑методы, реально реализованные объектом, перечислены в ref'е
+  (`presentOptional` на стороне‑создателе); consumer определяет ровно required + `has`, поэтому
+  `typeof obj.method === 'function'` — честная feature detection. Ref surface'а без optional‑методов
+  байт‑идентичен 1.0;
+- **`nextBatch`** — opt‑in: `iteratorBatchItems` (по умолчанию 1 — по элементу за round trip);
+  выше — consumer шлёт `next { max }`, executor отвечает массивом ≤ `max`, буфер сливается локально;
+- `operations().invoke` placements (`{signal, onProgress}` в третьем аргументе) переносятся
+  session‑адаптером backend'а; derived asset inputs (`subjects`/`materialized` как fields,
+  `openSubject`/`openMaterialized` как методы, `subjectsFor` локально).
 
-Не сделано (открыто): `has[]` (присутствие optional‑методов в ref), `nextBatch` для iterable,
-per‑contract `limits` как политика.
+Не сделано (открыто): per‑contract `limits` как политика владельца; `nextBatch`‑конвенция для
+стандартных surfaces (какие data sources включают батчинг и с каким размером — вопрос ABI‑конвенций).
 
 ## 5. Runtime‑ABI surfaces (`x3.abi/*@1`, host‑internal)
 
@@ -205,7 +214,9 @@ Host‑side module adapter сохраняет **синхронный** `createCo
 
 ## 8. Открытые вопросы (владелец/Root)
 
-1. `has[]`‑присутствие optional‑методов и `nextBatch` (протокол 1.1, ждут ABI‑конвенций).
+1. `nextBatch`‑конвенция для стандартных surfaces (какие data sources батчатся, размер) и
+   per‑contract `limits` как политика — ABI‑конвенции владельца (`has`/`nextBatch`‑механизм и
+   `operations().invoke`/derived inputs приземлены S2, 2026‑08‑18).
 2. Browser worker backend (`browser-sandbox`) на том же ядре; Electron IPC → capability‑RPC (R6).
 3. `process-brokered` до первого installed/linked native codec внешнего publisher'а (SB‑3).
 4. Digests зависимостей (SB‑4); политика `limits` по контрактам.

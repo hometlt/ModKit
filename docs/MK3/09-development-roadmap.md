@@ -652,8 +652,11 @@ NXT‑114/R3 (Node worker backend с verified loading; реальный `text-js
    Осталось из этого пункта:
    `x3.host/worker-shared-process` в UX по решениям Opus (OPUS‑UX‑01); acc‑8 restart generation,
    acc‑12 kit на реальной паре портов backend'а (единый MessagePort‑adapter в `host/execution`).
-2. **Протокол 1.1 остаток:** `has[]` присутствие optional‑методов, `nextBatch` для `iterable`,
-   `operations().invoke` placements в host‑side session adapter, derived inputs/`openMaterialized`.
+2. **Протокол 1.1** — _сделано 2026‑08‑18 (S2)_: `has` присутствие optional‑методов (feature
+   detection через границу), opt‑in `nextBatch` (`iteratorBatchItems`), `operations().invoke`
+   placements в session‑адаптере, derived inputs (`openSubject`/`openMaterialized`,
+   `subjectsFor` локально). Открыто: `nextBatch`‑конвенция стандартных surfaces и per‑contract
+   `limits` как политика.
 3. **R4/R5 (NXT‑101B, probe grant):** bounded data‑only signature index (renamed PNG `.dat`),
    отдельный probe grant через brokered execution seam; hostile detection fixtures (polyglot,
    magic collision).

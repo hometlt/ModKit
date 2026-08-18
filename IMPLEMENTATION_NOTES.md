@@ -6,6 +6,47 @@ overrides a canonical or detailed owner.
 
 ---
 
+## S2 — protocol 1.1 completed: has[] feature detection, opt-in nextBatch, operations().invoke placements, derived asset inputs (Root/Fable, 2026-08-18)
+
+**What exists (additive, wire `version` stays 1 — a 1.0 peer interoperates).**
+
+- **`has[]` (optional-method presence).** A handle ref may carry `has`: the surface's _optional_
+  methods the object actually implements, listed by the side that creates the handle
+  (`presentOptional` in `endpoint.ts`, on `expose` and on every leased result). The consumer's
+  `materialize` then defines exactly the required methods plus the ones `has` names, so
+  `typeof source.readRegion === 'function'` answers truthfully across the boundary — real feature
+  detection instead of the pre-1.1 fallback where every optional method was defined and an absent
+  implementation answered `x3.host/rpc-method-unavailable`. Refs of surfaces with no optional
+  method stay byte-identical to 1.0 (`has` absent). `RemoteCapability.has` exposes it; validated
+  by `isPresentList` (method-name grammar, `MAX_OPTIONAL_METHODS = 64`, unique).
+- **`nextBatch` (opt-in).** `ProtocolLimits.iteratorBatchItems` (default **1** — item per round
+  trip, byte-identical to 1.0). A consumer that raises it sends `next { max }`; the executor pulls
+  up to `max` items and replies with one array value (`done` when already exhausted), the consumer
+  drains the buffer locally and marks the iterator exhausted so the next `next` answers `done`
+  without touching the generator. Bounded by `maxArrayLength`.
+- **`operations().invoke` placements in the session adapter.** The Node worker backend's
+  `sessionAdapter` now leases the `OperationSession` once and returns its _materialized_ proxy, so
+  `invoke(handlerId, value, { signal, onProgress })` carries the ABI placements
+  (`signal: {arg:2}`, `progress: {arg:2,key:'onProgress'}`): the options object stays a plain wire
+  value, the executor re-creates the signal and progress callback; `dispose` releases the lease.
+- **Derived asset inputs.** `x3.abi/asset-input@1` gained `subjects`/`recipe`/`materialized`
+  fields and optional `openSubject`/`openMaterialized` methods; the worker bootstrap derives
+  `subjectsFor` locally from the copied `subjects` (as it already did `bindingsFor`). A codec in a
+  worker reads a derived input's subject list, opens one input subject as a host-executed session
+  and the optional materialized artifact — all brokered.
+
+**Proof.** `execution-endpoint.test.ts` (+2: `has` feature detection both ways; `nextBatch` one
+round trip + order + default-still-one-per-next); `execution-surface-adapter.test.ts` (readPcm is
+now absent, not a rejecting stub); `node-worker-backend.test.ts` (+1 derived input; the session
+test now drives `invoke` with a signal and an `onProgress` and asserts both crossed). Full
+`pnpm check` green.
+
+**Not done here.** Per-contract `limits` as enforced policy (still data, no owner policy yet); a
+`nextBatch`-aware standard-surface convention (which data sources opt into batching, and their
+default batch size — an ABI convention question for the owner); browser worker backend.
+
+---
+
 ## S1b — the worker backend is wired into every Node composition root; portable codecs run brokered in the products (Root/Fable, 2026-08-18)
 
 **What exists.** Every Node root now models a `node-worker` realm next to its host realm and

@@ -291,7 +291,7 @@ describe('standard data-source objects round-trip through the RPC core with the 
         descriptor(): Promise<unknown>
         read(o: bigint, l: number): Promise<Uint8Array>
       }>
-      readPcm(request: unknown): Promise<unknown>
+      readPcm?: (request: unknown) => Promise<unknown>
     }
     const media = await audio.encoded()
     expect(seenEncodedArgs[0]?.length).toBe(2)
@@ -299,10 +299,10 @@ describe('standard data-source objects round-trip through the RPC core with the 
     expect(seenEncodedArgs[0]?.[1]).toBeInstanceOf(AbortSignal)
     expect(await media.descriptor()).toEqual({ mediaType: 'audio/ogg', bytes: 3n })
     expect([...(await media.read(1n, 2))]).toEqual([2, 3])
-    // readPcm is optional on the ABI: the proxy defines it, the absent implementation answers structurally
-    await expect(audio.readPcm({})).rejects.toMatchObject({
-      code: 'x3.host/rpc-method-unavailable',
-    })
+    // readPcm is optional on the ABI and this audio object does not implement it: protocol 1.1
+    // `has` lists only present optional methods, so the proxy never defines readPcm and
+    // `typeof audio.readPcm === 'function'` answers false — feature detection across the boundary
+    expect(typeof audio.readPcm).toBe('undefined')
   })
 
   it('AssetSession ABI surface: revision travels as a field, dataSource resolves its lease surface from the arguments, dispose releases', async () => {

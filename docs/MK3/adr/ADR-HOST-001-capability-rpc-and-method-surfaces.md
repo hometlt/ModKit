@@ -47,9 +47,11 @@ boundary protocol whose vocabulary comes from contract definitions.
 - Codecs written for in-process use run brokered unchanged (the bundled `text-json` codec probes and
   opens in a worker with a host-resolved provider); their buffers stay usable because arguments are
   copied.
-- `optional` methods are still defined on proxies (an absent implementation answers
-  `x3.host/rpc-method-unavailable`) until `has[]` lands; iterables pull item by item until
-  `nextBatch`.
+- `optional` methods use protocol-1.1 `has` presence: the ref lists the optional methods the
+  object implements, so the proxy defines exactly those and `typeof obj.method === 'function'` is
+  feature detection (landed 2026-08-18; a pre-1.1 ref that omits `has` still gets every optional
+  method defined, with `x3.host/rpc-method-unavailable` on an absent one). Iterables pull one item
+  per `next` by default; a consumer opts into batching by raising `iteratorBatchItems`.
 - The worker profile is not a sandbox: reads outside the grant remain possible from worker code
   (document 24 §6.1 SB-1 row); `process-brokered`/`wasm-brokered` remain the enforceable rungs.
 

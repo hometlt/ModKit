@@ -493,25 +493,44 @@ function sessionAdapter(
     (...args: unknown[]) => Promise<unknown>
   >
   let state: 'live' | 'stale-revision' | 'disposed' = 'live'
-  const operations = {
-    invoke: async (...args: unknown[]) => {
+  // one leased OperationSession, materialized once so its `invoke` carries the ABI placements
+  // (`signal`/`onProgress` inside the third options argument are lifted by the RPC core and
+  // re-created in the worker) and its `dispose` releases the lease
+  let opsLease:
+    | Promise<{ readonly proxy: Record<string, unknown>; readonly remote: RemoteCapability }>
+    | undefined
+  const operationsProxy = async () => {
+    opsLease ??= (async () => {
       const outcome = await watch(realm, () => session.call('operations'))
-      if (outcome.kind !== 'lease')
+      if (outcome.kind !== 'lease') {
+        opsLease = undefined
         throw new ModkitError({
           code: 'x3.host/rpc-bad-return',
           message: 'operations did not lease',
         })
-      const ops = endpoint.materialize(outcome.remote) as Record<
-        string,
-        (...a: unknown[]) => Promise<unknown>
-      >
+      }
+      return { proxy: endpoint.materialize(outcome.remote), remote: outcome.remote }
+    })()
+    return opsLease
+  }
+  const operations = {
+    // invoke(handlerId, value, { signal, onProgress }) — the options object stays a plain wire
+    // value; the executor re-creates the signal and progress callback on its side
+    invoke: async (...args: unknown[]) => {
+      const { proxy } = await operationsProxy()
+      return (proxy['invoke'] as ((...a: unknown[]) => Promise<unknown>) | undefined)?.(...args)
+    },
+    dispose: async () => {
+      if (opsLease === undefined) return
+      const lease = opsLease
+      opsLease = undefined
+      const { proxy, remote } = await lease
       try {
-        return await ops['invoke']?.(...args)
+        await (proxy['dispose'] as (() => Promise<unknown>) | undefined)?.()
       } finally {
-        await outcome.remote.release()
+        await remote.release()
       }
     },
-    dispose: async () => undefined,
   }
   return {
     revision: session.data['revision'],
@@ -524,6 +543,7 @@ function sessionAdapter(
     dispose: async () => {
       state = 'disposed'
       try {
+        await operations.dispose()
         await materialized['dispose']?.()
       } finally {
         await exposedInput.release()

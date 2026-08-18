@@ -30,6 +30,7 @@ import type {
   CodecModule,
   ContractResolverPort,
   DiagnosticSink,
+  DerivedAssetInput,
   NamespaceAssetInput,
   OperationSession,
   ServiceProviderModule,
@@ -190,7 +191,11 @@ const assetNamespaceSurface = {
  */
 type AssetInputPin = Partial<
   Omit<NamespaceAssetInput, 'bindingsFor' | 'originKind'> &
-    Pick<SingleAssetInput, 'primaryBindingId'> & { readonly originKind: string }
+    Pick<SingleAssetInput, 'primaryBindingId'> &
+    Omit<
+      Extract<DerivedAssetInput, { openMaterialized: unknown }>,
+      'subjectsFor' | 'bindingsFor' | 'originKind' | 'revisions'
+    > & { readonly originKind: string }
 >
 
 /**
@@ -200,7 +205,17 @@ type AssetInputPin = Partial<
  */
 const assetInputSurface = {
   ...ABI_ASSET_INPUT,
-  fields: ['originKind', 'bindings', 'revisions', 'primaryBindingId'],
+  // topology data as fields: physical bindings, the namespace/derived discriminants, the derived
+  // subject list and its optional materialized requirement/recipe
+  fields: [
+    'originKind',
+    'bindings',
+    'revisions',
+    'primaryBindingId',
+    'subjects',
+    'recipe',
+    'materialized',
+  ],
   methods: {
     openBinding: {
       kind: 'lease',
@@ -212,6 +227,21 @@ const assetInputSurface = {
     openNamespace: {
       kind: 'lease',
       result: ABI_ASSET_NAMESPACE,
+      wrapper: 'lease',
+      optional: true,
+      ...sig,
+    },
+    // derived inputs: open one input subject as a session, or the optional materialized artifact
+    openSubject: {
+      kind: 'lease',
+      result: ABI_ASSET_SESSION,
+      wrapper: 'lease',
+      optional: true,
+      ...sig,
+    },
+    openMaterialized: {
+      kind: 'lease',
+      result: ABI_ARTIFACT_SOURCE,
       wrapper: 'lease',
       optional: true,
       ...sig,

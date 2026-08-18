@@ -107,14 +107,26 @@ export interface HandleRef {
      * ref travels — lease results, `ready.root`, capabilities passed as arguments.
      */
     readonly data?: Readonly<Record<string, WireValue>>
+    /**
+     * Protocol 1.1: the surface's *optional* methods this particular object implements, listed by
+     * the side that created the handle. Absent when the surface declares no optional method (or
+     * the creator predates 1.1): the consumer then defines every declared method and an absent
+     * implementation answers `x3.host/rpc-method-unavailable`. Present (possibly empty): the
+     * consumer defines exactly the required methods plus these.
+     */
+    readonly has?: readonly string[]
   }
 }
+
+/** Upper bound on `has` entries (a surface never declares more optional methods than this). */
+export const MAX_OPTIONAL_METHODS = 64
 
 export function handleRef(
   id: string,
   kind: HandleKind,
   contract?: { readonly contract: string; readonly major: number },
   data?: Readonly<Record<string, WireValue>>,
+  has?: readonly string[],
 ): HandleRef {
   return Object.freeze({
     [HANDLE_MARKER]: Object.freeze({
@@ -122,8 +134,18 @@ export function handleRef(
       kind,
       ...(contract === undefined ? {} : { contract: contract.contract, major: contract.major }),
       ...(data === undefined ? {} : { data }),
+      ...(has === undefined ? {} : { has: Object.freeze([...has]) }),
     }),
   })
+}
+
+function isPresentList(value: unknown): value is readonly string[] {
+  return (
+    Array.isArray(value) &&
+    value.length <= MAX_OPTIONAL_METHODS &&
+    value.every(item => typeof item === 'string' && isMethodName(item)) &&
+    new Set(value).size === value.length
+  )
 }
 
 export function isHandleRef(value: unknown): value is HandleRef {
@@ -134,7 +156,7 @@ export function isHandleRef(value: unknown): value is HandleRef {
   if (!isPlainObject(inner)) return false
   const record = inner as Record<string, unknown>
   const innerKeys = Object.keys(inner)
-    .filter(key => key !== 'data')
+    .filter(key => key !== 'data' && key !== 'has')
     .sort()
   const base = ['id', 'kind']
   const withContract = ['contract', 'id', 'kind', 'major']
@@ -142,6 +164,7 @@ export function isHandleRef(value: unknown): value is HandleRef {
     innerKeys.join(',') === base.join(',') || innerKeys.join(',') === withContract.join(',')
   if (!shape) return false
   if (record['data'] !== undefined && !isPlainObject(record['data'])) return false
+  if (record['has'] !== undefined && !isPresentList(record['has'])) return false
   if (typeof record['id'] !== 'string' || !isHandleId(record['id'])) return false
   if (typeof record['kind'] !== 'string' || !HANDLE_KINDS.includes(record['kind'] as HandleKind))
     return false
@@ -182,6 +205,12 @@ export interface ProtocolLimits {
   readonly maxQueuedEvents: number
   /** Default per-call deadline when the caller passes none; 0 disables. */
   readonly defaultCallDeadlineMs: number
+  /**
+   * Protocol 1.1: how many items a consumer asks for per `next` (`next.max`). Default 1 keeps the
+   * item-per-round-trip pull byte-identical to 1.0; a consumer that raises it opts into batching.
+   * Bounded by `maxArrayLength` — a batch reply is one array value.
+   */
+  readonly iteratorBatchItems: number
 }
 
 export const DEFAULT_PROTOCOL_LIMITS: ProtocolLimits = Object.freeze({
@@ -198,6 +227,7 @@ export const DEFAULT_PROTOCOL_LIMITS: ProtocolLimits = Object.freeze({
   maxSubscriptions: 64,
   maxQueuedEvents: 1024,
   defaultCallDeadlineMs: 30_000,
+  iteratorBatchItems: 1,
 })
 
 export function protocolLimits(overrides: Partial<ProtocolLimits> = {}): ProtocolLimits {
@@ -210,6 +240,13 @@ export function protocolLimits(overrides: Partial<ProtocolLimits> = {}): Protoco
         context: { key },
       })
     }
+  }
+  if (merged.iteratorBatchItems < 1 || merged.iteratorBatchItems > merged.maxArrayLength) {
+    throw new ModkitError({
+      code: 'x3.host/rpc-invalid-limits',
+      message: 'protocol limit iteratorBatchItems must be between 1 and maxArrayLength',
+      context: { key: 'iteratorBatchItems' },
+    })
   }
   return Object.freeze(merged)
 }
@@ -663,7 +700,15 @@ export type Frame =
     })
   | (Envelope & { readonly t: 'throw'; readonly inReplyTo: number; readonly error: ErrorDto })
   | (Envelope & { readonly t: 'cancel'; readonly target: number })
-  | (Envelope & { readonly t: 'next'; readonly handle: string })
+  | (Envelope & {
+      readonly t: 'next'
+      readonly handle: string
+      /**
+       * Protocol 1.1 batch pull: up to `max` items in one `return` whose value is an array;
+       * `done` when the iterator is already exhausted. Absent: exactly one item per reply.
+       */
+      readonly max?: number
+    })
   | (Envelope & {
       readonly t: 'done'
       /** Reply to a `next` (iterator exhausted) or unsolicited for an event stream. */
@@ -698,7 +743,7 @@ const FRAME_KEYS: Readonly<
   return: { required: ['inReplyTo'], optional: ['value', 'lease'] },
   throw: { required: ['inReplyTo', 'error'], optional: [] },
   cancel: { required: ['target'], optional: [] },
-  next: { required: ['handle'], optional: [] },
+  next: { required: ['handle'], optional: ['max'] },
   done: { required: ['handle'], optional: ['inReplyTo', 'error'] },
   subscribe: { required: ['handle'], optional: [] },
   event: { required: ['subscription', 'value'], optional: [] },
@@ -872,7 +917,24 @@ export function validateFrame(
         if (bad) return bad
       }
       break
-    case 'next':
+    case 'next': {
+      const bad = str('handle', isHandleId, 'bad-handle')
+      if (bad) return bad
+      const max = record['max']
+      if (
+        max !== undefined &&
+        (!Number.isSafeInteger(max) ||
+          (max as number) < 1 ||
+          (max as number) > limits.maxArrayLength)
+      ) {
+        return violation(
+          'bad-value',
+          `next.max must be an integer in 1..${limits.maxArrayLength}`,
+          ['max'],
+        )
+      }
+      break
+    }
     case 'subscribe':
     case 'release': {
       const bad = str('handle', isHandleId, 'bad-handle')

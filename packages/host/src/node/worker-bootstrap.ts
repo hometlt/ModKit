@@ -287,16 +287,25 @@ function contributionContext(wire: WireContext): ContributionContext {
 
 interface WireInput extends Record<string, unknown> {
   readonly bindings?: readonly { readonly sourceKind?: string; readonly requirementId?: string }[]
+  readonly subjects?: readonly { readonly requirementId?: string }[]
 }
 
-/** Derives the sync helpers the ABI declares from the copied fields. */
+/**
+ * Derives the sync helpers the ABI declares from the copied fields, so a codec sees a real
+ * `AssetInput`: `bindingsFor` over the physical bindings and `subjectsFor` over a derived
+ * input's subject list. The async openers (`openBinding`/`openNamespace`/`openSubject`/
+ * `openMaterialized`) are the host‑executed proxy methods already on `wire`.
+ */
 function assetInput(wire: WireInput): Record<string, unknown> {
   const bindings = wire.bindings ?? []
+  const subjects = wire.subjects ?? []
   return Object.assign(Object.create(null) as Record<string, unknown>, wire, {
     bindingsFor: (requirementId: string) =>
       bindings.filter(
         binding => binding.sourceKind === 'requirement' && binding.requirementId === requirementId,
       ),
+    subjectsFor: (requirementId: string) =>
+      subjects.filter(subject => subject.requirementId === requirementId),
   })
 }
 

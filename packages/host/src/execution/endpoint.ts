@@ -143,6 +143,11 @@ export interface RemoteCapability {
   readonly isReleased: boolean
   /** Data fields the peer copied when it created the handle (surface `fields`). */
   readonly data: Readonly<Record<string, WireValue>>
+  /**
+   * Optional methods of the surface the peer's object actually implements (protocol 1.1
+   * `has`); `undefined` when the peer did not say — every declared method is then assumed.
+   */
+  readonly has: readonly string[] | undefined
   call(method: string, args?: readonly unknown[], options?: CallOptions): Promise<CallOutcome>
   release(): Promise<void>
 }
@@ -209,6 +214,8 @@ interface RemoteHandleState {
 interface IteratorTarget {
   readonly iterator: AsyncIterator<unknown>
   busy: boolean
+  /** A batch pull saw the iterator end after ≥ 1 item: the next `next` answers `done` at once. */
+  exhausted?: boolean
 }
 
 interface EventsTarget {
@@ -234,6 +241,10 @@ class RemoteCapabilityImpl implements RemoteCapability {
 
   get id(): string {
     return this.ref[HANDLE_MARKER].id
+  }
+
+  get has(): readonly string[] | undefined {
+    return this.ref[HANDLE_MARKER].has
   }
 
   get isReleased(): boolean {
@@ -395,6 +406,7 @@ class EndpointImpl implements Endpoint {
       })
     }
     const data = this.fieldData(target, surface)
+    const has = this.presentOptional(target, surface)
     const record = this.table.allocate({
       kind: 'lease',
       target,
@@ -404,7 +416,7 @@ class EndpointImpl implements Endpoint {
     })
     return new LocalCapabilityImpl(
       this,
-      handleRef(record.id, 'lease', surface, data),
+      handleRef(record.id, 'lease', surface, data, has),
       surface.contract,
       surface.major,
     )
@@ -478,7 +490,11 @@ class EndpointImpl implements Endpoint {
         })
       }
     }
+    const present = remote.has
     for (const [name, method] of Object.entries(surface.methods)) {
+      // protocol 1.1: an optional method the peer's object does not implement is not defined,
+      // so `typeof source.readRegion === 'function'` answers truthfully across the boundary
+      if (method.optional === true && present !== undefined && !present.includes(name)) continue
       object[name] = async (...rawArgs: unknown[]) => {
         const args = [...rawArgs]
         let signal: AbortSignal | undefined
@@ -1002,13 +1018,21 @@ class EndpointImpl implements Endpoint {
   }
 
   private remoteIterable(id: string, decl: MethodSurface): AsyncIterable<WireValue> {
+    const batch = this.limits.iteratorBatchItems
     return {
       [Symbol.asyncIterator]: (): AsyncIterator<WireValue> => {
         let finished = false
+        // protocol 1.1: pull `batch` items per round trip; the buffer drains locally
+        const buffered: WireValue[] = []
         return {
           next: async (): Promise<IteratorResult<WireValue>> => {
+            if (buffered.length > 0) return { done: false, value: buffered.shift() as WireValue }
             if (finished || this.remoteReleased(id)) return { done: true, value: undefined }
-            const outcome = await this.request({ t: 'next', handle: id }, 'next', {})
+            const outcome = await this.request(
+              batch > 1 ? { t: 'next', handle: id, max: batch } : { t: 'next', handle: id },
+              'next',
+              {},
+            )
             if (outcome.kind === 'done') {
               finished = true
               this.markRemoteReleased(id)
@@ -1024,6 +1048,22 @@ class EndpointImpl implements Endpoint {
                 code: 'bad-return',
                 message: 'iterator item must be a plain value',
               })
+            }
+            if (batch > 1) {
+              const items = outcome.value
+              if (!Array.isArray(items) || items.length === 0 || items.length > batch) {
+                throw this.failWith({
+                  code: 'bad-return',
+                  message: `iterator batch must be a non-empty array of at most ${batch} items`,
+                })
+              }
+              for (const item of items) {
+                const problem = decl.validateReturn?.(item as WireValue)
+                if (problem !== undefined)
+                  throw this.failWith({ code: 'bad-return', message: problem })
+              }
+              buffered.push(...(items as WireValue[]))
+              return { done: false, value: buffered.shift() as WireValue }
             }
             const problem = decl.validateReturn?.(outcome.value)
             if (problem !== undefined) throw this.failWith({ code: 'bad-return', message: problem })
@@ -1610,6 +1650,7 @@ class EndpointImpl implements Endpoint {
         }
         try {
           const data = this.fieldData(value, resultSurface)
+          const has = this.presentOptional(value, resultSurface)
           const child = this.table.allocate({
             kind: 'lease',
             target: value,
@@ -1620,7 +1661,7 @@ class EndpointImpl implements Endpoint {
           })
           this.reply(frame.id, {
             kind: 'handle',
-            value: handleRef(child.id, 'lease', resultSurface, data),
+            value: handleRef(child.id, 'lease', resultSurface, data, has),
           })
         } catch (error) {
           if (lease !== undefined) await lease.release()
@@ -1707,42 +1748,63 @@ class EndpointImpl implements Endpoint {
       this.fail({ code: 'iterator-busy', message: `concurrent next on iterator ${frame.handle}` })
       return
     }
+    if (target.exhausted === true) {
+      // a previous batch consumed the last item: answer done without touching the iterator
+      this.send({ t: 'done', inReplyTo: frame.id, handle: frame.handle })
+      await this.releaseLocal(frame.handle)
+      return
+    }
     target.busy = true
     const active = this.active.begin(frame.id)
     active.controller.signal.addEventListener('abort', () => void target.iterator.return?.(), {
       once: true,
     })
+    const max = frame.max ?? 1
     try {
-      const step = await target.iterator.next()
-      if (active.cancelled) {
-        this.reply(frame.id, {
-          kind: 'throw',
-          error: toErrorDto(new OperationCancelledError('cancelled by peer'), this.limits),
-        })
-        await this.releaseLocal(frame.handle)
-        return
+      const items: WireValue[] = []
+      let ended = false
+      while (items.length < max) {
+        const step = await target.iterator.next()
+        if (active.cancelled) {
+          this.reply(frame.id, {
+            kind: 'throw',
+            error: toErrorDto(new OperationCancelledError('cancelled by peer'), this.limits),
+          })
+          await this.releaseLocal(frame.handle)
+          return
+        }
+        if (step.done === true) {
+          ended = true
+          break
+        }
+        const checked = validateWireValue(step.value, this.limits, 'forbid')
+        if (!checked.ok) {
+          this.reply(frame.id, {
+            kind: 'throw',
+            error: toErrorDto(
+              new ModkitError({
+                code: 'x3.host/rpc-bad-return',
+                message: `iterator item rejected: ${checked.violation.message}`,
+              }),
+              this.limits,
+            ),
+          })
+          await this.releaseLocal(frame.handle)
+          return
+        }
+        items.push(step.value as WireValue)
       }
-      if (step.done === true) {
+      if (items.length === 0) {
         this.send({ t: 'done', inReplyTo: frame.id, handle: frame.handle })
         await this.releaseLocal(frame.handle)
         return
       }
-      const checked = validateWireValue(step.value, this.limits, 'forbid')
-      if (!checked.ok) {
-        this.reply(frame.id, {
-          kind: 'throw',
-          error: toErrorDto(
-            new ModkitError({
-              code: 'x3.host/rpc-bad-return',
-              message: `iterator item rejected: ${checked.violation.message}`,
-            }),
-            this.limits,
-          ),
-        })
-        await this.releaseLocal(frame.handle)
-        return
-      }
-      this.reply(frame.id, { kind: 'return', value: step.value as WireValue })
+      if (ended) target.exhausted = true
+      // one item per reply without `max`; a batch reply carries the items as one array
+      this.reply(frame.id, {
+        kind: 'return',
+        value: frame.max === undefined ? (items[0] as WireValue) : items,
+      })
     } catch (error) {
       this.reply(frame.id, { kind: 'throw', error: toErrorDto(error, this.limits) })
       await this.releaseLocal(frame.handle)
@@ -1903,6 +1965,27 @@ class EndpointImpl implements Endpoint {
    * be a bounded wire value without handles. Absent properties are skipped; an invalid one is a
    * bad return on the executing side (thrown as `x3.host/rpc-bad-return`).
    */
+  /**
+   * Protocol 1.1 `has`: which of the surface's optional methods the object implements. Undefined
+   * when the surface declares none (nothing to say), so refs of such surfaces stay byte-identical
+   * to protocol 1.0.
+   */
+  private presentOptional(
+    target: unknown,
+    surface: { readonly contract: string; readonly major: number },
+  ): readonly string[] | undefined {
+    const methods = this.surfaces.surfaceFor(surface.contract, surface.major)?.methods
+    if (methods === undefined) return undefined
+    const optional = Object.entries(methods)
+      .filter(([, method]) => method.optional === true)
+      .map(([name]) => name)
+    if (optional.length === 0) return undefined
+    if (typeof target !== 'object' || target === null) return Object.freeze([])
+    return Object.freeze(
+      optional.filter(name => typeof (target as Record<string, unknown>)[name] === 'function'),
+    )
+  }
+
   private fieldData(
     target: unknown,
     surface: { readonly contract: string; readonly major: number },

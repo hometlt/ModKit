@@ -122,6 +122,8 @@ const surfaces = createSurfaceRegistry([
       search: { kind: 'iterable' },
       events: { kind: 'events' },
       dispose: { kind: 'value' },
+      readRegion: { kind: 'value', optional: true, signal: 'last' },
+      absentOpt: { kind: 'value', optional: true },
       hang: { kind: 'value', signal: 'last' },
       boom: { kind: 'value' },
       bytes: { kind: 'value' },
@@ -229,6 +231,8 @@ function workerWorld(): WorkerWorld {
         })
     },
     dispose: async () => void (released.session += 1),
+    readRegion: async (n: number) => ({ region: n }),
+    // absentOpt intentionally not implemented: protocol 1.1 `has` must omit it
     hang: (_input: unknown, signal: AbortSignal) =>
       new Promise((_resolve, reject) => {
         signal.addEventListener(
@@ -542,6 +546,59 @@ describe('capability-rpc endpoints — events, cancellation, deadlines, releases
     })
     expect(typeof hang).toBe('function')
     expect(p.host.state).toBe('open')
+  })
+
+  // ---------------------------------------------------------------- protocol 1.1
+
+  it('protocol 1.1 has[]: an optional method the object implements is defined and callable; one it does not is absent (feature detection across the wire)', async () => {
+    const p = pair()
+    const { session } = await openSession(p)
+    const capability = (session as unknown as Record<symbol, RemoteCapability>)[CAPABILITY_OF]
+    if (capability === undefined) throw new Error('materialized session must carry its capability')
+    // the worker's session implements readRegion but not absentOpt; `has` lists exactly the former
+    expect(capability.has).toEqual(['readRegion'])
+    expect(typeof session['readRegion']).toBe('function')
+    expect(typeof session['absentOpt']).toBe('undefined')
+    expect('absentOpt' in session).toBe(false)
+    const region = session['readRegion'] as (n: number, s?: AbortSignal) => Promise<unknown>
+    expect(await region(7)).toEqual({ region: 7 })
+    expect(p.host.state).toBe('open')
+    expect(p.failures.worker).toEqual([])
+  })
+
+  it('protocol 1.1 nextBatch: a consumer that raises iteratorBatchItems pulls the iterator in one round trip and keeps order; the default stays one item per next', async () => {
+    // default limits: one `next` per item (byte-identical to 1.0)
+    const single = pair()
+    const solo = await openSession(single)
+    const soloSearch = solo.session['search'] as (q: string) => Promise<AsyncIterable<string>>
+    const soloItems: string[] = []
+    for await (const item of await soloSearch('a')) soloItems.push(item)
+    expect(soloItems).toEqual(['alpha', 'beta', 'gamma'])
+    const soloNexts = single.wire.log.filter(e => e.from === 'a' && e.frame.t === 'next')
+    expect(soloNexts.every(e => e.frame.t === 'next' && e.frame.max === undefined)).toBe(true)
+    expect(soloNexts.length).toBe(4) // three items + the exhausting next
+
+    // batching: one `next max:4` drains all three, a second `next` observes the end → done
+    const batched = pair(protocolLimits({ defaultCallDeadlineMs: 2_000, iteratorBatchItems: 4 }))
+    const b = await openSession(batched)
+    const search = b.session['search'] as (q: string) => Promise<AsyncIterable<string>>
+    const items: string[] = []
+    for await (const item of await search('a')) items.push(item)
+    expect(items).toEqual(['alpha', 'beta', 'gamma'])
+    const nexts = batched.wire.log.filter(e => e.from === 'a' && e.frame.t === 'next')
+    expect(nexts.length).toBe(2)
+    expect(nexts[0]?.frame.t === 'next' && nexts[0].frame.max).toBe(4)
+    // the batch reply is a single array value; the consumer unpacks it in order
+    const batchReturn = batched.wire.log.find(
+      e => e.from === 'b' && e.frame.t === 'return' && Array.isArray(e.frame.value),
+    )
+    expect(batchReturn?.frame.t === 'return' && batchReturn.frame.value).toEqual([
+      'alpha',
+      'beta',
+      'gamma',
+    ])
+    expect(batched.host.state).toBe('open')
+    expect(batched.failures.worker).toEqual([])
   })
 
   it('a lease produced after cancellation is released on the worker instead of leaking', async () => {

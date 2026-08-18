@@ -56,7 +56,18 @@ export function createCodec(context) {
           release: async () => undefined,
         }),
         operations: () => ({
-          invoke: async (handlerId, value) => ({ kind: 'ok', handlerId, value }),
+          // exercises the ABI placements: signal + onProgress live inside the third argument
+          invoke: async (handlerId, value, options) => {
+            options?.onProgress?.({ completed: 1, total: 2, message: 'half' })
+            options?.onProgress?.({ completed: 2, total: 2 })
+            return {
+              kind: 'ok',
+              handlerId,
+              value,
+              sawSignal: options?.signal instanceof AbortSignal,
+              aborted: options?.signal?.aborted === true,
+            }
+          },
           dispose: async () => undefined,
         }),
         events: async function* () {

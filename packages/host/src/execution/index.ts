@@ -13,6 +13,7 @@ export {
   CAPABILITY_RPC_VERSION,
   DEFAULT_PROTOCOL_LIMITS,
   HANDLE_MARKER,
+  MAX_OPTIONAL_METHODS,
   describeFrame,
   fromErrorDto,
   handleRef,

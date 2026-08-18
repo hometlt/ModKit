@@ -29,7 +29,9 @@ Q75–Q77 решены 2026-08-13, Q78–Q85 — 2026-08-14 проходом BRI
 ### 2026‑08‑18 — Q89 — Signal/progress внутри объектов‑аргументов
 
 Placements `signal: {arg,key}`/`progress: {arg,key}`; consumer вынимает, executor воссоздаёт;
-`resultFromArgs` по `{arg,key}` → `contracts.resolve` из worker'а. `has[]` и `nextBatch` — открыты.
+`resultFromArgs` по `{arg,key}` → `contracts.resolve` из worker'а. `has` (присутствие
+optional‑методов) и `nextBatch` (opt‑in `iteratorBatchItems`) приземлены 2026‑08‑18 (S2); открыта
+только `nextBatch`‑конвенция для стандартных surfaces.
 
 ### 2026‑08‑18 — Q90 — Transfer policy и wire values
 
