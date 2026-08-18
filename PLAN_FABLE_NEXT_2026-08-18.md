@@ -49,6 +49,13 @@ owner‑документы; каждый пункт имеет свой file sco
   5 skipped). HW‑09/13 и acc‑6/7/8/9/11/12 — против backend‑а R3. Механические продолжения вынесены в
   `REQUEST_AGENT_TESTKIT_FOLLOWUPS_2026-08-18.md` (для Opus/Sonnet). Подробности — IMPLEMENTATION_NOTES
   «F4b», threat model §5.1.
+- **Root = Fable (с 2026‑08‑18, по решению владельца).** Закоммичено как Root: F1/F4b handoff
+  (`357c520`, `172a255`, `09b1e61`), gate‑ignore для `NexusForgeUI/` (`9dea937`), **R1** NXT‑103 в SDK
+  (`004206f`), **R2** adapter + ABI surfaces + protocol v1.1 kinds (`6456fc1`, `f76c173`), **R3a** Node
+  worker backend — в этом коммите. Opus параллельно ведёт `REQUEST_AGENT_TESTKIT_FOLLOWUPS` в
+  `packages/testkit/**` (не коммичу его файлы). Дальше: R3b (per‑file digests в inventory → gate
+  передаёт entrypoint digest; `contracts`/`operations` marshalling; wiring backend в composition roots
+  с policy; acc‑8/acc‑12), затем R4/R5 (NXT‑101B, probe grant), R6 (Electron IPC → capability‑RPC).
 - **Состояние гейтов после F1** (та же последовательность, что `pnpm check`, но lint/format без
   `NexusForgeUI/`): build 41 entries, bench gate, eslint, prettier, **71 test files / 551 tests**,
   schemas/manifests/tokens/icons/facilities, `apps:check` 16 cases, `legacy gate` clean (380),

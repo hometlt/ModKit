@@ -77,6 +77,8 @@ export interface LoadRequest {
   readonly contributionId: string
   readonly variantId: string
   readonly artifactDigest: string
+  /** Digest of the entrypoint bytes the executing side must re-verify right before evaluation. */
+  readonly entrypointDigest?: string
 }
 
 export interface LoadedModule {
@@ -1284,6 +1286,7 @@ class EndpointImpl implements Endpoint {
           contributionId: frame.contributionId,
           variantId: frame.variantId,
           artifactDigest: frame.artifactDigest,
+          ...(frame.entrypointDigest === undefined ? {} : { entrypointDigest: frame.entrypointDigest }),
         },
         active.controller.signal,
       )

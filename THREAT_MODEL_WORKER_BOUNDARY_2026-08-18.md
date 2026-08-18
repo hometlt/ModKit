@@ -200,10 +200,9 @@ Fixtures HW‑01/02/10/11/12 полезны и без Node transport — они 
 Reference supervisor **не** production policy (её вводит R3 как `WorkerBackendPolicy`, §8 п.2):
 он фиксирует наблюдаемые реакции — `onFailure → terminate()`, `'exit'/'error' → peerClosed()`,
 `release() → terminate frame → grace → terminate()`, `watched() → deadline → cancel → grace →
-terminate()` — и именно эти реакции R3 обязан воспроизвести (acc‑1…acc‑5, acc‑10). Ещё не
-покрыто: acc‑6/acc‑11 (loader), acc‑7 (diagnostic `x3.host/worker-shared-process`), acc‑8
-(restart generation — логика backend‑а), acc‑9 против настоящего `ExecutionModuleLease`, acc‑12
-(kit на реальной паре портов backend‑а).
+terminate()` — и именно эти реакции R3 обязан воспроизвести (acc‑1…acc‑5, acc‑10). Обновление R3a
+(2026‑08‑18, `packages/host/src/node/worker-backend.ts` + `worker-bootstrap.ts`,
+`packages/host/test/node-worker-backend.test.ts`): acc‑6 (tamper в окне digest→evaluate → `x3.host/artifact-digest-mismatch`, worker не выживает), acc‑7 (`x3.host/worker-shared-process` на каждую activation), acc‑9 (`release()` настоящего `ExecutionModuleLease` идемпотентен), acc‑11 (один `load`, `file:` ⊂ `artifactRoot` через realpath, относительные импорты → `x3.host/artifact-not-pinned`) — **закрыты**. Остались acc‑8 (restart generation) и acc‑12 (kit на реальной паре портов backend‑а) — R3b, вместе с wiring в composition roots.
 
 ## 6. Чек‑лист pre‑merge аудита R3 (Fable)
 

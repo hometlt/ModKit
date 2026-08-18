@@ -622,6 +622,8 @@ export type Frame =
       readonly contributionId: string
       readonly variantId: string
       readonly artifactDigest: string
+      /** Digest of the entrypoint bytes the loader must re-verify right before evaluation. */
+      readonly entrypointDigest?: string
     })
   | (Envelope & {
       readonly t: 'ready'
@@ -673,7 +675,10 @@ const ENVELOPE_KEYS = ['domain', 'version', 'session', 'generation', 'id', 't'] 
 const FRAME_KEYS: Readonly<
   Record<FrameType, { required: readonly string[]; optional: readonly string[] }>
 > = {
-  load: { required: ['moduleUrl', 'contributionId', 'variantId', 'artifactDigest'], optional: [] },
+  load: {
+    required: ['moduleUrl', 'contributionId', 'variantId', 'artifactDigest'],
+    optional: ['entrypointDigest'],
+  },
   ready: { required: ['inReplyTo', 'abiVersion', 'exports', 'root'], optional: [] },
   call: { required: ['handle', 'method', 'args'], optional: ['deadlineMs'] },
   return: { required: ['inReplyTo'], optional: ['value', 'lease'] },
@@ -769,6 +774,10 @@ export function validateFrame(
     case 'load': {
       for (const key of ['moduleUrl', 'artifactDigest'] as const) {
         const bad = str(key, value => value.length <= limits.maxStringLength)
+        if (bad) return bad
+      }
+      if (record['entrypointDigest'] !== undefined) {
+        const bad = str('entrypointDigest', value => value.length <= 256)
         if (bad) return bad
       }
       const bad = str('contributionId', isQualifiedId) ?? str('variantId', isSegment)

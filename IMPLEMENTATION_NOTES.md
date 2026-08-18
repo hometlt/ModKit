@@ -48,6 +48,73 @@ and the three `check:*` gates are green; `eslint .` reports 3 errors, all in the
 
 ---
 
+## R3a — Node worker backend: `worker-brokered` on the node target (Root/Fable, 2026-08-18)
+
+**What exists.** `packages/host/src/node/worker-backend.ts` (`createNodeWorkerBackend`, exported
+from `@modkitx-x3/host/node`), `packages/host/src/node/worker-bootstrap.ts` (its own published
+entry `@modkitx-x3/host/node/worker-bootstrap` so `new Worker(url)` finds it after bundling — 42
+bundle entries), `packages/host/src/execution/worker-policy.ts` (`WorkerBackendPolicy`, defaults,
+hard ceilings, `workerBackendPolicy()` refuses — never clamps — values above a ceiling), and
+`packages/host/test/node-worker-backend.test.ts` (8 tests over real `worker_threads`, 3/3 stable)
+with the single-file fixture `test/fixtures/worker-codec/codec.mjs`.
+
+**Backend (host side).** `ExecutionBackend { profile: 'worker-brokered', supports(node target +
+worker-brokered variant), activate }`. `activate`: refuses non-`file:` entrypoints; hashes the
+entrypoint bytes (`entrypointDigest`); spawns one `Worker` per activation from the bootstrap with the
+threat-model options (`env: {}`, `argv: []`, `execArgv: []`, `resourceLimits` from the policy,
+captured + capped stdio → diagnostics, `trackUnmanagedFds`, dedicated transferred `MessagePort`);
+runs a host endpoint over `createStandardSurfaceRegistry({ definitions: foreignSurfaces })`;
+supervisor reactions: `onFailure` → `terminate()`; worker `'exit'`/`'error'` → `peerClosed`
+(+ `x3.host/worker-crashed`); every outbound request under the hang watchdog (deadline → cancel →
+grace → `terminate()`); `release()` → `terminate` frame → grace → `terminate()`, idempotent.
+`load` carries `entrypointDigest` (new optional field of the `load` frame / `LoadRequest`) under
+`loadDeadlineMs`; a failed load releases the worker before rethrowing. Every activation reports
+`x3.host/worker-shared-process` (decision 1 of the threat model §8) — failure and protocol
+isolation, not a sandbox.
+
+**Module adapter (host side).** The lease's `module` keeps the ABI's _synchronous_
+`createCodec(context)`: the context's `diagnostics` sink is exposed as `x3.abi/diagnostic-sink@1`
+and `budgets` copied; the remote `createCodec` is issued eagerly and awaited by the returned codec's
+methods. `probe(request, signal)` exposes `request.source` as `x3.abi/artifact-source@1` (its data
+fields — `ref`, `revision`, `kind`, `size` — travel inside the ref) for the call's duration;
+`open(input, intent, budget, signal)` exposes the `AssetInput` as `x3.abi/asset-input@1` (fields +
+host-executed `openBinding`/`openNamespace`) and returns a session adapter over the leased
+`x3.abi/asset-session@1`: `revision` from the ref's fields, `state()` cached (`live` → `disposed`),
+`descriptor`/`dataSource`/`events` proxied (data sources come back as `{ value, release }` with
+materialized standard surfaces), `operations()` a lazy adapter, `dispose()` releases the session
+and the exposed input.
+
+**Bootstrap (worker side).** Worker endpoint over the same registry (foreign surfaces handed over
+as data); exactly one `load`; `file:` only; real path must stay inside `artifactRoot`; the
+entrypoint bytes are read once, re-hashed against `entrypointDigest` (`x3.host/artifact-digest-
+mismatch` otherwise) and evaluated _from those bytes_ as a `data:` module — a module that needs
+relative imports is refused with `x3.host/artifact-not-pinned` (decision 3: no `file:` fallback);
+`ContributionContext` re-assembled (`budgets`, `diagnostics` → host capability, `contracts` a port
+that refuses — service resolution from a worker is not v1); `AssetInput` re-assembled from the
+copied fields with `bindingsFor` derived locally; exit 0 on `terminate`, 2 on protocol failure.
+
+**Proved (acc-1/6/7/9/11 of the threat model).** Activation via `activateExecutionBackend`
+through a real worker; probe reads through a host-executed source with its `ref.path` visible to
+the codec; the codec's diagnostic reaches the host sink; `open` reads through the host's
+`openBinding` lease, derives `bindingsFor` in the worker, returns a session with `revision`,
+dynamic `dataSource`, `operations().invoke`, `events`, `dispose`; tamper inside the digest→evaluate
+window (deterministic through the `afterEntrypointDigest` seam) → `x3.host/artifact-digest-mismatch`
+and no worker survives; entrypoint outside the root → `execution-load-rejected`; relative import →
+`artifact-not-pinned`; `https:` entrypoint refused before spawn; policy ceilings; `release()`
+idempotent and calls afterwards → `endpoint-closed`.
+
+**Honest gaps (R3b).** (1) The entrypoint digest is taken by the backend at activation: a window
+remains between the gate's `verifyArtifactDigest` and this read — closing it means the inventory
+recording per-file digests and the gate handing the entrypoint's digest to the backend. (2)
+`ContributionContext.contracts` and `AssetSession.operations().invoke` options (`signal`,
+`onProgress`) do not cross yet. (3) `AssetInput`/`ArtifactSource` marshalling covers the single/
+bundle/namespace shapes' fields listed in the ABI surfaces; derived inputs and `openMaterialized`
+are not wired. (4) Not wired into the composition roots yet: `DEFAULT_EXECUTION_BACKENDS` still
+holds only `trusted-in-process`; the CLI/Electron roots choose the policy and register the backend
+(NXT-114 wiring + acc-8 restart generation + acc-12 conformance kit on the backend's port pair).
+
+---
+
 ## R2 — surface adapter, runtime-ABI surfaces and protocol v1.1 kinds in the RPC core (Root/Fable, 2026-08-18)
 
 **Protocol/core extensions (`packages/host/src/execution`, backward compatible — new frame fields

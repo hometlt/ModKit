@@ -33,6 +33,8 @@ const PUBLISHED_ENTRIES = [
   // capability-RPC core (NXT-105) as its own entry so transports/preloads/testkit depend on the
   // protocol alone, without pulling inventory/resolution/gate code into a renderer or worker
   'packages/host/dist/execution/index.js',
+  // worker-side bootstrap of the Node worker backend: its own file so `new Worker(url)` finds it
+  'packages/host/dist/node/worker-bootstrap.js',
   'packages/ui/dist/index.js',
   'packages/ui/dist/viewer/index.js',
   'packages/ui/dist/code/index.js',
