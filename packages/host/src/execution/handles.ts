@@ -15,7 +15,14 @@
  */
 
 import { ModkitError, OperationCancelledError } from '@modkitx-x3/core'
-import type { ErrorDto, HandleKind, ProgressDto, ProtocolLimits, WireValue } from './protocol.js'
+import type {
+  ErrorDto,
+  HandleKind,
+  HandleRef,
+  ProgressDto,
+  ProtocolLimits,
+  WireValue,
+} from './protocol.js'
 
 // ---------------------------------------------------------------------------------------------
 // local handles
@@ -231,8 +238,19 @@ export class HandleTable {
 // pending outbound calls
 
 export type PendingOutcome =
-  | { readonly kind: 'return'; readonly value: WireValue | undefined; readonly handle?: never }
-  | { readonly kind: 'handle'; readonly value: unknown }
+  | {
+      readonly kind: 'return'
+      readonly value: WireValue | undefined
+      readonly handle?: never
+      /** `leased-value`: the release-only handle owning `value`. */
+      readonly lease?: HandleRef
+    }
+  | {
+      readonly kind: 'handle'
+      readonly value: unknown
+      /** `lease`: data fields copied off the leased object (surface `fields`). */
+      readonly data?: Readonly<Record<string, WireValue>>
+    }
   | { readonly kind: 'throw'; readonly error: ErrorDto }
   | { readonly kind: 'done' }
 

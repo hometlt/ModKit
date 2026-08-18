@@ -48,6 +48,71 @@ and the three `check:*` gates are green; `eslint .` reports 3 errors, all in the
 
 ---
 
+## R2 — surface adapter, runtime-ABI surfaces and protocol v1.1 kinds in the RPC core (Root/Fable, 2026-08-18)
+
+**Protocol/core extensions (`packages/host/src/execution`, backward compatible — new frame fields
+are optional and only appear when a surface declares the new features):**
+
+- `leased-value` method kind: the executing side requires a `{ value, release }` result, allocates a
+  release-only `lease` handle (no surface) and replies `return { value, lease: <ref> }`; the consumer
+  gets `CallOutcome { kind: 'leased-value', value, release() }` and a materialized `{ value, release }`
+  (`Lease<T>` on the ABI). Late replies after cancel discard the lease with a real release request.
+- `resultFromArgs: { contract, major }` on a `lease` method: the executing side resolves the leased
+  surface from the decoded arguments (`AssetSession.dataSource(contract, major)`), refusing unknown
+  ones with `x3.host/rpc-bad-argument`; the consumer accepts any registered surface the returned
+  ref names (`unknown-surface` violation otherwise) — refs already carry contract/major.
+- `arity` on a method: omitted trailing arguments are padded with `undefined` before the signal is
+  appended (`encoded(trackId?, signal?)`).
+- `optional` on a method (data only for now; proxies still define the method, an absent
+  implementation answers `x3.host/rpc-method-unavailable`; `has[]` presence remains v1.1).
+- `fields` on a capability surface: data properties copied with the handle (`ready.data`,
+  `return.data` beside the handle ref, validated as handle-free wire values), exposed on the consumer
+  as own read-only properties of the materialized object and as `RemoteCapability.data`. This is
+  how data+method hybrids (`AssetSession.revision`, `ArtifactByteSource.size`, an `AssetInput`'s
+  bindings, a module's `abiVersion`) cross without a second marshalling layer.
+- Frame grammar: `return` gains optional `lease` (must be a `lease` ref; a leased value cannot itself
+  be a handle) and `data`; `ready` gains optional `data`. Hostile tests cover a non-lease `lease` ref
+  and handles hidden inside `data` (both fail closed).
+
+**Adapter (`surface-adapter.ts`).** `capabilitySurfaceFromDataSource(contract, major, surface)`
+maps NXT-103 surfaces 1:1; declared `limits` become validators (`maxStringLength` on arguments and
+results, `maxBytes` on result bytes, `maxPageItems` on `items` of page-shaped results).
+`createStandardSurfaceRegistry({ definitions?, surfaces? })` builds the one registry a host endpoint
+runs with: the 13 standard + auxiliary data-source surfaces (adapted from `@modkitx-x3/sdk`), the
+runtime-ABI surfaces, registered foreign definitions that carry a `surface` (those without are
+skipped — a host never guesses a foreign surface), and extras; the standard/ABI set wins conflicts,
+and a foreign lease naming an unregistered surface fails at build (`createSurfaceRegistry`).
+
+**Runtime-ABI surfaces (`abi-surfaces.ts`, host-internal, ids `x3.abi/*@1`).** `codec-module`
+(fields `abiVersion`; `createCodec` → codec), `codec` (`probe`, optional `planInput`, `open` →
+asset-session), `asset-session` (field `revision`; `state`, `descriptor`, `dataSource` with
+`resultFromArgs`, `operations` → operation-session, `events`, `dispose` = `releaseVia`),
+`operation-session` (`invoke` as plain value — the options-object signal/progress do not cross yet,
+plan F3), and the host-side objects a worker calls back into: `artifact-source` (union surface,
+fields `ref`/`revision`/`kind`/`size`, optional `read`/`stream`/`openNamespace`), `asset-namespace`,
+`asset-input` (union: fields `originKind`/`bindings`/`revisions`/`primaryBindingId`, optional
+`openBinding`/`openNamespace`; sync `bindingsFor`/`subjectsFor` are derived locally by the worker
+bootstrap), `diagnostic-sink`. Each is pinned to its SDK ABI interface by `AbiSurfaceOf<T>` at compile
+time (missing/extra/unflagged-optional methods, or fields that are methods, do not compile); the
+topology union of `AssetInput` collapses to `never` under intersection, so its pin is assembled from
+the union's members.
+
+**Proof.** `packages/host/test/execution-surface-adapter.test.ts`: the registry resolves everything;
+foreign definitions are added/skipped/never shadow the standard set; real `TextDataSource`,
+`NamespaceEntrySource.openEntry` (leased value), `AudioMediaSource.encoded()` (bare lease of the
+auxiliary surface, `arity` observed as `(undefined, signal)`, absent optional `readPcm` answered
+structurally) and an `AssetSession`-shaped object (`revision` field, dynamic `dataSource`, `dispose`
+releases) round-trip through the RPC core over a loopback; declared limits reject on the right side.
+`execution-endpoint.test.ts` (+6): leased values incl. discard after cancel on a macrotask wire,
+dynamic lease results, arity padding, fields on root and leases, hostile `lease`/`data` frames.
+
+**Not here (R3, the Node worker backend).** The marshalling of `ContributionContext` and
+`AssetInput` _into_ the worker (budgets copied, ports/openers exposed as host capabilities and
+re-assembled by the worker bootstrap), verify-after-load, `WorkerBackendPolicy`, and wiring the
+registry into the execution backend — all built on the surfaces above.
+
+---
+
 ## NXT-103 — data-source method surface is a contract-definition authority (Root/Fable, 2026-08-18)
 
 **What landed (`packages/sdk`).** The `kind: 'data-source'` arm of `contract-definition-spec.v1`
@@ -221,7 +286,7 @@ boundary proof is unaffected — the execution modules import only `@modkitx-x3/
 
 ---
 
-## NXT-105 — capability-RPC core v1 landed (Fable, 2026-08-18; not wired, not exported)
+## NXT-105 — capability-RPC core v1 landed (Fable, 2026-08-18; since published as `@modkitx-x3/host/execution`, wired by R2)
 
 **What exists.** `packages/host/src/execution/{protocol,surface,handles,endpoint,index}.ts` +
 `packages/host/test/execution-{protocol,handles,endpoint}.test.ts` (51 tests, hostile suite included).

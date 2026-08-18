@@ -603,6 +603,8 @@ export type Frame =
       readonly exports: readonly string[]
       /** Handle of the loaded module object (surface: the module surface of its contract). */
       readonly root: HandleRef
+      /** Data fields of the module object the root surface declares (`fields`), copied. */
+      readonly data?: Readonly<Record<string, WireValue>>
     })
   | (Envelope & {
       readonly t: 'call'
@@ -615,6 +617,10 @@ export type Frame =
       readonly t: 'return'
       readonly inReplyTo: number
       readonly value?: WireValue | HandleRef
+      /** `leased-value` methods: the release-only handle that owns the returned value. */
+      readonly lease?: HandleRef
+      /** `lease` results: data fields of the leased object its surface declares (`fields`). */
+      readonly data?: Readonly<Record<string, WireValue>>
     })
   | (Envelope & { readonly t: 'throw'; readonly inReplyTo: number; readonly error: ErrorDto })
   | (Envelope & { readonly t: 'cancel'; readonly target: number })
@@ -645,9 +651,9 @@ const FRAME_KEYS: Readonly<
   Record<FrameType, { required: readonly string[]; optional: readonly string[] }>
 > = {
   load: { required: ['moduleUrl', 'contributionId', 'variantId', 'artifactDigest'], optional: [] },
-  ready: { required: ['inReplyTo', 'abiVersion', 'exports', 'root'], optional: [] },
+  ready: { required: ['inReplyTo', 'abiVersion', 'exports', 'root'], optional: ['data'] },
   call: { required: ['handle', 'method', 'args'], optional: ['deadlineMs'] },
-  return: { required: ['inReplyTo'], optional: ['value'] },
+  return: { required: ['inReplyTo'], optional: ['value', 'lease', 'data'] },
   throw: { required: ['inReplyTo', 'error'], optional: [] },
   cancel: { required: ['target'], optional: [] },
   next: { required: ['handle'], optional: [] },
@@ -658,6 +664,17 @@ const FRAME_KEYS: Readonly<
   progress: { required: ['inReplyTo', 'progress'], optional: [] },
   release: { required: ['handle'], optional: [] },
   terminate: { required: ['reason'], optional: [] },
+}
+
+/** `data` on `ready`/`return`: a plain object of copied data fields, no handles inside. */
+function validateFieldData(
+  value: unknown,
+  limits: ProtocolLimits,
+  path: readonly (string | number)[],
+): Validated<never> | undefined {
+  if (!isPlainObject(value)) return violation('bad-value', 'data must be a plain object', path)
+  const checked = validateWireValue(value, limits, 'forbid', path)
+  return checked.ok ? undefined : checked
 }
 
 export interface FrameExpectation {
@@ -761,6 +778,10 @@ export function validateFrame(
       }
       if (!isHandleRef(record['root']))
         return violation('bad-handle', 'root must be a handle ref', ['root'])
+      if (record['data'] !== undefined) {
+        const bad = validateFieldData(record['data'], limits, ['data'])
+        if (bad !== undefined) return bad
+      }
       break
     }
     case 'call': {
@@ -789,6 +810,19 @@ export function validateFrame(
       if (record['value'] !== undefined) {
         const checked = validateWireValue(record['value'], limits, 'top', ['value'])
         if (!checked.ok) return checked
+      }
+      if (record['lease'] !== undefined) {
+        const lease = record['lease']
+        if (!isHandleRef(lease) || lease[HANDLE_MARKER].kind !== 'lease') {
+          return violation('bad-handle', 'lease must be a lease handle ref', ['lease'])
+        }
+        if (record['value'] !== undefined && isHandleRef(record['value'])) {
+          return violation('bad-value', 'a leased value cannot itself be a handle', ['value'])
+        }
+      }
+      if (record['data'] !== undefined) {
+        const badData = validateFieldData(record['data'], limits, ['data'])
+        if (badData !== undefined) return badData
       }
       break
     }

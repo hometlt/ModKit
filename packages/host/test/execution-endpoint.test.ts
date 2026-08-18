@@ -81,6 +81,7 @@ const surfaces = createSurfaceRegistry([
   {
     contract: 'x3.demo/module',
     major: 1,
+    fields: ['abiVersion'],
     methods: { createCodec: { kind: 'lease', result: { contract: 'x3.demo/codec', major: 1 } } },
   },
   {
@@ -95,8 +96,13 @@ const surfaces = createSurfaceRegistry([
     contract: 'x3.demo/session',
     major: 1,
     releaseVia: 'dispose',
+    fields: ['revision'],
     methods: {
       descriptor: { kind: 'value' },
+      openEntry: { kind: 'leased-value', signal: 'last' },
+      sourceFor: { kind: 'lease', resultFromArgs: { contract: 0, major: 1 }, wrapper: 'lease' },
+      padded: { kind: 'value', signal: 'last', arity: 2 },
+      badLeasedValue: { kind: 'leased-value' },
       dataSource: {
         kind: 'lease',
         result: { contract: 'x3.demo/text', major: 1 },
@@ -132,20 +138,38 @@ const surfaces = createSurfaceRegistry([
 interface WorkerWorld {
   readonly module: Record<string, unknown>
   readonly log: string[]
-  readonly released: { text: number; session: number; module: number }
+  readonly released: { text: number; session: number; module: number; entry: number }
   readonly eventsControl: { fail: boolean; count: number; delayMs: number }
 }
 
 function workerWorld(): WorkerWorld {
   const log: string[] = []
-  const released = { text: 0, session: 0, module: 0 }
+  const released = { text: 0, session: 0, module: 0, entry: 0 }
   const eventsControl = { fail: false, count: 3, delayMs: 0 }
   const text = {
     slice: async (from: number, to: number) => `hello world`.slice(from, to),
     size: async () => 11,
   }
   const session = {
+    revision: 'rev-1',
     descriptor: async () => ({ id: 'demo', traits: ['content.text'] }),
+    openEntry: async (id: string) => ({
+      value: { entry: id },
+      release: async () => void (released.entry += 1),
+    }),
+    sourceFor: async (contract: string) => ({
+      value:
+        contract === 'x3.demo/text'
+          ? text
+          : { size: async () => 2, read: async () => new Uint8Array([1, 2]) },
+      release: async () => void (released.text += 1),
+    }),
+    padded: async (...all: unknown[]) => ({
+      count: all.length,
+      first: all[0] === undefined ? null : all[0],
+      lastIsSignal: all[all.length - 1] instanceof AbortSignal,
+    }),
+    badLeasedValue: async () => ({ notALease: true }),
     dataSource: async (contract: string) => {
       log.push(`dataSource:${contract}`)
       return { value: text, release: async () => void (released.text += 1) }
@@ -798,5 +822,154 @@ describe('capability-rpc endpoints — misuse is a local structured error, not a
     })
     expect(p.host.state).toBe('open')
     expect(isCancellation(new OperationCancelledError())).toBe(true)
+  })
+})
+
+// ------------------------------------------------------------------ v1.1: leased values, dynamic results, arity, fields
+
+describe('capability-rpc endpoints — leased values, dynamic lease results, arity and fields', () => {
+  it('a leased-value crosses as value + release-only handle; release reaches the executing side', async () => {
+    const p = pair()
+    const { session } = await openSession(p)
+    const openEntry = session['openEntry'] as (
+      id: string,
+    ) => Promise<{ value: { entry: string }; release(): Promise<void> }>
+    const lease = await openEntry('e-1')
+    expect(lease.value).toEqual({ entry: 'e-1' })
+    expect(p.worker.counters().localHandles).toBe(4) // module, codec, session, the entry lease
+    await lease.release()
+    await lease.release()
+    await settle()
+    expect(p.world.released.entry).toBe(1)
+    expect(p.worker.counters().localHandles).toBe(3)
+    expect(p.host.counters().remoteHandles).toBe(3)
+    // a target that does not return a lease is a structured bad-return, not a violation
+    const bad = session['badLeasedValue'] as () => Promise<unknown>
+    await expect(bad()).rejects.toMatchObject({ code: 'x3.host/rpc-bad-return' })
+    expect(p.host.state).toBe('open')
+  })
+
+  it('a leased-value produced after cancellation is discarded, not leaked', async () => {
+    const p = pair(protocolLimits({ defaultCallDeadlineMs: 2_000 }), 1, 'macrotask')
+    const { session } = await openSession(p)
+    const remote = (session as unknown as Record<symbol, RemoteCapability>)[CAPABILITY_OF]
+    if (remote === undefined) throw new Error('remote missing')
+    const controller = new AbortController()
+    const promise = remote.call('openEntry', ['e-2'], { signal: controller.signal })
+    controller.abort()
+    await expect(promise).rejects.toBeInstanceOf(OperationCancelledError)
+    const deadline = Date.now() + 2_000
+    while (Date.now() < deadline && p.world.released.entry === 0) await settle()
+    await settle()
+    expect(p.world.released.entry).toBe(1)
+    expect(p.worker.counters().localHandles).toBe(3)
+    expect(p.host.counters().pendingCalls).toBe(0)
+    expect(p.failures.host).toEqual([])
+    expect(p.host.state).toBe('open')
+  })
+
+  it('a lease whose surface is named by the arguments resolves per call and refuses unknown surfaces', async () => {
+    const p = pair()
+    const { session } = await openSession(p)
+    const sourceFor = session['sourceFor'] as (
+      contract: string,
+      major: number,
+    ) => Promise<{ value: Record<string, unknown>; release(): Promise<void> }>
+    const text = await sourceFor('x3.demo/text', 1)
+    expect(await (text.value['slice'] as (a: number, b: number) => Promise<string>)(0, 5)).toBe(
+      'hello',
+    )
+    const source = await sourceFor('x3.demo/source', 1)
+    expect(await (source.value['size'] as () => Promise<number>)()).toBe(2)
+    expect(
+      (source.value as unknown as Record<symbol, RemoteCapability>)[CAPABILITY_OF]?.contract,
+    ).toBe('x3.demo/source')
+    await expect(sourceFor('x3.demo/nope', 1)).rejects.toMatchObject({
+      code: 'x3.host/rpc-bad-argument',
+    })
+    await text.release()
+    await source.release()
+    expect(p.host.state).toBe('open')
+  })
+
+  it('arity pads omitted trailing arguments so the signal stays last', async () => {
+    const p = pair()
+    const { session } = await openSession(p)
+    const padded = session['padded'] as (
+      ...args: unknown[]
+    ) => Promise<{ count: number; first: unknown; lastIsSignal: boolean }>
+    expect(await padded()).toEqual({ count: 3, first: null, lastIsSignal: true })
+    expect(await padded('a')).toEqual({ count: 3, first: 'a', lastIsSignal: true })
+    expect(await padded('a', 'b')).toEqual({ count: 3, first: 'a', lastIsSignal: true })
+  })
+
+  it('declared data fields travel with the handle and materialize as read-only properties', async () => {
+    const p = pair()
+    const loaded = await p.host.load(loadRequest)
+    expect(loaded.root.data).toEqual({ abiVersion: 1 })
+    const root = p.host.materialize(loaded.root)
+    expect(root['abiVersion']).toBe(1)
+    const { session } = await openSession(p)
+    expect(session['revision']).toBe('rev-1')
+    expect(Object.getOwnPropertyDescriptor(session, 'revision')?.writable).toBe(false)
+    expect(Object.keys(session)).toContain('revision')
+  })
+
+  it('a peer that returns a leased-value with a non-lease handle or handles inside data fails closed', async () => {
+    const p = pair()
+    const { session } = await openSession(p)
+    const remote = (session as unknown as Record<symbol, RemoteCapability>)[CAPABILITY_OF]
+    if (remote === undefined) throw new Error('remote missing')
+    const pending = remote.call('hang', [{}]).catch((error: unknown) => error)
+    await settle()
+    const call = [...p.wire.log]
+      .reverse()
+      .find(
+        entry => entry.from === 'a' && entry.frame.t === 'call' && entry.frame.method === 'hang',
+      )
+    if (call === undefined) throw new Error('call not observed')
+    p.wire.inject('a', {
+      domain: CAPABILITY_RPC_DOMAIN,
+      version: 1,
+      session: 'sess',
+      generation: 1,
+      id: 5_000,
+      t: 'return',
+      inReplyTo: call.frame.id,
+      value: { entry: 'e-3' },
+      lease: { '@x3.handle': { id: 'w1-77', kind: 'iterator' } },
+    })
+    await settle()
+    expect(p.host.state).toBe('failed')
+    expect((p.failures.host[0] as ProtocolViolation).code).toBe('bad-handle')
+    expect(await pending).toMatchObject({ code: 'x3.host/rpc-protocol-violation' })
+
+    const q = pair()
+    const opened = await openSession(q)
+    const remote2 = (opened.session as unknown as Record<symbol, RemoteCapability>)[CAPABILITY_OF]
+    if (remote2 === undefined) throw new Error('remote missing')
+    const pending2 = remote2.call('hang', [{}]).catch((error: unknown) => error)
+    await settle()
+    const call2 = [...q.wire.log]
+      .reverse()
+      .find(
+        entry => entry.from === 'a' && entry.frame.t === 'call' && entry.frame.method === 'hang',
+      )
+    if (call2 === undefined) throw new Error('call not observed')
+    q.wire.inject('a', {
+      domain: CAPABILITY_RPC_DOMAIN,
+      version: 1,
+      session: 'sess',
+      generation: 1,
+      id: 5_000,
+      t: 'return',
+      inReplyTo: call2.frame.id,
+      value: { '@x3.handle': { id: 'w1-9', kind: 'lease', contract: 'x3.demo/text', major: 1 } },
+      data: { nested: { '@x3.handle': { id: 'w1-10', kind: 'lease' } } },
+    })
+    await settle()
+    expect(q.host.state).toBe('failed')
+    expect((q.failures.host[0] as ProtocolViolation).code).toBe('handle-not-allowed')
+    expect(await pending2).toMatchObject({ code: 'x3.host/rpc-protocol-violation' })
   })
 })

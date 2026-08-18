@@ -46,6 +46,7 @@ import {
   validateWireValue,
   type Frame,
   type FrameOf,
+  type HandleKind,
   type HandleRef,
   type ProgressDto,
   type ProtocolLimits,
@@ -113,6 +114,12 @@ export interface CallOptions {
 export type CallOutcome =
   | { readonly kind: 'value'; readonly value: WireValue | undefined }
   | { readonly kind: 'lease'; readonly remote: RemoteCapability }
+  | {
+      readonly kind: 'leased-value'
+      readonly value: WireValue | undefined
+      /** Releases the peer-side lease that owns `value`; idempotent. */
+      readonly release: () => Promise<void>
+    }
   | { readonly kind: 'iterable'; readonly iterable: AsyncIterable<WireValue> }
   | { readonly kind: 'events'; readonly events: AsyncIterable<WireValue> }
 
@@ -131,6 +138,8 @@ export interface RemoteCapability {
   readonly contract: string
   readonly major: number
   readonly isReleased: boolean
+  /** Data fields the peer copied when it created the handle (surface `fields`). */
+  readonly data: Readonly<Record<string, WireValue>>
   call(method: string, args?: readonly unknown[], options?: CallOptions): Promise<CallOutcome>
   release(): Promise<void>
 }
@@ -217,6 +226,7 @@ class RemoteCapabilityImpl implements RemoteCapability {
     readonly ref: HandleRef,
     readonly contract: string,
     readonly major: number,
+    readonly data: Readonly<Record<string, WireValue>> = Object.freeze({}),
   ) {}
 
   get id(): string {
@@ -397,11 +407,16 @@ class EndpointImpl implements Endpoint {
       readonly abiVersion: 1
       readonly exports: readonly string[]
       readonly root: HandleRef
+      readonly data?: Readonly<Record<string, WireValue>>
     }
-    return Object.freeze({ abiVersion: 1, exports: ready.exports, root: this.proxy(ready.root) })
+    return Object.freeze({
+      abiVersion: 1,
+      exports: ready.exports,
+      root: this.proxy(ready.root, ready.data),
+    })
   }
 
-  proxy(ref: HandleRef): RemoteCapability {
+  proxy(ref: HandleRef, data?: Readonly<Record<string, WireValue>>): RemoteCapability {
     const inner = ref[HANDLE_MARKER]
     if (this.table.owns(inner.id)) {
       throw new ModkitError({
@@ -425,7 +440,13 @@ class EndpointImpl implements Endpoint {
     if (existing !== undefined) return existing
     if (!this.remote.has(inner.id))
       this.remote.set(inner.id, { ref, released: false, children: new Set() })
-    const capability = new RemoteCapabilityImpl(this, ref, inner.contract, inner.major)
+    const capability = new RemoteCapabilityImpl(
+      this,
+      ref,
+      inner.contract,
+      inner.major,
+      Object.freeze({ ...(data ?? {}) }),
+    )
     this.remoteProxies.set(inner.id, capability)
     return capability
   }
@@ -433,6 +454,15 @@ class EndpointImpl implements Endpoint {
   materialize(remote: RemoteCapability): Record<string, unknown> {
     const surface = this.requireSurface(remote.contract, remote.major)
     const object: Record<string, unknown> = {}
+    for (const field of surface.fields ?? []) {
+      if (Object.hasOwn(remote.data, field)) {
+        Object.defineProperty(object, field, {
+          value: remote.data[field],
+          enumerable: true,
+          writable: false,
+        })
+      }
+    }
     for (const [name, method] of Object.entries(surface.methods)) {
       object[name] = async (...rawArgs: unknown[]) => {
         const args = [...rawArgs]
@@ -452,6 +482,8 @@ class EndpointImpl implements Endpoint {
               ? { value: materialized, release: () => outcome.remote.release() }
               : materialized
           }
+          case 'leased-value':
+            return { value: outcome.value, release: outcome.release }
           case 'iterable':
             return outcome.iterable
           case 'events':
@@ -808,6 +840,23 @@ class EndpointImpl implements Endpoint {
         throw this.failWith({ code: 'bad-return', message: `${method}: ${problem}` })
       return { kind: 'value', value: outcome.value }
     }
+    if (decl.kind === 'leased-value') {
+      if (outcome.kind !== 'return' || outcome.lease === undefined) {
+        throw this.failWith({
+          code: 'bad-return',
+          message: `leased-value method «${method}» did not return a value with its lease`,
+        })
+      }
+      const problem = decl.validateReturn?.(outcome.value)
+      if (problem !== undefined)
+        throw this.failWith({ code: 'bad-return', message: `${method}: ${problem}` })
+      const leaseId = this.adoptRemoteHandle(outcome.lease, remote.id, 'lease')
+      return {
+        kind: 'leased-value',
+        value: outcome.value,
+        release: () => this.releaseRemote(leaseId),
+      }
+    }
     if (outcome.kind !== 'handle') {
       throw this.failWith({
         code: 'bad-return',
@@ -816,33 +865,32 @@ class EndpointImpl implements Endpoint {
     }
     const ref = outcome.value as HandleRef
     const inner = ref[HANDLE_MARKER]
-    if (this.table.owns(inner.id))
-      throw this.failWith({ code: 'bad-handle', message: 'peer returned a handle this side owns' })
-    if (this.remote.has(inner.id))
-      throw this.failWith({ code: 'bad-handle', message: `peer reused handle ${inner.id}` })
-    if (this.remote.size >= this.limits.maxHandles) {
-      throw new ModkitError({
-        code: 'x3.host/rpc-limit-exceeded',
-        message: `remote handle limit ${this.limits.maxHandles} reached`,
-      })
-    }
-    this.remote.set(inner.id, { ref, released: false, children: new Set(), parent: remote.id })
-    this.remote.get(remote.id)?.children.add(inner.id)
+    this.adoptRemoteHandle(ref, remote.id)
     switch (decl.kind) {
       case 'lease': {
         const expected = decl.result
+        const dynamic = decl.resultFromArgs !== undefined
         if (
           inner.kind !== 'lease' ||
-          expected === undefined ||
-          inner.contract !== expected.contract ||
-          inner.major !== expected.major
+          inner.contract === undefined ||
+          inner.major === undefined ||
+          (!dynamic &&
+            (expected === undefined ||
+              inner.contract !== expected.contract ||
+              inner.major !== expected.major))
         ) {
           throw this.failWith({
             code: 'bad-handle',
             message: `lease method «${method}» returned a handle of another kind/surface`,
           })
         }
-        return { kind: 'lease', remote: this.proxy(ref) }
+        if (dynamic && this.surfaces.surfaceFor(inner.contract, inner.major) === undefined) {
+          throw this.failWith({
+            code: 'unknown-surface',
+            message: `lease method «${method}» returned unregistered surface ${inner.contract}@${inner.major}`,
+          })
+        }
+        return { kind: 'lease', remote: this.proxy(ref, outcome.data) }
       }
       case 'iterable': {
         if (inner.kind !== 'iterator')
@@ -863,6 +911,26 @@ class EndpointImpl implements Endpoint {
       default:
         throw this.failWith({ code: 'bad-return', message: 'unknown method kind' })
     }
+  }
+
+  /** Registers a handle the peer produced for us; refuses our own, reused or over-limit ids. */
+  private adoptRemoteHandle(ref: HandleRef, parent: string, expectKind?: HandleKind): string {
+    const inner = ref[HANDLE_MARKER]
+    if (this.table.owns(inner.id))
+      throw this.failWith({ code: 'bad-handle', message: 'peer returned a handle this side owns' })
+    if (this.remote.has(inner.id))
+      throw this.failWith({ code: 'bad-handle', message: `peer reused handle ${inner.id}` })
+    if (expectKind !== undefined && inner.kind !== expectKind)
+      throw this.failWith({ code: 'bad-handle', message: `expected a ${expectKind} handle` })
+    if (this.remote.size >= this.limits.maxHandles) {
+      throw new ModkitError({
+        code: 'x3.host/rpc-limit-exceeded',
+        message: `remote handle limit ${this.limits.maxHandles} reached`,
+      })
+    }
+    this.remote.set(inner.id, { ref, released: false, children: new Set(), parent })
+    this.remote.get(parent)?.children.add(inner.id)
+    return inner.id
   }
 
   private markRemoteReleased(id: string): void {
@@ -1047,7 +1115,12 @@ class EndpointImpl implements Endpoint {
       | PendingOutcome
       | {
           readonly kind: 'ready'
-          readonly value: { abiVersion: 1; exports: readonly string[]; root: HandleRef }
+          readonly value: {
+            abiVersion: 1
+            exports: readonly string[]
+            root: HandleRef
+            data?: Readonly<Record<string, WireValue>>
+          }
         },
   ): void {
     if (this.state !== 'open') return
@@ -1058,10 +1131,16 @@ class EndpointImpl implements Endpoint {
             t: 'return',
             inReplyTo,
             ...(outcome.value === undefined ? {} : { value: outcome.value }),
+            ...(outcome.lease === undefined ? {} : { lease: outcome.lease }),
           })
           break
         case 'handle':
-          this.send({ t: 'return', inReplyTo, value: outcome.value as HandleRef })
+          this.send({
+            t: 'return',
+            inReplyTo,
+            value: outcome.value as HandleRef,
+            ...(outcome.data === undefined ? {} : { data: outcome.data }),
+          })
           break
         case 'throw':
           this.send({ t: 'throw', inReplyTo, error: outcome.error })
@@ -1071,6 +1150,7 @@ class EndpointImpl implements Endpoint {
             t: 'ready',
             inReplyTo,
             abiVersion: 1,
+            ...(outcome.value.data === undefined ? {} : { data: outcome.value.data }),
             exports: outcome.value.exports,
             root: outcome.value.root,
           })
@@ -1094,10 +1174,20 @@ class EndpointImpl implements Endpoint {
       case 'call':
         return this.handleCall(frame)
       case 'return':
-        return this.handleSettle(frame.inReplyTo, {
-          kind: isHandleRef(frame.value) ? 'handle' : 'return',
-          value: frame.value,
-        } as PendingOutcome)
+        return this.handleSettle(
+          frame.inReplyTo,
+          isHandleRef(frame.value)
+            ? {
+                kind: 'handle',
+                value: frame.value,
+                ...(frame.data === undefined ? {} : { data: frame.data }),
+              }
+            : {
+                kind: 'return',
+                value: frame.value,
+                ...(frame.lease === undefined ? {} : { lease: frame.lease }),
+              },
+        )
       case 'throw':
         return this.handleSettle(frame.inReplyTo, { kind: 'throw', error: frame.error })
       case 'progress': {
@@ -1162,6 +1252,8 @@ class EndpointImpl implements Endpoint {
       // the peer created a capability for a call we cancelled: release it so nothing leaks
       const ref = outcome.value as HandleRef
       this.discardHandle(ref[HANDLE_MARKER].id)
+    } else if (result === 'late-after-cancel' && outcome.kind === 'return' && outcome.lease) {
+      this.discardHandle(outcome.lease[HANDLE_MARKER].id)
     }
   }
 
@@ -1218,9 +1310,15 @@ class EndpointImpl implements Endpoint {
       const exports = Object.keys(loaded.module)
         .filter(key => key.length <= 256)
         .sort()
+      const data = this.fieldData(loaded.module, loaded.surface)
       this.reply(frame.id, {
         kind: 'ready',
-        value: { abiVersion: 1, exports, root: capability.ref },
+        value: {
+          abiVersion: 1,
+          exports,
+          root: capability.ref,
+          ...(data === undefined ? {} : { data }),
+        },
       })
     } catch (error) {
       this.reply(frame.id, { kind: 'throw', error: toErrorDto(error, this.limits) })
@@ -1237,7 +1335,12 @@ class EndpointImpl implements Endpoint {
     }
     const result = this.pending.settle(frame.inReplyTo, {
       kind: 'handle',
-      value: { abiVersion: 1, exports: frame.exports, root: frame.root },
+      value: {
+        abiVersion: 1,
+        exports: frame.exports,
+        root: frame.root,
+        ...(frame.data === undefined ? {} : { data: frame.data }),
+      },
     })
     if (result === 'unknown') {
       this.fail({
@@ -1329,7 +1432,32 @@ class EndpointImpl implements Endpoint {
       })
       return
     }
+    // a `lease` whose surface is named by the call itself (`dataSource(contract, major)`)
+    let dynamicResult: { readonly contract: string; readonly major: number } | undefined
+    if (decl.kind === 'lease' && decl.resultFromArgs !== undefined) {
+      const contract = args[decl.resultFromArgs.contract]
+      const major = args[decl.resultFromArgs.major]
+      if (
+        typeof contract !== 'string' ||
+        typeof major !== 'number' ||
+        this.surfaces.surfaceFor(contract, major) === undefined
+      ) {
+        this.reply(frame.id, {
+          kind: 'throw',
+          error: toErrorDto(
+            new ModkitError({
+              code: 'x3.host/rpc-bad-argument',
+              message: `${frame.method}: arguments do not name a registered surface`,
+            }),
+            this.limits,
+          ),
+        })
+        return
+      }
+      dynamicResult = { contract, major }
+    }
     const active = this.active.begin(frame.id)
+    if (decl.arity !== undefined) while (args.length < decl.arity) args.push(undefined)
     if (decl.signal === 'last') args.push(active.controller.signal)
     let result: unknown
     try {
@@ -1379,10 +1507,56 @@ class EndpointImpl implements Endpoint {
         if (surface.releaseVia === frame.method) await this.releaseLocal(record.id)
         return
       }
+      case 'leased-value': {
+        const lease = isLeaseLike(result) ? result : undefined
+        const checked =
+          lease === undefined
+            ? undefined
+            : lease.value === undefined
+              ? ({ ok: true } as const)
+              : validateWireValue(lease.value, this.limits, 'forbid')
+        const problem =
+          lease === undefined
+            ? 'did not return a lease'
+            : checked !== undefined && !checked.ok
+              ? checked.violation.message
+              : decl.validateReturn?.(lease.value as WireValue | undefined)
+        if (lease === undefined || problem !== undefined) {
+          if (lease !== undefined) await lease.release()
+          this.reply(frame.id, {
+            kind: 'throw',
+            error: toErrorDto(
+              new ModkitError({
+                code: 'x3.host/rpc-bad-return',
+                message: `${frame.method}: ${problem ?? 'did not return a lease'}`,
+              }),
+              this.limits,
+            ),
+          })
+          return
+        }
+        try {
+          const child = this.table.allocate({
+            kind: 'lease',
+            target: {},
+            release: () => lease.release(),
+            parent: record.id,
+          })
+          this.reply(frame.id, {
+            kind: 'return',
+            value: lease.value as WireValue | undefined,
+            lease: handleRef(child.id, 'lease'),
+          })
+        } catch (error) {
+          await lease.release()
+          this.reply(frame.id, { kind: 'throw', error: toErrorDto(error, this.limits) })
+        }
+        return
+      }
       case 'lease': {
         const lease = isLeaseLike(result) ? result : undefined
         const value = lease === undefined ? result : lease.value
-        const resultSurface = decl.result
+        const resultSurface = dynamicResult ?? decl.result
         if (typeof value !== 'object' || value === null || resultSurface === undefined) {
           if (lease !== undefined) await lease.release()
           this.reply(frame.id, {
@@ -1398,6 +1572,7 @@ class EndpointImpl implements Endpoint {
           return
         }
         try {
+          const data = this.fieldData(value, resultSurface)
           const child = this.table.allocate({
             kind: 'lease',
             target: value,
@@ -1409,6 +1584,7 @@ class EndpointImpl implements Endpoint {
           this.reply(frame.id, {
             kind: 'handle',
             value: handleRef(child.id, 'lease', resultSurface),
+            ...(data === undefined ? {} : { data }),
           })
         } catch (error) {
           if (lease !== undefined) await lease.release()
@@ -1671,6 +1847,34 @@ class EndpointImpl implements Endpoint {
       if (record.handle === frame.handle) this.closeSubscription(id, error)
     }
     this.markRemoteReleased(frame.handle)
+  }
+
+  /**
+   * Copies the data properties a surface declares (`fields`) off a capability object; each must
+   * be a bounded wire value without handles. Absent properties are skipped; an invalid one is a
+   * bad return on the executing side (thrown as `x3.host/rpc-bad-return`).
+   */
+  private fieldData(
+    target: unknown,
+    surface: { readonly contract: string; readonly major: number },
+  ): Readonly<Record<string, WireValue>> | undefined {
+    const fields = this.surfaces.surfaceFor(surface.contract, surface.major)?.fields
+    if (fields === undefined || fields.length === 0) return undefined
+    if (typeof target !== 'object' || target === null) return undefined
+    const data: Record<string, WireValue> = {}
+    for (const field of fields) {
+      const value = (target as Record<string, unknown>)[field]
+      if (value === undefined) continue
+      const checked = validateWireValue(value, this.limits, 'forbid')
+      if (!checked.ok) {
+        throw new ModkitError({
+          code: 'x3.host/rpc-bad-return',
+          message: `field «${field}» of ${surface.contract}@${surface.major} is not a wire value: ${checked.violation.message}`,
+        })
+      }
+      data[field] = value as WireValue
+    }
+    return Object.keys(data).length === 0 ? undefined : Object.freeze(data)
   }
 
   private async handleRelease(frame: FrameOf<'release'>): Promise<void> {

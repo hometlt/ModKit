@@ -86,3 +86,21 @@ export {
   type RemoteCapability,
   type Scheduler,
 } from './endpoint.js'
+export {
+  ABI_ARTIFACT_SOURCE,
+  ABI_ASSET_INPUT,
+  ABI_ASSET_NAMESPACE,
+  ABI_ASSET_SESSION,
+  ABI_CODEC,
+  ABI_CODEC_MODULE,
+  ABI_DIAGNOSTIC_SINK,
+  ABI_OPERATION_SESSION,
+  RUNTIME_ABI_SURFACES,
+} from './abi-surfaces.js'
+export {
+  capabilitySurfaceFromDataSource,
+  createStandardSurfaceRegistry,
+  standardDataSourceCapabilitySurfaces,
+  type DataSourceSurfaceSource,
+  type StandardSurfaceRegistryOptions,
+} from './surface-adapter.js'
