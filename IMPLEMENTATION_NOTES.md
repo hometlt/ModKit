@@ -6,6 +6,32 @@ overrides a canonical or detailed owner.
 
 ---
 
+## OPUS-MK2-01 accepted + Root decisions on its open items (Root/Fable, 2026-08-19)
+
+**Accepted as landed by Opus (`0a638d2`, commit authorized by the owner):** `scripts/convert-mk2.mjs`
+over the shared MK2 parser `scripts/lib/mk2-manifests.mjs` (the allocation report renders byte for
+byte as before), 102/103 mechanical codecs → 34 inventory-eligible extensions under
+`extensions/mk2/**` (workspace members), `check:mk2` in the `pnpm check` chain (skips cleanly
+without an MK2 checkout), the acceptance harness over real corpus files (read-only, never copied)
+with six hand-ported codecs opening both `trusted-in-process` and `worker-brokered`, and one real
+codec-kit defect fixed: `probeLength` now clamps the declared window to the source size (the
+window is a ceiling; two corpus samples smaller than 4096 bytes are the regression). Reviewed:
+the clamp is correct and minimal; `modkitx` untouched.
+
+**Root decisions (REPORT_MK2_CONVERSION §9, executed by OPUS-MK2-02):** (4) the `--rework` tree is
+committed only with an inert per-extension `MK2-CONVERSION.json` naming every lost v1 plane
+(viewer entrypoints, renames, converter defaults, dropped operations) — debt as data, no invented
+viewer contributions; (5) `pathGlobs: ["**/*"]` stays a non-wildcard: detect-by-content is
+`match.signatures` (S3), the converter maps v1 magic to signatures and drops the lone `**/*`,
+the eight media containers get well-known signatures at port; `matchesGlob` unchanged; (6)
+`earth-res` is a FormatDefinition, not a codec — skipped `format-definition-pending` until
+document 30's contract exists; (7) synthetic spec-derived minimal fixtures are allowed as a second
+acceptance axis (`corpus: real | synthetic`), real-corpus growth stays with the owner; (8) variant
+pair and permission union are converter _defaults_ recorded in the notes and narrowed at manual
+port. Request: `REQUEST_OPUS_MK2_02_2026-08-19.md`.
+
+---
+
 ## S5 — browser worker backend: verify-then-snapshot loading, the same RPC core and consumer adapters (Root/Fable, 2026-08-18)
 
 **What exists.** `packages/host/src/browser/verified-loader.ts` — the browser has no

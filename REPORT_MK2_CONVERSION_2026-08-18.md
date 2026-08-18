@@ -335,11 +335,34 @@ pnpm test -- packages/testkit/test/mk2-acceptance.test.ts scripts/test/convert-m
 3. ✔ `check:mk2` (`convert-mk2 --check`) добавлен в цепочку `pnpm check`; без соседнего
    MK2-checkout'а он печатает `skipped` и выходит с 0, поэтому CI без MK2 остаётся зелёным.
 
-Открыто:
+Решено Root'ом 2026‑08‑19 (исполнение — `REQUEST_OPUS_MK2_02_2026-08-19.md`):
 
-4. Коммитить ли `--rework`-дерево (§6) и что делать с viewer-плоскостью, которую конвертер
-   теряет на split-вердиктах.
-5. Что делать с `pathGlobs: ["**/*"]`-кодеками (§7.5): менять matcher, менять манифесты или
-   считать, что продукт всегда открывает путь с каталогом.
-6. `earth-res` (`status: unsupported`, но mechanical) — кодек или data-only FormatDefinition.
-7. Расширение корпуса (§7.9) — без него acceptance масштабируется только на 6 форматов.
+4. **`--rework` коммитим, но только с явным долгом.** Вариант (а): конвертер эмитит рядом с
+   каждым сконвертированным расширением инертный `MK2-CONVERSION.json` (источник в MK2, вердикт,
+   `lostPlanes[]` — потерянные v1‑entrypoint'ы с их путями, например
+   `{ plane: 'viewer', entrypoint: '…' }`, применённые rename'ы, дефолты конвертера,
+   пропущенные операции). Viewer‑contribution конвертер **не выдумывает** — spec вьюера в v1
+   отсутствует; долг перечислен данными, дописывается руками при порте. После этого
+   `--rework` становится режимом закоммиченного дерева, `check:mk2` сравнивает с теми же флагами.
+5. **`pathGlobs: ["**/*"]` — не wildcard и не станет им.** «Detect‑by‑content» в MK3 выражается
+   `match.signatures` (S3, data‑only, host читает ≤ 2 окна до любой активации): конвертер
+   переводит v1 `magic` в `signatures`, единственный glob `**/*` **опускает** и записывает в
+   `MK2-CONVERSION.json` `needsSignatures: true`; для восьми контейнеров (`flv swf ogg opus mp4
+mpeg ogv webm`) сигнатуры добавляются при порте из общеизвестных magic (FLV/FWS|CWS|ZWS/OggS/
+   `ftyp`@4/MPEG start codes/EBML `1A45DFA3`) с указанием источника в README. `matchesGlob` не
+   меняется: универсальная активация установленного кодека остаётся невозможной без явной
+   data‑only декларации (NXT‑101B).
+6. **`earth-res` — не кодек.** `status: unsupported` по 27 §0.5.2 — FormatDefinition; контракта
+   format‑definition в лаборатории пока нет (документ 30) → пропуск с причиной
+   `format-definition-pending` в конверсии, в `needs new contract`‑корзину.
+7. **Корпус: синтетические spec‑derived фикстуры разрешены как вторая ось.** Генератор
+   `packages/testkit/scripts/gen-synthetic-corpus.mjs` → `packages/testkit/test/fixtures/
+mk2-synthetic/` (byte‑stable, каждая фикстура — минимальный валидный файл по спецификации,
+   ссылка на раздел спецификации в комментарии генератора; ничего не копируется). Harness
+   помечает источник `corpus: real | synthetic`; синтетика доказывает структурное открытие
+   (probe/descriptor/dataSource), не fidelity. Граница §12: real‑coverage сегодня — 6 семейств +
+   `jpg`; расширение реального корпуса — за владельцем.
+8. **7.6/7.7 при порте.** Конвертер эмитит пару вариантов и объединённые permissions как дефолт
+   (записано в `MK2-CONVERSION.json`), ручной порт каждого кодека сужает оба до подтверждённого
+   кодом (node‑only → без `portable`; `filesystem-read` — только у варианта, который его
+   реально требует).
