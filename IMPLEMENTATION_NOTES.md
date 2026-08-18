@@ -6,6 +6,124 @@ overrides a canonical or detailed owner.
 
 ---
 
+## F4b — hostile-worker fixtures, Node worker harness and acceptance over real threads (Fable, 2026-08-18)
+
+**What exists.** `packages/testkit/src/capability-rpc/node/worker-harness.ts` (exported from
+`@modkitx-x3/testkit`): `spawnFixtureWorker(fixture, { session, generation, resourceLimits?,
+fixtureOptions? })` starts a fixture in a real `worker_threads.Worker` with the isolation options
+of `THREAT_MODEL_WORKER_BOUNDARY` §2 (`env: {}`, `argv: []`, `execArgv: []`, captured + capped
+stdio, `trackUnmanagedFds`, a dedicated transferred `MessagePort`) and returns `{ port: FramePort,
+exit, output, terminate() }`; `superviseFixtureWorker(...)` adds a host endpoint and the
+**reference supervisor** — the observable reactions the threat model prescribes: `onFailure` →
+`worker.terminate()`; worker `'exit'`/`'error'` → `endpoint.peerClosed()`; `release()` →
+`terminate` frame → grace → `terminate()`; `watched(request)` → after
+`x3.host/rpc-deadline-exceeded`, grace for a dropped late reply (the cancel acknowledgement) →
+otherwise `terminate()`. Everything is exposed through `end` (`closed | peer-exited | violation |
+peer-failure` + exit code/error), `terminations[]` and `endpoint.counters()`. The production
+backend (NXT‑114, Root) owns its own policy; this file owns the proof it must pass.
+
+**Fixtures** — `packages/testkit/fixtures/hostile-worker/*.mjs`, dependency-free raw-protocol
+scripts over `_lib.mjs` (`serveDemoChain` answers `load`/`createCodec`/`open`/`descriptor`/`echo`/
+`dispose`/`release` so each fixture scripts one misbehaviour in a hook): `proto-pollution` (HW‑01),
+`bad-values` (HW‑02: nan | partial-view | shared | deep | unknown-frame-key), `exit-early` /
+`exit-after-ready` (HW‑03), `throw-uncaught` (HW‑04), `hang-sync` (HW‑05), `hang-async` (HW‑06,
+`honourCancel` variant), `oom` (HW‑07), `event-flood` (HW‑08), `forged-handles` (HW‑10: unknown |
+foreign-owner | released), `wrong-session` (HW‑11: session | domain | generation), `reply-games`
+(HW‑12: duplicate | unknown-id | ready-for-call | late-after-cancel), `ignore-terminate` (HW‑14),
+plus `demo-worker` — a _well-behaved_ worker-role endpoint over the built dist serving the demo
+world, the positive control across the thread boundary. HW‑09 (`tamper-marker`) and HW‑13
+(`second-load`) test the backend's own loader (verify-after-load, one `load` per worker, `file:` ⊂
+`artifactRoot`) and wait for R3.
+
+**Acceptance** — `packages/testkit/test/hostile-worker.test.ts` (14 tests, 26 spawns, ~2.5 s,
+4/4 stable runs): acc‑1 (exit before `ready` → activation rejects `x3.host/rpc-peer-exited`,
+counters 0), acc‑2 (exit mid-call → pending rejected, host leases released, calls after →
+`endpoint-closed`), acc‑3 (every violation class → `state='failed'`, one termination, counters 0,
+worker gone), acc‑4 (dead loop and cancel-ignoring worker terminated after deadline+grace; a worker
+that answers cancel is _not_ terminated; `release()` on a terminate-ignoring worker resolves within
+grace), acc‑5 (`ERR_WORKER_OUT_OF_MEMORY` under `resourceLimits` = plain peer exit; 50k-event flood
+→ `x3.host/rpc-events-overflow`, endpoint open), acc‑10 (uncaught error surfaces as exit + error
+object, no leak of stack across the wire), and the positive control (load, callback into a host
+lease, `Uint8Array` transfer, iterate, events, cancel, close → exit 0, counters 0). Not yet: acc‑6
+(tamper), acc‑7 (diagnostic code — Root's naming), acc‑8 (restart generation — needs the backend's
+restart), acc‑9 (idempotent `release()` ×3 — trivially true for the reference supervisor, to be
+asserted against Root's `ExecutionModuleLease`), acc‑11 (loader scope), acc‑12 (conformance kit —
+Root wires it to the real transport pair).
+
+**Kit host-only mode (acc‑12 precursor).** `ConformancePair.worker` became optional; a pair with
+`farSide: 'demo-world'` declares that the far end already runs a worker endpoint over the demo
+world, and `ConformancePairFactory` now receives the `{ session, generation }` the kit's host
+endpoint will use so a remote peer can be spawned with the same identity. In that mode the kit runs
+the host-observable subset (16 of 21 cases: round trip, wire values, transfer, ordering, errors,
+large payload, events end/abandon, cancel, deadline, lease-after-cancel, release cascade, pending
+limit, graceful close, peer exit, local misuse) and reports the rest as `skipped` (`lc-events-
+overflow` needs the local world; the four `hs-*` cases need raw injection through the peer port).
+`demoWorkerPair(identity)` in the harness turns the `demo-worker` fixture into such a pair —
+`runFramePortConformance(identity => demoWorkerPair(identity))` is green over real
+`worker_threads` (16 passed / 5 skipped, transfer `detached`, delivery `asynchronous`, ~2 s). The
+same shape fits R3's real transport pair and R6's Electron main↔utility pair without new kit code.
+
+**Facts learned.** (1) A failing host endpoint sends `terminate` _and_ the supervisor calls
+`worker.terminate()`; a fixture that honours the frame exits 0 before the kill lands (exit 1) —
+tests accept both, what matters is `spawned.exited`. (2) `worker.terminate()` ends a synchronous
+`for(;;)` reliably (V8 termination) — the only thing that does. (3) OOM at
+`maxOldGenerationSizeMb: 24` arrives in well under a second and as an `'error'` with code
+`ERR_WORKER_OUT_OF_MEMORY` followed by `'exit'`; the host process is untouched. (4) The event
+flood is bounded on the host by `maxQueuedEvents` + `unsubscribe`; events that keep arriving after
+`unsubscribe` are counted (`droppedEvents`), never queued.
+
+---
+
+## F1 — FramePort conformance kit + first core defect it found (Fable, 2026-08-18)
+
+**What exists.** `packages/testkit/src/capability-rpc/{conformance,loopback,message-port,demo-world,index}.ts`,
+exported from `@modkitx-x3/testkit`; self-test `packages/testkit/test/capability-rpc-conformance.test.ts`.
+`runFramePortConformance(createPair, options) → { transport, passed, failures, skipped, observations }`
+is framework-agnostic (no vitest inside the kit): a transport hands over both ends of one channel
+(`ConformancePair { transport, host, worker, close? }`) and the kit runs 21 cases against fresh pairs —
+round trip (load → callback into a host source → lease → iterate → dispose; wire values incl. bigint,
+`Uint8Array`, unicode, nesting, `-0`; transfer; ordering of 64 concurrent calls + 200 FIFO events;
+error rehydration; payload at/over `maxTransferBytes`), lifecycle (events end/failure/abandon/overflow,
+cancel, deadline, lease-after-cancel, release cascade, pending limit, graceful close, peer exit,
+local misuse) and hostile (malformed/foreign-session/stale-generation/non-monotonic/orphan-reply frames,
+duplicate reply, unknown/foreign handles and methods, iterator busy). Hostile cases inject raw objects
+**through the transport's own `post`** — no special injection API — so a transport that carries garbage
+unchanged fails closed on the far endpoint, one that refuses garbage at `post` gets those cases
+`skipped` (a validating adapter is fine and reported), one that swallows garbage fails (deadline instead
+of violation). Observations, not pass/fail: `transfer: detached | copied`, `delivery: asynchronous`
+(delivery inside `post` is a failure — re-entrancy). Cases are the host loopback suite re-expressed
+against an abstract pair; the host suite stays as the unit suite (host cannot depend on testkit).
+
+**Proven against.** loopback (microtask and macrotask delivery), a real Node `MessageChannel`
+(`node:worker_threads`, structured clone + transfer, both `addEventListener` and `on('message')`
+listener styles via `framePortFromMessagePort`) — all 21/21; and negative self-tests: a duplicating
+transport, a dropping transport, a synchronous transport and a strict (refusing) transport are caught
+or classified as designed. Scope note in the kit header: both ends live in the calling thread;
+crash/hang/exit of a _real_ worker is backend acceptance (`THREAT_MODEL_WORKER_BOUNDARY` §4/§5), not
+FramePort conformance.
+
+**Defect found by the kit (fixed in `endpoint.ts`, my file).** On real event-loop hops (macrotask
+loopback, `MessageChannel`) the worker's reply to a call can already be in flight when the host sends
+`cancel`. The host then drops the late reply as `late-after-cancel` and — if it carried a handle —
+released it with a **fire-and-forget** `release` frame (`trySend`). The executing side answers every
+`release`, so the acknowledgement arrived for an id that was never pending → `unknown-reply-target`
+→ the host failed closed after a perfectly legitimate race. Same pattern in the late-`ready` path
+after a cancelled `load`. Fix: `discardHandle(id)` issues a real `release` _request_ (pending entry,
+deadline, outcome ignored, failure reported as `x3.host/rpc-release-failed` diagnostic). Regression
+test in `execution-endpoint.test.ts` (`Wire` now has a `macrotask` delivery mode; the test fails on
+the unfixed code and passes on the fix). The microtask loopback never showed it because the worker
+saw `cancel` before replying — the whole reason F1 exists.
+
+**Wiring (one enabling change outside testkit, flagged for Root).** `packages/host/package.json`
+gains the subpath export `./execution` (`@modkitx-x3/host/execution` → `dist/execution/index.*`).
+Rationale over a root re-export: testkit, transports (NXT‑114/115/401), the Electron preload and worker
+bootstraps then depend on the protocol alone and never pull inventory/resolution/gate code into a
+renderer or worker bundle; the host root namespace stays as Root left it. `scripts/bundle.mjs` picks
+the entry up from `exports` (41 entries; hash file regenerated by `pnpm build`). Root's `./browser`
+boundary proof is unaffected — the execution modules import only `@modkitx-x3/core`.
+
+---
+
 ## NXT-105 — capability-RPC core v1 landed (Fable, 2026-08-18; not wired, not exported)
 
 **What exists.** `packages/host/src/execution/{protocol,surface,handles,endpoint,index}.ts` +

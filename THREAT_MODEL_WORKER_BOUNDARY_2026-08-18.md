@@ -171,6 +171,40 @@ production bootstrap, и **не** использующий `createEndpoint` (в�
 Fixtures HW‑01/02/10/11/12 полезны и без Node transport — они запускаются через F1 loopback‑kit
 (`inject`), поэтому пишутся первыми; HW‑03…09/13/14 требуют реального `Worker` (R3).
 
+### 5.1 Статус (2026‑08‑18, F4b) — что уже лежит в дереве
+
+Реализовано и проходит над реальными `worker_threads` **без** production backend‑а:
+`packages/testkit/fixtures/hostile-worker/*.mjs` (raw‑protocol над `_lib.mjs`),
+`packages/testkit/src/capability-rpc/node/worker-harness.ts` (`spawnFixtureWorker` с изоляционными
+опциями §2 + **reference supervisor** `superviseFixtureWorker`) и acceptance
+`packages/testkit/test/hostile-worker.test.ts` (14 тестов, 26 spawn‑ов, ~2.5 s).
+
+| id    | статус                                                                                          | acc              |
+| ----- | ----------------------------------------------------------------------------------------------- | ---------------- |
+| HW‑01 | ✅ `proto-pollution.mjs` (own `__proto__` в return; `Object.prototype` не тронут)               | acc‑3            |
+| HW‑02 | ✅ `bad-values.mjs` — варианты `nan`, `partial-view`, `shared`, `deep`, `unknown-frame-key`     | acc‑3            |
+| HW‑03 | ✅ `exit-early.mjs` (код 3 до `ready`) и `exit-after-ready.mjs` (код 7 при in‑flight call)      | acc‑1, acc‑2     |
+| HW‑04 | ✅ `throw-uncaught.mjs`                                                                         | acc‑2, acc‑10    |
+| HW‑05 | ✅ `hang-sync.mjs` — только `worker.terminate()` завершает `for(;;)`                            | acc‑4            |
+| HW‑06 | ✅ `hang-async.mjs` (+ вариант `honourCancel: true` — не терминируется)                         | acc‑4            |
+| HW‑07 | ✅ `oom.mjs` — `ERR_WORKER_OUT_OF_MEMORY` при `maxOldGenerationSizeMb: 24`                      | acc‑5            |
+| HW‑08 | ✅ `event-flood.mjs` — 50k событий, `x3.host/rpc-events-overflow`, endpoint `open`              | acc‑5            |
+| HW‑09 | ⏳ ждёт R3 (loader backend‑а: verify‑after‑load)                                                | acc‑6            |
+| HW‑10 | ✅ `forged-handles.mjs` — `unknown`, `foreign-owner` (violation), `released` (structured error) | acc‑3            |
+| HW‑11 | ✅ `wrong-session.mjs` — `session`/`domain` → `bad-envelope`, `generation` → `stale-generation` | acc‑3            |
+| HW‑12 | ✅ `reply-games.mjs` — `duplicate`, `unknown-id`, `ready-for-call`, `late-after-cancel`         | acc‑3            |
+| HW‑13 | ⏳ ждёт R3 (loader backend‑а: один `load`, `file:` ⊂ `artifactRoot`)                            | acc‑11           |
+| HW‑14 | ✅ `ignore-terminate.mjs` — `release()` резолвится за `graceMs + ε`                             | acc‑4            |
+| —     | ✅ `demo-worker.mjs` — позитивный контроль: настоящий worker‑endpoint через границу потока      | positive control |
+
+Reference supervisor **не** production policy (её вводит R3 как `WorkerBackendPolicy`, §8 п.2):
+он фиксирует наблюдаемые реакции — `onFailure → terminate()`, `'exit'/'error' → peerClosed()`,
+`release() → terminate frame → grace → terminate()`, `watched() → deadline → cancel → grace →
+terminate()` — и именно эти реакции R3 обязан воспроизвести (acc‑1…acc‑5, acc‑10). Ещё не
+покрыто: acc‑6/acc‑11 (loader), acc‑7 (diagnostic `x3.host/worker-shared-process`), acc‑8
+(restart generation — логика backend‑а), acc‑9 против настоящего `ExecutionModuleLease`, acc‑12
+(kit на реальной паре портов backend‑а).
+
 ## 6. Чек‑лист pre‑merge аудита R3 (Fable)
 
 - [ ] `activate()` не оставляет Worker при любом отказе (early exit, load throw, deadline);
