@@ -1161,8 +1161,28 @@ class EndpointImpl implements Endpoint {
     if (result === 'late-after-cancel' && outcome.kind === 'handle') {
       // the peer created a capability for a call we cancelled: release it so nothing leaks
       const ref = outcome.value as HandleRef
-      this.trySend({ t: 'release', handle: ref[HANDLE_MARKER].id })
+      this.discardHandle(ref[HANDLE_MARKER].id)
     }
+  }
+
+  /**
+   * Releases a handle the peer produced for a request this side had already cancelled. The peer
+   * answers every `release`, so this must be a real request with a pending entry — a
+   * fire-and-forget frame would turn the peer's acknowledgement into an `unknown-reply-target`
+   * violation (found by the transport conformance kit on real event-loop hops).
+   */
+  private discardHandle(id: string): void {
+    if (this.state !== 'open') return
+    const failed = (reason: string) =>
+      this.report('x3.host/rpc-release-failed', `discard of late handle ${id} failed: ${reason}`)
+    void this.request({ t: 'release', handle: id }, 'release', {
+      deadlineMs: this.limits.defaultCallDeadlineMs,
+    }).then(
+      outcome => {
+        if (outcome.kind === 'throw') failed(outcome.error.message)
+      },
+      (error: unknown) => failed(error instanceof Error ? error.message : String(error)),
+    )
   }
 
   private async handleLoad(frame: FrameOf<'load'>): Promise<void> {
@@ -1231,7 +1251,7 @@ class EndpointImpl implements Endpoint {
         'x3.host/rpc-late-reply-dropped',
         `dropped late ready for cancelled load ${frame.inReplyTo}`,
       )
-      this.trySend({ t: 'release', handle: frame.root[HANDLE_MARKER].id })
+      this.discardHandle(frame.root[HANDLE_MARKER].id)
     }
   }
 

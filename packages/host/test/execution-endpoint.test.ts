@@ -34,7 +34,8 @@ class Wire {
   readonly a: FramePort
   readonly b: FramePort
 
-  constructor() {
+  /** `macrotask` delivery gives every frame its own event-loop turn, like a real port does. */
+  constructor(private readonly delivery: 'microtask' | 'macrotask' = 'microtask') {
     this.a = this.port('a')
     this.b = this.port('b')
   }
@@ -57,9 +58,11 @@ class Wire {
     if (tapped === 'drop') return
     if (tapped !== undefined) frames = tapped
     const targets = this.handlers[from === 'a' ? 'b' : 'a']
-    queueMicrotask(() => {
+    const run = () => {
       for (const item of frames) for (const handler of targets) handler(item)
-    })
+    }
+    if (this.delivery === 'macrotask') setTimeout(run, 0)
+    else queueMicrotask(run)
   }
 
   /** Delivers a raw (possibly malformed) object to one side as if the peer had sent it. */
@@ -221,8 +224,9 @@ interface Pair {
 function pair(
   limits: ProtocolLimits = protocolLimits({ defaultCallDeadlineMs: 2_000 }),
   generation = 1,
+  delivery: 'microtask' | 'macrotask' = 'microtask',
 ): Pair {
-  const wire = new Wire()
+  const wire = new Wire(delivery)
   const world = workerWorld()
   const failures = {
     host: [] as (ProtocolViolation | ModkitError)[],
@@ -495,6 +499,51 @@ describe('capability-rpc endpoints — events, cancellation, deadlines, releases
     expect(p.worker.counters().localHandles).toBe(3)
     expect(p.host.counters().pendingCalls).toBe(0)
     expect(p.host.state).toBe('open')
+  })
+
+  it('a late reply that carries a handle is discarded with a real release request, never a fire-and-forget frame', async () => {
+    // Over real event-loop hops the worker's reply can be in flight when the cancel is sent; the
+    // host then drops the late handle and must *ask* the worker to release it. The peer answers
+    // every release, so a fire-and-forget frame would make that answer an unknown-reply-target
+    // violation (regression found by the testkit conformance kit on macrotask delivery).
+    const p = pair(protocolLimits({ defaultCallDeadlineMs: 2_000 }), 1, 'macrotask')
+    const { session } = await openSession(p)
+    const capability = (session as unknown as Record<symbol, RemoteCapability>)[CAPABILITY_OF]
+    if (capability === undefined) throw new Error('capability missing')
+    const controller = new AbortController()
+    const promise = capability.call('leak', [], { signal: controller.signal })
+    controller.abort()
+    await expect(promise).rejects.toBeInstanceOf(OperationCancelledError)
+    // wait until the late reply, the discard request and its acknowledgement have all travelled
+    const until = async (predicate: () => boolean, what: string) => {
+      const deadline = Date.now() + 2_000
+      while (!predicate()) {
+        if (Date.now() > deadline) throw new Error(`timed out waiting for ${what}`)
+        await settle()
+      }
+    }
+    const releaseFrame = () =>
+      p.wire.log.find(entry => entry.from === 'a' && entry.frame.t === 'release')
+    await until(() => releaseFrame() !== undefined, 'the discard release request')
+    const releaseId = releaseFrame()?.frame.id
+    await until(
+      () =>
+        p.wire.log.some(
+          entry =>
+            entry.from === 'b' && entry.frame.t === 'return' && entry.frame.inReplyTo === releaseId,
+        ),
+      'the worker acknowledgement of the discard',
+    )
+    await settle()
+    await settle()
+    expect(p.diagnostics).toContain('x3.host/rpc-late-reply-dropped')
+    expect(p.wire.log.some(entry => entry.from === 'a' && entry.frame.t === 'release')).toBe(true)
+    expect(p.failures.host).toEqual([])
+    expect(p.host.state).toBe('open')
+    expect(p.worker.state).toBe('open')
+    expect(p.worker.counters().localHandles).toBe(3)
+    expect(p.host.counters().remoteHandles).toBe(3)
+    expect(p.host.counters().pendingCalls).toBe(0)
   })
 
   it('release is idempotent, cascades to children, and calling a released capability is a structured error', async () => {
