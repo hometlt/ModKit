@@ -90,6 +90,11 @@ export {
   type Scheduler,
 } from './endpoint.js'
 export {
+  framePortFromMessagePort,
+  type MessagePortFrameOptions,
+  type MessagePortLike,
+} from './message-port.js'
+export {
   ABI_ARTIFACT_SOURCE,
   ABI_ASSET_INPUT,
   ABI_ASSET_NAMESPACE,

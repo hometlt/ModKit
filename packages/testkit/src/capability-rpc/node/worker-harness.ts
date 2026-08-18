@@ -1,16 +1,18 @@
 /**
  * Node `worker_threads` harness for the capability-RPC hostile-worker fixtures
  * (THREAT_MODEL_WORKER_BOUNDARY §2/§4/§5). Test infrastructure only: it spawns a fixture in a real
- * thread with the isolation options the threat model requires (`env: {}`, `argv: []`,
- * `execArgv: []`, `resourceLimits`, captured stdio, a dedicated `MessagePort`), adapts the port
- * to a `FramePort`, and offers a **reference supervisor** — the observable outcomes any
- * production supervisor (NXT‑114, Root) must reproduce: fail-closed → terminate, exit → peer
- * exit, deadline → cancel → grace → terminate, close → terminate frame → grace → terminate,
- * counters drained. The production backend owns its own policy; this file owns the proof.
+ * thread through the host's **production spawn path** (`spawnWorkerRealm` from
+ * `@modkitx-x3/host/node`: `env: {}`, `argv: []`, `execArgv: []`, `resourceLimits`, captured and
+ * capped stdio, a dedicated `MessagePort` behind the production `framePortFromMessagePort`), and
+ * offers a **reference supervisor** — the observable outcomes any production supervisor
+ * (NXT‑114, Root) must reproduce: fail-closed → terminate, exit → peer exit, deadline → cancel →
+ * grace → terminate, close → terminate frame → grace → terminate, counters drained. The
+ * production backend owns its own policy; this file owns the proof — and because the spawn path
+ * is shared, what the fixtures and the conformance kit exercise is the backend's own transport
+ * (acc-12), while `env-report` checks the isolation options from inside the thread (T6).
  */
 
-import { fileURLToPath } from 'node:url'
-import { MessageChannel, Worker, type ResourceLimits } from 'node:worker_threads'
+import type { ResourceLimits } from 'node:worker_threads'
 import { ModkitError, type Diagnostic } from '@modkitx-x3/core'
 import {
   createEndpoint,
@@ -21,8 +23,8 @@ import {
   type ProtocolViolation,
   type SurfaceRegistry,
 } from '@modkitx-x3/host/execution'
+import { spawnWorkerRealm } from '@modkitx-x3/host/node'
 import type { ConformancePair } from '../conformance.js'
-import { framePortFromMessagePort } from '../message-port.js'
 
 // ---------------------------------------------------------------------------------------------
 // fixtures
@@ -43,6 +45,7 @@ export type HostileWorkerFixtureId =
   | 'reply-games'
   | 'ignore-terminate'
   | 'noisy'
+  | 'env-report'
 
 const FIXTURE_DIR = new URL('../../../fixtures/hostile-worker/', import.meta.url)
 
@@ -64,6 +67,7 @@ export const HOSTILE_WORKER_FIXTURES: Readonly<Record<HostileWorkerFixtureId, UR
     'reply-games': new URL('reply-games.mjs', FIXTURE_DIR),
     'ignore-terminate': new URL('ignore-terminate.mjs', FIXTURE_DIR),
     noisy: new URL('noisy.mjs', FIXTURE_DIR),
+    'env-report': new URL('env-report.mjs', FIXTURE_DIR),
   },
 )
 
@@ -97,88 +101,41 @@ export interface SpawnedWorker {
   readonly exited: boolean
 }
 
-function capture(
-  stream: NodeJS.ReadableStream | null,
-  sink: (chunk: string) => void,
-  cap: number,
-  state: { bytes: number; truncated: boolean },
-): void {
-  if (stream === null) return
-  stream.on('data', (chunk: Buffer | string) => {
-    const text = typeof chunk === 'string' ? chunk : chunk.toString('utf8')
-    if (state.bytes + text.length > cap) {
-      const room = Math.max(0, cap - state.bytes)
-      if (room > 0) sink(text.slice(0, room))
-      state.bytes = cap
-      state.truncated = true
-      return
-    }
-    state.bytes += text.length
-    sink(text)
-  })
-}
-
 /**
- * Spawns a fixture (by id or file URL) in a real worker thread with the isolation options of the
- * threat model. The fixture receives `workerData = { session, generation, port, options }` and
- * must speak the protocol on `port` (`MessagePort`, transferred).
+ * Spawns a fixture (by id or file URL) in a real worker thread through the host's production
+ * spawn path. The fixture receives `workerData = { session, generation, port, options }` and must
+ * speak the protocol on `port` (`MessagePort`, transferred).
  */
 export function spawnFixtureWorker(
   fixture: HostileWorkerFixtureId | URL,
   options: SpawnWorkerOptions,
 ): SpawnedWorker {
   const url = fixture instanceof URL ? fixture : HOSTILE_WORKER_FIXTURES[fixture]
-  const channel = new MessageChannel()
-  const cap = options.outputCapBytes ?? 64 * 1024
   const output = { stdout: '', stderr: '', truncated: false }
-  const outState = { bytes: 0, truncated: false }
-  const errState = { bytes: 0, truncated: false }
-  const worker = new Worker(fileURLToPath(url), {
-    workerData: {
-      session: options.session,
-      generation: options.generation,
-      port: channel.port2,
-      options: options.fixtureOptions ?? {},
-    },
-    transferList: [channel.port2],
+  const realm = spawnWorkerRealm({
+    bootstrap: url,
+    session: options.session,
+    generation: options.generation,
+    workerData: { options: options.fixtureOptions ?? {} },
     ...(options.resourceLimits === undefined ? {} : { resourceLimits: options.resourceLimits }),
-    env: {},
-    argv: [],
-    execArgv: [],
-    stdout: true,
-    stderr: true,
-    trackUnmanagedFds: true,
+    outputCapBytes: options.outputCapBytes ?? 64 * 1024,
+    onStdout: chunk => void (output.stdout += chunk),
+    onStderr: chunk => void (output.stderr += chunk),
     name: `x3-hostile-${typeof fixture === 'string' ? fixture : 'custom'}`,
   })
-  capture(worker.stdout, chunk => void (output.stdout += chunk), cap, outState)
-  capture(worker.stderr, chunk => void (output.stderr += chunk), cap, errState)
-  let exited = false
-  let lastError: Error | undefined
-  const exit = new Promise<WorkerExit>(resolve => {
-    worker.on('error', error => {
-      lastError = error
-    })
-    worker.on('exit', code => {
-      exited = true
-      output.truncated = outState.truncated || errState.truncated
-      channel.port1.close()
-      resolve(lastError === undefined ? { code } : { code, error: lastError })
-    })
+  const exit = realm.exit.then(({ code, error }) => {
+    output.truncated = realm.outputTruncated
+    return error === undefined ? { code } : { code, error }
   })
-  const port = framePortFromMessagePort(channel.port1)
-  let terminating: Promise<number> | undefined
   return {
-    threadId: worker.threadId,
-    port,
+    threadId: realm.threadId,
+    port: realm.port,
     exit,
     output,
     get exited() {
-      return exited
+      return realm.exited
     },
-    terminate() {
-      terminating ??= worker.terminate()
-      return terminating
-    },
+    terminate: () => realm.terminate(),
   }
 }
 

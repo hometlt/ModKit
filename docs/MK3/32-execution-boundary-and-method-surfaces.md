@@ -136,8 +136,26 @@ violation → `terminate()`, `'exit'/'error'` → peer exit, deadline → `cance
 `terminate()`, `release()` → `terminate`‑кадр → grace → `terminate()`, идемпотентно.
 
 `WorkerBackendPolicy` (`resourceLimits`, `loadDeadlineMs`, `defaultCallDeadlineMs`, `graceMs`,
-`outputCapBytes`) выбирает composition root; значения выше жёстких ceilings **отклоняются**, не
-clamp'аются; manifest/variant/activation её не поставляют.
+`outputCapBytes`, `maxRestartsPerLease`) выбирает composition root; значения выше жёстких ceilings
+**отклоняются**, не clamp'аются; manifest/variant/activation её не поставляют.
+
+**Spawn path и адаптер — общие (S1a, 2026‑08‑18).** Один `Worker` на _поколение_ поднимается через
+`spawnWorkerRealm` (`@modkitx-x3/host/node`): опции изоляции, лимиты policy, cap stdio,
+выделенный transferred `MessagePort` за единственным production‑адаптером
+`framePortFromMessagePort` (`@modkitx-x3/host/execution`). Тем же путём harness testkit'а
+поднимает hostile‑fixtures, а conformance kit — пару над реальным потоком: то, что они доказывают,
+— транспорт backend'а, а не его подобие (acc‑12); fixture `env-report` подтверждает изнутри потока
+`env: {}`, `argv: []`, `execArgv: []` и `resourceLimits` policy (T6).
+
+**Restart (acc‑8).** Модульная lease переживает смерть worker'а: следующий `createCodec` на той же
+lease поднимает поколение +1 **той же сессии** — старый порт закрыт до появления нового Worker'а,
+codec'и/сессии старого поколения остаются мёртвыми (`x3.host/rpc-peer-exited` →
+`x3.host/rpc-endpoint-closed`), ни один handle не переезжает, entrypoint перепроверяется по digests,
+взятым при activation (изменённый между поколениями файл — `x3.host/artifact-digest-mismatch`).
+Одновременные вызовы после смерти делят один restart; число restart'ов на lease ограничено policy
+(`x3.host/worker-restart-limit`, `retryability: never`); каждый restart — диагностика
+`x3.host/worker-restarted`; `x3.host/worker-shared-process` — одна на activation. Восстановление
+_сессий_ backend не обещает: это решение потребителя (повторный `open`), не транспорта.
 
 Загрузка: gate передаёт backend'у per‑file digests inventory (действительны: gate только что
 перепроверил artifact digest); bootstrap ставит синхронные module hooks — каждый файл внутри
@@ -163,7 +181,9 @@ Host‑side module adapter сохраняет **синхронный** `createCo
   `MessageChannel`, реальном `worker_threads`; негативные транспорты ловятся.
 - **Hostile worker acceptance** (`packages/testkit/fixtures/hostile-worker/*.mjs`, reference
   supervisor): acc‑1…acc‑5, acc‑9, acc‑10 закрыты над реальными потоками; acc‑6/acc‑7/acc‑11 —
-  тестами backend'а; acc‑8 (restart generation) и acc‑12 (kit на реальной паре backend'а) — открыты.
+  тестами backend'а; acc‑8 (restart generation — тесты backend'а над fixture `crashy`) и acc‑12
+  (kit над production spawn path `spawnWorkerRealm` + production адаптером) — закрыты 2026‑08‑18;
+  T6 (изоляция потока) — fixture `env-report`.
 - **Реальные расширения в worker'е:** bundled `text-json` codec активируется через backend SPI,
   `probe` детектит JSON, `open()` резолвит провайдер через host (`contracts.resolve`), собирает и
   валидирует descriptor, отдаёт tree data source (`packages/host/test/node-worker-backend.test.ts`).

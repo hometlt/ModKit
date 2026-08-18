@@ -56,9 +56,11 @@ owner‑документы; каждый пункт имеет свой file sco
   (`4fed319`), **R3b‑2** signal/progress в объектах‑аргументах, `contracts.resolve` из worker'а, service‑arm
   surfaces, реальный `open()` в worker'е (`aa5e59b`); follow‑ups Opus приняты (`745a7f6`), fix bundle
   tsbuildinfo (`221cc09`). Opus параллельно ведёт `REQUEST_AGENT_TESTKIT_FOLLOWUPS` в
-  `packages/testkit/**` (не коммичу его файлы). Дальше: R3b (per‑file digests в inventory → gate
-  передаёт entrypoint digest; `contracts`/`operations` marshalling; wiring backend в composition roots
-  с policy; acc‑8/acc‑12), затем R4/R5 (NXT‑101B, probe grant), R6 (Electron IPC → capability‑RPC).
+  `packages/testkit/**` (не коммичу его файлы). Затем **docs move** (`d3d0c65`: `docs/MK3` в лаборатории,
+  документ 32 + ADR‑HOST‑001), **S1a** (acc‑8 restart generation в backend'е, acc‑12 kit над production
+  spawn path `spawnWorkerRealm`, единый `framePortFromMessagePort` в `host/execution`, T6 fixture
+  `env-report`). Дальше: S1b wiring backend в composition roots с policy, S2 остаток протокола 1.1,
+  S3 R4/R5 (NXT‑101B, probe grant), S4 R6 (Electron IPC → capability‑RPC).
 - **Состояние гейтов после F1** (та же последовательность, что `pnpm check`, но lint/format без
   `NexusForgeUI/`): build 41 entries, bench gate, eslint, prettier, **71 test files / 551 tests**,
   schemas/manifests/tokens/icons/facilities, `apps:check` 16 cases, `legacy gate` clean (380),

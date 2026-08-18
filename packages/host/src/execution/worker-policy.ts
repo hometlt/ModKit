@@ -25,6 +25,12 @@ export interface WorkerBackendPolicy {
   readonly graceMs: number
   /** Cap on captured stdout and stderr, each. */
   readonly outputCapBytes: number
+  /**
+   * How many times one module lease may respawn its worker (generation + 1, same session) after
+   * the worker died or was terminated, before further use of the lease is refused
+   * (`x3.host/worker-restart-limit`). 0 disables restarts.
+   */
+  readonly maxRestartsPerLease: number
 }
 
 /** Hard ceilings no composition root can exceed. */
@@ -39,6 +45,7 @@ export const WORKER_BACKEND_POLICY_CEILINGS: WorkerBackendPolicy = Object.freeze
   defaultCallDeadlineMs: 600_000,
   graceMs: 30_000,
   outputCapBytes: 4 * 1024 * 1024,
+  maxRestartsPerLease: 1_000,
 })
 
 /** Conservative defaults for a lab host; production roots choose their own within the ceilings. */
@@ -53,6 +60,7 @@ export const DEFAULT_WORKER_BACKEND_POLICY: WorkerBackendPolicy = Object.freeze(
   defaultCallDeadlineMs: 30_000,
   graceMs: 1_000,
   outputCapBytes: 64 * 1024,
+  maxRestartsPerLease: 3,
 })
 
 export interface WorkerBackendPolicyInput {
@@ -61,6 +69,7 @@ export interface WorkerBackendPolicyInput {
   readonly defaultCallDeadlineMs?: number
   readonly graceMs?: number
   readonly outputCapBytes?: number
+  readonly maxRestartsPerLease?: number
 }
 
 function invalid(message: string): never {
@@ -121,6 +130,12 @@ export function workerBackendPolicy(input: WorkerBackendPolicyInput = {}): Worke
       'outputCapBytes',
       input.outputCapBytes ?? d.outputCapBytes,
       c.outputCapBytes,
+      0,
+    ),
+    maxRestartsPerLease: bounded(
+      'maxRestartsPerLease',
+      input.maxRestartsPerLease ?? d.maxRestartsPerLease,
+      c.maxRestartsPerLease,
       0,
     ),
   })

@@ -1,23 +1,30 @@
 /**
  * Node worker backend (NXT-114): the `worker-brokered` execution profile on the `node` target.
- * One `worker_threads.Worker` per activation, spawned from the host's own bootstrap with the
- * isolation options of THREAT_MODEL_WORKER_BOUNDARY §2 (`env: {}`, `argv: []`, `execArgv: []`,
- * V8 `resourceLimits` from the host policy, captured and capped stdio, a dedicated transferred
- * `MessagePort`), a host-role capability-RPC endpoint over it, and the supervisor reactions the
- * threat model prescribes:
+ * One `worker_threads.Worker` per activation generation, spawned through the production spawn
+ * path (`spawnWorkerRealm`: `env: {}`, `argv: []`, `execArgv: []`, V8 `resourceLimits` from the
+ * host policy, captured and capped stdio, a dedicated transferred `MessagePort` behind the
+ * shared `framePortFromMessagePort` adapter), a host-role capability-RPC endpoint over it, and
+ * the supervisor reactions THREAT_MODEL_WORKER_BOUNDARY prescribes:
  *
  *  - protocol failure → the endpoint fails closed and the worker is terminated at once;
  *  - worker exit/error → peer exit: pending calls reject, every host lease is released;
  *  - a call that exceeds its deadline sends `cancel`; if the worker does not answer within the
  *    grace period, it is terminated;
- *  - `release()` sends `terminate`, waits the grace period for a clean exit, then terminates.
+ *  - `release()` sends `terminate`, waits the grace period for a clean exit, then terminates;
+ *  - **restart (acc-8)**: after the worker died or was terminated, the next `createCodec` on the
+ *    same module lease brings up generation + 1 of the same session — the old port is closed
+ *    before the new worker exists, remotes of the old generation stay dead
+ *    (`x3.host/rpc-peer-exited` / `x3.host/rpc-endpoint-closed`), no handle travels across, the
+ *    entrypoint is re-verified against the digests taken at activation. Restarts are bounded by
+ *    `policy.maxRestartsPerLease` (`x3.host/worker-restart-limit`); each one is reported as
+ *    `x3.host/worker-restarted`.
  *
- * `load` carries the digest of the entrypoint bytes the host just read (`entrypointDigest`); the
- * bootstrap re-verifies and evaluates exactly those bytes. The module the lease exposes is a
- * host-side adapter with the *synchronous* `createCodec(context)` the ABI promises, backed by the
- * remote module: the context's diagnostics sink and the probe/open inputs are exposed to the
- * worker as host capabilities (with their data fields), the returned codec/session/data-source
- * objects are the RPC core's materialized proxies.
+ * `load` carries the digest of the entrypoint bytes (`entrypointDigest`); the bootstrap
+ * re-verifies and evaluates exactly those bytes. The module the lease exposes is a host-side
+ * adapter with the *synchronous* `createCodec(context)` the ABI promises, backed by the remote
+ * module: the context's diagnostics sink and the probe/open inputs are exposed to the worker as
+ * host capabilities (with their data fields), the returned codec/session/data-source objects are
+ * the RPC core's materialized proxies.
  *
  * Honest positioning (§0 of the threat model, decision 1 of §8): this is failure and protocol
  * isolation, not a security sandbox — the worker shares the process. Every activation reports
@@ -27,7 +34,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
-import { MessageChannel, Worker } from 'node:worker_threads'
 import { ModkitError, type Diagnostic } from '@modkitx-x3/core'
 import type {
   AssetInput,
@@ -51,7 +57,6 @@ import {
   protocolLimits,
   type DataSourceSurfaceSource,
   type Endpoint,
-  type FramePort,
   type ProtocolLimits,
   type RemoteCapability,
   type SurfaceRegistry,
@@ -65,8 +70,10 @@ import {
   DEFAULT_WORKER_BACKEND_POLICY,
   type WorkerBackendPolicy,
 } from '../execution/worker-policy.js'
+import { spawnWorkerRealm, type WorkerRealm } from './worker-realm.js'
 
 export const WORKER_SHARED_PROCESS_DIAGNOSTIC = 'x3.host/worker-shared-process'
+export const WORKER_RESTARTED_DIAGNOSTIC = 'x3.host/worker-restarted'
 
 export interface NodeWorkerBackendOptions {
   /** Host policy (validated by `workerBackendPolicy`); defaults are lab-conservative. */
@@ -86,13 +93,16 @@ export interface NodeWorkerBackendOptions {
   readonly afterEntrypointDigest?: (digest: string) => Promise<void> | void
 }
 
-interface ActiveWorker {
-  readonly worker: Worker
+/** One spawned generation: worker, its endpoint and the loaded module root. */
+interface Realm {
+  readonly generation: number
+  readonly worker: WorkerRealm
   readonly endpoint: Endpoint
-  readonly exit: Promise<number>
-  readonly exited: boolean
+  readonly root: RemoteCapability
   terminate(reason: string): Promise<void>
 }
+
+type Spawned = Omit<Realm, 'root'>
 
 const sha256 = (bytes: Uint8Array) => `sha256:${createHash('sha256').update(bytes).digest('hex')}`
 
@@ -104,28 +114,6 @@ function artifactRelative(artifactRoot: URL, entrypoint: URL): string {
     : ''
 }
 const delay = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms).unref())
-
-function framePortOver(port: import('node:worker_threads').MessagePort): FramePort {
-  return {
-    post: (frame, transfer) => port.postMessage(frame, [...transfer]),
-    onFrame: handler => {
-      const listener = (payload: unknown) => handler(payload)
-      port.on('message', listener)
-      return () => port.off('message', listener)
-    },
-  }
-}
-
-function capped(sink: (chunk: string) => void, cap: number): (chunk: Buffer | string) => void {
-  let seen = 0
-  return chunk => {
-    if (seen >= cap) return
-    const text = typeof chunk === 'string' ? chunk : chunk.toString('utf8')
-    const room = cap - seen
-    seen += Math.min(room, text.length)
-    sink(text.length > room ? text.slice(0, room) : text)
-  }
-}
 
 export function createNodeWorkerBackend(options: NodeWorkerBackendOptions = {}): ExecutionBackend {
   const policy = options.policy ?? DEFAULT_WORKER_BACKEND_POLICY
@@ -141,16 +129,17 @@ export function createNodeWorkerBackend(options: NodeWorkerBackendOptions = {}):
   const supports = (target: RuntimeTarget, variant: RuntimeVariantDeclaration): boolean =>
     variant.executionProfile === 'worker-brokered' && target.environment === 'node'
 
-  async function spawn(context: ExecutionBackendActivation): Promise<ActiveWorker> {
-    const session = randomUUID()
-    const generation = 1
-    const channel = new MessageChannel()
+  function spawn(
+    context: ExecutionBackendActivation,
+    session: string,
+    generation: number,
+  ): Spawned {
     let terminations = 0
-    const worker = new Worker(fileURLToPath(bootstrapUrl), {
+    const worker = spawnWorkerRealm({
+      bootstrap: bootstrapUrl,
+      session,
+      generation,
       workerData: {
-        session,
-        generation,
-        port: channel.port2,
         limits,
         artifactRoot: context.artifactRoot.href,
         ...(context.fileDigests === undefined ? {} : { fileDigests: { ...context.fileDigests } }),
@@ -160,41 +149,13 @@ export function createNodeWorkerBackend(options: NodeWorkerBackendOptions = {}):
           ...(item.surface === undefined ? {} : { surface: item.surface }),
         })),
       },
-      transferList: [channel.port2],
       resourceLimits: { ...policy.resourceLimits },
-      env: {},
-      argv: [],
-      execArgv: [],
-      stdout: true,
-      stderr: true,
-      trackUnmanagedFds: true,
-      name: `x3-worker:${context.ticket.contributionId}`,
-    })
-    worker.stdout.on(
-      'data',
-      capped(
-        text => report({ code: 'x3.host/worker-stdout', severity: 'information', message: text }),
-        policy.outputCapBytes,
-      ),
-    )
-    worker.stderr.on(
-      'data',
-      capped(
-        text => report({ code: 'x3.host/worker-stderr', severity: 'warning', message: text }),
-        policy.outputCapBytes,
-      ),
-    )
-    let exited = false
-    let lastError: Error | undefined
-    const exit = new Promise<number>(resolve => {
-      worker.on('error', error => {
-        lastError = error
-      })
-      worker.on('exit', code => {
-        exited = true
-        channel.port1.close()
-        resolve(code)
-      })
+      outputCapBytes: policy.outputCapBytes,
+      onStdout: text =>
+        report({ code: 'x3.host/worker-stdout', severity: 'information', message: text }),
+      onStderr: text =>
+        report({ code: 'x3.host/worker-stderr', severity: 'warning', message: text }),
+      name: `x3-worker:${context.ticket.contributionId}#${generation}`,
     })
     let terminating: Promise<void> | undefined
     const terminate = (reason: string): Promise<void> => {
@@ -203,7 +164,7 @@ export function createNodeWorkerBackend(options: NodeWorkerBackendOptions = {}):
         report({
           code: 'x3.host/worker-terminated',
           severity: 'warning',
-          message: `worker terminated: ${reason}`,
+          message: `worker generation ${generation} terminated: ${reason}`,
         })
         await worker.terminate()
       })()
@@ -211,7 +172,7 @@ export function createNodeWorkerBackend(options: NodeWorkerBackendOptions = {}):
     }
     const endpoint = createEndpoint({
       role: 'host',
-      port: framePortOver(channel.port1),
+      port: worker.port,
       session,
       generation,
       surfaces,
@@ -222,53 +183,51 @@ export function createNodeWorkerBackend(options: NodeWorkerBackendOptions = {}):
       },
       onDiagnostic: report,
     })
-    void exit.then(async code => {
+    void worker.exit.then(async ({ code, error }) => {
       await endpoint.peerClosed(
-        lastError === undefined
+        error === undefined
           ? `worker exited with code ${code}`
-          : `worker died: ${lastError.message} (${(lastError as { code?: string }).code ?? 'error'})`,
+          : `worker died: ${error.message} (${(error as { code?: string }).code ?? 'error'})`,
       )
-      if (terminations === 0 && lastError !== undefined) {
-        report({
-          code: 'x3.host/worker-crashed',
-          severity: 'error',
-          message: lastError.message,
-        })
+      if (terminations === 0 && error !== undefined) {
+        report({ code: 'x3.host/worker-crashed', severity: 'error', message: error.message })
       }
     })
-    const active: ActiveWorker = {
-      worker,
-      endpoint,
-      exit,
-      get exited() {
-        return exited
-      },
-      terminate,
-    }
-    return active
+    return { generation, worker, endpoint, terminate }
   }
 
   /**
    * Runs an outbound request under the hang watchdog: after a deadline, a live worker answers the
    * cancel (a dropped late reply arrives); one that does not within the grace period is killed.
    */
-  async function watched<T>(active: ActiveWorker, request: () => Promise<T>): Promise<T> {
-    const before = active.endpoint.counters().droppedLateReplies
+  async function watched<T>(realm: Spawned, request: () => Promise<T>): Promise<T> {
+    const before = realm.endpoint.counters().droppedLateReplies
     try {
       return await request()
     } catch (error) {
       if (error instanceof ModkitError && error.code === 'x3.host/rpc-deadline-exceeded') {
         const started = Date.now()
         while (Date.now() - started < policy.graceMs) {
-          if (active.endpoint.counters().droppedLateReplies > before || active.exited) break
+          if (realm.endpoint.counters().droppedLateReplies > before || realm.worker.exited) break
           await delay(10)
         }
-        if (active.endpoint.counters().droppedLateReplies === before && !active.exited) {
-          void active.terminate('cancel not honoured within the grace period after a deadline')
+        if (realm.endpoint.counters().droppedLateReplies === before && !realm.worker.exited) {
+          void realm.terminate('cancel not honoured within the grace period after a deadline')
         }
       }
       throw error
     }
+  }
+
+  /** Graceful shutdown of one generation: `terminate` frame → grace → `worker.terminate()`. */
+  async function shutdown(realm: Spawned, reason: string): Promise<void> {
+    await realm.endpoint.close(reason)
+    const exitedInTime = await Promise.race([
+      realm.worker.exit.then(() => true),
+      delay(policy.graceMs).then(() => false),
+    ])
+    if (!exitedInTime) await realm.terminate('terminate frame not honoured within the grace period')
+    await realm.worker.exit
   }
 
   async function activate(context: ExecutionBackendActivation): Promise<ExecutionModuleLease> {
@@ -280,52 +239,107 @@ export function createNodeWorkerBackend(options: NodeWorkerBackendOptions = {}):
     }
     // the inventory's per-file digest of the entrypoint (still valid: the gate re-verified the
     // artifact digest just now) — or, without a map, the exact bytes hashed here so the worker can
-    // refuse anything that changes between here and evaluation
+    // refuse anything that changes between here and evaluation (and on every restart)
     const entrypointDigest =
       context.fileDigests?.[artifactRelative(context.artifactRoot, context.entrypoint)] ??
       sha256(await readFile(fileURLToPath(context.entrypoint)))
     await options.afterEntrypointDigest?.(entrypointDigest)
-    const active = await spawn(context)
+
+    const session = randomUUID()
+    let generation = 0
+    let restarts = 0
+    let released = false
+
+    const bringUp = async (previous: Realm | undefined, signal?: AbortSignal): Promise<Realm> => {
+      if (previous !== undefined && !previous.worker.exited) {
+        // never two live generations of one session: kill and wait, the exit handler closes the port
+        await previous.terminate('replaced by a new generation')
+        await previous.worker.exit
+      }
+      generation += 1
+      const spawned = spawn(context, session, generation)
+      try {
+        const loaded = await watched(spawned, () =>
+          spawned.endpoint.load(
+            {
+              moduleUrl: context.entrypoint.href,
+              contributionId: context.ticket.contributionId,
+              variantId: context.variant.variantId,
+              artifactDigest: context.ticket.artifactDigest,
+              entrypointDigest,
+            },
+            {
+              deadlineMs: policy.loadDeadlineMs,
+              ...(signal === undefined ? {} : { signal }),
+            },
+          ),
+        )
+        return { ...spawned, root: loaded.root }
+      } catch (error) {
+        await shutdown(spawned, 'load failed')
+        throw error
+      }
+    }
+
+    // reported before any extension code is evaluated (module evaluation already runs it): the
+    // boundary this activation gets is a worker thread, not a sandbox
     report({
       code: WORKER_SHARED_PROCESS_DIAGNOSTIC,
       severity: 'information',
       message: `${context.ticket.contributionId} runs in a worker thread: failure and protocol isolation, not a security sandbox (SB-1)`,
     })
-    let released = false
+    let current: Promise<Realm> = bringUp(undefined, context.signal)
+    const first = await current // the activation itself fails when the first generation cannot load
+
+    // serialized: concurrent callers after a death share one restart
+    let chain: Promise<unknown> = Promise.resolve()
+    const realm = (): Promise<Realm> => {
+      const next = chain.then(
+        async () => {
+          if (released) {
+            throw new ModkitError({
+              code: 'x3.host/rpc-endpoint-closed',
+              message: 'the module lease was released',
+            })
+          }
+          const live = await current.catch(() => undefined)
+          if (live !== undefined && !live.worker.exited && live.endpoint.state === 'open')
+            return live
+          if (restarts >= policy.maxRestartsPerLease) {
+            throw new ModkitError({
+              code: 'x3.host/worker-restart-limit',
+              message: `worker for ${context.ticket.contributionId} died after ${restarts} restart(s); the host policy allows ${policy.maxRestartsPerLease}`,
+              context: { restarts, maxRestartsPerLease: policy.maxRestartsPerLease },
+              retryability: 'never',
+            })
+          }
+          restarts += 1
+          report({
+            code: WORKER_RESTARTED_DIAGNOSTIC,
+            severity: 'warning',
+            message: `worker for ${context.ticket.contributionId} is restarted as generation ${generation + 1} (restart ${restarts} of ${policy.maxRestartsPerLease}); leases of generation ${generation} stay invalid`,
+          })
+          current = bringUp(live)
+          return current
+        },
+        async () => undefined as never,
+      )
+      chain = next.catch(() => undefined)
+      return next
+    }
+
     const release = async (): Promise<void> => {
       if (released) return
       released = true
-      await active.endpoint.close('released')
-      const exitedInTime = await Promise.race([
-        active.exit.then(() => true),
-        delay(policy.graceMs).then(() => false),
-      ])
-      if (!exitedInTime)
-        await active.terminate('terminate frame not honoured within the grace period')
-      await active.exit
+      const live = await current.catch(() => undefined)
+      if (live !== undefined) await shutdown(live, 'released')
     }
-    let loaded
-    try {
-      loaded = await watched(active, () =>
-        active.endpoint.load(
-          {
-            moduleUrl: context.entrypoint.href,
-            contributionId: context.ticket.contributionId,
-            variantId: context.variant.variantId,
-            artifactDigest: context.ticket.artifactDigest,
-            entrypointDigest,
-          },
-          {
-            deadlineMs: policy.loadDeadlineMs,
-            ...(context.signal === undefined ? {} : { signal: context.signal }),
-          },
-        ),
-      )
-    } catch (error) {
-      await release()
-      throw error
-    }
-    const module = moduleAdapter(active, loaded.root, request => watched(active, request))
+    const module = moduleAdapter(
+      context.ticket.contributionId,
+      first.root.data['abiVersion'],
+      realm,
+      watched,
+    )
     return Object.freeze({ module, release })
   }
 
@@ -335,49 +349,58 @@ export function createNodeWorkerBackend(options: NodeWorkerBackendOptions = {}):
 // ---------------------------------------------------------------------------------------------
 // host-side ABI adapters over the remote module
 
-type Watch = <T>(request: () => Promise<T>) => Promise<T>
+type Watch = <T>(realm: Spawned, request: () => Promise<T>) => Promise<T>
+
+/** A codec is bound to the generation that created it; its calls never migrate. */
+interface BoundCodec {
+  readonly realm: Realm
+  readonly remote: RemoteCapability
+}
 
 function moduleAdapter(
-  active: ActiveWorker,
-  root: RemoteCapability,
+  contributionId: string,
+  abiVersion: unknown,
+  realm: () => Promise<Realm>,
   watch: Watch,
 ): Record<string, unknown> {
-  const endpoint = active.endpoint
   return Object.freeze({
-    abiVersion: root.data['abiVersion'],
+    abiVersion,
     createCodec: (context: ContributionContext): Codec => {
-      const sink = endpoint.expose(
-        { report: (diagnostic: Diagnostic) => context.diagnostics.report(diagnostic) },
-        ABI_DIAGNOSTIC_SINK,
-      )
-      // the host executes contract resolution; the worker gets a proxy whose leased providers
-      // carry the surface of the requested contract's definition
-      const contracts = endpoint.expose(context.contracts, ABI_CONTRACT_RESOLVER)
-      const codec = watch(() =>
-        root.call('createCodec', [{ budgets: context.budgets, diagnostics: sink, contracts }]),
-      ).then(outcome => {
+      const bound = realm().then(async live => {
+        const endpoint = live.endpoint
+        const sink = endpoint.expose(
+          { report: (diagnostic: Diagnostic) => context.diagnostics.report(diagnostic) },
+          ABI_DIAGNOSTIC_SINK,
+        )
+        // the host executes contract resolution; the worker gets a proxy whose leased providers
+        // carry the surface of the requested contract's definition
+        const contracts = endpoint.expose(context.contracts, ABI_CONTRACT_RESOLVER)
+        const outcome = await watch(live, () =>
+          live.root.call('createCodec', [
+            { budgets: context.budgets, diagnostics: sink, contracts },
+          ]),
+        )
         if (outcome.kind !== 'lease') {
           throw new ModkitError({
             code: 'x3.host/invalid-codec-module',
-            message: 'createCodec did not lease a codec',
+            message: `createCodec of ${contributionId} did not lease a codec`,
           })
         }
-        return outcome.remote
+        return { realm: live, remote: outcome.remote } satisfies BoundCodec
       })
-      codec.catch(() => undefined)
-      return codecAdapter(active, codec, watch)
+      bound.catch(() => undefined)
+      return codecAdapter(bound, watch)
     },
   })
 }
 
-function codecAdapter(active: ActiveWorker, codec: Promise<RemoteCapability>, watch: Watch): Codec {
-  const endpoint = active.endpoint
+function codecAdapter(bound: Promise<BoundCodec>, watch: Watch): Codec {
   return {
     async probe(request: CodecProbeRequest, signal?: AbortSignal): Promise<DetectionResult> {
-      const remote = await codec
-      const source = endpoint.expose(request.source as object, ABI_ARTIFACT_SOURCE)
+      const { realm, remote } = await bound
+      const source = realm.endpoint.expose(request.source as object, ABI_ARTIFACT_SOURCE)
       try {
-        const outcome = await watch(() =>
+        const outcome = await watch(realm, () =>
           remote.call(
             'probe',
             [{ source, plan: request.plan }],
@@ -401,9 +424,9 @@ function codecAdapter(active: ActiveWorker, codec: Promise<RemoteCapability>, wa
       budget: ResourceBudget,
       signal?: AbortSignal,
     ) {
-      const remote = await codec
-      const exposedInput = endpoint.expose(input as unknown as object, ABI_ASSET_INPUT)
-      const outcome = await watch(() =>
+      const { realm, remote } = await bound
+      const exposedInput = realm.endpoint.expose(input as unknown as object, ABI_ASSET_INPUT)
+      const outcome = await watch(realm, () =>
         remote.call('open', [exposedInput, intent, budget], signal === undefined ? {} : { signal }),
       ).catch(async (error: unknown) => {
         await exposedInput.release()
@@ -416,18 +439,18 @@ function codecAdapter(active: ActiveWorker, codec: Promise<RemoteCapability>, wa
           message: 'open did not lease a session',
         })
       }
-      return sessionAdapter(active, outcome.remote, exposedInput, watch) as unknown as AssetSession
+      return sessionAdapter(realm, outcome.remote, exposedInput, watch) as unknown as AssetSession
     },
   }
 }
 
 function sessionAdapter(
-  active: ActiveWorker,
+  realm: Realm,
   session: RemoteCapability,
   exposedInput: { release(): Promise<void> },
   watch: Watch,
 ) {
-  const endpoint = active.endpoint
+  const endpoint = realm.endpoint
   const materialized = endpoint.materialize(session) as Record<
     string,
     (...args: unknown[]) => Promise<unknown>
@@ -435,7 +458,7 @@ function sessionAdapter(
   let state: 'live' | 'stale-revision' | 'disposed' = 'live'
   const operations = {
     invoke: async (...args: unknown[]) => {
-      const outcome = await watch(() => session.call('operations'))
+      const outcome = await watch(realm, () => session.call('operations'))
       if (outcome.kind !== 'lease')
         throw new ModkitError({
           code: 'x3.host/rpc-bad-return',

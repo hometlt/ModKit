@@ -511,6 +511,9 @@ describe('13B text-data providers and codecs', () => {
       }
       await dataLease.release()
     },
+    // the first case pays the cold import of every bundled provider; under machine contention
+    // (parallel agent runs) that exceeded the 5 s default once
+    20_000,
   )
 
   it.each([

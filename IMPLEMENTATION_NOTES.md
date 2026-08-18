@@ -6,6 +6,45 @@ overrides a canonical or detailed owner.
 
 ---
 
+## S1a — one spawn path, one MessagePort adapter, restart generation (acc-8), kit over the backend transport (acc-12) (Root/Fable, 2026-08-18)
+
+**What exists.** `packages/host/src/execution/message-port.ts` — `framePortFromMessagePort` moved
+from the testkit into the published `@modkitx-x3/host/execution` subpath: the one production
+`MessagePort` → `FramePort` adapter (Node `worker_threads`, DOM, Electron `MessagePortMain`
+listener styles); the testkit re-exports it, and its conformance test asserts identity with the
+production import. `packages/host/src/node/worker-realm.ts` — `spawnWorkerRealm`, the production
+spawn path (isolation options of the threat model §2, `resourceLimits` from the caller's policy,
+capped stdio into sinks, dedicated transferred `MessagePort` behind the shared adapter, exit
+tracking, idempotent `terminate()`, `outputTruncated`); exported from `@modkitx-x3/host/node`. The
+Node worker backend spawns every generation through it; the testkit harness
+(`spawnFixtureWorker`, hence `superviseFixtureWorker` and `demoWorkerPair`) spawns through it too
+— what the hostile-worker acceptance and the kit exercise is now the backend's own transport, not
+a look-alike. New fixture `env-report.mjs` reports from inside the thread and the acceptance
+asserts `env: {}`, `argv` = [execPath, script], `execArgv: []`, the policy resource limits (T6, §6
+checklist — proven, not read from the source). `WorkerBackendPolicy.maxRestartsPerLease` (default 3,
+ceiling 1000, 0 disables).
+
+**Restart (acc-8).** `worker-backend.ts` keeps, per module lease, one session id and a generation
+counter. When the live generation died or was terminated, the next `createCodec` on the same lease
+brings up generation + 1 of the same session: the previous worker is awaited to exit (its port is
+closed in the `'exit'` handler before the new `Worker` exists), the same `load` request is sent
+(same `entrypointDigest` → a file changed between generations is `x3.host/artifact-digest-mismatch`),
+`x3.host/worker-restarted` is reported once per restart, concurrent callers share one restart (a
+serialized chain), and `x3.host/worker-restart-limit` (`retryability: 'never'`) refuses the lease
+beyond the policy. Codecs are bound to the generation that created them: their calls never migrate
+(`rpc-peer-exited` for the in-flight one, `rpc-endpoint-closed` afterwards) and no handle travels
+across generations. `x3.host/worker-shared-process` is per activation, reported before the first
+evaluation (module evaluation already runs extension code). Session recovery is deliberately not
+promised — a consumer re-opens. Tests: `node-worker-backend.test.ts` (13 → 16; fixture `crashy.mjs`
+kills the worker on a `/crash` probe), `hostile-worker.test.ts` (18 → 19), conformance (9 → 11:
+adapter identity + the kit over a `spawnWorkerRealm` pair, host-observable subset, transfer detached).
+
+**Not done here.** Wiring into composition roots (S1b); restart policy at the product level (no
+automatic re-`open` in `subject-open`); the harness keeps its own reference supervisor — sharing
+the spawn path does not share the supervision, which is what the acceptance still proves.
+
+---
+
 ## MK3 docs moved into the lab + execution-boundary decisions recorded (Root/Fable, 2026-08-18)
 
 **What changed.** `modkitx/docs/MK3` (39 files: 00–31, `adr/`, `uk-a/`) is copied to

@@ -1,8 +1,11 @@
 import { MessageChannel } from 'node:worker_threads'
 import { describe, expect, it } from 'vitest'
 import type { Frame } from '@modkitx-x3/host/execution'
+import { framePortFromMessagePort as productionAdapter } from '@modkitx-x3/host/execution'
+import { DEFAULT_WORKER_BACKEND_POLICY, spawnWorkerRealm } from '@modkitx-x3/host/node'
 import {
   CONFORMANCE_CASE_IDS,
+  HOSTILE_WORKER_FIXTURES,
   createLoopbackPair,
   demoWorkerPair,
   describeConformanceReport,
@@ -184,6 +187,40 @@ describe('capability-rpc conformance kit — broken transports are caught', () =
     expect(report.passed).toEqual(['rt-errors'])
     expect(report.skipped.map(item => item.caseId)).toEqual(['hs-malformed-frames'])
   }, 30_000)
+})
+
+describe('capability-rpc conformance kit — the production transport of the Node worker backend (acc-12)', () => {
+  it('the kit re-exports the production MessagePort adapter, so every in-process run above proves it', () => {
+    expect(framePortFromMessagePort).toBe(productionAdapter)
+  })
+
+  it('a pair spawned through spawnWorkerRealm (the backend spawn path: isolation options, policy limits, capped stdio, dedicated port) passes the host-observable suite', async () => {
+    const report = await runFramePortConformance(
+      identity => {
+        const realm = spawnWorkerRealm({
+          bootstrap: HOSTILE_WORKER_FIXTURES['demo-worker'],
+          ...identity,
+          resourceLimits: { ...DEFAULT_WORKER_BACKEND_POLICY.resourceLimits },
+          outputCapBytes: DEFAULT_WORKER_BACKEND_POLICY.outputCapBytes,
+          name: 'x3-conformance:spawnWorkerRealm',
+        })
+        return {
+          transport: 'node:worker_threads:spawnWorkerRealm',
+          host: realm.port,
+          farSide: 'demo-world',
+          close: async () => void (await realm.terminate()),
+        }
+      },
+      { caseTimeoutMs: 20_000 },
+    )
+    expect(report.failures, describeConformanceReport(report)).toEqual([])
+    expect(report.transport).toBe('node:worker_threads:spawnWorkerRealm')
+    expect(report.observations['mode']).toBe('host-only')
+    expect(report.observations['transfer']).toBe('detached')
+    expect(report.observations['delivery']).toBe('asynchronous')
+    expect(report.passed.length + report.skipped.length).toBe(CONFORMANCE_CASE_IDS.length)
+    expect(report.passed.length).toBeGreaterThanOrEqual(16)
+  }, 120_000)
 })
 
 describe('capability-rpc conformance kit — host-only mode over a real thread', () => {

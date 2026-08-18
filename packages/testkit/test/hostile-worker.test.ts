@@ -12,10 +12,12 @@ import {
   type Endpoint,
   type RemoteCapability,
 } from '@modkitx-x3/host/execution'
+import { DEFAULT_WORKER_BACKEND_POLICY } from '@modkitx-x3/host/node'
 import {
   DEMO_LOAD_REQUEST,
   DEMO_SOURCE,
   DEMO_SURFACES,
+  spawnFixtureWorker,
   superviseFixtureWorker,
   type HostileWorkerFixtureId,
   type SupervisedWorker,
@@ -431,4 +433,36 @@ describe('hostile workers — a restart is a new endpoint and a new generation (
     expect(await second.release('done')).toMatchObject({ kind: 'closed', exit: { code: 0 } })
     expect(drained(second.endpoint)).toEqual([0, 0, 0, 0, 0])
   }, 30_000)
+})
+
+describe('hostile workers — the production spawn path isolates the thread as the threat model requires (T6, §6 checklist)', () => {
+  it('env-report: no environment, no argv, no execArgv, the policy resource limits, a dedicated port', async () => {
+    const spawned = spawnFixtureWorker('env-report', {
+      session: 'env-1',
+      generation: 1,
+      resourceLimits: { ...DEFAULT_WORKER_BACKEND_POLICY.resourceLimits },
+    })
+    const report = await new Promise<Record<string, unknown>>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('no report from the worker')), 10_000)
+      spawned.port.onFrame(frame => {
+        clearTimeout(timer)
+        resolve(frame as Record<string, unknown>)
+      })
+    })
+    expect(report['report']).toBe('env')
+    // env: {} — not SHARE_ENV, not the parent's variables (the parent certainly has PATH)
+    expect(report['envKeys']).toEqual([])
+    // argv: [] → only execPath and the script; execArgv: [] → no inherited --inspect/--require
+    expect(report['argv']).toHaveLength(2)
+    expect(report['execArgv']).toEqual([])
+    expect(report['resourceLimits']).toMatchObject({
+      maxOldGenerationSizeMb: DEFAULT_WORKER_BACKEND_POLICY.resourceLimits.maxOldGenerationSizeMb,
+      maxYoungGenerationSizeMb:
+        DEFAULT_WORKER_BACKEND_POLICY.resourceLimits.maxYoungGenerationSizeMb,
+      codeRangeSizeMb: DEFAULT_WORKER_BACKEND_POLICY.resourceLimits.codeRangeSizeMb,
+      stackSizeMb: DEFAULT_WORKER_BACKEND_POLICY.resourceLimits.stackSizeMb,
+    })
+    expect(report['isMainThread']).toBe(false)
+    expect((await spawned.exit).code).toBe(0)
+  }, 20_000)
 })

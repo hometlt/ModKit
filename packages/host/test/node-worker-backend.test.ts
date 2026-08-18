@@ -26,6 +26,7 @@ import {
 import { workerBackendPolicy } from '../src/execution/worker-policy.js'
 import {
   createNodeWorkerBackend,
+  WORKER_RESTARTED_DIAGNOSTIC,
   WORKER_SHARED_PROCESS_DIAGNOSTIC,
 } from '../src/node/worker-backend.js'
 import type { ActivationTicket } from '../src/security/gate.js'
@@ -336,6 +337,110 @@ describe('node worker backend — verify-after-load, containment and policy', ()
       code: 'x3.host/rpc-endpoint-closed',
     })
   }, 20_000)
+})
+
+describe('node worker backend — restart is a new generation of the same session (acc-8)', () => {
+  interface ProbeCodec {
+    probe(request: unknown, signal?: AbortSignal): Promise<Record<string, unknown>>
+  }
+  const crashy = new URL('crashy.mjs', fixtureRoot)
+  const sourceNamed = (path: string) => ({ ...byteSource([1, 2, 3]), ref: { kind: 'file', path } })
+
+  it('after the worker died, the next createCodec brings up generation 2; the old codec stays dead and no handle travels', async () => {
+    const diagnostics: Diagnostic[] = []
+    const lease = await activate(diagnostics, crashy)
+    const createCodec = lease.module['createCodec'] as (c: ContributionContext) => ProbeCodec
+    const first = createCodec(context([]))
+    const before = await first.probe({ source: sourceNamed('/ok'), plan: {} })
+    expect(before['confidence']).toBe(1)
+
+    // the worker dies mid-call: peer exit, deterministic rejection, crash reported
+    await expect(first.probe({ source: sourceNamed('/crash'), plan: {} })).rejects.toMatchObject({
+      code: 'x3.host/rpc-peer-exited',
+    })
+    // the old codec belongs to the dead generation — it never migrates
+    await expect(first.probe({ source: sourceNamed('/ok'), plan: {} })).rejects.toMatchObject({
+      code: 'x3.host/rpc-endpoint-closed',
+    })
+
+    // a fresh createCodec on the same lease → generation 2, same session, new thread
+    const second = createCodec(context([]))
+    const after = await second.probe({ source: sourceNamed('/ok'), plan: {} })
+    expect(after['confidence']).toBe(1)
+    expect(after['threadId']).not.toBe(before['threadId'])
+    const restarted = diagnostics.filter(d => d.code === WORKER_RESTARTED_DIAGNOSTIC)
+    expect(restarted).toHaveLength(1)
+    expect(restarted[0]?.message).toContain('generation 2')
+    // the shared-process diagnostic is per activation, not per generation
+    expect(diagnostics.filter(d => d.code === WORKER_SHARED_PROCESS_DIAGNOSTIC)).toHaveLength(1)
+    // the first generation was reported as exited by its own doing, not terminated by us
+    expect(diagnostics.some(d => d.code === 'x3.host/worker-terminated')).toBe(false)
+    // and the still-dead first codec is unaffected by the restart
+    await expect(first.probe({ source: sourceNamed('/ok'), plan: {} })).rejects.toMatchObject({
+      code: 'x3.host/rpc-endpoint-closed',
+    })
+    await lease.release()
+    // release after a restart shuts the live generation down cleanly
+    await expect(second.probe({ source: sourceNamed('/ok'), plan: {} })).rejects.toMatchObject({
+      code: 'x3.host/rpc-endpoint-closed',
+    })
+  }, 30_000)
+
+  it('concurrent callers after a death share one restart; the policy bounds restarts per lease', async () => {
+    const diagnostics: Diagnostic[] = []
+    const registry = createExecutionBackendRegistry([
+      backend(diagnostics, { maxRestartsPerLease: 1 }),
+    ])
+    const lease = await activateExecutionBackend(registry, activation(crashy))
+    leases.push(lease)
+    const createCodec = lease.module['createCodec'] as (c: ContributionContext) => ProbeCodec
+    await expect(
+      createCodec(context([])).probe({ source: sourceNamed('/crash'), plan: {} }),
+    ).rejects.toMatchObject({ code: 'x3.host/rpc-peer-exited' })
+
+    // two codecs requested at once after the death: one restart, both served by generation 2
+    const [a, b] = [createCodec(context([])), createCodec(context([]))]
+    const [ra, rb] = await Promise.all([
+      a.probe({ source: sourceNamed('/a'), plan: {} }),
+      b.probe({ source: sourceNamed('/b'), plan: {} }),
+    ])
+    expect(ra['threadId']).toBe(rb['threadId'])
+    expect(diagnostics.filter(d => d.code === WORKER_RESTARTED_DIAGNOSTIC)).toHaveLength(1)
+
+    // generation 2 dies too: the policy allowed one restart, so the lease is now refused
+    await expect(a.probe({ source: sourceNamed('/crash'), plan: {} })).rejects.toMatchObject({
+      code: 'x3.host/rpc-peer-exited',
+    })
+    await expect(
+      createCodec(context([])).probe({ source: sourceNamed('/ok'), plan: {} }),
+    ).rejects.toMatchObject({ code: 'x3.host/worker-restart-limit', retryability: 'never' })
+    expect(diagnostics.filter(d => d.code === WORKER_RESTARTED_DIAGNOSTIC)).toHaveLength(1)
+    await lease.release()
+  }, 30_000)
+
+  it('a restart re-verifies the entrypoint: bytes changed since activation are refused, the lease reports why', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'x3-restart-'))
+    tempDirs.push(dir)
+    copyFileSync(crashy, join(dir, 'crashy.mjs'))
+    const root = pathToFileURL(`${dir}/`)
+    const diagnostics: Diagnostic[] = []
+    const lease = await activate(diagnostics, new URL('crashy.mjs', root), root)
+    const createCodec = lease.module['createCodec'] as (c: ContributionContext) => ProbeCodec
+    await expect(
+      createCodec(context([])).probe({ source: sourceNamed('/crash'), plan: {} }),
+    ).rejects.toMatchObject({ code: 'x3.host/rpc-peer-exited' })
+    // tamper between generations
+    writeFileSync(
+      join(dir, 'crashy.mjs'),
+      'export const abiVersion = 1\nexport function createCodec() { return { probe: async () => ({ confidence: 9 }) } }\n',
+      'utf8',
+    )
+    await expect(
+      createCodec(context([])).probe({ source: sourceNamed('/ok'), plan: {} }),
+    ).rejects.toMatchObject({ code: 'x3.host/artifact-digest-mismatch' })
+    expect(diagnostics.filter(d => d.code === WORKER_RESTARTED_DIAGNOSTIC)).toHaveLength(1)
+    await lease.release()
+  }, 30_000)
 })
 
 describe('node worker backend — verified multi-file loading through module hooks', () => {
