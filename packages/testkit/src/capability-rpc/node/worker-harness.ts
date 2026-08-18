@@ -42,6 +42,7 @@ export type HostileWorkerFixtureId =
   | 'wrong-session'
   | 'reply-games'
   | 'ignore-terminate'
+  | 'noisy'
 
 const FIXTURE_DIR = new URL('../../../fixtures/hostile-worker/', import.meta.url)
 
@@ -62,6 +63,7 @@ export const HOSTILE_WORKER_FIXTURES: Readonly<Record<HostileWorkerFixtureId, UR
     'wrong-session': new URL('wrong-session.mjs', FIXTURE_DIR),
     'reply-games': new URL('reply-games.mjs', FIXTURE_DIR),
     'ignore-terminate': new URL('ignore-terminate.mjs', FIXTURE_DIR),
+    noisy: new URL('noisy.mjs', FIXTURE_DIR),
   },
 )
 

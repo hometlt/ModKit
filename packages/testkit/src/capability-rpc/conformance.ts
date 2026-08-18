@@ -10,7 +10,8 @@
  * returns a report; a test asserts on it. Cases are the loopback hostile suite of
  * `packages/host/test/execution-endpoint.test.ts`, re-expressed against an abstract pair.
  *
- * Scope: in-process pairs (a `MessageChannel`, an in-memory loopback, an Electron
+ * Scope: `CASES` holds 25 cases — round trip (`rt-*`), lifecycle (`lc-*`) and hostile (`hs-*`).
+ * In-process pairs (a `MessageChannel`, an in-memory loopback, an Electron
  * `MessageChannelMain`) run every case; host-only pairs (`farSide: 'demo-world'` — the far end is
  * a real thread/process already running a worker endpoint over the demo world, e.g. the testkit
  * `demo-worker` fixture) run the host-observable subset and skip the rest. Crash/hang/exit
@@ -429,6 +430,30 @@ const asFn = <T>(target: Record<string, unknown>, name: string): T => {
   const fn = target[name]
   assert(typeof fn === 'function', `materialized object must expose ${name}()`)
   return fn as T
+}
+
+/** Id of the last `call` frame the host sent for `method` — hostile cases forge replies to it. */
+const lastHostCallId = (ctx: CaseContext, method: string): number => {
+  for (let index = ctx.spy.records.length - 1; index >= 0; index -= 1) {
+    const record = ctx.spy.records[index]
+    if (record === undefined) continue
+    if (record.from === 'host' && record.frame.t === 'call' && record.frame.method === method)
+      return record.frame.id
+  }
+  return fail(`no outbound call frame for ${method} was observed`)
+}
+
+/**
+ * Opens a session and parks a `hang` call on the far side, so a hostile case has a real pending
+ * id to forge a reply for. Returns that id and the (eventual) outcome of the parked call.
+ */
+const parkPendingHang = async (
+  ctx: CaseContext,
+): Promise<{ readonly id: number; readonly settled: Promise<unknown> }> => {
+  const { remote } = await ctx.openSession()
+  const settled = remote.call('hang', [{}]).catch((error: unknown) => error)
+  await ctx.waitFor(() => ctx.host.counters().pendingCalls === 1, 'hang to be pending')
+  return { id: lastHostCallId(ctx, 'hang'), settled }
 }
 
 const CASES: readonly ConformanceCase[] = [
@@ -1148,6 +1173,159 @@ const CASES: readonly ConformanceCase[] = [
         (stale.failures.worker[0] as ProtocolViolation).code,
         'stale-generation',
         'stale generation',
+      )
+    },
+  },
+  {
+    id: 'hs-proto-pollution-reply',
+    title:
+      'an own __proto__ key in a forged reply is a violation and never reaches Object.prototype',
+    hostile: true,
+    needsLocalWorker: true,
+    async run(ctx) {
+      const parked = await parkPendingHang(ctx)
+      ctx.postRawToHost({
+        ...ctx.envelope('worker'),
+        t: 'return',
+        inReplyTo: parked.id,
+        // JSON.parse creates an *own* «__proto__» key; an object literal only sets the prototype
+        value: JSON.parse('{"id":"demo","__proto__":{"admin":true}}'),
+      })
+      await ctx.waitFor(() => ctx.host.state === 'failed', 'host to fail on a forbidden key')
+      assertEqual(
+        (ctx.failures.host[0] as ProtocolViolation).code,
+        'forbidden-key',
+        'violation code',
+      )
+      assert(
+        (Object.prototype as { admin?: unknown }).admin === undefined,
+        'Object.prototype must not have been polluted',
+      )
+      assert(({} as { admin?: unknown }).admin === undefined, 'fresh objects must stay clean')
+      assertEqual(codeOf(await parked.settled), 'x3.host/rpc-protocol-violation', 'the parked call')
+      assertEqual(ctx.host.counters().pendingCalls, 0, 'pending drained')
+    },
+  },
+  {
+    id: 'hs-bad-values-reply',
+    title:
+      'NaN, partial views, shared buffers, over-deep values and unknown frame keys fail closed',
+    hostile: true,
+    needsLocalWorker: true,
+    async run(ctx) {
+      const nested = (depth: number): unknown =>
+        depth === 0 ? { leaf: true } : { d: nested(depth - 1) }
+      const sharedAvailable = typeof SharedArrayBuffer === 'function'
+      if (!sharedAvailable)
+        ctx.observations['sharedArrayBuffer'] = 'unavailable — shared-buffer probe not run'
+      const probes: readonly {
+        readonly code: string
+        readonly reply: () => Record<string, unknown>
+      }[] = [
+        { code: 'bad-value', reply: () => ({ value: { n: Number.NaN } }) },
+        {
+          code: 'partial-typed-array',
+          reply: () => ({ value: new Uint8Array(new ArrayBuffer(16), 4, 4) }),
+        },
+        ...(sharedAvailable
+          ? [
+              {
+                code: 'shared-buffer',
+                reply: () => ({ value: new Uint8Array(new SharedArrayBuffer(8)) }),
+              },
+            ]
+          : []),
+        { code: 'depth-exceeded', reply: () => ({ value: nested(40) }) },
+        { code: 'unknown-key', reply: () => ({ value: 1, extra: 1 }) },
+      ]
+      let first = true
+      for (const probe of probes) {
+        const c = first ? ctx : await ctx.fresh()
+        first = false
+        const parked = await parkPendingHang(c)
+        c.postRawToHost({
+          ...c.envelope('worker'),
+          t: 'return',
+          inReplyTo: parked.id,
+          ...probe.reply(),
+        })
+        await c.waitFor(() => c.host.state === 'failed', `host to fail closed on ${probe.code}`)
+        assertEqual(
+          (c.failures.host[0] as ProtocolViolation).code,
+          probe.code,
+          `${probe.code}: violation code`,
+        )
+        assertEqual(
+          codeOf(await parked.settled),
+          'x3.host/rpc-protocol-violation',
+          `${probe.code}: the parked call`,
+        )
+        assertEqual(c.host.counters().pendingCalls, 0, `${probe.code}: pending drained`)
+        assertEqual(c.host.counters().localHandles, 0, `${probe.code}: local handles released`)
+      }
+    },
+  },
+  {
+    id: 'hs-event-unknown-subscription',
+    title: 'an event for a subscription this side never opened is dropped and counted, not fatal',
+    hostile: true,
+    needsLocalWorker: true,
+    async run(ctx) {
+      await ctx.openSession()
+      const before = ctx.host.counters().droppedEvents
+      ctx.postRawToHost({
+        ...ctx.envelope('worker'),
+        t: 'event',
+        subscription: 'ws1-999',
+        value: 1,
+      })
+      await ctx.waitFor(
+        () => ctx.host.counters().droppedEvents === before + 1,
+        'the stray event to be dropped and counted',
+      )
+      await ctx.settle()
+      assertEqual(ctx.host.state, 'open', 'endpoint state')
+      assertEqual(ctx.failures.host.length, 0, 'a stray event is not a failure')
+      assertEqual(ctx.host.counters().droppedEvents, before + 1, 'droppedEvents')
+    },
+  },
+  {
+    id: 'hs-progress-after-settle',
+    title:
+      'progress after a call settled is noise; progress for a call that never existed is fatal',
+    hostile: true,
+    needsLocalWorker: true,
+    async run(ctx) {
+      const { remote } = await ctx.openSession()
+      const outcome = await remote.call('descriptor')
+      assert(outcome.kind === 'value', 'descriptor must return a value')
+      ctx.postRawToHost({
+        ...ctx.envelope('worker'),
+        t: 'progress',
+        inReplyTo: lastHostCallId(ctx, 'descriptor'),
+        progress: { completed: 1 },
+      })
+      await ctx.settle()
+      await ctx.settle()
+      assertEqual(ctx.host.state, 'open', 'progress after settle keeps the endpoint open')
+      assertEqual(ctx.failures.host.length, 0, 'progress after settle is not a failure')
+
+      const orphan = await ctx.fresh()
+      await orphan.openSession()
+      orphan.postRawToHost({
+        ...orphan.envelope('worker'),
+        t: 'progress',
+        inReplyTo: 999_999,
+        progress: { completed: 1 },
+      })
+      await orphan.waitFor(
+        () => orphan.host.state === 'failed',
+        'host to fail on progress for a call that never existed',
+      )
+      assertEqual(
+        (orphan.failures.host[0] as ProtocolViolation).code,
+        'unknown-reply-target',
+        'violation code',
       )
     },
   },

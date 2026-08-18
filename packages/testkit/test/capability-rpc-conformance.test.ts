@@ -202,6 +202,10 @@ describe('capability-rpc conformance kit — host-only mode over a real thread',
       'hs-duplicate-reply',
       'hs-unknown-handle-and-method',
       'hs-iterator-busy-and-stale-generation',
+      'hs-proto-pollution-reply',
+      'hs-bad-values-reply',
+      'hs-event-unknown-subscription',
+      'hs-progress-after-settle',
     ])
     expect(report.passed.length + report.skipped.length).toBe(CONFORMANCE_CASE_IDS.length)
   }, 120_000)

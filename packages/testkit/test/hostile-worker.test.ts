@@ -123,6 +123,55 @@ describe('hostile workers — positive control across a real thread boundary', (
     expect(drained(s.endpoint)).toEqual([0, 0, 0, 0, 0])
     expect(source.isReleased).toBe(true)
   }, 20_000)
+
+  it('demo-worker: 8 MiB transfer both ways keeps bytes intact and detaches the sender', async () => {
+    const s = supervise('demo-worker')
+    const { session } = await openSession(s.endpoint)
+    const size = 8 * 1024 * 1024 // well inside the default maxTransferBytes (64 MiB)
+    const big = new Uint8Array(size)
+    big.fill(0xab)
+    big[0] = 1
+    big[big.length - 1] = 2
+    const back = await (session['echo'] as (v: unknown) => Promise<Uint8Array>)(big)
+    expect(back.byteLength).toBe(size)
+    expect(back[0]).toBe(1)
+    expect(back[back.length - 1]).toBe(2)
+    expect(back[size >> 1]).toBe(0xab)
+    expect(big.byteLength).toBe(0) // detached: the buffer was transferred, not copied
+    const checked = session['checked'] as (n: number) => Promise<number>
+    const results = await Promise.all(Array.from({ length: 200 }, (_, i) => checked(i)))
+    expect(results).toEqual(Array.from({ length: 200 }, (_, i) => i * 2))
+    const end = await s.release('done')
+    expect(end.kind).toBe('closed')
+    expect(end.exit.code).toBe(0)
+    expect(drained(s.endpoint)).toEqual([0, 0, 0, 0, 0])
+  }, 30_000)
+
+  it('release() is idempotent: every call resolves with the same end, one termination at most (acc-9)', async () => {
+    const s = supervise('demo-worker')
+    await openSession(s.endpoint)
+    const [a, b, c] = await Promise.all([s.release('a'), s.release('b'), s.release('c')])
+    const d = await s.release('d')
+    expect(b).toBe(a)
+    expect(c).toBe(a)
+    expect(d).toBe(a)
+    expect(a.kind).toBe('closed')
+    expect(a.exit.code).toBe(0)
+    expect(s.terminations).toEqual([])
+
+    // a worker that ignores the terminate frame is killed exactly once, however often we ask
+    const stubborn = supervise('ignore-terminate', { graceMs: 200 })
+    await openSession(stubborn.endpoint)
+    const [x, y, z] = await Promise.all([
+      stubborn.release('x'),
+      stubborn.release('y'),
+      stubborn.release('z'),
+    ])
+    expect(y).toBe(x)
+    expect(z).toBe(x)
+    expect(x.kind).toBe('closed')
+    expect(stubborn.terminations).toEqual(['terminate frame not honoured within 200 ms'])
+  }, 25_000)
 })
 
 describe('hostile workers — crash and exit (T2/T14, acc-1, acc-2)', () => {
@@ -259,6 +308,18 @@ describe('hostile workers — resource abuse (T4, acc-5)', () => {
     expect(end.kind).toBe('closed')
     expect(s.endpoint.counters().droppedEvents).toBeGreaterThanOrEqual(0)
   }, 30_000)
+
+  it('noisy: a stdout/stderr flood is capped by the harness and flagged truncated (acc-10)', async () => {
+    const cap = 16 * 1024
+    const s = supervise('noisy', { outputCapBytes: cap })
+    await openSession(s.endpoint)
+    await new Promise(resolve => setTimeout(resolve, 200))
+    const end = await s.release('done')
+    expect(end.kind).toBe('closed')
+    expect(s.spawned.output.stdout.length).toBeLessThanOrEqual(cap)
+    expect(s.spawned.output.stderr.length).toBeLessThanOrEqual(cap)
+    expect(s.spawned.output.truncated).toBe(true)
+  }, 20_000)
 })
 
 describe('hostile workers — protocol violations fail closed and terminate (T1/T7/T8, acc-3)', () => {
@@ -299,11 +360,13 @@ describe('hostile workers — protocol violations fail closed and terminate (T1/
     await violation('bad-values', { variant: 'unknown-frame-key' }, 'unknown-key')
   }, 40_000)
 
-  it('wrong-session: forged session/domain are bad-envelope, a future generation is stale-generation', async () => {
+  it('wrong-session: forged session/domain are bad-envelope, any other generation is stale-generation', async () => {
     await violation('wrong-session', { variant: 'session' }, 'bad-envelope')
     await violation('wrong-session', { variant: 'domain' }, 'bad-envelope')
     await violation('wrong-session', { variant: 'generation' }, 'stale-generation')
-  }, 30_000)
+    // a worker left over from before a restart speaks the *previous* generation (acc-8)
+    await violation('wrong-session', { variant: 'previous-generation' }, 'stale-generation')
+  }, 40_000)
 
   it('reply-games: duplicate, orphan and mistyped replies are violations; a late reply after cancel is only counted', async () => {
     await violation('reply-games', { variant: 'duplicate' }, 'duplicate-reply')
@@ -345,5 +408,27 @@ describe('hostile workers — protocol violations fail closed and terminate (T1/
     expect(s.endpoint.state).toBe('open')
     const end = await s.release('done')
     expect(end).toMatchObject({ kind: 'closed', exit: { code: 0 } })
+  }, 30_000)
+})
+
+describe('hostile workers — a restart is a new endpoint and a new generation (acc-8)', () => {
+  it('demo-worker: generation 2 serves the same session; handles from generation 1 do not travel', async () => {
+    const first = supervise('demo-worker', { session: 'restart-1', generation: 1 })
+    const before = await openSession(first.endpoint)
+    expect(await before.remote.call('descriptor')).toMatchObject({ kind: 'value' })
+    expect(await first.release('restarting')).toMatchObject({ kind: 'closed', exit: { code: 0 } })
+
+    const second = supervise('demo-worker', { session: 'restart-1', generation: 2 })
+    const after = await openSession(second.endpoint)
+    expect(await after.remote.call('descriptor')).toMatchObject({
+      kind: 'value',
+      value: { id: 'demo', traits: ['content.text'] },
+    })
+    // the pre-restart remote belongs to the closed endpoint; it never reaches the new worker
+    await withinCode(before.remote.call('descriptor'), 'x3.host/rpc-endpoint-closed')
+    expect(first.endpoint.state).toBe('closed')
+    expect(drained(first.endpoint)).toEqual([0, 0, 0, 0, 0])
+    expect(await second.release('done')).toMatchObject({ kind: 'closed', exit: { code: 0 } })
+    expect(drained(second.endpoint)).toEqual([0, 0, 0, 0, 0])
   }, 30_000)
 })
