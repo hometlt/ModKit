@@ -28,3 +28,23 @@ export {
   type BrowserWorkerSpawn,
 } from './worker-backend.js'
 export { runBrowserWorkerBootstrap, type BrowserBootstrapInit } from './worker-bootstrap-core.js'
+export {
+  browserLoaderHooks,
+  createBrowserExecutionBackends,
+  createDomWorkerRealmFactory,
+  type BrowserBlobConstructorLike,
+  type BrowserBlobLike,
+  type BrowserExecutionBackendsOptions,
+  type BrowserFetchLike,
+  type BrowserLoaderHookOptions,
+  type BrowserMessageChannelConstructorLike,
+  type BrowserMessageChannelLike,
+  type BrowserObjectUrlLike,
+  type BrowserResponseLike,
+  type BrowserSubtleCryptoLike,
+  type BrowserWorkerConstructorLike,
+  type BrowserWorkerInitMessage,
+  type BrowserWorkerLike,
+  type DomWorkerRealmOptions,
+} from './worker-realm.js'
+export { installBrowserWorkerEntry } from './worker-entry.js'

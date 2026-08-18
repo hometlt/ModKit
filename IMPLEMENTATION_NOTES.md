@@ -6,6 +6,35 @@ overrides a canonical or detailed owner.
 
 ---
 
+## S5b — the DOM wiring of the browser worker backend (Root/Fable, 2026-08-19)
+
+**What exists.** `packages/host/src/browser/worker-realm.ts`: `browserLoaderHooks` (fetch →
+WebCrypto SHA-256 → `blob:` module URLs with `revokeAll`; bare specifiers only through the app's
+`moduleMap`), `createDomWorkerRealmFactory` (a module `Worker` per activation, dedicated
+`MessageChannel`, one `x3.host/worker-init` message with the transferred port,
+`x3.host/worker-crashed` on the worker's error event) and `createBrowserExecutionBackends` (the
+worker backend only — nothing evaluates on a page's main thread). `browser/worker-entry.ts`,
+published as `@modkitx-x3/host/browser/worker-entry`: one-shot init listener over the shared
+bootstrap core, `self.close()` on terminate/failure, auto-installed only inside a real worker
+scope (`WorkerGlobalScope` present). All DOM shapes are structural (the host package still
+compiles without `lib.dom`), so a page passes its globals and a test passes fakes.
+
+**Proof.** `browser-worker-realm.test.ts` (3): hooks over an in-memory origin + Node's WebCrypto +
+a data-URL blob store (real import of a minted URL, revoke frees); `createBrowserExecutionBackends`
+with a fake `Worker` whose "script" is the production entry over a real `MessageChannel` —
+one worker per activation, init message with the transferred port, the fixture codec probes end
+to end, the artifact fetched exactly once; the entry ignores garbage and near-miss inits and
+consumes exactly one real init. `bundle.test.ts` pins the new published entry.
+
+**Not done here (S6, the web product path).** A browser catalog with per-file digests emitted at
+build (`scripts/emit-app-catalogs.mjs`), extension artifacts served under the app origin, a
+module map for `@modkitx-x3/sdk`/`codec-kit` browser builds, `createWebApp` composing
+`createBrowserExecutionBackends` and an `openSubject` flow in the workbench, and a real-browser
+conformance-kit run. Only after S6 is the PWA extensible by codecs end to end; today the host side
+of that path is complete and proven with fakes.
+
+---
+
 ## OPUS-MK2-01 accepted + Root decisions on its open items (Root/Fable, 2026-08-19)
 
 **Accepted as landed by Opus (`0a638d2`, commit authorized by the owner):** `scripts/convert-mk2.mjs`

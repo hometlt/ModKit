@@ -35,6 +35,8 @@ const PUBLISHED_ENTRIES = [
   'packages/host/dist/execution/index.js',
   // worker-side bootstrap of the Node worker backend: its own file so `new Worker(url)` finds it
   'packages/host/dist/node/worker-bootstrap.js',
+  // worker-side entry of the browser worker backend (S5b): spawned as a module Worker by URL
+  'packages/host/dist/browser/worker-entry.js',
   'packages/ui/dist/index.js',
   'packages/ui/dist/viewer/index.js',
   'packages/ui/dist/code/index.js',

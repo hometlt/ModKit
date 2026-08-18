@@ -27,6 +27,10 @@
     "./node/worker-bootstrap": {
       "types": "./dist/node/worker-bootstrap.d.ts",
       "default": "./dist/node/worker-bootstrap.js"
+    },
+    "./browser/worker-entry": {
+      "types": "./dist/browser/worker-entry.d.ts",
+      "default": "./dist/browser/worker-entry.js"
     }
   },
   "files": [
