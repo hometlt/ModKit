@@ -1,4 +1,10 @@
-import { canonicalJsonStringify, isQualifiedId, ModkitError, uint64 } from '@modkitx-x3/core'
+import {
+  canonicalJsonStringify,
+  isQualifiedId,
+  ModkitError,
+  uint64,
+  type Diagnostic,
+} from '@modkitx-x3/core'
 import {
   createHostTopology,
   type ArtifactByteSource,
@@ -17,14 +23,45 @@ import {
   openSubject,
   resolvePresentationPlan,
   registerServiceContractDefinitionsFromInventory,
+  type ExecutionBackendRegistry,
   type ExtensionInput,
   type HostComposition,
   type OpenSubjectResult,
 } from '@modkitx-x3/host'
-import { loadExtensionDirectory, nodeRuntimeTargetBase } from '@modkitx-x3/host/node'
+import {
+  createNodeExecutionBackends,
+  loadExtensionDirectory,
+  nodeRuntimeTargetBase,
+  nodeWorkerLinks,
+  nodeWorkerRealmProfile,
+  workerBackendPolicy,
+  type DataSourceSurfaceSource,
+  type WorkerBackendPolicy,
+} from '@modkitx-x3/host/node'
 
 export const ELECTRON_MAIN_REALM = 'org.modkitx.app.electron/main'
 export const ELECTRON_RENDERER_REALM = 'org.modkitx.app.electron/renderer'
+/**
+ * Where codecs run: the worker threads of the main process (W4 in IMPLEMENTATION_NOTES). Portable
+ * variants are resolved and activated for this realm; the renderer keeps receiving leases through
+ * the preload broker (renderer ↔ main ↔ worker) and never hosts codec code.
+ */
+export const ELECTRON_WORKER_REALM = 'org.modkitx.app.electron/worker'
+
+/** Worker policy of the Electron main process (within the host ceilings, refused above them). */
+export const ELECTRON_WORKER_POLICY: WorkerBackendPolicy = workerBackendPolicy({
+  resourceLimits: {
+    maxOldGenerationSizeMb: 1024,
+    maxYoungGenerationSizeMb: 128,
+    codeRangeSizeMb: 128,
+    stackSizeMb: 8,
+  },
+  loadDeadlineMs: 20_000,
+  defaultCallDeadlineMs: 60_000,
+  graceMs: 2_000,
+  outputCapBytes: 256 * 1024,
+  maxRestartsPerLease: 3,
+})
 
 /** Safe BrowserWindow defaults. The Electron adapter spreads these last and never weakens them. */
 export const ELECTRON_SECURE_WEB_PREFERENCES = Object.freeze({
@@ -210,6 +247,17 @@ export function createElectronTopology(): HostTopology {
         },
         policy: { id: 'org.modkitx.policy/electron-renderer', revision: '1' },
       },
+      nodeWorkerRealmProfile({
+        realmId: ELECTRON_WORKER_REALM,
+        budgets: {
+          maxConcurrentTasks: 8,
+          maxWorkerCount: 0,
+          maxResidentBytes: uint64('4294967296'),
+          maxTransferBytes: uint64('536870912'),
+          defaultDeadlineMs: 120_000,
+        },
+        policy: { id: 'org.modkitx.policy/electron-worker', revision: '1' },
+      }),
     ],
     links: [
       {
@@ -222,6 +270,7 @@ export function createElectronTopology(): HostTopology {
         toRealm: ELECTRON_RENDERER_REALM,
         transports: ['rpc-handle', 'stream', 'structured-clone', 'transferable-buffer'],
       },
+      ...nodeWorkerLinks(ELECTRON_MAIN_REALM, ELECTRON_WORKER_REALM),
     ],
   })
 }
@@ -230,12 +279,25 @@ export interface ElectronApp {
   readonly topology: HostTopology
   readonly main: HostComposition
   readonly renderer: HostComposition
+  /** The realm codecs run in (worker threads of main); `open` resolves for its target. */
+  readonly workers: HostComposition
+  /** One registry for main and workers: the activation target picks the backend. */
+  readonly executionBackends: ExecutionBackendRegistry
+}
+
+export interface ElectronAppOptions {
+  /** Defaults to the trusted in-process backend plus the Node worker backend under `ELECTRON_WORKER_POLICY`. */
+  readonly executionBackends?: ExecutionBackendRegistry
+  /** Backend diagnostics (worker shared-process notice, restarts, crashes, capped worker stdio). */
+  readonly onDiagnostic?: (diagnostic: Diagnostic) => void
 }
 
 export interface ElectronSubjectServices {
   readonly application: ElectronApp
   /** Lowercase extension hints for shell registration; detection remains inventory-owned. */
   readonly supportedExtensions: readonly string[]
+  /** Execution profiles the composition can honour (`worker-brokered` = codecs run in worker threads). */
+  readonly executionProfiles: readonly string[]
   open(options: {
     readonly source: ArtifactByteSource
     readonly path: string
@@ -293,13 +355,31 @@ export async function resolveElectronPresentationPlan(
 
 export async function createElectronApp(
   extensions: readonly ExtensionInput[] = [],
+  options: ElectronAppOptions = {},
 ): Promise<ElectronApp> {
   const topology = createElectronTopology()
-  const [main, renderer] = await Promise.all([
-    createHostComposition({ topology, realmId: ELECTRON_MAIN_REALM, extensions }),
+  const executionBackends =
+    options.executionBackends ??
+    createNodeExecutionBackends({
+      policy: ELECTRON_WORKER_POLICY,
+      ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
+    })
+  const [main, renderer, workers] = await Promise.all([
+    createHostComposition({
+      topology,
+      realmId: ELECTRON_MAIN_REALM,
+      extensions,
+      executionBackends,
+    }),
     createHostComposition({ topology, realmId: ELECTRON_RENDERER_REALM, extensions }),
+    createHostComposition({
+      topology,
+      realmId: ELECTRON_WORKER_REALM,
+      extensions,
+      executionBackends,
+    }),
   ])
-  return Object.freeze({ topology, main, renderer })
+  return Object.freeze({ topology, main, renderer, workers, executionBackends })
 }
 
 /**
@@ -307,15 +387,29 @@ export async function createElectronApp(
  * pipeline used by Electron. The caller supplies explicit roots from the generated catalog; this
  * helper never scans the repository or trusts installed/linked extensions in-process.
  */
+export interface ElectronSubjectServicesOptions {
+  /** Backend diagnostics of the worker realm (shared-process notice, restarts, crashes, worker stdio). */
+  readonly onDiagnostic?: (diagnostic: Diagnostic) => void
+}
+
 export async function createElectronSubjectServices(
   extensionRoots: readonly string[],
+  options: ElectronSubjectServicesOptions = {},
 ): Promise<ElectronSubjectServices> {
   const loaded = await Promise.all(extensionRoots.map(root => loadExtensionDirectory(root)))
   const bundled: readonly ExtensionInput[] = loaded.map(input => ({
     ...input,
     execution: { origin: 'bundled', allowTrustedInProcess: true },
   }))
-  const application = await createElectronApp(bundled)
+  // the definitions registry is filled from the inventory below; the worker backend reads the
+  // surfaces at every spawn, so registering the backend first is fine
+  let definitionSurfaces: readonly DataSourceSurfaceSource[] = []
+  const executionBackends = createNodeExecutionBackends({
+    policy: ELECTRON_WORKER_POLICY,
+    foreignSurfaces: () => definitionSurfaces,
+    ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
+  })
+  const application = await createElectronApp(bundled, { executionBackends })
   const definitions = createServiceContractDefinitionRegistry({
     matcherProfiles: createServiceFacetMatcherProfileRegistry(),
     // Only generated first-party inputs reach this registry. Installed/linked extensions are never
@@ -335,6 +429,14 @@ export async function createElectronSubjectServices(
       context: { diagnostics: rejected.diagnostics },
     })
   }
+  definitionSurfaces = definitions
+    .list()
+    .filter(registration => registration.surface !== undefined)
+    .map(registration => ({
+      contract: registration.contract,
+      major: registration.major,
+      surface: registration.surface,
+    }))
 
   const supportedExtensions = Object.freeze(
     [
@@ -358,13 +460,16 @@ export async function createElectronSubjectServices(
   const services: ElectronSubjectServices = {
     application,
     supportedExtensions,
-    open: options =>
+    executionProfiles: application.executionBackends.profiles,
+    // codecs are resolved and activated for the worker realm: portable variants, worker-brokered;
+    // the gate refuses (never downgrades) when a candidate has no executable boundary there
+    open: request =>
       openSubject({
         inventory: application.main.inventory,
         serviceDefinitions: definitions,
-        target: application.main.target,
-        executionBackends: application.main.executionBackends,
-        ...options,
+        target: application.workers.target,
+        executionBackends: application.executionBackends,
+        ...request,
       }),
   }
   return Object.freeze(services)

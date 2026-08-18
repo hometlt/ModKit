@@ -147,6 +147,17 @@ violation → `terminate()`, `'exit'/'error'` → peer exit, deadline → `cance
 — транспорт backend'а, а не его подобие (acc‑12); fixture `env-report` подтверждает изнутри потока
 `env: {}`, `argv: []`, `execArgv: []` и `resourceLimits` policy (T6).
 
+**Wiring в продукты (S1b, 2026‑08‑18).** Каждый Node composition root (Electron main, CLI,
+server, automation host) моделирует рядом с host‑realm'ом realm `node-worker` (`nodeWorkerRealmProfile`
+без собственных facilities; `nodeWorkerLinks`) и один реестр backend'ов на оба realm'а
+(`createNodeExecutionBackends`: trusted‑in‑process с gate по artifact + Node worker backend под
+policy root'а). Приложение **резолвит открытие для target worker‑realm'а** — по правилу R‑A2/W4
+выбираются `portable` варианты, активация `worker-brokered`; понижения нет, gate отказывает.
+Провайдер контракта в продукте — тоже portable: root‑surface `x3.abi/service-provider-module@1`
+(`createProvider(selection, context)` → lease по контракту selection'а), host мостит worker A
+(codec) → host → worker B (provider). Реестр backend'ов несёт свои bindings под глобальным символом,
+поэтому раздельно собранные entries `@modkitx-x3/host` и `@modkitx-x3/host/node` понимают друг друга.
+
 **Restart (acc‑8).** Модульная lease переживает смерть worker'а: следующий `createCodec` на той же
 lease поднимает поколение +1 **той же сессии** — старый порт закрыт до появления нового Worker'а,
 codec'и/сессии старого поколения остаются мёртвыми (`x3.host/rpc-peer-exited` →
@@ -184,6 +195,10 @@ Host‑side module adapter сохраняет **синхронный** `createCo
   тестами backend'а; acc‑8 (restart generation — тесты backend'а над fixture `crashy`) и acc‑12
   (kit над production spawn path `spawnWorkerRealm` + production адаптером) — закрыты 2026‑08‑18;
   T6 (изоляция потока) — fixture `env-report`.
+- **Продукт:** Electron открывает JSON в worker‑realm'е (`portable`, диагностика
+  `x3.host/worker-shared-process` в результате открытия и в sink приложения; provider в
+  отдельном worker'е) — `apps/electron/test/subject-services.test.ts`; CLI/server/automation
+  пришпиливают пары realm'ов и реестр backend'ов.
 - **Реальные расширения в worker'е:** bundled `text-json` codec активируется через backend SPI,
   `probe` детектит JSON, `open()` резолвит провайдер через host (`contracts.resolve`), собирает и
   валидирует descriptor, отдаёт tree data source (`packages/host/test/node-worker-backend.test.ts`).

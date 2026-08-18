@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { AUTOMATION_REALM, createAutomationHost, createAutomationTopology } from '../src/index.js'
+import {
+  AUTOMATION_REALM,
+  AUTOMATION_WORKER_REALM,
+  createAutomationHost,
+  createAutomationTopology,
+} from '../src/index.js'
 
 describe('automation host composition root', () => {
   it('boots headless with an empty catalog', async () => {
@@ -19,10 +24,13 @@ describe('automation host composition root', () => {
     expect(host.describeHost().facilities).toEqual(host.composition.profile.facilities)
   })
 
-  it('runs in a single realm with no cross-realm links to broker', () => {
+  it('runs in a host realm plus its worker realm; the only links join the two', async () => {
     const topology = createAutomationTopology()
-    expect(topology.realms).toHaveLength(1)
-    expect(topology.links).toHaveLength(0)
+    expect(topology.realms.map(realm => realm.target.environment)).toEqual(['node', 'node-worker'])
+    expect(topology.links).toHaveLength(2)
+    const host = await createAutomationHost()
+    expect(host.workers.profile.realmId).toBe(AUTOMATION_WORKER_REALM)
+    expect(host.executionBackends.profiles).toEqual(['trusted-in-process', 'worker-brokered'])
   })
 
   it('freezes its description', async () => {

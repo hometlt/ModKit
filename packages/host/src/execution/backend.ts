@@ -64,10 +64,21 @@ const PROFILE_VALUES: readonly ExecutionProfile[] = Object.freeze([
   'trusted-in-process',
   'remote-provider',
 ])
-const registryBindings = new WeakMap<
-  ExecutionBackendRegistry,
-  ReadonlyMap<ExecutionProfile, BackendBinding>
->()
+/**
+ * The private bindings travel on the registry object under a global symbol (not a module-local
+ * WeakMap): the published entries of this package (`.`, `./node`) are bundled separately, so a
+ * registry created by `@modkitx-x3/host/node` must be honoured by the gate inside
+ * `@modkitx-x3/host`. Non-enumerable and symbol-keyed: a spread copy or a hand-built look-alike
+ * still carries no bindings and is refused.
+ */
+const REGISTRY_BINDINGS = Symbol.for('x3.host/execution-backend-registry-bindings')
+
+function bindingsOf(
+  registry: ExecutionBackendRegistry,
+): ReadonlyMap<ExecutionProfile, BackendBinding> | undefined {
+  const value = (registry as unknown as Record<symbol, unknown>)[REGISTRY_BINDINGS]
+  return value instanceof Map ? (value as ReadonlyMap<ExecutionProfile, BackendBinding>) : undefined
+}
 
 function invalid(message: string): ModkitError {
   return new ModkitError({ code: 'x3.host/invalid-execution-backend', message })
@@ -96,7 +107,7 @@ export function createExecutionBackendRegistry(
     bindings.set(profile, Object.freeze({ profile, supports, activate }))
   }
   const profiles = Object.freeze([...bindings.keys()].sort())
-  const registry: ExecutionBackendRegistry = Object.freeze({
+  const registry: ExecutionBackendRegistry = {
     profiles,
     supports(
       profile: ExecutionProfile,
@@ -111,9 +122,14 @@ export function createExecutionBackendRegistry(
         return false
       }
     },
+  }
+  Object.defineProperty(registry, REGISTRY_BINDINGS, {
+    value: bindings,
+    enumerable: false,
+    writable: false,
+    configurable: false,
   })
-  registryBindings.set(registry, bindings)
-  return registry
+  return Object.freeze(registry)
 }
 
 /** Internal gate-to-backend dispatch. Not exported from the package root. */
@@ -122,7 +138,7 @@ export async function activateExecutionBackend(
   context: ExecutionBackendActivation,
 ): Promise<ExecutionModuleLease> {
   throwIfAborted(context.signal)
-  const bindings = registryBindings.get(registry)
+  const bindings = bindingsOf(registry)
   if (bindings === undefined) {
     throw invalid('execution backend registry was not created by this host')
   }
@@ -168,7 +184,13 @@ export async function activateExecutionBackend(
   })
 }
 
-const trustedInProcessBackend = Object.freeze({
+/**
+ * The in-process backend: `import()` of the entrypoint in the host realm. It is offered to
+ * variants declaring `trusted-in-process`; the gate additionally requires the inventory's explicit
+ * `allowTrustedInProcess` decision for the artifact (24 §5.1: full process authority is never
+ * inferred). Composition roots register it next to their brokered backends.
+ */
+export const TRUSTED_IN_PROCESS_EXECUTION_BACKEND: ExecutionBackend = Object.freeze({
   profile: 'trusted-in-process',
   supports: (_target: RuntimeTarget, variant: RuntimeVariantDeclaration) =>
     variant.executionProfile === 'trusted-in-process',
@@ -181,5 +203,5 @@ const trustedInProcessBackend = Object.freeze({
 
 /** Compatibility composition used until an application supplies explicit worker/process realms. */
 export const DEFAULT_EXECUTION_BACKENDS: ExecutionBackendRegistry = createExecutionBackendRegistry([
-  trustedInProcessBackend,
+  TRUSTED_IN_PROCESS_EXECUTION_BACKEND,
 ])

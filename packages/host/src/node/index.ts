@@ -1,6 +1,18 @@
 export { listFilesRecursive, loadExtensionDirectory } from './loader.js'
 export { openFileSource } from './file-source.js'
-export { nodeRuntimeTargetBase } from './profile.js'
+export {
+  NODE_WORKER_LINK_TRANSPORTS,
+  nodeRuntimeTargetBase,
+  nodeWorkerLinks,
+  nodeWorkerRealmProfile,
+  nodeWorkerRuntimeTargetBase,
+  type NodeWorkerRealmOptions,
+} from './profile.js'
+export {
+  createNodeExecutionBackends,
+  type NodeExecutionBackendsOptions,
+} from './execution-backends.js'
+export type { DataSourceSurfaceSource } from '../execution/index.js'
 export {
   WORKER_RESTARTED_DIAGNOSTIC,
   WORKER_SHARED_PROCESS_DIAGNOSTIC,

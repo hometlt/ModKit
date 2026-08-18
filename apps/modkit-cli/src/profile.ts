@@ -1,9 +1,38 @@
 import { uint64 } from '@modkitx-x3/core'
 import { createHostTopology, type HostTopology } from '@modkitx-x3/sdk'
-import { createHostComposition, type ExtensionInput, type HostComposition } from '@modkitx-x3/host'
-import { nodeRuntimeTargetBase } from '@modkitx-x3/host/node'
+import {
+  createHostComposition,
+  type ExecutionBackendRegistry,
+  type ExtensionInput,
+  type HostComposition,
+} from '@modkitx-x3/host'
+import {
+  createNodeExecutionBackends,
+  nodeRuntimeTargetBase,
+  nodeWorkerLinks,
+  nodeWorkerRealmProfile,
+  workerBackendPolicy,
+  type WorkerBackendPolicy,
+} from '@modkitx-x3/host/node'
 
 export const MODKIT_CLI_REALM = 'org.modkitx.app.cli/main'
+/** Worker threads of the CLI process: where portable (`worker-brokered`) variants run. */
+export const MODKIT_CLI_WORKER_REALM = 'org.modkitx.app.cli/worker'
+
+/** Worker policy of the CLI (a short-lived tool: small heaps, short deadlines). */
+export const MODKIT_CLI_WORKER_POLICY: WorkerBackendPolicy = workerBackendPolicy({
+  resourceLimits: {
+    maxOldGenerationSizeMb: 512,
+    maxYoungGenerationSizeMb: 64,
+    codeRangeSizeMb: 64,
+    stackSizeMb: 4,
+  },
+  loadDeadlineMs: 15_000,
+  defaultCallDeadlineMs: 30_000,
+  graceMs: 1_000,
+  outputCapBytes: 64 * 1024,
+  maxRestartsPerLease: 1,
+})
 
 export function createModkitCliTopology(): HostTopology {
   return createHostTopology({
@@ -32,17 +61,42 @@ export function createModkitCliTopology(): HostTopology {
         },
         policy: { id: 'org.modkitx.policy/cli-default', revision: '1' },
       },
+      nodeWorkerRealmProfile({
+        realmId: MODKIT_CLI_WORKER_REALM,
+        budgets: {
+          maxConcurrentTasks: 4,
+          maxWorkerCount: 0,
+          maxResidentBytes: uint64('2147483648'),
+          maxTransferBytes: uint64('268435456'),
+          defaultDeadlineMs: 60_000,
+        },
+        policy: { id: 'org.modkitx.policy/cli-worker', revision: '1' },
+      }),
     ],
-    links: [],
+    links: [...nodeWorkerLinks(MODKIT_CLI_REALM, MODKIT_CLI_WORKER_REALM)],
   })
+}
+
+export interface ModkitCliCompositionOptions {
+  /** Which realm to compose: the host process (default) or its worker realm. */
+  readonly realmId?: typeof MODKIT_CLI_REALM | typeof MODKIT_CLI_WORKER_REALM
+  /** Defaults to the trusted in-process backend plus the Node worker backend under the CLI policy. */
+  readonly executionBackends?: ExecutionBackendRegistry
+}
+
+/** The CLI's execution backends: trusted in-process (gated per artifact) + Node worker threads. */
+export function createModkitCliExecutionBackends(): ExecutionBackendRegistry {
+  return createNodeExecutionBackends({ policy: MODKIT_CLI_WORKER_POLICY })
 }
 
 export function createModkitCliComposition(
   extensions: readonly ExtensionInput[] = [],
+  options: ModkitCliCompositionOptions = {},
 ): Promise<HostComposition> {
   return createHostComposition({
     topology: createModkitCliTopology(),
-    realmId: MODKIT_CLI_REALM,
+    realmId: options.realmId ?? MODKIT_CLI_REALM,
     extensions,
+    executionBackends: options.executionBackends ?? createModkitCliExecutionBackends(),
   })
 }

@@ -78,6 +78,7 @@ export {
 export {
   createExecutionBackendRegistry,
   DEFAULT_EXECUTION_BACKENDS,
+  TRUSTED_IN_PROCESS_EXECUTION_BACKEND,
   type ExecutionBackend,
   type ExecutionBackendActivation,
   type ExecutionBackendRegistry,

@@ -2,7 +2,12 @@ import { createRequire } from 'node:module'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { revisionId, type ArtifactByteSource, type PresentationSlot } from '@modkitx-x3/sdk'
-import { createElectronSubjectServices, resolveElectronPresentationPlan } from '../src/index.js'
+import type { Diagnostic } from '@modkitx-x3/core'
+import {
+  createElectronSubjectServices,
+  ELECTRON_WORKER_REALM,
+  resolveElectronPresentationPlan,
+} from '../src/index.js'
 
 const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
 const presentationCatalog = createRequire(import.meta.url)(
@@ -26,12 +31,17 @@ function memorySource(text: string): ArtifactByteSource {
 }
 
 describe('Electron host-owned subject services', () => {
-  it('loads a generated bundled input and opens JSON in the main realm', async () => {
-    const services = await createElectronSubjectServices([
-      join(repositoryRoot, 'extensions', 'common', 'text-json'),
-    ])
+  it('loads a generated bundled input and opens JSON in the worker realm: portable variant, worker-brokered, provider proxied through the host', async () => {
+    const backendDiagnostics: Diagnostic[] = []
+    const services = await createElectronSubjectServices(
+      [join(repositoryRoot, 'extensions', 'common', 'text-json')],
+      { onDiagnostic: diagnostic => void backendDiagnostics.push(diagnostic) },
+    )
     expect(services.application.main.inventory.extensions).toHaveLength(1)
     expect(services.supportedExtensions).toEqual(['json', 'jsonc'])
+    expect(services.executionProfiles).toEqual(['trusted-in-process', 'worker-brokered'])
+    expect(services.application.workers.profile.realmId).toBe(ELECTRON_WORKER_REALM)
+    expect(services.application.workers.target.environment).toBe('node-worker')
 
     const result = await services.open({
       source: memorySource('{"ready":true}'),
@@ -50,8 +60,17 @@ describe('Electron host-owned subject services', () => {
     if (result.state !== 'opened') throw new TypeError(result.reason)
     expect(result.selected).toMatchObject({
       contributionId: 'org.modkitx/text-json',
-      variantId: 'trusted-node',
+      variantId: 'portable',
     })
+    // the honest SB-1 statement travels with the open result (gate) and to the app sink (backend)
+    expect(result.diagnostics.map(item => item.code)).toContain('x3.host/worker-shared-process')
+    expect(result.diagnostics.map(item => item.code)).not.toContain(
+      'x3.host/full-process-authority',
+    )
+    // codec worker + json-syntax provider worker: two activations, two notices
+    expect(
+      backendDiagnostics.filter(item => item.code === 'x3.host/worker-shared-process'),
+    ).toHaveLength(2)
     const presentation = await resolveElectronPresentationPlan(
       result.descriptor,
       presentationCatalog,
@@ -66,5 +85,8 @@ describe('Electron host-owned subject services', () => {
     await expect(tree.value.root()).resolves.toMatchObject({ id: 'root', hasChildren: true })
     await tree.release()
     await result.session.dispose()
-  })
+    // the workers went away with the session: nothing crashed, nothing restarted
+    expect(backendDiagnostics.some(item => item.code === 'x3.host/worker-crashed')).toBe(false)
+    expect(backendDiagnostics.some(item => item.code === 'x3.host/worker-restarted')).toBe(false)
+  }, 30_000)
 })

@@ -10,10 +10,26 @@ import {
 } from '../src/index.js'
 
 describe('Electron composition security', () => {
-  it('does not leak main-process facilities into the renderer profile', async () => {
+  it('does not leak main-process facilities into the renderer or worker profiles', async () => {
     const app = await createElectronApp()
     expect(app.main.profile.facilities).toContain('process.launch')
     expect(app.renderer.profile.facilities).not.toContain('process.launch')
+    // the worker realm owns no facility of its own: whatever a codec gets, it gets brokered
+    expect(app.workers.profile.facilities).toEqual([])
+    expect(app.workers.target.environment).toBe('node-worker')
+    expect(app.executionBackends.profiles).toEqual(['trusted-in-process', 'worker-brokered'])
+    expect(app.topology.links.map(link => `${link.fromRealm}→${link.toRealm}`)).toEqual(
+      expect.arrayContaining([
+        'org.modkitx.app.electron/main→org.modkitx.app.electron/worker',
+        'org.modkitx.app.electron/worker→org.modkitx.app.electron/main',
+      ]),
+    )
+    // no link ever joins the renderer to the worker realm: two hops, renderer ↔ main ↔ worker
+    expect(
+      app.topology.links.some(
+        link => link.fromRealm.endsWith('/renderer') && link.toRealm.endsWith('/worker'),
+      ),
+    ).toBe(false)
     expect(ELECTRON_SECURE_WEB_PREFERENCES).toMatchObject({
       nodeIntegration: false,
       contextIsolation: true,

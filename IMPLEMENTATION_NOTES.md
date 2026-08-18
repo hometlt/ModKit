@@ -6,6 +6,51 @@ overrides a canonical or detailed owner.
 
 ---
 
+## S1b — the worker backend is wired into every Node composition root; portable codecs run brokered in the products (Root/Fable, 2026-08-18)
+
+**What exists.** Every Node root now models a `node-worker` realm next to its host realm and
+composes one execution-backend registry for both (`createNodeExecutionBackends` in
+`@modkitx-x3/host/node`: the trusted in-process backend, still gated per artifact by
+`allowTrustedInProcess`, plus `createNodeWorkerBackend` under a root-owned
+`workerBackendPolicy`): Electron (`ELECTRON_WORKER_REALM`, `ELECTRON_WORKER_POLICY`; `ElectronApp`
+gains `workers` and `executionBackends`; `createElectronSubjectServices` opens subjects for the
+**worker realm's target** and forwards backend diagnostics through `onDiagnostic`; `main.cjs`
+logs them as `[worker]` and reports `execution: {codecRealm, environment, profiles}` in the
+`modkit.profile` snapshot for the renderer), the CLI (`MODKIT_CLI_WORKER_REALM`,
+`createModkitCliExecutionBackends`), the server and the automation host (their `workers`
+composition and `executionBackends`). Helpers: `nodeWorkerRuntimeTargetBase`,
+`nodeWorkerRealmProfile` (no facilities of its own — a worker gets what the host brokers),
+`nodeWorkerLinks`. Rule R‑A2/W4 is now the product path: the target selects the variant —
+Electron resolves for `node-worker`, so every bundled codec's `portable` variant is chosen and
+activated `worker-brokered`; `trusted-node` variants stay available to the host realm.
+
+**Two things the wiring surfaced and fixed.** (1) The published entries `@modkitx-x3/host` and
+`@modkitx-x3/host/node` are bundled separately, so a registry created by the node entry was
+"not created by this host" for the gate inside the root entry (module-local WeakMap). The private
+bindings now travel on the registry object under `Symbol.for('x3.host/execution-backend-registry-bindings')`
+(non-enumerable, frozen): any copy of the host honours it, a hand-built look-alike still does not.
+(2) A codec in a worker resolves its provider through the host, and in the product the provider is
+itself a portable variant — so `ServiceProviderModule` needed a boundary too:
+`x3.abi/service-provider-module@1` (`createProvider(selection, context)` leases the provider by
+the contract the selection names, `resultFromArgs`), the bootstrap exposes such modules with that
+root surface, the backend's module adapter offers `createProvider` returning an ABI `Lease` whose
+value is the materialized proxy, and the host bridges worker A (codec) → host → worker B (provider)
+for `parse`/`dataSource`/tree pages. Definitions are late-bound: `foreignSurfaces` may be a thunk
+read at every spawn, so an app registers its backends before its definitions are inventoried.
+
+**Proof.** `node-worker-backend.test.ts` (16 → 17: provider in worker B, codec in worker A, host
+bridging both, two shared-process notices, no crash/restart); `apps/electron/test/subject-services`
+opens JSON in the worker realm (`portable`, `x3.host/worker-shared-process` in the open result
+and twice in the backend sink, no `full-process-authority`); security/server/automation tests pin
+the realm pairs, the empty worker facilities and the two-hop renderer ↔ main ↔ worker shape.
+
+**Not done here.** Renderer UX for the vocabulary (OPUS‑UX‑01 remains Opus's); a product-level
+retry on `rpc-peer-exited` (the backend restarts, `subject-open` does not re-open by itself);
+co-locating a provider in the codec's worker (today: one worker per activation, host in the middle);
+the browser worker backend.
+
+---
+
 ## S1a — one spawn path, one MessagePort adapter, restart generation (acc-8), kit over the backend transport (acc-12) (Root/Fable, 2026-08-18)
 
 **What exists.** `packages/host/src/execution/message-port.ts` — `framePortFromMessagePort` moved

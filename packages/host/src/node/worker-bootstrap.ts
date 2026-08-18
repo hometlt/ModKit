@@ -36,6 +36,7 @@ import { ModkitError, type Diagnostic } from '@modkitx-x3/core'
 import type { ContributionContext, ResourceBudget } from '@modkitx-x3/sdk'
 import {
   ABI_CODEC_MODULE,
+  ABI_SERVICE_PROVIDER_MODULE,
   createEndpoint,
   createStandardSurfaceRegistry,
   protocolLimits,
@@ -233,9 +234,13 @@ async function loader(request: LoadRequest): Promise<LoadedModule> {
   }
   installHooks()
   const module = (await import(moduleUrl)) as Record<string, unknown>
+  // the root's surface follows the module's ABI shape: a service-provider module leases
+  // providers by the contract the selection names; anything else is exposed as a codec module
+  const isServiceModule =
+    typeof module['createProvider'] === 'function' && typeof module['createCodec'] !== 'function'
   return {
-    module: wrapModule(module),
-    surface: ABI_CODEC_MODULE,
+    module: isServiceModule ? wrapServiceModule(module) : wrapModule(module),
+    surface: isServiceModule ? ABI_SERVICE_PROVIDER_MODULE : ABI_CODEC_MODULE,
     release: () => undefined,
   }
 }
@@ -293,6 +298,20 @@ function assetInput(wire: WireInput): Record<string, unknown> {
         binding => binding.sourceKind === 'requirement' && binding.requirementId === requirementId,
       ),
   })
+}
+
+/** `ServiceProviderModule`: `createProvider(selection, context)` with the context re-assembled. */
+function wrapServiceModule(module: Record<string, unknown>): Record<string, unknown> {
+  const createProvider = module['createProvider'] as (
+    selection: unknown,
+    context: ContributionContext,
+  ) => unknown
+  return {
+    abiVersion: module['abiVersion'],
+    provides: module['provides'],
+    createProvider: (selection: unknown, wire: WireContext) =>
+      createProvider.call(module, selection, contributionContext(wire)),
+  }
 }
 
 function wrapModule(module: Record<string, unknown>): Record<string, unknown> {

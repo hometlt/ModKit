@@ -188,12 +188,18 @@ async function createWindow() {
     BUNDLED_EXTENSION_DIRECTORIES.map(directory =>
       path.join(repositoryRoot, 'extensions', 'common', directory),
     ),
+    {
+      // worker realm diagnostics: the SB-1 shared-process notice, restarts, crashes, capped stdio
+      onDiagnostic: diagnostic =>
+        console.log(`[worker] ${diagnostic.severity} ${diagnostic.code}: ${diagnostic.message}`),
+    },
   )
   const composed = subjectServices.application
   console.log(
     `[main] composed ${composed.topology.topologyId}: ` +
       `main ${composed.main.profile.facilities.length} facilities, ` +
-      `renderer ${composed.renderer.profile.facilities.length} facilities`,
+      `renderer ${composed.renderer.profile.facilities.length} facilities, ` +
+      `codecs run in ${composed.workers.profile.realmId} (${subjectServices.executionProfiles.join('/')})`,
   )
 
   const window = new BrowserWindow({
@@ -247,6 +253,12 @@ async function createWindow() {
     extensions: composed.renderer.inventory.extensions.length,
     diagnostics: composed.renderer.inventory.diagnostics.length,
     supportedExtensions: subjectServices.supportedExtensions,
+    // OPUS-UX-01 vocabulary: which boundary codecs get — worker threads of main (SB-1), never the renderer
+    execution: {
+      codecRealm: composed.workers.profile.realmId,
+      environment: composed.workers.profile.target.environment,
+      profiles: [...subjectServices.executionProfiles],
+    },
   }))
 
   /*

@@ -42,6 +42,7 @@ import type {
   CodecProbeRequest,
   ContributionContext,
   DetectionResult,
+  Lease,
   OpenIntent,
   ResourceBudget,
   RuntimeTarget,
@@ -52,6 +53,7 @@ import {
   ABI_ASSET_INPUT,
   ABI_CONTRACT_RESOLVER,
   ABI_DIAGNOSTIC_SINK,
+  ABI_SERVICE_PROVIDER_MODULE,
   createEndpoint,
   createStandardSurfaceRegistry,
   protocolLimits,
@@ -78,8 +80,13 @@ export const WORKER_RESTARTED_DIAGNOSTIC = 'x3.host/worker-restarted'
 export interface NodeWorkerBackendOptions {
   /** Host policy (validated by `workerBackendPolicy`); defaults are lab-conservative. */
   readonly policy?: WorkerBackendPolicy
-  /** Surfaces of registered foreign data-source definitions, shared with the worker as data. */
-  readonly foreignSurfaces?: readonly DataSourceSurfaceSource[]
+  /**
+   * Surfaces of registered contract definitions (data-source and service arms), shared with the
+   * worker as data. A function is read at every spawn, so a composition root can register the
+   * backend before its definitions are inventoried and still have every worker see them.
+   */
+  readonly foreignSurfaces?:
+    readonly DataSourceSurfaceSource[] | (() => readonly DataSourceSurfaceSource[])
   /** Overrides the surface registry entirely (tests); defaults to the standard registry. */
   readonly surfaces?: SurfaceRegistry
   /** Where the bootstrap lives; defaults to the sibling published entry. */
@@ -117,17 +124,21 @@ const delay = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, m
 
 export function createNodeWorkerBackend(options: NodeWorkerBackendOptions = {}): ExecutionBackend {
   const policy = options.policy ?? DEFAULT_WORKER_BACKEND_POLICY
-  const foreignSurfaces = options.foreignSurfaces ?? []
-  const surfaces =
-    options.surfaces ?? createStandardSurfaceRegistry({ definitions: foreignSurfaces })
+  const foreignSurfaces = (): readonly DataSourceSurfaceSource[] =>
+    typeof options.foreignSurfaces === 'function'
+      ? options.foreignSurfaces()
+      : (options.foreignSurfaces ?? [])
   const bootstrapUrl = options.bootstrapUrl ?? new URL('./worker-bootstrap.js', import.meta.url)
   const report = (diagnostic: Diagnostic) => options.onDiagnostic?.(diagnostic)
   const limits: ProtocolLimits = protocolLimits({
     defaultCallDeadlineMs: policy.defaultCallDeadlineMs,
   })
 
+  // the target names the realm the code will run in — the worker realm of a Node host is
+  // `node-worker` (a variant's `target.environments` is matched against it by the resolver and
+  // the gate); the host process itself (`node`) is where this backend lives, not where it runs code
   const supports = (target: RuntimeTarget, variant: RuntimeVariantDeclaration): boolean =>
-    variant.executionProfile === 'worker-brokered' && target.environment === 'node'
+    variant.executionProfile === 'worker-brokered' && target.environment === 'node-worker'
 
   function spawn(
     context: ExecutionBackendActivation,
@@ -135,6 +146,8 @@ export function createNodeWorkerBackend(options: NodeWorkerBackendOptions = {}):
     generation: number,
   ): Spawned {
     let terminations = 0
+    const definitions = foreignSurfaces()
+    const surfaces = options.surfaces ?? createStandardSurfaceRegistry({ definitions })
     const worker = spawnWorkerRealm({
       bootstrap: bootstrapUrl,
       session,
@@ -143,7 +156,7 @@ export function createNodeWorkerBackend(options: NodeWorkerBackendOptions = {}):
         limits,
         artifactRoot: context.artifactRoot.href,
         ...(context.fileDigests === undefined ? {} : { fileDigests: { ...context.fileDigests } }),
-        foreignSurfaces: foreignSurfaces.map(item => ({
+        foreignSurfaces: definitions.map(item => ({
           contract: item.contract,
           major: item.major,
           ...(item.surface === undefined ? {} : { surface: item.surface }),
@@ -334,12 +347,7 @@ export function createNodeWorkerBackend(options: NodeWorkerBackendOptions = {}):
       const live = await current.catch(() => undefined)
       if (live !== undefined) await shutdown(live, 'released')
     }
-    const module = moduleAdapter(
-      context.ticket.contributionId,
-      first.root.data['abiVersion'],
-      realm,
-      watched,
-    )
+    const module = moduleAdapter(context.ticket.contributionId, first.root, realm, watched)
     return Object.freeze({ module, release })
   }
 
@@ -359,26 +367,55 @@ interface BoundCodec {
 
 function moduleAdapter(
   contributionId: string,
-  abiVersion: unknown,
+  first: RemoteCapability,
   realm: () => Promise<Realm>,
   watch: Watch,
 ): Record<string, unknown> {
+  const abiVersion = first.data['abiVersion']
+  /** `context` crosses as data + two host capabilities (diagnostics sink, contract resolver). */
+  const wireContext = (endpoint: Endpoint, context: ContributionContext) => ({
+    budgets: context.budgets,
+    diagnostics: endpoint.expose(
+      { report: (diagnostic: Diagnostic) => context.diagnostics.report(diagnostic) },
+      ABI_DIAGNOSTIC_SINK,
+    ),
+    // the host executes contract resolution; the worker gets a proxy whose leased providers
+    // carry the surface of the requested contract's definition
+    contracts: endpoint.expose(context.contracts, ABI_CONTRACT_RESOLVER),
+  })
+  if (first.contract === ABI_SERVICE_PROVIDER_MODULE.contract) {
+    // ServiceProviderModule ABI v1: the provider is leased by the contract the selection names
+    return Object.freeze({
+      abiVersion,
+      provides: first.data['provides'],
+      createProvider: async (
+        selection: { readonly contract: string; readonly major: number },
+        context: ContributionContext,
+      ): Promise<Lease<unknown>> => {
+        const live = await realm()
+        const outcome = await watch(live, () =>
+          live.root.call('createProvider', [selection, wireContext(live.endpoint, context)]),
+        )
+        if (outcome.kind !== 'lease') {
+          throw new ModkitError({
+            code: 'x3.host/invalid-service-provider-lease',
+            message: `createProvider of ${contributionId} did not lease a provider`,
+          })
+        }
+        const remote = outcome.remote
+        return {
+          value: live.endpoint.materialize(remote),
+          release: () => remote.release(),
+        }
+      },
+    })
+  }
   return Object.freeze({
     abiVersion,
     createCodec: (context: ContributionContext): Codec => {
       const bound = realm().then(async live => {
-        const endpoint = live.endpoint
-        const sink = endpoint.expose(
-          { report: (diagnostic: Diagnostic) => context.diagnostics.report(diagnostic) },
-          ABI_DIAGNOSTIC_SINK,
-        )
-        // the host executes contract resolution; the worker gets a proxy whose leased providers
-        // carry the surface of the requested contract's definition
-        const contracts = endpoint.expose(context.contracts, ABI_CONTRACT_RESOLVER)
         const outcome = await watch(live, () =>
-          live.root.call('createCodec', [
-            { budgets: context.budgets, diagnostics: sink, contracts },
-          ]),
+          live.root.call('createCodec', [wireContext(live.endpoint, context)]),
         )
         if (outcome.kind !== 'lease') {
           throw new ModkitError({

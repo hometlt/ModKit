@@ -59,7 +59,9 @@ owner‑документы; каждый пункт имеет свой file sco
   `packages/testkit/**` (не коммичу его файлы). Затем **docs move** (`d3d0c65`: `docs/MK3` в лаборатории,
   документ 32 + ADR‑HOST‑001), **S1a** (acc‑8 restart generation в backend'е, acc‑12 kit над production
   spawn path `spawnWorkerRealm`, единый `framePortFromMessagePort` в `host/execution`, T6 fixture
-  `env-report`). Дальше: S1b wiring backend в composition roots с policy, S2 остаток протокола 1.1,
+  `env-report`). **S1b** — worker backend подключён во все Node composition roots (realm
+  `node-worker`, `createNodeExecutionBackends`, Electron открывает subjects для worker‑realm'а,
+  провайдеры в worker'ах через `x3.abi/service-provider-module@1`). Дальше: S2 остаток протокола 1.1,
   S3 R4/R5 (NXT‑101B, probe grant), S4 R6 (Electron IPC → capability‑RPC).
 - **Состояние гейтов после F1** (та же последовательность, что `pnpm check`, но lint/format без
   `NexusForgeUI/`): build 41 entries, bench gate, eslint, prettier, **71 test files / 551 tests**,

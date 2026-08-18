@@ -10,11 +10,11 @@
   "packages/sdk/dist/editing.js": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "packages/sdk/dist/ui-contracts/index.js": "f249a43a617c24f7b24ba902c38cb9a1823c2996aee95ccec0b089da53ea33f3",
   "packages/vfs/dist/index.js": "0e4cc77bf46abb06e54318f2b6b1bec22dffdd2db11f02f573a0af0aa7dd08d5",
-  "packages/host/dist/index.js": "4dfde736012367925f47698a8769a3781d6f5c6299544b2abf034e912a1e2fb4",
-  "packages/host/dist/node/index.js": "dcc5d798b6e8bbf58651d3b2ebd6b383cf94851ed20f5a07f695661ff952b47a",
+  "packages/host/dist/index.js": "f1c0632a38206dfe4012139a05bf142d9763cf8f7aca546987f67af0a53bca03",
+  "packages/host/dist/node/index.js": "b4a20fd05e41e61a1d50e359e4a85210d742ed17a54a187d933c5955cad9507a",
   "packages/host/dist/browser/index.js": "1094acc780c056db43bc6a8cf02bb1a8dd955c66b494ed4426c5c89c0b02adb8",
-  "packages/host/dist/execution/index.js": "119b75ac01b313aacee6887bb25f30b9a4cf2f5b83932af5e4481ee8173576c0",
-  "packages/host/dist/node/worker-bootstrap.js": "94e857068494fe5c21a553f7652b8ec20424d48152b17ca755565d83809965eb",
+  "packages/host/dist/execution/index.js": "725e585d432b29cee4782bdb9a69fded7938d89e8a8eff64b97cc69b629e31df",
+  "packages/host/dist/node/worker-bootstrap.js": "003652d6231e564869c67632e0d7a79825a3c0ca89e90ebabc3735739780d572",
   "packages/ui/dist/index.js": "06972703b4f94a2cf45d4d0bd44336cc46585b865fdf4076fd11ac1c4d4dc7c6",
   "packages/ui/dist/viewer/index.js": "ac05c08fbb92973328063067a60c49a8707922e9e772523e612b96bb7914c348",
   "packages/ui/dist/code/index.js": "bb0f876b0f39a4b58cd7180e5aa9f336f2d31e5bbff6d78b5ca0029452760b9d",
@@ -40,5 +40,5 @@
   "packages/ui/dist/graph/index.js": "31e6ded0ec3969c6d5153500a11d5d90f58079a3527d139f6a72f6d5127943f3",
   "packages/ui/dist/workbench/index.js": "1cabfad8cd32eb000c13ee489a6c60b8c5d7c1561f03d1c68710443675ce4974",
   "packages/ui/dist/settings/index.js": "56ce5e80564551f5d4f1bbdd4c522ddbb64540966ca8ca5063305e06c8bed0d3",
-  "apps/modkit-cli/dist/main.js": "88d61341ed51334171e83d7663bce4febc18891657cd2b9e4a89c59e1bc544e6"
+  "apps/modkit-cli/dist/main.js": "ad7a9ca12ab89d7c3573a4a06ba3a3c85b40ecefb29038c9ecffee5b2c7fc1c7"
 }

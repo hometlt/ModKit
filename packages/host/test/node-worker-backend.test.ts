@@ -45,7 +45,7 @@ const budget: ResourceBudget = {
   maxDiagnostics: 16,
 } as unknown as ResourceBudget
 
-const target = { environment: 'node', os: 'any', arch: 'any' } as unknown as Parameters<
+const target = { environment: 'node-worker', os: 'any', arch: 'any' } as unknown as Parameters<
   ReturnType<typeof createNodeWorkerBackend>['supports']
 >[0]
 const variant = {
@@ -128,12 +128,15 @@ function byteSource(bytes: number[]) {
 }
 
 describe('node worker backend — activation, probe and open through the backend SPI', () => {
-  it('supports worker-brokered variants on the node target only', () => {
+  it('supports worker-brokered variants for the node-worker realm only (the host process is where it lives, not where it runs code)', () => {
     const b = backend()
     expect(b.profile).toBe('worker-brokered')
     expect(b.supports(target, variant)).toBe(true)
     expect(
-      b.supports({ ...target, environment: 'browser' } as unknown as typeof target, variant),
+      b.supports({ ...target, environment: 'browser-worker' } as unknown as typeof target, variant),
+    ).toBe(false)
+    expect(
+      b.supports({ ...target, environment: 'node' } as unknown as typeof target, variant),
     ).toBe(false)
     expect(
       b.supports(target, { ...variant, executionProfile: 'trusted-in-process' } as typeof variant),
@@ -701,4 +704,147 @@ describe('node worker backend — a real codec opens a session with a host-resol
     await tree.release()
     await session.dispose()
   }, 30_000)
+})
+
+describe('node worker backend — provider in one worker, codec in another, the host bridges them (S1b product path)', () => {
+  it('text-json: the provider module leases through createProvider in worker B; the codec in worker A resolves it through the host; parse/dataSource cross two boundaries', async () => {
+    const extensionDir = fileURLToPath(
+      new URL('../../../extensions/common/text-json/', import.meta.url),
+    )
+    const loaded = await loadExtensionDirectory(extensionDir)
+    const artifact = loaded.artifact
+    const definition = JSON.parse(
+      readFileSync(join(extensionDir, 'contributions', 'contract-json-syntax.json'), 'utf8'),
+    ) as { spec: { contract: string; major: number; surface: DataSourceSurfaceV1Wire } }
+    // one backend, definitions late-bound (registered after the backend exists, like an app does)
+    let definitions: { contract: string; major: number; surface: DataSourceSurfaceV1Wire }[] = []
+    const diagnostics: Diagnostic[] = []
+    const b = createNodeWorkerBackend({
+      bootstrapUrl,
+      policy: workerBackendPolicy({ loadDeadlineMs: 10_000, graceMs: 300 }),
+      foreignSurfaces: () => definitions,
+      onDiagnostic: d => void diagnostics.push(d),
+    })
+    definitions = [
+      {
+        contract: definition.spec.contract,
+        major: definition.spec.major,
+        surface: definition.spec.surface,
+      },
+    ]
+    const registry = createExecutionBackendRegistry([b])
+    const digests = artifact.fileDigests === undefined ? {} : { fileDigests: artifact.fileDigests }
+
+    // worker B: the service-provider module
+    const providerLease = await activateExecutionBackend(registry, {
+      ...activation(
+        new URL('./src/families/json/entrypoints/json-provider.js', artifact.artifactRoot),
+        artifact.artifactRoot,
+      ),
+      ...digests,
+    })
+    leases.push(providerLease)
+    expect(providerLease.module['abiVersion']).toBe(1)
+    expect(providerLease.module['provides']).toEqual([definition.spec.contract])
+    const createProvider = providerLease.module['createProvider'] as (
+      selection: unknown,
+      context: ContributionContext,
+    ) => Promise<{ value: Record<string, unknown>; release(): Promise<void> }>
+
+    // worker A: the codec; its contracts.resolve runs on the host and hands back B's provider
+    const codecLease = await activateExecutionBackend(registry, {
+      ...activation(
+        new URL('./src/families/json/entrypoints/json-codec.js', artifact.artifactRoot),
+        artifact.artifactRoot,
+      ),
+      ...digests,
+    })
+    leases.push(codecLease)
+    const resolved: string[] = []
+    const providerLeases: { release(): Promise<void> }[] = []
+    const codec = (
+      codecLease.module['createCodec'] as (c: ContributionContext) => {
+        open(
+          input: unknown,
+          intent: string,
+          budget: ResourceBudget,
+        ): Promise<Record<string, unknown>>
+      }
+    )({
+      budgets: budget,
+      diagnostics: { report: () => undefined },
+      contracts: {
+        resolve: async (request: { contract: string; major: number }) => {
+          resolved.push(`${request.contract}@${request.major}`)
+          const lease = await createProvider(
+            { offerId: 'json-syntax-default-v1', contract: request.contract, major: request.major },
+            { budgets: budget, diagnostics: { report: () => undefined }, contracts: {} as never },
+          )
+          providerLeases.push(lease)
+          return lease
+        },
+        resolveUnknown: async () => {
+          throw new Error('not expected')
+        },
+      } as unknown as ContributionContext['contracts'],
+    })
+    const json = new TextEncoder().encode('{"greeting": "hello", "n": [1, 2, 3]}')
+    const source = {
+      ref: { id: 'src-1', uri: 'file:///demo.json' },
+      revision: 'content-hash:demo',
+      kind: 'bytes',
+      size: BigInt(json.length),
+      read: async (offset: bigint, length: number) =>
+        json.slice(Number(offset), Number(offset) + length),
+      stream: async function* () {
+        yield json
+      },
+    }
+    const input = {
+      originKind: 'single',
+      primaryBindingId: 'content',
+      bindings: [
+        {
+          bindingId: 'content',
+          role: 'content',
+          ownership: 'owned',
+          sourceKind: 'candidate',
+          source: { id: 'src-1', uri: 'file:///demo.json' },
+          revision: 'content-hash:demo',
+        },
+      ],
+      revisions: {
+        topology: 'single',
+        revision: 'content-hash:demo',
+        bindings: [],
+        compositionFingerprint: 'f',
+      },
+      bindingsFor: () => [],
+      openBinding: async () => ({ value: source, release: async () => undefined }),
+    }
+    const session = (await codec.open(input, 'inspect', budget)) as {
+      descriptor(): Promise<Record<string, unknown>>
+      dataSource(
+        c: string,
+        m: number,
+      ): Promise<{ value: Record<string, unknown>; release(): Promise<void> }>
+      dispose(): Promise<void>
+    }
+    expect(resolved).toEqual(['common.text-data/json-syntax@1'])
+    expect((await session.descriptor())['schemaVersion']).toBe(2)
+    // A → host → B: the tree data source lives in worker B, leased through A's session
+    const tree = await session.dataSource('common.view/tree-data-source', 1)
+    const root = await (tree.value['root'] as () => Promise<{ id: string }>)()
+    const children = await (
+      tree.value['children'] as (n: unknown, p: unknown) => Promise<{ items: { id: string }[] }>
+    )(root, { limit: 10 })
+    expect(children.items.length).toBeGreaterThan(0)
+    await tree.release()
+    await session.dispose()
+    for (const lease of providerLeases) await lease.release()
+    // two activations → two shared-process notices, two workers, no crashes or restarts
+    expect(diagnostics.filter(d => d.code === WORKER_SHARED_PROCESS_DIAGNOSTIC)).toHaveLength(2)
+    expect(diagnostics.some(d => d.code === 'x3.host/worker-crashed')).toBe(false)
+    expect(diagnostics.some(d => d.code === WORKER_RESTARTED_DIAGNOSTIC)).toBe(false)
+  }, 40_000)
 })

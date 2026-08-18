@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { createServerApp, createServerTopology, SERVER_REALM } from '../src/index.js'
+import {
+  createServerApp,
+  createServerTopology,
+  SERVER_REALM,
+  SERVER_WORKER_REALM,
+} from '../src/index.js'
 
 describe('server composition root', () => {
   it('boots with an empty extension catalog', async () => {
@@ -15,11 +20,18 @@ describe('server composition root', () => {
     expect(health.topologyId).toBe('org.modkitx.app/server')
   })
 
-  it('publishes a single Node realm with no transport links', async () => {
+  it('publishes a Node host realm and its worker realm, linked to each other and to nothing else', async () => {
     const topology = createServerTopology()
-    expect(topology.realms).toHaveLength(1)
-    expect(topology.links).toHaveLength(0)
-    expect(topology.realms[0]?.target.environment).toBe('node')
+    expect(topology.realms.map(realm => realm.target.environment)).toEqual(['node', 'node-worker'])
+    expect(topology.links).toHaveLength(2)
+    expect(
+      topology.links.every(link => [SERVER_REALM, SERVER_WORKER_REALM].includes(link.fromRealm)),
+    ).toBe(true)
+    const app = await createServerApp()
+    expect(app.workers.profile.realmId).toBe(SERVER_WORKER_REALM)
+    expect(app.workers.profile.facilities).toEqual([])
+    expect(app.executionBackends.profiles).toEqual(['trusted-in-process', 'worker-brokered'])
+    expect(app.composition.executionBackends).toBe(app.executionBackends)
   })
 
   it('reports the profile revision that keys resolution caches', async () => {

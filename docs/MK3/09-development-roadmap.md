@@ -646,8 +646,10 @@ The Proposal is ready to seed canonical task slices when:
 NXT‑114/R3 (Node worker backend с verified loading; реальный `text-json` codec probe/open в worker'е)
 приземлены (документ [32](32-execution-boundary-and-method-surfaces.md)). Дальше, в порядке merge:
 
-1. **Wiring в composition roots (CLI/Electron/server):** `createNodeWorkerBackend` с
-   `WorkerBackendPolicy` в realm registry; `portable`‑варианты кодеков идут через worker в продукте;
+1. **Wiring в composition roots (CLI/Electron/server)** — _сделано 2026‑08‑18 (S1a/S1b)_:
+   `createNodeExecutionBackends` с `WorkerBackendPolicy`, realm `node-worker` в каждом Node root'е;
+   `portable`‑варианты кодеков и провайдеров идут через worker в продукте; acc‑8/acc‑12 закрыты.
+   Осталось из этого пункта:
    `x3.host/worker-shared-process` в UX по решениям Opus (OPUS‑UX‑01); acc‑8 restart generation,
    acc‑12 kit на реальной паре портов backend'а (единый MessagePort‑adapter в `host/execution`).
 2. **Протокол 1.1 остаток:** `has[]` присутствие optional‑методов, `nextBatch` для `iterable`,

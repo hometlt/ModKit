@@ -32,6 +32,7 @@ import type {
   DiagnosticSink,
   NamespaceAssetInput,
   OperationSession,
+  ServiceProviderModule,
   SingleAssetInput,
 } from '@modkitx-x3/sdk'
 import type { CapabilitySurface, MethodSurface } from './surface.js'
@@ -66,6 +67,11 @@ interface AbiSurfaceOf<T> {
 // surface ids
 
 export const ABI_CODEC_MODULE = { contract: 'x3.abi/codec-module', major: 1 } as const
+/** Root of a `ServiceProviderModule` (ABI v1): providers are leased by the contract they serve. */
+export const ABI_SERVICE_PROVIDER_MODULE = {
+  contract: 'x3.abi/service-provider-module',
+  major: 1,
+} as const
 export const ABI_CODEC = { contract: 'x3.abi/codec', major: 1 } as const
 export const ABI_ASSET_SESSION = { contract: 'x3.abi/asset-session', major: 1 } as const
 export const ABI_OPERATION_SESSION = { contract: 'x3.abi/operation-session', major: 1 } as const
@@ -91,6 +97,23 @@ const codecModuleSurface = {
     createCodec: { kind: 'lease', result: ABI_CODEC, wrapper: 'bare' },
   },
 } as const satisfies AbiSurfaceOf<CodecModule>
+
+const serviceProviderModuleSurface = {
+  ...ABI_SERVICE_PROVIDER_MODULE,
+  fields: ['abiVersion', 'provides'],
+  methods: {
+    /**
+     * `createProvider(selection, context)` — the leased provider's surface is the one the
+     * selection names (its contract definition's `surface`); `context` is marshalled like
+     * `createCodec`'s. Returns a `Lease`: releasing the handle releases the provider.
+     */
+    createProvider: {
+      kind: 'lease',
+      wrapper: 'lease',
+      resultFromArgs: { contract: { arg: 0, key: 'contract' }, major: { arg: 0, key: 'major' } },
+    },
+  },
+} as const satisfies AbiSurfaceOf<ServiceProviderModule>
 
 const codecSurface = {
   ...ABI_CODEC,
@@ -224,6 +247,7 @@ const diagnosticSinkSurface = {
 /** Every runtime-ABI surface a host endpoint registers next to the data-source surfaces. */
 export const RUNTIME_ABI_SURFACES: readonly CapabilitySurface[] = Object.freeze([
   codecModuleSurface,
+  serviceProviderModuleSurface,
   codecSurface,
   assetSessionSurface,
   operationSessionSurface,
