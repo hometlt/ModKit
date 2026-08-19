@@ -123,13 +123,15 @@ describe('createNodeSubjectServices (host realm inventory, worker realm target)'
     // …and a structural copy of a contribution still carries no record: spread drops the symbol
     const [extension] = services.inventory.extensions
     const original = extension?.contributions.find(item => item.record !== undefined)
-    if (original === undefined) throw new Error('images inventory has no attested contribution')
+    if (extension === undefined || original === undefined) {
+      throw new Error('images inventory has no attested contribution')
+    }
     const copy = { ...original }
     expect(Object.getOwnPropertySymbols(copy)).toEqual([])
     expect(
       offersFromInventory({
         ...services.inventory,
-        extensions: [{ ...extension!, contributions: [copy] }],
+        extensions: [{ ...extension, contributions: [copy] }],
       }),
     ).toEqual([])
 
