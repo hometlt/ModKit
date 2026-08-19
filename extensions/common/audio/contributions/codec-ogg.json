@@ -24,7 +24,7 @@
     "roles": ["container", "media"],
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled"],
-    "openIntents": ["probe", "inspect", "stream", "export"],
+    "openIntents": ["probe", "inspect", "full", "stream", "export"],
     "match": {
       "extensions": ["ogg", "oga", "opus"],
       "mediaTypes": ["audio/ogg", "audio/opus", "application/ogg"]

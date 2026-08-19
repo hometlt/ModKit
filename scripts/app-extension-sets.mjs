@@ -39,6 +39,8 @@ export const READY_APP_EXTENSIONS = Object.freeze({
       'org.modkitx/csv-syntax-contract',
       'org.modkitx/csv-syntax-default',
       'org.modkitx/text-csv',
+      // ADR-HOST-002 Path B: the text writer each extension ships (A6)
+      'org.modkitx/text-delimited-writer',
       'org.modkitx/text-tsv',
       'org.modkitx/tsv-syntax-contract',
       'org.modkitx/tsv-syntax-default',
@@ -50,6 +52,7 @@ export const READY_APP_EXTENSIONS = Object.freeze({
       'org.modkitx/ini-syntax-contract',
       'org.modkitx/ini-syntax-default',
       'org.modkitx/text-ini',
+      'org.modkitx/text-ini-writer',
     ]),
   }),
   'text-json': Object.freeze({
@@ -60,6 +63,7 @@ export const READY_APP_EXTENSIONS = Object.freeze({
       'org.modkitx/jsonc-syntax-contract',
       'org.modkitx/jsonc-syntax-default',
       'org.modkitx/text-json',
+      'org.modkitx/text-json-writer',
       'org.modkitx/text-jsonc',
     ]),
   }),
@@ -67,6 +71,7 @@ export const READY_APP_EXTENSIONS = Object.freeze({
     coordinate: 'org.modkitx/text-toml',
     contributions: Object.freeze([
       'org.modkitx/text-toml',
+      'org.modkitx/text-toml-writer',
       'org.modkitx/toml-syntax-contract',
       'org.modkitx/toml-syntax-default',
     ]),
@@ -75,6 +80,7 @@ export const READY_APP_EXTENSIONS = Object.freeze({
     coordinate: 'org.modkitx/text-xml',
     contributions: Object.freeze([
       'org.modkitx/text-xml',
+      'org.modkitx/text-xml-writer',
       'org.modkitx/xml-syntax-contract',
       'org.modkitx/xml-syntax-default',
     ]),
@@ -83,6 +89,7 @@ export const READY_APP_EXTENSIONS = Object.freeze({
     coordinate: 'org.modkitx/text-yaml',
     contributions: Object.freeze([
       'org.modkitx/text-yaml',
+      'org.modkitx/text-yaml-writer',
       'org.modkitx/yaml-syntax-contract',
       'org.modkitx/yaml-syntax-default',
     ]),

@@ -260,7 +260,8 @@ await checkApplicationSet(
   },
   {
     main: { offers: 'none', active: 'none' },
-    worker: { offers: 16, active: 16 },
+    // 16 codecs and syntax providers + the six text writers (A6, one per extension)
+    worker: { offers: 22, active: 22 },
   },
 )
 await checkApplicationSet(
@@ -293,7 +294,8 @@ await checkApplicationSet(
   },
   {
     main: { offers: 'none', active: 1 },
-    worker: { offers: 6, active: 6 },
+    // + the text-json writer (A6)
+    worker: { offers: 7, active: 7 },
   },
 )
 await checkApplicationSet(

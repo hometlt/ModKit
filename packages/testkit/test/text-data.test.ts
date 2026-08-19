@@ -335,8 +335,8 @@ describe('13B text-data providers and codecs', () => {
       )
     ).flat()
     const manifests = manifestsWithRoots.map(item => item.manifest)
-    expect(manifests).toHaveLength(24)
-    expect(new Set(manifests.map(manifest => manifest.id)).size).toBe(24)
+    expect(manifests).toHaveLength(30)
+    expect(new Set(manifests.map(manifest => manifest.id)).size).toBe(30)
     const registry = createSpecSchemaRegistry(A1_SPEC_SCHEMA_ENTRIES)
     for (const { manifest, root } of manifestsWithRoots) {
       const result = await validateContributionManifest(manifest, registry)
@@ -351,18 +351,21 @@ describe('13B text-data providers and codecs', () => {
       }
     }
     expect(manifests.filter(manifest => manifest.contract.id.includes('codec'))).toHaveLength(8)
+    // eight syntax providers plus the six text writers (one per extension, A6)
     expect(
       manifests.filter(manifest => manifest.contract.id.includes('service-provider')),
-    ).toHaveLength(8)
+    ).toHaveLength(14)
     expect(
       manifests.filter(manifest => manifest.contract.id.includes('contract-definition')),
     ).toHaveLength(8)
-    const expectedEntrypoints = new Set(
-      Object.values(providerFormatByContract).flatMap(format => [
+    const expectedEntrypoints = new Set([
+      ...Object.values(providerFormatByContract).flatMap(format => [
         `./${sourceEntrypoint(format, 'codec')}`,
         `./${sourceEntrypoint(format, 'provider')}`,
       ]),
-    )
+      // the writer each text extension ships (A6): one module per extension, not per format
+      './src/editing/text-writer.js',
+    ])
     for (const manifest of manifests.filter(item => item.runtimeVariants !== undefined)) {
       expect(
         manifest.runtimeVariants?.every(variant => expectedEntrypoints.has(variant.entrypoint)),

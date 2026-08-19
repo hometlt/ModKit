@@ -250,13 +250,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:9fbcd8f0cee72e0af71cca3b9b0746f24f7a7f29a2378d89d6bddb06deefa6eb',
+        artifactDigest: 'sha256:dd9bbbd19bff4296a372002273f2222639d81bde19ec9d0feda20812c675c97f',
         fileDigests: {
           'README.md': 'sha256:268ab2b7997a0a0be23cf0dbdc5c80a90ac58eaafafca75a4c9fad30093d26fd',
           'contributions/codec-mp3.json':
-            'sha256:4f080ade1e17d27fcf791504a317261c68f8e9421655958cfa0d150214c0414a',
+            'sha256:2db4ff5451181d302a7494df9bdfd1d30bf8700e262b1f8e3b2ea3292436c1fc',
           'contributions/codec-ogg.json':
-            'sha256:cbaf81e526270c5ea4783cf2e21dab6a1efe2d11f13556079608507d8f5fed1b',
+            'sha256:96ffb84cdb503acaef94824bcbfb00790ace696d43a39e1cbe626b41a8293867',
           'package.json': 'sha256:fa31b41ba725e7c620902f7ed360c6a07c54feb9ce3af42aef623e14f1975c63',
           'src/formats/mp3/codec.js':
             'sha256:cc27ff239bf2f97b2e1403de0af7f68e185ea8e574c2db550a87ed6bfe413402',
@@ -265,7 +265,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/index.js': 'sha256:e86ec9194630bc30037a46f042fb7839fa96dfa70ae81ef77142ae436c9bf2fb',
         },
         inventoryRecordId:
-          'artifact:sha256:9fbcd8f0cee72e0af71cca3b9b0746f24f7a7f29a2378d89d6bddb06deefa6eb',
+          'artifact:sha256:dd9bbbd19bff4296a372002273f2222639d81bde19ec9d0feda20812c675c97f',
       },
       artifactRoot: 'extensions/audio/',
       containers: {
@@ -309,11 +309,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       documentDigests: [
         [
           'contributions/codec-mp3.json',
-          'sha256:4f080ade1e17d27fcf791504a317261c68f8e9421655958cfa0d150214c0414a',
+          'sha256:2db4ff5451181d302a7494df9bdfd1d30bf8700e262b1f8e3b2ea3292436c1fc',
         ],
         [
           'contributions/codec-ogg.json',
-          'sha256:cbaf81e526270c5ea4783cf2e21dab6a1efe2d11f13556079608507d8f5fed1b',
+          'sha256:96ffb84cdb503acaef94824bcbfb00790ace696d43a39e1cbe626b41a8293867',
         ],
       ],
       documents: [
@@ -370,7 +370,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 extensions: ['mp3'],
                 mediaTypes: ['audio/mpeg'],
               },
-              openIntents: ['probe', 'inspect', 'stream', 'export'],
+              openIntents: ['probe', 'inspect', 'full', 'stream', 'export'],
               operations: [
                 {
                   handlerId: 'inspect',
@@ -546,7 +546,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 extensions: ['ogg', 'oga', 'opus'],
                 mediaTypes: ['audio/ogg', 'audio/opus', 'application/ogg'],
               },
-              openIntents: ['probe', 'inspect', 'stream', 'export'],
+              openIntents: ['probe', 'inspect', 'full', 'stream', 'export'],
               operations: [
                 {
                   handlerId: 'inspect',

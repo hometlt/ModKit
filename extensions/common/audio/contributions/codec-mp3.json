@@ -24,7 +24,7 @@
     "roles": ["media"],
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled"],
-    "openIntents": ["probe", "inspect", "stream", "export"],
+    "openIntents": ["probe", "inspect", "full", "stream", "export"],
     "match": { "extensions": ["mp3"], "mediaTypes": ["audio/mpeg"] },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 8192 }], "maxBytes": 8192 },
     "representations": [
