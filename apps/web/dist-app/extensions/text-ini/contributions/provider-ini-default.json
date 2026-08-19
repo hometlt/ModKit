@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/service-provider-contribution",
+    "major": 1
+  },
+  "id": "org.modkitx/ini-syntax-default",
+  "displayName": "ini syntax provider",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/formats/ini/provider.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/formats/ini/provider.js",
+      "target": {
+        "environments": ["browser-worker", "node-worker"]
+      },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "provides": [
+      {
+        "offerId": "ini-syntax-default-v1",
+        "contract": "common.text-data/ini-syntax",
+        "major": 1,
+        "version": "1.0.0"
+      }
+    ],
+    "lifecycleScope": "session",
+    "outputs": [
+      {
+        "id": "structure.hierarchy",
+        "representation": "runtime",
+        "presence": "will-expose"
+      }
+    ]
+  }
+}

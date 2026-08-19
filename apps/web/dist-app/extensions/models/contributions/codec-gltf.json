@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.modkitx/model-gltf",
+  "displayName": "glTF 2.x",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/formats/gltf/codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/formats/gltf/codec.js",
+      "target": { "environments": ["browser-worker", "node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "gltf", "label": "glTF 2.x", "mediaType": "model/gltf+json" }],
+    "roles": ["semantic"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored", "compiled", "runtime"],
+    "openIntents": ["probe", "inspect", "full", "export"],
+    "match": { "extensions": ["gltf"], "mediaTypes": ["model/gltf+json"] },
+    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 8192 }], "maxBytes": 8192 },
+    "representations": [
+      {
+        "id": "scene-metadata",
+        "contract": "common.model/scene-metadata",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      { "contract": "common.view/model-scene-source", "major": 1 },
+      { "contract": "common.view/tree-data-source", "major": 1 },
+      { "contract": "common.view/text-data-source", "major": 1 },
+      { "contract": "common.view/byte-range-source", "major": 1 },
+      { "contract": "common.view/relation-graph-source", "major": 1 },
+      { "contract": "common.view/subject-facts-source", "major": 1 }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "traitDeclarations": [
+      { "id": "model.geometry", "representation": "source", "presence": "may-expose" },
+      { "id": "model.materials", "representation": "source", "presence": "may-expose" },
+      { "id": "model.textures", "representation": "source", "presence": "may-expose" },
+      { "id": "model.skeleton", "representation": "source", "presence": "may-expose" },
+      { "id": "model.animations", "representation": "source", "presence": "may-expose" },
+      { "id": "scene.objects", "representation": "source", "presence": "will-expose" },
+      { "id": "structure.hierarchy", "representation": "source", "presence": "will-expose" },
+      { "id": "content.text", "representation": "source", "presence": "will-expose" }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1073741824",
+      "maxDepth": 256,
+      "maxNodes": 10000000,
+      "maxScalarBytes": 104857600,
+      "maxDiagnostics": 10000
+    }
+  }
+}

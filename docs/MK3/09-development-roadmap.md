@@ -676,9 +676,12 @@ NXT‑114/R3 (Node worker backend с verified loading; реальный `text-js
    честно unverified), bootstrap‑core + backend на общем RPC‑ядре и общих consumer‑адаптерах,
    диагностика `x3.host/worker-shared-origin`; DOM‑обвязка (S5b, 2026‑08‑19): loader hooks
    fetch/WebCrypto/blob, module‑Worker realm factory, worker‑entry
-   (`@modkitx-x3/host/browser/worker-entry`), `createBrowserExecutionBackends`. Осталось (S6):
-   каталог с digests и раздача артефактов в web/PWA, module map, `openSubject` в workbench,
-   браузерный прогон conformance kit; затем VS Code webview.
+   (`@modkitx-x3/host/browser/worker-entry`), `createBrowserExecutionBackends`; продуктовый
+   путь PWA (S6, 2026‑08‑19): аттестованный каталог с digests (`emit-web-catalog`), раздача
+   артефактов и vendor‑бандлы worker'а (один граф esbuild со splitting), `createWebSubjectServices`,
+   open‑flow в shell — реальный PNG открывается worker‑brokered в браузерной топологии (доказано в
+   Node с фейками платформы). Осталось: браузерный прогон conformance kit/shell (Playwright),
+   parity вьюеров с Electron, vendor‑парсеры text‑*; затем VS Code webview.
 6. **VFS/container + bundle resolver (NXT‑200/201)** и MK2‑конвертер/parity‑harness по
    `REPORT_MK2_ALLOCATION_*` — после стабилизации worker/VFS.
 7. **SB‑2/SB‑3/SB‑4** по своим gates: `process-brokered` до первого native codec внешнего

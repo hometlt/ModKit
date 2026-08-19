@@ -1,0 +1,8 @@
+{
+  "input": "name,note\r\nModkit,plain\r\n\"quoted, name\",\"said \"\"hello\"\"\"\r\n",
+  "rows": [
+    ["name", "note"],
+    ["Modkit", "plain"],
+    ["quoted, name", "said \"hello\""]
+  ]
+}

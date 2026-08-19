@@ -17,6 +17,18 @@ export {
   type HttpRangeSourceOptions,
 } from '@modkitx-x3/host/browser'
 export { createWorkbench, type Workbench } from '@modkitx-x3/ui/workbench'
+export {
+  catalogToExtensionInputs,
+  createWebSubjectServices,
+  resolveModuleMap,
+  WEB_WORKER_ENTRY,
+  WEB_WORKER_MODULE_MAP,
+  type WebDomGlobals,
+  type WebExtensionCatalog,
+  type WebExtensionCatalogEntry,
+  type WebSubjectServices,
+  type WebSubjectServicesOptions,
+} from './subjects.js'
 
 export const WEB_MAIN_REALM = 'org.modkitx.app.web/main'
 export const WEB_WORKER_REALM = 'org.modkitx.app.web/worker'

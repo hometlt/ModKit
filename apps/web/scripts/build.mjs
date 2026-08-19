@@ -11,7 +11,7 @@ import { build } from 'esbuild'
 import { createServer } from 'node:http'
 import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, extname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const appRoot = resolve(here, '..')
@@ -30,6 +30,68 @@ await build({
   absWorkingDir: repoRoot,
   logLevel: 'warning',
 })
+
+// ---------------------------------------------------------------- worker runtime (S6)
+/*
+ * The extension worker runtime: the host's browser worker entry plus the vendor modules a codec
+ * may import inside the worker (`WEB_WORKER_MODULE_MAP` in src/subjects.ts). One esbuild graph
+ * with code splitting, so `@modkitx-x3/core` and `@modkitx-x3/sdk` are a single instance shared
+ * by the entry and every vendor (an `instanceof ModkitError` in the worker sees one class). Bare
+ * dependencies of extensions outside this map are not served — the catalog emitter lists such
+ * extensions as excluded with the reason instead of shipping them broken.
+ */
+await build({
+  entryPoints: {
+    'worker-entry': join(repoRoot, 'packages', 'host', 'dist', 'browser', 'worker-entry.js'),
+    'vendor/codec-kit/index': join(
+      repoRoot,
+      'extensions',
+      '_shared',
+      'codec-kit',
+      'src',
+      'index.js',
+    ),
+    'vendor/codec-kit/text/index': join(
+      repoRoot,
+      'extensions',
+      '_shared',
+      'codec-kit',
+      'src',
+      'text',
+      'index.js',
+    ),
+    'vendor/core/index': join(repoRoot, 'packages', 'core', 'dist', 'index.js'),
+    'vendor/sdk/index': join(repoRoot, 'packages', 'sdk', 'dist', 'index.js'),
+  },
+  outdir: dist,
+  bundle: true,
+  splitting: true,
+  format: 'esm',
+  platform: 'browser',
+  target: ['chrome120', 'firefox121', 'safari17'],
+  chunkNames: 'chunks/[name]-[hash]',
+  absWorkingDir: repoRoot,
+  logLevel: 'warning',
+})
+
+/*
+ * The bundled extensions the catalog attests, served byte for byte under `extensions/<name>/`:
+ * exactly the inventoried files (the catalog's `files`), copied from the source tree. The
+ * per-file digests in the catalog are what the worker backend verifies against at load, so a
+ * file that is not in the catalog is not served here either.
+ */
+const { WEB_EXTENSION_CATALOG } = await import(
+  pathToFileURL(join(appRoot, 'generated', 'extension-catalog.js')).href
+)
+for (const entry of WEB_EXTENSION_CATALOG.extensions) {
+  const sourceRoot = join(repoRoot, entry.source)
+  const targetRoot = join(dist, entry.artifactRoot)
+  for (const file of entry.files) {
+    const target = join(targetRoot, file)
+    mkdirSync(dirname(target), { recursive: true })
+    cpSync(join(sourceRoot, file), target)
+  }
+}
 
 const stylesheet = join(repoRoot, 'packages', 'ui', 'styles', 'modkit-ui.css')
 if (!existsSync(stylesheet)) {
@@ -85,6 +147,9 @@ if (process.argv.includes('--serve')) {
     '.css': 'text/css',
     '.png': 'image/png',
     '.webmanifest': 'application/manifest+json',
+    '.json': 'application/json',
+    '.md': 'text/markdown',
+    '.mjs': 'text/javascript',
   }
   const port = 8732
   createServer((request, response) => {

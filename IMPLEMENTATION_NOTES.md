@@ -6,6 +6,47 @@ overrides a canonical or detailed owner.
 
 ---
 
+## S6 — the PWA product path: attested catalog, served artifacts, vendor worker bundles, open flow (Root/Fable, 2026-08-19)
+
+**What exists.** `scripts/emit-web-catalog.mjs` → `apps/web/generated/extension-catalog.{js,d.ts}`:
+for every bundled codec extension whose runtime dependencies the worker vendors cover (today
+`@modkitx-x3/codec-kit` only — 9 extensions: archives, audio, documents, images, models,
+text-delimited, text-ini, vector, video; text-json/toml/xml/yaml are listed `excluded` with the
+missing vendor named), the _same_ `loadExtensionDirectory` the Node hosts use serializes files,
+pre-read contribution documents + digests, the artifact digest and per-file digests, with the
+artifact root as `extensions/<name>/` under the app origin. Wired as `catalogs:check:web` after
+`typecheck` in `build` (it imports the built host). `apps/web/scripts/build.mjs`: one esbuild
+graph with code splitting for the worker runtime — the host's `worker-entry.js` plus
+`vendor/{codec-kit,codec-kit/text,core,sdk}` — so `core`/`sdk` are one instance across the
+entry and the vendors; the catalogued artifact files are copied byte for byte under
+`dist-app/extensions/<name>/`. `apps/web/src/subjects.ts`: `catalogToExtensionInputs` (the
+gate's `verifyArtifactDigest` compares against the build attestation; byte verification happens
+in the loader at load — verify-then-snapshot; `allowTrustedInProcess: false` everywhere),
+`WEB_WORKER_MODULE_MAP` (bare specifiers → vendor URLs, unverified by design), and
+`createWebSubjectServices` — the browser twin of Electron's subject services: composes both
+realms with `createBrowserExecutionBackends` and opens subjects for the **worker realm's
+target** through `openSubject`. `apps/web/src/shell.ts`: hands the page's real DOM globals to
+the services and wires one honest open flow (pick a file → open → selected codec + boundary +
+descriptor + the first data source's answer + diagnostics).
+
+**Proof.** `apps/web/test/subject-services.test.ts` (3): the generated catalog equals a fresh
+loader pass (same digests) and every input is `allowTrustedInProcess: false`; a real PNG opens
+through the browser topology — portable variant, worker-brokered, gate notice + backend
+`worker-shared-origin`, one module worker per activation spawned from the served entry, artifact
+files fetched once each, tree data source answers over the RPC; a served artifact whose bytes
+drifted from the attestation is refused at load (`artifact-digest-mismatch`), the trusted variant
+is refused as `codec-execution-unavailable`, no worker ever evaluated the drifted bytes. Full
+gate set green for this scope; the concurrent OPUS-MK2-02 working tree carries its own in-progress
+lint/test state in `scripts/convert-mk2*`, untouched by this commit.
+
+**Not done here.** A real-browser run of the conformance kit and of the shell (a manual smoke via
+`pnpm --filter @modkitx-x3/web-app app:serve` is the current proof; a Playwright harness is not
+in the repo); stage viewers/explorer parity with Electron in the PWA (the shell shows the raw
+descriptor and one data-source answer); vendoring text-json/toml/xml/yaml parsers for the worker;
+VS Code webview on the same core.
+
+---
+
 ## S5b — the DOM wiring of the browser worker backend (Root/Fable, 2026-08-19)
 
 **What exists.** `packages/host/src/browser/worker-realm.ts`: `browserLoaderHooks` (fetch →

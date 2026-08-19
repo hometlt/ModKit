@@ -1,0 +1,278 @@
+/**
+ * S6: the PWA product path proven in Node — the generated catalog composes the host, the real
+ * bundled extension sources are "served" from disk by a fake fetch, a fake module Worker runs the
+ * production worker entry over a real MessageChannel, WebCrypto digests, `data:` module URLs as
+ * the blob store, and the module map points bare specifiers at file: URLs. `open` then runs the
+ * real bundled PNG codec worker-brokered in the browser topology's worker realm.
+ */
+import { createHash, webcrypto } from 'node:crypto'
+import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { MessageChannel } from 'node:worker_threads'
+import { afterEach, describe, expect, it } from 'vitest'
+import type { Diagnostic } from '@modkitx-x3/core'
+import { revisionId, type ArtifactByteSource } from '@modkitx-x3/sdk'
+import { installBrowserWorkerEntry, type BrowserWorkerLike } from '@modkitx-x3/host/browser'
+import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
+import {
+  catalogToExtensionInputs,
+  createWebSubjectServices,
+  type WebExtensionCatalog,
+} from '../src/subjects.js'
+
+const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
+const ORIGIN = 'https://pwa.example/app/'
+const catalog: WebExtensionCatalog = WEB_EXTENSION_CATALOG
+const sha256 = (bytes: Uint8Array) => `sha256:${createHash('sha256').update(bytes).digest('hex')}`
+
+/** Serves `extensions/<name>/…` requests from `extensions/common/<name>/…` on disk. */
+function diskOrigin() {
+  const fetched: string[] = []
+  return {
+    fetched,
+    fetch: async (url: string) => {
+      fetched.push(url)
+      const relative = url.startsWith(`${ORIGIN}extensions/`)
+        ? url.slice(`${ORIGIN}extensions/`.length)
+        : undefined
+      const path =
+        relative === undefined ? undefined : join(repositoryRoot, 'extensions', 'common', relative)
+      const ok = path !== undefined && existsSync(path)
+      return {
+        ok,
+        status: ok ? 200 : 404,
+        arrayBuffer: async (): Promise<ArrayBuffer> => {
+          if (!ok || path === undefined) throw new Error(`404 ${url}`)
+          const bytes = readFileSync(path)
+          const copy = new ArrayBuffer(bytes.byteLength)
+          new Uint8Array(copy).set(bytes)
+          return copy
+        },
+      }
+    },
+  }
+}
+
+class FakeBlob {
+  readonly size: number
+  readonly source: string
+  constructor(parts: readonly string[], options: { readonly type: string }) {
+    this.source = parts.join('')
+    this.size = this.source.length
+    void options
+  }
+}
+const objectUrls = {
+  createObjectURL: (blob: { readonly source?: string }) =>
+    `data:text/javascript;base64,${Buffer.from(blob.source ?? '', 'utf8').toString('base64')}`,
+  revokeObjectURL: () => undefined,
+}
+
+/** A fake DOM Worker whose script is the production entry over a fake worker scope. */
+const spawned: string[] = []
+class FakeWorker implements BrowserWorkerLike {
+  private readonly listeners: ((event: { readonly data: unknown }) => void)[] = []
+  private closed = false
+  constructor(url: string, options: { readonly type: 'module'; readonly name?: string }) {
+    spawned.push(`${options.name ?? '?'} ← ${url}`)
+    installBrowserWorkerEntry({
+      addEventListener: (_t, l) => void this.listeners.push(l),
+      removeEventListener: (_t, l) => {
+        const index = this.listeners.indexOf(l)
+        if (index >= 0) this.listeners.splice(index, 1)
+      },
+      close: () => void (this.closed = true),
+    })
+  }
+  postMessage(message: unknown, transfer: readonly unknown[]): void {
+    void transfer
+    if (this.closed) return
+    for (const listener of [...this.listeners]) listener({ data: message })
+  }
+  terminate(): void {
+    this.closed = true
+  }
+  addEventListener(): void {
+    // the fake never raises worker errors
+  }
+}
+
+/** Node module map: bare specifiers → file: URLs of the real sources / built packages. */
+const nodeModuleMap = {
+  '@modkitx-x3/codec-kit': pathToFileURL(
+    join(repositoryRoot, 'extensions', '_shared', 'codec-kit', 'src', 'index.js'),
+  ).href,
+  '@modkitx-x3/codec-kit/text': pathToFileURL(
+    join(repositoryRoot, 'extensions', '_shared', 'codec-kit', 'src', 'text', 'index.js'),
+  ).href,
+  '@modkitx-x3/core': pathToFileURL(join(repositoryRoot, 'packages', 'core', 'dist', 'index.js'))
+    .href,
+  '@modkitx-x3/sdk': pathToFileURL(join(repositoryRoot, 'packages', 'sdk', 'dist', 'index.js'))
+    .href,
+}
+
+function fileSource(path: string, name: string): ArtifactByteSource {
+  const bytes = new Uint8Array(readFileSync(path))
+  return {
+    kind: 'bytes',
+    ref: { id: `memory://web/${name}`, uri: `memory://web/${name}` },
+    revision: revisionId(`content-hash.sha256:${name}`),
+    size: BigInt(bytes.byteLength),
+    async read(offset, length) {
+      return bytes.slice(Number(offset), Number(offset) + length)
+    },
+    async *stream() {
+      yield bytes
+    },
+  }
+}
+
+const budget = {
+  maxInputBytes: 10_000_000n,
+  maxDepth: 128,
+  maxNodes: 100_000,
+  maxScalarBytes: 1_000_000,
+  maxDiagnostics: 100,
+}
+const identity = { operatingSystem: 'windows' as const, architecture: 'x64' as const }
+const probe = { main: [], worker: [], sharedMemory: false } as const
+
+afterEach(() => {
+  spawned.splice(0)
+})
+
+describe('PWA product path — catalog → composition → worker-brokered open', () => {
+  it('the generated catalog is the loader attestation: same digests as loading the directories now', async () => {
+    const { loadExtensionDirectory } = await import('@modkitx-x3/host/node')
+    expect(catalog.extensions.length).toBeGreaterThan(0)
+    for (const entry of catalog.extensions) {
+      const fresh = await loadExtensionDirectory(join(repositoryRoot, entry.source))
+      expect(fresh.artifact.artifactDigest, entry.name).toBe(entry.artifact.artifactDigest)
+      expect(fresh.artifact.fileDigests, entry.name).toEqual(entry.artifact.fileDigests)
+    }
+    // exclusions are named with reasons, never silent
+    for (const excluded of catalog.excluded) expect(excluded.reason).toMatch(/not vendored/u)
+    const inputs = catalogToExtensionInputs(catalog, ORIGIN)
+    expect(inputs.every(input => input.execution?.allowTrustedInProcess === false)).toBe(true)
+    expect(inputs[0]?.artifact.artifactRoot.href.startsWith(`${ORIGIN}extensions/`)).toBe(true)
+  })
+
+  it('opens a real PNG through the browser topology: portable variant, worker-brokered in the worker realm, tree data source answers over the RPC', async () => {
+    const site = diskOrigin()
+    const diagnostics: Diagnostic[] = []
+    const services = await createWebSubjectServices({
+      baseUrl: ORIGIN,
+      catalog,
+      identity,
+      probe,
+      dom: {
+        fetch: site.fetch,
+        subtle: webcrypto.subtle as never,
+        Blob: FakeBlob as never,
+        objectUrls,
+        Worker: FakeWorker,
+        MessageChannel: MessageChannel as never,
+      },
+      moduleMap: nodeModuleMap,
+      onDiagnostic: diagnostic => void diagnostics.push(diagnostic),
+    })
+    expect(services.executionProfiles).toEqual(['worker-brokered'])
+    expect(services.supportedExtensions).toContain('png')
+    expect(services.worker.target.environment).toBe('browser-worker')
+    expect(services.main.inventory.diagnostics.filter(d => d.severity === 'error')).toEqual([])
+
+    const png = join(repositoryRoot, 'apps', 'web', 'public', 'favicon-32.png')
+    const result = await services.open({
+      source: fileSource(png, 'favicon-32.png'),
+      path: 'favicon-32.png',
+      intent: 'full',
+      grant: { id: 'pwa-open', classes: ['read-source'] },
+      budget,
+    })
+    expect(result.state).toBe('opened')
+    if (result.state !== 'opened') throw new Error(result.reason)
+    expect(result.selected).toMatchObject({
+      contributionId: 'org.modkitx/image-png',
+      variantId: 'portable',
+    })
+    // the honest boundary statements: the gate's profile notice + the browser backend's origin notice
+    expect(result.diagnostics.map(d => d.code)).toContain('x3.host/worker-shared-process')
+    expect(diagnostics.some(d => d.code === 'x3.host/worker-shared-origin')).toBe(true)
+    expect(result.diagnostics.map(d => d.code)).not.toContain('x3.host/full-process-authority')
+    // one module worker per activation, spawned from the served entry
+    expect(spawned).toHaveLength(1)
+    expect(spawned[0]).toContain(`${ORIGIN}worker-entry.js`)
+    // artifact files were fetched from the app origin, each exactly once
+    const codecFetches = site.fetched.filter(url => url.includes('/extensions/images/'))
+    expect(new Set(codecFetches).size).toBe(codecFetches.length)
+    expect(codecFetches.length).toBeGreaterThan(0)
+
+    const tree = await result.session.dataSource('common.view/tree-data-source', 1)
+    const root = await (tree.value as { root(): Promise<{ id: string }> }).root()
+    expect(typeof root.id).toBe('string')
+    await tree.release()
+    await result.session.dispose()
+  }, 30_000)
+
+  it('a served artifact that drifted from the attestation is refused at load, not silently run', async () => {
+    const site = diskOrigin()
+    const tampered = {
+      ...catalog,
+      extensions: catalog.extensions.map(entry =>
+        entry.name === 'images'
+          ? {
+              ...entry,
+              artifact: {
+                ...entry.artifact,
+                fileDigests: Object.fromEntries(
+                  Object.entries(entry.artifact.fileDigests).map(([path, digest]) => [
+                    path,
+                    path.endsWith('codec.js') ? sha256(new Uint8Array([1, 2, 3])) : digest,
+                  ]),
+                ),
+              },
+            }
+          : entry,
+      ),
+    } as WebExtensionCatalog
+    const services = await createWebSubjectServices({
+      baseUrl: ORIGIN,
+      catalog: tampered,
+      identity,
+      probe,
+      dom: {
+        fetch: site.fetch,
+        subtle: webcrypto.subtle as never,
+        Blob: FakeBlob as never,
+        objectUrls,
+        Worker: FakeWorker,
+        MessageChannel: MessageChannel as never,
+      },
+      moduleMap: nodeModuleMap,
+    })
+    const result = await services.open({
+      source: fileSource(join(repositoryRoot, 'apps', 'web', 'public', 'favicon-32.png'), 'x.png'),
+      path: 'x.png',
+      intent: 'full',
+      grant: { id: 'pwa-tamper', classes: ['read-source'] },
+      budget,
+    })
+    expect(result.state).toBe('unresolved')
+    if (result.state !== 'unresolved') throw new Error('tampered artifact must not open')
+    const png = result.candidates.find(
+      item => item.contributionId === 'org.modkitx/image-png' && item.variantId === 'portable',
+    )
+    expect(png?.state).toBe('rejected')
+    expect(png?.diagnostics.map(item => item.code)).toContain('x3.host/artifact-digest-mismatch')
+    // and the trusted-node variant is refused for the honest reason: no in-page boundary here
+    const trusted = result.candidates.find(
+      item => item.contributionId === 'org.modkitx/image-png' && item.variantId === 'trusted-node',
+    )
+    expect(trusted?.diagnostics.map(item => item.code)).toContain(
+      'x3.host/codec-execution-unavailable',
+    )
+    // no worker ever evaluated the drifted bytes
+    expect(spawned).toHaveLength(0)
+  }, 30_000)
+})
