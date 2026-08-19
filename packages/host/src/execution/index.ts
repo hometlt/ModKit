@@ -96,6 +96,14 @@ export {
   type MessagePortLike,
 } from './message-port.js'
 export {
+  decodeFrameJson,
+  decodeJsonValue,
+  encodeFrameJson,
+  encodeJsonValue,
+  framePortFromJsonPort,
+  type JsonPortLike,
+} from './frame-json.js'
+export {
   ABI_ARTIFACT_SOURCE,
   ABI_ASSET_INPUT,
   ABI_ASSET_NAMESPACE,

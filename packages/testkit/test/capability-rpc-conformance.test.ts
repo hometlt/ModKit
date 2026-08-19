@@ -1,7 +1,11 @@
 import { MessageChannel } from 'node:worker_threads'
 import { describe, expect, it } from 'vitest'
 import type { Frame } from '@modkitx-x3/host/execution'
-import { framePortFromMessagePort as productionAdapter } from '@modkitx-x3/host/execution'
+import {
+  framePortFromJsonPort,
+  framePortFromMessagePort as productionAdapter,
+  type JsonPortLike,
+} from '@modkitx-x3/host/execution'
 import { DEFAULT_WORKER_BACKEND_POLICY, spawnWorkerRealm } from '@modkitx-x3/host/node'
 import {
   CONFORMANCE_CASE_IDS,
@@ -122,6 +126,59 @@ describe('capability-rpc conformance kit — reference transports pass', () => {
       'hs-duplicate-reply',
     ])
   }, 30_000)
+})
+
+describe('capability-rpc conformance kit — JSON text transport (F1: bigint and bytes as tagged JSON, nothing transferred)', () => {
+  /** Two text channels joined by macrotask delivery — a socket or a webview channel in miniature. */
+  function jsonPair(): { a: JsonPortLike; b: JsonPortLike; close(): void } {
+    const listeners = { a: new Set<(text: string) => void>(), b: new Set<(text: string) => void>() }
+    let open = true
+    const make = (mine: 'a' | 'b', other: 'a' | 'b'): JsonPortLike => ({
+      send(text) {
+        if (!open) return
+        setTimeout(() => {
+          if (!open) return
+          for (const listener of [...listeners[other]]) listener(text)
+        }, 0)
+      },
+      onMessage(handler) {
+        listeners[mine].add(handler)
+        return () => listeners[mine].delete(handler)
+      },
+    })
+    return {
+      a: make('a', 'b'),
+      b: make('b', 'a'),
+      close() {
+        open = false
+        listeners.a.clear()
+        listeners.b.clear()
+      },
+    }
+  }
+
+  it('passes every case over JSON text with copied bytes', async () => {
+    const report = await runFramePortConformance((): ConformancePair => {
+      const pair = jsonPair()
+      return {
+        transport: 'json:text',
+        host: framePortFromJsonPort(pair.a),
+        worker: framePortFromJsonPort(pair.b),
+        close: () => pair.close(),
+      }
+    })
+    expect(report.failures, describeConformanceReport(report)).toEqual([])
+    // the one hostile probe JSON cannot carry faithfully (a partial typed-array view) is refused
+    // at post — the transport never launders it into a clean copy — so the kit skips that case
+    expect(
+      report.skipped.map(item => item.caseId),
+      describeConformanceReport(report),
+    ).toEqual(['hs-bad-values-reply'])
+    expect(report.passed).toEqual(CONFORMANCE_CASE_IDS.filter(id => id !== 'hs-bad-values-reply'))
+    expect(report.observations['delivery']).toBe('asynchronous')
+    // JSON carries bytes by copy: the sender keeps its buffer
+    expect(report.observations['transfer']).toBe('copied')
+  }, 60_000)
 })
 
 describe('capability-rpc conformance kit — broken transports are caught', () => {
