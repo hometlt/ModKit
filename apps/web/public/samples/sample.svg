@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <title>Modkit sample vector</title>
+  <rect x="4" y="4" width="112" height="112" rx="10" fill="#1f1f1f" stroke="#0078d4" stroke-width="3" />
+  <circle cx="60" cy="48" r="22" fill="none" stroke="#0078d4" stroke-width="4" />
+  <path d="M28 96 L60 66 L92 96 Z" fill="#0078d4" opacity="0.75" />
+</svg>

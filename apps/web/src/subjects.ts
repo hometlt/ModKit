@@ -11,9 +11,13 @@
  */
 
 import type { Diagnostic } from '@modkitx-x3/core'
+import type { ServiceContractDefinitionRegistry } from '@modkitx-x3/sdk'
 import {
+  createBundledServiceDefinitionRegistry,
   createHostComposition,
   createSubjectServices,
+  registerServiceDefinitionsOrThrow,
+  serviceDefinitionSurfaces,
   type ExtensionInput,
   type HostComposition,
   type SubjectServices,
@@ -147,6 +151,18 @@ export interface WebSubjectServicesOptions {
   readonly moduleMap?: Readonly<Record<string, string>>
   readonly workerUrl?: string
   readonly policy?: BrowserWorkerPolicy
+  /**
+   * Service-contract definitions, exactly as the Node twin takes them: `'bundled'` (default)
+   * registers the attested catalog's own definitions into a bundled registry, a registry of the
+   * root's own is used as given, and `false` registers none.
+   *
+   * This is what a codec with a nested provider needs. The structured-text codecs resolve a syntax
+   * provider while they open (`common.text/syntax`), and without a definition registry that
+   * resolution fails with `x3.host/rpc-bad-argument: arguments do not name a registered surface` —
+   * the file simply does not open. Only inputs this host already vouches for reach the bundled
+   * registry: it is fed the attested catalog's inventory and nothing else.
+   */
+  readonly serviceDefinitions?: 'bundled' | false | ServiceContractDefinitionRegistry
   readonly onDiagnostic?: (diagnostic: Diagnostic) => void
 }
 
@@ -162,6 +178,12 @@ export async function createWebSubjectServices(
   const probe = options.probe ?? probeWebFacilities()
   const topology = createWebTopology(options.identity, probe)
   const extensions = catalogToExtensionInputs(options.catalog, options.baseUrl)
+  const definitions =
+    options.serviceDefinitions === false
+      ? undefined
+      : options.serviceDefinitions === undefined || options.serviceDefinitions === 'bundled'
+        ? createBundledServiceDefinitionRegistry()
+        : options.serviceDefinitions
   const executionBackends = createBrowserExecutionBackends({
     workerUrl: options.workerUrl ?? new URL(WEB_WORKER_ENTRY, options.baseUrl).href,
     Worker: options.dom.Worker,
@@ -172,18 +194,27 @@ export async function createWebSubjectServices(
     objectUrls: options.dom.objectUrls,
     moduleMap: options.moduleMap ?? resolveModuleMap(options.baseUrl),
     policy: options.policy ?? DEFAULT_BROWSER_WORKER_POLICY,
+    // Bound late: definitions are inventoried after the backends exist, and workers read the
+    // surfaces per spawn.
+    ...(definitions === undefined
+      ? {}
+      : { foreignSurfaces: () => serviceDefinitionSurfaces(definitions) }),
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
   })
   const [main, worker] = await Promise.all([
     createHostComposition({ topology, realmId: WEB_MAIN_REALM, extensions, executionBackends }),
     createHostComposition({ topology, realmId: WEB_WORKER_REALM, extensions, executionBackends }),
   ])
+  // Fails closed: one rejected definition owner is a refused bootstrap, never a half-defined host.
+  if (definitions !== undefined)
+    await registerServiceDefinitionsOrThrow(main.inventory, definitions)
   // codecs are resolved against main's inventory and activated for the worker realm: portable
-  // variants, worker-brokered (no service-definition registry in the PWA yet)
+  // variants, worker-brokered
   const services = createSubjectServices({
     inventory: main.inventory,
     target: worker.target,
     executionBackends,
+    ...(definitions === undefined ? {} : { serviceDefinitions: definitions }),
   })
   return Object.freeze({ ...services, main, worker })
 }
