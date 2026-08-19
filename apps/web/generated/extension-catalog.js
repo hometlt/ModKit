@@ -250,22 +250,22 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:99a355b593a12a97e29ff82dfc5a35702fd55503ca50a8e7e9a8ad1f486f4b4e',
+        artifactDigest: 'sha256:9fbcd8f0cee72e0af71cca3b9b0746f24f7a7f29a2378d89d6bddb06deefa6eb',
         fileDigests: {
-          'README.md': 'sha256:05456326e15339a7f21db547765cb8428b60c45352faabb159420e1d664984f6',
+          'README.md': 'sha256:268ab2b7997a0a0be23cf0dbdc5c80a90ac58eaafafca75a4c9fad30093d26fd',
           'contributions/codec-mp3.json':
-            'sha256:41e836e11bbcafd51f297897fc86310668a0623d2223a31115bbb2047aa3addc',
+            'sha256:4f080ade1e17d27fcf791504a317261c68f8e9421655958cfa0d150214c0414a',
           'contributions/codec-ogg.json':
             'sha256:cbaf81e526270c5ea4783cf2e21dab6a1efe2d11f13556079608507d8f5fed1b',
           'package.json': 'sha256:fa31b41ba725e7c620902f7ed360c6a07c54feb9ce3af42aef623e14f1975c63',
           'src/formats/mp3/codec.js':
-            'sha256:010b30dc4aa82f498b0cac0297e5a1f1d141c77cb31d60ba95091840bf63d79d',
+            'sha256:cc27ff239bf2f97b2e1403de0af7f68e185ea8e574c2db550a87ed6bfe413402',
           'src/formats/ogg/codec.js':
             'sha256:1906cd3670a45186374a40db75725187d7eb3ee3682b9b7805e85b798e403aaf',
           'src/index.js': 'sha256:e86ec9194630bc30037a46f042fb7839fa96dfa70ae81ef77142ae436c9bf2fb',
         },
         inventoryRecordId:
-          'artifact:sha256:99a355b593a12a97e29ff82dfc5a35702fd55503ca50a8e7e9a8ad1f486f4b4e',
+          'artifact:sha256:9fbcd8f0cee72e0af71cca3b9b0746f24f7a7f29a2378d89d6bddb06deefa6eb',
       },
       artifactRoot: 'extensions/audio/',
       containers: {
@@ -309,7 +309,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       documentDigests: [
         [
           'contributions/codec-mp3.json',
-          'sha256:41e836e11bbcafd51f297897fc86310668a0623d2223a31115bbb2047aa3addc',
+          'sha256:4f080ade1e17d27fcf791504a317261c68f8e9421655958cfa0d150214c0414a',
         ],
         [
           'contributions/codec-ogg.json',
@@ -330,7 +330,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               {
                 entrypoint: './src/formats/mp3/codec.js',
                 executionProfile: 'trusted-in-process',
-                requestedPermissionClasses: ['read-source'],
+                requestedPermissionClasses: ['read-source', 'write-source'],
                 target: {
                   environments: ['node'],
                 },
@@ -339,7 +339,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               {
                 entrypoint: './src/formats/mp3/codec.js',
                 executionProfile: 'worker-brokered',
-                requestedPermissionClasses: ['read-source'],
+                requestedPermissionClasses: ['read-source', 'write-source'],
                 target: {
                   environments: ['browser-worker', 'node-worker'],
                 },
@@ -420,6 +420,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                   mutatesSource: false,
                   outputKinds: ['none'],
                   requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'set-text-frame',
+                  id: 'edit.field',
+                  mutatesSource: true,
+                  outputKinds: ['edit-plan'],
+                  requiredPermissions: ['read-source', 'write-source'],
                 },
               ],
               probe: {
@@ -1020,22 +1027,26 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:249ed43998d03af6f1d7a756751f82ad7e0505b026759e853f1ad468164a41fb',
+        artifactDigest: 'sha256:c8c2150394c2173ee610dd342472b3d70a653284d4ad9f3333470ea0bcb3da76',
         fileDigests: {
-          'README.md': 'sha256:177d9c6848a5ff9333d1c681e3868cfa7f87aed16e0533a8beff94dbbd298950',
+          'README.md': 'sha256:fee600d3a5d3eb369487d20b47158e3d2c8afee1f448164f64b2e44f554ba83f',
           'contributions/codec-jpeg.json':
-            'sha256:bca73505e78161fcdc2e3920c36e2462c8a5370f61697e7c6e6d8e664812cd27',
+            'sha256:3e4712377e58fdc3e4a835f2c1ac6731ae5595881a94d61666b177c33d9cb802',
           'contributions/codec-png.json':
             'sha256:e069e36d8e4e56a01da28ce8790f64b0f1bd6a3d31b2506615d49d40828e4839',
-          'package.json': 'sha256:73873e99e2d03f96b49f1003c89eee7d1da136a782eb0a1739e8b89f2aff51fd',
+          'contributions/writer-png.json':
+            'sha256:fa03ddbb7e468a6d9948ba9f89dee07ffc682e8404adb23f379da4cf231aed49',
+          'package.json': 'sha256:9d1f1918e481fc1cabb9c717fd2d6dbf99eaecc0b00b9010ed96de9fa3866d2d',
           'src/formats/jpeg/codec.js':
-            'sha256:cb2dcfdcd0f3318904744bcf559f25dc7917c294cadc385d02c04ff53a4cde22',
+            'sha256:43739ed9200be7c7e11b326ac83206892cb3eb9633b3b76477099e6fed24bd06',
           'src/formats/png/codec.js':
             'sha256:bd61f86cd7e629b4543a456c13e28d0bee00ecd92fba04a8c4dc58e1fbaa3e45',
           'src/index.js': 'sha256:bcbc40812fa5dcdb2937b0ff5b617c1483725570302b99f569249ac3c441ce41',
+          'src/writers/png-encoder.js':
+            'sha256:411efbd8aadd7a2edfb335752f8e8bfad1a11452534bd039e227d52f49d6a65a',
         },
         inventoryRecordId:
-          'artifact:sha256:249ed43998d03af6f1d7a756751f82ad7e0505b026759e853f1ad468164a41fb',
+          'artifact:sha256:c8c2150394c2173ee610dd342472b3d70a653284d4ad9f3333470ea0bcb3da76',
       },
       artifactRoot: 'extensions/images/',
       containers: {
@@ -1050,6 +1061,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             './formats/jpeg/codec': './src/formats/jpeg/codec.js',
             './formats/png/codec': './src/formats/png/codec.js',
             './package.json': './package.json',
+            './writers/png-encoder': './src/writers/png-encoder.js',
           },
           files: ['contributions', 'src', 'README.md'],
           license: 'MIT',
@@ -1079,11 +1091,15 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       documentDigests: [
         [
           'contributions/codec-jpeg.json',
-          'sha256:bca73505e78161fcdc2e3920c36e2462c8a5370f61697e7c6e6d8e664812cd27',
+          'sha256:3e4712377e58fdc3e4a835f2c1ac6731ae5595881a94d61666b177c33d9cb802',
         ],
         [
           'contributions/codec-png.json',
           'sha256:e069e36d8e4e56a01da28ce8790f64b0f1bd6a3d31b2506615d49d40828e4839',
+        ],
+        [
+          'contributions/writer-png.json',
+          'sha256:fa03ddbb7e468a6d9948ba9f89dee07ffc682e8404adb23f379da4cf231aed49',
         ],
       ],
       documents: [
@@ -1100,7 +1116,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               {
                 entrypoint: './src/formats/jpeg/codec.js',
                 executionProfile: 'trusted-in-process',
-                requestedPermissionClasses: ['read-source'],
+                requestedPermissionClasses: ['read-source', 'write-source'],
                 target: {
                   environments: ['node'],
                 },
@@ -1109,7 +1125,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               {
                 entrypoint: './src/formats/jpeg/codec.js',
                 executionProfile: 'worker-brokered',
-                requestedPermissionClasses: ['read-source'],
+                requestedPermissionClasses: ['read-source', 'write-source'],
                 target: {
                   environments: ['browser-worker', 'node-worker'],
                 },
@@ -1162,6 +1178,20 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                   mutatesSource: false,
                   outputKinds: ['bytes'],
                   requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'set-comment',
+                  id: 'edit.field',
+                  mutatesSource: true,
+                  outputKinds: ['edit-plan'],
+                  requiredPermissions: ['read-source', 'write-source'],
+                },
+                {
+                  handlerId: 'remove-segment',
+                  id: 'edit.structure',
+                  mutatesSource: true,
+                  outputKinds: ['edit-plan'],
+                  requiredPermissions: ['read-source', 'write-source'],
                 },
               ],
               probe: {
@@ -1375,15 +1405,59 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             },
           },
         ],
+        [
+          'contributions/writer-png.json',
+          {
+            contract: {
+              id: 'org.modkitx/service-provider-contribution',
+              major: 1,
+            },
+            displayName: 'PNG encoder (writer)',
+            id: 'org.modkitx/png-encoder-writer',
+            runtimeVariants: [
+              {
+                entrypoint: './src/writers/png-encoder.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['node-worker', 'browser-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              lifecycleScope: 'session',
+              provides: [
+                {
+                  contract: 'common.edit/writer',
+                  facet: {
+                    fidelityEvidenceId: 'png-encoder-v1',
+                    formatId: 'png',
+                    minimumRoundTrip: 'semantic',
+                    mutationMode: 'mutate',
+                    providerId: 'org.modkitx/png-encoder-writer',
+                    representationId: 'rgba8',
+                  },
+                  major: 1,
+                  offerId: 'png-rgba8-encoder',
+                  version: '1.0.0',
+                },
+              ],
+            },
+          },
+        ],
       ],
       files: [
         'README.md',
         'contributions/codec-jpeg.json',
         'contributions/codec-png.json',
+        'contributions/writer-png.json',
         'package.json',
         'src/formats/jpeg/codec.js',
         'src/formats/png/codec.js',
         'src/index.js',
+        'src/writers/png-encoder.js',
       ],
       name: 'images',
       source: 'extensions/common/images',
@@ -3252,9 +3326,9 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:a00b9571b11bdf5148ceffd5f8a1e8fc6e1d133f88761ec3cb583b83fee36292',
+        artifactDigest: 'sha256:ee8d518741d3d72ecaf30333be75c72dc271916eff9d809f25eb448ac6b6fd2b',
         fileDigests: {
-          'README.md': 'sha256:38f45b810e9d589388bc43ca53aa0d9f6e66c99fbce9547f78607f2ebc5e7c79',
+          'README.md': 'sha256:5afa854f15f6009e21e2898e7e030e5a246de537162a1e49422e519de299aa91',
           'contributions/codec-mp4.json':
             'sha256:2fe649041c4113e80d73ad3ab553446b80a68938156c53857b8f849984858de8',
           'contributions/codec-webm.json':
@@ -3267,7 +3341,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/index.js': 'sha256:fc2cf3b104e31455bd7cf3a68c572cbffcedf72166be2e5362a5dfb4f0bb65b8',
         },
         inventoryRecordId:
-          'artifact:sha256:a00b9571b11bdf5148ceffd5f8a1e8fc6e1d133f88761ec3cb583b83fee36292',
+          'artifact:sha256:ee8d518741d3d72ecaf30333be75c72dc271916eff9d809f25eb448ac6b6fd2b',
       },
       artifactRoot: 'extensions/video/',
       containers: {

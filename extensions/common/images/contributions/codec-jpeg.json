@@ -9,14 +9,14 @@
       "entrypoint": "./src/formats/jpeg/codec.js",
       "target": { "environments": ["node"] },
       "executionProfile": "trusted-in-process",
-      "requestedPermissionClasses": ["read-source"]
+      "requestedPermissionClasses": ["read-source", "write-source"]
     },
     {
       "variantId": "portable",
       "entrypoint": "./src/formats/jpeg/codec.js",
       "target": { "environments": ["browser-worker", "node-worker"] },
       "executionProfile": "worker-brokered",
-      "requestedPermissionClasses": ["read-source"]
+      "requestedPermissionClasses": ["read-source", "write-source"]
     }
   ],
   "spec": {
@@ -62,6 +62,20 @@
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]
+      },
+      {
+        "id": "edit.field",
+        "handlerId": "set-comment",
+        "mutatesSource": true,
+        "requiredPermissions": ["read-source", "write-source"],
+        "outputKinds": ["edit-plan"]
+      },
+      {
+        "id": "edit.structure",
+        "handlerId": "remove-segment",
+        "mutatesSource": true,
+        "requiredPermissions": ["read-source", "write-source"],
+        "outputKinds": ["edit-plan"]
       }
     ],
     "traitDeclarations": [

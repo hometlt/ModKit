@@ -4,3 +4,10 @@ Audio-family reference extension. MP3 provides bounded ID3/MPEG structural detec
 pages and identifies Opus/Vorbis logical streams. Both publish metadata and an honest transport
 snapshot. Neither claims PCM decode or playback ownership; those require the future media runtime
 contract. The two entrypoints do not import each other.
+
+Editing (ADR-HOST-002). MP3 `edit.field` sets or replaces an ID3v2 text frame (`TIT2`, `TPE1`,
+`TALB`, …), or creates an ID3v2.4 tag when the file has none: one byte-range replace of the tag
+region, every other frame and the padding copied verbatim, no audio byte moved. Tags that are
+unsynchronised or carry an extended header or a footer are refused with the reason instead of
+rewritten. Ogg has no editing operation: a Vorbis comment lives inside a packet whose pages carry
+their own CRC and segment table, so resizing it is a stream rewrite, not a byte range.

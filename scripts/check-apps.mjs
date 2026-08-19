@@ -276,7 +276,8 @@ await checkApplicationSet(
   },
   {
     main: { offers: 'none', active: 'none' },
-    worker: { offers: 7, active: 7 },
+    // 7 codecs + the PNG encoder writer provider (A5, browser-worker variant)
+    worker: { offers: 8, active: 8 },
   },
 )
 await checkApplicationSet(
