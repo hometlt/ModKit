@@ -694,6 +694,19 @@ NXT‑114/R3 (Node worker backend с verified loading; реальный `text-js
    (как registry bindings в S1b): inventory, собранный любым bundled‑entry пакета, честен для
    любого другого. Осталось: HTTP/RPC‑обвязка server'а поверх `subjects.open` (сессии как
    handles `x3.app/subject-services@1` — как в Electron), `--bundled` набор для CLI вне репо.
+   5b. **13D для бинарных представлений — семейство write/edit (S8, следующий слайс Root)**:
+   контракт кодека v1 read‑only намеренно (BRIEF‑13A acc. 19); 33 кодека MK2 упираются в
+   `write`, 12 — в `edit`. ADR‑HOST‑002: writer‑arm сессии (`encode → bytes|patch`), коммит у
+   хоста под `write-source` через `filesystem.atomic-replace` с проверкой ревизии (адаптер S7),
+   ABI `x3.abi/asset-writer@1`, kit‑кейсы, хелпер codec‑kit, маппинг конвертера MK2,
+   доказательство на синтетических `gzip`/`tar` волны 1. Затем по одному ADR на семейство:
+   language → runtime/launch → relations → game/UVM (S10); RPC‑поверхность сервера поверх
+   `subjects.open` (S9). Детали и порядок — `PLAN_FABLE_NEXT_2026-08-19.md`.
+   5c. **Темы Nexus (UI, 2026‑08‑19)**: дизайн `NexusForgeUI` заходит только как installable‑темы
+   на токенах и частях (`REPORT_NEXUS_UI_ADAPTATION_2026-08-19.md`); R‑1 сделан (токен
+   `color.accent-muted-fg`, гейт `themes:check`, шрифты в `assets/fonts`, хосты раздают темы);
+   O‑1 у Opus (`REQUEST_OPUS_UI_01`). Осталось владельцу: кириллический компаньон Saira,
+   раскладка (52 px header / докнутый инспектор) как отдельный UI‑слайс или нет.
 6. **VFS/container + bundle resolver (NXT‑200/201)** и MK2‑конвертер/parity‑harness по
    `REPORT_MK2_ALLOCATION_*` — после стабилизации worker/VFS.
 7. **SB‑2/SB‑3/SB‑4** по своим gates: `process-brokered` до первого native codec внешнего
