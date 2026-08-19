@@ -1,51 +1,48 @@
 {
   "schemaVersion": 1,
   "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
-  "id": "org.modkitx/earth-res",
-  "displayName": "RES container (layout unconfirmed)",
-  "status": "unsupported",
+  "id": "org.modkitx/visio",
+  "displayName": "Microsoft Visio document",
+  "status": "partial",
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
-      "entrypoint": "./src/earth-res/codec.js",
+      "entrypoint": "./src/visio/codec.js",
       "target": { "environments": ["node"] },
       "executionProfile": "trusted-in-process",
       "requestedPermissionClasses": ["read-source"]
     },
     {
       "variantId": "portable",
-      "entrypoint": "./src/earth-res/codec.js",
+      "entrypoint": "./src/visio/codec.js",
       "target": { "environments": ["browser-worker", "node-worker"] },
       "executionProfile": "worker-brokered",
       "requestedPermissionClasses": ["read-source"]
     }
   ],
   "limitations": [
-    "Only the RES signature and an optional version word are inspected; producer attribution and the container layout remain unconfirmed.",
-    "Opening, extracting, writing, and repacking always remain unsupported until the layout is established."
+    "Runtime detection distinguishes legacy OLE .vsd files from OOXML .vsdx packages; manifest prefiltering is extension-only because manifest v1 cannot express those alternatives.",
+    "Legacy VSD streams are not decoded beyond container recognition; VSDX preview is limited to bounded page, shape-count, and text structure.",
+    "Geometry, styles, masters, connectors, embedded objects, macros, external links, editing, and source write-back are not implemented or executed."
   ],
   "spec": {
-    "formatRefs": [{ "formatId": "earth-res", "label": "RES container (layout unconfirmed)" }],
-    "roles": ["container"],
+    "formatRefs": [{ "formatId": "visio", "label": "Microsoft Visio document" }],
+    "roles": ["semantic"],
     "sourceTopology": "single",
-    "artifactStages": ["authored", "compiled"],
+    "artifactStages": ["authored"],
     "openIntents": ["probe", "inspect", "full", "export"],
-    "match": {
-      "extensions": ["res"],
-      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "52455300" }]
-    },
+    "match": { "extensions": ["vsd", "vsdx"] },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {
-        "id": "archive-namespace",
-        "contract": "common.archive/entry-namespace",
+        "id": "flow-metadata",
+        "contract": "common.document/flow-metadata",
         "major": 1,
         "stage": "authored",
         "lossy": false
       }
     ],
     "publishesDataSources": [
-      { "contract": "common.view/namespace-entry-source", "major": 1 },
       { "contract": "common.view/tree-data-source", "major": 1 },
       { "contract": "common.view/byte-range-source", "major": 1 }
     ],
@@ -71,6 +68,11 @@
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]
       }
+    ],
+    "traitDeclarations": [
+      { "id": "content.binary", "representation": "source", "presence": "will-expose" },
+      { "id": "content.metadata", "representation": "source", "presence": "will-expose" },
+      { "id": "structure.nodes", "representation": "source", "presence": "may-expose" }
     ],
     "implementationTier": { "claimed": 1 },
     "budgets": {

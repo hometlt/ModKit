@@ -32,7 +32,7 @@
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "thumbnail", "full", "stream", "export"],
-    "match": { "pathGlobs": ["**/*"] },
+    "match": { "signatures": [{ "from": "start", "offset": 4, "bytesHex": "66747970" }] },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {

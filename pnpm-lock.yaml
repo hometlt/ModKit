@@ -350,6 +350,12 @@ importers:
         specifier: workspace:*
         version: link:../../_shared/codec-kit
 
+  extensions/mk2/blizzard-archives:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../_shared/codec-kit
+
   extensions/mk2/blizzard-diablo:
     dependencies:
       '@modkitx-x3/codec-kit':

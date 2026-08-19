@@ -12,9 +12,9 @@ const definition = Object.freeze({
   id: ID,
   format: Object.freeze({ id: 'fsb', label: 'FMOD Sound Bank (FSB5)' }),
   async detect(prefix) {
-    // TODO(port): the v1 manifest routed on name/path only. Until this codec is
-    // ported, claiming anything above 0 would be a detection this module cannot
-    // back with bytes; the candidate still reaches probe through match rules.
+    // TODO(port): the v1 manifest declared no magic. Until this codec is ported,
+    // claiming anything above 0 would be a detection this module cannot back with
+    // bytes; the candidate still reaches probe through its match rules.
     void prefix
     return { confidence: 0, kind: 'structure', note: 'mk2-port-pending' }
   },

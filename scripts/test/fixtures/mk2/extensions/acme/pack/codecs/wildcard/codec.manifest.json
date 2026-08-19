@@ -1,0 +1,27 @@
+{
+  "$comment": "@modkit-legacy-input-fixture — inert MK2 v1 codec manifest, converter input only",
+  "schemaVersion": 1,
+  "publisher": "org.acme",
+  "id": "wildcard",
+  "version": "0.1.0",
+  "contractVersion": 1,
+  "kind": "video",
+  "displayName": "Acme detector-first container",
+  "status": "partial",
+  "sourceKinds": ["file"],
+  "match": { "pathGlobs": ["**/*"] },
+  "capabilities": ["detect", "inspect"],
+  "runtimeVariants": [
+    {
+      "id": "portable",
+      "environments": ["node", "node-worker"],
+      "entrypoints": { "detect": "./detect.js", "runtime": "./index.js" },
+      "operatingSystems": ["any"],
+      "architectures": ["any"],
+      "capabilities": ["detect", "inspect"],
+      "operations": ["video.inspect"]
+    }
+  ],
+  "operations": ["video.inspect"],
+  "limitations": []
+}

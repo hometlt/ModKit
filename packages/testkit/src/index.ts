@@ -24,12 +24,14 @@ export {
   resolveMk2Root,
   runMk2Acceptance,
   runMk2AcceptanceCase,
+  syntheticCorpusRoot,
   tallyMk2Conversion,
   type Mk2AcceptanceOptions,
   type Mk2AcceptanceOutcome,
   type Mk2AcceptanceState,
   type Mk2ConversionTally,
   type Mk2CorpusEntry,
+  type Mk2CorpusKind,
 } from './mk2-acceptance.js'
 export {
   runTextDataConformance,

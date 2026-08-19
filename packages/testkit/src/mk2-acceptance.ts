@@ -1,15 +1,20 @@
 /**
- * Acceptance harness for the MK2 → MK3 converted extensions (OPUS-MK2-01 task B).
+ * Acceptance harness for the MK2 → MK3 converted extensions (OPUS-MK2-01 task B, extended by
+ * OPUS-MK2-02 tasks E/F/G).
  *
  * Not a parity harness: it never compares MK3 output with an MK2 implementation. It answers the
  * only question the conversion pipeline has to answer — does a converted extension, loaded the
- * way a product loads one, open a real file from the MK2 corpus and hand back a descriptor and
- * a working data source?
+ * way a product loads one, open a file and hand back a descriptor and a working data source?
  *
  * `loadExtensionDirectory → buildInventory → openSubject` is exactly the product path
- * (packages/host/test/subject-open.test.ts). Corpus samples are read from the sibling `modkitx`
- * checkout read-only and never copied into the lab; when that checkout is absent every case
- * reports `skipped` so CI without MK2 stays green.
+ * (packages/host/test/subject-open.test.ts). Samples come from two corpora and the outcome says
+ * which one:
+ *
+ *   * `real` — the sibling `modkitx` checkout, read-only, never copied into the lab. When that
+ *     checkout is absent every real case reports `skipped`, so CI without MK2 stays green.
+ *   * `synthetic` — `test/fixtures/mk2-synthetic`, written from format specifications by
+ *     `scripts/gen-synthetic-corpus.mjs`. These always run. They prove structural opening
+ *     (probe, descriptor, one data source); they do not prove fidelity against real encoders.
  */
 
 import { createHash } from 'node:crypto'
@@ -39,18 +44,31 @@ import {
   type TreeDataSource,
 } from '@modkitx-x3/sdk'
 
-/** One corpus case: a real file in the MK2 checkout and the converted codec that must claim it. */
+/** Which corpus a sample comes from; the report counts ported codecs separately per corpus. */
+export type Mk2CorpusKind = 'real' | 'synthetic'
+
+/** One corpus case: a file and the converted codec that must claim it. */
 export interface Mk2CorpusEntry {
-  /** Directory under `extensions/mk2/`. */
+  /** Extension directory relative to `extensions/`, posix — `mk2/common-images`, `common/images`. */
   readonly extension: string
   /** Contribution the host must select — a different winner is a failure, not a pass. */
   readonly contributionId: string
-  /** Sample path relative to the MK2 checkout root, posix separators. */
+  /** `real` samples live in the MK2 checkout, `synthetic` ones in the generated fixtures. */
+  readonly corpus?: Mk2CorpusKind
+  /** Sample path relative to that corpus root, posix separators. */
   readonly sample: string
   /** Lower bound on the selected candidate's probe confidence. */
   readonly minimumConfidence: number
   /** Data source contract that must answer its first request; `tree`, `table` or `byte-range`. */
   readonly dataSource: 'tree' | 'table' | 'byte-range'
+  /**
+   * What the host is told the subject is called. `path` passes the corpus-relative path, the way
+   * a product opens a file inside a mount. `basename` passes the bare file name, which is what a
+   * name-based rule cannot survive: it is how a case proves it routes on bytes (NXT-101B).
+   */
+  readonly route?: 'path' | 'basename'
+  /** Assert the selected candidate was admitted by its signature rather than by its name. */
+  readonly expectSignatureMatch?: boolean
   /** `probe` is not an open intent; the harness always opens for real. */
   readonly intent?: Exclude<OpenIntent, 'probe'>
   readonly mediaType?: string
@@ -62,11 +80,14 @@ export type Mk2AcceptanceState = 'opened' | 'skipped' | 'failed'
 export interface Mk2AcceptanceOutcome {
   readonly entry: Mk2CorpusEntry
   readonly state: Mk2AcceptanceState
+  readonly corpus: Mk2CorpusKind
   /** Why it skipped or failed; absent when it opened. */
   readonly detail?: string
   readonly confidence?: number
   readonly variantId?: string
   readonly formatId?: string
+  /** The host admitted this candidate by a declared byte signature, not by its name or path. */
+  readonly signatureMatch?: boolean
   readonly traits?: readonly string[]
   readonly dataSourceContracts?: readonly string[]
 }
@@ -78,9 +99,15 @@ export interface Mk2ConversionTally {
   /** Of those, the ones whose spec declares byte signatures, so probe compares real bytes. */
   readonly probing: number
   /** Of those, the ones whose module is hand-ported (the generated marker is gone). */
-  readonly opening: number
-  /** Converted minus opening: still throwing `x3.mk2/port-pending`. */
+  readonly ported: number
+  /** Converted minus ported: still throwing `x3.mk2/port-pending`. */
   readonly pending: number
+  /** Codecs whose conversion notes carry at least one debt entry. */
+  readonly withNotes: number
+  /** Codecs left with no candidate rule at all — `match.signatures` must be declared by hand. */
+  readonly needsSignatures: number
+  /** Codecs whose v1 manifest declared a plane (viewer, language, …) v2 cannot carry. */
+  readonly lostPlanes: number
 }
 
 const GENERATED_MARKER = '@generated by scripts/convert-mk2.mjs'
@@ -134,16 +161,33 @@ export function resolveMk2Root(repoRoot: string, env = process.env): string | un
   return directoryExists(join(candidate, 'extensions')) ? candidate : undefined
 }
 
+/** Where `gen-synthetic-corpus.mjs` writes; committed, so it is always there. */
+export function syntheticCorpusRoot(): string {
+  return join(import.meta.dirname, '..', 'test', 'fixtures', 'mk2-synthetic')
+}
+
 /** Counts the converted tree without loading or executing anything in it. */
 export function tallyMk2Conversion(mk2ExtensionsRoot: string): Mk2ConversionTally {
+  const empty: Mk2ConversionTally = {
+    converted: 0,
+    probing: 0,
+    ported: 0,
+    pending: 0,
+    withNotes: 0,
+    needsSignatures: 0,
+    lostPlanes: 0,
+  }
+  if (!directoryExists(mk2ExtensionsRoot)) return empty
   let converted = 0
   let probing = 0
-  let opening = 0
-  if (!directoryExists(mk2ExtensionsRoot))
-    return { converted: 0, probing: 0, opening: 0, pending: 0 }
+  let ported = 0
+  let withNotes = 0
+  let needsSignatures = 0
+  let lostPlanes = 0
   for (const extension of readdirSync(mk2ExtensionsRoot, { withFileTypes: true })) {
     if (!extension.isDirectory()) continue
-    const contributions = join(mk2ExtensionsRoot, extension.name, 'contributions')
+    const directory = join(mk2ExtensionsRoot, extension.name)
+    const contributions = join(directory, 'contributions')
     if (!directoryExists(contributions)) continue
     for (const file of readdirSync(contributions)) {
       if (!file.endsWith('.json')) continue
@@ -155,15 +199,50 @@ export function tallyMk2Conversion(mk2ExtensionsRoot: string): Mk2ConversionTall
       if ((manifest.spec?.match?.signatures?.length ?? 0) > 0) probing += 1
       const entrypoint = manifest.runtimeVariants?.[0]?.entrypoint
       if (entrypoint === undefined) continue
-      const modulePath = join(mk2ExtensionsRoot, extension.name, ...entrypoint.split('/'))
+      const modulePath = join(directory, ...entrypoint.split('/'))
       const source =
         statSync(modulePath, { throwIfNoEntry: false })?.isFile() === true
           ? readFileSync(modulePath, 'utf8')
           : undefined
-      if (source !== undefined && !source.includes(GENERATED_MARKER)) opening += 1
+      if (source !== undefined && !source.includes(GENERATED_MARKER)) ported += 1
+    }
+    // The debt file is inert data beside the extension, so counting it costs one read and no
+    // parsing of the manifests it describes.
+    const notesPath = join(directory, 'MK2-CONVERSION.json')
+    if (statSync(notesPath, { throwIfNoEntry: false })?.isFile() !== true) continue
+    const notes = JSON.parse(readFileSync(notesPath, 'utf8')) as {
+      readonly codecs?: Readonly<
+        Record<
+          string,
+          {
+            readonly lostPlanes?: readonly unknown[]
+            readonly renames?: readonly unknown[]
+            readonly droppedOperations?: readonly unknown[]
+            readonly needsSignatures?: boolean
+          }
+        >
+      >
+    }
+    for (const debt of Object.values(notes.codecs ?? {})) {
+      const carries =
+        (debt.lostPlanes?.length ?? 0) > 0 ||
+        (debt.renames?.length ?? 0) > 0 ||
+        (debt.droppedOperations?.length ?? 0) > 0 ||
+        debt.needsSignatures === true
+      if (carries) withNotes += 1
+      if (debt.needsSignatures === true) needsSignatures += 1
+      if ((debt.lostPlanes?.length ?? 0) > 0) lostPlanes += 1
     }
   }
-  return { converted, probing, opening, pending: converted - opening }
+  return {
+    converted,
+    probing,
+    ported,
+    pending: converted - ported,
+    withNotes,
+    needsSignatures,
+    lostPlanes,
+  }
 }
 
 async function corpusByteSource(path: string): Promise<ArtifactByteSource> {
@@ -177,10 +256,12 @@ async function corpusByteSource(path: string): Promise<ArtifactByteSource> {
 }
 
 export interface Mk2AcceptanceOptions {
-  /** Lab repository root (the directory holding `extensions/mk2`). */
+  /** Lab repository root (the directory holding `extensions/`). */
   readonly repoRoot: string
-  /** MK2 checkout root; `undefined` skips every case. */
+  /** MK2 checkout root; `undefined` skips every `real` case and leaves synthetic ones running. */
   readonly mk2Root: string | undefined
+  /** Synthetic fixture root; defaults to the committed `test/fixtures/mk2-synthetic`. */
+  readonly syntheticRoot?: string
   readonly budget?: ResourceBudget
   /**
    * Resolve the `portable` variant in a Node worker instead of the trusted in-process one. The
@@ -198,16 +279,24 @@ export async function runMk2AcceptanceCase(
   entry: Mk2CorpusEntry,
   options: Mk2AcceptanceOptions,
 ): Promise<Mk2AcceptanceOutcome> {
-  if (options.mk2Root === undefined) {
-    return { entry, state: 'skipped', detail: 'no MK2 checkout beside the lab' }
+  const corpus: Mk2CorpusKind = entry.corpus ?? 'real'
+  const corpusRoot =
+    corpus === 'synthetic' ? (options.syntheticRoot ?? syntheticCorpusRoot()) : options.mk2Root
+  if (corpusRoot === undefined) {
+    return { entry, corpus, state: 'skipped', detail: 'no MK2 checkout beside the lab' }
   }
-  const samplePath = join(options.mk2Root, ...entry.sample.split('/'))
+  const samplePath = join(corpusRoot, ...entry.sample.split('/'))
   if ((await stat(samplePath).catch(() => undefined))?.isFile() !== true) {
-    return { entry, state: 'skipped', detail: `corpus sample is missing: ${entry.sample}` }
+    return { entry, corpus, state: 'skipped', detail: `corpus sample is missing: ${entry.sample}` }
   }
-  const directory = join(options.repoRoot, 'extensions', 'mk2', entry.extension)
+  const directory = join(options.repoRoot, 'extensions', ...entry.extension.split('/'))
   if (!directoryExists(directory)) {
-    return { entry, state: 'failed', detail: `converted extension is missing: ${entry.extension}` }
+    return {
+      entry,
+      corpus,
+      state: 'failed',
+      detail: `converted extension is missing: ${entry.extension}`,
+    }
   }
 
   const input = await loadExtensionDirectory(directory)
@@ -216,12 +305,14 @@ export async function runMk2AcceptanceCase(
     createHostContributionContractRegistry(),
   )
   const source = await corpusByteSource(samplePath)
+  // `path` is the corpus-relative path, the way a product opens a file inside a mount.
+  // `basename` deliberately throws the path away: nothing about the name can help, so the only
+  // way a candidate can reach probe is the declared byte signature.
+  const path = entry.route === 'basename' ? (entry.sample.split('/').at(-1) ?? '') : entry.sample
   const result = await openSubject({
     inventory,
     source,
-    // The corpus-relative path, not the bare file name: a v1 `pathGlobs` rule like `**/*`
-    // needs a directory component, and a product always opens a path inside a mount.
-    path: entry.sample,
+    path,
     ...(entry.mediaType === undefined ? {} : { mediaType: entry.mediaType }),
     intent: entry.intent ?? 'full',
     target:
@@ -249,6 +340,7 @@ export async function runMk2AcceptanceCase(
       .join('; ')
     return {
       entry,
+      corpus,
       state: 'failed',
       detail: `openSubject returned ${result.reason}${explanation === '' ? '' : ` (${explanation})`}`,
     }
@@ -256,10 +348,17 @@ export async function runMk2AcceptanceCase(
 
   const selected = result.selected
   const descriptor = result.descriptor
+  const signatureMatch = result.candidates.some(
+    candidate =>
+      candidate.state === 'selected' &&
+      candidate.diagnostics.some(diagnostic => diagnostic.code === 'x3.host/signature-match'),
+  )
   const observed = {
+    corpus,
     confidence: selected.confidence,
     variantId: selected.variantId,
     ...(descriptor.interpretation === 'codec' ? { formatId: descriptor.identity.formatId } : {}),
+    signatureMatch,
     traits: descriptor.traits.map(trait => trait.id),
     dataSourceContracts: descriptor.dataSources.map(entryRef => entryRef.contract),
   }
@@ -274,6 +373,9 @@ export async function runMk2AcceptanceCase(
   }
   if (selected.confidence < entry.minimumConfidence) {
     return fail(`confidence ${selected.confidence} is below ${entry.minimumConfidence}`)
+  }
+  if (entry.expectSignatureMatch === true && !signatureMatch) {
+    return fail('the winning candidate was admitted by name, not by its declared signature')
   }
 
   // One declared data source has to answer its first request; a descriptor that promises a
@@ -312,26 +414,36 @@ export async function runMk2Acceptance(
   return outcomes
 }
 
-/** The converted / probing / opening / pending table task B asks the test to print. */
+/** The converted / probing / ported / pending table task B asks the test to print. */
 export function formatMk2AcceptanceTable(
   tally: Mk2ConversionTally,
   outcomes: readonly Mk2AcceptanceOutcome[],
 ): string {
+  const openedIn = (corpus: Mk2CorpusKind): number =>
+    outcomes.filter(outcome => outcome.state === 'opened' && outcome.corpus === corpus).length
   const lines: string[] = []
   lines.push('MK2 → MK3 conversion state')
-  lines.push(`  converted ${tally.converted}`)
-  lines.push(`  probing   ${tally.probing}  (spec declares byte signatures)`)
-  lines.push(`  opening   ${tally.opening}  (hand-ported open())`)
-  lines.push(`  pending   ${tally.pending}  (x3.mk2/port-pending)`)
+  lines.push(`  converted        ${tally.converted}`)
+  lines.push(`  with notes       ${tally.withNotes}  (MK2-CONVERSION.json carries debt)`)
+  lines.push(`  probing          ${tally.probing}  (spec declares byte signatures)`)
+  lines.push(`  needsSignatures  ${tally.needsSignatures}  (no candidate rule survives)`)
+  lines.push(`  lost planes      ${tally.lostPlanes}  (v1 viewer/language entrypoints dropped)`)
+  lines.push(`  ported           ${tally.ported}  (hand-written open())`)
+  lines.push(`  port-pending     ${tally.pending}  (x3.mk2/port-pending)`)
+  lines.push(`  opened on real corpus      ${openedIn('real')}`)
+  lines.push(`  opened on synthetic corpus ${openedIn('synthetic')}`)
   lines.push('')
   const width = Math.max(12, ...outcomes.map(outcome => outcome.entry.contributionId.length))
-  lines.push(`  ${'contribution'.padEnd(width)}  state    confidence  sample`)
+  lines.push(`  ${'contribution'.padEnd(width)}  state    corpus     conf  route  sample`)
   for (const outcome of outcomes) {
     const confidence = outcome.confidence === undefined ? '—' : outcome.confidence.toFixed(3)
+    const route = outcome.signatureMatch === true ? 'bytes' : 'name '
     lines.push(
-      `  ${outcome.entry.contributionId.padEnd(width)}  ${outcome.state.padEnd(7)}  ${confidence.padStart(
-        10,
-      )}  ${outcome.entry.sample}${outcome.detail === undefined ? '' : `  [${outcome.detail}]`}`,
+      `  ${outcome.entry.contributionId.padEnd(width)}  ${outcome.state.padEnd(7)}  ${outcome.corpus.padEnd(
+        9,
+      )}  ${confidence.padStart(5)}  ${route}  ${outcome.entry.sample}${
+        outcome.detail === undefined ? '' : `  [${outcome.detail}]`
+      }`,
     )
   }
   return lines.join('\n')

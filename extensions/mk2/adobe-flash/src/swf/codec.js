@@ -1,8 +1,12 @@
-// Hand-ported from the MK2 codec org.modkitx/swf (OPUS-MK2-01 task C pilot).
+// Hand-ported from the MK2 codec org.modkitx/swf (OPUS-MK2-01 task C pilot; signatures added in
+// OPUS-MK2-02 task E).
 //
-// The v1 manifest routes on `pathGlobs: ["**/*"]` — detector-first, so every opened file reaches
-// this probe. That makes a strict signature check the whole job: three known signatures, a
-// plausible version, and a declared length that agrees with the file. Anything less is a 0.
+// The v1 manifest was detector-first: its only match rule was a path glob matching every file,
+// which MK3 does not accept as a wildcard. The contribution now declares the three SWF
+// signatures instead (cited in the extension README), so the host shortlists this codec from the
+// bytes alone — a file called `ipistol.swf` opened by its bare name still reaches this probe.
+// That makes a strict header check the whole job: a known signature, a plausible version, and a
+// declared length that agrees with the file. Anything less is a 0.
 //
 // Fidelity matches the v1 limitation exactly: signature, version, compression mode and declared
 // length. The stage rect and frame rate live behind the compression for CWS/ZWS, and this port

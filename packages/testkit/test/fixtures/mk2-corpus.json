@@ -1,53 +1,165 @@
 {
-  "$comment": "Acceptance corpus for the MK2 → MK3 converted extensions (OPUS-MK2-01 task B). Paths are relative to the MK2 checkout (MODKITX_MK2_ROOT, default ../modkitx) and are READ ONLY — no sample is ever copied into this repository. Every case is skipped when that checkout is absent, so CI without MK2 stays green.",
+  "$comment": "Acceptance corpus for the MK2 → MK3 converted extensions (OPUS-MK2-01 task B, OPUS-MK2-02 task G). `extension` is a directory under `extensions/`. A `real` sample is a path relative to the MK2 checkout (MODKITX_MK2_ROOT, default ../modkitx) and is READ ONLY — no sample is ever copied into this repository; those cases are skipped when that checkout is absent, so CI without MK2 stays green. A `synthetic` sample is a file in test/fixtures/mk2-synthetic, written from the format specification by scripts/gen-synthetic-corpus.mjs; those cases always run and prove structural opening, not fidelity.",
   "entries": [
     {
-      "extension": "common-images",
+      "extension": "mk2/common-images",
       "contributionId": "org.modkitx/webp",
+      "corpus": "real",
       "sample": "-references/website/crossover/uploads/kane.webp",
       "minimumConfidence": 0.9,
       "dataSource": "tree",
       "note": "RIFF/WEBP container: simple, no native decoder, VP8/VP8L/VP8X chunk walk"
     },
     {
-      "extension": "common-audio",
+      "extension": "mk2/common-images",
+      "contributionId": "org.modkitx/jpg",
+      "corpus": "real",
+      "sample": "-references/website/crossover/uploads/earth.jpg",
+      "minimumConfidence": 0.9,
+      "dataSource": "tree",
+      "note": "JFIF segment chain; v1 fidelity is header inspection, no pixel decoding"
+    },
+    {
+      "extension": "mk2/common-audio",
       "contributionId": "org.modkitx/mp3",
+      "corpus": "real",
       "sample": "-references/website/crossover/uploads/welcome-back-commander.mp3",
       "minimumConfidence": 0.8,
       "dataSource": "tree",
       "note": "MPEG-1 layer III frame header; v1 manifest routes on extension only"
     },
     {
-      "extension": "common-models",
+      "extension": "mk2/common-models",
       "contributionId": "org.modkitx/glb",
+      "corpus": "real",
       "sample": "-references/website/old-wiki/src/app/js-3d-model-viewer-master/original/duck.glb",
       "minimumConfidence": 0.9,
       "dataSource": "tree",
       "note": "glTF 2.0 binary container; JSON chunk only, no buffer decoding"
     },
     {
-      "extension": "ea-archives",
+      "extension": "mk2/ea-archives",
       "contributionId": "org.modkitx/mix",
+      "corpus": "real",
       "sample": "-references/Mixer/ccmix/test_files/ts/tem.mix",
       "minimumConfidence": 0.6,
       "dataSource": "tree",
       "note": "Tiberian Sun MIX with an unencrypted (checksummed) header"
     },
     {
-      "extension": "common-vector",
+      "extension": "mk2/common-vector",
       "contributionId": "org.modkitx/svg",
+      "corpus": "real",
       "sample": "-references/m3/packages/three-m3-loader/docs/favicon.svg",
       "minimumConfidence": 0.6,
       "dataSource": "tree",
       "note": "SVG root element; v1 manifest has no magic, so probe parses structure"
     },
     {
-      "extension": "adobe-flash",
+      "extension": "mk2/adobe-flash",
       "contributionId": "org.modkitx/swf",
+      "corpus": "real",
       "sample": "-references/old-modkit-ts/sc2/core.sc2mod/base.sc2data/ui/flash/gameui/ipistol.swf",
       "minimumConfidence": 0.9,
       "dataSource": "tree",
-      "note": "CWS (zlib) SWF; the v1 codec claims header fields only, and so does this port"
+      "route": "basename",
+      "expectSignatureMatch": true,
+      "note": "Task E: opened by the bare file name, so only the declared SWF signature can shortlist it"
+    },
+    {
+      "extension": "mk2/common-audio",
+      "contributionId": "org.modkitx/wav",
+      "corpus": "synthetic",
+      "sample": "minimal.wav",
+      "minimumConfidence": 0.9,
+      "dataSource": "tree",
+      "note": "RIFF/WAVE, 8-bit PCM, four samples; the MK2 checkout has no .wav at all"
+    },
+    {
+      "extension": "mk2/adobe-flash",
+      "contributionId": "org.modkitx/flv",
+      "corpus": "synthetic",
+      "sample": "minimal.flv",
+      "minimumConfidence": 0.9,
+      "dataSource": "tree",
+      "route": "basename",
+      "expectSignatureMatch": true,
+      "note": "FLV header and one video tag; routed by signature, the v1 glob is gone"
+    },
+    {
+      "extension": "mk2/common-audio",
+      "contributionId": "org.modkitx/ogg",
+      "corpus": "synthetic",
+      "sample": "minimal.ogg",
+      "minimumConfidence": 0.9,
+      "dataSource": "tree",
+      "route": "basename",
+      "expectSignatureMatch": true,
+      "note": "Ogg page carrying the Vorbis identification header"
+    },
+    {
+      "extension": "mk2/common-audio",
+      "contributionId": "org.modkitx/opus",
+      "corpus": "synthetic",
+      "sample": "minimal.opus",
+      "minimumConfidence": 0.9,
+      "dataSource": "tree",
+      "route": "basename",
+      "expectSignatureMatch": true,
+      "note": "Ogg page carrying OpusHead: the Vorbis-versus-Opus split the v1 detector owned"
+    },
+    {
+      "extension": "mk2/common-video",
+      "contributionId": "org.modkitx/ogv",
+      "corpus": "synthetic",
+      "sample": "minimal.ogv",
+      "minimumConfidence": 0.9,
+      "dataSource": "tree",
+      "route": "basename",
+      "expectSignatureMatch": true,
+      "note": "Ogg page carrying the Theora identification header"
+    },
+    {
+      "extension": "mk2/common-video",
+      "contributionId": "org.modkitx/mp4",
+      "corpus": "synthetic",
+      "sample": "minimal.mp4",
+      "minimumConfidence": 0.9,
+      "dataSource": "tree",
+      "route": "basename",
+      "expectSignatureMatch": true,
+      "note": "ISO-BMFF ftyp + moov/mvhd; box walk only, no sample tables"
+    },
+    {
+      "extension": "mk2/common-video",
+      "contributionId": "org.modkitx/mpeg",
+      "corpus": "synthetic",
+      "sample": "minimal.mpg",
+      "minimumConfidence": 0.9,
+      "dataSource": "tree",
+      "route": "basename",
+      "expectSignatureMatch": true,
+      "note": "MPEG-1 video elementary stream: sequence header and sequence end code"
+    },
+    {
+      "extension": "mk2/common-video",
+      "contributionId": "org.modkitx/webm",
+      "corpus": "synthetic",
+      "sample": "minimal.webm",
+      "minimumConfidence": 0.9,
+      "dataSource": "tree",
+      "route": "basename",
+      "expectSignatureMatch": true,
+      "note": "EBML header with DocType webm plus a Segment/Info pair"
+    },
+    {
+      "extension": "common/images",
+      "contributionId": "org.modkitx/image-png",
+      "corpus": "synthetic",
+      "sample": "minimal.png",
+      "minimumConfidence": 0.9,
+      "dataSource": "tree",
+      "note": "Cross-check: the synthetic fixture must open under the bundled codec too, or the fixture is wrong and not the codec"
     }
   ]
 }

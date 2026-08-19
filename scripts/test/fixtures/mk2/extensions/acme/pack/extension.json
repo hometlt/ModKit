@@ -7,5 +7,7 @@
   "displayName": "Acme pack",
   "description": "converter fixture",
   "license": "Apache-2.0",
-  "contributes": { "codecs": ["atlas", "exotic", "namespaced", "tile", "writer"] }
+  "contributes": {
+    "codecs": ["atlas", "exotic", "namespaced", "retired", "tile", "wildcard", "writer"]
+  }
 }
