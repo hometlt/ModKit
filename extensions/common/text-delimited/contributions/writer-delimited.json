@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/service-provider-contribution",
+    "major": 1
+  },
+  "id": "org.modkitx/text-delimited-writer",
+  "displayName": "CSV and TSV text writer",
+  "runtimeVariants": [
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/editing/text-writer.js",
+      "target": {
+        "environments": ["browser-worker", "node-worker"]
+      },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "lifecycleScope": "session",
+    "provides": [
+      {
+        "offerId": "csv-source",
+        "contract": "common.edit/writer",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": {
+          "providerId": "org.modkitx/text-delimited-writer",
+          "fidelityEvidenceId": "text-delimited-text-writer-v1",
+          "formatId": "csv",
+          "representationId": "source",
+          "mutationMode": "mutate",
+          "minimumRoundTrip": "byte-identical"
+        }
+      },
+      {
+        "offerId": "tsv-source",
+        "contract": "common.edit/writer",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": {
+          "providerId": "org.modkitx/text-delimited-writer",
+          "fidelityEvidenceId": "text-delimited-text-writer-v1",
+          "formatId": "tsv",
+          "representationId": "source",
+          "mutationMode": "mutate",
+          "minimumRoundTrip": "byte-identical"
+        }
+      }
+    ]
+  }
+}
