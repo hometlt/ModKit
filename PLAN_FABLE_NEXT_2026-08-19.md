@@ -73,7 +73,13 @@ options) → bytes | patch`); хост владеет коммитом — grant
 Готово: ADR + схема + kit‑кейсы + оба доказательства зелёные; `check:mk2` пересчитан; в
 `REPORT_MK2_*` счётчик `needs new contract` уменьшился ровно на покрытое.
 
-### S9 — RPC‑поверхность сервера поверх `subjects.open` (≈ 1 день)
+### S9 — RPC‑поверхность сервера поверх `subjects.open` — _сделано 2026‑08‑19_ (см. IMPLEMENTATION_NOTES S9)
+
+Сделано: subject RPC вынесен в host (`exposeSubjectRpc`/`connectSubjectRpc`), Electron — алиасы;
+`createPathSubjectOpener` (roots‑confinement) в host/node; `createServerApp().exposeSubjectRpc(...)`
+доказан на реальной паре `MessageChannel`. Не сделано: байтовая кодировка кадров для
+socket‑транспортов (S9b — отдельный слайс: codec кадров + прогон kit'а через socket‑пару). Исходный
+план шага:
 
 `x3.app/subject-services@1` как у Electron (`open` → снапшот, `attach` → сессия как handle
 `x3.abi/asset-session@1`) над любым `framePort` (MessagePort / WebSocket‑адаптер через

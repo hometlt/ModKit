@@ -6,6 +6,33 @@ overrides a canonical or detailed owner.
 
 ---
 
+## S9 — the subject RPC is host-level; the server serves subjects over a port (Root/Fable, 2026-08-19)
+
+**What exists.** `packages/host/src/subject-rpc.ts`: the R6 Electron bridge generalised — one root
+`x3.app/subject-services@1` (`open(path)` → inert snapshot, `attach(sessionId)` → the live session
+under `x3.abi/asset-session@1`) served by `exposeSubjectRpc` and consumed by `connectSubjectRpc`
+over anything `framePortFromMessagePort` adapts; the opener is host policy (`SubjectOpener`);
+`presentation` in the snapshot is optional (Electron resolves a plan, other hosts do not).
+`apps/electron/src/subject-rpc.ts` is now aliases over it (Electron names and module identity
+kept; main/renderer/tests unchanged). `@modkitx-x3/host/node` `createPathSubjectOpener`: a
+requested path is resolved, refused outside the configured roots before any stat, opened through
+the S7 file adapter and `subjects.open` under the host's grant/budget, and mapped to the snapshot.
+`createServerApp` gains `exposeSubjectRpc({ port, session, roots, grant?, budget? })`.
+
+**Proof.** `apps/server/test/subject-rpc.test.ts` (2): over a real Node `MessageChannel` the server
+opens a PNG worker-brokered (notice on the wire), the client attaches the session and reads the
+byte-range source through the standard surface (`size() → 2727n`, the PNG signature); a path
+outside the roots is refused, an unclaimed file reports `unresolved/no-candidate`. The transport is
+the one the kit already proves (acc-12: Node `MessageChannel` passes every case); the server adds
+no new transport. Electron RPC tests (3) green on the shared module.
+
+**Not done here.** A byte encoding of frames for socket-shaped transports (WebSocket/TCP) — frames
+are structured-clone values today (bigint, `Uint8Array`, handle refs); a frame codec + kit run over
+a socket pair is its own slice (S9b). Write operations over the RPC (`createSubjectEditing` on the
+serving side, an `edit` arm) — after the Electron editor ports move onto the coordinator.
+
+---
+
 ## UI-01 follow-ups for Root (REPORT_NEXUS_THEMES §3) (Root/Fable, 2026-08-19)
 
 Three small things the Nexus themes could not reach through the parts vocabulary, done as asked:

@@ -52,6 +52,23 @@ export {
   type SubjectServicesOptions,
 } from './subject-services.js'
 export {
+  connectSubjectRpc,
+  exposeSubjectRpc,
+  SUBJECT_SERVICES,
+  SUBJECT_SERVICES_URL,
+  subjectRpcSurfaces,
+  type ConnectSubjectRpcOptions,
+  type ExposeSubjectRpcOptions,
+  type SubjectClientOpenResult,
+  type SubjectOpenedSnapshot,
+  type SubjectOpener,
+  type SubjectOpenSnapshot,
+  type SubjectPreviewSession,
+  type SubjectRpcClient,
+  type SubjectRpcExposure,
+  type SubjectUnresolvedSnapshot,
+} from './subject-rpc.js'
+export {
   activateServiceProvider,
   createHostServiceResolver,
   type HostServiceResolver,

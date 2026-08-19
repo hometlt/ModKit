@@ -13,6 +13,11 @@ export {
   type NodeSubjectServicesOptions,
 } from './subject-services.js'
 export {
+  createPathSubjectOpener,
+  DEFAULT_SUBJECT_OPEN_BUDGET,
+  type PathSubjectOpenerOptions,
+} from './subject-opener.js'
+export {
   NODE_WORKER_LINK_TRANSPORTS,
   nodeRuntimeTargetBase,
   nodeWorkerLinks,

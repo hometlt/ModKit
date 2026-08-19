@@ -1,14 +1,19 @@
 import { uint64 } from '@modkitx-x3/core'
 import { createHostTopology, type HostTopology } from '@modkitx-x3/sdk'
 import type { Diagnostic } from '@modkitx-x3/core'
-import type {
-  ExecutionBackendRegistry,
-  ExtensionInput,
-  HostComposition,
-  SubjectServices,
+import type { PermissionGrant, ResourceBudget } from '@modkitx-x3/sdk'
+import {
+  exposeSubjectRpc,
+  type ExecutionBackendRegistry,
+  type ExtensionInput,
+  type HostComposition,
+  type SubjectRpcExposure,
+  type SubjectServices,
 } from '@modkitx-x3/host'
+import type { MessagePortFrameOptions, MessagePortLike } from '@modkitx-x3/host/execution'
 import {
   createNodeSubjectServices,
+  createPathSubjectOpener,
   nodeRuntimeTargetBase,
   nodeWorkerLinks,
   nodeWorkerRealmProfile,
@@ -88,6 +93,21 @@ export interface ServerHealthSnapshot {
   readonly diagnosticCount: number
 }
 
+export interface ServerSubjectRpcOptions {
+  /** The port the server hands to a client realm or process (anything `framePortFromMessagePort` adapts). */
+  readonly port: MessagePortLike
+  readonly listener?: MessagePortFrameOptions['listener']
+  /** Endpoint identity the client must connect with. */
+  readonly session: string
+  readonly generation?: number
+  /** Absolute directories clients may open files from; nothing outside them is ever stat'ed. */
+  readonly roots: readonly string[]
+  /** The grant opens run under (default: `read-source` only). */
+  readonly grant?: PermissionGrant
+  readonly budget?: ResourceBudget
+  readonly onDiagnostic?: (diagnostic: { code: string; message: string }) => void
+}
+
 export interface ServerApp {
   readonly composition: HostComposition
   /** The realm codecs run in (worker threads); requests that open subjects resolve for its target. */
@@ -98,6 +118,12 @@ export interface ServerApp {
    * realm's target — what a request handler calls to open a subject for a client.
    */
   readonly subjects: SubjectServices
+  /**
+   * The product RPC path (S9): serve `x3.app/subject-services@1` (`open` → snapshot,
+   * `attach` → the live session under `x3.abi/asset-session@1`) over a port, with file access
+   * confined to `roots`. The same root Electron serves its renderer.
+   */
+  exposeSubjectRpc(options: ServerSubjectRpcOptions): SubjectRpcExposure
   health(): ServerHealthSnapshot
 }
 
@@ -123,6 +149,20 @@ export async function createServerApp(
     workers,
     executionBackends,
     subjects,
+    exposeSubjectRpc: (rpc: ServerSubjectRpcOptions) =>
+      exposeSubjectRpc({
+        port: rpc.port,
+        ...(rpc.listener === undefined ? {} : { listener: rpc.listener }),
+        session: rpc.session,
+        ...(rpc.generation === undefined ? {} : { generation: rpc.generation }),
+        open: createPathSubjectOpener({
+          subjects,
+          roots: rpc.roots,
+          ...(rpc.grant === undefined ? {} : { grant: rpc.grant }),
+          ...(rpc.budget === undefined ? {} : { budget: rpc.budget }),
+        }),
+        ...(rpc.onDiagnostic === undefined ? {} : { onDiagnostic: rpc.onDiagnostic }),
+      }),
     health: () =>
       Object.freeze({
         status: composition.inventory.diagnostics.some(item => item.severity === 'error')
