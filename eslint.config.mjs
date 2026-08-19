@@ -6,6 +6,8 @@ import tseslint from 'typescript-eslint'
 export default tseslint.config(
   {
     ignores: [
+      // agent worktrees: copies of this repository that run their own gates
+      '.claude/**',
       '**/dist/**',
       // bundled application output, not authored source
       '**/dist-app/**',

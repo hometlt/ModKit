@@ -77,12 +77,23 @@ export {
   type ProviderActivationOptions,
 } from './service-leases.js'
 export {
+  createEvidenceRegistry,
+  createRawWriter,
+  HOST_RAW_WRITER_EVIDENCE_ID,
+  HOST_RAW_WRITER_EVIDENCE_RECORD,
+  HOST_RAW_WRITER_IDENTITY,
+  type EvidenceRegistry,
+  type FidelityEvidenceRecord,
+  type RawWriterOptions,
+} from './editing-evidence.js'
+export {
   assetRevisionFromDescriptor,
   createSubjectEditing,
   NO_STAGED_PAYLOADS,
   subjectEditTargetsFromDescriptor,
   type SubjectEditing,
   type SubjectEditingOptions,
+  type SubjectEditorPorts,
 } from './subject-editing.js'
 export {
   registerStandardEditingDefinitions,

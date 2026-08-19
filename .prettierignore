@@ -12,3 +12,5 @@ packages/sdk/schemas/
 REPORT_MK2_ALLOCATION_*.md
 # external UI mockup drop (Nexus IDE .dc.html + support scripts) — not lab source
 NexusForgeUI/
+# agent worktrees: copies of this repository, checked by their own gates
+.claude/

@@ -19,6 +19,9 @@ import type {
   AssetEditPlan,
   AssetRevision,
   CommitCoordinator,
+  EditAuthorization,
+  EditAuthorizationPort,
+  EditSession,
   FidelityEvidence,
   GrantSnapshot,
   OperationOutput,
@@ -117,6 +120,18 @@ export interface SubjectEditingOptions {
   readonly snapshotId?: string
 }
 
+/**
+ * The four ports a `ViewerModule`-hosted editor (`@modkitx-x3/ui`) expects: the 13D edit session,
+ * the commit coordinator, the payload store and a host authorization port. Present only when a
+ * writer backs the subject (Path B); the ui drops editable stages when these are absent.
+ */
+export interface SubjectEditorPorts {
+  readonly edit: EditSession
+  readonly commit: CommitCoordinator
+  readonly payloads: PayloadStore
+  readonly authorization: EditAuthorizationPort
+}
+
 export interface SubjectEditing {
   readonly revision: AssetRevision
   readonly targets: readonly SubjectEditTarget[]
@@ -125,6 +140,8 @@ export interface SubjectEditing {
   readonly coordinator: CommitCoordinator
   /** Present when a writer was supplied (Path B). */
   readonly session?: ManagedEditSession
+  /** The ui editor ports, present when a writer was supplied. */
+  readonly editorPorts?: SubjectEditorPorts
   /**
    * Path A: accept an `edit-plan` operation output for this subject. Refuses any other output
    * kind, a plan whose targets are not this subject's, or a plan pinned to another revision.
@@ -172,6 +189,23 @@ export function createSubjectEditing(options: SubjectEditingOptions): SubjectEdi
     options.writer === undefined
       ? undefined
       : createEditSession({ revision, targets, writer: options.writer })
+  // one authorization port over the host-issued snapshot: the user already chose to edit; a host
+  // with a stricter policy (a confirm dialog, a per-save grant) replaces this without the editor
+  // knowing. `request` hands back the same snapshot `prepare`/`commit` validate.
+  const authorization: EditAuthorizationPort = Object.freeze({
+    async request(): Promise<EditAuthorization | undefined> {
+      return { grant: grantSnapshot }
+    },
+  })
+  const editorPorts: SubjectEditorPorts | undefined =
+    session === undefined
+      ? undefined
+      : Object.freeze({
+          edit: session,
+          commit: coordinator,
+          payloads: options.payloads ?? NO_STAGED_PAYLOADS,
+          authorization,
+        })
   const targetIds = new Set(targets.map(target => target.targetId))
   const sourceIds = new Set(targets.map(target => target.ownerSource.id))
   const expected = canonicalJsonStringify(revision)
@@ -182,6 +216,7 @@ export function createSubjectEditing(options: SubjectEditingOptions): SubjectEdi
     grantSnapshot,
     coordinator,
     ...(session === undefined ? {} : { session }),
+    ...(editorPorts === undefined ? {} : { editorPorts }),
     planFromOperation(output) {
       if (output.kind !== 'edit-plan') {
         throw new ModkitError({
