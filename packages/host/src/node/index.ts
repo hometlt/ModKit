@@ -13,6 +13,13 @@ export {
   type NodeSubjectServicesOptions,
 } from './subject-services.js'
 export {
+  loadExtensionRoots,
+  type ExtensionRootFailure,
+  type ExtensionRootRequest,
+  type LoadedExtensionRoots,
+  type LoadExtensionRootsOptions,
+} from './extension-roots.js'
+export {
   createPathSubjectOpener,
   DEFAULT_SUBJECT_OPEN_BUDGET,
   type PathSubjectOpenerOptions,
