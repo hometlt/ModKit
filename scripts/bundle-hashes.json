@@ -10,8 +10,8 @@
   "packages/sdk/dist/editing.js": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "packages/sdk/dist/ui-contracts/index.js": "6e03092e3bfee719914aa5673a12fcd5255fb977e8996890e187e231d4fe610a",
   "packages/vfs/dist/index.js": "0e4cc77bf46abb06e54318f2b6b1bec22dffdd2db11f02f573a0af0aa7dd08d5",
-  "packages/host/dist/index.js": "84f94bcec54e06a88901b07a50346610239884886691c3672f43648b3fbbf10a",
-  "packages/host/dist/node/index.js": "f3e11f9f7270788a3b329f303b08117dfd3766f291c476306ae8931d7f754137",
+  "packages/host/dist/index.js": "454c6dd0c2a9258a9d095e033f48c132be0f2e97675a19ac9fe6117512c6d422",
+  "packages/host/dist/node/index.js": "6519cf32fa19a46d283790326f75393fd23ecd1959c0cf01c3c5868d3373b94c",
   "packages/host/dist/browser/index.js": "d8be4fddab5b9a2a5f47157de733c0be2be60b7f3345f66e83b66dd0f0b78391",
   "packages/host/dist/execution/index.js": "374839aa5b3faec7f362d988ffe2e3f624da127bf3324b26aae58cab496870f2",
   "packages/host/dist/node/worker-bootstrap.js": "47a8915d5ab211604d12083903c7af8b8b3399b46166229224fa926153625377",
@@ -41,5 +41,5 @@
   "packages/ui/dist/graph/index.js": "31e6ded0ec3969c6d5153500a11d5d90f58079a3527d139f6a72f6d5127943f3",
   "packages/ui/dist/workbench/index.js": "1cabfad8cd32eb000c13ee489a6c60b8c5d7c1561f03d1c68710443675ce4974",
   "packages/ui/dist/settings/index.js": "56ce5e80564551f5d4f1bbdd4c522ddbb64540966ca8ca5063305e06c8bed0d3",
-  "apps/modkit-cli/dist/main.js": "ad7a9ca12ab89d7c3573a4a06ba3a3c85b40ecefb29038c9ecffee5b2c7fc1c7"
+  "apps/modkit-cli/dist/main.js": "d97c54e7a4716be186b8a96018bcad984d2d6f37d641d92a4494777f9b0337fa"
 }
