@@ -6,6 +6,58 @@ overrides a canonical or detailed owner.
 
 ---
 
+## F1 / F3 / S12 — the pieces the applications need: a JSON transport, an evidence policy with a raw writer, and connectable extensions (Root/Fable, 2026-08-19)
+
+Three small slices, each closing something a product could not do honestly.
+
+**F1 — JSON frame codec** (`packages/host/src/execution/frame-json.ts`). Capability-RPC frames are
+structured-clone values; a VS Code webview channel, a WebSocket or a pipe carries text. The codec
+tags what JSON lacks — `bigint`, `Uint8Array`, and the numbers JSON cannot spell (`-0`, `NaN`,
+`±Infinity`) — escapes an object that owns a `$x3` key, and recreates every key as an own property
+so a `__proto__` key arrives as the forbidden key it is. What it cannot carry faithfully (a partial
+typed-array view, a shared buffer) is refused at `post` rather than laundered into a clean copy.
+`framePortFromJsonPort` adapts any text channel. Proof: the conformance kit passes every case over
+a JSON text pair with `transfer: copied`, and the one hostile probe that needs a partial view is
+reported as skipped, not silently passed (`packages/testkit/test/capability-rpc-conformance.test.ts`);
+unit proofs in `packages/host/test/frame-json.test.ts` (4).
+
+**F3 — evidence policy and the raw writer** (`packages/host/src/editing-evidence.ts`). 13D refuses a
+plan whose claim has no evidence, so every product was hand-building evidence objects — the way a
+host ends up asserting a proof it does not have. `createEvidenceRegistry` makes the policy data: a
+record says which writer produced which claim and what proves it, a plan is proven only by a record
+with exactly its claim (a `semantic` record never stands in for `byte-identical`), and anything the
+host has not decided about stays `fidelity-unproven`. `createRawWriter` is the writer for editors
+with no format knowledge (hex, plain text): literal replacements only, no re-encoding, so its claim
+is byte-identical and its evidence is structural — `by-construction`, which the record says instead
+of naming a corpus that was never run. `allowWholeSource: false` is the guard a bounded editor
+needs: an editor holding only a prefix of a large file must not be able to save "the whole file".
+`createSubjectEditing` now also returns `editorPorts` — the exact `edit`/`commit`/`payloads`/
+`authorization` shape `createCodecPreview` feeds a ui editor module. Proof (4):
+`packages/host/test/editing-evidence.test.ts`.
+
+**S12 — connecting extensions** (`packages/host/src/node/extension-roots.ts`, `apps/electron`).
+`loadExtensionDirectory` throws, which is right for a build step and wrong for a product reading a
+user's extension list: one moved directory would stop the application. `loadExtensionRoots` loads
+each root independently and reports what did not load — unreadable directory, a folder that is not
+an extension at all (no authored container: the user picked the wrong folder and learns it), a
+coordinate another root already claimed (first wins, second reported, so load order never becomes
+the authority), an id that does not match the settings entry. Trust is not inferrable:
+`allowTrustedInProcess` is refused for anything but `bundled` roots before the gate would refuse it.
+Electron main now reads its settings list and connects those extensions as `installed` artifacts,
+reports a malformed settings file instead of letting the extensions vanish silently, and exposes
+the report as `ElectronSubjectServices.extensions`. Proof: `packages/host/test/extension-roots.test.ts`
+(4) plus a live run with an isolated `--user-data-dir` — one scaffolded extension connected
+(`[main] user extensions: org.example/demo-format`), one missing directory reported
+(`x3.host/extension-root-unreadable`), the application still opened a PNG worker-brokered.
+
+**Not done here.** The PWA's extension connection (a browser has no directory to load from without
+File System Access handles, and the attested-catalog model has to grow a second, unattested lane —
+a Root slice with its own honesty questions); an Electron-level test of the wiring (the app's test
+directory is being changed by a parallel agent; it lands with that merge); wiring `editorPorts`
+into the Electron and PWA previews (waiting on the same merges).
+
+---
+
 ## S9 — the subject RPC is host-level; the server serves subjects over a port (Root/Fable, 2026-08-19)
 
 **What exists.** `packages/host/src/subject-rpc.ts`: the R6 Electron bridge generalised — one root
