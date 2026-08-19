@@ -1,26 +1,23 @@
 import { canonicalJsonStringify, ModkitError, uint64, type Diagnostic } from '@modkitx-x3/core'
 import {
   createHostTopology,
-  type ArtifactByteSource,
   type AnyDescriptor,
   type HostTopology,
-  type OpenIntent,
-  type PermissionGrant,
   type PresentationPlan,
   type PresentationSlot,
-  type ResourceBudget,
 } from '@modkitx-x3/sdk'
 import {
+  createBundledServiceDefinitionRegistry,
   createHostComposition,
-  createServiceContractDefinitionRegistry,
-  createServiceFacetMatcherProfileRegistry,
-  openSubject,
+  createSubjectServices,
+  registerServiceDefinitionsOrThrow,
   resolvePresentationPlan,
-  registerServiceContractDefinitionsFromInventory,
+  serviceDefinitionSurfaces,
   type ExecutionBackendRegistry,
   type ExtensionInput,
   type HostComposition,
-  type OpenSubjectResult,
+  type SubjectOpenRequest,
+  type SubjectServices,
 } from '@modkitx-x3/host'
 import {
   createNodeExecutionBackends,
@@ -29,7 +26,6 @@ import {
   nodeWorkerLinks,
   nodeWorkerRealmProfile,
   workerBackendPolicy,
-  type DataSourceSurfaceSource,
   type WorkerBackendPolicy,
 } from '@modkitx-x3/host/node'
 
@@ -301,22 +297,13 @@ export interface ElectronAppOptions {
   readonly onDiagnostic?: (diagnostic: Diagnostic) => void
 }
 
-export interface ElectronSubjectServices {
+/** The host's subject services (S7) plus the Electron application they were built from. */
+export interface ElectronSubjectServices extends SubjectServices {
   readonly application: ElectronApp
-  /** Lowercase extension hints for shell registration; detection remains inventory-owned. */
-  readonly supportedExtensions: readonly string[]
-  /** Execution profiles the composition can honour (`worker-brokered` = codecs run in worker threads). */
-  readonly executionProfiles: readonly string[]
-  open(options: {
-    readonly source: ArtifactByteSource
-    readonly path: string
-    readonly mediaType?: string
-    readonly intent: Exclude<OpenIntent, 'probe'>
-    readonly grant: PermissionGrant
-    readonly budget: ResourceBudget
-    readonly signal?: AbortSignal
-  }): Promise<OpenSubjectResult>
 }
+
+/** One open request as the main process issues it (re-exported for the RPC and the tests). */
+export type ElectronSubjectOpenRequest = SubjectOpenRequest
 
 interface ElectronPresentationTicket {
   readonly bindingId: string
@@ -410,78 +397,27 @@ export async function createElectronSubjectServices(
     ...input,
     execution: { origin: 'bundled', allowTrustedInProcess: true },
   }))
-  // the definitions registry is filled from the inventory below; the worker backend reads the
-  // surfaces at every spawn, so registering the backend first is fine
-  let definitionSurfaces: readonly DataSourceSurfaceSource[] = []
+  // Only generated first-party inputs reach this registry (bundled: every inventoried owner is a
+  // namespace owner). Installed/linked extensions are never promoted by this bootstrap and need
+  // an explicit namespace-delegation policy later. The registry is filled after composition; the
+  // worker backend reads the surfaces at every spawn, so binding it first is fine.
+  const definitions = createBundledServiceDefinitionRegistry()
   const executionBackends = createNodeExecutionBackends({
     policy: ELECTRON_WORKER_POLICY,
-    foreignSurfaces: () => definitionSurfaces,
+    foreignSurfaces: () => serviceDefinitionSurfaces(definitions),
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
   })
   const application = await createElectronApp(bundled, { executionBackends })
-  const definitions = createServiceContractDefinitionRegistry({
-    matcherProfiles: createServiceFacetMatcherProfileRegistry(),
-    // Only generated first-party inputs reach this registry. Installed/linked extensions are never
-    // promoted by this bootstrap and need an explicit namespace-delegation policy later.
-    isNamespaceOwner: () => true,
-    validateJsonSchemaRef: () => [],
+  await registerServiceDefinitionsOrThrow(application.main.inventory, definitions)
+  // codecs are resolved against main's inventory and activated for the worker realm: portable
+  // variants, worker-brokered; the gate refuses (never downgrades) a candidate without a boundary
+  const services = createSubjectServices({
+    inventory: application.main.inventory,
+    target: application.workers.target,
+    executionBackends: application.executionBackends,
+    serviceDefinitions: definitions,
   })
-  const registrations = await registerServiceContractDefinitionsFromInventory(
-    application.main.inventory,
-    definitions,
-  )
-  const rejected = registrations.find(result => result.state === 'rejected')
-  if (rejected !== undefined) {
-    throw new ModkitError({
-      code: 'x3.app/electron-contract-definition-rejected',
-      message: 'a bundled service contract definition failed closed',
-      context: { diagnostics: rejected.diagnostics },
-    })
-  }
-  definitionSurfaces = definitions
-    .list()
-    .filter(registration => registration.surface !== undefined)
-    .map(registration => ({
-      contract: registration.contract,
-      major: registration.major,
-      surface: registration.surface,
-    }))
-
-  const supportedExtensions = Object.freeze(
-    [
-      ...new Set(
-        application.main.inventory.extensions.flatMap(extension =>
-          extension.contributions.flatMap(contribution => {
-            const manifest = contribution.manifest
-            if (manifest?.contract.id !== 'org.modkitx/codec-contribution') return []
-            const spec = manifest.spec as { readonly match?: { readonly extensions?: unknown } }
-            return Array.isArray(spec.match?.extensions)
-              ? spec.match.extensions.filter(
-                  (value): value is string => typeof value === 'string' && value.length > 0,
-                )
-              : []
-          }),
-        ),
-      ),
-    ].sort(),
-  )
-
-  const services: ElectronSubjectServices = {
-    application,
-    supportedExtensions,
-    executionProfiles: application.executionBackends.profiles,
-    // codecs are resolved and activated for the worker realm: portable variants, worker-brokered;
-    // the gate refuses (never downgrades) when a candidate has no executable boundary there
-    open: request =>
-      openSubject({
-        inventory: application.main.inventory,
-        serviceDefinitions: definitions,
-        target: application.workers.target,
-        executionBackends: application.executionBackends,
-        ...request,
-      }),
-  }
-  return Object.freeze(services)
+  return Object.freeze({ ...services, application })
 }
 
 /*
@@ -491,3 +427,5 @@ export async function createElectronSubjectServices(
  */
 
 export { createGrantedRoots, type GrantedRoots, type PathTools } from './roots.js'
+// S7: main.cjs opens files through the host's revision-checked adapter (no private copy here)
+export { openFileArtifactSource } from '@modkitx-x3/host/node'

@@ -119,7 +119,19 @@ export interface PrivateInventoryRecord {
   readonly execution: ExtensionExecutionPolicy
 }
 
-const privateRecords = new WeakMap<InventoryContribution, PrivateInventoryRecord>()
+/**
+ * The private record travels on the contribution object itself under a well-known symbol —
+ * non-enumerable, non-writable, frozen — rather than in a module-local WeakMap: the published
+ * entries of this package (`.`, `./node`, `./browser`, …) are bundled separately, so an inventory
+ * built by one entry must still be honoured by another (S1b did the same for the execution
+ * backend registry). Structural copies (spread, JSON, `Object.assign`) never carry a
+ * non-enumerable symbol property, so a look-alike still has no record.
+ */
+const INVENTORY_RECORD = Symbol.for('x3.host/inventory-record')
+
+interface RecordCarrier {
+  readonly [INVENTORY_RECORD]?: PrivateInventoryRecord
+}
 
 function deepFreezeJson<Value>(value: Value): Value {
   if (typeof value !== 'object' || value === null || Object.isFrozen(value)) return value
@@ -131,7 +143,12 @@ function deepFreezeJson<Value>(value: Value): Value {
 export function inventoryRecordFor(
   contribution: InventoryContribution,
 ): PrivateInventoryRecord | undefined {
-  return privateRecords.get(contribution)
+  const record = (contribution as RecordCarrier)[INVENTORY_RECORD]
+  return record !== undefined &&
+    Object.isFrozen(record) &&
+    record.publicRecord === contribution.record
+    ? record
+    : undefined
 }
 
 function coordinate(manifest: ExtensionManifest): string {
@@ -278,7 +295,7 @@ export async function buildInventory(
           }
         }
       }
-      const contribution: InventoryContribution = Object.freeze({
+      const contribution: InventoryContribution = {
         path: entry.path,
         ...(ownedManifest === undefined ? {} : { manifest: ownedManifest }),
         specState: result.specState,
@@ -287,9 +304,9 @@ export async function buildInventory(
         facts,
         ...(record === undefined ? {} : { record }),
         diagnostics: Object.freeze(localDiagnostics),
-      })
+      }
       if (record !== undefined && ownedManifest !== undefined) {
-        privateRecords.set(contribution, {
+        const privateRecord: PrivateInventoryRecord = Object.freeze({
           publicRecord: record,
           manifest: ownedManifest,
           verifyArtifactDigest: input.artifact.verifyArtifactDigest,
@@ -299,8 +316,14 @@ export async function buildInventory(
           artifactRoot: new URL(input.artifact.artifactRoot.href),
           execution: execution.policy,
         })
+        Object.defineProperty(contribution, INVENTORY_RECORD, {
+          value: privateRecord,
+          enumerable: false,
+          writable: false,
+          configurable: false,
+        })
       }
-      contributions.push(contribution)
+      contributions.push(Object.freeze(contribution))
     }
 
     extensions.push({

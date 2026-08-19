@@ -31,60 +31,7 @@ const root = import(pathToFileURL(path.join(__dirname, '..', 'dist', 'index.js')
  */
 const MAXIMUM_SUBJECT_BYTES = 64 * 1024 * 1024
 
-const sameFileRevision = (left, right) =>
-  left.dev === right.dev &&
-  left.ino === right.ino &&
-  left.size === right.size &&
-  left.mtimeNs === right.mtimeNs
-
-/** Random-access file source whose revision is checked before every bounded read. */
-async function fileByteSource(file) {
-  const initial = await fsp.stat(file, { bigint: true })
-  if (!initial.isFile()) throw new TypeError('subject path is not a file')
-  if (initial.size > BigInt(Number.MAX_SAFE_INTEGER)) {
-    throw new RangeError('subject exceeds the exact random-access range of the Node adapter')
-  }
-  const uri = pathToFileURL(file).href
-  const revision = `provider-token:${initial.dev}-${initial.ino}-${initial.size}-${initial.mtimeNs}`
-  const read = async (offset, length, signal) => {
-    if (signal?.aborted) throw new DOMException('cancelled', 'AbortError')
-    if (offset < 0n || !Number.isSafeInteger(length) || length < 0) {
-      throw new RangeError('file read must use a non-negative exact range')
-    }
-    if (offset > initial.size) throw new RangeError('file read starts beyond the source size')
-    const available = initial.size - offset
-    const boundedLength = Number(available < BigInt(length) ? available : BigInt(length))
-    const current = await fsp.stat(file, { bigint: true })
-    if (!sameFileRevision(initial, current)) throw new Error('source revision changed during open')
-    const handle = await fsp.open(file, 'r')
-    try {
-      const bytes = new Uint8Array(boundedLength)
-      const { bytesRead } = await handle.read(bytes, 0, boundedLength, Number(offset))
-      return bytesRead === boundedLength ? bytes : bytes.slice(0, bytesRead)
-    } finally {
-      await handle.close()
-    }
-  }
-  return {
-    kind: 'bytes',
-    ref: { id: uri, uri },
-    revision,
-    size: initial.size,
-    read,
-    async *stream(range, signal) {
-      const start = range?.offset ?? 0n
-      const total = range?.length ?? initial.size - start
-      let consumed = 0n
-      while (consumed < total) {
-        const length = Number(total - consumed > 1024n * 1024n ? 1024n * 1024n : total - consumed)
-        const bytes = await read(start + consumed, length, signal)
-        if (bytes.byteLength === 0) return
-        consumed += BigInt(bytes.byteLength)
-        yield bytes
-      }
-    },
-  }
-}
+/* S7: the file adapter is the host's `openFileArtifactSource` (revision-checked reads). */
 
 /**
  * Register this build for a set of file extensions.
@@ -169,6 +116,7 @@ async function createWindow() {
     resolveElectronPresentationPlan,
     createGrantedRoots,
     exposeElectronSubjectRpc,
+    openFileArtifactSource,
   } = await root
 
   const repositoryRoot = path.resolve(__dirname, '..', '..', '..')
@@ -278,7 +226,7 @@ async function createWindow() {
    */
   const openSubjectForRpc = async (requestedPath, signal) => {
     const file = roots.require(requestedPath)
-    const source = await fileByteSource(file)
+    const source = await openFileArtifactSource(file)
     const result = await subjectServices.open({
       source,
       path: file,

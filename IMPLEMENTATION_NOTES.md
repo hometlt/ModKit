@@ -6,6 +6,73 @@ overrides a canonical or detailed owner.
 
 ---
 
+## S7 — the product open path of every Node host: one subject-services builder, `modkit open`, server/automation `subjects` (Root/Fable, 2026-08-19)
+
+**What exists.** `packages/host/src/subject-services.ts` (root entry): `SubjectOpenRequest`
+(the request every product issues), `SubjectServices` (`inventory`, `target`,
+`executionBackends`, `executionProfiles`, `supportedExtensions`, `serviceDefinitions?`, `open`),
+`createSubjectServices` (bind an inventory, a target and a backend registry into `openSubject`),
+`supportedExtensionHints` (the extraction Electron and the PWA had each copied),
+`createBundledServiceDefinitionRegistry` (every inventoried owner accepted — for inputs the host
+vouches for, never for installed/linked promotion), `registerServiceDefinitionsOrThrow`
+(`x3.host/service-definition-rejected` — a partially-defined host is refused),
+`serviceDefinitionSurfaces` (what backends read as `foreignSurfaces`).
+`packages/host/src/node/subject-services.ts`: `createNodeSubjectServices({topology, realms:
+{host, workers}, extensions, policy?, onDiagnostic?, serviceDefinitions?: 'bundled'|false|
+registry, trustedInProcess?})` — backends with the definitions bound late, both compositions,
+fail-closed registration, `createSubjectServices` for the worker realm's target; returns the
+services plus `host`/`workers` compositions. `packages/host/src/node/file-artifact-source.ts`:
+`openFileArtifactSource(path)` — the one production file adapter (revision
+`provider-token:<dev>-<ino>-<size>-<mtimeNs>`, every bounded read re-checks it:
+`x3.host/source-revision-changed`; `source-not-a-file`, `invalid-source-range`,
+`source-size-unrepresentable`). Products: `modkit open <file> --ext <dir> [--ext …]
+[--intent inspect|full] [--trust] [--json]` — roots are _linked_ artifacts (`--trust` is the
+explicit in-process decision for all of them), the CLI's worker realm is the target, output names
+the selection, boundary, format, traits, operations, data sources, candidates and diagnostics;
+exit 0 opened / 1 unresolved or inventory errors / 2 usage or IO. `createServerApp` and
+`createAutomationHost` compose through `createNodeSubjectServices` and expose `subjects`
+(`executionBackends` option dropped — nothing used it). `createElectronSubjectServices` and
+`createWebSubjectServices` are thin over the shared pieces (`ElectronSubjectServices` /
+`WebSubjectServices` now `extends SubjectServices`); Electron `main.cjs` opens files through
+`openFileArtifactSource` (its private `fileByteSource` copy is gone).
+
+**One thing the wiring surfaced and fixed.** The published entries of `@modkitx-x3/host` are
+bundled separately (six entries), so an inventory built inside `host/node` (by
+`createNodeSubjectServices`) carried private records in _that_ copy's module-local WeakMap and
+was "record-less" for the root entry: `apps:check`'s `offersFromInventory` saw 0 offers for the
+automation host. The private record now travels on the contribution object itself under
+`Symbol.for('x3.host/inventory-record')` — non-enumerable, non-writable, frozen, cross-checked
+against `contribution.record` — exactly the S1b decision for the execution-backend registry:
+any copy of the host honours it, a structural copy (spread/JSON/`Object.assign`) still carries
+no record. The other brand tables (`offerBindings`, `resolverProducts`, `ticketBindings`) are
+intra-pipeline (one `openSubject` runs inside one copy) and were left as WeakMaps; the same move
+applies if a cross-entry flow ever needs them.
+
+**Proof.** `packages/host/test/subject-services.test.ts` (7): hints lowercase/unique/sorted;
+`createNodeSubjectServices` opens a real PNG worker-brokered (both compositions exposed,
+`trusted-node` rejected for a linked root, `byte-range-source.size() → 2727n`), the root
+entry's `offersFromInventory` recognises the node-built inventory while a spread copy of a
+contribution has no record; `serviceDefinitions: false` / a given registry; `createSubjectServices`
+
+- definitions helpers; `openFileArtifactSource` bounded reads, refused ranges, revision change
+  refused, directories refused. `apps/modkit-cli/test/cli.test.ts` (+2): `modkit open` JSON
+  opened/portable/worker-brokered/trusted rejected, human line names the boundary, exit 1/2/2/2.
+  `apps/server` and `apps/automation-host` (+1 each): `subjects.open` opens the PNG worker-brokered
+  with `installed`, untrusted inputs. Live: `modkit open favicon-32.png --ext extensions/common/images`
+  opens in 1.4 s and the process exits; the real Electron app (`--open <dir> --selftest`) logs
+  `[main] subject favicon-32.png -> org.modkitx/image-png/portable (100%)` through the shared adapter
+  and mounts the Image view. Full gate set green (83 files / 694 tests, `apps:check` 16 cases,
+  legacy 687, imports 204, extensions 53, schemas, catalogs, lint, format); one transient
+  `ajv/dist/runtime/ucs2length.js` load failure across suites reproduced only while node_modules was
+  being churned by the concurrent Opus tree and vanished on rerun.
+
+**Not done here.** An HTTP/RPC surface for the server over `subjects.open` (sessions as handles
+of `x3.app/subject-services@1`, as Electron does); a `--bundled` extension set for the CLI outside
+the repository (today: explicit `--ext` roots only, no discovery); moving the remaining brand
+tables onto their objects (not needed by any flow yet).
+
+---
+
 ## S6 — the PWA product path: attested catalog, served artifacts, vendor worker bundles, open flow (Root/Fable, 2026-08-19)
 
 **What exists.** `scripts/emit-web-catalog.mjs` → `apps/web/generated/extension-catalog.{js,d.ts}`:

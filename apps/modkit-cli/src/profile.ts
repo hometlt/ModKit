@@ -6,12 +6,15 @@ import {
   type ExtensionInput,
   type HostComposition,
 } from '@modkitx-x3/host'
+import type { Diagnostic } from '@modkitx-x3/core'
 import {
   createNodeExecutionBackends,
+  createNodeSubjectServices,
   nodeRuntimeTargetBase,
   nodeWorkerLinks,
   nodeWorkerRealmProfile,
   workerBackendPolicy,
+  type NodeSubjectServices,
   type WorkerBackendPolicy,
 } from '@modkitx-x3/host/node'
 
@@ -98,5 +101,23 @@ export function createModkitCliComposition(
     realmId: options.realmId ?? MODKIT_CLI_REALM,
     extensions,
     executionBackends: options.executionBackends ?? createModkitCliExecutionBackends(),
+  })
+}
+
+/**
+ * The CLI's product open path (S7, `modkit open`): resolve against the process realm's inventory,
+ * activate for the worker realm — portable variants run worker-brokered in worker threads of the
+ * CLI process; in-process execution needs the artifact's own `allowTrustedInProcess`.
+ */
+export function createModkitCliSubjectServices(
+  extensions: readonly ExtensionInput[],
+  options: { readonly onDiagnostic?: (diagnostic: Diagnostic) => void } = {},
+): Promise<NodeSubjectServices> {
+  return createNodeSubjectServices({
+    topology: createModkitCliTopology(),
+    realms: { host: MODKIT_CLI_REALM, workers: MODKIT_CLI_WORKER_REALM },
+    extensions,
+    policy: MODKIT_CLI_WORKER_POLICY,
+    ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
   })
 }

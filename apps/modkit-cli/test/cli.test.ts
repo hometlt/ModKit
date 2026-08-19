@@ -134,3 +134,47 @@ describe('modkit validate (S0 acceptance)', () => {
     expect(report.result.selected.offer.providerId).toBe('org.example/good')
   })
 })
+
+describe('modkit open (S7): the product open path of the CLI', () => {
+  const repositoryRoot = join(appDir, '..', '..')
+  const images = join(repositoryRoot, 'extensions', 'common', 'images')
+  const png = join(repositoryRoot, 'apps', 'web', 'public', 'favicon-32.png')
+
+  it('opens a real PNG worker-brokered with a linked root, prints the selection and exits 0; the process ends', () => {
+    const { status, stdout } = run(['open', png, '--ext', images, '--json'])
+    expect(status).toBe(0)
+    const report = JSON.parse(stdout) as {
+      state: string
+      selected: { contributionId: string; variantId: string }
+      descriptor: { dataSources: { contract: string }[] }
+      candidates: { variantId: string; state: string }[]
+      diagnostics: { code: string }[]
+    }
+    expect(report.state).toBe('opened')
+    expect(report.selected).toMatchObject({
+      contributionId: 'org.modkitx/image-png',
+      variantId: 'portable',
+    })
+    expect(report.descriptor.dataSources.map(item => item.contract)).toContain(
+      'common.view/byte-range-source',
+    )
+    expect(report.diagnostics.map(item => item.code)).toContain('x3.host/worker-shared-process')
+    // a linked root is never trusted in-process without --trust
+    expect(report.candidates.find(item => item.variantId === 'trusted-node')?.state).toBe(
+      'rejected',
+    )
+    // the human rendering names the boundary
+    expect(run(['open', png, '--ext', images]).stdout).toContain('· worker-brokered')
+  }, 60_000)
+
+  it('exits 1 for a subject no linked codec claims, 2 for usage and IO failures', () => {
+    const garbage = join(mkdtempSync(join(tmpdir(), 'x3-open-')), 'garbage.bin')
+    writeFileSync(garbage, 'not an image at all\n')
+    const unresolved = run(['open', garbage, '--ext', images])
+    expect(unresolved.status).toBe(1)
+    expect(unresolved.stdout).toContain('UNRESOLVED')
+    expect(run(['open', png]).status).toBe(2)
+    expect(run(['open', png, '--ext', images, '--intent', 'thumbnail']).status).toBe(2)
+    expect(run(['open', join(appDir, 'does-not-exist.png'), '--ext', images]).status).toBe(2)
+  }, 60_000)
+})

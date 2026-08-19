@@ -1,4 +1,6 @@
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { loadExtensionDirectory, openFileArtifactSource } from '@modkitx-x3/host/node'
 
 import {
   createServerApp,
@@ -55,4 +57,42 @@ describe('server composition root', () => {
     const app = await createServerApp()
     expect(Object.isFrozen(app.health())).toBe(true)
   })
+})
+
+describe('server open path (S7)', () => {
+  it('opens a subject for a client through the worker realm: portable variant, worker-brokered', async () => {
+    const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
+    const images = await loadExtensionDirectory(
+      join(repositoryRoot, 'extensions', 'common', 'images'),
+    )
+    const app = await createServerApp([
+      { ...images, execution: { origin: 'installed', allowTrustedInProcess: false } },
+    ])
+    expect(app.subjects.inventory).toBe(app.composition.inventory)
+    expect(app.subjects.target).toBe(app.workers.target)
+    expect(app.subjects.supportedExtensions).toContain('png')
+    const result = await app.subjects.open({
+      source: await openFileArtifactSource(
+        join(repositoryRoot, 'apps', 'web', 'public', 'favicon-32.png'),
+      ),
+      path: 'favicon-32.png',
+      intent: 'inspect',
+      grant: { id: 'server-request', classes: ['read-source'] },
+      budget: {
+        maxInputBytes: 10_000_000n,
+        maxDepth: 128,
+        maxNodes: 100_000,
+        maxScalarBytes: 1_000_000,
+        maxDiagnostics: 100,
+      },
+    })
+    expect(result.state).toBe('opened')
+    if (result.state !== 'opened') throw new Error(result.reason)
+    expect(result.selected).toMatchObject({
+      contributionId: 'org.modkitx/image-png',
+      variantId: 'portable',
+    })
+    expect(result.diagnostics.map(item => item.code)).toContain('x3.host/worker-shared-process')
+    await result.session.dispose()
+  }, 30_000)
 })

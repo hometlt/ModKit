@@ -41,6 +41,17 @@ export {
   type UnresolvedSubject,
 } from './subject-open.js'
 export {
+  createBundledServiceDefinitionRegistry,
+  createSubjectServices,
+  registerServiceDefinitionsOrThrow,
+  serviceDefinitionSurfaces,
+  supportedExtensionHints,
+  type BundledServiceDefinitionRegistryOptions,
+  type SubjectOpenRequest,
+  type SubjectServices,
+  type SubjectServicesOptions,
+} from './subject-services.js'
+export {
   createServiceFacetMatcherProfileRegistry,
   createServiceContractDefinitionRegistry,
   FACETLESS_SERVICE_MATCHER_PROFILE,

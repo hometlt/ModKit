@@ -5,24 +5,202 @@
  * @modkitx-x3/host + @modkitx-x3/sdk. No spec registry is built in: every contract is
  * reported as inspectable-unknown here (hosts/testkit supply registries).
  *
- * Exit codes: 0 = valid; 1 = validation errors; 2 = usage/IO failure.
+ * `modkit open` (S7) is the product open path of the CLI: the given extension roots are loaded
+ * as *linked* artifacts (never trusted in-process unless `--trust` says so for all of them), the
+ * subject is opened through the one host pipeline for the CLI's worker realm — portable variants
+ * run worker-brokered in worker threads of this process — and what was selected, under which
+ * boundary, with which descriptor, is printed. Nothing is discovered: no roots, no open.
+ *
+ * Exit codes: 0 = valid/opened; 1 = validation errors/unresolved; 2 = usage/IO failure.
  */
 
+import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { basename, resolve } from 'node:path'
 import process from 'node:process'
 import { isQualifiedId } from '@modkitx-x3/core'
-import { type ProviderOffer, type ProviderRequest } from '@modkitx-x3/sdk'
+import { type OpenIntent, type ProviderOffer, type ProviderRequest } from '@modkitx-x3/sdk'
 import {
   explainProviderResolution,
   inventoryHasErrors,
   renderProviderResolutionExplanation,
+  type ExtensionInput,
   type Inventory,
+  type OpenSubjectResult,
 } from '@modkitx-x3/host'
-import { loadExtensionDirectory } from '@modkitx-x3/host/node'
-import { createModkitCliComposition, createModkitCliTopology } from './profile.js'
+import { loadExtensionDirectory, openFileArtifactSource } from '@modkitx-x3/host/node'
+import {
+  createModkitCliComposition,
+  createModkitCliSubjectServices,
+  createModkitCliTopology,
+} from './profile.js'
 
-export { createModkitCliComposition, createModkitCliTopology } from './profile.js'
+export {
+  createModkitCliComposition,
+  createModkitCliSubjectServices,
+  createModkitCliTopology,
+} from './profile.js'
+
+const USAGE =
+  'usage: modkit validate <dir> [--json] | modkit explain <fixture.json> [--json] | modkit host-profile [--json] | modkit create codec <dir> --id <qualified-id> | modkit open <file> --ext <dir> [--ext <dir>...] [--intent inspect|full] [--trust] [--json]\n'
+
+type CliOpenIntent = Exclude<OpenIntent, 'probe'>
+const OPEN_INTENTS: readonly CliOpenIntent[] = ['inspect', 'full']
+
+/** JSON with bigints as decimal strings (budgets, sizes) — the same shape everywhere in the CLI. */
+const jsonText = (value: unknown): string =>
+  `${JSON.stringify(value, (_key, item: unknown) => (typeof item === 'bigint' ? String(item) : item), 2)}\n`
+
+interface OpenArguments {
+  readonly file: string
+  readonly roots: readonly string[]
+  readonly intent: CliOpenIntent
+  readonly trust: boolean
+  readonly json: boolean
+}
+
+function parseOpenArguments(target: string, rest: readonly string[]): OpenArguments | undefined {
+  const roots: string[] = []
+  let intent: CliOpenIntent = 'full'
+  let trust = false
+  let json = false
+  for (let index = 0; index < rest.length; index += 1) {
+    const argument = rest[index]
+    if (argument === '--ext') {
+      const value = rest[index + 1]
+      if (value === undefined || value.startsWith('--')) return undefined
+      roots.push(value)
+      index += 1
+    } else if (argument === '--intent') {
+      const value = rest[index + 1]
+      const known = OPEN_INTENTS.find(item => item === value)
+      if (known === undefined) return undefined
+      intent = known
+      index += 1
+    } else if (argument === '--trust') trust = true
+    else if (argument === '--json') json = true
+    else return undefined
+  }
+  if (roots.length === 0) return undefined
+  return { file: target, roots, intent, trust, json }
+}
+
+function renderOpen(result: OpenSubjectResult, file: string, json: boolean): string {
+  if (json) {
+    return jsonText(
+      result.state === 'opened'
+        ? {
+            state: result.state,
+            path: file,
+            selected: result.selected,
+            descriptor: result.descriptor,
+            candidates: result.candidates,
+            diagnostics: result.diagnostics,
+          }
+        : {
+            state: result.state,
+            path: file,
+            reason: result.reason,
+            fallback: result.fallback,
+            candidates: result.candidates,
+            diagnostics: result.diagnostics,
+          },
+    )
+  }
+  const lines: string[] = []
+  const candidateLine = (candidate: OpenSubjectResult['candidates'][number]) =>
+    `  ${candidate.contributionId}/${candidate.variantId}: ${candidate.state}` +
+    (candidate.confidence === undefined ? '' : ` (${Math.round(candidate.confidence * 100)}%)`) +
+    candidate.diagnostics.map(item => ` — ${item.code}: ${item.message}`).join('')
+  if (result.state === 'unresolved') {
+    lines.push(`UNRESOLVED ${file} (${result.reason}; fallback ${result.fallback.preferred})`)
+    for (const candidate of result.candidates) lines.push(candidateLine(candidate))
+  } else {
+    const boundary = result.diagnostics.some(item => item.code === 'x3.host/worker-shared-process')
+      ? 'worker-brokered'
+      : result.diagnostics.some(item => item.code === 'x3.host/full-process-authority')
+        ? 'trusted-in-process'
+        : 'boundary unknown'
+    lines.push(
+      `OPENED ${file}: ${result.selected.contributionId}/${result.selected.variantId} ` +
+        `(${Math.round(result.selected.confidence * 100)}%) · ${boundary}`,
+    )
+    const descriptor = result.descriptor as {
+      readonly identity?: { readonly formatId?: string; readonly formatLabel?: string }
+      readonly traits?: readonly { readonly id: string; readonly state: string }[]
+      readonly operations?: readonly { readonly id: string; readonly state: string }[]
+      readonly dataSources?: readonly { readonly contract: string; readonly major: number }[]
+    }
+    if (descriptor.identity?.formatId !== undefined) {
+      lines.push(
+        `  format: ${descriptor.identity.formatId} — ${descriptor.identity.formatLabel ?? ''}`,
+      )
+    }
+    lines.push(`  traits: ${(descriptor.traits ?? []).map(t => `${t.id}(${t.state})`).join(', ')}`)
+    lines.push(
+      `  operations: ${(descriptor.operations ?? []).map(o => `${o.id}(${o.state})`).join(', ')}`,
+    )
+    lines.push(
+      `  data sources: ${(descriptor.dataSources ?? []).map(d => `${d.contract}@${d.major}`).join(', ')}`,
+    )
+    for (const candidate of result.candidates) lines.push(candidateLine(candidate))
+  }
+  for (const item of result.diagnostics)
+    lines.push(`  ${item.severity} ${item.code} ${item.message}`)
+  return `${lines.join('\n')}\n`
+}
+
+async function openCommand(arguments_: OpenArguments): Promise<number> {
+  const backendDiagnostics: string[] = []
+  try {
+    const loaded = await Promise.all(
+      arguments_.roots.map(root => loadExtensionDirectory(resolve(root))),
+    )
+    // roots named on the command line are linked artifacts; `--trust` is the explicit in-process decision
+    const extensions: readonly ExtensionInput[] = loaded.map(input => ({
+      ...input,
+      execution: { origin: 'linked', allowTrustedInProcess: arguments_.trust },
+    }))
+    const services = await createModkitCliSubjectServices(extensions, {
+      onDiagnostic: diagnostic =>
+        void backendDiagnostics.push(
+          `  ${diagnostic.severity} ${diagnostic.code} ${diagnostic.message}`,
+        ),
+    })
+    if (inventoryHasErrors(services.inventory)) {
+      process.stdout.write(render(services.inventory, arguments_.json))
+      return 1
+    }
+    const file = resolve(arguments_.file)
+    const source = await openFileArtifactSource(file)
+    const result = await services.open({
+      source,
+      path: file,
+      intent: arguments_.intent,
+      grant: { id: `cli:${randomUUID()}`, classes: ['read-source'] },
+      budget: {
+        maxInputBytes: BigInt(64 * 1024 * 1024),
+        maxDepth: 256,
+        maxNodes: 1_000_000,
+        maxScalarBytes: 64 * 1024 * 1024,
+        maxDiagnostics: 10_000,
+        deadlineMs: 30_000,
+      },
+    })
+    try {
+      process.stdout.write(renderOpen(result, file, arguments_.json))
+      if (!arguments_.json && backendDiagnostics.length > 0) {
+        process.stdout.write(`${backendDiagnostics.join('\n')}\n`)
+      }
+    } finally {
+      if (result.state === 'opened') await result.session.dispose()
+    }
+    return result.state === 'opened' ? 0 : 1
+  } catch (error) {
+    process.stderr.write(`modkit open: ${(error as Error).message}\n`)
+    return 2
+  }
+}
 
 function render(inventory: Inventory, json: boolean): string {
   const extension = inventory.extensions[0]
@@ -110,10 +288,17 @@ async function main(argv: readonly string[]): Promise<number> {
       return 2
     }
   }
+  if (command === 'open') {
+    const parsed =
+      target === undefined || target.startsWith('--') ? undefined : parseOpenArguments(target, rest)
+    if (parsed === undefined) {
+      process.stderr.write(USAGE)
+      return 2
+    }
+    return openCommand(parsed)
+  }
   if (command !== 'validate' || target === undefined || target.startsWith('--')) {
-    process.stderr.write(
-      'usage: modkit validate <dir> [--json] | modkit explain <fixture.json> [--json] | modkit host-profile [--json] | modkit create codec <dir> --id <qualified-id>\n',
-    )
+    process.stderr.write(USAGE)
     return 2
   }
   let inventory: Inventory

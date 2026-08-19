@@ -1,14 +1,14 @@
 import { uint64 } from '@modkitx-x3/core'
 import { createHostTopology, type HostTopology } from '@modkitx-x3/sdk'
 import type { Diagnostic } from '@modkitx-x3/core'
-import {
-  createHostComposition,
-  type ExecutionBackendRegistry,
-  type ExtensionInput,
-  type HostComposition,
+import type {
+  ExecutionBackendRegistry,
+  ExtensionInput,
+  HostComposition,
+  SubjectServices,
 } from '@modkitx-x3/host'
 import {
-  createNodeExecutionBackends,
+  createNodeSubjectServices,
   nodeRuntimeTargetBase,
   nodeWorkerLinks,
   nodeWorkerRealmProfile,
@@ -89,11 +89,16 @@ export interface AutomationHost {
   /** The realm codecs run in (worker threads); automation steps that open subjects resolve for it. */
   readonly workers: HostComposition
   readonly executionBackends: ExecutionBackendRegistry
+  /**
+   * The product open path (S7): resolve against this realm's inventory, activate for the worker
+   * realm's target — what an automation step calls to open a subject.
+   */
+  readonly subjects: SubjectServices
   describeHost(): AutomationHostDescription
 }
 
 export interface AutomationHostOptions {
-  readonly executionBackends?: ExecutionBackendRegistry
+  /** Backend diagnostics of the worker realm (shared-process notice, restarts, crashes, stdio). */
   readonly onDiagnostic?: (diagnostic: Diagnostic) => void
 }
 
@@ -101,26 +106,19 @@ export async function createAutomationHost(
   extensions: readonly ExtensionInput[] = [],
   options: AutomationHostOptions = {},
 ): Promise<AutomationHost> {
-  const topology = createAutomationTopology()
-  const executionBackends =
-    options.executionBackends ??
-    createNodeExecutionBackends({
-      policy: AUTOMATION_WORKER_POLICY,
-      ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
-    })
-  const [composition, workers] = await Promise.all([
-    createHostComposition({ topology, realmId: AUTOMATION_REALM, extensions, executionBackends }),
-    createHostComposition({
-      topology,
-      realmId: AUTOMATION_WORKER_REALM,
-      extensions,
-      executionBackends,
-    }),
-  ])
+  const subjects = await createNodeSubjectServices({
+    topology: createAutomationTopology(),
+    realms: { host: AUTOMATION_REALM, workers: AUTOMATION_WORKER_REALM },
+    extensions,
+    policy: AUTOMATION_WORKER_POLICY,
+    ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
+  })
+  const { host: composition, workers, executionBackends } = subjects
   return Object.freeze({
     composition,
     workers,
     executionBackends,
+    subjects,
     describeHost: () =>
       Object.freeze({
         topologyId: composition.topology.topologyId,

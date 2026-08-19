@@ -89,8 +89,8 @@ import {
   validateSubjectDescriptorV2,
   validateWithSchema,
   viewerContributionSpecV1Schema
-} from "../../chunks/chunk-TWCGN3NA.js";
-import "../../chunks/chunk-OTHYGRZO.js";
+} from "../../chunks/chunk-7B5UTZBS.js";
+import "../../chunks/chunk-5WZM3EQ3.js";
 export {
   A1_SPEC_SCHEMA_ENTRIES,
   ARCHITECTURES,

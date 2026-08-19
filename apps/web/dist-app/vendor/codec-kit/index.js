@@ -2,11 +2,11 @@ import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../chunks/chunk-JT45YU2J.js";
+} from "../../chunks/chunk-FRJC64BA.js";
 import {
   revisionId
-} from "../../chunks/chunk-TWCGN3NA.js";
-import "../../chunks/chunk-OTHYGRZO.js";
+} from "../../chunks/chunk-7B5UTZBS.js";
+import "../../chunks/chunk-5WZM3EQ3.js";
 
 // extensions/_shared/codec-kit/src/index.js
 var INSPECTION_OPERATIONS = Object.freeze([

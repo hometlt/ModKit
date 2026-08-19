@@ -1,16 +1,16 @@
 import {
   AUXILIARY_DATA_SOURCE_SURFACES,
   STANDARD_DATA_SOURCE_SURFACES
-} from "./chunks/chunk-TWCGN3NA.js";
+} from "./chunks/chunk-7B5UTZBS.js";
 import {
   ModkitError,
   OperationCancelledError,
   isModkitError,
   isQualifiedId,
   isSegment
-} from "./chunks/chunk-OTHYGRZO.js";
+} from "./chunks/chunk-5WZM3EQ3.js";
 
-// packages/host/dist/execution/protocol.js
+// packages/host/dist/browser/worker-entry.js
 var CAPABILITY_RPC_DOMAIN = "x3.host/rpc";
 var CAPABILITY_RPC_VERSION = 1;
 var HANDLE_MARKER = "@x3.handle";
@@ -60,40 +60,30 @@ function isPresentList(value) {
   return Array.isArray(value) && value.length <= MAX_OPTIONAL_METHODS && value.every((item) => typeof item === "string" && isMethodName(item)) && new Set(value).size === value.length;
 }
 function isHandleRef(value) {
-  if (!isPlainObject(value))
-    return false;
+  if (!isPlainObject(value)) return false;
   const keys = Object.keys(value);
-  if (keys.length !== 1 || keys[0] !== HANDLE_MARKER)
-    return false;
+  if (keys.length !== 1 || keys[0] !== HANDLE_MARKER) return false;
   const inner = value[HANDLE_MARKER];
-  if (!isPlainObject(inner))
-    return false;
+  if (!isPlainObject(inner)) return false;
   const record = inner;
   const innerKeys = Object.keys(inner).filter((key) => key !== "data" && key !== "has").sort();
   const base = ["id", "kind"];
   const withContract = ["contract", "id", "kind", "major"];
   const shape = innerKeys.join(",") === base.join(",") || innerKeys.join(",") === withContract.join(",");
-  if (!shape)
-    return false;
-  if (record["data"] !== void 0 && !isPlainObject(record["data"]))
-    return false;
-  if (record["has"] !== void 0 && !isPresentList(record["has"]))
-    return false;
-  if (typeof record["id"] !== "string" || !isHandleId(record["id"]))
-    return false;
+  if (!shape) return false;
+  if (record["data"] !== void 0 && !isPlainObject(record["data"])) return false;
+  if (record["has"] !== void 0 && !isPresentList(record["has"])) return false;
+  if (typeof record["id"] !== "string" || !isHandleId(record["id"])) return false;
   if (typeof record["kind"] !== "string" || !HANDLE_KINDS.includes(record["kind"]))
     return false;
   if (innerKeys.length === 4) {
-    if (typeof record["contract"] !== "string" || !isQualifiedId(record["contract"]))
-      return false;
-    if (!Number.isSafeInteger(record["major"]) || record["major"] < 0)
-      return false;
+    if (typeof record["contract"] !== "string" || !isQualifiedId(record["contract"])) return false;
+    if (!Number.isSafeInteger(record["major"]) || record["major"] < 0) return false;
   }
   return true;
 }
 function isPlainObject(value) {
-  if (typeof value !== "object" || value === null || Array.isArray(value))
-    return false;
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
   const proto = Object.getPrototypeOf(value);
   return proto === Object.prototype || proto === null;
 }
@@ -173,8 +163,7 @@ function validateInner(value, limits, measure, depth, path, handles) {
     default:
       return { code: "bad-value", message: `${typeof value} is not a wire value`, path };
   }
-  if (value === null)
-    return void 0;
+  if (value === null) return void 0;
   if (value instanceof Uint8Array) {
     if (SHARED !== void 0 && value.buffer instanceof SHARED) {
       return {
@@ -216,9 +205,15 @@ function validateInner(value, limits, measure, depth, path, handles) {
       return { code: "array-too-long", message: `array longer than ${limits.maxArrayLength}`, path };
     }
     for (let index = 0; index < value.length; index += 1) {
-      const found = validateInner(value[index], limits, measure, depth + 1, [...path, index], handles);
-      if (found !== void 0)
-        return found;
+      const found = validateInner(
+        value[index],
+        limits,
+        measure,
+        depth + 1,
+        [...path, index],
+        handles
+      );
+      if (found !== void 0) return found;
     }
     return void 0;
   }
@@ -233,8 +228,7 @@ function validateInner(value, limits, measure, depth, path, handles) {
         path
       };
     }
-    if (!isHandleRef(value))
-      return { code: "bad-handle", message: "malformed handle ref", path };
+    if (!isHandleRef(value)) return { code: "bad-handle", message: "malformed handle ref", path };
     const data = value[HANDLE_MARKER].data;
     return data === void 0 ? void 0 : validateInner(data, limits, measure, depth + 1, [...path, HANDLE_MARKER, "data"], "forbid");
   }
@@ -254,8 +248,7 @@ function validateInner(value, limits, measure, depth, path, handles) {
       return { code: "string-too-long", message: "object key too long", path: [...path, key] };
     }
     const found = validateInner(value[key], limits, measure, depth + 1, [...path, key], handles);
-    if (found !== void 0)
-      return found;
+    if (found !== void 0) return found;
   }
   return void 0;
 }
@@ -264,8 +257,7 @@ function validateWireValue(value, limits, handles = "forbid", path = []) {
   if (handles === "top" && isHandleRef(value)) {
     const data = value[HANDLE_MARKER].data;
     const found2 = data === void 0 ? void 0 : validateInner(data, limits, measure, 1, [...path, HANDLE_MARKER, "data"], "forbid");
-    if (found2 !== void 0)
-      return { ok: false, violation: Object.freeze(found2) };
+    if (found2 !== void 0) return { ok: false, violation: Object.freeze(found2) };
     return {
       ok: true,
       value: Object.freeze({
@@ -275,9 +267,15 @@ function validateWireValue(value, limits, handles = "forbid", path = []) {
       })
     };
   }
-  const found = validateInner(value, limits, measure, 0, [...path], handles === "nested" ? "allow" : "forbid");
-  if (found !== void 0)
-    return { ok: false, violation: Object.freeze(found) };
+  const found = validateInner(
+    value,
+    limits,
+    measure,
+    0,
+    [...path],
+    handles === "nested" ? "allow" : "forbid"
+  );
+  if (found !== void 0) return { ok: false, violation: Object.freeze(found) };
   return {
     ok: true,
     value: Object.freeze({
@@ -326,8 +324,7 @@ function toErrorDto(error, limits) {
   });
 }
 function fromErrorDto(dto) {
-  if (dto.cancelled === true)
-    return new OperationCancelledError(dto.message);
+  if (dto.cancelled === true) return new OperationCancelledError(dto.message);
   return new ModkitError({
     code: dto.code,
     message: dto.message,
@@ -336,8 +333,7 @@ function fromErrorDto(dto) {
   });
 }
 function validateErrorDto(value, limits, path = []) {
-  if (!isPlainObject(value))
-    return violation("bad-error", "error must be an object", path);
+  if (!isPlainObject(value)) return violation("bad-error", "error must be an object", path);
   const record = value;
   const keys = Object.keys(record);
   const allowed = /* @__PURE__ */ new Set([
@@ -374,8 +370,7 @@ function validateErrorDto(value, limits, path = []) {
       return violation("bad-error", "error context must be an object", [...path, "context"]);
     }
     const checked = validateWireValue(record["context"], limits, "forbid", [...path, "context"]);
-    if (!checked.ok)
-      return checked;
+    if (!checked.ok) return checked;
   }
   return { ok: true, value: Object.freeze({ ...record }) };
 }
@@ -417,8 +412,7 @@ function checkExactKeys(record, required, optional) {
   return void 0;
 }
 function validateFrame(input, limits, expect) {
-  if (!isPlainObject(input))
-    return violation("not-an-object", "frame must be a plain object");
+  if (!isPlainObject(input)) return violation("not-an-object", "frame must be a plain object");
   const record = input;
   if (record["domain"] !== CAPABILITY_RPC_DOMAIN || record["version"] !== CAPABILITY_RPC_VERSION) {
     return violation("bad-envelope", "frame domain/version mismatch");
@@ -439,31 +433,26 @@ function validateFrame(input, limits, expect) {
   const t = type;
   const keys = FRAME_KEYS[t];
   const keyViolation = checkExactKeys(record, keys.required, keys.optional);
-  if (keyViolation !== void 0)
-    return { ok: false, violation: keyViolation };
+  if (keyViolation !== void 0) return { ok: false, violation: keyViolation };
   const str = (key, test, code = "bad-value") => typeof record[key] === "string" && record[key].length > 0 && (test?.(record[key]) ?? true) ? void 0 : violation(code, `\xAB${key}\xBB is malformed`, [key]);
   const replyId = (key) => isMessageId(record[key]) ? void 0 : violation("bad-id", `\xAB${key}\xBB must be a positive safe integer`, [key]);
   switch (t) {
     case "load": {
       for (const key of ["moduleUrl", "artifactDigest"]) {
         const bad2 = str(key, (value) => value.length <= limits.maxStringLength);
-        if (bad2)
-          return bad2;
+        if (bad2) return bad2;
       }
       if (record["entrypointDigest"] !== void 0) {
         const bad2 = str("entrypointDigest", (value) => value.length <= 256);
-        if (bad2)
-          return bad2;
+        if (bad2) return bad2;
       }
       const bad = str("contributionId", isQualifiedId) ?? str("variantId", isSegment);
-      if (bad)
-        return bad;
+      if (bad) return bad;
       break;
     }
     case "ready": {
       const bad = replyId("inReplyTo");
-      if (bad)
-        return bad;
+      if (bad) return bad;
       if (record["abiVersion"] !== 1)
         return violation("bad-value", "abiVersion must be 1", ["abiVersion"]);
       const exports = record["exports"];
@@ -474,23 +463,19 @@ function validateFrame(input, limits, expect) {
         return violation("bad-handle", "root must be a handle ref", ["root"]);
       {
         const checked = validateWireValue(record["root"], limits, "top", ["root"]);
-        if (!checked.ok)
-          return checked;
+        if (!checked.ok) return checked;
       }
       break;
     }
     case "call": {
       const bad = str("handle", isHandleId, "bad-handle") ?? str("method", isMethodName, "bad-method");
-      if (bad)
-        return bad;
+      if (bad) return bad;
       const args = record["args"];
-      if (!Array.isArray(args))
-        return violation("bad-value", "args must be an array", ["args"]);
+      if (!Array.isArray(args)) return violation("bad-value", "args must be an array", ["args"]);
       if (args.length > limits.maxArgs)
         return violation("too-many-args", `more than ${limits.maxArgs} args`, ["args"]);
       const checked = validateWireValue(args, limits, "nested", ["args"]);
-      if (!checked.ok)
-        return checked;
+      if (!checked.ok) return checked;
       if (record["deadlineMs"] !== void 0 && (!Number.isSafeInteger(record["deadlineMs"]) || record["deadlineMs"] < 0)) {
         return violation("bad-value", "deadlineMs must be a non-negative safe integer", [
           "deadlineMs"
@@ -500,12 +485,10 @@ function validateFrame(input, limits, expect) {
     }
     case "return": {
       const bad = replyId("inReplyTo");
-      if (bad)
-        return bad;
+      if (bad) return bad;
       if (record["value"] !== void 0) {
         const checked = validateWireValue(record["value"], limits, "top", ["value"]);
-        if (!checked.ok)
-          return checked;
+        if (!checked.ok) return checked;
       }
       if (record["lease"] !== void 0) {
         const lease = record["lease"];
@@ -516,79 +499,70 @@ function validateFrame(input, limits, expect) {
           return violation("bad-value", "a leased value cannot itself be a handle", ["value"]);
         }
         const checked = validateWireValue(lease, limits, "top", ["lease"]);
-        if (!checked.ok)
-          return checked;
+        if (!checked.ok) return checked;
       }
       break;
     }
     case "throw": {
       const bad = replyId("inReplyTo");
-      if (bad)
-        return bad;
+      if (bad) return bad;
       const checked = validateErrorDto(record["error"], limits, ["error"]);
-      if (!checked.ok)
-        return checked;
+      if (!checked.ok) return checked;
       break;
     }
     case "cancel":
       {
         const bad = replyId("target");
-        if (bad)
-          return bad;
+        if (bad) return bad;
       }
       break;
     case "next": {
       const bad = str("handle", isHandleId, "bad-handle");
-      if (bad)
-        return bad;
+      if (bad) return bad;
       const max = record["max"];
       if (max !== void 0 && (!Number.isSafeInteger(max) || max < 1 || max > limits.maxArrayLength)) {
-        return violation("bad-value", `next.max must be an integer in 1..${limits.maxArrayLength}`, ["max"]);
+        return violation(
+          "bad-value",
+          `next.max must be an integer in 1..${limits.maxArrayLength}`,
+          ["max"]
+        );
       }
       break;
     }
     case "subscribe":
     case "release": {
       const bad = str("handle", isHandleId, "bad-handle");
-      if (bad)
-        return bad;
+      if (bad) return bad;
       break;
     }
     case "done": {
       const bad = str("handle", isHandleId, "bad-handle");
-      if (bad)
-        return bad;
+      if (bad) return bad;
       if (record["inReplyTo"] !== void 0) {
         const badReply = replyId("inReplyTo");
-        if (badReply)
-          return badReply;
+        if (badReply) return badReply;
       }
       if (record["error"] !== void 0) {
         const checked = validateErrorDto(record["error"], limits, ["error"]);
-        if (!checked.ok)
-          return checked;
+        if (!checked.ok) return checked;
       }
       break;
     }
     case "event": {
       const bad = str("subscription", isSubscriptionId, "bad-subscription");
-      if (bad)
-        return bad;
+      if (bad) return bad;
       const checked = validateWireValue(record["value"], limits, "forbid", ["value"]);
-      if (!checked.ok)
-        return checked;
+      if (!checked.ok) return checked;
       break;
     }
     case "unsubscribe": {
       const bad = str("subscription", isSubscriptionId, "bad-subscription");
-      if (bad)
-        return bad;
+      if (bad) return bad;
       break;
     }
     case "progress": {
       const bad = replyId("inReplyTo");
-      if (bad)
-        return bad;
+      if (bad) return bad;
       const progress = record["progress"];
       if (!isPlainObject(progress))
         return violation("bad-progress", "progress must be an object", ["progress"]);
@@ -618,15 +592,12 @@ function validateFrame(input, limits, expect) {
     }
     case "terminate": {
       const bad = str("reason", (value) => value.length <= 1024);
-      if (bad)
-        return bad;
+      if (bad) return bad;
       break;
     }
   }
   return { ok: true, value: record };
 }
-
-// packages/host/dist/execution/surface.js
 function surfaceKey(contract, major) {
   return `${contract}@${major}`;
 }
@@ -639,8 +610,7 @@ function isArgRef(value) {
 var argRefKey = (ref) => typeof ref === "number" ? `${ref}` : `${ref.arg}.${ref.key}`;
 var freezeArgRef = (ref) => typeof ref === "number" ? ref : Object.freeze({ ...ref });
 function readArgRef(args, ref) {
-  if (typeof ref === "number")
-    return args[ref];
+  if (typeof ref === "number") return args[ref];
   const holder = args[ref.arg];
   return typeof holder === "object" && holder !== null ? holder[ref.key] : void 0;
 }
@@ -702,7 +672,10 @@ function snapshotMethod(name, raw, surface) {
   }
   if (kind === "lease") {
     if (result === void 0 === (resultFromArgs === void 0)) {
-      return invalidSurface(`lease method \xAB${name}\xBB must name the surface of its result (result or resultFromArgs)`, { surface });
+      return invalidSurface(
+        `lease method \xAB${name}\xBB must name the surface of its result (result or resultFromArgs)`,
+        { surface }
+      );
     }
     if (result !== void 0 && (!isQualifiedId(result.contract) || !Number.isSafeInteger(result.major) || result.major < 0)) {
       return invalidSurface(`lease method \xAB${name}\xBB must name the surface of its result`, {
@@ -734,7 +707,9 @@ function snapshotMethod(name, raw, surface) {
 }
 function assertSurface(surface) {
   if (!isQualifiedId(surface.contract) || !Number.isSafeInteger(surface.major) || surface.major < 0) {
-    return invalidSurface(`surface contract must be a qualified id with a non-negative major: ${surface.contract}@${String(surface.major)}`);
+    return invalidSurface(
+      `surface contract must be a qualified id with a non-negative major: ${surface.contract}@${String(surface.major)}`
+    );
   }
   const names = Object.keys(surface.methods);
   if (surface.releaseVia !== void 0 && surface.methods[surface.releaseVia]?.kind !== "value") {
@@ -743,7 +718,9 @@ function assertSurface(surface) {
     });
   }
   if (names.length === 0) {
-    return invalidSurface(`surface ${surfaceKey(surface.contract, surface.major)} declares no methods`);
+    return invalidSurface(
+      `surface ${surfaceKey(surface.contract, surface.major)} declares no methods`
+    );
   }
   for (const name of names) {
     const method = surface.methods[name];
@@ -815,9 +792,12 @@ function createSurfaceRegistry(surfaces) {
     }
   });
 }
-
-// packages/host/dist/execution/handles.js
 var HandleTable = class {
+  constructor(owner, generation, limits) {
+    this.owner = owner;
+    this.generation = generation;
+    this.limits = limits;
+  }
   owner;
   generation;
   limits;
@@ -825,11 +805,6 @@ var HandleTable = class {
   sequence = 0;
   releasedTotal = 0;
   invalidated = false;
-  constructor(owner, generation, limits) {
-    this.owner = owner;
-    this.generation = generation;
-    this.limits = limits;
-  }
   get isInvalidated() {
     return this.invalidated;
   }
@@ -838,12 +813,9 @@ var HandleTable = class {
     let iterators = 0;
     let events = 0;
     for (const record of this.records.values()) {
-      if (record.kind === "lease")
-        leases += 1;
-      else if (record.kind === "iterator")
-        iterators += 1;
-      else
-        events += 1;
+      if (record.kind === "lease") leases += 1;
+      else if (record.kind === "iterator") iterators += 1;
+      else events += 1;
     }
     return Object.freeze({
       live: this.records.size,
@@ -867,10 +839,8 @@ var HandleTable = class {
       }
     };
     limit("handles", counts.live, this.limits.maxHandles);
-    if (kind === "iterator")
-      limit("iterators", counts.iterators, this.limits.maxIterators);
-    if (kind === "events")
-      limit("events", counts.events, this.limits.maxSubscriptions);
+    if (kind === "iterator") limit("iterators", counts.iterators, this.limits.maxIterators);
+    if (kind === "events") limit("events", counts.events, this.limits.maxSubscriptions);
   }
   allocate(input) {
     if (this.invalidated) {
@@ -903,14 +873,12 @@ var HandleTable = class {
       released: false
     };
     this.records.set(id, record);
-    if (input.parent !== void 0)
-      this.records.get(input.parent)?.children.add(id);
+    if (input.parent !== void 0) this.records.get(input.parent)?.children.add(id);
     return record;
   }
   parseId(id) {
     const match = /^([hw])(\d+)-(\d+)$/u.exec(id);
-    if (match === null)
-      return void 0;
+    if (match === null) return void 0;
     return { owner: match[1], generation: Number(match[2]), sequence: Number(match[3]) };
   }
   /** True when the id was allocated by this side (owner prefix), whatever its generation. */
@@ -919,8 +887,7 @@ var HandleTable = class {
   }
   lookup(id) {
     const live = this.records.get(id);
-    if (live !== void 0)
-      return { state: "live", record: live };
+    if (live !== void 0) return { state: "live", record: live };
     const parsed = this.parseId(id);
     if (parsed === void 0 || parsed.owner !== this.owner || parsed.generation !== this.generation) {
       return { state: "foreign-generation" };
@@ -934,25 +901,21 @@ var HandleTable = class {
    */
   async release(id) {
     const record = this.records.get(id);
-    if (record === void 0)
-      return { released: false, failures: [] };
+    if (record === void 0) return { released: false, failures: [] };
     const failures = [];
     await this.releaseRecord(record, failures);
     return { released: true, failures };
   }
   async releaseRecord(record, failures) {
-    if (record.released)
-      return;
+    if (record.released) return;
     record.released = true;
     const children = [...record.children].reverse();
     for (const childId of children) {
       const child = this.records.get(childId);
-      if (child !== void 0)
-        await this.releaseRecord(child, failures);
+      if (child !== void 0) await this.releaseRecord(child, failures);
     }
     this.records.delete(record.id);
-    if (record.parent !== void 0)
-      this.records.get(record.parent)?.children.delete(record.id);
+    if (record.parent !== void 0) this.records.get(record.parent)?.children.delete(record.id);
     this.releasedTotal += 1;
     try {
       await record.release();
@@ -968,8 +931,7 @@ var HandleTable = class {
     const ids = [...this.records.keys()].reverse();
     for (const id of ids) {
       const record = this.records.get(id);
-      if (record === void 0)
-        continue;
+      if (record === void 0) continue;
       released.push(id);
       await this.releaseRecord(record, failures);
     }
@@ -980,14 +942,14 @@ var HandleTable = class {
   }
 };
 var PendingCalls = class {
+  constructor(limits) {
+    this.limits = limits;
+  }
   limits;
   calls = /* @__PURE__ */ new Map();
   lateAfterCancel = 0;
   /** Highest id ever opened; a reply above it never had a call, a reply at or below it did. */
   highestOpened = 0;
-  constructor(limits) {
-    this.limits = limits;
-  }
   get size() {
     return this.calls.size;
   }
@@ -1005,8 +967,7 @@ var PendingCalls = class {
     }
     const entry = { ...call, cancelled: false, settled: false };
     this.calls.set(call.id, entry);
-    if (call.id > this.highestOpened)
-      this.highestOpened = call.id;
+    if (call.id > this.highestOpened) this.highestOpened = call.id;
     return entry;
   }
   peek(id) {
@@ -1019,31 +980,26 @@ var PendingCalls = class {
   /** Marks the call cancelled locally; the caller has already been rejected with cancellation. */
   cancel(id) {
     const entry = this.calls.get(id);
-    if (entry === void 0 || entry.settled)
-      return void 0;
+    if (entry === void 0 || entry.settled) return void 0;
     entry.cancelled = true;
     return entry;
   }
   progress(id, progress) {
     const entry = this.calls.get(id);
-    if (entry === void 0)
-      return id <= this.highestOpened ? "duplicate" : "unknown";
-    if (entry.cancelled)
-      return "late-after-cancel";
+    if (entry === void 0) return id <= this.highestOpened ? "duplicate" : "unknown";
+    if (entry.cancelled) return "late-after-cancel";
     entry.onProgress?.(progress);
     return "settled";
   }
   settle(id, outcome) {
     const entry = this.calls.get(id);
-    if (entry === void 0)
-      return id <= this.highestOpened ? "duplicate" : "unknown";
+    if (entry === void 0) return id <= this.highestOpened ? "duplicate" : "unknown";
     this.calls.delete(id);
     if (entry.cancelled) {
       this.lateAfterCancel += 1;
       return "late-after-cancel";
     }
-    if (entry.settled)
-      return "duplicate";
+    if (entry.settled) return "duplicate";
     entry.settled = true;
     entry.resolve(outcome);
     return "settled";
@@ -1053,8 +1009,7 @@ var PendingCalls = class {
     let rejected = 0;
     for (const entry of [...this.calls.values()]) {
       this.calls.delete(entry.id);
-      if (entry.cancelled || entry.settled)
-        continue;
+      if (entry.cancelled || entry.settled) continue;
       entry.settled = true;
       entry.reject(error);
       rejected += 1;
@@ -1077,8 +1032,7 @@ var ActiveCalls = class {
   }
   cancel(id) {
     const entry = this.calls.get(id);
-    if (entry === void 0)
-      return false;
+    if (entry === void 0) return false;
     entry.cancelled = true;
     entry.controller.abort(new OperationCancelledError("cancelled by peer"));
     return true;
@@ -1092,17 +1046,15 @@ var ActiveCalls = class {
   }
 };
 var Subscriptions = class {
-  limits;
-  records = /* @__PURE__ */ new Map();
   constructor(limits) {
     this.limits = limits;
   }
+  limits;
+  records = /* @__PURE__ */ new Map();
   /** Live (not yet closed) subscriptions. */
   get size() {
     let live = 0;
-    for (const record of this.records.values())
-      if (!record.closed)
-        live += 1;
+    for (const record of this.records.values()) if (!record.closed) live += 1;
     return live;
   }
   register(id, handle) {
@@ -1140,10 +1092,8 @@ var Subscriptions = class {
   /** Enqueues an event; `overflow` when the consumer is too slow (bounded queue). */
   push(id, value) {
     const record = this.records.get(id);
-    if (record === void 0 || record.closed)
-      return "unknown";
-    if (record.queue.length >= this.limits.maxQueuedEvents)
-      return "overflow";
+    if (record === void 0 || record.closed) return "unknown";
+    if (record.queue.length >= this.limits.maxQueuedEvents) return "overflow";
     record.queue.push(value);
     record.wake?.();
     return "queued";
@@ -1151,11 +1101,9 @@ var Subscriptions = class {
   /** Marks the stream ended (optionally by failure) and wakes the consumer; keeps the queue. */
   close(id, error) {
     const record = this.records.get(id);
-    if (record === void 0)
-      return;
+    if (record === void 0) return;
     record.closed = true;
-    if (error !== void 0)
-      record.error = error;
+    if (error !== void 0) record.error = error;
     record.wake?.();
   }
   /** The consumer is done with the record (drained or abandoned). */
@@ -1163,19 +1111,11 @@ var Subscriptions = class {
     this.records.delete(id);
   }
   closeAll(error) {
-    for (const id of [...this.records.keys()])
-      this.close(id, error);
+    for (const id of [...this.records.keys()]) this.close(id, error);
   }
 };
-
-// packages/host/dist/execution/endpoint.js
 var CAPABILITY_OF = /* @__PURE__ */ Symbol.for("x3.host/rpc/proxied-remote");
 var RemoteCapabilityImpl = class {
-  endpoint;
-  ref;
-  contract;
-  major;
-  data;
   constructor(endpoint, ref, contract, major, data = Object.freeze({})) {
     this.endpoint = endpoint;
     this.ref = ref;
@@ -1183,6 +1123,11 @@ var RemoteCapabilityImpl = class {
     this.major = major;
     this.data = data;
   }
+  endpoint;
+  ref;
+  contract;
+  major;
+  data;
   get id() {
     return this.ref[HANDLE_MARKER].id;
   }
@@ -1200,16 +1145,16 @@ var RemoteCapabilityImpl = class {
   }
 };
 var LocalCapabilityImpl = class {
-  endpoint;
-  ref;
-  contract;
-  major;
   constructor(endpoint, ref, contract, major) {
     this.endpoint = endpoint;
     this.ref = ref;
     this.contract = contract;
     this.major = major;
   }
+  endpoint;
+  ref;
+  contract;
+  major;
   get isReleased() {
     return this.endpoint.localReleased(this.ref[HANDLE_MARKER].id);
   }
@@ -1219,8 +1164,7 @@ var LocalCapabilityImpl = class {
 };
 var noopRelease = () => void 0;
 function normalizeProgress(value) {
-  if (typeof value !== "object" || value === null)
-    return void 0;
+  if (typeof value !== "object" || value === null) return void 0;
   const record = value;
   const completed = record["completed"];
   if (typeof completed !== "number" || !Number.isFinite(completed) || completed < 0)
@@ -1324,7 +1268,12 @@ var EndpointImpl = class {
       contract: surface.contract,
       major: surface.major
     });
-    return new LocalCapabilityImpl(this, handleRef(record.id, "lease", surface, data, has), surface.contract, surface.major);
+    return new LocalCapabilityImpl(
+      this,
+      handleRef(record.id, "lease", surface, data, has),
+      surface.contract,
+      surface.major
+    );
   }
   async load(request, options = {}) {
     this.assertOpen();
@@ -1335,8 +1284,7 @@ var EndpointImpl = class {
       });
     }
     const outcome = await this.request({ t: "load", ...request }, "load", options);
-    if (outcome.kind === "throw")
-      throw fromErrorDto(outcome.error);
+    if (outcome.kind === "throw") throw fromErrorDto(outcome.error);
     if (outcome.kind !== "handle") {
       throw this.failWith({ code: "unexpected-frame", message: "load must be answered by ready" });
     }
@@ -1364,11 +1312,16 @@ var EndpointImpl = class {
       });
     }
     const existing = this.remoteProxies.get(inner.id);
-    if (existing !== void 0)
-      return existing;
+    if (existing !== void 0) return existing;
     if (!this.remote.has(inner.id))
       this.remote.set(inner.id, { ref, released: false, children: /* @__PURE__ */ new Set() });
-    const capability = new RemoteCapabilityImpl(this, ref, inner.contract, inner.major, Object.freeze({ ...inner.data ?? {} }));
+    const capability = new RemoteCapabilityImpl(
+      this,
+      ref,
+      inner.contract,
+      inner.major,
+      Object.freeze({ ...inner.data ?? {} })
+    );
     this.remoteProxies.set(inner.id, capability);
     return capability;
   }
@@ -1386,8 +1339,7 @@ var EndpointImpl = class {
     }
     const present = remote.has;
     for (const [name, method] of Object.entries(surface.methods)) {
-      if (method.optional === true && present !== void 0 && !present.includes(name))
-        continue;
+      if (method.optional === true && present !== void 0 && !present.includes(name)) continue;
       object[name] = async (...rawArgs) => {
         const args = [...rawArgs];
         let signal;
@@ -1403,20 +1355,19 @@ var EndpointImpl = class {
             return void 0;
           const value = holder[ref.key];
           const matches = expect === "signal" ? isAbortSignal(value) : typeof value === "function";
-          if (!matches && value !== void 0)
-            return void 0;
-          args[ref.arg] = Object.fromEntries(Object.entries(holder).filter(([key]) => key !== ref.key));
+          if (!matches && value !== void 0) return void 0;
+          args[ref.arg] = Object.fromEntries(
+            Object.entries(holder).filter(([key]) => key !== ref.key)
+          );
           return value;
         };
         if (typeof method.signal === "object") {
           const lifted = lift(method.signal, "signal");
-          if (isAbortSignal(lifted))
-            signal = lifted;
+          if (isAbortSignal(lifted)) signal = lifted;
         }
         if (method.progress !== void 0) {
           const lifted = lift(method.progress, "function");
-          if (typeof lifted === "function")
-            onProgress = lifted;
+          if (typeof lifted === "function") onProgress = lifted;
         }
         const outcome = await remote.call(name, args, {
           ...signal === void 0 ? {} : { signal },
@@ -1452,8 +1403,7 @@ var EndpointImpl = class {
     return object;
   }
   receive(raw) {
-    if (this.state !== "open")
-      return;
+    if (this.state !== "open") return;
     const validated = validateFrame(raw, this.limits, {
       session: this.session,
       generation: this.generation
@@ -1480,25 +1430,27 @@ var EndpointImpl = class {
     });
   }
   async close(reason) {
-    if (this.state !== "open")
-      return;
+    if (this.state !== "open") return;
     this.state = "closed";
     this.trySend({ t: "terminate", reason });
-    await this.teardown(new ModkitError({
-      code: "x3.host/rpc-endpoint-closed",
-      message: `endpoint closed: ${reason}`,
-      retryability: "conditional"
-    }));
+    await this.teardown(
+      new ModkitError({
+        code: "x3.host/rpc-endpoint-closed",
+        message: `endpoint closed: ${reason}`,
+        retryability: "conditional"
+      })
+    );
   }
   async peerClosed(reason) {
-    if (this.state !== "open")
-      return;
+    if (this.state !== "open") return;
     this.state = "closed";
-    await this.teardown(new ModkitError({
-      code: "x3.host/rpc-peer-exited",
-      message: `peer exited: ${reason}`,
-      retryability: "conditional"
-    }));
+    await this.teardown(
+      new ModkitError({
+        code: "x3.host/rpc-peer-exited",
+        message: `peer exited: ${reason}`,
+        retryability: "conditional"
+      })
+    );
   }
   // ------------------------------------------------------------------ internal: lifecycle
   assertOpen() {
@@ -1514,8 +1466,7 @@ var EndpointImpl = class {
     return protocolViolationError(item);
   }
   fail(item) {
-    if (this.state !== "open")
-      return;
+    if (this.state !== "open") return;
     this.violations += 1;
     this.state = "failed";
     this.trySend({ t: "terminate", reason: `protocol violation: ${item.code}` });
@@ -1532,11 +1483,13 @@ var EndpointImpl = class {
       void pump.iterator?.return?.();
     }
     this.pumps.clear();
-    for (const state of this.remote.values())
-      state.released = true;
+    for (const state of this.remote.values()) state.released = true;
     const { failures } = await this.table.invalidate();
     for (const failure of failures)
-      this.report("x3.host/rpc-release-failed", `release failed during teardown: ${failure instanceof Error ? failure.message : String(failure)}`);
+      this.report(
+        "x3.host/rpc-release-failed",
+        `release failed during teardown: ${failure instanceof Error ? failure.message : String(failure)}`
+      );
   }
   report(code, message) {
     this.onDiagnostic?.({ code, severity: "warning", message });
@@ -1577,15 +1530,11 @@ var EndpointImpl = class {
           context: { violation: checked.violation.code }
         });
       }
-      if (move)
-        transfer.push(...checked.value.transferables);
+      if (move) transfer.push(...checked.value.transferables);
     };
-    if (frame.t === "call")
-      measure(frame.args, "nested", false);
-    else if (frame.t === "return" && frame.value !== void 0)
-      measure(frame.value, "top", true);
-    else if (frame.t === "event")
-      measure(frame.value, "forbid", true);
+    if (frame.t === "call") measure(frame.args, "nested", false);
+    else if (frame.t === "return" && frame.value !== void 0) measure(frame.value, "top", true);
+    else if (frame.t === "event") measure(frame.value, "forbid", true);
     this.port.post(frame, transfer);
     return frame;
   }
@@ -1605,10 +1554,8 @@ var EndpointImpl = class {
       let timer;
       let abortListener;
       const cleanup = () => {
-        if (timer !== void 0)
-          this.scheduler.clearTimeout(timer);
-        if (abortListener !== void 0)
-          options.signal?.removeEventListener("abort", abortListener);
+        if (timer !== void 0) this.scheduler.clearTimeout(timer);
+        if (abortListener !== void 0) options.signal?.removeEventListener("abort", abortListener);
       };
       const entry = this.pending.open({
         id,
@@ -1624,8 +1571,7 @@ var EndpointImpl = class {
         ...options.onProgress === void 0 ? {} : { onProgress: options.onProgress }
       });
       const cancelWith = (error) => {
-        if (entry.settled || entry.cancelled)
-          return;
+        if (entry.settled || entry.cancelled) return;
         this.pending.cancel(id);
         cleanup();
         this.trySend({ t: "cancel", target: id });
@@ -1633,12 +1579,17 @@ var EndpointImpl = class {
       };
       const deadline = options.deadlineMs ?? this.limits.defaultCallDeadlineMs;
       if (deadline > 0 && kind !== "subscribe") {
-        timer = this.scheduler.setTimeout(() => cancelWith(new ModkitError({
-          code: "x3.host/rpc-deadline-exceeded",
-          message: `${kind} #${id} exceeded its ${deadline} ms deadline`,
-          context: { id, deadlineMs: deadline },
-          retryability: "conditional"
-        })), deadline);
+        timer = this.scheduler.setTimeout(
+          () => cancelWith(
+            new ModkitError({
+              code: "x3.host/rpc-deadline-exceeded",
+              message: `${kind} #${id} exceeded its ${deadline} ms deadline`,
+              context: { id, deadlineMs: deadline },
+              retryability: "conditional"
+            })
+          ),
+          deadline
+        );
       }
       if (options.signal !== void 0) {
         abortListener = () => cancelWith(new OperationCancelledError(options.signal?.reason));
@@ -1655,7 +1606,9 @@ var EndpointImpl = class {
       } catch (error) {
         this.pending.drop(id);
         cleanup();
-        reject(isModkitError(error) ? error : new ModkitError({ code: "x3.host/rpc-send-failed", message: String(error) }));
+        reject(
+          isModkitError(error) ? error : new ModkitError({ code: "x3.host/rpc-send-failed", message: String(error) })
+        );
       }
     });
   }
@@ -1690,14 +1643,11 @@ var EndpointImpl = class {
       if (typeof value === "object" && value !== null && CAPABILITY_OF in value) {
         return encode(value[CAPABILITY_OF], path);
       }
-      if (isHandleRef(value))
-        return value;
-      if (Array.isArray(value))
-        return value.map((item, index) => encode(item, `${path}[${index}]`));
+      if (isHandleRef(value)) return value;
+      if (Array.isArray(value)) return value.map((item, index) => encode(item, `${path}[${index}]`));
       if (isPlainObject(value)) {
         const out = {};
-        for (const [key, item] of Object.entries(value))
-          out[key] = encode(item, `${path}.${key}`);
+        for (const [key, item] of Object.entries(value)) out[key] = encode(item, `${path}.${key}`);
         return out;
       }
       return value;
@@ -1734,19 +1684,21 @@ var EndpointImpl = class {
         message: `${method}: ${argProblem}`
       });
     }
-    const outcome = await this.request({
-      t: "call",
-      handle: remote.id,
-      method,
-      args: encoded,
-      ...options.deadlineMs === void 0 ? {} : { deadlineMs: options.deadlineMs }
-    }, "call", options);
-    if (outcome.kind === "throw")
-      throw fromErrorDto(outcome.error);
+    const outcome = await this.request(
+      {
+        t: "call",
+        handle: remote.id,
+        method,
+        args: encoded,
+        ...options.deadlineMs === void 0 ? {} : { deadlineMs: options.deadlineMs }
+      },
+      "call",
+      options
+    );
+    if (outcome.kind === "throw") throw fromErrorDto(outcome.error);
     if (outcome.kind === "done")
       throw this.failWith({ code: "unexpected-frame", message: "call answered with done" });
-    if (surface.releaseVia === method)
-      this.markRemoteReleased(remote.id);
+    if (surface.releaseVia === method) this.markRemoteReleased(remote.id);
     if (decl.kind === "value") {
       if (outcome.kind !== "return")
         throw this.failWith({
@@ -1843,26 +1795,20 @@ var EndpointImpl = class {
   }
   markRemoteReleased(id) {
     const state = this.remote.get(id);
-    if (state === void 0 || state.released)
-      return;
+    if (state === void 0 || state.released) return;
     state.released = true;
-    for (const child of [...state.children].reverse())
-      this.markRemoteReleased(child);
-    if (state.parent !== void 0)
-      this.remote.get(state.parent)?.children.delete(id);
+    for (const child of [...state.children].reverse()) this.markRemoteReleased(child);
+    if (state.parent !== void 0) this.remote.get(state.parent)?.children.delete(id);
   }
   async releaseRemote(id) {
     const state = this.remote.get(id);
-    if (state === void 0 || state.released)
-      return;
+    if (state === void 0 || state.released) return;
     this.markRemoteReleased(id);
-    if (this.state !== "open")
-      return;
+    if (this.state !== "open") return;
     const outcome = await this.request({ t: "release", handle: id }, "release", {
       deadlineMs: this.limits.defaultCallDeadlineMs
     });
-    if (outcome.kind === "throw")
-      throw fromErrorDto(outcome.error);
+    if (outcome.kind === "throw") throw fromErrorDto(outcome.error);
   }
   remoteIterable(id, decl) {
     const batch = this.limits.iteratorBatchItems;
@@ -1872,11 +1818,13 @@ var EndpointImpl = class {
         const buffered = [];
         return {
           next: async () => {
-            if (buffered.length > 0)
-              return { done: false, value: buffered.shift() };
-            if (finished || this.remoteReleased(id))
-              return { done: true, value: void 0 };
-            const outcome = await this.request(batch > 1 ? { t: "next", handle: id, max: batch } : { t: "next", handle: id }, "next", {});
+            if (buffered.length > 0) return { done: false, value: buffered.shift() };
+            if (finished || this.remoteReleased(id)) return { done: true, value: void 0 };
+            const outcome = await this.request(
+              batch > 1 ? { t: "next", handle: id, max: batch } : { t: "next", handle: id },
+              "next",
+              {}
+            );
             if (outcome.kind === "done") {
               finished = true;
               this.markRemoteReleased(id);
@@ -1910,8 +1858,7 @@ var EndpointImpl = class {
               return { done: false, value: buffered.shift() };
             }
             const problem = decl.validateReturn?.(outcome.value);
-            if (problem !== void 0)
-              throw this.failWith({ code: "bad-return", message: problem });
+            if (problem !== void 0) throw this.failWith({ code: "bad-return", message: problem });
             return { done: false, value: outcome.value };
           },
           return: async () => {
@@ -1931,21 +1878,18 @@ var EndpointImpl = class {
         let subscription;
         let finished = false;
         const stop = async () => {
-          if (finished)
-            return;
+          if (finished) return;
           finished = true;
           if (subscription !== void 0) {
             this.subscriptions.close(subscription);
             this.subscriptions.drop(subscription);
-            if (this.state === "open")
-              this.trySend({ t: "unsubscribe", subscription });
+            if (this.state === "open") this.trySend({ t: "unsubscribe", subscription });
           }
           await this.releaseRemote(id);
         };
         return {
           next: async () => {
-            if (finished)
-              return { done: true, value: void 0 };
+            if (finished) return { done: true, value: void 0 };
             if (subscription === void 0) {
               const outcome = await this.request({ t: "subscribe", handle: id }, "subscribe", {});
               if (outcome.kind === "throw") {
@@ -1977,8 +1921,7 @@ var EndpointImpl = class {
               if (record.closed) {
                 finished = true;
                 this.subscriptions.drop(subscription);
-                if (record.error !== void 0)
-                  throw record.error;
+                if (record.error !== void 0) throw record.error;
                 return { done: true, value: void 0 };
               }
               await new Promise((resolve) => {
@@ -2002,7 +1945,10 @@ var EndpointImpl = class {
   async releaseLocal(id) {
     const result = await this.table.release(id);
     for (const failure of result.failures) {
-      this.report("x3.host/rpc-release-failed", `release of ${id} failed: ${failure instanceof Error ? failure.message : String(failure)}`);
+      this.report(
+        "x3.host/rpc-release-failed",
+        `release of ${id} failed: ${failure instanceof Error ? failure.message : String(failure)}`
+      );
     }
   }
   decodeArgs(args) {
@@ -2027,12 +1973,10 @@ var EndpointImpl = class {
         }
         return this.materialize(this.proxy(value));
       }
-      if (Array.isArray(value))
-        return value.map((item) => decode(item));
+      if (Array.isArray(value)) return value.map((item) => decode(item));
       if (isPlainObject(value)) {
         const out = {};
-        for (const [key, item] of Object.entries(value))
-          out[key] = decode(item);
+        for (const [key, item] of Object.entries(value)) out[key] = decode(item);
         return out;
       }
       return value;
@@ -2040,8 +1984,7 @@ var EndpointImpl = class {
     return args.map((arg) => decode(arg));
   }
   reply(inReplyTo, outcome) {
-    if (this.state !== "open")
-      return;
+    if (this.state !== "open") return;
     try {
       switch (outcome.kind) {
         case "return":
@@ -2083,11 +2026,14 @@ var EndpointImpl = class {
       case "call":
         return this.handleCall(frame);
       case "return":
-        return this.handleSettle(frame.inReplyTo, isHandleRef(frame.value) ? { kind: "handle", value: frame.value } : {
-          kind: "return",
-          value: frame.value,
-          ...frame.lease === void 0 ? {} : { lease: frame.lease }
-        });
+        return this.handleSettle(
+          frame.inReplyTo,
+          isHandleRef(frame.value) ? { kind: "handle", value: frame.value } : {
+            kind: "return",
+            value: frame.value,
+            ...frame.lease === void 0 ? {} : { lease: frame.lease }
+          }
+        );
       case "throw":
         return this.handleSettle(frame.inReplyTo, { kind: "throw", error: frame.error });
       case "progress": {
@@ -2122,14 +2068,15 @@ var EndpointImpl = class {
       case "release":
         return this.handleRelease(frame);
       case "terminate":
-        if (this.state !== "open")
-          return;
+        if (this.state !== "open") return;
         this.state = "closed";
-        await this.teardown(new ModkitError({
-          code: "x3.host/rpc-terminated",
-          message: `peer terminated: ${frame.reason}`,
-          retryability: "conditional"
-        }));
+        await this.teardown(
+          new ModkitError({
+            code: "x3.host/rpc-terminated",
+            message: `peer terminated: ${frame.reason}`,
+            retryability: "conditional"
+          })
+        );
         this.onTerminate?.(frame.reason);
         return;
     }
@@ -2141,7 +2088,10 @@ var EndpointImpl = class {
     else if (result === "duplicate")
       this.fail({ code: "duplicate-reply", message: `duplicate reply for call ${inReplyTo}` });
     else if (result === "late-after-cancel")
-      this.report("x3.host/rpc-late-reply-dropped", `dropped late reply for cancelled call ${inReplyTo}`);
+      this.report(
+        "x3.host/rpc-late-reply-dropped",
+        `dropped late reply for cancelled call ${inReplyTo}`
+      );
     if (result === "late-after-cancel" && outcome.kind === "handle") {
       const ref = outcome.value;
       this.discardHandle(ref[HANDLE_MARKER].id);
@@ -2156,15 +2106,16 @@ var EndpointImpl = class {
    * violation (found by the transport conformance kit on real event-loop hops).
    */
   discardHandle(id) {
-    if (this.state !== "open")
-      return;
+    if (this.state !== "open") return;
     const failed = (reason) => this.report("x3.host/rpc-release-failed", `discard of late handle ${id} failed: ${reason}`);
     void this.request({ t: "release", handle: id }, "release", {
       deadlineMs: this.limits.defaultCallDeadlineMs
-    }).then((outcome) => {
-      if (outcome.kind === "throw")
-        failed(outcome.error.message);
-    }, (error) => failed(error instanceof Error ? error.message : String(error)));
+    }).then(
+      (outcome) => {
+        if (outcome.kind === "throw") failed(outcome.error.message);
+      },
+      (error) => failed(error instanceof Error ? error.message : String(error))
+    );
   }
   async handleLoad(frame) {
     if (this.role !== "worker") {
@@ -2174,22 +2125,28 @@ var EndpointImpl = class {
     if (this.loader === void 0) {
       this.reply(frame.id, {
         kind: "throw",
-        error: toErrorDto(new ModkitError({
-          code: "x3.host/rpc-no-loader",
-          message: "this endpoint cannot load modules"
-        }), this.limits)
+        error: toErrorDto(
+          new ModkitError({
+            code: "x3.host/rpc-no-loader",
+            message: "this endpoint cannot load modules"
+          }),
+          this.limits
+        )
       });
       return;
     }
     const active = this.active.begin(frame.id);
     try {
-      const loaded = await this.loader({
-        moduleUrl: frame.moduleUrl,
-        contributionId: frame.contributionId,
-        variantId: frame.variantId,
-        artifactDigest: frame.artifactDigest,
-        ...frame.entrypointDigest === void 0 ? {} : { entrypointDigest: frame.entrypointDigest }
-      }, active.controller.signal);
+      const loaded = await this.loader(
+        {
+          moduleUrl: frame.moduleUrl,
+          contributionId: frame.contributionId,
+          variantId: frame.variantId,
+          artifactDigest: frame.artifactDigest,
+          ...frame.entrypointDigest === void 0 ? {} : { entrypointDigest: frame.entrypointDigest }
+        },
+        active.controller.signal
+      );
       const capability = this.expose(loaded.module, loaded.surface, loaded.release ?? noopRelease);
       const exports = Object.keys(loaded.module).filter((key) => key.length <= 256).sort();
       this.reply(frame.id, {
@@ -2220,7 +2177,10 @@ var EndpointImpl = class {
     } else if (result === "duplicate") {
       this.fail({ code: "duplicate-reply", message: `duplicate ready for load ${frame.inReplyTo}` });
     } else if (result === "late-after-cancel") {
-      this.report("x3.host/rpc-late-reply-dropped", `dropped late ready for cancelled load ${frame.inReplyTo}`);
+      this.report(
+        "x3.host/rpc-late-reply-dropped",
+        `dropped late ready for cancelled load ${frame.inReplyTo}`
+      );
       this.discardHandle(frame.root[HANDLE_MARKER].id);
     }
   }
@@ -2243,10 +2203,13 @@ var EndpointImpl = class {
     if (lookup.state === "released") {
       this.reply(frame.id, {
         kind: "throw",
-        error: toErrorDto(new ModkitError({
-          code: "x3.host/rpc-released-handle",
-          message: `handle ${frame.handle} was released`
-        }), this.limits)
+        error: toErrorDto(
+          new ModkitError({
+            code: "x3.host/rpc-released-handle",
+            message: `handle ${frame.handle} was released`
+          }),
+          this.limits
+        )
       });
       return;
     }
@@ -2285,10 +2248,13 @@ var EndpointImpl = class {
     if (typeof fn !== "function") {
       this.reply(frame.id, {
         kind: "throw",
-        error: toErrorDto(new ModkitError({
-          code: "x3.host/rpc-method-unavailable",
-          message: `target has no method \xAB${frame.method}\xBB`
-        }), this.limits)
+        error: toErrorDto(
+          new ModkitError({
+            code: "x3.host/rpc-method-unavailable",
+            message: `target has no method \xAB${frame.method}\xBB`
+          }),
+          this.limits
+        )
       });
       return;
     }
@@ -2299,21 +2265,21 @@ var EndpointImpl = class {
       if (typeof contract !== "string" || typeof major !== "number" || this.surfaces.surfaceFor(contract, major) === void 0) {
         this.reply(frame.id, {
           kind: "throw",
-          error: toErrorDto(new ModkitError({
-            code: "x3.host/rpc-bad-argument",
-            message: `${frame.method}: arguments do not name a registered surface`
-          }), this.limits)
+          error: toErrorDto(
+            new ModkitError({
+              code: "x3.host/rpc-bad-argument",
+              message: `${frame.method}: arguments do not name a registered surface`
+            }),
+            this.limits
+          )
         });
         return;
       }
       dynamicResult = { contract, major };
     }
     const active = this.active.begin(frame.id);
-    if (decl.arity !== void 0)
-      while (args.length < decl.arity)
-        args.push(void 0);
-    if (decl.signal === "last")
-      args.push(active.controller.signal);
+    if (decl.arity !== void 0) while (args.length < decl.arity) args.push(void 0);
+    if (decl.signal === "last") args.push(active.controller.signal);
     else if (typeof decl.signal === "object") {
       this.placeInArg(args, decl.signal, active.controller.signal);
     }
@@ -2335,8 +2301,7 @@ var EndpointImpl = class {
     }
     this.active.end(frame.id);
     if (active.cancelled) {
-      if (isLeaseLike(result))
-        await result.release();
+      if (isLeaseLike(result)) await result.release();
       else if (decl.kind !== "value" && isAsyncIterable(result)) {
         await result[Symbol.asyncIterator]().return?.();
       }
@@ -2353,16 +2318,18 @@ var EndpointImpl = class {
         if (problem !== void 0) {
           this.reply(frame.id, {
             kind: "throw",
-            error: toErrorDto(new ModkitError({
-              code: "x3.host/rpc-bad-return",
-              message: `${frame.method}: ${problem}`
-            }), this.limits)
+            error: toErrorDto(
+              new ModkitError({
+                code: "x3.host/rpc-bad-return",
+                message: `${frame.method}: ${problem}`
+              }),
+              this.limits
+            )
           });
           return;
         }
         this.reply(frame.id, { kind: "return", value: result });
-        if (surface.releaseVia === frame.method)
-          await this.releaseLocal(record.id);
+        if (surface.releaseVia === frame.method) await this.releaseLocal(record.id);
         return;
       }
       case "leased-value": {
@@ -2370,14 +2337,16 @@ var EndpointImpl = class {
         const checked = lease === void 0 ? void 0 : lease.value === void 0 ? { ok: true } : validateWireValue(lease.value, this.limits, "forbid");
         const problem = lease === void 0 ? "did not return a lease" : checked !== void 0 && !checked.ok ? checked.violation.message : decl.validateReturn?.(lease.value);
         if (lease === void 0 || problem !== void 0) {
-          if (lease !== void 0)
-            await lease.release();
+          if (lease !== void 0) await lease.release();
           this.reply(frame.id, {
             kind: "throw",
-            error: toErrorDto(new ModkitError({
-              code: "x3.host/rpc-bad-return",
-              message: `${frame.method}: ${problem ?? "did not return a lease"}`
-            }), this.limits)
+            error: toErrorDto(
+              new ModkitError({
+                code: "x3.host/rpc-bad-return",
+                message: `${frame.method}: ${problem ?? "did not return a lease"}`
+              }),
+              this.limits
+            )
           });
           return;
         }
@@ -2404,14 +2373,16 @@ var EndpointImpl = class {
         const value = lease === void 0 ? result : lease.value;
         const resultSurface = dynamicResult ?? decl.result;
         if (typeof value !== "object" || value === null || resultSurface === void 0) {
-          if (lease !== void 0)
-            await lease.release();
+          if (lease !== void 0) await lease.release();
           this.reply(frame.id, {
             kind: "throw",
-            error: toErrorDto(new ModkitError({
-              code: "x3.host/rpc-bad-return",
-              message: `${frame.method} did not return a capability`
-            }), this.limits)
+            error: toErrorDto(
+              new ModkitError({
+                code: "x3.host/rpc-bad-return",
+                message: `${frame.method} did not return a capability`
+              }),
+              this.limits
+            )
           });
           return;
         }
@@ -2431,8 +2402,7 @@ var EndpointImpl = class {
             value: handleRef(child.id, "lease", resultSurface, data, has)
           });
         } catch (error) {
-          if (lease !== void 0)
-            await lease.release();
+          if (lease !== void 0) await lease.release();
           this.reply(frame.id, { kind: "throw", error: toErrorDto(error, this.limits) });
         }
         return;
@@ -2442,10 +2412,13 @@ var EndpointImpl = class {
         if (!isAsyncIterable(result)) {
           this.reply(frame.id, {
             kind: "throw",
-            error: toErrorDto(new ModkitError({
-              code: "x3.host/rpc-bad-return",
-              message: `${frame.method} did not return an async iterable`
-            }), this.limits)
+            error: toErrorDto(
+              new ModkitError({
+                code: "x3.host/rpc-bad-return",
+                message: `${frame.method} did not return an async iterable`
+              }),
+              this.limits
+            )
           });
           return;
         }
@@ -2493,15 +2466,17 @@ var EndpointImpl = class {
   }
   async handleNext(frame) {
     const lookup = this.lookupOwned(frame.handle, "iterator");
-    if (lookup === void 0)
-      return;
+    if (lookup === void 0) return;
     if (lookup.state === "released") {
       this.reply(frame.id, {
         kind: "throw",
-        error: toErrorDto(new ModkitError({
-          code: "x3.host/rpc-released-handle",
-          message: `iterator ${frame.handle} was released`
-        }), this.limits)
+        error: toErrorDto(
+          new ModkitError({
+            code: "x3.host/rpc-released-handle",
+            message: `iterator ${frame.handle} was released`
+          }),
+          this.limits
+        )
       });
       return;
     }
@@ -2542,10 +2517,13 @@ var EndpointImpl = class {
         if (!checked.ok) {
           this.reply(frame.id, {
             kind: "throw",
-            error: toErrorDto(new ModkitError({
-              code: "x3.host/rpc-bad-return",
-              message: `iterator item rejected: ${checked.violation.message}`
-            }), this.limits)
+            error: toErrorDto(
+              new ModkitError({
+                code: "x3.host/rpc-bad-return",
+                message: `iterator item rejected: ${checked.violation.message}`
+              }),
+              this.limits
+            )
           });
           await this.releaseLocal(frame.handle);
           return;
@@ -2557,8 +2535,7 @@ var EndpointImpl = class {
         await this.releaseLocal(frame.handle);
         return;
       }
-      if (ended)
-        target.exhausted = true;
+      if (ended) target.exhausted = true;
       this.reply(frame.id, {
         kind: "return",
         value: frame.max === void 0 ? items[0] : items
@@ -2587,8 +2564,7 @@ var EndpointImpl = class {
       });
       return void 0;
     }
-    if (lookup.state === "released")
-      return { state: "released" };
+    if (lookup.state === "released") return { state: "released" };
     if (lookup.record.kind !== kind) {
       this.fail({
         code: "wrong-handle-kind",
@@ -2600,15 +2576,17 @@ var EndpointImpl = class {
   }
   async handleSubscribe(frame) {
     const lookup = this.lookupOwned(frame.handle, "events");
-    if (lookup === void 0)
-      return;
+    if (lookup === void 0) return;
     if (lookup.state === "released") {
       this.reply(frame.id, {
         kind: "throw",
-        error: toErrorDto(new ModkitError({
-          code: "x3.host/rpc-released-handle",
-          message: `events ${frame.handle} was released`
-        }), this.limits)
+        error: toErrorDto(
+          new ModkitError({
+            code: "x3.host/rpc-released-handle",
+            message: `events ${frame.handle} was released`
+          }),
+          this.limits
+        )
       });
       return;
     }
@@ -2616,10 +2594,13 @@ var EndpointImpl = class {
     if (target.subscription !== void 0) {
       this.reply(frame.id, {
         kind: "throw",
-        error: toErrorDto(new ModkitError({
-          code: "x3.host/rpc-already-subscribed",
-          message: `events ${frame.handle} already has a subscriber`
-        }), this.limits)
+        error: toErrorDto(
+          new ModkitError({
+            code: "x3.host/rpc-already-subscribed",
+            message: `events ${frame.handle} already has a subscriber`
+          }),
+          this.limits
+        )
       });
       return;
     }
@@ -2634,10 +2615,8 @@ var EndpointImpl = class {
         pump.iterator = target.iterable[Symbol.asyncIterator]();
         for (; ; ) {
           const step = await pump.iterator.next();
-          if (pump.stopped || this.state !== "open")
-            return;
-          if (step.done === true)
-            break;
+          if (pump.stopped || this.state !== "open") return;
+          if (step.done === true) break;
           const checked = validateWireValue(step.value, this.limits, "forbid");
           if (!checked.ok) {
             throw new ModkitError({
@@ -2647,8 +2626,7 @@ var EndpointImpl = class {
           }
           this.send({ t: "event", subscription, value: step.value });
         }
-        if (this.state === "open")
-          this.send({ t: "done", handle: frame.handle });
+        if (this.state === "open") this.send({ t: "done", handle: frame.handle });
       } catch (error) {
         if (!pump.stopped && this.state === "open") {
           this.trySend({ t: "done", handle: frame.handle, error: toErrorDto(error, this.limits) });
@@ -2661,18 +2639,20 @@ var EndpointImpl = class {
   }
   handleEvent(frame) {
     const result = this.subscriptions.push(frame.subscription, frame.value);
-    if (result === "queued")
-      return;
+    if (result === "queued") return;
     if (result === "unknown") {
       this.droppedEvents += 1;
       return;
     }
     this.trySend({ t: "unsubscribe", subscription: frame.subscription });
-    this.closeSubscription(frame.subscription, new ModkitError({
-      code: "x3.host/rpc-events-overflow",
-      message: `event queue for ${frame.subscription} exceeded ${this.limits.maxQueuedEvents}`,
-      retryability: "conditional"
-    }));
+    this.closeSubscription(
+      frame.subscription,
+      new ModkitError({
+        code: "x3.host/rpc-events-overflow",
+        message: `event queue for ${frame.subscription} exceeded ${this.limits.maxQueuedEvents}`,
+        retryability: "conditional"
+      })
+    );
   }
   handleDone(frame) {
     if (frame.inReplyTo !== void 0) {
@@ -2687,15 +2667,13 @@ var EndpointImpl = class {
     }
     const error = frame.error === void 0 ? void 0 : fromErrorDto(frame.error);
     for (const [id, record] of this.subscriptions.entries()) {
-      if (record.handle === frame.handle)
-        this.closeSubscription(id, error);
+      if (record.handle === frame.handle) this.closeSubscription(id, error);
     }
     this.markRemoteReleased(frame.handle);
   }
   /** Puts a host-created value (signal, progress emitter) at a declared key of an object argument. */
   placeInArg(args, ref, value) {
-    while (args.length <= ref.arg)
-      args.push(void 0);
+    while (args.length <= ref.arg) args.push(void 0);
     const holder = args[ref.arg];
     const base = typeof holder === "object" && holder !== null ? holder : {};
     args[ref.arg] = { ...base, [ref.key]: value };
@@ -2712,26 +2690,22 @@ var EndpointImpl = class {
    */
   presentOptional(target, surface) {
     const methods = this.surfaces.surfaceFor(surface.contract, surface.major)?.methods;
-    if (methods === void 0)
-      return void 0;
+    if (methods === void 0) return void 0;
     const optional = Object.entries(methods).filter(([, method]) => method.optional === true).map(([name]) => name);
-    if (optional.length === 0)
-      return void 0;
-    if (typeof target !== "object" || target === null)
-      return Object.freeze([]);
-    return Object.freeze(optional.filter((name) => typeof target[name] === "function"));
+    if (optional.length === 0) return void 0;
+    if (typeof target !== "object" || target === null) return Object.freeze([]);
+    return Object.freeze(
+      optional.filter((name) => typeof target[name] === "function")
+    );
   }
   fieldData(target, surface) {
     const fields = this.surfaces.surfaceFor(surface.contract, surface.major)?.fields;
-    if (fields === void 0 || fields.length === 0)
-      return void 0;
-    if (typeof target !== "object" || target === null)
-      return void 0;
+    if (fields === void 0 || fields.length === 0) return void 0;
+    if (typeof target !== "object" || target === null) return void 0;
     const data = {};
     for (const field of fields) {
       const value = target[field];
-      if (value === void 0)
-        continue;
+      if (value === void 0) continue;
       const checked = validateWireValue(value, this.limits, "forbid");
       if (!checked.ok) {
         throw new ModkitError({
@@ -2761,7 +2735,10 @@ var EndpointImpl = class {
     }
     const result = await this.table.release(frame.handle);
     for (const failure of result.failures) {
-      this.report("x3.host/rpc-release-failed", `release of ${frame.handle} failed: ${failure instanceof Error ? failure.message : String(failure)}`);
+      this.report(
+        "x3.host/rpc-release-failed",
+        `release of ${frame.handle} failed: ${failure instanceof Error ? failure.message : String(failure)}`
+      );
     }
     this.reply(frame.id, { kind: "return", value: { released: result.released } });
   }
@@ -2769,8 +2746,6 @@ var EndpointImpl = class {
 function createEndpoint(options) {
   return new EndpointImpl(options);
 }
-
-// packages/host/dist/execution/message-port.js
 function framePortFromMessagePort(port, options = {}) {
   const style = options.listener ?? (typeof port.addEventListener === "function" ? "event-target" : "emitter-value");
   return {
@@ -2784,15 +2759,15 @@ function framePortFromMessagePort(port, options = {}) {
         port.start?.();
         return () => port.removeEventListener?.("message", listener2);
       }
-      const listener = style === "emitter-value" ? (payload) => handler(payload) : (payload) => handler(typeof payload === "object" && payload !== null && "data" in payload ? payload.data : payload);
+      const listener = style === "emitter-value" ? (payload) => handler(payload) : (payload) => handler(
+        typeof payload === "object" && payload !== null && "data" in payload ? payload.data : payload
+      );
       port.on?.("message", listener);
       port.start?.();
       return () => port.off?.("message", listener);
     }
   };
 }
-
-// packages/host/dist/execution/abi-surfaces.js
 var ABI_CODEC_MODULE = { contract: "x3.abi/codec-module", major: 1 };
 var ABI_SERVICE_PROVIDER_MODULE = {
   contract: "x3.abi/service-provider-module",
@@ -2971,8 +2946,6 @@ var RUNTIME_ABI_SURFACES = Object.freeze([
   diagnosticSinkSurface,
   contractResolverSurface
 ]);
-
-// packages/host/dist/execution/surface-adapter.js
 function walkStrings(value, max) {
   if (typeof value === "string") {
     return value.length > max ? `a string is longer than ${max}` : void 0;
@@ -2980,27 +2953,22 @@ function walkStrings(value, max) {
   if (Array.isArray(value)) {
     for (const item of value) {
       const problem = walkStrings(item, max);
-      if (problem !== void 0)
-        return problem;
+      if (problem !== void 0) return problem;
     }
     return void 0;
   }
   if (typeof value === "object" && value !== null && !(value instanceof Uint8Array)) {
     for (const [key, item] of Object.entries(value)) {
-      if (key.length > max)
-        return `a key is longer than ${max}`;
+      if (key.length > max) return `a key is longer than ${max}`;
       const problem = walkStrings(item, max);
-      if (problem !== void 0)
-        return problem;
+      if (problem !== void 0) return problem;
     }
   }
   return void 0;
 }
 function countBytes(value) {
-  if (value instanceof Uint8Array)
-    return value.byteLength;
-  if (Array.isArray(value))
-    return value.reduce((sum, item) => sum + countBytes(item), 0);
+  if (value instanceof Uint8Array) return value.byteLength;
+  if (Array.isArray(value)) return value.reduce((sum, item) => sum + countBytes(item), 0);
   if (typeof value === "object" && value !== null) {
     return Object.values(value).reduce((sum, item) => sum + countBytes(item), 0);
   }
@@ -3012,8 +2980,7 @@ function limitValidators(limits) {
   const validateReturn = maxStringLength === void 0 && maxBytes === void 0 && maxPageItems === void 0 ? void 0 : (value) => {
     if (maxStringLength !== void 0) {
       const problem = walkStrings(value, maxStringLength);
-      if (problem !== void 0)
-        return problem;
+      if (problem !== void 0) return problem;
     }
     if (maxBytes !== void 0 && countBytes(value) > maxBytes) {
       return `result carries more than ${maxBytes} bytes`;
@@ -3068,34 +3035,34 @@ function createStandardSurfaceRegistry(options = {}) {
   const byKey = /* @__PURE__ */ new Map();
   const add = (surface, override) => {
     const key = `${surface.contract}@${surface.major}`;
-    if (!override && byKey.has(key))
-      return;
+    if (!override && byKey.has(key)) return;
     byKey.set(key, surface);
   };
-  for (const surface of standardDataSourceCapabilitySurfaces())
-    add(surface, true);
-  for (const surface of RUNTIME_ABI_SURFACES)
-    add(surface, true);
+  for (const surface of standardDataSourceCapabilitySurfaces()) add(surface, true);
+  for (const surface of RUNTIME_ABI_SURFACES) add(surface, true);
   for (const definition of options.definitions ?? []) {
-    if (definition.surface === void 0)
-      continue;
-    add(capabilitySurfaceFromDataSource(definition.contract, definition.major, definition.surface), false);
+    if (definition.surface === void 0) continue;
+    add(
+      capabilitySurfaceFromDataSource(definition.contract, definition.major, definition.surface),
+      false
+    );
   }
-  for (const surface of options.surfaces ?? [])
-    add(surface, false);
+  for (const surface of options.surfaces ?? []) add(surface, false);
   return createSurfaceRegistry([...byKey.values()]);
 }
-
-// packages/host/dist/execution/module-reassembly.js
 var unavailableResolver = {
-  resolve: () => Promise.reject(new ModkitError({
-    code: "x3.host/execution-backend-unavailable",
-    message: "the host did not hand this worker a contract resolver"
-  })),
-  resolveUnknown: () => Promise.reject(new ModkitError({
-    code: "x3.host/execution-backend-unavailable",
-    message: "the host did not hand this worker a contract resolver"
-  }))
+  resolve: () => Promise.reject(
+    new ModkitError({
+      code: "x3.host/execution-backend-unavailable",
+      message: "the host did not hand this worker a contract resolver"
+    })
+  ),
+  resolveUnknown: () => Promise.reject(
+    new ModkitError({
+      code: "x3.host/execution-backend-unavailable",
+      message: "the host did not hand this worker a contract resolver"
+    })
+  )
 };
 function contributionContext(wire) {
   const sink = wire.diagnostics;
@@ -3103,8 +3070,7 @@ function contributionContext(wire) {
     budgets: wire.budgets,
     diagnostics: {
       report(diagnostic) {
-        if (sink !== void 0)
-          void sink.report(diagnostic).catch(() => void 0);
+        if (sink !== void 0) void sink.report(diagnostic).catch(() => void 0);
       }
     },
     contracts: wire.contracts ?? unavailableResolver
@@ -3114,7 +3080,9 @@ function assetInput(wire) {
   const bindings = wire.bindings ?? [];
   const subjects = wire.subjects ?? [];
   return Object.assign(/* @__PURE__ */ Object.create(null), wire, {
-    bindingsFor: (requirementId) => bindings.filter((binding) => binding.sourceKind === "requirement" && binding.requirementId === requirementId),
+    bindingsFor: (requirementId) => bindings.filter(
+      (binding) => binding.sourceKind === "requirement" && binding.requirementId === requirementId
+    ),
     subjectsFor: (requirementId) => subjects.filter((subject) => subject.requirementId === requirementId)
   });
 }
@@ -3136,7 +3104,11 @@ function wrapCodecModule(module) {
       return {
         ...codec,
         ...typeof open !== "function" ? {} : {
-          open: (input, ...rest) => open.call(codec, assetInput(input), ...rest)
+          open: (input, ...rest) => open.call(
+            codec,
+            assetInput(input),
+            ...rest
+          )
         }
       };
     }
@@ -3149,8 +3121,6 @@ function wrapLoadedModule(module) {
     surface: isServiceModule ? ABI_SERVICE_PROVIDER_MODULE : ABI_CODEC_MODULE
   };
 }
-
-// packages/host/dist/browser/worker-bootstrap-core.js
 function runBrowserWorkerBootstrap(init) {
   let loads = 0;
   return createEndpoint({
@@ -3184,16 +3154,13 @@ function runBrowserWorkerBootstrap(init) {
     ...init.onFailure === void 0 ? {} : { onFailure: init.onFailure }
   });
 }
-
-// packages/host/dist/browser/worker-entry.js
 function isInit(value) {
   return typeof value === "object" && value !== null && value.type === "x3.host/worker-init" && typeof value.session === "string" && typeof value.moduleUrl === "string" && typeof value.port === "object";
 }
 function installBrowserWorkerEntry(scope) {
   let started = false;
   const listener = (event) => {
-    if (started || !isInit(event.data))
-      return;
+    if (started || !isInit(event.data)) return;
     started = true;
     scope.removeEventListener("message", listener);
     const init = event.data;

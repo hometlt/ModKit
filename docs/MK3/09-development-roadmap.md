@@ -680,8 +680,20 @@ NXT‑114/R3 (Node worker backend с verified loading; реальный `text-js
    путь PWA (S6, 2026‑08‑19): аттестованный каталог с digests (`emit-web-catalog`), раздача
    артефактов и vendor‑бандлы worker'а (один граф esbuild со splitting), `createWebSubjectServices`,
    open‑flow в shell — реальный PNG открывается worker‑brokered в браузерной топологии (доказано в
-   Node с фейками платформы). Осталось: браузерный прогон conformance kit/shell (Playwright),
-   parity вьюеров с Electron, vendor‑парсеры text‑*; затем VS Code webview.
+   Node с фейками платформы и вживую в Chromium через `?open=`, 2026‑08‑19). Осталось: браузерный
+   прогон conformance kit (Playwright), parity вьюеров с Electron, vendor‑парсеры text‑*; затем
+   VS Code webview.
+   5a. **Продуктовый open‑путь всех Node‑хостов (S7, 2026‑08‑19)**: один host‑билдер
+   `createSubjectServices` (inventory host‑realm'а + target worker‑realm'а + backends →
+   `open`), `createNodeSubjectServices` в `host/node` (backends с late‑bound definitions,
+   обе композиции, fail‑closed регистрация definitions), `openFileArtifactSource` — один
+   revision‑checked файловый адаптер; `modkit open <file> --ext <dir>… [--trust] [--json]`
+   (linked roots, коды выхода 0/1/2), `subjects.open` у server и automation‑host, Electron и
+   PWA на тех же кусках (Electron main открывает файл тем же адаптером — проверено вживую).
+   Приватная запись inventory теперь едет на самом объекте contribution под well‑known symbol
+   (как registry bindings в S1b): inventory, собранный любым bundled‑entry пакета, честен для
+   любого другого. Осталось: HTTP/RPC‑обвязка server'а поверх `subjects.open` (сессии как
+   handles `x3.app/subject-services@1` — как в Electron), `--bundled` набор для CLI вне репо.
 6. **VFS/container + bundle resolver (NXT‑200/201)** и MK2‑конвертер/parity‑harness по
    `REPORT_MK2_ALLOCATION_*` — после стабилизации worker/VFS.
 7. **SB‑2/SB‑3/SB‑4** по своим gates: `process-brokered` до первого native codec внешнего

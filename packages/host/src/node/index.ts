@@ -1,5 +1,11 @@
 export { listFilesRecursive, loadExtensionDirectory } from './loader.js'
 export { openFileSource } from './file-source.js'
+export { openFileArtifactSource, type FileArtifactSourceOptions } from './file-artifact-source.js'
+export {
+  createNodeSubjectServices,
+  type NodeSubjectServices,
+  type NodeSubjectServicesOptions,
+} from './subject-services.js'
 export {
   NODE_WORKER_LINK_TRANSPORTS,
   nodeRuntimeTargetBase,

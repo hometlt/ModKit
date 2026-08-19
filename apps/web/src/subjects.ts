@@ -11,19 +11,12 @@
  */
 
 import type { Diagnostic } from '@modkitx-x3/core'
-import type {
-  ArtifactByteSource,
-  OpenIntent,
-  PermissionGrant,
-  ResourceBudget,
-} from '@modkitx-x3/sdk'
 import {
   createHostComposition,
-  openSubject,
-  type ExecutionBackendRegistry,
+  createSubjectServices,
   type ExtensionInput,
   type HostComposition,
-  type OpenSubjectResult,
+  type SubjectServices,
 } from '@modkitx-x3/host'
 import {
   createBrowserExecutionBackends,
@@ -157,23 +150,10 @@ export interface WebSubjectServicesOptions {
   readonly onDiagnostic?: (diagnostic: Diagnostic) => void
 }
 
-export interface WebSubjectServices {
+/** The host's subject services (S7) — `executionProfiles` is `worker-brokered` only here. */
+export interface WebSubjectServices extends SubjectServices {
   readonly main: HostComposition
   readonly worker: HostComposition
-  readonly executionBackends: ExecutionBackendRegistry
-  /** Execution profiles this host can honour — `worker-brokered` only. */
-  readonly executionProfiles: readonly string[]
-  /** Lowercase extension hints for the picker; detection remains inventory-owned. */
-  readonly supportedExtensions: readonly string[]
-  open(request: {
-    readonly source: ArtifactByteSource
-    readonly path: string
-    readonly mediaType?: string
-    readonly intent: Exclude<OpenIntent, 'probe'>
-    readonly grant: PermissionGrant
-    readonly budget: ResourceBudget
-    readonly signal?: AbortSignal
-  }): Promise<OpenSubjectResult>
 }
 
 export async function createWebSubjectServices(
@@ -198,38 +178,12 @@ export async function createWebSubjectServices(
     createHostComposition({ topology, realmId: WEB_MAIN_REALM, extensions, executionBackends }),
     createHostComposition({ topology, realmId: WEB_WORKER_REALM, extensions, executionBackends }),
   ])
-  const supportedExtensions = Object.freeze(
-    [
-      ...new Set(
-        main.inventory.extensions.flatMap(extension =>
-          extension.contributions.flatMap(contribution => {
-            const manifest = contribution.manifest
-            if (manifest?.contract.id !== 'org.modkitx/codec-contribution') return []
-            const spec = manifest.spec as { readonly match?: { readonly extensions?: unknown } }
-            return Array.isArray(spec.match?.extensions)
-              ? spec.match.extensions.filter(
-                  (value): value is string => typeof value === 'string' && value.length > 0,
-                )
-              : []
-          }),
-        ),
-      ),
-    ].sort(),
-  )
-  const services: WebSubjectServices = {
-    main,
-    worker,
+  // codecs are resolved against main's inventory and activated for the worker realm: portable
+  // variants, worker-brokered (no service-definition registry in the PWA yet)
+  const services = createSubjectServices({
+    inventory: main.inventory,
+    target: worker.target,
     executionBackends,
-    executionProfiles: executionBackends.profiles,
-    supportedExtensions,
-    // codecs are resolved and activated for the worker realm: portable variants, worker-brokered
-    open: request =>
-      openSubject({
-        inventory: main.inventory,
-        target: worker.target,
-        executionBackends,
-        ...request,
-      }),
-  }
-  return Object.freeze(services)
+  })
+  return Object.freeze({ ...services, main, worker })
 }

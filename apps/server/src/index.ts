@@ -1,14 +1,14 @@
 import { uint64 } from '@modkitx-x3/core'
 import { createHostTopology, type HostTopology } from '@modkitx-x3/sdk'
 import type { Diagnostic } from '@modkitx-x3/core'
-import {
-  createHostComposition,
-  type ExecutionBackendRegistry,
-  type ExtensionInput,
-  type HostComposition,
+import type {
+  ExecutionBackendRegistry,
+  ExtensionInput,
+  HostComposition,
+  SubjectServices,
 } from '@modkitx-x3/host'
 import {
-  createNodeExecutionBackends,
+  createNodeSubjectServices,
   nodeRuntimeTargetBase,
   nodeWorkerLinks,
   nodeWorkerRealmProfile,
@@ -93,11 +93,16 @@ export interface ServerApp {
   /** The realm codecs run in (worker threads); requests that open subjects resolve for its target. */
   readonly workers: HostComposition
   readonly executionBackends: ExecutionBackendRegistry
+  /**
+   * The product open path (S7): resolve against this realm's inventory, activate for the worker
+   * realm's target — what a request handler calls to open a subject for a client.
+   */
+  readonly subjects: SubjectServices
   health(): ServerHealthSnapshot
 }
 
 export interface ServerAppOptions {
-  readonly executionBackends?: ExecutionBackendRegistry
+  /** Backend diagnostics of the worker realm (shared-process notice, restarts, crashes, stdio). */
   readonly onDiagnostic?: (diagnostic: Diagnostic) => void
 }
 
@@ -105,26 +110,19 @@ export async function createServerApp(
   extensions: readonly ExtensionInput[] = [],
   options: ServerAppOptions = {},
 ): Promise<ServerApp> {
-  const topology = createServerTopology()
-  const executionBackends =
-    options.executionBackends ??
-    createNodeExecutionBackends({
-      policy: SERVER_WORKER_POLICY,
-      ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
-    })
-  const [composition, workers] = await Promise.all([
-    createHostComposition({ topology, realmId: SERVER_REALM, extensions, executionBackends }),
-    createHostComposition({
-      topology,
-      realmId: SERVER_WORKER_REALM,
-      extensions,
-      executionBackends,
-    }),
-  ])
+  const subjects = await createNodeSubjectServices({
+    topology: createServerTopology(),
+    realms: { host: SERVER_REALM, workers: SERVER_WORKER_REALM },
+    extensions,
+    policy: SERVER_WORKER_POLICY,
+    ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
+  })
+  const { host: composition, workers, executionBackends } = subjects
   return Object.freeze({
     composition,
     workers,
     executionBackends,
+    subjects,
     health: () =>
       Object.freeze({
         status: composition.inventory.diagnostics.some(item => item.severity === 'error')

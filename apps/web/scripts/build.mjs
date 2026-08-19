@@ -9,7 +9,7 @@
  */
 import { build } from 'esbuild'
 import { createServer } from 'node:http'
-import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, extname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -18,6 +18,9 @@ const appRoot = resolve(here, '..')
 const repoRoot = resolve(appRoot, '..', '..')
 const dist = join(appRoot, 'dist-app')
 
+// A clean output every time: hashed chunks and copied artifacts of a previous build must not
+// linger next to the current ones (a stale chunk is unreachable but still served).
+rmSync(dist, { recursive: true, force: true })
 mkdirSync(dist, { recursive: true })
 
 await build({

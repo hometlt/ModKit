@@ -100,25 +100,7 @@ var require_equal = __commonJS({
   }
 });
 
-// packages/sdk/dist/schemas/patterns.js
-var DOTTED_PATTERN = "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
-var NAMESPACED_DOTTED_PATTERN = "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
-var OPERATION_PATTERN = "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$";
-var QUALIFIED_PATTERN = "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
-var SEGMENT_PATTERN = "^[a-z0-9]+(?:-[a-z0-9]+)*$";
-var SEMVER_PATTERN = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$";
-var RANGE_NUMBER = "(?:0|[1-9]\\d*)";
-var RANGE_NUMERIC = `${RANGE_NUMBER}(?:\\.${RANGE_NUMBER}){0,2}`;
-var RANGE_EXACT = `=?${RANGE_NUMBER}\\.${RANGE_NUMBER}\\.${RANGE_NUMBER}`;
-var RANGE_WILDCARD = `(?:${RANGE_NUMBER}\\.(?:x|\\*)|${RANGE_NUMBER}\\.${RANGE_NUMBER}\\.(?:x|\\*))`;
-var RANGE_CARET = `\\^${RANGE_NUMBER}\\.${RANGE_NUMBER}(?:\\.${RANGE_NUMBER})?`;
-var RANGE_COMPARATOR = `[<>]=?${RANGE_NUMERIC}`;
-var RANGE_ATOM = `(?:${RANGE_EXACT}|${RANGE_WILDCARD}|${RANGE_CARET}|${RANGE_COMPARATOR})`;
-var VERSION_RANGE_PATTERN = `^(?:\\*|x|${RANGE_ATOM}(?: ${RANGE_ATOM})*)$`;
-var RELATIVE_ENTRYPOINT_PATTERN = "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$";
-var METHOD_NAME_PATTERN = "^[a-z][a-zA-Z0-9]{0,63}$";
-
-// packages/core/dist/ids.js
+// packages/core/dist/index.js
 var SEGMENT = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 var DOTTED = /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)*$/;
 var QUALIFIED = /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)*\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)*$/;
@@ -138,18 +120,15 @@ function isTraitId(value2) {
   return value2.includes(".") && isDottedId(value2);
 }
 function contractId(value2) {
-  if (!isQualifiedId(value2))
-    throw new TypeError(`invalid contract id: ${value2}`);
+  if (!isQualifiedId(value2)) throw new TypeError(`invalid contract id: ${value2}`);
   return value2;
 }
 function errorCode(value2) {
-  if (!isErrorCode(value2))
-    throw new TypeError(`invalid diagnostic/error code: ${value2}`);
+  if (!isErrorCode(value2)) throw new TypeError(`invalid diagnostic/error code: ${value2}`);
   return value2;
 }
 function traitId(value2) {
-  if (!isTraitId(value2))
-    throw new TypeError(`invalid trait id: ${value2}`);
+  if (!isTraitId(value2)) throw new TypeError(`invalid trait id: ${value2}`);
   return value2;
 }
 var OPERATION_DOMAINS = Object.freeze([
@@ -210,10 +189,10 @@ function operationId(value2, owner) {
   if (SHARED_OPERATION_IDS.includes(value2) || canonicalDomain || localSuffix !== void 0 && isSegment(localSuffix)) {
     return value2;
   }
-  throw new TypeError(`operation id ${value2} is outside shared, canonical domain, and ${codecPrefix} namespaces`);
+  throw new TypeError(
+    `operation id ${value2} is outside shared, canonical domain, and ${codecPrefix} namespaces`
+  );
 }
-
-// packages/core/dist/version.js
 var SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/;
 function parseSafeInteger(value2) {
   const parsed = Number(value2);
@@ -221,16 +200,13 @@ function parseSafeInteger(value2) {
 }
 function parseSemver(value2) {
   const m = SEMVER.exec(value2);
-  if (!m)
-    return void 0;
+  if (!m) return void 0;
   const major = parseSafeInteger(m[1] ?? "");
   const minor = parseSafeInteger(m[2] ?? "");
   const patch = parseSafeInteger(m[3] ?? "");
-  if (major === void 0 || minor === void 0 || patch === void 0)
-    return void 0;
+  if (major === void 0 || minor === void 0 || patch === void 0) return void 0;
   const prerelease = (m[4] ?? "").split(".").filter((part) => part.length > 0).map((part) => /^\d+$/.test(part) ? parseSafeInteger(part) : part);
-  if (prerelease.some((part) => part === void 0))
-    return void 0;
+  if (prerelease.some((part) => part === void 0)) return void 0;
   const build = (m[5] ?? "").split(".").filter((part) => part.length > 0);
   return {
     major,
@@ -243,35 +219,25 @@ function parseSemver(value2) {
 function comparePrerelease(a, b) {
   const ap = a.prerelease;
   const bp = b.prerelease;
-  if (ap.length === 0 && bp.length === 0)
-    return 0;
-  if (ap.length === 0)
-    return 1;
-  if (bp.length === 0)
-    return -1;
+  if (ap.length === 0 && bp.length === 0) return 0;
+  if (ap.length === 0) return 1;
+  if (bp.length === 0) return -1;
   const length = Math.min(ap.length, bp.length);
   for (let i = 0; i < length; i += 1) {
     const x = ap[i];
     const y = bp[i];
-    if (x === y)
-      continue;
-    if (typeof x === "number" && typeof y === "number")
-      return x < y ? -1 : 1;
-    if (typeof x === "number")
-      return -1;
-    if (typeof y === "number")
-      return 1;
+    if (x === y) continue;
+    if (typeof x === "number" && typeof y === "number") return x < y ? -1 : 1;
+    if (typeof x === "number") return -1;
+    if (typeof y === "number") return 1;
     return x < y ? -1 : 1;
   }
   return ap.length === bp.length ? 0 : ap.length < bp.length ? -1 : 1;
 }
 function compareSemver(a, b) {
-  if (a.major !== b.major)
-    return a.major < b.major ? -1 : 1;
-  if (a.minor !== b.minor)
-    return a.minor < b.minor ? -1 : 1;
-  if (a.patch !== b.patch)
-    return a.patch < b.patch ? -1 : 1;
+  if (a.major !== b.major) return a.major < b.major ? -1 : 1;
+  if (a.minor !== b.minor) return a.minor < b.minor ? -1 : 1;
+  if (a.patch !== b.patch) return a.patch < b.patch ? -1 : 1;
   return comparePrerelease(a, b);
 }
 function formatSemver(version) {
@@ -308,23 +274,19 @@ function caretUpperBound(v) {
 }
 function parsePartial(value2) {
   const m = /^(0|[1-9]\d*)(?:\.(0|[1-9]\d*|x|\*))?(?:\.(0|[1-9]\d*|x|\*))?$/.exec(value2);
-  if (!m)
-    return void 0;
+  if (!m) return void 0;
   const major = parseSafeInteger(m[1] ?? "");
-  if (major === void 0)
-    return void 0;
+  if (major === void 0) return void 0;
   const minorRaw = m[2];
   const patchRaw = m[3];
   const wild = (s) => s === "x" || s === "*";
   if (minorRaw === void 0 || wild(minorRaw)) {
-    if (wild(minorRaw) && patchRaw !== void 0)
-      return void 0;
+    if (wild(minorRaw) && patchRaw !== void 0) return void 0;
     return { v: { major, minor: 0, patch: 0, prerelease: [], build: [] }, precision: 1 };
   }
   if (patchRaw === void 0 || wild(patchRaw)) {
     const minor2 = parseSafeInteger(minorRaw);
-    if (minor2 === void 0)
-      return void 0;
+    if (minor2 === void 0) return void 0;
     return {
       v: { major, minor: minor2, patch: 0, prerelease: [], build: [] },
       precision: 2
@@ -332,8 +294,7 @@ function parsePartial(value2) {
   }
   const minor = parseSafeInteger(minorRaw);
   const patch = parseSafeInteger(patchRaw);
-  if (minor === void 0 || patch === void 0)
-    return void 0;
+  if (minor === void 0 || patch === void 0) return void 0;
   return {
     v: { major, minor, patch, prerelease: [], build: [] },
     precision: 3
@@ -341,38 +302,29 @@ function parsePartial(value2) {
 }
 function parseSingle(token) {
   const opMatch = /^(>=|<=|>|<|=|\^)?(.+)$/.exec(token);
-  if (!opMatch)
-    return void 0;
+  if (!opMatch) return void 0;
   const op = opMatch[1];
   const rest = (opMatch[2] ?? "").trim();
   const hasWildcard = /(?:^|\.)(?:x|\*)(?:\.|$)/.test(rest);
   if (op === "^") {
-    if (hasWildcard)
-      return void 0;
+    if (hasWildcard) return void 0;
     const partial2 = parsePartial(rest);
-    if (!partial2 || partial2.precision === 1)
-      return void 0;
+    if (!partial2 || partial2.precision === 1) return void 0;
     const upper = caretUpperBound(partial2.v);
-    if (upper === void 0)
-      return void 0;
+    if (upper === void 0) return void 0;
     return [
       { op: ">=", version: partial2.v },
       { op: "<", version: upper }
     ];
   }
   const partial = parsePartial(rest);
-  if (!partial)
-    return void 0;
-  if (hasWildcard && op !== void 0)
-    return void 0;
+  if (!partial) return void 0;
+  if (hasWildcard && op !== void 0) return void 0;
   if (op === void 0 || op === "=") {
-    if (!hasWildcard && partial.precision !== 3)
-      return void 0;
-    if (partial.precision === 3)
-      return [{ op: "=", version: partial.v }];
+    if (!hasWildcard && partial.precision !== 3) return void 0;
+    if (partial.precision === 3) return [{ op: "=", version: partial.v }];
     const next = partial.precision === 1 ? partial.v.major + 1 : partial.v.minor + 1;
-    if (!Number.isSafeInteger(next))
-      return void 0;
+    if (!Number.isSafeInteger(next)) return void 0;
     const upper = partial.precision === 1 ? { major: partial.v.major + 1, minor: 0, patch: 0, prerelease: [], build: [] } : {
       major: partial.v.major,
       minor: partial.v.minor + 1,
@@ -396,8 +348,7 @@ function parseVersionRange(raw) {
   const comparators = [];
   for (const token of tokens) {
     const parsed = parseSingle(token);
-    if (!parsed)
-      return void 0;
+    if (!parsed) return void 0;
     comparators.push(...parsed);
   }
   return {
@@ -407,28 +358,23 @@ function parseVersionRange(raw) {
   };
 }
 function versionRangeTargetsMajor(range, major) {
-  if (!Number.isSafeInteger(major) || major < 0)
-    return false;
+  if (!Number.isSafeInteger(major) || major < 0) return false;
   const start = { major, minor: 0, patch: 0, prerelease: [], build: [] };
   return range.comparators.every((conjunction) => {
-    if (conjunction.length === 0)
-      return true;
+    if (conjunction.length === 0) return true;
     const exact = conjunction.find((comparator) => comparator.op === "=");
     if (exact !== void 0) {
       return exact.version.major === major && conjunction.every((comparator) => matches(exact.version, comparator));
     }
     const nextMajor = major + 1;
-    if (!Number.isSafeInteger(nextMajor))
-      return false;
+    if (!Number.isSafeInteger(nextMajor)) return false;
     const end = { major: nextMajor, minor: 0, patch: 0, prerelease: [], build: [] };
     const crossesUpperBoundary = conjunction.some((comparator) => {
-      if (comparator.op !== "<" && comparator.op !== "<=")
-        return false;
+      if (comparator.op !== "<" && comparator.op !== "<=") return false;
       const boundary = compareSemver(comparator.version, end);
       return boundary > 0 || boundary === 0 && comparator.op === "<=";
     });
-    if (crossesUpperBoundary)
-      return false;
+    if (crossesUpperBoundary) return false;
     const lowers = [
       { op: ">=", version: start },
       ...conjunction.filter((comparator) => comparator.op === ">" || comparator.op === ">=")
@@ -439,14 +385,12 @@ function versionRangeTargetsMajor(range, major) {
     ];
     const lower = lowers.reduce((best, candidate) => {
       const comparison = compareSemver(candidate.version, best.version);
-      if (comparison > 0 || comparison === 0 && candidate.op === ">")
-        return candidate;
+      if (comparison > 0 || comparison === 0 && candidate.op === ">") return candidate;
       return best;
     });
     const upper = uppers.reduce((best, candidate) => {
       const comparison = compareSemver(candidate.version, best.version);
-      if (comparison < 0 || comparison === 0 && candidate.op === "<")
-        return candidate;
+      if (comparison < 0 || comparison === 0 && candidate.op === "<") return candidate;
       return best;
     });
     const lowerInside = compareSemver(lower.version, start) >= 0;
@@ -475,8 +419,6 @@ function matches(version, comparator) {
 function satisfiesRange(version, range) {
   return range.comparators.some((conjunction) => conjunction.every((c) => matches(version, c)));
 }
-
-// packages/core/dist/errors.js
 var ModkitError = class extends Error {
   code;
   context;
@@ -488,8 +430,7 @@ var ModkitError = class extends Error {
       throw new TypeError(`ModkitError code must be a qualified id, got \xAB${options.code}\xBB`);
     }
     this.code = options.code;
-    if (options.context !== void 0)
-      this.context = options.context;
+    if (options.context !== void 0) this.context = options.context;
     this.retryability = options.retryability ?? "never";
   }
   toJSON() {
@@ -504,8 +445,6 @@ var ModkitError = class extends Error {
 function isModkitError(value2) {
   return value2 instanceof ModkitError;
 }
-
-// packages/core/dist/diagnostics.js
 function diagnostic(severity, code, message, path, data, range) {
   return {
     code: errorCode(code),
@@ -519,13 +458,10 @@ function diagnostic(severity, code, message, path, data, range) {
 function hasErrors(diagnostics) {
   return diagnostics.some((d) => d.severity === "error");
 }
-
-// packages/core/dist/immutability.js
 function deepFreeze(value2) {
   const seen = /* @__PURE__ */ new WeakSet();
   const visit = (candidate) => {
-    if (typeof candidate !== "object" || candidate === null || seen.has(candidate))
-      return;
+    if (typeof candidate !== "object" || candidate === null || seen.has(candidate)) return;
     seen.add(candidate);
     for (const key2 of Reflect.ownKeys(candidate)) {
       visit(candidate[key2]);
@@ -535,15 +471,12 @@ function deepFreeze(value2) {
   visit(value2);
   return value2;
 }
-
-// packages/core/dist/source-span.js
 var UINT64_MAX_DECIMAL = "18446744073709551615";
 function fixedWidthDecimalAtMost(maximum) {
   const alternatives = [maximum];
   for (let index = 1; index < maximum.length; index += 1) {
     const maximumDigit = Number(maximum[index]);
-    if (maximumDigit === 0)
-      continue;
+    if (maximumDigit === 0) continue;
     const prefix = maximum.slice(0, index);
     const lowerDigit = maximumDigit === 1 ? "0" : `[0-${maximumDigit - 1}]`;
     const remaining = maximum.length - index - 1;
@@ -602,8 +535,6 @@ function uint64(value2) {
   }
   return decimal;
 }
-
-// packages/core/dist/ordering.js
 var encoder = new TextEncoder();
 function compareUtf8(a, b) {
   let ascii = true;
@@ -623,13 +554,10 @@ function compareUtf8(a, b) {
   for (let i = 0; i < length; i += 1) {
     const x = ab[i];
     const y = bb[i];
-    if (x !== y)
-      return x < y ? -1 : 1;
+    if (x !== y) return x < y ? -1 : 1;
   }
-  if (ab.length !== bb.length)
-    return ab.length < bb.length ? -1 : 1;
-  if (a === b)
-    return 0;
+  if (ab.length !== bb.length) return ab.length < bb.length ? -1 : 1;
+  if (a === b) return 0;
   return a < b ? -1 : 1;
 }
 function sortedUtf8(values) {
@@ -638,11 +566,8 @@ function sortedUtf8(values) {
 function uniqueSortedUtf8(values) {
   return sortedUtf8([...new Set(values)]);
 }
-
-// packages/core/dist/canonical-json.js
 function render(value2, indent, depth, path) {
-  if (value2 === null)
-    return "null";
+  if (value2 === null) return "null";
   switch (typeof value2) {
     case "boolean":
       return value2 ? "true" : "false";
@@ -667,8 +592,7 @@ function render(value2, indent, depth, path) {
   const pad = indent.repeat(depth + 1);
   const closePad = indent.repeat(depth);
   if (Array.isArray(value2)) {
-    if (value2.length === 0)
-      return "[]";
+    if (value2.length === 0) return "[]";
     const items = value2.map((item, i) => pad + render(item, indent, depth + 1, `${path}[${i}]`));
     return `[
 ${items.join(",\n")}
@@ -676,9 +600,10 @@ ${closePad}]`;
   }
   const record = value2;
   const keys = Object.keys(record).filter((key2) => record[key2] !== void 0).sort(compareUtf8);
-  if (keys.length === 0)
-    return "{}";
-  const entries = keys.map((key2) => `${pad}${JSON.stringify(key2)}: ${render(record[key2], indent, depth + 1, `${path}.${key2}`)}`);
+  if (keys.length === 0) return "{}";
+  const entries = keys.map(
+    (key2) => `${pad}${JSON.stringify(key2)}: ${render(record[key2], indent, depth + 1, `${path}.${key2}`)}`
+  );
   return `{
 ${entries.join(",\n")}
 ${closePad}}`;
@@ -687,8 +612,6 @@ function canonicalJsonStringify(value2) {
   return `${render(value2, "  ", 0, "$")}
 `;
 }
-
-// packages/core/dist/cancellation.js
 var CANCELLED_CODE = "x3.core/operation-cancelled";
 var OperationCancelledError = class extends ModkitError {
   constructor(reason) {
@@ -702,11 +625,44 @@ var OperationCancelledError = class extends ModkitError {
   }
 };
 function throwIfAborted(signal) {
-  if (signal?.aborted)
-    throw new OperationCancelledError(signal.reason);
+  if (signal?.aborted) throw new OperationCancelledError(signal.reason);
 }
 
-// packages/sdk/dist/schemas/extension-manifest.js
+// packages/sdk/dist/index.js
+var func1Module = __toESM(require_ucs2length(), 1);
+var func1Module2 = __toESM(require_ucs2length(), 1);
+var func1Module3 = __toESM(require_ucs2length(), 1);
+var func2Module = __toESM(require_ucs2length(), 1);
+var func0Module = __toESM(require_equal(), 1);
+var func1Module4 = __toESM(require_ucs2length(), 1);
+var func0Module2 = __toESM(require_equal(), 1);
+var func3Module = __toESM(require_ucs2length(), 1);
+var func2Module2 = __toESM(require_ucs2length(), 1);
+var func0Module3 = __toESM(require_equal(), 1);
+var func1Module5 = __toESM(require_ucs2length(), 1);
+var func2Module3 = __toESM(require_ucs2length(), 1);
+var func2Module4 = __toESM(require_ucs2length(), 1);
+var func0Module4 = __toESM(require_equal(), 1);
+var func2Module5 = __toESM(require_ucs2length(), 1);
+var func1Module6 = __toESM(require_ucs2length(), 1);
+var func1Module7 = __toESM(require_ucs2length(), 1);
+var func1Module8 = __toESM(require_ucs2length(), 1);
+var DOTTED_PATTERN = "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
+var NAMESPACED_DOTTED_PATTERN = "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
+var OPERATION_PATTERN = "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$";
+var QUALIFIED_PATTERN = "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
+var SEGMENT_PATTERN = "^[a-z0-9]+(?:-[a-z0-9]+)*$";
+var SEMVER_PATTERN = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$";
+var RANGE_NUMBER = "(?:0|[1-9]\\d*)";
+var RANGE_NUMERIC = `${RANGE_NUMBER}(?:\\.${RANGE_NUMBER}){0,2}`;
+var RANGE_EXACT = `=?${RANGE_NUMBER}\\.${RANGE_NUMBER}\\.${RANGE_NUMBER}`;
+var RANGE_WILDCARD = `(?:${RANGE_NUMBER}\\.(?:x|\\*)|${RANGE_NUMBER}\\.${RANGE_NUMBER}\\.(?:x|\\*))`;
+var RANGE_CARET = `\\^${RANGE_NUMBER}\\.${RANGE_NUMBER}(?:\\.${RANGE_NUMBER})?`;
+var RANGE_COMPARATOR = `[<>]=?${RANGE_NUMERIC}`;
+var RANGE_ATOM = `(?:${RANGE_EXACT}|${RANGE_WILDCARD}|${RANGE_CARET}|${RANGE_COMPARATOR})`;
+var VERSION_RANGE_PATTERN = `^(?:\\*|x|${RANGE_ATOM}(?: ${RANGE_ATOM})*)$`;
+var RELATIVE_ENTRYPOINT_PATTERN = "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$";
+var METHOD_NAME_PATTERN = "^[a-z][a-zA-Z0-9]{0,63}$";
 var REQUIREMENT_SCOPE_KINDS = Object.freeze([
   "contribution",
   "offer",
@@ -777,8 +733,6 @@ deepFreeze(requirementScopeSchema);
 deepFreeze(extensionRequirementSchema);
 deepFreeze(extensionManifestSchema);
 deepFreeze(modkitBlockSchema);
-
-// packages/sdk/dist/schemas/contribution-manifest.js
 var EXECUTION_PROFILES = Object.freeze([
   "browser-sandbox",
   "worker-brokered",
@@ -896,8 +850,6 @@ deepFreeze(runtimeTargetConstraintSchema);
 deepFreeze(runtimeVariantDeclarationSchema);
 deepFreeze(scopedContractRequirementSchema);
 deepFreeze(contributionManifestSchema);
-
-// packages/sdk/dist/asset-capabilities/data-source-ids.js
 var STANDARD_DATA_SOURCE_CONTRACTS = Object.freeze([
   "common.view/text-data-source",
   "common.view/byte-range-source",
@@ -913,8 +865,6 @@ var STANDARD_DATA_SOURCE_CONTRACTS = Object.freeze([
   "common.view/relation-graph-source",
   "common.view/subject-facts-source"
 ]);
-
-// packages/sdk/dist/schemas/contribution-specs.js
 var nonEmptyString = { type: "string", minLength: 1 };
 var qualifiedId = { type: "string", pattern: QUALIFIED_PATTERN };
 var namespacedDottedId = { type: "string", pattern: NAMESPACED_DOTTED_PATTERN };
@@ -1590,8 +1540,6 @@ deepFreeze(dataSourceMethodSurfaceV1Schema);
 deepFreeze(dataSourceSurfaceV1Schema);
 deepFreeze(dataSourceContractDefinitionSpecV1Schema);
 deepFreeze(contractDefinitionSpecV1Schema);
-
-// packages/sdk/dist/subjects/refs.js
 var REVISION_KINDS = Object.freeze([
   "content-hash",
   "git-object",
@@ -1606,8 +1554,7 @@ var REVISION_VALUE_PATTERN = "(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+";
 var REVISION_ID_PATTERN = `^(?:${REVISION_KIND_PATTERN})(?:\\.${REVISION_ALGORITHM_PATTERN})?:${REVISION_VALUE_PATTERN}$`;
 var REVISION_ID = new RegExp(REVISION_ID_PATTERN);
 function parseRevisionRef(value2) {
-  if (!REVISION_ID.test(value2))
-    return void 0;
+  if (!REVISION_ID.test(value2)) return void 0;
   const colon = value2.indexOf(":");
   const coordinate2 = value2.slice(0, colon);
   const dot = coordinate2.indexOf(".");
@@ -1616,8 +1563,7 @@ function parseRevisionRef(value2) {
   const encoded = value2.slice(colon + 1);
   try {
     const decoded = decodeURIComponent(encoded);
-    if (decoded.length === 0 || encodeURIComponent(decoded) !== encoded)
-      return void 0;
+    if (decoded.length === 0 || encodeURIComponent(decoded) !== encoded) return void 0;
     return Object.freeze({
       kind,
       value: decoded,
@@ -1638,8 +1584,7 @@ function assertSubjectIdentity(identity2) {
   if (typeof identity2.kind !== "string" || typeof identity2.key !== "string") {
     throw new TypeError("subject identity kind and key must be strings");
   }
-  if (identity2.kind === "" && identity2.key === "")
-    return;
+  if (identity2.kind === "" && identity2.key === "") return;
   if (!isQualifiedId(identity2.kind)) {
     throw new TypeError(`nested subject kind must be a qualified id: ${identity2.kind}`);
   }
@@ -1669,8 +1614,7 @@ function sourceIdChain(source) {
   return chain.reverse();
 }
 function sourceFromIdChain(chain) {
-  if (chain.length === 0)
-    throw new TypeError("subject source chain must be non-empty");
+  if (chain.length === 0) throw new TypeError("subject source chain must be non-empty");
   let source;
   for (const id of chain) {
     if (typeof id !== "string" || id.length === 0) {
@@ -1693,14 +1637,15 @@ function serializeSubjectRef(ref) {
     ];
     return `${EXTENDED_SUBJECT_PREFIX}${encodeURIComponent(JSON.stringify(payload))}`;
   }
-  if (ref.identity.key === "" && ref.identity.kind === "")
-    return ref.source.id;
+  if (ref.identity.key === "" && ref.identity.kind === "") return ref.source.id;
   return `${ref.source.id}#${encodeURIComponent(ref.identity.kind)}/${encodeURIComponent(ref.identity.key)}`;
 }
 function parseSubjectRef(uri, workspace) {
   if (uri.startsWith(EXTENDED_SUBJECT_PREFIX)) {
     try {
-      const payload = JSON.parse(decodeURIComponent(uri.slice(EXTENDED_SUBJECT_PREFIX.length)));
+      const payload = JSON.parse(
+        decodeURIComponent(uri.slice(EXTENDED_SUBJECT_PREFIX.length))
+      );
       if (!Array.isArray(payload) || payload.length !== 5 || payload[0] !== 1) {
         throw new TypeError("invalid extended subject reference");
       }
@@ -1719,32 +1664,32 @@ function parseSubjectRef(uri, workspace) {
         identity: identity2
       };
     } catch (error) {
-      throw new TypeError(`invalid extended subject reference: ${error instanceof Error ? error.message : String(error)}`);
+      throw new TypeError(
+        `invalid extended subject reference: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
   const hash = uri.indexOf("#");
-  if (hash === -1)
-    return rootSubject({ id: uri }, workspace);
+  if (hash === -1) return rootSubject({ id: uri }, workspace);
   const fragment = uri.slice(hash + 1);
   const slash = fragment.indexOf("/");
-  if (slash === -1)
-    throw new TypeError("nested subject reference must include a non-empty key");
+  if (slash === -1) throw new TypeError("nested subject reference must include a non-empty key");
   try {
     const kind = decodeURIComponent(fragment.slice(0, slash));
     const key2 = decodeURIComponent(fragment.slice(slash + 1));
     return nestedSubject(rootSubject({ id: uri.slice(0, hash) }, workspace), kind, key2);
   } catch (error) {
-    throw new TypeError(`invalid nested subject reference: ${error instanceof Error ? error.message : String(error)}`);
+    throw new TypeError(
+      `invalid nested subject reference: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
-
-// packages/sdk/dist/schemas/subject-descriptor.js
 var sourceSpanValueSchema = { oneOf: sourceSpanSchema.oneOf };
 var nonEmptyString2 = { type: "string", minLength: 1 };
 var nonWhitespaceString = { type: "string", pattern: "\\S" };
 var revisionString = { type: "string", pattern: REVISION_ID_PATTERN };
 var namespacedDottedId2 = { type: "string", pattern: NAMESPACED_DOTTED_PATTERN };
-var operationId3 = { type: "string", pattern: OPERATION_PATTERN };
+var operationId22 = { type: "string", pattern: OPERATION_PATTERN };
 var stringArray = { type: "array", items: { type: "string" } };
 var jsonValueRef = { $ref: "#/$defs/jsonValue" };
 var jsonValueSchema = {
@@ -1802,7 +1747,7 @@ var derivationRecipeSchema = {
     extensionId: { type: "string", pattern: QUALIFIED_PATTERN },
     extensionVersion: { type: "string", pattern: SEMVER_PATTERN },
     contributionId: { type: "string", pattern: QUALIFIED_PATTERN },
-    operation: operationId3,
+    operation: operationId22,
     parameters: jsonValueRef
   }
 };
@@ -1938,7 +1883,7 @@ var jsonSchemaRefSchema2 = {
   properties: { $ref: nonEmptyString2 }
 };
 var operationProperties = {
-  id: operationId3,
+  id: operationId22,
   handlerId: nonEmptyString2,
   mutatesSource: { type: "boolean" },
   inputSchema: jsonSchemaRefSchema2
@@ -2231,8 +2176,6 @@ var subjectDescriptorV2InferenceSchema = {
 };
 deepFreeze(subjectDescriptorV2Schema);
 deepFreeze(subjectDescriptorV2InferenceSchema);
-
-// packages/sdk/dist/manifest/validators.generated/sourceSpanV1.js
 var sourceSpanV1 = validate20;
 var pattern4 = new RegExp("^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$", "u");
 function validate20(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
@@ -2822,9 +2765,6 @@ function validate20(data, { instancePath = "", parentData, parentDataProperty, r
   return errors === 0;
 }
 validate20.evaluated = { "dynamicProps": true, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/extensionManifestV1.js
-var func1Module = __toESM(require_ucs2length(), 1);
 var extensionManifestV1 = validate202;
 var schema31 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/extension-manifest.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "publisher", "id", "version", "license", "contributionManifests"], "properties": { "schemaVersion": { "const": 1 }, "publisher": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "license": { "type": "string", "minLength": 1 }, "contributionManifests": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "dependsOn": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/extension-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["extension", "mode", "scope"], "properties": { "extension": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } } } } };
 var pattern42 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
@@ -3254,9 +3194,6 @@ function validate202(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate202.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/extensionManifestModkitBlockV1.js
-var func1Module2 = __toESM(require_ucs2length(), 1);
 var extensionManifestModkitBlockV1 = validate203;
 var schema312 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/extension-manifest-modkit-block.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "publisher", "id", "contributionManifests"], "properties": { "schemaVersion": { "const": 1 }, "publisher": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "contributionManifests": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "dependsOn": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/extension-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["extension", "mode", "scope"], "properties": { "extension": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } } } } };
 var pattern43 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
@@ -3623,9 +3560,6 @@ function validate203(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate203.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/extensionRequirementV1.js
-var func1Module3 = __toESM(require_ucs2length(), 1);
 var extensionRequirementV1 = validate204;
 var schema313 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/extension-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["extension", "mode", "scope"], "properties": { "extension": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } };
 var pattern44 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
@@ -3826,10 +3760,6 @@ function validate204(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate204.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/codecContributionSpecV1.js
-var func2Module = __toESM(require_ucs2length(), 1);
-var func0Module = __toESM(require_equal(), 1);
 var codecContributionSpecV1 = validate205;
 var schema314 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/codec-contribution-spec.v1.schema.json", "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["formatRefs", "roles", "sourceTopology", "artifactStages", "openIntents", "match", "probe", "representations", "publishesDataSources", "operations", "implementationTier", "budgets"], "properties": { "formatRefs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["formatId", "label"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "label": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "roles": { "type": "array", "items": { "enum": ["container", "media", "byte-transform", "semantic", "index", "sidecar"] }, "minItems": 1 }, "artifactStages": { "type": "array", "items": { "enum": ["authored", "compiled", "runtime"] }, "minItems": 1 }, "openIntents": { "type": "array", "items": { "enum": ["probe", "inspect", "thumbnail", "full", "stream", "export"] }, "minItems": 1 }, "match": { "type": "object", "additionalProperties": false, "properties": { "extensions": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "mediaTypes": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "pathGlobs": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "signatures": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["from", "offset", "bytesHex"], "properties": { "from": { "enum": ["start", "end"] }, "offset": { "type": "integer", "minimum": 0, "maximum": 4096 }, "bytesHex": { "type": "string", "pattern": "^(?:[0-9a-f]{2}){1,64}$" }, "maskHex": { "type": "string", "pattern": "^(?:[0-9a-f]{2}){1,64}$" } } }, "maxItems": 8 } } }, "companions": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "patterns", "searchScopes"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "role": { "type": "string", "minLength": 1 }, "required": { "type": "boolean" }, "patterns": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }, "expected": { "type": "object", "additionalProperties": false, "properties": { "all": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "any": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "none": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } } } }, "searchScopes": { "type": "array", "minItems": 1, "items": { "enum": ["sibling-directory", "current-mount", "enclosing-container", "workspace-dependency-layer", "explicit-user-selection"] } } } } }, "representations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "contract", "major", "stage", "lossy"], "properties": { "id": { "type": "string", "minLength": 1 }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "stage": { "enum": ["authored", "compiled", "runtime"] }, "lossy": { "type": "boolean" } } }, "minItems": 1 }, "publishesDataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "requires": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "operations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "mutatesSource"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "requiredPermissions": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } }, "requiresContract": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "outputKinds": { "type": "array", "items": { "enum": ["json", "bytes", "stream", "source", "artifact", "none", "edit-plan", "transaction"] } } } } }, "traitDeclarations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "representation", "presence"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "representation": { "enum": ["source", "compiled", "runtime"] }, "presence": { "enum": ["may-expose", "will-expose"] }, "prerequisites": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } } } }, "implementationTier": { "type": "object", "additionalProperties": false, "required": ["claimed"], "properties": { "claimed": { "enum": [1, 2, 3, 4, 5] } } }, "budgets": { "type": "object", "additionalProperties": false, "required": ["maxInputBytes", "maxDepth", "maxNodes", "maxScalarBytes", "maxDiagnostics"], "properties": { "maxInputBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "maxDepth": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxNodes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxScalarBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxDiagnostics": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "deadlineMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "sourceTopology": { "enum": ["single", "bundle"] }, "probe": { "type": "object", "additionalProperties": false, "required": ["kind", "ranges", "maxBytes"], "properties": { "kind": { "const": "bytes" }, "ranges": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["from", "length"], "properties": { "from": { "enum": ["start", "end"] }, "length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["formatRefs", "roles", "sourceTopology", "artifactStages", "openIntents", "match", "probe", "representations", "publishesDataSources", "operations", "implementationTier", "budgets"], "properties": { "formatRefs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["formatId", "label"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "label": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "roles": { "type": "array", "items": { "enum": ["container", "media", "byte-transform", "semantic", "index", "sidecar"] }, "minItems": 1 }, "artifactStages": { "type": "array", "items": { "enum": ["authored", "compiled", "runtime"] }, "minItems": 1 }, "openIntents": { "type": "array", "items": { "enum": ["probe", "inspect", "thumbnail", "full", "stream", "export"] }, "minItems": 1 }, "match": { "type": "object", "additionalProperties": false, "properties": { "extensions": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "mediaTypes": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "pathGlobs": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "signatures": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["from", "offset", "bytesHex"], "properties": { "from": { "enum": ["start", "end"] }, "offset": { "type": "integer", "minimum": 0, "maximum": 4096 }, "bytesHex": { "type": "string", "pattern": "^(?:[0-9a-f]{2}){1,64}$" }, "maskHex": { "type": "string", "pattern": "^(?:[0-9a-f]{2}){1,64}$" } } }, "maxItems": 8 } } }, "companions": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "patterns", "searchScopes"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "role": { "type": "string", "minLength": 1 }, "required": { "type": "boolean" }, "patterns": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }, "expected": { "type": "object", "additionalProperties": false, "properties": { "all": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "any": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "none": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } } } }, "searchScopes": { "type": "array", "minItems": 1, "items": { "enum": ["sibling-directory", "current-mount", "enclosing-container", "workspace-dependency-layer", "explicit-user-selection"] } } } } }, "representations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "contract", "major", "stage", "lossy"], "properties": { "id": { "type": "string", "minLength": 1 }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "stage": { "enum": ["authored", "compiled", "runtime"] }, "lossy": { "type": "boolean" } } }, "minItems": 1 }, "publishesDataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "requires": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "operations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "mutatesSource"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "requiredPermissions": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } }, "requiresContract": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "outputKinds": { "type": "array", "items": { "enum": ["json", "bytes", "stream", "source", "artifact", "none", "edit-plan", "transaction"] } } } } }, "traitDeclarations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "representation", "presence"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "representation": { "enum": ["source", "compiled", "runtime"] }, "presence": { "enum": ["may-expose", "will-expose"] }, "prerequisites": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } } } }, "implementationTier": { "type": "object", "additionalProperties": false, "required": ["claimed"], "properties": { "claimed": { "enum": [1, 2, 3, 4, 5] } } }, "budgets": { "type": "object", "additionalProperties": false, "required": ["maxInputBytes", "maxDepth", "maxNodes", "maxScalarBytes", "maxDiagnostics"], "properties": { "maxInputBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "maxDepth": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxNodes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxScalarBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxDiagnostics": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "deadlineMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "sourceTopology": { "const": "namespace" }, "probe": { "type": "object", "additionalProperties": false, "required": ["kind", "maxEntries", "maxDepth", "maxPathBytes"], "properties": { "kind": { "const": "namespace" }, "prefixes": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "maxEntries": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxDepth": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxPathBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["formatRefs", "roles", "sourceTopology", "artifactStages", "openIntents", "match", "probe", "representations", "publishesDataSources", "operations", "implementationTier", "budgets"], "properties": { "formatRefs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["formatId", "label"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "label": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "roles": { "type": "array", "items": { "enum": ["container", "media", "byte-transform", "semantic", "index", "sidecar"] }, "minItems": 1 }, "artifactStages": { "type": "array", "items": { "enum": ["authored", "compiled", "runtime"] }, "minItems": 1 }, "openIntents": { "type": "array", "items": { "enum": ["probe", "inspect", "thumbnail", "full", "stream", "export"] }, "minItems": 1 }, "match": { "type": "object", "additionalProperties": false, "properties": { "extensions": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "mediaTypes": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "pathGlobs": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "signatures": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["from", "offset", "bytesHex"], "properties": { "from": { "enum": ["start", "end"] }, "offset": { "type": "integer", "minimum": 0, "maximum": 4096 }, "bytesHex": { "type": "string", "pattern": "^(?:[0-9a-f]{2}){1,64}$" }, "maskHex": { "type": "string", "pattern": "^(?:[0-9a-f]{2}){1,64}$" } } }, "maxItems": 8 } } }, "companions": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "patterns", "searchScopes"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "role": { "type": "string", "minLength": 1 }, "required": { "type": "boolean" }, "patterns": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }, "expected": { "type": "object", "additionalProperties": false, "properties": { "all": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "any": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "none": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } } } }, "searchScopes": { "type": "array", "minItems": 1, "items": { "enum": ["sibling-directory", "current-mount", "enclosing-container", "workspace-dependency-layer", "explicit-user-selection"] } } } } }, "representations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "contract", "major", "stage", "lossy"], "properties": { "id": { "type": "string", "minLength": 1 }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "stage": { "enum": ["authored", "compiled", "runtime"] }, "lossy": { "type": "boolean" } } }, "minItems": 1 }, "publishesDataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "requires": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "operations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "mutatesSource"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "requiredPermissions": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } }, "requiresContract": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "outputKinds": { "type": "array", "items": { "enum": ["json", "bytes", "stream", "source", "artifact", "none", "edit-plan", "transaction"] } } } } }, "traitDeclarations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "representation", "presence"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "representation": { "enum": ["source", "compiled", "runtime"] }, "presence": { "enum": ["may-expose", "will-expose"] }, "prerequisites": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } } } }, "implementationTier": { "type": "object", "additionalProperties": false, "required": ["claimed"], "properties": { "claimed": { "enum": [1, 2, 3, 4, 5] } } }, "budgets": { "type": "object", "additionalProperties": false, "required": ["maxInputBytes", "maxDepth", "maxNodes", "maxScalarBytes", "maxDiagnostics"], "properties": { "maxInputBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "maxDepth": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxNodes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxScalarBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxDiagnostics": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "deadlineMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "sourceTopology": { "const": "derived" }, "probe": { "type": "object", "additionalProperties": false, "required": ["kind", "maxSubjects", "maxRelationDepth"], "properties": { "kind": { "const": "derived" }, "maxSubjects": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxRelationDepth": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] };
 var func14 = Object.prototype.hasOwnProperty;
@@ -4784,20 +4714,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                             let i12 = data36.length;
                             let j0;
                             if (i12 > 1) {
-                              outer0: for (; i12--; ) {
-                                for (j0 = i12; j0--; ) {
-                                  if (func0(data36[i12], data36[j0])) {
-                                    const err84 = { instancePath: instancePath + "/companions/" + i8 + "/expected/all/" + i10 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/all/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i12, j: j0 }, message: "must NOT have duplicate items (items ## " + j0 + " and " + i12 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err84];
-                                    } else {
-                                      vErrors.push(err84);
+                              outer0:
+                                for (; i12--; ) {
+                                  for (j0 = i12; j0--; ) {
+                                    if (func0(data36[i12], data36[j0])) {
+                                      const err84 = { instancePath: instancePath + "/companions/" + i8 + "/expected/all/" + i10 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/all/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i12, j: j0 }, message: "must NOT have duplicate items (items ## " + j0 + " and " + i12 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err84];
+                                      } else {
+                                        vErrors.push(err84);
+                                      }
+                                      errors++;
+                                      break outer0;
                                     }
-                                    errors++;
-                                    break outer0;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err85 = { instancePath: instancePath + "/companions/" + i8 + "/expected/all/" + i10 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/all/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -4928,20 +4859,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                             let i15 = data42.length;
                             let j1;
                             if (i15 > 1) {
-                              outer1: for (; i15--; ) {
-                                for (j1 = i15; j1--; ) {
-                                  if (func0(data42[i15], data42[j1])) {
-                                    const err96 = { instancePath: instancePath + "/companions/" + i8 + "/expected/any/" + i13 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/any/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i15, j: j1 }, message: "must NOT have duplicate items (items ## " + j1 + " and " + i15 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err96];
-                                    } else {
-                                      vErrors.push(err96);
+                              outer1:
+                                for (; i15--; ) {
+                                  for (j1 = i15; j1--; ) {
+                                    if (func0(data42[i15], data42[j1])) {
+                                      const err96 = { instancePath: instancePath + "/companions/" + i8 + "/expected/any/" + i13 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/any/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i15, j: j1 }, message: "must NOT have duplicate items (items ## " + j1 + " and " + i15 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err96];
+                                      } else {
+                                        vErrors.push(err96);
+                                      }
+                                      errors++;
+                                      break outer1;
                                     }
-                                    errors++;
-                                    break outer1;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err97 = { instancePath: instancePath + "/companions/" + i8 + "/expected/any/" + i13 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/any/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -5072,20 +5004,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                             let i18 = data48.length;
                             let j2;
                             if (i18 > 1) {
-                              outer2: for (; i18--; ) {
-                                for (j2 = i18; j2--; ) {
-                                  if (func0(data48[i18], data48[j2])) {
-                                    const err108 = { instancePath: instancePath + "/companions/" + i8 + "/expected/none/" + i16 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/none/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i18, j: j2 }, message: "must NOT have duplicate items (items ## " + j2 + " and " + i18 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err108];
-                                    } else {
-                                      vErrors.push(err108);
+                              outer2:
+                                for (; i18--; ) {
+                                  for (j2 = i18; j2--; ) {
+                                    if (func0(data48[i18], data48[j2])) {
+                                      const err108 = { instancePath: instancePath + "/companions/" + i8 + "/expected/none/" + i16 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/none/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i18, j: j2 }, message: "must NOT have duplicate items (items ## " + j2 + " and " + i18 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err108];
+                                      } else {
+                                        vErrors.push(err108);
+                                      }
+                                      errors++;
+                                      break outer2;
                                     }
-                                    errors++;
-                                    break outer2;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err109 = { instancePath: instancePath + "/companions/" + i8 + "/expected/none/" + i16 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/none/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -7882,20 +7815,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                             let i43 = data152.length;
                             let j4;
                             if (i43 > 1) {
-                              outer3: for (; i43--; ) {
-                                for (j4 = i43; j4--; ) {
-                                  if (func0(data152[i43], data152[j4])) {
-                                    const err360 = { instancePath: instancePath + "/companions/" + i39 + "/expected/all/" + i41 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/all/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i43, j: j4 }, message: "must NOT have duplicate items (items ## " + j4 + " and " + i43 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err360];
-                                    } else {
-                                      vErrors.push(err360);
+                              outer3:
+                                for (; i43--; ) {
+                                  for (j4 = i43; j4--; ) {
+                                    if (func0(data152[i43], data152[j4])) {
+                                      const err360 = { instancePath: instancePath + "/companions/" + i39 + "/expected/all/" + i41 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/all/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i43, j: j4 }, message: "must NOT have duplicate items (items ## " + j4 + " and " + i43 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err360];
+                                      } else {
+                                        vErrors.push(err360);
+                                      }
+                                      errors++;
+                                      break outer3;
                                     }
-                                    errors++;
-                                    break outer3;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err361 = { instancePath: instancePath + "/companions/" + i39 + "/expected/all/" + i41 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/all/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -8026,20 +7960,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                             let i46 = data158.length;
                             let j5;
                             if (i46 > 1) {
-                              outer4: for (; i46--; ) {
-                                for (j5 = i46; j5--; ) {
-                                  if (func0(data158[i46], data158[j5])) {
-                                    const err372 = { instancePath: instancePath + "/companions/" + i39 + "/expected/any/" + i44 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/any/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i46, j: j5 }, message: "must NOT have duplicate items (items ## " + j5 + " and " + i46 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err372];
-                                    } else {
-                                      vErrors.push(err372);
+                              outer4:
+                                for (; i46--; ) {
+                                  for (j5 = i46; j5--; ) {
+                                    if (func0(data158[i46], data158[j5])) {
+                                      const err372 = { instancePath: instancePath + "/companions/" + i39 + "/expected/any/" + i44 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/any/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i46, j: j5 }, message: "must NOT have duplicate items (items ## " + j5 + " and " + i46 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err372];
+                                      } else {
+                                        vErrors.push(err372);
+                                      }
+                                      errors++;
+                                      break outer4;
                                     }
-                                    errors++;
-                                    break outer4;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err373 = { instancePath: instancePath + "/companions/" + i39 + "/expected/any/" + i44 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/any/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -8170,20 +8105,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                             let i49 = data164.length;
                             let j6;
                             if (i49 > 1) {
-                              outer5: for (; i49--; ) {
-                                for (j6 = i49; j6--; ) {
-                                  if (func0(data164[i49], data164[j6])) {
-                                    const err384 = { instancePath: instancePath + "/companions/" + i39 + "/expected/none/" + i47 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/none/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i49, j: j6 }, message: "must NOT have duplicate items (items ## " + j6 + " and " + i49 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err384];
-                                    } else {
-                                      vErrors.push(err384);
+                              outer5:
+                                for (; i49--; ) {
+                                  for (j6 = i49; j6--; ) {
+                                    if (func0(data164[i49], data164[j6])) {
+                                      const err384 = { instancePath: instancePath + "/companions/" + i39 + "/expected/none/" + i47 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/none/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i49, j: j6 }, message: "must NOT have duplicate items (items ## " + j6 + " and " + i49 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err384];
+                                      } else {
+                                        vErrors.push(err384);
+                                      }
+                                      errors++;
+                                      break outer5;
                                     }
-                                    errors++;
-                                    break outer5;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err385 = { instancePath: instancePath + "/companions/" + i39 + "/expected/none/" + i47 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/none/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -10994,20 +10930,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                               let i74 = data268.length;
                               let j8;
                               if (i74 > 1) {
-                                outer6: for (; i74--; ) {
-                                  for (j8 = i74; j8--; ) {
-                                    if (func0(data268[i74], data268[j8])) {
-                                      const err637 = { instancePath: instancePath + "/companions/" + i70 + "/expected/all/" + i72 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/all/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i74, j: j8 }, message: "must NOT have duplicate items (items ## " + j8 + " and " + i74 + " are identical)" };
-                                      if (vErrors === null) {
-                                        vErrors = [err637];
-                                      } else {
-                                        vErrors.push(err637);
+                                outer6:
+                                  for (; i74--; ) {
+                                    for (j8 = i74; j8--; ) {
+                                      if (func0(data268[i74], data268[j8])) {
+                                        const err637 = { instancePath: instancePath + "/companions/" + i70 + "/expected/all/" + i72 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/all/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i74, j: j8 }, message: "must NOT have duplicate items (items ## " + j8 + " and " + i74 + " are identical)" };
+                                        if (vErrors === null) {
+                                          vErrors = [err637];
+                                        } else {
+                                          vErrors.push(err637);
+                                        }
+                                        errors++;
+                                        break outer6;
                                       }
-                                      errors++;
-                                      break outer6;
                                     }
                                   }
-                                }
                               }
                             } else {
                               const err638 = { instancePath: instancePath + "/companions/" + i70 + "/expected/all/" + i72 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/all/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -11138,20 +11075,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                               let i77 = data274.length;
                               let j9;
                               if (i77 > 1) {
-                                outer7: for (; i77--; ) {
-                                  for (j9 = i77; j9--; ) {
-                                    if (func0(data274[i77], data274[j9])) {
-                                      const err649 = { instancePath: instancePath + "/companions/" + i70 + "/expected/any/" + i75 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/any/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i77, j: j9 }, message: "must NOT have duplicate items (items ## " + j9 + " and " + i77 + " are identical)" };
-                                      if (vErrors === null) {
-                                        vErrors = [err649];
-                                      } else {
-                                        vErrors.push(err649);
+                                outer7:
+                                  for (; i77--; ) {
+                                    for (j9 = i77; j9--; ) {
+                                      if (func0(data274[i77], data274[j9])) {
+                                        const err649 = { instancePath: instancePath + "/companions/" + i70 + "/expected/any/" + i75 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/any/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i77, j: j9 }, message: "must NOT have duplicate items (items ## " + j9 + " and " + i77 + " are identical)" };
+                                        if (vErrors === null) {
+                                          vErrors = [err649];
+                                        } else {
+                                          vErrors.push(err649);
+                                        }
+                                        errors++;
+                                        break outer7;
                                       }
-                                      errors++;
-                                      break outer7;
                                     }
                                   }
-                                }
                               }
                             } else {
                               const err650 = { instancePath: instancePath + "/companions/" + i70 + "/expected/any/" + i75 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/any/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -11282,20 +11220,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                               let i80 = data280.length;
                               let j10;
                               if (i80 > 1) {
-                                outer8: for (; i80--; ) {
-                                  for (j10 = i80; j10--; ) {
-                                    if (func0(data280[i80], data280[j10])) {
-                                      const err661 = { instancePath: instancePath + "/companions/" + i70 + "/expected/none/" + i78 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/none/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i80, j: j10 }, message: "must NOT have duplicate items (items ## " + j10 + " and " + i80 + " are identical)" };
-                                      if (vErrors === null) {
-                                        vErrors = [err661];
-                                      } else {
-                                        vErrors.push(err661);
+                                outer8:
+                                  for (; i80--; ) {
+                                    for (j10 = i80; j10--; ) {
+                                      if (func0(data280[i80], data280[j10])) {
+                                        const err661 = { instancePath: instancePath + "/companions/" + i70 + "/expected/none/" + i78 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/none/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i80, j: j10 }, message: "must NOT have duplicate items (items ## " + j10 + " and " + i80 + " are identical)" };
+                                        if (vErrors === null) {
+                                          vErrors = [err661];
+                                        } else {
+                                          vErrors.push(err661);
+                                        }
+                                        errors++;
+                                        break outer8;
                                       }
-                                      errors++;
-                                      break outer8;
                                     }
                                   }
-                                }
                               }
                             } else {
                               const err662 = { instancePath: instancePath + "/companions/" + i70 + "/expected/none/" + i78 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/none/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -13127,9 +13066,6 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate205.evaluated = { "dynamicProps": true, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/serviceProviderContributionSpecV1.js
-var func1Module4 = __toESM(require_ucs2length(), 1);
 var serviceProviderContributionSpecV1 = validate206;
 var schema315 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/service-provider-contribution-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["provides", "lifecycleScope"], "properties": { "provides": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["offerId", "contract", "major", "version"], "properties": { "offerId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "facet": { "title": "JsonValue" } } }, "minItems": 1 }, "requires": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "inputs": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "outputs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "representation", "presence"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "representation": { "enum": ["source", "compiled", "runtime"] }, "presence": { "enum": ["may-expose", "will-expose"] }, "prerequisites": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } } } }, "protocolOperations": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "replacement": { "type": "object", "additionalProperties": false, "required": ["target", "compatible"], "properties": { "target": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } }, "compatible": { "type": "boolean" } } }, "lifecycleScope": { "enum": ["session", "operation", "process"] }, "applicableVariants": { "type": "array", "items": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" } } } };
 var pattern46 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*$", "u");
@@ -14120,10 +14056,6 @@ function validate206(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate206.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/viewerContributionSpecV1.js
-var func0Module2 = __toESM(require_equal(), 1);
-var func3Module = __toESM(require_ucs2length(), 1);
 var viewerContributionSpecV1 = validate207;
 var schema316 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/viewer-contribution-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["kind", "consumesDataSources", "priority"], "properties": { "kind": { "enum": ["stage", "tree", "panel", "toolbar", "transport", "status", "fallback"] }, "requiresTraits": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "requiresOperations": { "type": "array", "items": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" } }, "consumesDataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "applicability": { "type": "object", "additionalProperties": false, "properties": { "interpretation": { "enum": ["none", "codec", "any"] }, "sourceBytes": { "type": "object", "additionalProperties": false, "properties": { "maximum": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, "longestLineBytes": { "type": "object", "additionalProperties": false, "required": ["maximum", "whenUnknown"], "properties": { "maximum": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "whenUnknown": { "enum": ["eligible", "ineligible"] } } } } }, "hosts": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "priority": { "type": "number" }, "conflicts": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "singletonGroup": { "type": "string", "minLength": 1 } } };
 var func16 = Object.prototype.hasOwnProperty;
@@ -14295,20 +14227,21 @@ function validate207(data, { instancePath = "", parentData, parentDataProperty, 
                 let i2 = data5.length;
                 let j0;
                 if (i2 > 1) {
-                  outer0: for (; i2--; ) {
-                    for (j0 = i2; j0--; ) {
-                      if (func02(data5[i2], data5[j0])) {
-                        const err13 = { instancePath: instancePath + "/requiresTraits/" + i0 + "/states", schemaPath: "#/properties/requiresTraits/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i2, j: j0 }, message: "must NOT have duplicate items (items ## " + j0 + " and " + i2 + " are identical)" };
-                        if (vErrors === null) {
-                          vErrors = [err13];
-                        } else {
-                          vErrors.push(err13);
+                  outer0:
+                    for (; i2--; ) {
+                      for (j0 = i2; j0--; ) {
+                        if (func02(data5[i2], data5[j0])) {
+                          const err13 = { instancePath: instancePath + "/requiresTraits/" + i0 + "/states", schemaPath: "#/properties/requiresTraits/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i2, j: j0 }, message: "must NOT have duplicate items (items ## " + j0 + " and " + i2 + " are identical)" };
+                          if (vErrors === null) {
+                            vErrors = [err13];
+                          } else {
+                            vErrors.push(err13);
+                          }
+                          errors++;
+                          break outer0;
                         }
-                        errors++;
-                        break outer0;
                       }
                     }
-                  }
                 }
               } else {
                 const err14 = { instancePath: instancePath + "/requiresTraits/" + i0 + "/states", schemaPath: "#/properties/requiresTraits/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -14927,10 +14860,6 @@ function validate207(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate207.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/editorContributionSpecV1.js
-var func2Module2 = __toESM(require_ucs2length(), 1);
-var func0Module3 = __toESM(require_equal(), 1);
 var editorContributionSpecV1 = validate208;
 var schema317 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/editor-contribution-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["sessionModel", "selectionKinds", "semanticLocationKinds", "requiresTransactions", "requiresOperations", "consumesDataSources", "writer", "priority"], "properties": { "sessionModel": { "enum": ["single-subject", "multi-subject", "workspace"] }, "selectionKinds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }, "semanticLocationKinds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }, "requiresTransactions": { "type": "boolean" }, "requiresOperations": { "type": "array", "items": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "uniqueItems": true }, "consumesDataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] }, "uniqueItems": true }, "writer": { "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "mutationMode", "minimumRoundTrip"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "mutationMode": { "enum": ["export-only", "mutate"] }, "minimumRoundTrip": { "enum": ["byte-identical", "semantic", "lossy", "none"] } } }, "hosts": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }, "priority": { "type": "number" }, "scaleLimits": { "type": "object", "additionalProperties": false, "properties": { "maximumSubjects": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maximumRows": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maximumSourceBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } } } };
 var func17 = Object.prototype.hasOwnProperty;
@@ -15491,20 +15420,21 @@ function validate208(data, { instancePath = "", parentData, parentDataProperty, 
         let i7 = data8.length;
         let j3;
         if (i7 > 1) {
-          outer0: for (; i7--; ) {
-            for (j3 = i7; j3--; ) {
-              if (func03(data8[i7], data8[j3])) {
-                const err43 = { instancePath: instancePath + "/consumesDataSources", schemaPath: "#/properties/consumesDataSources/uniqueItems", keyword: "uniqueItems", params: { i: i7, j: j3 }, message: "must NOT have duplicate items (items ## " + j3 + " and " + i7 + " are identical)" };
-                if (vErrors === null) {
-                  vErrors = [err43];
-                } else {
-                  vErrors.push(err43);
+          outer0:
+            for (; i7--; ) {
+              for (j3 = i7; j3--; ) {
+                if (func03(data8[i7], data8[j3])) {
+                  const err43 = { instancePath: instancePath + "/consumesDataSources", schemaPath: "#/properties/consumesDataSources/uniqueItems", keyword: "uniqueItems", params: { i: i7, j: j3 }, message: "must NOT have duplicate items (items ## " + j3 + " and " + i7 + " are identical)" };
+                  if (vErrors === null) {
+                    vErrors = [err43];
+                  } else {
+                    vErrors.push(err43);
+                  }
+                  errors++;
+                  break outer0;
                 }
-                errors++;
-                break outer0;
               }
             }
-          }
         }
       } else {
         const err44 = { instancePath: instancePath + "/consumesDataSources", schemaPath: "#/properties/consumesDataSources/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -15838,9 +15768,6 @@ function validate208(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate208.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/traitDefinitionSpecV1.js
-var func1Module5 = __toESM(require_ucs2length(), 1);
 var traitDefinitionSpecV1 = validate209;
 var schema318 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/trait-definition-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "id", "version", "scope", "parametersSchema", "transport"], "properties": { "schemaVersion": { "const": 1 }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "scope": { "anyOf": [{ "enum": ["source", "asset", "subject", "workspace", "service", "operation", "view-session", "representation"] }, { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }] }, "parametersSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "transport": { "enum": ["json", "structured-clone"] }, "documentation": { "type": "string", "minLength": 1 }, "imports": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "range"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } } } };
 var pattern49 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
@@ -16239,9 +16166,6 @@ function validate209(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate209.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/contractDefinitionSpecV1.js
-var func2Module3 = __toESM(require_ucs2length(), 1);
 var contractDefinitionSpecV1 = validate2010;
 var schema319 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/contract-definition-spec.v1.schema.json", "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["schemaVersion", "kind", "contract", "major", "offerFacet", "requestFacet", "matching", "conformanceProfile"], "properties": { "schemaVersion": { "const": 1 }, "kind": { "const": "service" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "offerFacet": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["presence"], "properties": { "presence": { "const": "forbidden" } } }, { "type": "object", "additionalProperties": false, "required": ["presence", "schema"], "properties": { "presence": { "enum": ["optional", "required"] }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } } } }] }, "requestFacet": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["presence"], "properties": { "presence": { "const": "forbidden" } } }, { "type": "object", "additionalProperties": false, "required": ["presence", "schema"], "properties": { "presence": { "enum": ["optional", "required"] }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } } } }] }, "matching": { "type": "object", "additionalProperties": false, "required": ["profile", "major"], "properties": { "profile": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "configuration": { "title": "JsonValue" } } }, "conformanceProfile": { "type": "string", "minLength": 1 }, "surface": { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } } } }, { "type": "object", "additionalProperties": false, "required": ["schemaVersion", "kind", "contract", "major", "schema", "conformanceProfile"], "properties": { "schemaVersion": { "const": 1 }, "kind": { "const": "data-source" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "conformanceProfile": { "type": "string", "minLength": 1 }, "surface": { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } } } }] };
 var func19 = Object.prototype.hasOwnProperty;
@@ -19609,10 +19533,6 @@ function validate2010(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2010.evaluated = { "dynamicProps": true, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/subjectDescriptorV2.js
-var func2Module4 = __toESM(require_ucs2length(), 1);
-var func0Module4 = __toESM(require_equal(), 1);
 var subjectDescriptorV2 = validate2011;
 var schema3110 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/subject-descriptor.v2.schema.json", "$defs": { "jsonValue": { "title": "JsonValue", "oneOf": [{ "type": "null" }, { "type": "boolean" }, { "type": "number" }, { "type": "string" }, { "type": "array", "items": { "$ref": "#/$defs/jsonValue" } }, { "type": "object", "additionalProperties": { "$ref": "#/$defs/jsonValue" } }] } }, "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["schemaVersion", "subjectUri", "origin", "traits", "operations", "constraints", "dataSources", "diagnostics", "revision", "interpretation", "candidates"], "properties": { "schemaVersion": { "const": 2 }, "subjectUri": { "type": "string", "pattern": "\\S" }, "origin": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "binding"], "properties": { "kind": { "const": "single" }, "binding": { "type": "object", "additionalProperties": false, "required": ["id", "role", "source", "required", "ownership", "revision"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "required": { "type": "boolean" }, "ownership": { "enum": ["owned", "companion", "external"] }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "bindings"], "properties": { "kind": { "const": "bundle" }, "bindings": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "role", "source", "required", "ownership", "revision"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "required": { "type": "boolean" }, "ownership": { "enum": ["owned", "companion", "external"] }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "primary": { "type": "string", "minLength": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "root", "revision"], "properties": { "kind": { "const": "namespace" }, "root": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "inputs"], "properties": { "kind": { "const": "derived" }, "inputs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["bindingId", "role", "subjectUri", "revision", "compositionFingerprint"], "properties": { "bindingId": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "subjectUri": { "type": "string", "minLength": 1 }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "compositionFingerprint": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "recipe": { "type": "object", "additionalProperties": false, "required": ["extensionId", "extensionVersion", "contributionId", "operation"], "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "extensionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "operation": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "parameters": { "$ref": "#/$defs/jsonValue" } } }, "materialization": { "type": "object", "additionalProperties": false, "required": ["source", "revision"], "properties": { "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } } } }] }, "traits": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "descriptorVersion", "state"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "descriptorVersion": { "const": 1 }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "parameters": { "$ref": "#/$defs/jsonValue" }, "state": { "const": "available" } } }, { "type": "object", "additionalProperties": false, "required": ["id", "descriptorVersion", "state", "diagnosticIds"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "descriptorVersion": { "const": 1 }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "parameters": { "$ref": "#/$defs/jsonValue" }, "state": { "enum": ["partial", "disabled", "dependency-required"] }, "diagnosticIds": { "type": "array", "items": { "type": "string" }, "minItems": 1 } } }] } }, "operations": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "state", "mutatesSource"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "state": { "const": "available" } } }, { "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "state", "mutatesSource", "reason"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "state": { "enum": ["disabled", "dependency-required"] }, "reason": { "type": "string", "minLength": 1 } } }] } }, "constraints": { "type": "object", "additionalProperties": false, "required": ["readOnly", "seekable", "randomAccess", "trusted"], "properties": { "readOnly": { "type": "boolean" }, "seekable": { "type": "boolean" }, "randomAccess": { "type": "boolean" }, "trusted": { "type": "boolean" }, "maxDecodedBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "unsupportedFeatures": { "type": "array", "items": { "type": "string" } } } }, "dataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "diagnostics": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "code", "category", "severity", "message"], "properties": { "id": { "type": "string", "minLength": 1 }, "code": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "category": { "enum": ["syntax", "structure", "fidelity", "dependency", "security", "performance", "operation", "io", "unknown"] }, "severity": { "enum": ["error", "warning", "information", "hint"] }, "message": { "type": "string" }, "source": { "type": "object", "additionalProperties": false, "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" } } }, "path": { "type": "array", "items": { "oneOf": [{ "type": "string" }, { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }] } }, "range": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, { "type": "object", "additionalProperties": false, "required": ["utf16Offset", "utf16Length", "line", "column"], "properties": { "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength", "utf16Offset", "utf16Length", "line", "column"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }] }, "data": { "$ref": "#/$defs/jsonValue" }, "relatedIds": { "type": "array", "items": { "type": "string" } } } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "interpretation": { "const": "none" }, "candidates": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["codecId", "confidence", "evidence", "requiredRanges"], "properties": { "codecId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "confidence": { "type": "number", "minimum": 0, "maximum": 1 }, "evidence": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["kind", "weight"], "properties": { "kind": { "enum": ["magic", "structure", "companion", "context", "extension", "user-override"] }, "weight": { "type": "number" }, "note": { "type": "string" } } } }, "requiredRanges": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, { "type": "object", "additionalProperties": false, "required": ["utf16Offset", "utf16Length", "line", "column"], "properties": { "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength", "utf16Offset", "utf16Length", "line", "column"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }] } }, "diagnostics": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "code", "category", "severity", "message"], "properties": { "id": { "type": "string", "minLength": 1 }, "code": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "category": { "enum": ["syntax", "structure", "fidelity", "dependency", "security", "performance", "operation", "io", "unknown"] }, "severity": { "enum": ["error", "warning", "information", "hint"] }, "message": { "type": "string" }, "source": { "type": "object", "additionalProperties": false, "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" } } }, "path": { "type": "array", "items": { "oneOf": [{ "type": "string" }, { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }] } }, "range": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, { "type": "object", "additionalProperties": false, "required": ["utf16Offset", "utf16Length", "line", "column"], "properties": { "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength", "utf16Offset", "utf16Length", "line", "column"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }] }, "data": { "$ref": "#/$defs/jsonValue" }, "relatedIds": { "type": "array", "items": { "type": "string" } } } } } } } } } }, { "type": "object", "additionalProperties": false, "required": ["schemaVersion", "subjectUri", "origin", "traits", "operations", "constraints", "dataSources", "diagnostics", "revision", "interpretation", "identity", "metadata"], "properties": { "schemaVersion": { "const": 2 }, "subjectUri": { "type": "string", "pattern": "\\S" }, "origin": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "binding"], "properties": { "kind": { "const": "single" }, "binding": { "type": "object", "additionalProperties": false, "required": ["id", "role", "source", "required", "ownership", "revision"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "required": { "type": "boolean" }, "ownership": { "enum": ["owned", "companion", "external"] }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "bindings"], "properties": { "kind": { "const": "bundle" }, "bindings": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "role", "source", "required", "ownership", "revision"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "required": { "type": "boolean" }, "ownership": { "enum": ["owned", "companion", "external"] }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "primary": { "type": "string", "minLength": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "root", "revision"], "properties": { "kind": { "const": "namespace" }, "root": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "inputs"], "properties": { "kind": { "const": "derived" }, "inputs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["bindingId", "role", "subjectUri", "revision", "compositionFingerprint"], "properties": { "bindingId": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "subjectUri": { "type": "string", "minLength": 1 }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "compositionFingerprint": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "recipe": { "type": "object", "additionalProperties": false, "required": ["extensionId", "extensionVersion", "contributionId", "operation"], "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "extensionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "operation": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "parameters": { "$ref": "#/$defs/jsonValue" } } }, "materialization": { "type": "object", "additionalProperties": false, "required": ["source", "revision"], "properties": { "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } } } }] }, "traits": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "descriptorVersion", "state"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "descriptorVersion": { "const": 1 }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "parameters": { "$ref": "#/$defs/jsonValue" }, "state": { "const": "available" } } }, { "type": "object", "additionalProperties": false, "required": ["id", "descriptorVersion", "state", "diagnosticIds"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "descriptorVersion": { "const": 1 }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "parameters": { "$ref": "#/$defs/jsonValue" }, "state": { "enum": ["partial", "disabled", "dependency-required"] }, "diagnosticIds": { "type": "array", "items": { "type": "string" }, "minItems": 1 } } }] } }, "operations": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "state", "mutatesSource"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "state": { "const": "available" } } }, { "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "state", "mutatesSource", "reason"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "state": { "enum": ["disabled", "dependency-required"] }, "reason": { "type": "string", "minLength": 1 } } }] } }, "constraints": { "type": "object", "additionalProperties": false, "required": ["readOnly", "seekable", "randomAccess", "trusted"], "properties": { "readOnly": { "type": "boolean" }, "seekable": { "type": "boolean" }, "randomAccess": { "type": "boolean" }, "trusted": { "type": "boolean" }, "maxDecodedBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "unsupportedFeatures": { "type": "array", "items": { "type": "string" } } } }, "dataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "diagnostics": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "code", "category", "severity", "message"], "properties": { "id": { "type": "string", "minLength": 1 }, "code": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "category": { "enum": ["syntax", "structure", "fidelity", "dependency", "security", "performance", "operation", "io", "unknown"] }, "severity": { "enum": ["error", "warning", "information", "hint"] }, "message": { "type": "string" }, "source": { "type": "object", "additionalProperties": false, "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" } } }, "path": { "type": "array", "items": { "oneOf": [{ "type": "string" }, { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }] } }, "range": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, { "type": "object", "additionalProperties": false, "required": ["utf16Offset", "utf16Length", "line", "column"], "properties": { "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength", "utf16Offset", "utf16Length", "line", "column"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }] }, "data": { "$ref": "#/$defs/jsonValue" }, "relatedIds": { "type": "array", "items": { "type": "string" } } } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "interpretation": { "const": "codec" }, "identity": { "type": "object", "additionalProperties": false, "required": ["codecId", "codecVersion", "formatId", "formatLabel", "confidence", "detection"], "properties": { "codecId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "codecVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "formatId": { "type": "string", "minLength": 1 }, "formatLabel": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 }, "confidence": { "type": "number", "minimum": 0, "maximum": 1 }, "detection": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["kind", "weight"], "properties": { "kind": { "enum": ["magic", "structure", "companion", "context", "extension", "user-override"] }, "weight": { "type": "number" }, "note": { "type": "string" } } } } } }, "metadata": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "label", "entries"], "properties": { "id": { "type": "string", "minLength": 1 }, "label": { "type": "string" }, "entries": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["key", "value"], "properties": { "key": { "type": "string", "minLength": 1 }, "value": { "$ref": "#/$defs/jsonValue" } } } } } } }, "companions": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "bindingIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": true }, "cardinality": { "const": "one" }, "state": { "const": "resolved" }, "bindingIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true, "maxItems": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "bindingIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": true }, "cardinality": { "const": "one-or-more" }, "state": { "const": "resolved" }, "bindingIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "bindingIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": false }, "cardinality": { "const": "zero-or-one" }, "state": { "const": "resolved" }, "bindingIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true, "maxItems": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "bindingIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": false }, "cardinality": { "const": "many" }, "state": { "const": "resolved" }, "bindingIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "diagnosticIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": true }, "cardinality": { "enum": ["one", "one-or-more"] }, "state": { "const": "missing" }, "diagnosticIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": false }, "cardinality": { "enum": ["zero-or-one", "many"] }, "state": { "const": "missing" }, "diagnosticIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "candidates", "diagnosticIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": true }, "cardinality": { "const": "one" }, "state": { "const": "ambiguous" }, "candidates": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["source", "revision"], "properties": { "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" } } }, "minItems": 2, "uniqueItems": true }, "diagnosticIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "candidates", "diagnosticIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": false }, "cardinality": { "const": "zero-or-one" }, "state": { "const": "ambiguous" }, "candidates": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["source", "revision"], "properties": { "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" } } }, "minItems": 2, "uniqueItems": true }, "diagnosticIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }] } } } }] };
 var func110 = Object.prototype.hasOwnProperty;
@@ -31834,20 +31754,21 @@ function validate2011(data, { instancePath = "", parentData, parentDataProperty,
                           let i52 = data388.length;
                           let j6;
                           if (i52 > 1) {
-                            outer0: for (; i52--; ) {
-                              for (j6 = i52; j6--; ) {
-                                if (func04(data388[i52], data388[j6])) {
-                                  const err1059 = { instancePath: instancePath + "/companions/" + i37 + "/candidates", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/6/properties/candidates/uniqueItems", keyword: "uniqueItems", params: { i: i52, j: j6 }, message: "must NOT have duplicate items (items ## " + j6 + " and " + i52 + " are identical)" };
-                                  if (vErrors === null) {
-                                    vErrors = [err1059];
-                                  } else {
-                                    vErrors.push(err1059);
+                            outer0:
+                              for (; i52--; ) {
+                                for (j6 = i52; j6--; ) {
+                                  if (func04(data388[i52], data388[j6])) {
+                                    const err1059 = { instancePath: instancePath + "/companions/" + i37 + "/candidates", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/6/properties/candidates/uniqueItems", keyword: "uniqueItems", params: { i: i52, j: j6 }, message: "must NOT have duplicate items (items ## " + j6 + " and " + i52 + " are identical)" };
+                                    if (vErrors === null) {
+                                      vErrors = [err1059];
+                                    } else {
+                                      vErrors.push(err1059);
+                                    }
+                                    errors++;
+                                    break outer0;
                                   }
-                                  errors++;
-                                  break outer0;
                                 }
                               }
-                            }
                           }
                         } else {
                           const err1060 = { instancePath: instancePath + "/companions/" + i37 + "/candidates", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/6/properties/candidates/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -32312,20 +32233,21 @@ function validate2011(data, { instancePath = "", parentData, parentDataProperty,
                             let i57 = data403.length;
                             let j8;
                             if (i57 > 1) {
-                              outer1: for (; i57--; ) {
-                                for (j8 = i57; j8--; ) {
-                                  if (func04(data403[i57], data403[j8])) {
-                                    const err1101 = { instancePath: instancePath + "/companions/" + i37 + "/candidates", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/7/properties/candidates/uniqueItems", keyword: "uniqueItems", params: { i: i57, j: j8 }, message: "must NOT have duplicate items (items ## " + j8 + " and " + i57 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err1101];
-                                    } else {
-                                      vErrors.push(err1101);
+                              outer1:
+                                for (; i57--; ) {
+                                  for (j8 = i57; j8--; ) {
+                                    if (func04(data403[i57], data403[j8])) {
+                                      const err1101 = { instancePath: instancePath + "/companions/" + i37 + "/candidates", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/7/properties/candidates/uniqueItems", keyword: "uniqueItems", params: { i: i57, j: j8 }, message: "must NOT have duplicate items (items ## " + j8 + " and " + i57 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err1101];
+                                      } else {
+                                        vErrors.push(err1101);
+                                      }
+                                      errors++;
+                                      break outer1;
                                     }
-                                    errors++;
-                                    break outer1;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err1102 = { instancePath: instancePath + "/companions/" + i37 + "/candidates", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/7/properties/candidates/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -32507,9 +32429,6 @@ function validate2011(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2011.evaluated = { "dynamicProps": true, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/contributionManifestV1.js
-var func2Module5 = __toESM(require_ucs2length(), 1);
 var contributionManifestV1 = validate2012;
 var schema3111 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/contribution-manifest.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "contract", "id", "displayName", "spec"], "properties": { "schemaVersion": { "const": 1 }, "contract": { "type": "object", "additionalProperties": false, "required": ["id", "major"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "displayName": { "type": "string", "minLength": 1 }, "status": { "enum": ["supported", "partial", "unsupported", "experimental"] }, "runtimeVariants": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/runtime-variant-declaration.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["variantId", "entrypoint", "target", "executionProfile", "requestedPermissionClasses"], "properties": { "variantId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "entrypoint": { "type": "string", "pattern": "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$" }, "target": { "type": "object", "additionalProperties": false, "properties": { "environments": { "type": "array", "items": { "enum": ["browser-main", "browser-worker", "node", "node-worker", "wasm", "native", "external-tool"] }, "minItems": 1 }, "operatingSystems": { "type": "array", "items": { "enum": ["any", "windows", "linux", "darwin", "android", "ios"] }, "minItems": 1 }, "architectures": { "type": "array", "items": { "enum": ["any", "x86", "x64", "arm32", "arm64", "wasm32"] }, "minItems": 1 }, "requiredHostCapabilities": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "requiredWebApis": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "externalTools": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, "executionProfile": { "enum": ["browser-sandbox", "worker-brokered", "process-brokered", "wasm-brokered", "trusted-in-process", "remote-provider"] }, "requestedPermissionClasses": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } } } } }, "dependsOn": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/scoped-contract-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["contract", "major", "mode", "scope"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } } }, "limitations": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "spec": { "title": "JsonValue" } } };
 var func111 = Object.prototype.hasOwnProperty;
@@ -33438,9 +33357,6 @@ function validate2012(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2012.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/runtimeVariantDeclarationV1.js
-var func1Module6 = __toESM(require_ucs2length(), 1);
 var runtimeVariantDeclarationV1 = validate2013;
 var schema3112 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/runtime-variant-declaration.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["variantId", "entrypoint", "target", "executionProfile", "requestedPermissionClasses"], "properties": { "variantId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "entrypoint": { "type": "string", "pattern": "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$" }, "target": { "type": "object", "additionalProperties": false, "properties": { "environments": { "type": "array", "items": { "enum": ["browser-main", "browser-worker", "node", "node-worker", "wasm", "native", "external-tool"] }, "minItems": 1 }, "operatingSystems": { "type": "array", "items": { "enum": ["any", "windows", "linux", "darwin", "android", "ios"] }, "minItems": 1 }, "architectures": { "type": "array", "items": { "enum": ["any", "x86", "x64", "arm32", "arm64", "wasm32"] }, "minItems": 1 }, "requiredHostCapabilities": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "requiredWebApis": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "externalTools": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, "executionProfile": { "enum": ["browser-sandbox", "worker-brokered", "process-brokered", "wasm-brokered", "trusted-in-process", "remote-provider"] }, "requestedPermissionClasses": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } } } };
 var pattern413 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*$", "u");
@@ -33846,9 +33762,6 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2013.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/scopedContractRequirementV1.js
-var func1Module7 = __toESM(require_ucs2length(), 1);
 var scopedContractRequirementV1 = validate2014;
 var schema3113 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/scoped-contract-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["contract", "major", "mode", "scope"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } };
 var pattern414 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
@@ -34090,9 +34003,6 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2014.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/dataSourceContractDefinitionV1.js
-var func1Module8 = __toESM(require_ucs2length(), 1);
 var dataSourceContractDefinitionV1 = validate2015;
 var schema3114 = { "type": "object", "additionalProperties": false, "required": ["schemaVersion", "kind", "contract", "major", "schema", "conformanceProfile"], "properties": { "schemaVersion": { "const": 1 }, "kind": { "const": "data-source" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "conformanceProfile": { "type": "string", "minLength": 1 }, "surface": { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } } } };
 var pattern415 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
@@ -35542,8 +35452,6 @@ function validate2015(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2015.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/dataSourceSurfaceV1.js
 var dataSourceSurfaceV1 = validate2016;
 var schema3115 = { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } };
 var pattern416 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
@@ -36761,8 +36669,6 @@ function validate2016(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2016.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/dataSourceMethodSurfaceV1.js
 var dataSourceMethodSurfaceV1 = validate2017;
 var schema3116 = { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] };
 var pattern417 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
@@ -37804,8 +37710,6 @@ function validate2017(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2017.evaluated = { "dynamicProps": true, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated.js
 var PRECOMPILED_SCHEMA_VALIDATORS = /* @__PURE__ */ new Map([
   ['{\n  "$id": "https://schemas.modkitx.org/x3/source-span.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "oneOf": [\n    {\n      "additionalProperties": false,\n      "properties": {\n        "byteLength": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        },\n        "byteOffset": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        }\n      },\n      "required": [\n        "byteOffset",\n        "byteLength"\n      ],\n      "type": "object"\n    },\n    {\n      "additionalProperties": false,\n      "properties": {\n        "column": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "line": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Length": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Offset": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        }\n      },\n      "required": [\n        "utf16Offset",\n        "utf16Length",\n        "line",\n        "column"\n      ],\n      "type": "object"\n    },\n    {\n      "additionalProperties": false,\n      "properties": {\n        "byteLength": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        },\n        "byteOffset": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        },\n        "column": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "line": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Length": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Offset": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        }\n      },\n      "required": [\n        "byteOffset",\n        "byteLength",\n        "utf16Offset",\n        "utf16Length",\n        "line",\n        "column"\n      ],\n      "type": "object"\n    }\n  ]\n}\n', sourceSpanV1],
   ['{\n  "$id": "https://schemas.modkitx.org/x3/extension-manifest.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "contributionManifests": {\n      "items": {\n        "minLength": 1,\n        "type": "string"\n      },\n      "type": "array"\n    },\n    "dependsOn": {\n      "items": {\n        "$id": "https://schemas.modkitx.org/x3/extension-requirement.v1.schema.json",\n        "$schema": "https://json-schema.org/draft/2020-12/schema",\n        "additionalProperties": false,\n        "properties": {\n          "extension": {\n            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n            "type": "string"\n          },\n          "mode": {\n            "enum": [\n              "required",\n              "default",\n              "suggested",\n              "integrates"\n            ]\n          },\n          "range": {\n            "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n            "type": "string"\n          },\n          "scope": {\n            "additionalProperties": false,\n            "properties": {\n              "id": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "kind": {\n                "enum": [\n                  "contribution",\n                  "offer",\n                  "operation",\n                  "intent",\n                  "variant",\n                  "profile",\n                  "projection",\n                  "slot"\n                ]\n              }\n            },\n            "required": [\n              "kind",\n              "id"\n            ],\n            "type": "object"\n          }\n        },\n        "required": [\n          "extension",\n          "mode",\n          "scope"\n        ],\n        "type": "object"\n      },\n      "type": "array"\n    },\n    "id": {\n      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n      "type": "string"\n    },\n    "license": {\n      "minLength": 1,\n      "type": "string"\n    },\n    "publisher": {\n      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n      "type": "string"\n    },\n    "schemaVersion": {\n      "const": 1\n    },\n    "version": {\n      "pattern": "^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)(?:-((?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\\\.(?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\\\+([0-9a-zA-Z-]+(?:\\\\.[0-9a-zA-Z-]+)*))?$",\n      "type": "string"\n    }\n  },\n  "required": [\n    "schemaVersion",\n    "publisher",\n    "id",\n    "version",\n    "license",\n    "contributionManifests"\n  ],\n  "type": "object"\n}\n', extensionManifestV1],
@@ -40397,14 +40301,22 @@ var PRECOMPILED_SCHEMA_VALIDATORS = /* @__PURE__ */ new Map([
   ['{\n  "additionalProperties": false,\n  "properties": {\n    "fields": {\n      "items": {\n        "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",\n        "type": "string"\n      },\n      "maxItems": 64,\n      "type": "array",\n      "uniqueItems": true\n    },\n    "methods": {\n      "additionalProperties": {\n        "oneOf": [\n          {\n            "additionalProperties": false,\n            "properties": {\n              "arity": {\n                "maximum": 16,\n                "minimum": 0,\n                "type": "integer"\n              },\n              "kind": {\n                "const": "lease"\n              },\n              "limits": {\n                "additionalProperties": false,\n                "properties": {\n                  "maxBytes": {\n                    "maximum": 9007199254740991,\n                    "minimum": 0,\n                    "type": "integer"\n                  },\n                  "maxPageItems": {\n                    "maximum": 9007199254740991,\n                    "minimum": 1,\n                    "type": "integer"\n                  },\n                  "maxStringLength": {\n                    "maximum": 9007199254740991,\n                    "minimum": 0,\n                    "type": "integer"\n                  }\n                },\n                "type": "object"\n              },\n              "optional": {\n                "type": "boolean"\n              },\n              "progress": {\n                "additionalProperties": false,\n                "properties": {\n                  "arg": {\n                    "maximum": 16,\n                    "minimum": 0,\n                    "type": "integer"\n                  },\n                  "key": {\n                    "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",\n                    "type": "string"\n                  }\n                },\n                "required": [\n                  "arg",\n                  "key"\n                ],\n                "type": "object"\n              },\n              "result": {\n                "additionalProperties": false,\n                "properties": {\n                  "contract": {\n                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                    "type": "string"\n                  },\n                  "major": {\n                    "maximum": 9007199254740991,\n                    "minimum": 0,\n                    "type": "integer"\n                  }\n                },\n                "required": [\n                  "contract",\n                  "major"\n                ],\n                "type": "object"\n              },\n              "signal": {\n                "anyOf": [\n                  {\n                    "enum": [\n                      "last",\n                      "none"\n                    ]\n                  },\n                  {\n                    "additionalProperties": false,\n                    "properties": {\n                      "arg": {\n                        "maximum": 16,\n                        "minimum": 0,\n                        "type": "integer"\n                      },\n                      "key": {\n                        "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",\n                        "type": "string"\n                      }\n                    },\n                    "required": [\n                      "arg",\n                      "key"\n                    ],\n                    "type": "object"\n                  }\n                ]\n              },\n              "wrapper": {\n                "enum": [\n                  "lease",\n                  "bare"\n                ]\n              }\n            },\n            "required": [\n              "kind",\n              "result"\n            ],\n            "type": "object"\n          },\n          {\n            "additionalProperties": false,\n            "properties": {\n              "arity": {\n                "maximum": 16,\n                "minimum": 0,\n                "type": "integer"\n              },\n              "kind": {\n                "enum": [\n                  "value",\n                  "leased-value",\n                  "iterable",\n                  "events"\n                ]\n              },\n              "limits": {\n                "additionalProperties": false,\n                "properties": {\n                  "maxBytes": {\n                    "maximum": 9007199254740991,\n                    "minimum": 0,\n                    "type": "integer"\n                  },\n                  "maxPageItems": {\n                    "maximum": 9007199254740991,\n                    "minimum": 1,\n                    "type": "integer"\n                  },\n                  "maxStringLength": {\n                    "maximum": 9007199254740991,\n                    "minimum": 0,\n                    "type": "integer"\n                  }\n                },\n                "type": "object"\n              },\n              "optional": {\n                "type": "boolean"\n              },\n              "progress": {\n                "additionalProperties": false,\n                "properties": {\n                  "arg": {\n                    "maximum": 16,\n                    "minimum": 0,\n                    "type": "integer"\n                  },\n                  "key": {\n                    "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",\n                    "type": "string"\n                  }\n                },\n                "required": [\n                  "arg",\n                  "key"\n                ],\n                "type": "object"\n              },\n              "signal": {\n                "anyOf": [\n                  {\n                    "enum": [\n                      "last",\n                      "none"\n                    ]\n                  },\n                  {\n                    "additionalProperties": false,\n                    "properties": {\n                      "arg": {\n                        "maximum": 16,\n                        "minimum": 0,\n                        "type": "integer"\n                      },\n                      "key": {\n                        "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",\n                        "type": "string"\n                      }\n                    },\n                    "required": [\n                      "arg",\n                      "key"\n                    ],\n                    "type": "object"\n                  }\n                ]\n              }\n            },\n            "required": [\n              "kind"\n            ],\n            "type": "object"\n          }\n        ]\n      },\n      "minProperties": 1,\n      "propertyNames": {\n        "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",\n        "type": "string"\n      },\n      "type": "object"\n    },\n    "releaseVia": {\n      "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",\n      "type": "string"\n    }\n  },\n  "required": [\n    "methods"\n  ],\n  "type": "object"\n}\n', dataSourceSurfaceV1],
   ['{\n  "oneOf": [\n    {\n      "additionalProperties": false,\n      "properties": {\n        "arity": {\n          "maximum": 16,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "kind": {\n          "const": "lease"\n        },\n        "limits": {\n          "additionalProperties": false,\n          "properties": {\n            "maxBytes": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "maxPageItems": {\n              "maximum": 9007199254740991,\n              "minimum": 1,\n              "type": "integer"\n            },\n            "maxStringLength": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            }\n          },\n          "type": "object"\n        },\n        "optional": {\n          "type": "boolean"\n        },\n        "progress": {\n          "additionalProperties": false,\n          "properties": {\n            "arg": {\n              "maximum": 16,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "key": {\n              "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",\n              "type": "string"\n            }\n          },\n          "required": [\n            "arg",\n            "key"\n          ],\n          "type": "object"\n        },\n        "result": {\n          "additionalProperties": false,\n          "properties": {\n            "contract": {\n              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n              "type": "string"\n            },\n            "major": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            }\n          },\n          "required": [\n            "contract",\n            "major"\n          ],\n          "type": "object"\n        },\n        "signal": {\n          "anyOf": [\n            {\n              "enum": [\n                "last",\n                "none"\n              ]\n            },\n            {\n              "additionalProperties": false,\n              "properties": {\n                "arg": {\n                  "maximum": 16,\n                  "minimum": 0,\n                  "type": "integer"\n                },\n                "key": {\n                  "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",\n                  "type": "string"\n                }\n              },\n              "required": [\n                "arg",\n                "key"\n              ],\n              "type": "object"\n            }\n          ]\n        },\n        "wrapper": {\n          "enum": [\n            "lease",\n            "bare"\n          ]\n        }\n      },\n      "required": [\n        "kind",\n        "result"\n      ],\n      "type": "object"\n    },\n    {\n      "additionalProperties": false,\n      "properties": {\n        "arity": {\n          "maximum": 16,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "kind": {\n          "enum": [\n            "value",\n            "leased-value",\n            "iterable",\n            "events"\n          ]\n        },\n        "limits": {\n          "additionalProperties": false,\n          "properties": {\n            "maxBytes": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "maxPageItems": {\n              "maximum": 9007199254740991,\n              "minimum": 1,\n              "type": "integer"\n            },\n            "maxStringLength": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            }\n          },\n          "type": "object"\n        },\n        "optional": {\n          "type": "boolean"\n        },\n        "progress": {\n          "additionalProperties": false,\n          "properties": {\n            "arg": {\n              "maximum": 16,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "key": {\n              "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",\n              "type": "string"\n            }\n          },\n          "required": [\n            "arg",\n            "key"\n          ],\n          "type": "object"\n        },\n        "signal": {\n          "anyOf": [\n            {\n              "enum": [\n                "last",\n                "none"\n              ]\n            },\n            {\n              "additionalProperties": false,\n              "properties": {\n                "arg": {\n                  "maximum": 16,\n                  "minimum": 0,\n                  "type": "integer"\n                },\n                "key": {\n                  "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",\n                  "type": "string"\n                }\n              },\n              "required": [\n                "arg",\n                "key"\n              ],\n              "type": "object"\n            }\n          ]\n        }\n      },\n      "required": [\n        "kind"\n      ],\n      "type": "object"\n    }\n  ]\n}\n', dataSourceMethodSurfaceV1]
 ]);
-
-// packages/sdk/dist/manifest/validate.js
 var platformValidators = PRECOMPILED_SCHEMA_VALIDATORS;
 function toPath(error) {
-  return error.instancePath.split("/").filter((part) => part.length > 0).map((part) => /^\d+$/.test(part) ? Number(part) : part.replaceAll("~1", "/").replaceAll("~0", "~"));
+  return error.instancePath.split("/").filter((part) => part.length > 0).map(
+    (part) => /^\d+$/.test(part) ? Number(part) : part.replaceAll("~1", "/").replaceAll("~0", "~")
+  );
 }
 function schemaDiagnostics(errors, code) {
-  return (errors ?? []).map((error) => diagnostic("error", code, `${error.instancePath || "/"} ${error.message ?? "schema violation"}`, toPath(error), { keyword: error.keyword, params: error.params }));
+  return (errors ?? []).map(
+    (error) => diagnostic(
+      "error",
+      code,
+      `${error.instancePath || "/"} ${error.message ?? "schema violation"}`,
+      toPath(error),
+      { keyword: error.keyword, params: error.params }
+    )
+  );
 }
 function isPromiseLike(value2) {
   return (typeof value2 === "object" || typeof value2 === "function") && value2 !== null && typeof value2.then === "function";
@@ -40418,7 +40330,13 @@ function materializePath(node) {
   return reversed.reverse();
 }
 function nonJsonDiagnostic(path, reason) {
-  return diagnostic("error", "x3.sdk/non-json-wire-value", `${path.length === 0 ? "/" : `/${path.join("/")}`} is not JSON-wire-safe: ${reason}`, path, { reason });
+  return diagnostic(
+    "error",
+    "x3.sdk/non-json-wire-value",
+    `${path.length === 0 ? "/" : `/${path.join("/")}`} is not JSON-wire-safe: ${reason}`,
+    path,
+    { reason }
+  );
 }
 function assignJsonValue(parent, key2, value2) {
   Object.defineProperty(parent, key2, {
@@ -40437,15 +40355,13 @@ function snapshotJsonWireValue(root) {
   const active = /* @__PURE__ */ new WeakSet();
   while (pending.length > 0) {
     const current = pending.pop();
-    if (current === void 0)
-      break;
+    if (current === void 0) break;
     if (current.exit !== void 0) {
       active.delete(current.exit);
       continue;
     }
     const { value: value2, path, parent, key: key2 } = current;
-    if (parent === void 0 || key2 === void 0)
-      continue;
+    if (parent === void 0 || key2 === void 0) continue;
     if (value2 === null || typeof value2 === "string" || typeof value2 === "boolean") {
       assignJsonValue(parent, key2, value2);
       continue;
@@ -40481,7 +40397,10 @@ function snapshotJsonWireValue(root) {
       if (ownNames.length !== value2.length + 1 || !ownNames.includes("length")) {
         return {
           diagnostics: [
-            nonJsonDiagnostic(materializePath(path), "arrays must be dense and have no extra properties")
+            nonJsonDiagnostic(
+              materializePath(path),
+              "arrays must be dense and have no extra properties"
+            )
           ]
         };
       }
@@ -40498,7 +40417,10 @@ function snapshotJsonWireValue(root) {
         if (!descriptor.enumerable || !("value" in descriptor)) {
           return {
             diagnostics: [
-              nonJsonDiagnostic(materializePath(childPath), "elements must be enumerable data values")
+              nonJsonDiagnostic(
+                materializePath(childPath),
+                "elements must be enumerable data values"
+              )
             ]
           };
         }
@@ -40510,7 +40432,10 @@ function snapshotJsonWireValue(root) {
     if (prototype !== Object.prototype && prototype !== null) {
       return {
         diagnostics: [
-          nonJsonDiagnostic(materializePath(path), "objects must have Object.prototype or a null prototype")
+          nonJsonDiagnostic(
+            materializePath(path),
+            "objects must have Object.prototype or a null prototype"
+          )
         ]
       };
     }
@@ -40521,7 +40446,10 @@ function snapshotJsonWireValue(root) {
       if (!descriptor.enumerable || !("value" in descriptor)) {
         return {
           diagnostics: [
-            nonJsonDiagnostic(materializePath(childPath), "fields must be enumerable data properties")
+            nonJsonDiagnostic(
+              materializePath(childPath),
+              "fields must be enumerable data properties"
+            )
           ]
         };
       }
@@ -40530,19 +40458,16 @@ function snapshotJsonWireValue(root) {
   }
   return { value: holder.value, diagnostics: [] };
 }
-function deepFreeze2(value2) {
-  if (value2 === null || typeof value2 !== "object")
-    return value2;
+function deepFreeze5(value2) {
+  if (value2 === null || typeof value2 !== "object") return value2;
   const pending = [value2];
   const visited = /* @__PURE__ */ new WeakSet();
   while (pending.length > 0) {
     const current = pending.pop();
-    if (current === void 0 || visited.has(current))
-      continue;
+    if (current === void 0 || visited.has(current)) continue;
     visited.add(current);
     for (const child of Object.values(current)) {
-      if (child !== null && typeof child === "object")
-        pending.push(child);
+      if (child !== null && typeof child === "object") pending.push(child);
     }
     Object.freeze(current);
   }
@@ -40557,7 +40482,7 @@ function snapshotJsonWireData(value2) {
       context: { diagnostics: snapshot.diagnostics }
     });
   }
-  return deepFreeze2(snapshot.value);
+  return deepFreeze5(snapshot.value);
 }
 function snapshotJsonWireObject(value2) {
   return snapshotJsonWireData(value2);
@@ -40571,8 +40496,7 @@ async function validateWithSchema(schema, value2, code = "x3.sdk/schema-violatio
       diagnostics: [nonJsonDiagnostic([], "value could not be inspected as inert data")]
     };
   }
-  if (valueSnapshot.diagnostics.length > 0)
-    return [...valueSnapshot.diagnostics];
+  if (valueSnapshot.diagnostics.length > 0) return [...valueSnapshot.diagnostics];
   let schemaSnapshot;
   let schemaCacheKey;
   try {
@@ -40580,13 +40504,25 @@ async function validateWithSchema(schema, value2, code = "x3.sdk/schema-violatio
     schemaCacheKey = canonicalJsonStringify(schemaSnapshot);
   } catch (error) {
     return [
-      diagnostic("error", "x3.sdk/invalid-schema-authority", "the selected JSON Schema is not inert JSON data", [], { error: error instanceof Error ? error.message : String(error) })
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-schema-authority",
+        "the selected JSON Schema is not inert JSON data",
+        [],
+        { error: error instanceof Error ? error.message : String(error) }
+      )
     ];
   }
   const validate = suppliedValidator ?? platformValidators.get(schemaCacheKey);
   if (validate === void 0) {
     return [
-      diagnostic("error", "x3.sdk/invalid-schema-authority", "the selected JSON Schema has no CSP-safe precompiled validator", [], { reason: "precompiled-validator-missing" })
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-schema-authority",
+        "the selected JSON Schema has no CSP-safe precompiled validator",
+        [],
+        { reason: "precompiled-validator-missing" }
+      )
     ];
   }
   try {
@@ -40595,8 +40531,7 @@ async function validateWithSchema(schema, value2, code = "x3.sdk/schema-violatio
       await result;
       return [];
     }
-    if (result)
-      return [];
+    if (result) return [];
   } catch (error) {
     const asyncErrors = error?.errors;
     if (asyncErrors !== void 0 && asyncErrors !== null) {
@@ -40604,28 +40539,28 @@ async function validateWithSchema(schema, value2, code = "x3.sdk/schema-violatio
     }
     const reason = error instanceof Error ? error.message : String(error);
     return [
-      diagnostic("error", "x3.sdk/schema-evaluation-failed", `the selected JSON Schema failed while evaluating inert wire data: ${reason}`, [], { error: reason })
+      diagnostic(
+        "error",
+        "x3.sdk/schema-evaluation-failed",
+        `the selected JSON Schema failed while evaluating inert wire data: ${reason}`,
+        [],
+        { error: reason }
+      )
     ];
   }
   return schemaDiagnostics(validate.errors, code);
 }
-
-// packages/sdk/dist/asset-capabilities/types.js
 function contributionId(value2) {
-  if (!isQualifiedId(value2))
-    throw new TypeError(`invalid contribution id: ${value2}`);
+  if (!isQualifiedId(value2)) throw new TypeError(`invalid contribution id: ${value2}`);
   return value2;
 }
 function isRevisionId(value2) {
   return parseRevisionRef(value2) !== void 0;
 }
 function revisionId(value2) {
-  if (!isRevisionId(value2))
-    throw new TypeError("revision id must be a canonical kind-tagged value");
+  if (!isRevisionId(value2)) throw new TypeError("revision id must be a canonical kind-tagged value");
   return value2;
 }
-
-// packages/sdk/dist/host-facilities.generated.js
 var STANDARD_HOST_FACILITY_IDS = Object.freeze([
   "clipboard.write",
   "credential.broker",
@@ -40659,8 +40594,6 @@ var STANDARD_HOST_FACILITY_IDS = Object.freeze([
 var LEGACY_HOST_FACILITY_ALIASES = Object.freeze([
   "editor.monaco"
 ]);
-
-// packages/sdk/dist/host-profile.js
 var HOST_TRANSPORT_KINDS = Object.freeze([
   "in-process",
   "structured-clone",
@@ -40693,14 +40626,29 @@ function hostFacilityId(value2) {
   return value2;
 }
 function hostFacilityDiagnostics(values, path = []) {
-  if (values === void 0)
-    return [];
+  if (values === void 0) return [];
   const diagnostics = [];
   values.forEach((value2, index) => {
     if (!isHostFacilityId(value2)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/unknown-host-facility", `unknown unqualified host facility \xAB${value2}\xBB`, [...path, index], { facility: value2 }));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/unknown-host-facility",
+          `unknown unqualified host facility \xAB${value2}\xBB`,
+          [...path, index],
+          { facility: value2 }
+        )
+      );
     } else if (legacyFacilities.has(value2)) {
-      diagnostics.push(diagnostic("warning", "x3.sdk/legacy-host-facility", `host facility \xAB${value2}\xBB is a transitional compatibility alias`, [...path, index], { facility: value2 }));
+      diagnostics.push(
+        diagnostic(
+          "warning",
+          "x3.sdk/legacy-host-facility",
+          `host facility \xAB${value2}\xBB is a transitional compatibility alias`,
+          [...path, index],
+          { facility: value2 }
+        )
+      );
     }
   });
   return diagnostics;
@@ -40714,12 +40662,10 @@ function invalidProfile(message, context) {
 }
 function exactKeys(value2, allowed, field) {
   const extra = Object.keys(value2).filter((key2) => !allowed.includes(key2));
-  if (extra.length > 0)
-    invalidProfile(`${field} contains unsupported fields`, { field, extra });
+  if (extra.length > 0) invalidProfile(`${field} contains unsupported fields`, { field, extra });
 }
 function nonEmpty(value2, field) {
-  if (value2.trim().length === 0)
-    return invalidProfile(`${field} must not be empty`, { field });
+  if (value2.trim().length === 0) return invalidProfile(`${field} must not be empty`, { field });
   return value2;
 }
 function count(value2, field) {
@@ -40738,29 +40684,42 @@ function normalizeStrings(values) {
 }
 function createHostRealmProfile(profile) {
   const snapshot = snapshotJsonWireData(profile);
-  exactKeys(snapshot, ["schemaVersion", "realmId", "revision", "target", "facilities", "budgets", "policy"], "profile");
-  if (snapshot.schemaVersion !== 1)
-    invalidProfile("host profile schemaVersion must be 1");
-  exactKeys(snapshot.target, [
-    "environment",
-    "operatingSystem",
-    "architecture",
-    "webApis",
-    "externalTools",
-    "hostCapabilities",
-    "grantedPermissions"
-  ], "target");
-  exactKeys(snapshot.budgets, [
-    "maxConcurrentTasks",
-    "maxWorkerCount",
-    "maxResidentBytes",
-    "maxTransferBytes",
-    "defaultDeadlineMs"
-  ], "budgets");
+  exactKeys(
+    snapshot,
+    ["schemaVersion", "realmId", "revision", "target", "facilities", "budgets", "policy"],
+    "profile"
+  );
+  if (snapshot.schemaVersion !== 1) invalidProfile("host profile schemaVersion must be 1");
+  exactKeys(
+    snapshot.target,
+    [
+      "environment",
+      "operatingSystem",
+      "architecture",
+      "webApis",
+      "externalTools",
+      "hostCapabilities",
+      "grantedPermissions"
+    ],
+    "target"
+  );
+  exactKeys(
+    snapshot.budgets,
+    [
+      "maxConcurrentTasks",
+      "maxWorkerCount",
+      "maxResidentBytes",
+      "maxTransferBytes",
+      "defaultDeadlineMs"
+    ],
+    "budgets"
+  );
   exactKeys(snapshot.policy, ["id", "revision", "digest"], "policy");
   const rawTarget = snapshot.target;
   if ("hostCapabilities" in rawTarget || "grantedPermissions" in rawTarget) {
-    return invalidProfile("target.hostCapabilities and target.grantedPermissions are projections and cannot be authored in a host profile");
+    return invalidProfile(
+      "target.hostCapabilities and target.grantedPermissions are projections and cannot be authored in a host profile"
+    );
   }
   if (!RUNTIME_ENVIRONMENTS.includes(rawTarget.environment)) {
     invalidProfile("target.environment is not registered", { environment: rawTarget.environment });
@@ -40808,14 +40767,12 @@ function createHostRealmProfile(profile) {
 function createHostTopology(topology) {
   const snapshot = snapshotJsonWireData(topology);
   exactKeys(snapshot, ["schemaVersion", "topologyId", "realms", "links"], "topology");
-  if (snapshot.schemaVersion !== 1)
-    return invalidProfile("host topology schemaVersion must be 1");
+  if (snapshot.schemaVersion !== 1) return invalidProfile("host topology schemaVersion must be 1");
   const realms = snapshot.realms.map(createHostRealmProfile);
   realms.sort((left, right) => compareUtf8(left.realmId, right.realmId));
   const realmIds = /* @__PURE__ */ new Set();
   for (const realm of realms) {
-    if (realmIds.has(realm.realmId))
-      return invalidProfile(`duplicate realmId \xAB${realm.realmId}\xBB`);
+    if (realmIds.has(realm.realmId)) return invalidProfile(`duplicate realmId \xAB${realm.realmId}\xBB`);
     realmIds.add(realm.realmId);
   }
   const links = snapshot.links.map((link) => {
@@ -40826,8 +40783,7 @@ function createHostTopology(topology) {
         toRealm: link.toRealm
       });
     }
-    if (link.fromRealm === link.toRealm)
-      return invalidProfile("transport link must cross realms");
+    if (link.fromRealm === link.toRealm) return invalidProfile("transport link must cross realms");
     const transports = uniqueSortedUtf8(link.transports);
     if (transports.length === 0 || transports.some((value2) => !transportKinds.has(value2))) {
       return invalidProfile("transport link must declare known transport kinds");
@@ -40838,12 +40794,16 @@ function createHostTopology(topology) {
       transports: Object.freeze(transports)
     });
   });
-  links.sort((left, right) => compareUtf8(`${left.fromRealm}\0${left.toRealm}`, `${right.fromRealm}\0${right.toRealm}`));
+  links.sort(
+    (left, right) => compareUtf8(
+      `${left.fromRealm}\0${left.toRealm}`,
+      `${right.fromRealm}\0${right.toRealm}`
+    )
+  );
   const seenLinks = /* @__PURE__ */ new Set();
   for (const link of links) {
     const key2 = `${link.fromRealm}\0${link.toRealm}`;
-    if (seenLinks.has(key2))
-      return invalidProfile("duplicate directed transport link", { key: key2 });
+    if (seenLinks.has(key2)) return invalidProfile("duplicate directed transport link", { key: key2 });
     seenLinks.add(key2);
   }
   return Object.freeze({
@@ -40864,8 +40824,6 @@ function runtimeTargetForHostRealm(profile, grantedPermissions) {
 function hostRealmCacheKey(profile) {
   return canonicalJsonStringify(createHostRealmProfile(profile));
 }
-
-// packages/sdk/dist/manifest/spec-registry.js
 function invalidRegistration(message, context) {
   throw new ModkitError({
     code: "x3.sdk/invalid-spec-registration",
@@ -40874,10 +40832,8 @@ function invalidRegistration(message, context) {
   });
 }
 function safeContextValue(value2) {
-  if (value2 === null || typeof value2 === "string" || typeof value2 === "boolean")
-    return value2;
-  if (typeof value2 === "number")
-    return Number.isFinite(value2) ? value2 : String(value2);
+  if (value2 === null || typeof value2 === "string" || typeof value2 === "boolean") return value2;
+  if (typeof value2 === "number") return Number.isFinite(value2) ? value2 : String(value2);
   return typeof value2;
 }
 function validatedCoordinate(contractValue, majorValue) {
@@ -40959,12 +40915,20 @@ function createSpecSchemaRegistry(entries) {
       if (typeof project !== "function") {
         invalidRegistration("spec inventory projector must be a function", coordinate2);
       }
-      const conformanceProfile = validatedConformanceProfile(conformanceProfileValue, coordinate2.contract, coordinate2.major);
+      const conformanceProfile = validatedConformanceProfile(
+        conformanceProfileValue,
+        coordinate2.contract,
+        coordinate2.major
+      );
       registration = mode === "executable" ? Object.freeze({
         mode: "executable",
         project,
         conformanceProfile,
-        moduleAbi: validatedModuleAbi(candidate.moduleAbi, coordinate2.contract, coordinate2.major)
+        moduleAbi: validatedModuleAbi(
+          candidate.moduleAbi,
+          coordinate2.contract,
+          coordinate2.major
+        )
       }) : Object.freeze({
         mode: "data-only",
         project,
@@ -40989,7 +40953,11 @@ function createSpecSchemaRegistry(entries) {
     }
     map.set(key2, entry2);
   }
-  const list = Object.freeze([...map.values()].sort((left, right) => compareUtf8(left.contract, right.contract) || left.major - right.major));
+  const list = Object.freeze(
+    [...map.values()].sort(
+      (left, right) => compareUtf8(left.contract, right.contract) || left.major - right.major
+    )
+  );
   return {
     getEntry: (contract, major) => map.get(`${contract}@${major}`),
     get: (contract, major) => map.get(`${contract}@${major}`)?.schema,
@@ -41001,10 +40969,16 @@ function duplicateVariantDiagnostics(manifest) {
   const diagnostics = [];
   (manifest.runtimeVariants ?? []).forEach((variant, index) => {
     const previous = first.get(variant.variantId);
-    if (previous === void 0)
-      first.set(variant.variantId, index);
+    if (previous === void 0) first.set(variant.variantId, index);
     else {
-      diagnostics.push(diagnostic("error", "x3.sdk/duplicate-runtime-variant", `runtime variant ${variant.variantId} duplicates index ${previous}`, ["runtimeVariants", index, "variantId"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-runtime-variant",
+          `runtime variant ${variant.variantId} duplicates index ${previous}`,
+          ["runtimeVariants", index, "variantId"]
+        )
+      );
     }
   });
   return diagnostics;
@@ -41014,31 +40988,51 @@ function envelopeRangeDiagnostics(manifest) {
   manifest.dependsOn?.forEach((requirement, index) => {
     const parsed = requirement.range === void 0 ? void 0 : parseVersionRange(requirement.range);
     if (requirement.range !== void 0 && (parsed === void 0 || !versionRangeTargetsMajor(parsed, requirement.major))) {
-      diagnostics.push(diagnostic("error", "x3.sdk/invalid-contract-range", `contract range ${requirement.range} cannot be evaluated safely`, ["dependsOn", index, "range"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-contract-range",
+          `contract range ${requirement.range} cannot be evaluated safely`,
+          ["dependsOn", index, "range"]
+        )
+      );
     }
   });
   return diagnostics;
 }
 function runtimeFacilityDiagnostics(manifest) {
-  return (manifest.runtimeVariants ?? []).flatMap((variant, index) => hostFacilityDiagnostics(variant.target.requiredHostCapabilities, [
-    "runtimeVariants",
-    index,
-    "target",
-    "requiredHostCapabilities"
-  ]));
+  return (manifest.runtimeVariants ?? []).flatMap(
+    (variant, index) => hostFacilityDiagnostics(variant.target.requiredHostCapabilities, [
+      "runtimeVariants",
+      index,
+      "target",
+      "requiredHostCapabilities"
+    ])
+  );
 }
 async function runSemanticValidator(validator, manifest) {
-  if (validator === void 0)
-    return [];
+  if (validator === void 0) return [];
   try {
     const result = await validator(manifest);
-    if (!Array.isArray(result) || !result.every((item) => typeof item === "object" && item !== null && !Array.isArray(item) && typeof item.code === "string" && isQualifiedId(item.code) && ["error", "warning", "information", "hint"].includes(String(item.severity)) && typeof item.message === "string" && (item.path === void 0 || Array.isArray(item.path) && item.path.every((part) => typeof part === "string" || Number.isSafeInteger(part))))) {
+    if (!Array.isArray(result) || !result.every(
+      (item) => typeof item === "object" && item !== null && !Array.isArray(item) && typeof item.code === "string" && isQualifiedId(item.code) && ["error", "warning", "information", "hint"].includes(
+        String(item.severity)
+      ) && typeof item.message === "string" && (item.path === void 0 || Array.isArray(item.path) && item.path.every(
+        (part) => typeof part === "string" || Number.isSafeInteger(part)
+      ))
+    )) {
       throw new TypeError("semantic validator returned malformed diagnostics");
     }
     return [...result];
   } catch (error) {
     return [
-      diagnostic("error", "x3.sdk/semantic-validator-failed", "the host-owned contribution semantic validator threw", ["spec"], { error: error instanceof Error ? error.message : String(error) })
+      diagnostic(
+        "error",
+        "x3.sdk/semantic-validator-failed",
+        "the host-owned contribution semantic validator threw",
+        ["spec"],
+        { error: error instanceof Error ? error.message : String(error) }
+      )
     ];
   }
 }
@@ -41052,10 +41046,14 @@ function normalizeContributionManifest(wire) {
       id: contractId(contract.id)
     }),
     ...dependsOn === void 0 ? {} : {
-      dependsOn: Object.freeze(dependsOn.map((requirement) => Object.freeze({
-        ...requirement,
-        contract: contractId(requirement.contract)
-      })))
+      dependsOn: Object.freeze(
+        dependsOn.map(
+          (requirement) => Object.freeze({
+            ...requirement,
+            contract: contractId(requirement.contract)
+          })
+        )
+      )
     }
   });
 }
@@ -41069,7 +41067,13 @@ async function validateContributionManifest(value2, registry) {
       inventoryEligible: false,
       activationEligible: false,
       diagnostics: [
-        diagnostic("error", "x3.sdk/non-json-wire-value", "contribution manifest must be inert JSON data", [], { error: error instanceof Error ? error.message : String(error) })
+        diagnostic(
+          "error",
+          "x3.sdk/non-json-wire-value",
+          "contribution manifest must be inert JSON data",
+          [],
+          { error: error instanceof Error ? error.message : String(error) }
+        )
       ]
     };
   }
@@ -41107,11 +41111,21 @@ async function validateContributionManifest(value2, registry) {
       diagnostics: [
         ...envelopeDiagnostics,
         ...manifestDiagnostics,
-        diagnostic("warning", "x3.sdk/unknown-contract", `contract \xAB${manifest.contract.id}\xBB major ${manifest.contract.major} has no registered spec schema \u2014 contribution stays inspectable data and is not activatable`, ["contract"])
+        diagnostic(
+          "warning",
+          "x3.sdk/unknown-contract",
+          `contract \xAB${manifest.contract.id}\xBB major ${manifest.contract.major} has no registered spec schema \u2014 contribution stays inspectable data and is not activatable`,
+          ["contract"]
+        )
       ]
     };
   }
-  const specDiagnostics = (await validateWithSchema(registration.schema, manifest.spec, "x3.sdk/invalid-spec", registration.validator)).map((d) => ({ ...d, path: ["spec", ...d.path ?? []] }));
+  const specDiagnostics = (await validateWithSchema(
+    registration.schema,
+    manifest.spec,
+    "x3.sdk/invalid-spec",
+    registration.validator
+  )).map((d) => ({ ...d, path: ["spec", ...d.path ?? []] }));
   if (hasErrors(specDiagnostics)) {
     return {
       manifest,
@@ -41143,12 +41157,22 @@ async function validateContributionManifest(value2, registry) {
       diagnostics: [
         ...envelopeDiagnostics,
         ...specDiagnostics,
-        diagnostic("warning", "x3.sdk/schema-only-contract", `contract \xAB${manifest.contract.id}\xBB major ${manifest.contract.major} has a schema but no executable registration quartet`, ["contract"])
+        diagnostic(
+          "warning",
+          "x3.sdk/schema-only-contract",
+          `contract \xAB${manifest.contract.id}\xBB major ${manifest.contract.major} has a schema but no executable registration quartet`,
+          ["contract"]
+        )
       ]
     };
   }
   if (registration.registration.mode === "executable" && (manifest.runtimeVariants?.length ?? 0) === 0) {
-    const missingVariant = diagnostic("error", "x3.sdk/executable-without-runtime-variant", "an executable contribution requires at least one runtime variant", ["runtimeVariants"]);
+    const missingVariant = diagnostic(
+      "error",
+      "x3.sdk/executable-without-runtime-variant",
+      "an executable contribution requires at least one runtime variant",
+      ["runtimeVariants"]
+    );
     return {
       manifest,
       specState: "invalid",
@@ -41163,7 +41187,12 @@ async function validateContributionManifest(value2, registry) {
     };
   }
   if (registration.registration.mode === "data-only" && (manifest.runtimeVariants?.length ?? 0) > 0) {
-    const unexpectedVariant = diagnostic("error", "x3.sdk/data-only-with-runtime-variant", "a data-only contribution cannot declare runtime variants", ["runtimeVariants"]);
+    const unexpectedVariant = diagnostic(
+      "error",
+      "x3.sdk/data-only-with-runtime-variant",
+      "a data-only contribution cannot declare runtime variants",
+      ["runtimeVariants"]
+    );
     return {
       manifest,
       specState: "invalid",
@@ -41185,8 +41214,6 @@ async function validateContributionManifest(value2, registry) {
     diagnostics: [...envelopeDiagnostics, ...specDiagnostics, ...semanticDiagnostics]
   };
 }
-
-// packages/sdk/dist/asset-capabilities/standard-traits.js
 var TRAIT_IDS = Object.freeze([
   "content.metadata",
   "content.binary",
@@ -41268,26 +41295,46 @@ var STANDARD_TRAIT_SET = new Set(TRAIT_IDS);
 function isStandardTraitId(value2) {
   return STANDARD_TRAIT_SET.has(value2);
 }
-
-// packages/sdk/dist/manifest/contribution-contract-registry.js
 var CODEC_CONTRIBUTION_CONTRACT = contractId("org.modkitx/codec-contribution");
-var SERVICE_PROVIDER_CONTRIBUTION_CONTRACT = contractId("org.modkitx/service-provider-contribution");
-var VIEWER_CONTRIBUTION_CONTRACT = contractId("org.modkitx/viewer-contribution");
-var EDITOR_CONTRIBUTION_CONTRACT = contractId("org.modkitx/editor-contribution");
-var TRAIT_DEFINITION_CONTRIBUTION_CONTRACT = contractId("org.modkitx/trait-definition");
-var CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT = contractId("org.modkitx/contract-definition");
-var TRAIT_DEFINITION_FACT = contractId("org.modkitx.inventory/trait-definition");
-var CONTRACT_DEFINITION_FACT = contractId("org.modkitx.inventory/contract-definition");
-var EDITOR_CONTRIBUTION_FACT = contractId("org.modkitx.inventory/editor-contribution");
+var SERVICE_PROVIDER_CONTRIBUTION_CONTRACT = contractId(
+  "org.modkitx/service-provider-contribution"
+);
+var VIEWER_CONTRIBUTION_CONTRACT = contractId(
+  "org.modkitx/viewer-contribution"
+);
+var EDITOR_CONTRIBUTION_CONTRACT = contractId(
+  "org.modkitx/editor-contribution"
+);
+var TRAIT_DEFINITION_CONTRIBUTION_CONTRACT = contractId(
+  "org.modkitx/trait-definition"
+);
+var CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT = contractId(
+  "org.modkitx/contract-definition"
+);
+var TRAIT_DEFINITION_FACT = contractId(
+  "org.modkitx.inventory/trait-definition"
+);
+var CONTRACT_DEFINITION_FACT = contractId(
+  "org.modkitx.inventory/contract-definition"
+);
+var EDITOR_CONTRIBUTION_FACT = contractId(
+  "org.modkitx.inventory/editor-contribution"
+);
 function duplicateFieldDiagnostics(values, path, label) {
   const first = /* @__PURE__ */ new Map();
   const diagnostics = [];
   values.forEach((value2, index) => {
     const previous = first.get(value2);
-    if (previous === void 0)
-      first.set(value2, index);
+    if (previous === void 0) first.set(value2, index);
     else {
-      diagnostics.push(diagnostic("error", "x3.sdk/duplicate-semantic-id", `${label} ${value2} duplicates index ${previous}`, [...path, index]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-semantic-id",
+          `${label} ${value2} duplicates index ${previous}`,
+          [...path, index]
+        )
+      );
     }
   });
   return diagnostics;
@@ -41295,18 +41342,33 @@ function duplicateFieldDiagnostics(values, path, label) {
 function requirementRangeDiagnostics(requirement, path) {
   const parsed = requirement.range === void 0 ? void 0 : parseVersionRange(requirement.range);
   return requirement.range !== void 0 && (parsed === void 0 || !versionRangeTargetsMajor(parsed, requirement.major)) ? [
-    diagnostic("error", "x3.sdk/invalid-contract-range", `contract range ${requirement.range} cannot be evaluated safely`, [...path, "range"])
+    diagnostic(
+      "error",
+      "x3.sdk/invalid-contract-range",
+      `contract range ${requirement.range} cannot be evaluated safely`,
+      [...path, "range"]
+    )
   ] : [];
 }
 function traitDefinitionRangeDiagnostics(id, range, path) {
   if (isStandardTraitId(id)) {
     return range === void 0 ? [] : [
-      diagnostic("error", "x3.sdk/standard-trait-versioned", `standard trait ${id} does not use an extension definition range`, [...path, "definitionRange"])
+      diagnostic(
+        "error",
+        "x3.sdk/standard-trait-versioned",
+        `standard trait ${id} does not use an extension definition range`,
+        [...path, "definitionRange"]
+      )
     ];
   }
   if (range === void 0 || parseVersionRange(range) === void 0) {
     return [
-      diagnostic("error", "x3.sdk/custom-trait-definition-unbound", `custom trait ${id} must declare a safe definition range`, [...path, "definitionRange"])
+      diagnostic(
+        "error",
+        "x3.sdk/custom-trait-definition-unbound",
+        `custom trait ${id} must declare a safe definition range`,
+        [...path, "definitionRange"]
+      )
     ];
   }
   return [];
@@ -41314,12 +41376,22 @@ function traitDefinitionRangeDiagnostics(id, range, path) {
 function traitDefinitionOfferDiagnostics(id, version, path) {
   if (isStandardTraitId(id)) {
     return version === void 0 ? [] : [
-      diagnostic("error", "x3.sdk/standard-trait-versioned", `standard trait ${id} does not use an extension definition version`, [...path, "definitionVersion"])
+      diagnostic(
+        "error",
+        "x3.sdk/standard-trait-versioned",
+        `standard trait ${id} does not use an extension definition version`,
+        [...path, "definitionVersion"]
+      )
     ];
   }
   if (version === void 0 || parseSemver(version) === void 0) {
     return [
-      diagnostic("error", "x3.sdk/custom-trait-definition-unbound", `custom trait ${id} must declare one exact safe definition version`, [...path, "definitionVersion"])
+      diagnostic(
+        "error",
+        "x3.sdk/custom-trait-definition-unbound",
+        `custom trait ${id} must declare one exact safe definition version`,
+        [...path, "definitionVersion"]
+      )
     ];
   }
   return [];
@@ -41328,58 +41400,99 @@ var validateCodecContributionSemantics = (manifest) => {
   const spec = manifest.spec;
   const localCodecPrefix = manifest.id;
   const diagnostics = [
-    ...duplicateFieldDiagnostics(spec.formatRefs.map((format) => format.formatId), ["spec", "formatRefs"], "format ID"),
-    ...duplicateFieldDiagnostics(spec.representations.map((representation) => representation.id), ["spec", "representations"], "representation ID"),
-    ...duplicateFieldDiagnostics(spec.companions?.map((companion) => companion.id) ?? [], ["spec", "companions"], "companion rule ID"),
-    ...duplicateFieldDiagnostics(spec.traitDeclarations?.map((declaration) => `${declaration.id}\0${declaration.representation}`) ?? [], ["spec", "traitDeclarations"], "trait declaration coordinate"),
-    ...duplicateFieldDiagnostics(spec.operations.map((operation) => operation.id), ["spec", "operations"], "operation ID"),
-    ...duplicateFieldDiagnostics(spec.operations.map((operation) => operation.handlerId), ["spec", "operations"], "operation handler ID")
+    ...duplicateFieldDiagnostics(
+      spec.formatRefs.map((format) => format.formatId),
+      ["spec", "formatRefs"],
+      "format ID"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.representations.map((representation) => representation.id),
+      ["spec", "representations"],
+      "representation ID"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.companions?.map((companion) => companion.id) ?? [],
+      ["spec", "companions"],
+      "companion rule ID"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.traitDeclarations?.map(
+        (declaration) => `${declaration.id}\0${declaration.representation}`
+      ) ?? [],
+      ["spec", "traitDeclarations"],
+      "trait declaration coordinate"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.operations.map((operation) => operation.id),
+      ["spec", "operations"],
+      "operation ID"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.operations.map((operation) => operation.handlerId),
+      ["spec", "operations"],
+      "operation handler ID"
+    )
   ];
   const expectedProbeKind = spec.sourceTopology === "namespace" ? "namespace" : spec.sourceTopology === "derived" ? "derived" : "bytes";
   if (spec.probe.kind !== expectedProbeKind) {
-    diagnostics.push(diagnostic("error", "x3.sdk/probe-topology-mismatch", `topology ${spec.sourceTopology} requires a ${expectedProbeKind} probe policy`, ["spec", "probe", "kind"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/probe-topology-mismatch",
+        `topology ${spec.sourceTopology} requires a ${expectedProbeKind} probe policy`,
+        ["spec", "probe", "kind"]
+      )
+    );
   }
   spec.requires?.forEach((requirement, index) => {
     diagnostics.push(...requirementRangeDiagnostics(requirement, ["spec", "requires", index]));
   });
   spec.traitDeclarations?.forEach((claim, index) => {
-    diagnostics.push(...traitDefinitionOfferDiagnostics(claim.id, claim.definitionVersion, [
-      "spec",
-      "traitDeclarations",
-      index
-    ]));
-    claim.prerequisites?.forEach((requirement, requirementIndex) => {
-      diagnostics.push(...requirementRangeDiagnostics(requirement, [
+    diagnostics.push(
+      ...traitDefinitionOfferDiagnostics(claim.id, claim.definitionVersion, [
         "spec",
         "traitDeclarations",
-        index,
-        "prerequisites",
-        requirementIndex
-      ]));
+        index
+      ])
+    );
+    claim.prerequisites?.forEach((requirement, requirementIndex) => {
+      diagnostics.push(
+        ...requirementRangeDiagnostics(requirement, [
+          "spec",
+          "traitDeclarations",
+          index,
+          "prerequisites",
+          requirementIndex
+        ])
+      );
     });
   });
   spec.companions?.forEach((companion, companionIndex) => {
     for (const selector of ["all", "any", "none"]) {
       companion.expected?.[selector]?.forEach((requirement, requirementIndex) => {
-        diagnostics.push(...traitDefinitionRangeDiagnostics(requirement.id, requirement.definitionRange, [
-          "spec",
-          "companions",
-          companionIndex,
-          "expected",
-          selector,
-          requirementIndex
-        ]));
+        diagnostics.push(
+          ...traitDefinitionRangeDiagnostics(requirement.id, requirement.definitionRange, [
+            "spec",
+            "companions",
+            companionIndex,
+            "expected",
+            selector,
+            requirementIndex
+          ])
+        );
       });
     }
   });
   spec.operations.forEach((operation, index) => {
     if (operation.requiresContract !== void 0) {
-      diagnostics.push(...requirementRangeDiagnostics(operation.requiresContract, [
-        "spec",
-        "operations",
-        index,
-        "requiresContract"
-      ]));
+      diagnostics.push(
+        ...requirementRangeDiagnostics(operation.requiresContract, [
+          "spec",
+          "operations",
+          index,
+          "requiresContract"
+        ])
+      );
     }
     const shared = SHARED_OPERATION_IDS.includes(operation.id);
     const canonicalDomain = OPERATION_DOMAINS.some((domain) => {
@@ -41389,28 +41502,40 @@ var validateCodecContributionSemantics = (manifest) => {
     const localSuffix = operation.id.startsWith(`${localCodecPrefix}.`) ? operation.id.slice(localCodecPrefix.length + 1) : void 0;
     const codecLocal = localSuffix !== void 0 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(localSuffix);
     if (!shared && !canonicalDomain && !codecLocal) {
-      diagnostics.push(diagnostic("error", "x3.sdk/invalid-operation-namespace", `operation ${operation.id} is not shared, canonical-domain, or local to ${manifest.id}`, ["spec", "operations", index, "id"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-operation-namespace",
+          `operation ${operation.id} is not shared, canonical-domain, or local to ${manifest.id}`,
+          ["spec", "operations", index, "id"]
+        )
+      );
     }
   });
   const requiredPermissions = /* @__PURE__ */ new Set(["read-source"]);
   spec.operations.forEach((operation) => {
-    if (operation.mutatesSource)
-      requiredPermissions.add("write-source");
+    if (operation.mutatesSource) requiredPermissions.add("write-source");
     operation.requiredPermissions?.forEach((permission) => requiredPermissions.add(permission));
   });
   manifest.runtimeVariants?.forEach((variant, variantIndex) => {
     const requested = new Set(variant.requestedPermissionClasses);
     for (const permission of requiredPermissions) {
       if (!requested.has(permission)) {
-        diagnostics.push(diagnostic("error", "x3.sdk/variant-permission-underdeclared", `runtime variant ${variant.variantId} does not request ${permission}`, ["runtimeVariants", variantIndex, "requestedPermissionClasses"]));
+        diagnostics.push(
+          diagnostic(
+            "error",
+            "x3.sdk/variant-permission-underdeclared",
+            `runtime variant ${variant.variantId} does not request ${permission}`,
+            ["runtimeVariants", variantIndex, "requestedPermissionClasses"]
+          )
+        );
       }
     }
   });
   return diagnostics;
 };
 function isPortableOperationReference(id) {
-  if (SHARED_OPERATION_IDS.includes(id))
-    return true;
+  if (SHARED_OPERATION_IDS.includes(id)) return true;
   if (OPERATION_DOMAINS.some((domain) => {
     const prefix = `${domain}.`;
     return id.startsWith(prefix) && isSegment(id.slice(prefix.length));
@@ -41423,20 +41548,37 @@ function isPortableOperationReference(id) {
 var validateViewerContributionSemantics = (manifest) => {
   const spec = manifest.spec;
   const diagnostics = [
-    ...duplicateFieldDiagnostics(spec.requiresTraits?.map((requirement) => requirement.id) ?? [], ["spec", "requiresTraits"], "trait requirement"),
-    ...duplicateFieldDiagnostics(spec.requiresOperations ?? [], ["spec", "requiresOperations"], "operation requirement")
+    ...duplicateFieldDiagnostics(
+      spec.requiresTraits?.map((requirement) => requirement.id) ?? [],
+      ["spec", "requiresTraits"],
+      "trait requirement"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.requiresOperations ?? [],
+      ["spec", "requiresOperations"],
+      "operation requirement"
+    )
   ];
   spec.requiresOperations?.forEach((id, index) => {
     if (!isPortableOperationReference(id)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/invalid-operation-namespace", `viewer operation requirement ${id} is not shared, canonical-domain, or qualified-local`, ["spec", "requiresOperations", index]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-operation-namespace",
+          `viewer operation requirement ${id} is not shared, canonical-domain, or qualified-local`,
+          ["spec", "requiresOperations", index]
+        )
+      );
     }
   });
   spec.requiresTraits?.forEach((requirement, index) => {
-    diagnostics.push(...traitDefinitionRangeDiagnostics(requirement.id, requirement.definitionRange, [
-      "spec",
-      "requiresTraits",
-      index
-    ]));
+    diagnostics.push(
+      ...traitDefinitionRangeDiagnostics(requirement.id, requirement.definitionRange, [
+        "spec",
+        "requiresTraits",
+        index
+      ])
+    );
   });
   return diagnostics;
 };
@@ -41451,22 +41593,58 @@ var EDITING_OPERATION_IDS = Object.freeze([
 var validateEditorContributionSemantics = (manifest) => {
   const spec = manifest.spec;
   const diagnostics = [
-    ...duplicateFieldDiagnostics(spec.requiresOperations, ["spec", "requiresOperations"], "operation"),
-    ...duplicateFieldDiagnostics(spec.consumesDataSources.map((source) => `${source.contract}@${source.major}`), ["spec", "consumesDataSources"], "data-source requirement")
+    ...duplicateFieldDiagnostics(
+      spec.requiresOperations,
+      ["spec", "requiresOperations"],
+      "operation"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.consumesDataSources.map((source) => `${source.contract}@${source.major}`),
+      ["spec", "consumesDataSources"],
+      "data-source requirement"
+    )
   ];
   spec.requiresOperations.forEach((id, index) => {
     if (!EDITING_OPERATION_IDS.includes(id)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/invalid-editor-operation", `editor operation ${id} is not one of the shared editing operations`, ["spec", "requiresOperations", index]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-editor-operation",
+          `editor operation ${id} is not one of the shared editing operations`,
+          ["spec", "requiresOperations", index]
+        )
+      );
     }
   });
   if (!spec.requiresOperations.some((id) => id.startsWith("edit."))) {
-    diagnostics.push(diagnostic("error", "x3.sdk/editor-edit-operation-missing", "an editor contribution requires an explicit edit operation", ["spec", "requiresOperations"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/editor-edit-operation-missing",
+        "an editor contribution requires an explicit edit operation",
+        ["spec", "requiresOperations"]
+      )
+    );
   }
   if (spec.requiresTransactions && !spec.requiresOperations.some((id) => id === "source.save" || id === "source.save-as")) {
-    diagnostics.push(diagnostic("error", "x3.sdk/editor-save-operation-missing", "a transactional editor requires source.save or source.save-as", ["spec", "requiresOperations"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/editor-save-operation-missing",
+        "a transactional editor requires source.save or source.save-as",
+        ["spec", "requiresOperations"]
+      )
+    );
   }
   if (spec.requiresTransactions && spec.writer.mutationMode !== "mutate") {
-    diagnostics.push(diagnostic("error", "x3.sdk/editor-writer-mode-mismatch", "a transactional editor requires a mutating writer", ["spec", "writer", "mutationMode"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/editor-writer-mode-mismatch",
+        "a transactional editor requires a mutating writer",
+        ["spec", "writer", "mutationMode"]
+      )
+    );
   }
   return diagnostics;
 };
@@ -41474,21 +41652,48 @@ var validateTraitDefinitionSemantics = (manifest) => {
   const spec = manifest.spec;
   const diagnostics = [];
   if (parseSemver(spec.version) === void 0) {
-    diagnostics.push(diagnostic("error", "x3.sdk/invalid-definition-version", `trait definition version ${spec.version} cannot be evaluated safely`, ["spec", "version"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-definition-version",
+        `trait definition version ${spec.version} cannot be evaluated safely`,
+        ["spec", "version"]
+      )
+    );
   }
   const seen = /* @__PURE__ */ new Map();
   spec.imports?.forEach((dependency, index) => {
     if (dependency.id === spec.id) {
-      diagnostics.push(diagnostic("error", "x3.sdk/self-definition-import", `trait definition ${spec.id} cannot import itself`, ["spec", "imports", index, "id"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/self-definition-import",
+          `trait definition ${spec.id} cannot import itself`,
+          ["spec", "imports", index, "id"]
+        )
+      );
     }
     const previous = seen.get(dependency.id);
-    if (previous === void 0)
-      seen.set(dependency.id, index);
+    if (previous === void 0) seen.set(dependency.id, index);
     else {
-      diagnostics.push(diagnostic("error", "x3.sdk/duplicate-definition-import", `trait import ${dependency.id} duplicates index ${previous}`, ["spec", "imports", index, "id"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-definition-import",
+          `trait import ${dependency.id} duplicates index ${previous}`,
+          ["spec", "imports", index, "id"]
+        )
+      );
     }
     if (parseVersionRange(dependency.range) === void 0) {
-      diagnostics.push(diagnostic("error", "x3.sdk/invalid-definition-range", `trait import range ${dependency.range} cannot be evaluated safely`, ["spec", "imports", index, "range"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-definition-range",
+          `trait import range ${dependency.range} cannot be evaluated safely`,
+          ["spec", "imports", index, "range"]
+        )
+      );
     }
   });
   return diagnostics;
@@ -41497,7 +41702,12 @@ var validateContractDefinitionSemantics = (manifest) => {
   const spec = manifest.spec;
   if (!Number.isSafeInteger(spec.major) || spec.major < 0) {
     return [
-      diagnostic("error", "x3.sdk/invalid-contract-major", `contract definition major ${spec.major} is not a safe non-negative integer`, ["spec", "major"])
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-contract-major",
+        `contract definition major ${spec.major} is not a safe non-negative integer`,
+        ["spec", "major"]
+      )
     ];
   }
   if (spec.surface !== void 0) {
@@ -41510,14 +41720,35 @@ function dataSourceSurfaceDiagnostics(surface, path) {
   if (surface.releaseVia !== void 0) {
     const target = surface.methods[surface.releaseVia];
     if (target === void 0) {
-      diagnostics.push(diagnostic("error", "x3.sdk/surface-release-via-unknown", `releaseVia \xAB${surface.releaseVia}\xBB does not name a declared method`, [...path, "releaseVia"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/surface-release-via-unknown",
+          `releaseVia \xAB${surface.releaseVia}\xBB does not name a declared method`,
+          [...path, "releaseVia"]
+        )
+      );
     } else if (target.kind !== "value") {
-      diagnostics.push(diagnostic("error", "x3.sdk/surface-release-via-kind", `releaseVia \xAB${surface.releaseVia}\xBB must name a value method, found ${target.kind}`, [...path, "releaseVia"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/surface-release-via-kind",
+          `releaseVia \xAB${surface.releaseVia}\xBB must name a value method, found ${target.kind}`,
+          [...path, "releaseVia"]
+        )
+      );
     }
   }
   for (const field of surface.fields ?? []) {
     if (Object.hasOwn(surface.methods, field)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/surface-field-is-method", `\xAB${field}\xBB cannot be both a field and a method`, [...path, "fields"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/surface-field-is-method",
+          `\xAB${field}\xBB cannot be both a field and a method`,
+          [...path, "fields"]
+        )
+      );
     }
   }
   return diagnostics;
@@ -41525,41 +41756,69 @@ function dataSourceSurfaceDiagnostics(surface, path) {
 var validateServiceProviderContributionSemantics = (manifest) => {
   const spec = manifest.spec;
   const diagnostics = [
-    ...duplicateFieldDiagnostics(spec.provides.map((offer) => offer.offerId), ["spec", "provides"], "offer ID"),
-    ...duplicateFieldDiagnostics(spec.outputs?.map((output) => `${output.id}\0${output.representation}`) ?? [], ["spec", "outputs"], "trait declaration coordinate")
+    ...duplicateFieldDiagnostics(
+      spec.provides.map((offer) => offer.offerId),
+      ["spec", "provides"],
+      "offer ID"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.outputs?.map((output) => `${output.id}\0${output.representation}`) ?? [],
+      ["spec", "outputs"],
+      "trait declaration coordinate"
+    )
   ];
   spec.requires?.forEach((requirement, index) => {
     diagnostics.push(...requirementRangeDiagnostics(requirement, ["spec", "requires", index]));
   });
   spec.outputs?.forEach((claim, index) => {
-    diagnostics.push(...traitDefinitionOfferDiagnostics(claim.id, claim.definitionVersion, [
-      "spec",
-      "outputs",
-      index
-    ]));
-    claim.prerequisites?.forEach((requirement, requirementIndex) => {
-      diagnostics.push(...requirementRangeDiagnostics(requirement, [
+    diagnostics.push(
+      ...traitDefinitionOfferDiagnostics(claim.id, claim.definitionVersion, [
         "spec",
         "outputs",
-        index,
-        "prerequisites",
-        requirementIndex
-      ]));
+        index
+      ])
+    );
+    claim.prerequisites?.forEach((requirement, requirementIndex) => {
+      diagnostics.push(
+        ...requirementRangeDiagnostics(requirement, [
+          "spec",
+          "outputs",
+          index,
+          "prerequisites",
+          requirementIndex
+        ])
+      );
     });
   });
   if (spec.replacement !== void 0) {
-    diagnostics.push(...requirementRangeDiagnostics(spec.replacement.target, ["spec", "replacement", "target"]));
+    diagnostics.push(
+      ...requirementRangeDiagnostics(spec.replacement.target, ["spec", "replacement", "target"])
+    );
   }
   const variants = new Set((manifest.runtimeVariants ?? []).map((variant) => variant.variantId));
   spec.provides.forEach((offer, index) => {
     const version = parseSemver(offer.version);
     if (version === void 0 || version.major !== offer.major) {
-      diagnostics.push(diagnostic("error", "x3.sdk/offer-major-mismatch", `offer ${offer.offerId} version ${offer.version} does not match major ${offer.major}`, ["spec", "provides", index, "version"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/offer-major-mismatch",
+          `offer ${offer.offerId} version ${offer.version} does not match major ${offer.major}`,
+          ["spec", "provides", index, "version"]
+        )
+      );
     }
   });
   spec.applicableVariants?.forEach((variantId, index) => {
     if (!variants.has(variantId)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/unknown-applicable-variant", `applicable variant ${variantId} is not declared by the envelope`, ["spec", "applicableVariants", index]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/unknown-applicable-variant",
+          `applicable variant ${variantId} is not declared by the envelope`,
+          ["spec", "applicableVariants", index]
+        )
+      );
     }
   });
   return diagnostics;
@@ -41575,10 +41834,8 @@ function invalidOpenRegistration(message, context) {
   });
 }
 function safeRegistrationContextValue(value2) {
-  if (value2 === null || typeof value2 === "string" || typeof value2 === "boolean")
-    return value2;
-  if (typeof value2 === "number")
-    return Number.isFinite(value2) ? value2 : String(value2);
+  if (value2 === null || typeof value2 === "string" || typeof value2 === "boolean") return value2;
+  if (typeof value2 === "number") return Number.isFinite(value2) ? value2 : String(value2);
   return typeof value2;
 }
 function validatedRegistrationCoordinate(value2) {
@@ -41594,7 +41851,10 @@ function validatedRegistrationCoordinate(value2) {
     });
   }
   if (!Number.isSafeInteger(major) || major < 0) {
-    return invalidOpenRegistration("contribution contract major must be a safe non-negative integer", { contract: id, major: safeRegistrationContextValue(major) });
+    return invalidOpenRegistration(
+      "contribution contract major must be a safe non-negative integer",
+      { contract: id, major: safeRegistrationContextValue(major) }
+    );
   }
   return Object.freeze({ id: contractId(id), major });
 }
@@ -41640,7 +41900,9 @@ function createContributionContractRegistry(entries) {
     if (typeof authoredEntry !== "object" || authoredEntry === null || Array.isArray(authoredEntry)) {
       invalidOpenRegistration("contribution contract registration must be an object", {});
     }
-    const coordinate2 = validatedRegistrationCoordinate(authoredEntry.contract);
+    const coordinate2 = validatedRegistrationCoordinate(
+      authoredEntry.contract
+    );
     const mode = authoredEntry.mode;
     const conformanceProfileValue = authoredEntry.conformanceProfile;
     const project = authoredEntry.project;
@@ -41671,7 +41933,11 @@ function createContributionContractRegistry(entries) {
         major: coordinate2.major
       });
     }
-    const conformanceProfile = validatedRegistrationProfile(conformanceProfileValue, coordinate2.id, coordinate2.major);
+    const conformanceProfile = validatedRegistrationProfile(
+      conformanceProfileValue,
+      coordinate2.id,
+      coordinate2.major
+    );
     const base = {
       contract: coordinate2,
       schema: snapshotJsonWireObject(authoredEntry.schema),
@@ -41683,36 +41949,46 @@ function createContributionContractRegistry(entries) {
     const entry2 = mode === "executable" ? Object.freeze({
       ...base,
       mode: "executable",
-      moduleAbi: validatedRegistrationModuleAbi(authoredEntry.moduleAbi, coordinate2.id, coordinate2.major)
+      moduleAbi: validatedRegistrationModuleAbi(
+        authoredEntry.moduleAbi,
+        coordinate2.id,
+        coordinate2.major
+      )
     }) : Object.freeze({ ...base, mode: "data-only" });
-    const registrationKey = key(entry2.contract.id, entry2.contract.major);
-    if (map.has(registrationKey)) {
+    const registrationKey2 = key(entry2.contract.id, entry2.contract.major);
+    if (map.has(registrationKey2)) {
       throw new ModkitError({
         code: "x3.sdk/duplicate-contribution-contract",
-        message: `duplicate contribution contract registration: ${registrationKey}`,
+        message: `duplicate contribution contract registration: ${registrationKey2}`,
         context: { contract: entry2.contract.id, major: entry2.contract.major }
       });
     }
-    map.set(registrationKey, entry2);
+    map.set(registrationKey2, entry2);
   }
-  const list = Object.freeze([...map.values()].sort((left, right) => compareUtf8(left.contract.id, right.contract.id) || left.contract.major - right.contract.major));
-  const validationRegistry = createSpecSchemaRegistry(list.map((entry2) => ({
-    contract: entry2.contract.id,
-    major: entry2.contract.major,
-    schema: entry2.schema,
-    ...entry2.validator === void 0 ? {} : { validator: entry2.validator },
-    validateSemantics: entry2.validateSemantics,
-    registration: entry2.mode === "executable" ? {
-      mode: "executable",
-      project: entry2.project,
-      moduleAbi: entry2.moduleAbi,
-      conformanceProfile: entry2.conformanceProfile
-    } : {
-      mode: "data-only",
-      project: entry2.project,
-      conformanceProfile: entry2.conformanceProfile
-    }
-  })));
+  const list = Object.freeze(
+    [...map.values()].sort(
+      (left, right) => compareUtf8(left.contract.id, right.contract.id) || left.contract.major - right.contract.major
+    )
+  );
+  const validationRegistry = createSpecSchemaRegistry(
+    list.map((entry2) => ({
+      contract: entry2.contract.id,
+      major: entry2.contract.major,
+      schema: entry2.schema,
+      ...entry2.validator === void 0 ? {} : { validator: entry2.validator },
+      validateSemantics: entry2.validateSemantics,
+      registration: entry2.mode === "executable" ? {
+        mode: "executable",
+        project: entry2.project,
+        moduleAbi: entry2.moduleAbi,
+        conformanceProfile: entry2.conformanceProfile
+      } : {
+        mode: "data-only",
+        project: entry2.project,
+        conformanceProfile: entry2.conformanceProfile
+      }
+    }))
+  );
   return {
     get: (contract, major) => map.get(key(contract, major)),
     list: () => list,
@@ -41776,27 +42052,19 @@ var A1_SPEC_SCHEMA_ENTRIES = [
     }
   }
 ];
-
-// packages/sdk/dist/manifest/patterns.js
 function normalize(path) {
   return path.startsWith("./") ? path.slice(2) : path;
 }
 function validateContributionPattern(pattern) {
   const diagnostics = [];
   const bad = (message) => diagnostics.push(diagnostic("error", "x3.sdk/invalid-contribution-pattern", message, [pattern]));
-  if (pattern.trim().length === 0)
-    bad("empty pattern");
-  if (/^([/\\]|[A-Za-z]:)/.test(pattern))
-    bad("absolute paths are forbidden");
-  if (pattern.includes("\\"))
-    bad("use forward slashes");
-  if (pattern.split("/").includes(".."))
-    bad("`..` segments are forbidden");
-  if (pattern.includes("**"))
-    bad("recursive `**` is forbidden");
+  if (pattern.trim().length === 0) bad("empty pattern");
+  if (/^([/\\]|[A-Za-z]:)/.test(pattern)) bad("absolute paths are forbidden");
+  if (pattern.includes("\\")) bad("use forward slashes");
+  if (pattern.split("/").includes("..")) bad("`..` segments are forbidden");
+  if (pattern.includes("**")) bad("recursive `**` is forbidden");
   const stars = pattern.split("*").length - 1;
-  if (stars > 1)
-    bad("at most one shallow `*` is allowed");
+  if (stars > 1) bad("at most one shallow `*` is allowed");
   return diagnostics;
 }
 function toRegExp(pattern) {
@@ -41805,37 +42073,54 @@ function toRegExp(pattern) {
 }
 function expandContributionManifests(patterns, files) {
   const diagnostics = [];
-  for (const pattern of patterns)
-    diagnostics.push(...validateContributionPattern(pattern));
-  if (diagnostics.length > 0)
-    return { entries: [], diagnostics };
+  for (const pattern of patterns) diagnostics.push(...validateContributionPattern(pattern));
+  if (diagnostics.length > 0) return { entries: [], diagnostics };
   const normalizedFiles = files.map(normalize);
   const regexes = patterns.map(toRegExp);
   const entries = [];
   for (const file of normalizedFiles) {
     const matched = [];
     for (let i = 0; i < patterns.length; i += 1) {
-      if (regexes[i].test(file))
-        matched.push(patterns[i]);
+      if (regexes[i].test(file)) matched.push(patterns[i]);
     }
     if (matched.length > 1) {
-      diagnostics.push(diagnostic("error", "x3.sdk/duplicate-pattern-match", `\xAB${file}\xBB matches ${matched.length} declarations`, [file], { patterns: matched }));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-pattern-match",
+          `\xAB${file}\xBB matches ${matched.length} declarations`,
+          [file],
+          { patterns: matched }
+        )
+      );
     } else if (matched.length === 1) {
       entries.push({ pattern: matched[0], path: file });
     } else if (file.endsWith("/contribution.manifest.json")) {
-      diagnostics.push(diagnostic("error", "x3.sdk/orphan-contribution-manifest", `\xAB${file}\xBB is not covered by any contributionManifests declaration`, [file]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/orphan-contribution-manifest",
+          `\xAB${file}\xBB is not covered by any contributionManifests declaration`,
+          [file]
+        )
+      );
     }
   }
   for (const pattern of patterns) {
     if (!entries.some((entry2) => entry2.pattern === pattern)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/pattern-without-matches", `\xAB${pattern}\xBB matched no files (optional groups do not exist in v1)`, [pattern]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/pattern-without-matches",
+          `\xAB${pattern}\xBB matched no files (optional groups do not exist in v1)`,
+          [pattern]
+        )
+      );
     }
   }
   entries.sort((a, b) => compareUtf8(a.path, b.path));
   return { entries, diagnostics };
 }
-
-// packages/sdk/dist/manifest/normalize.js
 function isRecord(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
 }
@@ -41845,17 +42130,28 @@ function patternDiagnostics(manifest) {
 function rangeDiagnostics(manifest) {
   const out = [];
   manifest.dependsOn?.forEach((requirement, index) => {
-    if (requirement.range === void 0)
-      return;
+    if (requirement.range === void 0) return;
     if (parseVersionRange(requirement.range) === void 0) {
-      out.push(diagnostic("error", "x3.sdk/invalid-version-range", `\xAB${requirement.range}\xBB is not a range this resolver can evaluate (MK3/23 \xA74 subset)`, ["dependsOn", index, "range"]));
+      out.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-version-range",
+          `\xAB${requirement.range}\xBB is not a range this resolver can evaluate (MK3/23 \xA74 subset)`,
+          ["dependsOn", index, "range"]
+        )
+      );
     }
   });
   return out;
 }
 function exactVersionDiagnostics(manifest) {
   return parseSemver(manifest.version) === void 0 ? [
-    diagnostic("error", "x3.sdk/invalid-extension-version", "extension version must be an exactly evaluable SemVer with safe numeric components", ["version"])
+    diagnostic(
+      "error",
+      "x3.sdk/invalid-extension-version",
+      "extension version must be an exactly evaluable SemVer with safe numeric components",
+      ["version"]
+    )
   ] : [];
 }
 async function normalizeExtensionManifest(input) {
@@ -41879,7 +42175,11 @@ async function normalizeExtensionManifest(input) {
   } catch (error) {
     return {
       diagnostics: [
-        diagnostic("error", "x3.sdk/non-json-authored-container", `authored container must be inert JSON data: ${error instanceof Error ? error.message : String(error)}`)
+        diagnostic(
+          "error",
+          "x3.sdk/non-json-authored-container",
+          `authored container must be inert JSON data: ${error instanceof Error ? error.message : String(error)}`
+        )
       ]
     };
   }
@@ -41890,21 +42190,28 @@ async function normalizeExtensionManifest(input) {
   if (hasBlock && hasStandalone) {
     return {
       diagnostics: [
-        diagnostic("error", "x3.sdk/two-authored-containers", "both package.json#modkit and modkit.extension.json exist \u2014 exactly one authored container per artifact (packaging error)")
+        diagnostic(
+          "error",
+          "x3.sdk/two-authored-containers",
+          "both package.json#modkit and modkit.extension.json exist \u2014 exactly one authored container per artifact (packaging error)"
+        )
       ]
     };
   }
   if (!hasBlock && !hasStandalone) {
     return {
       diagnostics: [
-        diagnostic("error", "x3.sdk/no-authored-container", "neither package.json#modkit nor modkit.extension.json found")
+        diagnostic(
+          "error",
+          "x3.sdk/no-authored-container",
+          "neither package.json#modkit nor modkit.extension.json found"
+        )
       ]
     };
   }
   if (hasStandalone) {
     const diagnostics2 = await validateWithSchema(extensionManifestSchema, standaloneInput);
-    if (hasErrors(diagnostics2))
-      return { container: "standalone", diagnostics: diagnostics2 };
+    if (hasErrors(diagnostics2)) return { container: "standalone", diagnostics: diagnostics2 };
     const manifest2 = standaloneInput;
     const all2 = [
       ...diagnostics2,
@@ -41918,20 +42225,40 @@ async function normalizeExtensionManifest(input) {
   const blockRecord = block;
   for (const field of ["version", "license"]) {
     if (field in blockRecord) {
-      diagnostics.push(diagnostic("error", "x3.sdk/npm-field-duplicated-in-block", `\xAB${field}\xBB belongs to the top-level package.json only (Q76 packaging error)`, ["modkit", field]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/npm-field-duplicated-in-block",
+          `\xAB${field}\xBB belongs to the top-level package.json only (Q76 packaging error)`,
+          ["modkit", field]
+        )
+      );
     }
   }
   diagnostics.push(...await validateWithSchema(modkitBlockSchema, blockRecord));
   const version = packageJson["version"];
   if (typeof version !== "string" || parseSemver(version) === void 0) {
-    diagnostics.push(diagnostic("error", "x3.sdk/invalid-npm-version", "package.json must carry a valid SemVer `version` (inherited into the normalized manifest)", ["version"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-npm-version",
+        "package.json must carry a valid SemVer `version` (inherited into the normalized manifest)",
+        ["version"]
+      )
+    );
   }
   const license = packageJson["license"];
   if (typeof license !== "string" || license.length === 0) {
-    diagnostics.push(diagnostic("error", "x3.sdk/invalid-npm-license", "package.json must carry a non-empty `license` (inherited into the normalized manifest)", ["license"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-npm-license",
+        "package.json must carry a non-empty `license` (inherited into the normalized manifest)",
+        ["license"]
+      )
+    );
   }
-  if (hasErrors(diagnostics))
-    return { container: "package-json", diagnostics };
+  if (hasErrors(diagnostics)) return { container: "package-json", diagnostics };
   const manifest = snapshotJsonWireObject({
     schemaVersion: 1,
     publisher: blockRecord["publisher"],
@@ -41952,38 +42279,28 @@ async function normalizeExtensionManifest(input) {
   ];
   return hasErrors(all) ? { container: "package-json", diagnostics: all } : { container: "package-json", manifest, diagnostics: all };
 }
-
-// packages/sdk/dist/security/grant.js
 function grantValidity(grant, now = Date.now()) {
-  if (grant.expiresAt === void 0)
-    return { state: "valid" };
+  if (grant.expiresAt === void 0) return { state: "valid" };
   const parsed = Date.parse(grant.expiresAt);
-  if (Number.isNaN(parsed))
-    return { state: "malformed", value: grant.expiresAt };
+  if (Number.isNaN(parsed)) return { state: "malformed", value: grant.expiresAt };
   return parsed > now ? { state: "valid" } : { state: "expired", at: grant.expiresAt };
 }
 function intersectClasses(a, b) {
   return uniqueSortedUtf8(a.filter((cls) => b.includes(cls)));
 }
 function intersectStrings(a, b) {
-  if (a === void 0)
-    return b === void 0 ? void 0 : [...b];
-  if (b === void 0)
-    return [...a];
+  if (a === void 0) return b === void 0 ? void 0 : [...b];
+  if (b === void 0) return [...a];
   return uniqueSortedUtf8(a.filter((item) => b.includes(item)));
 }
 function narrowPaths(parent, requestedRoots) {
-  if (parent === void 0)
-    return void 0;
-  if (requestedRoots === void 0)
-    return [...parent];
+  if (parent === void 0) return void 0;
+  if (requestedRoots === void 0) return [...parent];
   return parent.filter((scope) => requestedRoots.includes(scope.root));
 }
 function narrowNetwork(parent, requestedOrigins) {
-  if (parent === void 0)
-    return void 0;
-  if (requestedOrigins === void 0)
-    return [...parent];
+  if (parent === void 0) return void 0;
+  if (requestedOrigins === void 0) return [...parent];
   return parent.map((scope) => ({
     ...scope,
     origins: scope.origins.filter((origin) => requestedOrigins.includes(origin))
@@ -42004,10 +42321,11 @@ function narrowGrant(parent, request) {
   }
   if (request.operation !== void 0 && policy?.operationClasses !== void 0) {
     const ceiling = policy.operationClasses[request.operation];
-    if (ceiling !== void 0)
-      allowed = intersectClasses(allowed, ceiling);
+    if (ceiling !== void 0) allowed = intersectClasses(allowed, ceiling);
   }
-  const missing = uniqueSortedUtf8(request.requestedClasses.filter((cls) => !allowed.includes(cls)));
+  const missing = uniqueSortedUtf8(
+    request.requestedClasses.filter((cls) => !allowed.includes(cls))
+  );
   const sourceScope = intersectStrings(parent.sourceScope, request.requestedSourceRoots);
   const filesystem = narrowPaths(parent.filesystem, request.requestedSourceRoots);
   const network = narrowNetwork(parent.network, request.requestedOrigins);
@@ -42024,8 +42342,6 @@ function narrowGrant(parent, request) {
   };
   return { child, missing };
 }
-
-// packages/sdk/dist/asset-capabilities/data-sources.js
 function dataSourceRefFromWire(ref) {
   if (!isQualifiedId(ref.contract) || !Number.isSafeInteger(ref.major) || ref.major < 0) {
     throw new TypeError(`invalid data-source reference: ${ref.contract}@${ref.major}`);
@@ -42037,12 +42353,12 @@ function dataSourceRefFromWire(ref) {
     return Object.freeze({ ...ref });
   }
   if (!STANDARD_DATA_SOURCE_CONTRACTS.includes(ref.contract) || ref.major !== 1) {
-    throw new TypeError(`unknown data-source reference must be explicitly opaque: ${ref.contract}@${ref.major}`);
+    throw new TypeError(
+      `unknown data-source reference must be explicitly opaque: ${ref.contract}@${ref.major}`
+    );
   }
   return Object.freeze({ ...ref });
 }
-
-// packages/sdk/dist/asset-capabilities/data-source-surfaces.js
 var ENCODED_MEDIA_SURFACE_ID = "common.view/encoded-media";
 var ENCODED_MEDIA = Object.freeze({
   contract: contractId(ENCODED_MEDIA_SURFACE_ID),
@@ -42171,8 +42487,6 @@ var AUXILIARY_DATA_SOURCE_SURFACES = deepFreeze({
   [ENCODED_MEDIA_SURFACE_ID]: encodedMediaSurface
 });
 var ENCODED_MEDIA_SURFACE_CONTRACT = contractId(ENCODED_MEDIA_SURFACE_ID);
-
-// packages/sdk/dist/asset-capabilities/validate-descriptor.js
 function normalizeSourceSpan(span) {
   if (typeof span.byteOffset === "string" && typeof span.byteLength === "string") {
     return Object.freeze({
@@ -42222,10 +42536,14 @@ function normalizeCompanion(item) {
   if (item.state === "ambiguous") {
     return Object.freeze({
       ...item,
-      candidates: Object.freeze(item.candidates.map((candidate) => Object.freeze({
-        source: freezeSource(candidate.source),
-        revision: revisionId(candidate.revision)
-      }))),
+      candidates: Object.freeze(
+        item.candidates.map(
+          (candidate) => Object.freeze({
+            source: freezeSource(candidate.source),
+            revision: revisionId(candidate.revision)
+          })
+        )
+      ),
       diagnosticIds: Object.freeze([...item.diagnosticIds])
     });
   }
@@ -42256,7 +42574,11 @@ function normalizeOrigin(origin) {
     case "derived":
       return Object.freeze({
         kind: "derived",
-        inputs: Object.freeze(origin.inputs.map((input) => Object.freeze({ ...input, revision: revisionId(input.revision) }))),
+        inputs: Object.freeze(
+          origin.inputs.map(
+            (input) => Object.freeze({ ...input, revision: revisionId(input.revision) })
+          )
+        ),
         ...origin.recipe === void 0 ? {} : {
           recipe: Object.freeze({
             ...origin.recipe,
@@ -42283,13 +42605,18 @@ async function validateSubjectDescriptorV2(value2) {
   } catch (error) {
     return {
       diagnostics: [
-        diagnostic("error", "x3.sdk/non-json-subject-descriptor", "subject descriptor must be inert JSON data", [], { error: error instanceof Error ? error.message : String(error) })
+        diagnostic(
+          "error",
+          "x3.sdk/non-json-subject-descriptor",
+          "subject descriptor must be inert JSON data",
+          [],
+          { error: error instanceof Error ? error.message : String(error) }
+        )
       ]
     };
   }
   const schemaDiagnostics2 = await validateWithSchema(subjectDescriptorV2Schema, snapshot);
-  if (hasErrors(schemaDiagnostics2))
-    return { diagnostics: schemaDiagnostics2 };
+  if (hasErrors(schemaDiagnostics2)) return { diagnostics: schemaDiagnostics2 };
   const wire = snapshot;
   const semanticDiagnostics = [];
   const validateSubjectUri = (uri, path) => {
@@ -42298,61 +42625,131 @@ async function validateSubjectDescriptorV2(value2) {
         throw new TypeError("subject reference is not in canonical form");
       }
     } catch (error) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-subject-reference", `subject reference ${uri} is not a canonical restorable identity`, path, { error: error instanceof Error ? error.message : String(error) }));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-subject-reference",
+          `subject reference ${uri} is not a canonical restorable identity`,
+          path,
+          { error: error instanceof Error ? error.message : String(error) }
+        )
+      );
     }
   };
   validateSubjectUri(wire.subjectUri, ["subjectUri"]);
   if (wire.origin.kind === "derived") {
-    wire.origin.inputs.forEach((input, index) => validateSubjectUri(input.subjectUri, ["origin", "inputs", index, "subjectUri"]));
+    wire.origin.inputs.forEach(
+      (input, index) => validateSubjectUri(input.subjectUri, ["origin", "inputs", index, "subjectUri"])
+    );
   }
   const validateDiagnosticCode = (item, path) => {
     if (!isQualifiedId(item.code)) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-persistent-diagnostic-code", `persistent diagnostic code ${item.code} is not a qualified id`, [...path, "code"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-persistent-diagnostic-code",
+          `persistent diagnostic code ${item.code} is not a qualified id`,
+          [...path, "code"]
+        )
+      );
     }
   };
   wire.diagnostics.forEach((item, index) => validateDiagnosticCode(item, ["diagnostics", index]));
   if (wire.interpretation === "none") {
-    wire.candidates.forEach((candidate, candidateIndex) => candidate.diagnostics?.forEach((item, diagnosticIndex) => validateDiagnosticCode(item, [
-      "candidates",
-      candidateIndex,
-      "diagnostics",
-      diagnosticIndex
-    ])));
+    wire.candidates.forEach(
+      (candidate, candidateIndex) => candidate.diagnostics?.forEach(
+        (item, diagnosticIndex) => validateDiagnosticCode(item, [
+          "candidates",
+          candidateIndex,
+          "diagnostics",
+          diagnosticIndex
+        ])
+      )
+    );
   }
   if (wire.interpretation === "codec" && parseSemver(wire.identity.codecVersion) === void 0) {
-    semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-codec-version", `codec version ${wire.identity.codecVersion} cannot be evaluated safely`, ["identity", "codecVersion"]));
+    semanticDiagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-codec-version",
+        `codec version ${wire.identity.codecVersion} cannot be evaluated safely`,
+        ["identity", "codecVersion"]
+      )
+    );
   }
   const knownDiagnostics = /* @__PURE__ */ new Set();
   wire.diagnostics.forEach((item, index) => {
     if (knownDiagnostics.has(item.id)) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-descriptor-diagnostic", `diagnostic id ${item.id} is declared more than once`, ["diagnostics", index, "id"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-descriptor-diagnostic",
+          `diagnostic id ${item.id} is declared more than once`,
+          ["diagnostics", index, "id"]
+        )
+      );
     }
     knownDiagnostics.add(item.id);
   });
   const traitIds = /* @__PURE__ */ new Set();
   wire.traits.forEach((trait, index) => {
     if (traitIds.has(trait.id)) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-descriptor-trait", `trait ${trait.id} is declared more than once`, ["traits", index, "id"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-descriptor-trait",
+          `trait ${trait.id} is declared more than once`,
+          ["traits", index, "id"]
+        )
+      );
     }
     traitIds.add(trait.id);
     if (isStandardTraitId(trait.id)) {
       if (trait.definitionVersion !== void 0) {
-        semanticDiagnostics.push(diagnostic("error", "x3.sdk/standard-trait-versioned", `standard trait ${trait.id} cannot bind an extension definition version`, ["traits", index, "definitionVersion"]));
+        semanticDiagnostics.push(
+          diagnostic(
+            "error",
+            "x3.sdk/standard-trait-versioned",
+            `standard trait ${trait.id} cannot bind an extension definition version`,
+            ["traits", index, "definitionVersion"]
+          )
+        );
       }
     } else {
       if (trait.definitionVersion === void 0 || parseSemver(trait.definitionVersion) === void 0) {
-        semanticDiagnostics.push(diagnostic("error", "x3.sdk/custom-trait-definition-unbound", `custom trait ${trait.id} must bind an exact installed definition version`, ["traits", index, "definitionVersion"]));
+        semanticDiagnostics.push(
+          diagnostic(
+            "error",
+            "x3.sdk/custom-trait-definition-unbound",
+            `custom trait ${trait.id} must bind an exact installed definition version`,
+            ["traits", index, "definitionVersion"]
+          )
+        );
       }
     }
     if (trait.state !== "available") {
       const diagnosticIds = /* @__PURE__ */ new Set();
       for (const id of trait.diagnosticIds) {
         if (diagnosticIds.has(id)) {
-          semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-trait-diagnostic", `trait diagnostic ${id} is referenced more than once`, ["traits", index, "diagnosticIds"]));
+          semanticDiagnostics.push(
+            diagnostic(
+              "error",
+              "x3.sdk/duplicate-trait-diagnostic",
+              `trait diagnostic ${id} is referenced more than once`,
+              ["traits", index, "diagnosticIds"]
+            )
+          );
         }
         diagnosticIds.add(id);
         if (!knownDiagnostics.has(id)) {
-          semanticDiagnostics.push(diagnostic("error", "x3.sdk/unknown-trait-diagnostic", `trait diagnostic ${id} is not present in descriptor diagnostics`, ["traits", index, "diagnosticIds"]));
+          semanticDiagnostics.push(
+            diagnostic(
+              "error",
+              "x3.sdk/unknown-trait-diagnostic",
+              `trait diagnostic ${id} is not present in descriptor diagnostics`,
+              ["traits", index, "diagnosticIds"]
+            )
+          );
         }
       }
     }
@@ -42362,29 +42759,64 @@ async function validateSubjectDescriptorV2(value2) {
   const handlerIds = /* @__PURE__ */ new Set();
   wire.operations.forEach((operation, index) => {
     if (operationIds.has(operation.id)) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-descriptor-operation", `operation ${operation.id} is declared more than once`, ["operations", index, "id"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-descriptor-operation",
+          `operation ${operation.id} is declared more than once`,
+          ["operations", index, "id"]
+        )
+      );
     }
     operationIds.add(operation.id);
     if (handlerIds.has(operation.handlerId)) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-descriptor-handler", `handler ${operation.handlerId} is bound to more than one operation`, ["operations", index, "handlerId"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-descriptor-handler",
+          `handler ${operation.handlerId} is bound to more than one operation`,
+          ["operations", index, "handlerId"]
+        )
+      );
     }
     handlerIds.add(operation.handlerId);
     try {
       operationId(operation.id, { contributionId: operationOwner });
     } catch {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-descriptor-operation", `operation ${operation.id} is not owned by ${operationOwner}`, ["operations", index, "id"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-descriptor-operation",
+          `operation ${operation.id} is not owned by ${operationOwner}`,
+          ["operations", index, "id"]
+        )
+      );
     }
   });
   if (wire.origin.kind === "bundle") {
     const bindingIds = /* @__PURE__ */ new Set();
     wire.origin.bindings.forEach((binding, index) => {
       if (bindingIds.has(binding.id)) {
-        semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-origin-binding", `origin binding id ${binding.id} is duplicated`, ["origin", "bindings", index, "id"]));
+        semanticDiagnostics.push(
+          diagnostic(
+            "error",
+            "x3.sdk/duplicate-origin-binding",
+            `origin binding id ${binding.id} is duplicated`,
+            ["origin", "bindings", index, "id"]
+          )
+        );
       }
       bindingIds.add(binding.id);
     });
     if (wire.origin.primary !== void 0 && !bindingIds.has(wire.origin.primary)) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/unknown-origin-primary", `origin primary ${wire.origin.primary} does not name a bundle binding`, ["origin", "primary"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/unknown-origin-primary",
+          `origin primary ${wire.origin.primary} does not name a bundle binding`,
+          ["origin", "primary"]
+        )
+      );
     }
   }
   if (wire.interpretation === "codec") {
@@ -42393,24 +42825,52 @@ async function validateSubjectDescriptorV2(value2) {
     const bundleBindings = wire.origin.kind === "bundle" ? new Map(wire.origin.bindings.map((binding) => [binding.id, binding])) : /* @__PURE__ */ new Map();
     (wire.companions ?? []).forEach((companion, index) => {
       if (companionIds.has(companion.id)) {
-        semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-companion-state", `companion requirement ${companion.id} is declared more than once`, ["companions", index, "id"]));
+        semanticDiagnostics.push(
+          diagnostic(
+            "error",
+            "x3.sdk/duplicate-companion-state",
+            `companion requirement ${companion.id} is declared more than once`,
+            ["companions", index, "id"]
+          )
+        );
       }
       companionIds.add(companion.id);
       if (companion.state === "resolved") {
         if ((companion.cardinality === "one" || companion.cardinality === "zero-or-one") && companion.bindingIds.length !== 1) {
-          semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-companion-cardinality", `resolved companion ${companion.id} must name exactly one binding for ${companion.cardinality}`, ["companions", index, "bindingIds"]));
+          semanticDiagnostics.push(
+            diagnostic(
+              "error",
+              "x3.sdk/invalid-companion-cardinality",
+              `resolved companion ${companion.id} must name exactly one binding for ${companion.cardinality}`,
+              ["companions", index, "bindingIds"]
+            )
+          );
         }
         companion.bindingIds.forEach((bindingId2, bindingIndex) => {
           const binding = bundleBindings.get(bindingId2);
           if (binding === void 0 || binding.ownership !== "companion" || binding.role !== companion.role || binding.required !== companion.required || companionBindingIds.has(bindingId2)) {
-            semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-companion-binding", `resolved companion ${companion.id} does not name a distinct matching companion binding`, ["companions", index, "bindingIds", bindingIndex]));
+            semanticDiagnostics.push(
+              diagnostic(
+                "error",
+                "x3.sdk/invalid-companion-binding",
+                `resolved companion ${companion.id} does not name a distinct matching companion binding`,
+                ["companions", index, "bindingIds", bindingIndex]
+              )
+            );
           }
           companionBindingIds.add(bindingId2);
         });
       } else {
         for (const id of companion.diagnosticIds ?? []) {
           if (!knownDiagnostics.has(id)) {
-            semanticDiagnostics.push(diagnostic("error", "x3.sdk/unknown-companion-diagnostic", `companion diagnostic ${id} is not present in descriptor diagnostics`, ["companions", index, "diagnosticIds"]));
+            semanticDiagnostics.push(
+              diagnostic(
+                "error",
+                "x3.sdk/unknown-companion-diagnostic",
+                `companion diagnostic ${id} is not present in descriptor diagnostics`,
+                ["companions", index, "diagnosticIds"]
+              )
+            );
           }
         }
         if (companion.state === "ambiguous") {
@@ -42418,7 +42878,14 @@ async function validateSubjectDescriptorV2(value2) {
           companion.candidates.forEach((candidate, candidateIndex) => {
             const key2 = canonicalJsonStringify(candidate);
             if (candidates.has(key2)) {
-              semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-companion-candidate", `ambiguous companion ${companion.id} repeats one candidate`, ["companions", index, "candidates", candidateIndex]));
+              semanticDiagnostics.push(
+                diagnostic(
+                  "error",
+                  "x3.sdk/duplicate-companion-candidate",
+                  `ambiguous companion ${companion.id} repeats one candidate`,
+                  ["companions", index, "candidates", candidateIndex]
+                )
+              );
             }
             candidates.add(key2);
           });
@@ -42428,7 +42895,14 @@ async function validateSubjectDescriptorV2(value2) {
     if (wire.origin.kind === "bundle") {
       wire.origin.bindings.forEach((binding, index) => {
         if (binding.ownership === "companion" && !companionBindingIds.has(binding.id)) {
-          semanticDiagnostics.push(diagnostic("error", "x3.sdk/untracked-companion-binding", `companion binding ${binding.id} has no resolved requirement state`, ["origin", "bindings", index, "id"]));
+          semanticDiagnostics.push(
+            diagnostic(
+              "error",
+              "x3.sdk/untracked-companion-binding",
+              `companion binding ${binding.id} has no resolved requirement state`,
+              ["origin", "bindings", index, "id"]
+            )
+          );
         }
       });
     }
@@ -42437,7 +42911,14 @@ async function validateSubjectDescriptorV2(value2) {
     const inputIds = /* @__PURE__ */ new Set();
     wire.origin.inputs.forEach((input, index) => {
       if (inputIds.has(input.bindingId)) {
-        semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-derived-input", `derived input binding ${input.bindingId} is duplicated`, ["origin", "inputs", index, "bindingId"]));
+        semanticDiagnostics.push(
+          diagnostic(
+            "error",
+            "x3.sdk/duplicate-derived-input",
+            `derived input binding ${input.bindingId} is duplicated`,
+            ["origin", "inputs", index, "bindingId"]
+          )
+        );
       }
       inputIds.add(input.bindingId);
     });
@@ -42452,7 +42933,14 @@ async function validateSubjectDescriptorV2(value2) {
         contributionId: wire.origin.recipe.contributionId
       });
     } catch {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-derivation-operation", `derivation recipe ${wire.origin.recipe.extensionId}@${wire.origin.recipe.extensionVersion}#${wire.origin.recipe.contributionId} cannot own ${wire.origin.recipe.operation}`, ["origin", "recipe"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-derivation-operation",
+          `derivation recipe ${wire.origin.recipe.extensionId}@${wire.origin.recipe.extensionVersion}#${wire.origin.recipe.contributionId} cannot own ${wire.origin.recipe.operation}`,
+          ["origin", "recipe"]
+        )
+      );
     }
   }
   if (hasErrors(semanticDiagnostics)) {
@@ -42468,16 +42956,24 @@ async function validateSubjectDescriptorV2(value2) {
     }),
     diagnostics: Object.freeze(wire.diagnostics.map(normalizeDiagnostic)),
     dataSources: Object.freeze(wire.dataSources.map(dataSourceRefFromWire)),
-    traits: Object.freeze(wire.traits.map((item) => Object.freeze({ ...item, id: traitId(item.id) }))),
-    operations: Object.freeze(wire.operations.map((item) => Object.freeze({
-      ...item,
-      id: operationId(item.id, { contributionId: operationOwner })
-    })))
+    traits: Object.freeze(
+      wire.traits.map((item) => Object.freeze({ ...item, id: traitId(item.id) }))
+    ),
+    operations: Object.freeze(
+      wire.operations.map(
+        (item) => Object.freeze({
+          ...item,
+          id: operationId(item.id, { contributionId: operationOwner })
+        })
+      )
+    )
   };
-  const descriptor = Object.freeze(wire.interpretation === "none" ? { ...base, candidates: Object.freeze(wire.candidates.map(normalizeDetection)) } : {
-    ...base,
-    ...wire.companions === void 0 ? {} : { companions: Object.freeze(wire.companions.map(normalizeCompanion)) }
-  });
+  const descriptor = Object.freeze(
+    wire.interpretation === "none" ? { ...base, candidates: Object.freeze(wire.candidates.map(normalizeDetection)) } : {
+      ...base,
+      ...wire.companions === void 0 ? {} : { companions: Object.freeze(wire.companions.map(normalizeCompanion)) }
+    }
+  );
   return { descriptor, diagnostics: [...schemaDiagnostics2, ...semanticDiagnostics] };
 }
 
@@ -46094,17 +46590,16 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
   schemaVersion: 1
 });
 
-// packages/host/dist/inventory.js
-var privateRecords = /* @__PURE__ */ new WeakMap();
+// packages/host/dist/index.js
+var INVENTORY_RECORD = /* @__PURE__ */ Symbol.for("x3.host/inventory-record");
 function deepFreezeJson(value2) {
-  if (typeof value2 !== "object" || value2 === null || Object.isFrozen(value2))
-    return value2;
-  for (const child of Object.values(value2))
-    deepFreezeJson(child);
+  if (typeof value2 !== "object" || value2 === null || Object.isFrozen(value2)) return value2;
+  for (const child of Object.values(value2)) deepFreezeJson(child);
   return Object.freeze(value2);
 }
 function inventoryRecordFor(contribution) {
-  return privateRecords.get(contribution);
+  const record = contribution[INVENTORY_RECORD];
+  return record !== void 0 && Object.isFrozen(record) && record.publicRecord === contribution.record ? record : void 0;
 }
 function coordinate(manifest) {
   return `${manifest.publisher}/${manifest.id}`;
@@ -46114,8 +46609,7 @@ var RESTRICTED_LINKED_EXECUTION = Object.freeze({
   allowTrustedInProcess: false
 });
 function snapshotExecutionPolicy(value2) {
-  if (value2 === void 0)
-    return { policy: RESTRICTED_LINKED_EXECUTION, valid: true };
+  if (value2 === void 0) return { policy: RESTRICTED_LINKED_EXECUTION, valid: true };
   const origin = value2.origin;
   const allowTrustedInProcess = value2.allowTrustedInProcess;
   const allowedOrigin = origin === "bundled" || origin === "installed" || origin === "linked";
@@ -46136,24 +46630,46 @@ async function buildInventory(inputs, registry) {
   for (const input of inputs) {
     const execution = snapshotExecutionPolicy(input.execution);
     if (!execution.valid) {
-      diagnostics.push(diagnostic("error", "x3.host/invalid-extension-execution-policy", "the host loader supplied malformed extension execution provenance; activation is disabled", [input.source]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.host/invalid-extension-execution-policy",
+          "the host loader supplied malformed extension execution provenance; activation is disabled",
+          [input.source]
+        )
+      );
     }
     const normalized = await normalizeExtensionManifest(input.containers);
-    diagnostics.push(...normalized.diagnostics.map((d) => ({ ...d, path: [input.source, ...d.path ?? []] })));
-    if (!normalized.manifest || !normalized.container)
-      continue;
-    const expansion = expandContributionManifests(normalized.manifest.contributionManifests, input.files);
-    diagnostics.push(...expansion.diagnostics.map((d) => ({ ...d, path: [input.source, ...d.path ?? []] })));
+    diagnostics.push(
+      ...normalized.diagnostics.map((d) => ({ ...d, path: [input.source, ...d.path ?? []] }))
+    );
+    if (!normalized.manifest || !normalized.container) continue;
+    const expansion = expandContributionManifests(
+      normalized.manifest.contributionManifests,
+      input.files
+    );
+    diagnostics.push(
+      ...expansion.diagnostics.map((d) => ({ ...d, path: [input.source, ...d.path ?? []] }))
+    );
     const contributions = [];
     for (const entry2 of expansion.entries) {
       const document2 = input.documents.get(entry2.path);
       if (document2 === void 0) {
-        diagnostics.push(diagnostic("error", "x3.host/unreadable-contribution", `declared contribution \xAB${entry2.path}\xBB was not provided by the loader`, [input.source, entry2.path]));
+        diagnostics.push(
+          diagnostic(
+            "error",
+            "x3.host/unreadable-contribution",
+            `declared contribution \xAB${entry2.path}\xBB was not provided by the loader`,
+            [input.source, entry2.path]
+          )
+        );
         continue;
       }
       const validationRegistry = registry.validationRegistry();
       const result = await validateContributionManifest(document2, validationRegistry);
-      const ownedManifest = result.manifest === void 0 ? void 0 : deepFreezeJson(JSON.parse(canonicalJsonStringify(result.manifest)));
+      const ownedManifest = result.manifest === void 0 ? void 0 : deepFreezeJson(
+        JSON.parse(canonicalJsonStringify(result.manifest))
+      );
       const manifestDigest = input.documentDigests.get(entry2.path);
       const localDiagnostics = [...result.diagnostics];
       let inventoryEligible = result.inventoryEligible;
@@ -46162,7 +46678,14 @@ async function buildInventory(inputs, registry) {
       let record;
       if (ownedManifest !== void 0 && result.inventoryEligible) {
         if (manifestDigest === void 0 || manifestDigest.trim().length === 0) {
-          localDiagnostics.push(diagnostic("error", "x3.host/missing-manifest-digest", "the trusted loader did not attest the contribution manifest bytes", [input.source, entry2.path]));
+          localDiagnostics.push(
+            diagnostic(
+              "error",
+              "x3.host/missing-manifest-digest",
+              "the trusted loader did not attest the contribution manifest bytes",
+              [input.source, entry2.path]
+            )
+          );
           inventoryEligible = false;
           activationEligible = false;
         } else {
@@ -46178,9 +46701,10 @@ async function buildInventory(inputs, registry) {
           const registration = registry.get(ownedManifest.contract.id, ownedManifest.contract.major);
           try {
             const projected = registration?.project(ownedManifest, context);
-            if (!Array.isArray(projected))
-              throw new TypeError("projector must return an array");
-            facts = Object.freeze(projected.map((fact2, index) => validateProjectedFact(fact2, context, index)));
+            if (!Array.isArray(projected)) throw new TypeError("projector must return an array");
+            facts = Object.freeze(
+              projected.map((fact2, index) => validateProjectedFact(fact2, context, index))
+            );
             record = Object.freeze({
               inventoryRecordId: context.inventoryRecordId,
               manifestDigest,
@@ -46188,7 +46712,15 @@ async function buildInventory(inputs, registry) {
               artifactRoot: context.artifactRoot
             });
           } catch (error) {
-            localDiagnostics.push(diagnostic("error", "x3.host/inventory-projection-failed", "the host-trusted contribution projector returned malformed data or threw", [input.source, entry2.path], { error: error instanceof Error ? error.message : String(error) }));
+            localDiagnostics.push(
+              diagnostic(
+                "error",
+                "x3.host/inventory-projection-failed",
+                "the host-trusted contribution projector returned malformed data or threw",
+                [input.source, entry2.path],
+                { error: error instanceof Error ? error.message : String(error) }
+              )
+            );
             inventoryEligible = false;
             activationEligible = false;
             facts = [];
@@ -46196,7 +46728,7 @@ async function buildInventory(inputs, registry) {
           }
         }
       }
-      const contribution = Object.freeze({
+      const contribution = {
         path: entry2.path,
         ...ownedManifest === void 0 ? {} : { manifest: ownedManifest },
         specState: result.specState,
@@ -46205,9 +46737,9 @@ async function buildInventory(inputs, registry) {
         facts,
         ...record === void 0 ? {} : { record },
         diagnostics: Object.freeze(localDiagnostics)
-      });
+      };
       if (record !== void 0 && ownedManifest !== void 0) {
-        privateRecords.set(contribution, {
+        const privateRecord = Object.freeze({
           publicRecord: record,
           manifest: ownedManifest,
           verifyArtifactDigest: input.artifact.verifyArtifactDigest,
@@ -46215,8 +46747,14 @@ async function buildInventory(inputs, registry) {
           artifactRoot: new URL(input.artifact.artifactRoot.href),
           execution: execution.policy
         });
+        Object.defineProperty(contribution, INVENTORY_RECORD, {
+          value: privateRecord,
+          enumerable: false,
+          writable: false,
+          configurable: false
+        });
       }
-      contributions.push(contribution);
+      contributions.push(Object.freeze(contribution));
     }
     extensions.push({
       source: input.source,
@@ -46232,7 +46770,14 @@ async function buildInventory(inputs, registry) {
     const coord = coordinate(extension.manifest);
     const prior = seenExtensions.get(coord);
     if (prior !== void 0) {
-      diagnostics.push(diagnostic("error", "x3.host/duplicate-extension-coordinate", `extension coordinate \xAB${coord}\xBB provided by both \xAB${prior}\xBB and \xAB${extension.source}\xBB`, [extension.source]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.host/duplicate-extension-coordinate",
+          `extension coordinate \xAB${coord}\xBB provided by both \xAB${prior}\xBB and \xAB${extension.source}\xBB`,
+          [extension.source]
+        )
+      );
     } else {
       seenExtensions.set(coord, extension.source);
     }
@@ -46241,12 +46786,18 @@ async function buildInventory(inputs, registry) {
   for (const extension of extensions) {
     for (const contribution of extension.contributions) {
       const id = contribution.manifest?.id;
-      if (id === void 0)
-        continue;
+      if (id === void 0) continue;
       const where = `${coordinate(extension.manifest)}:${contribution.path}`;
       const prior = seenContributions.get(id);
       if (prior !== void 0) {
-        diagnostics.push(diagnostic("error", "x3.host/duplicate-contribution-id", `contribution id \xAB${id}\xBB declared by both \xAB${prior}\xBB and \xAB${where}\xBB`, [id]));
+        diagnostics.push(
+          diagnostic(
+            "error",
+            "x3.host/duplicate-contribution-id",
+            `contribution id \xAB${id}\xBB declared by both \xAB${prior}\xBB and \xAB${where}\xBB`,
+            [id]
+          )
+        );
       } else {
         seenContributions.set(id, where);
       }
@@ -46260,17 +46811,21 @@ function validateProjectedFact(value2, context, index) {
   if (typeof value2 !== "object" || value2 === null || !isQualifiedId(value2.contract?.id) || !Number.isSafeInteger(value2.contract?.major) || value2.contract.major < 0 || canonicalJsonStringify(value2.provenance) !== canonicalJsonStringify(context)) {
     throw new TypeError(`invalid inventory fact at index ${index}`);
   }
-  const ownedValue = deepFreezeJson(JSON.parse(canonicalJsonStringify(value2.value)));
+  const ownedValue = deepFreezeJson(
+    JSON.parse(canonicalJsonStringify(value2.value))
+  );
   return Object.freeze({
     contract: Object.freeze({ id: value2.contract.id, major: value2.contract.major }),
     value: ownedValue,
     provenance: Object.freeze({ ...context })
   });
 }
-
-// packages/host/dist/contribution-registry.js
-var PROVIDER_OFFER_INVENTORY_FACT = contractId("org.modkitx.inventory/provider-offer");
-var VIEWER_CONTRIBUTION_INVENTORY_FACT = contractId("org.modkitx.inventory/viewer-contribution");
+var PROVIDER_OFFER_INVENTORY_FACT = contractId(
+  "org.modkitx.inventory/provider-offer"
+);
+var VIEWER_CONTRIBUTION_INVENTORY_FACT = contractId(
+  "org.modkitx.inventory/viewer-contribution"
+);
 function fact(contract, value2, context) {
   return Object.freeze({
     contract: Object.freeze({ id: contract, major: 1 }),
@@ -46279,14 +46834,19 @@ function fact(contract, value2, context) {
   });
 }
 function executableFacts(manifest, context, valueForVariant, applicableVariants) {
-  return Object.freeze((manifest.runtimeVariants ?? []).filter((variant) => applicableVariants === void 0 || applicableVariants.includes(variant.variantId)).map((variant) => fact(PROVIDER_OFFER_INVENTORY_FACT, valueForVariant(variant.variantId), context)));
+  return Object.freeze(
+    (manifest.runtimeVariants ?? []).filter(
+      (variant) => applicableVariants === void 0 || applicableVariants.includes(variant.variantId)
+    ).map(
+      (variant) => fact(PROVIDER_OFFER_INVENTORY_FACT, valueForVariant(variant.variantId), context)
+    )
+  );
 }
 function codecProjector(manifest, context) {
   const spec = manifest.spec;
   return executableFacts(manifest, context, (variantId) => {
     const variant = manifest.runtimeVariants?.find((item) => item.variantId === variantId);
-    if (variant === void 0)
-      throw new TypeError(`unknown runtime variant ${variantId}`);
+    if (variant === void 0) throw new TypeError(`unknown runtime variant ${variantId}`);
     return {
       kind: "primary",
       extensionId: context.ownerExtensionId,
@@ -46312,27 +46872,31 @@ function codecProjector(manifest, context) {
 }
 function serviceProjector(manifest, context) {
   const spec = manifest.spec;
-  return executableFacts(manifest, context, (variantId) => {
-    const variant = manifest.runtimeVariants?.find((item) => item.variantId === variantId);
-    if (variant === void 0)
-      throw new TypeError(`unknown runtime variant ${variantId}`);
-    return {
-      kind: spec.replacement?.compatible === true ? "replacement" : "primary",
-      extensionId: context.ownerExtensionId,
-      extensionVersion: context.extensionVersion,
-      providerId: manifest.id,
-      runtimeVariant: variant.variantId,
-      target: variant.target,
-      requiredPermissions: variant.requestedPermissionClasses,
-      provides: spec.provides,
-      requires: spec.requires ?? [],
-      outputs: (spec.outputs ?? []).filter((declaration) => declaration.presence === "will-expose").map((declaration) => ({
-        id: declaration.id,
-        ...declaration.definitionVersion === void 0 ? {} : { definitionVersion: declaration.definitionVersion }
-      })),
-      ...spec.replacement === void 0 ? {} : { replaces: spec.replacement.target }
-    };
-  }, spec.applicableVariants);
+  return executableFacts(
+    manifest,
+    context,
+    (variantId) => {
+      const variant = manifest.runtimeVariants?.find((item) => item.variantId === variantId);
+      if (variant === void 0) throw new TypeError(`unknown runtime variant ${variantId}`);
+      return {
+        kind: spec.replacement?.compatible === true ? "replacement" : "primary",
+        extensionId: context.ownerExtensionId,
+        extensionVersion: context.extensionVersion,
+        providerId: manifest.id,
+        runtimeVariant: variant.variantId,
+        target: variant.target,
+        requiredPermissions: variant.requestedPermissionClasses,
+        provides: spec.provides,
+        requires: spec.requires ?? [],
+        outputs: (spec.outputs ?? []).filter((declaration) => declaration.presence === "will-expose").map((declaration) => ({
+          id: declaration.id,
+          ...declaration.definitionVersion === void 0 ? {} : { definitionVersion: declaration.definitionVersion }
+        })),
+        ...spec.replacement === void 0 ? {} : { replaces: spec.replacement.target }
+      };
+    },
+    spec.applicableVariants
+  );
 }
 function entry(id) {
   const found = A1_SPEC_SCHEMA_ENTRIES.find((item) => item.contract === id && item.major === 1);
@@ -46413,8 +46977,6 @@ function builtins() {
 function createHostContributionContractRegistry(additional = []) {
   return createContributionContractRegistry([...builtins(), ...additional]);
 }
-
-// packages/host/dist/offers.js
 var offerBindings = /* @__PURE__ */ new WeakMap();
 function inventoryBindingForOffer(offer) {
   return offerBindings.get(offer);
@@ -46462,22 +47024,24 @@ function parseContractOffer(value2, label) {
   });
 }
 function parseOutputs(value2) {
-  if (value2 === void 0)
-    return void 0;
-  if (!Array.isArray(value2))
-    throw new TypeError("outputs must be an array");
-  return Object.freeze(value2.map((raw, index) => {
-    const item = object(raw, `outputs[${index}]`);
-    const id = string(item.id, `outputs[${index}].id`);
-    if (!isTraitId(id))
-      throw new TypeError(`outputs[${index}].id is not a trait id`);
-    return Object.freeze({
-      id,
-      ...item.definitionVersion === void 0 ? {} : {
-        definitionVersion: string(item.definitionVersion, `outputs[${index}].definitionVersion`)
-      }
-    });
-  }));
+  if (value2 === void 0) return void 0;
+  if (!Array.isArray(value2)) throw new TypeError("outputs must be an array");
+  return Object.freeze(
+    value2.map((raw, index) => {
+      const item = object(raw, `outputs[${index}]`);
+      const id = string(item.id, `outputs[${index}].id`);
+      if (!isTraitId(id)) throw new TypeError(`outputs[${index}].id is not a trait id`);
+      return Object.freeze({
+        id,
+        ...item.definitionVersion === void 0 ? {} : {
+          definitionVersion: string(
+            item.definitionVersion,
+            `outputs[${index}].definitionVersion`
+          )
+        }
+      });
+    })
+  );
 }
 function parseTarget(value2) {
   const target = object(value2, "target");
@@ -46494,13 +47058,10 @@ function parseProviderOffer(value2) {
     throw new TypeError("provider offer kind is invalid");
   }
   const providerId = string(item.providerId, "providerId");
-  if (!isQualifiedId(providerId))
-    throw new TypeError("providerId must be qualified");
+  if (!isQualifiedId(providerId)) throw new TypeError("providerId must be qualified");
   const parseRequirementArray = (raw, label) => {
-    if (raw === void 0)
-      return void 0;
-    if (!Array.isArray(raw))
-      throw new TypeError(`${label} must be an array`);
+    if (raw === void 0) return void 0;
+    if (!Array.isArray(raw)) throw new TypeError(`${label} must be an array`);
     return Object.freeze(raw.map((entry2, index) => parseRequirement(entry2, `${label}[${index}]`)));
   };
   const operations = item.operations;
@@ -46523,11 +47084,15 @@ function parseProviderOffer(value2) {
     ...requiredPermissions === void 0 ? {} : {
       requiredPermissions
     },
-    provides: Object.freeze(provides.map((entry2, index) => parseContractOffer(entry2, `provides[${index}]`))),
+    provides: Object.freeze(
+      provides.map((entry2, index) => parseContractOffer(entry2, `provides[${index}]`))
+    ),
     ...requires === void 0 ? {} : { requires },
     ...outputs === void 0 ? {} : { outputs },
     ...operations === void 0 ? {} : {
-      operations: Object.freeze(operations.map((entry2, index) => string(entry2, `operations[${index}]`)))
+      operations: Object.freeze(
+        operations.map((entry2, index) => string(entry2, `operations[${index}]`))
+      )
     },
     ...item.replaces === void 0 ? {} : { replaces: parseRequirement(item.replaces, "replaces") }
   });
@@ -46536,11 +47101,9 @@ function offersFromInventory(inventory) {
   const catalog = [];
   for (const extension of inventory.extensions) {
     for (const contribution of extension.contributions) {
-      if (!contribution.activationEligible)
-        continue;
+      if (!contribution.activationEligible) continue;
       const privateRecord = inventoryRecordFor(contribution);
-      if (privateRecord === void 0 || contribution.record === void 0)
-        continue;
+      if (privateRecord === void 0 || contribution.record === void 0) continue;
       for (const fact2 of contribution.facts) {
         if (fact2.contract.id !== PROVIDER_OFFER_INVENTORY_FACT || fact2.contract.major !== 1) {
           continue;
@@ -46556,10 +47119,12 @@ function offersFromInventory(inventory) {
       }
     }
   }
-  return Object.freeze(catalog.sort((left, right) => compareUtf8(canonicalJsonStringify(left), canonicalJsonStringify(right))));
+  return Object.freeze(
+    catalog.sort(
+      (left, right) => compareUtf8(canonicalJsonStringify(left), canonicalJsonStringify(right))
+    )
+  );
 }
-
-// packages/host/dist/detection-selection.js
 var EVIDENCE_KINDS = Object.freeze([
   "magic",
   "structure",
@@ -46592,23 +47157,31 @@ function evidence(value2, label) {
   if (!Array.isArray(value2)) {
     return fail("x3.host/invalid-detection-selection", `${label} must be an array`);
   }
-  return Object.freeze(value2.map((raw, index) => {
-    const item = exactObject(raw, ["kind", "weight"], ["note"], `${label}[${index}]`);
-    if (!EVIDENCE_KINDS.includes(item.kind)) {
-      return fail("x3.host/invalid-detection-selection", `${label}[${index}].kind is invalid`);
-    }
-    if (typeof item.weight !== "number" || !Number.isFinite(item.weight)) {
-      return fail("x3.host/invalid-detection-selection", `${label}[${index}].weight must be finite`);
-    }
-    if (item.note !== void 0 && typeof item.note !== "string") {
-      return fail("x3.host/invalid-detection-selection", `${label}[${index}].note must be a string`);
-    }
-    return Object.freeze({
-      kind: item.kind,
-      weight: item.weight,
-      ...item.note === void 0 ? {} : { note: item.note }
-    });
-  }));
+  return Object.freeze(
+    value2.map((raw, index) => {
+      const item = exactObject(raw, ["kind", "weight"], ["note"], `${label}[${index}]`);
+      if (!EVIDENCE_KINDS.includes(item.kind)) {
+        return fail("x3.host/invalid-detection-selection", `${label}[${index}].kind is invalid`);
+      }
+      if (typeof item.weight !== "number" || !Number.isFinite(item.weight)) {
+        return fail(
+          "x3.host/invalid-detection-selection",
+          `${label}[${index}].weight must be finite`
+        );
+      }
+      if (item.note !== void 0 && typeof item.note !== "string") {
+        return fail(
+          "x3.host/invalid-detection-selection",
+          `${label}[${index}].note must be a string`
+        );
+      }
+      return Object.freeze({
+        kind: item.kind,
+        weight: item.weight,
+        ...item.note === void 0 ? {} : { note: item.note }
+      });
+    })
+  );
 }
 function normalize2(value2) {
   const root = exactObject(value2, ["schemaVersion", "sourceRevision", "selected"], [], "selection");
@@ -46616,21 +47189,29 @@ function normalize2(value2) {
     return fail("x3.host/invalid-detection-selection", "selection schemaVersion is unsupported");
   }
   const sourceRevision = revisionId(nonBlank(root.sourceRevision, "selection.sourceRevision"));
-  const selected = exactObject(root.selected, [
-    "extensionId",
-    "contributionId",
-    "variantId",
-    "offerId",
-    "artifactDigest",
-    "manifestDigest",
-    "sourceTopology",
-    "confidence",
-    "evidence"
-  ], [], "selection.selected");
+  const selected = exactObject(
+    root.selected,
+    [
+      "extensionId",
+      "contributionId",
+      "variantId",
+      "offerId",
+      "artifactDigest",
+      "manifestDigest",
+      "sourceTopology",
+      "confidence",
+      "evidence"
+    ],
+    [],
+    "selection.selected"
+  );
   const extensionId = nonBlank(selected.extensionId, "selection.selected.extensionId");
   const contributionText = nonBlank(selected.contributionId, "selection.selected.contributionId");
   if (!isQualifiedId(extensionId) || !isQualifiedId(contributionText)) {
-    return fail("x3.host/invalid-detection-selection", "selection extension and contribution coordinates must be qualified");
+    return fail(
+      "x3.host/invalid-detection-selection",
+      "selection extension and contribution coordinates must be qualified"
+    );
   }
   const topology = selected.sourceTopology;
   if (!["single", "bundle", "namespace", "derived"].includes(String(topology))) {
@@ -46658,7 +47239,10 @@ function normalize2(value2) {
 }
 function buildCodecDetectionSelection(input) {
   if (input.detection.codecId !== input.contributionId) {
-    return fail("x3.host/detection-selection-mismatch", "detection codecId does not match the selected contribution");
+    return fail(
+      "x3.host/detection-selection-mismatch",
+      "detection codecId does not match the selected contribution"
+    );
   }
   return normalize2({
     schemaVersion: 1,
@@ -46679,8 +47263,6 @@ function buildCodecDetectionSelection(input) {
 function serializeCodecDetectionSelection(selection) {
   return canonicalJsonStringify(normalize2(selection));
 }
-
-// packages/host/dist/resolution/resolver.js
 var RESOLVER_VERSION = 1;
 var resolverProducts = /* @__PURE__ */ new WeakMap();
 function requestProvenanceKey(request) {
@@ -46713,8 +47295,7 @@ function isSubset(needed, have) {
   return (needed ?? []).every((item) => have.includes(item));
 }
 function traitOfferMatches(requirement, offer) {
-  if (requirement.id !== offer.id)
-    return false;
+  if (requirement.id !== offer.id) return false;
   if (isStandardTraitId(requirement.id)) {
     return requirement.definitionRange === void 0 && offer.definitionVersion === void 0;
   }
@@ -46725,7 +47306,9 @@ function traitOfferMatches(requirement, offer) {
   return range !== void 0 && version !== void 0 && satisfiesRange(version, range);
 }
 function hasTraitOutputs(needed, offered) {
-  return (needed ?? []).every((requirement) => offered.some((offer) => traitOfferMatches(requirement, offer)));
+  return (needed ?? []).every(
+    (requirement) => offered.some((offer) => traitOfferMatches(requirement, offer))
+  );
 }
 function uniqueTraitRequirements(values) {
   const unique = /* @__PURE__ */ new Map();
@@ -46740,7 +47323,9 @@ function uniqueTraitRequirements(values) {
   return [...unique.values()];
 }
 function traitRequirementsAreValid(values) {
-  return (values ?? []).every((value2) => isStandardTraitId(value2.id) ? value2.definitionRange === void 0 : value2.definitionRange !== void 0 && parseVersionRange(value2.definitionRange) !== void 0);
+  return (values ?? []).every(
+    (value2) => isStandardTraitId(value2.id) ? value2.definitionRange === void 0 : value2.definitionRange !== void 0 && parseVersionRange(value2.definitionRange) !== void 0
+  );
 }
 function resolveProvider(request, offers, preparation) {
   if (!traitRequirementsAreValid(request.requiredOutputs) || !traitRequirementsAreValid(request.preferredOutputs)) {
@@ -46748,8 +47333,8 @@ function resolveProvider(request, offers, preparation) {
   }
   const requiredOutputs = uniqueTraitRequirements(request.requiredOutputs);
   const preferredOutputs = uniqueTraitRequirements(request.preferredOutputs);
-  const rejected = [];
-  const reject = (offer, reason, detail, offerId) => rejected.push({
+  const rejected2 = [];
+  const reject = (offer, reason, detail, offerId) => rejected2.push({
     providerId: offer.providerId,
     runtimeVariant: offer.runtimeVariant,
     ...offerId === void 0 ? {} : { offerId },
@@ -46766,11 +47351,19 @@ function resolveProvider(request, offers, preparation) {
       return version !== void 0 && version.major === p.major && (preparation?.accepts?.(offer, p) ?? true);
     });
     if (contractMatches.length === 0) {
-      reject(offer, "no-offer", `does not provide ${request.contract.contract}@${request.contract.major}`);
+      reject(
+        offer,
+        "no-offer",
+        `does not provide ${request.contract.contract}@${request.contract.major}`
+      );
       continue;
     }
     if (offer.kind !== "primary" && offer.kind !== "replacement") {
-      reject(offer, "unsupported-kind", `resolver v1 executes only primary/replacement, got ${offer.kind}`);
+      reject(
+        offer,
+        "unsupported-kind",
+        `resolver v1 executes only primary/replacement, got ${offer.kind}`
+      );
       continue;
     }
     for (const match of contractMatches) {
@@ -46783,23 +47376,34 @@ function resolveProvider(request, offers, preparation) {
     }
   }
   if (candidates.length === 0) {
-    return remember({ state: "unresolved", reason: "no-offer", rejected: sortRejected(rejected) }, request);
+    return remember(
+      { state: "unresolved", reason: "no-offer", rejected: sortRejected(rejected2) },
+      request
+    );
   }
   const range = parseVersionRange(request.contract.range ?? "*");
   const versionOk = candidates.filter((candidate) => {
     const version = parseSemver(candidate.contractOffer.version);
     if (version === void 0 || range === void 0 || !satisfiesRange(version, range)) {
-      reject(candidate.offer, "version-incompatible", `${candidate.contractOffer.version} \u2209 ${request.contract.range ?? "*"}`, candidate.contractOffer.offerId);
+      reject(
+        candidate.offer,
+        "version-incompatible",
+        `${candidate.contractOffer.version} \u2209 ${request.contract.range ?? "*"}`,
+        candidate.contractOffer.offerId
+      );
       return false;
     }
     return true;
   });
   if (versionOk.length === 0) {
-    return remember({
-      state: "unresolved",
-      reason: "version-incompatible",
-      rejected: sortRejected(rejected)
-    }, request);
+    return remember(
+      {
+        state: "unresolved",
+        reason: "version-incompatible",
+        rejected: sortRejected(rejected2)
+      },
+      request
+    );
   }
   const target = request.target;
   let sawToolReject = false;
@@ -46824,12 +47428,15 @@ function resolveProvider(request, offers, preparation) {
     return true;
   });
   if (targetOk.length === 0) {
-    const onlyToolRejects = sawToolReject && !rejected.some((r) => r.reason === "target-incompatible");
-    return remember({
-      state: "unresolved",
-      reason: onlyToolRejects ? "external-tool-required" : "target-incompatible",
-      rejected: sortRejected(rejected)
-    }, request);
+    const onlyToolRejects = sawToolReject && !rejected2.some((r) => r.reason === "target-incompatible");
+    return remember(
+      {
+        state: "unresolved",
+        reason: onlyToolRejects ? "external-tool-required" : "target-incompatible",
+        rejected: sortRejected(rejected2)
+      },
+      request
+    );
   }
   let sawPermissionReject = false;
   const permitted = targetOk.filter((candidate) => {
@@ -46845,11 +47452,14 @@ function resolveProvider(request, offers, preparation) {
     return true;
   });
   if (permitted.length === 0) {
-    return remember({
-      state: "unresolved",
-      reason: sawPermissionReject ? "permission-required" : "output-missing",
-      rejected: sortRejected(rejected)
-    }, request);
+    return remember(
+      {
+        state: "unresolved",
+        reason: sawPermissionReject ? "permission-required" : "output-missing",
+        rejected: sortRejected(rejected2)
+      },
+      request
+    );
   }
   let pool = permitted;
   if (request.pin) {
@@ -46862,50 +47472,62 @@ function resolveProvider(request, offers, preparation) {
       return hit;
     });
     if (pool.length === 0) {
-      return remember({
-        state: "unresolved",
-        reason: "pin-unsatisfied",
-        rejected: sortRejected(rejected)
-      }, request);
+      return remember(
+        {
+          state: "unresolved",
+          reason: "pin-unsatisfied",
+          rejected: sortRejected(rejected2)
+        },
+        request
+      );
     }
   }
   const score = (candidate) => [
     request.operation !== void 0 && (candidate.offer.operations ?? []).includes(request.operation) ? 1 : 0,
-    preferredOutputs.filter((requirement) => (candidate.offer.outputs ?? []).some((offer) => traitOfferMatches(requirement, offer))).length
+    preferredOutputs.filter(
+      (requirement) => (candidate.offer.outputs ?? []).some((offer) => traitOfferMatches(requirement, offer))
+    ).length
   ];
   const compareTuple = (a, b) => {
     for (let i = 0; i < a.length; i += 1) {
-      if (a[i] !== b[i])
-        return a[i] < b[i] ? 1 : -1;
+      if (a[i] !== b[i]) return a[i] < b[i] ? 1 : -1;
     }
     return 0;
   };
-  const ranked = [...pool].sort((a, b) => compareTuple(score(a), score(b)) || compareUtf8(candidateSortKey(a), candidateSortKey(b)));
+  const ranked = [...pool].sort(
+    (a, b) => compareTuple(score(a), score(b)) || compareUtf8(candidateSortKey(a), candidateSortKey(b))
+  );
   const best = ranked[0];
   const tied = ranked.filter((c) => compareTuple(score(c), score(best)) === 0);
   if (tied.length > 1) {
     for (const candidate of tied) {
       reject(candidate.offer, "ambiguous", "preference tuple tie", candidate.contractOffer.offerId);
     }
-    return remember({ state: "unresolved", reason: "ambiguous", rejected: sortRejected(rejected) }, request);
+    return remember(
+      { state: "unresolved", reason: "ambiguous", rejected: sortRejected(rejected2) },
+      request
+    );
   }
   const toResolved = (candidate) => ({
     offer: candidate.offer,
     resolvedContract: candidate.contractOffer,
     ...candidate.contractSelectionKey === void 0 ? {} : { contractSelectionKey: candidate.contractSelectionKey }
   });
-  return remember({
-    state: "resolved",
-    selected: toResolved(best),
-    alternatives: ranked.slice(1).map(toResolved),
-    rejected: sortRejected(rejected)
-  }, request);
+  return remember(
+    {
+      state: "resolved",
+      selected: toResolved(best),
+      alternatives: ranked.slice(1).map(toResolved),
+      rejected: sortRejected(rejected2)
+    },
+    request
+  );
 }
-function sortRejected(rejected) {
-  return [...rejected].sort((a, b) => compareUtf8(canonicalJsonStringify(a), canonicalJsonStringify(b)));
+function sortRejected(rejected2) {
+  return [...rejected2].sort(
+    (a, b) => compareUtf8(canonicalJsonStringify(a), canonicalJsonStringify(b))
+  );
 }
-
-// packages/host/dist/resolution/lock.js
 function normalizeTraitRequirements(values) {
   const normalized = /* @__PURE__ */ new Map();
   for (const value2 of values ?? []) {
@@ -47002,8 +47624,6 @@ function serializePolicyLock(entries) {
   });
   return canonicalJsonStringify({ schemaVersion: 1, entries: sorted });
 }
-
-// packages/host/dist/resolution/service-resolver.js
 async function resolveServiceProvider(request, offers, definitions) {
   const accepted = /* @__PURE__ */ new Set();
   const selectionKeys = /* @__PURE__ */ new Map();
@@ -47046,7 +47666,11 @@ function createContractResolverPort(options) {
       ...request.requiredOutputs === void 0 ? {} : { requiredOutputs: request.requiredOutputs },
       ...request.operation === void 0 ? {} : { operation: request.operation }
     };
-    const result = await resolveServiceProvider(providerRequest, options.offers, options.definitions);
+    const result = await resolveServiceProvider(
+      providerRequest,
+      options.offers,
+      options.definitions
+    );
     if (result.state !== "resolved") {
       throw new ModkitError({
         code: "x3.host/service-contract-unresolved",
@@ -47072,8 +47696,6 @@ function createContractResolverPort(options) {
     }
   };
 }
-
-// packages/host/dist/security/entrypoint.js
 var SCHEME = /^[a-zA-Z][a-zA-Z0-9+.-]*:/;
 var WINDOWS_DRIVE = /^[a-zA-Z]:/;
 function refuse(entrypoint, why) {
@@ -47084,23 +47706,19 @@ function refuse(entrypoint, why) {
   });
 }
 function assertRelativeEntrypoint(entrypoint) {
-  if (entrypoint.trim().length === 0)
-    throw refuse(entrypoint, "empty");
+  if (entrypoint.trim().length === 0) throw refuse(entrypoint, "empty");
   if (/[\u0000-\u001f\u007f]/.test(entrypoint)) {
     throw refuse(entrypoint, "contains control characters");
   }
   if (SCHEME.test(entrypoint) && !WINDOWS_DRIVE.test(entrypoint)) {
     throw refuse(entrypoint, "URL schemes are not allowed");
   }
-  if (WINDOWS_DRIVE.test(entrypoint))
-    throw refuse(entrypoint, "absolute Windows path");
+  if (WINDOWS_DRIVE.test(entrypoint)) throw refuse(entrypoint, "absolute Windows path");
   if (entrypoint.startsWith("/") || entrypoint.startsWith("\\")) {
     throw refuse(entrypoint, "absolute path");
   }
-  if (entrypoint.includes("\\"))
-    throw refuse(entrypoint, "use forward slashes");
-  if (entrypoint.split("/").includes(".."))
-    throw refuse(entrypoint, "`..` traversal");
+  if (entrypoint.includes("\\")) throw refuse(entrypoint, "use forward slashes");
+  if (entrypoint.split("/").includes("..")) throw refuse(entrypoint, "`..` traversal");
 }
 function resolveContainedEntrypoint(baseUrl, entrypoint) {
   assertRelativeEntrypoint(entrypoint);
@@ -47114,8 +47732,6 @@ function resolveContainedEntrypoint(baseUrl, entrypoint) {
   }
   return resolved;
 }
-
-// packages/host/dist/execution/backend.js
 var PROFILE_VALUES = Object.freeze([
   "browser-sandbox",
   "worker-brokered",
@@ -47158,8 +47774,7 @@ function createExecutionBackendRegistry(backends) {
     supports(profile, target, variant) {
       try {
         const binding = bindings.get(profile);
-        if (binding === void 0 || variant.executionProfile !== profile)
-          return false;
+        if (binding === void 0 || variant.executionProfile !== profile) return false;
         return binding.supports(target, variant) === true;
       } catch {
         return false;
@@ -47207,8 +47822,7 @@ async function activateExecutionBackend(registry, context) {
   return Object.freeze({
     module: raw.module,
     async release() {
-      if (released)
-        return;
+      if (released) return;
       released = true;
       await raw.release();
     }
@@ -47226,17 +47840,13 @@ var TRUSTED_IN_PROCESS_EXECUTION_BACKEND = Object.freeze({
 var DEFAULT_EXECUTION_BACKENDS = createExecutionBackendRegistry([
   TRUSTED_IN_PROCESS_EXECUTION_BACKEND
 ]);
-
-// packages/host/dist/security/gate.js
 var issuedTickets = /* @__PURE__ */ new WeakSet();
 var ticketBindings = /* @__PURE__ */ new WeakMap();
 function resolveForActivation(request, offers, operation) {
   const result = resolveProvider(request, offers);
-  if (result.state !== "resolved")
-    return { result };
+  if (result.state !== "resolved") return { result };
   const binding = inventoryBindingForOffer(result.selected.offer);
-  if (binding === void 0)
-    return { result };
+  if (binding === void 0) return { result };
   return { result, ticket: issueActivationTicket(result, request.target, operation) };
 }
 function issueActivationTicket(result, target, operation) {
@@ -47329,8 +47939,7 @@ function targetSatisfies(variant, target) {
   const c = variant.target;
   const problems = [];
   const has = (list, value2, anyAllowed = false) => list === void 0 || anyAllowed && list.includes("any") || list.includes(value2);
-  if (!has(c.environments, target.environment))
-    problems.push(`environment ${target.environment}`);
+  if (!has(c.environments, target.environment)) problems.push(`environment ${target.environment}`);
   if (!has(c.operatingSystems, target.operatingSystem, true)) {
     problems.push(`operatingSystem ${target.operatingSystem}`);
   }
@@ -47338,16 +47947,13 @@ function targetSatisfies(variant, target) {
     problems.push(`architecture ${target.architecture}`);
   }
   for (const cap of c.requiredHostCapabilities ?? []) {
-    if (!(target.hostCapabilities ?? []).includes(cap))
-      problems.push(`hostCapability ${cap}`);
+    if (!(target.hostCapabilities ?? []).includes(cap)) problems.push(`hostCapability ${cap}`);
   }
   for (const api of c.requiredWebApis ?? []) {
-    if (!(target.webApis ?? []).includes(api))
-      problems.push(`webApi ${api}`);
+    if (!(target.webApis ?? []).includes(api)) problems.push(`webApi ${api}`);
   }
   for (const tool of c.externalTools ?? []) {
-    if (!(target.externalTools ?? []).includes(tool))
-      problems.push(`externalTool ${tool}`);
+    if (!(target.externalTools ?? []).includes(tool)) problems.push(`externalTool ${tool}`);
   }
   return problems;
 }
@@ -47356,7 +47962,10 @@ async function activateContribution(request) {
   const { ticket } = request;
   const ticketBinding = ticketBindings.get(ticket);
   if (!issuedTickets.has(ticket) || ticketBinding === void 0 || ticketBinding.ticketFingerprint !== ticketFingerprint(ticket)) {
-    throw deny("x3.host/invalid-ticket", "activation requires a ticket issued by this host from a real resolution");
+    throw deny(
+      "x3.host/invalid-ticket",
+      "activation requires a ticket issued by this host from a real resolution"
+    );
   }
   const privateRecord = inventoryRecordFor(ticketBinding.contribution);
   const manifest = ticketBinding.contribution.manifest;
@@ -47372,45 +47981,74 @@ async function activateContribution(request) {
     mismatches.push("artifact digest");
   if (ticket.artifactRoot.href !== privateRecord.publicRecord.artifactRoot)
     mismatches.push("artifact root");
-  if (ticket.contributionId !== manifest.id)
-    mismatches.push("contribution");
-  if (ticket.contributionContract.id !== manifest.contract.id)
-    mismatches.push("contract");
+  if (ticket.contributionId !== manifest.id) mismatches.push("contribution");
+  if (ticket.contributionContract.id !== manifest.contract.id) mismatches.push("contract");
   if (ticket.contributionContract.major !== manifest.contract.major)
     mismatches.push("contract major");
   if (mismatches.length > 0) {
-    throw deny("x3.host/ticket-manifest-mismatch", `the ticket does not describe this contribution (${mismatches.join(", ")})`, { mismatches, ticketContribution: ticket.contributionId, manifestId: manifest.id });
+    throw deny(
+      "x3.host/ticket-manifest-mismatch",
+      `the ticket does not describe this contribution (${mismatches.join(", ")})`,
+      { mismatches, ticketContribution: ticket.contributionId, manifestId: manifest.id }
+    );
   }
   if (!await privateRecord.verifyArtifactDigest(ticket.artifactDigest)) {
-    throw deny("x3.host/artifact-digest-mismatch", "the selected artifact changed after inventory and will not be imported", { inventoryRecordId: ticket.inventoryRecordId });
+    throw deny(
+      "x3.host/artifact-digest-mismatch",
+      "the selected artifact changed after inventory and will not be imported",
+      { inventoryRecordId: ticket.inventoryRecordId }
+    );
   }
   const variant = (manifest.runtimeVariants ?? []).find((v) => v.variantId === ticket.variantId);
   if (!variant) {
-    throw deny("x3.host/unknown-variant", `contribution \xAB${manifest.id}\xBB has no runtime variant \xAB${ticket.variantId}\xBB`);
+    throw deny(
+      "x3.host/unknown-variant",
+      `contribution \xAB${manifest.id}\xBB has no runtime variant \xAB${ticket.variantId}\xBB`
+    );
   }
   const targetProblems = targetSatisfies(variant, ticket.target);
   if (targetProblems.length > 0) {
-    throw deny("x3.host/target-incompatible", `variant \xAB${variant.variantId}\xBB does not support this target: ${targetProblems.join(", ")}`, { problems: targetProblems });
+    throw deny(
+      "x3.host/target-incompatible",
+      `variant \xAB${variant.variantId}\xBB does not support this target: ${targetProblems.join(", ")}`,
+      { problems: targetProblems }
+    );
   }
   const executionBackends = request.executionBackends ?? DEFAULT_EXECUTION_BACKENDS;
   if (!executionBackends.supports(variant.executionProfile, ticket.target, variant)) {
-    throw deny("x3.host/execution-backend-unavailable", `profile \xAB${variant.executionProfile}\xBB has no backend for ${ticket.target.environment} \u2014 refusing rather than running under a weaker boundary (24 \xA76.1 rule 1)`, { profile: variant.executionProfile, environment: ticket.target.environment });
+    throw deny(
+      "x3.host/execution-backend-unavailable",
+      `profile \xAB${variant.executionProfile}\xBB has no backend for ${ticket.target.environment} \u2014 refusing rather than running under a weaker boundary (24 \xA76.1 rule 1)`,
+      { profile: variant.executionProfile, environment: ticket.target.environment }
+    );
   }
   if (variant.executionProfile === "trusted-in-process" && privateRecord.execution.allowTrustedInProcess !== true) {
-    throw deny("x3.host/trusted-in-process-not-authorized", `extension \xAB${ticket.extensionId}\xBB came from ${privateRecord.execution.origin} inventory without an explicit host decision allowing full process authority`, { extensionId: ticket.extensionId, origin: privateRecord.execution.origin });
+    throw deny(
+      "x3.host/trusted-in-process-not-authorized",
+      `extension \xAB${ticket.extensionId}\xBB came from ${privateRecord.execution.origin} inventory without an explicit host decision allowing full process authority`,
+      { extensionId: ticket.extensionId, origin: privateRecord.execution.origin }
+    );
   }
   const validity = grantValidity(request.grant);
   if (validity.state !== "valid") {
-    throw deny("x3.host/grant-not-live", validity.state === "malformed" ? `grant \xAB${request.grant.id}\xBB has an unparseable expiresAt (\xAB${validity.value}\xBB) \u2014 treated as expired` : `grant \xAB${request.grant.id}\xBB expired at ${validity.at}`, { grant: request.grant.id, validity: validity.state });
+    throw deny(
+      "x3.host/grant-not-live",
+      validity.state === "malformed" ? `grant \xAB${request.grant.id}\xBB has an unparseable expiresAt (\xAB${validity.value}\xBB) \u2014 treated as expired` : `grant \xAB${request.grant.id}\xBB expired at ${validity.at}`,
+      { grant: request.grant.id, validity: validity.state }
+    );
   }
   const probeScoped = ticket.operation === PROBE_OPERATION;
-  const requestedClasses = probeScoped ? variant.requestedPermissionClasses.filter((item) => PROBE_PERMISSION_CLASSES.includes(item)) : variant.requestedPermissionClasses;
+  const requestedClasses = probeScoped ? variant.requestedPermissionClasses.filter(
+    (item) => PROBE_PERMISSION_CLASSES.includes(item)
+  ) : variant.requestedPermissionClasses;
   const callerProbeCeiling = request.policy?.operationClasses?.[PROBE_OPERATION];
   const policy = probeScoped ? {
     ...request.policy,
     operationClasses: {
       ...request.policy?.operationClasses,
-      [PROBE_OPERATION]: callerProbeCeiling === void 0 ? PROBE_PERMISSION_CLASSES : callerProbeCeiling.filter((item) => PROBE_PERMISSION_CLASSES.includes(item))
+      [PROBE_OPERATION]: callerProbeCeiling === void 0 ? PROBE_PERMISSION_CLASSES : callerProbeCeiling.filter(
+        (item) => PROBE_PERMISSION_CLASSES.includes(item)
+      )
     }
   } : request.policy;
   const { child, missing } = narrowGrant(request.grant, {
@@ -47420,7 +48058,11 @@ async function activateContribution(request) {
     ...policy === void 0 ? {} : { policy }
   });
   if (missing.length > 0) {
-    throw deny("x3.host/permission-denied", `grant \xAB${request.grant.id}\xBB does not cover: ${missing.join(", ")}`, { missing });
+    throw deny(
+      "x3.host/permission-denied",
+      `grant \xAB${request.grant.id}\xBB does not cover: ${missing.join(", ")}`,
+      { missing }
+    );
   }
   const entryUrl = resolveContainedEntrypoint(privateRecord.artifactRoot, variant.entrypoint);
   throwIfAborted(request.signal);
@@ -47436,10 +48078,26 @@ async function activateContribution(request) {
   });
   const diagnostics = [];
   if (variant.executionProfile === "worker-brokered") {
-    diagnostics.push(diagnostic("information", "x3.host/worker-shared-process", `\xAB${manifest.id}\xBB runs worker-brokered: a crash, hang or protocol violation of this code is isolated from the host, but the worker shares the process \u2014 it is not a security sandbox (24 \xA76.1 SB-1).`, [manifest.id], { grant: child.id, classes: child.classes }));
+    diagnostics.push(
+      diagnostic(
+        "information",
+        "x3.host/worker-shared-process",
+        `\xAB${manifest.id}\xBB runs worker-brokered: a crash, hang or protocol violation of this code is isolated from the host, but the worker shares the process \u2014 it is not a security sandbox (24 \xA76.1 SB-1).`,
+        [manifest.id],
+        { grant: child.id, classes: child.classes }
+      )
+    );
   }
   if (variant.executionProfile === "trusted-in-process") {
-    diagnostics.push(diagnostic("warning", "x3.host/full-process-authority", `\xAB${manifest.id}\xBB runs as trusted-in-process: the host checks grants at dispatch and brokers what it owns, but it cannot technically prevent this code from reaching node:fs/node:net or the process itself. This is an audit/policy boundary, not a sandbox (24 \xA75.1).`, [manifest.id], { grant: child.id, classes: child.classes }));
+    diagnostics.push(
+      diagnostic(
+        "warning",
+        "x3.host/full-process-authority",
+        `\xAB${manifest.id}\xBB runs as trusted-in-process: the host checks grants at dispatch and brokers what it owns, but it cannot technically prevent this code from reaching node:fs/node:net or the process itself. This is an audit/policy boundary, not a sandbox (24 \xA75.1).`,
+        [manifest.id],
+        { grant: child.id, classes: child.classes }
+      )
+    );
   }
   return {
     module: backendLease.module,
@@ -47449,8 +48107,6 @@ async function activateContribution(request) {
     release: backendLease.release
   };
 }
-
-// packages/host/dist/detection-index.js
 var MAX_SIGNATURE_WINDOW_BYTES = 4096 + 64;
 var clamp = (value2) => Math.min(value2, MAX_SIGNATURE_WINDOW_BYTES);
 function signatureNeeds(ruleSets) {
@@ -47459,10 +48115,8 @@ function signatureNeeds(ruleSets) {
   for (const rules of ruleSets) {
     for (const rule of rules) {
       const length = rule.bytesHex.length / 2;
-      if (rule.from === "start")
-        prefix = Math.max(prefix, rule.offset + length);
-      else
-        suffix = Math.max(suffix, rule.offset);
+      if (rule.from === "start") prefix = Math.max(prefix, rule.offset + length);
+      else suffix = Math.max(suffix, rule.offset);
     }
   }
   return { prefix: clamp(prefix), suffix: clamp(suffix) };
@@ -47475,23 +48129,18 @@ function parseHex(hex) {
   return bytes2;
 }
 function matchesSignatures(rules, windows) {
-  if (rules === void 0 || rules.length === 0)
-    return false;
+  if (rules === void 0 || rules.length === 0) return false;
   const size = windows.size;
   for (const rule of rules) {
     const pattern = parseHex(rule.bytesHex);
     const mask = rule.maskHex === void 0 ? void 0 : parseHex(rule.maskHex);
-    if (mask !== void 0 && mask.length !== pattern.length)
-      continue;
-    if (rule.from === "end" && rule.offset < pattern.length)
-      continue;
+    if (mask !== void 0 && mask.length !== pattern.length) continue;
+    if (rule.from === "end" && rule.offset < pattern.length) continue;
     const patternEnd = BigInt(rule.offset) + (rule.from === "start" ? BigInt(pattern.length) : 0n);
-    if (patternEnd > size)
-      continue;
+    if (patternEnd > size) continue;
     const window2 = rule.from === "start" ? windows.head : windows.tail;
     const start = rule.from === "start" ? rule.offset : window2.length - rule.offset;
-    if (start < 0 || start + pattern.length > window2.length)
-      continue;
+    if (start < 0 || start + pattern.length > window2.length) continue;
     let matched = true;
     for (let index = 0; index < pattern.length; index += 1) {
       const m = mask?.[index] ?? 255;
@@ -47500,17 +48149,13 @@ function matchesSignatures(rules, windows) {
         break;
       }
     }
-    if (matched)
-      return true;
+    if (matched) return true;
   }
   return false;
 }
-
-// packages/host/dist/session.js
 async function assembleSubjectDescriptor(value2) {
   const result = await validateSubjectDescriptorV2(value2);
-  if (result.descriptor !== void 0)
-    return result.descriptor;
+  if (result.descriptor !== void 0) return result.descriptor;
   throw new ModkitError({
     code: "x3.host/invalid-subject-descriptor",
     message: "subject descriptor assembly failed validation",
@@ -47524,8 +48169,6 @@ async function assembleSubjectDescriptor(value2) {
     }
   });
 }
-
-// packages/host/dist/subject-open.js
 var DEFAULT_MINIMUM_CONFIDENCE = 0.5;
 var DEFAULT_MAX_CANDIDATES = 64;
 function createReleaseScope() {
@@ -47542,8 +48185,7 @@ function createReleaseScope() {
       releases.push(release);
     },
     async release() {
-      if (released)
-        return;
+      if (released) return;
       released = true;
       let firstError;
       for (const release of releases.reverse()) {
@@ -47553,16 +48195,14 @@ function createReleaseScope() {
           firstError ??= error;
         }
       }
-      if (firstError !== void 0)
-        throw firstError;
+      if (firstError !== void 0) throw firstError;
     }
   };
 }
 function trackedLease(scope, lease) {
   let released = false;
   const release = async () => {
-    if (released)
-      return;
+    if (released) return;
     released = true;
     await lease.release();
   };
@@ -47586,8 +48226,7 @@ function sessionWithResources(session, resources) {
     operations: () => session.operations(),
     events: (signal) => session.events(signal),
     async dispose() {
-      if (disposed)
-        return;
+      if (disposed) return;
       disposed = true;
       let firstError;
       try {
@@ -47600,8 +48239,7 @@ function sessionWithResources(session, resources) {
       } catch (error) {
         firstError ??= error;
       }
-      if (firstError !== void 0)
-        throw firstError;
+      if (firstError !== void 0) throw firstError;
     }
   });
 }
@@ -47611,15 +48249,21 @@ function errorDiagnostic(code, message, error) {
   });
 }
 function caughtDiagnostic(stage, error) {
-  return errorDiagnostic(isModkitError(error) ? error.code : `x3.host/subject-${stage}-failed`, isModkitError(error) ? error.message : `subject ${stage} failed closed`, error);
+  return errorDiagnostic(
+    isModkitError(error) ? error.code : `x3.host/subject-${stage}-failed`,
+    isModkitError(error) ? error.message : `subject ${stage} failed closed`,
+    error
+  );
 }
 function normalizeTarget(target, grant) {
-  return JSON.parse(canonicalJsonStringify({
-    ...target,
-    grantedPermissions: [
-      .../* @__PURE__ */ new Set([...target.grantedPermissions ?? [], ...grant.classes])
-    ].sort(compareUtf8)
-  }));
+  return JSON.parse(
+    canonicalJsonStringify({
+      ...target,
+      grantedPermissions: [
+        .../* @__PURE__ */ new Set([...target.grantedPermissions ?? [], ...grant.classes])
+      ].sort(compareUtf8)
+    })
+  );
 }
 function matchesGlob(path, glob) {
   let pattern = "^";
@@ -47641,13 +48285,13 @@ function matchesGlob(path, glob) {
   return new RegExp(`${pattern}$`, "u").test(path);
 }
 function matchesSpec(spec, path, mediaType) {
-  const normalizedPath = path.replaceAll("\\", "/").split(/[?#]/u, 1)[0]?.toLocaleLowerCase() ?? "";
+  const normalizedPath2 = path.replaceAll("\\", "/").split(/[?#]/u, 1)[0]?.toLocaleLowerCase() ?? "";
   const extensionMatch = (spec.match.extensions ?? []).some((extension) => {
     const suffix = extension.toLocaleLowerCase().replace(/^\.+/u, "");
-    return normalizedPath.endsWith(`.${suffix}`) || normalizedPath === suffix;
+    return normalizedPath2.endsWith(`.${suffix}`) || normalizedPath2 === suffix;
   });
   const mediaMatch = mediaType !== void 0 && (spec.match.mediaTypes ?? []).some((candidate) => candidate === mediaType);
-  const pathMatch = (spec.match.pathGlobs ?? []).some((glob) => matchesGlob(normalizedPath, glob));
+  const pathMatch = (spec.match.pathGlobs ?? []).some((glob) => matchesGlob(normalizedPath2, glob));
   const declaresMatch = (spec.match.extensions?.length ?? 0) > 0 || (spec.match.mediaTypes?.length ?? 0) > 0 || (spec.match.pathGlobs?.length ?? 0) > 0;
   return declaresMatch && (extensionMatch || mediaMatch || pathMatch);
 }
@@ -47663,16 +48307,13 @@ async function readSignatureWindows(options) {
         continue;
       }
       const signatures = manifest.spec.match.signatures;
-      if (signatures !== void 0 && signatures.length > 0)
-        ruleSets.push(signatures);
+      if (signatures !== void 0 && signatures.length > 0) ruleSets.push(signatures);
     }
   }
   const needs = signatureNeeds(ruleSets);
-  if (needs.prefix === 0 && needs.suffix === 0)
-    return void 0;
+  if (needs.prefix === 0 && needs.suffix === 0) return void 0;
   const size = options.source.size;
-  if (size === void 0)
-    return void 0;
+  if (size === void 0) return void 0;
   const headLength = Number(size < BigInt(needs.prefix) ? size : BigInt(needs.prefix));
   const head = headLength === 0 ? new Uint8Array(0) : await options.source.read(0n, headLength, options.signal);
   const tailLength = Number(size < BigInt(needs.suffix) ? size : BigInt(needs.suffix));
@@ -47695,8 +48336,7 @@ function boundedProbeSource(source, plan) {
   const maximum = BigInt(plan.maxBytes);
   const ranges = plan.ranges.map((range) => {
     const length = BigInt(range.length);
-    if (range.from === "start")
-      return { start: 0n, end: length };
+    if (range.from === "start") return { start: 0n, end: length };
     if (source.size === void 0) {
       throw new ModkitError({
         code: "x3.host/end-relative-probe-requires-size",
@@ -47817,12 +48457,12 @@ function defaultResolveInput(context) {
       compositionFingerprint
     }),
     bindingsFor: () => Object.freeze([]),
-    async openBinding(bindingId2, signal) {
+    async openBinding(bindingId, signal) {
       throwIfAborted(signal);
-      if (bindingId2 !== binding.bindingId) {
+      if (bindingId !== binding.bindingId) {
         throw new ModkitError({
           code: "x3.host/unknown-asset-input-binding",
-          message: `asset input has no binding ${bindingId2}`
+          message: `asset input has no binding ${bindingId}`
         });
       }
       return Object.freeze({ value: context.source, release: async () => void 0 });
@@ -47848,7 +48488,7 @@ function assertCodec(value2, contributionId2) {
   return value2;
 }
 function noServiceResolver() {
-  const unavailable = (contract, major) => {
+  const unavailable2 = (contract, major) => {
     throw new ModkitError({
       code: "x3.host/service-contract-unregistered",
       message: `service contract ${contract}@${major} is unavailable in this composition`
@@ -47856,10 +48496,10 @@ function noServiceResolver() {
   };
   return {
     async resolve(request) {
-      return unavailable(request.contract, request.major);
+      return unavailable2(request.contract, request.major);
     },
     async resolveUnknown(request) {
-      return unavailable(request.contract, request.major);
+      return unavailable2(request.contract, request.major);
     }
   };
 }
@@ -47882,11 +48522,11 @@ function runnableCandidates(options, offers, signatureWindows) {
         continue;
       }
       for (const offer of offers) {
-        if (offer.providerId !== manifest.id)
-          continue;
-        const logicalOffer = [...offer.provides].sort((left, right) => compareUtf8(canonicalJsonStringify(left), canonicalJsonStringify(right)))[0];
-        if (logicalOffer === void 0)
-          continue;
+        if (offer.providerId !== manifest.id) continue;
+        const logicalOffer = [...offer.provides].sort(
+          (left, right) => compareUtf8(canonicalJsonStringify(left), canonicalJsonStringify(right))
+        )[0];
+        if (logicalOffer === void 0) continue;
         candidates.push({
           contribution,
           extensionId: offer.extensionId,
@@ -47899,7 +48539,11 @@ function runnableCandidates(options, offers, signatureWindows) {
       }
     }
   }
-  return Object.freeze(candidates.sort((left, right) => compareUtf8(left.contributionId, right.contributionId) || compareUtf8(left.offer.runtimeVariant, right.offer.runtimeVariant) || compareUtf8(left.logicalOffer.offerId, right.logicalOffer.offerId)));
+  return Object.freeze(
+    candidates.sort(
+      (left, right) => compareUtf8(left.contributionId, right.contributionId) || compareUtf8(left.offer.runtimeVariant, right.offer.runtimeVariant) || compareUtf8(left.logicalOffer.offerId, right.logicalOffer.offerId)
+    )
+  );
 }
 async function unresolvedDescriptor(options, detections) {
   return assembleSubjectDescriptor({
@@ -47941,8 +48585,7 @@ async function unresolvedDescriptor(options, detections) {
   });
 }
 async function textFallbackAvailable(source, signal) {
-  if (source.size === void 0)
-    return false;
+  if (source.size === void 0) return false;
   const length = Number(source.size > 65536n ? 65536n : source.size);
   try {
     const bytes2 = await source.read(0n, length, signal);
@@ -47970,16 +48613,28 @@ async function openSubject(options) {
   const signatureWindows = await readSignatureWindows(options);
   const candidates = runnableCandidates(options, offers, signatureWindows);
   if (candidates.length > maxCandidates) {
-    diagnostics.push(errorDiagnostic("x3.host/subject-candidate-limit", `subject matched ${candidates.length} codecs, exceeding the host limit ${maxCandidates}`));
+    diagnostics.push(
+      errorDiagnostic(
+        "x3.host/subject-candidate-limit",
+        `subject matched ${candidates.length} codecs, exceeding the host limit ${maxCandidates}`
+      )
+    );
   } else {
     const target = normalizeTarget(options.target, options.grant);
     for (const candidate of candidates) {
       const local = [];
       const resources = createReleaseScope();
       const privateRecord = inventoryRecordFor(candidate.contribution);
-      const variant = candidate.contribution.manifest?.runtimeVariants?.find((item) => item.variantId === candidate.offer.runtimeVariant);
+      const variant = candidate.contribution.manifest?.runtimeVariants?.find(
+        (item) => item.variantId === candidate.offer.runtimeVariant
+      );
       if (privateRecord === void 0 || variant === void 0 || !executionBackends.supports(variant.executionProfile, target, variant) || variant.executionProfile === "trusted-in-process" && privateRecord.execution.allowTrustedInProcess !== true) {
-        local.push(errorDiagnostic("x3.host/codec-execution-unavailable", `codec ${candidate.contributionId}#${candidate.offer.runtimeVariant} has no executable boundary in this host`));
+        local.push(
+          errorDiagnostic(
+            "x3.host/codec-execution-unavailable",
+            `codec ${candidate.contributionId}#${candidate.offer.runtimeVariant} has no executable boundary in this host`
+          )
+        );
         explanations.push({
           contributionId: candidate.contributionId,
           extensionId: candidate.extensionId,
@@ -48012,7 +48667,12 @@ async function openSubject(options) {
       }
       const resolved = resolveForActivation(request, offers, PROBE_OPERATION);
       if (resolved.result.state !== "resolved" || resolved.ticket === void 0) {
-        local.push(errorDiagnostic("x3.host/codec-resolution-unresolved", `codec candidate did not resolve: ${resolved.result.state === "resolved" ? "ticket unavailable" : resolved.result.reason}`));
+        local.push(
+          errorDiagnostic(
+            "x3.host/codec-resolution-unresolved",
+            `codec candidate did not resolve: ${resolved.result.state === "resolved" ? "ticket unavailable" : resolved.result.reason}`
+          )
+        );
         explanations.push({
           contributionId: candidate.contributionId,
           extensionId: candidate.extensionId,
@@ -48072,7 +48732,10 @@ async function openSubject(options) {
                 });
               }
               const createProvider = nested.module["createProvider"];
-              const lease = await createProvider(selection, makeContext(nested.effectiveGrant, [...chain, key2]));
+              const lease = await createProvider(
+                selection,
+                makeContext(nested.effectiveGrant, [...chain, key2])
+              );
               if (typeof lease !== "object" || lease === null || !("value" in lease) || typeof lease.release !== "function") {
                 throw new ModkitError({
                   code: "x3.host/invalid-service-provider-lease",
@@ -48093,23 +48756,43 @@ async function openSubject(options) {
             ...options.signal === void 0 ? {} : { signal: options.signal }
           });
         };
-        const codec = assertCodec(codecModule(activation.module, candidate.contributionId).createCodec(makeContext(activation.effectiveGrant, [candidate.contributionId])), candidate.contributionId);
-        const probeSource = boundedProbeSource(options.source, candidate.spec.probe);
-        const detection = snapshotDetection(await codec.probe({
-          source: probeSource,
-          plan: candidate.spec.probe
-        }, options.signal), candidate.contributionId);
-        detected.push(Object.assign(record, {
-          ...candidate,
-          ticket: resolved.ticket,
-          codec,
-          detection,
-          effectiveBudget,
-          activationDiagnostics: Object.freeze(local),
-          request,
-          makeContext,
-          probeScoped: variantRequestsBeyondProbe(candidate.contribution.manifest?.runtimeVariants?.find((item) => item.variantId === candidate.offer.runtimeVariant)?.requestedPermissionClasses ?? [])
-        }));
+        const codec = assertCodec(
+          codecModule(activation.module, candidate.contributionId).createCodec(
+            makeContext(activation.effectiveGrant, [candidate.contributionId])
+          ),
+          candidate.contributionId
+        );
+        const probeSource = boundedProbeSource(
+          options.source,
+          candidate.spec.probe
+        );
+        const detection = snapshotDetection(
+          await codec.probe(
+            {
+              source: probeSource,
+              plan: candidate.spec.probe
+            },
+            options.signal
+          ),
+          candidate.contributionId
+        );
+        detected.push(
+          Object.assign(record, {
+            ...candidate,
+            ticket: resolved.ticket,
+            codec,
+            detection,
+            effectiveBudget,
+            activationDiagnostics: Object.freeze(local),
+            request,
+            makeContext,
+            probeScoped: variantRequestsBeyondProbe(
+              candidate.contribution.manifest?.runtimeVariants?.find(
+                (item) => item.variantId === candidate.offer.runtimeVariant
+              )?.requestedPermissionClasses ?? []
+            )
+          })
+        );
         explanations.push({
           contributionId: candidate.contributionId,
           extensionId: candidate.extensionId,
@@ -48137,13 +48820,17 @@ async function openSubject(options) {
       }
     }
   }
-  const eligible = detected.filter((candidate) => candidate.detection.confidence >= minimumConfidence).sort((left, right) => right.detection.confidence - left.detection.confidence || compareUtf8(left.contributionId, right.contributionId) || compareUtf8(left.offer.runtimeVariant, right.offer.runtimeVariant));
+  const eligible = detected.filter((candidate) => candidate.detection.confidence >= minimumConfidence).sort(
+    (left, right) => right.detection.confidence - left.detection.confidence || compareUtf8(left.contributionId, right.contributionId) || compareUtf8(left.offer.runtimeVariant, right.offer.runtimeVariant)
+  );
   const best = eligible[0];
   const tied = best === void 0 ? [] : eligible.filter((candidate) => candidate.detection.confidence === best.detection.confidence);
   if (best === void 0 || tied.length !== 1) {
-    for (const candidate of detected)
-      await releaseCandidate(candidate, diagnostics);
-    const descriptor = await unresolvedDescriptor(options, detected.map((candidate) => candidate.detection));
+    for (const candidate of detected) await releaseCandidate(candidate, diagnostics);
+    const descriptor = await unresolvedDescriptor(
+      options,
+      detected.map((candidate) => candidate.detection)
+    );
     const text = await textFallbackAvailable(options.source, options.signal);
     return Object.freeze({
       state: "unresolved",
@@ -48158,8 +48845,7 @@ async function openSubject(options) {
     });
   }
   for (const candidate of detected) {
-    if (candidate !== best)
-      await releaseCandidate(candidate, diagnostics);
+    if (candidate !== best) await releaseCandidate(candidate, diagnostics);
   }
   let openedSession;
   try {
@@ -48183,7 +48869,12 @@ async function openSubject(options) {
         });
         openScope.add(activation.release);
         best.resources = openScope;
-        best.codec = assertCodec(codecModule(activation.module, best.contributionId).createCodec(best.makeContext(activation.effectiveGrant, [best.contributionId])), best.contributionId);
+        best.codec = assertCodec(
+          codecModule(activation.module, best.contributionId).createCodec(
+            best.makeContext(activation.effectiveGrant, [best.contributionId])
+          ),
+          best.contributionId
+        );
         best.ticket = reResolved.ticket;
         best.activationDiagnostics = Object.freeze([
           ...best.activationDiagnostics,
@@ -48216,16 +48907,25 @@ async function openSubject(options) {
       detection: best.detection,
       ...options.signal === void 0 ? {} : { signal: options.signal }
     });
-    openedSession = await best.codec.open(input, options.intent, best.effectiveBudget, options.signal);
+    openedSession = await best.codec.open(
+      input,
+      options.intent,
+      best.effectiveBudget,
+      options.signal
+    );
     const session = openedSession;
-    const descriptor = await assembleSubjectDescriptor(await session.descriptor());
+    const descriptor = await assembleSubjectDescriptor(
+      await session.descriptor()
+    );
     if (descriptor.interpretation !== "codec" || descriptor.identity.codecId !== best.contributionId || descriptor.subjectUri !== options.source.ref.uri || descriptor.revision !== options.source.revision) {
       throw new ModkitError({
         code: "x3.host/subject-session-identity-mismatch",
         message: "opened codec session does not describe the selected source and codec"
       });
     }
-    const selectedExplanation = explanations.find((item) => item.contributionId === best.contributionId && item.variantId === best.offer.runtimeVariant && item.offerId === best.logicalOffer.offerId);
+    const selectedExplanation = explanations.find(
+      (item) => item.contributionId === best.contributionId && item.variantId === best.offer.runtimeVariant && item.offerId === best.logicalOffer.offerId
+    );
     if (selectedExplanation !== void 0) {
       const index = explanations.indexOf(selectedExplanation);
       explanations[index] = Object.freeze({ ...selectedExplanation, state: "selected" });
@@ -48237,17 +48937,19 @@ async function openSubject(options) {
         message: "selected codec has no attested inventory record"
       });
     }
-    const detectionSelectionText = serializeCodecDetectionSelection(buildCodecDetectionSelection({
-      sourceRevision: options.source.revision,
-      extensionId: best.extensionId,
-      contributionId: best.contributionId,
-      variantId: best.offer.runtimeVariant,
-      offerId: best.logicalOffer.offerId,
-      artifactDigest: record.artifactDigest,
-      manifestDigest: record.manifestDigest,
-      sourceTopology: best.spec.sourceTopology,
-      detection: best.detection
-    }));
+    const detectionSelectionText = serializeCodecDetectionSelection(
+      buildCodecDetectionSelection({
+        sourceRevision: options.source.revision,
+        extensionId: best.extensionId,
+        contributionId: best.contributionId,
+        variantId: best.offer.runtimeVariant,
+        offerId: best.logicalOffer.offerId,
+        artifactDigest: record.artifactDigest,
+        manifestDigest: record.manifestDigest,
+        sourceTopology: best.spec.sourceTopology,
+        detection: best.detection
+      })
+    );
     const lockText = serializePolicyLock(best.nestedLocks);
     const managedSession = sessionWithResources(session, best.resources);
     openedSession = void 0;
@@ -48278,7 +48980,10 @@ async function openSubject(options) {
     }
     await releaseCandidate(best, diagnostics);
     diagnostics.push(caughtDiagnostic("input-open", error));
-    const descriptor = await unresolvedDescriptor(options, detected.map((candidate) => candidate.detection));
+    const descriptor = await unresolvedDescriptor(
+      options,
+      detected.map((candidate) => candidate.detection)
+    );
     const text = await textFallbackAvailable(options.source, options.signal);
     return Object.freeze({
       state: "unresolved",
@@ -48293,8 +48998,6 @@ async function openSubject(options) {
     });
   }
 }
-
-// packages/host/dist/service-definitions.js
 var FACETLESS_SERVICE_MATCHER_PROFILE = contractId("org.modkitx/facetless-matcher");
 var facetlessMatcher = Object.freeze({
   profile: FACETLESS_SERVICE_MATCHER_PROFILE,
@@ -48303,19 +49006,52 @@ var facetlessMatcher = Object.freeze({
     return context.offerFacet === void 0 && context.requestFacet === void 0 ? { state: "match", selectionKey: "facetless:v1" } : { state: "no-match" };
   }
 });
-
-// packages/host/dist/data-sources.js
+function supportedExtensionHints(inventory) {
+  return Object.freeze(
+    [
+      ...new Set(
+        inventory.extensions.flatMap(
+          (extension) => extension.contributions.flatMap((contribution) => {
+            const manifest = contribution.manifest;
+            if (manifest?.contract.id !== "org.modkitx/codec-contribution") return [];
+            const spec = manifest.spec;
+            return Array.isArray(spec.match?.extensions) ? spec.match.extensions.flatMap(
+              (value2) => typeof value2 === "string" && value2.length > 0 ? [value2.toLowerCase()] : []
+            ) : [];
+          })
+        )
+      )
+    ].sort()
+  );
+}
+function createSubjectServices(options) {
+  const fixed = {
+    inventory: options.inventory,
+    target: options.target,
+    executionBackends: options.executionBackends,
+    ...options.serviceDefinitions === void 0 ? {} : { serviceDefinitions: options.serviceDefinitions },
+    ...options.policy === void 0 ? {} : { policy: options.policy },
+    ...options.minimumConfidence === void 0 ? {} : { minimumConfidence: options.minimumConfidence },
+    ...options.maxCandidates === void 0 ? {} : { maxCandidates: options.maxCandidates }
+  };
+  const services = {
+    inventory: options.inventory,
+    target: options.target,
+    executionBackends: options.executionBackends,
+    executionProfiles: options.executionBackends.profiles,
+    supportedExtensions: supportedExtensionHints(options.inventory),
+    ...options.serviceDefinitions === void 0 ? {} : { serviceDefinitions: options.serviceDefinitions },
+    open: (request) => openSubject({ ...fixed, ...request })
+  };
+  return Object.freeze(services);
+}
 var DEFAULT_CHUNK_BYTES = 64 * 1024;
-
-// packages/host/dist/editing.js
 var GUARANTEE_STRENGTH = Object.freeze({
   "best-effort": 0,
   recoverable: 1,
   transactional: 2,
   atomic: 3
 });
-
-// packages/host/dist/composition.js
 async function createHostComposition(options) {
   const topology = createHostTopology(options.topology);
   const profile = topology.realms.find((candidate) => candidate.realmId === options.realmId);
@@ -48326,7 +49062,10 @@ async function createHostComposition(options) {
       context: { topologyId: topology.topologyId, realmId: options.realmId }
     });
   }
-  const inventory = await buildInventory(options.extensions ?? [], options.contributionContracts ?? createHostContributionContractRegistry());
+  const inventory = await buildInventory(
+    options.extensions ?? [],
+    options.contributionContracts ?? createHostContributionContractRegistry()
+  );
   return Object.freeze({
     topology,
     profile,
@@ -48764,10 +49503,8 @@ function createWorkbench(document2, options) {
 // packages/vfs/dist/index.js
 var CHUNK = 64 * 1024;
 
-// packages/host/dist/browser/sources.js
+// packages/host/dist/browser/index.js
 var CHUNK2 = 64 * 1024;
-
-// packages/host/dist/browser/verified-loader.js
 var DEFAULT_MAX_FILES = 256;
 var DEFAULT_MAX_TOTAL_BYTES = 32 * 1024 * 1024;
 function refused(message, context) {
@@ -48780,14 +49517,15 @@ function refused(message, context) {
 function scanModuleSpecifiers(source) {
   const stripped = source.replace(/\/\*[\s\S]*?\*\//gu, " ").replace(/(^|[^:])\/\/[^\n]*/gu, "$1");
   if (/\bimport\s*\(\s*[^'")\s]/u.test(stripped)) {
-    throw refused("dynamic import with a non-literal specifier cannot be verified before evaluation");
+    throw refused(
+      "dynamic import with a non-literal specifier cannot be verified before evaluation"
+    );
   }
   const specifiers = [];
   const pattern = /\b(?:import|export)\s+(?:[\s\S]*?\bfrom\s+)?(['"])([^'"\n]+)\1|\bimport\s*\(\s*(['"])([^'"\n]+)\3\s*\)/gu;
   for (const match of stripped.matchAll(pattern)) {
     const specifier = match[2] ?? match[4];
-    if (specifier !== void 0)
-      specifiers.push(specifier);
+    if (specifier !== void 0) specifiers.push(specifier);
   }
   return specifiers;
 }
@@ -48812,10 +49550,11 @@ async function loadVerifiedModuleGraph(entrypoint, options) {
   const entryRelative = relativePath(entryHref);
   async function build(href) {
     const existing = built.get(href);
-    if (existing !== void 0)
-      return existing;
+    if (existing !== void 0) return existing;
     if (visiting.has(href)) {
-      throw refused(`import cycle at ${relativePath(href)}; an immutable module graph cannot represent it`);
+      throw refused(
+        `import cycle at ${relativePath(href)}; an immutable module graph cannot represent it`
+      );
     }
     visiting.add(href);
     const relative = relativePath(href);
@@ -48827,8 +49566,7 @@ async function loadVerifiedModuleGraph(entrypoint, options) {
       });
     }
     files += 1;
-    if (files > maxFiles)
-      throw refused(`artifact exceeds the loader ceiling of ${maxFiles} files`);
+    if (files > maxFiles) throw refused(`artifact exceeds the loader ceiling of ${maxFiles} files`);
     const bytes2 = await options.fetchBytes(href, options.signal);
     totalBytes += bytes2.byteLength;
     if (totalBytes > maxTotalBytes) {
@@ -48853,7 +49591,10 @@ async function loadVerifiedModuleGraph(entrypoint, options) {
       } else {
         const mapped = options.resolveBare?.(specifier);
         if (mapped === void 0) {
-          throw refused(`bare specifier \xAB${specifier}\xBB is not in the host module map (dependencies load unverified only through the map, SB-1)`, { specifier });
+          throw refused(
+            `bare specifier \xAB${specifier}\xBB is not in the host module map (dependencies load unverified only through the map, SB-1)`,
+            { specifier }
+          );
         }
         unverified.add(specifier);
         target = mapped;
@@ -48875,8 +49616,6 @@ async function loadVerifiedModuleGraph(entrypoint, options) {
     unverified: Object.freeze([...unverified].sort())
   });
 }
-
-// packages/host/dist/execution/protocol.js
 var CAPABILITY_RPC_DOMAIN = "x3.host/rpc";
 var CAPABILITY_RPC_VERSION = 1;
 var HANDLE_MARKER = "@x3.handle";
@@ -48926,40 +49665,30 @@ function isPresentList(value2) {
   return Array.isArray(value2) && value2.length <= MAX_OPTIONAL_METHODS && value2.every((item) => typeof item === "string" && isMethodName(item)) && new Set(value2).size === value2.length;
 }
 function isHandleRef(value2) {
-  if (!isPlainObject(value2))
-    return false;
+  if (!isPlainObject(value2)) return false;
   const keys = Object.keys(value2);
-  if (keys.length !== 1 || keys[0] !== HANDLE_MARKER)
-    return false;
+  if (keys.length !== 1 || keys[0] !== HANDLE_MARKER) return false;
   const inner = value2[HANDLE_MARKER];
-  if (!isPlainObject(inner))
-    return false;
+  if (!isPlainObject(inner)) return false;
   const record = inner;
   const innerKeys = Object.keys(inner).filter((key2) => key2 !== "data" && key2 !== "has").sort();
   const base = ["id", "kind"];
   const withContract = ["contract", "id", "kind", "major"];
   const shape = innerKeys.join(",") === base.join(",") || innerKeys.join(",") === withContract.join(",");
-  if (!shape)
-    return false;
-  if (record["data"] !== void 0 && !isPlainObject(record["data"]))
-    return false;
-  if (record["has"] !== void 0 && !isPresentList(record["has"]))
-    return false;
-  if (typeof record["id"] !== "string" || !isHandleId(record["id"]))
-    return false;
+  if (!shape) return false;
+  if (record["data"] !== void 0 && !isPlainObject(record["data"])) return false;
+  if (record["has"] !== void 0 && !isPresentList(record["has"])) return false;
+  if (typeof record["id"] !== "string" || !isHandleId(record["id"])) return false;
   if (typeof record["kind"] !== "string" || !HANDLE_KINDS.includes(record["kind"]))
     return false;
   if (innerKeys.length === 4) {
-    if (typeof record["contract"] !== "string" || !isQualifiedId(record["contract"]))
-      return false;
-    if (!Number.isSafeInteger(record["major"]) || record["major"] < 0)
-      return false;
+    if (typeof record["contract"] !== "string" || !isQualifiedId(record["contract"])) return false;
+    if (!Number.isSafeInteger(record["major"]) || record["major"] < 0) return false;
   }
   return true;
 }
 function isPlainObject(value2) {
-  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
-    return false;
+  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2)) return false;
   const proto = Object.getPrototypeOf(value2);
   return proto === Object.prototype || proto === null;
 }
@@ -49039,8 +49768,7 @@ function validateInner(value2, limits, measure, depth, path, handles) {
     default:
       return { code: "bad-value", message: `${typeof value2} is not a wire value`, path };
   }
-  if (value2 === null)
-    return void 0;
+  if (value2 === null) return void 0;
   if (value2 instanceof Uint8Array) {
     if (SHARED !== void 0 && value2.buffer instanceof SHARED) {
       return {
@@ -49082,9 +49810,15 @@ function validateInner(value2, limits, measure, depth, path, handles) {
       return { code: "array-too-long", message: `array longer than ${limits.maxArrayLength}`, path };
     }
     for (let index = 0; index < value2.length; index += 1) {
-      const found = validateInner(value2[index], limits, measure, depth + 1, [...path, index], handles);
-      if (found !== void 0)
-        return found;
+      const found = validateInner(
+        value2[index],
+        limits,
+        measure,
+        depth + 1,
+        [...path, index],
+        handles
+      );
+      if (found !== void 0) return found;
     }
     return void 0;
   }
@@ -49099,8 +49833,7 @@ function validateInner(value2, limits, measure, depth, path, handles) {
         path
       };
     }
-    if (!isHandleRef(value2))
-      return { code: "bad-handle", message: "malformed handle ref", path };
+    if (!isHandleRef(value2)) return { code: "bad-handle", message: "malformed handle ref", path };
     const data = value2[HANDLE_MARKER].data;
     return data === void 0 ? void 0 : validateInner(data, limits, measure, depth + 1, [...path, HANDLE_MARKER, "data"], "forbid");
   }
@@ -49120,8 +49853,7 @@ function validateInner(value2, limits, measure, depth, path, handles) {
       return { code: "string-too-long", message: "object key too long", path: [...path, key2] };
     }
     const found = validateInner(value2[key2], limits, measure, depth + 1, [...path, key2], handles);
-    if (found !== void 0)
-      return found;
+    if (found !== void 0) return found;
   }
   return void 0;
 }
@@ -49130,8 +49862,7 @@ function validateWireValue(value2, limits, handles = "forbid", path = []) {
   if (handles === "top" && isHandleRef(value2)) {
     const data = value2[HANDLE_MARKER].data;
     const found2 = data === void 0 ? void 0 : validateInner(data, limits, measure, 1, [...path, HANDLE_MARKER, "data"], "forbid");
-    if (found2 !== void 0)
-      return { ok: false, violation: Object.freeze(found2) };
+    if (found2 !== void 0) return { ok: false, violation: Object.freeze(found2) };
     return {
       ok: true,
       value: Object.freeze({
@@ -49141,9 +49872,15 @@ function validateWireValue(value2, limits, handles = "forbid", path = []) {
       })
     };
   }
-  const found = validateInner(value2, limits, measure, 0, [...path], handles === "nested" ? "allow" : "forbid");
-  if (found !== void 0)
-    return { ok: false, violation: Object.freeze(found) };
+  const found = validateInner(
+    value2,
+    limits,
+    measure,
+    0,
+    [...path],
+    handles === "nested" ? "allow" : "forbid"
+  );
+  if (found !== void 0) return { ok: false, violation: Object.freeze(found) };
   return {
     ok: true,
     value: Object.freeze({
@@ -49192,8 +49929,7 @@ function toErrorDto(error, limits) {
   });
 }
 function fromErrorDto(dto) {
-  if (dto.cancelled === true)
-    return new OperationCancelledError(dto.message);
+  if (dto.cancelled === true) return new OperationCancelledError(dto.message);
   return new ModkitError({
     code: dto.code,
     message: dto.message,
@@ -49202,8 +49938,7 @@ function fromErrorDto(dto) {
   });
 }
 function validateErrorDto(value2, limits, path = []) {
-  if (!isPlainObject(value2))
-    return violation("bad-error", "error must be an object", path);
+  if (!isPlainObject(value2)) return violation("bad-error", "error must be an object", path);
   const record = value2;
   const keys = Object.keys(record);
   const allowed = /* @__PURE__ */ new Set([
@@ -49240,8 +49975,7 @@ function validateErrorDto(value2, limits, path = []) {
       return violation("bad-error", "error context must be an object", [...path, "context"]);
     }
     const checked = validateWireValue(record["context"], limits, "forbid", [...path, "context"]);
-    if (!checked.ok)
-      return checked;
+    if (!checked.ok) return checked;
   }
   return { ok: true, value: Object.freeze({ ...record }) };
 }
@@ -49283,8 +50017,7 @@ function checkExactKeys(record, required, optional) {
   return void 0;
 }
 function validateFrame(input, limits, expect) {
-  if (!isPlainObject(input))
-    return violation("not-an-object", "frame must be a plain object");
+  if (!isPlainObject(input)) return violation("not-an-object", "frame must be a plain object");
   const record = input;
   if (record["domain"] !== CAPABILITY_RPC_DOMAIN || record["version"] !== CAPABILITY_RPC_VERSION) {
     return violation("bad-envelope", "frame domain/version mismatch");
@@ -49305,31 +50038,26 @@ function validateFrame(input, limits, expect) {
   const t = type;
   const keys = FRAME_KEYS[t];
   const keyViolation = checkExactKeys(record, keys.required, keys.optional);
-  if (keyViolation !== void 0)
-    return { ok: false, violation: keyViolation };
+  if (keyViolation !== void 0) return { ok: false, violation: keyViolation };
   const str = (key2, test, code = "bad-value") => typeof record[key2] === "string" && record[key2].length > 0 && (test?.(record[key2]) ?? true) ? void 0 : violation(code, `\xAB${key2}\xBB is malformed`, [key2]);
   const replyId = (key2) => isMessageId(record[key2]) ? void 0 : violation("bad-id", `\xAB${key2}\xBB must be a positive safe integer`, [key2]);
   switch (t) {
     case "load": {
       for (const key2 of ["moduleUrl", "artifactDigest"]) {
         const bad2 = str(key2, (value2) => value2.length <= limits.maxStringLength);
-        if (bad2)
-          return bad2;
+        if (bad2) return bad2;
       }
       if (record["entrypointDigest"] !== void 0) {
         const bad2 = str("entrypointDigest", (value2) => value2.length <= 256);
-        if (bad2)
-          return bad2;
+        if (bad2) return bad2;
       }
       const bad = str("contributionId", isQualifiedId) ?? str("variantId", isSegment);
-      if (bad)
-        return bad;
+      if (bad) return bad;
       break;
     }
     case "ready": {
       const bad = replyId("inReplyTo");
-      if (bad)
-        return bad;
+      if (bad) return bad;
       if (record["abiVersion"] !== 1)
         return violation("bad-value", "abiVersion must be 1", ["abiVersion"]);
       const exports = record["exports"];
@@ -49340,23 +50068,19 @@ function validateFrame(input, limits, expect) {
         return violation("bad-handle", "root must be a handle ref", ["root"]);
       {
         const checked = validateWireValue(record["root"], limits, "top", ["root"]);
-        if (!checked.ok)
-          return checked;
+        if (!checked.ok) return checked;
       }
       break;
     }
     case "call": {
       const bad = str("handle", isHandleId, "bad-handle") ?? str("method", isMethodName, "bad-method");
-      if (bad)
-        return bad;
+      if (bad) return bad;
       const args = record["args"];
-      if (!Array.isArray(args))
-        return violation("bad-value", "args must be an array", ["args"]);
+      if (!Array.isArray(args)) return violation("bad-value", "args must be an array", ["args"]);
       if (args.length > limits.maxArgs)
         return violation("too-many-args", `more than ${limits.maxArgs} args`, ["args"]);
       const checked = validateWireValue(args, limits, "nested", ["args"]);
-      if (!checked.ok)
-        return checked;
+      if (!checked.ok) return checked;
       if (record["deadlineMs"] !== void 0 && (!Number.isSafeInteger(record["deadlineMs"]) || record["deadlineMs"] < 0)) {
         return violation("bad-value", "deadlineMs must be a non-negative safe integer", [
           "deadlineMs"
@@ -49366,12 +50090,10 @@ function validateFrame(input, limits, expect) {
     }
     case "return": {
       const bad = replyId("inReplyTo");
-      if (bad)
-        return bad;
+      if (bad) return bad;
       if (record["value"] !== void 0) {
         const checked = validateWireValue(record["value"], limits, "top", ["value"]);
-        if (!checked.ok)
-          return checked;
+        if (!checked.ok) return checked;
       }
       if (record["lease"] !== void 0) {
         const lease = record["lease"];
@@ -49382,79 +50104,70 @@ function validateFrame(input, limits, expect) {
           return violation("bad-value", "a leased value cannot itself be a handle", ["value"]);
         }
         const checked = validateWireValue(lease, limits, "top", ["lease"]);
-        if (!checked.ok)
-          return checked;
+        if (!checked.ok) return checked;
       }
       break;
     }
     case "throw": {
       const bad = replyId("inReplyTo");
-      if (bad)
-        return bad;
+      if (bad) return bad;
       const checked = validateErrorDto(record["error"], limits, ["error"]);
-      if (!checked.ok)
-        return checked;
+      if (!checked.ok) return checked;
       break;
     }
     case "cancel":
       {
         const bad = replyId("target");
-        if (bad)
-          return bad;
+        if (bad) return bad;
       }
       break;
     case "next": {
       const bad = str("handle", isHandleId, "bad-handle");
-      if (bad)
-        return bad;
+      if (bad) return bad;
       const max = record["max"];
       if (max !== void 0 && (!Number.isSafeInteger(max) || max < 1 || max > limits.maxArrayLength)) {
-        return violation("bad-value", `next.max must be an integer in 1..${limits.maxArrayLength}`, ["max"]);
+        return violation(
+          "bad-value",
+          `next.max must be an integer in 1..${limits.maxArrayLength}`,
+          ["max"]
+        );
       }
       break;
     }
     case "subscribe":
     case "release": {
       const bad = str("handle", isHandleId, "bad-handle");
-      if (bad)
-        return bad;
+      if (bad) return bad;
       break;
     }
     case "done": {
       const bad = str("handle", isHandleId, "bad-handle");
-      if (bad)
-        return bad;
+      if (bad) return bad;
       if (record["inReplyTo"] !== void 0) {
         const badReply = replyId("inReplyTo");
-        if (badReply)
-          return badReply;
+        if (badReply) return badReply;
       }
       if (record["error"] !== void 0) {
         const checked = validateErrorDto(record["error"], limits, ["error"]);
-        if (!checked.ok)
-          return checked;
+        if (!checked.ok) return checked;
       }
       break;
     }
     case "event": {
       const bad = str("subscription", isSubscriptionId, "bad-subscription");
-      if (bad)
-        return bad;
+      if (bad) return bad;
       const checked = validateWireValue(record["value"], limits, "forbid", ["value"]);
-      if (!checked.ok)
-        return checked;
+      if (!checked.ok) return checked;
       break;
     }
     case "unsubscribe": {
       const bad = str("subscription", isSubscriptionId, "bad-subscription");
-      if (bad)
-        return bad;
+      if (bad) return bad;
       break;
     }
     case "progress": {
       const bad = replyId("inReplyTo");
-      if (bad)
-        return bad;
+      if (bad) return bad;
       const progress = record["progress"];
       if (!isPlainObject(progress))
         return violation("bad-progress", "progress must be an object", ["progress"]);
@@ -49484,15 +50197,12 @@ function validateFrame(input, limits, expect) {
     }
     case "terminate": {
       const bad = str("reason", (value2) => value2.length <= 1024);
-      if (bad)
-        return bad;
+      if (bad) return bad;
       break;
     }
   }
   return { ok: true, value: record };
 }
-
-// packages/host/dist/execution/surface.js
 function surfaceKey(contract, major) {
   return `${contract}@${major}`;
 }
@@ -49505,8 +50215,7 @@ function isArgRef(value2) {
 var argRefKey = (ref) => typeof ref === "number" ? `${ref}` : `${ref.arg}.${ref.key}`;
 var freezeArgRef = (ref) => typeof ref === "number" ? ref : Object.freeze({ ...ref });
 function readArgRef(args, ref) {
-  if (typeof ref === "number")
-    return args[ref];
+  if (typeof ref === "number") return args[ref];
   const holder = args[ref.arg];
   return typeof holder === "object" && holder !== null ? holder[ref.key] : void 0;
 }
@@ -49568,7 +50277,10 @@ function snapshotMethod(name, raw, surface) {
   }
   if (kind === "lease") {
     if (result === void 0 === (resultFromArgs === void 0)) {
-      return invalidSurface(`lease method \xAB${name}\xBB must name the surface of its result (result or resultFromArgs)`, { surface });
+      return invalidSurface(
+        `lease method \xAB${name}\xBB must name the surface of its result (result or resultFromArgs)`,
+        { surface }
+      );
     }
     if (result !== void 0 && (!isQualifiedId(result.contract) || !Number.isSafeInteger(result.major) || result.major < 0)) {
       return invalidSurface(`lease method \xAB${name}\xBB must name the surface of its result`, {
@@ -49600,7 +50312,9 @@ function snapshotMethod(name, raw, surface) {
 }
 function assertSurface(surface) {
   if (!isQualifiedId(surface.contract) || !Number.isSafeInteger(surface.major) || surface.major < 0) {
-    return invalidSurface(`surface contract must be a qualified id with a non-negative major: ${surface.contract}@${String(surface.major)}`);
+    return invalidSurface(
+      `surface contract must be a qualified id with a non-negative major: ${surface.contract}@${String(surface.major)}`
+    );
   }
   const names = Object.keys(surface.methods);
   if (surface.releaseVia !== void 0 && surface.methods[surface.releaseVia]?.kind !== "value") {
@@ -49609,7 +50323,9 @@ function assertSurface(surface) {
     });
   }
   if (names.length === 0) {
-    return invalidSurface(`surface ${surfaceKey(surface.contract, surface.major)} declares no methods`);
+    return invalidSurface(
+      `surface ${surfaceKey(surface.contract, surface.major)} declares no methods`
+    );
   }
   for (const name of names) {
     const method = surface.methods[name];
@@ -49681,9 +50397,12 @@ function createSurfaceRegistry(surfaces) {
     }
   });
 }
-
-// packages/host/dist/execution/handles.js
 var HandleTable = class {
+  constructor(owner, generation, limits) {
+    this.owner = owner;
+    this.generation = generation;
+    this.limits = limits;
+  }
   owner;
   generation;
   limits;
@@ -49691,11 +50410,6 @@ var HandleTable = class {
   sequence = 0;
   releasedTotal = 0;
   invalidated = false;
-  constructor(owner, generation, limits) {
-    this.owner = owner;
-    this.generation = generation;
-    this.limits = limits;
-  }
   get isInvalidated() {
     return this.invalidated;
   }
@@ -49704,12 +50418,9 @@ var HandleTable = class {
     let iterators = 0;
     let events = 0;
     for (const record of this.records.values()) {
-      if (record.kind === "lease")
-        leases += 1;
-      else if (record.kind === "iterator")
-        iterators += 1;
-      else
-        events += 1;
+      if (record.kind === "lease") leases += 1;
+      else if (record.kind === "iterator") iterators += 1;
+      else events += 1;
     }
     return Object.freeze({
       live: this.records.size,
@@ -49733,10 +50444,8 @@ var HandleTable = class {
       }
     };
     limit("handles", counts.live, this.limits.maxHandles);
-    if (kind === "iterator")
-      limit("iterators", counts.iterators, this.limits.maxIterators);
-    if (kind === "events")
-      limit("events", counts.events, this.limits.maxSubscriptions);
+    if (kind === "iterator") limit("iterators", counts.iterators, this.limits.maxIterators);
+    if (kind === "events") limit("events", counts.events, this.limits.maxSubscriptions);
   }
   allocate(input) {
     if (this.invalidated) {
@@ -49769,14 +50478,12 @@ var HandleTable = class {
       released: false
     };
     this.records.set(id, record);
-    if (input.parent !== void 0)
-      this.records.get(input.parent)?.children.add(id);
+    if (input.parent !== void 0) this.records.get(input.parent)?.children.add(id);
     return record;
   }
   parseId(id) {
     const match = /^([hw])(\d+)-(\d+)$/u.exec(id);
-    if (match === null)
-      return void 0;
+    if (match === null) return void 0;
     return { owner: match[1], generation: Number(match[2]), sequence: Number(match[3]) };
   }
   /** True when the id was allocated by this side (owner prefix), whatever its generation. */
@@ -49785,8 +50492,7 @@ var HandleTable = class {
   }
   lookup(id) {
     const live = this.records.get(id);
-    if (live !== void 0)
-      return { state: "live", record: live };
+    if (live !== void 0) return { state: "live", record: live };
     const parsed = this.parseId(id);
     if (parsed === void 0 || parsed.owner !== this.owner || parsed.generation !== this.generation) {
       return { state: "foreign-generation" };
@@ -49800,25 +50506,21 @@ var HandleTable = class {
    */
   async release(id) {
     const record = this.records.get(id);
-    if (record === void 0)
-      return { released: false, failures: [] };
+    if (record === void 0) return { released: false, failures: [] };
     const failures = [];
     await this.releaseRecord(record, failures);
     return { released: true, failures };
   }
   async releaseRecord(record, failures) {
-    if (record.released)
-      return;
+    if (record.released) return;
     record.released = true;
     const children = [...record.children].reverse();
     for (const childId of children) {
       const child = this.records.get(childId);
-      if (child !== void 0)
-        await this.releaseRecord(child, failures);
+      if (child !== void 0) await this.releaseRecord(child, failures);
     }
     this.records.delete(record.id);
-    if (record.parent !== void 0)
-      this.records.get(record.parent)?.children.delete(record.id);
+    if (record.parent !== void 0) this.records.get(record.parent)?.children.delete(record.id);
     this.releasedTotal += 1;
     try {
       await record.release();
@@ -49834,8 +50536,7 @@ var HandleTable = class {
     const ids = [...this.records.keys()].reverse();
     for (const id of ids) {
       const record = this.records.get(id);
-      if (record === void 0)
-        continue;
+      if (record === void 0) continue;
       released.push(id);
       await this.releaseRecord(record, failures);
     }
@@ -49846,14 +50547,14 @@ var HandleTable = class {
   }
 };
 var PendingCalls = class {
+  constructor(limits) {
+    this.limits = limits;
+  }
   limits;
   calls = /* @__PURE__ */ new Map();
   lateAfterCancel = 0;
   /** Highest id ever opened; a reply above it never had a call, a reply at or below it did. */
   highestOpened = 0;
-  constructor(limits) {
-    this.limits = limits;
-  }
   get size() {
     return this.calls.size;
   }
@@ -49871,8 +50572,7 @@ var PendingCalls = class {
     }
     const entry2 = { ...call, cancelled: false, settled: false };
     this.calls.set(call.id, entry2);
-    if (call.id > this.highestOpened)
-      this.highestOpened = call.id;
+    if (call.id > this.highestOpened) this.highestOpened = call.id;
     return entry2;
   }
   peek(id) {
@@ -49885,31 +50585,26 @@ var PendingCalls = class {
   /** Marks the call cancelled locally; the caller has already been rejected with cancellation. */
   cancel(id) {
     const entry2 = this.calls.get(id);
-    if (entry2 === void 0 || entry2.settled)
-      return void 0;
+    if (entry2 === void 0 || entry2.settled) return void 0;
     entry2.cancelled = true;
     return entry2;
   }
   progress(id, progress) {
     const entry2 = this.calls.get(id);
-    if (entry2 === void 0)
-      return id <= this.highestOpened ? "duplicate" : "unknown";
-    if (entry2.cancelled)
-      return "late-after-cancel";
+    if (entry2 === void 0) return id <= this.highestOpened ? "duplicate" : "unknown";
+    if (entry2.cancelled) return "late-after-cancel";
     entry2.onProgress?.(progress);
     return "settled";
   }
   settle(id, outcome) {
     const entry2 = this.calls.get(id);
-    if (entry2 === void 0)
-      return id <= this.highestOpened ? "duplicate" : "unknown";
+    if (entry2 === void 0) return id <= this.highestOpened ? "duplicate" : "unknown";
     this.calls.delete(id);
     if (entry2.cancelled) {
       this.lateAfterCancel += 1;
       return "late-after-cancel";
     }
-    if (entry2.settled)
-      return "duplicate";
+    if (entry2.settled) return "duplicate";
     entry2.settled = true;
     entry2.resolve(outcome);
     return "settled";
@@ -49919,8 +50614,7 @@ var PendingCalls = class {
     let rejected = 0;
     for (const entry2 of [...this.calls.values()]) {
       this.calls.delete(entry2.id);
-      if (entry2.cancelled || entry2.settled)
-        continue;
+      if (entry2.cancelled || entry2.settled) continue;
       entry2.settled = true;
       entry2.reject(error);
       rejected += 1;
@@ -49943,8 +50637,7 @@ var ActiveCalls = class {
   }
   cancel(id) {
     const entry2 = this.calls.get(id);
-    if (entry2 === void 0)
-      return false;
+    if (entry2 === void 0) return false;
     entry2.cancelled = true;
     entry2.controller.abort(new OperationCancelledError("cancelled by peer"));
     return true;
@@ -49958,17 +50651,15 @@ var ActiveCalls = class {
   }
 };
 var Subscriptions = class {
-  limits;
-  records = /* @__PURE__ */ new Map();
   constructor(limits) {
     this.limits = limits;
   }
+  limits;
+  records = /* @__PURE__ */ new Map();
   /** Live (not yet closed) subscriptions. */
   get size() {
     let live = 0;
-    for (const record of this.records.values())
-      if (!record.closed)
-        live += 1;
+    for (const record of this.records.values()) if (!record.closed) live += 1;
     return live;
   }
   register(id, handle) {
@@ -50006,10 +50697,8 @@ var Subscriptions = class {
   /** Enqueues an event; `overflow` when the consumer is too slow (bounded queue). */
   push(id, value2) {
     const record = this.records.get(id);
-    if (record === void 0 || record.closed)
-      return "unknown";
-    if (record.queue.length >= this.limits.maxQueuedEvents)
-      return "overflow";
+    if (record === void 0 || record.closed) return "unknown";
+    if (record.queue.length >= this.limits.maxQueuedEvents) return "overflow";
     record.queue.push(value2);
     record.wake?.();
     return "queued";
@@ -50017,11 +50706,9 @@ var Subscriptions = class {
   /** Marks the stream ended (optionally by failure) and wakes the consumer; keeps the queue. */
   close(id, error) {
     const record = this.records.get(id);
-    if (record === void 0)
-      return;
+    if (record === void 0) return;
     record.closed = true;
-    if (error !== void 0)
-      record.error = error;
+    if (error !== void 0) record.error = error;
     record.wake?.();
   }
   /** The consumer is done with the record (drained or abandoned). */
@@ -50029,19 +50716,11 @@ var Subscriptions = class {
     this.records.delete(id);
   }
   closeAll(error) {
-    for (const id of [...this.records.keys()])
-      this.close(id, error);
+    for (const id of [...this.records.keys()]) this.close(id, error);
   }
 };
-
-// packages/host/dist/execution/endpoint.js
 var CAPABILITY_OF = /* @__PURE__ */ Symbol.for("x3.host/rpc/proxied-remote");
 var RemoteCapabilityImpl = class {
-  endpoint;
-  ref;
-  contract;
-  major;
-  data;
   constructor(endpoint, ref, contract, major, data = Object.freeze({})) {
     this.endpoint = endpoint;
     this.ref = ref;
@@ -50049,6 +50728,11 @@ var RemoteCapabilityImpl = class {
     this.major = major;
     this.data = data;
   }
+  endpoint;
+  ref;
+  contract;
+  major;
+  data;
   get id() {
     return this.ref[HANDLE_MARKER].id;
   }
@@ -50066,16 +50750,16 @@ var RemoteCapabilityImpl = class {
   }
 };
 var LocalCapabilityImpl = class {
-  endpoint;
-  ref;
-  contract;
-  major;
   constructor(endpoint, ref, contract, major) {
     this.endpoint = endpoint;
     this.ref = ref;
     this.contract = contract;
     this.major = major;
   }
+  endpoint;
+  ref;
+  contract;
+  major;
   get isReleased() {
     return this.endpoint.localReleased(this.ref[HANDLE_MARKER].id);
   }
@@ -50085,8 +50769,7 @@ var LocalCapabilityImpl = class {
 };
 var noopRelease = () => void 0;
 function normalizeProgress(value2) {
-  if (typeof value2 !== "object" || value2 === null)
-    return void 0;
+  if (typeof value2 !== "object" || value2 === null) return void 0;
   const record = value2;
   const completed = record["completed"];
   if (typeof completed !== "number" || !Number.isFinite(completed) || completed < 0)
@@ -50190,7 +50873,12 @@ var EndpointImpl = class {
       contract: surface.contract,
       major: surface.major
     });
-    return new LocalCapabilityImpl(this, handleRef(record.id, "lease", surface, data, has), surface.contract, surface.major);
+    return new LocalCapabilityImpl(
+      this,
+      handleRef(record.id, "lease", surface, data, has),
+      surface.contract,
+      surface.major
+    );
   }
   async load(request, options = {}) {
     this.assertOpen();
@@ -50201,8 +50889,7 @@ var EndpointImpl = class {
       });
     }
     const outcome = await this.request({ t: "load", ...request }, "load", options);
-    if (outcome.kind === "throw")
-      throw fromErrorDto(outcome.error);
+    if (outcome.kind === "throw") throw fromErrorDto(outcome.error);
     if (outcome.kind !== "handle") {
       throw this.failWith({ code: "unexpected-frame", message: "load must be answered by ready" });
     }
@@ -50230,11 +50917,16 @@ var EndpointImpl = class {
       });
     }
     const existing = this.remoteProxies.get(inner.id);
-    if (existing !== void 0)
-      return existing;
+    if (existing !== void 0) return existing;
     if (!this.remote.has(inner.id))
       this.remote.set(inner.id, { ref, released: false, children: /* @__PURE__ */ new Set() });
-    const capability = new RemoteCapabilityImpl(this, ref, inner.contract, inner.major, Object.freeze({ ...inner.data ?? {} }));
+    const capability = new RemoteCapabilityImpl(
+      this,
+      ref,
+      inner.contract,
+      inner.major,
+      Object.freeze({ ...inner.data ?? {} })
+    );
     this.remoteProxies.set(inner.id, capability);
     return capability;
   }
@@ -50252,8 +50944,7 @@ var EndpointImpl = class {
     }
     const present = remote.has;
     for (const [name, method] of Object.entries(surface.methods)) {
-      if (method.optional === true && present !== void 0 && !present.includes(name))
-        continue;
+      if (method.optional === true && present !== void 0 && !present.includes(name)) continue;
       object2[name] = async (...rawArgs) => {
         const args = [...rawArgs];
         let signal;
@@ -50269,20 +50960,19 @@ var EndpointImpl = class {
             return void 0;
           const value2 = holder[ref.key];
           const matches2 = expect === "signal" ? isAbortSignal(value2) : typeof value2 === "function";
-          if (!matches2 && value2 !== void 0)
-            return void 0;
-          args[ref.arg] = Object.fromEntries(Object.entries(holder).filter(([key2]) => key2 !== ref.key));
+          if (!matches2 && value2 !== void 0) return void 0;
+          args[ref.arg] = Object.fromEntries(
+            Object.entries(holder).filter(([key2]) => key2 !== ref.key)
+          );
           return value2;
         };
         if (typeof method.signal === "object") {
           const lifted = lift(method.signal, "signal");
-          if (isAbortSignal(lifted))
-            signal = lifted;
+          if (isAbortSignal(lifted)) signal = lifted;
         }
         if (method.progress !== void 0) {
           const lifted = lift(method.progress, "function");
-          if (typeof lifted === "function")
-            onProgress = lifted;
+          if (typeof lifted === "function") onProgress = lifted;
         }
         const outcome = await remote.call(name, args, {
           ...signal === void 0 ? {} : { signal },
@@ -50318,8 +51008,7 @@ var EndpointImpl = class {
     return object2;
   }
   receive(raw) {
-    if (this.state !== "open")
-      return;
+    if (this.state !== "open") return;
     const validated = validateFrame(raw, this.limits, {
       session: this.session,
       generation: this.generation
@@ -50346,25 +51035,27 @@ var EndpointImpl = class {
     });
   }
   async close(reason) {
-    if (this.state !== "open")
-      return;
+    if (this.state !== "open") return;
     this.state = "closed";
     this.trySend({ t: "terminate", reason });
-    await this.teardown(new ModkitError({
-      code: "x3.host/rpc-endpoint-closed",
-      message: `endpoint closed: ${reason}`,
-      retryability: "conditional"
-    }));
+    await this.teardown(
+      new ModkitError({
+        code: "x3.host/rpc-endpoint-closed",
+        message: `endpoint closed: ${reason}`,
+        retryability: "conditional"
+      })
+    );
   }
   async peerClosed(reason) {
-    if (this.state !== "open")
-      return;
+    if (this.state !== "open") return;
     this.state = "closed";
-    await this.teardown(new ModkitError({
-      code: "x3.host/rpc-peer-exited",
-      message: `peer exited: ${reason}`,
-      retryability: "conditional"
-    }));
+    await this.teardown(
+      new ModkitError({
+        code: "x3.host/rpc-peer-exited",
+        message: `peer exited: ${reason}`,
+        retryability: "conditional"
+      })
+    );
   }
   // ------------------------------------------------------------------ internal: lifecycle
   assertOpen() {
@@ -50380,8 +51071,7 @@ var EndpointImpl = class {
     return protocolViolationError(item);
   }
   fail(item) {
-    if (this.state !== "open")
-      return;
+    if (this.state !== "open") return;
     this.violations += 1;
     this.state = "failed";
     this.trySend({ t: "terminate", reason: `protocol violation: ${item.code}` });
@@ -50398,11 +51088,13 @@ var EndpointImpl = class {
       void pump.iterator?.return?.();
     }
     this.pumps.clear();
-    for (const state of this.remote.values())
-      state.released = true;
+    for (const state of this.remote.values()) state.released = true;
     const { failures } = await this.table.invalidate();
     for (const failure of failures)
-      this.report("x3.host/rpc-release-failed", `release failed during teardown: ${failure instanceof Error ? failure.message : String(failure)}`);
+      this.report(
+        "x3.host/rpc-release-failed",
+        `release failed during teardown: ${failure instanceof Error ? failure.message : String(failure)}`
+      );
   }
   report(code, message) {
     this.onDiagnostic?.({ code, severity: "warning", message });
@@ -50443,15 +51135,11 @@ var EndpointImpl = class {
           context: { violation: checked.violation.code }
         });
       }
-      if (move)
-        transfer.push(...checked.value.transferables);
+      if (move) transfer.push(...checked.value.transferables);
     };
-    if (frame.t === "call")
-      measure(frame.args, "nested", false);
-    else if (frame.t === "return" && frame.value !== void 0)
-      measure(frame.value, "top", true);
-    else if (frame.t === "event")
-      measure(frame.value, "forbid", true);
+    if (frame.t === "call") measure(frame.args, "nested", false);
+    else if (frame.t === "return" && frame.value !== void 0) measure(frame.value, "top", true);
+    else if (frame.t === "event") measure(frame.value, "forbid", true);
     this.port.post(frame, transfer);
     return frame;
   }
@@ -50471,10 +51159,8 @@ var EndpointImpl = class {
       let timer;
       let abortListener;
       const cleanup = () => {
-        if (timer !== void 0)
-          this.scheduler.clearTimeout(timer);
-        if (abortListener !== void 0)
-          options.signal?.removeEventListener("abort", abortListener);
+        if (timer !== void 0) this.scheduler.clearTimeout(timer);
+        if (abortListener !== void 0) options.signal?.removeEventListener("abort", abortListener);
       };
       const entry2 = this.pending.open({
         id,
@@ -50490,8 +51176,7 @@ var EndpointImpl = class {
         ...options.onProgress === void 0 ? {} : { onProgress: options.onProgress }
       });
       const cancelWith = (error) => {
-        if (entry2.settled || entry2.cancelled)
-          return;
+        if (entry2.settled || entry2.cancelled) return;
         this.pending.cancel(id);
         cleanup();
         this.trySend({ t: "cancel", target: id });
@@ -50499,12 +51184,17 @@ var EndpointImpl = class {
       };
       const deadline = options.deadlineMs ?? this.limits.defaultCallDeadlineMs;
       if (deadline > 0 && kind !== "subscribe") {
-        timer = this.scheduler.setTimeout(() => cancelWith(new ModkitError({
-          code: "x3.host/rpc-deadline-exceeded",
-          message: `${kind} #${id} exceeded its ${deadline} ms deadline`,
-          context: { id, deadlineMs: deadline },
-          retryability: "conditional"
-        })), deadline);
+        timer = this.scheduler.setTimeout(
+          () => cancelWith(
+            new ModkitError({
+              code: "x3.host/rpc-deadline-exceeded",
+              message: `${kind} #${id} exceeded its ${deadline} ms deadline`,
+              context: { id, deadlineMs: deadline },
+              retryability: "conditional"
+            })
+          ),
+          deadline
+        );
       }
       if (options.signal !== void 0) {
         abortListener = () => cancelWith(new OperationCancelledError(options.signal?.reason));
@@ -50521,7 +51211,9 @@ var EndpointImpl = class {
       } catch (error) {
         this.pending.drop(id);
         cleanup();
-        reject(isModkitError(error) ? error : new ModkitError({ code: "x3.host/rpc-send-failed", message: String(error) }));
+        reject(
+          isModkitError(error) ? error : new ModkitError({ code: "x3.host/rpc-send-failed", message: String(error) })
+        );
       }
     });
   }
@@ -50556,14 +51248,11 @@ var EndpointImpl = class {
       if (typeof value2 === "object" && value2 !== null && CAPABILITY_OF in value2) {
         return encode(value2[CAPABILITY_OF], path);
       }
-      if (isHandleRef(value2))
-        return value2;
-      if (Array.isArray(value2))
-        return value2.map((item, index) => encode(item, `${path}[${index}]`));
+      if (isHandleRef(value2)) return value2;
+      if (Array.isArray(value2)) return value2.map((item, index) => encode(item, `${path}[${index}]`));
       if (isPlainObject(value2)) {
         const out = {};
-        for (const [key2, item] of Object.entries(value2))
-          out[key2] = encode(item, `${path}.${key2}`);
+        for (const [key2, item] of Object.entries(value2)) out[key2] = encode(item, `${path}.${key2}`);
         return out;
       }
       return value2;
@@ -50600,19 +51289,21 @@ var EndpointImpl = class {
         message: `${method}: ${argProblem}`
       });
     }
-    const outcome = await this.request({
-      t: "call",
-      handle: remote.id,
-      method,
-      args: encoded,
-      ...options.deadlineMs === void 0 ? {} : { deadlineMs: options.deadlineMs }
-    }, "call", options);
-    if (outcome.kind === "throw")
-      throw fromErrorDto(outcome.error);
+    const outcome = await this.request(
+      {
+        t: "call",
+        handle: remote.id,
+        method,
+        args: encoded,
+        ...options.deadlineMs === void 0 ? {} : { deadlineMs: options.deadlineMs }
+      },
+      "call",
+      options
+    );
+    if (outcome.kind === "throw") throw fromErrorDto(outcome.error);
     if (outcome.kind === "done")
       throw this.failWith({ code: "unexpected-frame", message: "call answered with done" });
-    if (surface.releaseVia === method)
-      this.markRemoteReleased(remote.id);
+    if (surface.releaseVia === method) this.markRemoteReleased(remote.id);
     if (decl.kind === "value") {
       if (outcome.kind !== "return")
         throw this.failWith({
@@ -50709,26 +51400,20 @@ var EndpointImpl = class {
   }
   markRemoteReleased(id) {
     const state = this.remote.get(id);
-    if (state === void 0 || state.released)
-      return;
+    if (state === void 0 || state.released) return;
     state.released = true;
-    for (const child of [...state.children].reverse())
-      this.markRemoteReleased(child);
-    if (state.parent !== void 0)
-      this.remote.get(state.parent)?.children.delete(id);
+    for (const child of [...state.children].reverse()) this.markRemoteReleased(child);
+    if (state.parent !== void 0) this.remote.get(state.parent)?.children.delete(id);
   }
   async releaseRemote(id) {
     const state = this.remote.get(id);
-    if (state === void 0 || state.released)
-      return;
+    if (state === void 0 || state.released) return;
     this.markRemoteReleased(id);
-    if (this.state !== "open")
-      return;
+    if (this.state !== "open") return;
     const outcome = await this.request({ t: "release", handle: id }, "release", {
       deadlineMs: this.limits.defaultCallDeadlineMs
     });
-    if (outcome.kind === "throw")
-      throw fromErrorDto(outcome.error);
+    if (outcome.kind === "throw") throw fromErrorDto(outcome.error);
   }
   remoteIterable(id, decl) {
     const batch = this.limits.iteratorBatchItems;
@@ -50738,11 +51423,13 @@ var EndpointImpl = class {
         const buffered = [];
         return {
           next: async () => {
-            if (buffered.length > 0)
-              return { done: false, value: buffered.shift() };
-            if (finished || this.remoteReleased(id))
-              return { done: true, value: void 0 };
-            const outcome = await this.request(batch > 1 ? { t: "next", handle: id, max: batch } : { t: "next", handle: id }, "next", {});
+            if (buffered.length > 0) return { done: false, value: buffered.shift() };
+            if (finished || this.remoteReleased(id)) return { done: true, value: void 0 };
+            const outcome = await this.request(
+              batch > 1 ? { t: "next", handle: id, max: batch } : { t: "next", handle: id },
+              "next",
+              {}
+            );
             if (outcome.kind === "done") {
               finished = true;
               this.markRemoteReleased(id);
@@ -50776,8 +51463,7 @@ var EndpointImpl = class {
               return { done: false, value: buffered.shift() };
             }
             const problem = decl.validateReturn?.(outcome.value);
-            if (problem !== void 0)
-              throw this.failWith({ code: "bad-return", message: problem });
+            if (problem !== void 0) throw this.failWith({ code: "bad-return", message: problem });
             return { done: false, value: outcome.value };
           },
           return: async () => {
@@ -50797,21 +51483,18 @@ var EndpointImpl = class {
         let subscription;
         let finished = false;
         const stop = async () => {
-          if (finished)
-            return;
+          if (finished) return;
           finished = true;
           if (subscription !== void 0) {
             this.subscriptions.close(subscription);
             this.subscriptions.drop(subscription);
-            if (this.state === "open")
-              this.trySend({ t: "unsubscribe", subscription });
+            if (this.state === "open") this.trySend({ t: "unsubscribe", subscription });
           }
           await this.releaseRemote(id);
         };
         return {
           next: async () => {
-            if (finished)
-              return { done: true, value: void 0 };
+            if (finished) return { done: true, value: void 0 };
             if (subscription === void 0) {
               const outcome = await this.request({ t: "subscribe", handle: id }, "subscribe", {});
               if (outcome.kind === "throw") {
@@ -50843,8 +51526,7 @@ var EndpointImpl = class {
               if (record.closed) {
                 finished = true;
                 this.subscriptions.drop(subscription);
-                if (record.error !== void 0)
-                  throw record.error;
+                if (record.error !== void 0) throw record.error;
                 return { done: true, value: void 0 };
               }
               await new Promise((resolve) => {
@@ -50868,7 +51550,10 @@ var EndpointImpl = class {
   async releaseLocal(id) {
     const result = await this.table.release(id);
     for (const failure of result.failures) {
-      this.report("x3.host/rpc-release-failed", `release of ${id} failed: ${failure instanceof Error ? failure.message : String(failure)}`);
+      this.report(
+        "x3.host/rpc-release-failed",
+        `release of ${id} failed: ${failure instanceof Error ? failure.message : String(failure)}`
+      );
     }
   }
   decodeArgs(args) {
@@ -50893,12 +51578,10 @@ var EndpointImpl = class {
         }
         return this.materialize(this.proxy(value2));
       }
-      if (Array.isArray(value2))
-        return value2.map((item) => decode(item));
+      if (Array.isArray(value2)) return value2.map((item) => decode(item));
       if (isPlainObject(value2)) {
         const out = {};
-        for (const [key2, item] of Object.entries(value2))
-          out[key2] = decode(item);
+        for (const [key2, item] of Object.entries(value2)) out[key2] = decode(item);
         return out;
       }
       return value2;
@@ -50906,8 +51589,7 @@ var EndpointImpl = class {
     return args.map((arg) => decode(arg));
   }
   reply(inReplyTo, outcome) {
-    if (this.state !== "open")
-      return;
+    if (this.state !== "open") return;
     try {
       switch (outcome.kind) {
         case "return":
@@ -50949,11 +51631,14 @@ var EndpointImpl = class {
       case "call":
         return this.handleCall(frame);
       case "return":
-        return this.handleSettle(frame.inReplyTo, isHandleRef(frame.value) ? { kind: "handle", value: frame.value } : {
-          kind: "return",
-          value: frame.value,
-          ...frame.lease === void 0 ? {} : { lease: frame.lease }
-        });
+        return this.handleSettle(
+          frame.inReplyTo,
+          isHandleRef(frame.value) ? { kind: "handle", value: frame.value } : {
+            kind: "return",
+            value: frame.value,
+            ...frame.lease === void 0 ? {} : { lease: frame.lease }
+          }
+        );
       case "throw":
         return this.handleSettle(frame.inReplyTo, { kind: "throw", error: frame.error });
       case "progress": {
@@ -50988,14 +51673,15 @@ var EndpointImpl = class {
       case "release":
         return this.handleRelease(frame);
       case "terminate":
-        if (this.state !== "open")
-          return;
+        if (this.state !== "open") return;
         this.state = "closed";
-        await this.teardown(new ModkitError({
-          code: "x3.host/rpc-terminated",
-          message: `peer terminated: ${frame.reason}`,
-          retryability: "conditional"
-        }));
+        await this.teardown(
+          new ModkitError({
+            code: "x3.host/rpc-terminated",
+            message: `peer terminated: ${frame.reason}`,
+            retryability: "conditional"
+          })
+        );
         this.onTerminate?.(frame.reason);
         return;
     }
@@ -51007,7 +51693,10 @@ var EndpointImpl = class {
     else if (result === "duplicate")
       this.fail({ code: "duplicate-reply", message: `duplicate reply for call ${inReplyTo}` });
     else if (result === "late-after-cancel")
-      this.report("x3.host/rpc-late-reply-dropped", `dropped late reply for cancelled call ${inReplyTo}`);
+      this.report(
+        "x3.host/rpc-late-reply-dropped",
+        `dropped late reply for cancelled call ${inReplyTo}`
+      );
     if (result === "late-after-cancel" && outcome.kind === "handle") {
       const ref = outcome.value;
       this.discardHandle(ref[HANDLE_MARKER].id);
@@ -51022,15 +51711,16 @@ var EndpointImpl = class {
    * violation (found by the transport conformance kit on real event-loop hops).
    */
   discardHandle(id) {
-    if (this.state !== "open")
-      return;
+    if (this.state !== "open") return;
     const failed = (reason) => this.report("x3.host/rpc-release-failed", `discard of late handle ${id} failed: ${reason}`);
     void this.request({ t: "release", handle: id }, "release", {
       deadlineMs: this.limits.defaultCallDeadlineMs
-    }).then((outcome) => {
-      if (outcome.kind === "throw")
-        failed(outcome.error.message);
-    }, (error) => failed(error instanceof Error ? error.message : String(error)));
+    }).then(
+      (outcome) => {
+        if (outcome.kind === "throw") failed(outcome.error.message);
+      },
+      (error) => failed(error instanceof Error ? error.message : String(error))
+    );
   }
   async handleLoad(frame) {
     if (this.role !== "worker") {
@@ -51040,22 +51730,28 @@ var EndpointImpl = class {
     if (this.loader === void 0) {
       this.reply(frame.id, {
         kind: "throw",
-        error: toErrorDto(new ModkitError({
-          code: "x3.host/rpc-no-loader",
-          message: "this endpoint cannot load modules"
-        }), this.limits)
+        error: toErrorDto(
+          new ModkitError({
+            code: "x3.host/rpc-no-loader",
+            message: "this endpoint cannot load modules"
+          }),
+          this.limits
+        )
       });
       return;
     }
     const active = this.active.begin(frame.id);
     try {
-      const loaded = await this.loader({
-        moduleUrl: frame.moduleUrl,
-        contributionId: frame.contributionId,
-        variantId: frame.variantId,
-        artifactDigest: frame.artifactDigest,
-        ...frame.entrypointDigest === void 0 ? {} : { entrypointDigest: frame.entrypointDigest }
-      }, active.controller.signal);
+      const loaded = await this.loader(
+        {
+          moduleUrl: frame.moduleUrl,
+          contributionId: frame.contributionId,
+          variantId: frame.variantId,
+          artifactDigest: frame.artifactDigest,
+          ...frame.entrypointDigest === void 0 ? {} : { entrypointDigest: frame.entrypointDigest }
+        },
+        active.controller.signal
+      );
       const capability = this.expose(loaded.module, loaded.surface, loaded.release ?? noopRelease);
       const exports = Object.keys(loaded.module).filter((key2) => key2.length <= 256).sort();
       this.reply(frame.id, {
@@ -51086,7 +51782,10 @@ var EndpointImpl = class {
     } else if (result === "duplicate") {
       this.fail({ code: "duplicate-reply", message: `duplicate ready for load ${frame.inReplyTo}` });
     } else if (result === "late-after-cancel") {
-      this.report("x3.host/rpc-late-reply-dropped", `dropped late ready for cancelled load ${frame.inReplyTo}`);
+      this.report(
+        "x3.host/rpc-late-reply-dropped",
+        `dropped late ready for cancelled load ${frame.inReplyTo}`
+      );
       this.discardHandle(frame.root[HANDLE_MARKER].id);
     }
   }
@@ -51109,10 +51808,13 @@ var EndpointImpl = class {
     if (lookup.state === "released") {
       this.reply(frame.id, {
         kind: "throw",
-        error: toErrorDto(new ModkitError({
-          code: "x3.host/rpc-released-handle",
-          message: `handle ${frame.handle} was released`
-        }), this.limits)
+        error: toErrorDto(
+          new ModkitError({
+            code: "x3.host/rpc-released-handle",
+            message: `handle ${frame.handle} was released`
+          }),
+          this.limits
+        )
       });
       return;
     }
@@ -51151,10 +51853,13 @@ var EndpointImpl = class {
     if (typeof fn !== "function") {
       this.reply(frame.id, {
         kind: "throw",
-        error: toErrorDto(new ModkitError({
-          code: "x3.host/rpc-method-unavailable",
-          message: `target has no method \xAB${frame.method}\xBB`
-        }), this.limits)
+        error: toErrorDto(
+          new ModkitError({
+            code: "x3.host/rpc-method-unavailable",
+            message: `target has no method \xAB${frame.method}\xBB`
+          }),
+          this.limits
+        )
       });
       return;
     }
@@ -51165,21 +51870,21 @@ var EndpointImpl = class {
       if (typeof contract !== "string" || typeof major !== "number" || this.surfaces.surfaceFor(contract, major) === void 0) {
         this.reply(frame.id, {
           kind: "throw",
-          error: toErrorDto(new ModkitError({
-            code: "x3.host/rpc-bad-argument",
-            message: `${frame.method}: arguments do not name a registered surface`
-          }), this.limits)
+          error: toErrorDto(
+            new ModkitError({
+              code: "x3.host/rpc-bad-argument",
+              message: `${frame.method}: arguments do not name a registered surface`
+            }),
+            this.limits
+          )
         });
         return;
       }
       dynamicResult = { contract, major };
     }
     const active = this.active.begin(frame.id);
-    if (decl.arity !== void 0)
-      while (args.length < decl.arity)
-        args.push(void 0);
-    if (decl.signal === "last")
-      args.push(active.controller.signal);
+    if (decl.arity !== void 0) while (args.length < decl.arity) args.push(void 0);
+    if (decl.signal === "last") args.push(active.controller.signal);
     else if (typeof decl.signal === "object") {
       this.placeInArg(args, decl.signal, active.controller.signal);
     }
@@ -51201,8 +51906,7 @@ var EndpointImpl = class {
     }
     this.active.end(frame.id);
     if (active.cancelled) {
-      if (isLeaseLike(result))
-        await result.release();
+      if (isLeaseLike(result)) await result.release();
       else if (decl.kind !== "value" && isAsyncIterable(result)) {
         await result[Symbol.asyncIterator]().return?.();
       }
@@ -51219,16 +51923,18 @@ var EndpointImpl = class {
         if (problem !== void 0) {
           this.reply(frame.id, {
             kind: "throw",
-            error: toErrorDto(new ModkitError({
-              code: "x3.host/rpc-bad-return",
-              message: `${frame.method}: ${problem}`
-            }), this.limits)
+            error: toErrorDto(
+              new ModkitError({
+                code: "x3.host/rpc-bad-return",
+                message: `${frame.method}: ${problem}`
+              }),
+              this.limits
+            )
           });
           return;
         }
         this.reply(frame.id, { kind: "return", value: result });
-        if (surface.releaseVia === frame.method)
-          await this.releaseLocal(record.id);
+        if (surface.releaseVia === frame.method) await this.releaseLocal(record.id);
         return;
       }
       case "leased-value": {
@@ -51236,14 +51942,16 @@ var EndpointImpl = class {
         const checked = lease === void 0 ? void 0 : lease.value === void 0 ? { ok: true } : validateWireValue(lease.value, this.limits, "forbid");
         const problem = lease === void 0 ? "did not return a lease" : checked !== void 0 && !checked.ok ? checked.violation.message : decl.validateReturn?.(lease.value);
         if (lease === void 0 || problem !== void 0) {
-          if (lease !== void 0)
-            await lease.release();
+          if (lease !== void 0) await lease.release();
           this.reply(frame.id, {
             kind: "throw",
-            error: toErrorDto(new ModkitError({
-              code: "x3.host/rpc-bad-return",
-              message: `${frame.method}: ${problem ?? "did not return a lease"}`
-            }), this.limits)
+            error: toErrorDto(
+              new ModkitError({
+                code: "x3.host/rpc-bad-return",
+                message: `${frame.method}: ${problem ?? "did not return a lease"}`
+              }),
+              this.limits
+            )
           });
           return;
         }
@@ -51270,14 +51978,16 @@ var EndpointImpl = class {
         const value2 = lease === void 0 ? result : lease.value;
         const resultSurface = dynamicResult ?? decl.result;
         if (typeof value2 !== "object" || value2 === null || resultSurface === void 0) {
-          if (lease !== void 0)
-            await lease.release();
+          if (lease !== void 0) await lease.release();
           this.reply(frame.id, {
             kind: "throw",
-            error: toErrorDto(new ModkitError({
-              code: "x3.host/rpc-bad-return",
-              message: `${frame.method} did not return a capability`
-            }), this.limits)
+            error: toErrorDto(
+              new ModkitError({
+                code: "x3.host/rpc-bad-return",
+                message: `${frame.method} did not return a capability`
+              }),
+              this.limits
+            )
           });
           return;
         }
@@ -51297,8 +52007,7 @@ var EndpointImpl = class {
             value: handleRef(child.id, "lease", resultSurface, data, has)
           });
         } catch (error) {
-          if (lease !== void 0)
-            await lease.release();
+          if (lease !== void 0) await lease.release();
           this.reply(frame.id, { kind: "throw", error: toErrorDto(error, this.limits) });
         }
         return;
@@ -51308,10 +52017,13 @@ var EndpointImpl = class {
         if (!isAsyncIterable(result)) {
           this.reply(frame.id, {
             kind: "throw",
-            error: toErrorDto(new ModkitError({
-              code: "x3.host/rpc-bad-return",
-              message: `${frame.method} did not return an async iterable`
-            }), this.limits)
+            error: toErrorDto(
+              new ModkitError({
+                code: "x3.host/rpc-bad-return",
+                message: `${frame.method} did not return an async iterable`
+              }),
+              this.limits
+            )
           });
           return;
         }
@@ -51359,15 +52071,17 @@ var EndpointImpl = class {
   }
   async handleNext(frame) {
     const lookup = this.lookupOwned(frame.handle, "iterator");
-    if (lookup === void 0)
-      return;
+    if (lookup === void 0) return;
     if (lookup.state === "released") {
       this.reply(frame.id, {
         kind: "throw",
-        error: toErrorDto(new ModkitError({
-          code: "x3.host/rpc-released-handle",
-          message: `iterator ${frame.handle} was released`
-        }), this.limits)
+        error: toErrorDto(
+          new ModkitError({
+            code: "x3.host/rpc-released-handle",
+            message: `iterator ${frame.handle} was released`
+          }),
+          this.limits
+        )
       });
       return;
     }
@@ -51408,10 +52122,13 @@ var EndpointImpl = class {
         if (!checked.ok) {
           this.reply(frame.id, {
             kind: "throw",
-            error: toErrorDto(new ModkitError({
-              code: "x3.host/rpc-bad-return",
-              message: `iterator item rejected: ${checked.violation.message}`
-            }), this.limits)
+            error: toErrorDto(
+              new ModkitError({
+                code: "x3.host/rpc-bad-return",
+                message: `iterator item rejected: ${checked.violation.message}`
+              }),
+              this.limits
+            )
           });
           await this.releaseLocal(frame.handle);
           return;
@@ -51423,8 +52140,7 @@ var EndpointImpl = class {
         await this.releaseLocal(frame.handle);
         return;
       }
-      if (ended)
-        target.exhausted = true;
+      if (ended) target.exhausted = true;
       this.reply(frame.id, {
         kind: "return",
         value: frame.max === void 0 ? items[0] : items
@@ -51453,8 +52169,7 @@ var EndpointImpl = class {
       });
       return void 0;
     }
-    if (lookup.state === "released")
-      return { state: "released" };
+    if (lookup.state === "released") return { state: "released" };
     if (lookup.record.kind !== kind) {
       this.fail({
         code: "wrong-handle-kind",
@@ -51466,15 +52181,17 @@ var EndpointImpl = class {
   }
   async handleSubscribe(frame) {
     const lookup = this.lookupOwned(frame.handle, "events");
-    if (lookup === void 0)
-      return;
+    if (lookup === void 0) return;
     if (lookup.state === "released") {
       this.reply(frame.id, {
         kind: "throw",
-        error: toErrorDto(new ModkitError({
-          code: "x3.host/rpc-released-handle",
-          message: `events ${frame.handle} was released`
-        }), this.limits)
+        error: toErrorDto(
+          new ModkitError({
+            code: "x3.host/rpc-released-handle",
+            message: `events ${frame.handle} was released`
+          }),
+          this.limits
+        )
       });
       return;
     }
@@ -51482,10 +52199,13 @@ var EndpointImpl = class {
     if (target.subscription !== void 0) {
       this.reply(frame.id, {
         kind: "throw",
-        error: toErrorDto(new ModkitError({
-          code: "x3.host/rpc-already-subscribed",
-          message: `events ${frame.handle} already has a subscriber`
-        }), this.limits)
+        error: toErrorDto(
+          new ModkitError({
+            code: "x3.host/rpc-already-subscribed",
+            message: `events ${frame.handle} already has a subscriber`
+          }),
+          this.limits
+        )
       });
       return;
     }
@@ -51500,10 +52220,8 @@ var EndpointImpl = class {
         pump.iterator = target.iterable[Symbol.asyncIterator]();
         for (; ; ) {
           const step = await pump.iterator.next();
-          if (pump.stopped || this.state !== "open")
-            return;
-          if (step.done === true)
-            break;
+          if (pump.stopped || this.state !== "open") return;
+          if (step.done === true) break;
           const checked = validateWireValue(step.value, this.limits, "forbid");
           if (!checked.ok) {
             throw new ModkitError({
@@ -51513,8 +52231,7 @@ var EndpointImpl = class {
           }
           this.send({ t: "event", subscription, value: step.value });
         }
-        if (this.state === "open")
-          this.send({ t: "done", handle: frame.handle });
+        if (this.state === "open") this.send({ t: "done", handle: frame.handle });
       } catch (error) {
         if (!pump.stopped && this.state === "open") {
           this.trySend({ t: "done", handle: frame.handle, error: toErrorDto(error, this.limits) });
@@ -51527,18 +52244,20 @@ var EndpointImpl = class {
   }
   handleEvent(frame) {
     const result = this.subscriptions.push(frame.subscription, frame.value);
-    if (result === "queued")
-      return;
+    if (result === "queued") return;
     if (result === "unknown") {
       this.droppedEvents += 1;
       return;
     }
     this.trySend({ t: "unsubscribe", subscription: frame.subscription });
-    this.closeSubscription(frame.subscription, new ModkitError({
-      code: "x3.host/rpc-events-overflow",
-      message: `event queue for ${frame.subscription} exceeded ${this.limits.maxQueuedEvents}`,
-      retryability: "conditional"
-    }));
+    this.closeSubscription(
+      frame.subscription,
+      new ModkitError({
+        code: "x3.host/rpc-events-overflow",
+        message: `event queue for ${frame.subscription} exceeded ${this.limits.maxQueuedEvents}`,
+        retryability: "conditional"
+      })
+    );
   }
   handleDone(frame) {
     if (frame.inReplyTo !== void 0) {
@@ -51553,15 +52272,13 @@ var EndpointImpl = class {
     }
     const error = frame.error === void 0 ? void 0 : fromErrorDto(frame.error);
     for (const [id, record] of this.subscriptions.entries()) {
-      if (record.handle === frame.handle)
-        this.closeSubscription(id, error);
+      if (record.handle === frame.handle) this.closeSubscription(id, error);
     }
     this.markRemoteReleased(frame.handle);
   }
   /** Puts a host-created value (signal, progress emitter) at a declared key of an object argument. */
   placeInArg(args, ref, value2) {
-    while (args.length <= ref.arg)
-      args.push(void 0);
+    while (args.length <= ref.arg) args.push(void 0);
     const holder = args[ref.arg];
     const base = typeof holder === "object" && holder !== null ? holder : {};
     args[ref.arg] = { ...base, [ref.key]: value2 };
@@ -51578,26 +52295,22 @@ var EndpointImpl = class {
    */
   presentOptional(target, surface) {
     const methods = this.surfaces.surfaceFor(surface.contract, surface.major)?.methods;
-    if (methods === void 0)
-      return void 0;
+    if (methods === void 0) return void 0;
     const optional = Object.entries(methods).filter(([, method]) => method.optional === true).map(([name]) => name);
-    if (optional.length === 0)
-      return void 0;
-    if (typeof target !== "object" || target === null)
-      return Object.freeze([]);
-    return Object.freeze(optional.filter((name) => typeof target[name] === "function"));
+    if (optional.length === 0) return void 0;
+    if (typeof target !== "object" || target === null) return Object.freeze([]);
+    return Object.freeze(
+      optional.filter((name) => typeof target[name] === "function")
+    );
   }
   fieldData(target, surface) {
     const fields = this.surfaces.surfaceFor(surface.contract, surface.major)?.fields;
-    if (fields === void 0 || fields.length === 0)
-      return void 0;
-    if (typeof target !== "object" || target === null)
-      return void 0;
+    if (fields === void 0 || fields.length === 0) return void 0;
+    if (typeof target !== "object" || target === null) return void 0;
     const data = {};
     for (const field of fields) {
       const value2 = target[field];
-      if (value2 === void 0)
-        continue;
+      if (value2 === void 0) continue;
       const checked = validateWireValue(value2, this.limits, "forbid");
       if (!checked.ok) {
         throw new ModkitError({
@@ -51627,7 +52340,10 @@ var EndpointImpl = class {
     }
     const result = await this.table.release(frame.handle);
     for (const failure of result.failures) {
-      this.report("x3.host/rpc-release-failed", `release of ${frame.handle} failed: ${failure instanceof Error ? failure.message : String(failure)}`);
+      this.report(
+        "x3.host/rpc-release-failed",
+        `release of ${frame.handle} failed: ${failure instanceof Error ? failure.message : String(failure)}`
+      );
     }
     this.reply(frame.id, { kind: "return", value: { released: result.released } });
   }
@@ -51635,8 +52351,6 @@ var EndpointImpl = class {
 function createEndpoint(options) {
   return new EndpointImpl(options);
 }
-
-// packages/host/dist/execution/message-port.js
 function framePortFromMessagePort(port, options = {}) {
   const style = options.listener ?? (typeof port.addEventListener === "function" ? "event-target" : "emitter-value");
   return {
@@ -51650,15 +52364,15 @@ function framePortFromMessagePort(port, options = {}) {
         port.start?.();
         return () => port.removeEventListener?.("message", listener2);
       }
-      const listener = style === "emitter-value" ? (payload) => handler(payload) : (payload) => handler(typeof payload === "object" && payload !== null && "data" in payload ? payload.data : payload);
+      const listener = style === "emitter-value" ? (payload) => handler(payload) : (payload) => handler(
+        typeof payload === "object" && payload !== null && "data" in payload ? payload.data : payload
+      );
       port.on?.("message", listener);
       port.start?.();
       return () => port.off?.("message", listener);
     }
   };
 }
-
-// packages/host/dist/execution/abi-surfaces.js
 var ABI_CODEC_MODULE = { contract: "x3.abi/codec-module", major: 1 };
 var ABI_SERVICE_PROVIDER_MODULE = {
   contract: "x3.abi/service-provider-module",
@@ -51837,8 +52551,6 @@ var RUNTIME_ABI_SURFACES = Object.freeze([
   diagnosticSinkSurface,
   contractResolverSurface
 ]);
-
-// packages/host/dist/execution/surface-adapter.js
 function walkStrings(value2, max) {
   if (typeof value2 === "string") {
     return value2.length > max ? `a string is longer than ${max}` : void 0;
@@ -51846,27 +52558,22 @@ function walkStrings(value2, max) {
   if (Array.isArray(value2)) {
     for (const item of value2) {
       const problem = walkStrings(item, max);
-      if (problem !== void 0)
-        return problem;
+      if (problem !== void 0) return problem;
     }
     return void 0;
   }
   if (typeof value2 === "object" && value2 !== null && !(value2 instanceof Uint8Array)) {
     for (const [key2, item] of Object.entries(value2)) {
-      if (key2.length > max)
-        return `a key is longer than ${max}`;
+      if (key2.length > max) return `a key is longer than ${max}`;
       const problem = walkStrings(item, max);
-      if (problem !== void 0)
-        return problem;
+      if (problem !== void 0) return problem;
     }
   }
   return void 0;
 }
 function countBytes(value2) {
-  if (value2 instanceof Uint8Array)
-    return value2.byteLength;
-  if (Array.isArray(value2))
-    return value2.reduce((sum, item) => sum + countBytes(item), 0);
+  if (value2 instanceof Uint8Array) return value2.byteLength;
+  if (Array.isArray(value2)) return value2.reduce((sum, item) => sum + countBytes(item), 0);
   if (typeof value2 === "object" && value2 !== null) {
     return Object.values(value2).reduce((sum, item) => sum + countBytes(item), 0);
   }
@@ -51878,8 +52585,7 @@ function limitValidators(limits) {
   const validateReturn = maxStringLength === void 0 && maxBytes === void 0 && maxPageItems === void 0 ? void 0 : (value2) => {
     if (maxStringLength !== void 0) {
       const problem = walkStrings(value2, maxStringLength);
-      if (problem !== void 0)
-        return problem;
+      if (problem !== void 0) return problem;
     }
     if (maxBytes !== void 0 && countBytes(value2) > maxBytes) {
       return `result carries more than ${maxBytes} bytes`;
@@ -51934,30 +52640,29 @@ function createStandardSurfaceRegistry(options = {}) {
   const byKey = /* @__PURE__ */ new Map();
   const add = (surface, override) => {
     const key2 = `${surface.contract}@${surface.major}`;
-    if (!override && byKey.has(key2))
-      return;
+    if (!override && byKey.has(key2)) return;
     byKey.set(key2, surface);
   };
-  for (const surface of standardDataSourceCapabilitySurfaces())
-    add(surface, true);
-  for (const surface of RUNTIME_ABI_SURFACES)
-    add(surface, true);
+  for (const surface of standardDataSourceCapabilitySurfaces()) add(surface, true);
+  for (const surface of RUNTIME_ABI_SURFACES) add(surface, true);
   for (const definition of options.definitions ?? []) {
-    if (definition.surface === void 0)
-      continue;
-    add(capabilitySurfaceFromDataSource(definition.contract, definition.major, definition.surface), false);
+    if (definition.surface === void 0) continue;
+    add(
+      capabilitySurfaceFromDataSource(definition.contract, definition.major, definition.surface),
+      false
+    );
   }
-  for (const surface of options.surfaces ?? [])
-    add(surface, false);
+  for (const surface of options.surfaces ?? []) add(surface, false);
   return createSurfaceRegistry([...byKey.values()]);
 }
-
-// packages/host/dist/execution/consumer-adapters.js
 function moduleAdapter(contributionId2, first, realm, watch) {
   const abiVersion = first.data["abiVersion"];
   const wireContext = (endpoint, context) => ({
     budgets: context.budgets,
-    diagnostics: endpoint.expose({ report: (diagnostic2) => context.diagnostics.report(diagnostic2) }, ABI_DIAGNOSTIC_SINK),
+    diagnostics: endpoint.expose(
+      { report: (diagnostic2) => context.diagnostics.report(diagnostic2) },
+      ABI_DIAGNOSTIC_SINK
+    ),
     // the host executes contract resolution; the worker gets a proxy whose leased providers
     // carry the surface of the requested contract's definition
     contracts: endpoint.expose(context.contracts, ABI_CONTRACT_RESOLVER)
@@ -51968,7 +52673,10 @@ function moduleAdapter(contributionId2, first, realm, watch) {
       provides: first.data["provides"],
       createProvider: async (selection, context) => {
         const live = await realm();
-        const outcome = await watch(live, () => live.root.call("createProvider", [selection, wireContext(live.endpoint, context)]));
+        const outcome = await watch(
+          live,
+          () => live.root.call("createProvider", [selection, wireContext(live.endpoint, context)])
+        );
         if (outcome.kind !== "lease") {
           throw new ModkitError({
             code: "x3.host/invalid-service-provider-lease",
@@ -51987,7 +52695,10 @@ function moduleAdapter(contributionId2, first, realm, watch) {
     abiVersion,
     createCodec: (context) => {
       const bound = realm().then(async (live) => {
-        const outcome = await watch(live, () => live.root.call("createCodec", [wireContext(live.endpoint, context)]));
+        const outcome = await watch(
+          live,
+          () => live.root.call("createCodec", [wireContext(live.endpoint, context)])
+        );
         if (outcome.kind !== "lease") {
           throw new ModkitError({
             code: "x3.host/invalid-codec-module",
@@ -52007,7 +52718,14 @@ function codecAdapter(bound, watch) {
       const { realm, remote } = await bound;
       const source = realm.endpoint.expose(request.source, ABI_ARTIFACT_SOURCE);
       try {
-        const outcome = await watch(realm, () => remote.call("probe", [{ source, plan: request.plan }], signal === void 0 ? {} : { signal }));
+        const outcome = await watch(
+          realm,
+          () => remote.call(
+            "probe",
+            [{ source, plan: request.plan }],
+            signal === void 0 ? {} : { signal }
+          )
+        );
         if (outcome.kind !== "value") {
           throw new ModkitError({
             code: "x3.host/rpc-bad-return",
@@ -52022,7 +52740,10 @@ function codecAdapter(bound, watch) {
     async open(input, intent, budget, signal) {
       const { realm, remote } = await bound;
       const exposedInput = realm.endpoint.expose(input, ABI_ASSET_INPUT);
-      const outcome = await watch(realm, () => remote.call("open", [exposedInput, intent, budget], signal === void 0 ? {} : { signal })).catch(async (error) => {
+      const outcome = await watch(
+        realm,
+        () => remote.call("open", [exposedInput, intent, budget], signal === void 0 ? {} : { signal })
+      ).catch(async (error) => {
         await exposedInput.release();
         throw error;
       });
@@ -52064,8 +52785,7 @@ function sessionAdapter(realm, session, exposedInput, watch) {
       return proxy["invoke"]?.(...args);
     },
     dispose: async () => {
-      if (opsLease === void 0)
-        return;
+      if (opsLease === void 0) return;
       const lease = opsLease;
       opsLease = void 0;
       const { proxy, remote } = await lease;
@@ -52094,8 +52814,6 @@ function sessionAdapter(realm, session, exposedInput, watch) {
     }
   };
 }
-
-// packages/host/dist/browser/worker-backend.js
 var WORKER_SHARED_ORIGIN_DIAGNOSTIC = "x3.host/worker-shared-origin";
 var DEFAULT_BROWSER_WORKER_POLICY = Object.freeze({
   loadDeadlineMs: 15e3,
@@ -52136,8 +52854,7 @@ function createBrowserWorkerBackend(options) {
     });
     let terminated = false;
     const terminate = async (reason) => {
-      if (terminated)
-        return;
+      if (terminated) return;
       terminated = true;
       report({
         code: "x3.host/worker-terminated",
@@ -52166,23 +52883,25 @@ function createBrowserWorkerBackend(options) {
     });
     let released = false;
     const release = async () => {
-      if (released)
-        return;
+      if (released) return;
       released = true;
       await endpoint.close("released");
       await terminate("released");
     };
     let loaded;
     try {
-      loaded = await endpoint.load({
-        moduleUrl: graph.url,
-        contributionId: context.ticket.contributionId,
-        variantId: context.variant.variantId,
-        artifactDigest: context.ticket.artifactDigest
-      }, {
-        deadlineMs: policy.loadDeadlineMs,
-        ...context.signal === void 0 ? {} : { signal: context.signal }
-      });
+      loaded = await endpoint.load(
+        {
+          moduleUrl: graph.url,
+          contributionId: context.ticket.contributionId,
+          variantId: context.variant.variantId,
+          artifactDigest: context.ticket.artifactDigest
+        },
+        {
+          deadlineMs: policy.loadDeadlineMs,
+          ...context.signal === void 0 ? {} : { signal: context.signal }
+        }
+      );
     } catch (error) {
       await release();
       throw error;
@@ -52196,8 +52915,7 @@ function createBrowserWorkerBackend(options) {
         if (error instanceof ModkitError && error.code === "x3.host/rpc-deadline-exceeded") {
           const started = Date.now();
           while (Date.now() - started < policy.graceMs) {
-            if (target.endpoint.counters().droppedLateReplies > before)
-              break;
+            if (target.endpoint.counters().droppedLateReplies > before) break;
             await new Promise((resolve) => setTimeout(resolve, 10));
           }
           if (target.endpoint.counters().droppedLateReplies === before) {
@@ -52207,22 +52925,29 @@ function createBrowserWorkerBackend(options) {
         throw error;
       }
     };
-    const module = moduleAdapter(context.ticket.contributionId, loaded.root, async () => live, watch);
+    const module = moduleAdapter(
+      context.ticket.contributionId,
+      loaded.root,
+      async () => live,
+      watch
+    );
     return Object.freeze({ module, release });
   }
   return Object.freeze({ profile: "worker-brokered", supports, activate });
 }
-
-// packages/host/dist/execution/module-reassembly.js
 var unavailableResolver = {
-  resolve: () => Promise.reject(new ModkitError({
-    code: "x3.host/execution-backend-unavailable",
-    message: "the host did not hand this worker a contract resolver"
-  })),
-  resolveUnknown: () => Promise.reject(new ModkitError({
-    code: "x3.host/execution-backend-unavailable",
-    message: "the host did not hand this worker a contract resolver"
-  }))
+  resolve: () => Promise.reject(
+    new ModkitError({
+      code: "x3.host/execution-backend-unavailable",
+      message: "the host did not hand this worker a contract resolver"
+    })
+  ),
+  resolveUnknown: () => Promise.reject(
+    new ModkitError({
+      code: "x3.host/execution-backend-unavailable",
+      message: "the host did not hand this worker a contract resolver"
+    })
+  )
 };
 function contributionContext(wire) {
   const sink = wire.diagnostics;
@@ -52230,8 +52955,7 @@ function contributionContext(wire) {
     budgets: wire.budgets,
     diagnostics: {
       report(diagnostic2) {
-        if (sink !== void 0)
-          void sink.report(diagnostic2).catch(() => void 0);
+        if (sink !== void 0) void sink.report(diagnostic2).catch(() => void 0);
       }
     },
     contracts: wire.contracts ?? unavailableResolver
@@ -52241,7 +52965,9 @@ function assetInput(wire) {
   const bindings = wire.bindings ?? [];
   const subjects = wire.subjects ?? [];
   return Object.assign(/* @__PURE__ */ Object.create(null), wire, {
-    bindingsFor: (requirementId) => bindings.filter((binding) => binding.sourceKind === "requirement" && binding.requirementId === requirementId),
+    bindingsFor: (requirementId) => bindings.filter(
+      (binding) => binding.sourceKind === "requirement" && binding.requirementId === requirementId
+    ),
     subjectsFor: (requirementId) => subjects.filter((subject) => subject.requirementId === requirementId)
   });
 }
@@ -52263,7 +52989,11 @@ function wrapCodecModule(module) {
       return {
         ...codec,
         ...typeof open !== "function" ? {} : {
-          open: (input, ...rest) => open.call(codec, assetInput(input), ...rest)
+          open: (input, ...rest) => open.call(
+            codec,
+            assetInput(input),
+            ...rest
+          )
         }
       };
     }
@@ -52276,8 +53006,6 @@ function wrapLoadedModule(module) {
     surface: isServiceModule ? ABI_SERVICE_PROVIDER_MODULE : ABI_CODEC_MODULE
   };
 }
-
-// packages/host/dist/browser/worker-bootstrap-core.js
 function runBrowserWorkerBootstrap(init) {
   let loads = 0;
   return createEndpoint({
@@ -52311,33 +53039,95 @@ function runBrowserWorkerBootstrap(init) {
     ...init.onFailure === void 0 ? {} : { onFailure: init.onFailure }
   });
 }
-
-// packages/host/dist/browser/worker-realm.js
+var PROFILE_VALUES2 = Object.freeze([
+  "browser-sandbox",
+  "worker-brokered",
+  "process-brokered",
+  "wasm-brokered",
+  "trusted-in-process",
+  "remote-provider"
+]);
+var REGISTRY_BINDINGS2 = /* @__PURE__ */ Symbol.for("x3.host/execution-backend-registry-bindings");
+function invalid2(message) {
+  return new ModkitError({ code: "x3.host/invalid-execution-backend", message });
+}
+function createExecutionBackendRegistry2(backends) {
+  const bindings = /* @__PURE__ */ new Map();
+  for (const [index, backend] of backends.entries()) {
+    if (typeof backend !== "object" || backend === null) {
+      throw invalid2(`execution backend[${index}] must be an object`);
+    }
+    const profile = backend.profile;
+    const supports = backend.supports;
+    const activate = backend.activate;
+    if (!PROFILE_VALUES2.includes(profile)) {
+      throw invalid2(`execution backend[${index}] has an invalid profile`);
+    }
+    if (typeof supports !== "function" || typeof activate !== "function") {
+      throw invalid2(`execution backend ${profile} must provide supports and activate callbacks`);
+    }
+    if (bindings.has(profile)) {
+      throw invalid2(`execution backend profile ${profile} is registered more than once`);
+    }
+    bindings.set(profile, Object.freeze({ profile, supports, activate }));
+  }
+  const profiles = Object.freeze([...bindings.keys()].sort());
+  const registry = {
+    profiles,
+    supports(profile, target, variant) {
+      try {
+        const binding = bindings.get(profile);
+        if (binding === void 0 || variant.executionProfile !== profile) return false;
+        return binding.supports(target, variant) === true;
+      } catch {
+        return false;
+      }
+    }
+  };
+  Object.defineProperty(registry, REGISTRY_BINDINGS2, {
+    value: bindings,
+    enumerable: false,
+    writable: false,
+    configurable: false
+  });
+  return Object.freeze(registry);
+}
+var TRUSTED_IN_PROCESS_EXECUTION_BACKEND2 = Object.freeze({
+  profile: "trusted-in-process",
+  supports: (_target, variant) => variant.executionProfile === "trusted-in-process",
+  async activate(context) {
+    throwIfAborted(context.signal);
+    const module = await import(context.entrypoint.href);
+    return Object.freeze({ module, release: async () => void 0 });
+  }
+});
+var DEFAULT_EXECUTION_BACKENDS2 = createExecutionBackendRegistry2([
+  TRUSTED_IN_PROCESS_EXECUTION_BACKEND2
+]);
 function browserLoaderHooks(options) {
   const minted = [];
   return {
     fetchBytes: async (url, signal) => {
       const response = await options.fetch(url, signal === void 0 ? {} : { signal });
-      if (!response.ok)
-        throw new Error(`fetch ${url} failed with status ${response.status}`);
+      if (!response.ok) throw new Error(`fetch ${url} failed with status ${response.status}`);
       return new Uint8Array(await response.arrayBuffer());
     },
     digest: async (bytes2) => {
       const hash = new Uint8Array(await options.subtle.digest("SHA-256", bytes2));
       let hex = "";
-      for (const byte of hash)
-        hex += byte.toString(16).padStart(2, "0");
+      for (const byte of hash) hex += byte.toString(16).padStart(2, "0");
       return `sha256:${hex}`;
     },
     createModuleUrl: (source) => {
-      const url = options.objectUrls.createObjectURL(new options.Blob([source], { type: "text/javascript" }));
+      const url = options.objectUrls.createObjectURL(
+        new options.Blob([source], { type: "text/javascript" })
+      );
       minted.push(url);
       return url;
     },
     resolveBare: (specifier) => options.moduleMap?.[specifier],
     revokeAll: () => {
-      for (const url of minted.splice(0))
-        options.objectUrls.revokeObjectURL(url);
+      for (const url of minted.splice(0)) options.objectUrls.revokeObjectURL(url);
     }
   };
 }
@@ -52352,7 +53142,9 @@ function createDomWorkerRealmFactory(options) {
       options.onDiagnostic?.({
         code: "x3.host/worker-crashed",
         severity: "error",
-        message: `browser worker error: ${String(event?.message ?? "unknown")}`
+        message: `browser worker error: ${String(
+          event?.message ?? "unknown"
+        )}`
       });
     });
     const init = {
@@ -52369,8 +53161,7 @@ function createDomWorkerRealmFactory(options) {
     return {
       port: framePortFromMessagePort(channel.port1),
       terminate() {
-        if (terminated)
-          return;
+        if (terminated) return;
         terminated = true;
         worker.terminate();
         channel.port1.close?.();
@@ -52380,7 +53171,7 @@ function createDomWorkerRealmFactory(options) {
 }
 function createBrowserExecutionBackends(options) {
   const hooks = browserLoaderHooks(options);
-  return createExecutionBackendRegistry([
+  return createExecutionBackendRegistry2([
     createBrowserWorkerBackend({
       realm: createDomWorkerRealmFactory(options),
       loader: hooks,
@@ -52390,16 +53181,13 @@ function createBrowserExecutionBackends(options) {
     })
   ]);
 }
-
-// packages/host/dist/browser/worker-entry.js
 function isInit(value2) {
   return typeof value2 === "object" && value2 !== null && value2.type === "x3.host/worker-init" && typeof value2.session === "string" && typeof value2.moduleUrl === "string" && typeof value2.port === "object";
 }
 function installBrowserWorkerEntry(scope) {
   let started = false;
   const listener = (event) => {
-    if (started || !isInit(event.data))
-      return;
+    if (started || !isInit(event.data)) return;
     started = true;
     scope.removeEventListener("message", listener);
     const init = event.data;
@@ -52476,37 +53264,12 @@ async function createWebSubjectServices(options) {
     createHostComposition({ topology, realmId: WEB_MAIN_REALM, extensions, executionBackends }),
     createHostComposition({ topology, realmId: WEB_WORKER_REALM, extensions, executionBackends })
   ]);
-  const supportedExtensions = Object.freeze(
-    [
-      ...new Set(
-        main.inventory.extensions.flatMap(
-          (extension) => extension.contributions.flatMap((contribution) => {
-            const manifest = contribution.manifest;
-            if (manifest?.contract.id !== "org.modkitx/codec-contribution") return [];
-            const spec = manifest.spec;
-            return Array.isArray(spec.match?.extensions) ? spec.match.extensions.filter(
-              (value2) => typeof value2 === "string" && value2.length > 0
-            ) : [];
-          })
-        )
-      )
-    ].sort()
-  );
-  const services = {
-    main,
-    worker,
-    executionBackends,
-    executionProfiles: executionBackends.profiles,
-    supportedExtensions,
-    // codecs are resolved and activated for the worker realm: portable variants, worker-brokered
-    open: (request) => openSubject({
-      inventory: main.inventory,
-      target: worker.target,
-      executionBackends,
-      ...request
-    })
-  };
-  return Object.freeze(services);
+  const services = createSubjectServices({
+    inventory: main.inventory,
+    target: worker.target,
+    executionBackends
+  });
+  return Object.freeze({ ...services, main, worker });
 }
 
 // apps/web/src/index.ts

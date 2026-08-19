@@ -1,4 +1,6 @@
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { loadExtensionDirectory, openFileArtifactSource } from '@modkitx-x3/host/node'
 
 import {
   AUTOMATION_REALM,
@@ -37,4 +39,41 @@ describe('automation host composition root', () => {
     const host = await createAutomationHost()
     expect(Object.isFrozen(host.describeHost())).toBe(true)
   })
+})
+
+describe('automation open path (S7)', () => {
+  it('an automation step opens a subject through the worker realm: portable variant, worker-brokered', async () => {
+    const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
+    const images = await loadExtensionDirectory(
+      join(repositoryRoot, 'extensions', 'common', 'images'),
+    )
+    const host = await createAutomationHost([
+      { ...images, execution: { origin: 'installed', allowTrustedInProcess: false } },
+    ])
+    expect(host.subjects.inventory).toBe(host.composition.inventory)
+    expect(host.subjects.target).toBe(host.workers.target)
+    const result = await host.subjects.open({
+      source: await openFileArtifactSource(
+        join(repositoryRoot, 'apps', 'web', 'public', 'favicon-32.png'),
+      ),
+      path: 'favicon-32.png',
+      intent: 'full',
+      grant: { id: 'automation-step', classes: ['read-source'] },
+      budget: {
+        maxInputBytes: 10_000_000n,
+        maxDepth: 128,
+        maxNodes: 100_000,
+        maxScalarBytes: 1_000_000,
+        maxDiagnostics: 100,
+      },
+    })
+    expect(result.state).toBe('opened')
+    if (result.state !== 'opened') throw new Error(result.reason)
+    expect(result.selected).toMatchObject({
+      contributionId: 'org.modkitx/image-png',
+      variantId: 'portable',
+    })
+    expect(result.diagnostics.map(item => item.code)).toContain('x3.host/worker-shared-process')
+    await result.session.dispose()
+  }, 30_000)
 })
