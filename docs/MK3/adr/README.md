@@ -11,8 +11,9 @@ Required sections: Status · Context · Decision · Consequences · Alternatives
 Every factual claim in Evidence cites a path with a line number, or a reproducible command.
 A decision that cannot be evidenced is a proposal, not an ADR.
 
-| ID                                                                 | Title                                                                      | Status   |
-| ------------------------------------------------------------------ | -------------------------------------------------------------------------- | -------- |
-| [ADR-UI-001](ADR-UI-001-csp-dynamic-style-values.md)               | CSP contract for dynamic style values                                      | Accepted |
-| [ADR-UI-002](ADR-UI-002-design-token-registry-ownership.md)        | Design token registry ownership                                            | Accepted |
-| [ADR-HOST-001](ADR-HOST-001-capability-rpc-and-method-surfaces.md) | One execution boundary: capability-RPC over contract-owned method surfaces | Accepted |
+| ID                                                                 | Title                                                                                                       | Status   |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- | -------- |
+| [ADR-UI-001](ADR-UI-001-csp-dynamic-style-values.md)               | CSP contract for dynamic style values                                                                       | Accepted |
+| [ADR-UI-002](ADR-UI-002-design-token-registry-ownership.md)        | Design token registry ownership                                                                             | Accepted |
+| [ADR-HOST-001](ADR-HOST-001-capability-rpc-and-method-surfaces.md) | One execution boundary: capability-RPC over contract-owned method surfaces                                  | Accepted |
+| [ADR-HOST-002](ADR-HOST-002-binary-editing-on-the-13d-seam.md)     | Binary editing on the 13D seam: writer surface and definition, file backend, host-gated mutating operations | Accepted |

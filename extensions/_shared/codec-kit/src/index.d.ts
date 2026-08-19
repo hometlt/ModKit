@@ -1,5 +1,19 @@
+import type { Diagnostic } from '@modkitx-x3/core'
 import type {
   ArtifactByteSource,
+  AssetEditPlan,
+  AssetInput,
+  AssetRevision,
+  AssetSourceRef,
+  ChangeSet,
+  CommitGuarantee,
+  FidelityClaim,
+  MutationMode,
+  PermissionClass,
+  RoundTrip,
+  SourceEdit,
+  ValidationResult,
+  WriterModule,
   AudioMediaInfo,
   AudioMediaSource,
   AssetDiagnostic,
@@ -52,6 +66,8 @@ export interface InspectionContext {
   readonly source: ArtifactByteSource
   readonly primary: ResolvedAssetInputBinding
   readonly byteSource: ByteRangeSource
+  /** The opened input; Path A plans (`editPlanFromInput`) derive targets and revision from it. */
+  readonly input: AssetInput
 }
 
 export interface InspectionResult {
@@ -137,3 +153,53 @@ export function createInspectionCodec(
   definition: InspectionCodecDefinition,
   context?: ContributionContext,
 ): Codec
+
+// ---------------------------------------------------------------------------------------------
+// ADR-HOST-002 — editing helpers
+
+export function declaredPermissionClasses(
+  operations: readonly OperationDecl[],
+): readonly PermissionClass[]
+
+export function assetRevisionFromInput(input: AssetInput): AssetRevision
+
+export interface EditPlanFromInputOptions {
+  readonly planId: string
+  readonly edits: readonly (Omit<SourceEdit, 'targetId' | 'source'> & {
+    readonly targetId?: string
+    readonly source?: AssetSourceRef
+  })[]
+  readonly fidelity: FidelityClaim
+  readonly guarantee?: CommitGuarantee
+  readonly diagnostics?: readonly Diagnostic[]
+}
+
+export function editPlanFromInput(
+  input: AssetInput,
+  options: EditPlanFromInputOptions,
+): AssetEditPlan
+
+export function replaceBytes(
+  offset: number | bigint,
+  length: number | bigint,
+  bytes: Uint8Array,
+  label?: string,
+): Omit<Extract<SourceEdit, { operation: 'replace' }>, 'targetId' | 'source'>
+
+export interface DefineWriterOptions {
+  readonly providerId: string
+  readonly providerVersion?: string
+  readonly artifactDigest: string
+  readonly offerId: string
+  readonly formatId: string
+  readonly representationId: string
+  readonly mutationMode?: MutationMode
+  readonly minimumRoundTrip: RoundTrip
+  readonly fidelityEvidenceId: string
+  readonly fidelity: FidelityClaim
+  readonly validate?: (change: ChangeSet, signal?: AbortSignal) => Promise<ValidationResult>
+  readonly planEdits?: (change: ChangeSet, signal?: AbortSignal) => Promise<readonly SourceEdit[]>
+  readonly plan?: (change: ChangeSet, signal?: AbortSignal) => Promise<AssetEditPlan>
+}
+
+export function defineWriter(options: DefineWriterOptions): WriterModule

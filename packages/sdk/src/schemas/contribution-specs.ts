@@ -446,6 +446,30 @@ const writerRequirementSchema = {
   },
 } as const
 
+/**
+ * Standalone facet schemas of `common.edit/writer@1` (ADR-HOST-002 §3): the request facet is the
+ * editor's `writer` requirement, the offer facet adds the provider's identity and its fidelity
+ * evidence id. Published so the standard writer contract definition can reference them.
+ */
+export const writerRequirementV1Schema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  $id: 'https://schemas.modkitx.org/x3/writer-requirement.v1.schema.json',
+  ...writerRequirementSchema,
+} as const
+
+export const writerOfferV1Schema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  $id: 'https://schemas.modkitx.org/x3/writer-offer.v1.schema.json',
+  type: 'object',
+  additionalProperties: false,
+  required: [...writerRequirementSchema.required, 'providerId', 'fidelityEvidenceId'],
+  properties: {
+    ...writerRequirementSchema.properties,
+    providerId: nonEmptyString,
+    fidelityEvidenceId: nonEmptyString,
+  },
+} as const
+
 export const editorContributionSpecV1Schema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   $id: 'https://schemas.modkitx.org/x3/editor-contribution-spec.v1.schema.json',

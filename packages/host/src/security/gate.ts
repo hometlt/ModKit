@@ -31,7 +31,9 @@ import { inventoryRecordFor, type InventoryContribution } from '../inventory.js'
 import {
   grantValidity,
   narrowGrant,
+  operationScopedPermissionClasses,
   type HostPolicy,
+  type OperationPermissionDeclaration,
   type PermissionClass,
   type PermissionGrant,
   type ProviderOffer,
@@ -205,6 +207,35 @@ function ticketFingerprint(ticket: ActivationTicket): string {
  * it is probing and nothing else, whatever the variant would request for a real open. The child
  * grant id is suffixed `#probe` so probe and open grants of one contribution stay distinct.
  */
+/** Emitted when operation-scoped classes were requested but not granted (ADR-HOST-002 §2). */
+export const PERMISSION_DEGRADED_DIAGNOSTIC = 'x3.host/permission-degraded'
+
+export function permissionDegradedDiagnostic(
+  contributionId: string,
+  degraded: readonly PermissionClass[],
+): Diagnostic {
+  return diagnostic(
+    'information',
+    PERMISSION_DEGRADED_DIAGNOSTIC,
+    `«${contributionId}» runs without ${degraded.join(', ')}: the grant does not cover these classes, so the operations that need them are disabled (ADR-HOST-002 §2)`,
+    [contributionId],
+    { degraded },
+  )
+}
+
+/**
+ * Classes a contribution's *operations* need (the SDK rule `operationScopedPermissionClasses`):
+ * only these may be degraded at activation; a contribution without operation declarations
+ * degrades nothing.
+ */
+export function operationScopedClasses(manifest: {
+  readonly spec?: unknown
+}): ReadonlySet<PermissionClass> {
+  const spec = manifest.spec as
+    { readonly operations?: readonly OperationPermissionDeclaration[] } | undefined
+  return operationScopedPermissionClasses(spec?.operations)
+}
+
 export const PROBE_OPERATION = 'probe'
 export const PROBE_PERMISSION_CLASSES: readonly PermissionClass[] = Object.freeze(['read-source'])
 
@@ -388,13 +419,20 @@ export async function activateContribution(request: ActivationRequest): Promise<
     ...(ticket.operation === undefined ? {} : { operation: ticket.operation }),
     ...(policy === undefined ? {} : { policy }),
   })
-  if (missing.length > 0) {
+  // ADR-HOST-002 §2: classes that only operations need (each operation's requiredPermissions and
+  // `write-source` for a mutating one) are degradable — the child grant simply lacks them and the
+  // host disables those operations at dispatch; everything else the variant asked for and the
+  // grant lacks stays a hard denial (read-source always, anything needed to load or open).
+  const operationScoped = operationScopedClasses(manifest)
+  const hardMissing = missing.filter(item => !operationScoped.has(item))
+  if (hardMissing.length > 0) {
     throw deny(
       'x3.host/permission-denied',
-      `grant «${request.grant.id}» does not cover: ${missing.join(', ')}`,
-      { missing },
+      `grant «${request.grant.id}» does not cover: ${hardMissing.join(', ')}`,
+      { missing: hardMissing },
     )
   }
+  const degraded = missing.filter(item => operationScoped.has(item))
 
   // 6. entry point contained inside its own artifact
   const entryUrl = resolveContainedEntrypoint(privateRecord.artifactRoot, variant.entrypoint)
@@ -412,6 +450,7 @@ export async function activateContribution(request: ActivationRequest): Promise<
   })
 
   const diagnostics: Diagnostic[] = []
+  if (degraded.length > 0) diagnostics.push(permissionDegradedDiagnostic(manifest.id, degraded))
   if (variant.executionProfile === 'worker-brokered') {
     diagnostics.push(
       diagnostic(

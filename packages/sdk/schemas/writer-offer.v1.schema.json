@@ -1,0 +1,46 @@
+{
+  "$id": "https://schemas.modkitx.org/x3/writer-offer.v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "fidelityEvidenceId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "formatId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "minimumRoundTrip": {
+      "enum": [
+        "byte-identical",
+        "semantic",
+        "lossy",
+        "none"
+      ]
+    },
+    "mutationMode": {
+      "enum": [
+        "export-only",
+        "mutate"
+      ]
+    },
+    "providerId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "representationId": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "formatId",
+    "representationId",
+    "mutationMode",
+    "minimumRoundTrip",
+    "providerId",
+    "fidelityEvidenceId"
+  ],
+  "type": "object"
+}

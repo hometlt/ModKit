@@ -1,7 +1,12 @@
 import {
+  WRITER_CONTRACT_ID,
+  WRITER_FACET_MATCHER_PROFILE,
+  WRITER_SURFACE,
   grantValidity,
-  validateSubjectDescriptorV2
-} from "./chunk-7B5UTZBS.js";
+  validateSubjectDescriptorV2,
+  writerOfferSatisfies,
+  writerSelectionKey
+} from "./chunk-2UBMYNBR.js";
 import {
   ModkitError,
   canonicalJsonStringify,
@@ -369,6 +374,84 @@ var facetlessMatcher = Object.freeze({
     return context.offerFacet === void 0 && context.requestFacet === void 0 ? { state: "match", selectionKey: "facetless:v1" } : { state: "no-match" };
   }
 });
+var REQUIREMENT_KEYS = ["formatId", "representationId", "mutationMode", "minimumRoundTrip"];
+var OFFER_KEYS = [...REQUIREMENT_KEYS, "providerId", "fidelityEvidenceId"];
+var MUTATION_MODES = /* @__PURE__ */ new Set(["export-only", "mutate"]);
+var ROUND_TRIPS = /* @__PURE__ */ new Set(["byte-identical", "semantic", "lossy", "none"]);
+function facetOf(value, keys) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return void 0;
+  const record = value;
+  const own = Object.keys(record);
+  if (own.length !== keys.length || !keys.every((key2) => own.includes(key2))) return void 0;
+  for (const key2 of keys) {
+    if (typeof record[key2] !== "string" || record[key2].length === 0) return void 0;
+  }
+  if (!MUTATION_MODES.has(record["mutationMode"])) return void 0;
+  if (!ROUND_TRIPS.has(record["minimumRoundTrip"])) return void 0;
+  return record;
+}
+function matchWriterFacets(context) {
+  const request = facetOf(context.requestFacet, REQUIREMENT_KEYS);
+  const offer = facetOf(context.offerFacet, OFFER_KEYS);
+  if (request === void 0 || offer === void 0) {
+    return {
+      state: "invalid",
+      diagnostics: [
+        diagnostic(
+          "error",
+          "x3.host/writer-facet-invalid",
+          `${context.contract}@${context.major}: writer request and offer facets must both be complete`
+        )
+      ]
+    };
+  }
+  return writerOfferSatisfies(
+    request,
+    offer
+  ) ? {
+    state: "match",
+    selectionKey: writerSelectionKey(request)
+  } : { state: "no-match" };
+}
+var WRITER_FACET_MATCHER = Object.freeze({
+  profile: contractId(WRITER_FACET_MATCHER_PROFILE),
+  major: 1,
+  match: matchWriterFacets
+});
+var WRITER_CONTRACT_DEFINITION = Object.freeze({
+  schemaVersion: 1,
+  kind: "service",
+  contract: WRITER_CONTRACT_ID,
+  major: 1,
+  offerFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({ $ref: "https://schemas.modkitx.org/x3/writer-offer.v1.schema.json" })
+  }),
+  requestFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkitx.org/x3/writer-requirement.v1.schema.json"
+    })
+  }),
+  matching: Object.freeze({ profile: WRITER_FACET_MATCHER_PROFILE, major: 1 }),
+  conformanceProfile: "common.edit/writer-v1",
+  surface: WRITER_SURFACE
+});
+var STANDARD_EDITING_DEFINITIONS = Object.freeze([WRITER_CONTRACT_DEFINITION]);
+var GUARANTEE_STRENGTH = Object.freeze({
+  "best-effort": 0,
+  recoverable: 1,
+  transactional: 2,
+  atomic: 3
+});
+var NO_STAGED_PAYLOADS = Object.freeze({
+  async open(ref) {
+    throw new ModkitError({
+      code: "x3.host/edit-payload-unavailable",
+      message: `no payload store can open staged payload \xAB${ref.handleId}\xBB`
+    });
+  }
+});
 var DEFAULT_CHUNK_BYTES = 64 * 1024;
 function safeLength(value) {
   if (value > BigInt(Number.MAX_SAFE_INTEGER)) {
@@ -579,12 +662,6 @@ function createUtf8TextDataSource(source, options = {}) {
     }
   });
 }
-var GUARANTEE_STRENGTH = Object.freeze({
-  "best-effort": 0,
-  recoverable: 1,
-  transactional: 2,
-  atomic: 3
-});
 
 export {
   assembleSubjectDescriptor,

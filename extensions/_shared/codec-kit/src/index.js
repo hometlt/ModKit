@@ -1,3 +1,4 @@
+import { canonicalJsonStringify } from '@modkitx-x3/core'
 import {
   assembleSubjectDescriptor,
   createAssetSession,
@@ -534,6 +535,7 @@ export function createInspectionCodec(definition) {
           source,
           primary,
           byteSource,
+          input,
         })
         const dataSources = new Map([
           ['common.view/byte-range-source', byteSource],
@@ -577,7 +579,8 @@ export function createInspectionCodec(definition) {
             state: 'available',
           })),
           constraints: {
-            readOnly: true,
+            // a codec with a mutating operation is not read-only (ADR-HOST-002 Path A)
+            readOnly: !operationDeclarations.some(operation => operation.mutatesSource === true),
             seekable: true,
             randomAccess: true,
             trusted: false,
@@ -603,7 +606,7 @@ export function createInspectionCodec(definition) {
           operationDeclarations,
           permissionGrant: {
             id: `${definition.format.id}-inspection-session`,
-            classes: ['read-source'],
+            classes: declaredPermissionClasses(operationDeclarations),
           },
           handlers,
           async openDataSource(contract) {
@@ -618,6 +621,150 @@ export function createInspectionCodec(definition) {
         await sourceLease.release()
         throw error
       }
+    },
+  })
+}
+
+/** `read-source` plus every class the declared operations need (`write-source` for mutating ones). */
+export function declaredPermissionClasses(operations) {
+  const classes = new Set(['read-source'])
+  for (const operation of operations) {
+    for (const item of operation.requiredPermissions ?? []) classes.add(item)
+    if (operation.mutatesSource === true) classes.add('write-source')
+  }
+  return Object.freeze([...classes].sort())
+}
+
+// ---------------------------------------------------------------------------------------------
+// ADR-HOST-002 — editing helpers
+
+/**
+ * The subject's 13D revision vector, derived from the opened input with the host's own rule
+ * (subject-open: canonical `{topology, bindingId, source, revision}`), so a plan built here and
+ * the host's expectation agree byte for byte. Single-source subjects only.
+ */
+export function assetRevisionFromInput(input) {
+  if (input.originKind !== 'single' || input.revisions.topology !== 'single') {
+    throw new TypeError('assetRevisionFromInput: single-source subjects only')
+  }
+  const [binding] = input.bindings
+  if (binding === undefined) throw new TypeError('assetRevisionFromInput: no binding')
+  const revision = binding.revision
+  return Object.freeze({
+    bindings: Object.freeze({ [binding.bindingId]: revision }),
+    compositionFingerprint: canonicalJsonStringify({
+      topology: 'single',
+      bindingId: binding.bindingId,
+      source: { id: binding.source.id, uri: binding.source.uri },
+      revision,
+    }),
+  })
+}
+
+/** Path A: the plan a mutating codec operation returns as `{ kind: 'edit-plan', plan }`. */
+export function editPlanFromInput(
+  input,
+  { planId, edits, fidelity, guarantee = 'atomic', diagnostics = [] },
+) {
+  const revision = assetRevisionFromInput(input)
+  const [binding] = input.bindings
+  const target = Object.freeze({
+    targetId: binding.bindingId,
+    subjectUri: binding.source.uri,
+    ownerSource: Object.freeze({ id: binding.source.id, uri: binding.source.uri }),
+    semanticPath: Object.freeze([]),
+    expectedRevision: revision,
+  })
+  return Object.freeze({
+    planId,
+    targets: Object.freeze([target]),
+    edits: Object.freeze(
+      edits.map(edit =>
+        Object.freeze({
+          ...edit,
+          targetId: edit.targetId ?? binding.bindingId,
+          source: edit.source ?? target.ownerSource,
+        }),
+      ),
+    ),
+    semantics: Object.freeze({ mutationMode: 'mutate', minimumGuarantee: guarantee }),
+    fidelity,
+    diagnostics: Object.freeze([...diagnostics]),
+  })
+}
+
+/** A byte-range `replace` edit (`length: 0` inserts) with an inline payload. */
+export function replaceBytes(offset, length, bytes, label) {
+  return Object.freeze({
+    operation: 'replace',
+    range: Object.freeze({ kind: 'bytes', offset: BigInt(offset), length: BigInt(length) }),
+    payload: Object.freeze({ kind: 'inline', bytes }),
+    ...(label === undefined ? {} : { label }),
+  })
+}
+
+/**
+ * Path B: a one-file writer provider module for `common.edit/writer@1`. `plan(change)` receives
+ * the change set and must return an `AssetEditPlan` (`planEdits` may return just the edits —
+ * targets, semantics and the claimed fidelity are filled in); `validate` defaults to "non-empty".
+ */
+export function defineWriter({
+  providerId,
+  providerVersion = '1.0.0',
+  artifactDigest,
+  offerId,
+  formatId,
+  representationId,
+  mutationMode = 'mutate',
+  minimumRoundTrip,
+  fidelityEvidenceId,
+  fidelity,
+  validate,
+  planEdits,
+  plan,
+}) {
+  const identity = Object.freeze({
+    providerId,
+    providerVersion,
+    artifactDigest,
+    formatId,
+    representationId,
+  })
+  const offer = Object.freeze({
+    providerId,
+    fidelityEvidenceId,
+    formatId,
+    representationId,
+    mutationMode,
+    minimumRoundTrip,
+  })
+  const writer = Object.freeze({
+    identity,
+    offer,
+    async validate(change, signal) {
+      if (validate !== undefined) return validate(change, signal)
+      return { valid: change.targets.length > 0 && change.edits.length > 0, diagnostics: [] }
+    },
+    async plan(change, signal) {
+      if (plan !== undefined) return plan(change, signal)
+      const edits = await planEdits(change, signal)
+      return Object.freeze({
+        planId: `${providerId}:${change.targets.map(target => target.targetId).join('+')}`,
+        targets: change.targets,
+        edits,
+        semantics: Object.freeze({ mutationMode, minimumGuarantee: 'atomic' }),
+        fidelity,
+        diagnostics: Object.freeze([]),
+      })
+    },
+  })
+  return Object.freeze({
+    abiVersion: 1,
+    provides: Object.freeze(['common.edit/writer']),
+    async createProvider(selection) {
+      if (selection.offerId !== offerId)
+        throw new TypeError(`unknown writer offer ${selection.offerId}`)
+      return simpleLease(writer)
     },
   })
 }

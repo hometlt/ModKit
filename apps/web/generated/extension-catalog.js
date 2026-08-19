@@ -1020,22 +1020,22 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:9fe4bb50e3d56f1e3641675e20234b765d7fa20fbca8341e824941b7badc24b9',
+        artifactDigest: 'sha256:249ed43998d03af6f1d7a756751f82ad7e0505b026759e853f1ad468164a41fb',
         fileDigests: {
           'README.md': 'sha256:177d9c6848a5ff9333d1c681e3868cfa7f87aed16e0533a8beff94dbbd298950',
           'contributions/codec-jpeg.json':
             'sha256:bca73505e78161fcdc2e3920c36e2462c8a5370f61697e7c6e6d8e664812cd27',
           'contributions/codec-png.json':
-            'sha256:1e5d84050ba6f8a58d4df54145424ce37b041d16a77cf6e13c5419cf36c39aba',
+            'sha256:e069e36d8e4e56a01da28ce8790f64b0f1bd6a3d31b2506615d49d40828e4839',
           'package.json': 'sha256:73873e99e2d03f96b49f1003c89eee7d1da136a782eb0a1739e8b89f2aff51fd',
           'src/formats/jpeg/codec.js':
             'sha256:cb2dcfdcd0f3318904744bcf559f25dc7917c294cadc385d02c04ff53a4cde22',
           'src/formats/png/codec.js':
-            'sha256:8220bda82214b55e17bbb0c5cc2e608d5e91c6980968d9b0bb42f824125787fc',
+            'sha256:bd61f86cd7e629b4543a456c13e28d0bee00ecd92fba04a8c4dc58e1fbaa3e45',
           'src/index.js': 'sha256:bcbc40812fa5dcdb2937b0ff5b617c1483725570302b99f569249ac3c441ce41',
         },
         inventoryRecordId:
-          'artifact:sha256:9fe4bb50e3d56f1e3641675e20234b765d7fa20fbca8341e824941b7badc24b9',
+          'artifact:sha256:249ed43998d03af6f1d7a756751f82ad7e0505b026759e853f1ad468164a41fb',
       },
       artifactRoot: 'extensions/images/',
       containers: {
@@ -1083,7 +1083,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-png.json',
-          'sha256:1e5d84050ba6f8a58d4df54145424ce37b041d16a77cf6e13c5419cf36c39aba',
+          'sha256:e069e36d8e4e56a01da28ce8790f64b0f1bd6a3d31b2506615d49d40828e4839',
         ],
       ],
       documents: [
@@ -1232,7 +1232,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               {
                 entrypoint: './src/formats/png/codec.js',
                 executionProfile: 'trusted-in-process',
-                requestedPermissionClasses: ['read-source'],
+                requestedPermissionClasses: ['read-source', 'write-source'],
                 target: {
                   environments: ['node'],
                 },
@@ -1241,7 +1241,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               {
                 entrypoint: './src/formats/png/codec.js',
                 executionProfile: 'worker-brokered',
-                requestedPermissionClasses: ['read-source'],
+                requestedPermissionClasses: ['read-source', 'write-source'],
                 target: {
                   environments: ['browser-worker', 'node-worker'],
                 },
@@ -1301,6 +1301,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                   mutatesSource: false,
                   outputKinds: ['bytes'],
                   requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'set-text',
+                  id: 'edit.field',
+                  mutatesSource: true,
+                  outputKinds: ['edit-plan'],
+                  requiredPermissions: ['read-source', 'write-source'],
                 },
               ],
               probe: {

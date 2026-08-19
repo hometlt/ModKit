@@ -1,0 +1,14 @@
+{
+  "name": "x3-editing-writer-fixture",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "org.example",
+    "id": "png-passthrough-writer",
+    "contributionManifests": [
+      "./contributions/writer.json"
+    ]
+  }
+}

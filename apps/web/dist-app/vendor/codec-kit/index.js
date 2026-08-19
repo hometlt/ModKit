@@ -2,11 +2,13 @@ import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../chunks/chunk-FRJC64BA.js";
+} from "../../chunks/chunk-OK3FIVEI.js";
 import {
   revisionId
-} from "../../chunks/chunk-7B5UTZBS.js";
-import "../../chunks/chunk-5WZM3EQ3.js";
+} from "../../chunks/chunk-2UBMYNBR.js";
+import {
+  canonicalJsonStringify
+} from "../../chunks/chunk-5WZM3EQ3.js";
 
 // extensions/_shared/codec-kit/src/index.js
 var INSPECTION_OPERATIONS = Object.freeze([
@@ -489,7 +491,8 @@ function createInspectionCodec(definition) {
           intent,
           source,
           primary,
-          byteSource
+          byteSource,
+          input
         });
         const dataSources = new Map([
           ["common.view/byte-range-source", byteSource],
@@ -531,7 +534,8 @@ function createInspectionCodec(definition) {
             state: "available"
           })),
           constraints: {
-            readOnly: true,
+            // a codec with a mutating operation is not read-only (ADR-HOST-002 Path A)
+            readOnly: !operationDeclarations.some((operation) => operation.mutatesSource === true),
             seekable: true,
             randomAccess: true,
             trusted: false,
@@ -555,7 +559,7 @@ function createInspectionCodec(definition) {
           operationDeclarations,
           permissionGrant: {
             id: `${definition.format.id}-inspection-session`,
-            classes: ["read-source"]
+            classes: declaredPermissionClasses(operationDeclarations)
           },
           handlers,
           async openDataSource(contract) {
@@ -573,9 +577,130 @@ function createInspectionCodec(definition) {
     }
   });
 }
+function declaredPermissionClasses(operations) {
+  const classes = /* @__PURE__ */ new Set(["read-source"]);
+  for (const operation of operations) {
+    for (const item of operation.requiredPermissions ?? []) classes.add(item);
+    if (operation.mutatesSource === true) classes.add("write-source");
+  }
+  return Object.freeze([...classes].sort());
+}
+function assetRevisionFromInput(input) {
+  if (input.originKind !== "single" || input.revisions.topology !== "single") {
+    throw new TypeError("assetRevisionFromInput: single-source subjects only");
+  }
+  const [binding] = input.bindings;
+  if (binding === void 0) throw new TypeError("assetRevisionFromInput: no binding");
+  const revision = binding.revision;
+  return Object.freeze({
+    bindings: Object.freeze({ [binding.bindingId]: revision }),
+    compositionFingerprint: canonicalJsonStringify({
+      topology: "single",
+      bindingId: binding.bindingId,
+      source: { id: binding.source.id, uri: binding.source.uri },
+      revision
+    })
+  });
+}
+function editPlanFromInput(input, { planId, edits, fidelity, guarantee = "atomic", diagnostics = [] }) {
+  const revision = assetRevisionFromInput(input);
+  const [binding] = input.bindings;
+  const target = Object.freeze({
+    targetId: binding.bindingId,
+    subjectUri: binding.source.uri,
+    ownerSource: Object.freeze({ id: binding.source.id, uri: binding.source.uri }),
+    semanticPath: Object.freeze([]),
+    expectedRevision: revision
+  });
+  return Object.freeze({
+    planId,
+    targets: Object.freeze([target]),
+    edits: Object.freeze(
+      edits.map(
+        (edit) => Object.freeze({
+          ...edit,
+          targetId: edit.targetId ?? binding.bindingId,
+          source: edit.source ?? target.ownerSource
+        })
+      )
+    ),
+    semantics: Object.freeze({ mutationMode: "mutate", minimumGuarantee: guarantee }),
+    fidelity,
+    diagnostics: Object.freeze([...diagnostics])
+  });
+}
+function replaceBytes(offset, length, bytes, label) {
+  return Object.freeze({
+    operation: "replace",
+    range: Object.freeze({ kind: "bytes", offset: BigInt(offset), length: BigInt(length) }),
+    payload: Object.freeze({ kind: "inline", bytes }),
+    ...label === void 0 ? {} : { label }
+  });
+}
+function defineWriter({
+  providerId,
+  providerVersion = "1.0.0",
+  artifactDigest,
+  offerId,
+  formatId,
+  representationId,
+  mutationMode = "mutate",
+  minimumRoundTrip,
+  fidelityEvidenceId,
+  fidelity,
+  validate,
+  planEdits,
+  plan
+}) {
+  const identity = Object.freeze({
+    providerId,
+    providerVersion,
+    artifactDigest,
+    formatId,
+    representationId
+  });
+  const offer = Object.freeze({
+    providerId,
+    fidelityEvidenceId,
+    formatId,
+    representationId,
+    mutationMode,
+    minimumRoundTrip
+  });
+  const writer = Object.freeze({
+    identity,
+    offer,
+    async validate(change, signal) {
+      if (validate !== void 0) return validate(change, signal);
+      return { valid: change.targets.length > 0 && change.edits.length > 0, diagnostics: [] };
+    },
+    async plan(change, signal) {
+      if (plan !== void 0) return plan(change, signal);
+      const edits = await planEdits(change, signal);
+      return Object.freeze({
+        planId: `${providerId}:${change.targets.map((target) => target.targetId).join("+")}`,
+        targets: change.targets,
+        edits,
+        semantics: Object.freeze({ mutationMode, minimumGuarantee: "atomic" }),
+        fidelity,
+        diagnostics: Object.freeze([])
+      });
+    }
+  });
+  return Object.freeze({
+    abiVersion: 1,
+    provides: Object.freeze(["common.edit/writer"]),
+    async createProvider(selection) {
+      if (selection.offerId !== offerId)
+        throw new TypeError(`unknown writer offer ${selection.offerId}`);
+      return simpleLease(writer);
+    }
+  });
+}
 export {
   INSPECTION_OPERATIONS,
   TRANSPORT_OPERATIONS,
+  assetRevisionFromInput,
   createAudioMediaSource,
   createEncodedMediaSource,
   createInspectionCodec,
@@ -586,5 +711,9 @@ export {
   createTreeDataSource,
   createVectorSceneSource,
   createVideoMediaSource,
+  declaredPermissionClasses,
+  defineWriter,
+  editPlanFromInput,
+  replaceBytes,
   simpleLease
 };

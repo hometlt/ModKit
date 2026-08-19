@@ -10,6 +10,7 @@ import {
   SERVICE_PROVIDER_CONTRIBUTION_CONTRACT,
   TRAIT_DEFINITION_CONTRIBUTION_CONTRACT,
   VIEWER_CONTRIBUTION_CONTRACT,
+  activationRequiredPermissionClasses,
   createContributionContractRegistry,
   type CodecContributionSpecV1Wire,
   type ContributionContractRegistration,
@@ -67,7 +68,12 @@ function codecProjector(manifest: ContributionManifestV1, context: ContributionP
       providerId: manifest.id,
       runtimeVariant: variant.variantId,
       target: variant.target,
-      requiredPermissions: variant.requestedPermissionClasses,
+      // ADR-HOST-002 §2: operation-scoped classes are capabilities the host may degrade, not
+      // preconditions of resolving the codec — the resolver sees only what opening needs
+      requiredPermissions: activationRequiredPermissionClasses(
+        variant.requestedPermissionClasses,
+        spec.operations,
+      ),
       provides: spec.representations.map(representation => ({
         offerId: representation.id,
         contract: representation.contract,

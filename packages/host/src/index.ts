@@ -52,6 +52,29 @@ export {
   type SubjectServicesOptions,
 } from './subject-services.js'
 export {
+  activateServiceProvider,
+  createHostServiceResolver,
+  type HostServiceResolver,
+  type HostServiceResolverOptions,
+  type ProviderActivation,
+  type ProviderActivationOptions,
+} from './service-leases.js'
+export {
+  assetRevisionFromDescriptor,
+  createSubjectEditing,
+  NO_STAGED_PAYLOADS,
+  subjectEditTargetsFromDescriptor,
+  type SubjectEditing,
+  type SubjectEditingOptions,
+} from './subject-editing.js'
+export {
+  registerStandardEditingDefinitions,
+  STANDARD_EDITING_DEFINITIONS,
+  STANDARD_EDITING_OWNER,
+  WRITER_CONTRACT_DEFINITION,
+  WRITER_FACET_MATCHER,
+} from './editing-definitions.js'
+export {
   createServiceFacetMatcherProfileRegistry,
   createServiceContractDefinitionRegistry,
   FACETLESS_SERVICE_MATCHER_PROFILE,

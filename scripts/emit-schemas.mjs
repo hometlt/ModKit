@@ -48,6 +48,15 @@ const artifacts = new Map([
     join(root, 'packages', 'sdk', 'schemas', 'editor-contribution-spec.v1.schema.json'),
     sdk.editorContributionSpecV1Schema,
   ],
+  // ADR-HOST-002: facets of the standard writer contract definition
+  [
+    join(root, 'packages', 'sdk', 'schemas', 'writer-requirement.v1.schema.json'),
+    sdk.writerRequirementV1Schema,
+  ],
+  [
+    join(root, 'packages', 'sdk', 'schemas', 'writer-offer.v1.schema.json'),
+    sdk.writerOfferV1Schema,
+  ],
   [
     join(root, 'packages', 'sdk', 'schemas', 'trait-definition-spec.v1.schema.json'),
     sdk.traitDefinitionSpecV1Schema,

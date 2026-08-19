@@ -14,6 +14,7 @@
 import {
   AUXILIARY_DATA_SOURCE_SURFACES,
   STANDARD_DATA_SOURCE_SURFACES,
+  STANDARD_EDITING_SURFACES,
   type DataSourceMethodSurfaceV1Wire,
   type DataSourceSurfaceV1Wire,
 } from '@modkitx-x3/sdk'
@@ -142,10 +143,17 @@ export function capabilitySurfaceFromDataSource(
   }
 }
 
-/** The standard + auxiliary data-source surfaces, adapted. */
+/**
+ * The standard + auxiliary data-source surfaces and the standard editing surfaces
+ * (`common.edit/writer@1`, ADR-HOST-002 §3), adapted.
+ */
 export function standardDataSourceCapabilitySurfaces(): readonly CapabilitySurface[] {
   const out: CapabilitySurface[] = []
-  for (const table of [STANDARD_DATA_SOURCE_SURFACES, AUXILIARY_DATA_SOURCE_SURFACES]) {
+  for (const table of [
+    STANDARD_DATA_SOURCE_SURFACES,
+    AUXILIARY_DATA_SOURCE_SURFACES,
+    STANDARD_EDITING_SURFACES,
+  ]) {
     for (const [contract, surface] of Object.entries(table)) {
       out.push(capabilitySurfaceFromDataSource(contract, 1, surface))
     }

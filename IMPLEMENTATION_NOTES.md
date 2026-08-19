@@ -6,6 +6,55 @@ overrides a canonical or detailed owner.
 
 ---
 
+## S8 — binary editing on the 13D seam: writer surface/definition, file backend, host-gated mutating operations, PNG `edit.field` (Root/Fable, 2026-08-19)
+
+**What exists.** `docs/MK3/adr/ADR-HOST-002-binary-editing-on-the-13d-seam.md` (Accepted, evidence by
+line). The finding that shaped it: BRIEF-13D is implemented in the lab (ABI, coordinator, text
+proofs, packed editor) — binary `write`/`edit` needed **no new contract family**, only the parts
+that were missing for a product path: (1) `common.edit/writer@1` as a standard contract — SDK
+surface `WRITER_SURFACE` pinned to `Writer` (`validate`/`plan`, fields `identity`/`offer`),
+standard definition + host matcher `org.modkitx/writer-facet-matcher@1` registered by
+`createBundledServiceDefinitionRegistry`/`registerServiceDefinitionsOrThrow` under
+`org.modkitx/editing`, facet schemas emitted (16 artifacts); (2) the permission rule (SDK
+`operationScopedPermissionClasses`): classes only operations need are capabilities — offers carry
+activation requirements only, the gate degrades instead of denying (`x3.host/permission-degraded`),
+and `openSubject` gates `operations().invoke` against the effective child grant (codec-kit
+sessions now mirror the manifest's classes; `readOnly` is honest); R5 re-activates only when the
+open grant is actually wider than the probe's; (3) `createFileEditingBackend` in `host/node` —
+`file:` sources in roots, S7 revision vocabulary, conditional temp+rename writes (byte/UTF-16/whole
+replace, create, delete, rename), per-transaction pre-images for rollback, capability atomic /
+recoverable / best-effort; (4) `createSubjectEditing` (revision + targets from the descriptor with
+subject-open's fingerprint rule, host-issued grant snapshot, coordinator, `planFromOperation`,
+writer session) and `createHostServiceResolver`/`activateServiceProvider` (the product-level
+resolver port; subject-open's nested provider activation now shares it); (5) codec-kit
+`editPlanFromInput`, `replaceBytes`, `defineWriter`, `declaredPermissionClasses`; (6) the first
+mutating first-party operation: PNG `edit.field` sets/replaces a tEXt keyword as a byte-range plan
+(both variants request `write-source`).
+
+**Proof.** `packages/host/test/subject-editing.test.ts` (4): Path A — the PNG operation runs
+worker-brokered, the plan crosses the boundary, the file backend commits atomically, the tEXt chunk
+is present on reopen with every other byte identical, a second call replaces in place; a
+read-source-only grant still opens the PNG (degraded) and the host refuses the operation
+`permission-missing` while `inspect` works; a changed file → `conflict`, a read-only snapshot →
+`permission-missing`, no evidence → `fidelity-unproven`, a foreign plan → subject mismatch;
+Path B — the fixture writer resolves by facet, is leased worker-brokered with `identity`/`offer`
+as handle data, backs a writer session whose plan commits, and an unsatisfiable facet is refused at
+resolution. `file-editing-backend.test.ts` (3), `editing-definitions.test.ts` (4). All previous
+suites unchanged; `pnpm check` green.
+
+**Decisions recorded.** MK2 mapping: v1 `write` → writer provider contribution (Path B) next to the
+read codec, v1 `edit` → Path A operations; no per-codec editor contribution; encoders still need
+ports (OPUS-MK2-04 carries the converter change). Fidelity evidence is host policy (first-party
+evidence ships with the proof); multi-edit plans are recoverable, never promised atomic;
+single-source subjects only for now.
+
+**Not done here.** Electron's `filesystem.write-file` shortcut still bypasses the coordinator
+(migration = a broker-backed `EditingBackend` in main + renderer ports on `createSubjectEditing`);
+PWA/VS Code editing; bundle/namespace topologies; a CLI `modkit edit`; staged payload store for
+large edits; the converter mapping (Opus, MK2-04).
+
+---
+
 ## OPUS-MK2-02 accepted; Root decisions on its owner list (Root/Fable, 2026-08-19)
 
 **Accepted.** `042dc55` — debt as data (`MK2-CONVERSION.json` ×35), rework as the committed tree

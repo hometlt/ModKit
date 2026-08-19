@@ -1,0 +1,218 @@
+/**
+ * Host-owned activation of resolved service providers (ADR-HOST-002 §3/§5; the A-2 seam).
+ *
+ * Two callers need the same four steps — issue the activation ticket from the resolver's result,
+ * activate the contribution through the gate (execution boundary, narrowed grant, honest
+ * diagnostics), check the module's `ServiceProviderModule` ABI, and lease the provider through
+ * `createProvider` with a host-built `ContributionContext`: the codec open path (nested providers
+ * a codec resolves while it runs) and a product that needs a provider directly — the first such
+ * product need is a writer (`common.edit/writer@1`) for an edit session. This module is that
+ * shared implementation plus `createHostServiceResolver`, the product-facing resolver port.
+ */
+
+import { ModkitError, type Diagnostic } from '@modkitx-x3/core'
+import type {
+  ContributionContext,
+  ContractResolverPort,
+  HostPolicy,
+  Lease,
+  PermissionGrant,
+  ProviderOffer,
+  ProviderPolicyLockEntry,
+  ResolutionResult,
+  ResourceBudget,
+  RuntimeTarget,
+  SelectedServiceOffer,
+  ServiceContractDefinitionRegistry,
+} from '@modkitx-x3/sdk'
+import type { ExecutionBackendRegistry } from './execution/backend.js'
+import type { Inventory } from './inventory.js'
+import { offersFromInventory } from './offers.js'
+import { buildLockEntry } from './resolution/lock.js'
+import {
+  createContractResolverPort,
+  type FacetAwareProviderRequest,
+} from './resolution/service-resolver.js'
+import { activateContribution, issueActivationTicket } from './security/gate.js'
+
+export interface ProviderActivationOptions {
+  readonly selection: SelectedServiceOffer
+  readonly result: Extract<ResolutionResult, { state: 'resolved' }>
+  readonly target: RuntimeTarget
+  readonly grant: PermissionGrant
+  readonly executionBackends: ExecutionBackendRegistry
+  readonly policy?: HostPolicy
+  readonly signal?: AbortSignal
+  /** Builds the context the provider is created with, bound to its own narrowed grant. */
+  readonly contextFor: (effectiveGrant: PermissionGrant) => ContributionContext
+  /** Activation diagnostics (boundary statements, degraded classes) land here. */
+  readonly diagnostics?: Diagnostic[]
+}
+
+export interface ProviderActivation {
+  readonly lease: Lease<unknown>
+  readonly effectiveGrant: PermissionGrant
+  /** Releases the provider lease and then the activation (realm); idempotent. */
+  release(): Promise<void>
+}
+
+/** Activate the contribution behind a resolved offer and lease the provider it creates. */
+export async function activateServiceProvider(
+  options: ProviderActivationOptions,
+): Promise<ProviderActivation> {
+  const ticket = issueActivationTicket(options.result, options.target)
+  const activation = await activateContribution({
+    ticket,
+    grant: options.grant,
+    executionBackends: options.executionBackends,
+    ...(options.policy === undefined ? {} : { policy: options.policy }),
+    ...(options.signal === undefined ? {} : { signal: options.signal }),
+  })
+  options.diagnostics?.push(...activation.diagnostics)
+  const providerId = options.result.selected.offer.providerId
+  const fail = async (code: string, message: string): Promise<never> => {
+    await activation.release()
+    throw new ModkitError({ code, message })
+  }
+  if (
+    activation.module['abiVersion'] !== 1 ||
+    typeof activation.module['createProvider'] !== 'function'
+  ) {
+    return fail(
+      'x3.host/invalid-service-provider-module',
+      `provider ${providerId} does not implement ServiceProviderModule ABI v1`,
+    )
+  }
+  const createProvider = activation.module['createProvider'] as (
+    selected: SelectedServiceOffer,
+    context: ContributionContext,
+  ) => Promise<Lease<unknown>> | Lease<unknown>
+  let lease: Lease<unknown>
+  try {
+    lease = await createProvider(options.selection, options.contextFor(activation.effectiveGrant))
+  } catch (error) {
+    await activation.release()
+    throw error
+  }
+  if (
+    typeof lease !== 'object' ||
+    lease === null ||
+    !('value' in lease) ||
+    typeof lease.release !== 'function'
+  ) {
+    return fail(
+      'x3.host/invalid-service-provider-lease',
+      `provider ${providerId} returned an invalid lease`,
+    )
+  }
+  let released = false
+  return Object.freeze({
+    lease,
+    effectiveGrant: activation.effectiveGrant,
+    async release() {
+      if (released) return
+      released = true
+      try {
+        await lease.release()
+      } finally {
+        await activation.release()
+      }
+    },
+  })
+}
+
+export interface HostServiceResolverOptions {
+  readonly inventory: Inventory
+  readonly target: RuntimeTarget
+  readonly executionBackends: ExecutionBackendRegistry
+  readonly definitions: ServiceContractDefinitionRegistry
+  /** The caller's grant; every provider runs under a child narrowed from it. */
+  readonly grant: PermissionGrant
+  readonly budgets: ResourceBudget
+  readonly policy?: HostPolicy
+  readonly signal?: AbortSignal
+  /** Offers to resolve against; defaults to the inventory's projection. */
+  readonly offers?: readonly ProviderOffer[]
+}
+
+export interface HostServiceResolver {
+  /** Resolve + activate + lease; leases are tracked and released with the resolver. */
+  readonly port: ContractResolverPort
+  /** Provider-policy lock entries of every resolution made through this resolver (audit). */
+  readonly locks: readonly ProviderPolicyLockEntry[]
+  readonly diagnostics: readonly Diagnostic[]
+  release(): Promise<void>
+}
+
+/**
+ * A product-level resolver port: the same facet-aware resolution and gate activation a codec's
+ * `ContributionContext.contracts` performs, for a host that needs a provider itself (a writer
+ * for an edit session, a syntax provider for a tool). Nested providers resolved by a leased
+ * provider share the chain, so activation cycles are refused.
+ */
+export function createHostServiceResolver(
+  options: HostServiceResolverOptions,
+): HostServiceResolver {
+  const offers = options.offers ?? offersFromInventory(options.inventory)
+  const activations: ProviderActivation[] = []
+  const locks: ProviderPolicyLockEntry[] = []
+  const diagnostics: Diagnostic[] = []
+  const makePort = (grant: PermissionGrant, chain: readonly string[]): ContractResolverPort =>
+    createContractResolverPort({
+      offers,
+      definitions: options.definitions,
+      target: options.target,
+      onResolved(request: FacetAwareProviderRequest, result) {
+        locks.push(buildLockEntry(request, result))
+      },
+      async activate(selection, result, signal) {
+        const key = `${selection.contract}@${selection.major}:${result.selected.offer.providerId}:${selection.offerId}`
+        if (chain.includes(key)) {
+          throw new ModkitError({
+            code: 'x3.host/service-dependency-cycle',
+            message: `service activation cycle detected at ${key}`,
+          })
+        }
+        const activation = await activateServiceProvider({
+          selection,
+          result,
+          target: options.target,
+          grant,
+          executionBackends: options.executionBackends,
+          ...(options.policy === undefined ? {} : { policy: options.policy }),
+          ...(signal === undefined ? {} : { signal }),
+          diagnostics,
+          contextFor: effectiveGrant =>
+            Object.freeze({
+              contracts: makePort(effectiveGrant, [...chain, key]),
+              budgets: options.budgets,
+              diagnostics: {
+                report(item: Diagnostic) {
+                  diagnostics.push(item)
+                },
+              },
+              ...(options.signal === undefined ? {} : { signal: options.signal }),
+            }),
+        })
+        activations.push(activation)
+        return Object.freeze({ value: activation.lease.value, release: () => activation.release() })
+      },
+    })
+  const port = makePort(options.grant, [])
+  return Object.freeze({
+    port,
+    locks,
+    diagnostics,
+    async release() {
+      let firstError: unknown
+      for (const activation of activations.splice(0).reverse()) {
+        try {
+          await activation.release()
+        } catch (error) {
+          firstError ??= error
+        }
+      }
+      if (firstError !== undefined) throw firstError
+    },
+  })
+}

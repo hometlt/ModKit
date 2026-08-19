@@ -33,6 +33,7 @@ import {
   createServiceFacetMatcherProfileRegistry,
   registerServiceContractDefinitionsFromInventory,
 } from './service-definitions.js'
+import { registerStandardEditingDefinitions, WRITER_FACET_MATCHER } from './editing-definitions.js'
 import { openSubject, type OpenSubjectResult } from './subject-open.js'
 
 // ---------------------------------------------------------------------------------------------
@@ -140,31 +141,38 @@ export interface BundledServiceDefinitionRegistryOptions {
  * A definition registry for inputs the host already vouches for (its generated first-party
  * catalog): every inventoried owner is accepted as the namespace owner of what it defines and
  * schema refs are not validated here. Installed/linked extensions must never be promoted through
- * this registry — they need an explicit namespace-delegation policy, which is not this.
+ * this registry — they need an explicit namespace-delegation policy, which is not this. The
+ * platform's matcher profiles (the writer facet matcher, ADR-HOST-002 §3) are always available.
  */
 export function createBundledServiceDefinitionRegistry(
   options: BundledServiceDefinitionRegistryOptions = {},
 ): ServiceContractDefinitionRegistry {
   return createServiceContractDefinitionRegistry({
-    matcherProfiles: createServiceFacetMatcherProfileRegistry(options.matcherProfiles ?? []),
+    matcherProfiles: createServiceFacetMatcherProfileRegistry([
+      WRITER_FACET_MATCHER,
+      ...(options.matcherProfiles ?? []),
+    ]),
     isNamespaceOwner: () => true,
     validateJsonSchemaRef: () => [],
   })
 }
 
 /**
- * Register the inventory's service-contract definitions and fail closed: one rejected owner is a
- * refused bootstrap (`x3.host/service-definition-rejected` with the diagnostics), never a
- * partially-defined host.
+ * Register the platform's standard editing definitions and then the inventory's service-contract
+ * definitions, failing closed: one rejected owner is a refused bootstrap
+ * (`x3.host/service-definition-rejected` with the diagnostics), never a partially-defined host.
+ * A registry that lacks the standard matcher profiles is rejected here too — use
+ * `createBundledServiceDefinitionRegistry` or include `WRITER_FACET_MATCHER`.
  */
 export async function registerServiceDefinitionsOrThrow(
   inventory: Inventory,
   definitions: ServiceContractDefinitionRegistry,
 ): Promise<readonly DefinitionInventoryResult[]> {
-  const registrations = await registerServiceContractDefinitionsFromInventory(
-    inventory,
-    definitions,
-  )
+  const standard = await registerStandardEditingDefinitions(definitions)
+  const registrations = [
+    standard,
+    ...(await registerServiceContractDefinitionsFromInventory(inventory, definitions)),
+  ]
   const rejected = registrations.filter(result => result.state === 'rejected')
   if (rejected.length > 0) {
     const diagnostics: Diagnostic[] = rejected.flatMap(result => result.diagnostics)

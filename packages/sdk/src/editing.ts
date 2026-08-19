@@ -1,4 +1,6 @@
-import type { Diagnostic, UInt64String } from '@modkitx-x3/core'
+import { deepFreeze, type Diagnostic, type UInt64String } from '@modkitx-x3/core'
+import type { SurfaceOf } from './asset-capabilities/data-source-surfaces.js'
+import type { DataSourceSurfaceV1 } from './definitions.js'
 import type { DataSourceRef, DataSourceRefWire, Lease } from './asset-capabilities/data-sources.js'
 import type {
   AssetOperationId,
@@ -449,4 +451,59 @@ export interface EditorModule {
     readonly authorization: EditAuthorizationPort
     readonly signal?: AbortSignal
   }): Promise<EditorMount>
+}
+
+// ---------------------------------------------------------------------------------------------
+// ADR-HOST-002: `common.edit/writer@1` as a standard contract of the platform — its method
+// surface (pinned to `Writer`) and the deterministic facet rule every host matcher applies.
+
+export const WRITER_CONTRACT_ID = 'common.edit/writer' as const
+export type WriterContractId = typeof WRITER_CONTRACT_ID
+
+/** Matcher profile id the standard writer definition selects (host-trusted code, never injected). */
+export const WRITER_FACET_MATCHER_PROFILE = 'org.modkitx/writer-facet-matcher' as const
+
+/**
+ * How a writer object is called across an execution boundary: `validate`/`plan` carry the
+ * change set by value with the signal appended; `identity` and `offer` travel as handle data so a
+ * consumer can read them without a round trip. Pinned to the ABI interface at compile time.
+ */
+const writerSurface = {
+  fields: ['identity', 'offer'],
+  methods: {
+    validate: { kind: 'value', signal: 'last', arity: 1 },
+    plan: { kind: 'value', signal: 'last', arity: 1 },
+  },
+} as const satisfies SurfaceOf<Writer> & { readonly fields: readonly string[] }
+
+export const WRITER_SURFACE: typeof writerSurface = deepFreeze(writerSurface)
+
+export const STANDARD_EDITING_SURFACES: Readonly<Record<WriterContractId, DataSourceSurfaceV1>> =
+  deepFreeze({ [WRITER_CONTRACT_ID]: WRITER_SURFACE })
+
+/** Stronger round trips satisfy weaker requirements. */
+export const ROUND_TRIP_RANK: Readonly<Record<RoundTrip, number>> = Object.freeze({
+  'byte-identical': 3,
+  semantic: 2,
+  lossy: 1,
+  none: 0,
+})
+
+/**
+ * The writer facet rule (ADR-HOST-002 §3): same format and representation, an offer that
+ * mutates also serves an export-only request, and the offer's round trip must be at least the
+ * requested one. Pure and deterministic; the host matcher profile wraps it.
+ */
+export function writerOfferSatisfies(request: WriterRequirement, offer: WriterOffer): boolean {
+  return (
+    request.formatId === offer.formatId &&
+    request.representationId === offer.representationId &&
+    (request.mutationMode === 'export-only' || offer.mutationMode === 'mutate') &&
+    ROUND_TRIP_RANK[offer.minimumRoundTrip] >= ROUND_TRIP_RANK[request.minimumRoundTrip]
+  )
+}
+
+/** Canonical, non-secret selection key of a matched writer request (safe for policy locks). */
+export function writerSelectionKey(request: WriterRequirement): string {
+  return `writer:${request.formatId}:${request.representationId}:${request.mutationMode}:${request.minimumRoundTrip}`
 }

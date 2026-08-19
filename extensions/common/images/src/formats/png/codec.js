@@ -2,6 +2,8 @@ import {
   createInspectionCodec,
   createRasterImageSource,
   createTreeDataSource,
+  editPlanFromInput,
+  replaceBytes,
 } from '@modkitx-x3/codec-kit'
 
 const SIGNATURE = Object.freeze([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
@@ -238,8 +240,93 @@ function decodedRegionReader(bytes, png) {
   }
 }
 
+/**
+ * ADR-HOST-002 Path A: the one mutating operation of this codec. `edit.field` with
+ * `{ keyword, text }` sets or replaces a `tEXt` chunk and returns an edit plan — a single
+ * byte-range replace (an insert before IEND when the keyword is new), every other byte of the file
+ * untouched, so the claim is byte-identical preservation of unknown data. The codec never writes:
+ * the host commits the plan under `write-source` through its editing backend.
+ */
+const EDIT_FIELD_OPERATION = Object.freeze({
+  id: 'edit.field',
+  handlerId: 'set-text',
+  mutatesSource: true,
+  requiredPermissions: Object.freeze(['read-source', 'write-source']),
+  outputKinds: Object.freeze(['edit-plan']),
+})
+
+const latin1 = new TextEncoder()
+function latin1Bytes(text) {
+  // tEXt is Latin-1: refuse code points the chunk cannot carry instead of mangling them
+  for (const char of text) {
+    if ((char.codePointAt(0) ?? 0) > 0xff) throw new TypeError('tEXt carries Latin-1 only')
+  }
+  return Uint8Array.from(text, char => char.codePointAt(0) ?? 0)
+}
+
+function textChunkBytes(keyword, text) {
+  const key = latin1Bytes(keyword)
+  const value = latin1Bytes(text)
+  if (key.byteLength < 1 || key.byteLength > 79 || key.includes(0)) {
+    throw new TypeError('tEXt keyword must be 1–79 Latin-1 characters without NUL')
+  }
+  if (value.includes(0)) throw new TypeError('tEXt text cannot contain NUL')
+  const length = key.byteLength + 1 + value.byteLength
+  const chunk = new Uint8Array(12 + length)
+  new DataView(chunk.buffer).setUint32(0, length, false)
+  chunk.set(latin1.encode('tEXt'), 4)
+  chunk.set(key, 8)
+  chunk[8 + key.byteLength] = 0
+  chunk.set(value, 9 + key.byteLength)
+  new DataView(chunk.buffer).setUint32(8 + length, crc32(chunk, 4, 8 + length), false)
+  return chunk
+}
+
+function textKeywordOf(bytes, chunk) {
+  if (chunk.type !== 'tEXt') return undefined
+  const end = bytes.indexOf(0, chunk.dataOffset)
+  if (end < 0 || end >= chunk.dataOffset + chunk.length) return undefined
+  return ascii.decode(bytes.subarray(chunk.dataOffset, end))
+}
+
+/** The `set-text` handler: a plan that sets or replaces one tEXt keyword, nothing else moves. */
+function setTextHandler(bytes, png, input) {
+  return async value => {
+    if (
+      typeof value !== 'object' ||
+      value === null ||
+      typeof value.keyword !== 'string' ||
+      typeof value.text !== 'string'
+    ) {
+      throw new TypeError('edit.field expects { keyword, text }')
+    }
+    const replacement = textChunkBytes(value.keyword, value.text)
+    const existing = png.chunks.find(chunk => textKeywordOf(bytes, chunk) === value.keyword)
+    const iend = png.chunks.find(chunk => chunk.type === 'IEND')
+    if (iend === undefined) throw new TypeError('PNG has no IEND chunk')
+    const edit =
+      existing === undefined
+        ? replaceBytes(iend.offset, 0, replacement, `insert tEXt ${value.keyword}`)
+        : replaceBytes(
+            existing.offset,
+            12 + existing.length,
+            replacement,
+            `replace tEXt ${value.keyword}`,
+          )
+    return {
+      kind: 'edit-plan',
+      plan: editPlanFromInput(input, {
+        planId: `png-set-text:${value.keyword}`,
+        edits: [edit],
+        fidelity: { roundTrip: 'byte-identical', preservesUnknownData: true },
+      }),
+    }
+  }
+}
+
 const definition = Object.freeze({
   id: 'org.modkitx/image-png',
+  operations: Object.freeze([EDIT_FIELD_OPERATION]),
   format: Object.freeze({ id: 'png', label: 'PNG image', mediaType: 'image/png' }),
   async detect(bytes) {
     const match = matchesSignature(bytes)
@@ -331,6 +418,7 @@ const definition = Object.freeze({
         'common.view/tree-data-source': tree,
         'common.view/raster-image-source': raster,
       },
+      handlers: { 'set-text': setTextHandler(bytes, png, context.input) },
       maxDecodedBytes: BigInt(png.width) * BigInt(png.height) * 4n,
       unsupportedFeatures: [...(decodedAccess ? [] : ['decoded-region-provider']), 'pixel-editing'],
     }

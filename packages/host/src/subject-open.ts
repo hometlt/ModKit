@@ -11,6 +11,7 @@ import {
 } from '@modkitx-x3/core'
 import {
   CODEC_CONTRIBUTION_CONTRACT,
+  grantValidity,
   type AnyDescriptor,
   type AnyDescriptorWire,
   type ArtifactByteSource,
@@ -27,6 +28,9 @@ import {
   type HostPolicy,
   type Lease,
   type OpenIntent,
+  type OperationResult,
+  type OperationSession,
+  type PermissionClass,
   type PermissionGrant,
   type ProviderOffer,
   type ProviderPolicyLockEntry,
@@ -37,6 +41,7 @@ import {
   type SelectedServiceOffer,
 } from '@modkitx-x3/sdk'
 import { inventoryRecordFor, type Inventory, type InventoryContribution } from './inventory.js'
+import { activateServiceProvider } from './service-leases.js'
 import { offersFromInventory } from './offers.js'
 import {
   buildCodecDetectionSelection,
@@ -49,7 +54,7 @@ import {
 } from './resolution/service-resolver.js'
 import {
   activateContribution,
-  issueActivationTicket,
+  permissionDegradedDiagnostic,
   PROBE_OPERATION,
   PROBE_PERMISSION_CLASSES,
   resolveForActivation,
@@ -154,6 +159,8 @@ interface DetectedCandidate extends RunnableCandidate {
   codec: Codec
   resources: AsyncReleaseScope
   activationDiagnostics: readonly Diagnostic[]
+  /** The narrowed grant the codec runs under; host-side operation gating reads it (ADR-HOST-002 §2). */
+  effectiveGrant: PermissionGrant
   readonly detection: DetectionResult
   readonly effectiveBudget: ResourceBudget
   readonly nestedLocks: ProviderPolicyLockEntry[]
@@ -202,17 +209,6 @@ function createReleaseScope(): AsyncReleaseScope {
   }
 }
 
-function trackedLease<Value>(scope: AsyncReleaseScope, lease: Lease<Value>): Lease<Value> {
-  let released = false
-  const release = async (): Promise<void> => {
-    if (released) return
-    released = true
-    await lease.release()
-  }
-  scope.add(release)
-  return Object.freeze({ value: lease.value, release })
-}
-
 async function releaseCandidate(
   candidate: DetectedCandidate,
   diagnostics: Diagnostic[],
@@ -224,14 +220,67 @@ async function releaseCandidate(
   }
 }
 
-function sessionWithResources(session: AssetSession, resources: AsyncReleaseScope): AssetSession {
+/**
+ * ADR-HOST-002 §2: the host checks an operation's required classes (the manifest's declaration,
+ * plus `write-source` for a mutating one) against the narrowed grant the codec runs under, before
+ * the call reaches the codec — whatever the codec's own session says.
+ */
+function gatedOperations(
+  session: AssetSession,
+  spec: CodecContributionSpecV1Wire,
+  grant: PermissionGrant,
+): OperationSession {
+  const inner = session.operations()
+  const required = new Map<string, readonly PermissionClass[]>()
+  for (const operation of spec.operations) {
+    required.set(operation.handlerId, [
+      ...(operation.requiredPermissions ?? []),
+      ...(operation.mutatesSource ? (['write-source'] as const) : []),
+    ])
+  }
+  const gated: OperationSession = {
+    async invoke(handlerId, input, invokeOptions): Promise<OperationResult> {
+      const needed = required.get(handlerId) ?? []
+      const validity = grantValidity(grant)
+      const missing = needed.filter(item => !grant.classes.includes(item))
+      if (validity.state !== 'valid' || missing.length > 0) {
+        return {
+          state: 'rejected',
+          reason: 'permission-missing',
+          diagnostics: [
+            diagnostic(
+              'error',
+              'x3.host/permission-missing',
+              validity.state === 'valid'
+                ? `operation ${handlerId} requires classes the grant does not hold: ${missing.join(', ')}`
+                : 'the grant the codec runs under is not valid',
+              [handlerId],
+              { missing },
+            ),
+          ],
+        }
+      }
+      return inner.invoke(handlerId, input, invokeOptions)
+    },
+    dispose: () => inner.dispose(),
+  }
+  return Object.freeze(gated)
+}
+
+function sessionWithResources(
+  session: AssetSession,
+  resources: AsyncReleaseScope,
+  gating?: { readonly spec: CodecContributionSpecV1Wire; readonly grant: PermissionGrant },
+): AssetSession {
   let disposed = false
+  const operations =
+    gating === undefined ? undefined : gatedOperations(session, gating.spec, gating.grant)
   return Object.freeze({
     revision: session.revision,
     state: () => session.state(),
     descriptor: () => session.descriptor(),
     dataSource: session.dataSource.bind(session) as AssetSession['dataSource'],
-    operations: () => session.operations(),
+    operations: () => operations ?? session.operations(),
     events: (signal?: AbortSignal) => session.events(signal),
     async dispose(): Promise<void> {
       if (disposed) return
@@ -319,8 +368,22 @@ function matchesSpec(spec: CodecContributionSpecV1Wire, path: string, mediaType?
 }
 
 /** R5: does the variant request anything beyond what a probe may hold? */
-function variantRequestsBeyondProbe(requested: readonly string[]): boolean {
-  return requested.some(item => !(PROBE_PERMISSION_CLASSES as readonly string[]).includes(item))
+/**
+ * R5: the probe runs under the probe-scoped child grant; re-activation before open is needed
+ * exactly when the open grant would be wider — the variant requests classes beyond the probe set
+ * *and* the caller's grant actually holds one of them. A caller holding only `read-source`
+ * opens a codec that also requests `write-source` (ADR-HOST-002 §2, degraded) on the probe
+ * realm itself: its child grant is already the open grant.
+ */
+function variantRequestsBeyondProbe(
+  requested: readonly string[],
+  callerGrant?: PermissionGrant,
+): boolean {
+  return requested.some(
+    item =>
+      !(PROBE_PERMISSION_CLASSES as readonly string[]).includes(item) &&
+      (callerGrant === undefined || callerGrant.classes.includes(item as PermissionClass)),
+  )
 }
 
 /**
@@ -836,6 +899,23 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
         })
         record.resources.add(activation.release)
         local.push(...activation.diagnostics)
+        {
+          // the probe ticket asks only for the probe classes; if this realm will also serve the
+          // open (no R5 re-activation because the caller grant holds nothing beyond the probe set),
+          // say which requested classes the open runs without — the gate would have, had it seen them
+          const requested =
+            candidate.contribution.manifest?.runtimeVariants?.find(
+              item => item.variantId === candidate.offer.runtimeVariant,
+            )?.requestedPermissionClasses ?? []
+          const degraded = requested.filter(
+            item =>
+              !(PROBE_PERMISSION_CLASSES as readonly string[]).includes(item) &&
+              !options.grant.classes.includes(item),
+          )
+          if (degraded.length > 0) {
+            local.push(permissionDegradedDiagnostic(candidate.contributionId, degraded))
+          }
+        }
         const effectiveBudget = runtimeBudget(options.budget, candidate.spec)
         const nestedLocks = record.nestedLocks
         const makeContext = (
@@ -864,45 +944,24 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
                         message: `service activation cycle detected at ${key}`,
                       })
                     }
-                    const ticket = issueActivationTicket(result, target)
-                    const nested = await activateContribution({
-                      ticket,
+                    // the shared host activation (service-leases.ts): ticket → gate → ABI check →
+                    // createProvider with a context bound to the provider's own narrowed grant
+                    const nested = await activateServiceProvider({
+                      selection,
+                      result,
+                      target,
                       grant,
                       executionBackends,
                       ...(options.policy === undefined ? {} : { policy: options.policy }),
                       ...(signal === undefined ? {} : { signal }),
+                      diagnostics,
+                      contextFor: effectiveGrant => makeContext(effectiveGrant, [...chain, key]),
                     })
-                    record.resources.add(nested.release)
-                    diagnostics.push(...nested.diagnostics)
-                    if (
-                      nested.module['abiVersion'] !== 1 ||
-                      typeof nested.module['createProvider'] !== 'function'
-                    ) {
-                      throw new ModkitError({
-                        code: 'x3.host/invalid-service-provider-module',
-                        message: `provider ${result.selected.offer.providerId} does not implement ServiceProviderModule ABI v1`,
-                      })
-                    }
-                    const createProvider = nested.module['createProvider'] as (
-                      selected: SelectedServiceOffer,
-                      context: ContributionContext,
-                    ) => Promise<Lease<unknown>> | Lease<unknown>
-                    const lease = await createProvider(
-                      selection,
-                      makeContext(nested.effectiveGrant, [...chain, key]),
-                    )
-                    if (
-                      typeof lease !== 'object' ||
-                      lease === null ||
-                      !('value' in lease) ||
-                      typeof lease.release !== 'function'
-                    ) {
-                      throw new ModkitError({
-                        code: 'x3.host/invalid-service-provider-lease',
-                        message: `provider ${result.selected.offer.providerId} returned an invalid lease`,
-                      })
-                    }
-                    return trackedLease(record.resources, lease)
+                    record.resources.add(() => nested.release())
+                    return Object.freeze({
+                      value: nested.lease.value,
+                      release: () => nested.release(),
+                    })
                   },
                 })
           return Object.freeze({
@@ -946,6 +1005,7 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
             codec,
             detection,
             effectiveBudget,
+            effectiveGrant: activation.effectiveGrant,
             activationDiagnostics: Object.freeze(local) as readonly Diagnostic[],
             request,
             makeContext,
@@ -953,6 +1013,7 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
               candidate.contribution.manifest?.runtimeVariants?.find(
                 item => item.variantId === candidate.offer.runtimeVariant,
               )?.requestedPermissionClasses ?? [],
+              options.grant,
             ),
           }),
         )
@@ -1057,6 +1118,7 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
           best.contributionId,
         )
         best.ticket = reResolved.ticket
+        best.effectiveGrant = activation.effectiveGrant
         best.activationDiagnostics = Object.freeze([
           ...best.activationDiagnostics,
           ...activation.diagnostics,
@@ -1142,7 +1204,10 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
       }),
     )
     const lockText = serializePolicyLock(best.nestedLocks)
-    const managedSession = sessionWithResources(session, best.resources)
+    const managedSession = sessionWithResources(session, best.resources, {
+      spec: best.spec,
+      grant: best.effectiveGrant,
+    })
     openedSession = undefined
     return Object.freeze({
       state: 'opened' as const,

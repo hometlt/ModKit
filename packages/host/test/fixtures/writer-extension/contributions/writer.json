@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/service-provider-contribution", "major": 1 },
+  "id": "org.example/png-passthrough-writer",
+  "displayName": "PNG pass-through writer (fixture)",
+  "runtimeVariants": [
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/writer.js",
+      "target": { "environments": ["node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "lifecycleScope": "session",
+    "provides": [
+      {
+        "offerId": "png-source-byte-identical",
+        "contract": "common.edit/writer",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": {
+          "providerId": "org.example/png-passthrough-writer",
+          "fidelityEvidenceId": "png-passthrough-v1",
+          "formatId": "png",
+          "representationId": "source",
+          "mutationMode": "mutate",
+          "minimumRoundTrip": "byte-identical"
+        }
+      }
+    ]
+  }
+}

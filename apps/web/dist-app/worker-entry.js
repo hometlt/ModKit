@@ -1,7 +1,8 @@
 import {
   AUXILIARY_DATA_SOURCE_SURFACES,
-  STANDARD_DATA_SOURCE_SURFACES
-} from "./chunks/chunk-7B5UTZBS.js";
+  STANDARD_DATA_SOURCE_SURFACES,
+  STANDARD_EDITING_SURFACES
+} from "./chunks/chunk-2UBMYNBR.js";
 import {
   ModkitError,
   OperationCancelledError,
@@ -3024,7 +3025,11 @@ function capabilitySurfaceFromDataSource(contract, major, surface) {
 }
 function standardDataSourceCapabilitySurfaces() {
   const out = [];
-  for (const table of [STANDARD_DATA_SOURCE_SURFACES, AUXILIARY_DATA_SOURCE_SURFACES]) {
+  for (const table of [
+    STANDARD_DATA_SOURCE_SURFACES,
+    AUXILIARY_DATA_SOURCE_SURFACES,
+    STANDARD_EDITING_SURFACES
+  ]) {
     for (const [contract, surface] of Object.entries(table)) {
       out.push(capabilitySurfaceFromDataSource(contract, 1, surface));
     }

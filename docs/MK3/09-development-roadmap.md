@@ -694,7 +694,14 @@ NXT‑114/R3 (Node worker backend с verified loading; реальный `text-js
    (как registry bindings в S1b): inventory, собранный любым bundled‑entry пакета, честен для
    любого другого. Осталось: HTTP/RPC‑обвязка server'а поверх `subjects.open` (сессии как
    handles `x3.app/subject-services@1` — как в Electron), `--bundled` набор для CLI вне репо.
-   5b. **13D для бинарных представлений — семейство write/edit (S8, следующий слайс Root)**:
+   5b. **13D для бинарных представлений — write/edit (S8, _сделано 2026‑08‑19_, ADR‑HOST‑002)**:
+   нового семейства контрактов не понадобилось — 13D уже выразителен для бинарных правок; сделаны
+   недостающие части: стандартная surface и definition `common.edit/writer@1` (matcher по
+   facet'у), файловый backend `createFileEditingBackend` (условная запись, temp+rename,
+   pre‑image rollback), `createSubjectEditing`/`createHostServiceResolver` в host, правило
+   «operation‑scoped классы деградируют, а не запрещают» в resolver/gate/dispatch, codec‑kit
+   `editPlanFromInput`/`defineWriter`, первый мутирующий кодек — PNG `edit.field` (tEXt),
+   доказано worker‑brokered сквозь границу с atomic‑коммитом и reopen. Первоначальный план:
    контракт кодека v1 read‑only намеренно (BRIEF‑13A acc. 19); 33 кодека MK2 упираются в
    `write`, 12 — в `edit`. ADR‑HOST‑002: writer‑arm сессии (`encode → bytes|patch`), коммит у
    хоста под `write-source` через `filesystem.atomic-replace` с проверкой ревизии (адаптер S7),

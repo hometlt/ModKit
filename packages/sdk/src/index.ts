@@ -31,8 +31,15 @@ export {
   serviceContractDefinitionSpecV1Schema,
   traitDefinitionSpecV1Schema,
   viewerContributionSpecV1Schema,
+  writerOfferV1Schema,
+  writerRequirementV1Schema,
 } from './schemas/contribution-specs.js'
 export * from './editing.js'
+export {
+  activationRequiredPermissionClasses,
+  operationScopedPermissionClasses,
+  type OperationPermissionDeclaration,
+} from './manifest/operation-permissions.js'
 export { anyDescriptorV2Schema, subjectDescriptorV2Schema } from './schemas/subject-descriptor.js'
 export type {
   Architecture,

@@ -477,6 +477,16 @@
       rgba(182, 240, 74, 0.14) 0 1px,
       transparent 1px var(--mk-tree-indent)
     );
+    /*
+     * The geometry is repeated from the base rule on purpose. `chrome.css` paints the selected
+     * row with the `background` *shorthand*, which resets size, repeat and position to their
+     * initial values; this layer's `background-image` outlives that reset, so without the three
+     * longhands below the guide would tile across the whole selected row instead of stopping at
+     * the node's own indent depth.
+     */
+    background-repeat: no-repeat;
+    background-size: calc(var(--mk-tree-indent) * var(--mk-tree-indent-level, 0)) 100%;
+    background-position: calc(var(--mk-space-2) + var(--mk-tree-indent) / 2) 0;
   }
 
   :root[data-mk-theme='nexus-forge'] [data-mk-part='filetree.row']:hover {
