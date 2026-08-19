@@ -18,7 +18,12 @@ export const READY_APP_EXTENSIONS = Object.freeze({
   }),
   images: Object.freeze({
     coordinate: 'org.modkitx/images',
-    contributions: Object.freeze(['org.modkitx/image-jpeg', 'org.modkitx/image-png']),
+    contributions: Object.freeze([
+      'org.modkitx/image-jpeg',
+      'org.modkitx/image-png',
+      // ADR-HOST-002 Path B: the PNG encoder writer ships beside the read codecs (A5)
+      'org.modkitx/png-encoder-writer',
+    ]),
   }),
   models: Object.freeze({
     coordinate: 'org.modkitx/models',

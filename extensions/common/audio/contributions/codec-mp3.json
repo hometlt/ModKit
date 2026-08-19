@@ -9,14 +9,14 @@
       "entrypoint": "./src/formats/mp3/codec.js",
       "target": { "environments": ["node"] },
       "executionProfile": "trusted-in-process",
-      "requestedPermissionClasses": ["read-source"]
+      "requestedPermissionClasses": ["read-source", "write-source"]
     },
     {
       "variantId": "portable",
       "entrypoint": "./src/formats/mp3/codec.js",
       "target": { "environments": ["browser-worker", "node-worker"] },
       "executionProfile": "worker-brokered",
-      "requestedPermissionClasses": ["read-source"]
+      "requestedPermissionClasses": ["read-source", "write-source"]
     }
   ],
   "spec": {
@@ -91,6 +91,13 @@
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["none"]
+      },
+      {
+        "id": "edit.field",
+        "handlerId": "set-text-frame",
+        "mutatesSource": true,
+        "requiredPermissions": ["read-source", "write-source"],
+        "outputKinds": ["edit-plan"]
       }
     ],
     "traitDeclarations": [
