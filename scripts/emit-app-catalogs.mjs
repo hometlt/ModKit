@@ -21,16 +21,17 @@ const absolutePathPattern = /(?:[A-Za-z]:[\\/]|(?:from\s+|require\(\s*)['"]\/)/u
  */
 const previewPolicy = Object.freeze([
   {
-    slotId: 'tree',
-    label: 'Tree',
-    contributionId: 'org.modkitx.ui/tree-stage',
-    module: 'treeViewer',
+    slotId: 'code',
+    label: 'Code',
+    contributionId: 'org.modkitx.ui-monaco/code-stage',
+    module: 'monacoEditor',
+    editable: true,
   },
   {
-    slotId: 'table',
-    label: 'Table',
-    contributionId: 'org.modkitx.ui/table-stage',
-    module: 'tableViewer',
+    slotId: 'video',
+    label: 'Video',
+    contributionId: 'org.modkitx.ui/video-stage',
+    module: 'videoViewer',
   },
   {
     slotId: 'image',
@@ -39,11 +40,34 @@ const previewPolicy = Object.freeze([
     module: 'imageViewer',
   },
   {
-    slotId: 'code',
-    label: 'Code',
-    contributionId: 'org.modkitx.ui-monaco/code-stage',
-    module: 'monacoEditor',
-    editable: true,
+    slotId: 'audio',
+    label: 'Audio',
+    contributionId: 'org.modkitx.ui/audio-stage',
+    module: 'audioViewer',
+  },
+  {
+    slotId: 'model',
+    label: 'Model',
+    contributionId: 'org.modkitx.ui/model-stage',
+    module: 'modelViewer',
+  },
+  {
+    slotId: 'vector',
+    label: 'Vector',
+    contributionId: 'org.modkitx.ui/vector-stage',
+    module: 'vectorViewer',
+  },
+  {
+    slotId: 'table',
+    label: 'Table',
+    contributionId: 'org.modkitx.ui/table-stage',
+    module: 'tableViewer',
+  },
+  {
+    slotId: 'tree',
+    label: 'Tree',
+    contributionId: 'org.modkitx.ui/tree-stage',
+    module: 'treeViewer',
   },
   {
     slotId: 'text',
@@ -52,6 +76,12 @@ const previewPolicy = Object.freeze([
     module: 'textEditor',
     readOnlyModule: 'boundedTextViewer',
     editable: true,
+  },
+  {
+    slotId: 'virtual-text',
+    label: 'Large text',
+    contributionId: 'org.modkitx.ui/virtual-text-stage',
+    module: 'virtualTextViewer',
   },
   {
     slotId: 'hex',

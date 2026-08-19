@@ -14,7 +14,7 @@
  * and a renderer able to run that would need the Node access `nodeIntegration: false` denies. The
  * bundle failing to resolve `node:fs` is the guard doing its job.
  */
-import { connectElectronSubjectRpc } from './subject-rpc.js'
+import { connectElectronSubjectClient, type ElectronSubjectSession } from './subject-client.js'
 import {
   createCodecPreview,
   createEditorArea,
@@ -28,13 +28,18 @@ import {
   type EditorArea,
   type ExplorerEntry,
   type FileAccess,
+  type PreviewResolver,
   type SettingsDocument,
   type SettingsStore,
 } from '@modkitx-x3/ui'
 import { applyDensity, applyTheme } from '@modkitx-x3/ui/tokens'
+import type { OperationSession } from '@modkitx-x3/sdk'
 
-import { PREVIEW_FALLBACK, PREVIEW_STAGES } from '../generated/viewer-catalog.js'
+import { PREVIEW_FALLBACK } from '../generated/viewer-catalog.js'
 import { createFileEditorPorts } from './editing.js'
+import { createInspectorDock, type InspectorSubject } from './inspector.js'
+import { createElectronStages } from './stages.js'
+import { preferredStage, selfTestLine } from './view-policy.js'
 
 /**
  * Hand Monaco its language workers. Monaco reads this the first time an editor asks for one, which
@@ -258,7 +263,7 @@ async function boot(): Promise<void> {
   // Bound locally: the narrowing above does not reach the nested helpers declared later.
   const bridge = broker
   const { port: subjectPort, session: subjectSession } = await acquireSubjectPort(subjects)
-  const subjectClient = await connectElectronSubjectRpc({
+  const subjectClient = await connectElectronSubjectClient({
     port: subjectPort,
     session: subjectSession,
     onDiagnostic: diagnostic =>
@@ -291,9 +296,44 @@ async function boot(): Promise<void> {
     footer.classList.toggle('bad', bad)
   }
 
-  const preview = createCodecPreview({
+  /*
+   * One record per open subject: the live session, its descriptor, the stage the host's
+   * presentation plan made active, and the operation session — leased once and shared by the
+   * inspector's toolbar, the transport bar and the archive stage's entry preview.
+   */
+  interface SubjectRecord {
+    readonly path: string
+    readonly descriptor: Record<string, unknown>
+    readonly session: ElectronSubjectSession
+    readonly planActive: string | undefined
+    operations?: Promise<OperationSession | undefined>
+  }
+  const subjectsByPath = new Map<string, SubjectRecord>()
+  /** Descriptor identity, so a viewer holding only a descriptor can find its own session. */
+  const subjectsByDescriptor = new Map<string, SubjectRecord>()
+  const descriptorKey = (descriptor: Record<string, unknown>): string =>
+    `${String(descriptor['subjectUri'] ?? '')}@${String(descriptor['revision'] ?? '')}`
+
+  const operationsFor = async (
+    descriptor: Record<string, unknown>,
+  ): Promise<OperationSession | undefined> => {
+    const record = subjectsByDescriptor.get(descriptorKey(descriptor))
+    if (record === undefined) return undefined
+    record.operations ??= record.session
+      .operations()
+      .then(session => session as OperationSession | undefined)
+      .catch((error: unknown) => {
+        console.warn(`[subject] operations unavailable: ${String(error)}`)
+        return undefined
+      })
+    return record.operations
+  }
+
+  const stages = createElectronStages({ operationsFor })
+
+  const codecPreview = createCodecPreview({
     supported: profile.supportedExtensions,
-    stages: PREVIEW_STAGES,
+    stages,
     fallback: PREVIEW_FALLBACK,
     async openSession(entry) {
       const result = await subjectClient.open(entry.id)
@@ -302,6 +342,7 @@ async function boot(): Promise<void> {
           result.snapshot.diagnostics[0]?.message ??
           `${result.snapshot.reason}; using the explicit text/hex fallback`
         setFooter(entry.id, detail, result.snapshot.reason !== 'no-candidate')
+        subjectsByPath.delete(entry.id)
         return undefined
       }
       const snapshot = result.snapshot
@@ -318,7 +359,31 @@ async function boot(): Promise<void> {
           snapshot.selected.confidence * 100,
         )}%${boundary}`,
       )
-      return result.session
+      const record: SubjectRecord = {
+        path: entry.id,
+        descriptor: snapshot.descriptor,
+        session: result.session,
+        planActive: result.session.presentation?.activeStage,
+      }
+      subjectsByPath.set(entry.id, record)
+      subjectsByDescriptor.set(descriptorKey(snapshot.descriptor), record)
+      /*
+       * The host's plan is kept as the *default* stage, not as the list of stages.
+       * `resolvePresentationPlan` keeps one stage per `singletonGroup`, which is right for "what
+       * opens first" and wrong for "what can this file be shown as" — a PNG would offer Image and
+       * never Hex. Handing the previewer a session without the plan lets it evaluate every stage
+       * in the app policy against the descriptor's own data sources and traits, and `planActive`
+       * below restores the host's choice of which one starts.
+       */
+      return {
+        descriptor: async () => snapshot.descriptor,
+        dataSource: (contract, major) => result.session.dataSource(contract, major),
+        dispose: async () => {
+          subjectsByPath.delete(entry.id)
+          subjectsByDescriptor.delete(descriptorKey(snapshot.descriptor))
+          await result.session.dispose()
+        },
+      }
     },
     // Editable stages get a real save path: bytes go through the broker to an atomic write.
     editorPorts: (entry, bytes) => {
@@ -335,9 +400,42 @@ async function boot(): Promise<void> {
     },
   })
 
+  /** Offer every applicable stage, then start on the one the host's plan selected. */
+  const preview: PreviewResolver = {
+    supported: codecPreview.supported,
+    async open(container, entry, bytes, signal) {
+      const handle = await codecPreview.open(container, entry, bytes, signal)
+      if (handle === undefined) return undefined
+      const wanted = preferredStage(
+        handle.views.map(view => view.id),
+        subjectsByPath.get(entry.id)?.planActive,
+      )
+      if (wanted !== undefined && wanted !== handle.activeView) await handle.show(wanted)
+      return handle
+    },
+  }
+
   let access: FileAccess | undefined
   /** Live editor ports per open file, so a close prompt can save through the same session. */
   const openPorts = new Map<string, { save(): Promise<void> }>()
+
+  // ---------------------------------------------------------------- inspector
+  const inspector = createInspectorDock(document)
+  const inspectorSubject = (path: string | undefined): InspectorSubject | undefined => {
+    const record = path === undefined ? undefined : subjectsByPath.get(path)
+    if (record === undefined) return undefined
+    return {
+      path: record.path,
+      descriptor: record.descriptor,
+      dataSource: (contract, major) => record.session.dataSource(contract, major),
+      operations: () => operationsFor(record.descriptor),
+    }
+  }
+  const showInspector = (path: string | undefined): void => {
+    void inspector.show(inspectorSubject(path)).catch((error: unknown) => {
+      console.warn(`[inspector] ${String(error)}`)
+    })
+  }
 
   // ---------------------------------------------------------------- editors
   const editors: EditorArea = createEditorArea(document, {
@@ -358,6 +456,8 @@ async function boot(): Promise<void> {
         [status.view, status.detail].filter(Boolean).join(' · '),
         status.severity === 'error',
       )
+      // The dock describes whatever tab is focused, so it follows the same signal the footer does.
+      if (status.severity !== 'busy') showInspector(status.path)
     },
   })
 
@@ -408,7 +508,18 @@ async function boot(): Promise<void> {
   const singlePane = explorer.root.querySelector('[data-mk-part="explorer.preview"]')
   if (singlePane === null) throw new Error('explorer has no preview pane to replace')
   singlePane.replaceWith(editors.root)
-  body.append(explorer.root)
+
+  // Tree · editors · inspector. The dock is a sibling of the explorer, not part of a tab, because
+  // it describes the focused subject rather than one of its stages.
+  const workspace = document.createElement('div')
+  workspace.className = 'modkit-workspace'
+  workspace.append(explorer.root, inspector.root)
+  body.append(workspace)
+  let inspectorOpen = true
+  const toggleInspector = (open = !inspectorOpen): void => {
+    inspectorOpen = open
+    inspector.root.hidden = !open
+  }
 
   // ---------------------------------------------------------------- settings
   const store = settingsStore(settingsBridge)
@@ -442,7 +553,7 @@ async function boot(): Promise<void> {
   let settingsOpen = false
   function toggleSettings(open = !settingsOpen): void {
     settingsOpen = open
-    body.replaceChildren(settingsOpen ? settingsUi.root : explorer.root)
+    body.replaceChildren(settingsOpen ? settingsUi.root : workspace)
     setFooter(
       settingsOpen ? 'Settings' : '',
       settingsOpen ? `${store.location} · realm ${profile.renderer.realmId}` : 'Ready',
@@ -504,6 +615,10 @@ async function boot(): Promise<void> {
   on('split', () => {
     if (settingsOpen) toggleSettings(false)
     editors.split()
+  })
+  on('inspector', () => {
+    if (settingsOpen) toggleSettings(false)
+    toggleInspector()
   })
   on('default-app', () => {
     // The full picker lives in settings; the menu item is a shortcut to it, not a second flow.
@@ -655,7 +770,10 @@ async function boot(): Promise<void> {
     { label: 'Set as Default App…', command: 'default-app' },
     { label: 'Settings', command: 'settings', hint: 'Ctrl+,' },
   ])
-  addMenu('View', [{ label: 'Split Editor', command: 'split', hint: 'Ctrl+Backslash' }])
+  addMenu('View', [
+    { label: 'Split Editor', command: 'split', hint: 'Ctrl+Backslash' },
+    { label: 'Toggle Inspector', command: 'inspector' },
+  ])
 
   titleBar.prepend(menuBar)
 
@@ -683,44 +801,110 @@ async function boot(): Promise<void> {
     await explorer.setAccess(access)
     if (initial.entry !== undefined) await editors.open(initial.entry)
     if (initial.selfTest === true)
-      await selfTest(access, preview, editors, settingsUi.root, (entry, bytes) =>
-        createFileEditorPorts(bridge, entry, bytes, line => setFooter(entry.id, line)),
-      )
+      await selfTest({
+        access,
+        preview,
+        editors,
+        settingsRoot: settingsUi.root,
+        inspector,
+        subjectFor: inspectorSubject,
+        saveProbe: (entry, bytes) =>
+          createFileEditorPorts(bridge, entry, bytes, line => setFooter(entry.id, line)),
+      })
   }
+}
+
+/** Let the microtask queue and one animation frame settle after a mount. */
+const settle = async (): Promise<void> => {
+  await new Promise(resolve => setTimeout(resolve, 60))
 }
 
 /**
  * Drive the previewer without a human: list the granted folder, open every file, and report what
  * mounted. Verification has to reach the codecs, the tabs and the split, not just the window.
  */
-async function selfTest(
-  access: FileAccess,
-  preview: ReturnType<typeof createCodecPreview>,
-  editors: EditorArea,
-  settingsRoot: HTMLElement,
+async function selfTest(options: {
+  readonly access: FileAccess
+  readonly preview: PreviewResolver
+  readonly editors: EditorArea
+  readonly settingsRoot: HTMLElement
+  readonly inspector: ReturnType<typeof createInspectorDock>
+  subjectFor(path: string | undefined): InspectorSubject | undefined
   saveProbe?: (
     entry: ExplorerEntry,
     bytes: Uint8Array,
   ) => {
     readonly session: unknown
     readonly commit: unknown
-  },
-): Promise<void> {
+  }
+}): Promise<void> {
+  const { access, preview, editors, settingsRoot, inspector, saveProbe } = options
   const entries = await access.list(undefined)
   console.log(`selftest: ${entries.length} entries in ${access.label}`)
   console.log(`selftest: supported extensions ${preview.supported.join(', ')}`)
+
+  /*
+   * Everything below reads the *focused* group. After `split()` there are two, and the first one
+   * in document order is no longer the one `editors.open` targets — reading `editors.root`
+   * directly is what made the archive probe look at an empty picker.
+   */
+  const FOCUSED = '[data-mk-part="explorer.group"][data-mk-state~="active"]'
+  const focusedPicker = (): HTMLSelectElement | undefined => {
+    const node = editors.root.querySelector(`${FOCUSED} [data-mk-part="explorer.viewpicker"]`)
+    return node instanceof HTMLSelectElement ? node : undefined
+  }
+  /** The visible tab's mounted viewer surface, or `null` when nothing mounted. */
+  const mountedSurface = (): Element | null =>
+    editors.root.querySelector(
+      `${FOCUSED} [data-mk-part="explorer.tabcontent"]:not([hidden]) [data-mk-part="viewer"]`,
+    )
 
   for (const entry of entries) {
     if (entry.directory) continue
     try {
       await editors.open(entry)
-      const picker = editors.root.querySelector('[data-mk-part="explorer.viewpicker"]')
-      const views =
-        picker instanceof HTMLSelectElement ? [...picker.options].map(item => item.textContent) : []
-      const mounted = editors.root.querySelector('[data-mk-part="explorer.stage"] [data-mk-part]')
-      console.log(
-        `selftest: ${entry.name} -> views [${views.join(', ')}] mounted=${mounted !== null}`,
-      )
+      await settle()
+      const picker = focusedPicker()
+      const views = picker === undefined ? [] : [...picker.options].map(item => item.value)
+
+      /*
+       * Every offered stage has to mount, not just the one that opens. The picker is the public
+       * control, so the check drives it exactly as a user would instead of calling `show`.
+       * `ok(degraded)` is a stage that mounted and then said honestly that it could not render —
+       * a platform decoder refusing a fixture is not the same failure as nothing mounting.
+       */
+      const results: string[] = []
+      let all = mountedSurface() !== null
+      for (const view of views) {
+        if (picker !== undefined) {
+          picker.value = view
+          picker.dispatchEvent(new Event('change'))
+          await settle()
+        }
+        const surface = mountedSurface()
+        if (surface === null) all = false
+        const degraded = surface?.querySelector('[data-mk-state~="error"]') != null
+        results.push(`${view}=${surface === null ? 'EMPTY' : degraded ? 'ok(degraded)' : 'ok'}`)
+      }
+      console.log(selfTestLine(entry.name, views, views.length > 0 && all))
+      if (views.length > 1) console.log(`selftest: ${entry.name} stages ${results.join(' ')}`)
+
+      const subject = options.subjectFor(entry.id)
+      if (subject !== undefined) {
+        // Every panel the policy offers has to mount too — cycle them the way the dock's own
+        // control does, and report which produced a viewer surface.
+        const panelResults: string[] = []
+        await inspector.show(subject)
+        for (const panel of inspector.panels) {
+          await inspector.select(panel)
+          await settle()
+          const ok = inspector.root.querySelector('[data-mk-part="viewer"]') !== null
+          panelResults.push(`${panel}=${ok ? 'ok' : 'EMPTY'}`)
+        }
+        console.log(
+          `selftest: ${entry.name} panels [${inspector.panels.join(', ')}] ${panelResults.join(' ')}`,
+        )
+      }
     } catch (error) {
       console.log(`selftest: ${entry.name} -> FAILED ${String(error)}`)
     }
@@ -842,6 +1026,66 @@ async function selfTest(
       console.log(
         `selftest: hex ascii ${JSON.stringify(asciiBefore)} -> ${JSON.stringify(twin.textContent)} tabMarked=${marked}`,
       )
+    }
+  }
+
+  // Operations: invoke the read-only standard verbs through the subject's own operation session.
+  for (const entry of entries.filter(item => !item.directory)) {
+    const subject = options.subjectFor(entry.id)
+    if (subject === undefined) continue
+    const session = await subject.operations()
+    if (session === undefined) {
+      console.log(`selftest: ${entry.name} operations -> no session`)
+      continue
+    }
+    const declared = (
+      subject.descriptor['operations'] as
+        readonly { id?: string; handlerId?: string; state?: string }[] | undefined
+    )?.filter(item => item.state === 'available')
+    const outcomes: string[] = []
+    for (const operation of declared ?? []) {
+      if (!['view.inspect', 'asset.validate', 'export.raw'].includes(operation.id ?? '')) continue
+      try {
+        const result = await session.invoke(operation.handlerId ?? '', null)
+        const output = (result as { output?: { kind?: string } }).output
+        outcomes.push(
+          `${operation.id ?? '?'}=${result.state}${
+            result.state === 'ok' ? `/${output?.kind ?? '?'}` : `/${result.reason}`
+          }`,
+        )
+      } catch (error) {
+        outcomes.push(`${operation.id ?? '?'}=THREW ${String(error)}`)
+      }
+    }
+    console.log(`selftest: ${entry.name} operations ${outcomes.join(' ')}`)
+    break
+  }
+
+  // Archive: open the namespace stage, activate the first entry, and read the inline preview.
+  const archive = entries.find(item => item.name.toLowerCase().endsWith('.zip'))
+  if (archive !== undefined) {
+    await editors.open(archive)
+    await settle()
+    const picker = focusedPicker()
+    if (picker !== undefined && [...picker.options].some(option => option.value === 'archive')) {
+      picker.value = 'archive'
+      picker.dispatchEvent(new Event('change'))
+      await settle()
+      const label = editors.root.querySelector(
+        `${FOCUSED} [data-mk-part="explorer.tabcontent"]:not([hidden]) [data-mk-part="namespace.label"]`,
+      )
+      ;(label as HTMLElement | null)?.click()
+      await new Promise(resolve => setTimeout(resolve, 800))
+      const pane = editors.root.querySelector(
+        `${FOCUSED} [data-mk-part="explorer.tabcontent"]:not([hidden]) [data-mk-part="archive.preview"]`,
+      )
+      const status = pane?.querySelector('[data-mk-part="viewer.status"]')?.textContent ?? ''
+      const rendered = pane?.querySelector('[data-mk-part="text"], [data-mk-part="hex"]') != null
+      console.log(
+        `selftest: archive entry clicked=${label !== null} preview=${rendered} status=${JSON.stringify(status)}`,
+      )
+    } else {
+      console.log('selftest: archive stage was not offered for the zip sample')
     }
   }
 

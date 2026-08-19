@@ -96,7 +96,16 @@ const themeLinks = themeIds
   .map(id => `    <link rel="stylesheet" href="./theme-${id}.css" />`)
   .join('\n')
 
-// The renderer runs from file://, so its CSP is declared in the document itself.
+/*
+ * The renderer runs from file://, so its CSP is declared in the document itself.
+ *
+ * `media-src 'self' blob:` and `blob:` in `img-src` are the two allowances `VIEWER_CSP` in
+ * `packages/ui` already carries and this page was missing: the audio and video stages hand the
+ * codec-owned encoded representation to the platform player as a blob, and the vector stage renders
+ * the sanitised SVG document through an `<img>` blob URL. Without them `default-src 'none'` refuses
+ * both and the stages mount into a permanently failed state. Nothing else is relaxed: no remote
+ * origin, no `data:` media, no `connect-src`.
+ */
 writeFileSync(
   join(dist, 'index.html'),
   `<!doctype html>
@@ -105,7 +114,7 @@ writeFileSync(
     <meta charset="utf-8" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'unsafe-inline'; script-src 'self'; img-src 'self' data:; font-src 'self' data:; worker-src 'self' blob:;"
+      content="default-src 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'unsafe-inline'; script-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; worker-src 'self' blob:;"
     />
     <title>Modkit MK3</title>
     <link rel="stylesheet" href="./modkit-ui.css" />
