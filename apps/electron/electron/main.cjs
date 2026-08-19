@@ -120,6 +120,32 @@ async function createWindow() {
   } = await root
 
   const repositoryRoot = path.resolve(__dirname, '..', '..', '..')
+  /*
+   * Extensions the user connected in Settings. They are read here, in main, because main owns the
+   * settings file and the trust decision: a user's directory is an `installed` artifact and never
+   * reaches the in-process boundary. A disabled entry is skipped; a broken one is reported by
+   * `loadExtensionRoots` and the application still starts with everything else.
+   */
+  const userExtensionRoots = await (async () => {
+    try {
+      const settings = await readSettings(app)
+      // a malformed settings file is reported by the store; say so, or the user's extensions
+      // would simply be absent with no explanation anywhere
+      if (settings.problem !== undefined) {
+        console.log(`[main] settings could not be read: ${settings.problem}`)
+      }
+      const configured = Array.isArray(settings.raw?.extensions) ? settings.raw.extensions : []
+      return configured
+        .filter(entry => entry && typeof entry.path === 'string' && entry.enabled !== false)
+        .map(entry => ({
+          root: path.resolve(entry.path),
+          ...(typeof entry.id === 'string' && entry.id.length > 0 ? { expectedId: entry.id } : {}),
+        }))
+    } catch (error) {
+      console.log(`[main] settings unreadable, no user extensions loaded: ${String(error)}`)
+      return []
+    }
+  })()
   const subjectServices = await createElectronSubjectServices(
     BUNDLED_EXTENSION_DIRECTORIES.map(directory =>
       path.join(repositoryRoot, 'extensions', 'common', directory),
@@ -128,8 +154,17 @@ async function createWindow() {
       // worker realm diagnostics: the SB-1 shared-process notice, restarts, crashes, capped stdio
       onDiagnostic: diagnostic =>
         console.log(`[worker] ${diagnostic.severity} ${diagnostic.code}: ${diagnostic.message}`),
+      userRoots: userExtensionRoots,
     },
   )
+  for (const failure of subjectServices.extensions.failures) {
+    console.log(
+      `[main] extension not loaded: ${failure.root} — ${failure.code}: ${failure.message}`,
+    )
+  }
+  if (subjectServices.extensions.installed.length > 0) {
+    console.log(`[main] user extensions: ${subjectServices.extensions.installed.join(', ')}`)
+  }
   const composed = subjectServices.application
   console.log(
     `[main] composed ${composed.topology.topologyId}: ` +

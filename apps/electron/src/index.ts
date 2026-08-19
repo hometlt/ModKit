@@ -21,11 +21,13 @@ import {
 } from '@modkitx-x3/host'
 import {
   createNodeExecutionBackends,
-  loadExtensionDirectory,
+  loadExtensionRoots,
   nodeRuntimeTargetBase,
   nodeWorkerLinks,
   nodeWorkerRealmProfile,
   workerBackendPolicy,
+  type ExtensionRootFailure,
+  type ExtensionRootRequest,
   type WorkerBackendPolicy,
 } from '@modkitx-x3/host/node'
 
@@ -297,9 +299,20 @@ export interface ElectronAppOptions {
   readonly onDiagnostic?: (diagnostic: Diagnostic) => void
 }
 
+/** What loaded from where, and what did not — the settings UI and the status bar report it. */
+export interface ElectronExtensionReport {
+  /** Coordinates of the bundled first-party catalog. */
+  readonly bundled: readonly string[]
+  /** Coordinates of the user's own extensions that loaded. */
+  readonly installed: readonly string[]
+  /** Roots that did not load, with the reason (a broken one never stops the others). */
+  readonly failures: readonly ExtensionRootFailure[]
+}
+
 /** The host's subject services (S7) plus the Electron application they were built from. */
 export interface ElectronSubjectServices extends SubjectServices {
   readonly application: ElectronApp
+  readonly extensions: ElectronExtensionReport
 }
 
 /** One open request as the main process issues it (re-exported for the RPC and the tests). */
@@ -386,17 +399,34 @@ export async function createElectronApp(
 export interface ElectronSubjectServicesOptions {
   /** Backend diagnostics of the worker realm (shared-process notice, restarts, crashes, worker stdio). */
   readonly onDiagnostic?: (diagnostic: Diagnostic) => void
+  /**
+   * Extensions the user connected (settings). They are `installed` artifacts: never admitted to
+   * the in-process boundary, and a broken one is reported instead of stopping the application.
+   */
+  readonly userRoots?: readonly (string | ExtensionRootRequest)[]
 }
 
 export async function createElectronSubjectServices(
   extensionRoots: readonly string[],
   options: ElectronSubjectServicesOptions = {},
 ): Promise<ElectronSubjectServices> {
-  const loaded = await Promise.all(extensionRoots.map(root => loadExtensionDirectory(root)))
-  const bundled: readonly ExtensionInput[] = loaded.map(input => ({
-    ...input,
-    execution: { origin: 'bundled', allowTrustedInProcess: true },
-  }))
+  // the generated first-party catalog: this build vouches for these exact directories
+  const bundledRoots = await loadExtensionRoots(extensionRoots, {
+    origin: 'bundled',
+    allowTrustedInProcess: true,
+  })
+  // whatever the user connected: installed artifacts, never trusted in-process, and a coordinate
+  // the bundled catalog already owns is refused rather than shadowing it
+  const userRoots = await loadExtensionRoots(options.userRoots ?? [], {
+    origin: 'installed',
+    claimed: bundledRoots.coordinates,
+  })
+  const bundled: readonly ExtensionInput[] = [...bundledRoots.inputs, ...userRoots.inputs]
+  const extensions: ElectronExtensionReport = Object.freeze({
+    bundled: bundledRoots.coordinates,
+    installed: userRoots.coordinates,
+    failures: Object.freeze([...bundledRoots.failures, ...userRoots.failures]),
+  })
   // Only generated first-party inputs reach this registry (bundled: every inventoried owner is a
   // namespace owner). Installed/linked extensions are never promoted by this bootstrap and need
   // an explicit namespace-delegation policy later. The registry is filled after composition; the
@@ -417,7 +447,7 @@ export async function createElectronSubjectServices(
     executionBackends: application.executionBackends,
     serviceDefinitions: definitions,
   })
-  return Object.freeze({ ...services, application })
+  return Object.freeze({ ...services, application, extensions })
 }
 
 /*
