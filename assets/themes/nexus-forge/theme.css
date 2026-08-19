@@ -1,0 +1,758 @@
+/**
+ * Nexus Forge — an installable theme, not a fork of the UI.
+ *
+ * Toxic lime on carbon. The look comes from the NexusForgeUI design study (see
+ * REPORT_NEXUS_UI_ADAPTATION_2026-08-19 §3 for the value-by-value mapping); nothing of that
+ * export's markup, runtime or font service is here. What travels is the palette, four polygon
+ * silhouettes, and a background that drifts. Everything lands on a registered token or on a
+ * public `data-mk-part` — no component internal is named, so a viewer written next month
+ * inherits the look for free.
+ *
+ * Three ideas carry the whole design and are worth stating once:
+ *
+ *   1. **Square.** `border-radius` is 0 everywhere; shape comes from cut corners (`clip-path`
+ *      polygons) and from 2 px edges that appear only on the active thing. Rounded corners read
+ *      as a web app, chamfers read as a machine.
+ *   2. **Panels float over a lit ground.** The grounds carry alpha (`e6`), so the drifting grid
+ *      and the radial wash behind them stay faintly visible through every panel. That is what
+ *      makes the shell read as depth rather than as stacked flat divs — and it is why the decor
+ *      layer below is painted *under* the panels, not over them.
+ *   3. **Mini-caps.** Section labels are 9–11 px, uppercase, tracked to `.24em`. It is the
+ *      cheapest and strongest cue in the design, and it costs no paint at all.
+ *
+ * Motion is four slow loops (grid drift, scan sweep, hover sweep, focus pulse), all on
+ * `background-position` or `transform`, none on layout, all disabled under
+ * `prefers-reduced-motion` by the guard at the end of this file.
+ */
+
+/*
+ * Self-hosted faces. `VIEWER_CSP` allows `font-src 'self'` only, so a theme never links a font
+ * service; the hosts copy `assets/fonts/` beside the theme stylesheet as `fonts/`. Saira has no
+ * Cyrillic subset — the stack below keeps a system family after it so Cyrillic UI text stays
+ * readable rather than falling back to a serif.
+ */
+@font-face {
+  font-family: 'Saira';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('./fonts/saira/saira-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Saira';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('./fonts/saira/saira-latin-ext.woff2') format('woff2');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('./fonts/jetbrains-mono/jetbrains-mono-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('./fonts/jetbrains-mono/jetbrains-mono-latin-ext.woff2') format('woff2');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('./fonts/jetbrains-mono/jetbrains-mono-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('./fonts/jetbrains-mono/jetbrains-mono-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+
+@layer mk.theme {
+  :root[data-mk-theme='nexus-forge'] {
+    color-scheme: dark;
+
+    /*
+     * Grounds. `surface` and the editor stage carry alpha on purpose: the decor layer is painted
+     * behind them, and 90 % opacity is what lets the grid show through as a hint of structure
+     * instead of a texture. `overlay` (menus, popovers) stays fully opaque — a menu that shows
+     * the grid through it is a menu you cannot read.
+     */
+    --mk-color-bg: #07090b;
+    --mk-color-surface: #0b1012e6;
+    --mk-color-raised: #0e1417;
+    --mk-color-sunken: #111719;
+    --mk-color-overlay: #0d1316;
+    --mk-color-scrim: rgba(3, 5, 6, 0.72);
+
+    /* Text: cool grey-green. `head` (#e7f2ea) is painted on title parts, not stored as a role. */
+    --mk-color-fg: #b7c7cb;
+    --mk-color-fg-muted: #a7babe;
+    --mk-color-fg-subtle: #87999e;
+    --mk-color-fg-inverse: #07090b;
+    --mk-color-fg-disabled: #4c585c;
+    --mk-color-fg-link: #c9f76b;
+    --mk-color-fg-destructive: #ff5a4f;
+
+    /* Lines are structural, not decorative: one dark rule, one darker separator. */
+    --mk-color-border: #1e272b;
+    --mk-color-border-strong: #b6f04a55;
+    --mk-color-separator: #141c1f;
+
+    /*
+     * The signal colour. The design's primary control is a *wash* with light text and a
+     * translucent edge, not a solid fill with inverse text — which is exactly what
+     * `accent-muted` + `accent-muted-fg` express. `accent-fg` still has to be right for the few
+     * places that do fill solid (badges, the drop target).
+     */
+    --mk-color-accent: #b6f04a;
+    --mk-color-accent-fg: #0d1405;
+    --mk-color-accent-muted: #141c10;
+    --mk-color-accent-muted-fg: #dcf7a4;
+    --mk-color-focus: #b6f04a;
+    --mk-color-hover: #151c20;
+    --mk-color-active: #1b2429;
+    --mk-color-selection: #1f2c12;
+    --mk-color-selection-inactive: #151a1c;
+    --mk-color-selection-fg: #e7f2ea;
+    --mk-color-match-highlight: #3d3208;
+    --mk-color-drop-target: #b6f04a;
+    --mk-color-readonly: #0a0e10;
+
+    /* Status keeps the design's four alert hues; the -bg/-border rows are derived washes. */
+    --mk-status-ok: #8ee04a;
+    --mk-status-ok-fg: #0b1704;
+    --mk-status-ok-bg: #16220c;
+    --mk-status-ok-border: #4a7a22;
+    --mk-status-warn: #ffb545;
+    --mk-status-warn-fg: #1d1200;
+    --mk-status-warn-bg: #2a1e07;
+    --mk-status-warn-border: #a8721a;
+    --mk-status-error: #ff5a4f;
+    --mk-status-error-fg: #200504;
+    --mk-status-error-bg: #2c0f0d;
+    --mk-status-error-border: #a5342c;
+    --mk-status-info: #6ee7ff;
+    --mk-status-info-fg: #04181d;
+    --mk-status-info-bg: #0a2830;
+    --mk-status-info-border: #1f7a8f;
+
+    /* Scrollbars: the design's hairline rails — a dark track and a barely-there thumb. */
+    --mk-color-scrollbar-track: rgba(0, 0, 0, 0.22);
+    --mk-color-scrollbar-thumb: rgba(255, 255, 255, 0.13);
+    --mk-color-scrollbar-thumb-hover: rgba(182, 240, 74, 0.45);
+    --mk-color-scrollbar-thumb-active: rgba(182, 240, 74, 0.7);
+    --mk-color-scrollbar-shadow: rgba(0, 0, 0, 0.6);
+
+    /* 3D and graph scenes sit on the same carbon, one step darker than the shell. */
+    --mk-color-canvas-bg: #06080a;
+    --mk-color-canvas-grid: #161e21;
+    --mk-color-canvas-gizmo: #87999e;
+    --mk-color-canvas-selection: #b6f04a;
+    --mk-color-axis-x: #ff5a4f;
+    --mk-color-axis-y: #8ee04a;
+    --mk-color-axis-z: #6ee7ff;
+    --mk-color-graph-node: #111719;
+    --mk-color-graph-edge: #2a363b;
+    --mk-color-graph-edge-dead: #ff5a4f;
+
+    /* Categorical ramp starts at the signal colour and walks the design's accent set. */
+    --mk-chart-categorical-1: #b6f04a;
+    --mk-chart-categorical-2: #6ee7ff;
+    --mk-chart-categorical-3: #b48cff;
+    --mk-chart-categorical-4: #ffb545;
+    --mk-chart-categorical-5: #ff5a4f;
+    --mk-chart-categorical-6: #4ad2a0;
+
+    --mk-color-diff-added: #16220c;
+    --mk-color-diff-removed: #2c0f0d;
+    --mk-color-diff-changed: #2a1e07;
+
+    /*
+     * Elevation is a rule plus a glow, never a soft drop shadow: on a near-black ground a blurred
+     * black shadow is invisible, so depth has to come from light.
+     */
+    --mk-elevation-1: 0 0 0 1px rgba(182, 240, 74, 0.12);
+    --mk-elevation-2: 0 8px 24px -18px #000, 0 0 0 1px rgba(182, 240, 74, 0.18);
+    --mk-elevation-3: 0 22px 46px -18px #000, 0 0 0 1px rgba(182, 240, 74, 0.26);
+    --mk-shadow-focus-ring: 0 0 0 1px #b6f04a, 0 0 10px rgba(182, 240, 74, 0.45);
+
+    /* The language is square. Corners are cut, never rounded (see the clip-path section). */
+    --mk-radius-sm: 0;
+    --mk-radius-md: 0;
+    --mk-radius-lg: 0;
+
+    /* Saira for UI, JetBrains Mono for data; a system family follows each for Cyrillic. */
+    --mk-font-sans: 'Saira', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+    --mk-font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+    /* Tier 3: the design's tree is denser than ours by four pixels. */
+    --mk-tree-row-height: 24px;
+  }
+}
+
+@layer mk.theme {
+  /* ------------------------------------------------------------------ the ground */
+  /*
+   * The workbench sits on a lit, drifting field: a radial wash, a 64 px grid that scrolls one
+   * cell every nine seconds, a scan bar crossing top to bottom, and 3 px scanlines over it all.
+   *
+   * Two pseudo-elements carry six layers between them because the decor must straddle the
+   * content: the wash and the grid belong *under* the panels (they show through the 90 %-opaque
+   * grounds), the scan and the scanlines belong *over* them. `::before` is therefore given
+   * `z-index: -1` and `::after` `z-index: 0`, and `isolation: isolate` on the workbench keeps
+   * that negative layer from escaping into an ancestor's stacking context.
+   *
+   * Only `background-position` is animated — no filter, no opacity on a full-screen box, nothing
+   * that would repaint the tree beneath on every frame.
+   */
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='workbench'] {
+    position: relative;
+    isolation: isolate;
+    background-color: #07090b;
+    background-image:
+      radial-gradient(1200px 700px at 18% -10%, #12232a 0%, transparent 60%),
+      radial-gradient(900px 600px at 90% 110%, #16210f 0%, transparent 65%);
+  }
+
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='workbench']::before {
+    position: absolute;
+    z-index: -1;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.031) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.031) 1px, transparent 1px);
+    background-size:
+      64px 64px,
+      64px 64px;
+    content: '';
+    inset: 0;
+    pointer-events: none;
+    animation: mk-forge-grid 9s linear infinite;
+  }
+
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='workbench']::after {
+    position: absolute;
+    z-index: 0;
+    background-image:
+      linear-gradient(90deg, transparent, rgba(182, 240, 74, 0.33), transparent),
+      repeating-linear-gradient(
+        0deg,
+        transparent 0 3px,
+        rgba(0, 0, 0, 0.12) 3px,
+        rgba(0, 0, 0, 0.12) 4px
+      );
+    background-repeat: no-repeat, repeat;
+    background-size:
+      100% 2px,
+      100% 100%;
+    background-position:
+      0 -2%,
+      0 0;
+    content: '';
+    inset: 0;
+    pointer-events: none;
+    animation: mk-forge-scan 11s linear infinite;
+  }
+
+  /*
+   * Hosts that compose their own shell have no `workbench` part to hang the decor on (the
+   * Electron renderer builds `titlebar` + body + footer directly). There the document is the
+   * anchor: `:has()` keeps the two from ever painting at once, so a host that later adopts
+   * `createWorkbench` loses this rule without losing the decor.
+   */
+  :root[data-mk-theme='nexus-forge'] body:not(:has([data-mk-part='workbench'])) {
+    background-color: #07090b;
+    background-image:
+      radial-gradient(1200px 700px at 18% -10%, #12232a 0%, transparent 60%),
+      radial-gradient(900px 600px at 90% 110%, #16210f 0%, transparent 65%);
+  }
+
+  :root[data-mk-theme='nexus-forge'] body:not(:has([data-mk-part='workbench']))::before {
+    position: fixed;
+    z-index: 0;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.031) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.031) 1px, transparent 1px);
+    background-size:
+      64px 64px,
+      64px 64px;
+    content: '';
+    inset: 0;
+    pointer-events: none;
+    animation: mk-forge-grid 9s linear infinite;
+  }
+
+  :root[data-mk-theme='nexus-forge'] body:not(:has([data-mk-part='workbench']))::after {
+    position: fixed;
+    z-index: 0;
+    background-image:
+      linear-gradient(90deg, transparent, rgba(182, 240, 74, 0.33), transparent),
+      repeating-linear-gradient(
+        0deg,
+        transparent 0 3px,
+        rgba(0, 0, 0, 0.12) 3px,
+        rgba(0, 0, 0, 0.12) 4px
+      );
+    background-repeat: no-repeat, repeat;
+    background-size:
+      100% 2px,
+      100% 100%;
+    background-position:
+      0 -2%,
+      0 0;
+    content: '';
+    inset: 0;
+    pointer-events: none;
+    animation: mk-forge-scan 11s linear infinite;
+  }
+
+  @keyframes mk-forge-grid {
+    from {
+      background-position:
+        0 0,
+        0 0;
+    }
+    to {
+      background-position:
+        0 64px,
+        64px 0;
+    }
+  }
+
+  @keyframes mk-forge-scan {
+    from {
+      background-position:
+        0 -2%,
+        0 0;
+    }
+    to {
+      background-position:
+        0 102%,
+        0 0;
+    }
+  }
+}
+
+@layer mk.theme {
+  /* ------------------------------------------------------------------ mini-caps */
+  /*
+   * The single strongest cue in the design: every label that names a region is small, uppercase
+   * and widely tracked. Applied by part rather than by element so it reaches labels in viewers
+   * this theme has never seen.
+   */
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='metadata.heading'],
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='settings.group'],
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='explorer.header'],
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='accordion.title'],
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='card.subtitle'] {
+    color: #87999e;
+    text-transform: uppercase;
+    letter-spacing: 0.24em;
+    font-weight: 700;
+    font-size: var(--mk-font-size-xs);
+  }
+
+  /* Titles are the one place the near-white `head` colour is used. */
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='titlebar.title'],
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='workbench.titlebar'],
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='card.title'] {
+    color: #e7f2ea;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-weight: 700;
+  }
+
+  /* ------------------------------------------------------------------ title bars */
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='titlebar'],
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='workbench.titlebar'] {
+    position: relative;
+    border-bottom: 1px solid #1e272b;
+    background-image: linear-gradient(180deg, #101619ee, #0b0f11ee);
+    box-shadow:
+      0 1px 0 rgba(182, 240, 74, 0.33),
+      0 8px 24px -18px #000;
+  }
+
+  /* Menu labels are tracked like the section headings, one step tighter. */
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='titlebar.menu-item'] {
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+  }
+
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='titlebar.menu-item']:hover {
+    color: #e7f2ea;
+    background-color: #141c10;
+  }
+
+  /*
+   * An open menu is marked by a 2 px edge under its label rather than by a fill, so the header
+   * keeps its flat silhouette while the menu is down.
+   */
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='titlebar.menu-item'][data-mk-state~='active'] {
+    color: #b6f04a;
+    box-shadow: inset 0 -2px 0 #b6f04a;
+  }
+
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='titlebar.menu-panel'] {
+    border: 1px solid #1e272b;
+    background-color: #0d1316;
+    box-shadow:
+      0 22px 46px -18px #000,
+      0 0 0 1px rgba(182, 240, 74, 0.33);
+  }
+
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='titlebar.menu-entry']:hover {
+    color: #dcf7a4;
+    background-color: #141c10;
+  }
+
+  /* Window controls take the small bevel; close keeps the destructive hue. */
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='titlebar.button'] {
+    clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+    color: #a7babe;
+    transition: background-color var(--mk-motion-fast) var(--mk-motion-ease);
+  }
+
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='titlebar.button']:hover {
+    color: #e7f2ea;
+    background-color: #1b2429;
+  }
+
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='titlebar.button'][data-command='close']:hover {
+    color: #200504;
+    background-color: #ff5a4f;
+  }
+
+  /* ------------------------------------------------------------------ activity bar */
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='workbench.activitybar'] {
+    border-right: 1px solid #1e272b;
+    background-image: linear-gradient(180deg, #0e1417ee, #0b0f11ee);
+  }
+
+  /* ------------------------------------------------------------------ sidebar */
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='workbench.sidebar'],
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='explorer.sidebar'] {
+    border-right: 1px solid #1e272b;
+    background-color: #0b1012e6;
+  }
+
+  /*
+   * Indent guides. The base stylesheet already paints one hairline per nesting level from
+   * `--mk-color-border` over `--mk-tree-indent-level`; the theme only lifts them to a visible
+   * lime tint. `background-image` on the row is *that* gradient, so a hover or selection wash
+   * here must be a `box-shadow` or a `background-color` — painting an image would erase the
+   * guides, which is the mistake this comment exists to prevent.
+   */
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='filetree.row'] {
+    background-image: repeating-linear-gradient(
+      to right,
+      rgba(182, 240, 74, 0.14) 0 1px,
+      transparent 1px var(--mk-tree-indent)
+    );
+    /*
+     * The geometry is repeated from the base rule on purpose. `chrome.css` paints the selected
+     * row with the `background` *shorthand*, which resets size, repeat and position to their
+     * initial values; this layer's `background-image` outlives that reset, so without the three
+     * longhands below the guide would tile across the whole selected row instead of stopping at
+     * the node's own indent depth.
+     */
+    background-repeat: no-repeat;
+    background-size: calc(var(--mk-tree-indent) * var(--mk-tree-indent-level, 0)) 100%;
+    background-position: calc(var(--mk-space-2) + var(--mk-tree-indent) / 2) 0;
+  }
+
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='filetree.row']:hover {
+    background-color: #151c20;
+  }
+
+  /* Selection is a 2 px leading bar plus a wash that fades out, never a flat block of colour. */
+  :root[data-mk-theme='nexus-forge']
+    [data-mk-part='filetree.node'][data-mk-state~='selected']
+    > [data-mk-part='filetree.row'] {
+    color: #e7f2ea;
+    background-color: #1f2c12;
+    box-shadow: inset 2px 0 0 #b6f04a;
+  }
+
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='filetree.badge'] {
+    color: #b6f04a;
+    letter-spacing: 0.08em;
+    font-size: var(--mk-font-size-xs);
+  }
+
+  /* ------------------------------------------------------------------ tabs */
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='explorer.tabstrip'] {
+    border-bottom: 1px solid #1e272b;
+    background-image: linear-gradient(180deg, #0e1417ee, #0b0f11ee);
+  }
+
+  /*
+   * The slanted tab. A 12 px cut on the trailing edge is the design's silhouette; because
+   * `clip-path` also cuts the close button, the slant is on the tab and the close button keeps
+   * its own square hit area well inside it.
+   */
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='explorer.filetab'] {
+    position: relative;
+    clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+    padding-inline-end: calc(var(--mk-space-3) + 12px);
+    color: #87999e;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: var(--mk-font-size-xs);
+    transition:
+      color var(--mk-motion-fast) var(--mk-motion-ease),
+      background-color var(--mk-motion-fast) var(--mk-motion-ease);
+  }
+
+  /*
+   * The kind dot. The design colours it per file kind; the tab carries no kind attribute today
+   * (see the report — `data-mk-kind` on `explorer.filetab` is the hook that is missing), so the
+   * dot states selection instead: accent when the tab is active, muted otherwise.
+   */
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='explorer.filetab']::before {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-inline-end: var(--mk-space-2);
+    background-color: #87999e;
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+    content: '';
+    vertical-align: middle;
+  }
+
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='explorer.filetab']:hover {
+    color: #b7c7cb;
+    background-color: #151c20;
+  }
+
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='explorer.filetab'][data-mk-state~='selected'] {
+    color: #e7f2ea;
+    background-color: #111719;
+    box-shadow: inset 0 2px 0 #b6f04a;
+  }
+
+  :root[data-mk-theme='nexus-forge']
+    [data-mk-part='explorer.filetab'][data-mk-state~='selected']::before {
+    background-color: #b6f04a;
+  }
+
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='explorer.tab'] {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: var(--mk-font-size-xs);
+  }
+
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='explorer.tab'][data-mk-state~='selected'] {
+    color: #b6f04a;
+    box-shadow: inset 0 -2px 0 #b6f04a;
+  }
+
+  /* The focused editor group is named by its strip, not by a border around the whole pane. */
+  :root[data-mk-theme='nexus-forge']
+    [data-mk-part='explorer.group'][data-mk-state~='active']
+    [data-mk-part='explorer.tabstrip'] {
+    border-bottom-color: rgba(182, 240, 74, 0.33);
+  }
+}
+
+@layer mk.theme {
+  /* ------------------------------------------------------------------ controls */
+  /*
+   * The primary control: a 9 px bevel, an accent wash rather than a solid fill, light text on it,
+   * and a translucent edge. `accent-muted` / `accent-muted-fg` exist precisely for this pair.
+   */
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='operations.button'],
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='explorer.action'],
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='settings.add'],
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='settings.remove'],
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='transport.button'] {
+    position: relative;
+    clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
+    color: #dcf7a4;
+    border: 1px solid rgba(182, 240, 74, 0.33);
+    background-color: #141c10;
+    overflow: hidden;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 700;
+    font-size: var(--mk-font-size-xs);
+    transition:
+      color var(--mk-motion-fast) var(--mk-motion-ease),
+      border-color var(--mk-motion-fast) var(--mk-motion-ease),
+      background-color var(--mk-motion-fast) var(--mk-motion-ease);
+  }
+
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='operations.button']:hover,
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='explorer.action']:hover,
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='settings.add']:hover,
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='settings.remove']:hover,
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='transport.button']:hover {
+    color: #07090b;
+    border-color: #b6f04a;
+    background-color: #b6f04a;
+  }
+
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='operations.button']:active,
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='explorer.action']:active,
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='settings.add']:active,
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='settings.remove']:active,
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='transport.button']:active {
+    background-color: #8fc734;
+  }
+
+  /*
+   * The sweep. A narrow light crosses the control once per hover, on a pseudo-element and by
+   * `transform`, so it stays on the compositor and the control itself is never re-laid out.
+   */
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='operations.button']::after,
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='explorer.action']::after,
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='settings.add']::after,
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='transport.button']::after {
+    position: absolute;
+    width: 36%;
+    background-image: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+    content: '';
+    inset-block: 0;
+    inset-inline-start: -40%;
+    pointer-events: none;
+    transform: translateX(0);
+  }
+
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='operations.button']:hover::after,
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='explorer.action']:hover::after,
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='settings.add']:hover::after,
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='transport.button']:hover::after {
+    animation: mk-forge-sweep 620ms var(--mk-motion-ease);
+  }
+
+  @keyframes mk-forge-sweep {
+    to {
+      transform: translateX(400%);
+    }
+  }
+
+  /* ------------------------------------------------------------------ fields */
+  /*
+   * Inputs are recessed instrument fields: the sunken ground, a hairline, and an accent edge the
+   * moment they take focus. No rounding, no inner glow — the focus ring token carries that.
+   */
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='search'],
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='search.input'],
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='settings.input'],
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='settings.select'],
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='explorer.viewpicker'],
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='viewpicker.select'] {
+    color: #b7c7cb;
+    border: 1px solid #1e272b;
+    background-color: #111719;
+  }
+
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='search']:focus-within,
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='search.input']:focus-visible,
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='settings.input']:focus-visible,
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='settings.select']:focus-visible,
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='explorer.viewpicker']:focus-visible {
+    border-color: #b6f04a;
+  }
+
+  /* Setting groups read as a stack of plates; the selected one is marked, not filled. */
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='settings.group'] {
+    border: 1px solid #141c1f;
+    background-color: #0e1417;
+  }
+
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='settings.group'][data-mk-state~='selected'] {
+    color: #dcf7a4;
+    border-color: rgba(182, 240, 74, 0.33);
+    background-color: #141c10;
+    box-shadow: inset 2px 0 0 #b6f04a;
+  }
+
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='settings.pane'],
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='settings.groups'] {
+    background-color: #0b1012e6;
+  }
+
+  /* ------------------------------------------------------------------ status bars */
+  /*
+   * Our status bar is a solid accent strip by default; the design's is a dark rail with accent
+   * text and a lit top edge. Same information, far less shouting on a dark shell.
+   */
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='workbench.statusbar'],
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='explorer.status'],
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='shell.footer'] {
+    color: #a7babe;
+    border-top: 1px solid #1e272b;
+    background-color: #0e1417;
+    background-image: none;
+    box-shadow: inset 0 1px 0 rgba(182, 240, 74, 0.18);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: var(--mk-font-size-xs);
+  }
+
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='shell.status-item'] {
+    color: #87999e;
+    letter-spacing: 0.14em;
+  }
+
+  /* ------------------------------------------------------------------ metadata */
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='metadata.label'] {
+    color: #87999e;
+    letter-spacing: 0.08em;
+  }
+
+  :root[data-mk-theme='nexus-forge'] [data-mk-part='metadata.value'] {
+    color: #b7c7cb;
+    font-family: var(--mk-font-mono);
+  }
+
+  /*
+   * Reduced motion.
+   *
+   * `base.css` neutralises animation for `.modkit-viewer *` — descendants only, so neither the
+   * workbench's own pseudo-elements nor anything painted on `body` is covered. Every animation
+   * this theme starts is therefore stopped here, which is also what `themes:check` requires of a
+   * theme that animates at all.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    :root[data-mk-theme='nexus-forge'] body,
+    :root[data-mk-theme='nexus-forge'] body::before,
+    :root[data-mk-theme='nexus-forge'] body::after,
+    :root[data-mk-theme='nexus-forge'] [data-mk-part],
+    :root[data-mk-theme='nexus-forge'] [data-mk-part]::before,
+    :root[data-mk-theme='nexus-forge'] [data-mk-part]::after {
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 1ms !important;
+    }
+  }
+}

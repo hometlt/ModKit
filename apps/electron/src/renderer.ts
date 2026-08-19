@@ -416,6 +416,8 @@ async function boot(): Promise<void> {
       { id: 'modkit-high-contrast', label: 'High contrast' },
       // An installed theme is just an id plus a stylesheet; nothing about it is special-cased.
       { id: 'sc2', label: 'StarCraft II' },
+      { id: 'nexus-forge', label: 'Nexus Forge' },
+      { id: 'nexus-dominion', label: 'Nexus Dominion' },
     ],
     onAppearance(appearance: SettingsDocument['appearance']) {
       applyTheme(document.documentElement, appearance.theme as never)
@@ -773,6 +775,26 @@ async function selfTest(
     }
   }
   console.log(`selftest: sheets=[${sheets.join(', ')}] sheenRule=${sheenRule.length} chars`)
+
+  // Every installed theme has to reach two places: the token cascade and the decor layer. Reading
+  // the accent back proves the stylesheet is linked and its selector matches; reading the decor
+  // animation name proves the theme found something to hang a background on in *this* host, which
+  // is exactly what breaks silently when a host composes its own shell.
+  for (const [id, accent] of [
+    ['nexus-forge', '#b6f04a'],
+    ['nexus-dominion', '#f0a02a'],
+  ] as const) {
+    document.documentElement.setAttribute('data-mk-theme', id)
+    const themed = getComputedStyle(document.documentElement)
+      .getPropertyValue('--mk-color-accent')
+      .trim()
+    const anchor = document.querySelector('[data-mk-part="workbench"]') ?? document.body
+    const decor = getComputedStyle(anchor, '::before').animationName
+    console.log(
+      `selftest: theme ${id} accent ${themed} (expected ${accent}, ${themed === accent ? 'ok' : 'MISMATCH'}) decor ${decor}`,
+    )
+  }
+  document.documentElement.setAttribute('data-mk-theme', 'sc2')
 
   const menus = [...document.querySelectorAll('[data-mk-part="titlebar.menu-item"]')].map(
     node => node.textContent,

@@ -1,0 +1,773 @@
+/**
+ * Nexus Dominion — an installable theme, not a fork of the UI.
+ *
+ * Amber on navy: the warmer, heavier sibling of Nexus Forge. Same grammar — square silhouettes,
+ * cut corners, mini-caps section labels, panels floating over a lit ground — with a colder ground
+ * and a warmer signal, and one thing Forge does not have: a hexagonal mesh drifting behind the
+ * shell with two slow blooms of light under it.
+ *
+ * The palette and the decor recipe come from the NexusForgeUI design study; the mapping from its
+ * `pal()` keys to lab tokens and parts is REPORT_NEXUS_UI_ADAPTATION_2026-08-19 §3. None of that
+ * export's markup, runtime or font service travels: this is one stylesheet over the public token
+ * and `data-mk-part` vocabulary, and it names no component internal.
+ *
+ * Motion is four slow loops (mesh drift, blooms, scan sweep, hover sweep). All of them animate
+ * `background-position` or `transform` only, so nothing here can trigger layout; all of them are
+ * stopped by the reduced-motion guard at the end of the file.
+ */
+
+/*
+ * Self-hosted faces. `VIEWER_CSP` allows `font-src 'self'` only, so a theme never links a font
+ * service; the hosts copy `assets/fonts/` beside the theme stylesheet as `fonts/`. Saira has no
+ * Cyrillic subset — the stack below keeps a system family after it so Cyrillic UI text stays
+ * readable rather than falling back to a serif.
+ */
+@font-face {
+  font-family: 'Saira';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('./fonts/saira/saira-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Saira';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('./fonts/saira/saira-latin-ext.woff2') format('woff2');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('./fonts/jetbrains-mono/jetbrains-mono-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('./fonts/jetbrains-mono/jetbrains-mono-latin-ext.woff2') format('woff2');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('./fonts/jetbrains-mono/jetbrains-mono-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('./fonts/jetbrains-mono/jetbrains-mono-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+
+@layer mk.theme {
+  :root[data-mk-theme='nexus-dominion'] {
+    color-scheme: dark;
+
+    /*
+     * Grounds. As in Forge, `surface` and the editor stage carry alpha (`e6`) so the mesh and the
+     * blooms stay faintly visible through every panel — that translucency is the design, not a
+     * detail. `overlay` is opaque: a menu you can see the mesh through is a menu you cannot read.
+     */
+    --mk-color-bg: #06090d;
+    --mk-color-surface: #0c141be6;
+    --mk-color-raised: #101b24;
+    --mk-color-sunken: #0f1a22;
+    --mk-color-overlay: #0e1a23;
+    --mk-color-scrim: rgba(2, 5, 8, 0.74);
+
+    /* Text is a cool blue-grey; `head` (#e6f0f7) is painted on title parts, not stored as a role. */
+    --mk-color-fg: #c2d3de;
+    --mk-color-fg-muted: #abc1cf;
+    --mk-color-fg-subtle: #8aa4b3;
+    --mk-color-fg-inverse: #06090d;
+    --mk-color-fg-disabled: #4d626f;
+    --mk-color-fg-link: #ffc76a;
+    --mk-color-fg-destructive: #e0483c;
+
+    /* The navy ground takes a lighter rule than carbon does, or the panels lose their edges. */
+    --mk-color-border: #22384a;
+    --mk-color-border-strong: #f0a02a55;
+    --mk-color-separator: #17232d;
+
+    /*
+     * Amber is the signal. As in Forge the primary control is a *wash* with light text and a
+     * translucent edge — `accent-muted` + `accent-muted-fg` — rather than a solid fill; the solid
+     * pair is still correct for badges and the drop target.
+     */
+    --mk-color-accent: #f0a02a;
+    --mk-color-accent-fg: #1c1002;
+    --mk-color-accent-muted: #241a0c;
+    --mk-color-accent-muted-fg: #ffd79a;
+    --mk-color-focus: #f0a02a;
+    --mk-color-hover: #14222c;
+    --mk-color-active: #1b2f3d;
+    --mk-color-selection: #2c2110;
+    --mk-color-selection-inactive: #16222b;
+    --mk-color-selection-fg: #e6f0f7;
+    --mk-color-match-highlight: #46350d;
+    --mk-color-drop-target: #f0a02a;
+    --mk-color-readonly: #0a121a;
+
+    /* Status: the design's four alert hues, plus derived washes and borders for each. */
+    --mk-status-ok: #57c98a;
+    --mk-status-ok-fg: #05180d;
+    --mk-status-ok-bg: #0e2418;
+    --mk-status-ok-border: #2c7a4f;
+    --mk-status-warn: #ffcf5a;
+    --mk-status-warn-fg: #211803;
+    --mk-status-warn-bg: #2e2409;
+    --mk-status-warn-border: #a8851f;
+    --mk-status-error: #e0483c;
+    --mk-status-error-fg: #1f0605;
+    --mk-status-error-bg: #2a100e;
+    --mk-status-error-border: #9a352c;
+    --mk-status-info: #57b6ff;
+    --mk-status-info-fg: #041521;
+    --mk-status-info-bg: #0a2436;
+    --mk-status-info-border: #1f6b9e;
+
+    /* Hairline rails, warmed on hover so the scrollbar answers to the same signal colour. */
+    --mk-color-scrollbar-track: rgba(0, 0, 0, 0.24);
+    --mk-color-scrollbar-thumb: rgba(255, 255, 255, 0.13);
+    --mk-color-scrollbar-thumb-hover: rgba(240, 160, 42, 0.45);
+    --mk-color-scrollbar-thumb-active: rgba(240, 160, 42, 0.7);
+    --mk-color-scrollbar-shadow: rgba(0, 0, 0, 0.62);
+
+    /* Scenes sit one step below the shell ground, on the same navy. */
+    --mk-color-canvas-bg: #050a0f;
+    --mk-color-canvas-grid: #17252f;
+    --mk-color-canvas-gizmo: #8aa4b3;
+    --mk-color-canvas-selection: #f0a02a;
+    --mk-color-axis-x: #e0483c;
+    --mk-color-axis-y: #57c98a;
+    --mk-color-axis-z: #57b6ff;
+    --mk-color-graph-node: #0f1a22;
+    --mk-color-graph-edge: #2c4356;
+    --mk-color-graph-edge-dead: #e0483c;
+
+    /* Ramp opens on the signal amber and walks the design's accent set. */
+    --mk-chart-categorical-1: #f0a02a;
+    --mk-chart-categorical-2: #57b6ff;
+    --mk-chart-categorical-3: #9fd0ff;
+    --mk-chart-categorical-4: #57c98a;
+    --mk-chart-categorical-5: #e0483c;
+    --mk-chart-categorical-6: #c98ce0;
+
+    --mk-color-diff-added: #0e2418;
+    --mk-color-diff-removed: #2a100e;
+    --mk-color-diff-changed: #2e2409;
+
+    /*
+     * Depth is a rule plus a glow. A blurred black shadow is invisible on a near-black ground, so
+     * elevation has to be made of light, not of darkness.
+     */
+    --mk-elevation-1: 0 0 0 1px rgba(240, 160, 42, 0.12);
+    --mk-elevation-2: 0 8px 24px -18px #000, 0 0 0 1px rgba(240, 160, 42, 0.18);
+    --mk-elevation-3: 0 22px 46px -18px #000, 0 0 0 1px rgba(240, 160, 42, 0.26);
+    --mk-shadow-focus-ring: 0 0 0 1px #f0a02a, 0 0 10px rgba(240, 160, 42, 0.45);
+
+    /* Square language: corners are cut, never rounded (see the clip-path rules below). */
+    --mk-radius-sm: 0;
+    --mk-radius-md: 0;
+    --mk-radius-lg: 0;
+
+    /* Saira for UI, JetBrains Mono for data; a system family follows each for Cyrillic. */
+    --mk-font-sans: 'Saira', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+    --mk-font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+    /* Tier 3: the design's tree is denser than ours by four pixels. */
+    --mk-tree-row-height: 24px;
+  }
+}
+
+@layer mk.theme {
+  /* ------------------------------------------------------------------ the ground */
+  /*
+   * Three layers of decor at three speeds, split across the element and its two pseudo-elements
+   * because one element can only animate `background-position` once:
+   *
+   *   element   — the radial wash plus two slow blooms of light (21 s, eased, alternating)
+   *   ::before  — the hexagonal mesh over a 64 px grid (18 s, linear)  ·  under the panels
+   *   ::after   — the scan bar and 3 px scanlines (11 s, linear)      ·  over the panels
+   *
+   * `::before` sits at `z-index: -1` so the mesh reads *through* the 90 %-opaque panels rather
+   * than across them; `isolation: isolate` keeps that negative layer inside the workbench.
+   *
+   * The design blurs its blooms with `filter: blur(60px)` on two divs. A radial gradient with a
+   * soft stop is the same picture for a fraction of the cost — and a full-screen `filter` would
+   * repaint everything under it on every frame, which is exactly what a background decor must
+   * never do.
+   */
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='workbench'] {
+    position: relative;
+    isolation: isolate;
+    background-color: #06090d;
+    background-image:
+      radial-gradient(60% 70% at 12% 8%, rgba(27, 90, 122, 0.55), transparent 68%),
+      radial-gradient(58% 68% at 88% 92%, rgba(122, 74, 8, 0.5), transparent 70%),
+      radial-gradient(1200px 700px at 18% -10%, #16303f 0%, transparent 62%),
+      radial-gradient(900px 600px at 88% 112%, #2a1c08 0%, transparent 66%);
+    animation: mk-dominion-blooms 21s ease-in-out infinite alternate;
+  }
+
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='workbench']::before {
+    position: absolute;
+    z-index: -1;
+    background-image:
+      repeating-linear-gradient(60deg, transparent 0 27px, rgba(240, 160, 42, 0.075) 27px 28px),
+      repeating-linear-gradient(-60deg, transparent 0 27px, rgba(240, 160, 42, 0.075) 27px 28px),
+      repeating-linear-gradient(0deg, transparent 0 47px, rgba(240, 160, 42, 0.06) 47px 48px),
+      linear-gradient(rgba(255, 255, 255, 0.039) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.039) 1px, transparent 1px);
+    background-size:
+      auto,
+      auto,
+      auto,
+      64px 64px,
+      64px 64px;
+    content: '';
+    inset: 0;
+    opacity: 0.55;
+    pointer-events: none;
+    animation: mk-dominion-mesh 18s linear infinite;
+  }
+
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='workbench']::after {
+    position: absolute;
+    z-index: 0;
+    background-image:
+      linear-gradient(90deg, transparent, rgba(240, 160, 42, 0.33), transparent),
+      repeating-linear-gradient(
+        0deg,
+        transparent 0 3px,
+        rgba(0, 0, 0, 0.14) 3px,
+        rgba(0, 0, 0, 0.14) 4px
+      );
+    background-repeat: no-repeat, repeat;
+    background-size:
+      100% 2px,
+      100% 100%;
+    background-position:
+      0 -2%,
+      0 0;
+    content: '';
+    inset: 0;
+    pointer-events: none;
+    animation: mk-dominion-scan 11s linear infinite;
+  }
+
+  /*
+   * Hosts that compose their own shell have no `workbench` part to hang the decor on (the
+   * Electron renderer builds `titlebar` + body + footer directly). There the document is the
+   * anchor; `:has()` keeps the two anchors from ever painting at once, so a host that later
+   * adopts `createWorkbench` loses these rules without losing the decor.
+   */
+  :root[data-mk-theme='nexus-dominion'] body:not(:has([data-mk-part='workbench'])) {
+    background-color: #06090d;
+    background-image:
+      radial-gradient(60% 70% at 12% 8%, rgba(27, 90, 122, 0.55), transparent 68%),
+      radial-gradient(58% 68% at 88% 92%, rgba(122, 74, 8, 0.5), transparent 70%),
+      radial-gradient(1200px 700px at 18% -10%, #16303f 0%, transparent 62%),
+      radial-gradient(900px 600px at 88% 112%, #2a1c08 0%, transparent 66%);
+    animation: mk-dominion-blooms 21s ease-in-out infinite alternate;
+  }
+
+  :root[data-mk-theme='nexus-dominion'] body:not(:has([data-mk-part='workbench']))::before {
+    position: fixed;
+    z-index: 0;
+    background-image:
+      repeating-linear-gradient(60deg, transparent 0 27px, rgba(240, 160, 42, 0.075) 27px 28px),
+      repeating-linear-gradient(-60deg, transparent 0 27px, rgba(240, 160, 42, 0.075) 27px 28px),
+      repeating-linear-gradient(0deg, transparent 0 47px, rgba(240, 160, 42, 0.06) 47px 48px),
+      linear-gradient(rgba(255, 255, 255, 0.039) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.039) 1px, transparent 1px);
+    background-size:
+      auto,
+      auto,
+      auto,
+      64px 64px,
+      64px 64px;
+    content: '';
+    inset: 0;
+    opacity: 0.55;
+    pointer-events: none;
+    animation: mk-dominion-mesh 18s linear infinite;
+  }
+
+  :root[data-mk-theme='nexus-dominion'] body:not(:has([data-mk-part='workbench']))::after {
+    position: fixed;
+    z-index: 0;
+    background-image:
+      linear-gradient(90deg, transparent, rgba(240, 160, 42, 0.33), transparent),
+      repeating-linear-gradient(
+        0deg,
+        transparent 0 3px,
+        rgba(0, 0, 0, 0.14) 3px,
+        rgba(0, 0, 0, 0.14) 4px
+      );
+    background-repeat: no-repeat, repeat;
+    background-size:
+      100% 2px,
+      100% 100%;
+    background-position:
+      0 -2%,
+      0 0;
+    content: '';
+    inset: 0;
+    pointer-events: none;
+    animation: mk-dominion-scan 11s linear infinite;
+  }
+
+  /* The blooms drift a few percent and back; the two fixed washes below them never move. */
+  @keyframes mk-dominion-blooms {
+    from {
+      background-position:
+        0% 0%,
+        100% 100%,
+        0 0,
+        0 0;
+    }
+    to {
+      background-position:
+        14% 9%,
+        86% 91%,
+        0 0,
+        0 0;
+    }
+  }
+
+  /* One cycle carries the mesh 96 px along its axes and the grid two full cells. */
+  @keyframes mk-dominion-mesh {
+    from {
+      background-position:
+        0 0,
+        0 0,
+        0 0,
+        0 0,
+        0 0;
+    }
+    to {
+      background-position:
+        0 96px,
+        84px 96px,
+        -84px 96px,
+        0 128px,
+        128px 0;
+    }
+  }
+
+  @keyframes mk-dominion-scan {
+    from {
+      background-position:
+        0 -2%,
+        0 0;
+    }
+    to {
+      background-position:
+        0 102%,
+        0 0;
+    }
+  }
+}
+
+@layer mk.theme {
+  /* ------------------------------------------------------------------ mini-caps */
+  /*
+   * The strongest cue in the design and the cheapest: every label that names a region is small,
+   * uppercase and widely tracked. Applied by part, so it reaches labels in viewers this theme has
+   * never seen.
+   */
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='metadata.heading'],
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='settings.group'],
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='explorer.header'],
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='accordion.title'],
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='card.subtitle'] {
+    color: #8aa4b3;
+    text-transform: uppercase;
+    letter-spacing: 0.24em;
+    font-weight: 700;
+    font-size: var(--mk-font-size-xs);
+  }
+
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='titlebar.title'],
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='workbench.titlebar'],
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='card.title'] {
+    color: #e6f0f7;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-weight: 700;
+  }
+
+  /* ------------------------------------------------------------------ title bars */
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='titlebar'],
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='workbench.titlebar'] {
+    position: relative;
+    border-bottom: 1px solid #22384a;
+    background-image: linear-gradient(180deg, #16242fee, #0c141bee);
+    box-shadow:
+      0 1px 0 rgba(240, 160, 42, 0.33),
+      0 8px 24px -18px #000;
+  }
+
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='titlebar.menu-item'] {
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+  }
+
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='titlebar.menu-item']:hover {
+    color: #e6f0f7;
+    background-color: #241a0c;
+  }
+
+  /* An open menu is marked by a 2 px edge under its label, not by a fill. */
+  :root[data-mk-theme='nexus-dominion']
+    [data-mk-part='titlebar.menu-item'][data-mk-state~='active'] {
+    color: #f0a02a;
+    box-shadow: inset 0 -2px 0 #f0a02a;
+  }
+
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='titlebar.menu-panel'] {
+    border: 1px solid #22384a;
+    background-color: #0e1a23;
+    box-shadow:
+      0 22px 46px -18px #000,
+      0 0 0 1px rgba(240, 160, 42, 0.33);
+  }
+
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='titlebar.menu-entry']:hover {
+    color: #ffd79a;
+    background-color: #241a0c;
+  }
+
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='titlebar.button'] {
+    clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+    color: #abc1cf;
+    transition: background-color var(--mk-motion-fast) var(--mk-motion-ease);
+  }
+
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='titlebar.button']:hover {
+    color: #e6f0f7;
+    background-color: #1b2f3d;
+  }
+
+  :root[data-mk-theme='nexus-dominion']
+    [data-mk-part='titlebar.button'][data-command='close']:hover {
+    color: #1f0605;
+    background-color: #e0483c;
+  }
+
+  /* ------------------------------------------------------------------ activity bar */
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='workbench.activitybar'] {
+    border-right: 1px solid #22384a;
+    background-image: linear-gradient(180deg, #101b24ee, #0a121aee);
+  }
+
+  /* ------------------------------------------------------------------ sidebar */
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='workbench.sidebar'],
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='explorer.sidebar'] {
+    border-right: 1px solid #22384a;
+    background-color: #0c141be6;
+  }
+
+  /*
+   * Indent guides. The base stylesheet paints one hairline per nesting level from
+   * `--mk-color-border` over `--mk-tree-indent-level`; the theme only warms them. That gradient
+   * *is* the row's `background-image`, so hover and selection here must use `background-color` or
+   * `box-shadow` — painting an image would erase the guides.
+   */
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='filetree.row'] {
+    background-image: repeating-linear-gradient(
+      to right,
+      rgba(240, 160, 42, 0.16) 0 1px,
+      transparent 1px var(--mk-tree-indent)
+    );
+  }
+
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='filetree.row']:hover {
+    background-color: #14222c;
+  }
+
+  :root[data-mk-theme='nexus-dominion']
+    [data-mk-part='filetree.node'][data-mk-state~='selected']
+    > [data-mk-part='filetree.row'] {
+    color: #e6f0f7;
+    background-color: #2c2110;
+    box-shadow: inset 2px 0 0 #f0a02a;
+  }
+
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='filetree.badge'] {
+    color: #f0a02a;
+    letter-spacing: 0.08em;
+    font-size: var(--mk-font-size-xs);
+  }
+
+  /* ------------------------------------------------------------------ tabs */
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='explorer.tabstrip'] {
+    border-bottom: 1px solid #22384a;
+    background-image: linear-gradient(180deg, #101b24ee, #0a121aee);
+  }
+
+  /*
+   * The slanted tab: a 12 px cut on the trailing edge. `clip-path` cuts children too, so the
+   * padding below keeps the close button clear of the cut.
+   */
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='explorer.filetab'] {
+    position: relative;
+    clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+    padding-inline-end: calc(var(--mk-space-3) + 12px);
+    color: #8aa4b3;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: var(--mk-font-size-xs);
+    transition:
+      color var(--mk-motion-fast) var(--mk-motion-ease),
+      background-color var(--mk-motion-fast) var(--mk-motion-ease);
+  }
+
+  /*
+   * The kind dot. The design colours it per file kind; the tab carries no kind attribute today
+   * (see the report — `data-mk-kind` on `explorer.filetab` is the hook that is missing), so the
+   * dot states selection instead: amber when the tab is active, muted otherwise.
+   */
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='explorer.filetab']::before {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-inline-end: var(--mk-space-2);
+    background-color: #8aa4b3;
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+    content: '';
+    vertical-align: middle;
+  }
+
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='explorer.filetab']:hover {
+    color: #c2d3de;
+    background-color: #14222c;
+  }
+
+  :root[data-mk-theme='nexus-dominion']
+    [data-mk-part='explorer.filetab'][data-mk-state~='selected'] {
+    color: #e6f0f7;
+    background-color: #0f1a22;
+    box-shadow: inset 0 2px 0 #f0a02a;
+  }
+
+  :root[data-mk-theme='nexus-dominion']
+    [data-mk-part='explorer.filetab'][data-mk-state~='selected']::before {
+    background-color: #f0a02a;
+  }
+
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='explorer.tab'] {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: var(--mk-font-size-xs);
+  }
+
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='explorer.tab'][data-mk-state~='selected'] {
+    color: #f0a02a;
+    box-shadow: inset 0 -2px 0 #f0a02a;
+  }
+
+  :root[data-mk-theme='nexus-dominion']
+    [data-mk-part='explorer.group'][data-mk-state~='active']
+    [data-mk-part='explorer.tabstrip'] {
+    border-bottom-color: rgba(240, 160, 42, 0.33);
+  }
+}
+
+@layer mk.theme {
+  /* ------------------------------------------------------------------ controls */
+  /*
+   * The primary control: a 9 px bevel, an amber wash rather than a solid fill, light text on it,
+   * and a translucent edge — which is exactly the `accent-muted` / `accent-muted-fg` pair.
+   */
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='operations.button'],
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='explorer.action'],
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='settings.add'],
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='settings.remove'],
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='transport.button'] {
+    position: relative;
+    clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
+    color: #ffd79a;
+    border: 1px solid rgba(240, 160, 42, 0.33);
+    background-color: #241a0c;
+    overflow: hidden;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 700;
+    font-size: var(--mk-font-size-xs);
+    transition:
+      color var(--mk-motion-fast) var(--mk-motion-ease),
+      border-color var(--mk-motion-fast) var(--mk-motion-ease),
+      background-color var(--mk-motion-fast) var(--mk-motion-ease);
+  }
+
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='operations.button']:hover,
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='explorer.action']:hover,
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='settings.add']:hover,
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='settings.remove']:hover,
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='transport.button']:hover {
+    color: #1c1002;
+    border-color: #f0a02a;
+    background-color: #f0a02a;
+  }
+
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='operations.button']:active,
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='explorer.action']:active,
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='settings.add']:active,
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='settings.remove']:active,
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='transport.button']:active {
+    background-color: #c9821d;
+  }
+
+  /*
+   * The sweep: a narrow light crosses the control once per hover, on a pseudo-element and by
+   * `transform`, so it stays on the compositor and never re-lays out the control.
+   */
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='operations.button']::after,
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='explorer.action']::after,
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='settings.add']::after,
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='transport.button']::after {
+    position: absolute;
+    width: 36%;
+    background-image: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.32), transparent);
+    content: '';
+    inset-block: 0;
+    inset-inline-start: -40%;
+    pointer-events: none;
+    transform: translateX(0);
+  }
+
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='operations.button']:hover::after,
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='explorer.action']:hover::after,
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='settings.add']:hover::after,
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='transport.button']:hover::after {
+    animation: mk-dominion-sweep 620ms var(--mk-motion-ease);
+  }
+
+  @keyframes mk-dominion-sweep {
+    to {
+      transform: translateX(400%);
+    }
+  }
+
+  /* ------------------------------------------------------------------ fields */
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='search'],
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='search.input'],
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='settings.input'],
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='settings.select'],
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='explorer.viewpicker'],
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='viewpicker.select'] {
+    color: #c2d3de;
+    border: 1px solid #22384a;
+    background-color: #0f1a22;
+  }
+
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='search']:focus-within,
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='search.input']:focus-visible,
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='settings.input']:focus-visible,
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='settings.select']:focus-visible,
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='explorer.viewpicker']:focus-visible {
+    border-color: #f0a02a;
+  }
+
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='settings.group'] {
+    border: 1px solid #17232d;
+    background-color: #101b24;
+  }
+
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='settings.group'][data-mk-state~='selected'] {
+    color: #ffd79a;
+    border-color: rgba(240, 160, 42, 0.33);
+    background-color: #241a0c;
+    box-shadow: inset 2px 0 0 #f0a02a;
+  }
+
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='settings.pane'],
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='settings.groups'] {
+    background-color: #0c141be6;
+  }
+
+  /* ------------------------------------------------------------------ status bars */
+  /*
+   * Our status bar is a solid accent strip by default; the design's is a dark rail with a lit top
+   * edge. Same information, far less shouting on a dark shell.
+   */
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='workbench.statusbar'],
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='explorer.status'],
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='shell.footer'] {
+    color: #abc1cf;
+    border-top: 1px solid #22384a;
+    background-color: #101b24;
+    background-image: none;
+    box-shadow: inset 0 1px 0 rgba(240, 160, 42, 0.18);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: var(--mk-font-size-xs);
+  }
+
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='shell.status-item'] {
+    color: #8aa4b3;
+    letter-spacing: 0.14em;
+  }
+
+  /* ------------------------------------------------------------------ metadata */
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='metadata.label'] {
+    color: #8aa4b3;
+    letter-spacing: 0.08em;
+  }
+
+  :root[data-mk-theme='nexus-dominion'] [data-mk-part='metadata.value'] {
+    color: #c2d3de;
+    font-family: var(--mk-font-mono);
+  }
+
+  /*
+   * Reduced motion.
+   *
+   * `base.css` neutralises animation for `.modkit-viewer *` — descendants only, so neither the
+   * workbench's own pseudo-elements nor anything painted on `body` is covered. Every animation
+   * this theme starts is stopped here, which is also what `themes:check` requires of any theme
+   * that animates.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    :root[data-mk-theme='nexus-dominion'] body,
+    :root[data-mk-theme='nexus-dominion'] body::before,
+    :root[data-mk-theme='nexus-dominion'] body::after,
+    :root[data-mk-theme='nexus-dominion'] [data-mk-part],
+    :root[data-mk-theme='nexus-dominion'] [data-mk-part]::before,
+    :root[data-mk-theme='nexus-dominion'] [data-mk-part]::after {
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 1ms !important;
+    }
+  }
+}

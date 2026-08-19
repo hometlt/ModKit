@@ -63,6 +63,48 @@ PWA settings/theme picker; VS Code webview theme option.
 
 ---
 
+## O-1 — the Nexus themes: `nexus-forge` and `nexus-dominion` as installable stylesheets (Opus, 2026-08-19)
+
+**Context.** The Opus half of the Nexus UI adaptation (`REQUEST_OPUS_UI_01_2026-08-19.md`), on top
+of R-1 above. Report: `REPORT_NEXUS_THEMES_2026-08-19.md`.
+
+**What exists.** Two stylesheets — `assets/themes/nexus-forge/theme.css` (lime on carbon) and
+`assets/themes/nexus-dominion/theme.css` (amber on navy) — each declaring all 73 public tier-2
+appearance roles plus font stacks, zeroed radii and `--mk-tree-row-height: 24px` (79 declarations
+each), self-hosting Saira and JetBrains Mono from `./fonts/`, and decorating only the public
+`data-mk-part` vocabulary: mini-caps tracked labels, 7 px window-button and 9 px control bevels, a
+12 px tab slant with a kind dot, indent guides over `--mk-tree-indent-level`, 2 px selection and
+active-tab edges, recessed fields, a dark status rail. The background decor rides
+`[data-mk-part='workbench']::before/::after` — `::before` at `z-index: -1` under the 90 %-opaque
+panels (grid drift, Dominion's hex mesh), `::after` above them (scan bar, 3 px scanlines) — with
+`isolation: isolate` keeping the negative layer contained; Dominion adds two blooms on the element
+itself. Gradients only, `background-position`/`transform` only, all four loops per theme stopped by
+each theme's own reduced-motion block. Electron lists both in the settings picker and its selftest
+asserts, per theme, that `--mk-color-accent` becomes the theme's accent and that a decor animation
+is attached.
+
+**Proof.** `themes:check` 3/3 complete; every other gate green (`tokens`, `schemas`, `manifests`,
+`icons`, `facilities`, `apps`, `legacy`, `imports`, `extensions`, `mk2`). Live, through
+`playwright-core` against the real applications: the Electron workbench (`_electron.launch`) and the
+PWA (`dist-app` on :8732, `?open=./favicon-32.png`) under each theme — accent, Saira, decor
+animation names, tab clip, kind dot, guide tint, button bevel, status ground and row height all read
+back as declared, console clean. Screenshots committed as
+`assets/themes/nexus-*/preview-{electron,web}.jpg`.
+
+**Not done here — three hooks the parts vocabulary is missing** (all outside this slice's scope;
+detail in the report §3). (1) The Electron renderer builds its own shell and never stamps
+`data-mk-part='workbench'`, so the decor anchor the request names does not exist there; the themes
+carry a `body:not(:has([data-mk-part='workbench']))` fallback that retires itself the moment the
+part appears. (2) `explorer.filetab` carries no file-kind attribute, so the kind dot states
+selection instead of kind — `data-mk-kind` in `explorer/editors.ts` would finish it. (3)
+`extensions/common/ui-monaco` reads the token values once, when an editor is created, so a live
+theme switch leaves open code editors in the previous palette until the next file opens. Also
+recorded: `chrome.css` paints the selected tree row with the `background` shorthand, which resets
+the guide geometry a theme's `background-image` then inherits — both themes re-declare
+`background-size/repeat/position` and say why.
+
+---
+
 ## S7 — the product open path of every Node host: one subject-services builder, `modkit open`, server/automation `subjects` (Root/Fable, 2026-08-19)
 
 **What exists.** `packages/host/src/subject-services.ts` (root entry): `SubjectOpenRequest`
