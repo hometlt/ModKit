@@ -1944,7 +1944,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:febf8f045f6a3d96e4431c5ce96f354ef8580e7463763fe5c2341f63662b4164',
+        artifactDigest: 'sha256:41b18bb6583165fc5ad5a3ceae9a168e769d30cfd377f621e03568957b8aa7ff',
         fileDigests: {
           'README.md': 'sha256:32b16af9cd40d5a69ccc3a44c7d74e40703c44ff0ac7f61a8f1289f093506a0d',
           'contributions/codec-csv.json':
@@ -1959,7 +1959,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:51dce1699a464ede2fe08da370490985c2c6f97d1162aee16c2767e875f87ede',
           'contributions/provider-tsv-default.json':
             'sha256:5520bc14a0ff8d688706a5821cef953670e5936827138dc75d21829d28e81c8c',
+          'contributions/writer-delimited.json':
+            'sha256:21e1441bcc2c6e5b81ad048edfafb8bc3ec77551fe183a0d03de96c28f6833ad',
           'package.json': 'sha256:c21cbacc8f779a8c1a37eda8266e00ba456ba3a4c74c47f65e8abb7ba20ce359',
+          'src/editing/text-writer.js':
+            'sha256:dce962c640c433456183054d03940ab874d4970da6cf41a1fae289269873d561',
           'src/families/delimited/codec.js':
             'sha256:8ce0696b57a7094d17468051804a030296494d4d9af15380b8a6d706252a8e42',
           'src/families/delimited/detect.js':
@@ -1993,7 +1997,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:518c4096fdf96326de1c0a83acab3674a66a2ccfa7f9b7279760e97fbb712ef5',
         },
         inventoryRecordId:
-          'artifact:sha256:febf8f045f6a3d96e4431c5ce96f354ef8580e7463763fe5c2341f63662b4164',
+          'artifact:sha256:41b18bb6583165fc5ad5a3ceae9a168e769d30cfd377f621e03568957b8aa7ff',
       },
       artifactRoot: 'extensions/text-delimited/',
       containers: {
@@ -2064,6 +2068,10 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         [
           'contributions/provider-tsv-default.json',
           'sha256:5520bc14a0ff8d688706a5821cef953670e5936827138dc75d21829d28e81c8c',
+        ],
+        [
+          'contributions/writer-delimited.json',
+          'sha256:21e1441bcc2c6e5b81ad048edfafb8bc3ec77551fe183a0d03de96c28f6833ad',
         ],
       ],
       documents: [
@@ -2621,6 +2629,62 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             },
           },
         ],
+        [
+          'contributions/writer-delimited.json',
+          {
+            contract: {
+              id: 'org.modkitx/service-provider-contribution',
+              major: 1,
+            },
+            displayName: 'CSV and TSV text writer',
+            id: 'org.modkitx/text-delimited-writer',
+            runtimeVariants: [
+              {
+                entrypoint: './src/editing/text-writer.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              lifecycleScope: 'session',
+              provides: [
+                {
+                  contract: 'common.edit/writer',
+                  facet: {
+                    fidelityEvidenceId: 'text-delimited-text-writer-v1',
+                    formatId: 'csv',
+                    minimumRoundTrip: 'byte-identical',
+                    mutationMode: 'mutate',
+                    providerId: 'org.modkitx/text-delimited-writer',
+                    representationId: 'source',
+                  },
+                  major: 1,
+                  offerId: 'csv-source',
+                  version: '1.0.0',
+                },
+                {
+                  contract: 'common.edit/writer',
+                  facet: {
+                    fidelityEvidenceId: 'text-delimited-text-writer-v1',
+                    formatId: 'tsv',
+                    minimumRoundTrip: 'byte-identical',
+                    mutationMode: 'mutate',
+                    providerId: 'org.modkitx/text-delimited-writer',
+                    representationId: 'source',
+                  },
+                  major: 1,
+                  offerId: 'tsv-source',
+                  version: '1.0.0',
+                },
+              ],
+            },
+          },
+        ],
       ],
       files: [
         'README.md',
@@ -2630,7 +2694,9 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'contributions/contract-tsv-syntax.json',
         'contributions/provider-csv-default.json',
         'contributions/provider-tsv-default.json',
+        'contributions/writer-delimited.json',
         'package.json',
+        'src/editing/text-writer.js',
         'src/families/delimited/codec.js',
         'src/families/delimited/detect.js',
         'src/families/delimited/entrypoints/csv-codec.js',
@@ -2653,7 +2719,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:487c72e12426373e8a0e4cb81bd21842495f0529eb30f67f0091764ba2358691',
+        artifactDigest: 'sha256:6c203a9e1d424f58eafd7341e8ed83b8600e5f67ca47dc07ccd2a334545d4649',
         fileDigests: {
           'README.md': 'sha256:9519219eb63529bab5e470614ac5a8c5506507cb35e567d4686f73c13023e546',
           'contributions/codec-ini.json':
@@ -2662,7 +2728,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:aafe6ff6e6465a0ac49865cd594ff360ed796e29dc803668bfd8f83cdd0f9973',
           'contributions/provider-ini-default.json':
             'sha256:92fad791e38fa9cc4d22907ef846b88bbba25e237c156285954688ff417f8893',
+          'contributions/writer-ini.json':
+            'sha256:d278dfffae415d855276a46335e7668f6ecdf465cc4c3e73b672dc39850abfaf',
           'package.json': 'sha256:8d6c9a84dfd4c7d41d6f68a2d4e3bcf0f33395151aceec6596c5464129e3b244',
+          'src/editing/text-writer.js':
+            'sha256:2c0fe6dd7b60302cc6ba2e91d995a257e875b81a6af1bda8d23869ead9d7a56c',
           'src/formats/index.js':
             'sha256:a4d3cbdd7e162f66732f3c2dc857e4538c5f2a9794a610d144a1baaf6b6da75f',
           'src/formats/ini/codec.js':
@@ -2676,7 +2746,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:205a176ec39d8c1adeebd8f9419ff9c9b8e2e2d45f4387541adc7e96c2090df9',
         },
         inventoryRecordId:
-          'artifact:sha256:487c72e12426373e8a0e4cb81bd21842495f0529eb30f67f0091764ba2358691',
+          'artifact:sha256:6c203a9e1d424f58eafd7341e8ed83b8600e5f67ca47dc07ccd2a334545d4649',
       },
       artifactRoot: 'extensions/text-ini/',
       containers: {
@@ -2733,6 +2803,10 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         [
           'contributions/provider-ini-default.json',
           'sha256:92fad791e38fa9cc4d22907ef846b88bbba25e237c156285954688ff417f8893',
+        ],
+        [
+          'contributions/writer-ini.json',
+          'sha256:d278dfffae415d855276a46335e7668f6ecdf465cc4c3e73b672dc39850abfaf',
         ],
       ],
       documents: [
@@ -3006,13 +3080,57 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             },
           },
         ],
+        [
+          'contributions/writer-ini.json',
+          {
+            contract: {
+              id: 'org.modkitx/service-provider-contribution',
+              major: 1,
+            },
+            displayName: 'INI text writer',
+            id: 'org.modkitx/text-ini-writer',
+            runtimeVariants: [
+              {
+                entrypoint: './src/editing/text-writer.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              lifecycleScope: 'session',
+              provides: [
+                {
+                  contract: 'common.edit/writer',
+                  facet: {
+                    fidelityEvidenceId: 'text-ini-text-writer-v1',
+                    formatId: 'ini',
+                    minimumRoundTrip: 'byte-identical',
+                    mutationMode: 'mutate',
+                    providerId: 'org.modkitx/text-ini-writer',
+                    representationId: 'source',
+                  },
+                  major: 1,
+                  offerId: 'ini-source',
+                  version: '1.0.0',
+                },
+              ],
+            },
+          },
+        ],
       ],
       files: [
         'README.md',
         'contributions/codec-ini.json',
         'contributions/contract-ini-syntax.json',
         'contributions/provider-ini-default.json',
+        'contributions/writer-ini.json',
         'package.json',
+        'src/editing/text-writer.js',
         'src/formats/index.js',
         'src/formats/ini/codec.js',
         'src/formats/ini/definition.js',
