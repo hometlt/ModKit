@@ -23,18 +23,18 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
   extensions: [
     {
       artifact: {
-        artifactDigest: 'sha256:44d3e2ec46db6c5763e3fc5b780c51d951ab72d5d5ad92d99869960d616d4b5b',
+        artifactDigest: 'sha256:695e0cec1587e349bae679935812c468a23077c68a3f15cea850beb2e0f7f526',
         fileDigests: {
-          'README.md': 'sha256:f06c80345ee17145a666883da547db3c7e1c6aab80985e1380eeaacd9d675b0f',
+          'README.md': 'sha256:2c8abea7cb674e2a423eb034a51b47053744d502a154578889c541bfb110ea72',
           'contributions/codec-zip.json':
-            'sha256:5c1d2125933a2d9158da74c769bf8fd6c9ce7e55e38493bd540a558022d0f6c4',
+            'sha256:4601074c28e23bb8ed5e942355618277c0bec91012dba68c18a339c5b326bd41',
           'package.json': 'sha256:70196adc05d186774fcce8ebbf05a3b1166b70201583199fb2fc292e55abcbd4',
           'src/formats/zip/codec.js':
-            'sha256:29caf81d0bf37418ef1d853ca154c3fb3af30141bcdc65bca9e36279ac534e76',
+            'sha256:20238e2ac3607f3cd32cea4ab2823578cb3ba272fe583dd24084c8bcb97e367e',
           'src/index.js': 'sha256:121004c40bd5560b35a26034c291429f1d103e68698c7e1aaf5cf8456890dc95',
         },
         inventoryRecordId:
-          'artifact:sha256:44d3e2ec46db6c5763e3fc5b780c51d951ab72d5d5ad92d99869960d616d4b5b',
+          'artifact:sha256:695e0cec1587e349bae679935812c468a23077c68a3f15cea850beb2e0f7f526',
       },
       artifactRoot: 'extensions/archives/',
       containers: {
@@ -77,7 +77,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       documentDigests: [
         [
           'contributions/codec-zip.json',
-          'sha256:5c1d2125933a2d9158da74c769bf8fd6c9ce7e55e38493bd540a558022d0f6c4',
+          'sha256:4601074c28e23bb8ed5e942355618277c0bec91012dba68c18a339c5b326bd41',
         ],
       ],
       documents: [
@@ -94,7 +94,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               {
                 entrypoint: './src/formats/zip/codec.js',
                 executionProfile: 'trusted-in-process',
-                requestedPermissionClasses: ['read-source'],
+                requestedPermissionClasses: ['read-source', 'write-source'],
                 target: {
                   environments: ['node'],
                 },
@@ -103,7 +103,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               {
                 entrypoint: './src/formats/zip/codec.js',
                 executionProfile: 'worker-brokered',
-                requestedPermissionClasses: ['read-source'],
+                requestedPermissionClasses: ['read-source', 'write-source'],
                 target: {
                   environments: ['browser-worker', 'node-worker'],
                 },
@@ -175,6 +175,20 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                   mutatesSource: false,
                   outputKinds: ['bytes'],
                   requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'edit-structure',
+                  id: 'edit.structure',
+                  mutatesSource: true,
+                  outputKinds: ['edit-plan'],
+                  requiredPermissions: ['read-source', 'write-source'],
+                },
+                {
+                  handlerId: 'edit-content',
+                  id: 'edit.content',
+                  mutatesSource: true,
+                  outputKinds: ['edit-plan'],
+                  requiredPermissions: ['read-source', 'write-source'],
                 },
               ],
               probe: {
