@@ -8,7 +8,12 @@
  * which stages appear. A codec that grows a new data source gets a new tab here without this file
  * changing.
  */
-import type { PresentationPlan, ViewerModule } from '@modkitx-x3/sdk'
+import type {
+  EditorModule,
+  OperationSession,
+  PresentationPlan,
+  ViewerModule,
+} from '@modkitx-x3/sdk'
 
 import type { ExplorerEntry, PreviewHandle, PreviewResolver } from './index.js'
 import { builtinByteRangeSource, builtinTextSource, looksTextual } from './builtin.js'
@@ -20,7 +25,13 @@ export interface PreviewStage {
   readonly id?: string
   readonly label: string
   readonly contract: string
-  readonly module: ViewerModule
+  /**
+   * The module to mount. An `editable` stage carries an `EditorModule` (four more mount arguments
+   * than a viewer) — the union is here so a host can name one in TypeScript at all. It used to be
+   * `ViewerModule` alone, which meant every first-party host that wired an editor did it through a
+   * cast, and a generated untyped catalog was the only way to declare one honestly.
+   */
+  readonly module: ViewerModule | EditorModule
   /** Only offered when the descriptor carries this trait. */
   readonly trait?: string
   /**
@@ -76,6 +87,15 @@ export interface PreviewSession {
   readonly presentation?: PresentationPlan
   descriptor(): Promise<Record<string, unknown>>
   dataSource(contract: string, major: number): Promise<{ value: unknown }>
+  /**
+   * The subject's operations, when this host can invoke them.
+   *
+   * Optional because a fallback session has none. When present it is leased once per opened
+   * subject and handed to every viewer mounted from it, which is what an operation toolbar, a
+   * transport bar or a container stage reading an entry needs — before this, viewers were mounted
+   * with no operations at all and a host had to smuggle a session in beside the previewer.
+   */
+  operations?(): Promise<OperationSession>
   dispose(): Promise<void>
 }
 
@@ -111,6 +131,13 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
       const session = externallyOpened ?? builtinSession(bytes, options.fallback)
 
       const descriptor = await session.descriptor()
+      /*
+       * One lease per opened subject, shared by every stage. A viewer that cannot invoke is a
+       * viewer that cannot offer a toolbar, a transport bar or an entry's bytes; a host that
+       * cannot invoke says so by not implementing the method, and the viewers see `undefined`
+       * exactly as they did before.
+       */
+      const operations = await session.operations?.().catch(() => undefined)
       const traits = new Set(traitsOf(descriptor))
       const published = new Set(publishedContracts(descriptor))
 
@@ -205,7 +232,7 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
               }
             },
           } as never,
-          operations: undefined as never,
+          operations: operations as never,
           ...(signal === undefined ? {} : { signal }),
         } as never)
         active = mounted
@@ -232,7 +259,7 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
 
 /** Registered for hosts that want the raw bytes when no codec claims the file. */
 export function fallbackHexStage(module: ViewerModule): PreviewStage {
-  return { label: 'Hex', contract: 'common.view/byte-range-source', module }
+  return { id: 'hex', label: 'Hex', contract: 'common.view/byte-range-source', module }
 }
 
 export { setPart }
@@ -240,11 +267,23 @@ export { setPart }
 /** Stage list for a file no codec claimed: whatever fallback viewers the host supplied. */
 function fallbackStages(fallback: CodecPreviewOptions['fallback']): readonly PreviewStage[] {
   const stages: PreviewStage[] = []
+  // ids, because `stageId` falls back to the contract and a picker then offers a file no codec
+  // claimed a view named `common.view/text-data-source`
   if (fallback?.text !== undefined) {
-    stages.push({ label: 'Text', contract: 'common.view/text-data-source', module: fallback.text })
+    stages.push({
+      id: 'text',
+      label: 'Text',
+      contract: 'common.view/text-data-source',
+      module: fallback.text,
+    })
   }
   if (fallback?.hex !== undefined) {
-    stages.push({ label: 'Hex', contract: 'common.view/byte-range-source', module: fallback.hex })
+    stages.push({
+      id: 'hex',
+      label: 'Hex',
+      contract: 'common.view/byte-range-source',
+      module: fallback.hex,
+    })
   }
   return stages
 }

@@ -42,6 +42,15 @@ export interface SettingsUiOptions {
   readonly associableTypes?: readonly string[]
   /** Register the app for the chosen extensions. Absent hides the group entirely. */
   registerFileTypes?(extensions: readonly string[]): Promise<string>
+  /**
+   * Why this host cannot change the extension list, when it cannot.
+   *
+   * A host that serves only what its build attested has no way to honour an Add or a Remove. With
+   * this set the group still *shows* what is loaded — that is the useful half — but draws no
+   * controls that would fail, and states the reason once. Without it the group is editable, which
+   * is right for a host with an install path.
+   */
+  readonly extensionsReadOnly?: string
   /** Shown as a close affordance. Absent means the host closes the panel its own way. */
   onClose?(): void
 }
@@ -172,6 +181,14 @@ export function createSettingsUi(document: Document, options: SettingsUiOptions)
         'loads from, and whether it is enabled. The same file is read by the desktop app, the web ' +
         'app and a headless run.'
 
+      const readOnly = options.extensionsReadOnly
+      if (readOnly !== undefined) {
+        element(host, 'p', {
+          part: 'settings.description',
+          text: safeViewerText(readOnly, 400),
+        })
+      }
+
       const list = element(host, 'div', { part: 'settings.list' })
 
       const draw = (): void => {
@@ -184,20 +201,29 @@ export function createSettingsUi(document: Document, options: SettingsUiOptions)
         }
         for (const entry of current.extensions) {
           const item = element(list, 'div', { part: 'settings.extension' })
-          const toggle = element(item, 'input', {
-            part: 'settings.toggle',
-          }) as HTMLInputElement
-          toggle.type = 'checkbox'
-          toggle.checked = entry.enabled
-          toggle.setAttribute('aria-label', `Enable ${entry.id}`)
-          toggle.addEventListener('change', () => {
-            void persist({
-              ...current,
-              extensions: current.extensions.map(other =>
-                other.id === entry.id ? { ...other, enabled: toggle.checked } : other,
-              ),
-            }).then(draw)
-          })
+          if (readOnly === undefined) {
+            const toggle = element(item, 'input', {
+              part: 'settings.toggle',
+            }) as HTMLInputElement
+            toggle.type = 'checkbox'
+            toggle.checked = entry.enabled
+            toggle.setAttribute('aria-label', `Enable ${entry.id}`)
+            toggle.addEventListener('change', () => {
+              void persist({
+                ...current,
+                extensions: current.extensions.map(other =>
+                  other.id === entry.id ? { ...other, enabled: toggle.checked } : other,
+                ),
+              }).then(draw)
+            })
+          } else {
+            // `settings.description`, not a new part: the parts list is a contract themes
+            // style against, and one read-only annotation does not earn an entry in it
+            element(item, 'div', {
+              part: 'settings.description',
+              text: entry.enabled ? 'enabled' : 'disabled',
+            })
+          }
 
           const text = element(item, 'div', { part: 'settings.extension-text' })
           element(text, 'div', { part: 'settings.label', text: safeViewerText(entry.id, 200) })
@@ -206,22 +232,25 @@ export function createSettingsUi(document: Document, options: SettingsUiOptions)
             text: safeViewerText(entry.path, 400),
           })
 
-          const remove = element(item, 'button', {
-            part: 'settings.remove',
-            text: 'Remove',
-          }) as HTMLButtonElement
-          remove.type = 'button'
-          remove.addEventListener('click', () => {
-            void persist({
-              ...current,
-              extensions: current.extensions.filter(other => other.id !== entry.id),
-            }).then(draw)
-          })
+          if (readOnly === undefined) {
+            const remove = element(item, 'button', {
+              part: 'settings.remove',
+              text: 'Remove',
+            }) as HTMLButtonElement
+            remove.type = 'button'
+            remove.addEventListener('click', () => {
+              void persist({
+                ...current,
+                extensions: current.extensions.filter(other => other.id !== entry.id),
+              }).then(draw)
+            })
+          }
         }
       }
       draw()
 
       // ---- add by path
+      if (readOnly !== undefined) return
       const adder = element(host, 'div', { part: 'settings.adder' })
       const id = element(adder, 'input', { part: 'settings.input' }) as HTMLInputElement
       id.placeholder = 'publisher/name'

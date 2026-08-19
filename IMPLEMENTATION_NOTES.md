@@ -6,6 +6,106 @@ overrides a canonical or detailed owner.
 
 ---
 
+## S14 / A1 / A2 + host follow-ups — editing across the wire, both apps completed, and three defects that hid well (Fable with Opus agents, 2026-08-19)
+
+**S14 — editing over the subject RPC** (`b4f793f`). The Electron renderer holds a proxied session:
+no grant, no backend, no coordinator, so it could show an editor but never save.
+`x3.app/subject-services@1` gained an `edit` arm (`x3.app/subject-editing@1`) that crosses as data
+and ids only — the grant snapshot, the prepared commit and the file backend stay on the serving
+side, and a prepared id is spent on first use, so a consumer cannot replay a write or forge one it
+was not granted. A host that cannot write a subject refuses the arm outright, which is what lets a
+shell hide a save button rather than offer one that fails at the end.
+`createFileEditingBackend({ roots })` now accepts a provider function, because Electron grants roots
+as the user picks folders and a static list would be either empty or stale. Two ui hex-editor bugs
+came out while wiring it: `prepare` was checked for a state of `prepared`, which no coordinator
+produces (`ready` is the state), so every save reported failure after the plan was made; and
+`propose`'s result was read as `{ state: 'invalid' }` instead of `{ valid, diagnostics }`, so a
+refused change went on to be planned and prepared as if accepted.
+
+**A1 — Electron viewing completeness** (`970b30f`, merged `2b3ac11`; report in
+`REPORT_A1_ELECTRON_VIEWERS_2026-08-19.md`). Every first-party `stage` contribution is now
+catalogued (video, audio, model, vector, streaming text added), and the view picker offers every
+_applicable_ stage rather than the one the presentation plan chose — the plan decides the default,
+not the menu. The image editor is deliberately not `editable`: this host cannot re-encode pixels, so
+it is read-only with a disabled Save and says why.
+
+**A2 — PWA workbench parity** (`edfdb85`, merged `12c2b93`; report in
+`REPORT_A2_PWA_PARITY_2026-08-19.md`). The browser now runs the workbench Electron runs. It also
+surfaced a product bug alive since S6: `createWebSubjectServices` registered no service-contract
+definitions, so every codec resolving a nested provider while opening — CSV, TSV, INI and their
+syntax providers — failed with `x3.host/rpc-bad-argument` and came back `unresolved`. **The PWA
+silently had no structured text at all.** It now takes `serviceDefinitions` exactly as the Node twin
+does.
+
+### Three defects that hid well, and why
+
+All three shared a shape worth naming: **the product degraded honestly, and the honesty concealed
+the fault.** A viewer that mounts and then says "I cannot render this" looks like a limitation of
+the format, not a broken transport. Every one of them survived live runs for that reason, and each
+was found only when something _invoked_ rather than _displayed_.
+
+1. **No byte-carrying result could cross the Electron subject RPC** (fixed app-side by A1,
+   generalised in `d2ec87e`). The endpoint transfers result `ArrayBuffer`s; Electron's
+   `MessagePortMain.postMessage` accepts only `MessagePortMain` values in a transfer list and
+   rejects the rest. JSON operations worked, byte ones did not. The general fix belongs in
+   `framePortFromMessagePort`, the one place that knows which port shape it adapted: it now takes
+   `transfer: 'move' | 'copy'`, defaulting to `copy` for `emitter-event` ports. Both modes are
+   conformant — the kit records `transfer: detached` / `copied` as an observation, because the
+   protocol promises the receiver sees the bytes, not that the sender's buffer is detached.
+
+2. **Typed arrays other than `Uint8Array` could never cross any RPC boundary** (`1214d90`).
+   `validateWireValue` refused every other view with `only Uint8Array binary payloads are allowed`.
+   `ModelPrimitive.positions` is a `Float32Array` and its `indices` a `Uint32Array`;
+   `AudioSamples.channels` is `Float32Array[]`. So no mesh and no decoded audio had ever reached the
+   Electron renderer or a browser worker. A1 reported it as "unreliable"; it was impossible. The
+   wire value set now admits every typed array that owns its whole buffer. Still refused, and now
+   for a stated reason: a `DataView` or bare `ArrayBuffer` (no element type — they would cross as
+   bytes whose reading is a matter of convention), a partial view, and a _subclass_ (the far side
+   would rebuild it as its base kind while the sender believed otherwise). The JSON codec needed the
+   element kind as the tag itself, and multi-byte elements normalised to little-endian so a text
+   channel between two machines means one thing. `rt-typed-arrays` joins the conformance kit
+   (26 cases) — and the kit's own `deepEqual` had to be fixed first, because it compared typed
+   arrays by index keys, under which a `Float32Array` and an `Int32Array` holding the same numbers
+   are equal.
+
+3. **`SubjectPreviewSession` omitted `operations()`** (`d2ec87e`) although the ABI surface declared
+   it and the wire carried it, so the Electron app forked the whole connect function to add one
+   line. It is on the shared session now and the fork is an alias.
+
+### `packages/ui` — the documented composition now actually works
+
+Five requests from A1 and A2, all of the form "the seam exists and does not hold":
+
+- `PreviewStage.module` was typed `ViewerModule` although the field's own documentation said an
+  editable stage carries an `EditorModule`, so no host could name an editor stage in TypeScript
+  without a cast, and an untyped generated catalog was the only honest way to declare one.
+- Viewers were mounted with no operations at all, so an operation toolbar, a transport bar or a
+  container stage reading an entry could not be a stage; the session now lends its operation session
+  once per opened subject.
+- The explorer tree dropped `size` when rebuilding an entry from a node, which moved "is this file
+  too large to read?" from before the read to after it.
+- `createExplorer`'s file picker and drop called `explorer.open`, which previews into
+  `explorer.preview` — the exact element a host with its own editor area replaces. Both paths
+  therefore mounted into a detached node, and the drop listener sat on an element no longer in the
+  document. Both now route through `onOpen`, and the drop target can be nominated.
+- The settings extensions group was unconditionally editable, so a host that serves only what its
+  build attested had to refuse the write and explain afterwards. `extensionsReadOnly` states the
+  reason once and draws no control that would fail.
+
+Also: fallback stages carry ids, so a file no codec claimed no longer offers a view named
+`common.view/text-data-source`.
+
+### Owner decision recorded — the trust model for browser-side user extensions
+
+No signature is required; there is no publisher PKI in this lab and pretending otherwise would be
+theatre. The page computes digests itself with WebCrypto from the bytes it just read, and the code
+must say plainly what that buys: it does **not** attest provenance, it pins the bytes between the
+moment they were read and the moment they are evaluated. A bundled catalog digest is a build-time
+claim by a third party; a user-folder digest is not a claim about origin at all. User extensions are
+worker-only, always — `allowTrustedInProcess` is unreachable from the UI and refused at the loader.
+
+---
+
 ## A4 / A5 / A6 — editing the formats: archives, image and audio metadata, a PNG encoder, text writers (Opus agents, merged by Root 2026-08-19)
 
 Three bounded agent slices on the S8 seam, merged after review; each carries its own proof and its

@@ -21,6 +21,12 @@ export interface FileTreeNode {
   readonly icon?: string
   /** Right-aligned annotation: entry count, size, compression, anything short. */
   readonly badge?: string
+  /**
+   * Size in bytes, carried so a caller that rebuilds an entry from a node does not lose it. The
+   * badge is a formatted string for the eye; a host deciding whether a file is too large to read
+   * needs the number, and without it that decision moves from "before the read" to "after".
+   */
+  readonly size?: number
   readonly kind?: string
 }
 

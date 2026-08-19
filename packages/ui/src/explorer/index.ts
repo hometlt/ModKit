@@ -87,6 +87,11 @@ export interface ExplorerOptions {
    * entry to its own editor area, which is what lets tabs and split groups exist above the tree.
    */
   onOpen?(entry: ExplorerEntry): void
+  /**
+   * Element that accepts drops. Defaults to the preview pane, or to the explorer root when this
+   * host took over opening — because such a host has replaced the pane and drops on it never fire.
+   */
+  readonly dropTarget?: unknown
 }
 
 export interface Explorer {
@@ -183,7 +188,7 @@ export function createExplorer(document: Document, options: ExplorerOptions): Ex
           const picked = await options.openFile?.()
           if (picked === undefined) return
           await explorer.setAccess(picked.access)
-          await explorer.open(picked.entry)
+          await activate(picked.entry)
         } catch (error) {
           say(`Could not open the file: ${describe(error)}`, 'error')
         }
@@ -321,15 +326,13 @@ export function createExplorer(document: Document, options: ExplorerOptions): Ex
             icon: entry.directory ? '🗀' : supported.has(extensionOf(entry.name)) ? '◆' : '·',
             ...(entry.size === undefined || entry.directory
               ? {}
-              : { badge: formatBytes(entry.size) }),
+              : { badge: formatBytes(entry.size), size: entry.size }),
             kind: entry.directory ? 'directory' : extensionOf(entry.name),
           }))
       },
       onActivate(node) {
         if (node.kind === 'directory') return
-        const entry = nodeToEntry(node)
-        if (options.onOpen !== undefined) options.onOpen(entry)
-        else void preview(entry)
+        void activate(nodeToEntry(node))
       },
       matches(node) {
         return query === undefined ? true : matches(node.label, query)
@@ -343,27 +346,49 @@ export function createExplorer(document: Document, options: ExplorerOptions): Ex
     id: node.id,
     name: node.label,
     directory: node.kind === 'directory',
+    ...(node.size === undefined ? {} : { size: node.size }),
   })
+
+  /**
+   * Open an entry the way this host asked for.
+   *
+   * Every path that opens a file goes through here — the tree, the file picker, a drop. It used to
+   * be only the tree: the picker and the drop called `explorer.open`, which previews into
+   * `explorer.preview`, the one element a host with its own editor area replaces. Those two paths
+   * therefore mounted into a detached node and appeared to do nothing.
+   */
+  const activate = async (entry: ExplorerEntry): Promise<void> => {
+    if (options.onOpen !== undefined) options.onOpen(entry)
+    else await preview(entry)
+  }
 
   // ------------------------------------------------------------------ drop
   if (options.acceptDrop !== undefined) {
+    /*
+     * The preview pane is the natural target for a host that uses the built-in preview. A host that
+     * replaced it (an editor area of its own) has removed this element from the document, so drops
+     * on it never fire — hence `dropTarget`, and the root as the default in that case.
+     */
+    const dropZone =
+      (options.dropTarget as HTMLElement | undefined) ??
+      (options.onOpen === undefined ? previewPane : root)
     setPart(previewPane, 'explorer.preview')
     const stop = (event: DragEvent): void => {
       event.preventDefault()
       event.stopPropagation()
     }
-    previewPane.addEventListener('dragover', event => {
+    dropZone.addEventListener('dragover', event => {
       stop(event)
       if (event.dataTransfer !== null) event.dataTransfer.dropEffect = 'copy'
-      setState(previewPane, ['drop-target'])
+      setState(dropZone, ['drop-target'])
     })
-    previewPane.addEventListener('dragleave', event => {
+    dropZone.addEventListener('dragleave', event => {
       stop(event)
-      setState(previewPane, [])
+      setState(dropZone, [])
     })
-    previewPane.addEventListener('drop', event => {
+    dropZone.addEventListener('drop', event => {
       stop(event)
-      setState(previewPane, [])
+      setState(dropZone, [])
       const transfer = event.dataTransfer
       if (transfer === null) return
       void (async () => {
@@ -375,7 +400,7 @@ export function createExplorer(document: Document, options: ExplorerOptions): Ex
             return
           }
           if (result.access !== undefined) await explorer.setAccess(result.access)
-          if (result.entry !== undefined) await explorer.open(result.entry)
+          if (result.entry !== undefined) await activate(result.entry)
           else say('Folder opened. Pick a file in the tree.')
         } catch (error) {
           say(`Drop failed: ${describe(error)}`, 'error')

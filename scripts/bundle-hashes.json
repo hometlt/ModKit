@@ -16,7 +16,7 @@
   "packages/host/dist/execution/index.js": "1be049f77f2126edfa8ee92c3baa37d6ceeb117f080e34181dcce79b83097a9a",
   "packages/host/dist/node/worker-bootstrap.js": "7b6550823c8d45b5781ed01b51b5447bca5a461eeedb5be70c3550466b5c8d1b",
   "packages/host/dist/browser/worker-entry.js": "e30fdc6f79b18d6b334c581eb15ee9c222f9c0ae619942c45d6f45b5b7a4b5bc",
-  "packages/ui/dist/index.js": "1c0a3269388f3fc474131e8b0855e7506763f8c9655c9a57745eb7247944eeb1",
+  "packages/ui/dist/index.js": "558995f485a8161f37d42dd5f95213e8b94d0dcf9e5ff7a5ac62e0d9771aeac1",
   "packages/ui/dist/viewer/index.js": "ac05c08fbb92973328063067a60c49a8707922e9e772523e612b96bb7914c348",
   "packages/ui/dist/code/index.js": "bb0f876b0f39a4b58cd7180e5aa9f336f2d31e5bbff6d78b5ca0029452760b9d",
   "packages/ui/dist/text-virtual/index.js": "d0a9ad28fafb86370e2bef665b49d0bd4c697c121567546c27dc2cf77707b33d",
@@ -40,6 +40,6 @@
   "packages/ui/dist/card/index.js": "e7f9f0a3b6b030dbb5184291197855d2e11103ec45b962e086e05a36312b53d0",
   "packages/ui/dist/graph/index.js": "31e6ded0ec3969c6d5153500a11d5d90f58079a3527d139f6a72f6d5127943f3",
   "packages/ui/dist/workbench/index.js": "1cabfad8cd32eb000c13ee489a6c60b8c5d7c1561f03d1c68710443675ce4974",
-  "packages/ui/dist/settings/index.js": "56ce5e80564551f5d4f1bbdd4c522ddbb64540966ca8ca5063305e06c8bed0d3",
+  "packages/ui/dist/settings/index.js": "196d5e283f5a3e1d0e381fdbc42f584fe5f407046012b0d5f84138a4ee444ea7",
   "apps/modkit-cli/dist/main.js": "d97c54e7a4716be186b8a96018bcad984d2d6f37d641d92a4494777f9b0337fa"
 }

@@ -1624,6 +1624,73 @@ describe('13C real-browser viewer host', () => {
     expect(result.afterUnmount).toMatchObject({ opens: 1, unmounts: 2, disposes: 1 })
   })
 
+  it('routes the picker and a drop through the host, not into a replaced preview pane', async () => {
+    await reset()
+    const result = await page.evaluate(async () => {
+      const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
+      const typed = ui as unknown as typeof import('@modkitx-x3/ui')
+      const root = document.querySelector('#app') as HTMLElement
+      const opened: { id: string; size?: number }[] = []
+      const bytes = new TextEncoder().encode('hello')
+      const access = {
+        label: 'memory',
+        async list(parent?: string) {
+          return parent === undefined
+            ? [{ id: 'a.txt', name: 'a.txt', directory: false, size: 5 }]
+            : []
+        },
+        async read() {
+          return bytes
+        },
+      }
+      const explorer = typed.createExplorer(document, {
+        preview: typed.createCodecPreview({ stages: [] }),
+        // a host with its own editor area: it takes over opening and replaces the preview pane
+        onOpen: entry =>
+          opened.push({ id: entry.id, ...(entry.size === undefined ? {} : { size: entry.size }) }),
+        async openFile() {
+          return {
+            access,
+            entry: { id: 'picked.txt', name: 'picked.txt', directory: false, size: 5 },
+          }
+        },
+        async acceptDrop() {
+          return {
+            access,
+            entry: { id: 'dropped.txt', name: 'dropped.txt', directory: false, size: 5 },
+          }
+        },
+      })
+      root.replaceChildren(explorer.root)
+      const previewPane = explorer.root.querySelector('[data-mk-part="explorer.preview"]')
+      previewPane?.remove()
+      await explorer.setAccess(access)
+
+      // the tree's own activation already routed through `onOpen`; these two did not
+
+      // 1. the file picker action
+      const actions = [...explorer.root.querySelectorAll('button')] as HTMLButtonElement[]
+      actions.find(button => button.textContent?.startsWith('Open file'))?.click()
+
+      // 2. a drop, on whatever element the explorer chose as its target
+      const transfer = new DataTransfer()
+      explorer.root.dispatchEvent(new DragEvent('drop', { bubbles: true, dataTransfer: transfer }))
+
+      await new Promise(resolve => setTimeout(resolve, 150))
+      return { opened, paneRemoved: previewPane !== null }
+    })
+
+    expect(result.paneRemoved).toBe(true)
+    // both reached the host, carrying the size the listing reported. Before this they called
+    // `explorer.open`, which previews into `explorer.preview` — the element this host removed — so
+    // the picker mounted into a detached node and the drop listener sat on an element not in the
+    // document
+    expect(result.opened).toEqual([
+      { id: 'picked.txt', size: 5 },
+      { id: 'dropped.txt', size: 5 },
+    ])
+  })
+
   it('falls back to bounded Text/Hex views and lets the explorer switch views', async () => {
     await reset()
     await page.evaluate(async () => {
@@ -1652,16 +1719,18 @@ describe('13C real-browser viewer host', () => {
 
     const picker = page.getByRole('combobox', { name: 'Preview view' })
     await expect(picker.locator('option').allTextContents()).resolves.toEqual(['Text', 'Hex'])
-    expect(await picker.inputValue()).toBe('common.view/text-data-source')
+    // the fallback stages carry ids of their own; before that the picker's *value* for a file no
+    // codec claimed was the contract id, which is what a host reads back and shows in a status line
+    expect(await picker.inputValue()).toBe('text')
     expect(await page.getByText('fallback text', { exact: true }).count()).toBe(1)
 
-    await picker.selectOption('common.view/byte-range-source')
+    await picker.selectOption('hex')
     await page.waitForFunction(
       () =>
         document.querySelector('[data-mk-part="explorer.viewpicker"]')?.getAttribute('value') ===
-          'common.view/byte-range-source' ||
+          'hex' ||
         (document.querySelector('[data-mk-part="explorer.viewpicker"]') as HTMLSelectElement | null)
-          ?.value === 'common.view/byte-range-source',
+          ?.value === 'hex',
     )
     expect(await page.locator('[data-mk-part="hex.content"]').count()).toBe(1)
 
