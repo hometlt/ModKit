@@ -1,4 +1,14 @@
-/* Shell chrome only — the workbench brings its own styling from the shipped stylesheet. */
+/*
+ * Shell chrome only.
+ *
+ * Every viewer, the explorer, the editor area and the settings surface bring their own styling from
+ * the shipped stylesheet. What is left for the application is the workbench frame — the shipped
+ * `workbench` parts are structure without layout on purpose, so a host places them itself — plus
+ * the few app-owned elements this shell adds (the host rail, the panel, the composite stages).
+ *
+ * Values are static rules here; nothing sets a `style` attribute, and dynamic values go through the
+ * token runtime inside the components (ADR-UI-001 C1/C3, VIEWER_CSP `style-src-attr 'none'`).
+ */
 
 html,
 body {
@@ -25,21 +35,130 @@ body {
   color: var(--mk-color-fg-muted);
 }
 
-.boot-panel {
+/* ------------------------------------------------------------------ workbench frame */
+
+[data-mk-part='workbench'] {
+  display: grid;
+  grid-template:
+    'title title title' auto
+    'activity sidebar main' minmax(0, 1fr)
+    'activity sidebar panel' auto
+    'status status status' auto
+    / auto auto minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  background: var(--mk-color-bg);
+}
+
+[data-mk-part='workbench.titlebar'] {
   display: flex;
+  grid-area: title;
+  gap: var(--mk-space-3);
+  align-items: center;
+  padding: var(--mk-space-2) var(--mk-space-3);
+  border-bottom: 1px solid var(--mk-color-border);
+  background: var(--mk-color-raised);
+  font-weight: 600;
+}
+
+[data-mk-part='workbench.activitybar'] {
+  display: flex;
+  grid-area: activity;
   flex-direction: column;
-  gap: 8px;
-  padding: 8px;
+  gap: var(--mk-space-1);
+  padding: var(--mk-space-2);
+  border-right: 1px solid var(--mk-color-border);
+  background: var(--mk-color-raised);
+}
+
+[data-mk-part='workbench.activitybar'] button {
+  padding: var(--mk-space-2) var(--mk-space-2);
+  border: 1px solid transparent;
+  border-radius: var(--mk-radius-md);
+  color: var(--mk-color-fg-muted);
+  background: none;
+  font-size: var(--mk-font-size-xs);
+  cursor: pointer;
+}
+
+[data-mk-part='workbench.activitybar'] button:hover {
+  background: var(--mk-color-hover);
+}
+
+[data-mk-part='workbench.activitybar'] button[aria-pressed='true'] {
+  color: var(--mk-color-fg);
+  border-color: var(--mk-color-accent);
+  background: var(--mk-color-selection);
+}
+
+/*
+ * The host rail is visible on first run because the capability notice belongs where it is read,
+ * not behind a button; it is narrow, and the activity bar's "Host" toggle takes it away.
+ */
+[data-mk-part='workbench.sidebar']:not([hidden]) {
+  display: block;
+  grid-area: sidebar;
+  width: min(17rem, 30vw);
+  min-height: 0;
+  border-right: 1px solid var(--mk-color-border);
+  background: var(--mk-color-surface);
   overflow: auto;
 }
 
-.boot-summary {
-  color: var(--mk-color-fg-muted);
-  font-size: var(--mk-font-size-xs);
-  line-height: var(--mk-line-loose);
+[data-mk-part='workbench.main'] {
+  grid-area: main;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.facility-list {
+[data-mk-part='workbench.panel']:not([hidden]) {
+  display: block;
+  grid-area: panel;
+  max-height: 40vh;
+  border-top: 1px solid var(--mk-color-border);
+  background: var(--mk-color-surface);
+  overflow: auto;
+}
+
+[data-mk-part='workbench.statusbar'] {
+  display: flex;
+  grid-area: status;
+  gap: var(--mk-space-4);
+  align-items: center;
+  padding: var(--mk-space-1) var(--mk-space-3);
+  border-top: 1px solid var(--mk-color-border);
+  background: var(--mk-color-raised);
+  color: var(--mk-color-fg-muted);
+  font-size: var(--mk-font-size-xs);
+}
+
+.web-status {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ host rail */
+
+.web-host-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mk-space-2);
+  padding: var(--mk-space-3);
+}
+
+.web-host-panel h2,
+.web-extensions h2 {
+  margin: var(--mk-space-2) 0 0;
+  color: var(--mk-color-fg);
+  font-size: var(--mk-font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.web-host-panel ul {
   margin: 0;
   padding: 0;
   list-style: none;
@@ -47,19 +166,104 @@ body {
   font-size: var(--mk-font-size-xs);
 }
 
-.facility-list li {
+.web-host-panel li {
   padding: 2px 4px;
   border-radius: var(--mk-radius-sm);
 }
 
-.facility-list li:nth-child(odd) {
+.web-host-panel li:nth-child(odd) {
   background: var(--mk-color-raised);
 }
 
-.placeholder {
-  max-width: 60ch;
-  margin: auto;
-  padding: 24px;
-  color: var(--mk-color-fg-subtle);
-  text-align: center;
+.web-host-panel [data-mk-part='explorer.action'] {
+  width: 100%;
+  height: auto;
+  padding: var(--mk-space-2);
+  text-align: start;
+}
+
+/* ------------------------------------------------------------------ settings view */
+
+.web-settings-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+}
+
+.web-settings-view > [data-mk-part='settings'] {
+  flex: 0 0 auto;
+  min-height: 24rem;
+}
+
+.web-extensions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mk-space-2);
+  padding: var(--mk-space-4);
+  border-top: 1px solid var(--mk-color-border);
+}
+
+/* ------------------------------------------------------------------ panel + stages */
+
+.web-inspector {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mk-space-2);
+  padding: var(--mk-space-3);
+}
+
+.web-inspector-diagnostics {
+  min-height: 0;
+  overflow: auto;
+}
+
+/* A composite stage stacks its parts; each shipped module owns one of them. */
+.web-stage-part {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+[data-mk-part='explorer.tabcontent'] > .web-stage-part:first-child {
+  flex: 1 1 auto;
+}
+
+.web-archive-entry {
+  flex: 0 0 auto;
+  max-height: 18rem;
+  border-top: 1px solid var(--mk-color-border);
+  padding: var(--mk-space-2);
+  font-family: var(--mk-font-mono);
+  font-size: var(--mk-font-size-xs);
+}
+
+/* The drop target is the editor area, because the explorer's own preview pane was replaced. */
+[data-mk-part='explorer.editors'][data-mk-state~='drop-target'] {
+  outline: 2px dashed var(--mk-color-drop-target);
+  outline-offset: -6px;
+}
+
+/* ------------------------------------------------------------------ self test */
+
+.web-selftest {
+  position: fixed;
+  right: 8px;
+  bottom: 28px;
+  z-index: 40;
+  max-width: min(48rem, 60vw);
+  max-height: 60vh;
+  margin: 0;
+  padding: var(--mk-space-3);
+  border: 1px solid var(--mk-color-border);
+  border-radius: var(--mk-radius-md);
+  background: var(--mk-color-surface);
+  color: var(--mk-color-fg);
+  font-family: var(--mk-font-mono);
+  font-size: var(--mk-font-size-xs);
+  white-space: pre-wrap;
+  overflow: auto;
 }

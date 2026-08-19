@@ -1,8 +1,9 @@
 /**
  * Build the PWA into `dist-app/`, then optionally serve it.
  *
- *   node scripts/build.mjs           build
- *   node scripts/build.mjs --serve   build and serve on 8732
+ *   node scripts/build.mjs                     build
+ *   node scripts/build.mjs --serve             build and serve on 8732
+ *   node scripts/build.mjs --serve --port 8744 build and serve on another port
  *
  * Output goes to `dist-app/`, not `dist/`: `dist/` is the package's compiled library surface that
  * other roots import, and overwriting it with a bundle would break them.
@@ -174,8 +175,23 @@ if (process.argv.includes('--serve')) {
     '.json': 'application/json',
     '.md': 'text/markdown',
     '.mjs': 'text/javascript',
+    '.svg': 'image/svg+xml',
+    '.csv': 'text/csv',
+    '.ini': 'text/plain',
+    '.txt': 'text/plain',
+    '.woff2': 'font/woff2',
   }
-  const port = 8732
+  // `--port <n>`: two checkouts of this lab can be served side by side without fighting over 8732.
+  const portIndex = process.argv.indexOf('--port')
+  const requested = portIndex === -1 ? undefined : Number(process.argv[portIndex + 1])
+  if (
+    requested !== undefined &&
+    (!Number.isSafeInteger(requested) || requested < 1 || requested > 65_535)
+  ) {
+    console.error(`invalid --port ${process.argv[portIndex + 1]}`)
+    process.exit(1)
+  }
+  const port = requested ?? 8732
   createServer((request, response) => {
     const url = new URL(request.url ?? '/', `http://localhost:${port}`)
     const name = url.pathname === '/' ? '/index.html' : url.pathname
