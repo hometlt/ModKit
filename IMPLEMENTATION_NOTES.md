@@ -6,6 +6,66 @@ overrides a canonical or detailed owner.
 
 ---
 
+## A4 / A5 / A6 — editing the formats: archives, image and audio metadata, a PNG encoder, text writers (Opus agents, merged by Root 2026-08-19)
+
+Three bounded agent slices on the S8 seam, merged after review; each carries its own proof and its
+own refusals. Full `pnpm check` on the merged tree: 95 files / 744 tests, every gate.
+
+**A6 — text writers** (`dea2bf5`). Eight `common.edit/writer@1` offers across the six text
+extensions (json, jsonc, ini, csv, tsv, toml, xml, yaml), one writer module per extension, portable
+variants only, no permission classes requested — the host commits. `validate` accepts replacement
+edits on the change set's own target with a UTF-16/byte range or a whole-source text payload and
+refuses everything else with a named diagnostic; `plan` re-validates and throws, so a caller that
+skips `propose` still cannot commit a refused change. `yml` is deliberately not an offer: it is a
+match alias, not a format any codec owns. Proof: `packages/host/test/text-writers.test.ts` (4) —
+resolved by facet, committed through the file backend, the file changed exactly in the range and
+reopened; `export-only` requests match a `mutate` offer, a foreign format does not.
+
+**A5 — image and audio metadata, and the first first-party writer** (`f9ebdf5`). Path A: JPEG
+`edit.field` (set/replace the COM segment) and `edit.structure` (remove COM/APPn — SOS, DQT, SOF
+and friends refused by name), MP3 `edit.field` (ID3v2.3/2.4 text frames; the tag is rebuilt with
+every other frame copied verbatim and the audio untouched; unsynchronised tags, extended headers,
+footers and duplicate frames refused rather than guessed). Path B: the PNG encoder writer
+(RGBA8 → PNG via `CompressionStream`), claiming `semantic` with `preservesUnknownData: false`
+because ancillary chunks do not survive — and refusing outright when `CompressionStream` is absent.
+Proof: `packages/host/test/media-edits.test.ts` (5), each asserting that every byte outside the
+edit is identical. Not done, with reasons recorded: MP4/MOV (an `ilst` resize invalidates
+`stco`/`co64` chunk offsets), WebM (`SeekHead`/`Cues` absolute positions), Ogg (page CRCs and
+segment tables), WAV (no bundled codec yet — a promotion decision, not a safety one). The MP3
+proof runs on a synthetic file: the repository contains no `.mp3`.
+
+**A4 — zip editing** (`c1f2af2`). `edit.structure` (add/remove/rename) and `edit.content` as
+whole-source replace plans: untouched entries' local header and compressed data are copied
+verbatim — no recompression, method/CRC/sizes/timestamps/extra fields preserved — and only the
+local-header offset in each central record is rewritten. Fidelity is `semantic`, never
+byte-identical (the file is rebuilt), and `preservesUnknownData` is computed per archive from the
+layout actually walked: `true` only for a canonical archive, `false` with a note otherwise.
+Refused before any bytes exist: ZIP64, encrypted entries, self-extracting stubs, duplicate paths,
+descriptor/central disagreements, and results that would need ZIP64. Proof:
+`packages/host/test/archive-edits.test.ts` (6) with an independent ZIP reader and `node:zlib`.
+
+**What their reports changed in Root's code.** The three hard-coded contribution censuses
+(`text-data.test.ts`, `app-extension-sets.mjs`, `check-apps.mjs`) now count the new
+contributions — agents cannot fix those from inside their scope, and A6 correctly refused to.
+Two product bugs their reports surfaced are fixed: audio codecs declared `openIntents` without
+`full`, so **every MP3 and Ogg failed to open in Electron and the PWA** (both open with `full`),
+and a codec's refusal lost its reason crossing the worker boundary, so a deliberate "this archive
+carries a ZIP64 locator" was indistinguishable from a crash. The product inline-payload ceiling
+moved from the coordinator's 1 MiB primitive default to 16 MiB in `createSubjectEditing`, because
+a whole-source rewrite (archive repack, image encode) exceeds 1 MiB with the first real file;
+anything larger is still refused, and staged payloads — which no codec can produce yet — remain
+the honest fix.
+
+**Open requests from the agents, not yet done.** `NamespaceEntry` carries no compression/CRC/
+timestamp and `openEntry` returns a `zip-entry:` ref nothing resolves, so an archive viewer's only
+byte path is the `extract-entry` operation (sdk decision); `defineWriter` takes one offer, so
+multi-format extensions hand-roll the module envelope, and the text change-set validator is
+duplicated six times (codec-kit); a codec cannot declare an operation `disabled` with a reason
+(codec-kit); `vitest.config.ts` does not include `extensions/**`; `apps/web/dist-app/extensions/**`
+holds a stale committed copy of the archives extension.
+
+---
+
 ## F1 / F3 / S12 — the pieces the applications need: a JSON transport, an evidence policy with a raw writer, and connectable extensions (Root/Fable, 2026-08-19)
 
 Three small slices, each closing something a product could not do honestly.
