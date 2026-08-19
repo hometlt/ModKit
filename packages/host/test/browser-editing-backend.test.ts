@@ -21,7 +21,8 @@ const payloads: PayloadStore = {
 
 /** A file that behaves like the API: writes are staged and replace the file only on `close()`. */
 function fakeFile(initial: string, name = 'doc.txt') {
-  let bytes = new TextEncoder().encode(initial)
+  // the wire type is the general one: what the backend hands us may view any buffer
+  let bytes: Uint8Array<ArrayBufferLike> = new TextEncoder().encode(initial)
   let lastModified = 1_000
   let aborted = 0
   const handle: BrowserWritableFileHandle = {
