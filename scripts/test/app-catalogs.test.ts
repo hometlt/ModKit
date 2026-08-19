@@ -131,6 +131,14 @@ describe('deterministic Electron app catalog emission', () => {
       'utf8',
     )
     expect(presentation).toContain('priority: 361')
-    expect(presentation).not.toContain('priority: 360')
+    /*
+     * Scoped to the image slot: "no 360 anywhere" was only ever a proxy for "the priority came
+     * from the manifest", and it stopped being one when the policy grew a second stage that
+     * declares 360 (the audio stage). What must hold is that *this* slot moved.
+     */
+    const slot = presentation.slice(presentation.indexOf("slotId: 'image'"))
+    const block = slot.slice(0, slot.indexOf('}),'))
+    expect(block).toContain('priority: 361')
+    expect(block).not.toContain('priority: 360')
   })
 })
