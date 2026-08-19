@@ -6,6 +6,26 @@ overrides a canonical or detailed owner.
 
 ---
 
+## OPUS-MK2-02 accepted; Root decisions on its owner list (Root/Fable, 2026-08-19)
+
+**Accepted.** `042dc55` — debt as data (`MK2-CONVERSION.json` ×35), rework as the committed tree
+(123 codecs / 35 extensions / 351 files, byte-stable), byte signatures for eight containers instead
+of the everything-glob, a synthetic corpus (13 fixtures, real checksums, independent zlib/PNG
+checks), 15 ports (DoD ≥ 12). The one red line it flagged in my scope (`!` in
+`subject-services.test.ts`) is fixed in `f6c01fa`; full `pnpm check` on HEAD is green.
+
+**Decisions (§12 of `REPORT_MK2_CONVERSION_2026-08-19.md`).** No per-codec viewer contribution
+(viewers are universal; a port is done when a standard viewer mounts on its data sources);
+binary `write`/`edit` is Root's next slice **S8** — an ADR'd contract family over the pieces that
+already exist (`write-source`, `filesystem.atomic-replace`, `mutatesSource`, 13D text editing,
+the S7 revision-guarded file adapter), not a port; format-definition deferred; the MK2 tree is an
+import inventory, never product inventory (promotion is an explicit per-codec step, so
+`org.modkitx/jpg` beside bundled `image-jpeg` is not a conflict); `casc` waits for VFS namespace
+routing; real corpus samples are the owner's to supply. Next Opus requests are written:
+`REQUEST_OPUS_UI_01` (first), `REQUEST_OPUS_MK2_03` (wave 2, parallel with S8).
+
+---
+
 ## R-1 — Nexus UI adaptation, Root part: `color.accent-muted-fg`, `themes:check`, vendored fonts, hosts ship themes + fonts (Root/Fable, 2026-08-19)
 
 **Context.** `REPORT_NEXUS_UI_ADAPTATION_2026-08-19.md` (accepted): the NexusForgeUI design
