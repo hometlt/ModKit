@@ -35,19 +35,18 @@ import {
 import { tmpdir } from 'node:os'
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { canonicalJsonStringify, ModkitError, throwIfAborted } from '@modkitx-x3/core'
+import { canonicalJsonStringify, throwIfAborted } from '@modkitx-x3/core'
 import {
   revisionId,
   type AssetRevision,
   type AssetSourceRef,
   type BackendCapability,
-  type EditPayload,
-  type PayloadStore,
   type RevisionId,
   type SourceEdit,
   type SubjectEditTarget,
 } from '@modkitx-x3/sdk'
 import type { EditingBackend, EditingBackendApplyResult } from '../editing.js'
+import { editingError, payloadBytes, replacedBytes, type ReplaceEdit } from '../editing-splice.js'
 
 export interface FileEditingBackendOptions {
   /** Identifies this backend in write sets and receipts. */
@@ -77,21 +76,16 @@ export const FILE_EDITING_BACKEND_CAPABILITY: BackendCapability = Object.freeze(
 })
 
 const DEFAULT_MAX_PAYLOAD_BYTES = 256 * 1024 * 1024
-const STAGED_CHUNK = 1024 * 1024
-
-function fail(code: string, message: string, context?: Record<string, unknown>): ModkitError {
-  return new ModkitError({ code, message, ...(context === undefined ? {} : { context }) })
-}
 
 function filePathOf(source: AssetSourceRef): string {
   let url: URL
   try {
     url = new URL(source.uri)
   } catch {
-    throw fail('x3.host/edit-source-not-file', `source «${source.uri}» is not a file: URL`)
+    throw editingError('x3.host/edit-source-not-file', `source «${source.uri}» is not a file: URL`)
   }
   if (url.protocol !== 'file:') {
-    throw fail('x3.host/edit-source-not-file', `source «${source.uri}» is not a file: URL`)
+    throw editingError('x3.host/edit-source-not-file', `source «${source.uri}» is not a file: URL`)
   }
   return fileURLToPath(url)
 }
@@ -139,7 +133,7 @@ function revisionFor(
 function bindingIdOf(expected: AssetRevision): string {
   const ids = Object.keys(expected.bindings)
   if (ids.length !== 1 || ids[0] === undefined) {
-    throw fail(
+    throw editingError(
       'x3.host/edit-topology-unsupported',
       `the file backend edits single-binding subjects; expected revision names ${ids.length} bindings`,
     )
@@ -149,87 +143,6 @@ function bindingIdOf(expected: AssetRevision): string {
 
 function sameRevision(left: AssetRevision, right: AssetRevision): boolean {
   return canonicalJsonStringify(left) === canonicalJsonStringify(right)
-}
-
-async function payloadBytes(
-  payload: EditPayload,
-  payloads: PayloadStore,
-  maxBytes: number,
-  signal?: AbortSignal,
-): Promise<Uint8Array> {
-  if (payload.kind === 'text') return new TextEncoder().encode(payload.text)
-  if (payload.kind === 'inline') return payload.bytes
-  if (payload.ref.bytes > BigInt(maxBytes)) {
-    throw fail('x3.host/edit-payload-too-large', `staged payload exceeds ${maxBytes} bytes`)
-  }
-  const lease = await payloads.open(payload.ref, signal)
-  try {
-    const chunks: Uint8Array[] = []
-    let total = 0
-    let cursor: string | undefined
-    for (;;) {
-      throwIfAborted(signal)
-      const chunk = await lease.value.read(
-        { ...(cursor === undefined ? {} : { cursor }), maxBytes: STAGED_CHUNK },
-        signal,
-      )
-      chunks.push(chunk.bytes)
-      total += chunk.bytes.byteLength
-      if (total > maxBytes) {
-        throw fail('x3.host/edit-payload-too-large', `staged payload exceeds ${maxBytes} bytes`)
-      }
-      if (chunk.complete) break
-      cursor = chunk.nextCursor
-    }
-    const out = new Uint8Array(total)
-    let offset = 0
-    for (const chunk of chunks) {
-      out.set(chunk, offset)
-      offset += chunk.byteLength
-    }
-    return out
-  } finally {
-    await lease.release()
-  }
-}
-
-function spliceBytes(
-  original: Uint8Array,
-  range: Extract<
-    NonNullable<Extract<SourceEdit, { operation: 'replace' }>['range']>,
-    { kind: 'bytes' }
-  >,
-  replacement: Uint8Array,
-): Uint8Array {
-  const start = Number(range.offset)
-  const length = Number(range.length)
-  if (
-    range.offset < 0n ||
-    range.length < 0n ||
-    !Number.isSafeInteger(start) ||
-    !Number.isSafeInteger(length) ||
-    start + length > original.byteLength
-  ) {
-    throw fail('x3.host/edit-range-invalid', 'byte range lies outside the source')
-  }
-  const out = new Uint8Array(original.byteLength - length + replacement.byteLength)
-  out.set(original.subarray(0, start), 0)
-  out.set(replacement, start)
-  out.set(original.subarray(start + length), start + replacement.byteLength)
-  return out
-}
-
-function spliceUtf16(
-  original: Uint8Array,
-  offset: number,
-  length: number,
-  text: string,
-): Uint8Array {
-  const decoded = new TextDecoder('utf-8', { fatal: true }).decode(original)
-  if (offset < 0 || length < 0 || offset + length > decoded.length) {
-    throw fail('x3.host/edit-range-invalid', 'UTF-16 range lies outside the source')
-  }
-  return new TextEncoder().encode(decoded.slice(0, offset) + text + decoded.slice(offset + length))
 }
 
 interface PreImage {
@@ -257,7 +170,10 @@ export function createFileEditingBackend(
       return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
     })
     if (!inside) {
-      throw fail('x3.host/edit-path-outside-roots', `«${absolute}» is outside the backend roots`)
+      throw editingError(
+        'x3.host/edit-path-outside-roots',
+        `«${absolute}» is outside the backend roots`,
+      )
     }
     return absolute
   }
@@ -267,7 +183,8 @@ export function createFileEditingBackend(
     preImages.set(transactionId, list)
     try {
       const stats = await stat(path)
-      if (!stats.isFile()) throw fail('x3.host/edit-source-not-file', `«${path}» is not a file`)
+      if (!stats.isFile())
+        throw editingError('x3.host/edit-source-not-file', `«${path}» is not a file`)
       await mkdir(join(staging, transactionId), { recursive: true })
       const staged = join(staging, transactionId, `${list.length}-${basename(path)}`)
       await copyFile(path, staged)
@@ -325,7 +242,7 @@ export function createFileEditingBackend(
         applyOptions.expectedRevision.namespaceRevision,
       )
       if (!sameRevision(live, applyOptions.expectedRevision)) {
-        throw fail(
+        throw editingError(
           'x3.host/edit-conditional-write-lost',
           `«${edit.source.uri}» is not at the revision the plan expects`,
           { expected: applyOptions.expectedRevision, actual: live },
@@ -333,27 +250,16 @@ export function createFileEditingBackend(
       }
       switch (edit.operation) {
         case 'replace': {
-          const replacement = await payloadBytes(
-            edit.payload,
+          // a whole-source replace does not need the current bytes; a range edit does
+          const original =
+            edit.range === undefined ? new Uint8Array() : new Uint8Array(await readFile(path))
+          const next = await replacedBytes(
+            edit as ReplaceEdit,
+            original,
             applyOptions.payloads,
             maxPayloadBytes,
             signal,
           )
-          let next: Uint8Array
-          if (edit.range === undefined) {
-            next = replacement
-          } else {
-            const original = new Uint8Array(await readFile(path))
-            next =
-              edit.range.kind === 'bytes'
-                ? spliceBytes(original, edit.range, replacement)
-                : spliceUtf16(
-                    original,
-                    edit.range.offset,
-                    edit.range.length,
-                    new TextDecoder('utf-8', { fatal: true }).decode(replacement),
-                  )
-          }
           await stagePreImage(applyOptions.transactionId, path)
           await writeAtomically(path, next)
           break

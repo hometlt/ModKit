@@ -48,3 +48,11 @@ export {
   type DomWorkerRealmOptions,
 } from './worker-realm.js'
 export { installBrowserWorkerEntry } from './worker-entry.js'
+export {
+  createBrowserEditingBackend,
+  BROWSER_EDITING_BACKEND_CAPABILITY,
+  type BrowserEditingBackend,
+  type BrowserEditingBackendOptions,
+  type BrowserWritableFile,
+  type BrowserWritableFileHandle,
+} from './editing-backend.js'
