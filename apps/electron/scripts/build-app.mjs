@@ -8,7 +8,7 @@
  * decides what the renderer is allowed to do.
  */
 import { build } from 'esbuild'
-import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, writeFileSync, readdirSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -83,8 +83,18 @@ if (!existsSync(stylesheet)) {
 }
 cpSync(stylesheet, join(dist, 'modkit-ui.css'))
 // Installable themes ship as plain stylesheets: token overrides under their own
-// `[data-mk-theme]` selector, no component code. Copied beside the app so the page can link them.
-cpSync(join(repoRoot, 'assets', 'themes', 'sc2', 'theme.css'), join(dist, 'theme-sc2.css'))
+// `[data-mk-theme]` selector, no component code. Every theme under assets/themes is copied beside
+// the app as theme-<id>.css and linked; a theme only applies once its id is stamped on <html>.
+// Self-hosted fonts (assets/fonts, OFL) travel with them: theme @font-face rules point at ./fonts/.
+const themesRoot = join(repoRoot, 'assets', 'themes')
+const themeIds = readdirSync(themesRoot)
+  .filter(id => existsSync(join(themesRoot, id, 'theme.css')))
+  .sort()
+for (const id of themeIds) cpSync(join(themesRoot, id, 'theme.css'), join(dist, `theme-${id}.css`))
+cpSync(join(repoRoot, 'assets', 'fonts'), join(dist, 'fonts'), { recursive: true })
+const themeLinks = themeIds
+  .map(id => `    <link rel="stylesheet" href="./theme-${id}.css" />`)
+  .join('\n')
 
 // The renderer runs from file://, so its CSP is declared in the document itself.
 writeFileSync(
@@ -101,7 +111,7 @@ writeFileSync(
     <link rel="stylesheet" href="./modkit-ui.css" />
     <!-- Monaco CSS, extracted by esbuild so it loads from self rather than being injected. -->
     <link rel="stylesheet" href="./renderer.css" />
-    <link rel="stylesheet" href="./theme-sc2.css" />
+${themeLinks}
     <style>
       html,
       body {

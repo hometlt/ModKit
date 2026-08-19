@@ -88,6 +88,7 @@
     --mk-color-accent: #005fb8;
     --mk-color-accent-fg: #ffffff;
     --mk-color-accent-muted: #cfe4fa;
+    --mk-color-accent-muted-fg: #0a3d63;
     --mk-color-focus: #005fb8;
     --mk-color-hover: #e8e8e8;
     --mk-color-active: #dcdcdc;
@@ -295,6 +296,7 @@
       --mk-color-accent: #0078d4;
       --mk-color-accent-fg: #ffffff;
       --mk-color-accent-muted: #04395e;
+      --mk-color-accent-muted-fg: #ffffff;
       --mk-color-focus: #0078d4;
       --mk-color-hover: #2a2d2e;
       --mk-color-active: #37373d;
@@ -479,6 +481,7 @@
     --mk-color-accent: #0078d4;
     --mk-color-accent-fg: #ffffff;
     --mk-color-accent-muted: #04395e;
+    --mk-color-accent-muted-fg: #ffffff;
     --mk-color-focus: #0078d4;
     --mk-color-hover: #2a2d2e;
     --mk-color-active: #37373d;
@@ -660,6 +663,7 @@
     --mk-color-accent: #005fb8;
     --mk-color-accent-fg: #ffffff;
     --mk-color-accent-muted: #cfe4fa;
+    --mk-color-accent-muted-fg: #0a3d63;
     --mk-color-focus: #005fb8;
     --mk-color-hover: #e8e8e8;
     --mk-color-active: #dcdcdc;
@@ -841,6 +845,7 @@
     --mk-color-accent: #0078d4;
     --mk-color-accent-fg: #ffffff;
     --mk-color-accent-muted: #000000;
+    --mk-color-accent-muted-fg: #ffffff;
     --mk-color-focus: #f38518;
     --mk-color-hover: #0d0d0d;
     --mk-color-active: #1a1a1a;
@@ -1022,6 +1027,7 @@
     --mk-color-accent: var(--vscode-button-background, #0078d4);
     --mk-color-accent-fg: var(--vscode-button-foreground, #ffffff);
     --mk-color-accent-muted: #04395e;
+    --mk-color-accent-muted-fg: var(--vscode-list-activeSelectionForeground, #ffffff);
     --mk-color-focus: var(--vscode-focusBorder, #0078d4);
     --mk-color-hover: var(--vscode-list-hoverBackground, #2a2d2e);
     --mk-color-active: var(--vscode-list-activeSelectionBackground, #37373d);

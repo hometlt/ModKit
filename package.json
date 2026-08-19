@@ -20,7 +20,7 @@
     "check:mk2": "node scripts/convert-mk2.mjs --check",
     "catalogs:emit": "node scripts/emit-app-catalogs.mjs && node scripts/emit-web-catalog.mjs",
     "catalogs:check": "node scripts/emit-app-catalogs.mjs --check",
-    "check": "pnpm build && pnpm bench:universal:gate && pnpm lint && pnpm format:check && pnpm test && pnpm schemas:check && pnpm manifests:check && pnpm tokens:check && pnpm icons:check && pnpm facilities:check && pnpm apps:check && pnpm check:legacy && pnpm check:imports && pnpm check:extensions && pnpm check:mk2",
+    "check": "pnpm build && pnpm bench:universal:gate && pnpm lint && pnpm format:check && pnpm test && pnpm schemas:check && pnpm manifests:check && pnpm tokens:check && pnpm themes:check && pnpm icons:check && pnpm facilities:check && pnpm apps:check && pnpm check:legacy && pnpm check:imports && pnpm check:extensions && pnpm check:mk2",
     "schemas:emit": "node scripts/emit-schemas.mjs",
     "schemas:check": "node scripts/emit-schemas.mjs --check",
     "facilities:emit": "node scripts/emit-host-facilities.mjs",
@@ -37,6 +37,7 @@
     "bundle:check": "node scripts/bundle.mjs --check",
     "build": "pnpm catalogs:check && pnpm typecheck && pnpm catalogs:check:web && pnpm bundle",
     "tokens:check": "pnpm --filter @modkitx-x3/ui tokens:check",
+    "themes:check": "node scripts/check-themes.mjs",
     "icons:emit": "node scripts/generate-icons.mjs",
     "icons:check": "node scripts/generate-icons.mjs --check",
     "catalogs:check:web": "node scripts/emit-web-catalog.mjs --check"

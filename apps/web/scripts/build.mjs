@@ -9,7 +9,15 @@
  */
 import { build } from 'esbuild'
 import { createServer } from 'node:http'
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { dirname, extname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -104,7 +112,20 @@ if (!existsSync(stylesheet)) {
   process.exit(1)
 }
 cpSync(stylesheet, join(dist, 'modkit-ui.css'))
-cpSync(join(appRoot, 'index.html'), join(dist, 'index.html'))
+// Installable themes (assets/themes/<id>/theme.css) and the self-hosted fonts they reference ship
+// beside the app; the page links every theme and applies one by stamping data-mk-theme.
+const themesRoot = join(repoRoot, 'assets', 'themes')
+const themeIds = readdirSync(themesRoot)
+  .filter(id => existsSync(join(themesRoot, id, 'theme.css')))
+  .sort()
+for (const id of themeIds) cpSync(join(themesRoot, id, 'theme.css'), join(dist, `theme-${id}.css`))
+cpSync(join(repoRoot, 'assets', 'fonts'), join(dist, 'fonts'), { recursive: true })
+const indexHtml = readFileSync(join(appRoot, 'index.html'), 'utf8').replace(
+  '<link rel="stylesheet" href="./app.css" />',
+  `<link rel="stylesheet" href="./app.css" />
+${themeIds.map(id => `    <link rel="stylesheet" href="./theme-${id}.css" />`).join('\n')}`,
+)
+writeFileSync(join(dist, 'index.html'), indexHtml)
 cpSync(join(appRoot, 'app.css'), join(dist, 'app.css'))
 cpSync(join(appRoot, 'public'), dist, { recursive: true })
 

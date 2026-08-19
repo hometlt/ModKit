@@ -111,6 +111,9 @@ const VSCODE_MAP = {
   'color.separator': 'panel-border',
   'color.accent': 'button-background',
   'color.accent-fg': 'button-foreground',
+  // the wash itself stays the dark fallback (unmapped, as before); its text follows the host's
+  // active-selection foreground, which is what Dark+ paints on that wash
+  'color.accent-muted-fg': 'list-activeSelectionForeground',
   'color.focus': 'focusBorder',
   'color.hover': 'list-hoverBackground',
   'color.active': 'list-activeSelectionBackground',

@@ -6,6 +6,43 @@ overrides a canonical or detailed owner.
 
 ---
 
+## R-1 — Nexus UI adaptation, Root part: `color.accent-muted-fg`, `themes:check`, vendored fonts, hosts ship themes + fonts (Root/Fable, 2026-08-19)
+
+**Context.** `REPORT_NEXUS_UI_ADAPTATION_2026-08-19.md` (accepted): the NexusForgeUI design
+lands as installable themes on the existing token/part channel; nothing of its markup or runtime
+is taken. This entry is the Root half; `REQUEST_OPUS_UI_01_2026-08-19.md` is the Opus half (the
+two theme stylesheets, picker entries, live proofs).
+
+**What exists.** (1) Registry tier-2 `color.accent-muted-fg` — text on the accent wash (the
+design's primary button is wash + light text, not fill + inverse text); values in the three shipped
+palettes, `sc2`, and the VS Code adapter (`list-activeSelectionForeground`); contract v1 is now
+193 tokens, additive. (2) `scripts/check-themes.mjs` + `pnpm themes:check` (in `pnpm check`,
+tests in `scripts/test/check-themes.test.ts`): every `assets/themes/<id>/theme.css` must declare
+all public tier-2 `color`/`shadow` roles (73), only its own `[data-mk-theme='<id>']`,
+`color-scheme`, `url(` only inside `@font-face` and pointing at an existing `assets/fonts` file,
+and its own `prefers-reduced-motion` block when it animates; structure tokens may be inherited on
+purpose. `sc2` is complete under it (it lacked only `color.axis-x/y/z` — my report's first reading
+"inherits light canvas/graph/diff/chart" was wrong and is corrected there — and now carries its own
+reduced-motion guard for the `body`-level decor `base.css` cannot reach). (3) `assets/fonts/`:
+Saira (latin, latin-ext) and JetBrains Mono (latin, latin-ext, cyrillic, cyrillic-ext), variable
+`wght` 400–700 woff2 subsets from Google Fonts (144 KB total, SHA-256 + source URLs + OFL texts in
+`assets/fonts/README.md`, with a ready `@font-face` snippet). Saira has **no Cyrillic** subset —
+Cyrillic UI text falls through to the system family behind it; recorded as an owner decision if a
+uniform look is wanted. (4) `apps/electron/scripts/build-app.mjs` and `apps/web/scripts/build.mjs`
+copy every `assets/themes/<id>/theme.css` as `theme-<id>.css`, copy `assets/fonts` → `fonts/`, and
+link every theme (scoped by `[data-mk-theme]`, applies only when stamped) — a new theme directory
+ships without touching the builds.
+
+**Proof.** `tokens:check` 193/3 palettes; `themes:check` 1/1; gate tests (5) — complete theme
+passes, missing role / foreign selector / no color-scheme, remote or stray `url(`, missing font
+file, animating without reduced-motion all fail, real repo green; ui/electron/web suites pass;
+both apps rebuilt with `fonts/` and `theme-sc2.css` shipped and linked.
+
+**Not done here.** The Nexus themes themselves (O-1); a Cyrillic companion for the sans stack; the
+PWA settings/theme picker; VS Code webview theme option.
+
+---
+
 ## S7 — the product open path of every Node host: one subject-services builder, `modkit open`, server/automation `subjects` (Root/Fable, 2026-08-19)
 
 **What exists.** `packages/host/src/subject-services.ts` (root entry): `SubjectOpenRequest`

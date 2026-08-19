@@ -638,6 +638,14 @@
       "description": "low-emphasis accent wash"
     },
     {
+      "name": "color.accent-muted-fg",
+      "tier": 2,
+      "type": "color",
+      "public": true,
+      "cssVariable": "--mk-color-accent-muted-fg",
+      "description": "text on the accent wash"
+    },
+    {
       "name": "color.focus",
       "tier": 2,
       "type": "color",

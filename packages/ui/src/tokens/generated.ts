@@ -81,6 +81,7 @@ export type TokenName =
   | 'color.accent'
   | 'color.accent-fg'
   | 'color.accent-muted'
+  | 'color.accent-muted-fg'
   | 'color.focus'
   | 'color.hover'
   | 'color.active'
@@ -275,6 +276,7 @@ export const TOKEN_NAMES: readonly TokenName[] = Object.freeze([
   'color.accent',
   'color.accent-fg',
   'color.accent-muted',
+  'color.accent-muted-fg',
   'color.focus',
   'color.hover',
   'color.active',

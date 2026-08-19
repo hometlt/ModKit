@@ -86,6 +86,7 @@ const tier2: TokenDefinition[] = [
   t('color.accent', 2, 'color', 'primary action fill'),
   t('color.accent-fg', 2, 'color', 'text on the accent fill'),
   t('color.accent-muted', 2, 'color', 'low-emphasis accent wash'),
+  t('color.accent-muted-fg', 2, 'color', 'text on the accent wash'),
   t('color.focus', 2, 'color', 'focus ring'),
   t('color.hover', 2, 'color', 'hover wash'),
   t('color.active', 2, 'color', 'pressed wash'),

@@ -45,6 +45,7 @@
     --mk-color-accent: #17b8e0;
     --mk-color-accent-fg: #03151d;
     --mk-color-accent-muted: #0b3e51;
+    --mk-color-accent-muted-fg: #bff0ff;
     --mk-color-focus: #4fd8ff;
     --mk-color-hover: #17406e;
     --mk-color-active: #1d5288;
@@ -84,6 +85,9 @@
     --mk-color-canvas-bg: #051222;
     --mk-color-canvas-grid: #12293c;
     --mk-color-canvas-gizmo: #7fa3bb;
+    --mk-color-axis-x: #ff5f5f;
+    --mk-color-axis-y: #46e08a;
+    --mk-color-axis-z: #4fd8ff;
     --mk-color-canvas-selection: #ffb738;
     --mk-color-graph-node: #17384f;
     --mk-color-graph-edge: #2f5a7d;
@@ -614,6 +618,23 @@
     box-shadow:
       inset 0 2px 6px rgba(0, 0, 0, 0.5),
       0 0 14px rgba(111, 211, 255, 0.45);
+  }
+
+  /*
+   * Reduced motion: base.css neutralises animation under `.modkit-viewer`, but the console decor
+   * above is painted on `body` — outside that scope — so the theme carries its own guard
+   * (themes:check requires one from every animating theme).
+   */
+  @media (prefers-reduced-motion: reduce) {
+    :root[data-mk-theme='sc2'] body::before,
+    :root[data-mk-theme='sc2'] body::after,
+    :root[data-mk-theme='sc2'] [data-mk-part]::before,
+    :root[data-mk-theme='sc2'] [data-mk-part]::after,
+    :root[data-mk-theme='sc2'] [data-mk-part] {
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 1ms !important;
+    }
   }
 
   /* The footer closes the console with the same charged rail the title bar opens it with. */
