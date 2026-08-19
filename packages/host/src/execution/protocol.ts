@@ -9,7 +9,7 @@
  * Design rules fixed here (review REVIEW_FABLE_NEXT_A2_A3 F-01/F-02/F-12):
  *  - every frame carries an exact-key envelope `{domain, version, session, generation, id}`;
  *    generation increments on worker restart so a stale reply can never satisfy a live call;
- *  - values crossing the boundary are JSON-safe data, `bigint`, whole `Uint8Array`s (transferred,
+ *  - values crossing the boundary are JSON-safe data, `bigint`, whole typed arrays (transferred,
  *    never a view over a larger/shared buffer) and opaque handle refs — nothing else; functions,
  *    class instances, prototypes, paths, credentials and `AbortSignal` never cross;
  *  - validators are exact-key and prototype-safe (`__proto__`, `constructor`, `prototype` are
@@ -91,7 +91,58 @@ export function isMethodName(value: string): boolean {
 export type WireScalar = null | boolean | number | string | bigint
 /** Inside objects/arrays `undefined` is tolerated as "absent" (structured-clone preserves it). */
 export type WireValue =
-  WireScalar | Uint8Array | readonly WireValue[] | { readonly [key: string]: WireValue }
+  WireScalar | WireTypedArray | readonly WireValue[] | { readonly [key: string]: WireValue }
+
+/**
+ * The typed arrays a wire value may carry, and the short code each travels under on a transport
+ * that cannot carry them natively (the JSON codec tags with these; structured clone needs no help).
+ *
+ * The set is closed on purpose. A structured-clone transport would happily carry a `DataView`, but
+ * a view that names no element type crosses as bytes whose reading is a matter of convention
+ * between the two ends — exactly the kind of implicit agreement this protocol exists to remove.
+ * Everything here names its element type and its length in elements.
+ *
+ * `Uint8Array` keeps the code `bytes` it has always had on the JSON wire; nothing that already
+ * crossed changes shape.
+ */
+export const WIRE_TYPED_ARRAYS = Object.freeze({
+  bytes: Uint8Array,
+  i8: Int8Array,
+  u8c: Uint8ClampedArray,
+  i16: Int16Array,
+  u16: Uint16Array,
+  i32: Int32Array,
+  u32: Uint32Array,
+  f32: Float32Array,
+  f64: Float64Array,
+  i64: BigInt64Array,
+  u64: BigUint64Array,
+} as const)
+
+export type WireTypedArrayCode = keyof typeof WIRE_TYPED_ARRAYS
+
+export type WireTypedArray =
+  | Uint8Array
+  | Int8Array
+  | Uint8ClampedArray
+  | Int16Array
+  | Uint16Array
+  | Int32Array
+  | Uint32Array
+  | Float32Array
+  | Float64Array
+  | BigInt64Array
+  | BigUint64Array
+
+/** The code for a view's exact kind, or `undefined` when this is not a wire typed array. */
+export function wireTypedArrayCode(view: ArrayBufferView): WireTypedArrayCode | undefined {
+  for (const [code, constructor] of Object.entries(WIRE_TYPED_ARRAYS)) {
+    // exact constructor, not `instanceof`: a subclass carries behaviour the far side would not
+    // reconstruct, so it must not silently become its base kind
+    if (view.constructor === constructor) return code as WireTypedArrayCode
+  }
+  return undefined
+}
 
 /** Opaque reference to a capability living on the other side of the boundary. */
 export interface HandleRef {
@@ -193,7 +244,7 @@ export interface ProtocolLimits {
   readonly maxStringLength: number
   readonly maxArrayLength: number
   readonly maxObjectKeys: number
-  /** Maximum total `Uint8Array` bytes carried by one frame. */
+  /** Maximum total typed-array bytes carried by one frame. */
   readonly maxTransferBytes: number
   /** Maximum number of call arguments. */
   readonly maxArgs: number
@@ -337,7 +388,7 @@ export function protocolViolationError(item: ProtocolViolation): ModkitError {
 export interface WireValueMeasure {
   readonly nodes: number
   readonly transferBytes: number
-  /** Whole `Uint8Array` buffers found; a transport moves them instead of copying. */
+  /** Whole typed-array buffers found; a transport moves them instead of copying. */
   readonly transferables: readonly ArrayBuffer[]
 }
 
@@ -388,7 +439,11 @@ function validateInner(
       return { code: 'bad-value', message: `${typeof value} is not a wire value`, path }
   }
   if (value === null) return undefined
-  if (value instanceof Uint8Array) {
+  if (ArrayBuffer.isView(value) && !(value instanceof DataView)) {
+    const kind = value.constructor.name
+    if (wireTypedArrayCode(value) === undefined) {
+      return { code: 'bad-value', message: `${kind} is not a wire value`, path }
+    }
     if (SHARED !== undefined && value.buffer instanceof SHARED) {
       return {
         code: 'shared-buffer',
@@ -399,14 +454,14 @@ function validateInner(
     if ((value.buffer as { detached?: boolean }).detached === true) {
       return {
         code: 'bad-value',
-        message: 'a Uint8Array over a detached buffer cannot cross (it was transferred already)',
+        message: `a ${kind} over a detached buffer cannot cross (it was transferred already)`,
         path,
       }
     }
     if (value.byteOffset !== 0 || value.byteLength !== value.buffer.byteLength) {
       return {
         code: 'partial-typed-array',
-        message: 'a Uint8Array must own its whole buffer (slice() before sending)',
+        message: `a ${kind} must own its whole buffer (slice() before sending)`,
         path,
       }
     }
@@ -421,8 +476,14 @@ function validateInner(
     measure.buffers.push(value.buffer as ArrayBuffer)
     return undefined
   }
-  if (ArrayBuffer.isView(value) || value instanceof ArrayBuffer) {
-    return { code: 'bad-value', message: 'only Uint8Array binary payloads are allowed', path }
+  if (value instanceof DataView || value instanceof ArrayBuffer) {
+    // a DataView declares no element type and a bare ArrayBuffer no element type *and* no length
+    // in elements; both would cross as bytes whose reading is a matter of convention
+    return {
+      code: 'bad-value',
+      message: 'binary payloads must be a typed array that names its element type',
+      path,
+    }
   }
   if (Array.isArray(value)) {
     if (value.length > limits.maxArrayLength) {

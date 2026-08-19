@@ -1,8 +1,10 @@
 /**
  * JSON encoding of capability-RPC frames (F1) — for transports that carry text or JSON, not
  * structured clone: a VS Code webview channel, a WebSocket, a pipe. Wire values are JSON plus
- * what JSON lacks: `bigint` and `Uint8Array` travel as tagged objects
- * (`{"$x3":"bigint","value":"123"}`, `{"$x3":"bytes","base64":"…"}`), the numbers JSON cannot
+ * what JSON lacks: `bigint` and typed arrays travel as tagged objects
+ * (`{"$x3":"bigint","value":"123"}`, `{"$x3":"bytes","base64":"…"}`, `{"$x3":"f32","base64":"…"}`
+ * — the tag *is* the element kind, so a `Float32Array` does not come back a `Uint8Array`), the
+ * numbers JSON cannot
  * spell (`-0`, `NaN`, `±Infinity`) as `{"$x3":"number","value":"-0"}` so the receiving endpoint
  * applies its own rules to them (negative zero survives, NaN is still refused there), and a plain
  * object that itself owns a `$x3` key is wrapped (`{"$x3":"object","value":{…}}`) so nothing
@@ -22,7 +24,12 @@
  */
 
 import type { FramePort } from './endpoint.js'
-import type { Frame } from './protocol.js'
+import {
+  WIRE_TYPED_ARRAYS,
+  wireTypedArrayCode,
+  type Frame,
+  type WireTypedArrayCode,
+} from './protocol.js'
 
 const TAG = '$x3'
 
@@ -54,6 +61,27 @@ function own(target: Record<string, unknown>, key: string, value: unknown): void
   })
 }
 
+/**
+ * Multi-byte elements travel little-endian, whatever the host is.
+ *
+ * A structured-clone port hands the far side the same machine's memory and endianness never comes
+ * up. JSON is text: the two ends may be different processes on different machines, and base64 of
+ * host-order bytes would silently transpose every value on a big-endian reader. The swap below is
+ * a no-op on every mainstream platform and the reason this codec can be believed on the rest.
+ */
+const LITTLE_ENDIAN = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1
+
+function toLittleEndian(bytes: Uint8Array, elementSize: number): Uint8Array {
+  if (LITTLE_ENDIAN || elementSize < 2) return bytes
+  const out = new Uint8Array(bytes.byteLength)
+  for (let start = 0; start < bytes.byteLength; start += elementSize) {
+    for (let index = 0; index < elementSize; index += 1) {
+      out[start + index] = bytes[start + elementSize - 1 - index] ?? 0
+    }
+  }
+  return out
+}
+
 function bytesView(view: ArrayBufferView): Uint8Array {
   if (SHARED !== undefined && view.buffer instanceof SHARED) {
     throw new TypeError('json transport: cannot carry a typed array over a shared buffer')
@@ -74,7 +102,14 @@ export function encodeJsonValue(value: unknown): unknown {
     if (value === Number.NEGATIVE_INFINITY) return { [TAG]: 'number', value: '-Infinity' }
     return value
   }
-  if (ArrayBuffer.isView(value)) return { [TAG]: 'bytes', base64: base64Of(bytesView(value)) }
+  if (ArrayBuffer.isView(value)) {
+    const code = wireTypedArrayCode(value)
+    if (code === undefined) {
+      throw new TypeError(`json transport: ${value.constructor.name} is not a wire value`)
+    }
+    const bytes = toLittleEndian(bytesView(value), WIRE_TYPED_ARRAYS[code].BYTES_PER_ELEMENT)
+    return { [TAG]: code, base64: base64Of(bytes) }
+  }
   if (value instanceof ArrayBuffer) {
     return { [TAG]: 'bytes', base64: base64Of(new Uint8Array(value)) }
   }
@@ -92,6 +127,19 @@ export function encodeJsonValue(value: unknown): unknown {
   return value
 }
 
+const isWireTypedArrayCode = (tag: string): tag is WireTypedArrayCode =>
+  Object.prototype.hasOwnProperty.call(WIRE_TYPED_ARRAYS, tag)
+
+function decodeTypedArray(code: WireTypedArrayCode, base64: string): ArrayBufferView | undefined {
+  const constructor = WIRE_TYPED_ARRAYS[code]
+  const bytes = bytesOf(base64)
+  const elementSize = constructor.BYTES_PER_ELEMENT
+  if (bytes.byteLength % elementSize !== 0) return undefined
+  const ordered = toLittleEndian(bytes, elementSize)
+  // `bytesOf` minted this buffer, so the view owns it whole — which is what the protocol requires
+  return new constructor(ordered.buffer as ArrayBuffer)
+}
+
 /** JSON-safe value → structured value (the inverse of `encodeJsonValue`). */
 export function decodeJsonValue(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(decodeJsonValue)
@@ -106,7 +154,12 @@ export function decodeJsonValue(value: unknown): unknown {
       ) {
         return BigInt(record['value'])
       }
-      if (tag === 'bytes' && typeof record['base64'] === 'string') return bytesOf(record['base64'])
+      if (isWireTypedArrayCode(tag) && typeof record['base64'] === 'string') {
+        const decoded = decodeTypedArray(tag, record['base64'])
+        // a length that does not divide into whole elements is a malformed frame: fall through to
+        // the plain-object path so the endpoint refuses it, rather than inventing a shorter array
+        if (decoded !== undefined) return decoded
+      }
       if (tag === 'number' && typeof record['value'] === 'string') {
         switch (record['value']) {
           case '-0':

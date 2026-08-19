@@ -10,7 +10,7 @@
  * returns a report; a test asserts on it. Cases are the loopback hostile suite of
  * `packages/host/test/execution-endpoint.test.ts`, re-expressed against an abstract pair.
  *
- * Scope: `CASES` holds 25 cases — round trip (`rt-*`), lifecycle (`lc-*`) and hostile (`hs-*`).
+ * Scope: `CASES` holds 26 cases — round trip (`rt-*`), lifecycle (`lc-*`) and hostile (`hs-*`).
  * In-process pairs (a `MessageChannel`, an in-memory loopback, an Electron
  * `MessageChannelMain`) run every case; host-only pairs (`farSide: 'demo-world'` — the far end is
  * a real thread/process already running a worker endpoint over the demo world, e.g. the testkit
@@ -133,14 +133,16 @@ function assert(condition: unknown, message: string): asserts condition {
   if (!condition) fail(message)
 }
 
+function showView(view: ArrayBufferView): string {
+  const items = Array.from(view as unknown as ArrayLike<unknown>)
+  const head = items.slice(0, 8).map(item => (typeof item === 'bigint' ? `${item}n` : String(item)))
+  return `${view.constructor.name}(${items.length})[${head.join(',')}${items.length > 8 ? ',…' : ''}]`
+}
+
 function show(value: unknown): string {
   try {
     return JSON.stringify(value, (_key, item: unknown) =>
-      typeof item === 'bigint'
-        ? `${item}n`
-        : item instanceof Uint8Array
-          ? `Uint8Array(${item.byteLength})[${[...item.slice(0, 8)].join(',')}${item.byteLength > 8 ? ',…' : ''}]`
-          : item,
+      typeof item === 'bigint' ? `${item}n` : ArrayBuffer.isView(item) ? showView(item) : item,
     )
   } catch {
     return String(value)
@@ -156,10 +158,19 @@ function deepEqual(a: unknown, b: unknown): boolean {
   if (Object.is(a, b)) return true
   if (typeof a !== typeof b) return false
   if (typeof a !== 'object' || a === null || b === null) return false
-  if (a instanceof Uint8Array || b instanceof Uint8Array) {
-    if (!(a instanceof Uint8Array && b instanceof Uint8Array) || a.byteLength !== b.byteLength)
-      return false
-    for (let i = 0; i < a.byteLength; i += 1) if (a[i] !== b[i]) return false
+  if (ArrayBuffer.isView(a) || ArrayBuffer.isView(b)) {
+    /*
+     * Kind first, then elements. Falling through to the object path would compare a typed array by
+     * its index keys, under which a Float32Array and an Int32Array holding the same numbers are
+     * "equal" — and a case whose whole point is that the element type survived would pass without
+     * it having survived.
+     */
+    if (!ArrayBuffer.isView(a) || !ArrayBuffer.isView(b)) return false
+    if (a.constructor !== b.constructor) return false
+    const left = a as unknown as ArrayLike<unknown>
+    const right = b as unknown as ArrayLike<unknown>
+    if (left.length !== right.length) return false
+    for (let i = 0; i < left.length; i += 1) if (!Object.is(left[i], right[i])) return false
     return true
   }
   if (Array.isArray(a) || Array.isArray(b)) {
@@ -564,6 +575,49 @@ const CASES: readonly ConformanceCase[] = [
       // a value method may complete with nothing (dispose-style); the transport must carry that too
       const { session: other } = await ctx.fresh().then(c => c.openSession())
       assert((await asFn<() => Promise<unknown>>(other, 'dispose')()) === undefined, 'void result')
+    },
+  },
+  {
+    id: 'rt-typed-arrays',
+    title: 'typed arrays survive with their element type (model geometry, decoded audio)',
+    async run(ctx) {
+      /*
+       * Not a hypothetical. `ModelPrimitive.positions` is a `Float32Array` and its `indices` a
+       * `Uint32Array`; `AudioSamples.channels` is `Float32Array[]`. A transport that carries only
+       * `Uint8Array` cannot carry a mesh or decoded audio at all, and the failure looks like a
+       * viewer that mounts and then quietly says it cannot render.
+       */
+      const { session } = await ctx.openSession()
+      const echo = asFn<(v: unknown) => Promise<unknown>>(session, 'echo')
+      const primitive = {
+        id: 'mesh-0',
+        topology: 'triangles',
+        positions: new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+        indices: new Uint32Array([0, 1, 2]),
+        normals: new Float32Array([0, 0, 1, 0, 0, 1, 0, 0, 1]),
+      }
+      const expected = structuredClone(primitive)
+      assertEqual(await echo(primitive), expected, 'model primitive')
+
+      // every kind the protocol admits, including the extremes each one can represent
+      const kinds = {
+        i8: new Int8Array([-128, 0, 127]),
+        u8c: new Uint8ClampedArray([0, 128, 255]),
+        i16: new Int16Array([-32768, 0, 32767]),
+        u16: new Uint16Array([0, 1, 65535]),
+        i32: new Int32Array([-2147483648, 0, 2147483647]),
+        u32: new Uint32Array([0, 1, 4294967295]),
+        f32: new Float32Array([-0, 1.5, 3.4028234663852886e38]),
+        f64: new Float64Array([-0, Number.MIN_VALUE, Number.MAX_VALUE]),
+        i64: new BigInt64Array([-9223372036854775808n, 0n, 9223372036854775807n]),
+        u64: new BigUint64Array([0n, 18446744073709551615n]),
+        bytes: new Uint8Array([0, 255]),
+      }
+      const back = (await echo(kinds)) as Record<string, ArrayBufferView>
+      assertEqual(back, structuredClone(kinds), 'every wire typed-array kind')
+      // -0 in a float array is not the same value as 0, and a codec that normalises would lose it
+      assert(Object.is((back['f32'] as unknown as number[])[0], -0), 'f32 keeps negative zero')
+      assert(Object.is((back['f64'] as unknown as number[])[0], -0), 'f64 keeps negative zero')
     },
   },
   {

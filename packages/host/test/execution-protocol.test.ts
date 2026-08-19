@@ -81,14 +81,44 @@ describe('capability-rpc protocol v1 — wire values', () => {
     ['too many keys', { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6 }, 'too-many-keys'],
     ['too deep', [[[[[1]]]]], 'depth-exceeded'],
     ['ArrayBuffer', new ArrayBuffer(4), 'bad-value'],
-    ['Int32Array', new Int32Array(2), 'bad-value'],
+    ['DataView', new DataView(new ArrayBuffer(4)), 'bad-value'],
     ['partial view', new Uint8Array(new ArrayBuffer(16), 4, 4), 'partial-typed-array'],
+    ['partial f32 view', new Float32Array(new ArrayBuffer(32), 8, 2), 'partial-typed-array'],
     ['transfer too large', new Uint8Array(33), 'transfer-too-large'],
+    ['transfer too large in elements', new Float32Array(9), 'transfer-too-large'],
   ] as const)('rejects %s', (_label, value, code) => {
     const checked = validateWireValue(value, limits)
     expect(checked.ok).toBe(false)
     if (checked.ok) throw new Error('unexpected')
     expect(checked.violation.code).toBe(code)
+  })
+
+  it.each([
+    ['Int32Array', new Int32Array([-1, 2])],
+    ['Float32Array', new Float32Array([1.5, -0])],
+    ['Float64Array', new Float64Array([Number.MAX_VALUE])],
+    ['Uint32Array', new Uint32Array([4294967295])],
+    ['Uint8ClampedArray', new Uint8ClampedArray([0, 255])],
+    ['BigInt64Array', new BigInt64Array([-9223372036854775808n])],
+  ] as const)(
+    'accepts a whole %s, because a mesh and decoded audio are made of them',
+    (_l, value) => {
+      const checked = validateWireValue(value, limits)
+      expect(checked.ok).toBe(true)
+      if (!checked.ok) throw new Error(checked.violation.message)
+      // it is transferable like any other whole buffer: the transport moves it instead of copying
+      expect(checked.value.transferables).toEqual([value.buffer])
+      expect(checked.value.transferBytes).toBe(value.byteLength)
+    },
+  )
+
+  it('refuses a typed-array subclass, which the far side would rebuild as its base kind', () => {
+    class Positions extends Float32Array {}
+    const checked = validateWireValue(new Positions([1, 2, 3]), limits)
+    expect(checked.ok).toBe(false)
+    if (checked.ok) throw new Error('unexpected')
+    expect(checked.violation.code).toBe('bad-value')
+    expect(checked.violation.message).toContain('Positions')
   })
 
   it('rejects SharedArrayBuffer-backed bytes when the platform has SharedArrayBuffer', () => {
