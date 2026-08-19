@@ -259,9 +259,14 @@ export function createAssetSession(options: AssetSessionOptions): ManagedAssetSe
           return rejected('cancelled', 'the operation was cancelled')
         }
         if (error instanceof ModkitError) throw error
+        // the cause never crosses an execution boundary (the protocol carries no stacks and no
+        // causes), so the reason a codec refused has to travel in the message — otherwise a
+        // worker-brokered caller sees only "operation handler … failed" and cannot tell a
+        // deliberate refusal from a crash
+        const reason = error instanceof Error ? error.message : String(error)
         throw new ModkitError({
           code: 'x3.host/operation-handler-failed',
-          message: `operation handler ${handlerId} failed`,
+          message: `operation handler ${handlerId} failed: ${reason}`,
           context: { handlerId },
           cause: error,
         })

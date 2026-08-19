@@ -573,7 +573,7 @@ describe('A4 — ZIP editing on the 13D seam (ADR-HOST-002 Path A)', () => {
     expect(readFileSync(path).length).toBeLessThan(original.length)
   }, 60_000)
 
-  it('an assembled archive above the coordinator default inline-payload cap is payload-unavailable until the host raises it', async () => {
+  it('an assembled archive above the host inline-payload cap is payload-unavailable; under the cap it commits', async () => {
     // 1.5 MiB of incompressible bytes stored: the whole-source payload is ~1.5 MiB
     const bulk = Buffer.alloc(1_536_000)
     for (let index = 0; index < bulk.length; index += 1) bulk[index] = (index * 2654435761) & 0xff
@@ -600,13 +600,17 @@ describe('A4 — ZIP editing on the 13D seam (ADR-HOST-002 Path A)', () => {
     // deterministic assembly: the 1,536,038-byte bulk block, the new entry (40), two central
     // records (54 + 53) and the EOCD (22)
     expect(payload.payload.bytes.byteLength).toBe(1_536_207)
-    // the coordinator's default inline cap is 1 MiB: nothing is written
-    expect(await editing.coordinator.prepare(plan, { grant: editing.grantSnapshot })).toMatchObject(
-      { state: 'rejected', reason: 'payload-unavailable' },
-    )
+    // a host that caps inline payloads below the assembled archive writes nothing
+    const capped = createSubjectEditing({ ...options, maxInlinePayloadBytes: 1024 * 1024 })
+    expect(
+      await capped.coordinator.prepare(capped.planFromOperation(invoked.output), {
+        grant: capped.grantSnapshot,
+      }),
+    ).toMatchObject({ state: 'rejected', reason: 'payload-unavailable' })
     expect(Buffer.compare(readFileSync(path), original)).toBe(0)
 
-    // the same plan commits once the host raises the cap for this subject
+    // and the same plan commits under the product default (16 MiB), which is what a real archive
+    // save runs into first — the explicit raise below is what a host does for anything larger
     const raised = createSubjectEditing({ ...options, maxInlinePayloadBytes: 8 * 1024 * 1024 })
     const prepared = await raised.coordinator.prepare(raised.planFromOperation(invoked.output), {
       grant: raised.grantSnapshot,

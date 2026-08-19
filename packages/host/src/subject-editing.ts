@@ -149,6 +149,16 @@ export interface SubjectEditing {
   planFromOperation(output: OperationOutput): AssetEditPlan
 }
 
+/**
+ * Inline-payload ceiling for a subject a product is editing. The coordinator's own default is
+ * 1 MiB — right for a primitive, unusable for a product: a format whose edit is a whole-source
+ * rewrite (an archive repack, an image encode) exceeds it with the first real file, and the user
+ * sees `payload-unavailable` for a save that is perfectly ordinary. 16 MiB covers those and stays
+ * far below the realms' transfer limits. Larger sources need staged payloads, which no codec can
+ * produce yet — a known limit, not a silent truncation: above this the commit is refused.
+ */
+const DEFAULT_INLINE_PAYLOAD_BYTES = 16 * 1024 * 1024
+
 const defaultDigest = (value: unknown): string =>
   canonicalJsonStringify(JSON.parse(JSON.stringify(value)) as never)
 
@@ -181,9 +191,7 @@ export function createSubjectEditing(options: SubjectEditingOptions): SubjectEdi
       : { confirmationMatches: options.confirmationMatches }),
     ...(options.now === undefined ? {} : { now: options.now }),
     ...(options.nextId === undefined ? {} : { nextId: options.nextId }),
-    ...(options.maxInlinePayloadBytes === undefined
-      ? {}
-      : { maxInlinePayloadBytes: options.maxInlinePayloadBytes }),
+    maxInlinePayloadBytes: options.maxInlinePayloadBytes ?? DEFAULT_INLINE_PAYLOAD_BYTES,
   })
   const session =
     options.writer === undefined
