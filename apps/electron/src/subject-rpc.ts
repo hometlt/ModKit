@@ -41,50 +41,26 @@ export type ElectronSubjectOpener = SubjectOpener
 type ElectronPort = MessagePortLike | MessagePort
 
 /**
- * Copy byte results across the main→renderer port instead of transferring them.
+ * Which listener style a bare Electron port has.
  *
- * The endpoint's transfer policy is "arguments are copied, results and events are transferred",
- * and it hands the frame's `ArrayBuffer`s to `postMessage` as the transfer list. A DOM
- * `MessagePort` accepts that; Electron's `MessagePortMain` accepts **only** `MessagePortMain`
- * values and rejects everything else with `Port at index 0 is not a valid port`. Measured: with the
- * transfer list intact, every byte-carrying result over this boundary fails — `export.raw`, an
- * archive entry's bytes, and the encoded representation behind the image, audio, video and model
- * stages — while json-only operations succeed. Dropping the list makes the structured clone copy
- * the buffers, which is what Electron supports; the cost is one copy per byte payload and nothing
- * else changes (the sender's buffer simply is not detached).
- *
- * The general fix belongs in `framePortFromMessagePort`, which is the one place that knows which
- * port shape it adapted; the report to Root carries that request.
+ * `MessagePortMain` is an emitter whose `'message'` events carry `.data`, which the adapter calls
+ * `'emitter-event'` — and that is also what tells the adapter to copy byte payloads rather than
+ * hand `postMessage` a transfer list, because `MessagePortMain` accepts only `MessagePortMain`
+ * values in one. Defaulting it here means a caller that forgets does not silently get the
+ * `'emitter-value'` fallback, under which every frame arrives as an event object and nothing works.
  */
-function copyingPort(port: ElectronPort): MessagePortLike {
-  const source = port as MessagePortLike
-  // Only the methods the real port has are forwarded: the frame adapter picks its listener style
-  // by probing for `addEventListener`, so inventing one here would change how frames are read.
-  const wrapper: MessagePortLike = {
-    postMessage: message => {
-      source.postMessage(message)
-    },
-  }
-  const forward: Partial<MessagePortLike> = wrapper
-  if (typeof source.addEventListener === 'function') {
-    forward.addEventListener = (type, listener) => source.addEventListener?.(type, listener)
-    forward.removeEventListener = (type, listener) => source.removeEventListener?.(type, listener)
-  }
-  if (typeof source.on === 'function') {
-    forward.on = (event, listener) => source.on?.(event, listener)
-    forward.off = (event, listener) => source.off?.(event, listener)
-  }
-  if (typeof source.start === 'function') forward.start = () => source.start?.()
-  if (typeof source.close === 'function') forward.close = () => source.close?.()
-  return wrapper
-}
+const listenerStyleFor = (port: ElectronPort): 'event-target' | 'emitter-event' =>
+  typeof (port as MessagePortLike).addEventListener === 'function'
+    ? 'event-target'
+    : 'emitter-event'
 
 export function exposeElectronSubjectRpc(
   options: Omit<ExposeSubjectRpcOptions, 'moduleUrl' | 'port'> & { readonly port: ElectronPort },
 ): SubjectRpcExposure {
   return exposeSubjectRpc({
+    listener: listenerStyleFor(options.port),
     ...options,
-    port: copyingPort(options.port),
+    port: options.port as MessagePortLike,
     moduleUrl: ELECTRON_SUBJECT_SERVICES_URL,
   })
 }

@@ -33,6 +33,23 @@ export interface MessagePortFrameOptions {
    * Default: `'event-target'` when `addEventListener` exists, otherwise `'emitter-value'`.
    */
   readonly listener?: 'event-target' | 'emitter-value' | 'emitter-event'
+  /**
+   * What to do with the endpoint's transfer list:
+   *  - `'move'` — hand it to `postMessage`, so the buffers are detached and not copied;
+   *  - `'copy'` — post without it, so structured clone copies the bytes instead.
+   *
+   * Default: `'copy'` for `'emitter-event'` ports, `'move'` for the rest. That default is not a
+   * preference, it is what Electron supports: `MessagePortMain.postMessage` accepts **only**
+   * `MessagePortMain` values in its transfer list and rejects an `ArrayBuffer` outright with
+   * `Port at index 0 is not a valid port`. Handing it the endpoint's list makes every
+   * byte-carrying frame fail while json-only frames succeed — a failure mode that hides well,
+   * because viewers that degrade honestly still mount. Copying costs one copy per byte payload.
+   *
+   * Both modes are conformant: the kit records `transfer: detached` or `transfer: copied` as an
+   * observation rather than a verdict, because the protocol never promises the sender's buffer is
+   * detached — only that the receiver sees the bytes.
+   */
+  readonly transfer?: 'move' | 'copy'
 }
 
 export function framePortFromMessagePort(
@@ -42,9 +59,11 @@ export function framePortFromMessagePort(
   const style =
     options.listener ??
     (typeof port.addEventListener === 'function' ? 'event-target' : 'emitter-value')
+  const moves = (options.transfer ?? (style === 'emitter-event' ? 'copy' : 'move')) === 'move'
   return {
     post(frame: Frame, transfer: readonly ArrayBuffer[]): void {
-      port.postMessage(frame, [...transfer])
+      if (moves) port.postMessage(frame, [...transfer])
+      else port.postMessage(frame)
     },
     onFrame(handler: (frame: unknown) => void): () => void {
       if (style === 'event-target') {

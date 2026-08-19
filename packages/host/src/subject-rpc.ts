@@ -21,6 +21,7 @@ import type {
   AssetSession,
   ChangeSet,
   CommitReceipt,
+  OperationSession,
   PresentationPlan,
   SourceConflict,
   SubjectEditTarget,
@@ -339,6 +340,17 @@ export interface SubjectPreviewSession {
   readonly presentation?: PresentationPlan
   descriptor(): Promise<Record<string, unknown>>
   dataSource(contract: string, major: number): Promise<{ value: unknown }>
+  /**
+   * The subject's operation session, leased across the wire like any other ABI lease.
+   *
+   * A consumer that can only read data sources can draw a viewer and nothing else: an operation
+   * toolbar, a transport bar and a container's entry extraction all need to *invoke*. The ABI
+   * surface has always declared this method and the wire has always carried it — only the client
+   * facade omitted it, which is why the Electron app had to fork this whole function to add one
+   * line. What crosses is still gated on the serving side: main opens with the classes it means to
+   * grant, so a mutating operation is refused there, not here.
+   */
+  operations(): Promise<OperationSession>
   dispose(): Promise<void>
 }
 
@@ -430,6 +442,7 @@ export async function connectSubjectRpc(
       if (snapshot.state !== 'opened') return { state: 'unresolved', snapshot }
       // the bare lease: a materialized `x3.abi/asset-session@1` proxy; dispose releases the handle
       const proxy = (await services.attach(snapshot.sessionId)) as {
+        operations(): Promise<OperationSession>
         descriptor(): Promise<Record<string, unknown>>
         dataSource(contract: string, major: number): Promise<{ value: unknown }>
         dispose(): Promise<void>
@@ -439,6 +452,7 @@ export async function connectSubjectRpc(
         // the descriptor already crossed inside the snapshot; asking again would re-run the codec
         descriptor: async () => snapshot.descriptor,
         dataSource: (contract, major) => proxy.dataSource(contract, major),
+        operations: () => proxy.operations(),
         dispose: () => proxy.dispose(),
       }
       return { state: 'opened', snapshot, session }
