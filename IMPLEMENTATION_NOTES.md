@@ -39,11 +39,23 @@ is refused as `codec-execution-unavailable`, no worker ever evaluated the drifte
 gate set green for this scope; the concurrent OPUS-MK2-02 working tree carries its own in-progress
 lint/test state in `scripts/convert-mk2*`, untouched by this commit.
 
-**Not done here.** A real-browser run of the conformance kit and of the shell (a manual smoke via
-`pnpm --filter @modkitx-x3/web-app app:serve` is the current proof; a Playwright harness is not
-in the repo); stage viewers/explorer parity with Electron in the PWA (the shell shows the raw
-descriptor and one data-source answer); vendoring text-json/toml/xml/yaml parsers for the worker;
-VS Code webview on the same core.
+**Live in Chromium (2026-08-19, follow-up).** The shell gained `?open=<same-origin path>`: on
+boot the page fetches the resource from its own origin only and opens it exactly like a picked
+file — a launch path for the PWA and the manual smoke path. Served by `build.mjs --serve` and
+loaded in a real Chromium page (`/?open=./favicon-32.png`): `main.js` composed 9 attested
+extensions, the served `worker-entry.js` was spawned as a module worker, the loader fetched
+`extensions/images/src/formats/png/codec.js` once and verified it with WebCrypto,
+`openSubject` selected `org.modkitx/image-png/portable` worker-brokered, the descriptor came back
+over the capability-RPC and `common.view/byte-range-source@1.size()` answered `2727n`; the page
+showed both boundary statements (`worker-shared-process`, `worker-shared-origin`). Service-worker
+registration failed only inside the embedded preview pane (the page fetches the script itself
+with 200/`text/javascript`); the shell already treats the SW as non-blocking.
+
+**Not done here.** A real-browser run of the _conformance kit_ (the shell path is proven live,
+the kit pair is proven in Node with fakes; a Playwright harness is not in the repo); stage
+viewers/explorer parity with Electron in the PWA (the shell shows the raw descriptor and one
+data-source answer); vendoring text-json/toml/xml/yaml parsers for the worker; VS Code webview
+on the same core.
 
 ---
 

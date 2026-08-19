@@ -163,10 +163,8 @@ async function boot(): Promise<void> {
 
   // ---------------------------------------------------------------- open flow
   let current: { dispose(): Promise<void> } | undefined
-  openButton.addEventListener('click', () => {
-    void (async () => {
-      const file = await pickFile()
-      if (file === undefined) return
+  const openFile = async (file: File): Promise<void> => {
+    {
       openButton.disabled = true
       const view = el('div', 'subject-view')
       view.append(el('h2', '', file.name), el('p', 'muted', 'opening…'))
@@ -273,8 +271,29 @@ async function boot(): Promise<void> {
       } finally {
         openButton.disabled = false
       }
+    }
+  }
+  openButton.addEventListener('click', () => {
+    void (async () => {
+      const file = await pickFile()
+      if (file !== undefined) await openFile(file)
     })()
   })
+
+  // `?open=<same-origin path>` — launch the app on a served resource (also the manual smoke path):
+  // the resource is fetched from this origin only and opened exactly like a picked file
+  const requested = new URL(window.location.href).searchParams.get('open')
+  if (requested !== null) {
+    const target = new URL(requested, baseUrl)
+    if (target.origin === baseUrl.origin) {
+      const response = await fetch(target.href)
+      if (response.ok) {
+        const blob = await response.blob()
+        const name = target.pathname.split('/').pop() ?? 'resource'
+        await openFile(new File([blob], name, { lastModified: Date.now() }))
+      }
+    }
+  }
 }
 
 // Registered after boot so a service-worker failure can never block the app from starting.

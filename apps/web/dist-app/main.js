@@ -52720,10 +52720,8 @@ async function boot() {
   );
   workbench.setMain(empty);
   let current;
-  openButton.addEventListener("click", () => {
-    void (async () => {
-      const file = await pickFile();
-      if (file === void 0) return;
+  const openFile = async (file) => {
+    {
       openButton.disabled = true;
       const view = el("div", "subject-view");
       view.append(el("h2", "", file.name), el("p", "muted", "opening\u2026"));
@@ -52816,8 +52814,26 @@ async function boot() {
       } finally {
         openButton.disabled = false;
       }
+    }
+  };
+  openButton.addEventListener("click", () => {
+    void (async () => {
+      const file = await pickFile();
+      if (file !== void 0) await openFile(file);
     })();
   });
+  const requested = new URL(window.location.href).searchParams.get("open");
+  if (requested !== null) {
+    const target = new URL(requested, baseUrl);
+    if (target.origin === baseUrl.origin) {
+      const response = await fetch(target.href);
+      if (response.ok) {
+        const blob = await response.blob();
+        const name = target.pathname.split("/").pop() ?? "resource";
+        await openFile(new File([blob], name, { lastModified: Date.now() }));
+      }
+    }
+  }
 }
 async function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
