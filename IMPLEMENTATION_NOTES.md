@@ -6,6 +6,22 @@ overrides a canonical or detailed owner.
 
 ---
 
+## UI-01 follow-ups for Root (REPORT_NEXUS_THEMES §3) (Root/Fable, 2026-08-19)
+
+Three small things the Nexus themes could not reach through the parts vocabulary, done as asked:
+(1) the Electron shell now carries the public `workbench` part (`setPart(shell, 'workbench')` in
+`apps/electron/src/renderer.ts`) — the same anchor the PWA's `createWorkbench` stamps, so a theme's
+decor lands under the panels in both hosts and Opus's `:has()`-guarded body fallback retires by
+itself; the page's unlayered `.modkit-shell` rules keep the Electron flex layout, only the layered
+part defaults apply; (2) `explorer.filetab` carries `data-mk-kind` (lowercase extension or
+`file`, `fileKindOf` in `packages/ui/src/explorer/editors.ts`) so a theme's kind dot can mean
+what the design meant; (3) ui-monaco redefines and re-applies its `modkit` theme when
+`data-mk-theme`/`data-mk-density` change on the document root (MutationObserver, disconnected on
+unmount) — open code panes follow a live theme switch. Proof: Electron selftest run — both files
+open, `nexus-forge`/`nexus-dominion` switch with their decor attached, no errors.
+
+---
+
 ## S8 — binary editing on the 13D seam: writer surface/definition, file backend, host-gated mutating operations, PNG `edit.field` (Root/Fable, 2026-08-19)
 
 **What exists.** `docs/MK3/adr/ADR-HOST-002-binary-editing-on-the-13d-seam.md` (Accepted, evidence by

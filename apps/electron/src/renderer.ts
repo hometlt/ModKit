@@ -22,6 +22,7 @@ import {
   createSettingsUi,
   normalizeSettings,
   serializeSettings,
+  setPart,
   withRecent,
   type RecentEntry,
   type EditorArea,
@@ -267,6 +268,10 @@ async function boot(): Promise<void> {
 
   const shell = document.createElement('div')
   shell.className = 'modkit-shell'
+  // The shell is the application's workbench: the same public part the PWA's createWorkbench
+  // stamps, so installable themes anchor their decor on one name in both hosts (the page's own
+  // unlayered .modkit-shell rules keep this shell's flex layout; only the layered defaults apply)
+  setPart(shell, 'workbench')
   const body = document.createElement('div')
   body.className = 'modkit-body'
   const footer = document.createElement('footer')

@@ -15,6 +15,14 @@
  * broker, the web app's file handles and VS Code's workspace fs.
  */
 import { setToken } from '../tokens/index.js'
+
+/** Lowercase extension without the dot (`'png'`), or `'file'` when there is none. */
+export function fileKindOf(name: string): string {
+  const dot = name.lastIndexOf('.')
+  if (dot <= 0 || dot === name.length - 1) return 'file'
+  const kind = name.slice(dot + 1).toLowerCase()
+  return /^[a-z0-9_-]{1,16}$/u.test(kind) ? kind : 'file'
+}
 import { element, setPart, setState, safeViewerText } from '../viewer/index.js'
 import type { ExplorerEntry, PreviewHandle, PreviewResolver } from './index.js'
 
@@ -378,6 +386,9 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
       const button = element(group.strip, 'div', { part: 'explorer.filetab' })
       button.setAttribute('role', 'tab')
       button.title = entry.id
+      // the file kind (lowercase extension, or 'file') as data for themes — a tab's kind dot or
+      // icon is theme decoration, never a new part
+      button.setAttribute('data-mk-kind', fileKindOf(entry.name))
 
       if (group.tabs.length === 0) group.stage.replaceChildren()
       const content = element(group.stage, 'div', { part: 'explorer.tabcontent' })

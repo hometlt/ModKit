@@ -198,6 +198,17 @@ export function createMonacoEditor(options = {}) {
         sizeWatch.disconnect()
         remeasure()
       })
+      // A theme switch restamps data-mk-theme on the document root; the palette was read once at
+      // create, so redefine the named theme from the new tokens and re-apply it — open editors
+      // follow the host instead of keeping the previous palette until the next file opens.
+      const themeWatch = new MutationObserver(() => {
+        if (disposed) return
+        monaco.editor.setTheme(defineTheme(root))
+      })
+      themeWatch.observe(root.ownerDocument.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-mk-theme', 'data-mk-density'],
+      })
       sizeWatch.observe(host)
 
       // Conformance hook: Monaco paints through requestAnimationFrame, which does not tick in a
@@ -258,6 +269,7 @@ export function createMonacoEditor(options = {}) {
         },
         async unmount() {
           disposed = true
+          themeWatch.disconnect()
           sizeWatch.disconnect()
           subscription.dispose()
           editor.dispose()
