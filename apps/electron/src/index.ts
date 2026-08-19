@@ -457,5 +457,15 @@ export async function createElectronSubjectServices(
  */
 
 export { createGrantedRoots, type GrantedRoots, type PathTools } from './roots.js'
+// S14: main owns the editing authority (backend, grant, writer, prepared commits) and hands
+// the renderer ids; these are the pieces its bootstrap composes
+export { createEvidenceRegistry, createRawWriter, createSubjectEditing } from '@modkitx-x3/host'
+export { createFileEditingBackend } from '@modkitx-x3/host/node'
+// S14: the renderer's editor ports over the subject RPC (it holds no grant of its own)
+export {
+  createRendererEditorPorts,
+  type RendererEditorPorts,
+  type RendererEditorPortsOptions,
+} from './editor-ports.js'
 // S7: main.cjs opens files through the host's revision-checked adapter (no private copy here)
 export { openFileArtifactSource } from '@modkitx-x3/host/node'

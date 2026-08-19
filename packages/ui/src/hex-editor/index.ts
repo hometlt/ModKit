@@ -259,10 +259,17 @@ export const hexEditor: EditorModule = {
         provenance: { origin: 'hex-editor' },
       }
       setViewerText(status, 'Validating…')
+      // `ValidationResult` is `{ valid, diagnostics }` (13D); this used to look for a `state` of
+      // `invalid`, which no writer produces — so a refused change went on to be planned and
+      // prepared as if the writer had accepted it
       const validation = await args.edit.propose(change as never)
-      if ((validation as { state?: string }).state === 'invalid') {
+      if (!validation.valid) {
         setState(root, ['error'])
-        setViewerText(status, 'Rejected by validation')
+        const first = validation.diagnostics[0]
+        setViewerText(
+          status,
+          first === undefined ? 'Rejected by validation' : `Rejected: ${first.message}`,
+        )
         return
       }
       const plan = await args.edit.plan(change as never)
@@ -272,15 +279,32 @@ export const hexEditor: EditorModule = {
         return
       }
       const prepared = await args.commit.prepare(plan, { grant: authorization.grant })
-      const state = (prepared as { state?: string }).state
-      if (state !== 'prepared') {
+      // `ready` is what a CommitCoordinator answers with (13D `PrepareCommitResult`); this used to
+      // look for `prepared`, a state no coordinator produces, so every save reported a failure
+      // after the plan had already been made
+      if (prepared.state !== 'ready') {
         setState(root, ['error'])
-        setViewerText(status, `Prepare failed: ${state ?? 'unknown'}`)
+        setViewerText(
+          status,
+          prepared.state === 'conflict'
+            ? 'Conflict: the source changed'
+            : `Prepare rejected: ${prepared.reason}`,
+        )
         return
       }
-      await args.commit.commit((prepared as unknown as { prepared: never }).prepared, {
+      const receipt = await args.commit.commit(prepared.prepared, {
         grant: authorization.grant,
-      } as never)
+      })
+      if (receipt.state !== 'committed') {
+        setState(root, ['error'])
+        setViewerText(
+          status,
+          receipt.state === 'not-applied'
+            ? `Save rejected: ${receipt.reason}`
+            : `Save ${receipt.state}`,
+        )
+        return
+      }
       setState(root, [])
       setViewerText(status, `Committed ${runs.length} range(s)`)
       await renderWindow()

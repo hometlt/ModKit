@@ -51,8 +51,13 @@ import { editingError, payloadBytes, replacedBytes, type ReplaceEdit } from '../
 export interface FileEditingBackendOptions {
   /** Identifies this backend in write sets and receipts. */
   readonly backendId?: string
-  /** Absolute directories the backend may touch; empty means any `file:` path (the grant still scopes). */
-  readonly roots?: readonly string[]
+  /**
+   * Absolute directories the backend may touch. A function is read on every write, which is what a
+   * host with dynamic grants needs (the user picks another folder and it becomes writable without
+   * rebuilding the backend). An empty list confines nothing on its own — pass one only when
+   * another layer does the confining, and say so where you pass it.
+   */
+  readonly roots?: readonly string[] | (() => readonly string[])
   /** Where pre-images are staged per transaction (default: a directory under the OS temp dir). */
   readonly stagingDirectory?: string
   /** Ceiling on a single staged payload the backend will materialize (default 256 MiB). */
@@ -155,7 +160,10 @@ export function createFileEditingBackend(
   options: FileEditingBackendOptions = {},
 ): FileEditingBackend {
   const backendId = options.backendId ?? FILE_EDITING_BACKEND_CAPABILITY.backendId
-  const roots = (options.roots ?? []).map(root => resolve(root))
+  const rootsOf = (): readonly string[] =>
+    (typeof options.roots === 'function' ? options.roots() : (options.roots ?? [])).map(item =>
+      resolve(item),
+    )
   const staging =
     options.stagingDirectory ?? join(tmpdir(), `x3-edit-${process.pid}-${randomUUID()}`)
   const maxPayloadBytes = options.maxPayloadBytes ?? DEFAULT_MAX_PAYLOAD_BYTES
@@ -164,6 +172,7 @@ export function createFileEditingBackend(
 
   const confine = (path: string): string => {
     const absolute = resolve(path)
+    const roots = rootsOf()
     if (roots.length === 0) return absolute
     const inside = roots.some(root => {
       const rel = relative(root, absolute)

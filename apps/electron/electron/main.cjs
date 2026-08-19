@@ -117,6 +117,10 @@ async function createWindow() {
     createGrantedRoots,
     exposeElectronSubjectRpc,
     openFileArtifactSource,
+    createFileEditingBackend,
+    createSubjectEditing,
+    createRawWriter,
+    createEvidenceRegistry,
   } = await root
 
   const repositoryRoot = path.resolve(__dirname, '..', '..', '..')
@@ -323,6 +327,22 @@ async function createWindow() {
       await result.session.dispose()
       throw error
     }
+    // the editing arm for this session; the renderer only ever names it by id
+    try {
+      editingBySession.set(
+        sessionId,
+        createSubjectEditing({
+          opened: result,
+          grant: { id: `electron:${sessionId}`, classes: ['read-source', 'write-source'] },
+          backendFor: () => editingBackend,
+          evidenceFor: plan => evidence.evidenceFor(plan),
+          writer: rawWriter,
+        }),
+      )
+    } catch (error) {
+      // a subject shape editing does not support yet (a bundle, a namespace) still opens read-only
+      console.log(`[main] ${path.basename(file)} opened without an editing arm: ${String(error)}`)
+    }
     return {
       snapshot: {
         state: result.state,
@@ -337,6 +357,18 @@ async function createWindow() {
     }
   }
 
+  /*
+   * S14: the renderer can edit, but it holds nothing that authorises a write. Main keeps the file
+   * backend, the grant snapshot, the writer and every prepared commit; the renderer gets ids. The
+   * backend is confined to the roots the user granted through a dialog, so a subject outside them
+   * cannot be written even if a session id for it existed.
+   */
+  const editingBackend = createFileEditingBackend({ roots: () => roots.list() })
+  const editingBySession = new Map()
+  const evidence = createEvidenceRegistry()
+  /** The writer for editors that know nothing about the format (hex, plain text). */
+  const rawWriter = createRawWriter()
+
   /** One capability-RPC endpoint per handed-out port; closed with the window. */
   const subjectEndpoints = new Set()
   ipcMain.handle('modkit.subject.port', event => {
@@ -347,6 +379,7 @@ async function createWindow() {
       listener: 'emitter-event',
       session,
       open: openSubjectForRpc,
+      editing: sessionId => editingBySession.get(sessionId),
       onDiagnostic: diagnostic =>
         console.log(`[subject-rpc] ${diagnostic.code}: ${diagnostic.message}`),
     })

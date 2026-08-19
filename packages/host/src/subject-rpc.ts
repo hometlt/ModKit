@@ -14,7 +14,19 @@
  * a requested path to an opened subject (or refuses), and nothing here touches a file.
  */
 
-import type { AssetSession, PresentationPlan } from '@modkitx-x3/sdk'
+import type { Diagnostic } from '@modkitx-x3/core'
+import type {
+  AssetEditPlan,
+  AssetRevision,
+  AssetSession,
+  ChangeSet,
+  CommitReceipt,
+  PresentationPlan,
+  SourceConflict,
+  SubjectEditTarget,
+  ValidationResult,
+} from '@modkitx-x3/sdk'
+import type { SubjectEditing } from './subject-editing.js'
 import { ABI_ASSET_SESSION } from './execution/abi-surfaces.js'
 import { createEndpoint, type Endpoint } from './execution/endpoint.js'
 import {
@@ -30,6 +42,8 @@ import type { CapabilitySurface } from './execution/surface.js'
 // the one app-level surface
 
 export const SUBJECT_SERVICES = Object.freeze({ contract: 'x3.app/subject-services', major: 1 })
+/** The editing arm of an opened subject; leased from `edit(sessionId)` when the host allows it. */
+export const SUBJECT_EDITING = Object.freeze({ contract: 'x3.app/subject-editing', major: 1 })
 /** Loader-validated module identity of the services root (there is nothing to import). */
 export const SUBJECT_SERVICES_URL = 'x3-app://subject-services'
 
@@ -40,12 +54,35 @@ const subjectServicesSurface: CapabilitySurface = {
     open: { kind: 'value', signal: 'last' },
     /** `attach(sessionId)` → the live session under `x3.abi/asset-session@1`. */
     attach: { kind: 'lease', result: ABI_ASSET_SESSION, wrapper: 'bare' },
+    /** `edit(sessionId)` → the editing arm, when this host can write this subject. */
+    edit: { kind: 'lease', result: SUBJECT_EDITING, wrapper: 'bare' },
+  },
+}
+
+/**
+ * The editing arm crosses as data and ids, never as authority: the grant snapshot, the prepared
+ * commit and the backends stay on the serving side. A consumer proposes a change, receives a plan,
+ * prepares it (getting an id back) and commits that id. Nothing it holds can be replayed into a
+ * write it was not granted, because it never holds the grant.
+ */
+const subjectEditingSurface: CapabilitySurface = {
+  ...SUBJECT_EDITING,
+  releaseVia: 'dispose',
+  methods: {
+    state: { kind: 'value' },
+    propose: { kind: 'value', signal: 'last', arity: 1 },
+    plan: { kind: 'value', signal: 'last', arity: 1 },
+    prepare: { kind: 'value', signal: 'last', arity: 1 },
+    commit: { kind: 'value', signal: 'last', arity: 1 },
+    dispose: { kind: 'value' },
   },
 }
 
 /** One registry: the services surface names the session ABI surface as a result; closure checked. */
 export function subjectRpcSurfaces() {
-  return createStandardSurfaceRegistry({ surfaces: [subjectServicesSurface] })
+  return createStandardSurfaceRegistry({
+    surfaces: [subjectServicesSurface, subjectEditingSurface],
+  })
 }
 
 const SUBJECT_RPC_LIMITS: ProtocolLimits = protocolLimits({ defaultCallDeadlineMs: 60_000 })
@@ -77,6 +114,32 @@ export interface SubjectUnresolvedSnapshot {
 
 export type SubjectOpenSnapshot = SubjectOpenedSnapshot | SubjectUnresolvedSnapshot
 
+/** What the editing arm reports about the subject it can write. */
+export interface SubjectEditingState {
+  readonly revision: AssetRevision
+  readonly targets: readonly SubjectEditTarget[]
+}
+
+/** `prepare` answers with an id, never with the prepared commit itself. */
+export type SubjectEditingPrepareResult =
+  | { readonly state: 'ready'; readonly preparedId: string }
+  | { readonly state: 'conflict'; readonly conflicts: readonly SourceConflict[] }
+  | {
+      readonly state: 'rejected'
+      readonly reason: string
+      readonly diagnostics: readonly Diagnostic[]
+    }
+
+export type SubjectEditingCommitResult =
+  | { readonly state: 'committed'; readonly receipt: CommitReceipt }
+  | { readonly state: 'rolled-back'; readonly receipt: CommitReceipt }
+  | { readonly state: 'partially-applied'; readonly receipt: CommitReceipt }
+  | {
+      readonly state: 'not-applied'
+      readonly reason: string
+      readonly diagnostics: readonly Diagnostic[]
+    }
+
 /** Serving-side opener: host policy from a requested path to a snapshot (+ the live session). */
 export type SubjectOpener = (
   path: string,
@@ -95,6 +158,12 @@ export interface ExposeSubjectRpcOptions {
   readonly session: string
   readonly generation?: number
   readonly open: SubjectOpener
+  /**
+   * Host policy: the editing wiring for an opened session, or `undefined` when this host cannot
+   * write this subject (no backend, no writer, no `write-source` in the grant). The consumer sees
+   * `edit()` refuse, which is the honest answer — not a save button that fails at the end.
+   */
+  readonly editing?: (sessionId: string) => SubjectEditing | undefined
   /** Module identity the loader accepts (defaults to the generic root URL). */
   readonly moduleUrl?: string
   readonly onDiagnostic?: (diagnostic: { code: string; message: string }) => void
@@ -138,6 +207,83 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
           if (disposed) return
           disposed = true
           await session.dispose()
+        },
+      }
+    },
+    edit: async (sessionId: unknown) => {
+      const editing = typeof sessionId === 'string' ? options.editing?.(sessionId) : undefined
+      if (editing === undefined) {
+        throw new TypeError('this subject is not editable in this host')
+      }
+      // ids, not authority: the grant snapshot and the prepared commit never leave this side
+      const prepared = new Map<string, Parameters<typeof editing.coordinator.commit>[0]>()
+      let sequence = 0
+      const arm = {
+        state: (): SubjectEditingState => ({
+          revision: editing.revision,
+          targets: editing.targets,
+        }),
+        propose: async (change: unknown, signal?: AbortSignal): Promise<ValidationResult> => {
+          if (editing.session === undefined) {
+            throw new TypeError('this subject has no writer, so a change cannot be validated')
+          }
+          void signal
+          return editing.session.propose(change as ChangeSet)
+        },
+        plan: async (change: unknown, signal?: AbortSignal): Promise<AssetEditPlan> => {
+          if (editing.session === undefined) {
+            throw new TypeError('this subject has no writer, so a change cannot be planned')
+          }
+          void signal
+          return editing.session.plan(change as ChangeSet)
+        },
+        prepare: async (
+          plan: unknown,
+          signal?: AbortSignal,
+        ): Promise<SubjectEditingPrepareResult> => {
+          const result = await editing.coordinator.prepare(plan as AssetEditPlan, {
+            grant: editing.grantSnapshot,
+            ...(signal === undefined ? {} : { signal }),
+          })
+          if (result.state === 'ready') {
+            sequence += 1
+            const preparedId = `prepared-${sequence}`
+            prepared.set(preparedId, result.prepared)
+            return { state: 'ready', preparedId }
+          }
+          if (result.state === 'conflict') return { state: 'conflict', conflicts: result.conflicts }
+          return { state: 'rejected', reason: result.reason, diagnostics: result.diagnostics }
+        },
+        commit: async (
+          preparedId: unknown,
+          signal?: AbortSignal,
+        ): Promise<SubjectEditingCommitResult> => {
+          const found = typeof preparedId === 'string' ? prepared.get(preparedId) : undefined
+          if (found === undefined) {
+            throw new TypeError('unknown prepared commit (already committed, or never prepared)')
+          }
+          prepared.delete(preparedId as string)
+          const result = await editing.coordinator.commit(found, {
+            grant: editing.grantSnapshot,
+            ...(signal === undefined ? {} : { signal }),
+          })
+          if (result.state === 'not-applied') {
+            return { state: 'not-applied', reason: result.reason, diagnostics: result.diagnostics }
+          }
+          return { state: result.state, receipt: result.receipt }
+        },
+        dispose: async (): Promise<void> => {
+          prepared.clear()
+          await editing.session?.dispose()
+        },
+      }
+      let released = false
+      return {
+        value: arm,
+        release: async () => {
+          if (released) return
+          released = true
+          await arm.dispose()
         },
       }
     },
@@ -204,8 +350,24 @@ export type SubjectClientOpenResult =
     }
   | { readonly state: 'unresolved'; readonly snapshot: SubjectUnresolvedSnapshot }
 
+/** The editing arm as a consumer sees it: data in, ids back, no authority anywhere. */
+export interface SubjectEditingArm {
+  state(): Promise<SubjectEditingState>
+  propose(change: ChangeSet): Promise<ValidationResult>
+  plan(change: ChangeSet): Promise<AssetEditPlan>
+  prepare(plan: AssetEditPlan): Promise<SubjectEditingPrepareResult>
+  commit(preparedId: string): Promise<SubjectEditingCommitResult>
+  dispose(): Promise<void>
+}
+
 export interface SubjectRpcClient {
   open(path: string): Promise<SubjectClientOpenResult>
+  /**
+   * The editing arm of an opened session. Rejects when the serving side cannot write this subject
+   * — which is the honest answer, and the reason a consumer can hide a save button rather than
+   * offer one that fails at the end.
+   */
+  edit(sessionId: string): Promise<SubjectEditingArm>
   close(reason: string): Promise<void>
 }
 
@@ -226,6 +388,7 @@ export interface ConnectSubjectRpcOptions {
 interface ServicesProxy {
   open(path: string): Promise<SubjectOpenSnapshot>
   attach(sessionId: string): Promise<Record<string, unknown>>
+  edit(sessionId: string): Promise<SubjectEditingArm>
 }
 
 export async function connectSubjectRpc(
@@ -280,6 +443,7 @@ export async function connectSubjectRpc(
       }
       return { state: 'opened', snapshot, session }
     },
+    edit: (sessionId: string) => services.edit(sessionId),
     close: (reason: string) => endpoint.close(reason),
   }
 }
