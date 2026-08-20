@@ -74,6 +74,9 @@ importers:
       '@modkitx-x3/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
+      '@modkitx-x3/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
     devDependencies:
       electron:
         specifier: ^43.4.0
@@ -102,6 +105,9 @@ importers:
       '@modkitx-x3/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
+      '@modkitx-x3/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
     devDependencies:
       '@types/vscode':
         specifier: ^1.125.0

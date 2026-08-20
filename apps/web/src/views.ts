@@ -461,7 +461,7 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
       id: 'text-editor',
       label: 'Text (editor)',
       contract: 'common.view/text-data-source',
-      module: textEditor as unknown as ViewerModule,
+      module: textEditor,
       trait: 'content.text',
       editable: true,
     },
@@ -469,7 +469,7 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
       id: 'hex-editor',
       label: 'Hex (editor)',
       contract: 'common.view/byte-range-source',
-      module: hexEditor as unknown as ViewerModule,
+      module: hexEditor,
       editable: true,
     },
   ] satisfies readonly PreviewStage[])

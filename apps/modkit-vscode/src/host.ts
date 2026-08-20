@@ -129,6 +129,12 @@ export interface VsCodeSubjectHostOptions {
   readonly workspaceFolders?: readonly string[]
   /** Raw value of the `modkit.extensions` setting, exactly as the editor returned it. */
   readonly configuredExtensions?: unknown
+  /**
+   * The worker bootstrap this extension shipped beside its bundle. Required in a packaged build:
+   * the backend default resolves it through `import.meta.url`, which a CommonJS extension entry
+   * does not have.
+   */
+  readonly bootstrapUrl?: URL
   readonly onDiagnostic?: (diagnostic: Diagnostic) => void
   /** Injectable for tests; defaults to `node:fs`. */
   readonly probe?: DirectoryProbe
@@ -191,6 +197,16 @@ export async function createVsCodeSubjectHost(
     realms: { host: VSCODE_DESKTOP_EXTENSION_REALM, workers: VSCODE_DESKTOP_WORKER_REALM },
     extensions: extensionInputs,
     policy: VSCODE_WORKER_POLICY,
+    /*
+     * Where this host shipped the worker bootstrap.
+     *
+     * The backend's default resolves it beside its own module through `import.meta.url`, which is
+     * empty in a CommonJS bundle — and VS Code requires a CommonJS extension entry, so the default
+     * would be `undefined` and every codec spawn would die at `new Worker`. Naming the file the
+     * build emits is the honest version of that, and it replaced a build-time rewrite of
+     * `import.meta.url` that made one expression mean something else than it says.
+     */
+    ...(options.bootstrapUrl === undefined ? {} : { bootstrapUrl: options.bootstrapUrl }),
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
   })
   // The bridge realm, composed only so the page can be told what its own realm holds. It shares
@@ -360,8 +376,7 @@ function serveVsCode(services: NodeSubjectServices, options: VsCodeServeOptions)
   }
 
   const exposure = exposeSubjectRpc({
-    port: bridge.port,
-    listener: 'emitter-value',
+    framePort: bridge.framePort,
     session: options.session,
     open: openSubject,
     editing: sessionId => editingBySession.get(sessionId),

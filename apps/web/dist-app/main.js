@@ -46585,6 +46585,9 @@ var hexEditor = {
       windowOffset = view.offset;
       original = view.bytes;
       pending.clear();
+      drawWindow();
+    };
+    const drawWindow = () => {
       grid.replaceChildren();
       for (let row = 0; row < original.length; row += 16) {
         const line = element(grid, "div", { part: "hex.row" });
@@ -46690,13 +46693,31 @@ var hexEditor = {
         );
         return;
       }
+      const updated = new Uint8Array(original);
+      for (const run of runs) {
+        const start = Number(run.offset - windowOffset);
+        if (start >= 0 && start + run.bytes.length <= updated.length) updated.set(run.bytes, start);
+      }
+      original = updated;
+      pending.clear();
+      drawWindow();
       setState(root, []);
-      setViewerText(status, `Committed ${runs.length} range(s)`);
-      await renderWindow();
+      setViewerText(
+        status,
+        `Committed ${runs.length} range(s) \u2014 reopen the file before editing it again`
+      );
     };
     go.addEventListener("click", () => void renderWindow());
     revert.addEventListener("click", () => void renderWindow());
-    save.addEventListener("click", () => void commit());
+    save.addEventListener("click", () => {
+      commit().catch((error) => {
+        setState(root, ["error"]);
+        setViewerText(
+          status,
+          `Save failed: ${error instanceof Error ? error.message : String(error)}`
+        );
+      });
+    });
     await renderWindow();
     return {
       async update(next) {

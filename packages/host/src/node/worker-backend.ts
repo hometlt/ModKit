@@ -106,13 +106,33 @@ function artifactRelative(artifactRoot: URL, entrypoint: URL): string {
 }
 const delay = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms).unref())
 
+/**
+ * The bootstrap beside this module, for a host that did not name one.
+ *
+ * `import.meta.url` is empty in a CommonJS bundle — which VS Code requires for an extension entry
+ * — and `new URL(x, undefined)` throws a `TypeError` that says nothing about what to do. A named
+ * refusal that names the option is the difference between a five-minute fix and an afternoon.
+ */
+function defaultBootstrapUrl(): URL {
+  const base: string | undefined = import.meta.url
+  if (base === undefined || base === '') {
+    throw new ModkitError({
+      code: 'x3.host/worker-bootstrap-unresolved',
+      message:
+        'this host must pass bootstrapUrl: import.meta.url is unavailable (a CommonJS bundle), ' +
+        'so the worker bootstrap beside this module cannot be located',
+    })
+  }
+  return new URL('./worker-bootstrap.js', base)
+}
+
 export function createNodeWorkerBackend(options: NodeWorkerBackendOptions = {}): ExecutionBackend {
   const policy = options.policy ?? DEFAULT_WORKER_BACKEND_POLICY
   const foreignSurfaces = (): readonly DataSourceSurfaceSource[] =>
     typeof options.foreignSurfaces === 'function'
       ? options.foreignSurfaces()
       : (options.foreignSurfaces ?? [])
-  const bootstrapUrl = options.bootstrapUrl ?? new URL('./worker-bootstrap.js', import.meta.url)
+  const bootstrapUrl = options.bootstrapUrl ?? defaultBootstrapUrl()
   const report = (diagnostic: Diagnostic) => options.onDiagnostic?.(diagnostic)
   const limits: ProtocolLimits = protocolLimits({
     defaultCallDeadlineMs: policy.defaultCallDeadlineMs,

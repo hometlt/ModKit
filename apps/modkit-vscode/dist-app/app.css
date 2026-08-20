@@ -1,0 +1,148 @@
+/*
+ * Shell chrome only.
+ *
+ * Every viewer, the explorer, the editor area and the workbench parts bring their own styling from
+ * the shipped stylesheet. What is left for a host is the workbench *frame* — the shipped
+ * `workbench` parts are structure without layout on purpose — plus the two elements this page adds
+ * of its own (the host rail and the status line).
+ *
+ * The page loads this and `modkit-ui.css` from the extension's own `dist-app`, which is the only
+ * origin its `style-src` allows. Nothing here sets a `style` attribute; dynamic values go through
+ * the token runtime inside the components, which is CSSOM and not the attribute.
+ */
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  color: var(--mk-color-fg);
+  background: var(--mk-color-bg);
+  font-family: var(--mk-font-sans);
+  font-size: var(--mk-font-size-md);
+}
+
+/* The workbench is a grid that fills its container; without a definite height it collapses. */
+#root {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ------------------------------------------------------------------ workbench frame */
+
+[data-mk-part='workbench'] {
+  display: grid;
+  grid-template:
+    'title title title' auto
+    'activity sidebar main' minmax(0, 1fr)
+    'activity sidebar panel' auto
+    'status status status' auto
+    / auto auto minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  background: var(--mk-color-bg);
+}
+
+[data-mk-part='workbench.titlebar'] {
+  display: flex;
+  grid-area: title;
+  gap: var(--mk-space-3);
+  align-items: center;
+  padding: var(--mk-space-2) var(--mk-space-3);
+  border-bottom: 1px solid var(--mk-color-border);
+  background: var(--mk-color-raised);
+  font-weight: 600;
+}
+
+[data-mk-part='workbench.activitybar'] {
+  display: flex;
+  grid-area: activity;
+  flex-direction: column;
+  gap: var(--mk-space-1);
+  padding: var(--mk-space-2);
+  border-right: 1px solid var(--mk-color-border);
+  background: var(--mk-color-raised);
+}
+
+[data-mk-part='workbench.sidebar']:not([hidden]) {
+  display: block;
+  grid-area: sidebar;
+  width: min(17rem, 30vw);
+  min-height: 0;
+  border-right: 1px solid var(--mk-color-border);
+  background: var(--mk-color-surface);
+  overflow: auto;
+}
+
+[data-mk-part='workbench.main'] {
+  grid-area: main;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+[data-mk-part='workbench.panel']:not([hidden]) {
+  display: block;
+  grid-area: panel;
+  max-height: 40vh;
+  border-top: 1px solid var(--mk-color-border);
+  background: var(--mk-color-surface);
+  overflow: auto;
+}
+
+[data-mk-part='workbench.statusbar'] {
+  display: flex;
+  grid-area: status;
+  gap: var(--mk-space-4);
+  align-items: center;
+  padding: var(--mk-space-1) var(--mk-space-3);
+  border-top: 1px solid var(--mk-color-border);
+  background: var(--mk-color-raised);
+  color: var(--mk-color-fg-muted);
+  font-size: var(--mk-font-size-xs);
+}
+
+/* ------------------------------------------------------------------ page-owned elements */
+
+.vscode-status {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vscode-host-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mk-space-2);
+  padding: var(--mk-space-3);
+}
+
+.vscode-host-panel h2 {
+  margin: var(--mk-space-2) 0 0;
+  color: var(--mk-color-fg);
+  font-size: var(--mk-font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.vscode-host-panel ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--mk-font-mono);
+  font-size: var(--mk-font-size-xs);
+  word-break: break-word;
+}
+
+.vscode-host-panel li {
+  padding: 2px 4px;
+  border-radius: var(--mk-radius-sm);
+}
+
+.vscode-host-panel li:nth-child(odd) {
+  background: var(--mk-color-raised);
+}

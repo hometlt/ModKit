@@ -116,9 +116,8 @@ async function mount(
   }
   const bridge = createBridge({ channel, idPrefix: 'view' })
   const client = await connectSubjectRpc({
-    port: bridge.port,
+    framePort: bridge.framePort,
     // This port is emitter-shaped (`on`), and its payload is the frame itself.
-    listener: 'emitter-value',
     session: snapshot.session,
     moduleUrl: snapshot.moduleUrl,
     contributionId: snapshot.contributionId,

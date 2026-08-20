@@ -33,21 +33,10 @@ await build({
   // Supplied by the VS Code runtime; bundling it would shadow the real API.
   external: ['vscode'],
   /*
-   * The Node worker backend locates its worker bootstrap with
-   * `new URL('./worker-bootstrap.js', import.meta.url)`, and `import.meta` is empty in a CommonJS
-   * output — which VS Code requires for an extension entry point. Pointing it at this bundle's own
-   * file makes that expression resolve to `dist-app/worker-bootstrap.js`, which is the sibling
-   * built below. Without this the URL is `undefined` and every codec spawn fails at `new Worker`.
-   * The bootstrap is a published entry precisely so it can survive bundling as its own file.
+   * No rewrite of `import.meta.url` here any more. The extension names the bootstrap it shipped
+   * through `bootstrapUrl`, which the Node factories now thread through — a host saying where its
+   * own file is, rather than a build making one expression mean something other than it says.
    */
-  banner: {
-    // `'use strict'` is repeated here because a banner displaces esbuild's own directive out of
-    // the prologue position, which would silently take the whole bundle out of strict mode.
-    js:
-      `'use strict';\n` +
-      `const __modkitBundleUrl = require('node:url').pathToFileURL(__filename).href;`,
-  },
-  define: { 'import.meta.url': '__modkitBundleUrl' },
   absWorkingDir: repoRoot,
   logLevel: 'warning',
 })

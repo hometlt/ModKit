@@ -11,6 +11,7 @@ import { randomUUID } from 'node:crypto'
 import { isAbsolute, relative, resolve } from 'node:path'
 import type { PermissionGrant, ResourceBudget } from '@modkitx-x3/sdk'
 import type { SubjectServices } from '../subject-services.js'
+import type { OpenedSubject } from '../subject-open.js'
 import type { SubjectOpener, SubjectOpenSnapshot } from '../subject-rpc.js'
 import { openFileArtifactSource } from './file-artifact-source.js'
 
@@ -23,6 +24,12 @@ export interface PathSubjectOpenerOptions {
   readonly budget?: ResourceBudget
   readonly intent?: 'inspect' | 'full'
   readonly sessionId?: () => string
+  /**
+   * Called with the opened subject just before its snapshot is returned, and only for an open that
+   * resolved. A host that composes editing needs the `OpenedSubject` itself, which is otherwise
+   * dropped here; the session id is the key an editing policy is keyed by.
+   */
+  onOpened?(opened: OpenedSubject, sessionId: string): void
 }
 
 export const DEFAULT_SUBJECT_OPEN_BUDGET: ResourceBudget = Object.freeze({
@@ -86,6 +93,16 @@ export function createPathSubjectOpener(options: PathSubjectOpenerOptions): Subj
       candidates: result.candidates,
       diagnostics,
     }
+    /*
+     * The opened subject, handed over before the snapshot leaves.
+     *
+     * A host that also edits needs it: `createSubjectEditing({ opened })` takes the whole
+     * `OpenedSubject`, and this function used to keep it — a host had to wrap
+     * `SubjectServices.open` and catch the result on its way past, which is a lot of machinery to
+     * recover something that was right here. The session id is passed too, because that is the key
+     * an editing policy is looked up by on the serving side.
+     */
+    options.onOpened?.(result, snapshot.sessionId)
     return { snapshot, session: result.session }
   }
 }

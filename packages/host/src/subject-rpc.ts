@@ -29,7 +29,7 @@ import type {
 } from '@modkitx-x3/sdk'
 import type { SubjectEditing } from './subject-editing.js'
 import { ABI_ASSET_SESSION } from './execution/abi-surfaces.js'
-import { createEndpoint, type Endpoint } from './execution/endpoint.js'
+import { createEndpoint, type Endpoint, type FramePort } from './execution/endpoint.js'
 import {
   framePortFromMessagePort,
   type MessagePortFrameOptions,
@@ -87,6 +87,22 @@ export function subjectRpcSurfaces() {
 }
 
 const SUBJECT_RPC_LIMITS: ProtocolLimits = protocolLimits({ defaultCallDeadlineMs: 60_000 })
+
+/** The frame port either side runs on: the one it was handed, or one adapted from a port shape. */
+function resolveFramePort(options: {
+  readonly port?: MessagePortLike
+  readonly framePort?: FramePort
+  readonly listener?: MessagePortFrameOptions['listener']
+}): FramePort {
+  if (options.framePort !== undefined) return options.framePort
+  if (options.port === undefined) {
+    throw new TypeError('subject RPC needs either a port or a framePort')
+  }
+  return framePortFromMessagePort(
+    options.port,
+    options.listener === undefined ? {} : { listener: options.listener },
+  )
+}
 
 // ---------------------------------------------------------------------------------------------
 // wire snapshots (inert data; the session itself is a capability, never part of the snapshot)
@@ -152,7 +168,16 @@ export type SubjectOpener = (
 
 export interface ExposeSubjectRpcOptions {
   /** `MessagePortMain`, a DOM `MessagePort`, a Node port, or anything port-shaped. */
-  readonly port: MessagePortLike
+  readonly port?: MessagePortLike
+  /**
+   * A `FramePort` this host already built, used instead of adapting `port`.
+   *
+   * The port-shaped default fits structured-clone transports. A text channel — a VS Code webview,
+   * a socket — is a `FramePort` from the start (`framePortFromJsonPort`), and without this it has
+   * to be re-shaped back into something port-like only for this function to adapt it again. Pass
+   * one or the other; `framePort` wins when both are given.
+   */
+  readonly framePort?: FramePort
   /** `'emitter-event'` for `MessagePortMain`; default follows the port's shape. */
   readonly listener?: MessagePortFrameOptions['listener']
   /** Endpoint identity; the consumer must connect with the same pair. */
@@ -291,10 +316,7 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
   }
   const endpoint = createEndpoint({
     role: 'worker',
-    port: framePortFromMessagePort(
-      options.port,
-      options.listener === undefined ? {} : { listener: options.listener },
-    ),
+    port: resolveFramePort(options),
     session: options.session,
     generation: options.generation ?? 1,
     surfaces: subjectRpcSurfaces(),
@@ -385,7 +407,16 @@ export interface SubjectRpcClient {
 
 export interface ConnectSubjectRpcOptions {
   /** The port the serving side handed over (or anything port-shaped in tests). */
-  readonly port: MessagePortLike
+  readonly port?: MessagePortLike
+  /**
+   * A `FramePort` this host already built, used instead of adapting `port`.
+   *
+   * The port-shaped default fits structured-clone transports. A text channel — a VS Code webview,
+   * a socket — is a `FramePort` from the start (`framePortFromJsonPort`), and without this it has
+   * to be re-shaped back into something port-like only for this function to adapt it again. Pass
+   * one or the other; `framePort` wins when both are given.
+   */
+  readonly framePort?: FramePort
   /** Default `'event-target'` (a DOM `MessagePort`). */
   readonly listener?: MessagePortFrameOptions['listener']
   readonly session: string
@@ -408,10 +439,7 @@ export async function connectSubjectRpc(
 ): Promise<SubjectRpcClient> {
   const endpoint = createEndpoint({
     role: 'host',
-    port: framePortFromMessagePort(
-      options.port,
-      options.listener === undefined ? {} : { listener: options.listener },
-    ),
+    port: resolveFramePort(options),
     session: options.session,
     generation: options.generation ?? 1,
     surfaces: subjectRpcSurfaces(),

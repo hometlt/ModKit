@@ -26,9 +26,8 @@ import {
   decodeJsonValue,
   encodeJsonValue,
   framePortFromJsonPort,
-  type Frame,
+  type FramePort,
   type JsonPortLike,
-  type MessagePortLike,
 } from '@modkitx-x3/host/execution'
 
 // ---------------------------------------------------------------------------------------------
@@ -123,7 +122,8 @@ export interface Bridge {
    * beside it: this object has `on`, not `addEventListener`, and the default style for an
    * emitter-shaped port is the one that hands the payload through unchanged.
    */
-  readonly port: MessagePortLike
+  /** The transport itself: a text channel is a `FramePort` from the start. */
+  readonly framePort: FramePort
   /** Send a request and await its single answer. Rejects with the far side's message. */
   request(request: ShellRequest): Promise<unknown>
   /** Serve requests from the far side. One handler; a second call replaces it. */
@@ -224,27 +224,17 @@ export function createBridge(options: BridgeOptions): Bridge {
       return () => frameSinks.delete(handler)
     },
   }
-  const frames = framePortFromJsonPort(jsonPort)
-
-  /** Emitter-shaped, because that is the one style whose payload is the frame itself. */
-  const listeners = new Map<(payload: unknown) => void, () => void>()
-  const port: MessagePortLike = {
-    postMessage(message: unknown): void {
-      frames.post(message as Frame, [])
-    },
-    on(_event: 'message', listener: (payload: unknown) => void): unknown {
-      listeners.set(listener, frames.onFrame(listener))
-      return port
-    },
-    off(_event: 'message', listener: (payload: unknown) => void): unknown {
-      listeners.get(listener)?.()
-      listeners.delete(listener)
-      return port
-    },
-  }
+  /*
+   * Handed over as a `FramePort`, which is what it already is.
+   *
+   * This used to be re-shaped into something port-like so `exposeSubjectRpc`/`connectSubjectRpc`
+   * could adapt it back — two conversions to arrive where the adapter had started. Both now accept
+   * `framePort` directly.
+   */
+  const framePort = framePortFromJsonPort(jsonPort)
 
   return {
-    port,
+    framePort,
 
     async request(request: ShellRequest): Promise<unknown> {
       if (disposed) throw new Error('the webview bridge is closed')

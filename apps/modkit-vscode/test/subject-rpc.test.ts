@@ -113,8 +113,7 @@ async function wire(files: Readonly<Record<string, string>>): Promise<Wired> {
   })
   const page = createBridge({ channel: channels.page, idPrefix: 'page' })
   const client = await connectSubjectRpc({
-    port: page.port,
-    listener: 'emitter-value',
+    framePort: page.framePort,
     session: 'vscode-test',
     moduleUrl: VSCODE_SUBJECT_SERVICES_URL,
     contributionId: VSCODE_SUBJECT_CONTRIBUTION_ID,

@@ -29,6 +29,15 @@ export interface NodeExecutionBackendsOptions {
   /** Surfaces of the root's registered contract definitions (a thunk is read per spawn). */
   readonly foreignSurfaces?:
     readonly DataSourceSurfaceSource[] | (() => readonly DataSourceSurfaceSource[])
+  /**
+   * Where the worker bootstrap lives, for a host that cannot rely on `import.meta.url`.
+   *
+   * The default resolves the bootstrap beside this module, which is right for an ESM host. A host
+   * bundled as CommonJS has no `import.meta` — VS Code *requires* a CommonJS extension entry — so
+   * the default resolves to `undefined` there and every codec spawn dies at `new Worker`. Such a
+   * host passes the URL of the bootstrap it shipped instead.
+   */
+  readonly bootstrapUrl?: URL
   /** Register the in-process backend too (default true; the gate still requires the artifact decision). */
   readonly trustedInProcess?: boolean
 }
@@ -45,6 +54,7 @@ export function createNodeExecutionBackends(
       ...(options.foreignSurfaces === undefined
         ? {}
         : { foreignSurfaces: options.foreignSurfaces }),
+      ...(options.bootstrapUrl === undefined ? {} : { bootstrapUrl: options.bootstrapUrl }),
     }),
   )
   return createExecutionBackendRegistry(backends)

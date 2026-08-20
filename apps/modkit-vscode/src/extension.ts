@@ -13,7 +13,8 @@
  * webview is not an extension host) stays true in the running product and not only in the
  * topology.
  */
-import { dirname, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import * as vscode from 'vscode'
 
 import type { CloseAnswer, WebviewChannel } from './bridge.js'
@@ -204,6 +205,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     catalogCandidates: catalogCandidates(extensionRoot, repositoryRoot),
     workspaceFolders: workspaceFolders(),
     configuredExtensions: vscode.workspace.getConfiguration('modkit').get('extensions'),
+    // the bootstrap this extension ships beside its own bundle: a CommonJS entry has no
+    // `import.meta.url` for the backend to resolve it from
+    bootstrapUrl: pathToFileURL(join(extensionRoot, 'dist-app', 'worker-bootstrap.js')),
     onDiagnostic: diagnostic =>
       log(`[worker] ${diagnostic.severity} ${diagnostic.code}: ${diagnostic.message}`),
   })

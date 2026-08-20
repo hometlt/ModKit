@@ -44,6 +44,12 @@ export interface NodeSubjectServicesOptions {
    * a registry of the root's own; `false` registers nothing.
    */
   readonly serviceDefinitions?: 'bundled' | false | ServiceContractDefinitionRegistry
+  /**
+   * Where the worker bootstrap lives, for a host that cannot rely on `import.meta.url` — a
+   * CommonJS bundle has no `import.meta`, so the default resolves to `undefined` there and every
+   * codec spawn dies at `new Worker`.
+   */
+  readonly bootstrapUrl?: URL
   /** Register the in-process backend too (default true; the gate still requires the artifact decision). */
   readonly trustedInProcess?: boolean
 }
@@ -70,6 +76,7 @@ export async function createNodeSubjectServices(
     ...(definitions === undefined
       ? {}
       : { foreignSurfaces: () => serviceDefinitionSurfaces(definitions) }),
+    ...(options.bootstrapUrl === undefined ? {} : { bootstrapUrl: options.bootstrapUrl }),
     ...(options.trustedInProcess === undefined
       ? {}
       : { trustedInProcess: options.trustedInProcess }),
