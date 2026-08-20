@@ -182,7 +182,7 @@ function snapshotExecutionPolicy(value: ExtensionInput['execution']): {
 
 export interface InventoryBuildOptions {
   /**
-   * Contribution ids (`org.modkitx/image-png`) the user switched off.
+   * Contribution ids (`org.example/some-codec`) the user switched off.
    *
    * A disabled contribution stays in the inventory — listed, inspectable, its manifest readable —
    * and loses `activationEligible`, so resolution never selects it. That is what "выключить кодек"
