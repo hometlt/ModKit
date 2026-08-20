@@ -236,6 +236,20 @@ export const PARTS = Object.freeze([
   'settings.close',
   'settings.status',
 
+  // generic form vocabulary — any surface that collects input (an edit panel, a dialog).
+  // Named generically because the settings.* family is named for the settings surface, and a
+  // theme styling a form should not have to know which surface hosts it.
+  'form',
+  'form.row',
+  'form.label',
+  'form.description',
+  'form.control',
+  'form.input',
+  'form.select',
+  'form.actions',
+  'form.button',
+  'form.status',
+
   // collapsible property sections
   'accordion',
   'accordion.section',

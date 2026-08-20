@@ -262,6 +262,13 @@ describe('ADR-HOST-002 Path A — codec operation → edit plan → host commit'
     }
     const meta = described.metadata?.[0]?.entries.find(entry => entry.key === 'chunks')
     expect(meta?.value).toBe(chunks.length)
+    // and the *value* the edit wrote is published, not only a rising chunk count (A12 request 5)
+    const textGroup = (described.metadata ?? []).find(
+      group => (group as { id?: string }).id === 'png-text',
+    )
+    expect(textGroup?.entries).toEqual(
+      expect.arrayContaining([{ key: 'Comment', value: 'edited by S8' }]),
+    )
 
     // replace path: the same keyword again replaces the chunk in place (no second tEXt)
     const again = await reopened.session

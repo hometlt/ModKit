@@ -111,6 +111,46 @@ const EDIT_FIELD_OPERATION = Object.freeze({
 })
 
 const MP3_OPERATIONS = Object.freeze([...TRANSPORT_OPERATIONS, EDIT_FIELD_OPERATION])
+/**
+ * Decode the text-information frames for display.
+ *
+ * Deliberately tolerant where `id3TagForEditing` is strict: that parser *refuses* tags it would
+ * not rewrite safely (unsynchronised, extended header, unparsed padding), which is right for
+ * editing and wrong for showing — a user must be able to *see* a title this codec declines to
+ * rewrite. Anything malformed simply ends the walk; whatever decoded up to that point is real.
+ */
+function decodeTextFrames(bytes) {
+  if (!isId3(bytes)) return []
+  const major = bytes[3] ?? 0
+  if (major !== 3 && major !== 4) return []
+  const end = Math.min(ID3_HEADER_BYTES + synchsafe(bytes, 6), bytes.byteLength)
+  const out = []
+  let offset = ID3_HEADER_BYTES
+  while (offset + ID3_HEADER_BYTES <= end && bytes[offset] !== 0) {
+    const id = latin1.decode(bytes.subarray(offset, offset + 4))
+    if (!/^[A-Z0-9]{4}$/u.test(id)) break
+    const frameSize = major === 4 ? synchsafe(bytes, offset + 4) : u32be(bytes, offset + 4)
+    const frameEnd = offset + ID3_HEADER_BYTES + frameSize
+    if (frameSize <= 0 || frameEnd > end) break
+    if (TEXT_FRAME_ID.test(id) && id !== 'TXXX') {
+      const body = bytes.subarray(offset + ID3_HEADER_BYTES, frameEnd)
+      const encoding = body[0] ?? 0
+      const payload = body.subarray(1)
+      let text
+      if (encoding === 0) text = latin1.decode(payload)
+      else if (encoding === 3) text = new TextDecoder('utf-8').decode(payload)
+      else if (encoding === 1) text = new TextDecoder('utf-16').decode(payload)
+      else if (encoding === 2) text = new TextDecoder('utf-16be').decode(payload)
+      if (text !== undefined) {
+        const nul = text.indexOf('\u0000')
+        out.push({ id, text: nul === -1 ? text : text.slice(0, nul) })
+      }
+    }
+    offset = frameEnd
+  }
+  return out
+}
+
 /** Text information frames share one shape; `TXXX` does not, so it is not one of them. */
 const TEXT_FRAME_ID = /^T[A-Z0-9]{3}$/u
 
@@ -419,6 +459,9 @@ const definition = Object.freeze({
                 entries: [
                   { key: 'version', value: id3.version },
                   { key: 'bytes', value: id3.bytes },
+                  // the values edit.field writes, not only the tag's size — a host can set a
+                  // frame; it must also be able to show what the file currently says
+                  ...decodeTextFrames(bytes).map(frame => ({ key: frame.id, value: frame.text })),
                 ],
               },
             ]),

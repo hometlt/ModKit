@@ -227,7 +227,13 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
 
     if (group.active === tab) {
       group.active = undefined
-      group.stage.replaceChildren()
+      /*
+       * No `stage.replaceChildren()` here: every open tab keeps its content element mounted in
+       * the stage (hidden when inactive), and clearing the stage would detach them all —
+       * `activate(next)` only flips `hidden`, so every surviving tab rendered blank until it was
+       * closed and reopened. The closed tab's own element left the tree via `tab.content.remove()`
+       * above; the siblings are exactly what must stay.
+       */
       const next = group.tabs[Math.max(0, index - 1)]
       if (next !== undefined) {
         await activate(group, next)

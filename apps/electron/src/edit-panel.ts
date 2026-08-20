@@ -126,18 +126,18 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
       const ports = options.portsFor(descriptor)
       const offer = editOffer(descriptor, { editable: ports !== undefined })
 
-      const chooser = element(root, 'div', { part: 'settings.row' })
-      element(chooser, 'label', { part: 'settings.label', text: 'Operation' })
-      const picker = element(chooser, 'select', { part: 'settings.select' })
+      const chooser = element(root, 'div', { part: 'form.row' })
+      element(chooser, 'label', { part: 'form.label', text: 'Operation' })
+      const picker = element(chooser, 'select', { part: 'form.select' })
       if (!(picker instanceof HTMLSelectElement)) throw new TypeError('no select element')
       picker.setAttribute('aria-label', 'Mutating operation')
-      const summary = element(root, 'p', { part: 'settings.description' })
+      const summary = element(root, 'p', { part: 'form.description' })
       const pane = element(root, 'div', { part: 'settings.pane' })
-      const controls = element(root, 'div', { part: 'settings.control' })
+      const controls = element(root, 'div', { part: 'form.control' })
       const apply = element(controls, 'button', { part: 'operations.button', text: 'Apply' })
       apply.setAttribute('type', 'button')
       const status = element(root, 'output', { part: 'operations.status' })
-      const notes = element(root, 'div', { part: 'settings.status' })
+      const notes = element(root, 'div', { part: 'form.status' })
 
       const say = (message: string, failed: boolean): void => {
         setViewerText(status, message)
@@ -149,11 +149,11 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
         notes.replaceChildren()
         const previous = options.lastOutcome(descriptor)
         if (previous !== undefined) {
-          element(notes, 'div', { part: 'settings.description', text: `Last change: ${previous}` })
+          element(notes, 'div', { part: 'form.description', text: `Last change: ${previous}` })
         }
         for (const item of offer.unsupported) {
           element(notes, 'div', {
-            part: 'settings.description',
+            part: 'form.description',
             text: `${item.operationId}: not available in this host yet — ${item.reason}`,
           })
         }
@@ -176,9 +176,9 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
         apply.removeAttribute('disabled')
         setViewerText(summary, `${form.summary} (${form.operationId} → ${form.handlerId})`)
         for (const field of form.fields) {
-          const row = element(pane, 'div', { part: 'settings.row' })
-          element(row, 'label', { part: 'settings.label', text: field.label })
-          const input = element(row, 'input', { part: 'settings.input' })
+          const row = element(pane, 'div', { part: 'form.row' })
+          element(row, 'label', { part: 'form.label', text: field.label })
+          const input = element(row, 'input', { part: 'form.input' })
           if (!(input instanceof HTMLInputElement)) continue
           input.type = 'text'
           input.name = field.name
@@ -187,7 +187,7 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
           if (field.hint !== undefined) input.title = field.hint
           inputs.set(field.name, input)
           if (field.hint !== undefined) {
-            element(row, 'span', { part: 'settings.description', text: field.hint })
+            element(row, 'span', { part: 'form.description', text: field.hint })
           }
         }
       }

@@ -507,6 +507,24 @@ describe('A5 Path A — MP3 ID3v2 text frames on the 13D seam', () => {
     const inspected = await reopened.result.session.operations().invoke('inspect', {})
     if (inspected.state !== 'ok' || inspected.output.kind !== 'json') throw new Error('no summary')
     expect(inspected.output.value).toMatchObject({ format: 'mp3', id3Version: '2.3.0' })
+    /*
+     * The descriptor publishes the values edit.field writes, not only the tag's size: without
+     * this, a host can set a frame and never show it — every form starts from a default instead
+     * of from what the file says (A12's request 5).
+     */
+    const groups = (
+      reopened.result.descriptor as unknown as {
+        metadata: readonly { id: string; entries: readonly { key: string; value: unknown }[] }[]
+      }
+    ).metadata
+    const id3Group = groups.find(group => group.id === 'id3')
+    if (id3Group === undefined) throw new Error('no id3 metadata group')
+    expect(id3Group.entries).toEqual(
+      expect.arrayContaining([
+        { key: 'TIT2', value: 'A5 title' },
+        { key: 'TPE1', value: 'Original artist' },
+      ]),
+    )
     await reopened.result.session.dispose()
   }, 90_000)
 

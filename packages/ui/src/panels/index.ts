@@ -63,6 +63,15 @@ function renderToolbar(
   root.replaceChildren()
   const status = element(root, 'output', { text: 'Ready', part: 'operations.status' })
   for (const operation of descriptor.operations) {
+    /*
+     * This toolbar invokes with a `null` input, and a mutating operation's input is a record —
+     * so a button for one is a control that can only refuse. It also is not this component's
+     * place to author a mutation UI: a host that offers mutating operations builds forms for
+     * their inputs (Electron's Edit panel is the worked example). Declared-but-unavailable
+     * operations still render disabled with their reason, because "you cannot run this and here
+     * is why" is information; "click me and be refused" is not.
+     */
+    if (operation.mutatesSource === true) continue
     const button = element(root, 'button', {
       text: operation.id,
       part: 'operations.button',
@@ -73,15 +82,34 @@ function renderToolbar(
       button.title = operation.reason
       continue
     }
-    button.addEventListener('click', async () => {
+    button.addEventListener('click', () => {
       button.disabled = true
-      const result = await invokeOperation(descriptor, operations, operation.id, null, {
+      /*
+       * Explicitly settled, never floated: a handler that throws before producing a result (a
+       * codec refusing outright does exactly that) used to become an unhandled rejection while
+       * the status line kept saying "Ready" — the one moment the user most needs the reason is
+       * the one moment it went to the console instead.
+       */
+      invokeOperation(descriptor, operations, operation.id, null, {
         signal,
         onProgress: (completed, total, message) =>
           setViewerText(status, `${message ?? 'Working'}: ${completed}/${total ?? '?'}`),
       })
-      setViewerText(status, result.state === 'ok' ? `${operation.id}: complete` : result.reason)
-      button.disabled = false
+        .then(result =>
+          setViewerText(
+            status,
+            result.state === 'ok' ? `${operation.id}: complete` : result.reason,
+          ),
+        )
+        .catch((error: unknown) =>
+          setViewerText(
+            status,
+            `${operation.id}: ${error instanceof Error ? error.message : String(error)}`,
+          ),
+        )
+        .finally(() => {
+          button.disabled = false
+        })
     })
   }
 }

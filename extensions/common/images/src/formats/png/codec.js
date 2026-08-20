@@ -240,6 +240,23 @@ function decodedRegionReader(bytes, png) {
   }
 }
 
+/** The decoded `tEXt` chunks: latin-1 keyword, NUL, latin-1 text — the pair `set-text` writes. */
+function decodeTextChunks(bytes, png) {
+  const decoder = new TextDecoder('latin1')
+  const out = []
+  for (const chunk of png.chunks) {
+    if (chunk.type !== 'tEXt') continue
+    const data = bytes.subarray(chunk.dataOffset, chunk.dataOffset + chunk.length)
+    const nul = data.indexOf(0)
+    if (nul <= 0) continue
+    out.push({
+      keyword: decoder.decode(data.subarray(0, nul)),
+      text: decoder.decode(data.subarray(nul + 1)),
+    })
+  }
+  return out
+}
+
 /**
  * ADR-HOST-002 Path A: the one mutating operation of this codec. `edit.field` with
  * `{ keyword, text }` sets or replaces a `tEXt` chunk and returns an edit plan — a single
@@ -403,6 +420,23 @@ const definition = Object.freeze({
             { key: 'frames', value: png.frames },
           ],
         },
+        /*
+         * The values `edit.field` writes, not only their count. Without this a host can *set* a
+         * text field and never show its current value — every form starts from a default instead
+         * of from what the file says, and the only proof an edit landed is a rising chunk count.
+         */
+        ...(() => {
+          const texts = decodeTextChunks(bytes, png)
+          return texts.length === 0
+            ? []
+            : [
+                {
+                  id: 'png-text',
+                  label: 'Text fields (tEXt)',
+                  entries: texts.map(item => ({ key: item.keyword, value: item.text })),
+                },
+              ]
+        })(),
       ],
       traits: [
         {

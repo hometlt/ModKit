@@ -267,7 +267,19 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
           plan: unknown,
           signal?: AbortSignal,
         ): Promise<SubjectEditingPrepareResult> => {
-          const result = await editing.coordinator.prepare(plan as AssetEditPlan, {
+          /*
+           * Every plan that crosses this boundary is validated against *this* subject at *its*
+           * open revision before the coordinator sees it — `planFromOperation` is exactly that
+           * check, and a plan the arm's own `plan()` produced passes it trivially. Without this,
+           * a consumer could hand `prepare` any plan and the refusal came back as a grant-scope
+           * side effect (`permission-missing`) rather than the named
+           * `x3.host/edit-plan-subject-mismatch`.
+           */
+          const validated = editing.planFromOperation({
+            kind: 'edit-plan',
+            plan: plan as AssetEditPlan,
+          })
+          const result = await editing.coordinator.prepare(validated, {
             grant: editing.grantSnapshot,
             ...(signal === undefined ? {} : { signal }),
           })

@@ -264,7 +264,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:dd9bbbd19bff4296a372002273f2222639d81bde19ec9d0feda20812c675c97f',
+        artifactDigest: 'sha256:6c4d257c61be48fc9274bc5b687551a784f7f7bf823b845c95aeddacb48ef544',
         fileDigests: {
           'README.md': 'sha256:268ab2b7997a0a0be23cf0dbdc5c80a90ac58eaafafca75a4c9fad30093d26fd',
           'contributions/codec-mp3.json':
@@ -273,13 +273,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:96ffb84cdb503acaef94824bcbfb00790ace696d43a39e1cbe626b41a8293867',
           'package.json': 'sha256:fa31b41ba725e7c620902f7ed360c6a07c54feb9ce3af42aef623e14f1975c63',
           'src/formats/mp3/codec.js':
-            'sha256:cc27ff239bf2f97b2e1403de0af7f68e185ea8e574c2db550a87ed6bfe413402',
+            'sha256:5ff766d783b99acdbf14868dd0e66323821ee6334dcdcf0742fba642f1be7e9d',
           'src/formats/ogg/codec.js':
             'sha256:1906cd3670a45186374a40db75725187d7eb3ee3682b9b7805e85b798e403aaf',
           'src/index.js': 'sha256:e86ec9194630bc30037a46f042fb7839fa96dfa70ae81ef77142ae436c9bf2fb',
         },
         inventoryRecordId:
-          'artifact:sha256:dd9bbbd19bff4296a372002273f2222639d81bde19ec9d0feda20812c675c97f',
+          'artifact:sha256:6c4d257c61be48fc9274bc5b687551a784f7f7bf823b845c95aeddacb48ef544',
       },
       artifactRoot: 'extensions/audio/',
       containers: {
@@ -1041,7 +1041,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:c8c2150394c2173ee610dd342472b3d70a653284d4ad9f3333470ea0bcb3da76',
+        artifactDigest: 'sha256:7981b4b9269741f85d9315054a1c52595e17dca09f536599af7115a69a2c1bfe',
         fileDigests: {
           'README.md': 'sha256:fee600d3a5d3eb369487d20b47158e3d2c8afee1f448164f64b2e44f554ba83f',
           'contributions/codec-jpeg.json':
@@ -1054,13 +1054,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/formats/jpeg/codec.js':
             'sha256:43739ed9200be7c7e11b326ac83206892cb3eb9633b3b76477099e6fed24bd06',
           'src/formats/png/codec.js':
-            'sha256:bd61f86cd7e629b4543a456c13e28d0bee00ecd92fba04a8c4dc58e1fbaa3e45',
+            'sha256:013031d12676c907b1f0cebc4570185fe00dd7d47a7f2e65471e7772c915a78a',
           'src/index.js': 'sha256:bcbc40812fa5dcdb2937b0ff5b617c1483725570302b99f569249ac3c441ce41',
           'src/writers/png-encoder.js':
             'sha256:411efbd8aadd7a2edfb335752f8e8bfad1a11452534bd039e227d52f49d6a65a',
         },
         inventoryRecordId:
-          'artifact:sha256:c8c2150394c2173ee610dd342472b3d70a653284d4ad9f3333470ea0bcb3da76',
+          'artifact:sha256:7981b4b9269741f85d9315054a1c52595e17dca09f536599af7115a69a2c1bfe',
       },
       artifactRoot: 'extensions/images/',
       containers: {
