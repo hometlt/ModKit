@@ -266,11 +266,33 @@ async function createWindow() {
   const openSubjectForRpc = async (requestedPath, signal) => {
     const file = roots.require(requestedPath)
     const source = await openFileArtifactSource(file)
+    /*
+     * Whether this host can replace the file decides the *open grant*, not just the arm.
+     *
+     * ADR-HOST-002 §2: a mutating operation's `write-source` is checked twice — once when the
+     * activation narrows the child grant, and again by the host before an `invoke` reaches the
+     * codec. Opening every subject read-only therefore made `edit.field`, `edit.structure` and
+     * `edit.content` refuse with `permission-missing` no matter what the user did, which is why no
+     * application ever offered them. Asking `access(W_OK)` first and opening with the class only
+     * when the answer is yes keeps the refusal exactly where it belongs: a file this process
+     * cannot replace still opens, still reads, and refuses the mutating operation with its reason.
+     * `access(W_OK)` is the right check on Windows too, where it reports the read-only attribute.
+     */
+    const notEditable = []
+    try {
+      await fsp.access(file, fs.constants.W_OK)
+    } catch (error) {
+      notEditable.push(`the file is not writable (${error.code ?? 'EACCES'})`)
+    }
+    const writable = notEditable.length === 0
     const result = await subjectServices.open({
       source,
       path: file,
       intent: 'full',
-      grant: { id: `electron:${randomUUID()}`, classes: ['read-source'] },
+      grant: {
+        id: `electron:${randomUUID()}`,
+        classes: writable ? ['read-source', 'write-source'] : ['read-source'],
+      },
       budget: {
         maxInputBytes: BigInt(MAXIMUM_SUBJECT_BYTES),
         maxDepth: 256,
@@ -333,16 +355,10 @@ async function createWindow() {
      * A subject this host cannot write must have *no* arm, because `edit()` refusing is what tells
      * the renderer to drop its editable stages instead of drawing a Save that fails at the end.
      * Two things make a subject unwritable here: a shape editing does not support yet (a bundle, a
-     * namespace — `createSubjectEditing` throws), and a file the OS will not let us replace.
-     * `access(W_OK)` is the right check on Windows too, where it reports the read-only attribute.
+     * namespace — `createSubjectEditing` throws), and a file the OS will not let us replace. The
+     * second was already decided above, because it also decides the open grant.
      */
-    const notEditable = []
-    try {
-      await fsp.access(file, fs.constants.W_OK)
-    } catch (error) {
-      notEditable.push(`the file is not writable (${error.code ?? 'EACCES'})`)
-    }
-    if (notEditable.length === 0) {
+    if (writable) {
       try {
         editingBySession.set(
           sessionId,
@@ -386,7 +402,52 @@ async function createWindow() {
    */
   const editingBackend = createFileEditingBackend({ roots: () => roots.list() })
   const editingBySession = new Map()
+
+  /*
+   * Host fidelity-evidence policy (ADR-HOST-002 §6): which fidelity claims this application is
+   * willing to commit, and what proves each. A claim with no record is `fidelity-unproven` and
+   * nothing is written — which is the right default, and the reason this list is explicit.
+   *
+   * The registry's own record covers every `{byte-identical, preservesUnknownData: true}` plan:
+   * the host raw writer's, and the metadata edits of the PNG, JPEG and MP3 codecs, which splice
+   * one byte range and leave every other byte where it was.
+   *
+   * A ZIP edit is a different fact. The codec re-assembles the whole archive, so it claims
+   * `semantic`, and what proves the re-assembly is verbatim is a corpus run rather than a
+   * construction argument: `packages/host/test/archive-edits.test.ts` compares every kept entry's
+   * local header, compressed data and central-directory record byte for byte against an
+   * independent ZIP reader, and checks a kept deflated entry still inflates. Two records, because
+   * the codec downgrades its own claim honestly for an archive whose layout the central directory
+   * does not account for, and "keeps every unknown byte" and "does not" are two different claims.
+   */
+  const ZIP_WRITER = Object.freeze({
+    providerId: 'org.modkitx/archive-zip',
+    providerVersion: '1.0.0',
+    artifactDigest: 'none:extension-artifact-not-pinned',
+    formatId: 'zip',
+    representationId: 'archive-namespace',
+  })
+  const zipEvidenceRecord = (preservesUnknownData, evidenceId, inputClass) =>
+    Object.freeze({
+      writer: ZIP_WRITER,
+      claim: { roundTrip: 'semantic', preservesUnknownData },
+      evidenceId,
+      corpusId: 'modkitX3/packages/host/test/archive-edits.test.ts',
+      corpusDigest: 'none:proof-suite',
+      conformanceProfile: 'org.modkitx/codec-contribution-v1',
+      optionsFingerprint: 'options:stored-additions',
+      inputClass,
+      provenAt: '2026-08-19T00:00:00Z',
+    })
   const evidence = createEvidenceRegistry()
+    .with(zipEvidenceRecord(true, 'zip-verbatim-reassembly-v1', 'zip-classic'))
+    .with(
+      zipEvidenceRecord(
+        false,
+        'zip-verbatim-reassembly-non-canonical-v1',
+        'zip-non-canonical-layout',
+      ),
+    )
   /** The writer for editors that know nothing about the format (hex, plain text). */
   const rawWriter = createRawWriter()
 

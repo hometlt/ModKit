@@ -375,6 +375,57 @@ describe('the renderer editor ports over an editing arm', () => {
   })
 })
 
+/*
+ * ADR-HOST-002 Path A: the codec authored the edits, so there is no change set and no writer —
+ * only the two arm calls a save ends in. The point of these is that the Edit panel gains no write
+ * path of its own: it hands a plan to the same arm, and every refusal reaches it in words.
+ */
+describe('applyPlan — a codec operation`s plan, committed through the same arm', () => {
+  it('prepares and commits the plan it was given, and never proposes or plans a change set', async () => {
+    const arm = fakeArm()
+    const { ports, recorded } = await portsWith(arm)
+    expect(await ports.applyPlan(PLAN)).toEqual({ message: 'saved', failed: false })
+    expect(arm.committed).toEqual(['prepared-1'])
+    // the writer is never consulted: the plan came from the codec, already complete
+    expect(arm.proposed).toEqual([])
+    expect(arm.planned).toEqual([])
+    expect(recorded.status.at(-1)).toEqual({ message: 'saved', failed: false })
+  })
+
+  it('returns the same refusal it reports, so the panel and the status line say one thing', async () => {
+    const arm = fakeArm({
+      prepare: { state: 'rejected', reason: 'fidelity-unproven', diagnostics: [] },
+    })
+    const { ports, recorded } = await portsWith(arm)
+    const result = await ports.applyPlan(PLAN)
+    expect(result.failed).toBe(true)
+    expect(result.message).toContain('fidelity-unproven')
+    expect(result).toEqual(recorded.status.at(-1))
+    expect(arm.committed).toEqual([])
+  })
+
+  it('reports a conflict as the file having changed on disk, not as a failure', async () => {
+    const arm = fakeArm({ prepare: { state: 'conflict', conflicts: [] } })
+    const { ports } = await portsWith(arm)
+    const result = await ports.applyPlan(PLAN)
+    expect(result.message).toMatch(/changed on disk/u)
+    expect(result.failed).toBe(true)
+    expect(arm.committed).toEqual([])
+  })
+
+  it('reports a commit the host would not apply with the reason the host gave', async () => {
+    const arm = fakeArm({
+      commit: { state: 'not-applied', reason: 'stale-revision', diagnostics: [] },
+    })
+    const { ports } = await portsWith(arm)
+    const result = await ports.applyPlan(PLAN)
+    expect(result.failed).toBe(true)
+    expect(result.message).toContain('stale-revision')
+    // the id was still spent, which is the arm's rule and not something this host may work around
+    expect(arm.committed).toEqual(['prepared-1'])
+  })
+})
+
 describe('the read-only stage rule', () => {
   const stage = (id: string, module: unknown, editable?: boolean): StageBinding => ({
     id,
