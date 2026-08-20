@@ -56,7 +56,6 @@ import {
   createRawWriter,
   createSubjectEditing,
   type EvidenceRegistry,
-  type FidelityEvidenceRecord,
   type OpenedSubject,
   type SubjectEditing,
   type SubjectEditorPorts,
