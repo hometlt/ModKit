@@ -6,6 +6,16 @@
  * API when the page has it, a single picked `File` when it does not, and an honest report of which
  * of the two the user is getting.
  *
+ * It also answers the two questions the editing arm (`./editing.js`) asks about an entry, because
+ * they are questions about the *handle* and this module is what holds handles:
+ *
+ *  - `handleOf(entryId)` — the handle behind an entry, if this access has one. A file that arrived
+ *    through a plain `<input type="file">`, a drop or a same-origin fetch has none, and no amount
+ *    of wishing turns it into something that can be written back.
+ *  - `snapshotOf(entryId)` — the file's `size`/`lastModified` as they are *now*, which is what the
+ *    source revision is keyed on. Read fresh from the handle, never from the listing: a stale pair
+ *    would let a save overwrite a file that changed under the tab.
+ *
  * Every platform shape is declared structurally rather than imported from `lib.dom`, so the whole
  * module is unit-tested in Node against fakes and runs unchanged in the page. Nothing here reads
  * bytes eagerly: the explorer decides when to read and how much.
@@ -27,13 +37,49 @@ export interface WebFileLike {
   slice(start: number, end: number): WebBlobSlice
 }
 
-export interface WebFileHandleLike {
+/** What a page may ask a handle for. Reading is granted on pick; writing has to be asked for. */
+export type WebPermissionMode = 'read' | 'readwrite'
+
+/** The three answers the File System Access permission surface gives. */
+export type WebPermissionState = 'granted' | 'denied' | 'prompt'
+
+/**
+ * The permission surface a File System Access handle carries.
+ *
+ * Both methods are optional because both are absent in a browser that has no File System Access at
+ * all — and a host that assumes they are there turns "this browser cannot" into a `TypeError`.
+ * `requestPermission` may only be called from a user gesture; `queryPermission` never prompts.
+ */
+export interface WebPermissionHandleLike {
+  queryPermission?(descriptor: { readonly mode: WebPermissionMode }): Promise<WebPermissionState>
+  requestPermission?(descriptor: { readonly mode: WebPermissionMode }): Promise<WebPermissionState>
+}
+
+/** The writable stream `createWritable()` returns: a swap file that replaces the target on close. */
+export interface WebWritableStreamLike {
+  write(data: Uint8Array): Promise<void>
+  close(): Promise<void>
+  abort?(reason?: string): Promise<void>
+}
+
+export interface WebFileHandleLike extends WebPermissionHandleLike {
   readonly kind: 'file'
   readonly name: string
   getFile(): Promise<WebFileLike>
+  /**
+   * Present only on a real File System Access handle. Its presence is exactly what separates a
+   * file this page can save in place from one it can only look at, so the editing arm tests for
+   * it rather than for the name of the browser.
+   */
+  createWritable?(options?: { readonly keepExistingData?: boolean }): Promise<WebWritableStreamLike>
 }
 
-export interface WebDirectoryHandleLike {
+/** A file handle that carries the write path. Narrowed from `WebFileHandleLike` by `isWritable`. */
+export interface WebWritableFileHandleLike extends WebFileHandleLike {
+  createWritable(options?: { readonly keepExistingData?: boolean }): Promise<WebWritableStreamLike>
+}
+
+export interface WebDirectoryHandleLike extends WebPermissionHandleLike {
   readonly kind: 'directory'
   readonly name: string
   /** The FSA iteration surface. Chromium ships both; a host only needs one of them. */
@@ -42,6 +88,19 @@ export interface WebDirectoryHandleLike {
 }
 
 export type WebFileSystemHandleLike = WebFileHandleLike | WebDirectoryHandleLike
+
+/** True when this handle offers the write path a save needs. */
+export function isWritableHandle(
+  handle: WebFileHandleLike | undefined,
+): handle is WebWritableFileHandleLike {
+  return handle !== undefined && typeof handle.createWritable === 'function'
+}
+
+/** Size and modification time as the file is right now — the pair a source revision is keyed on. */
+export interface WebFileSnapshot {
+  readonly size: number
+  readonly lastModified: number
+}
 
 /**
  * How many children one folder contributes to the tree.
@@ -133,6 +192,20 @@ const describe = (error: unknown): string =>
 export interface WebFileAccess extends FileAccess {
   /** Size this access observed while listing, or `undefined` if it never could read one. */
   sizeOf(entryId: string): number | undefined
+  /**
+   * The handle behind an entry, when this access has one.
+   *
+   * `undefined` is the honest answer for a file that arrived through a plain file input, a drop or
+   * a fetch: there is nothing to write back to, and the editing arm must offer no editor for it.
+   */
+  handleOf(entryId: string): WebFileHandleLike | undefined
+  /** `size`/`lastModified` read from the handle now, not from the listing. */
+  snapshotOf(entryId: string, signal?: AbortSignal): Promise<WebFileSnapshot | undefined>
+  /**
+   * The handle whose `readwrite` permission covers this access — the granted folder, or the one
+   * picked file. Absent when nothing here could ever be written.
+   */
+  readonly writeGrant?: WebPermissionHandleLike
 }
 
 /**
@@ -160,6 +233,11 @@ export function createDirectoryAccess(
 
   return {
     label: root.name === '' ? 'Granted folder' : root.name,
+    /*
+     * One `readwrite` grant covers the whole tree: the user picked this folder, so asking again per
+     * file would be a prompt storm for a permission the browser already scopes to the directory.
+     */
+    writeGrant: root,
 
     async list(entryId, signal) {
       signal?.throwIfAborted()
@@ -207,6 +285,18 @@ export function createDirectoryAccess(
       return sizes.get(entryId)
     },
 
+    handleOf(entryId) {
+      return files.get(entryId)
+    },
+
+    async snapshotOf(entryId, signal) {
+      signal?.throwIfAborted()
+      const handle = files.get(entryId)
+      if (handle === undefined) return undefined
+      const file = await handle.getFile()
+      return { size: file.size, lastModified: file.lastModified }
+    },
+
     async read(entryId, maxBytes, signal) {
       signal?.throwIfAborted()
       const handle = files.get(entryId)
@@ -234,11 +324,20 @@ export interface SingleFileAccess {
  * The fallback path — a file picker without directory access, or a plain `<input type="file">` —
  * still produces a real `FileAccess`, so the explorer, the tabs and every stage behave exactly as
  * they do over a granted folder. Only the tree is shorter.
+ *
+ * `handle` is what separates the two ways one file arrives. `showOpenFilePicker` yields a handle
+ * and the file can be saved in place; an `<input type="file">`, a drop and a same-origin fetch
+ * yield a `File` and nothing else, and that file can never be written back from this page. The
+ * distinction is carried in the data rather than guessed at later.
  */
-export function createSingleFileAccess(file: WebFileLike): SingleFileAccess {
+export function createSingleFileAccess(
+  file: WebFileLike,
+  handle?: WebFileHandleLike,
+): SingleFileAccess {
   const entry: ExplorerEntry = { id: file.name, name: file.name, directory: false, size: file.size }
   const access: WebFileAccess = {
     label: file.name,
+    ...(handle === undefined ? {} : { writeGrant: handle }),
     async list(entryId, signal) {
       signal?.throwIfAborted()
       return entryId === undefined ? [entry] : []
@@ -246,11 +345,25 @@ export function createSingleFileAccess(file: WebFileLike): SingleFileAccess {
     sizeOf(entryId) {
       return entryId === entry.id ? file.size : undefined
     },
+    handleOf(entryId) {
+      return entryId === entry.id ? handle : undefined
+    },
+    async snapshotOf(entryId, signal) {
+      signal?.throwIfAborted()
+      if (entryId !== entry.id) return undefined
+      // The handle's own snapshot, not the `File` this access was built from: the picked file may
+      // be minutes old by the time a save is attempted, and the revision has to be current.
+      const current = handle === undefined ? file : await handle.getFile()
+      return { size: current.size, lastModified: current.lastModified }
+    },
     async read(entryId, maxBytes, signal) {
       signal?.throwIfAborted()
       if (entryId !== entry.id) throw new TypeError(`«${entryId}» is not the opened file`)
-      const length = Math.min(file.size, maxBytes)
-      return new Uint8Array(await file.slice(0, length).arrayBuffer())
+      // Through the handle when there is one, so the bytes a tab holds and the revision it pins
+      // describe the same moment; a picked `File` alone is a snapshot that never refreshes.
+      const current = handle === undefined ? file : await handle.getFile()
+      const length = Math.min(current.size, maxBytes)
+      return new Uint8Array(await current.slice(0, length).arrayBuffer())
     },
   }
   return { access, entry }
