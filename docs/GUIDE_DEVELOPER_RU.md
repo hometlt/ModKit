@@ -184,6 +184,75 @@ await modkit.close() // подметёт забытые сессии
 (грант не может обещать больше файловой политики), расширения из `extensions`/`userExtensions`
 исполняются только в worker.
 
+#### 3.2.1 Установка библиотеки без npm-публикации
+
+Пакеты ModKit пока не опубликованы в npm. Устанавливайте один и тот же зафиксированный снимок
+репозитория одним из двух способов. В обоих случаях нужны Node.js 22+, четыре платформенных пакета
+(`core`, `sdk`, `vfs`, `host`) и только выбранные расширения. Для расширения изображений также нужен
+его маленький runtime-пакет `codec-kit`.
+
+**Из Git.** pnpm умеет брать пакет из подкаталога Git-монорепозитория через параметр `path:`.
+Зафиксируйте один commit SHA для всех записей; не смешивайте ветки и коммиты. Так как внутренние
+пакеты ещё не лежат в registry, перечислите всю платформенную четвёрку прямо в `dependencies`:
+
+```json
+{
+  "dependencies": {
+    "@modkitx-x3/core": "github:<owner>/<repo>#<sha>&path:/packages/core",
+    "@modkitx-x3/sdk": "github:<owner>/<repo>#<sha>&path:/packages/sdk",
+    "@modkitx-x3/vfs": "github:<owner>/<repo>#<sha>&path:/packages/vfs",
+    "@modkitx-x3/host": "github:<owner>/<repo>#<sha>&path:/packages/host",
+    "@modkitx-x3/codec-kit": "github:<owner>/<repo>#<sha>&path:/extensions/_shared/codec-kit",
+    "modkit-extension-x3-images": "github:<owner>/<repo>#<sha>&path:/extensions/common/images"
+  }
+}
+```
+
+`<owner>/<repo>` здесь намеренно заполнитель: у checkout нет канонического remote, его выбирает
+владелец развёртывания. После подстановки выполните `pnpm install` и закоммитьте lockfile: именно SHA
+в нём делает сборку повторяемой.
+
+**Через tarball — рекомендуемый и проверяемый путь.** В checkout сначала соберите пакеты, затем
+упакуйте платформу, поддержку кодека и нужное расширение в один каталог артефактов:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm build
+mkdir artifacts
+pnpm -C packages/core pack --pack-destination ../../artifacts
+pnpm -C packages/sdk pack --pack-destination ../../artifacts
+pnpm -C packages/vfs pack --pack-destination ../../artifacts
+pnpm -C packages/host pack --pack-destination ../../artifacts
+pnpm -C extensions/_shared/codec-kit pack --pack-destination ../../../artifacts
+pnpm -C extensions/common/images pack --pack-destination ../../../artifacts
+```
+
+Передайте полученные `.tgz` потребителю (`pnpm add /path/to/artifacts/*.tgz`; в PowerShell пути
+перечисляются явно). Затем найдите установленный каталог расширения и передайте его фасаду:
+
+```js
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { createModkit } from '@modkitx-x3/host/node'
+
+const projectDir = dirname(fileURLToPath(import.meta.url))
+const imagesDir = dirname(
+  fileURLToPath(import.meta.resolve('modkit-extension-x3-images/package.json')),
+)
+const modkit = await createModkit({ extensions: [imagesDir], roots: [projectDir] })
+const opened = await modkit.open(join(projectDir, 'logo.png'))
+if (opened.snapshot.state === 'opened' && opened.session !== undefined) {
+  const descriptor = await opened.session.descriptor()
+  console.log(descriptor.dataSources.map(item => item.contract))
+}
+await opened.close()
+await modkit.close()
+```
+
+`scripts/test/library-install-packed.test.ts` повторяет этот рецепт вне workspace: делает tarball,
+ставит их в чистый временный проект, запускает `createModkit`, открывает настоящий PNG и проверяет
+дескриптор. Публикации в registry и ссылок на исходники в этом доказательстве нет.
+
 ### 3.3 Расширение VS Code
 
 Блоки: `core + sdk + host` (Node-адаптер) + кодеки + логика расширения. **Без Monaco** — редактор

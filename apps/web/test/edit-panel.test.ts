@@ -49,6 +49,7 @@ const MIME: Readonly<Record<string, string>> = {
   '.js': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
   '.md': 'text/markdown; charset=utf-8',
+  '.mp3': 'audio/mpeg',
   '.png': 'image/png',
   '.svg': 'image/svg+xml',
   '.webmanifest': 'application/manifest+json',
@@ -74,6 +75,7 @@ const ADDED = 'added-by-the-panel.txt'
 /** No newline: the panel collects a payload through a single-line control, and says so. */
 const ADDED_TEXT = 'added by the live Edit panel test'
 const PNG_TEXT = 'set by the live Edit panel test'
+const MP3_TEXT = 'Silent proof from the live Edit panel test'
 
 beforeAll(async () => {
   scratch = mkdtempSync(join(tmpdir(), 'modkit-edit-panel-'))
@@ -478,6 +480,75 @@ describe('the Edit panel in a real browser', () => {
       .getAttribute('title')
     expect(hint).toBe('this file already carries: Description')
   }, 180_000)
+
+  it('decodes the shipped MP3, writes an ID3 frame, and reopens on its value', async () => {
+    await closeAllTabs()
+    await pickFile('./samples/sample.mp3', 'sample.mp3')
+    await waitForEditPanel()
+    expect(await inspectorText()).toContain('1 edit form(s) over 1 mutating operation(s)')
+
+    // The committed sample is not only a header fixture: Chromium accepts its 39 silence frames
+    // and reports the roughly one-second duration the generator claims.
+    await showView('audio')
+    await page.waitForFunction(
+      () => {
+        const player = document.querySelector('[data-mk-part="audio.player"]')
+        return (
+          player instanceof HTMLAudioElement &&
+          player.readyState >= HTMLMediaElement.HAVE_METADATA &&
+          Number.isFinite(player.duration)
+        )
+      },
+      undefined,
+      { timeout: 60_000 },
+    )
+    const duration = await page
+      .locator('[data-mk-part="audio.player"]')
+      .evaluate(node => (node instanceof HTMLAudioElement ? node.duration : 0))
+    expect(duration).toBeGreaterThan(0.9)
+    expect(duration).toBeLessThan(1.2)
+
+    await applyForm('mp3-set-text-frame', { keyword: 'TIT2', text: MP3_TEXT })
+    await waitForPanelText('Last change: Set an ID3v2 text frame')
+    await waitForPanelText('the tab was reopened, so this view is not stale')
+
+    const log = await writes()
+    expect(log).toHaveLength(4)
+    expect(log[3]?.name).toBe('sample.mp3')
+    const written = await lastWrittenText()
+    expect(written.startsWith('ID3')).toBe(true)
+    expect(written).toContain('TIT2')
+    expect(written).toContain(MP3_TEXT)
+    // The ID3 tag was inserted ahead of the same independently decodable MPEG frames.
+    expect(written).toContain('\u00ff\u00fb\u0010\u00c0')
+
+    await showView('metadata')
+    await page.waitForFunction(
+      value =>
+        [...document.querySelectorAll('[data-mk-part="metadata.value"]')].some(
+          node => node.textContent === value,
+        ),
+      MP3_TEXT,
+      { timeout: 60_000 },
+    )
+    expect(await page.locator('[data-mk-part="metadata.label"]').allTextContents()).toContain(
+      'TIT2',
+    )
+
+    // The remounted form reads the reopened descriptor; this is the live ID3 prefill proof.
+    await page
+      .locator(`${EDIT_PANEL} [data-mk-part="form.select"]`)
+      .selectOption('mp3-set-text-frame')
+    const values = await page.evaluate(() =>
+      [...document.querySelectorAll('section[aria-label="Edit"] [data-mk-part="form.input"]')].map(
+        node => [
+          node.getAttribute('name') ?? '',
+          node instanceof HTMLInputElement ? node.value : '',
+        ],
+      ),
+    )
+    expect(Object.fromEntries(values)).toEqual({ keyword: 'TIT2', text: MP3_TEXT })
+  }, 300_000)
 
   it('raised no page error and no CSP refusal along the way', () => {
     /*

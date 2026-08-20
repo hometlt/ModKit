@@ -95,6 +95,7 @@ const SAMPLES: readonly { readonly path: string; readonly label: string }[] = Ob
   { path: './samples/sample.ini', label: 'sample.ini — INI tree' },
   { path: './samples/sample.svg', label: 'sample.svg — vector scene' },
   { path: './samples/sample.md', label: 'sample.md — markdown document' },
+  { path: './samples/sample.mp3', label: 'sample.mp3 — one second of MP3 silence' },
   { path: './samples/sample.zip', label: 'sample.zip — container namespace' },
 ])
 

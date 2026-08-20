@@ -21,7 +21,7 @@
 // Usage: node packages/testkit/scripts/gen-synthetic-corpus.mjs [--out <dir>] [--check] [--quiet]
 
 import { mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import process from 'node:process'
 
@@ -31,7 +31,19 @@ const argValue = flag => {
   return index === -1 ? undefined : args[index + 1]
 }
 const packageRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
-const outRoot = resolve(argValue('--out') ?? join(packageRoot, 'test', 'fixtures', 'mk2-synthetic'))
+const customOut = argValue('--out')
+const outRoot = resolve(customOut ?? join(packageRoot, 'test', 'fixtures', 'mk2-synthetic'))
+const webMp3Path = resolve(
+  packageRoot,
+  '..',
+  '..',
+  'apps',
+  'web',
+  'public',
+  'samples',
+  'sample.mp3',
+)
+const mirrorsWebMp3 = customOut === undefined
 const checkOnly = args.includes('--check')
 const quiet = args.includes('--quiet')
 
@@ -511,6 +523,21 @@ function webm() {
   return concat(ebml, element(bytes(0x18, 0x53, 0x80, 0x67), info))
 }
 
+/**
+ * MPEG-1 Layer III mono silence, ISO/IEC 11172-3 §§2.4.1.2 and 2.4.2.7.
+ *
+ * The header selects 32 kbit/s at 44.1 kHz with no CRC and one channel. The frame-size formula is
+ * floor(144 * bitrate / sampleRate) = 104 bytes. A mono Layer III frame has 17 side-information
+ * bytes; keeping every field zero declares no scale-factor or Huffman data for either granule, so
+ * the rest is legal ancillary zero data. Thirty-nine independent frames carry 44,928 samples —
+ * 1.019 seconds — and require neither an encoder nor a bit reservoir from another frame.
+ */
+function mp3() {
+  const frame = new Uint8Array(104)
+  frame.set(bytes(0xff, 0xfb, 0x10, 0xc0))
+  return concat(...Array.from({ length: 39 }, () => frame))
+}
+
 // ---------------------------------------------------------------- the corpus
 
 /** Every fixture: file name → builder. The name is what the acceptance corpus refers to. */
@@ -522,6 +549,7 @@ const FIXTURES = {
   'minimal.gz': gz,
   'minimal.png': png,
   'minimal.flv': flv,
+  'minimal.mp3': mp3,
   'minimal.ogg': ogg,
   'minimal.opus': opus,
   'minimal.ogv': ogv,
@@ -564,7 +592,14 @@ for (const [name, contents] of built) {
 for (const name of existing.keys()) if (!built.has(name)) drift.removed.push(name)
 for (const key of Object.keys(drift)) drift[key].sort()
 
-const total = drift.added.length + drift.changed.length + drift.removed.length
+const webMp3 = built.get('minimal.mp3')
+if (webMp3 === undefined) throw new TypeError('the MP3 builder is missing')
+const existingWebMp3 = statSync(webMp3Path, { throwIfNoEntry: false })?.isFile()
+  ? new Uint8Array(readFileSync(webMp3Path))
+  : undefined
+const webMp3Changed = mirrorsWebMp3 && !sameBytes(existingWebMp3, webMp3)
+const total =
+  drift.added.length + drift.changed.length + drift.removed.length + (webMp3Changed ? 1 : 0)
 
 if (checkOnly) {
   if (total > 0) {
@@ -572,6 +607,7 @@ if (checkOnly) {
     for (const name of drift.added) console.error(`  + ${name}`)
     for (const name of drift.changed) console.error(`  ~ ${name}`)
     for (const name of drift.removed) console.error(`  - ${name}`)
+    if (webMp3Changed) console.error('  ~ apps/web/public/samples/sample.mp3')
     process.exit(1)
   }
   if (!quiet) console.log(`gen-synthetic-corpus --check: clean (${built.size} fixture(s))`)
@@ -580,6 +616,10 @@ if (checkOnly) {
   for (const name of drift.removed) rmSync(join(outRoot, name), { force: true })
   for (const name of [...drift.added, ...drift.changed]) {
     writeFileSync(join(outRoot, name), built.get(name))
+  }
+  if (webMp3Changed) {
+    mkdirSync(dirname(webMp3Path), { recursive: true })
+    writeFileSync(webMp3Path, webMp3)
   }
   if (!quiet) {
     const sizes = [...built].map(([name, contents]) => `${name} ${contents.byteLength}B`).join(', ')
