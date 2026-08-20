@@ -6,6 +6,94 @@ overrides a canonical or detailed owner.
 
 ---
 
+## A8 / A9 + the defects they surfaced — editing and user extensions in the browser (Fable with Opus agents, 2026-08-19/20)
+
+**A9 — the PWA loads a user's own extension folders** (`d085968`, merged `399d5c4`).
+`apps/web/src/extension-roots.ts` is the browser twin of `loadExtensionRoots`, reusing the Node
+failure codes verbatim and reproducing the Node digest stream byte for byte, so a folder digests
+identically on both hosts. Bytes reach the verified loader through a synthetic
+`https://user-extension.invalid/<root>/<path>` origin served from the granted handles — no second,
+unverified load path, and a composition that forgets to install the shim fails rather than reaching
+a real server. Handles persist in IndexedDB; no digest is ever stored, every load re-reads and
+re-hashes, and a lapsed grant shows as "needs permission" with a button rather than prompting on
+page load.
+
+**A8 — editing in the browser** (merged `2791c1e`). `describeEditability` answers "is this entry
+writable?" without prompting anybody, and the honest notice changed from "this build has no browser
+editing backend" to the handle rule that is now the truth: a picked file can be saved in place, a
+dropped or fetched one genuinely cannot. The revision token is taken from the handle _before_ the
+bytes are read, so a file that changed under the tab is refused rather than overwritten — proven
+live, with the second save from a stale tab refused and the first save's bytes intact.
+
+### The five defects the wiring exposed (`67dc269`)
+
+Each of these was invisible until an app tried to use the seam, which is the recurring lesson of
+this whole stretch: a contract nobody exercises is a contract nobody has checked.
+
+1. **No multi-edit plan could commit.** The coordinator computes every request's `expectedRevision`
+   before a batch runs, so two edits against one source arrive carrying the same one; both backends
+   looped through `apply`, which compares against the _live_ revision, so the first write moved it
+   and the second was refused as a lost conditional write. A hex editor writing two runs had to
+   merge them to save at all. The shared `applySequentialBatch` threads each write's revision into
+   the next; the first write to a source still honours the caller's expected revision, which is the
+   guard that catches a file changed under the editor.
+2. **The hex editor could not save through any writer.** It hand-built a change with
+   `baseRevisions`, `bindingId` and a bare `kind` — fields no contract declares — and cast it
+   `as never`, silencing the one place that would have said so.
+3. **Editability was decided per host, where a browser needs it per file.** `editorPorts` may now
+   answer `undefined` for one entry, and is asked once per opened subject rather than once per stage
+   mount.
+4. **One name for the edit session.** `SubjectEditorPorts.edit` and `createCodecPreview`'s
+   `ports.session` were the same thing under two names.
+5. **A bare side-effect import was silently dropped** by the verified loader's specifier scan — a
+   relative one in that position was never fetched, hashed or rewritten at all. Fail-closed, but the
+   named refusal was lost. Checked against all 209 real extension modules: the corrected scan is
+   unchanged on every one of them.
+
+Also: `tsconfig.tooling.json` now typechecks `apps/*/test/**`, which nothing had ever covered (three
+real errors were hiding there), and `vitest.config.ts` collects `extensions/*/*/test/**` so the
+first test written there actually runs instead of passing by never being collected.
+
+### The app did not boot, and no gate could see it (`c33db05`)
+
+Wiring the extensions panel into the shell shipped a build whose every unit test passed and whose
+first line in a browser was `Boot failed: Cannot access 'services' before initialization` — the
+panel asks the shell for conflicts during its first render, which happens before the composition,
+because folders must be read before the inventory is built.
+
+The gap matters more than the mistake: every `apps/web` test drives a module against structural
+fakes, and nothing loaded the built page. `apps/web/test/boot.test.ts` now serves the committed
+`dist-app` and loads it in a real Chromium — workbench mounted, placeholder gone, settings really
+carrying the panel (reached by clicking Settings, the way a user reaches it), no page error, no CSP
+refusal. It was verified as a regression test rather than assumed: with the bug reintroduced it
+fails; with the fix it passes.
+
+### Archive listings (`bcc8810`)
+
+`NamespaceEntry` gained `storedSize`, `compression`, `modifiedAt` and `checksum` (with its algorithm
+named). The ZIP codec had always parsed the method, the compressed size and the CRC-32 out of the
+central directory and never published them, so no host could show a column it had no data for. MS-DOS
+date/time carries no zone — ZIP defines it as local time on the writing machine, unrecoverable — so
+it is read and shown as UTC rather than silently shifted by the reader's offset, keeps the format's
+two-second resolution, and a zero date answers `undefined` rather than 1980-01-01.
+
+### Decisions recorded
+
+- **The workbench frame stays host-owned** (`cf84359`). Shipping a default layout in `modkit-ui.css`
+  was considered; two hosts already have grids and would be overriding a third, and a wrong override
+  is harder to see than an absent rule. Parts and tokens are the styling contract; the arrangement
+  is the application's, and a theme may not assume the sidebar is on the left.
+- **Agents must not run `pnpm check` as one foreground command.** The harness stops an agent after
+  600s without output, so a gate that takes half an hour under load kills the run that is waiting on
+  it — four agents died this way before the cause was clear. Run it in phases, or in the background
+  with polling.
+- **Parallelism has a ceiling on this machine.** With four agents plus a gate, tests that take
+  seconds reported 39 minutes and 2.3 hours of wall time and failed on timeouts that meant nothing.
+  Two concurrent agents is the working limit; a failure under load is re-run alone before it is
+  believed.
+
+---
+
 ## S14 / A1 / A2 + host follow-ups — editing across the wire, both apps completed, and three defects that hid well (Fable with Opus agents, 2026-08-19)
 
 **S14 — editing over the subject RPC** (`b4f793f`). The Electron renderer holds a proxied session:
