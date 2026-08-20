@@ -6,11 +6,47 @@ import {
   type OperatingSystem,
 } from '@modkitx-x3/sdk'
 import { createHostComposition, type ExtensionInput, type HostComposition } from '@modkitx-x3/host'
-import { nodeRuntimeTargetBase } from '@modkitx-x3/host/node'
+import {
+  nodeRuntimeTargetBase,
+  nodeWorkerLinks,
+  nodeWorkerRealmProfile,
+  workerBackendPolicy,
+  type WorkerBackendPolicy,
+} from '@modkitx-x3/host/node'
 
 export const VSCODE_DESKTOP_EXTENSION_REALM = 'org.modkitx.app.vscode/desktop-extension'
 export const VSCODE_WEB_EXTENSION_REALM = 'org.modkitx.app.vscode/web-extension'
 export const VSCODE_WEBVIEW_REALM = 'org.modkitx.app.vscode/webview'
+/**
+ * Where codecs run: worker threads of the VS Code extension host process.
+ *
+ * The extension host is a Node process the editor shares with every other installed extension, so
+ * evaluating a codec in it would put a third party's parser on the same thread as everybody's
+ * language servers. Portable (`worker-brokered`) variants declare `node-worker`, which is exactly
+ * what this realm's target is, so resolution picks them and the Node worker backend honours them.
+ */
+export const VSCODE_DESKTOP_WORKER_REALM = 'org.modkitx.app.vscode/desktop-worker'
+
+/**
+ * Worker policy of the VS Code extension host (deliberately smaller than Electron's).
+ *
+ * The process is not ours: it hosts every other extension in the window, so a codec that runs away
+ * with memory or a deadline has to be stopped before the editor notices. These ceilings sit inside
+ * the realm budgets below and are what `createNodeSubjectServices` spawns each worker under.
+ */
+export const VSCODE_WORKER_POLICY: WorkerBackendPolicy = workerBackendPolicy({
+  resourceLimits: {
+    maxOldGenerationSizeMb: 768,
+    maxYoungGenerationSizeMb: 96,
+    codeRangeSizeMb: 128,
+    stackSizeMb: 8,
+  },
+  loadDeadlineMs: 20_000,
+  defaultCallDeadlineMs: 60_000,
+  graceMs: 2_000,
+  outputCapBytes: 256 * 1024,
+  maxRestartsPerLease: 3,
+})
 
 const desktopBudgets = () => ({
   maxConcurrentTasks: 12,
@@ -76,8 +112,22 @@ export function createVsCodeDesktopTopology(): HostTopology {
         budgets: webviewBudgets(),
         policy: { id: 'org.modkitx.policy/vscode-webview', revision: '1' },
       },
+      nodeWorkerRealmProfile({
+        realmId: VSCODE_DESKTOP_WORKER_REALM,
+        budgets: {
+          maxConcurrentTasks: 6,
+          maxWorkerCount: 0,
+          maxResidentBytes: uint64('3221225472'),
+          maxTransferBytes: uint64('268435456'),
+          defaultDeadlineMs: 120_000,
+        },
+        policy: { id: 'org.modkitx.policy/vscode-desktop-worker', revision: '1' },
+      }),
     ],
-    links: bridgeLinks(VSCODE_DESKTOP_EXTENSION_REALM),
+    links: [
+      ...bridgeLinks(VSCODE_DESKTOP_EXTENSION_REALM),
+      ...nodeWorkerLinks(VSCODE_DESKTOP_EXTENSION_REALM, VSCODE_DESKTOP_WORKER_REALM),
+    ],
   })
 }
 

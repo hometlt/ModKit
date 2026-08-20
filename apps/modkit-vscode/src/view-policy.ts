@@ -1,0 +1,129 @@
+/**
+ * The VS Code application's view policy — data and rules only, no DOM and no viewer imports.
+ *
+ * The same two ideas the Electron host's `view-policy.ts` states, in the same shape, because a
+ * third stage-policy shape would be a third thing to keep true:
+ *
+ *  - `STAGE_ORDER` fixes the order every stage appears in a tab's view picker. It is preference:
+ *    `createCodecPreview` mounts the first applicable stage, so the richest rendering of a subject
+ *    comes up first and hex stays near the end as the thing that always works.
+ *  - `applicableStages` is the predicate `createCodecPreview` applies, evaluated ahead of the mount
+ *    so the host can log and test what a subject offers. One rule is added to Electron's, and it is
+ *    the PWA's: an `editable` stage is offered only when the host supplied editor ports for *that*
+ *    subject. In this host the ports come from the subject RPC's editing arm, and the arm is absent
+ *    for a subject the extension host cannot write — a container, a bundle, a file outside the
+ *    granted roots. An editor that could never save would be a lie.
+ *
+ * Descriptors arrive over the RPC as plain JSON, so every reader here takes
+ * `Record<string, unknown>` rather than `AnyDescriptor`; that is also what keeps this module
+ * runnable in Node with no `vscode`, no DOM and no `@modkitx-x3/ui`.
+ */
+
+/** Slot ids in the order the picker offers them. Anything not listed here is not offered. */
+export const STAGE_ORDER: readonly string[] = Object.freeze([
+  'image',
+  'vector',
+  'model',
+  'audio',
+  'video',
+  'entries',
+  'table',
+  'tree',
+  'text',
+  'text-virtual',
+  'text-editor',
+  'metadata',
+  'hex',
+  'hex-editor',
+])
+
+/** The stage ids that only ever appear when this host can write the subject behind the tab. */
+export const EDITABLE_STAGE_IDS: readonly string[] = Object.freeze(['text-editor', 'hex-editor'])
+
+/** The minimum a policy rule needs to know about a stage; `PreviewStage` is a superset. */
+export interface StageFacts {
+  readonly id?: string
+  readonly label: string
+  readonly contract: string
+  readonly trait?: string
+  readonly editable?: boolean
+}
+
+export const stageIdOf = (stage: StageFacts): string => stage.id ?? stage.contract
+
+/** Data sources the descriptor publishes, as plain contract names. */
+export function publishedContracts(descriptor: Record<string, unknown>): readonly string[] {
+  const sources = descriptor['dataSources']
+  if (!Array.isArray(sources)) return []
+  return sources.map(item => String((item as { contract?: unknown }).contract ?? ''))
+}
+
+/** Trait ids the descriptor reports as observed. */
+export function descriptorTraits(descriptor: Record<string, unknown>): readonly string[] {
+  const traits = descriptor['traits']
+  if (!Array.isArray(traits)) return []
+  return traits.map(item => String((item as { id?: unknown }).id ?? ''))
+}
+
+/**
+ * Put the catalog in policy order.
+ *
+ * A stage whose id is not in `STAGE_ORDER` is a policy gap, not a runtime surprise: it throws here
+ * rather than silently dropping out of every picker in the product.
+ */
+export function orderStages<Stage extends StageFacts>(stages: readonly Stage[]): readonly Stage[] {
+  const seen = new Set<string>()
+  for (const stage of stages) {
+    const id = stageIdOf(stage)
+    if (!STAGE_ORDER.includes(id)) throw new TypeError(`stage ${id} is not ranked in STAGE_ORDER`)
+    if (seen.has(id)) throw new TypeError(`duplicate stage id: ${id}`)
+    seen.add(id)
+  }
+  return Object.freeze(
+    [...stages].sort(
+      (left, right) => STAGE_ORDER.indexOf(stageIdOf(left)) - STAGE_ORDER.indexOf(stageIdOf(right)),
+    ),
+  )
+}
+
+/**
+ * The stages this descriptor can actually show: published contract, trait when the stage names
+ * one, and — for an editable stage — editor ports for this subject.
+ */
+export function applicableStages<Stage extends StageFacts>(
+  stages: readonly Stage[],
+  descriptor: Record<string, unknown>,
+  options: { readonly editorPorts?: boolean } = {},
+): readonly Stage[] {
+  const published = new Set(publishedContracts(descriptor))
+  const traits = new Set(descriptorTraits(descriptor))
+  return Object.freeze(
+    stages.filter(
+      stage =>
+        published.has(stage.contract) &&
+        (stage.trait === undefined || traits.has(stage.trait)) &&
+        (stage.editable !== true || options.editorPorts === true),
+    ),
+  )
+}
+
+/**
+ * Which view to show first.
+ *
+ * This host resolves no presentation plan (it ships no generated presentation catalog), so the
+ * answer is the first stage in policy order. The signature still takes the plan's choice, because
+ * the RPC snapshot may carry one from a serving side that does resolve, and honouring it costs a
+ * comparison.
+ */
+export function preferredStage(
+  applicable: readonly string[],
+  planActive: string | undefined,
+): string | undefined {
+  if (planActive !== undefined && applicable.includes(planActive)) return planActive
+  return applicable[0]
+}
+
+/** One line per opened file: what the tests assert on and what the output channel prints. */
+export function openedLine(name: string, views: readonly string[], editable: boolean): string {
+  return `opened ${name} -> views [${views.join(', ')}] editable=${String(editable)}`
+}
