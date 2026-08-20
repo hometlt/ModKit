@@ -113,6 +113,9 @@ async function createWindow() {
     assertElectronBrokerRequest,
     isAllowedElectronNavigation,
     createElectronSubjectServices,
+    describeInventoryContributions,
+    disabledContributionNotices,
+    probeElectronExtensionRoot,
     resolveElectronPresentationPlan,
     createGrantedRoots,
     exposeElectronSubjectRpc,
@@ -124,13 +127,20 @@ async function createWindow() {
   } = await root
 
   const repositoryRoot = path.resolve(__dirname, '..', '..', '..')
-  /*
-   * Extensions the user connected in Settings. They are read here, in main, because main owns the
-   * settings file and the trust decision: a user's directory is an `installed` artifact and never
-   * reaches the in-process boundary. A disabled entry is skipped; a broken one is reported by
-   * `loadExtensionRoots` and the application still starts with everything else.
+  const BUNDLED_ROOTS = BUNDLED_EXTENSION_DIRECTORIES.map(directory =>
+    path.join(repositoryRoot, 'extensions', 'common', directory),
+  )
+
+  /**
+   * What the settings file asks this composition for.
+   *
+   * Read here, in main, because main owns the settings file and the trust decision: a user's
+   * directory is an `installed` artifact and never reaches the in-process boundary. A disabled
+   * entry is skipped; a broken one is reported by `loadExtensionRoots` and the application still
+   * starts with everything else. The disabled-contribution list travels the same way and is the
+   * one place a switched-off codec is decided — the host keeps the record and refuses activation.
    */
-  const userExtensionRoots = await (async () => {
+  const readExtensionConfiguration = async () => {
     try {
       const settings = await readSettings(app)
       // a malformed settings file is reported by the store; say so, or the user's extensions
@@ -138,44 +148,86 @@ async function createWindow() {
       if (settings.problem !== undefined) {
         console.log(`[main] settings could not be read: ${settings.problem}`)
       }
-      const configured = Array.isArray(settings.raw?.extensions) ? settings.raw.extensions : []
-      return configured
-        .filter(entry => entry && typeof entry.path === 'string' && entry.enabled !== false)
-        .map(entry => ({
-          root: path.resolve(entry.path),
-          ...(typeof entry.id === 'string' && entry.id.length > 0 ? { expectedId: entry.id } : {}),
-        }))
+      const raw = settings.raw
+      const configured = Array.isArray(raw?.extensions) ? raw.extensions : []
+      const entries = configured.flatMap(entry =>
+        entry && typeof entry.path === 'string' && entry.path.length > 0
+          ? [
+              {
+                path: entry.path,
+                root: path.resolve(entry.path),
+                enabled: entry.enabled !== false,
+                ...(typeof entry.id === 'string' && entry.id.length > 0 ? { id: entry.id } : {}),
+              },
+            ]
+          : [],
+      )
+      const disabledContributions = (
+        Array.isArray(raw?.disabledContributions) ? raw.disabledContributions : []
+      ).filter(value => typeof value === 'string' && value.length > 0)
+      return {
+        location: settings.location,
+        entries,
+        disabledContributions,
+        ...(settings.problem === undefined ? {} : { problem: settings.problem }),
+      }
     } catch (error) {
       console.log(`[main] settings unreadable, no user extensions loaded: ${String(error)}`)
-      return []
+      return {
+        location: 'settings',
+        entries: [],
+        disabledContributions: [],
+        problem: String(error),
+      }
     }
-  })()
-  const subjectServices = await createElectronSubjectServices(
-    BUNDLED_EXTENSION_DIRECTORIES.map(directory =>
-      path.join(repositoryRoot, 'extensions', 'common', directory),
-    ),
-    {
+  }
+
+  /** Compose the whole subject pipeline from what the settings file says right now. */
+  const composeFromSettings = async () => {
+    const configuration = await readExtensionConfiguration()
+    const services = await createElectronSubjectServices(BUNDLED_ROOTS, {
       // worker realm diagnostics: the SB-1 shared-process notice, restarts, crashes, capped stdio
       onDiagnostic: diagnostic =>
         console.log(`[worker] ${diagnostic.severity} ${diagnostic.code}: ${diagnostic.message}`),
-      userRoots: userExtensionRoots,
-    },
-  )
-  for (const failure of subjectServices.extensions.failures) {
+      userRoots: configuration.entries
+        .filter(entry => entry.enabled)
+        .map(entry => ({
+          root: entry.root,
+          ...(entry.id === undefined ? {} : { expectedId: entry.id }),
+        })),
+      disabledContributions: configuration.disabledContributions,
+    })
+    for (const failure of services.extensions.failures) {
+      console.log(
+        `[main] extension not loaded: ${failure.root} — ${failure.code}: ${failure.message}`,
+      )
+    }
+    if (services.extensions.installed.length > 0) {
+      console.log(`[main] user extensions: ${services.extensions.installed.join(', ')}`)
+    }
+    if (configuration.disabledContributions.length > 0) {
+      console.log(`[main] disabled codecs: ${configuration.disabledContributions.join(', ')}`)
+    }
+    const application = services.application
     console.log(
-      `[main] extension not loaded: ${failure.root} — ${failure.code}: ${failure.message}`,
+      `[main] composed ${application.topology.topologyId}: ` +
+        `main ${application.main.profile.facilities.length} facilities, ` +
+        `renderer ${application.renderer.profile.facilities.length} facilities, ` +
+        `codecs run in ${application.workers.profile.realmId} (${services.executionProfiles.join('/')})`,
     )
+    return { services, configuration }
   }
-  if (subjectServices.extensions.installed.length > 0) {
-    console.log(`[main] user extensions: ${subjectServices.extensions.installed.join(', ')}`)
-  }
-  const composed = subjectServices.application
-  console.log(
-    `[main] composed ${composed.topology.topologyId}: ` +
-      `main ${composed.main.profile.facilities.length} facilities, ` +
-      `renderer ${composed.renderer.profile.facilities.length} facilities, ` +
-      `codecs run in ${composed.workers.profile.realmId} (${subjectServices.executionProfiles.join('/')})`,
-  )
+
+  /*
+   * Live, not "on next launch".
+   *
+   * Both bindings are reassigned by `modkit.extensions.reload`, so every handler below reads the
+   * composition the user's settings describe *now*. The renderer closes its tabs before asking and
+   * reopens them afterwards, which is what disposes the sessions of the old composition — a worker
+   * lease ends with the session that holds it.
+   */
+  let { services: subjectServices, configuration: extensionConfiguration } =
+    await composeFromSettings()
 
   const window = new BrowserWindow({
     width: 1180,
@@ -217,24 +269,29 @@ async function createWindow() {
    * Node access — exactly what `nodeIntegration: false` denies. Main composes, and the renderer
    * receives the snapshot its own realm is allowed to see.
    */
-  ipcMain.handle('modkit.profile', () => ({
-    topologyId: composed.topology.topologyId,
-    renderer: {
-      realmId: composed.renderer.profile.realmId,
-      facilities: [...composed.renderer.profile.facilities],
-      environment: composed.renderer.profile.target.environment,
-    },
-    mainFacilityCount: composed.main.profile.facilities.length,
-    extensions: composed.renderer.inventory.extensions.length,
-    diagnostics: composed.renderer.inventory.diagnostics.length,
-    supportedExtensions: subjectServices.supportedExtensions,
-    // OPUS-UX-01 vocabulary: which boundary codecs get — worker threads of main (SB-1), never the renderer
-    execution: {
-      codecRealm: composed.workers.profile.realmId,
-      environment: composed.workers.profile.target.environment,
-      profiles: [...subjectServices.executionProfiles],
-    },
-  }))
+  // Read at call time, not captured: `modkit.extensions.reload` replaces the composition, and a
+  // snapshot pinned to the one built at start would keep describing codecs that are gone.
+  ipcMain.handle('modkit.profile', () => {
+    const composed = subjectServices.application
+    return {
+      topologyId: composed.topology.topologyId,
+      renderer: {
+        realmId: composed.renderer.profile.realmId,
+        facilities: [...composed.renderer.profile.facilities],
+        environment: composed.renderer.profile.target.environment,
+      },
+      mainFacilityCount: composed.main.profile.facilities.length,
+      extensions: composed.renderer.inventory.extensions.length,
+      diagnostics: composed.renderer.inventory.diagnostics.length,
+      supportedExtensions: subjectServices.supportedExtensions,
+      // OPUS-UX-01 vocabulary: which boundary codecs get — worker threads of main (SB-1), never the renderer
+      execution: {
+        codecRealm: composed.workers.profile.realmId,
+        environment: composed.workers.profile.target.environment,
+        profiles: [...subjectServices.executionProfiles],
+      },
+    }
+  })
 
   /*
    * Every filesystem read is confined to a directory the user picked in a native dialog. Without
@@ -304,6 +361,20 @@ async function createWindow() {
       ...(signal === undefined ? {} : { signal }),
     })
     if (result.state === 'unresolved') {
+      /*
+       * Why nothing claimed it, when the answer is "you switched that codec off".
+       *
+       * A disabled contribution is never a candidate, so the result carries no diagnostic that
+       * would explain it. The host's own record does; this puts it in front of the user instead of
+       * leaving them with a bare "no codec claimed it" for a file that opened a minute ago.
+       */
+      const switchedOff = disabledContributionNotices(
+        subjectServices.application.main.inventory,
+        file,
+      )
+      for (const notice of switchedOff) {
+        console.log(`[main] ${path.basename(file)} ${notice.code}: ${notice.message}`)
+      }
       console.log(
         `[main] subject ${path.basename(file)} unresolved (${result.reason}): ` +
           result.diagnostics.map(item => item.code).join(', ') +
@@ -325,7 +396,8 @@ async function createWindow() {
           state: result.state,
           reason: result.reason,
           candidates: result.candidates,
-          diagnostics: result.diagnostics,
+          // the switched-off notices first: they are the reason, the rest is the consequence
+          diagnostics: [...switchedOff, ...result.diagnostics],
         },
       }
     }
@@ -705,6 +777,154 @@ async function createWindow() {
     return { location: await writeSettings(app, text) }
   })
 
+  // ------------------------------------------------------------------ extensions and codecs
+  /**
+   * What the settings page draws: one row per configured extension with the outcome the loader
+   * gave it, and one row per contribution in the inventory with the switch it is in.
+   *
+   * The outcome is joined here rather than in the renderer, because main is the side that resolved
+   * the path and called `loadExtensionRoots` — the renderer has no `path.resolve` and must never
+   * be handed one. A failure travels with its code and message unchanged: a user who pointed at
+   * the wrong folder needs the loader's own sentence, not a paraphrase.
+   */
+  const extensionReport = () => {
+    const configuration = extensionConfiguration
+    const failures = subjectServices.extensions.failures
+    const installed = new Set(subjectServices.extensions.installed)
+    const entries = configuration.entries.map(entry => {
+      const failure = failures.find(item => item.root.toLowerCase() === entry.root.toLowerCase())
+      /*
+       * The loader reports one failure per root it refused — an unreadable directory, a folder
+       * that is not an extension, a coordinate conflict, an identity mismatch — so an enabled
+       * root that is not among them is loaded. Requiring the settings entry to name a coordinate
+       * would report a hand-written bare path as "absent" for no reason; that state is kept for
+       * the one genuinely odd case, an entry naming a coordinate the inventory does not hold.
+       */
+      const state = !entry.enabled
+        ? 'disabled'
+        : failure !== undefined
+          ? 'failed'
+          : entry.id !== undefined && !installed.has(entry.id)
+            ? 'absent'
+            : 'loaded'
+      return {
+        ...(entry.id === undefined ? {} : { id: entry.id }),
+        path: entry.path,
+        root: entry.root,
+        enabled: entry.enabled,
+        state,
+        ...(failure === undefined ? {} : { code: failure.code, message: failure.message }),
+      }
+    })
+    /*
+     * Failures whose root is not in the settings list at all — a bundled directory this build
+     * shipped broken. They belong on the page too: the user cannot fix them from here, but a
+     * codec that is missing for that reason must not look like a codec that never existed.
+     */
+    const configuredRoots = new Set(configuration.entries.map(entry => entry.root.toLowerCase()))
+    const unconfiguredFailures = failures
+      .filter(item => !configuredRoots.has(item.root.toLowerCase()))
+      .map(item => ({ root: item.root, code: item.code, message: item.message }))
+    return {
+      location: configuration.location,
+      ...(configuration.problem === undefined ? {} : { problem: configuration.problem }),
+      bundled: [...subjectServices.extensions.bundled],
+      installed: [...subjectServices.extensions.installed],
+      entries,
+      unconfiguredFailures,
+      contributions: describeInventoryContributions(subjectServices.application.main.inventory).map(
+        row => ({ ...row }),
+      ),
+      disabledContributions: [...configuration.disabledContributions],
+      supportedExtensions: [...subjectServices.supportedExtensions],
+    }
+  }
+
+  /*
+   * Reloading is serialised.
+   *
+   * Two toggles in quick succession would otherwise compose two pipelines against the same
+   * settings file and the last one to finish — not the last one asked for — would win. Chaining
+   * makes the final composition the one the final settings write describes.
+   */
+  let reloading = Promise.resolve()
+  const reloadExtensions = async () => {
+    const next = reloading.then(async () => {
+      const composedNow = await composeFromSettings()
+      subjectServices = composedNow.services
+      extensionConfiguration = composedNow.configuration
+    })
+    reloading = next.catch(() => undefined)
+    await next
+    return extensionReport()
+  }
+
+  ipcMain.handle('modkit.extensions.report', () => extensionReport())
+  ipcMain.handle('modkit.extensions.reload', () => reloadExtensions())
+
+  /*
+   * Picking an extension folder.
+   *
+   * A native directory dialog, exactly like `dialog.open-directory` — and deliberately *not*
+   * through it: opening a folder to browse grants it to the renderer's file access, and connecting
+   * an extension must not. Nothing here calls `roots.grant`.
+   *
+   * The directory is probed before anything is written, because the settings document keys an
+   * extension by identity and only the directory knows its own coordinate. A folder that is not an
+   * extension comes back as a refusal carrying the loader's code and message, which the page shows
+   * verbatim instead of silently dropping the folder.
+   */
+  const selfTestExtensionFolders = process.argv.includes('--selftest')
+    ? process.argv.flatMap((value, index) =>
+        value === '--extension-folder' && process.argv[index + 1] !== undefined
+          ? [process.argv[index + 1]]
+          : [],
+      )
+    : []
+  ipcMain.handle('modkit.extensions.browse', async () => {
+    /*
+     * A dialog needs a human. `--extension-folder <dir>` (accepted only in a `--selftest` run,
+     * beside `--open`) answers it from the command line instead, so the *renderer's* add flow —
+     * the button, the probe, the settings write, the reload — is the one being verified rather
+     * than a second path that only the test uses.
+     */
+    const scripted = selfTestExtensionFolders.shift()
+    const picked =
+      scripted === undefined
+        ? await dialog.showOpenDialog(window, {
+            properties: ['openDirectory'],
+            title: 'Add an extension folder',
+            buttonLabel: 'Add extension',
+          })
+        : { canceled: false, filePaths: [scripted] }
+    if (picked.canceled || picked.filePaths[0] === undefined) return { canceled: true }
+    const root = path.resolve(picked.filePaths[0])
+    const already = extensionConfiguration.entries.find(
+      entry => entry.root.toLowerCase() === root.toLowerCase(),
+    )
+    if (already !== undefined) {
+      return {
+        canceled: false,
+        state: 'already-configured',
+        root,
+        ...(already.id === undefined ? {} : { id: already.id }),
+      }
+    }
+    const claimed = [
+      ...subjectServices.extensions.bundled,
+      ...extensionConfiguration.entries.flatMap(entry =>
+        entry.id === undefined ? [] : [entry.id],
+      ),
+    ]
+    const probe = await probeElectronExtensionRoot(root, claimed)
+    console.log(
+      probe.state === 'extension'
+        ? `[main] extension folder accepted: ${probe.root} declares ${probe.id}`
+        : `[main] extension folder refused: ${probe.root} — ${probe.code}: ${probe.message}`,
+    )
+    return { canceled: false, ...probe }
+  })
+
   /*
    * Native menu. The actions live here rather than as toolbar buttons because this is a desktop
    * app: File/Open Folder is where a user looks for it, and the accelerators come for free.
@@ -755,6 +975,11 @@ async function createWindow() {
             { type: 'separator' },
             { label: 'Set as Default App…', click: send('modkit.menu.default-app') },
             { label: 'Settings', accelerator: 'CmdOrCtrl+,', click: send('modkit.menu.settings') },
+            {
+              label: 'Extensions & Codecs…',
+              accelerator: 'CmdOrCtrl+Shift+X',
+              click: send('modkit.menu.extensions'),
+            },
             { type: 'separator' },
             { role: 'quit' },
           ],

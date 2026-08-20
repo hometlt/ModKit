@@ -42,6 +42,16 @@ export interface SettingsDocument {
   readonly appearance: AppearanceSettings
   readonly extensions: readonly ExtensionSetting[]
   readonly recent: readonly RecentEntry[]
+  /**
+   * Contribution ids (`org.example/image-png`) the user switched off, one level below an
+   * extension: an extension may ship six codecs and a user may want five of them.
+   *
+   * A set, not an ordered list, so it is normalised and serialised sorted — two hosts writing the
+   * same choice produce the same bytes. The host reads it as `disabledContributions` and keeps the
+   * record in its inventory with `activationEligible: false`, which is what lets a settings page
+   * show the switch in its off position instead of the codec simply vanishing.
+   */
+  readonly disabledContributions: readonly string[]
 }
 
 /** Bounded so the menu stays readable and the file cannot grow without limit. */
@@ -54,6 +64,7 @@ export const DEFAULT_SETTINGS: SettingsDocument = Object.freeze({
   appearance: Object.freeze({ theme: 'modkit-dark', density: 'compact' as Density }),
   extensions: Object.freeze([]),
   recent: Object.freeze([]),
+  disabledContributions: Object.freeze([]),
 })
 
 export interface NormalizedSettings {
@@ -153,12 +164,37 @@ export function normalizeSettings(value: unknown): NormalizedSettings {
     }
   }
 
+  /*
+   * A set of contribution ids. Sorted and deduplicated here rather than at every read site,
+   * because "is this codec off?" is a membership question and the file is user-editable: two
+   * entries for the same id, or an id written as a number, must not decide anything.
+   */
+  const disabled: string[] = []
+  const disabledInput = value['disabledContributions']
+  if (disabledInput !== undefined && !Array.isArray(disabledInput)) {
+    problems.push('disabledContributions must be an array; it was ignored')
+  } else {
+    const seenIds = new Set<string>()
+    for (const [index, item] of (disabledInput ?? []).entries()) {
+      const id = asText(item)
+      if (id === undefined) {
+        problems.push(`disabledContributions[${index}] is not a contribution id; ignored`)
+        continue
+      }
+      if (seenIds.has(id)) continue
+      seenIds.add(id)
+      disabled.push(id)
+    }
+    disabled.sort(compareUtf8)
+  }
+
   return {
     document: Object.freeze({
       schemaVersion: SETTINGS_SCHEMA_VERSION,
       appearance: Object.freeze({ theme, density }),
       extensions: Object.freeze(extensions),
       recent: Object.freeze(recent),
+      disabledContributions: Object.freeze(disabled),
     }),
     problems: Object.freeze(problems),
   }
@@ -183,6 +219,8 @@ export function serializeSettings(document: SettingsDocument): string {
       appearance: { theme: document.appearance.theme, density: document.appearance.density },
       // Recency is meaningful order, so this list is written as-is rather than sorted.
       recent: document.recent.map(entry => ({ path: entry.path, kind: entry.kind })),
+      // A set: sorted, so the same choice made in two hosts produces the same bytes.
+      disabledContributions: [...document.disabledContributions].sort(compareUtf8),
       extensions: [...document.extensions]
         .sort((a, b) => compareUtf8(a.id, b.id))
         .map(entry => ({

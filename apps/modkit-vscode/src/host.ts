@@ -54,18 +54,32 @@ import {
   createBridge,
   type Bridge,
   type CloseAnswer,
+  type ShellConfigureResult,
   type ShellEntry,
   type ShellRequest,
+  type ShellSettingsView,
   type WebviewChannel,
 } from './bridge.js'
+import { describeInventoryContributions, type ContributionRow } from './contributions.js'
 import {
+  configuredDisabledContributions,
   configuredExtensionRoots,
   dedupeRoots,
+  describeConfiguredExtensions,
   discoverCatalogRoots,
   discoverWorkspaceRoots,
+  withContributionDisabled,
+  withExtensionEnabled,
+  withExtensionRoot,
+  withoutExtension,
   type DirectoryProbe,
   type ExtensionRootRequestLike,
 } from './extension-roots.js'
+
+/** Said once, so every refusal to write configuration reads the same. */
+const CANNOT_CONFIGURE =
+  'This window cannot change Modkit configuration, so nothing was written. ' +
+  'The same keys can be edited in the editor’s own Settings UI.'
 import {
   createVsCodeDesktopTopology,
   VSCODE_DESKTOP_EXTENSION_REALM,
@@ -106,6 +120,8 @@ export interface VsCodeExtensionReport {
   readonly failures: readonly ExtensionRootFailure[]
   /** Settings entries that were not usable as a root at all (malformed, no path). */
   readonly problems: readonly string[]
+  /** Contribution ids `modkit.disabledContributions` switched off, as the host received them. */
+  readonly disabledContributions: readonly string[]
 }
 
 export interface VsCodeSubjectHost {
@@ -115,6 +131,15 @@ export interface VsCodeSubjectHost {
   readonly webview: HostComposition
   readonly extensions: VsCodeExtensionReport
   readonly supportedExtensions: readonly string[]
+  /**
+   * Every contribution the inventory holds, with the switch the running composition put it in.
+   *
+   * Fixed for the life of the extension host, because the composition is: the profile revision
+   * keys resolution caches, so recomposing per command would silently invalidate them. A setting
+   * changed after activation is therefore shown against these rows as pending until the window
+   * reloads — which is the honest thing for this editor to say.
+   */
+  readonly contributions: readonly ContributionRow[]
   /** Serve the subject RPC and the shell over one webview channel. */
   serve(options: VsCodeServeOptions): VsCodeServed
 }
@@ -129,6 +154,15 @@ export interface VsCodeSubjectHostOptions {
   readonly workspaceFolders?: readonly string[]
   /** Raw value of the `modkit.extensions` setting, exactly as the editor returned it. */
   readonly configuredExtensions?: unknown
+  /**
+   * Raw value of the `modkit.disabledContributions` setting, exactly as the editor returned it.
+   *
+   * Threaded into `createNodeSubjectServices` unchanged in meaning: a switched-off contribution
+   * stays in the inventory and loses `activationEligible`, so the settings view can show it in its
+   * off position and the user can put it back. Filtering it out here instead would make the codec
+   * vanish and the switch with it.
+   */
+  readonly configuredDisabledContributions?: unknown
   /**
    * The worker bootstrap this extension shipped beside its bundle. Required in a packaged build:
    * the backend default resolves it through `import.meta.url`, which a CommonJS extension entry
@@ -190,6 +224,7 @@ export async function createVsCodeSubjectHost(
     claimed: bundled.coordinates,
   })
   const extensionInputs: readonly ExtensionInput[] = [...bundled.inputs, ...installed.inputs]
+  const switchedOff = configuredDisabledContributions(options.configuredDisabledContributions)
 
   const topology = createVsCodeDesktopTopology()
   const services = await createNodeSubjectServices({
@@ -197,6 +232,7 @@ export async function createVsCodeSubjectHost(
     realms: { host: VSCODE_DESKTOP_EXTENSION_REALM, workers: VSCODE_DESKTOP_WORKER_REALM },
     extensions: extensionInputs,
     policy: VSCODE_WORKER_POLICY,
+    disabledContributions: switchedOff.ids,
     /*
      * Where this host shipped the worker bootstrap.
      *
@@ -216,21 +252,29 @@ export async function createVsCodeSubjectHost(
     topology,
     realmId: VSCODE_WEBVIEW_REALM,
     extensions: extensionInputs,
+    disabledContributions: switchedOff.ids,
   })
 
   const extensions: VsCodeExtensionReport = Object.freeze({
     bundled: bundled.coordinates,
     installed: installed.coordinates,
     failures: Object.freeze([...bundled.failures, ...installed.failures]),
-    problems: configured.problems,
+    // a malformed `modkit.disabledContributions` is the user's setting too, so it is reported in
+    // the same place a malformed `modkit.extensions` entry is, not swallowed on the way past
+    problems: Object.freeze([...configured.problems, ...switchedOff.problems]),
+    disabledContributions: switchedOff.ids,
   })
+
+  const contributions = describeInventoryContributions(services.host.inventory)
 
   return Object.freeze({
     services,
     webview,
     extensions,
+    contributions,
     supportedExtensions: services.supportedExtensions,
-    serve: (served: VsCodeServeOptions) => serveVsCode(services, served),
+    serve: (served: VsCodeServeOptions) =>
+      serveVsCode(services, served, { extensions, contributions }),
   })
 }
 
@@ -252,6 +296,29 @@ export interface VsCodeServeOptions {
   /** Confirm discarding unsaved work; a webview iframe cannot show a modal of its own. */
   readonly confirmClose?: (message: string, savable: boolean) => Promise<CloseAnswer>
   readonly onDiagnostic?: (diagnostic: { code: string; message: string }) => void
+  /**
+   * Reading and writing this window's Modkit configuration.
+   *
+   * Supplied by `./extension.ts`, because `vscode.workspace.getConfiguration` and
+   * `vscode.window.showOpenDialog` live only where `vscode` may be imported. Absent means this
+   * window cannot change configuration at all — the settings view then still *shows* everything
+   * and draws no switch that would fail, which is the same rule the read-only settings surface
+   * follows elsewhere in this lab.
+   */
+  readonly configuration?: VsCodeConfigurationPort
+}
+
+/** What the extension side lets the page do to configuration, and nothing more. */
+export interface VsCodeConfigurationPort {
+  /** `modkit.extensions` exactly as the editor returns it. */
+  readExtensions(): unknown
+  /** `modkit.disabledContributions` exactly as the editor returns it. */
+  readDisabledContributions(): unknown
+  /** Where a write lands; shown to the user, because it decides who else sees the change. */
+  readonly scope: 'workspace' | 'user'
+  write(key: 'extensions' | 'disabledContributions', value: readonly unknown[]): Promise<void>
+  /** Native folder dialog; resolves with the chosen absolute path, or nothing when cancelled. */
+  pickFolder(): Promise<string | undefined>
 }
 
 export interface VsCodeServed {
@@ -291,7 +358,14 @@ function requireInside(roots: readonly string[], requested: string): string {
   return path
 }
 
-function serveVsCode(services: NodeSubjectServices, options: VsCodeServeOptions): VsCodeServed {
+function serveVsCode(
+  services: NodeSubjectServices,
+  options: VsCodeServeOptions,
+  composed: {
+    readonly extensions: VsCodeExtensionReport
+    readonly contributions: readonly ContributionRow[]
+  },
+): VsCodeServed {
   const bridge = createBridge({
     channel: options.channel,
     idPrefix: 'host',
@@ -384,8 +458,80 @@ function serveVsCode(services: NodeSubjectServices, options: VsCodeServeOptions)
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
   })
 
+  // ------------------------------------------------------------------ settings traffic
+  /**
+   * What the page shows: the setting as it stands now, and the composition as it is running.
+   *
+   * The two can disagree, and saying so is the point. A contribution the user just switched off is
+   * in `disabledContributions` immediately and still `disabled: false` on its row until the window
+   * reloads — the page draws that difference as "pending" instead of pretending the codec is
+   * already gone.
+   */
+  const settingsView = (): ShellSettingsView => {
+    const configuration = options.configuration
+    const rawExtensions = configuration?.readExtensions()
+    const configured = describeConfiguredExtensions(rawExtensions)
+    const failures = composed.extensions.failures
+    const installed = new Set(composed.extensions.installed)
+    const resolvedFor = (path: string): string => resolve(path)
+    return {
+      bundled: composed.extensions.bundled,
+      installed: composed.extensions.installed,
+      failures: failures.map(item => ({
+        root: item.root,
+        code: item.code,
+        message: item.message,
+      })),
+      problems: composed.extensions.problems,
+      configuredExtensions: configured.map(entry => {
+        const root = resolvedFor(entry.path)
+        const failure = failures.find(item => item.root === root)
+        /*
+         * An entry with no `id` is the common case — a bare path is what the folder dialog
+         * appends — so "loaded" cannot be conditioned on knowing the coordinate in advance. The
+         * loader reports one failure per root it refused, including an identity mismatch, so a
+         * root that is enabled and not among the failures is loaded. `absent` is left for the one
+         * case that is genuinely odd: an entry that names a coordinate the inventory does not hold
+         * and that the loader did not refuse.
+         */
+        const state = !entry.enabled
+          ? 'disabled'
+          : failure !== undefined
+            ? 'failed'
+            : entry.id !== undefined && !installed.has(entry.id)
+              ? 'absent'
+              : 'loaded'
+        return {
+          index: entry.index,
+          path: entry.path,
+          ...(entry.id === undefined ? {} : { id: entry.id }),
+          enabled: entry.enabled,
+          state,
+          ...(failure === undefined ? {} : { code: failure.code, message: failure.message }),
+        }
+      }),
+      contributions: composed.contributions.map(row => ({ ...row })),
+      disabledContributions:
+        configuration === undefined
+          ? composed.extensions.disabledContributions
+          : configuredDisabledContributions(configuration.readDisabledContributions()).ids,
+      scope: configuration?.scope ?? 'user',
+      writable: configuration !== undefined,
+    }
+  }
+
+  const answer = (changed: boolean, message: string): ShellConfigureResult => ({
+    changed,
+    message,
+    view: settingsView(),
+  })
+
+  /** Every write goes through here, so "changed" and "reload to apply" are said in one place. */
+  const applies = 'Reload the window to apply it.'
+
   bridge.serve(async (request: ShellRequest): Promise<unknown> => {
     const roots = options.roots().map(root => resolve(root))
+    const configuration = options.configuration
     switch (request.op) {
       case 'list':
         return listDirectory(roots, request.path)
@@ -395,6 +541,69 @@ function serveVsCode(services: NodeSubjectServices, options: VsCodeServeOptions)
         // No adapter means no way to ask, and discarding silently is the one answer that loses
         // work — so an unanswerable prompt keeps the tab open.
         return (await options.confirmClose?.(request.message, request.savable)) ?? 'cancel'
+      case 'settings':
+        return settingsView()
+      case 'set-contribution': {
+        if (configuration === undefined) return answer(false, CANNOT_CONFIGURE)
+        const { next, changed } = withContributionDisabled(
+          configuration.readDisabledContributions(),
+          request.id,
+          !request.enabled,
+        )
+        if (changed) await configuration.write('disabledContributions', next)
+        return answer(
+          changed,
+          changed
+            ? `${request.id} is now ${request.enabled ? 'enabled' : 'disabled'} in ` +
+                `modkit.disabledContributions (${configuration.scope}). ${applies}`
+            : `${request.id} was already ${request.enabled ? 'enabled' : 'disabled'}.`,
+        )
+      }
+      case 'set-extension': {
+        if (configuration === undefined) return answer(false, CANNOT_CONFIGURE)
+        const { next, changed } = withExtensionEnabled(
+          configuration.readExtensions(),
+          request.index,
+          request.enabled,
+        )
+        if (changed) await configuration.write('extensions', next)
+        return answer(
+          changed,
+          changed
+            ? `modkit.extensions[${request.index}] is now ` +
+                `${request.enabled ? 'enabled' : 'disabled'} (${configuration.scope}). ${applies}`
+            : `modkit.extensions has no entry ${request.index}.`,
+        )
+      }
+      case 'remove-extension': {
+        if (configuration === undefined) return answer(false, CANNOT_CONFIGURE)
+        const { next, changed } = withoutExtension(configuration.readExtensions(), request.index)
+        if (changed) await configuration.write('extensions', next)
+        return answer(
+          changed,
+          changed
+            ? `Removed modkit.extensions[${request.index}] (${configuration.scope}). ${applies}`
+            : `modkit.extensions has no entry ${request.index}.`,
+        )
+      }
+      case 'add-extension-folder': {
+        if (configuration === undefined) return answer(false, CANNOT_CONFIGURE)
+        const picked = await configuration.pickFolder()
+        if (picked === undefined) return answer(false, 'No folder was chosen.')
+        const root = resolve(picked)
+        const { next, added, reason } = withExtensionRoot(configuration.readExtensions(), root, {
+          // Windows and macOS default volumes fold case; a Linux path does not.
+          caseSensitive: process.platform !== 'win32' && process.platform !== 'darwin',
+        })
+        if (added) await configuration.write('extensions', next)
+        return answer(
+          added,
+          added
+            ? `Added ${root} to modkit.extensions (${configuration.scope}). ${applies}` +
+                (reason === undefined ? '' : ` ${reason}`)
+            : (reason ?? `${root} is already in modkit.extensions.`),
+        )
+      }
       default:
         throw new Error('unknown shell request')
     }

@@ -121,6 +121,19 @@ body {
   padding: var(--mk-space-3);
 }
 
+/*
+ * The settings section is the same panel, but in the editor area rather than the rail.
+ *
+ * The main area clips (`overflow: hidden`) and is sized by the grid, so a child that is content
+ * height would simply be cut off. A definite height plus its own scroller is what lets a list of
+ * forty-odd contributions be read.
+ */
+.vscode-host-panel[data-surface='settings'] {
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+}
+
 .vscode-host-panel h2 {
   margin: var(--mk-space-2) 0 0;
   color: var(--mk-color-fg);

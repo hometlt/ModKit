@@ -51,12 +51,79 @@ export interface ShellEntry {
 /** What a close prompt can answer. `save` is only offered when the tab has a save path. */
 export type CloseAnswer = 'save' | 'discard' | 'cancel'
 
+/**
+ * What the webview's settings section shows.
+ *
+ * All of it is inert description: coordinates, reasons and switch positions. The page never
+ * receives the raw setting value, only these views — the entries carry the index the writers below
+ * name, so the *extension side* stays the one that decides what a hand-written setting looks like.
+ */
+export interface ShellSettingsView {
+  readonly bundled: readonly string[]
+  readonly installed: readonly string[]
+  readonly failures: readonly {
+    readonly root: string
+    readonly code: string
+    readonly message: string
+  }[]
+  /** Settings entries that were not usable as a root at all (malformed, no path). */
+  readonly problems: readonly string[]
+  readonly configuredExtensions: readonly ShellConfiguredExtension[]
+  readonly contributions: readonly ShellContribution[]
+  readonly disabledContributions: readonly string[]
+  /** Which configuration target a write lands in (`workspace` when one is open, else `user`). */
+  readonly scope: 'workspace' | 'user'
+  /** False when this window has no way to write configuration; the page then draws no switches. */
+  readonly writable: boolean
+}
+
+export interface ShellConfiguredExtension {
+  readonly index: number
+  readonly path: string
+  readonly id?: string
+  readonly enabled: boolean
+  /** What the loader made of it, when the composition can say. */
+  readonly state: 'loaded' | 'disabled' | 'failed' | 'absent'
+  readonly code?: string
+  readonly message?: string
+}
+
+export interface ShellContribution {
+  readonly id?: string
+  readonly displayName: string
+  readonly contract?: string
+  readonly extension: string
+  readonly origin: string
+  readonly activationEligible: boolean
+  readonly disabled: boolean
+  readonly path: string
+}
+
+/** The answer to any request that changes configuration. */
+export interface ShellConfigureResult {
+  readonly changed: boolean
+  /** One sentence for the page's status line, written by the side that did the work. */
+  readonly message: string
+  /** The state after the write, so the page never has to guess what it now looks like. */
+  readonly view: ShellSettingsView
+}
+
 /** Webview → extension host. Every one of these is answered exactly once. */
 export type ShellRequest =
   | { readonly op: 'list'; readonly path?: string }
   | { readonly op: 'read'; readonly path: string; readonly maxBytes: number }
   /** A webview iframe cannot show a modal of its own, so the prompt happens in the editor. */
   | { readonly op: 'confirm'; readonly message: string; readonly savable: boolean }
+  /*
+   * Settings traffic. The webview holds no host and no configuration API, so it asks — which is
+   * the honest path: `vscode.workspace.getConfiguration().update` exists only on the extension
+   * side, and a page that could reach it would have become an extension host.
+   */
+  | { readonly op: 'settings' }
+  | { readonly op: 'set-contribution'; readonly id: string; readonly enabled: boolean }
+  | { readonly op: 'set-extension'; readonly index: number; readonly enabled: boolean }
+  | { readonly op: 'remove-extension'; readonly index: number }
+  | { readonly op: 'add-extension-folder' }
 
 /** Fire-and-forget, in both directions. */
 export type ShellEvent =
