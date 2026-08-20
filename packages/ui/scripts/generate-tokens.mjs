@@ -141,8 +141,17 @@ const adapterDeclarations = themed
   .join('\n')
 
 const tokenLayer = `@layer mk.tokens {
+  /*
+   * Every token block selects ":root, :host" (a selector LIST, deliberately not
+   * ":where(:root, :host)", whose zero specificity would break the theme cascade): ":root"
+   * matches nothing inside a shadow tree, so a bare-:root sheet adopted into one resolves every
+   * token to nothing — the embedded element had to regex-rewrite the shipped stylesheet to be
+   * usable at all. In a normal document ":host" matches nothing and costs nothing.
+   */
+
   /* Complete light palette on bare :root, so an unstamped document always resolves. */
-  :root {
+  :root,
+  :host {
 ${declarations(light, '    ')}
 
     /* tier 3 derives from tier 2; a theme may override any of these */
@@ -156,32 +165,40 @@ ${tier3Declarations('    ')}
    * pins the OS palette. Keep it at (0,2,0) so source order decides and the explicit choice wins.
    */
   @media (prefers-color-scheme: dark) {
-    :root:not([data-mk-theme]) {
+    :root:not([data-mk-theme]),
+    :host(:not([data-mk-theme])) {
 ${declarations(dark, '      ')}
     }
   }
 
   /* Explicit choices win in both directions. */
-  :root[data-mk-theme='modkit-dark'] {
+  :root[data-mk-theme='modkit-dark'],
+  :host([data-mk-theme='modkit-dark']) {
 ${declarations(dark, '    ')}
   }
 
-  :root[data-mk-theme='modkit-light'] {
+  :root[data-mk-theme='modkit-light'],
+
+  :host([data-mk-theme='modkit-light']) {
 ${declarations(light, '    ')}
   }
 
-  :root[data-mk-theme='modkit-high-contrast'] {
+  :root[data-mk-theme='modkit-high-contrast'],
+
+  :host([data-mk-theme='modkit-high-contrast']) {
 ${declarations(contrast, '    ')}
   }
 
   /* Adapter, not a user-selectable theme: the host's own theme drives every role. */
-  :root[data-mk-theme='vscode-adapter'] {
+  :root[data-mk-theme='vscode-adapter'],
+  :host([data-mk-theme='vscode-adapter']) {
 ${adapterDeclarations}
   }
 
   /* Forced colors: hand every semantic role to the system palette (BRIEF-13C C-15). */
   @media (forced-colors: active) {
-    :root {
+    :root,
+    :host {
       ${cssVariableName('color.bg')}: Canvas;
       ${cssVariableName('color.surface')}: Canvas;
       ${cssVariableName('color.raised')}: Canvas;

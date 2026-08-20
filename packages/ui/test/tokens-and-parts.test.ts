@@ -158,9 +158,12 @@ describe('shipped stylesheet', () => {
     expect(firstBlock).toBeGreaterThan(statement)
   })
 
-  it('defines a complete light palette on bare :root', async () => {
+  it('defines a complete light palette on bare :root (and its :host twin, for shadow roots)', async () => {
     const css = await readText('styles', 'modkit-ui.css')
-    const root = css.slice(css.indexOf('  :root {'), css.indexOf('@media (prefers-color-scheme'))
+    // the opener is a ':root, :host' selector list now, so tokens resolve inside a shadow tree too
+    const opener = css.indexOf('  :root,' + String.fromCharCode(10) + '  :host {')
+    expect(opener).toBeGreaterThan(-1)
+    const root = css.slice(opener, css.indexOf('@media (prefers-color-scheme'))
     for (const token of TOKENS.filter(item => item.tier !== 3)) {
       expect(root, `bare :root is missing ${token.name}`).toContain(
         `${cssVariableName(token.name)}:`,

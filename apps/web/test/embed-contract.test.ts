@@ -24,7 +24,6 @@ import {
   MODKIT_VIEWER_TAG,
   preferStage,
   resolveAssetBase,
-  shadowScopedCss,
   shareByAssetBase,
 } from '../src/embed.js'
 import { repositoryRoot } from './browser-harness.js'
@@ -140,39 +139,29 @@ describe('preferred stage', () => {
   })
 })
 
-describe('the shipped stylesheet, rewritten for a shadow root', () => {
+describe('the shipped stylesheet is shadow-capable as shipped', () => {
   const source = readFileSync(
     join(repositoryRoot, 'packages', 'ui', 'styles', 'modkit-ui.css'),
     'utf8',
   )
-  const scoped = shadowScopedCss(source)
 
-  it('leaves no :root behind, because :root matches nothing inside a shadow tree', () => {
-    expect(source).toContain(':root')
-    expect(scoped).not.toContain(':root')
+  /*
+   * The element used to regex-rewrite ":root" to ":host" at load time; the generator now emits
+   * both, so the element adopts the fetched bytes untouched. This is the test that keeps it true:
+   * if the generator regresses to bare :root, the embedded element silently loses every token —
+   * exactly the failure the rewrite existed to prevent — and this goes red instead.
+   */
+  it('defines its tokens for :host, not only :root', () => {
+    expect(source).toContain(':host {')
+    expect(source).toContain(":host([data-mk-theme='modkit-dark'])")
+    expect(source).toContain(":host([data-mk-theme='modkit-light'])")
+    expect(source).toContain(":host([data-mk-theme='modkit-high-contrast'])")
+    expect(source).toContain(':host(:not([data-mk-theme]))')
   })
 
-  it('keeps every theme block, at the specificity it was written with', () => {
-    expect(scoped).toContain(":host([data-mk-theme='modkit-dark'])")
-    expect(scoped).toContain(":host([data-mk-theme='modkit-light'])")
-    expect(scoped).toContain(":host([data-mk-theme='modkit-high-contrast'])")
-    expect(scoped).toContain(':host(:not([data-mk-theme]))')
-  })
-
-  it('rewrites the selector and nothing else', () => {
-    const rules = (text: string): number => (text.match(/--mk-color-fg:/gu) ?? []).length
-    expect(rules(scoped)).toBe(rules(source))
-    expect(scoped.length).toBeGreaterThan(source.length - 100)
-  })
-
-  it('handles each spelling on its own', () => {
-    expect(shadowScopedCss(':root { --a: 1 }')).toBe(':host { --a: 1 }')
-    expect(shadowScopedCss(":root[data-mk-theme='x'] { --a: 1 }")).toBe(
-      ":host([data-mk-theme='x']) { --a: 1 }",
-    )
-    expect(shadowScopedCss(':root:not([data-mk-theme]) { --a: 1 }')).toBe(
-      ':host(:not([data-mk-theme])) { --a: 1 }',
-    )
+  it('lets density sit on the embedded element itself', () => {
+    expect(source).toContain(":host([data-mk-density='compact'])")
+    expect(source).toContain(":host([data-mk-density='comfortable'])")
   })
 })
 

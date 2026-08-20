@@ -1,0 +1,113 @@
+/*
+ * The host page's own stylesheet. Nothing modkit here on purpose: a serif face, a warm ground and
+ * a red ink, chosen so that anything of this page's typography that leaked through the shadow
+ * boundary would be obvious on sight — and so the automated proof can assert the difference
+ * instead of eyeballing it.
+ *
+ * `letter-spacing` on `.site` is the deliberately hostile one. Selectors do not cross a shadow
+ * boundary, but *inheritance* does, so this is exactly the kind of rule that would arrive inside a
+ * viewer if the element did not reset inherited text properties on its host.
+ */
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  color: #2f2a26;
+  background: #f6f1e7;
+  font-family: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  font-size: 17px;
+  line-height: 1.65;
+}
+
+a {
+  color: #a4342a;
+}
+
+code {
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+  background: #ece3d3;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.site-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 2rem;
+  border-bottom: 2px solid #d9cbb0;
+  background: #efe6d5;
+}
+
+.site-mark {
+  margin: 0;
+  font-size: 1.1rem;
+  font-variant: small-caps;
+  letter-spacing: 0.18em;
+}
+
+.site-nav {
+  display: flex;
+  gap: 1.25rem;
+  font-size: 0.9rem;
+}
+
+.site {
+  max-width: 54rem;
+  margin: 0 auto;
+  padding: 2rem;
+  /* hostile on purpose: an inherited property that a shadow root does not stop */
+  letter-spacing: 0.02em;
+}
+
+h1 {
+  margin: 0 0 0.5rem;
+  font-size: 2rem;
+  font-weight: 400;
+}
+
+h2 {
+  margin: 2.5rem 0 0.5rem;
+  font-size: 1.35rem;
+  font-weight: 400;
+  border-bottom: 1px solid #ded1b8;
+}
+
+.lede {
+  color: #6a5f52;
+  font-style: italic;
+}
+
+.viewer {
+  margin: 1rem 0 0;
+  padding: 0.75rem;
+  border: 1px solid #ded1b8;
+  border-radius: 6px;
+  background: #fffdf8;
+}
+
+.viewer figcaption {
+  padding-top: 0.5rem;
+  color: #6a5f52;
+  font-size: 0.85rem;
+}
+
+/* The host page sizes the element; a rule in the outer tree beats the element's own `:host`. */
+.viewer modkit-viewer {
+  display: block;
+  block-size: 22rem;
+}
+
+.site-foot {
+  padding: 2rem;
+  border-top: 2px solid #d9cbb0;
+  color: #6a5f52;
+  font-size: 0.85rem;
+  text-align: center;
+}

@@ -11,13 +11,15 @@
  * worker backend re-verifies every file's bytes against the catalog's digests before it becomes
  * evaluable, so a cached copy is trusted no further than a freshly fetched one.
  */
-const CACHE = 'modkit-mk3-shell-v2'
+const CACHE = 'modkit-mk3-shell-v3'
 
 /** Names the build always emits; a miss here is a broken build, so `addAll` may fail loudly. */
 const SHELL = [
   './',
   './index.html',
   './main.js',
+  // the embed entry is a stable build output too; a page that embedded a viewer once works offline
+  './embed.js',
   './app.css',
   './modkit-ui.css',
   './manifest.webmanifest',

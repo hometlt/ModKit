@@ -449,13 +449,6 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
     /*
      * Mounted only for a subject the shell handed `editorPorts` for — a file with a File System
      * Access handle whose write permission the browser has not refused. See the module comment.
-     *
-     * The cast records a gap in the ui package rather than hiding one: in the `packages/ui` this
-     * worktree was cut from, `PreviewStage.module` is typed `ViewerModule`, while its own
-     * documentation says an `editable` stage carries an `EditorModule` (which takes four more
-     * mount arguments), so a first-party host cannot name an editor stage in TypeScript at all.
-     * The widening to `ViewerModule | EditorModule` has since landed upstream: once this sits on
-     * top of it, both casts here become plain `module: textEditor` / `module: hexEditor`.
      */
     {
       id: 'text-editor',

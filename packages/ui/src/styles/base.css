@@ -118,13 +118,16 @@
   }
 
   /* Density. Compact matches VS Code list metrics; comfortable suits web and Electron. */
-  [data-mk-density='compact'] {
+  /* The :host twins let density be set on an embedded element itself, not only inside it. */
+  [data-mk-density='compact'],
+  :host([data-mk-density='compact']) {
     --mk-size-row: 22px;
     --mk-size-control: 24px;
     --mk-panel-padding: var(--mk-space-2);
   }
 
-  [data-mk-density='comfortable'] {
+  [data-mk-density='comfortable'],
+  :host([data-mk-density='comfortable']) {
     --mk-size-row: 28px;
     --mk-size-control: 32px;
     --mk-panel-padding: var(--mk-space-4);

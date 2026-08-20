@@ -284,21 +284,12 @@ export function preferStage(
   return Object.freeze([...chosen, ...stages.filter(stage => stageIdOf(stage) !== preferred)])
 }
 
-/**
- * `modkit-ui.css` as a shadow root can use it.
- *
- * The shipped sheet defines every token under `:root`, which matches the document element and
- * nothing else — inside a shadow tree it matches nothing at all, and every `var(--mk-…)` would
- * resolve to its fallback (that is, to nothing). `:host` is the shadow-tree spelling of the same
- * thing, and it keeps the specificity relationship the sheet was written with: `:root[data-mk-theme]`
- * becomes `:host([data-mk-theme])`, which still beats bare `:host`.
+/*
+ * No stylesheet rewriting here any more: the token generator now emits every token block with a
+ * ":root, :host" selector list, so the shipped sheet is shadow-capable as fetched. The contract
+ * test asserts that on the shipped bytes — if the generator regresses to bare :root, that test
+ * goes red, not this element.
  */
-export function shadowScopedCss(text: string): string {
-  return text
-    .replace(/:root:not\(([^)]*)\)/gu, ':host(:not($1))')
-    .replace(/:root(\[[^\]]*\])/gu, ':host($1)')
-    .replace(/:root\b/gu, ':host')
-}
 
 /**
  * Compose once per asset base, share for the page's lifetime.
@@ -360,7 +351,7 @@ async function loadStyles(assetBase: string): Promise<EmbedStyles> {
   if (!response.ok) {
     throw new Error(`modkit-ui.css could not be fetched from ${assetBase} (${response.status})`)
   }
-  const text = `${shadowScopedCss(await response.text())}\n${EMBED_CHROME_CSS}`
+  const text = `${await response.text()}\n${EMBED_CHROME_CSS}`
   if (typeof CSSStyleSheet !== 'function') return { text }
   try {
     const sheet = new CSSStyleSheet()
