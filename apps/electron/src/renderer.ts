@@ -1230,6 +1230,22 @@ async function selfTest(options: {
 
   const tabs = editors.root.querySelectorAll('[data-mk-part="explorer.filetab"]').length
   console.log(`selftest: ${tabs} tabs open in ${editors.groupCount} group(s)`)
+  {
+    /*
+     * One file visible at a time. The component hides inactive tabs with the `hidden` attribute,
+     * and an authored `display` on the same part silently defeats it — which is exactly how every
+     * open file once rendered stacked one under another. The component test covers the mechanism;
+     * this covers *this application*, whose own stylesheet could reintroduce the same defeat.
+     */
+    const contents = [...document.querySelectorAll('[data-mk-part="explorer.tabcontent"]')]
+    const visible = contents.filter(
+      node => getComputedStyle(node as HTMLElement).display !== 'none',
+    ).length
+    console.log(
+      `selftest: tab visibility contents=${contents.length} visible=${visible} ` +
+        `${contents.length > 0 && visible === 1 ? 'ok' : 'FAILED: expected exactly one'}`,
+    )
+  }
   editors.split()
   const groups = editors.root.querySelectorAll('[data-mk-part="explorer.group"]').length
   console.log(`selftest: after split groups=${editors.groupCount}, rendered=${groups}`)
