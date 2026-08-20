@@ -834,7 +834,7 @@ async function selfTest(options: {
     entry: ExplorerEntry,
     bytes: Uint8Array,
   ) => {
-    readonly session: unknown
+    readonly edit: unknown
     readonly commit: unknown
   }
 }): Promise<void> {
@@ -925,7 +925,7 @@ async function selfTest(options: {
     try {
       const ports = saveProbe(target, new TextEncoder().encode('original text'))
       const edits = [{ payload: { kind: 'text', text: 'SAVED BY SELFTEST' } }]
-      await (ports.session as { plan(c: unknown): Promise<unknown> }).plan({ edits })
+      await (ports.edit as { plan(c: unknown): Promise<unknown> }).plan({ edits })
       const plan = { edits }
       await (ports.commit as { prepare(p: unknown): Promise<unknown> }).prepare(plan)
       await (ports.commit as { commit(): Promise<unknown> }).commit()

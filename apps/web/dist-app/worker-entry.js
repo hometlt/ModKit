@@ -5,11 +5,14 @@ import {
   createStandardSurfaceRegistry,
   framePortFromMessagePort,
   protocolLimits
-} from "./chunks/chunk-T26QW2H7.js";
+} from "./chunks/chunk-6CP4BXQC.js";
 import "./chunks/chunk-2UUQHBRG.js";
 import {
   ModkitError
 } from "./chunks/chunk-OTHYGRZO.js";
+
+// packages/host/dist/execution/frame-json.js
+var LITTLE_ENDIAN = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1;
 
 // packages/host/dist/execution/module-reassembly.js
 var unavailableResolver = {

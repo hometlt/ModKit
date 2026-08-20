@@ -40964,15 +40964,15 @@ function deepFreeze2(value2) {
   return value2;
 }
 function snapshotJsonWireData(value2) {
-  const snapshot = snapshotJsonWireValue(value2);
-  if (snapshot.diagnostics.length > 0) {
+  const snapshot2 = snapshotJsonWireValue(value2);
+  if (snapshot2.diagnostics.length > 0) {
     throw new ModkitError({
       code: "x3.sdk/non-json-schema-registration",
       message: "registered schema must be inert JSON data",
-      context: { diagnostics: snapshot.diagnostics }
+      context: { diagnostics: snapshot2.diagnostics }
     });
   }
-  return deepFreeze2(snapshot.value);
+  return deepFreeze2(snapshot2.value);
 }
 function snapshotJsonWireObject(value2) {
   return snapshotJsonWireData(value2);
@@ -41152,11 +41152,11 @@ function normalizeStrings(values) {
   return Object.freeze(uniqueSortedUtf8(values.map((value2) => nonEmpty(value2, "target list value"))));
 }
 function createHostRealmProfile(profile) {
-  const snapshot = snapshotJsonWireData(profile);
-  exactKeys(snapshot, ["schemaVersion", "realmId", "revision", "target", "facilities", "budgets", "policy"], "profile");
-  if (snapshot.schemaVersion !== 1)
+  const snapshot2 = snapshotJsonWireData(profile);
+  exactKeys(snapshot2, ["schemaVersion", "realmId", "revision", "target", "facilities", "budgets", "policy"], "profile");
+  if (snapshot2.schemaVersion !== 1)
     invalidProfile("host profile schemaVersion must be 1");
-  exactKeys(snapshot.target, [
+  exactKeys(snapshot2.target, [
     "environment",
     "operatingSystem",
     "architecture",
@@ -41165,15 +41165,15 @@ function createHostRealmProfile(profile) {
     "hostCapabilities",
     "grantedPermissions"
   ], "target");
-  exactKeys(snapshot.budgets, [
+  exactKeys(snapshot2.budgets, [
     "maxConcurrentTasks",
     "maxWorkerCount",
     "maxResidentBytes",
     "maxTransferBytes",
     "defaultDeadlineMs"
   ], "budgets");
-  exactKeys(snapshot.policy, ["id", "revision", "digest"], "policy");
-  const rawTarget = snapshot.target;
+  exactKeys(snapshot2.policy, ["id", "revision", "digest"], "policy");
+  const rawTarget = snapshot2.target;
   if ("hostCapabilities" in rawTarget || "grantedPermissions" in rawTarget) {
     return invalidProfile("target.hostCapabilities and target.grantedPermissions are projections and cannot be authored in a host profile");
   }
@@ -41190,7 +41190,7 @@ function createHostRealmProfile(profile) {
   if (architecture === "any" || !ARCHITECTURES.includes(architecture)) {
     invalidProfile("target.architecture must be concrete", { architecture: rawTarget.architecture });
   }
-  const facilities = uniqueSortedUtf8(snapshot.facilities.map((value2) => hostFacilityId(value2)));
+  const facilities = uniqueSortedUtf8(snapshot2.facilities.map((value2) => hostFacilityId(value2)));
   const target = Object.freeze({
     environment: rawTarget.environment,
     operatingSystem: rawTarget.operatingSystem,
@@ -41199,21 +41199,21 @@ function createHostRealmProfile(profile) {
     ...rawTarget.externalTools === void 0 ? {} : { externalTools: normalizeStrings(rawTarget.externalTools) }
   });
   const budgets = Object.freeze({
-    maxConcurrentTasks: count(snapshot.budgets.maxConcurrentTasks, "budgets.maxConcurrentTasks"),
-    maxWorkerCount: count(snapshot.budgets.maxWorkerCount, "budgets.maxWorkerCount"),
-    maxResidentBytes: bytes(snapshot.budgets.maxResidentBytes, "budgets.maxResidentBytes"),
-    maxTransferBytes: bytes(snapshot.budgets.maxTransferBytes, "budgets.maxTransferBytes"),
-    defaultDeadlineMs: count(snapshot.budgets.defaultDeadlineMs, "budgets.defaultDeadlineMs")
+    maxConcurrentTasks: count(snapshot2.budgets.maxConcurrentTasks, "budgets.maxConcurrentTasks"),
+    maxWorkerCount: count(snapshot2.budgets.maxWorkerCount, "budgets.maxWorkerCount"),
+    maxResidentBytes: bytes(snapshot2.budgets.maxResidentBytes, "budgets.maxResidentBytes"),
+    maxTransferBytes: bytes(snapshot2.budgets.maxTransferBytes, "budgets.maxTransferBytes"),
+    defaultDeadlineMs: count(snapshot2.budgets.defaultDeadlineMs, "budgets.defaultDeadlineMs")
   });
   const policy = Object.freeze({
-    id: nonEmpty(snapshot.policy.id, "policy.id"),
-    revision: nonEmpty(snapshot.policy.revision, "policy.revision"),
-    ...snapshot.policy.digest === void 0 ? {} : { digest: nonEmpty(snapshot.policy.digest, "policy.digest") }
+    id: nonEmpty(snapshot2.policy.id, "policy.id"),
+    revision: nonEmpty(snapshot2.policy.revision, "policy.revision"),
+    ...snapshot2.policy.digest === void 0 ? {} : { digest: nonEmpty(snapshot2.policy.digest, "policy.digest") }
   });
   return Object.freeze({
     schemaVersion: 1,
-    realmId: nonEmpty(snapshot.realmId, "realmId"),
-    revision: nonEmpty(snapshot.revision, "revision"),
+    realmId: nonEmpty(snapshot2.realmId, "realmId"),
+    revision: nonEmpty(snapshot2.revision, "revision"),
     target,
     facilities: Object.freeze(facilities),
     budgets,
@@ -41221,11 +41221,11 @@ function createHostRealmProfile(profile) {
   });
 }
 function createHostTopology(topology) {
-  const snapshot = snapshotJsonWireData(topology);
-  exactKeys(snapshot, ["schemaVersion", "topologyId", "realms", "links"], "topology");
-  if (snapshot.schemaVersion !== 1)
+  const snapshot2 = snapshotJsonWireData(topology);
+  exactKeys(snapshot2, ["schemaVersion", "topologyId", "realms", "links"], "topology");
+  if (snapshot2.schemaVersion !== 1)
     return invalidProfile("host topology schemaVersion must be 1");
-  const realms = snapshot.realms.map(createHostRealmProfile);
+  const realms = snapshot2.realms.map(createHostRealmProfile);
   realms.sort((left, right) => compareUtf8(left.realmId, right.realmId));
   const realmIds = /* @__PURE__ */ new Set();
   for (const realm of realms) {
@@ -41233,7 +41233,7 @@ function createHostTopology(topology) {
       return invalidProfile(`duplicate realmId \xAB${realm.realmId}\xBB`);
     realmIds.add(realm.realmId);
   }
-  const links = snapshot.links.map((link) => {
+  const links = snapshot2.links.map((link) => {
     exactKeys(link, ["fromRealm", "toRealm", "transports"], "transport link");
     if (!realmIds.has(link.fromRealm) || !realmIds.has(link.toRealm)) {
       return invalidProfile("transport link references an unknown realm", {
@@ -41263,7 +41263,7 @@ function createHostTopology(topology) {
   }
   return Object.freeze({
     schemaVersion: 1,
-    topologyId: nonEmpty(snapshot.topologyId, "topologyId"),
+    topologyId: nonEmpty(snapshot2.topologyId, "topologyId"),
     realms: Object.freeze(realms),
     links: Object.freeze(links)
   });
@@ -42692,9 +42692,9 @@ function normalizeOrigin(origin) {
   }
 }
 async function validateSubjectDescriptorV2(value2) {
-  let snapshot;
+  let snapshot2;
   try {
-    snapshot = snapshotJsonWireData(value2);
+    snapshot2 = snapshotJsonWireData(value2);
   } catch (error) {
     return {
       diagnostics: [
@@ -42702,10 +42702,10 @@ async function validateSubjectDescriptorV2(value2) {
       ]
     };
   }
-  const schemaDiagnostics2 = await validateWithSchema(subjectDescriptorV2Schema, snapshot);
+  const schemaDiagnostics2 = await validateWithSchema(subjectDescriptorV2Schema, snapshot2);
   if (hasErrors(schemaDiagnostics2))
     return { diagnostics: schemaDiagnostics2 };
-  const wire = snapshot;
+  const wire = snapshot2;
   const semanticDiagnostics = [];
   const validateSubjectUri = (uri, path) => {
     try {
@@ -43804,9 +43804,9 @@ var transportViewer = defineViewerModule({
       part: "transport.controls"
     });
     let descriptor = args.descriptor;
-    let snapshot;
+    let snapshot2;
     const render2 = (value2) => {
-      snapshot = value2;
+      snapshot2 = value2;
       controls.replaceChildren();
       setViewerText(status, `${value2.state} \xB7 ${value2.positionMs} / ${value2.durationMs} ms`);
       const commands = [
@@ -43817,19 +43817,19 @@ var transportViewer = defineViewerModule({
       for (const [label, operation, input] of commands) {
         if (operation === void 0)
           continue;
-        const button = element(controls, "button", {
+        const button2 = element(controls, "button", {
           text: label,
           part: "transport.button"
         });
-        button.type = "button";
+        button2.type = "button";
         const invoke = async () => {
           const result = await invokeOperation(descriptor, args.operations, operation, input, {
             signal: scope.signal
           });
           setViewerText(status, result.state === "ok" ? `${label}: complete` : result.reason);
         };
-        button.addEventListener("click", invoke);
-        scope.cleanup(() => button.removeEventListener("click", invoke));
+        button2.addEventListener("click", invoke);
+        scope.cleanup(() => button2.removeEventListener("click", invoke));
       }
       for (const track of value2.tracks) {
         const item = element(controls, "span", {
@@ -43858,7 +43858,7 @@ var transportViewer = defineViewerModule({
     return createViewerMount(root, scope, args, (update) => {
       descriptor = update.descriptor;
       root.dataset["revision"] = descriptor.revision;
-      render2(snapshot);
+      render2(snapshot2);
     });
   }
 });
@@ -43919,11 +43919,11 @@ var namespaceViewer = defineViewerModule({
         item.setAttribute("role", "treeitem");
         item.dataset["entryId"] = entry2.id;
         item.dataset["revision"] = entry2.revision;
-        const button = element(item, "button", {
+        const button2 = element(item, "button", {
           text: entry2.name,
           part: "namespace.label"
         });
-        button.type = "button";
+        button2.type = "button";
         const activate = async () => {
           if (entry2.kind === "directory") {
             let nested = item.querySelector(":scope > ul");
@@ -43945,9 +43945,9 @@ var namespaceViewer = defineViewerModule({
             await opened.release();
           }
         };
-        button.addEventListener("click", activate);
-        scope.cleanup(() => button.removeEventListener("click", activate));
-        setViewerText(button, entry2.name);
+        button2.addEventListener("click", activate);
+        scope.cleanup(() => button2.removeEventListener("click", activate));
+        setViewerText(button2, entry2.name);
       }
     };
     await renderPrefix("", list);
@@ -43972,13 +43972,13 @@ function renderDiagnostics(root, descriptor) {
     for (const diagnostic2 of grouped[severity]) {
       const item = element(list, "li", { part: "diagnostics.item" });
       item.dataset["severity"] = severity;
-      const button = element(item, "button", {
+      const button2 = element(item, "button", {
         text: diagnostic2.message,
         part: "diagnostics.message"
       });
-      button.type = "button";
-      button.dataset["diagnosticId"] = diagnostic2.id;
-      button.addEventListener("click", () => {
+      button2.type = "button";
+      button2.dataset["diagnosticId"] = diagnostic2.id;
+      button2.addEventListener("click", () => {
         root.dispatchEvent(new CustomEvent("modkit-diagnostic-jump", {
           bubbles: true,
           detail: { id: diagnostic2.id, range: diagnostic2.range }
@@ -44002,24 +44002,24 @@ function renderToolbar(root, descriptor, operations, signal) {
   root.replaceChildren();
   const status = element(root, "output", { text: "Ready", part: "operations.status" });
   for (const operation of descriptor.operations) {
-    const button = element(root, "button", {
+    const button2 = element(root, "button", {
       text: operation.id,
       part: "operations.button"
     });
-    button.type = "button";
-    button.disabled = operation.state !== "available";
+    button2.type = "button";
+    button2.disabled = operation.state !== "available";
     if (operation.state !== "available") {
-      button.title = operation.reason;
+      button2.title = operation.reason;
       continue;
     }
-    button.addEventListener("click", async () => {
-      button.disabled = true;
+    button2.addEventListener("click", async () => {
+      button2.disabled = true;
       const result = await invokeOperation(descriptor, operations, operation.id, null, {
         signal,
         onProgress: (completed, total, message) => setViewerText(status, `${message ?? "Working"}: ${completed}/${total ?? "?"}`)
       });
       setViewerText(status, result.state === "ok" ? `${operation.id}: complete` : result.reason);
-      button.disabled = false;
+      button2.disabled = false;
     });
   }
 }
@@ -45056,7 +45056,7 @@ var imageViewer = defineViewerModule({
       isolateChannel(context, width, height, channel);
       setViewerText(readout, `${bitmap.width}\xD7${bitmap.height} \xB7 ${(model.bytes / 1024).toFixed(1)} KiB \xB7 ${Math.round(scale * 100)}%${channel === "rgb" ? "" : ` \xB7 channel ${channel.toUpperCase()}`}`);
     };
-    const button = (label, title, onClick) => {
+    const button2 = (label, title, onClick) => {
       const node = element(toolbar, "button", {
         text: label,
         part: "operations.button"
@@ -45069,26 +45069,26 @@ var imageViewer = defineViewerModule({
       });
       scope.cleanup(() => node.replaceWith(node.cloneNode(true)));
     };
-    button("Fit", "Fit to the stage", () => {
+    button2("Fit", "Fit to the stage", () => {
       fit = true;
     });
-    button("1:1", "Actual pixels", () => {
+    button2("1:1", "Actual pixels", () => {
       fit = false;
       zoom = 1;
     });
-    button("\u2212", "Zoom out", () => {
+    button2("\u2212", "Zoom out", () => {
       fit = false;
       zoom = Math.max(0.1, zoom / 1.5);
     });
-    button("+", "Zoom in", () => {
+    button2("+", "Zoom in", () => {
       fit = false;
       zoom = Math.min(32, zoom * 1.5);
     });
-    button("BG", "Cycle the backdrop", () => {
+    button2("BG", "Cycle the backdrop", () => {
       background = background === "checker" ? "dark" : background === "dark" ? "light" : "checker";
     });
     for (const value2 of ["rgb", "r", "g", "b", "a"]) {
-      button(value2.toUpperCase(), `Isolate the ${value2.toUpperCase()} channel`, () => {
+      button2(value2.toUpperCase(), `Isolate the ${value2.toUpperCase()} channel`, () => {
         channel = value2;
       });
     }
@@ -45771,15 +45771,15 @@ var modelViewer = defineViewerModule({
         };
         scope.cleanup(camera.onChange(redraw));
         camera.attach(canvas, scope.signal);
-        const button = (label, title, run) => {
+        const button2 = (label, title, run) => {
           const node = element(toolbar, "button", { part: "operations.button", text: label });
           node.setAttribute("type", "button");
           node.title = title;
           node.addEventListener("click", run, { signal: scope.signal });
         };
-        button("Reset", "Reset the camera to its default pose", () => camera.reset());
-        button("\u2212", "Zoom out", () => camera.zoom(1));
-        button("+", "Zoom in", () => camera.zoom(-1));
+        button2("Reset", "Reset the camera to its default pose", () => camera.reset());
+        button2("\u2212", "Zoom out", () => camera.zoom(1));
+        button2("+", "Zoom in", () => camera.zoom(-1));
         scope.cleanup(() => gizmo.destroy());
         redraw();
       }
@@ -45976,6 +45976,23 @@ var BYTE_RANGE_SOURCE = Object.freeze({
   major: 1
 });
 var HEX_BYTE = /^[0-9a-f]{1,2}$/iu;
+function hexChangeSet(runs, targets) {
+  const target = targets[0];
+  if (target === void 0)
+    throw new TypeError("the edit session carries no target to write to");
+  return {
+    targets,
+    edits: runs.map((run) => ({
+      operation: "replace",
+      targetId: target.targetId,
+      source: target.ownerSource,
+      range: { kind: "bytes", offset: run.offset, length: BigInt(run.bytes.length) },
+      payload: { kind: "inline", bytes: run.bytes },
+      label: "Edit bytes"
+    })),
+    provenance: { actor: "user" }
+  };
+}
 function coalesceHexEdits(edits) {
   const sorted = [...edits].sort((left, right) => left.offset < right.offset ? -1 : 1);
   const runs = [];
@@ -46033,16 +46050,7 @@ var hexEditor = {
       if (pending.size === 0)
         return;
       const runs = coalesceHexEdits([...pending.values()]);
-      void args.edit.propose({
-        baseRevisions: { content: args.descriptor.revision },
-        edits: runs.map((run) => ({
-          kind: "bytes",
-          bindingId: "content",
-          range: { kind: "bytes", offset: run.offset, length: BigInt(run.bytes.length) },
-          payload: { kind: "inline", bytes: run.bytes }
-        })),
-        provenance: { origin: "hex-editor" }
-      });
+      void args.edit.propose(hexChangeSet(runs, args.edit.targets));
     };
     const setByte = (absolute, base, next) => {
       const key3 = absolute.toString(10);
@@ -46148,21 +46156,13 @@ var hexEditor = {
       if (pending.size === 0)
         return;
       const runs = coalesceHexEdits([...pending.values()]);
-      const change = {
-        baseRevisions: { content: args.descriptor.revision },
-        edits: runs.map((run) => ({
-          kind: "bytes",
-          bindingId: "content",
-          range: { kind: "bytes", offset: run.offset, length: BigInt(run.bytes.length) },
-          payload: { kind: "inline", bytes: run.bytes }
-        })),
-        provenance: { origin: "hex-editor" }
-      };
+      const change = hexChangeSet(runs, args.edit.targets);
       setViewerText(status, "Validating\u2026");
       const validation = await args.edit.propose(change);
-      if (validation.state === "invalid") {
+      if (!validation.valid) {
         setState(root, ["error"]);
-        setViewerText(status, "Rejected by validation");
+        const first = validation.diagnostics[0];
+        setViewerText(status, first === void 0 ? "Rejected by validation" : `Rejected: ${first.message}`);
         return;
       }
       const plan = await args.edit.plan(change);
@@ -46172,15 +46172,19 @@ var hexEditor = {
         return;
       }
       const prepared = await args.commit.prepare(plan, { grant: authorization.grant });
-      const state = prepared.state;
-      if (state !== "prepared") {
+      if (prepared.state !== "ready") {
         setState(root, ["error"]);
-        setViewerText(status, `Prepare failed: ${state ?? "unknown"}`);
+        setViewerText(status, prepared.state === "conflict" ? "Conflict: the source changed" : `Prepare rejected: ${prepared.reason}`);
         return;
       }
-      await args.commit.commit(prepared.prepared, {
+      const receipt = await args.commit.commit(prepared.prepared, {
         grant: authorization.grant
       });
+      if (receipt.state !== "committed") {
+        setState(root, ["error"]);
+        setViewerText(status, receipt.state === "not-applied" ? `Save rejected: ${receipt.reason}` : `Save ${receipt.state}`);
+        return;
+      }
       setState(root, []);
       setViewerText(status, `Committed ${runs.length} range(s)`);
       await renderWindow();
@@ -46596,16 +46600,16 @@ function createSearchField(document2, options) {
   const specs = options.allowGlob === true ? [...TOGGLES, GLOB_TOGGLE] : TOGGLES;
   const buttons = /* @__PURE__ */ new Map();
   for (const spec of specs) {
-    const button = document2.createElement("button");
-    button.type = "button";
-    button.className = "modkit-search__toggle";
-    button.textContent = spec.label;
-    button.title = spec.title;
-    button.setAttribute("aria-label", spec.title);
-    button.setAttribute("aria-pressed", "false");
-    setPart(button, "search.toggle");
-    toggleBar.append(button);
-    buttons.set(spec.id, button);
+    const button2 = document2.createElement("button");
+    button2.type = "button";
+    button2.className = "modkit-search__toggle";
+    button2.textContent = spec.label;
+    button2.title = spec.title;
+    button2.setAttribute("aria-label", spec.title);
+    button2.setAttribute("aria-pressed", "false");
+    setPart(button2, "search.toggle");
+    toggleBar.append(button2);
+    buttons.set(spec.id, button2);
   }
   const status = document2.createElement("output");
   status.className = "modkit-search__status";
@@ -46624,13 +46628,13 @@ function createSearchField(document2, options) {
       ["\u2039", -1, "Previous match"],
       ["\u203A", 1, "Next match"]
     ]) {
-      const button = document2.createElement("button");
-      button.type = "button";
-      button.textContent = label;
-      button.title = title;
-      button.setAttribute("aria-label", title);
-      button.addEventListener("click", () => options.onNavigate?.(direction));
-      nav.append(button);
+      const button2 = document2.createElement("button");
+      button2.type = "button";
+      button2.textContent = label;
+      button2.title = title;
+      button2.setAttribute("aria-label", title);
+      button2.addEventListener("click", () => options.onNavigate?.(direction));
+      nav.append(button2);
     }
     root.append(nav);
   }
@@ -46642,11 +46646,11 @@ function createSearchField(document2, options) {
     buttons.get("word")?.setAttribute("aria-pressed", String(wholeWord));
     buttons.get("regex")?.setAttribute("aria-pressed", String(mode === "regex"));
     buttons.get("glob")?.setAttribute("aria-pressed", String(mode === "glob"));
-    for (const [id, button] of buttons) {
-      const pressed = button.getAttribute("aria-pressed") === "true";
-      setState(button, pressed ? ["active"] : []);
+    for (const [id, button2] of buttons) {
+      const pressed = button2.getAttribute("aria-pressed") === "true";
+      setState(button2, pressed ? ["active"] : []);
       if (id === "word")
-        button.disabled = mode === "glob";
+        button2.disabled = mode === "glob";
     }
   };
   let current = buildState();
@@ -46674,8 +46678,8 @@ function createSearchField(document2, options) {
     input.setAttribute("aria-invalid", String(invalid2));
     status.textContent = invalid2 ? "invalid" : compiled.kind === "empty" || count2 === void 0 ? "" : count2 === 1 ? "1 match" : `${count2} matches`;
     if (nav !== void 0) {
-      for (const button of nav.querySelectorAll("button")) {
-        button.disabled = invalid2 || count2 === void 0 || count2 === 0;
+      for (const button2 of nav.querySelectorAll("button")) {
+        button2.disabled = invalid2 || count2 === void 0 || count2 === 0;
       }
     }
   }
@@ -46875,7 +46879,7 @@ function createExplorer(document2, options) {
           if (picked === void 0)
             return;
           await explorer.setAccess(picked.access);
-          await explorer.open(picked.entry);
+          await activate(picked.entry);
         } catch (error) {
           say(`Could not open the file: ${describe2(error)}`, "error");
         }
@@ -46994,18 +46998,14 @@ function createExplorer(document2, options) {
           // No arrow here: the tree draws its own twisty for `hasChildren`, and a second
           // chevron in the icon slot reads as two arrows on every folder.
           icon: entry2.directory ? "\u{1F5C0}" : supported.has(extensionOf(entry2.name)) ? "\u25C6" : "\xB7",
-          ...entry2.size === void 0 || entry2.directory ? {} : { badge: formatBytes(entry2.size) },
+          ...entry2.size === void 0 || entry2.directory ? {} : { badge: formatBytes(entry2.size), size: entry2.size },
           kind: entry2.directory ? "directory" : extensionOf(entry2.name)
         }));
       },
       onActivate(node) {
         if (node.kind === "directory")
           return;
-        const entry2 = nodeToEntry(node);
-        if (options.onOpen !== void 0)
-          options.onOpen(entry2);
-        else
-          void preview(entry2);
+        void activate(nodeToEntry(node));
       },
       matches(node) {
         return query === void 0 ? true : matches2(node.label, query);
@@ -47017,27 +47017,35 @@ function createExplorer(document2, options) {
   const nodeToEntry = (node) => ({
     id: node.id,
     name: node.label,
-    directory: node.kind === "directory"
+    directory: node.kind === "directory",
+    ...node.size === void 0 ? {} : { size: node.size }
   });
+  const activate = async (entry2) => {
+    if (options.onOpen !== void 0)
+      options.onOpen(entry2);
+    else
+      await preview(entry2);
+  };
   if (options.acceptDrop !== void 0) {
+    const dropZone = options.dropTarget ?? (options.onOpen === void 0 ? previewPane : root);
     setPart(previewPane, "explorer.preview");
     const stop = (event) => {
       event.preventDefault();
       event.stopPropagation();
     };
-    previewPane.addEventListener("dragover", (event) => {
+    dropZone.addEventListener("dragover", (event) => {
       stop(event);
       if (event.dataTransfer !== null)
         event.dataTransfer.dropEffect = "copy";
-      setState(previewPane, ["drop-target"]);
+      setState(dropZone, ["drop-target"]);
     });
-    previewPane.addEventListener("dragleave", (event) => {
+    dropZone.addEventListener("dragleave", (event) => {
       stop(event);
-      setState(previewPane, []);
+      setState(dropZone, []);
     });
-    previewPane.addEventListener("drop", (event) => {
+    dropZone.addEventListener("drop", (event) => {
       stop(event);
-      setState(previewPane, []);
+      setState(dropZone, []);
       const transfer = event.dataTransfer;
       if (transfer === null)
         return;
@@ -47052,7 +47060,7 @@ function createExplorer(document2, options) {
           if (result.access !== void 0)
             await explorer.setAccess(result.access);
           if (result.entry !== void 0)
-            await explorer.open(result.entry);
+            await activate(result.entry);
           else
             say("Folder opened. Pick a file in the tree.");
         } catch (error) {
@@ -47297,6 +47305,8 @@ function createCodecPreview(options) {
       const resolved2 = externallyOpened !== void 0;
       const session = externallyOpened ?? builtinSession(bytes2, options.fallback);
       const descriptor = await session.descriptor();
+      const operations = await session.operations?.().catch(() => void 0);
+      const ports = await options.editorPorts?.(entry2, bytes2);
       const traits = new Set(traitsOf(descriptor));
       const published = new Set(publishedContracts(descriptor));
       const candidates = resolved2 ? options.stages : fallbackStages(options.fallback);
@@ -47307,7 +47317,7 @@ function createCodecPreview(options) {
         return stage === void 0 ? [] : [stage];
       });
       const usable = planned.filter((stage) => published.has(stage.contract) && (stage.trait === void 0 || traits.has(stage.trait)) && // An editable stage without ports could never save; offering it would be a lie.
-      (stage.editable !== true || options.editorPorts !== void 0));
+      (stage.editable !== true || ports !== void 0));
       if (usable.length === 0) {
         await session.dispose();
         return void 0;
@@ -47331,16 +47341,16 @@ function createCodecPreview(options) {
           priority: 100,
           bindings: [{ bindingId: "content", contract: stage.contract, major: 1 }]
         };
-        const ports = stage.editable === true ? options.editorPorts?.(entry2, bytes2) : void 0;
+        const stagePorts = stage.editable === true ? ports : void 0;
         const mounted = await stage.module.mount({
           container,
           descriptor,
           slot,
-          ...ports === void 0 ? {} : {
-            edit: ports.session,
-            commit: ports.commit,
-            payloads: ports.payloads,
-            authorization: ports.authorization
+          ...stagePorts === void 0 ? {} : {
+            edit: stagePorts.edit,
+            commit: stagePorts.commit,
+            payloads: stagePorts.payloads,
+            authorization: stagePorts.authorization
           },
           sources: {
             async get(binding) {
@@ -47360,7 +47370,7 @@ function createCodecPreview(options) {
               };
             }
           },
-          operations: void 0,
+          operations,
           ...signal === void 0 ? {} : { signal }
         });
         active = mounted;
@@ -47385,10 +47395,20 @@ function createCodecPreview(options) {
 function fallbackStages(fallback) {
   const stages = [];
   if (fallback?.text !== void 0) {
-    stages.push({ label: "Text", contract: "common.view/text-data-source", module: fallback.text });
+    stages.push({
+      id: "text",
+      label: "Text",
+      contract: "common.view/text-data-source",
+      module: fallback.text
+    });
   }
   if (fallback?.hex !== void 0) {
-    stages.push({ label: "Hex", contract: "common.view/byte-range-source", module: fallback.hex });
+    stages.push({
+      id: "hex",
+      label: "Hex",
+      contract: "common.view/byte-range-source",
+      module: fallback.hex
+    });
   }
   return stages;
 }
@@ -47446,7 +47466,7 @@ function createEditorArea(document2, options) {
   let focused;
   let destroyed = false;
   let openMenu;
-  const report = (status) => {
+  const report2 = (status) => {
     options.onStatus?.(status);
   };
   function drawBreadcrumb(group, entry2) {
@@ -47497,7 +47517,7 @@ function createEditorArea(document2, options) {
       return;
     }
     syncPicker(group);
-    report({
+    report2({
       path: tab.entry.id,
       view: group.picker.selectedOptions[0]?.textContent ?? "",
       detail: tab.entry.name,
@@ -47509,7 +47529,7 @@ function createEditorArea(document2, options) {
     const run = new AbortController();
     tab.run = run;
     tab.content.replaceChildren();
-    report({ path: tab.entry.id, detail: `Opening ${tab.entry.name}\u2026`, severity: "busy" });
+    report2({ path: tab.entry.id, detail: `Opening ${tab.entry.name}\u2026`, severity: "busy" });
     try {
       const bytes2 = await options.read(tab.entry, run.signal);
       if (run.signal.aborted)
@@ -47521,12 +47541,12 @@ function createEditorArea(document2, options) {
       }
       if (handle === void 0) {
         placeholder({ ...group, stage: tab.content }, `Nothing could render \u201C${tab.entry.name}\u201D.`);
-        report({ path: tab.entry.id, detail: "no viewer", severity: "error" });
+        report2({ path: tab.entry.id, detail: "no viewer", severity: "error" });
         return;
       }
       tab.handle = handle;
       syncPicker(group);
-      report({
+      report2({
         path: tab.entry.id,
         view: handle.views.find((view) => view.id === handle.activeView)?.label ?? "",
         detail: formatBytes2(bytes2.length),
@@ -47536,7 +47556,7 @@ function createEditorArea(document2, options) {
       if (run.signal.aborted)
         return;
       placeholder({ ...group, stage: tab.content }, `Could not preview ${tab.entry.name}: ${describe3(error)}`);
-      report({ path: tab.entry.id, detail: describe3(error), severity: "error" });
+      report2({ path: tab.entry.id, detail: describe3(error), severity: "error" });
     }
   }
   async function closeTab(group, tab) {
@@ -47662,7 +47682,7 @@ function createEditorArea(document2, options) {
       if (handle === void 0)
         return;
       void handle.show(picker.value).then(() => {
-        report({
+        report2({
           ...group.active === void 0 ? {} : { path: group.active.entry.id },
           view: picker.selectedOptions[0]?.textContent ?? picker.value,
           detail: group.active?.entry.name ?? "",
@@ -47688,25 +47708,25 @@ function createEditorArea(document2, options) {
         await activate(group, existing);
         return;
       }
-      const button = element(group.strip, "div", { part: "explorer.filetab" });
-      button.setAttribute("role", "tab");
-      button.title = entry2.id;
-      button.setAttribute("data-mk-kind", fileKindOf(entry2.name));
+      const button2 = element(group.strip, "div", { part: "explorer.filetab" });
+      button2.setAttribute("role", "tab");
+      button2.title = entry2.id;
+      button2.setAttribute("data-mk-kind", fileKindOf(entry2.name));
       if (group.tabs.length === 0)
         group.stage.replaceChildren();
       const content = element(group.stage, "div", { part: "explorer.tabcontent" });
-      const tab = { entry: entry2, button, content };
-      const label = element(button, "span", { text: safeViewerText(entry2.name, 120) });
+      const tab = { entry: entry2, button: button2, content };
+      const label = element(button2, "span", { text: safeViewerText(entry2.name, 120) });
       label.addEventListener("click", () => {
         focus(group);
         void activate(group, tab);
       });
-      button.addEventListener("contextmenu", (event) => {
+      button2.addEventListener("contextmenu", (event) => {
         event.preventDefault();
         focus(group);
         openTabMenu(group, tab, event.clientX, event.clientY);
       });
-      const close = element(button, "button", { part: "explorer.filetab-close", text: "\xD7" });
+      const close = element(button2, "button", { part: "explorer.filetab-close", text: "\xD7" });
       close.setAttribute("type", "button");
       close.setAttribute("aria-label", `Close ${entry2.name}`);
       close.addEventListener("click", (event) => {
@@ -47953,6 +47973,13 @@ function createSettingsUi(document2, options) {
     render(host) {
       const intro = element(host, "p", { part: "settings.description" });
       intro.textContent = `Extensions are listed in ${options.store.location}. Each entry is an id, a path the host loads from, and whether it is enabled. The same file is read by the desktop app, the web app and a headless run.`;
+      const readOnly = options.extensionsReadOnly;
+      if (readOnly !== void 0) {
+        element(host, "p", {
+          part: "settings.description",
+          text: safeViewerText(readOnly, 400)
+        });
+      }
       const list = element(host, "div", { part: "settings.list" });
       const draw = () => {
         list.replaceChildren();
@@ -47964,38 +47991,49 @@ function createSettingsUi(document2, options) {
         }
         for (const entry2 of current.extensions) {
           const item = element(list, "div", { part: "settings.extension" });
-          const toggle = element(item, "input", {
-            part: "settings.toggle"
-          });
-          toggle.type = "checkbox";
-          toggle.checked = entry2.enabled;
-          toggle.setAttribute("aria-label", `Enable ${entry2.id}`);
-          toggle.addEventListener("change", () => {
-            void persist({
-              ...current,
-              extensions: current.extensions.map((other) => other.id === entry2.id ? { ...other, enabled: toggle.checked } : other)
-            }).then(draw);
-          });
+          if (readOnly === void 0) {
+            const toggle = element(item, "input", {
+              part: "settings.toggle"
+            });
+            toggle.type = "checkbox";
+            toggle.checked = entry2.enabled;
+            toggle.setAttribute("aria-label", `Enable ${entry2.id}`);
+            toggle.addEventListener("change", () => {
+              void persist({
+                ...current,
+                extensions: current.extensions.map((other) => other.id === entry2.id ? { ...other, enabled: toggle.checked } : other)
+              }).then(draw);
+            });
+          } else {
+            element(item, "div", {
+              part: "settings.description",
+              text: entry2.enabled ? "enabled" : "disabled"
+            });
+          }
           const text = element(item, "div", { part: "settings.extension-text" });
           element(text, "div", { part: "settings.label", text: safeViewerText(entry2.id, 200) });
           element(text, "div", {
             part: "settings.description",
             text: safeViewerText(entry2.path, 400)
           });
-          const remove = element(item, "button", {
-            part: "settings.remove",
-            text: "Remove"
-          });
-          remove.type = "button";
-          remove.addEventListener("click", () => {
-            void persist({
-              ...current,
-              extensions: current.extensions.filter((other) => other.id !== entry2.id)
-            }).then(draw);
-          });
+          if (readOnly === void 0) {
+            const remove = element(item, "button", {
+              part: "settings.remove",
+              text: "Remove"
+            });
+            remove.type = "button";
+            remove.addEventListener("click", () => {
+              void persist({
+                ...current,
+                extensions: current.extensions.filter((other) => other.id !== entry2.id)
+              }).then(draw);
+            });
+          }
         }
       };
       draw();
+      if (readOnly !== void 0)
+        return;
       const adder = element(host, "div", { part: "settings.adder" });
       const id = element(adder, "input", { part: "settings.input" });
       id.placeholder = "publisher/name";
@@ -48137,14 +48175,14 @@ function createSettingsUi(document2, options) {
     group.render(pane);
   };
   for (const group of groups) {
-    const button = element(groupList, "button", {
+    const button2 = element(groupList, "button", {
       part: "settings.group",
       text: group.label
     });
-    button.type = "button";
-    button.dataset["group"] = group.id;
-    button.setAttribute("role", "tab");
-    button.addEventListener("click", () => {
+    button2.type = "button";
+    button2.dataset["group"] = group.id;
+    button2.setAttribute("role", "tab");
+    button2.addEventListener("click", () => {
       showGroup(group);
     });
   }
@@ -48192,15 +48230,15 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
   extensions: [
     {
       artifact: {
-        artifactDigest: "sha256:44d3e2ec46db6c5763e3fc5b780c51d951ab72d5d5ad92d99869960d616d4b5b",
+        artifactDigest: "sha256:695e0cec1587e349bae679935812c468a23077c68a3f15cea850beb2e0f7f526",
         fileDigests: {
-          "README.md": "sha256:f06c80345ee17145a666883da547db3c7e1c6aab80985e1380eeaacd9d675b0f",
-          "contributions/codec-zip.json": "sha256:5c1d2125933a2d9158da74c769bf8fd6c9ce7e55e38493bd540a558022d0f6c4",
+          "README.md": "sha256:2c8abea7cb674e2a423eb034a51b47053744d502a154578889c541bfb110ea72",
+          "contributions/codec-zip.json": "sha256:4601074c28e23bb8ed5e942355618277c0bec91012dba68c18a339c5b326bd41",
           "package.json": "sha256:70196adc05d186774fcce8ebbf05a3b1166b70201583199fb2fc292e55abcbd4",
-          "src/formats/zip/codec.js": "sha256:29caf81d0bf37418ef1d853ca154c3fb3af30141bcdc65bca9e36279ac534e76",
+          "src/formats/zip/codec.js": "sha256:20238e2ac3607f3cd32cea4ab2823578cb3ba272fe583dd24084c8bcb97e367e",
           "src/index.js": "sha256:121004c40bd5560b35a26034c291429f1d103e68698c7e1aaf5cf8456890dc95"
         },
-        inventoryRecordId: "artifact:sha256:44d3e2ec46db6c5763e3fc5b780c51d951ab72d5d5ad92d99869960d616d4b5b"
+        inventoryRecordId: "artifact:sha256:695e0cec1587e349bae679935812c468a23077c68a3f15cea850beb2e0f7f526"
       },
       artifactRoot: "extensions/archives/",
       containers: {
@@ -48243,7 +48281,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
       documentDigests: [
         [
           "contributions/codec-zip.json",
-          "sha256:5c1d2125933a2d9158da74c769bf8fd6c9ce7e55e38493bd540a558022d0f6c4"
+          "sha256:4601074c28e23bb8ed5e942355618277c0bec91012dba68c18a339c5b326bd41"
         ]
       ],
       documents: [
@@ -48260,7 +48298,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
               {
                 entrypoint: "./src/formats/zip/codec.js",
                 executionProfile: "trusted-in-process",
-                requestedPermissionClasses: ["read-source"],
+                requestedPermissionClasses: ["read-source", "write-source"],
                 target: {
                   environments: ["node"]
                 },
@@ -48269,7 +48307,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
               {
                 entrypoint: "./src/formats/zip/codec.js",
                 executionProfile: "worker-brokered",
-                requestedPermissionClasses: ["read-source"],
+                requestedPermissionClasses: ["read-source", "write-source"],
                 target: {
                   environments: ["browser-worker", "node-worker"]
                 },
@@ -48341,6 +48379,20 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
                   mutatesSource: false,
                   outputKinds: ["bytes"],
                   requiredPermissions: ["read-source"]
+                },
+                {
+                  handlerId: "edit-structure",
+                  id: "edit.structure",
+                  mutatesSource: true,
+                  outputKinds: ["edit-plan"],
+                  requiredPermissions: ["read-source", "write-source"]
+                },
+                {
+                  handlerId: "edit-content",
+                  id: "edit.content",
+                  mutatesSource: true,
+                  outputKinds: ["edit-plan"],
+                  requiredPermissions: ["read-source", "write-source"]
                 }
               ],
               probe: {
@@ -48416,17 +48468,17 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: "sha256:99a355b593a12a97e29ff82dfc5a35702fd55503ca50a8e7e9a8ad1f486f4b4e",
+        artifactDigest: "sha256:dd9bbbd19bff4296a372002273f2222639d81bde19ec9d0feda20812c675c97f",
         fileDigests: {
-          "README.md": "sha256:05456326e15339a7f21db547765cb8428b60c45352faabb159420e1d664984f6",
-          "contributions/codec-mp3.json": "sha256:41e836e11bbcafd51f297897fc86310668a0623d2223a31115bbb2047aa3addc",
-          "contributions/codec-ogg.json": "sha256:cbaf81e526270c5ea4783cf2e21dab6a1efe2d11f13556079608507d8f5fed1b",
+          "README.md": "sha256:268ab2b7997a0a0be23cf0dbdc5c80a90ac58eaafafca75a4c9fad30093d26fd",
+          "contributions/codec-mp3.json": "sha256:2db4ff5451181d302a7494df9bdfd1d30bf8700e262b1f8e3b2ea3292436c1fc",
+          "contributions/codec-ogg.json": "sha256:96ffb84cdb503acaef94824bcbfb00790ace696d43a39e1cbe626b41a8293867",
           "package.json": "sha256:fa31b41ba725e7c620902f7ed360c6a07c54feb9ce3af42aef623e14f1975c63",
-          "src/formats/mp3/codec.js": "sha256:010b30dc4aa82f498b0cac0297e5a1f1d141c77cb31d60ba95091840bf63d79d",
+          "src/formats/mp3/codec.js": "sha256:cc27ff239bf2f97b2e1403de0af7f68e185ea8e574c2db550a87ed6bfe413402",
           "src/formats/ogg/codec.js": "sha256:1906cd3670a45186374a40db75725187d7eb3ee3682b9b7805e85b798e403aaf",
           "src/index.js": "sha256:e86ec9194630bc30037a46f042fb7839fa96dfa70ae81ef77142ae436c9bf2fb"
         },
-        inventoryRecordId: "artifact:sha256:99a355b593a12a97e29ff82dfc5a35702fd55503ca50a8e7e9a8ad1f486f4b4e"
+        inventoryRecordId: "artifact:sha256:dd9bbbd19bff4296a372002273f2222639d81bde19ec9d0feda20812c675c97f"
       },
       artifactRoot: "extensions/audio/",
       containers: {
@@ -48470,11 +48522,11 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
       documentDigests: [
         [
           "contributions/codec-mp3.json",
-          "sha256:41e836e11bbcafd51f297897fc86310668a0623d2223a31115bbb2047aa3addc"
+          "sha256:2db4ff5451181d302a7494df9bdfd1d30bf8700e262b1f8e3b2ea3292436c1fc"
         ],
         [
           "contributions/codec-ogg.json",
-          "sha256:cbaf81e526270c5ea4783cf2e21dab6a1efe2d11f13556079608507d8f5fed1b"
+          "sha256:96ffb84cdb503acaef94824bcbfb00790ace696d43a39e1cbe626b41a8293867"
         ]
       ],
       documents: [
@@ -48491,7 +48543,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
               {
                 entrypoint: "./src/formats/mp3/codec.js",
                 executionProfile: "trusted-in-process",
-                requestedPermissionClasses: ["read-source"],
+                requestedPermissionClasses: ["read-source", "write-source"],
                 target: {
                   environments: ["node"]
                 },
@@ -48500,7 +48552,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
               {
                 entrypoint: "./src/formats/mp3/codec.js",
                 executionProfile: "worker-brokered",
-                requestedPermissionClasses: ["read-source"],
+                requestedPermissionClasses: ["read-source", "write-source"],
                 target: {
                   environments: ["browser-worker", "node-worker"]
                 },
@@ -48531,7 +48583,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
                 extensions: ["mp3"],
                 mediaTypes: ["audio/mpeg"]
               },
-              openIntents: ["probe", "inspect", "stream", "export"],
+              openIntents: ["probe", "inspect", "full", "stream", "export"],
               operations: [
                 {
                   handlerId: "inspect",
@@ -48581,6 +48633,13 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
                   mutatesSource: false,
                   outputKinds: ["none"],
                   requiredPermissions: ["read-source"]
+                },
+                {
+                  handlerId: "set-text-frame",
+                  id: "edit.field",
+                  mutatesSource: true,
+                  outputKinds: ["edit-plan"],
+                  requiredPermissions: ["read-source", "write-source"]
                 }
               ],
               probe: {
@@ -48700,7 +48759,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
                 extensions: ["ogg", "oga", "opus"],
                 mediaTypes: ["audio/ogg", "audio/opus", "application/ogg"]
               },
-              openIntents: ["probe", "inspect", "stream", "export"],
+              openIntents: ["probe", "inspect", "full", "stream", "export"],
               operations: [
                 {
                   handlerId: "inspect",
@@ -49176,17 +49235,19 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: "sha256:249ed43998d03af6f1d7a756751f82ad7e0505b026759e853f1ad468164a41fb",
+        artifactDigest: "sha256:c8c2150394c2173ee610dd342472b3d70a653284d4ad9f3333470ea0bcb3da76",
         fileDigests: {
-          "README.md": "sha256:177d9c6848a5ff9333d1c681e3868cfa7f87aed16e0533a8beff94dbbd298950",
-          "contributions/codec-jpeg.json": "sha256:bca73505e78161fcdc2e3920c36e2462c8a5370f61697e7c6e6d8e664812cd27",
+          "README.md": "sha256:fee600d3a5d3eb369487d20b47158e3d2c8afee1f448164f64b2e44f554ba83f",
+          "contributions/codec-jpeg.json": "sha256:3e4712377e58fdc3e4a835f2c1ac6731ae5595881a94d61666b177c33d9cb802",
           "contributions/codec-png.json": "sha256:e069e36d8e4e56a01da28ce8790f64b0f1bd6a3d31b2506615d49d40828e4839",
-          "package.json": "sha256:73873e99e2d03f96b49f1003c89eee7d1da136a782eb0a1739e8b89f2aff51fd",
-          "src/formats/jpeg/codec.js": "sha256:cb2dcfdcd0f3318904744bcf559f25dc7917c294cadc385d02c04ff53a4cde22",
+          "contributions/writer-png.json": "sha256:fa03ddbb7e468a6d9948ba9f89dee07ffc682e8404adb23f379da4cf231aed49",
+          "package.json": "sha256:9d1f1918e481fc1cabb9c717fd2d6dbf99eaecc0b00b9010ed96de9fa3866d2d",
+          "src/formats/jpeg/codec.js": "sha256:43739ed9200be7c7e11b326ac83206892cb3eb9633b3b76477099e6fed24bd06",
           "src/formats/png/codec.js": "sha256:bd61f86cd7e629b4543a456c13e28d0bee00ecd92fba04a8c4dc58e1fbaa3e45",
-          "src/index.js": "sha256:bcbc40812fa5dcdb2937b0ff5b617c1483725570302b99f569249ac3c441ce41"
+          "src/index.js": "sha256:bcbc40812fa5dcdb2937b0ff5b617c1483725570302b99f569249ac3c441ce41",
+          "src/writers/png-encoder.js": "sha256:411efbd8aadd7a2edfb335752f8e8bfad1a11452534bd039e227d52f49d6a65a"
         },
-        inventoryRecordId: "artifact:sha256:249ed43998d03af6f1d7a756751f82ad7e0505b026759e853f1ad468164a41fb"
+        inventoryRecordId: "artifact:sha256:c8c2150394c2173ee610dd342472b3d70a653284d4ad9f3333470ea0bcb3da76"
       },
       artifactRoot: "extensions/images/",
       containers: {
@@ -49200,7 +49261,8 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
             "./formats/*/codec": "./src/formats/*/codec.js",
             "./formats/jpeg/codec": "./src/formats/jpeg/codec.js",
             "./formats/png/codec": "./src/formats/png/codec.js",
-            "./package.json": "./package.json"
+            "./package.json": "./package.json",
+            "./writers/png-encoder": "./src/writers/png-encoder.js"
           },
           files: ["contributions", "src", "README.md"],
           license: "MIT",
@@ -49230,11 +49292,15 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
       documentDigests: [
         [
           "contributions/codec-jpeg.json",
-          "sha256:bca73505e78161fcdc2e3920c36e2462c8a5370f61697e7c6e6d8e664812cd27"
+          "sha256:3e4712377e58fdc3e4a835f2c1ac6731ae5595881a94d61666b177c33d9cb802"
         ],
         [
           "contributions/codec-png.json",
           "sha256:e069e36d8e4e56a01da28ce8790f64b0f1bd6a3d31b2506615d49d40828e4839"
+        ],
+        [
+          "contributions/writer-png.json",
+          "sha256:fa03ddbb7e468a6d9948ba9f89dee07ffc682e8404adb23f379da4cf231aed49"
         ]
       ],
       documents: [
@@ -49251,7 +49317,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
               {
                 entrypoint: "./src/formats/jpeg/codec.js",
                 executionProfile: "trusted-in-process",
-                requestedPermissionClasses: ["read-source"],
+                requestedPermissionClasses: ["read-source", "write-source"],
                 target: {
                   environments: ["node"]
                 },
@@ -49260,7 +49326,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
               {
                 entrypoint: "./src/formats/jpeg/codec.js",
                 executionProfile: "worker-brokered",
-                requestedPermissionClasses: ["read-source"],
+                requestedPermissionClasses: ["read-source", "write-source"],
                 target: {
                   environments: ["browser-worker", "node-worker"]
                 },
@@ -49313,6 +49379,20 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
                   mutatesSource: false,
                   outputKinds: ["bytes"],
                   requiredPermissions: ["read-source"]
+                },
+                {
+                  handlerId: "set-comment",
+                  id: "edit.field",
+                  mutatesSource: true,
+                  outputKinds: ["edit-plan"],
+                  requiredPermissions: ["read-source", "write-source"]
+                },
+                {
+                  handlerId: "remove-segment",
+                  id: "edit.structure",
+                  mutatesSource: true,
+                  outputKinds: ["edit-plan"],
+                  requiredPermissions: ["read-source", "write-source"]
                 }
               ],
               probe: {
@@ -49525,16 +49605,60 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
               ]
             }
           }
+        ],
+        [
+          "contributions/writer-png.json",
+          {
+            contract: {
+              id: "org.modkitx/service-provider-contribution",
+              major: 1
+            },
+            displayName: "PNG encoder (writer)",
+            id: "org.modkitx/png-encoder-writer",
+            runtimeVariants: [
+              {
+                entrypoint: "./src/writers/png-encoder.js",
+                executionProfile: "worker-brokered",
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ["node-worker", "browser-worker"]
+                },
+                variantId: "portable"
+              }
+            ],
+            schemaVersion: 1,
+            spec: {
+              lifecycleScope: "session",
+              provides: [
+                {
+                  contract: "common.edit/writer",
+                  facet: {
+                    fidelityEvidenceId: "png-encoder-v1",
+                    formatId: "png",
+                    minimumRoundTrip: "semantic",
+                    mutationMode: "mutate",
+                    providerId: "org.modkitx/png-encoder-writer",
+                    representationId: "rgba8"
+                  },
+                  major: 1,
+                  offerId: "png-rgba8-encoder",
+                  version: "1.0.0"
+                }
+              ]
+            }
+          }
         ]
       ],
       files: [
         "README.md",
         "contributions/codec-jpeg.json",
         "contributions/codec-png.json",
+        "contributions/writer-png.json",
         "package.json",
         "src/formats/jpeg/codec.js",
         "src/formats/png/codec.js",
-        "src/index.js"
+        "src/index.js",
+        "src/writers/png-encoder.js"
       ],
       name: "images",
       source: "extensions/common/images"
@@ -50088,7 +50212,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: "sha256:febf8f045f6a3d96e4431c5ce96f354ef8580e7463763fe5c2341f63662b4164",
+        artifactDigest: "sha256:41b18bb6583165fc5ad5a3ceae9a168e769d30cfd377f621e03568957b8aa7ff",
         fileDigests: {
           "README.md": "sha256:32b16af9cd40d5a69ccc3a44c7d74e40703c44ff0ac7f61a8f1289f093506a0d",
           "contributions/codec-csv.json": "sha256:dc839a238213fe35a8e7e3eeb03680798c62ae7c6186de0c4dad76e84ed68544",
@@ -50097,7 +50221,9 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "contributions/contract-tsv-syntax.json": "sha256:2f4bd11489e72d4ba207b6a79dd7680651b2ff93f25b8acde057ce5ccbf0976c",
           "contributions/provider-csv-default.json": "sha256:51dce1699a464ede2fe08da370490985c2c6f97d1162aee16c2767e875f87ede",
           "contributions/provider-tsv-default.json": "sha256:5520bc14a0ff8d688706a5821cef953670e5936827138dc75d21829d28e81c8c",
+          "contributions/writer-delimited.json": "sha256:21e1441bcc2c6e5b81ad048edfafb8bc3ec77551fe183a0d03de96c28f6833ad",
           "package.json": "sha256:c21cbacc8f779a8c1a37eda8266e00ba456ba3a4c74c47f65e8abb7ba20ce359",
+          "src/editing/text-writer.js": "sha256:dce962c640c433456183054d03940ab874d4970da6cf41a1fae289269873d561",
           "src/families/delimited/codec.js": "sha256:8ce0696b57a7094d17468051804a030296494d4d9af15380b8a6d706252a8e42",
           "src/families/delimited/detect.js": "sha256:05dd4043a75b2c2df8ea96c4387123399b166b94ac9ed525206897771826885f",
           "src/families/delimited/entrypoints/csv-codec.js": "sha256:6243da640aa7c418bc29546d9eaca189633e2dbb8e90ef03e5fba2cc1f7db599",
@@ -50115,7 +50241,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "src/index.js": "sha256:4d3c1f65a922238a9b5cd20832700b890e95abd3e1485f07bd472d9a074227d2",
           "test/fixtures/csv-rfc4180-parity.json": "sha256:518c4096fdf96326de1c0a83acab3674a66a2ccfa7f9b7279760e97fbb712ef5"
         },
-        inventoryRecordId: "artifact:sha256:febf8f045f6a3d96e4431c5ce96f354ef8580e7463763fe5c2341f63662b4164"
+        inventoryRecordId: "artifact:sha256:41b18bb6583165fc5ad5a3ceae9a168e769d30cfd377f621e03568957b8aa7ff"
       },
       artifactRoot: "extensions/text-delimited/",
       containers: {
@@ -50186,6 +50312,10 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         [
           "contributions/provider-tsv-default.json",
           "sha256:5520bc14a0ff8d688706a5821cef953670e5936827138dc75d21829d28e81c8c"
+        ],
+        [
+          "contributions/writer-delimited.json",
+          "sha256:21e1441bcc2c6e5b81ad048edfafb8bc3ec77551fe183a0d03de96c28f6833ad"
         ]
       ],
       documents: [
@@ -50742,6 +50872,62 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
               ]
             }
           }
+        ],
+        [
+          "contributions/writer-delimited.json",
+          {
+            contract: {
+              id: "org.modkitx/service-provider-contribution",
+              major: 1
+            },
+            displayName: "CSV and TSV text writer",
+            id: "org.modkitx/text-delimited-writer",
+            runtimeVariants: [
+              {
+                entrypoint: "./src/editing/text-writer.js",
+                executionProfile: "worker-brokered",
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ["browser-worker", "node-worker"]
+                },
+                variantId: "portable"
+              }
+            ],
+            schemaVersion: 1,
+            spec: {
+              lifecycleScope: "session",
+              provides: [
+                {
+                  contract: "common.edit/writer",
+                  facet: {
+                    fidelityEvidenceId: "text-delimited-text-writer-v1",
+                    formatId: "csv",
+                    minimumRoundTrip: "byte-identical",
+                    mutationMode: "mutate",
+                    providerId: "org.modkitx/text-delimited-writer",
+                    representationId: "source"
+                  },
+                  major: 1,
+                  offerId: "csv-source",
+                  version: "1.0.0"
+                },
+                {
+                  contract: "common.edit/writer",
+                  facet: {
+                    fidelityEvidenceId: "text-delimited-text-writer-v1",
+                    formatId: "tsv",
+                    minimumRoundTrip: "byte-identical",
+                    mutationMode: "mutate",
+                    providerId: "org.modkitx/text-delimited-writer",
+                    representationId: "source"
+                  },
+                  major: 1,
+                  offerId: "tsv-source",
+                  version: "1.0.0"
+                }
+              ]
+            }
+          }
         ]
       ],
       files: [
@@ -50752,7 +50938,9 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         "contributions/contract-tsv-syntax.json",
         "contributions/provider-csv-default.json",
         "contributions/provider-tsv-default.json",
+        "contributions/writer-delimited.json",
         "package.json",
+        "src/editing/text-writer.js",
         "src/families/delimited/codec.js",
         "src/families/delimited/detect.js",
         "src/families/delimited/entrypoints/csv-codec.js",
@@ -50775,13 +50963,15 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: "sha256:487c72e12426373e8a0e4cb81bd21842495f0529eb30f67f0091764ba2358691",
+        artifactDigest: "sha256:6c203a9e1d424f58eafd7341e8ed83b8600e5f67ca47dc07ccd2a334545d4649",
         fileDigests: {
           "README.md": "sha256:9519219eb63529bab5e470614ac5a8c5506507cb35e567d4686f73c13023e546",
           "contributions/codec-ini.json": "sha256:a049d4e8c41e3954c685ae048a37fe88295486ab93dda96cd81e648e301d9624",
           "contributions/contract-ini-syntax.json": "sha256:aafe6ff6e6465a0ac49865cd594ff360ed796e29dc803668bfd8f83cdd0f9973",
           "contributions/provider-ini-default.json": "sha256:92fad791e38fa9cc4d22907ef846b88bbba25e237c156285954688ff417f8893",
+          "contributions/writer-ini.json": "sha256:d278dfffae415d855276a46335e7668f6ecdf465cc4c3e73b672dc39850abfaf",
           "package.json": "sha256:8d6c9a84dfd4c7d41d6f68a2d4e3bcf0f33395151aceec6596c5464129e3b244",
+          "src/editing/text-writer.js": "sha256:2c0fe6dd7b60302cc6ba2e91d995a257e875b81a6af1bda8d23869ead9d7a56c",
           "src/formats/index.js": "sha256:a4d3cbdd7e162f66732f3c2dc857e4538c5f2a9794a610d144a1baaf6b6da75f",
           "src/formats/ini/codec.js": "sha256:bc28ceb31c5dd6606d6fe302cf8ffa0b42bcd85ed4f9ca9c95d9a60120e5cef8",
           "src/formats/ini/definition.js": "sha256:818494714eab867402779285234d227938d606a8737e50d4318ee6aa0cff6c45",
@@ -50789,7 +50979,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "src/index.js": "sha256:4490f78940b58ce6125c3f02a429c6e502a4f8cbb6ebbb01d0693fb06eed5b04",
           "test/fixtures/ini-sc2-parity.json": "sha256:205a176ec39d8c1adeebd8f9419ff9c9b8e2e2d45f4387541adc7e96c2090df9"
         },
-        inventoryRecordId: "artifact:sha256:487c72e12426373e8a0e4cb81bd21842495f0529eb30f67f0091764ba2358691"
+        inventoryRecordId: "artifact:sha256:6c203a9e1d424f58eafd7341e8ed83b8600e5f67ca47dc07ccd2a334545d4649"
       },
       artifactRoot: "extensions/text-ini/",
       containers: {
@@ -50846,6 +51036,10 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         [
           "contributions/provider-ini-default.json",
           "sha256:92fad791e38fa9cc4d22907ef846b88bbba25e237c156285954688ff417f8893"
+        ],
+        [
+          "contributions/writer-ini.json",
+          "sha256:d278dfffae415d855276a46335e7668f6ecdf465cc4c3e73b672dc39850abfaf"
         ]
       ],
       documents: [
@@ -51118,6 +51312,48 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
               ]
             }
           }
+        ],
+        [
+          "contributions/writer-ini.json",
+          {
+            contract: {
+              id: "org.modkitx/service-provider-contribution",
+              major: 1
+            },
+            displayName: "INI text writer",
+            id: "org.modkitx/text-ini-writer",
+            runtimeVariants: [
+              {
+                entrypoint: "./src/editing/text-writer.js",
+                executionProfile: "worker-brokered",
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ["browser-worker", "node-worker"]
+                },
+                variantId: "portable"
+              }
+            ],
+            schemaVersion: 1,
+            spec: {
+              lifecycleScope: "session",
+              provides: [
+                {
+                  contract: "common.edit/writer",
+                  facet: {
+                    fidelityEvidenceId: "text-ini-text-writer-v1",
+                    formatId: "ini",
+                    minimumRoundTrip: "byte-identical",
+                    mutationMode: "mutate",
+                    providerId: "org.modkitx/text-ini-writer",
+                    representationId: "source"
+                  },
+                  major: 1,
+                  offerId: "ini-source",
+                  version: "1.0.0"
+                }
+              ]
+            }
+          }
         ]
       ],
       files: [
@@ -51125,7 +51361,9 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         "contributions/codec-ini.json",
         "contributions/contract-ini-syntax.json",
         "contributions/provider-ini-default.json",
+        "contributions/writer-ini.json",
         "package.json",
+        "src/editing/text-writer.js",
         "src/formats/index.js",
         "src/formats/ini/codec.js",
         "src/formats/ini/definition.js",
@@ -51362,9 +51600,9 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: "sha256:a00b9571b11bdf5148ceffd5f8a1e8fc6e1d133f88761ec3cb583b83fee36292",
+        artifactDigest: "sha256:ee8d518741d3d72ecaf30333be75c72dc271916eff9d809f25eb448ac6b6fd2b",
         fileDigests: {
-          "README.md": "sha256:38f45b810e9d589388bc43ca53aa0d9f6e66c99fbce9547f78607f2ebc5e7c79",
+          "README.md": "sha256:5afa854f15f6009e21e2898e7e030e5a246de537162a1e49422e519de299aa91",
           "contributions/codec-mp4.json": "sha256:2fe649041c4113e80d73ad3ab553446b80a68938156c53857b8f849984858de8",
           "contributions/codec-webm.json": "sha256:f92bba4f0c36eb3d03771d86b5aa663421530d3eba1198bc9fd180aebd742a3b",
           "package.json": "sha256:2b2b64e3a13378458c25a0081496dfb09c50307596ff467cd445976d6b6183da",
@@ -51372,7 +51610,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "src/formats/webm/codec.js": "sha256:b8f80e46ea45dc927cadece35212e2336e591b66a03be4d55c2672ad4b86db70",
           "src/index.js": "sha256:fc2cf3b104e31455bd7cf3a68c572cbffcedf72166be2e5362a5dfb4f0bb65b8"
         },
-        inventoryRecordId: "artifact:sha256:a00b9571b11bdf5148ceffd5f8a1e8fc6e1d133f88761ec3cb583b83fee36292"
+        inventoryRecordId: "artifact:sha256:ee8d518741d3d72ecaf30333be75c72dc271916eff9d809f25eb448ac6b6fd2b"
       },
       artifactRoot: "extensions/video/",
       containers: {
@@ -53424,13 +53662,13 @@ function matchesGlob(path, glob) {
   return new RegExp(`${pattern}$`, "u").test(path);
 }
 function matchesSpec(spec, path, mediaType) {
-  const normalizedPath = path.replaceAll("\\", "/").split(/[?#]/u, 1)[0]?.toLocaleLowerCase() ?? "";
+  const normalizedPath2 = path.replaceAll("\\", "/").split(/[?#]/u, 1)[0]?.toLocaleLowerCase() ?? "";
   const extensionMatch = (spec.match.extensions ?? []).some((extension) => {
     const suffix = extension.toLocaleLowerCase().replace(/^\.+/u, "");
-    return normalizedPath.endsWith(`.${suffix}`) || normalizedPath === suffix;
+    return normalizedPath2.endsWith(`.${suffix}`) || normalizedPath2 === suffix;
   });
   const mediaMatch = mediaType !== void 0 && (spec.match.mediaTypes ?? []).some((candidate) => candidate === mediaType);
-  const pathMatch = (spec.match.pathGlobs ?? []).some((glob) => matchesGlob(normalizedPath, glob));
+  const pathMatch = (spec.match.pathGlobs ?? []).some((glob) => matchesGlob(normalizedPath2, glob));
   const declaresMatch = (spec.match.extensions?.length ?? 0) > 0 || (spec.match.mediaTypes?.length ?? 0) > 0 || (spec.match.pathGlobs?.length ?? 0) > 0;
   return declaresMatch && (extensionMatch || mediaMatch || pathMatch);
 }
@@ -55031,6 +55269,26 @@ function isSubscriptionId(value2) {
 function isMethodName(value2) {
   return METHOD_NAME.test(value2);
 }
+var WIRE_TYPED_ARRAYS = Object.freeze({
+  bytes: Uint8Array,
+  i8: Int8Array,
+  u8c: Uint8ClampedArray,
+  i16: Int16Array,
+  u16: Uint16Array,
+  i32: Int32Array,
+  u32: Uint32Array,
+  f32: Float32Array,
+  f64: Float64Array,
+  i64: BigInt64Array,
+  u64: BigUint64Array
+});
+function wireTypedArrayCode(view) {
+  for (const [code, constructor] of Object.entries(WIRE_TYPED_ARRAYS)) {
+    if (view.constructor === constructor)
+      return code;
+  }
+  return void 0;
+}
 var MAX_OPTIONAL_METHODS = 64;
 function handleRef(id, kind, contract, data, has) {
   return Object.freeze({
@@ -55162,7 +55420,11 @@ function validateInner(value2, limits, measure, depth, path, handles) {
   }
   if (value2 === null)
     return void 0;
-  if (value2 instanceof Uint8Array) {
+  if (ArrayBuffer.isView(value2) && !(value2 instanceof DataView)) {
+    const kind = value2.constructor.name;
+    if (wireTypedArrayCode(value2) === void 0) {
+      return { code: "bad-value", message: `${kind} is not a wire value`, path };
+    }
     if (SHARED !== void 0 && value2.buffer instanceof SHARED) {
       return {
         code: "shared-buffer",
@@ -55173,14 +55435,14 @@ function validateInner(value2, limits, measure, depth, path, handles) {
     if (value2.buffer.detached === true) {
       return {
         code: "bad-value",
-        message: "a Uint8Array over a detached buffer cannot cross (it was transferred already)",
+        message: `a ${kind} over a detached buffer cannot cross (it was transferred already)`,
         path
       };
     }
     if (value2.byteOffset !== 0 || value2.byteLength !== value2.buffer.byteLength) {
       return {
         code: "partial-typed-array",
-        message: "a Uint8Array must own its whole buffer (slice() before sending)",
+        message: `a ${kind} must own its whole buffer (slice() before sending)`,
         path
       };
     }
@@ -55195,8 +55457,12 @@ function validateInner(value2, limits, measure, depth, path, handles) {
     measure.buffers.push(value2.buffer);
     return void 0;
   }
-  if (ArrayBuffer.isView(value2) || value2 instanceof ArrayBuffer) {
-    return { code: "bad-value", message: "only Uint8Array binary payloads are allowed", path };
+  if (value2 instanceof DataView || value2 instanceof ArrayBuffer) {
+    return {
+      code: "bad-value",
+      message: "binary payloads must be a typed array that names its element type",
+      path
+    };
   }
   if (Array.isArray(value2)) {
     if (value2.length > limits.maxArrayLength) {
@@ -55777,14 +56043,14 @@ function createSurfaceRegistry(surfaces) {
     for (const [name, method] of Object.entries(surface.methods)) {
       methods[name] = snapshotMethod(name, method, key3);
     }
-    const snapshot = Object.freeze({
+    const snapshot2 = Object.freeze({
       contract: surface.contract,
       major: surface.major,
       methods: Object.freeze(methods),
       ...surface.releaseVia === void 0 ? {} : { releaseVia: surface.releaseVia },
       ...surface.fields === void 0 ? {} : { fields: Object.freeze([...surface.fields]) }
     });
-    byKey.set(key3, snapshot);
+    byKey.set(key3, snapshot2);
   }
   for (const surface of byKey.values()) {
     for (const [name, method] of Object.entries(surface.methods)) {
@@ -55866,6 +56132,38 @@ function normalizeProgress(value2) {
     completed,
     ...typeof total === "number" && Number.isFinite(total) && total >= 0 ? { total } : {},
     ...typeof message === "string" ? { message: message.slice(0, 1024) } : {}
+  };
+}
+function lazyStream(start) {
+  return {
+    [Symbol.asyncIterator]() {
+      let iterator;
+      const open = async () => {
+        if (iterator === void 0) {
+          const stream = await start();
+          iterator = stream[Symbol.asyncIterator]();
+        }
+        return iterator;
+      };
+      return {
+        async next(...args) {
+          return (await open()).next(...args);
+        },
+        async return(value2) {
+          if (iterator === void 0)
+            return { done: true, value: value2 };
+          return await iterator.return?.(value2) ?? { done: true, value: value2 };
+        },
+        async throw(error) {
+          if (iterator === void 0)
+            throw error;
+          const thrown = await iterator.throw?.(error);
+          if (thrown === void 0)
+            throw error;
+          return thrown;
+        }
+      };
+    }
   };
 }
 function isAbortSignal(value2) {
@@ -56023,7 +56321,7 @@ var EndpointImpl = class {
     for (const [name, method] of Object.entries(surface.methods)) {
       if (method.optional === true && present !== void 0 && !present.includes(name))
         continue;
-      object2[name] = async (...rawArgs) => {
+      const invoke = async (...rawArgs) => {
         const args = [...rawArgs];
         let signal;
         let onProgress;
@@ -56072,6 +56370,7 @@ var EndpointImpl = class {
             return outcome.events;
         }
       };
+      object2[name] = method.kind === "iterable" || method.kind === "events" ? (...rawArgs) => lazyStream(() => invoke(...rawArgs)) : invoke;
     }
     if (surface.releaseVia !== void 0) {
       const inner = object2[surface.releaseVia];
@@ -57408,9 +57707,13 @@ function createEndpoint(options) {
 // packages/host/dist/execution/message-port.js
 function framePortFromMessagePort(port, options = {}) {
   const style = options.listener ?? (typeof port.addEventListener === "function" ? "event-target" : "emitter-value");
+  const moves = (options.transfer ?? (style === "emitter-event" ? "copy" : "move")) === "move";
   return {
     post(frame, transfer) {
-      port.postMessage(frame, [...transfer]);
+      if (moves)
+        port.postMessage(frame, [...transfer]);
+      else
+        port.postMessage(frame);
     },
     onFrame(handler) {
       if (style === "event-target") {
@@ -57547,16 +57850,149 @@ function createStandardSurfaceRegistry(options = {}) {
 
 // packages/host/dist/subject-rpc.js
 var SUBJECT_SERVICES = Object.freeze({ contract: "x3.app/subject-services", major: 1 });
+var SUBJECT_EDITING = Object.freeze({ contract: "x3.app/subject-editing", major: 1 });
 var subjectServicesSurface = {
   ...SUBJECT_SERVICES,
   methods: {
     /** `open(path)` → an inert snapshot (opened carries a `sessionId` to attach). */
     open: { kind: "value", signal: "last" },
     /** `attach(sessionId)` → the live session under `x3.abi/asset-session@1`. */
-    attach: { kind: "lease", result: ABI_ASSET_SESSION, wrapper: "bare" }
+    attach: { kind: "lease", result: ABI_ASSET_SESSION, wrapper: "bare" },
+    /** `edit(sessionId)` → the editing arm, when this host can write this subject. */
+    edit: { kind: "lease", result: SUBJECT_EDITING, wrapper: "bare" }
+  }
+};
+var subjectEditingSurface = {
+  ...SUBJECT_EDITING,
+  releaseVia: "dispose",
+  methods: {
+    state: { kind: "value" },
+    propose: { kind: "value", signal: "last", arity: 1 },
+    plan: { kind: "value", signal: "last", arity: 1 },
+    prepare: { kind: "value", signal: "last", arity: 1 },
+    commit: { kind: "value", signal: "last", arity: 1 },
+    dispose: { kind: "value" }
   }
 };
 var SUBJECT_RPC_LIMITS = protocolLimits({ defaultCallDeadlineMs: 6e4 });
+
+// packages/host/dist/editing-evidence.js
+var HOST_RAW_WRITER_IDENTITY = Object.freeze({
+  providerId: "org.modkitx.host/raw-writer",
+  providerVersion: "1.0.0",
+  artifactDigest: "host:raw-writer",
+  formatId: "*",
+  representationId: "source"
+});
+var RAW_CLAIM = Object.freeze({
+  roundTrip: "byte-identical",
+  preservesUnknownData: true
+});
+function isRangeReplace(edit) {
+  return edit.operation === "replace" && edit.range !== void 0;
+}
+function createRawWriter(options = {}) {
+  const allowWholeSource = options.allowWholeSource ?? true;
+  const identity2 = Object.freeze({
+    ...HOST_RAW_WRITER_IDENTITY,
+    ...options.formatId === void 0 ? {} : { formatId: options.formatId },
+    ...options.representationId === void 0 ? {} : { representationId: options.representationId }
+  });
+  const offer = Object.freeze({
+    providerId: identity2.providerId,
+    fidelityEvidenceId: HOST_RAW_WRITER_EVIDENCE_ID,
+    formatId: identity2.formatId,
+    representationId: identity2.representationId,
+    mutationMode: "mutate",
+    minimumRoundTrip: "byte-identical"
+  });
+  const check = (change) => {
+    const targets = new Set(change.targets.map((target) => target.targetId));
+    const problems = [];
+    if (change.targets.length === 0 || change.edits.length === 0) {
+      problems.push(diagnostic("error", "x3.host/raw-writer-empty", "a change set needs a target and an edit"));
+    }
+    for (const edit of change.edits) {
+      if (edit.operation !== "replace") {
+        problems.push(diagnostic("error", "x3.host/raw-writer-operation-unsupported", `the raw writer plans replacements only; \xAB${edit.operation}\xBB needs a format writer`));
+        continue;
+      }
+      if (!targets.has(edit.targetId)) {
+        problems.push(diagnostic("error", "x3.host/raw-writer-unknown-target", `edit names target \xAB${edit.targetId}\xBB, which this change set does not declare`));
+      }
+      if (!allowWholeSource && !isRangeReplace(edit)) {
+        problems.push(diagnostic("error", "x3.host/raw-writer-whole-source-refused", "this host allows range edits only: a whole-source replace from a bounded editor can drop what it never loaded"));
+      }
+    }
+    return { valid: problems.length === 0, diagnostics: Object.freeze(problems) };
+  };
+  return Object.freeze({
+    identity: identity2,
+    offer,
+    async validate(change) {
+      return check(change);
+    },
+    async plan(change) {
+      const validation = check(change);
+      if (!validation.valid) {
+        return Object.freeze({
+          planId: "raw-writer:refused",
+          targets: Object.freeze([]),
+          edits: Object.freeze([]),
+          semantics: Object.freeze({ mutationMode: "mutate", minimumGuarantee: "atomic" }),
+          fidelity: RAW_CLAIM,
+          diagnostics: validation.diagnostics
+        });
+      }
+      return Object.freeze({
+        planId: options.planId?.(change) ?? `raw-writer:${change.targets.map((target) => target.targetId).join("+")}`,
+        targets: change.targets,
+        edits: change.edits,
+        semantics: Object.freeze({ mutationMode: "mutate", minimumGuarantee: "atomic" }),
+        fidelity: RAW_CLAIM,
+        diagnostics: Object.freeze([])
+      });
+    }
+  });
+}
+var HOST_RAW_WRITER_EVIDENCE_ID = "host:raw-writer/by-construction";
+var HOST_RAW_WRITER_EVIDENCE_RECORD = Object.freeze({
+  writer: HOST_RAW_WRITER_IDENTITY,
+  claim: RAW_CLAIM,
+  evidenceId: HOST_RAW_WRITER_EVIDENCE_ID,
+  corpusId: "by-construction: literal replacement, no re-encoding",
+  corpusDigest: "none:by-construction",
+  conformanceProfile: "org.modkitx/raw-writer-v1",
+  optionsFingerprint: "options:none",
+  inputClass: "any",
+  provenAt: "2026-08-19T00:00:00Z"
+});
+function evidenceOf(record) {
+  return Object.freeze({
+    ...record.claim,
+    evidenceId: record.evidenceId,
+    corpusId: record.corpusId,
+    corpusDigest: record.corpusDigest,
+    conformanceProfile: record.conformanceProfile,
+    writer: record.writer,
+    optionsFingerprint: record.optionsFingerprint,
+    inputClass: record.inputClass,
+    provenAt: record.provenAt
+  });
+}
+var sameClaim = (left, right) => left.roundTrip === right.roundTrip && left.preservesUnknownData === right.preservesUnknownData;
+function createEvidenceRegistry(records = [HOST_RAW_WRITER_EVIDENCE_RECORD]) {
+  const own = Object.freeze([...records]);
+  const registry = {
+    evidenceFor(plan) {
+      const record = own.find((item) => sameClaim(item.claim, plan.fidelity));
+      return record === void 0 ? void 0 : evidenceOf(record);
+    },
+    list: () => own,
+    with: (record) => createEvidenceRegistry([record, ...own])
+  };
+  return Object.freeze(registry);
+}
 
 // packages/host/dist/editing.js
 var GUARANTEE_STRENGTH = Object.freeze({
@@ -57565,8 +58001,931 @@ var GUARANTEE_STRENGTH = Object.freeze({
   transactional: 2,
   atomic: 3
 });
+var issuedGrantSnapshots = /* @__PURE__ */ new WeakSet();
+function snapshot(value2, ancestors = /* @__PURE__ */ new WeakSet()) {
+  if (typeof value2 === "function" || typeof value2 === "symbol") {
+    throw new TypeError("editing inputs cannot contain executable or symbol values");
+  }
+  if (value2 instanceof Uint8Array)
+    return value2.slice();
+  if (Array.isArray(value2)) {
+    if (ancestors.has(value2))
+      throw new TypeError("editing inputs must be acyclic owned data");
+    ancestors.add(value2);
+    const copy = Object.freeze(value2.map((item) => snapshot(item, ancestors)));
+    ancestors.delete(value2);
+    return copy;
+  }
+  if (typeof value2 === "object" && value2 !== null) {
+    if (ancestors.has(value2))
+      throw new TypeError("editing inputs must be acyclic owned data");
+    const prototype = Object.getPrototypeOf(value2);
+    if (prototype !== Object.prototype && prototype !== null) {
+      throw new TypeError("editing inputs must contain only plain owned data");
+    }
+    ancestors.add(value2);
+    const copy = {};
+    for (const key3 of Reflect.ownKeys(value2)) {
+      copy[key3] = snapshot(value2[key3], ancestors);
+    }
+    ancestors.delete(value2);
+    return Object.freeze(copy);
+  }
+  return value2;
+}
+function snapshotGrant(grant) {
+  if (!issuedGrantSnapshots.has(grant))
+    throw new TypeError("grant snapshot is not host-issued");
+  return Object.freeze({
+    snapshotId: String(grant.snapshotId),
+    permissions: Object.freeze([...grant.permissions]),
+    sourceIds: Object.freeze([...grant.sourceIds])
+  });
+}
+function grantIsValid(options, grant) {
+  try {
+    return options.isGrantValid(grant) === true;
+  } catch {
+    return false;
+  }
+}
+function createGrantSnapshot(value2) {
+  if (!isNonBlank(value2.snapshotId) || !Array.isArray(value2.permissions) || !value2.permissions.every((permission) => PERMISSION_CLASSES.includes(permission)) || !Array.isArray(value2.sourceIds) || !value2.sourceIds.every(isNonBlank)) {
+    throw new TypeError("grant snapshot is malformed");
+  }
+  const snapshot2 = Object.freeze({
+    snapshotId: value2.snapshotId,
+    permissions: Object.freeze([...new Set(value2.permissions)].sort(compareUtf8)),
+    sourceIds: Object.freeze([...new Set(value2.sourceIds)].sort(compareUtf8))
+  });
+  issuedGrantSnapshots.add(snapshot2);
+  return snapshot2;
+}
+function revisionValue(revision) {
+  return {
+    bindings: Object.fromEntries(Object.entries(revision.bindings).sort(([left], [right]) => compareUtf8(left, right)).map(([key3, value2]) => [key3, String(value2)])),
+    ...revision.namespaceRevision === void 0 ? {} : { namespaceRevision: String(revision.namespaceRevision) },
+    compositionFingerprint: revision.compositionFingerprint
+  };
+}
+function sameRevision(left, right) {
+  return JSON.stringify(revisionValue(left)) === JSON.stringify(revisionValue(right));
+}
+function revisionFingerprint(targets, digest) {
+  return digest(targets.map((target) => ({
+    targetId: target.targetId,
+    revision: revisionValue(target.expectedRevision)
+  })).sort((left, right) => compareUtf8(left.targetId, right.targetId)));
+}
+function normalizedPath(value2) {
+  if (value2.trim() === "" || value2.includes("\\") || value2.startsWith("/"))
+    return void 0;
+  const parts = value2.split("/");
+  if (parts.some((part) => part === "" || part === "." || part === ".."))
+    return void 0;
+  return parts.join("/");
+}
+function modeOf(edit) {
+  if (edit.operation === "replace")
+    return "in-place";
+  return edit.operation;
+}
+function isRecord3(value2) {
+  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
+}
+function hasExactKeys(value2, allowed) {
+  const keys = Object.keys(value2);
+  return keys.length === new Set(keys).size && keys.every((key3) => allowed.includes(key3));
+}
+function isNonBlank(value2) {
+  return typeof value2 === "string" && value2.trim() !== "";
+}
+function isAssetSource(value2) {
+  return isRecord3(value2) && hasExactKeys(value2, ["id", "uri", "parentIds"]) && isNonBlank(value2["id"]) && isNonBlank(value2["uri"]) && (value2["parentIds"] === void 0 || Array.isArray(value2["parentIds"]) && value2["parentIds"].every(isNonBlank));
+}
+function isRevision(value2) {
+  if (!isRecord3(value2) || !hasExactKeys(value2, ["bindings", "namespaceRevision", "compositionFingerprint"]) || !isRecord3(value2["bindings"]) || Object.keys(value2["bindings"]).length === 0 || !Object.values(value2["bindings"]).every(isNonBlank) || !isNonBlank(value2["compositionFingerprint"])) {
+    return false;
+  }
+  return value2["namespaceRevision"] === void 0 || isNonBlank(value2["namespaceRevision"]);
+}
+function isRecoveryRef(value2) {
+  return isRecord3(value2) && hasExactKeys(value2, ["kind", "ref", "digest"]) && (value2["kind"] === "journal" || value2["kind"] === "staging") && isNonBlank(value2["ref"]) && isNonBlank(value2["digest"]);
+}
+function isFidelityEvidence(value2) {
+  if (!isRecord3(value2) || !hasExactKeys(value2, [
+    "roundTrip",
+    "preservesUnknownData",
+    "notes",
+    "evidenceId",
+    "corpusId",
+    "corpusDigest",
+    "conformanceProfile",
+    "writer",
+    "optionsFingerprint",
+    "inputClass",
+    "provenAt"
+  ]) || !["byte-identical", "semantic", "lossy", "none"].includes(value2["roundTrip"]) || typeof value2["preservesUnknownData"] !== "boolean" || value2["notes"] !== void 0 && (!Array.isArray(value2["notes"]) || !value2["notes"].every(isNonBlank)) || ![
+    value2["evidenceId"],
+    value2["corpusId"],
+    value2["corpusDigest"],
+    value2["conformanceProfile"],
+    value2["optionsFingerprint"],
+    value2["inputClass"],
+    value2["provenAt"]
+  ].every(isNonBlank) || !isRecord3(value2["writer"]) || !hasExactKeys(value2["writer"], [
+    "providerId",
+    "providerVersion",
+    "artifactDigest",
+    "formatId",
+    "representationId"
+  ]) || !Object.values(value2["writer"]).every(isNonBlank)) {
+    return false;
+  }
+  if (value2["roundTrip"] === "byte-identical")
+    return value2["preservesUnknownData"] === true;
+  if (value2["roundTrip"] === "lossy" || value2["roundTrip"] === "none") {
+    return value2["preservesUnknownData"] === false;
+  }
+  return true;
+}
+function isEditPayload(value2) {
+  if (!isRecord3(value2) || !isNonBlank(value2["kind"]))
+    return false;
+  if (value2["kind"] === "text") {
+    return hasExactKeys(value2, ["kind", "text"]) && typeof value2["text"] === "string";
+  }
+  if (value2["kind"] === "inline") {
+    return hasExactKeys(value2, ["kind", "bytes"]) && value2["bytes"] instanceof Uint8Array;
+  }
+  if (value2["kind"] !== "staged" || !hasExactKeys(value2, ["kind", "ref"]))
+    return false;
+  const ref = value2["ref"];
+  return isRecord3(ref) && hasExactKeys(ref, ["storeId", "handleId", "digest", "bytes", "replayable", "expiresAt"]) && isNonBlank(ref["storeId"]) && isNonBlank(ref["handleId"]) && isNonBlank(ref["digest"]) && typeof ref["bytes"] === "bigint" && ref["bytes"] >= 0n && ref["replayable"] === true && (ref["expiresAt"] === void 0 || isNonBlank(ref["expiresAt"]));
+}
+function isEditRange(value2) {
+  if (!isRecord3(value2) || !hasExactKeys(value2, ["kind", "offset", "length"]))
+    return false;
+  if (value2["kind"] === "bytes") {
+    return typeof value2["offset"] === "bigint" && value2["offset"] >= 0n && typeof value2["length"] === "bigint" && value2["length"] >= 0n;
+  }
+  return value2["kind"] === "utf16" && Number.isSafeInteger(value2["offset"]) && Number.isSafeInteger(value2["length"]) && value2["offset"] >= 0 && value2["length"] >= 0;
+}
+function isSourceEdit(value2) {
+  if (!isRecord3(value2) || !isNonBlank(value2["operation"]))
+    return false;
+  const common = isNonBlank(value2["targetId"]) && isAssetSource(value2["source"]) && (value2["label"] === void 0 || typeof value2["label"] === "string");
+  if (!common)
+    return false;
+  if (value2["operation"] === "replace") {
+    return hasExactKeys(value2, ["operation", "targetId", "source", "range", "payload", "label"]) && (value2["range"] === void 0 || isEditRange(value2["range"])) && isEditPayload(value2["payload"]);
+  }
+  if (value2["operation"] === "create") {
+    return hasExactKeys(value2, ["operation", "targetId", "source", "newPath", "payload", "label"]) && isNonBlank(value2["newPath"]) && isEditPayload(value2["payload"]);
+  }
+  if (value2["operation"] === "delete") {
+    return hasExactKeys(value2, ["operation", "targetId", "source", "label"]);
+  }
+  return value2["operation"] === "rename" && hasExactKeys(value2, ["operation", "targetId", "source", "newPath", "label"]) && isNonBlank(value2["newPath"]);
+}
+function planDigestValue(plan) {
+  const payload = (edit) => {
+    if (!("payload" in edit))
+      return void 0;
+    if (edit.payload.kind === "inline") {
+      return { kind: "inline", bytes: [...edit.payload.bytes] };
+    }
+    if (edit.payload.kind === "staged") {
+      return {
+        kind: "staged",
+        ref: { ...edit.payload.ref, bytes: edit.payload.ref.bytes.toString(10) }
+      };
+    }
+    return edit.payload;
+  };
+  return {
+    planId: plan.planId,
+    targets: plan.targets.map((target) => ({
+      ...target,
+      expectedRevision: revisionValue(target.expectedRevision)
+    })),
+    edits: plan.edits.map((edit) => ({
+      ...edit,
+      ...edit.operation === "replace" && edit.range?.kind === "bytes" ? {
+        range: {
+          kind: "bytes",
+          offset: edit.range.offset.toString(10),
+          length: edit.range.length.toString(10)
+        }
+      } : {},
+      ...payload(edit) === void 0 ? {} : { payload: payload(edit) }
+    })),
+    semantics: plan.semantics,
+    fidelity: plan.fidelity,
+    diagnostics: plan.diagnostics
+  };
+}
+function fidelityMatches(plan, evidence2, expectedWriter, expectedContext) {
+  if (!isFidelityEvidence(evidence2) || evidence2.roundTrip !== plan.fidelity.roundTrip)
+    return false;
+  if (evidence2.preservesUnknownData !== plan.fidelity.preservesUnknownData)
+    return false;
+  if (expectedContext !== void 0 && (evidence2.optionsFingerprint !== expectedContext.optionsFingerprint || evidence2.inputClass !== expectedContext.inputClass)) {
+    return false;
+  }
+  if (expectedWriter === void 0)
+    return true;
+  return evidence2.writer.providerId === expectedWriter.providerId && evidence2.writer.providerVersion === expectedWriter.providerVersion && evidence2.writer.artifactDigest === expectedWriter.artifactDigest && evidence2.writer.formatId === expectedWriter.formatId && evidence2.writer.representationId === expectedWriter.representationId;
+}
+function strongestGuarantee(backends) {
+  const unique = new Set(backends);
+  const single = [...unique][0];
+  if (unique.size === 1 && single !== void 0 && single.profile.guarantees.includes("atomic") && single.applyBatch !== void 0) {
+    return "atomic";
+  }
+  if (backends.every((backend) => backend.profile.supportsPrepare && backend.profile.supportsRollback)) {
+    return "transactional";
+  }
+  if (backends.every((backend) => backend.profile.supportsJournal))
+    return "recoverable";
+  return "best-effort";
+}
+function derive(plan, targets, grant, options) {
+  const entries = [];
+  const backends = /* @__PURE__ */ new Map();
+  for (const edit of plan.edits) {
+    const target = targets.get(edit.targetId);
+    const backend = options.backendFor(edit.source.id);
+    if (target === void 0 || backend === void 0 || target.ownerSource.id !== edit.source.id) {
+      return { rejection: "plan-invalid" };
+    }
+    if (!backend.writable && plan.semantics.mutationMode === "mutate") {
+      return { rejection: "source-read-only" };
+    }
+    if (edit.operation === "rename" && !backend.profile.supportsRename) {
+      return { rejection: "plan-invalid" };
+    }
+    const path = edit.operation === "create" || edit.operation === "rename" ? normalizedPath(edit.newPath) : void 0;
+    if ((edit.operation === "create" || edit.operation === "rename") && path === void 0) {
+      return { rejection: "plan-invalid" };
+    }
+    entries.push(Object.freeze({
+      targetId: edit.targetId,
+      source: snapshot(edit.source),
+      backendId: backend.profile.backendId,
+      mode: modeOf(edit),
+      ...path === void 0 ? {} : { normalizedPath: path }
+    }));
+    backends.set(edit.targetId, backend);
+  }
+  entries.sort((left, right) => compareUtf8(left.targetId, right.targetId) || compareUtf8(left.source.id, right.source.id) || compareUtf8(left.mode, right.mode));
+  const requiredPermissions = plan.semantics.mutationMode === "mutate" ? ["write-source"] : [];
+  const missing = requiredPermissions.filter((permission) => !grant.permissions.includes(permission));
+  const scopeSatisfied = entries.every((entry2) => grant.sourceIds.includes(entry2.source.id));
+  const achievableGuarantee = strongestGuarantee([...backends.values()]);
+  const writeSet = Object.freeze({
+    entries: Object.freeze(entries),
+    digest: options.digest(entries.map((entry2) => ({
+      targetId: entry2.targetId,
+      sourceId: entry2.source.id,
+      backendId: entry2.backendId,
+      mode: entry2.mode,
+      ...entry2.normalizedPath === void 0 ? {} : { normalizedPath: entry2.normalizedPath }
+    })))
+  });
+  return {
+    writeSet,
+    backends,
+    authorization: Object.freeze({
+      requiredPermissions: Object.freeze(requiredPermissions),
+      granted: missing.length === 0 && scopeSatisfied,
+      achievableGuarantee,
+      missing: Object.freeze(missing),
+      scopeSatisfied
+    })
+  };
+}
+async function conflictsFor(targets, backends, signal) {
+  const conflicts = [];
+  for (const [targetId, target] of targets) {
+    const backend = backends.get(targetId);
+    if (backend === void 0)
+      continue;
+    const actual = snapshot(await backend.currentRevision(target, signal));
+    if (!sameRevision(target.expectedRevision, actual)) {
+      conflicts.push(Object.freeze({
+        targetId,
+        expected: snapshot(target.expectedRevision),
+        actual: snapshot(actual)
+      }));
+    }
+  }
+  return Object.freeze(conflicts.sort((left, right) => compareUtf8(left.targetId, right.targetId)));
+}
+async function payloadsAvailable(plan, options, signal) {
+  const maximum = options.maxInlinePayloadBytes ?? 1024 * 1024;
+  for (const edit of plan.edits) {
+    if (!("payload" in edit))
+      continue;
+    if (edit.payload.kind === "inline" && edit.payload.bytes.byteLength > maximum)
+      return false;
+    if (edit.payload.kind === "text" && new TextEncoder().encode(edit.payload.text).byteLength > maximum)
+      return false;
+    if (edit.payload.kind !== "staged")
+      continue;
+    if (!edit.payload.ref.replayable || edit.payload.ref.bytes < 0n)
+      return false;
+    if (edit.payload.ref.expiresAt !== void 0 && Date.parse(edit.payload.ref.expiresAt) <= Date.parse(options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString())) {
+      return false;
+    }
+    if (options.verifyStagedPayload === void 0)
+      return false;
+    try {
+      if (await options.verifyStagedPayload(edit.payload.ref, signal) !== true)
+        return false;
+    } catch {
+      return false;
+    }
+  }
+  return true;
+}
+function invalidPlan(plan) {
+  if (!isRecord3(plan) || !hasExactKeys(plan, ["planId", "targets", "edits", "semantics", "fidelity", "diagnostics"]) || !isNonBlank(plan.planId) || !Array.isArray(plan.targets) || plan.targets.length === 0 || !Array.isArray(plan.edits) || plan.edits.length === 0 || !Array.isArray(plan.diagnostics) || !isRecord3(plan.semantics) || !hasExactKeys(plan.semantics, ["mutationMode", "minimumGuarantee"]) || !["export-only", "mutate"].includes(plan.semantics.mutationMode) || !["atomic", "transactional", "recoverable", "best-effort"].includes(plan.semantics.minimumGuarantee) || !isRecord3(plan.fidelity) || !hasExactKeys(plan.fidelity, ["roundTrip", "preservesUnknownData", "notes"]) || !["byte-identical", "semantic", "lossy", "none"].includes(plan.fidelity.roundTrip) || typeof plan.fidelity.preservesUnknownData !== "boolean" || plan.fidelity.notes !== void 0 && (!Array.isArray(plan.fidelity.notes) || !plan.fidelity.notes.every(isNonBlank)) || plan.fidelity.roundTrip === "byte-identical" && plan.fidelity.preservesUnknownData !== true || (plan.fidelity.roundTrip === "lossy" || plan.fidelity.roundTrip === "none") && plan.fidelity.preservesUnknownData !== false) {
+    return true;
+  }
+  const ids = /* @__PURE__ */ new Set();
+  for (const target of plan.targets) {
+    if (!isRecord3(target) || !hasExactKeys(target, [
+      "targetId",
+      "subjectUri",
+      "ownerSource",
+      "semanticPath",
+      "expectedRevision"
+    ]) || !isNonBlank(target.targetId) || ids.has(target.targetId) || !isNonBlank(target.subjectUri) || !isAssetSource(target.ownerSource) || !Array.isArray(target.semanticPath) || !target.semanticPath.every(isNonBlank) || !isRevision(target.expectedRevision)) {
+      return true;
+    }
+    ids.add(target.targetId);
+  }
+  const editedIds = /* @__PURE__ */ new Set();
+  for (const edit of plan.edits) {
+    if (!isSourceEdit(edit) || !ids.has(edit.targetId))
+      return true;
+    editedIds.add(edit.targetId);
+    if ((edit.operation === "create" || edit.operation === "delete" || edit.operation === "rename") && plan.targets.find((target) => target.targetId === edit.targetId)?.expectedRevision.namespaceRevision === void 0) {
+      return true;
+    }
+  }
+  return editedIds.size !== ids.size || [...ids].some((id) => !editedIds.has(id));
+}
+function createCommitCoordinator(options) {
+  options = Object.freeze({
+    ...options,
+    payloads: Object.freeze({ open: options.payloads.open.bind(options.payloads) }),
+    ...options.expectedWriter === void 0 ? {} : { expectedWriter: snapshot(options.expectedWriter) },
+    ...options.expectedEvidenceContext === void 0 ? {} : { expectedEvidenceContext: snapshot(options.expectedEvidenceContext) }
+  });
+  let serial = 0;
+  const nextId = (kind) => options.nextId?.(kind) ?? `${kind}-${String(++serial).padStart(6, "0")}`;
+  const preparedInputs = /* @__PURE__ */ new WeakMap();
+  const history = /* @__PURE__ */ new Map();
+  const prepare = async (authoredPlan, prepareOptions) => {
+    if (prepareOptions.signal?.aborted) {
+      return { state: "rejected", reason: "cancelled", diagnostics: [] };
+    }
+    let grant;
+    let plan;
+    try {
+      grant = snapshotGrant(prepareOptions.grant);
+      plan = snapshot(authoredPlan);
+    } catch {
+      return { state: "rejected", reason: "plan-invalid", diagnostics: [] };
+    }
+    if (!grantIsValid(options, grant) || invalidPlan(plan)) {
+      return { state: "rejected", reason: "plan-invalid", diagnostics: [] };
+    }
+    const targetMap = new Map(plan.targets.map((target) => [target.targetId, target]));
+    let derived;
+    try {
+      derived = derive(plan, targetMap, grant, options);
+    } catch {
+      return { state: "rejected", reason: "plan-invalid", diagnostics: [] };
+    }
+    if ("rejection" in derived) {
+      return { state: "rejected", reason: derived.rejection, diagnostics: [] };
+    }
+    if (!derived.authorization.scopeSatisfied) {
+      return { state: "rejected", reason: "write-scope-mismatch", diagnostics: [] };
+    }
+    if (derived.authorization.missing.length > 0) {
+      return { state: "rejected", reason: "permission-missing", diagnostics: [] };
+    }
+    if (GUARANTEE_STRENGTH[derived.authorization.achievableGuarantee] < GUARANTEE_STRENGTH[plan.semantics.minimumGuarantee]) {
+      return { state: "rejected", reason: "guarantee-unachievable", diagnostics: [] };
+    }
+    const canPartiallyApply = plan.edits.length > 1 && derived.authorization.achievableGuarantee !== "atomic";
+    if (canPartiallyApply && options.createRecovery === void 0) {
+      return { state: "rejected", reason: "guarantee-unachievable", diagnostics: [] };
+    }
+    let fidelity;
+    try {
+      fidelity = options.evidenceFor(plan);
+    } catch {
+      fidelity = void 0;
+    }
+    let proven = false;
+    try {
+      proven = fidelityMatches(plan, fidelity, options.expectedWriter, options.expectedEvidenceContext);
+    } catch {
+      proven = false;
+    }
+    if (!proven) {
+      return { state: "rejected", reason: "fidelity-unproven", diagnostics: [] };
+    }
+    if ((plan.fidelity.roundTrip === "lossy" || plan.fidelity.roundTrip === "none") && (prepareOptions.confirmationToken === void 0 || !(options.confirmationMatches?.(prepareOptions.confirmationToken, plan) ?? false))) {
+      return { state: "rejected", reason: "confirmation-required", diagnostics: [] };
+    }
+    if (!await payloadsAvailable(plan, options, prepareOptions.signal)) {
+      return { state: "rejected", reason: "payload-unavailable", diagnostics: [] };
+    }
+    let conflicts;
+    try {
+      conflicts = await conflictsFor(targetMap, derived.backends, prepareOptions.signal);
+    } catch {
+      return { state: "rejected", reason: "plan-invalid", diagnostics: [] };
+    }
+    if (conflicts.length > 0)
+      return { state: "conflict", conflicts };
+    let prepared;
+    try {
+      const planDigest = options.digest(planDigestValue(plan));
+      prepared = Object.freeze({
+        preparedId: nextId("prepared"),
+        plan: snapshot(plan),
+        planDigest,
+        writeSet: derived.writeSet,
+        authorization: derived.authorization,
+        preparedRevisionFingerprint: revisionFingerprint(plan.targets, options.digest),
+        fidelity: snapshot(fidelity)
+      });
+    } catch {
+      return { state: "rejected", reason: "plan-invalid", diagnostics: [] };
+    }
+    const internal = Object.freeze({
+      plan,
+      targets: targetMap,
+      backends: derived.backends,
+      prepared,
+      ...prepareOptions.confirmationToken === void 0 ? {} : { confirmationToken: prepareOptions.confirmationToken }
+    });
+    preparedInputs.set(prepared, internal);
+    return { state: "ready", prepared };
+  };
+  const commit = async (publicPrepared, commitOptions) => {
+    const internal = preparedInputs.get(publicPrepared);
+    if (internal === void 0) {
+      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
+    }
+    if (commitOptions.signal?.aborted) {
+      return { state: "not-applied", reason: "cancelled", diagnostics: [] };
+    }
+    let grant;
+    try {
+      grant = snapshotGrant(commitOptions.grant);
+    } catch {
+      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
+    }
+    if (!grantIsValid(options, grant)) {
+      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
+    }
+    let fresh;
+    try {
+      fresh = derive(internal.plan, internal.targets, grant, options);
+    } catch {
+      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
+    }
+    if ("rejection" in fresh) {
+      return { state: "not-applied", reason: fresh.rejection, diagnostics: [] };
+    }
+    if (!fresh.authorization.scopeSatisfied) {
+      return { state: "not-applied", reason: "write-scope-mismatch", diagnostics: [] };
+    }
+    if (fresh.authorization.missing.length > 0) {
+      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
+    }
+    if (fresh.writeSet.digest !== internal.prepared.writeSet.digest || GUARANTEE_STRENGTH[fresh.authorization.achievableGuarantee] < GUARANTEE_STRENGTH[internal.plan.semantics.minimumGuarantee]) {
+      return { state: "not-applied", reason: "guarantee-unachievable", diagnostics: [] };
+    }
+    if (!await payloadsAvailable(internal.plan, options, commitOptions.signal)) {
+      return { state: "not-applied", reason: "payload-unavailable", diagnostics: [] };
+    }
+    let conflicts;
+    try {
+      conflicts = await conflictsFor(internal.targets, fresh.backends, commitOptions.signal);
+    } catch {
+      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
+    }
+    if (conflicts.length > 0) {
+      return {
+        state: "not-applied",
+        reason: "stale-revision",
+        conflicts,
+        diagnostics: []
+      };
+    }
+    const transactionId = nextId("transaction");
+    const before = internal.plan.targets.map((target) => snapshot(target.expectedRevision));
+    const writes = [];
+    const latestRevisions = new Map(internal.plan.targets.map((target) => [target.targetId, target.expectedRevision]));
+    const finalRevisions = () => internal.plan.targets.map((target) => snapshot(latestRevisions.get(target.targetId) ?? target.expectedRevision));
+    const applied = [];
+    if (fresh.authorization.achievableGuarantee === "atomic") {
+      const backend = [...new Set(fresh.backends.values())][0];
+      if (backend?.applyBatch === void 0) {
+        return { state: "not-applied", reason: "guarantee-unachievable", diagnostics: [] };
+      }
+      preparedInputs.delete(publicPrepared);
+      try {
+        const results = await backend.applyBatch(internal.plan.edits.map((edit) => ({
+          edit,
+          expectedRevision: latestRevisions.get(edit.targetId) ?? internal.targets.get(edit.targetId).expectedRevision
+        })), {
+          transactionId,
+          payloads: options.payloads,
+          ...commitOptions.signal === void 0 ? {} : { signal: commitOptions.signal }
+        });
+        if (results.length !== internal.plan.edits.length || results.some((result, index) => result.targetId !== internal.plan.edits[index]?.targetId)) {
+          throw new TypeError("atomic backend returned a malformed write result");
+        }
+        results.forEach((result, index) => {
+          const edit = internal.plan.edits[index];
+          const stepBefore = latestRevisions.get(edit.targetId);
+          latestRevisions.set(edit.targetId, snapshot(result.after));
+          applied.push({ edit, backend, before: stepBefore });
+          writes.push(Object.freeze({
+            targetId: edit.targetId,
+            source: snapshot(edit.source),
+            state: "applied",
+            diagnosticIds: Object.freeze([...result.diagnosticIds ?? []])
+          }));
+          commitOptions.onProgress?.(index + 1);
+        });
+      } catch (error) {
+        return {
+          state: "not-applied",
+          reason: commitOptions.signal?.aborted ? "cancelled" : "plan-invalid",
+          diagnostics: [
+            diagnostic("error", "x3.host/edit-write-failed", error instanceof Error ? error.message : String(error))
+          ]
+        };
+      }
+      const receipt2 = Object.freeze({
+        transactionId,
+        committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
+        mutationMode: internal.plan.semantics.mutationMode,
+        commitGuarantee: "atomic",
+        status: "committed",
+        undo: backend.profile.supportsRollback && backend.rollback !== void 0 ? "snapshot" : "none",
+        before: Object.freeze(before),
+        after: Object.freeze(finalRevisions()),
+        writes: Object.freeze(writes),
+        fidelity: internal.prepared.fidelity
+      });
+      history.set(transactionId, {
+        plan: internal.plan,
+        prepared: internal,
+        receipt: receipt2,
+        steps: Object.freeze([...applied])
+      });
+      return {
+        state: "committed",
+        receipt: receipt2
+      };
+    }
+    const needsRecovery = internal.plan.edits.length > 1;
+    let recovery;
+    try {
+      recovery = needsRecovery ? await options.createRecovery?.(internal.prepared.preparedId, internal.prepared.planDigest) : void 0;
+    } catch {
+      return { state: "not-applied", reason: "guarantee-unachievable", diagnostics: [] };
+    }
+    if (needsRecovery && !isRecoveryRef(recovery)) {
+      return { state: "not-applied", reason: "guarantee-unachievable", diagnostics: [] };
+    }
+    if (recovery !== void 0)
+      recovery = snapshot(recovery);
+    preparedInputs.delete(publicPrepared);
+    for (let index = 0; index < internal.plan.edits.length; index += 1) {
+      const edit = internal.plan.edits[index];
+      const backend = fresh.backends.get(edit.targetId);
+      const target = internal.targets.get(edit.targetId);
+      const expectedRevision = latestRevisions.get(edit.targetId) ?? target.expectedRevision;
+      try {
+        const result = await backend.apply(edit, {
+          transactionId,
+          payloads: options.payloads,
+          expectedRevision,
+          ...commitOptions.signal === void 0 ? {} : { signal: commitOptions.signal }
+        });
+        latestRevisions.set(edit.targetId, snapshot(result.after));
+        applied.push({ edit, backend, before: expectedRevision });
+        writes.push(Object.freeze({
+          targetId: edit.targetId,
+          source: snapshot(edit.source),
+          state: "applied",
+          diagnosticIds: Object.freeze([...result.diagnosticIds ?? []])
+        }));
+        commitOptions.onProgress?.(index + 1);
+      } catch (error) {
+        writes.push(Object.freeze({
+          targetId: edit.targetId,
+          source: snapshot(edit.source),
+          state: "failed",
+          diagnosticIds: Object.freeze(["x3.host/edit-write-failed"])
+        }));
+        const diagnostics = [
+          diagnostic("error", "x3.host/edit-write-failed", error instanceof Error ? error.message : String(error))
+        ];
+        if (applied.length === 0) {
+          return {
+            state: "not-applied",
+            reason: commitOptions.signal?.aborted ? "cancelled" : "plan-invalid",
+            diagnostics
+          };
+        }
+        if (applied.every((item) => item.backend.profile.supportsRollback && item.backend.rollback !== void 0)) {
+          const rolledBackTargets = /* @__PURE__ */ new Set();
+          try {
+            for (const item of [...applied].reverse()) {
+              latestRevisions.set(item.edit.targetId, await item.backend.rollback(transactionId, item.edit, item.before, commitOptions.signal));
+              rolledBackTargets.add(item.edit.targetId);
+            }
+          } catch (rollbackError) {
+            if (recovery === void 0) {
+              return {
+                state: "not-applied",
+                reason: "guarantee-unachievable",
+                diagnostics: [
+                  ...diagnostics,
+                  diagnostic("error", "x3.host/edit-rollback-failed", rollbackError instanceof Error ? rollbackError.message : String(rollbackError))
+                ]
+              };
+            }
+            return {
+              state: "partially-applied",
+              receipt: Object.freeze({
+                transactionId,
+                committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
+                mutationMode: internal.plan.semantics.mutationMode,
+                commitGuarantee: fresh.authorization.achievableGuarantee,
+                status: "partially-applied",
+                undo: "none",
+                before: Object.freeze(before),
+                after: Object.freeze(finalRevisions()),
+                writes: Object.freeze(writes.map((write) => write.state === "applied" && rolledBackTargets.has(write.targetId) ? Object.freeze({ ...write, state: "rolled-back" }) : write)),
+                recovery,
+                fidelity: internal.prepared.fidelity
+              })
+            };
+          }
+          const rolledWrites = writes.map((write) => write.state === "applied" ? Object.freeze({ ...write, state: "rolled-back" }) : write);
+          return {
+            state: "rolled-back",
+            receipt: Object.freeze({
+              transactionId,
+              committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
+              mutationMode: internal.plan.semantics.mutationMode,
+              commitGuarantee: fresh.authorization.achievableGuarantee,
+              status: "rolled-back",
+              undo: "none",
+              before: Object.freeze(before),
+              after: Object.freeze(finalRevisions()),
+              writes: Object.freeze(rolledWrites),
+              fidelity: internal.prepared.fidelity
+            })
+          };
+        }
+        if (recovery === void 0) {
+          throw new TypeError("partial commit requires a durable recovery reference");
+        }
+        return {
+          state: "partially-applied",
+          receipt: Object.freeze({
+            transactionId,
+            committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
+            mutationMode: internal.plan.semantics.mutationMode,
+            commitGuarantee: fresh.authorization.achievableGuarantee,
+            status: "partially-applied",
+            undo: "none",
+            before: Object.freeze(before),
+            after: Object.freeze(finalRevisions()),
+            writes: Object.freeze(writes),
+            recovery,
+            fidelity: internal.prepared.fidelity
+          })
+        };
+      }
+    }
+    const receipt = Object.freeze({
+      transactionId,
+      committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
+      mutationMode: internal.plan.semantics.mutationMode,
+      commitGuarantee: fresh.authorization.achievableGuarantee,
+      status: "committed",
+      undo: applied.every((item) => item.backend.profile.supportsRollback && item.backend.rollback !== void 0) ? "snapshot" : "none",
+      before: Object.freeze(before),
+      after: Object.freeze(finalRevisions()),
+      writes: Object.freeze(writes),
+      ...recovery === void 0 ? {} : { recovery },
+      fidelity: internal.prepared.fidelity
+    });
+    history.set(transactionId, {
+      plan: internal.plan,
+      prepared: internal,
+      receipt,
+      steps: Object.freeze([...applied])
+    });
+    return {
+      state: "committed",
+      receipt
+    };
+  };
+  const undo = async (transactionId, undoOptions) => {
+    const item = history.get(transactionId);
+    if (item === void 0) {
+      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
+    }
+    let grant;
+    try {
+      grant = snapshotGrant(undoOptions.grant);
+    } catch {
+      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
+    }
+    if (!grantIsValid(options, grant)) {
+      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
+    }
+    let fresh;
+    try {
+      fresh = derive(item.plan, item.prepared.targets, grant, options);
+    } catch {
+      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
+    }
+    if ("rejection" in fresh || fresh.authorization.missing.length > 0) {
+      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
+    }
+    if (!fresh.authorization.scopeSatisfied) {
+      return { state: "not-applied", reason: "write-scope-mismatch", diagnostics: [] };
+    }
+    const currentTargets = new Map(item.plan.targets.map((target, index) => [
+      target.targetId,
+      Object.freeze({ ...target, expectedRevision: item.receipt.after[index] })
+    ]));
+    let conflicts;
+    try {
+      conflicts = await conflictsFor(currentTargets, fresh.backends, undoOptions.signal);
+    } catch {
+      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
+    }
+    if (conflicts.length > 0) {
+      return { state: "not-applied", reason: "stale-revision", conflicts, diagnostics: [] };
+    }
+    const latestRevisions = new Map(item.plan.targets.map((target, index) => [
+      target.targetId,
+      item.receipt.after[index]
+    ]));
+    for (const step of [...item.steps].reverse()) {
+      const backend = fresh.backends.get(step.edit.targetId);
+      if (backend?.rollback === void 0) {
+        return { state: "not-applied", reason: "guarantee-unachievable", diagnostics: [] };
+      }
+      latestRevisions.set(step.edit.targetId, await backend.rollback(transactionId, step.edit, step.before, undoOptions.signal));
+    }
+    const after = item.plan.targets.map((target) => snapshot(latestRevisions.get(target.targetId) ?? target.expectedRevision));
+    const receipt = Object.freeze({
+      transactionId: nextId("transaction"),
+      committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
+      mutationMode: item.plan.semantics.mutationMode,
+      commitGuarantee: item.receipt.commitGuarantee,
+      status: "committed",
+      undo: "none",
+      before: item.receipt.after,
+      after: Object.freeze(after),
+      writes: Object.freeze(item.receipt.writes.map((write) => Object.freeze({ ...write, state: "rolled-back" }))),
+      fidelity: item.receipt.fidelity
+    });
+    return {
+      state: "committed",
+      receipt
+    };
+  };
+  const redo = async (transactionId, redoOptions) => {
+    const item = history.get(transactionId);
+    if (item === void 0) {
+      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
+    }
+    const prepared = await prepare(item.plan, {
+      grant: redoOptions.grant,
+      confirmationToken: item.prepared.confirmationToken ?? "explicit-redo",
+      ...redoOptions.signal === void 0 ? {} : { signal: redoOptions.signal }
+    });
+    if (prepared.state === "conflict") {
+      return {
+        state: "not-applied",
+        reason: "stale-revision",
+        conflicts: prepared.conflicts,
+        diagnostics: []
+      };
+    }
+    if (prepared.state === "rejected") {
+      return { state: "not-applied", reason: prepared.reason, diagnostics: prepared.diagnostics };
+    }
+    return commit(prepared.prepared, redoOptions);
+  };
+  return Object.freeze({ prepare, commit, undo, redo });
+}
+function createEditSession(options) {
+  let state = "live";
+  const targets = snapshot(options.targets);
+  const revision = snapshot(options.revision);
+  const validate = options.writer.validate.bind(options.writer);
+  const plan = options.writer.plan.bind(options.writer);
+  const ensureLive = () => {
+    if (state !== "live")
+      throw new TypeError(`edit session is ${state}`);
+  };
+  return Object.freeze({
+    revision,
+    targets,
+    state: () => state,
+    async propose(change) {
+      ensureLive();
+      const result = snapshot(await validate(snapshot(change)));
+      if (!isRecord3(result) || !hasExactKeys(result, ["valid", "diagnostics"]) || typeof result["valid"] !== "boolean" || !Array.isArray(result["diagnostics"])) {
+        return {
+          valid: false,
+          diagnostics: [
+            diagnostic("error", "x3.host/edit-validation-result-invalid", "writer returned a malformed validation result")
+          ]
+        };
+      }
+      return result;
+    },
+    async plan(change) {
+      ensureLive();
+      return snapshot(await plan(snapshot(change)));
+    },
+    markStale() {
+      if (state !== "disposed")
+        state = "stale-revision";
+    },
+    markCommitting(committing) {
+      if (state === "disposed")
+        return;
+      state = committing ? "committing" : "live";
+    },
+    async dispose() {
+      state = "disposed";
+    }
+  });
+}
 
 // packages/host/dist/subject-editing.js
+function unsupported(kind) {
+  return new ModkitError({
+    code: "x3.host/edit-topology-unsupported",
+    message: `editing a \xAB${kind}\xBB subject is not supported yet (single-source subjects only)`,
+    context: { kind }
+  });
+}
+function assetRevisionFromDescriptor(descriptor) {
+  const origin = descriptor.origin;
+  if (origin.kind !== "single")
+    throw unsupported(origin.kind);
+  const binding = origin.binding;
+  return Object.freeze({
+    bindings: Object.freeze({ [binding.id]: binding.revision }),
+    compositionFingerprint: canonicalJsonStringify({
+      topology: "single",
+      bindingId: binding.id,
+      source: { id: binding.source.id, uri: binding.source.uri },
+      revision: binding.revision
+    })
+  });
+}
+function subjectEditTargetsFromDescriptor(descriptor) {
+  const origin = descriptor.origin;
+  if (origin.kind !== "single")
+    throw unsupported(origin.kind);
+  const revision = assetRevisionFromDescriptor(descriptor);
+  return Object.freeze([
+    Object.freeze({
+      targetId: origin.binding.id,
+      subjectUri: descriptor.subjectUri,
+      ownerSource: Object.freeze({ id: origin.binding.source.id, uri: origin.binding.source.uri }),
+      semanticPath: Object.freeze([]),
+      expectedRevision: revision
+    })
+  ]);
+}
 var NO_STAGED_PAYLOADS = Object.freeze({
   async open(ref) {
     throw new ModkitError({
@@ -57575,6 +58934,86 @@ var NO_STAGED_PAYLOADS = Object.freeze({
     });
   }
 });
+var DEFAULT_INLINE_PAYLOAD_BYTES = 16 * 1024 * 1024;
+var defaultDigest = (value2) => canonicalJsonStringify(JSON.parse(JSON.stringify(value2)));
+function createSubjectEditing(options) {
+  const descriptor = options.opened.descriptor;
+  const revision = assetRevisionFromDescriptor(descriptor);
+  const targets = subjectEditTargetsFromDescriptor(descriptor);
+  const grantSnapshot = createGrantSnapshot({
+    snapshotId: options.snapshotId ?? `${options.grant.id}#edit`,
+    permissions: options.grant.classes,
+    sourceIds: targets.map((target) => target.ownerSource.id)
+  });
+  const issued = /* @__PURE__ */ new Set([grantSnapshot.snapshotId]);
+  const coordinator = createCommitCoordinator({
+    payloads: options.payloads ?? NO_STAGED_PAYLOADS,
+    backendFor: options.backendFor,
+    evidenceFor: options.evidenceFor,
+    ...options.expectedWriter === void 0 ? {} : { expectedWriter: options.expectedWriter },
+    ...options.expectedEvidenceContext === void 0 ? {} : { expectedEvidenceContext: options.expectedEvidenceContext },
+    isGrantValid: options.isGrantValid ?? ((grant) => issued.has(grant.snapshotId)),
+    digest: options.digest ?? defaultDigest,
+    ...options.verifyStagedPayload === void 0 ? {} : { verifyStagedPayload: options.verifyStagedPayload },
+    ...options.createRecovery === void 0 ? {} : { createRecovery: options.createRecovery },
+    ...options.confirmationMatches === void 0 ? {} : { confirmationMatches: options.confirmationMatches },
+    ...options.now === void 0 ? {} : { now: options.now },
+    ...options.nextId === void 0 ? {} : { nextId: options.nextId },
+    maxInlinePayloadBytes: options.maxInlinePayloadBytes ?? DEFAULT_INLINE_PAYLOAD_BYTES
+  });
+  const session = options.writer === void 0 ? void 0 : createEditSession({ revision, targets, writer: options.writer });
+  const authorization = Object.freeze({
+    async request() {
+      return { grant: grantSnapshot };
+    }
+  });
+  const editorPorts = session === void 0 ? void 0 : Object.freeze({
+    edit: session,
+    commit: coordinator,
+    payloads: options.payloads ?? NO_STAGED_PAYLOADS,
+    authorization
+  });
+  const targetIds = new Set(targets.map((target) => target.targetId));
+  const sourceIds = new Set(targets.map((target) => target.ownerSource.id));
+  const expected = canonicalJsonStringify(revision);
+  const editing = {
+    revision,
+    targets,
+    grantSnapshot,
+    coordinator,
+    ...session === void 0 ? {} : { session },
+    ...editorPorts === void 0 ? {} : { editorPorts },
+    planFromOperation(output) {
+      if (output.kind !== "edit-plan") {
+        throw new ModkitError({
+          code: "x3.host/edit-plan-expected",
+          message: `operation returned \xAB${output.kind}\xBB, not an edit plan`
+        });
+      }
+      const plan = output.plan;
+      for (const target of plan.targets) {
+        if (!targetIds.has(target.targetId) || !sourceIds.has(target.ownerSource.id) || canonicalJsonStringify(target.expectedRevision) !== expected) {
+          throw new ModkitError({
+            code: "x3.host/edit-plan-subject-mismatch",
+            message: `edit plan target \xAB${target.targetId}\xBB is not this subject at its open revision`,
+            context: { targetId: target.targetId }
+          });
+        }
+      }
+      for (const edit of plan.edits) {
+        if (!targetIds.has(edit.targetId) || !sourceIds.has(edit.source.id)) {
+          throw new ModkitError({
+            code: "x3.host/edit-plan-subject-mismatch",
+            message: `edit \xAB${edit.operation}\xBB on \xAB${edit.source.id}\xBB is not this subject`,
+            context: { targetId: edit.targetId, sourceId: edit.source.id }
+          });
+        }
+      }
+      return plan;
+    }
+  };
+  return Object.freeze(editing);
+}
 
 // packages/host/dist/data-sources.js
 var DEFAULT_CHUNK_BYTES = 64 * 1024;
@@ -57601,7 +59040,7 @@ async function createHostComposition(options) {
   });
 }
 
-// packages/vfs/dist/source.js
+// packages/vfs/dist/index.js
 var CHUNK = 64 * 1024;
 
 // packages/host/dist/browser/sources.js
@@ -57623,7 +59062,7 @@ function scanModuleSpecifiers(source) {
     throw refused("dynamic import with a non-literal specifier cannot be verified before evaluation");
   }
   const specifiers = [];
-  const pattern = /\b(?:import|export)\s+(?:[\s\S]*?\bfrom\s+)?(['"])([^'"\n]+)\1|\bimport\s*\(\s*(['"])([^'"\n]+)\3\s*\)/gu;
+  const pattern = /\b(?:import|export)\s*(?:[^'"();]*?\bfrom\s+)?(['"])([^'"\n]+)\1|\bimport\s*\(\s*(['"])([^'"\n]+)\3\s*\)/gu;
   for (const match of stripped.matchAll(pattern)) {
     const specifier = match[2] ?? match[4];
     if (specifier !== void 0)
@@ -57715,6 +59154,9 @@ async function loadVerifiedModuleGraph(entrypoint, options) {
     unverified: Object.freeze([...unverified].sort())
   });
 }
+
+// packages/host/dist/execution/frame-json.js
+var LITTLE_ENDIAN = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1;
 
 // packages/host/dist/execution/consumer-adapters.js
 function moduleAdapter(contributionId2, first, realm, watch) {
@@ -57869,7 +59311,7 @@ var DEFAULT_BROWSER_WORKER_POLICY = Object.freeze({
 function createBrowserWorkerBackend(options) {
   const policy = options.policy ?? DEFAULT_BROWSER_WORKER_POLICY;
   const foreignSurfaces = () => typeof options.foreignSurfaces === "function" ? options.foreignSurfaces() : options.foreignSurfaces ?? [];
-  const report = (diagnostic2) => options.onDiagnostic?.(diagnostic2);
+  const report2 = (diagnostic2) => options.onDiagnostic?.(diagnostic2);
   const limits = protocolLimits({ defaultCallDeadlineMs: policy.defaultCallDeadlineMs });
   const supports = (target, variant) => variant.executionProfile === "worker-brokered" && target.environment === "browser-worker";
   async function activate(context) {
@@ -57903,7 +59345,7 @@ function createBrowserWorkerBackend(options) {
       if (terminated)
         return;
       terminated = true;
-      report({
+      report2({
         code: "x3.host/worker-terminated",
         severity: "warning",
         message: `browser worker terminated: ${reason}`
@@ -57921,9 +59363,9 @@ function createBrowserWorkerBackend(options) {
         const code = "code" in failure ? failure.code : "peer-failure";
         void terminate(`protocol failure: ${String(code)}`);
       },
-      onDiagnostic: report
+      onDiagnostic: report2
     });
-    report({
+    report2({
       code: WORKER_SHARED_ORIGIN_DIAGNOSTIC,
       severity: "information",
       message: `${context.ticket.contributionId} runs in a browser worker: crash/hang/protocol isolation inside the page origin \u2014 ambient Web APIs of the origin are not revoked (24 \xA76.1 SB-1); loaded from a verified snapshot (${graph.verified.length} file(s), ${graph.unverified.length} unverified dependenc(y/ies))`
@@ -58142,18 +59584,6 @@ function createDomWorkerRealmFactory(options) {
     };
   };
 }
-function createBrowserExecutionBackends(options) {
-  const hooks = browserLoaderHooks(options);
-  return createExecutionBackendRegistry([
-    createBrowserWorkerBackend({
-      realm: createDomWorkerRealmFactory(options),
-      loader: hooks,
-      ...options.policy === void 0 ? {} : { policy: options.policy },
-      ...options.foreignSurfaces === void 0 ? {} : { foreignSurfaces: options.foreignSurfaces },
-      ...options.onDiagnostic === void 0 ? {} : { onDiagnostic: options.onDiagnostic }
-    })
-  ]);
-}
 
 // packages/host/dist/browser/worker-entry.js
 function isInit(value2) {
@@ -58186,6 +59616,654 @@ if (workerScope !== void 0 && typeof globalThis.WorkerGlobalScope === "function"
   installBrowserWorkerEntry(workerScope);
 }
 
+// packages/host/dist/editing-splice.js
+var STAGED_CHUNK = 1024 * 1024;
+function editingError(code, message, context) {
+  return new ModkitError({ code, message, ...context === void 0 ? {} : { context } });
+}
+async function payloadBytes(payload, payloads, maxBytes, signal) {
+  if (payload.kind === "text")
+    return new TextEncoder().encode(payload.text);
+  if (payload.kind === "inline")
+    return payload.bytes;
+  if (payload.ref.bytes > BigInt(maxBytes)) {
+    throw editingError("x3.host/edit-payload-too-large", `staged payload exceeds ${maxBytes} bytes`);
+  }
+  const lease = await payloads.open(payload.ref, signal);
+  try {
+    const chunks = [];
+    let total = 0;
+    let cursor2;
+    for (; ; ) {
+      throwIfAborted(signal);
+      const chunk = await lease.value.read({ ...cursor2 === void 0 ? {} : { cursor: cursor2 }, maxBytes: STAGED_CHUNK }, signal);
+      chunks.push(chunk.bytes);
+      total += chunk.bytes.byteLength;
+      if (total > maxBytes) {
+        throw editingError("x3.host/edit-payload-too-large", `staged payload exceeds ${maxBytes} bytes`);
+      }
+      if (chunk.complete)
+        break;
+      cursor2 = chunk.nextCursor;
+    }
+    const out = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      out.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return out;
+  } finally {
+    await lease.release();
+  }
+}
+function spliceBytes(original, range, replacement) {
+  const start = Number(range.offset);
+  const length = Number(range.length);
+  if (range.offset < 0n || range.length < 0n || !Number.isSafeInteger(start) || !Number.isSafeInteger(length) || start + length > original.byteLength) {
+    throw editingError("x3.host/edit-range-invalid", "byte range lies outside the source");
+  }
+  const out = new Uint8Array(original.byteLength - length + replacement.byteLength);
+  out.set(original.subarray(0, start), 0);
+  out.set(replacement, start);
+  out.set(original.subarray(start + length), start + replacement.byteLength);
+  return out;
+}
+function spliceUtf16(original, offset, length, text) {
+  const decoded = new TextDecoder("utf-8", { fatal: true }).decode(original);
+  if (offset < 0 || length < 0 || offset + length > decoded.length) {
+    throw editingError("x3.host/edit-range-invalid", "UTF-16 range lies outside the source");
+  }
+  return new TextEncoder().encode(decoded.slice(0, offset) + text + decoded.slice(offset + length));
+}
+async function replacedBytes(edit, original, payloads, maxPayloadBytes, signal) {
+  const replacement = await payloadBytes(edit.payload, payloads, maxPayloadBytes, signal);
+  if (edit.range === void 0)
+    return replacement;
+  if (edit.range.kind === "bytes")
+    return spliceBytes(original, edit.range, replacement);
+  return spliceUtf16(original, edit.range.offset, edit.range.length, new TextDecoder("utf-8", { fatal: true }).decode(replacement));
+}
+async function applySequentialBatch(requests, apply) {
+  const produced = /* @__PURE__ */ new Map();
+  const results = [];
+  for (const request of requests) {
+    const sourceId = request.edit.source.id;
+    const expected = produced.get(sourceId) ?? request.expectedRevision;
+    const result = await apply(request.edit, expected);
+    produced.set(sourceId, result.after);
+    results.push({ targetId: request.edit.targetId, ...result });
+  }
+  return results;
+}
+
+// packages/host/dist/browser/editing-backend.js
+var BROWSER_EDITING_BACKEND_CAPABILITY = Object.freeze({
+  backendId: "browser-file-system-access",
+  guarantees: Object.freeze(["atomic", "recoverable", "best-effort"]),
+  supportsPrepare: true,
+  supportsRollback: true,
+  supportsJournal: false,
+  // a file handle cannot rename or delete itself; those need the parent directory handle
+  supportsRename: false
+});
+var DEFAULT_MAX_PAYLOAD_BYTES = 64 * 1024 * 1024;
+var defaultRevisionOf = (snapshot2) => `provider-token:${snapshot2.size}-${snapshot2.lastModified ?? 0}`;
+function bindingIdOf(expected) {
+  const ids = Object.keys(expected.bindings);
+  if (ids.length !== 1 || ids[0] === void 0) {
+    throw editingError("x3.host/edit-topology-unsupported", `the browser backend edits single-binding subjects; expected revision names ${ids.length} bindings`);
+  }
+  return ids[0];
+}
+function revisionFor(bindingId2, source, token, namespaceRevision) {
+  const revision = revisionId(token);
+  return Object.freeze({
+    bindings: Object.freeze({ [bindingId2]: revision }),
+    ...namespaceRevision === void 0 ? {} : { namespaceRevision },
+    compositionFingerprint: canonicalJsonStringify({
+      topology: "single",
+      bindingId: bindingId2,
+      source: { id: source.id, uri: source.uri },
+      revision
+    })
+  });
+}
+async function readAll(snapshot2) {
+  return new Uint8Array(await snapshot2.slice(0, snapshot2.size).arrayBuffer());
+}
+function createBrowserEditingBackend(options) {
+  const backendId = options.backendId ?? BROWSER_EDITING_BACKEND_CAPABILITY.backendId;
+  const maxPayloadBytes = options.maxPayloadBytes ?? DEFAULT_MAX_PAYLOAD_BYTES;
+  const revisionOf = options.revisionOf ?? defaultRevisionOf;
+  const preImages = /* @__PURE__ */ new Map();
+  const handle = (source) => {
+    const found = options.handleFor(source.id);
+    if (found === void 0) {
+      throw editingError("x3.host/edit-source-not-writable", `\xAB${source.uri}\xBB has no writable handle in this host`, { sourceId: source.id });
+    }
+    return found;
+  };
+  const liveRevision = async (file, bindingId2, source, namespaceRevision) => {
+    const snapshot2 = await file.getFile();
+    return revisionFor(bindingId2, source, revisionOf(snapshot2), namespaceRevision);
+  };
+  const backend = {
+    profile: Object.freeze({ ...BROWSER_EDITING_BACKEND_CAPABILITY, backendId }),
+    writable: true,
+    async currentRevision(target, signal) {
+      throwIfAborted(signal);
+      return liveRevision(handle(target.ownerSource), bindingIdOf(target.expectedRevision), target.ownerSource, target.expectedRevision.namespaceRevision);
+    },
+    async apply(edit, applyOptions) {
+      const { signal } = applyOptions;
+      throwIfAborted(signal);
+      if (edit.operation !== "replace") {
+        throw editingError("x3.host/edit-operation-unsupported", `the browser backend replaces file contents; \xAB${edit.operation}\xBB needs a directory handle`, { operation: edit.operation });
+      }
+      const file = handle(edit.source);
+      const bindingId2 = bindingIdOf(applyOptions.expectedRevision);
+      const live = await liveRevision(file, bindingId2, edit.source, applyOptions.expectedRevision.namespaceRevision);
+      if (canonicalJsonStringify(live) !== canonicalJsonStringify(applyOptions.expectedRevision)) {
+        throw editingError("x3.host/edit-conditional-write-lost", `\xAB${edit.source.uri}\xBB is not at the revision the plan expects`, { expected: applyOptions.expectedRevision, actual: live });
+      }
+      const original = await readAll(await file.getFile());
+      const next = await replacedBytes(edit, original, applyOptions.payloads, maxPayloadBytes, signal);
+      const images = preImages.get(applyOptions.transactionId) ?? /* @__PURE__ */ new Map();
+      preImages.set(applyOptions.transactionId, images);
+      if (!images.has(edit.source.id))
+        images.set(edit.source.id, original);
+      const writable = await file.createWritable({ keepExistingData: false });
+      try {
+        await writable.write(next);
+        await writable.close();
+      } catch (error) {
+        await writable.abort?.(String(error)).catch(() => void 0);
+        throw error;
+      }
+      return {
+        after: await liveRevision(file, bindingId2, edit.source, applyOptions.expectedRevision.namespaceRevision)
+      };
+    },
+    async applyBatch(requests, batchOptions) {
+      return applySequentialBatch(requests, (edit, expectedRevision) => backend.apply(edit, {
+        ...batchOptions,
+        expectedRevision
+      }));
+    },
+    async rollback(transactionId, edit, before, signal) {
+      throwIfAborted(signal);
+      const images = preImages.get(transactionId);
+      const original = images?.get(edit.source.id);
+      const file = handle(edit.source);
+      const bindingId2 = bindingIdOf(before);
+      if (original === void 0) {
+        return liveRevision(file, bindingId2, edit.source, before.namespaceRevision);
+      }
+      const writable = await file.createWritable({ keepExistingData: false });
+      try {
+        await writable.write(original);
+        await writable.close();
+      } catch (error) {
+        await writable.abort?.(String(error)).catch(() => void 0);
+        throw error;
+      }
+      images?.delete(edit.source.id);
+      return liveRevision(file, bindingId2, edit.source, before.namespaceRevision);
+    },
+    async dispose() {
+      preImages.clear();
+    }
+  };
+  return Object.freeze(backend);
+}
+
+// apps/web/src/files.ts
+function isWritableHandle(handle) {
+  return handle !== void 0 && typeof handle.createWritable === "function";
+}
+var MAXIMUM_DIRECTORY_ENTRIES = 2e3;
+function describeFileCapability(scope) {
+  const pickers = scope;
+  const directories = typeof pickers.showDirectoryPicker === "function";
+  const filePicker = typeof pickers.showOpenFilePicker === "function";
+  const notice = directories ? "This browser grants folder access: pick a folder and the tree browses it in place." : filePicker ? "This browser has no folder picker, only a file picker: one file opens at a time and there is no tree to browse." : "This browser has neither picker, so files arrive through a plain file input: one file opens at a time and there is no tree to browse.";
+  return Object.freeze({ directories, filePicker, inputFallback: true, notice });
+}
+var joinPath = (parent, name) => parent === "" ? name : `${parent}/${name}`;
+async function* iterateDirectoryChildren(directory) {
+  const entries = directory.entries;
+  if (entries !== void 0) {
+    for await (const pair of entries.call(directory)) yield pair[1];
+    return;
+  }
+  const values = directory.values;
+  if (values === void 0) {
+    throw new TypeError("directory handle exposes neither entries() nor values()");
+  }
+  for await (const handle of values.call(directory)) yield handle;
+}
+var describe4 = (error) => error instanceof Error ? error.message : String(error);
+function createDirectoryAccess(root, options = {}) {
+  const directories = /* @__PURE__ */ new Map([["", root]]);
+  const files = /* @__PURE__ */ new Map();
+  const sizes = /* @__PURE__ */ new Map();
+  const requireDirectory = (entryId) => {
+    const found = directories.get(entryId ?? "");
+    if (found === void 0) {
+      throw new TypeError(`\xAB${entryId ?? ""}\xBB is not a folder this session has browsed`);
+    }
+    return found;
+  };
+  return {
+    label: root.name === "" ? "Granted folder" : root.name,
+    /*
+     * One `readwrite` grant covers the whole tree: the user picked this folder, so asking again per
+     * file would be a prompt storm for a permission the browser already scopes to the directory.
+     */
+    writeGrant: root,
+    async list(entryId, signal) {
+      signal?.throwIfAborted();
+      const directory = requireDirectory(entryId);
+      const prefix = entryId ?? "";
+      const listed = [];
+      let truncated = false;
+      for await (const handle of iterateDirectoryChildren(directory)) {
+        signal?.throwIfAborted();
+        if (listed.length >= MAXIMUM_DIRECTORY_ENTRIES) {
+          truncated = true;
+          break;
+        }
+        const path = joinPath(prefix, handle.name);
+        if (handle.kind === "directory") {
+          directories.set(path, handle);
+          listed.push({ id: path, name: handle.name, directory: true });
+          continue;
+        }
+        files.set(path, handle);
+        try {
+          const file = await handle.getFile();
+          sizes.set(path, file.size);
+          listed.push({ id: path, name: handle.name, directory: false, size: file.size });
+        } catch (error) {
+          options.onNotice?.(`${path} could not be read: ${describe4(error)}`);
+          listed.push({ id: path, name: handle.name, directory: false });
+        }
+      }
+      if (truncated) {
+        options.onNotice?.(
+          `${prefix === "" ? root.name : prefix} has more than ${MAXIMUM_DIRECTORY_ENTRIES} entries; the tree shows the first ones only.`
+        );
+      }
+      return listed;
+    },
+    sizeOf(entryId) {
+      return sizes.get(entryId);
+    },
+    handleOf(entryId) {
+      return files.get(entryId);
+    },
+    async snapshotOf(entryId, signal) {
+      signal?.throwIfAborted();
+      const handle = files.get(entryId);
+      if (handle === void 0) return void 0;
+      const file = await handle.getFile();
+      return { size: file.size, lastModified: file.lastModified };
+    },
+    async read(entryId, maxBytes, signal) {
+      signal?.throwIfAborted();
+      const handle = files.get(entryId);
+      if (handle === void 0) {
+        throw new TypeError(`\xAB${entryId}\xBB is not a file this session has browsed`);
+      }
+      const file = await handle.getFile();
+      const length = Math.min(file.size, maxBytes);
+      return new Uint8Array(await file.slice(0, length).arrayBuffer());
+    }
+  };
+}
+function createSingleFileAccess(file, handle) {
+  const entry2 = { id: file.name, name: file.name, directory: false, size: file.size };
+  const access = {
+    label: file.name,
+    ...handle === void 0 ? {} : { writeGrant: handle },
+    async list(entryId, signal) {
+      signal?.throwIfAborted();
+      return entryId === void 0 ? [entry2] : [];
+    },
+    sizeOf(entryId) {
+      return entryId === entry2.id ? file.size : void 0;
+    },
+    handleOf(entryId) {
+      return entryId === entry2.id ? handle : void 0;
+    },
+    async snapshotOf(entryId, signal) {
+      signal?.throwIfAborted();
+      if (entryId !== entry2.id) return void 0;
+      const current = handle === void 0 ? file : await handle.getFile();
+      return { size: current.size, lastModified: current.lastModified };
+    },
+    async read(entryId, maxBytes, signal) {
+      signal?.throwIfAborted();
+      if (entryId !== entry2.id) throw new TypeError(`\xAB${entryId}\xBB is not the opened file`);
+      const current = handle === void 0 ? file : await handle.getFile();
+      const length = Math.min(current.size, maxBytes);
+      return new Uint8Array(await current.slice(0, length).arrayBuffer());
+    }
+  };
+  return { access, entry: entry2 };
+}
+
+// apps/web/src/extension-roots.ts
+var EXTENSION_ROOT_FAILURE_CODES = Object.freeze({
+  unreadable: "x3.host/extension-root-unreadable",
+  notAnExtension: "x3.host/extension-not-an-extension",
+  coordinateConflict: "x3.host/extension-coordinate-conflict",
+  identityMismatch: "x3.host/extension-identity-mismatch",
+  permissionRequired: "x3.host/extension-root-permission-required",
+  tooLarge: "x3.host/extension-root-too-large"
+});
+var USER_EXTENSION_ORIGIN = "installed";
+var USER_EXTENSION_ARTIFACT_ORIGIN = "https://user-extension.invalid/";
+var DEFAULT_EXTENSION_ROOT_MAX_FILES = 2e3;
+var DEFAULT_EXTENSION_ROOT_MAX_TOTAL_BYTES = 32 * 1024 * 1024;
+var SKIPPED_EVERYWHERE = /* @__PURE__ */ new Set(["node_modules", ".git"]);
+var SKIPPED_FROM_LISTING = "dist";
+var messageOf = (error) => error instanceof ModkitError || error instanceof Error ? error.message : String(error);
+var codeOf = (error) => error instanceof ModkitError ? error.code : EXTENSION_ROOT_FAILURE_CODES.unreadable;
+var compareNames = (left, right) => left < right ? -1 : left > right ? 1 : 0;
+function refuse2(code, message, context) {
+  return new ModkitError({ code, message, ...context === void 0 ? {} : { context } });
+}
+function containerCoordinate(containers) {
+  const blocks = [
+    containers.packageJson?.modkit,
+    containers.standalone
+  ];
+  for (const block of blocks) {
+    if (typeof block !== "object" || block === null) continue;
+    const authored = block;
+    if (typeof authored.publisher === "string" && typeof authored.id === "string") {
+      return `${authored.publisher}/${authored.id}`;
+    }
+  }
+  return void 0;
+}
+var extensionCoordinate = (input) => containerCoordinate(input.containers);
+async function sha256(subtle, bytes2) {
+  const hash = new Uint8Array(await subtle.digest("SHA-256", bytes2));
+  let hex = "";
+  for (const byte of hash) hex += byte.toString(16).padStart(2, "0");
+  return `sha256:${hex}`;
+}
+var encoder3 = new TextEncoder();
+function concatenate(chunks) {
+  let total = 0;
+  for (const chunk of chunks) total += chunk.byteLength;
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return out;
+}
+function userExtensionArtifactRoot(rootId) {
+  return `${USER_EXTENSION_ARTIFACT_ORIGIN}${encodeURIComponent(rootId)}/`;
+}
+async function walkGrantedFolder(root, label, maxFiles, maxTotalBytes, signal) {
+  const walked = [];
+  let totalBytes = 0;
+  const visit = async (directory, prefix) => {
+    signal?.throwIfAborted();
+    const children = [];
+    for await (const child of iterateDirectoryChildren(directory)) {
+      children.push({ name: child.name, handle: child });
+    }
+    children.sort((left, right) => compareNames(left.name, right.name));
+    for (const child of children) {
+      signal?.throwIfAborted();
+      if (SKIPPED_EVERYWHERE.has(child.name)) continue;
+      const handle = child.handle;
+      const path = prefix === "" ? child.name : `${prefix}/${child.name}`;
+      if (handle.kind === "directory") {
+        await visit(handle, path);
+        continue;
+      }
+      if (walked.length >= maxFiles) {
+        throw refuse2(
+          EXTENSION_ROOT_FAILURE_CODES.tooLarge,
+          `\xAB${label}\xBB holds more than ${maxFiles} files; this host reads at most that many per extension folder (bound: maxFiles=${maxFiles})`,
+          { bound: "maxFiles", maxFiles }
+        );
+      }
+      const file = await handle.getFile();
+      totalBytes += file.size;
+      if (totalBytes > maxTotalBytes) {
+        throw refuse2(
+          EXTENSION_ROOT_FAILURE_CODES.tooLarge,
+          `\xAB${label}\xBB holds more than ${maxTotalBytes} bytes; this host reads at most that many per extension folder (bound: maxTotalBytes=${maxTotalBytes})`,
+          { bound: "maxTotalBytes", maxTotalBytes }
+        );
+      }
+      walked.push({ path, handle, size: file.size });
+    }
+  };
+  await visit(root, "");
+  return walked;
+}
+async function readAll2(handle) {
+  const file = await handle.getFile();
+  return new Uint8Array(await file.slice(0, file.size).arrayBuffer());
+}
+function parseJson(bytes2, path) {
+  const text = new TextDecoder().decode(bytes2);
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    throw refuse2(
+      EXTENSION_ROOT_FAILURE_CODES.unreadable,
+      `${path} is not valid JSON: ${messageOf(error)}`,
+      { path }
+    );
+  }
+}
+async function readGrantedRoot(request, options) {
+  const label = request.handle.name === "" ? request.id : request.handle.name;
+  const walked = await walkGrantedFolder(
+    request.handle,
+    label,
+    options.maxFiles ?? DEFAULT_EXTENSION_ROOT_MAX_FILES,
+    options.maxTotalBytes ?? DEFAULT_EXTENSION_ROOT_MAX_TOTAL_BYTES,
+    options.signal
+  );
+  const handles = /* @__PURE__ */ new Map();
+  const fileDigests = {};
+  const bytesByPath = /* @__PURE__ */ new Map();
+  const artifactStream = [];
+  for (const entry2 of walked) {
+    options.signal?.throwIfAborted();
+    const bytes2 = await readAll2(entry2.handle);
+    handles.set(entry2.path, entry2.handle);
+    fileDigests[entry2.path] = await sha256(options.subtle, bytes2);
+    bytesByPath.set(entry2.path, bytes2);
+    const pathBytes = encoder3.encode(entry2.path);
+    artifactStream.push(
+      encoder3.encode(String(pathBytes.byteLength)),
+      new Uint8Array([0]),
+      pathBytes,
+      new Uint8Array([0]),
+      encoder3.encode(String(bytes2.byteLength)),
+      new Uint8Array([0]),
+      bytes2
+    );
+  }
+  const artifactDigest = await sha256(options.subtle, concatenate(artifactStream));
+  const packageBytes = bytesByPath.get("package.json");
+  const standaloneBytes = bytesByPath.get("modkit.extension.json");
+  const containers = {
+    ...packageBytes === void 0 ? {} : { packageJson: parseJson(packageBytes, "package.json") },
+    ...standaloneBytes === void 0 ? {} : { standalone: parseJson(standaloneBytes, "modkit.extension.json") }
+  };
+  const files = walked.map((entry2) => entry2.path).filter((path) => !path.split("/").includes(SKIPPED_FROM_LISTING));
+  const documents = /* @__PURE__ */ new Map();
+  const documentDigests = /* @__PURE__ */ new Map();
+  const normalized = await normalizeExtensionManifest(containers);
+  if (normalized.manifest) {
+    options.signal?.throwIfAborted();
+    const expansion = expandContributionManifests(normalized.manifest.contributionManifests, files);
+    for (const entry2 of expansion.entries) {
+      const bytes2 = bytesByPath.get(entry2.path);
+      const digest = fileDigests[entry2.path];
+      if (bytes2 === void 0 || digest === void 0) continue;
+      documents.set(entry2.path, parseJson(bytes2, entry2.path));
+      documentDigests.set(entry2.path, digest);
+    }
+  }
+  const artifactRoot = userExtensionArtifactRoot(request.id);
+  return {
+    files: handles,
+    input: {
+      source: `user-folder/${label}`,
+      containers,
+      files,
+      documents,
+      documentDigests,
+      artifact: {
+        inventoryRecordId: `artifact:${artifactDigest}`,
+        artifactDigest,
+        artifactRoot: new URL(artifactRoot),
+        fileDigests: Object.freeze(fileDigests),
+        verifyArtifactDigest: (expected) => expected === artifactDigest
+      },
+      execution: { origin: USER_EXTENSION_ORIGIN, allowTrustedInProcess: false }
+    }
+  };
+}
+function decodeUserExtensionUrl(url) {
+  if (!url.startsWith(USER_EXTENSION_ARTIFACT_ORIGIN)) return void 0;
+  const rest = url.slice(USER_EXTENSION_ARTIFACT_ORIGIN.length);
+  const slash = rest.indexOf("/");
+  if (slash <= 0) return void 0;
+  const query = rest.indexOf("?");
+  const tail = query === -1 ? rest.slice(slash + 1) : rest.slice(slash + 1, query);
+  try {
+    return { id: decodeURIComponent(rest.slice(0, slash)), path: decodeURIComponent(tail) };
+  } catch {
+    return void 0;
+  }
+}
+var isUserExtensionUrl = (url) => url.startsWith(USER_EXTENSION_ARTIFACT_ORIGIN);
+var notFound = (url) => ({
+  ok: false,
+  status: 404,
+  arrayBuffer: () => Promise.reject(new Error(`404 ${url}`))
+});
+function createUserExtensionFetch(roots) {
+  return async (url, init) => {
+    init?.signal?.throwIfAborted();
+    const decoded = decodeUserExtensionUrl(url);
+    if (decoded === void 0) return notFound(url);
+    const handle = roots.get(decoded.id)?.get(decoded.path);
+    if (handle === void 0) return notFound(url);
+    const file = await handle.getFile();
+    const buffer = await file.slice(0, file.size).arrayBuffer();
+    return { ok: true, status: 200, arrayBuffer: async () => buffer };
+  };
+}
+async function queryUserExtensionPermission(handle) {
+  if (handle.queryPermission === void 0) return "granted";
+  return handle.queryPermission({ mode: "read" });
+}
+async function requestUserExtensionPermission(handle) {
+  if (handle.requestPermission === void 0) return queryUserExtensionPermission(handle);
+  return handle.requestPermission({ mode: "read" });
+}
+async function loadUserExtensionRoots(requests, options) {
+  if (options.allowTrustedInProcess === true) {
+    throw refuse2(
+      "x3.host/extension-trust-misdeclared",
+      `only bundled roots may be admitted in-process; \xAB${USER_EXTENSION_ORIGIN}\xBB roots may not, and a browser host has no in-page boundary to admit them to`,
+      { origin: USER_EXTENSION_ORIGIN }
+    );
+  }
+  const inputs = [];
+  const failures = [];
+  const coordinates = [];
+  const rootIds = [];
+  const served = /* @__PURE__ */ new Map();
+  const claimed = new Set(options.claimed ?? []);
+  for (const request of requests) {
+    options.signal?.throwIfAborted();
+    const label = request.handle.name === "" ? request.id : request.handle.name;
+    const fail2 = (code, message) => {
+      failures.push({ root: label, rootId: request.id, code, message });
+    };
+    let permission;
+    try {
+      permission = await queryUserExtensionPermission(request.handle);
+    } catch (error) {
+      fail2(EXTENSION_ROOT_FAILURE_CODES.unreadable, messageOf(error));
+      continue;
+    }
+    if (permission !== "granted") {
+      fail2(
+        EXTENSION_ROOT_FAILURE_CODES.permissionRequired,
+        `this page no longer holds read access to \xAB${label}\xBB; grant it again to load this extension`
+      );
+      continue;
+    }
+    let read;
+    try {
+      read = await readGrantedRoot(request, options);
+    } catch (error) {
+      fail2(codeOf(error), messageOf(error));
+      continue;
+    }
+    const coordinate2 = extensionCoordinate(read.input);
+    if (coordinate2 === void 0) {
+      fail2(
+        EXTENSION_ROOT_FAILURE_CODES.notAnExtension,
+        "no authored container: the folder has neither package.json#modkit nor modkit.extension.json"
+      );
+      continue;
+    }
+    if (claimed.has(coordinate2)) {
+      fail2(
+        EXTENSION_ROOT_FAILURE_CODES.coordinateConflict,
+        `\xAB${coordinate2}\xBB is already loaded from another root; this one is ignored`
+      );
+      continue;
+    }
+    if (request.expectedId !== void 0 && request.expectedId !== coordinate2) {
+      fail2(
+        EXTENSION_ROOT_FAILURE_CODES.identityMismatch,
+        `recorded as \xAB${request.expectedId}\xBB but the folder declares \xAB${coordinate2}\xBB`
+      );
+      continue;
+    }
+    claimed.add(coordinate2);
+    coordinates.push(coordinate2);
+    rootIds.push(request.id);
+    inputs.push(read.input);
+    served.set(request.id, read.files);
+  }
+  return Object.freeze({
+    inputs: Object.freeze(inputs),
+    failures: Object.freeze(failures),
+    coordinates: Object.freeze(coordinates),
+    rootIds: Object.freeze(rootIds),
+    serve: createUserExtensionFetch(served)
+  });
+}
+var NO_USER_EXTENSION_ROOTS = Object.freeze({
+  inputs: Object.freeze([]),
+  failures: Object.freeze([]),
+  coordinates: Object.freeze([]),
+  rootIds: Object.freeze([]),
+  serve: async (url) => notFound(url)
+});
+
 // apps/web/src/subjects.ts
 function catalogToExtensionInputs(catalog, baseUrl) {
   const base = new URL(baseUrl);
@@ -58205,6 +60283,14 @@ function catalogToExtensionInputs(catalog, baseUrl) {
     execution: { origin: "bundled", allowTrustedInProcess: false }
   }));
 }
+function catalogCoordinates(catalog) {
+  const coordinates = [];
+  for (const entry2 of catalog.extensions) {
+    const coordinate2 = containerCoordinate(entry2.containers);
+    if (coordinate2 !== void 0) coordinates.push(coordinate2);
+  }
+  return Object.freeze(coordinates);
+}
 var WEB_WORKER_MODULE_MAP = Object.freeze({
   "@modkitx-x3/codec-kit": "vendor/codec-kit/index.js",
   "@modkitx-x3/codec-kit/text": "vendor/codec-kit/text/index.js",
@@ -58223,23 +60309,60 @@ function resolveModuleMap(baseUrl, map = WEB_WORKER_MODULE_MAP) {
 async function createWebSubjectServices(options) {
   const probe = options.probe ?? probeWebFacilities();
   const topology = createWebTopology(options.identity, probe);
-  const extensions = catalogToExtensionInputs(options.catalog, options.baseUrl);
+  const catalogInputs = catalogToExtensionInputs(options.catalog, options.baseUrl);
+  const user = options.userExtensions ?? NO_USER_EXTENSION_ROOTS;
+  const claimed = /* @__PURE__ */ new Set();
+  for (const input of catalogInputs) {
+    const coordinate2 = extensionCoordinate(input);
+    if (coordinate2 !== void 0) claimed.add(coordinate2);
+  }
+  const userInputs = [];
+  const userExtensionConflicts = [];
+  for (const [index, input] of user.inputs.entries()) {
+    const coordinate2 = user.coordinates[index] ?? extensionCoordinate(input);
+    if (coordinate2 !== void 0 && claimed.has(coordinate2)) {
+      userExtensionConflicts.push({
+        root: input.source,
+        rootId: user.rootIds[index] ?? input.source,
+        code: "x3.host/extension-coordinate-conflict",
+        message: `\xAB${coordinate2}\xBB is already loaded from another root; this one is ignored`
+      });
+      continue;
+    }
+    if (coordinate2 !== void 0) claimed.add(coordinate2);
+    userInputs.push(input);
+  }
+  const extensions = [...catalogInputs, ...userInputs];
   const definitions = options.serviceDefinitions === false ? void 0 : options.serviceDefinitions === void 0 || options.serviceDefinitions === "bundled" ? createBundledServiceDefinitionRegistry() : options.serviceDefinitions;
-  const executionBackends = createBrowserExecutionBackends({
-    workerUrl: options.workerUrl ?? new URL(WEB_WORKER_ENTRY, options.baseUrl).href,
-    Worker: options.dom.Worker,
-    MessageChannel: options.dom.MessageChannel,
-    fetch: options.dom.fetch,
+  const pageFetch = options.dom.fetch;
+  const fetch2 = (url, init) => isUserExtensionUrl(url) ? user.serve(url, init) : pageFetch(url, init);
+  const loaderHooks = browserLoaderHooks({
+    fetch: fetch2,
     subtle: options.dom.subtle,
     Blob: options.dom.Blob,
     objectUrls: options.dom.objectUrls,
-    moduleMap: options.moduleMap ?? resolveModuleMap(options.baseUrl),
-    policy: options.policy ?? DEFAULT_BROWSER_WORKER_POLICY,
-    // Bound late: definitions are inventoried after the backends exist, and workers read the
-    // surfaces per spawn.
-    ...definitions === void 0 ? {} : { foreignSurfaces: () => serviceDefinitionSurfaces(definitions) },
-    ...options.onDiagnostic === void 0 ? {} : { onDiagnostic: options.onDiagnostic }
+    moduleMap: options.moduleMap ?? resolveModuleMap(options.baseUrl)
   });
+  const executionBackends = createExecutionBackendRegistry([
+    createBrowserWorkerBackend({
+      realm: createDomWorkerRealmFactory({
+        workerUrl: options.workerUrl ?? new URL(WEB_WORKER_ENTRY, options.baseUrl).href,
+        Worker: options.dom.Worker,
+        MessageChannel: options.dom.MessageChannel,
+        ...options.onDiagnostic === void 0 ? {} : { onDiagnostic: options.onDiagnostic }
+      }),
+      loader: {
+        ...loaderHooks,
+        ...options.loaderLimits?.maxFiles === void 0 ? {} : { maxFiles: options.loaderLimits.maxFiles },
+        ...options.loaderLimits?.maxTotalBytes === void 0 ? {} : { maxTotalBytes: options.loaderLimits.maxTotalBytes }
+      },
+      policy: options.policy ?? DEFAULT_BROWSER_WORKER_POLICY,
+      // Bound late: definitions are inventoried after the backends exist, and workers read the
+      // surfaces per spawn.
+      ...definitions === void 0 ? {} : { foreignSurfaces: () => serviceDefinitionSurfaces(definitions) },
+      ...options.onDiagnostic === void 0 ? {} : { onDiagnostic: options.onDiagnostic }
+    })
+  ]);
   const [main, worker] = await Promise.all([
     createHostComposition({ topology, realmId: WEB_MAIN_REALM, extensions, executionBackends }),
     createHostComposition({ topology, realmId: WEB_WORKER_REALM, extensions, executionBackends })
@@ -58252,7 +60375,79 @@ async function createWebSubjectServices(options) {
     executionBackends,
     ...definitions === void 0 ? {} : { serviceDefinitions: definitions }
   });
-  return Object.freeze({ ...services, main, worker });
+  return Object.freeze({
+    ...services,
+    main,
+    worker,
+    userExtensionConflicts: Object.freeze(userExtensionConflicts)
+  });
+}
+
+// apps/web/src/extension-store.ts
+var USER_EXTENSION_DATABASE = "org.modkitx.app.web/extensions";
+var USER_EXTENSION_STORE = "roots";
+function settle(request) {
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(
+      request.error instanceof Error ? request.error : new Error(`IndexedDB request failed: ${String(request.error)}`)
+    );
+  });
+}
+function toRecord(value2) {
+  if (typeof value2 !== "object" || value2 === null) return void 0;
+  const candidate = value2;
+  if (typeof candidate.id !== "string" || candidate.id === "") return void 0;
+  if (typeof candidate.label !== "string") return void 0;
+  const handle = candidate.handle;
+  if (typeof handle !== "object" || handle === null) return void 0;
+  if (handle.kind !== "directory") return void 0;
+  return {
+    id: candidate.id,
+    label: candidate.label,
+    addedAt: typeof candidate.addedAt === "number" ? candidate.addedAt : 0,
+    ...typeof candidate.coordinate === "string" ? { coordinate: candidate.coordinate } : {},
+    handle
+  };
+}
+var byAddedAt = (left, right) => left.addedAt === right.addedAt ? left.id < right.id ? -1 : left.id > right.id ? 1 : 0 : left.addedAt - right.addedAt;
+function createIndexedDbExtensionStore(factory, databaseName = USER_EXTENSION_DATABASE, storeName = USER_EXTENSION_STORE) {
+  const open = async () => {
+    const request = factory.open(databaseName, 1);
+    request.onupgradeneeded = () => {
+      const database = request.result;
+      if (!database.objectStoreNames.contains(storeName)) {
+        database.createObjectStore(storeName, { keyPath: "id" });
+      }
+    };
+    return settle(request);
+  };
+  const withStore = async (mode, body) => {
+    const database = await open();
+    try {
+      return await body(database.transaction(storeName, mode).objectStore(storeName));
+    } finally {
+      database.close();
+    }
+  };
+  return {
+    location: `indexedDB[${databaseName}/${storeName}]`,
+    async list() {
+      const rows = await withStore("readonly", (store) => settle(store.getAll()));
+      const records = [];
+      for (const row of rows) {
+        const record = toRecord(row);
+        if (record !== void 0) records.push(record);
+      }
+      return Object.freeze(records.sort(byAddedAt));
+    },
+    async add(record) {
+      await withStore("readwrite", (store) => settle(store.put(record)));
+    },
+    async remove(id) {
+      await withStore("readwrite", (store) => settle(store.delete(id)));
+    }
+  };
 }
 
 // apps/web/src/index.ts
@@ -58345,111 +60540,517 @@ function mountWebWorkbench(document2, container, app, title = "Modkit MK3") {
   return workbench;
 }
 
-// apps/web/src/files.ts
-var MAXIMUM_DIRECTORY_ENTRIES = 2e3;
-function describeFileCapability(scope) {
-  const pickers = scope;
-  const directories = typeof pickers.showDirectoryPicker === "function";
-  const filePicker = typeof pickers.showOpenFilePicker === "function";
-  const notice = directories ? "This browser grants folder access: pick a folder and the tree browses it in place." : filePicker ? "This browser has no folder picker, only a file picker: one file opens at a time and there is no tree to browse." : "This browser has neither picker, so files arrive through a plain file input: one file opens at a time and there is no tree to browse.";
-  return Object.freeze({ directories, filePicker, inputFallback: true, notice });
-}
-var joinPath = (parent, name) => parent === "" ? name : `${parent}/${name}`;
-async function* iterateChildren(directory) {
-  const entries = directory.entries;
-  if (entries !== void 0) {
-    for await (const pair of entries.call(directory)) yield pair[1];
-    return;
+// apps/web/src/extensions-ui.ts
+var USER_EXTENSION_TRUST_SENTENCE = "A folder you add here is trusted because you picked it and for no other reason \u2014 nothing is signed and nobody has reviewed it; this page hashes every file as it reads them so that a file changed afterwards is refused instead of run, and user extensions always run in a worker, never on the page.";
+var USER_EXTENSION_PROVENANCE_NOTE = "Bundled extensions carry digests this app recorded when it was built. Folders you added carry digests this page computed itself just now \u2014 a measurement of the bytes it read, not a claim about who wrote them.";
+var bundledProvenance = (root) => `Bundled with this build, served from ${root}; its digests were recorded when the app was built.`;
+var userProvenance = (label) => `Folder you granted (\xAB${label}\xBB); its digests were computed by this page from the bytes it just read.`;
+function describeExtensionList(input) {
+  const rows = [];
+  for (const entry2 of input.catalog.extensions) {
+    const coordinate2 = containerCoordinate(entry2.containers);
+    rows.push({
+      kind: "bundled",
+      state: "loaded",
+      label: entry2.name,
+      ...coordinate2 === void 0 ? {} : { coordinate: coordinate2 },
+      provenance: bundledProvenance(entry2.artifactRoot)
+    });
   }
-  const values = directory.values;
-  if (values === void 0) {
-    throw new TypeError("directory handle exposes neither entries() nor values()");
+  const labels = new Map((input.stored ?? []).map((record) => [record.id, record.label]));
+  for (const [index, extension] of input.loaded.inputs.entries()) {
+    const rootId = input.loaded.rootIds[index];
+    const coordinate2 = input.loaded.coordinates[index];
+    const label = (rootId === void 0 ? void 0 : labels.get(rootId)) ?? extension.source;
+    rows.push({
+      kind: "user",
+      state: "loaded",
+      ...rootId === void 0 ? {} : { rootId },
+      label,
+      ...coordinate2 === void 0 ? {} : { coordinate: coordinate2 },
+      provenance: userProvenance(label)
+    });
   }
-  for await (const handle of values.call(directory)) yield handle;
+  for (const failure of [...input.loaded.failures, ...input.extraFailures ?? []]) {
+    const label = labels.get(failure.rootId) ?? failure.root;
+    rows.push({
+      kind: "user",
+      state: failure.code === EXTENSION_ROOT_FAILURE_CODES.permissionRequired ? "needs-permission" : "failed",
+      rootId: failure.rootId,
+      label,
+      provenance: userProvenance(label),
+      code: failure.code,
+      detail: failure.message
+    });
+  }
+  return Object.freeze(rows);
 }
-var describe4 = (error) => error instanceof Error ? error.message : String(error);
-function createDirectoryAccess(root, options = {}) {
-  const directories = /* @__PURE__ */ new Map([["", root]]);
-  const files = /* @__PURE__ */ new Map();
-  const sizes = /* @__PURE__ */ new Map();
-  const requireDirectory = (entryId) => {
-    const found = directories.get(entryId ?? "");
-    if (found === void 0) {
-      throw new TypeError(`\xAB${entryId ?? ""}\xBB is not a folder this session has browsed`);
-    }
-    return found;
+var describe5 = (error) => error instanceof Error ? error.message : String(error);
+function defaultId() {
+  const source = globalThis.crypto;
+  const uuid = source?.randomUUID?.();
+  return uuid ?? `root-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+function button(parent, part, label, onClick) {
+  const node = element(parent, "button", { part, text: label });
+  node.setAttribute("type", "button");
+  node.addEventListener("click", onClick);
+}
+function mountExtensionsUi(documentRef, options) {
+  const root = documentRef.createElement("section");
+  root.className = "web-extensions-view";
+  const newId = options.newId ?? defaultId;
+  let stored = [];
+  let loaded = {
+    inputs: [],
+    failures: [],
+    coordinates: [],
+    rootIds: [],
+    serve: async (url) => ({
+      ok: false,
+      status: 404,
+      arrayBuffer: () => Promise.reject(new Error(`404 ${url}`))
+    })
   };
+  let status = "";
+  const loadOptions = () => ({
+    subtle: options.subtle,
+    claimed: catalogCoordinates(options.catalog),
+    ...options.maxFiles === void 0 ? {} : { maxFiles: options.maxFiles },
+    ...options.maxTotalBytes === void 0 ? {} : { maxTotalBytes: options.maxTotalBytes }
+  });
+  const reload = async () => {
+    stored = await options.store.list();
+    loaded = await loadUserExtensionRoots(
+      stored.map((record) => ({
+        id: record.id,
+        handle: record.handle,
+        ...record.coordinate === void 0 ? {} : { expectedId: record.coordinate }
+      })),
+      loadOptions()
+    );
+    render2();
+  };
+  const changed = async () => {
+    await reload();
+    await options.onChanged?.(loaded);
+    render2();
+  };
+  const add = () => {
+    void (async () => {
+      try {
+        const handle = await options.pickDirectory();
+        if (handle === void 0) return;
+        const id = newId();
+        const probe = await loadUserExtensionRoots([{ id, handle }], {
+          ...loadOptions(),
+          claimed: [...catalogCoordinates(options.catalog), ...loaded.coordinates]
+        });
+        const failure = probe.failures[0];
+        if (failure !== void 0) {
+          status = `${handle.name}: ${failure.message} (${failure.code})`;
+          render2();
+          return;
+        }
+        const coordinate2 = probe.coordinates[0];
+        await options.store.add({
+          id,
+          label: handle.name,
+          addedAt: Date.now(),
+          ...coordinate2 === void 0 ? {} : { coordinate: coordinate2 },
+          handle
+        });
+        status = `Added \xAB${handle.name}\xBB${coordinate2 === void 0 ? "" : ` (${coordinate2})`}.`;
+        await changed();
+      } catch (error) {
+        status = `Could not add that folder: ${describe5(error)}`;
+        render2();
+      }
+    })();
+  };
+  const remove = (rootId) => {
+    void (async () => {
+      try {
+        await options.store.remove(rootId);
+        status = "Removed. The extension is gone from the list; reload to rebuild the host.";
+        await changed();
+      } catch (error) {
+        status = `Could not remove it: ${describe5(error)}`;
+        render2();
+      }
+    })();
+  };
+  const grant = (rootId) => {
+    void (async () => {
+      const record = stored.find((entry2) => entry2.id === rootId);
+      if (record === void 0) return;
+      try {
+        const state = await requestUserExtensionPermission(record.handle);
+        status = state === "granted" ? `Access to \xAB${record.label}\xBB granted again.` : `Access to \xAB${record.label}\xBB was not granted (${state}).`;
+        await changed();
+      } catch (error) {
+        status = `Could not ask for access: ${describe5(error)}`;
+        render2();
+      }
+    })();
+  };
+  function render2() {
+    root.replaceChildren();
+    element(root, "h2", { text: "Extensions" });
+    element(root, "p", { part: "settings.description", text: USER_EXTENSION_TRUST_SENTENCE });
+    element(root, "p", { part: "settings.description", text: USER_EXTENSION_PROVENANCE_NOTE });
+    const adder = element(root, "div", { part: "settings.adder" });
+    button(adder, "settings.add", "Add a folder\u2026", add);
+    element(adder, "span", {
+      part: "settings.description",
+      text: `Added folders are remembered in ${options.store.location}.`
+    });
+    const rows = describeExtensionList({
+      catalog: options.catalog,
+      loaded,
+      stored,
+      ...options.conflicts === void 0 ? {} : { extraFailures: options.conflicts() }
+    });
+    const list = element(root, "div", { part: "settings.list" });
+    for (const row of rows) {
+      const item = element(list, "div", { part: "settings.extension" });
+      const text = element(item, "div", { part: "settings.extension-text" });
+      element(text, "div", {
+        part: "settings.label",
+        text: row.coordinate ?? row.label
+      });
+      element(text, "div", { part: "settings.description", text: row.provenance });
+      if (row.code !== void 0) {
+        element(text, "div", {
+          part: "settings.description",
+          text: `${row.code}: ${row.detail ?? ""}`
+        });
+      }
+      if (row.kind === "user" && row.rootId !== void 0) {
+        const rootId = row.rootId;
+        if (row.state === "needs-permission") {
+          button(item, "settings.add", "Grant access", () => grant(rootId));
+        }
+        button(item, "settings.remove", "Remove", () => remove(rootId));
+      }
+    }
+    if (rows.every((row) => row.kind === "bundled")) {
+      element(root, "p", {
+        part: "settings.description",
+        text: "No folders added yet."
+      });
+    }
+    element(root, "p", { part: "settings.status", text: status });
+  }
+  render2();
   return {
-    label: root.name === "" ? "Granted folder" : root.name,
-    async list(entryId, signal) {
-      signal?.throwIfAborted();
-      const directory = requireDirectory(entryId);
-      const prefix = entryId ?? "";
-      const listed = [];
-      let truncated = false;
-      for await (const handle of iterateChildren(directory)) {
-        signal?.throwIfAborted();
-        if (listed.length >= MAXIMUM_DIRECTORY_ENTRIES) {
-          truncated = true;
-          break;
-        }
-        const path = joinPath(prefix, handle.name);
-        if (handle.kind === "directory") {
-          directories.set(path, handle);
-          listed.push({ id: path, name: handle.name, directory: true });
-          continue;
-        }
-        files.set(path, handle);
-        try {
-          const file = await handle.getFile();
-          sizes.set(path, file.size);
-          listed.push({ id: path, name: handle.name, directory: false, size: file.size });
-        } catch (error) {
-          options.onNotice?.(`${path} could not be read: ${describe4(error)}`);
-          listed.push({ id: path, name: handle.name, directory: false });
-        }
-      }
-      if (truncated) {
-        options.onNotice?.(
-          `${prefix === "" ? root.name : prefix} has more than ${MAXIMUM_DIRECTORY_ENTRIES} entries; the tree shows the first ones only.`
-        );
-      }
-      return listed;
-    },
-    sizeOf(entryId) {
-      return sizes.get(entryId);
-    },
-    async read(entryId, maxBytes, signal) {
-      signal?.throwIfAborted();
-      const handle = files.get(entryId);
-      if (handle === void 0) {
-        throw new TypeError(`\xAB${entryId}\xBB is not a file this session has browsed`);
-      }
-      const file = await handle.getFile();
-      const length = Math.min(file.size, maxBytes);
-      return new Uint8Array(await file.slice(0, length).arrayBuffer());
-    }
+    root,
+    reload,
+    current: () => loaded
   };
 }
-function createSingleFileAccess(file) {
-  const entry2 = { id: file.name, name: file.name, directory: false, size: file.size };
-  const access = {
-    label: file.name,
-    async list(entryId, signal) {
-      signal?.throwIfAborted();
-      return entryId === void 0 ? [entry2] : [];
+
+// apps/web/src/editing.ts
+var WEB_SOURCE_SCHEME = "file-picker://";
+var sourceUriFor = (entryId) => `${WEB_SOURCE_SCHEME}${encodeURIComponent(entryId)}`;
+var sourceRevisionToken = (snapshot2) => `provider-token:${snapshot2.size}-${snapshot2.lastModified}`;
+var report = (state, editable, sentence) => Object.freeze({ state, editable, sentence });
+var describe6 = (error) => error instanceof Error ? error.message : String(error);
+async function describeEditability(access, entryId, name = entryId) {
+  const handle = access?.handleOf(entryId);
+  if (!isWritableHandle(handle)) {
+    return report(
+      "no-handle",
+      false,
+      `${name} has no writable handle: it arrived through a file input, a drop or a fetch, so this page can show it but can never save it back. Pick it through "Open file\u2026" or a folder to edit it.`
+    );
+  }
+  const grant = access?.writeGrant ?? handle;
+  let state;
+  try {
+    state = await grant.queryPermission?.({ mode: "readwrite" });
+  } catch (error) {
+    return report(
+      "no-permission-surface",
+      true,
+      `${name} has a writable handle, but this browser could not report its write permission (${describe6(error)}); the first save is where it is decided.`
+    );
+  }
+  if (state === void 0) {
+    return report(
+      "no-permission-surface",
+      true,
+      `${name} has a writable handle, but this browser exposes no permission query, so whether the write is allowed is decided by the first save.`
+    );
+  }
+  if (state === "denied") {
+    return report(
+      "denied",
+      false,
+      `Write access was denied for ${name}, so its text and hex editors are dropped. This build will not offer a save it already knows the browser refuses.`
+    );
+  }
+  if (state === "granted") {
+    return report("granted", true, `${name} can be saved in place: write access is granted.`);
+  }
+  return report(
+    "prompt",
+    true,
+    `${name} can be saved in place once you allow write access; the browser asks on the first save, or use "Enable editing" to answer it now.`
+  );
+}
+async function requestWriteAccess(access) {
+  const grant = access?.writeGrant;
+  if (access === void 0) {
+    return { state: "no-handle", sentence: "Open a folder or pick a file before enabling editing." };
+  }
+  if (grant === void 0) {
+    return {
+      state: "no-handle",
+      sentence: `${access.label} has no writable handle: files opened through a drop, a plain file input or a fetch cannot be written back. Use "Open file\u2026" or a granted folder instead.`
+    };
+  }
+  const ask = grant.requestPermission;
+  if (ask === void 0) {
+    return {
+      state: "no-permission-surface",
+      sentence: `${access.label} cannot be asked for write permission in this browser; a save will try directly and report what the browser answers.`
+    };
+  }
+  try {
+    const state = await ask.call(grant, { mode: "readwrite" });
+    if (state === "granted") {
+      return {
+        state: "granted",
+        sentence: `Write access granted for ${access.label}: the text and hex editors can save.`
+      };
+    }
+    return {
+      state: state === "denied" ? "denied" : "prompt",
+      sentence: state === "denied" ? `Write access denied for ${access.label}; files opened from now on show no editor.` : `Write access was not granted for ${access.label}; nothing was changed.`
+    };
+  } catch (error) {
+    return {
+      state: "no-permission-surface",
+      sentence: `Asking for write access to ${access.label} failed: ${describe6(error)}`
+    };
+  }
+}
+var isRecord4 = (value2) => typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
+function byteRuns(value2) {
+  if (!Array.isArray(value2) || value2.length === 0) return void 0;
+  const runs = [];
+  for (const item of value2) {
+    if (!isRecord4(item)) return void 0;
+    const range = item["range"];
+    const payload = item["payload"];
+    if (!isRecord4(range) || !isRecord4(payload)) return void 0;
+    if (range["kind"] !== "bytes" || typeof range["offset"] !== "bigint") return void 0;
+    if (payload["kind"] !== "inline" || !(payload["bytes"] instanceof Uint8Array)) return void 0;
+    const offset = Number(range["offset"]);
+    if (!Number.isSafeInteger(offset) || offset < 0) return void 0;
+    runs.push({ offset, bytes: payload["bytes"] });
+  }
+  return runs;
+}
+function mergeByteRuns(runs, original) {
+  if (runs.length === 0) return void 0;
+  let start = Number.MAX_SAFE_INTEGER;
+  let end = 0;
+  for (const run of runs) {
+    start = Math.min(start, run.offset);
+    end = Math.max(end, run.offset + run.bytes.byteLength);
+  }
+  if (start > end || end > original.byteLength) return void 0;
+  const window2 = original.slice(start, end);
+  for (const run of runs) window2.set(run.bytes, run.offset - start);
+  return { offset: start, bytes: window2 };
+}
+function normalizeChangeSet(change, targets, original) {
+  if (!isRecord4(change)) return void 0;
+  const declared = change["targets"];
+  if (Array.isArray(declared) && declared.length > 0) return change;
+  const target = targets[0];
+  if (target === void 0) return void 0;
+  const runs = byteRuns(change["edits"]);
+  if (runs === void 0) return void 0;
+  const merged = mergeByteRuns(runs, original);
+  if (merged === void 0) return void 0;
+  return {
+    targets,
+    edits: [
+      {
+        operation: "replace",
+        targetId: target.targetId,
+        source: target.ownerSource,
+        range: {
+          kind: "bytes",
+          offset: BigInt(merged.offset),
+          length: BigInt(merged.bytes.byteLength)
+        },
+        payload: { kind: "inline", bytes: merged.bytes },
+        label: "Edit bytes"
+      }
+    ],
+    provenance: { actor: "user" }
+  };
+}
+function describeRejection(reason) {
+  switch (reason) {
+    case "stale-revision":
+      return "the file changed on disk after this tab read it";
+    case "permission-missing":
+      return "the grant this subject was opened under does not carry write permission";
+    case "write-scope-mismatch":
+      return "the plan names a source outside this subject";
+    case "guarantee-unachievable":
+      return "this backend cannot promise the guarantee the plan asks for";
+    case "fidelity-unproven":
+      return "no evidence proves the writer keeps what the plan claims it keeps";
+    case "confirmation-required":
+      return "a lossy write needs an explicit confirmation this host does not collect";
+    case "payload-unavailable":
+      return "the edited bytes exceed what this host will hand over inline";
+    case "source-read-only":
+      return "the backend behind this source is read-only";
+    case "cancelled":
+      return "the save was cancelled";
+    default:
+      return "the plan did not describe this subject at its open revision";
+  }
+}
+var firstMessage = (diagnostics) => diagnostics[0]?.message;
+function createWebEditingArm(options) {
+  const evidence2 = createEvidenceRegistry();
+  const writer = createRawWriter();
+  const backend = createBrowserEditingBackend({
+    handleFor: options.handleFor,
+    // The same token the shell pins its sources with, passed explicitly so the two are visibly
+    // one function rather than two that happen to agree today.
+    revisionOf: (snapshot2) => sourceRevisionToken({ size: snapshot2.size, lastModified: snapshot2.lastModified ?? 0 }),
+    ...options.maxPayloadBytes === void 0 ? {} : { maxPayloadBytes: options.maxPayloadBytes }
+  });
+  const speaking = (base, request) => {
+    const targets = base.edit.targets;
+    const notice = (line) => options.onNotice(`${request.name}: ${line}`);
+    const refused2 = (line) => {
+      notice(line);
+      return {
+        valid: false,
+        diagnostics: [diagnostic("error", "x3.app.web/edit-change-unsupported", line)]
+      };
+    };
+    const edit = {
+      revision: base.edit.revision,
+      targets,
+      state: () => base.edit.state(),
+      async propose(change) {
+        const normalized = normalizeChangeSet(change, targets, request.bytes);
+        if (normalized === void 0) {
+          return refused2(
+            "this editor produced a change this host cannot express as a literal replacement"
+          );
+        }
+        options.onDirty(request.entryId, true);
+        const result = await base.edit.propose(normalized);
+        if (!result.valid) {
+          notice(firstMessage(result.diagnostics) ?? "the writer refused the change");
+        }
+        return result;
+      },
+      async plan(change) {
+        const normalized = normalizeChangeSet(change, targets, request.bytes);
+        if (normalized === void 0) {
+          throw new TypeError("this host cannot plan the change set this editor produced");
+        }
+        return base.edit.plan(normalized);
+      },
+      dispose: () => base.edit.dispose()
+    };
+    const announce = (result, what) => {
+      if (result.state === "committed") {
+        options.onDirty(request.entryId, false);
+        notice(
+          `${what} \u2014 written to the file this tab opened. Reopen it before editing again: this tab still holds the revision it read.`
+        );
+      } else if (result.state === "not-applied") {
+        notice(
+          `${what} refused \u2014 ${describeRejection(result.reason)}${firstMessage(result.diagnostics) === void 0 ? "" : ` (${firstMessage(result.diagnostics) ?? ""})`}.`
+        );
+      } else if (result.state === "rolled-back") {
+        notice(`${what} failed and the file was rolled back to what it held before.`);
+      } else {
+        notice(`${what} landed only partly; recovery is available in the receipt.`);
+      }
+      return result;
+    };
+    const commit = {
+      async prepare(plan, prepareOptions) {
+        const result = await base.commit.prepare(plan, prepareOptions);
+        if (result.state === "conflict") {
+          notice(
+            "refused \u2014 the file changed on disk after this tab read it, so nothing was overwritten. Reopen it and redo the edit."
+          );
+        } else if (result.state === "rejected") {
+          notice(`refused before writing \u2014 ${describeRejection(result.reason)}.`);
+        }
+        return result;
+      },
+      async commit(prepared, commitOptions) {
+        return announce(await base.commit.commit(prepared, commitOptions), "Saved");
+      },
+      async undo(transactionId, undoOptions) {
+        return announce(await base.commit.undo(transactionId, undoOptions), "Undo");
+      },
+      async redo(transactionId, redoOptions) {
+        return announce(await base.commit.redo(transactionId, redoOptions), "Redo");
+      }
+    };
+    const authorization = {
+      async request(plan, requestOptions) {
+        const state = await options.ensureWriteAccess(request.entryId);
+        if (state !== "granted") {
+          notice(
+            state === "denied" ? "not saved \u2014 this browser denied write access to the file." : `not saved \u2014 write access was not granted (${state}).`
+          );
+          return void 0;
+        }
+        return base.authorization.request(plan, requestOptions);
+      }
+    };
+    return Object.freeze({ edit, commit, payloads: base.payloads, authorization });
+  };
+  const arm = {
+    backend,
+    portsFor(request) {
+      let ports;
+      try {
+        ports = createSubjectEditing({
+          opened: request.opened,
+          grant: request.grant,
+          // One backend, and only for a source this session really holds a handle for: an unknown
+          // source must reach `derive` as "no backend", not as a backend that would refuse later.
+          backendFor: (sourceId) => options.handleFor(sourceId) === void 0 ? void 0 : backend,
+          evidenceFor: (plan) => evidence2.evidenceFor(plan),
+          writer,
+          expectedWriter: writer.identity,
+          ...options.maxInlinePayloadBytes === void 0 ? {} : { maxInlinePayloadBytes: options.maxInlinePayloadBytes }
+        }).editorPorts;
+      } catch (error) {
+        options.onNotice(`${request.name} cannot be edited here: ${describe6(error)}`);
+        return void 0;
+      }
+      if (ports === void 0) {
+        options.onNotice(`${request.name} cannot be edited here: no writer backs this subject.`);
+        return void 0;
+      }
+      return speaking(ports, request);
     },
-    sizeOf(entryId) {
-      return entryId === entry2.id ? file.size : void 0;
-    },
-    async read(entryId, maxBytes, signal) {
-      signal?.throwIfAborted();
-      if (entryId !== entry2.id) throw new TypeError(`\xAB${entryId}\xBB is not the opened file`);
-      const length = Math.min(file.size, maxBytes);
-      return new Uint8Array(await file.slice(0, length).arrayBuffer());
+    async dispose() {
+      await backend.dispose();
     }
   };
-  return { access, entry: entry2 };
+  return Object.freeze(arm);
 }
 
 // apps/web/src/inspector.ts
@@ -58545,7 +61146,7 @@ function createInspector(document2) {
 
 // apps/web/src/settings.ts
 var SETTINGS_STORAGE_KEY = "org.modkitx.app.web/settings";
-var EXTENSIONS_READ_ONLY_REASON = "this host serves only the extensions its build attested, so user-supplied extensions cannot be added, removed or disabled here yet";
+var EXTENSIONS_READ_ONLY_REASON = "this host has no enable/disable switch for an inventoried extension yet, so the settings extension list cannot be written here; add or remove your own extension folders in the Extensions panel instead";
 var WEB_THEMES = Object.freeze([
   { id: "modkit-dark", label: "Modkit Dark" },
   { id: "modkit-light", label: "Modkit Light" },
@@ -58849,15 +61450,15 @@ function createWebPreviewStages(context) {
     },
     { id: "hex", label: "Hex", contract: "common.view/byte-range-source", module: hexViewer },
     /*
-     * Declared, never mounted here: this host passes no `editorPorts`, so `createCodecPreview`
-     * drops both before the first stage appears. See the module comment.
+     * Mounted only for a subject the shell handed `editorPorts` for — a file with a File System
+     * Access handle whose write permission the browser has not refused. See the module comment.
      *
-     * The cast records a gap in the ui package rather than hiding one: `PreviewStage.module` is
-     * typed `ViewerModule`, while its own documentation says an `editable` stage carries an
-     * `EditorModule` (which takes four more mount arguments). Widening that field to
-     * `ViewerModule | EditorModule` is a Root change; until then a first-party host cannot name an
-     * editor stage in TypeScript at all — Electron only gets away with it through an untyped
-     * generated catalog.
+     * The cast records a gap in the ui package rather than hiding one: in the `packages/ui` this
+     * worktree was cut from, `PreviewStage.module` is typed `ViewerModule`, while its own
+     * documentation says an `editable` stage carries an `EditorModule` (which takes four more
+     * mount arguments), so a first-party host cannot name an editor stage in TypeScript at all.
+     * The widening to `ViewerModule | EditorModule` has since landed upstream: once this sits on
+     * top of it, both casts here become plain `module: textEditor` / `module: hexEditor`.
      */
     {
       id: "text-editor",
@@ -58878,7 +61479,7 @@ function createWebPreviewStages(context) {
 }
 var WEB_PREVIEW_FALLBACK = Object.freeze({ text: boundedTextViewer, hex: hexViewer });
 var EDITABLE_STAGE_IDS = Object.freeze(["text-editor", "hex-editor"]);
-var READ_ONLY_NOTICE = "Viewing only: this build has no browser editing backend, so the text and hex editors are declared and then dropped \u2014 an editor that could never save would be a lie.";
+var WEB_EDITING_NOTICE = "Editing: a file opened through the file or folder picker has a writable handle, so it gets the text and hex editors and saves in place once you allow write access. A file that arrived by drop, by a plain file input or by a same-origin fetch has no handle and stays view-only.";
 
 // apps/web/src/shell.ts
 var SAMPLES = Object.freeze([
@@ -58889,7 +61490,7 @@ var SAMPLES = Object.freeze([
   { path: "./samples/sample.md", label: "sample.md \u2014 markdown document" },
   { path: "./samples/sample.zip", label: "sample.zip \u2014 container namespace" }
 ]);
-var describe5 = (error) => error instanceof Error ? error.message : String(error);
+var describe7 = (error) => error instanceof Error ? error.message : String(error);
 function requireRoot() {
   const node = document.querySelector("#root");
   if (node === null) throw new Error("missing #root");
@@ -58900,12 +61501,12 @@ function identity() {
   const operatingSystem = agent.includes("Windows") ? "windows" : agent.includes("Mac") ? "darwin" : "linux";
   return { operatingSystem, architecture: "x64" };
 }
-function bytesSource(name, bytes2, token) {
-  const uri = `file-picker://${encodeURIComponent(name)}`;
+function bytesSource(entryId, bytes2, token) {
+  const uri = sourceUriFor(entryId);
   return {
     kind: "bytes",
     ref: { id: uri, uri },
-    revision: revisionId(`provider-token:${token}`),
+    revision: revisionId(token),
     size: BigInt(bytes2.byteLength),
     async read(offset, length) {
       const start = Number(offset);
@@ -58923,12 +61524,20 @@ async function pickFile() {
   const picker = window.showOpenFilePicker;
   if (picker !== void 0) {
     const [handle] = await picker.call(window);
-    return handle === void 0 ? void 0 : await handle.getFile();
+    if (handle === void 0) return void 0;
+    return { file: await handle.getFile(), handle };
   }
   return new Promise((resolve) => {
     const input = document.createElement("input");
     input.type = "file";
-    input.addEventListener("change", () => resolve(input.files?.[0] ?? void 0), { once: true });
+    input.addEventListener(
+      "change",
+      () => {
+        const chosen = input.files?.[0];
+        resolve(chosen === void 0 ? void 0 : { file: chosen });
+      },
+      { once: true }
+    );
     input.click();
   });
 }
@@ -58951,9 +61560,34 @@ async function boot() {
   const baseUrl = new URL("./", document.baseURI);
   const capability = describeFileCapability(window);
   const bootDiagnostics = [];
+  const extensionStore = createIndexedDbExtensionStore(indexedDB);
+  const subtle = {
+    digest: (algorithm, data) => crypto.subtle.digest(algorithm, data)
+  };
+  const extensionsUi = mountExtensionsUi(document, {
+    store: extensionStore,
+    catalog: WEB_EXTENSION_CATALOG,
+    subtle,
+    pickDirectory: async () => {
+      const picker = window.showDirectoryPicker;
+      if (picker === void 0) throw new Error("this browser has no folder picker");
+      return await picker.call(window);
+    },
+    conflicts: () => services.userExtensionConflicts,
+    onChanged: (loaded) => {
+      console.info(
+        `[extensions] ${loaded.inputs.length} user extension(s) loaded. Reload the page to compose a host with a changed list: this app builds its inventory once, at startup.`
+      );
+    }
+  });
+  await extensionsUi.reload();
+  for (const failure of extensionsUi.current().failures) {
+    bootDiagnostics.push(`${failure.code}: ${failure.message}`);
+  }
   const services = await createWebSubjectServices({
     baseUrl,
     catalog: WEB_EXTENSION_CATALOG,
+    userExtensions: extensionsUi.current(),
     identity: identity(),
     probe,
     dom: {
@@ -58996,23 +61630,61 @@ async function boot() {
     inspecting = entryId;
     void inspector.show(entryId === void 0 ? void 0 : inspected.get(entryId)).catch((error) => console.warn("inspector failed", error));
   };
+  let access;
+  const pinnedRevisions = /* @__PURE__ */ new Map();
+  const writableHandles = /* @__PURE__ */ new Map();
+  const openedSubjects = /* @__PURE__ */ new Map();
+  const editability = /* @__PURE__ */ new Map();
+  const editingStatus = document.createElement("p");
+  setPart(editingStatus, "settings.status");
+  setViewerText(editingStatus, "No file is open yet, so nothing is editable.");
+  const noteEditing = (message) => setViewerText(editingStatus, message, 400);
+  let markDirty = () => void 0;
+  let focused;
+  const editing = createWebEditingArm({
+    handleFor: (sourceId) => writableHandles.get(sourceId),
+    onNotice(message) {
+      say(message);
+      noteEditing(message);
+    },
+    onDirty: (entryId, dirty) => markDirty(entryId, dirty),
+    /*
+     * Reached from an editor's Save click, which is the only place the browser will honour
+     * `requestPermission`. Asking on load is both refused by the browser and rude.
+     */
+    async ensureWriteAccess(entryId) {
+      const current = await describeEditability(access, entryId);
+      if (current.state === "granted" || current.state === "no-permission-surface") return "granted";
+      if (current.state !== "prompt") {
+        noteEditing(current.sentence);
+        return "denied";
+      }
+      const asked = await requestWriteAccess(access);
+      noteEditing(asked.sentence);
+      return asked.state === "granted" ? "granted" : asked.state === "denied" ? "denied" : "prompt";
+    }
+  });
   let openCount = 0;
   const stages = createWebPreviewStages({
     operationsFor: (descriptor) => operationSessions.get(descriptorKey(descriptor))
   });
-  const preview = createCodecPreview({
+  const previewBase = {
     supported: services.supportedExtensions,
     stages,
     fallback: WEB_PREVIEW_FALLBACK,
-    // No `editorPorts`: every `editable` stage is dropped before it mounts. See views.ts.
     async openSession(entry2, bytes2, signal) {
       openCount += 1;
-      const token = `${entry2.name}-${bytes2.byteLength}-${openCount}`.replace(/[^a-z0-9-]/giu, "-");
+      const writable = editability.get(entry2.id)?.editable === true;
+      const token = pinnedRevisions.get(entry2.id) ?? `provider-token:${bytes2.byteLength}-${openCount}`;
+      const grant = {
+        id: `pwa-${openCount}`,
+        classes: writable ? ["read-source", "write-source"] : ["read-source"]
+      };
       const result = await services.open({
-        source: bytesSource(entry2.name, bytes2, token),
+        source: bytesSource(entry2.id, bytes2, token),
         path: entry2.name,
         intent: "full",
-        grant: { id: `pwa-${openCount}`, classes: ["read-source"] },
+        grant,
         budget: {
           maxInputBytes: BigInt(EXPLORER_MAXIMUM_BYTES),
           maxDepth: 256,
@@ -59038,6 +61710,7 @@ async function boot() {
       const operations = session.operations();
       operationSessions.set(key3, operations);
       inspected.set(entry2.id, { label: entry2.name, descriptor: result.descriptor, operations });
+      openedSubjects.set(entry2.id, { opened: result, grant });
       inspecting = void 0;
       inspect(entry2.id);
       return {
@@ -59046,17 +61719,52 @@ async function boot() {
         async dispose() {
           operationSessions.delete(key3);
           inspected.delete(entry2.id);
+          openedSubjects.delete(entry2.id);
+          writableHandles.delete(sourceUriFor(entry2.id));
           if (inspecting === entry2.id) inspect(void 0);
           await session.dispose();
         }
       };
     }
+  };
+  const codecPreview = createCodecPreview({
+    ...previewBase,
+    editorPorts(entry2, bytes2) {
+      const record = openedSubjects.get(entry2.id);
+      if (record === void 0 || editability.get(entry2.id)?.editable !== true) return void 0;
+      return editing.portsFor({
+        entryId: entry2.id,
+        name: entry2.name,
+        opened: record.opened,
+        grant: record.grant,
+        bytes: bytes2
+      });
+    }
   });
-  let access;
+  const preview = {
+    supported: codecPreview.supported,
+    async open(container, entry2, bytes2, signal) {
+      const decision = await describeEditability(access, entry2.id, entry2.name);
+      const source = sourceUriFor(entry2.id);
+      const handle = access?.handleOf(entry2.id);
+      const editable = decision.editable && pinnedRevisions.has(entry2.id);
+      if (editable && isWritableHandle(handle)) writableHandles.set(source, handle);
+      else writableHandles.delete(source);
+      editability.set(entry2.id, editable ? decision : { ...decision, editable: false });
+      noteEditing(decision.sentence);
+      return codecPreview.open(container, entry2, bytes2, signal);
+    }
+  };
   const editors = createEditorArea(document, {
     preview,
+    async confirmClose(entry2) {
+      return window.confirm(`${entry2.name} has unsaved changes. Close the tab and discard them?`) ? "discard" : "cancel";
+    },
     async read(entry2, signal) {
       if (access === void 0) throw new Error("no folder or file is open");
+      const snapshot2 = await access.snapshotOf(entry2.id, signal);
+      if (snapshot2 === void 0) pinnedRevisions.delete(entry2.id);
+      else pinnedRevisions.set(entry2.id, sourceRevisionToken(snapshot2));
       const size = access.sizeOf(entry2.id) ?? entry2.size;
       if (size !== void 0 && size > EXPLORER_MAXIMUM_BYTES) {
         throw new Error(
@@ -59068,7 +61776,14 @@ async function boot() {
     onStatus(status) {
       say([status.path, status.view, status.detail].filter(Boolean).join(" \xB7 "));
       inspect(status.path);
+      focused = status.path;
     }
+  });
+  markDirty = (entryId, dirty) => editors.markDirty(entryId, dirty);
+  editors.root.addEventListener("input", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement) || target.dataset["mkPart"] !== "editor.text") return;
+    if (focused !== void 0) editors.markDirty(focused, true);
   });
   const explorer = createExplorer(document, {
     preview,
@@ -59092,16 +61807,16 @@ async function boot() {
   const toolbar = explorer.root.querySelector('[data-mk-part="explorer.toolbar"]');
   const toolbarAction = (label, title, run) => {
     if (!(toolbar instanceof HTMLElement)) return;
-    const button = element(toolbar, "button", {
+    const button2 = element(toolbar, "button", {
       part: "explorer.action",
       text: label
     });
-    button.type = "button";
-    button.title = title;
-    button.addEventListener("click", run);
+    button2.type = "button";
+    button2.title = title;
+    button2.addEventListener("click", run);
   };
-  async function openFile(file) {
-    const picked = createSingleFileAccess(file);
+  async function openFile(file, handle) {
+    const picked = createSingleFileAccess(file, handle);
     access = picked.access;
     await explorer.setAccess(picked.access);
     await editors.open(picked.entry);
@@ -59109,14 +61824,25 @@ async function boot() {
   toolbarAction("Open file\u2026", "Open a single file in a new tab", () => {
     void (async () => {
       try {
-        const file = await pickFile();
-        if (file !== void 0) await openFile(file);
+        const picked = await pickFile();
+        if (picked !== void 0) await openFile(picked.file, picked.handle);
       } catch (error) {
-        say(`Could not open the file: ${describe5(error)}`);
+        say(`Could not open the file: ${describe7(error)}`);
       }
     })();
   });
   toolbarAction("Split editor", "Open the next file beside this one", () => editors.split());
+  toolbarAction(
+    "Enable editing",
+    "Ask this browser for permission to write the file or folder you picked",
+    () => {
+      void (async () => {
+        const asked = await requestWriteAccess(access);
+        say(asked.sentence);
+        noteEditing(asked.sentence);
+      })();
+    }
+  );
   const stopEvent = (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -59135,7 +61861,7 @@ async function boot() {
     setState(editors.root, []);
     const file = event.dataTransfer?.files[0];
     if (file === void 0) return;
-    void openFile(file).catch((error) => say(`Drop failed: ${describe5(error)}`));
+    void openFile(file).catch((error) => say(`Drop failed: ${describe7(error)}`));
   });
   const store = createWebSettingsStore(window.localStorage);
   const settingsUi = createSettingsUi(document, {
@@ -59177,7 +61903,7 @@ async function boot() {
   }
   const settingsView = document.createElement("div");
   settingsView.className = "web-settings-view";
-  settingsView.append(settingsUi.root, bundledExtensionsSection());
+  settingsView.append(settingsUi.root, extensionsUi.root, bundledExtensionsSection());
   await settingsUi.reload();
   const sidebar = document.createElement("div");
   sidebar.className = "web-host-panel";
@@ -59187,7 +61913,8 @@ async function boot() {
     text: `${services.main.inventory.extensions.length} extensions \xB7 ${services.supportedExtensions.length} detectable types \xB7 codecs run ${services.executionProfiles.join("/")} in ${services.worker.profile.realmId} \xB7 shared memory ${probe.sharedMemory ? "yes" : "no"}`
   });
   element(sidebar, "p", { part: "settings.description", text: capability.notice });
-  element(sidebar, "p", { part: "settings.description", text: READ_ONLY_NOTICE });
+  element(sidebar, "p", { part: "settings.description", text: WEB_EDITING_NOTICE });
+  sidebar.append(editingStatus);
   element(sidebar, "h2", { text: "Facilities" });
   const facilities = element(sidebar, "ul", { part: "settings.list" });
   for (const facility of services.main.profile.facilities) {
@@ -59196,13 +61923,13 @@ async function boot() {
   element(sidebar, "h2", { text: "Served samples" });
   const sampleList = element(sidebar, "div", { part: "settings.list" });
   for (const sample of SAMPLES) {
-    const button = element(sampleList, "button", {
+    const button2 = element(sampleList, "button", {
       part: "explorer.action",
       text: sample.label
     });
-    button.type = "button";
-    button.addEventListener("click", () => {
-      void openServed(sample.path).catch((error) => say(describe5(error)));
+    button2.type = "button";
+    button2.addEventListener("click", () => {
+      void openServed(sample.path).catch((error) => say(describe7(error)));
     });
   }
   workbench.setSidebar(sidebar);
@@ -59216,14 +61943,14 @@ async function boot() {
     }
   }
   const activity = (label, title, run, view) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = label;
-    button.title = title;
-    button.setAttribute("aria-label", title);
-    if (view !== void 0) button.dataset["view"] = view;
-    button.addEventListener("click", run);
-    workbench.activitybar.append(button);
+    const button2 = document.createElement("button");
+    button2.type = "button";
+    button2.textContent = label;
+    button2.title = title;
+    button2.setAttribute("aria-label", title);
+    if (view !== void 0) button2.dataset["view"] = view;
+    button2.addEventListener("click", run);
+    workbench.activitybar.append(button2);
   };
   activity("Files", "Explorer", () => showView("explorer"), "explorer");
   activity("Host", "Show or hide the host panel", () => {
@@ -59252,32 +61979,197 @@ async function boot() {
   const query = new URL(window.location.href).searchParams;
   const requested = query.get("open");
   if (requested !== null) await openServed(requested);
+  async function probeEditing(log) {
+    const encoder4 = new TextEncoder();
+    const decoder = new TextDecoder();
+    const settle2 = () => new Promise((resolve) => setTimeout(resolve, 60));
+    const until = async (test) => {
+      for (let attempt = 0; attempt < 60; attempt += 1) {
+        if (test()) return true;
+        await settle2();
+      }
+      return test();
+    };
+    const memoryFile = (name, text) => {
+      let content = encoder4.encode(text);
+      let modified = 1e3;
+      const handle = {
+        kind: "file",
+        name,
+        async getFile() {
+          const held = content;
+          return {
+            name,
+            size: held.byteLength,
+            lastModified: modified,
+            slice: (start, end) => ({
+              async arrayBuffer() {
+                const part = held.slice(start, end);
+                const copy = new ArrayBuffer(part.byteLength);
+                new Uint8Array(copy).set(part);
+                return copy;
+              }
+            })
+          };
+        },
+        async createWritable() {
+          const chunks = [];
+          return {
+            async write(data) {
+              chunks.push(data.slice());
+            },
+            async close() {
+              const total = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0);
+              const next = new Uint8Array(total);
+              let at = 0;
+              for (const chunk of chunks) {
+                next.set(chunk, at);
+                at += chunk.byteLength;
+              }
+              content = next;
+              modified += 1;
+            }
+          };
+        },
+        async queryPermission() {
+          return "granted";
+        },
+        async requestPermission() {
+          return "granted";
+        }
+      };
+      return {
+        handle,
+        entry: { id: name, name, directory: false, size: content.byteLength },
+        text: () => decoder.decode(content),
+        size: () => content.byteLength,
+        modified: () => modified
+      };
+    };
+    const first = memoryFile("selftest-text.csv", "a,b\n1,2\n");
+    const second = memoryFile("selftest-hex.csv", "a,b\n3,4\n");
+    const files = [first, second];
+    const byId = new Map(files.map((file) => [file.entry.id, file]));
+    const memory = {
+      label: "in-memory grant",
+      writeGrant: first.handle,
+      async list(entryId) {
+        return entryId === void 0 ? files.map((file) => file.entry) : [];
+      },
+      sizeOf: (entryId) => byId.get(entryId)?.size(),
+      handleOf: (entryId) => byId.get(entryId)?.handle,
+      async snapshotOf(entryId) {
+        const file = byId.get(entryId);
+        return file === void 0 ? void 0 : { size: file.size(), lastModified: file.modified() };
+      },
+      async read(entryId) {
+        const file = byId.get(entryId);
+        if (file === void 0) throw new TypeError(`${entryId} is not in the memory grant`);
+        return encoder4.encode(file.text());
+      }
+    };
+    const group = () => {
+      const active = editors.root.querySelector(
+        '[data-mk-part="explorer.group"][data-mk-state~="active"]'
+      );
+      return active instanceof HTMLElement ? active : editors.root;
+    };
+    const picker = () => {
+      const node = group().querySelector('[data-mk-part="explorer.viewpicker"]');
+      return node instanceof HTMLSelectElement ? node : void 0;
+    };
+    const visible = (node) => node.closest('[data-mk-part="explorer.tabcontent"]')?.hasAttribute("hidden") !== true;
+    const saveButton = () => [...group().querySelectorAll("button")].find(
+      (button2) => button2.textContent === "Save" && visible(button2)
+    );
+    const inStage = (part) => [...group().querySelectorAll(`[data-mk-part="${part}"]`)].find(visible);
+    const showView2 = async (id) => {
+      const select = picker();
+      if (select === void 0 || ![...select.options].some((option) => option.value === id)) {
+        log(`selftest: ${id} was not offered for the focused tab`);
+        return false;
+      }
+      select.value = id;
+      select.dispatchEvent(new Event("change"));
+      await settle2();
+      return true;
+    };
+    access = memory;
+    await explorer.setAccess(memory);
+    await editors.open(first.entry);
+    await settle2();
+    const views = [...picker()?.options ?? []].map((option) => option.value);
+    log(`selftest: writable file offers [${views.join(", ")}]`);
+    log(`selftest: editing line says "${editingStatus.textContent ?? ""}"`);
+    if (await showView2("text-editor")) {
+      const area = inStage("editor.text");
+      if (area instanceof HTMLTextAreaElement) {
+        area.value = "a,b\n9,9\n";
+        area.dispatchEvent(new Event("input", { bubbles: true }));
+        const tab = [...group().querySelectorAll('[data-mk-part="explorer.filetab"]')].find(
+          (node) => node.getAttribute("title") === first.entry.id
+        );
+        log(`selftest: tab state after typing = ${tab?.getAttribute("data-mk-state") ?? "none"}`);
+        saveButton()?.click();
+        await until(() => first.text() === "a,b\n9,9\n");
+        log(`selftest: text save wrote ${JSON.stringify(first.text())}`);
+        log(`selftest: after text save "${editingStatus.textContent ?? ""}"`);
+      } else {
+        log("selftest: the text editor mounted no textarea");
+      }
+    }
+    await editors.open(second.entry);
+    await settle2();
+    if (await showView2("hex-editor")) {
+      const cell = inStage("hex.cell");
+      if (cell instanceof HTMLElement) {
+        cell.textContent = "5a";
+        cell.dispatchEvent(new Event("blur"));
+        await settle2();
+        saveButton()?.click();
+        await until(() => second.text().startsWith("Z"));
+        log(`selftest: hex save wrote ${JSON.stringify(second.text())}`);
+      } else {
+        log("selftest: the hex editor mounted no cells");
+      }
+      const again = [...group().querySelectorAll('[data-mk-part="hex.cell"]')].filter(visible)[1];
+      if (again instanceof HTMLElement) {
+        again.textContent = "59";
+        again.dispatchEvent(new Event("blur"));
+        await settle2();
+        saveButton()?.click();
+        await until(() => (editingStatus.textContent ?? "").includes("changed on disk"));
+        log(`selftest: second save from a stale tab -> "${editingStatus.textContent ?? ""}"`);
+        log(`selftest: file is still ${JSON.stringify(second.text())}`);
+      }
+    }
+  }
   if (query.get("selftest") !== null) {
-    await selfTest({ openServed, editors, settingsView, inspector });
+    await selfTest({ openServed, editors, settingsView, inspector, probeEditing });
   }
 }
 async function selfTest(parts) {
-  const report = document.createElement("pre");
-  setPart(report, "viewer.status");
-  report.className = "web-selftest";
-  document.body.append(report);
+  const report2 = document.createElement("pre");
+  setPart(report2, "viewer.status");
+  report2.className = "web-selftest";
+  document.body.append(report2);
   const lines = [];
   const log = (line) => {
     console.info(line);
     lines.push(line);
-    report.textContent = lines.join("\n");
+    report2.textContent = lines.join("\n");
   };
   const picker = () => {
     const node = parts.editors.root.querySelector('[data-mk-part="explorer.viewpicker"]');
     return node instanceof HTMLSelectElement ? node : void 0;
   };
   const mountedPart = () => parts.editors.root.querySelector('[data-mk-part="explorer.tabcontent"] [data-mk-part]') !== null;
-  const settle = () => new Promise((resolve) => setTimeout(resolve, 80));
+  const settle2 = () => new Promise((resolve) => setTimeout(resolve, 80));
   for (const sample of SAMPLES) {
     const name = sample.path.split("/").pop() ?? sample.path;
     try {
       await parts.openServed(sample.path);
-      await settle();
+      await settle2();
       const select = picker();
       const options = select === void 0 ? [] : [...select.options];
       const views = options.map((option) => option.textContent ?? option.value);
@@ -59286,14 +62178,14 @@ async function selfTest(parts) {
         if (select === void 0) break;
         select.value = option.value;
         select.dispatchEvent(new Event("change"));
-        await settle();
+        await settle2();
         const ok = mountedPart();
         mounted = mounted && ok;
         log(`selftest: ${name} view ${option.value} mounted=${ok}`);
       }
       log(`selftest: ${name} -> views [${views.join(", ")}] mounted=${mounted}`);
     } catch (error) {
-      log(`selftest: ${name} -> FAILED ${describe5(error)}`);
+      log(`selftest: ${name} -> FAILED ${describe7(error)}`);
     }
   }
   const tabs = parts.editors.root.querySelectorAll('[data-mk-part="explorer.filetab"]').length;
@@ -59310,7 +62202,12 @@ async function selfTest(parts) {
   ).length;
   log(`selftest: inspector operations=${operations} diagnosticGroups=${diagnostics}`);
   const editable = [...picker()?.options ?? []].some((option) => option.value.endsWith("-editor"));
-  log(`selftest: editable stages offered=${editable} (expected false: no browser editing backend)`);
+  log(`selftest: editable stages for a fetched sample=${editable} (expected false: no handle)`);
+  try {
+    await parts.probeEditing(log);
+  } catch (error) {
+    log(`selftest: editing probe FAILED ${describe7(error)}`);
+  }
   for (const theme of WEB_THEMES) {
     document.documentElement.setAttribute("data-mk-theme", theme.id);
     const accent = getComputedStyle(document.documentElement).getPropertyValue("--mk-color-accent").trim();
@@ -59332,6 +62229,6 @@ boot().then(registerServiceWorker).catch((error) => {
   node.replaceChildren();
   const failure = document.createElement("p");
   failure.className = "booting";
-  failure.textContent = `Boot failed: ${describe5(error)}`;
+  failure.textContent = `Boot failed: ${describe7(error)}`;
   node.append(failure);
 });

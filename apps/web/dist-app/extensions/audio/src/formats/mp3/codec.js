@@ -4,10 +4,19 @@ import {
   createTransportHandlers,
   createTransportSource,
   createTreeDataSource,
+  editPlanFromInput,
+  replaceBytes,
   TRANSPORT_OPERATIONS,
 } from '@modkitx-x3/codec-kit'
 
 const latin1 = new TextDecoder('latin1')
+const utf8 = new TextEncoder()
+const ID3_HEADER_BYTES = 10
+const UNSYNCHRONISED = 0x80
+const EXTENDED_HEADER = 0x40
+const FOOTER_PRESENT = 0x10
+/** A synchsafe integer carries 7 bits per byte, so a tag or a v2.4 frame stops here. */
+const MAX_SYNCHSAFE = 0x0fffffff
 
 function isId3(bytes) {
   return bytes.byteLength >= 10 && latin1.decode(bytes.subarray(0, 3)) === 'ID3'
@@ -83,17 +92,252 @@ function id3Info(bytes) {
   })
 }
 
+/**
+ * ADR-HOST-002 Path A — the one mutating operation of this codec. `edit.field` sets or replaces an
+ * ID3v2 text frame and returns an edit plan: a single byte-range replace of the tag region, where
+ * every frame the edit does not name is copied verbatim, the padding keeps its length, only the
+ * tag header's size field and the named frame change, and not one audio byte moves. The codec
+ * never writes: the host commits the plan under `write-source`.
+ *
+ * Bounded on purpose: ID3v2.3/2.4 tags without unsynchronisation, an extended header or a footer
+ * are editable; anything else is refused with the reason rather than guessed at.
+ */
+const EDIT_FIELD_OPERATION = Object.freeze({
+  id: 'edit.field',
+  handlerId: 'set-text-frame',
+  mutatesSource: true,
+  requiredPermissions: Object.freeze(['read-source', 'write-source']),
+  outputKinds: Object.freeze(['edit-plan']),
+})
+
+const MP3_OPERATIONS = Object.freeze([...TRANSPORT_OPERATIONS, EDIT_FIELD_OPERATION])
+/** Text information frames share one shape; `TXXX` does not, so it is not one of them. */
+const TEXT_FRAME_ID = /^T[A-Z0-9]{3}$/u
+
+function synchsafe(bytes, offset) {
+  return (
+    (((bytes[offset] ?? 0) & 0x7f) << 21) |
+    (((bytes[offset + 1] ?? 0) & 0x7f) << 14) |
+    (((bytes[offset + 2] ?? 0) & 0x7f) << 7) |
+    ((bytes[offset + 3] ?? 0) & 0x7f)
+  )
+}
+
+function writeSynchsafe(target, offset, value) {
+  target[offset] = (value >>> 21) & 0x7f
+  target[offset + 1] = (value >>> 14) & 0x7f
+  target[offset + 2] = (value >>> 7) & 0x7f
+  target[offset + 3] = value & 0x7f
+}
+
+function u32be(bytes, offset) {
+  return (
+    ((bytes[offset] ?? 0) << 24) |
+    ((bytes[offset + 1] ?? 0) << 16) |
+    ((bytes[offset + 2] ?? 0) << 8) |
+    (bytes[offset + 3] ?? 0)
+  )
+}
+
+function writeU32be(target, offset, value) {
+  target[offset] = (value >>> 24) & 0xff
+  target[offset + 1] = (value >>> 16) & 0xff
+  target[offset + 2] = (value >>> 8) & 0xff
+  target[offset + 3] = value & 0xff
+}
+
+/** Parse the tag well enough to rewrite it, or refuse; `undefined` means "no ID3v2 tag". */
+function id3TagForEditing(bytes) {
+  if (!isId3(bytes)) return undefined
+  const major = bytes[3] ?? 0
+  const flags = bytes[5] ?? 0
+  if (major !== 3 && major !== 4) {
+    throw new TypeError(`editing an ID3v2.${major} tag is not supported (2.3 and 2.4 only)`)
+  }
+  if ((flags & UNSYNCHRONISED) !== 0) {
+    throw new TypeError('this ID3v2 tag is unsynchronised; rewriting it would have to guess')
+  }
+  if ((flags & EXTENDED_HEADER) !== 0) {
+    throw new TypeError('this ID3v2 tag carries an extended header this codec does not rewrite')
+  }
+  if ((flags & FOOTER_PRESENT) !== 0) {
+    throw new TypeError('this ID3v2 tag carries a footer this codec does not rewrite')
+  }
+  const size = synchsafe(bytes, 6)
+  const end = ID3_HEADER_BYTES + size
+  if (end > bytes.byteLength) throw new TypeError('the ID3v2 tag overruns the file')
+  const frames = []
+  let offset = ID3_HEADER_BYTES
+  while (offset + ID3_HEADER_BYTES <= end && bytes[offset] !== 0) {
+    const id = latin1.decode(bytes.subarray(offset, offset + 4))
+    if (!/^[A-Z0-9]{4}$/u.test(id)) throw new TypeError(`ID3v2 frame id «${id}» is invalid`)
+    const frameSize = major === 4 ? synchsafe(bytes, offset + 4) : u32be(bytes, offset + 4)
+    const frameEnd = offset + ID3_HEADER_BYTES + frameSize
+    if (frameSize < 0 || frameEnd > end) throw new TypeError('an ID3v2 frame overruns its tag')
+    frames.push(
+      Object.freeze({
+        id,
+        offset,
+        end: frameEnd,
+        flags: (((bytes[offset + 8] ?? 0) << 8) | (bytes[offset + 9] ?? 0)) >>> 0,
+      }),
+    )
+    offset = frameEnd
+  }
+  if (bytes.subarray(offset, end).some(value => value !== 0)) {
+    throw new TypeError('the ID3v2 tag holds unparsed bytes where its padding should be')
+  }
+  return Object.freeze({
+    major,
+    end,
+    frames: Object.freeze(frames),
+    paddingBytes: end - offset,
+  })
+}
+
+/** v2.4 writes UTF-8; v2.3 has no UTF-8, so it is Latin-1 when it fits and UTF-16+BOM otherwise. */
+function textFrameContent(text, major) {
+  if (text.includes('\0')) throw new TypeError('an ID3v2 text frame cannot carry NUL')
+  if (major === 4) {
+    const payload = utf8.encode(text)
+    const content = new Uint8Array(1 + payload.byteLength)
+    content[0] = 3
+    content.set(payload, 1)
+    return content
+  }
+  if ([...text].every(char => (char.codePointAt(0) ?? 0) <= 0xff)) {
+    const content = new Uint8Array(1 + text.length)
+    content.set(
+      Uint8Array.from(text, char => char.codePointAt(0) ?? 0),
+      1,
+    )
+    return content
+  }
+  const content = new Uint8Array(3 + text.length * 2)
+  content[0] = 1
+  content[1] = 0xff
+  content[2] = 0xfe
+  for (let index = 0; index < text.length; index += 1) {
+    const unit = text.charCodeAt(index)
+    content[3 + index * 2] = unit & 0xff
+    content[4 + index * 2] = (unit >> 8) & 0xff
+  }
+  return content
+}
+
+function textFrameBytes(frameId, text, major) {
+  const content = textFrameContent(text, major)
+  if (major === 4 && content.byteLength > MAX_SYNCHSAFE) {
+    throw new RangeError('the ID3v2.4 frame exceeds the synchsafe size limit')
+  }
+  const frame = new Uint8Array(ID3_HEADER_BYTES + content.byteLength)
+  frame.set(
+    Uint8Array.from(frameId, char => char.codePointAt(0) ?? 0),
+    0,
+  )
+  if (major === 4) writeSynchsafe(frame, 4, content.byteLength)
+  else writeU32be(frame, 4, content.byteLength)
+  frame.set(content, ID3_HEADER_BYTES)
+  return frame
+}
+
+/** The whole tag region, rebuilt: header bytes and every other frame copied verbatim. */
+function rebuiltTagBytes(bytes, tag, frameId, frame) {
+  const matches = tag.frames.filter(existing => existing.id === frameId)
+  if (matches.length > 1) {
+    throw new TypeError(`this tag carries ${matches.length} ${frameId} frames; which one is meant?`)
+  }
+  const [existing] = matches
+  if (existing !== undefined && existing.flags !== 0) {
+    throw new TypeError(`the ${frameId} frame carries frame flags this codec does not rewrite`)
+  }
+  const pieces = tag.frames.map(item =>
+    item.id === frameId ? frame : bytes.subarray(item.offset, item.end),
+  )
+  if (existing === undefined) pieces.push(frame)
+  const bodyBytes = pieces.reduce((total, piece) => total + piece.byteLength, 0) + tag.paddingBytes
+  if (bodyBytes > MAX_SYNCHSAFE) {
+    throw new RangeError('the rewritten ID3v2 tag exceeds the synchsafe size limit')
+  }
+  const next = new Uint8Array(ID3_HEADER_BYTES + bodyBytes)
+  next.set(bytes.subarray(0, ID3_HEADER_BYTES), 0)
+  writeSynchsafe(next, 6, bodyBytes)
+  let cursor = ID3_HEADER_BYTES
+  for (const piece of pieces) {
+    next.set(piece, cursor)
+    cursor += piece.byteLength
+  }
+  return next
+}
+
+/** A file without a tag gets a minimal ID3v2.4 one, inserted before the first audio frame. */
+function newTagBytes(frameId, text) {
+  const frame = textFrameBytes(frameId, text, 4)
+  const tag = new Uint8Array(ID3_HEADER_BYTES + frame.byteLength)
+  tag.set(utf8.encode('ID3'), 0)
+  tag[3] = 4
+  writeSynchsafe(tag, 6, frame.byteLength)
+  tag.set(frame, ID3_HEADER_BYTES)
+  return tag
+}
+
+function setTextFrameHandler(bytes, input) {
+  return async value => {
+    if (
+      typeof value !== 'object' ||
+      value === null ||
+      typeof value.keyword !== 'string' ||
+      typeof value.text !== 'string'
+    ) {
+      throw new TypeError('edit.field expects { keyword, text }')
+    }
+    if (!TEXT_FRAME_ID.test(value.keyword) || value.keyword === 'TXXX') {
+      throw new TypeError(
+        `«${value.keyword}» is not an ID3v2 text frame id (TIT2, TPE1, TALB, …; TXXX has another shape)`,
+      )
+    }
+    const tag = id3TagForEditing(bytes)
+    const edit =
+      tag === undefined
+        ? replaceBytes(
+            0,
+            0,
+            newTagBytes(value.keyword, value.text),
+            `create an ID3v2.4 tag with ${value.keyword}`,
+          )
+        : replaceBytes(
+            0,
+            tag.end,
+            rebuiltTagBytes(
+              bytes,
+              tag,
+              value.keyword,
+              textFrameBytes(value.keyword, value.text, tag.major),
+            ),
+            `set ${value.keyword}`,
+          )
+    return {
+      kind: 'edit-plan',
+      plan: editPlanFromInput(input, {
+        planId: `mp3-set-text-frame:${value.keyword}`,
+        edits: [edit],
+        fidelity: { roundTrip: 'byte-identical', preservesUnknownData: true },
+      }),
+    }
+  }
+}
+
 const definition = Object.freeze({
   id: 'org.modkitx/audio-mp3',
   format: Object.freeze({ id: 'mp3', label: 'MP3 audio', mediaType: 'audio/mpeg' }),
-  operations: TRANSPORT_OPERATIONS,
+  operations: MP3_OPERATIONS,
   async detect(bytes) {
     const frame = findFrame(bytes)
     if (frame !== undefined) return { confidence: 0.99, note: 'mpeg-layer-3-frame' }
     if (isId3(bytes)) return { confidence: 0.72, note: 'id3-prefix-without-bounded-frame' }
     return { confidence: 0.01, note: 'mp3-frame-missing' }
   },
-  async inspect(bytes) {
+  async inspect(bytes, context) {
     const frame = findFrame(bytes)
     if (frame === undefined) throw new TypeError('MP3 frame header is missing')
     const id3 = id3Info(bytes)
@@ -198,7 +442,10 @@ const definition = Object.freeze({
         'common.view/transport-source': transport,
         'common.view/audio-media-source': audio,
       },
-      handlers: createTransportHandlers(transport),
+      handlers: {
+        ...createTransportHandlers(transport),
+        'set-text-frame': setTextFrameHandler(bytes, context.input),
+      },
       unsupportedFeatures: ['pcm-decoder-provider'],
     }
   },

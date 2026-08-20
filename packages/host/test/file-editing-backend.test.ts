@@ -141,6 +141,50 @@ describe('file editing backend', () => {
     await backend.dispose()
   })
 
+  it('applies a multi-edit batch to one source, threading each write revision into the next', async () => {
+    /*
+     * The coordinator computes every request's expected revision *before* the batch runs, so two
+     * edits against one source arrive carrying the same one. Applied naively, the first write moves
+     * the revision and the second is refused as a lost conditional write — which meant every
+     * multi-edit plan on this backend failed, and a hex editor writing two separate runs could
+     * never save.
+     */
+    const path = join(scratch, 'batch.txt')
+    writeFileSync(path, 'AAAA BBBB')
+    const backend = createFileEditingBackend({ roots: [scratch] })
+    const { ref, revision } = await pinned(path)
+    const replace = (offset: number, length: number, text: string) => ({
+      operation: 'replace' as const,
+      targetId: 'content',
+      source: ref,
+      range: { kind: 'bytes' as const, offset: BigInt(offset), length: BigInt(length) },
+      payload: inline(new TextEncoder().encode(text)),
+    })
+    if (backend.applyBatch === undefined) throw new Error('this backend must offer applyBatch')
+    const results = await backend.applyBatch(
+      [
+        { edit: replace(0, 4, 'ZZZZ'), expectedRevision: revision },
+        { edit: replace(5, 4, 'YYYY'), expectedRevision: revision },
+      ],
+      { transactionId: 'batch-1', payloads },
+    )
+
+    expect(readFileSync(path, 'utf8')).toBe('ZZZZ YYYY')
+    expect(results).toHaveLength(2)
+    // each result reports what that write produced, and the second is not the first
+    expect(results[0]?.after.bindings['content']).not.toBe(revision.bindings['content'])
+    expect(results[1]?.after.bindings['content']).not.toBe(results[0]?.after.bindings['content'])
+
+    // the guard that matters is still live: a batch whose *first* expected revision is stale is refused
+    await expect(
+      backend.applyBatch([{ edit: replace(0, 4, 'QQQQ'), expectedRevision: revision }], {
+        transactionId: 'batch-2',
+        payloads,
+      }),
+    ).rejects.toThrow(/is not at the revision the plan expects/u)
+    expect(readFileSync(path, 'utf8')).toBe('ZZZZ YYYY')
+  })
+
   it('creates without overwriting, deletes, renames, and stays inside its roots', async () => {
     const path = join(scratch, 'c.bin')
     writeFileSync(path, Uint8Array.from([1]))

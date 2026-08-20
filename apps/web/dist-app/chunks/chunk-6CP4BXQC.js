@@ -14,9 +14,13 @@ import {
 // packages/host/dist/execution/message-port.js
 function framePortFromMessagePort(port, options = {}) {
   const style = options.listener ?? (typeof port.addEventListener === "function" ? "event-target" : "emitter-value");
+  const moves = (options.transfer ?? (style === "emitter-event" ? "copy" : "move")) === "move";
   return {
     post(frame, transfer) {
-      port.postMessage(frame, [...transfer]);
+      if (moves)
+        port.postMessage(frame, [...transfer]);
+      else
+        port.postMessage(frame);
     },
     onFrame(handler) {
       if (style === "event-target") {
@@ -66,6 +70,26 @@ function isSubscriptionId(value) {
 }
 function isMethodName(value) {
   return METHOD_NAME.test(value);
+}
+var WIRE_TYPED_ARRAYS = Object.freeze({
+  bytes: Uint8Array,
+  i8: Int8Array,
+  u8c: Uint8ClampedArray,
+  i16: Int16Array,
+  u16: Uint16Array,
+  i32: Int32Array,
+  u32: Uint32Array,
+  f32: Float32Array,
+  f64: Float64Array,
+  i64: BigInt64Array,
+  u64: BigUint64Array
+});
+function wireTypedArrayCode(view) {
+  for (const [code, constructor] of Object.entries(WIRE_TYPED_ARRAYS)) {
+    if (view.constructor === constructor)
+      return code;
+  }
+  return void 0;
 }
 var MAX_OPTIONAL_METHODS = 64;
 function handleRef(id, kind, contract, data, has) {
@@ -198,7 +222,11 @@ function validateInner(value, limits, measure, depth, path, handles) {
   }
   if (value === null)
     return void 0;
-  if (value instanceof Uint8Array) {
+  if (ArrayBuffer.isView(value) && !(value instanceof DataView)) {
+    const kind = value.constructor.name;
+    if (wireTypedArrayCode(value) === void 0) {
+      return { code: "bad-value", message: `${kind} is not a wire value`, path };
+    }
     if (SHARED !== void 0 && value.buffer instanceof SHARED) {
       return {
         code: "shared-buffer",
@@ -209,14 +237,14 @@ function validateInner(value, limits, measure, depth, path, handles) {
     if (value.buffer.detached === true) {
       return {
         code: "bad-value",
-        message: "a Uint8Array over a detached buffer cannot cross (it was transferred already)",
+        message: `a ${kind} over a detached buffer cannot cross (it was transferred already)`,
         path
       };
     }
     if (value.byteOffset !== 0 || value.byteLength !== value.buffer.byteLength) {
       return {
         code: "partial-typed-array",
-        message: "a Uint8Array must own its whole buffer (slice() before sending)",
+        message: `a ${kind} must own its whole buffer (slice() before sending)`,
         path
       };
     }
@@ -231,8 +259,12 @@ function validateInner(value, limits, measure, depth, path, handles) {
     measure.buffers.push(value.buffer);
     return void 0;
   }
-  if (ArrayBuffer.isView(value) || value instanceof ArrayBuffer) {
-    return { code: "bad-value", message: "only Uint8Array binary payloads are allowed", path };
+  if (value instanceof DataView || value instanceof ArrayBuffer) {
+    return {
+      code: "bad-value",
+      message: "binary payloads must be a typed array that names its element type",
+      path
+    };
   }
   if (Array.isArray(value)) {
     if (value.length > limits.maxArrayLength) {
@@ -1256,6 +1288,38 @@ function normalizeProgress(value) {
     ...typeof message === "string" ? { message: message.slice(0, 1024) } : {}
   };
 }
+function lazyStream(start) {
+  return {
+    [Symbol.asyncIterator]() {
+      let iterator;
+      const open = async () => {
+        if (iterator === void 0) {
+          const stream = await start();
+          iterator = stream[Symbol.asyncIterator]();
+        }
+        return iterator;
+      };
+      return {
+        async next(...args) {
+          return (await open()).next(...args);
+        },
+        async return(value) {
+          if (iterator === void 0)
+            return { done: true, value };
+          return await iterator.return?.(value) ?? { done: true, value };
+        },
+        async throw(error) {
+          if (iterator === void 0)
+            throw error;
+          const thrown = await iterator.throw?.(error);
+          if (thrown === void 0)
+            throw error;
+          return thrown;
+        }
+      };
+    }
+  };
+}
 function isAbortSignal(value) {
   return typeof AbortSignal !== "undefined" && value instanceof AbortSignal;
 }
@@ -1411,7 +1475,7 @@ var EndpointImpl = class {
     for (const [name, method] of Object.entries(surface.methods)) {
       if (method.optional === true && present !== void 0 && !present.includes(name))
         continue;
-      object[name] = async (...rawArgs) => {
+      const invoke = async (...rawArgs) => {
         const args = [...rawArgs];
         let signal;
         let onProgress;
@@ -1460,6 +1524,7 @@ var EndpointImpl = class {
             return outcome.events;
         }
       };
+      object[name] = method.kind === "iterable" || method.kind === "events" ? (...rawArgs) => lazyStream(() => invoke(...rawArgs)) : invoke;
     }
     if (surface.releaseVia !== void 0) {
       const inner = object[surface.releaseVia];

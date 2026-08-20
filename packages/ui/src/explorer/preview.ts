@@ -68,18 +68,32 @@ export interface CodecPreviewOptions {
     readonly hex?: ViewerModule
   }
   /**
-   * Ports for editable stages: propose/plan/prepare/authorize/commit. Absent means this host is
-   * read-only, and every `editable` stage is dropped rather than shown without a save path.
+   * Ports for editable stages: propose/plan/prepare/authorize/commit.
+   *
+   * Absent means this host is read-only, and every `editable` stage is dropped rather than shown
+   * without a save path. **Returning `undefined` for one entry means the same thing for that
+   * entry alone**, which is what a browser needs: editability there is a property of the file (a
+   * subject opened from a writable handle can be saved; the same codec's output from a drop or a
+   * fetch cannot), not of the build. Without it a host had to build two previewers and choose
+   * between them per open.
+   *
+   * Called once per opened subject, before any stage mounts, so one set of ports serves every view
+   * the user switches between rather than a fresh set per mount.
    */
   editorPorts?(
     entry: ExplorerEntry,
     bytes: Uint8Array,
-  ): {
-    readonly session: unknown
-    readonly commit: unknown
-    readonly payloads: unknown
-    readonly authorization: unknown
-  }
+  ): undefined | Promise<EditorPorts | undefined> | EditorPorts
+}
+
+/** What an `editable` stage's `EditorModule` is mounted with, beside the viewer arguments. */
+export interface EditorPorts {
+  /** The `EditSession`: `propose`/`plan`. Named as `EditorModule.mount` names it. */
+  readonly edit: unknown
+  /** The `CommitCoordinator`: `prepare`/`commit`/`undo`/`redo`. */
+  readonly commit: unknown
+  readonly payloads: unknown
+  readonly authorization: unknown
 }
 
 export interface PreviewSession {
@@ -138,6 +152,13 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
        * exactly as they did before.
        */
       const operations = await session.operations?.().catch(() => undefined)
+      /*
+       * Asked once, per entry, before the stage list is filtered. Per entry because in a browser
+       * editability is a property of the file — a subject opened from a writable handle can be
+       * saved, the same codec's output from a drop or a fetch cannot — and a host that could only
+       * answer per build had to construct two previewers and pick between them at every open.
+       */
+      const ports = await options.editorPorts?.(entry, bytes)
       const traits = new Set(traitsOf(descriptor))
       const published = new Set(publishedContracts(descriptor))
 
@@ -155,7 +176,7 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
           published.has(stage.contract) &&
           (stage.trait === undefined || traits.has(stage.trait)) &&
           // An editable stage without ports could never save; offering it would be a lie.
-          (stage.editable !== true || options.editorPorts !== undefined),
+          (stage.editable !== true || ports !== undefined),
       )
       if (usable.length === 0) {
         await session.dispose()
@@ -198,19 +219,19 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
          * host-owned ports, and it calls `edit.propose()` during mount. Passing them only for
          * `editable` stages keeps a plain viewer from ever seeing a write path.
          */
-        const ports = stage.editable === true ? options.editorPorts?.(entry, bytes) : undefined
+        const stagePorts = stage.editable === true ? ports : undefined
 
         const mounted = await stage.module.mount({
           container,
           descriptor: descriptor as never,
           slot: slot as never,
-          ...(ports === undefined
+          ...(stagePorts === undefined
             ? {}
             : {
-                edit: ports.session as never,
-                commit: ports.commit as never,
-                payloads: ports.payloads as never,
-                authorization: ports.authorization as never,
+                edit: stagePorts.edit as never,
+                commit: stagePorts.commit as never,
+                payloads: stagePorts.payloads as never,
+                authorization: stagePorts.authorization as never,
               }),
           sources: {
             async get(binding: { contract: string; major?: number }) {

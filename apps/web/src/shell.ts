@@ -53,6 +53,8 @@ import {
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
 import { createWebTopology, mountWebWorkbench, probeWebFacilities } from './index.js'
 import { createWebSubjectServices, type WebSubjectServices } from './subjects.js'
+import { createIndexedDbExtensionStore, type IdbFactoryLike } from './extension-store.js'
+import { mountExtensionsUi } from './extensions-ui.js'
 import {
   createDirectoryAccess,
   createSingleFileAccess,
@@ -204,9 +206,47 @@ async function boot(): Promise<void> {
   const capability = describeFileCapability(window)
   const bootDiagnostics: string[] = []
 
+  /*
+   * The user's own extension folders, read and re-hashed before the host is composed — their
+   * codecs have to be in the inventory this page runs, not added to it afterwards. Loading only
+   * *queries* each grant; a folder whose permission lapsed appears in the panel as "needs
+   * permission" with a button, because a prompt on page load is a prompt nobody asked for.
+   */
+  // the structural shape takes a plain `Event`; the platform types it as `IDBVersionChangeEvent`
+  const extensionStore = createIndexedDbExtensionStore(indexedDB as unknown as IdbFactoryLike)
+  const subtle = {
+    digest: (algorithm: string, data: Uint8Array) =>
+      crypto.subtle.digest(algorithm, data as Uint8Array<ArrayBuffer>),
+  }
+  const extensionsUi = mountExtensionsUi(document, {
+    store: extensionStore,
+    catalog: WEB_EXTENSION_CATALOG,
+    subtle,
+    pickDirectory: async () => {
+      const picker = (window as unknown as { showDirectoryPicker?: () => Promise<unknown> })
+        .showDirectoryPicker
+      if (picker === undefined) throw new Error('this browser has no folder picker')
+      return (await picker.call(window)) as never
+    },
+    conflicts: () => services.userExtensionConflicts,
+    onChanged: loaded => {
+      // `say` is not in scope yet at boot; the status line is created below, so report where a
+      // user is already looking for load news
+      console.info(
+        `[extensions] ${loaded.inputs.length} user extension(s) loaded. Reload the page to compose ` +
+          'a host with a changed list: this app builds its inventory once, at startup.',
+      )
+    },
+  })
+  await extensionsUi.reload()
+  for (const failure of extensionsUi.current().failures) {
+    bootDiagnostics.push(`${failure.code}: ${failure.message}`)
+  }
+
   const services: WebSubjectServices = await createWebSubjectServices({
     baseUrl,
     catalog: WEB_EXTENSION_CATALOG,
+    userExtensions: extensionsUi.current(),
     identity: identity(),
     probe,
     dom: {
@@ -404,42 +444,28 @@ async function boot(): Promise<void> {
   }
 
   /*
-   * Two resolvers over the same open path, because `createCodecPreview` decides once, at
-   * construction, whether *any* editable stage may appear — the presence of `editorPorts` is the
-   * switch. Editability, though, is per file: this folder's PNG has a writable handle and the
-   * sample fetched from the app origin does not. So the app builds both and picks per open, which
-   * keeps the honest rule ("no editor without a save path") at file granularity.
+   * One resolver. `editorPorts` answers per entry and may answer `undefined`, which drops the
+   * editable stages for that file alone — which is what a browser needs, because editability here
+   * is a property of the file: this folder's PNG has a writable handle, the sample fetched from
+   * the app origin does not.
    */
-  const readOnlyPreview = createCodecPreview(previewBase)
-  const editablePreview = createCodecPreview({
+  const codecPreview = createCodecPreview({
     ...previewBase,
     editorPorts(entry, bytes) {
       const record = openedSubjects.get(entry.id)
-      const ports =
-        record === undefined
-          ? undefined
-          : editing.portsFor({
-              entryId: entry.id,
-              name: entry.name,
-              opened: record.opened,
-              grant: record.grant,
-              bytes,
-            })
-      /*
-       * `createSubjectEditing` names the edit session `edit`; `createCodecPreview` reads it as
-       * `session`. Mapped here rather than pretending the two shapes are the same one.
-       */
-      return {
-        session: ports?.edit,
-        commit: ports?.commit,
-        payloads: ports?.payloads,
-        authorization: ports?.authorization,
-      }
+      if (record === undefined || editability.get(entry.id)?.editable !== true) return undefined
+      return editing.portsFor({
+        entryId: entry.id,
+        name: entry.name,
+        opened: record.opened,
+        grant: record.grant,
+        bytes,
+      })
     },
   })
 
   const preview: PreviewResolver = {
-    supported: readOnlyPreview.supported,
+    supported: codecPreview.supported,
     async open(container, entry, bytes, signal) {
       const decision = await describeEditability(access, entry.id, entry.name)
       /*
@@ -454,8 +480,7 @@ async function boot(): Promise<void> {
       else writableHandles.delete(source)
       editability.set(entry.id, editable ? decision : { ...decision, editable: false })
       noteEditing(decision.sentence)
-      const resolver = editable ? editablePreview : readOnlyPreview
-      return resolver.open(container, entry, bytes, signal)
+      return codecPreview.open(container, entry, bytes, signal)
     },
   }
 
@@ -668,7 +693,7 @@ async function boot(): Promise<void> {
 
   const settingsView = document.createElement('div')
   settingsView.className = 'web-settings-view'
-  settingsView.append(settingsUi.root, bundledExtensionsSection())
+  settingsView.append(settingsUi.root, extensionsUi.root, bundledExtensionsSection())
   await settingsUi.reload()
 
   // ---------------------------------------------------------------- sidebar: the host itself

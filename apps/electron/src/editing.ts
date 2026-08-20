@@ -35,7 +35,8 @@ function bytesOf(edits: readonly unknown[], fallback: Uint8Array): Uint8Array {
 export interface EditorPorts {
   /** Commit whatever is pending, if anything. Used by "save before closing". */
   save(): Promise<void>
-  readonly session: unknown
+  /** The `EditSession`, under the one name the previewer and `EditorModule.mount` both use. */
+  readonly edit: unknown
   readonly commit: unknown
   readonly payloads: unknown
   readonly authorization: unknown
@@ -129,7 +130,7 @@ export function createFileEditorPorts(
   }
 
   return {
-    session,
+    edit: session,
     commit,
     payloads,
     authorization,

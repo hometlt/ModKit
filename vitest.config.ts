@@ -10,6 +10,10 @@ export default defineConfig({
       'apps/*/test/**/*.test.ts',
       // tooling self-tests (legacy-gate regression suite)
       'scripts/test/**/*.test.ts',
+      // extension-owned tests. None exist today; the glob is here so the first one to be written
+      // actually runs — a test that is silently never collected is worse than no test, because the
+      // gate goes green either way.
+      'extensions/*/*/test/**/*.test.ts',
     ],
     exclude: ['**/node_modules/**', '**/dist/**', 'scripts/test/fixtures/**'],
   },

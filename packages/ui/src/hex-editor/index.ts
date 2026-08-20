@@ -9,7 +9,7 @@
  * Only the loaded window is editable, and only bytes that actually changed are emitted — a
  * one-byte change in a 1 TiB source produces a one-byte edit, never a whole-file rewrite.
  */
-import type { ByteRangeSource, EditorModule, EditorMount } from '@modkitx-x3/sdk'
+import type { ByteRangeSource, ChangeSet, EditorModule, EditorMount } from '@modkitx-x3/sdk'
 import { bindingId } from '@modkitx-x3/sdk'
 
 import {
@@ -40,6 +40,38 @@ export interface HexEdit {
   readonly offset: bigint
   readonly before: number
   readonly after: number
+}
+
+/**
+ * The pending runs as a `ChangeSet`.
+ *
+ * This used to be hand-built with fields no contract declares — `baseRevisions`, `bindingId`, a
+ * bare `kind` — and cast `as never`, which is precisely why nobody noticed. `ChangeSet` is
+ * `{ targets, edits: SourceEdit[], provenance: { actor } }`, and the first thing `createRawWriter`
+ * does is read `change.targets`. The hex editor could not save through any writer, and the cast
+ * silenced the one place that would have said so.
+ *
+ * The edits address the target's own source by byte range, which is what a hex editor means: no
+ * semantic path, no re-encoding, just these bytes at this offset.
+ */
+function hexChangeSet(
+  runs: readonly { readonly offset: bigint; readonly bytes: Uint8Array }[],
+  targets: ChangeSet['targets'],
+): ChangeSet {
+  const target = targets[0]
+  if (target === undefined) throw new TypeError('the edit session carries no target to write to')
+  return {
+    targets,
+    edits: runs.map(run => ({
+      operation: 'replace' as const,
+      targetId: target.targetId,
+      source: target.ownerSource,
+      range: { kind: 'bytes' as const, offset: run.offset, length: BigInt(run.bytes.length) },
+      payload: { kind: 'inline' as const, bytes: run.bytes },
+      label: 'Edit bytes',
+    })),
+    provenance: { actor: 'user' },
+  }
 }
 
 /** Pure: collapse per-byte changes into contiguous runs so one drag is one edit, not fifty. */
@@ -116,16 +148,7 @@ export const hexEditor: EditorModule = {
     const announce = (): void => {
       if (pending.size === 0) return
       const runs = coalesceHexEdits([...pending.values()])
-      void args.edit.propose({
-        baseRevisions: { content: args.descriptor.revision },
-        edits: runs.map(run => ({
-          kind: 'bytes' as const,
-          bindingId: 'content',
-          range: { kind: 'bytes' as const, offset: run.offset, length: BigInt(run.bytes.length) },
-          payload: { kind: 'inline' as const, bytes: run.bytes },
-        })),
-        provenance: { origin: 'hex-editor' },
-      } as never)
+      void args.edit.propose(hexChangeSet(runs, args.edit.targets))
     }
 
     /** Apply a new value for one offset and keep both columns in step. */
@@ -248,21 +271,12 @@ export const hexEditor: EditorModule = {
     const commit = async (): Promise<void> => {
       if (pending.size === 0) return
       const runs = coalesceHexEdits([...pending.values()])
-      const change = {
-        baseRevisions: { content: args.descriptor.revision },
-        edits: runs.map(run => ({
-          kind: 'bytes' as const,
-          bindingId: 'content',
-          range: { kind: 'bytes' as const, offset: run.offset, length: BigInt(run.bytes.length) },
-          payload: { kind: 'inline' as const, bytes: run.bytes },
-        })),
-        provenance: { origin: 'hex-editor' },
-      }
+      const change = hexChangeSet(runs, args.edit.targets)
       setViewerText(status, 'Validating…')
       // `ValidationResult` is `{ valid, diagnostics }` (13D); this used to look for a `state` of
       // `invalid`, which no writer produces — so a refused change went on to be planned and
       // prepared as if the writer had accepted it
-      const validation = await args.edit.propose(change as never)
+      const validation = await args.edit.propose(change)
       if (!validation.valid) {
         setState(root, ['error'])
         const first = validation.diagnostics[0]
@@ -272,7 +286,7 @@ export const hexEditor: EditorModule = {
         )
         return
       }
-      const plan = await args.edit.plan(change as never)
+      const plan = await args.edit.plan(change)
       const authorization = await args.authorization.request(plan)
       if (authorization === undefined) {
         setViewerText(status, 'Not authorised')

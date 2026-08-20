@@ -187,6 +187,14 @@ export function createDomWorkerRealmFactory(
 export interface BrowserExecutionBackendsOptions
   extends BrowserLoaderHookOptions, DomWorkerRealmOptions {
   readonly policy?: BrowserWorkerPolicy
+  /**
+   * Ceilings the verified loader applies to one artifact graph. A host that grants a user's own
+   * folder needs to set these — a folder can be a whole drive — and without them here the only way
+   * to reach them was to compose the backend registry by hand, which is a lot of surface to
+   * duplicate for two numbers.
+   */
+  readonly maxFiles?: number
+  readonly maxTotalBytes?: number
   readonly foreignSurfaces?:
     readonly DataSourceSurfaceSource[] | (() => readonly DataSourceSurfaceSource[])
 }
@@ -199,7 +207,11 @@ export function createBrowserExecutionBackends(
   return createExecutionBackendRegistry([
     createBrowserWorkerBackend({
       realm: createDomWorkerRealmFactory(options),
-      loader: hooks,
+      loader: {
+        ...hooks,
+        ...(options.maxFiles === undefined ? {} : { maxFiles: options.maxFiles }),
+        ...(options.maxTotalBytes === undefined ? {} : { maxTotalBytes: options.maxTotalBytes }),
+      },
       ...(options.policy === undefined ? {} : { policy: options.policy }),
       ...(options.foreignSurfaces === undefined
         ? {}

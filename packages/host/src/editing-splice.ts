@@ -9,7 +9,7 @@
  */
 
 import { ModkitError, throwIfAborted } from '@modkitx-x3/core'
-import type { EditPayload, PayloadStore, SourceEdit } from '@modkitx-x3/sdk'
+import type { AssetRevision, EditPayload, PayloadStore, SourceEdit } from '@modkitx-x3/sdk'
 
 const STAGED_CHUNK = 1024 * 1024
 
@@ -128,4 +128,37 @@ export async function replacedBytes(
     edit.range.length,
     new TextDecoder('utf-8', { fatal: true }).decode(replacement),
   )
+}
+
+/**
+ * Apply a batch one edit at a time, threading each write's revision into the next.
+ *
+ * The coordinator computes every request's `expectedRevision` *before* the batch runs, from the
+ * revisions it knew then. Two edits against one source therefore arrive carrying the same expected
+ * revision — and a backend that checks the live revision per write refuses the second one as
+ * `edit-conditional-write-lost`, because the first write moved it. Every multi-edit plan on a
+ * sequential backend failed that way.
+ *
+ * The guard that matters is still enforced: the *first* write to a source honours the caller's
+ * expected revision, which is what catches a file that changed under the editor. Later writes in
+ * the same batch expect what this batch just produced, because inside one transaction that is the
+ * truth about the file.
+ */
+export async function applySequentialBatch(
+  requests: readonly { readonly edit: SourceEdit; readonly expectedRevision: AssetRevision }[],
+  apply: (
+    edit: SourceEdit,
+    expectedRevision: AssetRevision,
+  ) => Promise<{ readonly after: AssetRevision; readonly before?: AssetRevision }>,
+): Promise<{ targetId: string; after: AssetRevision; before?: AssetRevision }[]> {
+  const produced = new Map<string, AssetRevision>()
+  const results: { targetId: string; after: AssetRevision; before?: AssetRevision }[] = []
+  for (const request of requests) {
+    const sourceId = request.edit.source.id
+    const expected = produced.get(sourceId) ?? request.expectedRevision
+    const result = await apply(request.edit, expected)
+    produced.set(sourceId, result.after)
+    results.push({ targetId: request.edit.targetId, ...result })
+  }
+  return results
 }

@@ -46,7 +46,13 @@ import {
   type SubjectEditTarget,
 } from '@modkitx-x3/sdk'
 import type { EditingBackend, EditingBackendApplyResult } from '../editing.js'
-import { editingError, payloadBytes, replacedBytes, type ReplaceEdit } from '../editing-splice.js'
+import {
+  applySequentialBatch,
+  editingError,
+  payloadBytes,
+  replacedBytes,
+  type ReplaceEdit,
+} from '../editing-splice.js'
 
 export interface FileEditingBackendOptions {
   /** Identifies this backend in write sets and receipts. */
@@ -328,15 +334,12 @@ export function createFileEditingBackend(
     },
 
     async applyBatch(requests, batchOptions) {
-      const results = []
-      for (const request of requests) {
-        const result = await backend.apply(request.edit, {
+      return applySequentialBatch(requests, (edit, expectedRevision) =>
+        backend.apply(edit, {
           ...batchOptions,
-          expectedRevision: request.expectedRevision,
-        })
-        results.push({ targetId: request.edit.targetId, ...result })
-      }
-      return results
+          expectedRevision,
+        }),
+      )
     },
 
     async rollback(transactionId, edit, before, signal) {

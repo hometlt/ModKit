@@ -14,7 +14,7 @@
         "environments": ["node"]
       },
       "executionProfile": "trusted-in-process",
-      "requestedPermissionClasses": ["read-source"]
+      "requestedPermissionClasses": ["read-source", "write-source"]
     },
     {
       "variantId": "portable",
@@ -23,7 +23,7 @@
         "environments": ["browser-worker", "node-worker"]
       },
       "executionProfile": "worker-brokered",
-      "requestedPermissionClasses": ["read-source"]
+      "requestedPermissionClasses": ["read-source", "write-source"]
     }
   ],
   "spec": {
@@ -115,6 +115,20 @@
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]
+      },
+      {
+        "id": "edit.structure",
+        "handlerId": "edit-structure",
+        "mutatesSource": true,
+        "requiredPermissions": ["read-source", "write-source"],
+        "outputKinds": ["edit-plan"]
+      },
+      {
+        "id": "edit.content",
+        "handlerId": "edit-content",
+        "mutatesSource": true,
+        "requiredPermissions": ["read-source", "write-source"],
+        "outputKinds": ["edit-plan"]
       }
     ],
     "traitDeclarations": [

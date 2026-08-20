@@ -72,6 +72,19 @@ function refused(message: string, context?: Record<string, unknown>): ModkitErro
  * Static ES module specifier scan. Comments are stripped first (string-aware enough for the
  * fail-closed contract documented above); matched are `import|export … from '…'`, bare
  * `import '…'`, and literal `import('…')`. A non-literal dynamic import refuses the file.
+ *
+ * The import clause may not contain a quote, a parenthesis or a semicolon. That is not a
+ * stylistic bound, it is what keeps a side-effect import from being swallowed: with `[\s\S]*?`
+ * there, the lazy clause of the *first* `import` would run past its own specifier's quotes and
+ * pair with a later `from`, so
+ *
+ *     import 'left-pad'
+ *     import { x } from '@modkitx-x3/codec-kit'
+ *
+ * reported only the second specifier. A bare specifier lost that way still fails closed — the
+ * unrewritten specifier does not resolve inside the worker — but the host's own named refusal is
+ * lost with it, and a *relative* side-effect import in that position was never fetched, hashed or
+ * rewritten at all.
  */
 export function scanModuleSpecifiers(source: string): readonly string[] {
   const stripped = source.replace(/\/\*[\s\S]*?\*\//gu, ' ').replace(/(^|[^:])\/\/[^\n]*/gu, '$1')
@@ -82,7 +95,7 @@ export function scanModuleSpecifiers(source: string): readonly string[] {
   }
   const specifiers: string[] = []
   const pattern =
-    /\b(?:import|export)\s+(?:[\s\S]*?\bfrom\s+)?(['"])([^'"\n]+)\1|\bimport\s*\(\s*(['"])([^'"\n]+)\3\s*\)/gu
+    /\b(?:import|export)\s*(?:[^'"();]*?\bfrom\s+)?(['"])([^'"\n]+)\1|\bimport\s*\(\s*(['"])([^'"\n]+)\3\s*\)/gu
   for (const match of stripped.matchAll(pattern)) {
     const specifier = match[2] ?? match[4]
     if (specifier !== undefined) specifiers.push(specifier)

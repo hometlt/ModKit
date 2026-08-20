@@ -24,7 +24,8 @@ import type {
 
 /** The four ports `createCodecPreview` hands an editable stage. */
 export interface RendererEditorPorts {
-  readonly session: unknown
+  /** The `EditSession`, under the name `createCodecPreview` and `EditorModule.mount` both use. */
+  readonly edit: unknown
   readonly commit: unknown
   readonly payloads: unknown
   readonly authorization: unknown
@@ -116,7 +117,7 @@ export async function createRendererEditorPorts(
   }
 
   return {
-    session,
+    edit: session,
     commit,
     payloads,
     authorization,

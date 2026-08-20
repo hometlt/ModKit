@@ -1,7 +1,7 @@
 import {
   ABI_ASSET_SESSION,
   protocolLimits
-} from "./chunk-T26QW2H7.js";
+} from "./chunk-6CP4BXQC.js";
 import {
   WRITER_CONTRACT_ID,
   WRITER_FACET_MATCHER_PROFILE,
@@ -179,9 +179,10 @@ function createAssetSession(options) {
         }
         if (error instanceof ModkitError)
           throw error;
+        const reason = error instanceof Error ? error.message : String(error);
         throw new ModkitError({
           code: "x3.host/operation-handler-failed",
-          message: `operation handler ${handlerId} failed`,
+          message: `operation handler ${handlerId} failed: ${reason}`,
           context: { handlerId },
           cause: error
         });
@@ -657,16 +658,56 @@ var STANDARD_EDITING_DEFINITIONS = Object.freeze([WRITER_CONTRACT_DEFINITION]);
 
 // packages/host/dist/subject-rpc.js
 var SUBJECT_SERVICES = Object.freeze({ contract: "x3.app/subject-services", major: 1 });
+var SUBJECT_EDITING = Object.freeze({ contract: "x3.app/subject-editing", major: 1 });
 var subjectServicesSurface = {
   ...SUBJECT_SERVICES,
   methods: {
     /** `open(path)` → an inert snapshot (opened carries a `sessionId` to attach). */
     open: { kind: "value", signal: "last" },
     /** `attach(sessionId)` → the live session under `x3.abi/asset-session@1`. */
-    attach: { kind: "lease", result: ABI_ASSET_SESSION, wrapper: "bare" }
+    attach: { kind: "lease", result: ABI_ASSET_SESSION, wrapper: "bare" },
+    /** `edit(sessionId)` → the editing arm, when this host can write this subject. */
+    edit: { kind: "lease", result: SUBJECT_EDITING, wrapper: "bare" }
+  }
+};
+var subjectEditingSurface = {
+  ...SUBJECT_EDITING,
+  releaseVia: "dispose",
+  methods: {
+    state: { kind: "value" },
+    propose: { kind: "value", signal: "last", arity: 1 },
+    plan: { kind: "value", signal: "last", arity: 1 },
+    prepare: { kind: "value", signal: "last", arity: 1 },
+    commit: { kind: "value", signal: "last", arity: 1 },
+    dispose: { kind: "value" }
   }
 };
 var SUBJECT_RPC_LIMITS = protocolLimits({ defaultCallDeadlineMs: 6e4 });
+
+// packages/host/dist/editing-evidence.js
+var HOST_RAW_WRITER_IDENTITY = Object.freeze({
+  providerId: "org.modkitx.host/raw-writer",
+  providerVersion: "1.0.0",
+  artifactDigest: "host:raw-writer",
+  formatId: "*",
+  representationId: "source"
+});
+var RAW_CLAIM = Object.freeze({
+  roundTrip: "byte-identical",
+  preservesUnknownData: true
+});
+var HOST_RAW_WRITER_EVIDENCE_ID = "host:raw-writer/by-construction";
+var HOST_RAW_WRITER_EVIDENCE_RECORD = Object.freeze({
+  writer: HOST_RAW_WRITER_IDENTITY,
+  claim: RAW_CLAIM,
+  evidenceId: HOST_RAW_WRITER_EVIDENCE_ID,
+  corpusId: "by-construction: literal replacement, no re-encoding",
+  corpusDigest: "none:by-construction",
+  conformanceProfile: "org.modkitx/raw-writer-v1",
+  optionsFingerprint: "options:none",
+  inputClass: "any",
+  provenAt: "2026-08-19T00:00:00Z"
+});
 
 // packages/host/dist/editing.js
 var GUARANTEE_STRENGTH = Object.freeze({
@@ -685,6 +726,7 @@ var NO_STAGED_PAYLOADS = Object.freeze({
     });
   }
 });
+var DEFAULT_INLINE_PAYLOAD_BYTES = 16 * 1024 * 1024;
 
 export {
   assembleSubjectDescriptor,

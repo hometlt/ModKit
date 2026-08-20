@@ -29,7 +29,12 @@ import {
   type SubjectEditTarget,
 } from '@modkitx-x3/sdk'
 import type { EditingBackend, EditingBackendApplyResult } from '../editing.js'
-import { editingError, replacedBytes, type ReplaceEdit } from '../editing-splice.js'
+import {
+  applySequentialBatch,
+  editingError,
+  replacedBytes,
+  type ReplaceEdit,
+} from '../editing-splice.js'
 import type { BrowserFileSnapshot } from './sources.js'
 
 /** The writable stream `FileSystemFileHandle.createWritable()` returns. */
@@ -225,15 +230,12 @@ export function createBrowserEditingBackend(
     },
 
     async applyBatch(requests, batchOptions) {
-      const results = []
-      for (const request of requests) {
-        const result = await backend.apply(request.edit, {
+      return applySequentialBatch(requests, (edit, expectedRevision) =>
+        backend.apply(edit, {
           ...batchOptions,
-          expectedRevision: request.expectedRevision,
-        })
-        results.push({ targetId: request.edit.targetId, ...result })
-      }
-      return results
+          expectedRevision,
+        }),
+      )
     },
 
     async rollback(transactionId, edit, before, signal) {

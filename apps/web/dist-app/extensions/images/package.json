@@ -9,6 +9,7 @@
     "./formats/png/codec": "./src/formats/png/codec.js",
     "./formats/jpeg/codec": "./src/formats/jpeg/codec.js",
     "./formats/*/codec": "./src/formats/*/codec.js",
+    "./writers/png-encoder": "./src/writers/png-encoder.js",
     "./package.json": "./package.json"
   },
   "files": [
