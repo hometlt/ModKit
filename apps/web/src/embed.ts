@@ -21,9 +21,11 @@
  * element therefore checks the origin *before* it composes anything and states the refusal in its
  * own box (`crossOriginRefusal`) rather than letting a `SecurityError` surface as an empty frame or
  * a load that never settles. Reverse-proxy the assets under your own origin, or copy them there.
- * `src` is a different question and is answered by the network: it is fetched relative to the
- * *document*, so a cross-origin `src` works whenever the file's own server sends CORS headers, and
- * a failure shows the status line it failed with.
+ * `src` is a different question, and it has *two* gates rather than one. It is fetched relative to
+ * the document, and a cross-origin `src` opens when the file's own server sends CORS headers **and**
+ * the embedding page's `connect-src` names that origin. Both halves are proven live; either one
+ * missing ends in the element stating the URL and both conditions, because the browser's own
+ * message for the rejected fetch is «Failed to fetch» and nothing else.
  *
  * **CSP.** Measured in Chromium, one directive at a time, against the demo page — which ships this
  * policy and is asserted to raise zero `securitypolicyviolation` events (`test/embed.test.ts`):
@@ -740,7 +742,24 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
       if (blob !== undefined) return fileLikeFrom(blob, name)
       const src = this.getAttribute('src') ?? ''
       const target = new URL(src, this.ownerDocument.baseURI)
-      const response = await fetch(target.href, { signal })
+      let response: Response
+      try {
+        response = await fetch(target.href, { signal })
+      } catch (error) {
+        if (signal.aborted) throw error
+        /*
+         * A rejected fetch carries no status and, in Chromium, no URL either — «Failed to fetch»
+         * is all a page gets whether the file is missing CORS headers or the embedding page's own
+         * `connect-src` refused the origin. Measured (`test/embed.test.ts`), and the reason this
+         * says which URL and names both gates: the bare message is not something a reader could
+         * act on.
+         */
+        throw new Error(
+          `${target.href} could not be fetched (${describe(error)}). A cross-origin file needs ` +
+            "CORS headers from its own server and an entry for its origin in this page's " +
+            'content-security-policy connect-src.',
+        )
+      }
       if (!response.ok) {
         throw new Error(
           `${target.href} could not be fetched (${response.status} ${response.statusText})`,

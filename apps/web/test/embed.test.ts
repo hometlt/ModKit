@@ -14,10 +14,12 @@
  *    committed `dist-app`. Committing `dist-app` is a separate, deliberate act; a test that
  *    depended on it would go red on every source change until someone remembered to rebuild, which
  *    teaches the suite to be ignored. Nothing here writes into the repository.
- *  - **It serves the same output on two ports**, because "the asset base must be same-origin"
- *    is a claim about two origins and cannot be proven with one. The second origin is used for
- *    exactly one assertion: that a cross-origin asset base is refused with a sentence, rather than
- *    hanging on a worker the browser will never let it construct.
+ *  - **It serves the same output on two ports**, because every origin claim in the contract is a
+ *    claim about two origins and cannot be proven with one. The second origin carries three
+ *    assertions: a cross-origin *asset base* is refused with a sentence rather than hanging on a
+ *    worker the browser will never let it construct; a cross-origin *src* opens when it is
+ *    CORS-served and the page's `connect-src` names its origin; and the same file fails, with the
+ *    URL and both conditions stated, when the policy does not.
  */
 import { execFileSync } from 'node:child_process'
 import { createServer, type Server } from 'node:http'
@@ -147,6 +149,19 @@ beforeAll(async () => {
   )
   pageOrigin = await serve(scratch)
   otherOrigin = await serve(scratch)
+  /*
+   * A third variant, written once the second origin has a port: same page, but its `connect-src`
+   * also names that origin. `src` is the one URL an element fetches that need not be same-origin,
+   * and «CORS-served is enough» is only half true — the *embedding page's* policy has to allow the
+   * origin too. One variant proves each half.
+   */
+  writeFileSync(
+    join(scratch, 'embed-demo-cors.html'),
+    demo.replace(
+      declared,
+      declared.replace("connect-src 'self'", `connect-src 'self' ${otherOrigin.origin}`),
+    ),
+  )
   const executablePath = chromeCandidates.find(candidate => existsSync(candidate))
   if (executablePath === undefined) {
     throw new Error('Chrome/Chromium is required for the embed test')
@@ -437,6 +452,70 @@ describe('modkit-viewer on a third-party page', () => {
     expect(refused).toEqual([])
   })
 
+  /** Open one page, add one element, wait for it to settle, and report what it and the CSP said. */
+  const probeSrc = async (
+    pageName: string,
+    src: string,
+  ): Promise<{
+    readonly state: string
+    readonly view: string
+    readonly status: string
+    readonly refusals: readonly string[]
+  }> => {
+    const probe = await browser.newPage()
+    await probe.addInitScript(() => {
+      const seen: string[] = []
+      Object.defineProperty(globalThis, '__cspRefusals', { configurable: true, value: seen })
+      document.addEventListener('securitypolicyviolation', event => {
+        seen.push(`${event.violatedDirective}:${event.blockedURI || 'inline'}`)
+      })
+    })
+    await probe.goto(`${pageOrigin.origin}/${pageName}`, { waitUntil: 'load' })
+    const answer = await probe.evaluate(async target => {
+      const node = document.createElement('modkit-viewer') as unknown as ViewerElement
+      node.setAttribute('src', target)
+      document.body.append(node)
+      for (let attempt = 0; attempt < 200; attempt += 1) {
+        const state = node.getAttribute('data-mk-state')
+        if (state === 'ready' || state === 'error') break
+        await new Promise(done => setTimeout(done, 100))
+      }
+      return {
+        state: node.getAttribute('data-mk-state') ?? '',
+        view: node.activeView,
+        status: node.shadowRoot?.querySelector('.modkit-embed__status')?.textContent ?? '',
+        refusals: (globalThis as unknown as { __cspRefusals: string[] }).__cspRefusals,
+      }
+    }, src)
+    await probe.close()
+    return answer
+  }
+
+  it('opens a cross-origin src when it is CORS-served and the page policy allows the origin', async () => {
+    const answer = await probeSrc(
+      'embed-demo-cors.html',
+      `${otherOrigin.origin}/samples/sample.csv`,
+    )
+    expect(answer.state).toBe('ready')
+    expect(answer.view).toBe('table')
+    expect(answer.refusals).toEqual([])
+  })
+
+  it('states the failure when the page policy does not allow that origin', async () => {
+    /*
+     * The same file, CORS-served just as generously, on the page whose `connect-src` is `'self'`.
+     * The element cannot fetch it and says so where the file would have been; the browser records
+     * the reason it could not. This is the other half of «same-origin or CORS-served»: the
+     * embedding page's own policy is the second gate, and no header on the file's server opens it.
+     */
+    const answer = await probeSrc('embed-demo.html', `${otherOrigin.origin}/samples/sample.csv`)
+    expect(answer.state).toBe('error')
+    // the URL and both gates, because a rejected fetch says only «Failed to fetch» on its own
+    expect(answer.status).toContain(otherOrigin.origin)
+    expect(answer.status).toContain('connect-src')
+    expect(answer.refusals.some(line => line.startsWith('connect-src'))).toBe(true)
+  })
+
   it('refuses a cross-origin asset base with a reason instead of hanging on it', async () => {
     const refused = await page.evaluate(async other => {
       const node = document.createElement('modkit-viewer')
@@ -457,7 +536,18 @@ describe('modkit-viewer on a third-party page', () => {
     expect(refused.state).toBe('error')
     expect(refused.status).toContain('cross-origin')
     expect(refused.status).toContain(otherOrigin.origin)
-    // and it never went near the other origin: the refusal is decided before anything is fetched
-    expect(otherOrigin.hits).toEqual([])
+    /*
+     * And it never asked that origin for an asset: the refusal is decided before anything is
+     * fetched. (The `src` probes above did fetch a sample from there, which is a different URL and
+     * a different rule — hence naming the assets rather than asserting silence.)
+     */
+    const assets = otherOrigin.hits.filter(
+      name =>
+        name.endsWith('.js') ||
+        name.endsWith('modkit-ui.css') ||
+        name.startsWith('/extensions/') ||
+        name.startsWith('/vendor/'),
+    )
+    expect(assets).toEqual([])
   })
 })
