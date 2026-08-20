@@ -79,6 +79,16 @@ export const ELECTRON_SECURE_WEB_PREFERENCES = Object.freeze({
   allowRunningInsecureContent: false,
 } as const)
 
+/**
+ * Broker channels the renderer may name.
+ *
+ * There is no whole-file write here on purpose. Saving goes through the subject RPC's editing arm
+ * (S14), where main holds the grant, the commit coordinator, the file backend and every prepared
+ * commit; a `filesystem.write-file` channel beside it would be a second write authority with none
+ * of that — no revision check, no fidelity evidence, no receipt — and the renderer would choose
+ * between them. `filesystem.atomic-replace` is the handle-based facility operation, not a path the
+ * renderer can name.
+ */
 export const ELECTRON_BROKER_CHANNELS = Object.freeze([
   'filesystem.read-range',
   'filesystem.atomic-replace',
@@ -88,7 +98,6 @@ export const ELECTRON_BROKER_CHANNELS = Object.freeze([
   'dialog.reopen-recent',
   'directory.list',
   'filesystem.read-file',
-  'filesystem.write-file',
   'process.launch',
 ] as const)
 
@@ -118,10 +127,6 @@ export type ElectronBrokerRequest =
   | {
       readonly channel: 'filesystem.read-file'
       readonly payload: { readonly path: string; readonly maxBytes: number }
-    }
-  | {
-      readonly channel: 'filesystem.write-file'
-      readonly payload: { readonly path: string; readonly bytes: Uint8Array }
     }
   | {
       readonly channel: 'process.launch'
@@ -169,8 +174,6 @@ export function isElectronBrokerRequest(value: unknown): value is ElectronBroker
         Number.isSafeInteger(payload['maxBytes']) &&
         Number(payload['maxBytes']) > 0
       )
-    case 'filesystem.write-file':
-      return text(payload['path']) && payload['bytes'] instanceof Uint8Array
     case 'process.launch':
       return (
         text(payload['toolId']) &&

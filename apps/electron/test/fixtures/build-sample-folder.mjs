@@ -9,7 +9,7 @@
  * *host* mounts every viewer, so "minimal and valid" is the whole requirement.
  */
 import { createHash } from 'node:crypto'
-import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { chmodSync, copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -194,8 +194,23 @@ const FILES = [
   ['sample.svg', SVG],
   ['sample.obj', OBJ],
   ['sample.txt', 'Plain text with no codec: the built-in text/hex fallback shows this.\n'],
-  ['savetest.txt', 'original text'],
+  /*
+   * The editing probes. They are `.json` on purpose: a subject only gets an editing arm once a
+   * codec has claimed it, so a `.txt` — which no codec claims here — could never prove a save.
+   * One file per probe, because the first two both change the bytes on disk.
+   */
+  ['savetest.json', '{"note":"original"}'],
+  ['savehex.json', '{"hex":"aaaa"}'],
+  ['savecode.json', '{"code":"original"}'],
+  ['readonly.json', '{"readonly":true}'],
 ]
+
+/**
+ * Samples written without the write permission, so the host must refuse an editing arm for them.
+ * On Windows this clears the write bit into the FILE_ATTRIBUTE_READONLY flag, which is exactly
+ * what `fs.access(W_OK)` reports there.
+ */
+const READ_ONLY = ['readonly.json']
 
 const COPIES = [
   ['sample.png', join(synthetic, 'minimal.png')],
@@ -212,7 +227,12 @@ const BINARIES = [
 export function buildSampleFolder(target) {
   const directory = resolve(target)
   mkdirSync(directory, { recursive: true })
-  for (const [name, text] of FILES) writeFileSync(join(directory, name), text, 'utf8')
+  for (const [name, text] of FILES) {
+    // A previous run may have left this one read-only; writing it again would fail.
+    rmSync(join(directory, name), { force: true })
+    writeFileSync(join(directory, name), text, 'utf8')
+  }
+  for (const name of READ_ONLY) chmodSync(join(directory, name), 0o444)
   for (const [name, from] of COPIES) copyFileSync(from, join(directory, name))
   for (const [name, bytes] of BINARIES) writeFileSync(join(directory, name), bytes)
 

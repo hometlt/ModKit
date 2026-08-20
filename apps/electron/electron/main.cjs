@@ -327,22 +327,43 @@ async function createWindow() {
       await result.session.dispose()
       throw error
     }
-    // the editing arm for this session; the renderer only ever names it by id
+    /*
+     * The editing arm for this session; the renderer only ever names it by id.
+     *
+     * A subject this host cannot write must have *no* arm, because `edit()` refusing is what tells
+     * the renderer to drop its editable stages instead of drawing a Save that fails at the end.
+     * Two things make a subject unwritable here: a shape editing does not support yet (a bundle, a
+     * namespace — `createSubjectEditing` throws), and a file the OS will not let us replace.
+     * `access(W_OK)` is the right check on Windows too, where it reports the read-only attribute.
+     */
+    const notEditable = []
     try {
-      editingBySession.set(
-        sessionId,
-        createSubjectEditing({
-          opened: result,
-          grant: { id: `electron:${sessionId}`, classes: ['read-source', 'write-source'] },
-          backendFor: () => editingBackend,
-          evidenceFor: plan => evidence.evidenceFor(plan),
-          writer: rawWriter,
-        }),
-      )
+      await fsp.access(file, fs.constants.W_OK)
     } catch (error) {
-      // a subject shape editing does not support yet (a bundle, a namespace) still opens read-only
-      console.log(`[main] ${path.basename(file)} opened without an editing arm: ${String(error)}`)
+      notEditable.push(`the file is not writable (${error.code ?? 'EACCES'})`)
     }
+    if (notEditable.length === 0) {
+      try {
+        editingBySession.set(
+          sessionId,
+          createSubjectEditing({
+            opened: result,
+            grant: { id: `electron:${sessionId}`, classes: ['read-source', 'write-source'] },
+            backendFor: () => editingBackend,
+            evidenceFor: plan => evidence.evidenceFor(plan),
+            writer: rawWriter,
+          }),
+        )
+      } catch (error) {
+        notEditable.push(String(error.message ?? error))
+      }
+    }
+    // The reason travels in the snapshot: the RPC refusal itself is a generic "not editable here",
+    // and a renderer that cannot say *why* a file is read-only has not explained anything.
+    const editingDiagnostics = notEditable.map(message => {
+      console.log(`[main] ${path.basename(file)} opened without an editing arm: ${message}`)
+      return { severity: 'information', code: 'x3.app/subject-not-editable', message }
+    })
     return {
       snapshot: {
         state: result.state,
@@ -351,7 +372,7 @@ async function createWindow() {
         presentation,
         selected: result.selected,
         candidates: result.candidates,
-        diagnostics: result.diagnostics,
+        diagnostics: [...result.diagnostics, ...editingDiagnostics],
       },
       session: result.session,
     }
@@ -379,7 +400,17 @@ async function createWindow() {
       listener: 'emitter-event',
       session,
       open: openSubjectForRpc,
-      editing: sessionId => editingBySession.get(sessionId),
+      /*
+       * One arm per opened session, handed out once. The consumer leases it when the tab opens and
+       * releases it when the tab closes; keeping the entry afterwards would leave a map that only
+       * grows and would let a second `edit()` build an arm over an edit session the first one
+       * already disposed. Taking it out on the way through is the whole lifetime rule.
+       */
+      editing: sessionId => {
+        const editing = editingBySession.get(sessionId)
+        editingBySession.delete(sessionId)
+        return editing
+      },
       onDiagnostic: diagnostic =>
         console.log(`[subject-rpc] ${diagnostic.code}: ${diagnostic.message}`),
     })
@@ -502,26 +533,11 @@ async function createWindow() {
       }
 
       /*
-       * Written through a temporary file and a rename, so an interrupted save cannot leave a
-       * half-written asset where a whole one used to be. Confined to the granted roots like every
-       * other path the renderer names.
+       * No write channel. Saving is the editing arm (S14) and nothing else: `editingBackend` below
+       * owns the temp-file-and-rename, the revision check and the pre-image, under a grant the
+       * renderer never holds. A path-named whole-file write beside it would be a second write
+       * authority with none of those guarantees.
        */
-      case 'filesystem.write-file': {
-        const file = roots.require(request.payload.path)
-        const temporary = `${file}.${process.pid}.tmp`
-        const bytes = Buffer.from(
-          request.payload.bytes.buffer,
-          request.payload.bytes.byteOffset,
-          request.payload.bytes.byteLength,
-        )
-        try {
-          await fsp.writeFile(temporary, bytes)
-          await fsp.rename(temporary, file)
-        } finally {
-          await fsp.rm(temporary, { force: true })
-        }
-        return { path: file, bytes: bytes.length }
-      }
 
       default:
         return {
@@ -711,8 +727,17 @@ async function createWindow() {
 
   // Renderer findings belong in the same log as the main process ones, otherwise verifying the
   // isolation checks would need a human looking at the window.
+  const selfTest = process.argv.includes('--selftest')
   window.webContents.on('console-message', (_event, _level, message) => {
     console.log(`[renderer] ${message}`)
+    /*
+     * A self-test run has a last line, and a window that stays open after it forces every harness
+     * to kill the process on a timeout — which is indistinguishable from the run hanging. Exiting
+     * on the renderer's own final line makes the exit code mean something.
+     */
+    if (selfTest && String(message).trim() === 'selftest: done') {
+      setTimeout(() => app.exit(0), 250)
+    }
   })
 
   await window.loadFile(RENDERER)

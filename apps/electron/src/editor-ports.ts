@@ -10,26 +10,52 @@
  * What the renderer therefore cannot do, by construction: commit a plan main did not prepare,
  * replay a prepared commit (the id is spent on first use), or forge a grant — the `authorization`
  * port hands back a marker the serving side ignores, because the real grant never crosses.
+ *
+ * Two host-side jobs live here besides the relaying, because nothing else in the renderer can do
+ * them: reporting *why* a save was refused (the coordinator answers with a reason code, and a
+ * status line that only said "failed" would be useless), and remembering the last change an editor
+ * proposed so "save before closing" can commit it — an `EditorMount` has no host-callable save.
  */
 
-import type { SubjectEditingArm } from '@modkitx-x3/host'
+import type { SubjectEditingArm, SubjectEditingPrepareResult } from '@modkitx-x3/host'
 import type {
   AssetEditPlan,
   ChangeSet,
   CommitReceipt,
+  EditPayload,
+  EditRange,
   PrepareCommitResult,
+  SourceEdit,
   SubjectEditTarget,
   ValidationResult,
 } from '@modkitx-x3/sdk'
 
-/** The four ports `createCodecPreview` hands an editable stage. */
+/** The four ports `createCodecPreview` hands an editable stage, plus this host's lease hygiene. */
 export interface RendererEditorPorts {
+  /**
+   * The 13D edit session. `EditorModule.mount` receives it as `edit`, and Root is renaming the
+   * port to match end to end; `session` is the name `createCodecPreview` still reads on this
+   * branch. Both point at one object, so this compiles either side of that rename — drop `session`
+   * once the renamed previewer has merged.
+   */
+  readonly edit: unknown
   readonly session: unknown
   readonly commit: unknown
   readonly payloads: unknown
   readonly authorization: unknown
+  /**
+   * Commit whatever the editor last proposed, if anything. The close prompt's "Save" is the only
+   * caller: the buffer lives in the editor, so the last proposal is the only thing the host holds.
+   */
+  save(): Promise<void>
   /** Release the arm (and with it main's prepared commits for this subject). */
   dispose(): Promise<void>
+}
+
+/** What the shell shows about a save, and whether it should read as a failure. */
+export interface EditorStatus {
+  readonly message: string
+  readonly failed: boolean
 }
 
 /** A marker the renderer passes around; the real grant snapshot never leaves the serving side. */
@@ -37,9 +63,138 @@ const RENDERER_GRANT = Object.freeze({ snapshotId: 'renderer', permissions: [], 
 
 export interface RendererEditorPortsOptions {
   readonly arm: SubjectEditingArm
-  /** Reports save progress and refusals to the shell (status line, tab dirty marker). */
-  readonly onStatus?: (message: string) => void
+  /** Reports save progress and refusals to the shell's status line. */
+  readonly onStatus?: (status: EditorStatus) => void
+  /** Reports uncommitted work so the shell can mark the tab and guard closing. */
+  readonly onDirty?: (dirty: boolean) => void
 }
+
+// ---------------------------------------------------------------------------------------------
+// refusal vocabulary
+
+/**
+ * The coordinator's refusal reasons in plain words (13D `PrepareCommitResult`/`CommitResult`).
+ *
+ * A save that fails has exactly one honest answer, and it is not "failed": every reason below is a
+ * different thing for the user to do about it. Unknown codes are reported verbatim rather than
+ * flattened, so a new reason from the coordinator still reaches the status line.
+ */
+const REFUSAL_REASONS: Readonly<Record<string, string>> = Object.freeze({
+  'plan-invalid': 'the change did not describe a valid edit of this file',
+  'permission-missing': 'this session may not write the file',
+  'write-scope-mismatch': 'the edit named a file outside what this session may write',
+  'guarantee-unachievable': 'the host cannot promise this write safely enough',
+  'fidelity-unproven': 'no evidence backs the writer fidelity claim for this change',
+  'confirmation-required': 'a lossy write needs a confirmation this host does not ask for',
+  'payload-unavailable': 'the edited bytes never reached the writer',
+  'stale-revision': 'the file changed on disk after the change was prepared',
+  cancelled: 'the save was cancelled',
+})
+
+/** `save refused: <plain words> (<code>)`, so a user and a log both get what they need. */
+export function refusalMessage(reason: string): string {
+  const plain = REFUSAL_REASONS[reason]
+  return plain === undefined ? `save refused: ${reason}` : `save refused: ${plain} (${reason})`
+}
+
+/** What the shell says about a `prepare` that did not reach `ready`. */
+export function prepareStatus(result: SubjectEditingPrepareResult): EditorStatus | undefined {
+  if (result.state === 'ready') return undefined
+  if (result.state === 'conflict') {
+    return {
+      message: `save refused: the file changed on disk while it was open (${result.conflicts.length} conflict(s))`,
+      failed: true,
+    }
+  }
+  return { message: refusalMessage(result.reason), failed: true }
+}
+
+/** What the shell says about a `commit`. `committed` is the only state that is not a problem. */
+export function commitStatus(result: {
+  readonly state: string
+  readonly reason?: string
+}): EditorStatus {
+  switch (result.state) {
+    case 'committed':
+      return { message: 'saved', failed: false }
+    case 'not-applied':
+      return { message: refusalMessage(result.reason ?? 'unknown'), failed: true }
+    case 'rolled-back':
+      return {
+        message: 'save failed: the write was rolled back and the file is unchanged',
+        failed: true,
+      }
+    case 'partially-applied':
+      return { message: 'save partially applied: recovery is available', failed: true }
+    default:
+      return { message: `save ${result.state}`, failed: true }
+  }
+}
+
+// ---------------------------------------------------------------------------------------------
+// change-set normalisation
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+/**
+ * Bring a ui editor's change set to the 13D `ChangeSet` the arm accepts.
+ *
+ * `textEditor` already authors the 13D shape (`targets` + `replace` edits carrying `targetId` and
+ * `source`). The hex editor and the Monaco stage still author the pre-13D one — a `baseRevisions`
+ * map, edits keyed by `bindingId`, `provenance.origin` — which the raw writer cannot even read
+ * (`change.targets.map` throws before validation starts). Only the host knows the subject's edit
+ * targets, so filling them in is this adapter's job rather than a cast that would fail at the
+ * writer. A change that is already well formed passes through untouched.
+ *
+ * This is a compatibility shim over a defect in the editor modules, not a feature — see the note
+ * to Root. It is deliberately narrow: it never invents an operation other than `replace`, and it
+ * refuses a change it cannot place on a target.
+ */
+export function normalizeChangeSet(
+  change: unknown,
+  targets: readonly SubjectEditTarget[],
+): ChangeSet {
+  if (!isRecord(change) || !Array.isArray(change['edits'])) {
+    throw new TypeError('an editor change set must carry an `edits` array')
+  }
+  const authored = change['edits']
+  const declared = Array.isArray(change['targets'])
+    ? (change['targets'] as readonly SubjectEditTarget[])
+    : targets
+  const provenance = isRecord(change['provenance']) ? change['provenance'] : {}
+  const actor = provenance['actor']
+  const target = declared[0]
+
+  const edits = authored.map((item): SourceEdit => {
+    if (!isRecord(item)) throw new TypeError('an edit must be an object')
+    if (typeof item['operation'] === 'string') return item as unknown as SourceEdit
+    if (target === undefined) {
+      throw new TypeError('this subject publishes no edit target, so an edit cannot be placed')
+    }
+    const payload = item['payload']
+    if (!isRecord(payload) || typeof payload['kind'] !== 'string') {
+      throw new TypeError('a legacy edit must carry an inline or text payload')
+    }
+    const range = item['range']
+    return {
+      operation: 'replace',
+      targetId: target.targetId,
+      source: target.ownerSource,
+      ...(isRecord(range) ? { range: range as unknown as EditRange } : {}),
+      payload: payload as unknown as EditPayload,
+    }
+  })
+
+  return {
+    targets: declared,
+    edits,
+    provenance: { actor: actor === 'automation' || actor === 'agent' ? actor : 'user' },
+  }
+}
+
+// ---------------------------------------------------------------------------------------------
+// the ports
 
 export async function createRendererEditorPorts(
   options: RendererEditorPortsOptions,
@@ -49,27 +204,64 @@ export async function createRendererEditorPorts(
   const targets: readonly SubjectEditTarget[] = state.targets
   /** `prepare` answers with an id; the ui carries the object it was given straight back to us. */
   const preparedIds = new WeakMap<object, string>()
+  /**
+   * The last change an editor proposed and this host has not committed. It is both the dirty
+   * signal and the only thing "save before closing" can act on — an `EditorMount` exposes
+   * `update` and `unmount`, and nothing a host may call to make it save.
+   */
+  let pending: ChangeSet | undefined
+
+  const report = (status: EditorStatus): void => {
+    options.onStatus?.(status)
+  }
+
+  const markPending = (change: ChangeSet): ChangeSet => {
+    pending = change
+    options.onDirty?.(true)
+    return change
+  }
+
+  const markSaved = (): void => {
+    pending = undefined
+    options.onDirty?.(false)
+  }
 
   const session = {
     revision: state.revision,
     targets,
     state: () => 'live',
-    propose: async (change: ChangeSet): Promise<ValidationResult> => arm.propose(change),
-    plan: async (change: ChangeSet): Promise<AssetEditPlan> => arm.plan(change),
-    dispose: async (): Promise<void> => undefined,
+    propose: async (change: ChangeSet): Promise<ValidationResult> =>
+      arm.propose(markPending(normalizeChangeSet(change, targets))),
+    plan: async (change: ChangeSet): Promise<AssetEditPlan> =>
+      arm.plan(markPending(normalizeChangeSet(change, targets))),
+    dispose: async (): Promise<void> => {
+      // Switching stages unmounts the editor, which disposes its edit port. The arm outlives the
+      // stage — the tab still holds it — so this releases nothing; `dispose()` below does.
+    },
+  }
+
+  const prepare = async (plan: AssetEditPlan): Promise<SubjectEditingPrepareResult> => {
+    const result = await arm.prepare(plan)
+    const refusal = prepareStatus(result)
+    if (refusal !== undefined) report(refusal)
+    return result
+  }
+
+  const commitPrepared = async (
+    preparedId: string,
+  ): Promise<{ state: string; receipt?: CommitReceipt }> => {
+    const result = await arm.commit(preparedId)
+    report(commitStatus(result))
+    if (result.state === 'committed') markSaved()
+    return result.state === 'not-applied'
+      ? { state: result.state }
+      : { state: result.state, receipt: result.receipt }
   }
 
   const commit = {
     async prepare(plan: AssetEditPlan): Promise<PrepareCommitResult> {
-      const result = await arm.prepare(plan)
-      if (result.state !== 'ready') {
-        options.onStatus?.(
-          result.state === 'conflict'
-            ? 'the source changed while it was open'
-            : `save rejected: ${result.reason}`,
-        )
-        return result as unknown as PrepareCommitResult
-      }
+      const result = await prepare(plan)
+      if (result.state !== 'ready') return result as unknown as PrepareCommitResult
       // the ui hands this object back to `commit`; the id rides along in a side table so nothing
       // resembling a prepared commit is ever fabricated here
       const handle = Object.freeze({ preparedId: result.preparedId })
@@ -80,24 +272,20 @@ export async function createRendererEditorPorts(
       const preparedId =
         preparedIds.get(prepared) ?? (prepared as { preparedId?: string }).preparedId
       if (preparedId === undefined) {
-        options.onStatus?.('nothing prepared to save')
+        report({ message: 'nothing prepared to save', failed: true })
         return { state: 'not-applied' }
       }
-      const result = await arm.commit(preparedId)
-      options.onStatus?.(
-        result.state === 'committed' ? 'saved' : `save ${result.state.replace('-', ' ')}`,
-      )
-      return result.state === 'not-applied'
-        ? { state: result.state }
-        : { state: result.state, receipt: result.receipt }
+      return commitPrepared(preparedId)
     },
-    async undo(): Promise<{ state: string }> {
-      options.onStatus?.('undo is not available in this host yet')
-      return { state: 'not-applied' }
+    async undo(): Promise<{ state: string; reason: string }> {
+      const reason = 'this host does not replay commits yet'
+      report({ message: `undo refused: ${reason}`, failed: true })
+      return { state: 'not-applied', reason }
     },
-    async redo(): Promise<{ state: string }> {
-      options.onStatus?.('redo is not available in this host yet')
-      return { state: 'not-applied' }
+    async redo(): Promise<{ state: string; reason: string }> {
+      const reason = 'this host does not replay commits yet'
+      report({ message: `redo refused: ${reason}`, failed: true })
+      return { state: 'not-applied', reason }
     },
   }
 
@@ -116,10 +304,30 @@ export async function createRendererEditorPorts(
   }
 
   return {
+    edit: session,
     session,
     commit,
     payloads,
     authorization,
+    async save(): Promise<void> {
+      const change = pending
+      if (change === undefined) {
+        report({ message: 'nothing to save', failed: false })
+        return
+      }
+      const validation = await arm.propose(change)
+      if (!validation.valid) {
+        const first = validation.diagnostics[0]
+        report({
+          message: `save refused: ${first === undefined ? 'the writer rejected the change' : first.message}`,
+          failed: true,
+        })
+        return
+      }
+      const result = await prepare(await arm.plan(change))
+      if (result.state !== 'ready') return
+      await commitPrepared(result.preparedId)
+    },
     dispose: () => arm.dispose(),
   }
 }

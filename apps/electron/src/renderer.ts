@@ -36,9 +36,9 @@ import { applyDensity, applyTheme } from '@modkitx-x3/ui/tokens'
 import type { OperationSession } from '@modkitx-x3/sdk'
 
 import { PREVIEW_FALLBACK } from '../generated/viewer-catalog.js'
-import { createFileEditorPorts } from './editing.js'
+import { createRendererEditorPorts, type RendererEditorPorts } from './editor-ports.js'
 import { createInspectorDock, type InspectorSubject } from './inspector.js'
-import { createElectronStages } from './stages.js'
+import { createElectronReadOnlyStages, createElectronStages } from './stages.js'
 import { preferredStage, selfTestLine } from './view-policy.js'
 
 /**
@@ -330,81 +330,173 @@ async function boot(): Promise<void> {
   }
 
   const stages = createElectronStages({ operationsFor })
+  const readOnlyStages = createElectronReadOnlyStages({ operationsFor })
 
-  const codecPreview = createCodecPreview({
-    supported: profile.supportedExtensions,
-    stages,
-    fallback: PREVIEW_FALLBACK,
-    async openSession(entry) {
-      const result = await subjectClient.open(entry.id)
-      if (result.state === 'unresolved') {
-        const detail =
-          result.snapshot.diagnostics[0]?.message ??
-          `${result.snapshot.reason}; using the explicit text/hex fallback`
-        setFooter(entry.id, detail, result.snapshot.reason !== 'no-candidate')
-        subjectsByPath.delete(entry.id)
-        return undefined
-      }
-      const snapshot = result.snapshot
-      const boundary = snapshot.diagnostics.some(
-        item => item.code === 'x3.host/full-process-authority',
-      )
-        ? ' · full process authority'
-        : snapshot.diagnostics.some(item => item.code === 'x3.host/worker-shared-process')
-          ? ' · worker'
-          : ''
-      setFooter(
-        entry.id,
-        `${snapshot.selected.contributionId}/${snapshot.selected.variantId} · ${Math.round(
-          snapshot.selected.confidence * 100,
-        )}%${boundary}`,
-      )
-      const record: SubjectRecord = {
-        path: entry.id,
-        descriptor: snapshot.descriptor,
-        session: result.session,
-        planActive: result.session.presentation?.activeStage,
-      }
-      subjectsByPath.set(entry.id, record)
-      subjectsByDescriptor.set(descriptorKey(snapshot.descriptor), record)
-      /*
-       * The host's plan is kept as the *default* stage, not as the list of stages.
-       * `resolvePresentationPlan` keeps one stage per `singletonGroup`, which is right for "what
-       * opens first" and wrong for "what can this file be shown as" — a PNG would offer Image and
-       * never Hex. Handing the previewer a session without the plan lets it evaluate every stage
-       * in the app policy against the descriptor's own data sources and traits, and `planActive`
-       * below restores the host's choice of which one starts.
-       */
-      return {
+  /**
+   * Everything one opened subject needs before a stage list can even be chosen.
+   *
+   * The editing arm has to be leased *before* the previewer picks stages, because whether main
+   * will write this subject is what decides whether the editable stages may be offered at all.
+   * `session` absent means the codecs did not claim the file (the built-in text/hex fallback);
+   * `ports` absent means main refused the arm.
+   */
+  interface PreparedOpen {
+    readonly session?: PreviewSessionLike
+    readonly ports?: RendererEditorPorts
+    dispose(): Promise<void>
+  }
+  interface PreviewSessionLike {
+    descriptor(): Promise<Record<string, unknown>>
+    dataSource(contract: string, major: number): Promise<{ value: unknown }>
+    dispose(): Promise<void>
+  }
+
+  /** Consumed by `openSession` during the one `createCodecPreview.open` call that follows. */
+  const pendingOpens = new Map<string, PreparedOpen>()
+  /** Live editor ports per open subject: a stage switch and the close prompt reach the same arm. */
+  const portsByPath = new Map<string, RendererEditorPorts>()
+  /** Why a tab has no editors, kept so the footer keeps saying it after the open report. */
+  const readOnlyNotes = new Map<string, string>()
+
+  /**
+   * Open the subject, then ask main whether it will write it.
+   *
+   * `edit()` rejects when the serving side has no editing wiring for the subject — no writer, no
+   * grant, an unwritable file. That rejection is the whole point of the S14 arm: a shell learns it
+   * *before* mounting, so it drops the editors instead of drawing a Save that fails at the end.
+   */
+  async function prepareOpen(entry: ExplorerEntry): Promise<PreparedOpen> {
+    const result = await subjectClient.open(entry.id)
+    if (result.state === 'unresolved') {
+      const detail =
+        result.snapshot.diagnostics[0]?.message ??
+        `${result.snapshot.reason}; using the explicit text/hex fallback`
+      setFooter(entry.id, detail, result.snapshot.reason !== 'no-candidate')
+      subjectsByPath.delete(entry.id)
+      readOnlyNotes.delete(entry.id)
+      return { dispose: async () => undefined }
+    }
+    const snapshot = result.snapshot
+    const boundary = snapshot.diagnostics.some(
+      item => item.code === 'x3.host/full-process-authority',
+    )
+      ? ' · full process authority'
+      : snapshot.diagnostics.some(item => item.code === 'x3.host/worker-shared-process')
+        ? ' · worker'
+        : ''
+    setFooter(
+      entry.id,
+      `${snapshot.selected.contributionId}/${snapshot.selected.variantId} · ${Math.round(
+        snapshot.selected.confidence * 100,
+      )}%${boundary}`,
+    )
+    const record: SubjectRecord = {
+      path: entry.id,
+      descriptor: snapshot.descriptor,
+      session: result.session,
+      planActive: result.session.presentation?.activeStage,
+    }
+    subjectsByPath.set(entry.id, record)
+    subjectsByDescriptor.set(descriptorKey(snapshot.descriptor), record)
+
+    let ports: RendererEditorPorts | undefined
+    try {
+      const arm = await subjectClient.edit(snapshot.sessionId)
+      ports = await createRendererEditorPorts({
+        arm,
+        onStatus: status => setFooter(entry.id, status.message, status.failed),
+        onDirty: dirty => editors.markDirty(entry.id, dirty),
+      })
+      portsByPath.set(entry.id, ports)
+      readOnlyNotes.delete(entry.id)
+    } catch (error) {
+      // main says why in a snapshot diagnostic; the wire error is the generic refusal.
+      const stated = snapshot.diagnostics.find(item => item.code === 'x3.app/subject-not-editable')
+      const because = stated?.message ?? (error instanceof Error ? error.message : String(error))
+      readOnlyNotes.set(entry.id, `read-only: ${because}`)
+      console.log(`[editing] ${entry.id} is read-only here: ${because}`)
+    }
+
+    const release = async (): Promise<void> => {
+      subjectsByPath.delete(entry.id)
+      subjectsByDescriptor.delete(descriptorKey(snapshot.descriptor))
+      // The arm belongs to the tab, not to a stage: closing the tab is what releases it, and with
+      // it every commit main has prepared for this subject.
+      if (ports !== undefined && portsByPath.get(entry.id) === ports) portsByPath.delete(entry.id)
+      await ports?.dispose().catch((error: unknown) => {
+        console.warn(`[editing] releasing the arm failed: ${String(error)}`)
+      })
+      await result.session.dispose()
+    }
+    /*
+     * The host's plan is kept as the *default* stage, not as the list of stages.
+     * `resolvePresentationPlan` keeps one stage per `singletonGroup`, which is right for "what
+     * opens first" and wrong for "what can this file be shown as" — a PNG would offer Image and
+     * never Hex. Handing the previewer a session without the plan lets it evaluate every stage
+     * in the app policy against the descriptor's own data sources and traits, and `planActive`
+     * later restores the host's choice of which one starts.
+     */
+    return {
+      session: {
         descriptor: async () => snapshot.descriptor,
         dataSource: (contract, major) => result.session.dataSource(contract, major),
-        dispose: async () => {
-          subjectsByPath.delete(entry.id)
-          subjectsByDescriptor.delete(descriptorKey(snapshot.descriptor))
-          await result.session.dispose()
-        },
-      }
-    },
-    // Editable stages get a real save path: bytes go through the broker to an atomic write.
-    editorPorts: (entry, bytes) => {
-      const ports = createFileEditorPorts(
-        bridge,
-        entry,
-        bytes,
-        line => setFooter(entry.id, line),
-        dirty => editors.markDirty(entry.id, dirty),
-      )
-      // Kept so "save before closing" can commit the very ports the editor is holding.
-      openPorts.set(entry.id, ports)
-      return ports
-    },
-  })
+        dispose: release,
+      },
+      ...(ports === undefined ? {} : { ports }),
+      dispose: release,
+    }
+  }
+
+  /**
+   * Two previewers over one opener: with the editing ports, and without them.
+   *
+   * `createCodecPreview` decides once per instance whether editable stages may be offered, so the
+   * per-subject answer has to be a choice between instances. Both share the session handed over in
+   * `pendingOpens`, so a subject is still opened exactly once.
+   */
+  const previewFor = (editable: boolean): PreviewResolver =>
+    createCodecPreview({
+      supported: profile.supportedExtensions,
+      stages: editable ? stages : readOnlyStages,
+      fallback: PREVIEW_FALLBACK,
+      async openSession(entry) {
+        return pendingOpens.get(entry.id)?.session
+      },
+      ...(editable
+        ? {
+            // Every editable stage saves through main's editing backend under the granted roots.
+            // There is no other write path in this renderer.
+            editorPorts: (entry: ExplorerEntry) => {
+              const ports = portsByPath.get(entry.id)
+              if (ports === undefined) {
+                throw new Error(`no editing arm is held for ${entry.id}`)
+              }
+              return ports
+            },
+          }
+        : {}),
+    })
+
+  const editablePreview = previewFor(true)
+  const readOnlyPreview = previewFor(false)
 
   /** Offer every applicable stage, then start on the one the host's plan selected. */
   const preview: PreviewResolver = {
-    supported: codecPreview.supported,
+    supported: editablePreview.supported,
     async open(container, entry, bytes, signal) {
-      const handle = await codecPreview.open(container, entry, bytes, signal)
+      const prepared = await prepareOpen(entry)
+      pendingOpens.set(entry.id, prepared)
+      let handle
+      try {
+        const resolver = prepared.ports === undefined ? readOnlyPreview : editablePreview
+        handle = await resolver.open(container, entry, bytes, signal)
+      } catch (error) {
+        await prepared.dispose()
+        throw error
+      } finally {
+        pendingOpens.delete(entry.id)
+      }
+      // No usable stage: `createCodecPreview` disposed the session, so the arm goes with it.
       if (handle === undefined) return undefined
       const wanted = preferredStage(
         handle.views.map(view => view.id),
@@ -416,8 +508,6 @@ async function boot(): Promise<void> {
   }
 
   let access: FileAccess | undefined
-  /** Live editor ports per open file, so a close prompt can save through the same session. */
-  const openPorts = new Map<string, { save(): Promise<void> }>()
 
   // ---------------------------------------------------------------- inspector
   const inspector = createInspectorDock(document)
@@ -448,12 +538,15 @@ async function boot(): Promise<void> {
       return host.confirmClose(entry.name)
     },
     async save(entry) {
-      await openPorts.get(entry.id)?.save()
+      await portsByPath.get(entry.id)?.save()
     },
     onStatus(status) {
+      // The read-only note rides along with every report for that tab: the open report lands after
+      // the mount, and a sentence the user never sees is not an explanation.
+      const note = status.path === undefined ? undefined : readOnlyNotes.get(status.path)
       setFooter(
         status.path ?? '',
-        [status.view, status.detail].filter(Boolean).join(' · '),
+        [status.view, status.detail, note].filter(Boolean).join(' · '),
         status.severity === 'error',
       )
       // The dock describes whatever tab is focused, so it follows the same signal the footer does.
@@ -808,8 +901,8 @@ async function boot(): Promise<void> {
         settingsRoot: settingsUi.root,
         inspector,
         subjectFor: inspectorSubject,
-        saveProbe: (entry, bytes) =>
-          createFileEditorPorts(bridge, entry, bytes, line => setFooter(entry.id, line)),
+        portsFor: path => portsByPath.get(path),
+        footerText: () => `${footerPath.textContent ?? ''} · ${footerDetail.textContent ?? ''}`,
       })
   }
 }
@@ -830,15 +923,12 @@ async function selfTest(options: {
   readonly settingsRoot: HTMLElement
   readonly inspector: ReturnType<typeof createInspectorDock>
   subjectFor(path: string | undefined): InspectorSubject | undefined
-  saveProbe?: (
-    entry: ExplorerEntry,
-    bytes: Uint8Array,
-  ) => {
-    readonly session: unknown
-    readonly commit: unknown
-  }
+  /** The editing arm a tab holds, or nothing when main refused one for that subject. */
+  portsFor(path: string): RendererEditorPorts | undefined
+  /** Whatever the status line currently says, so a refusal can be read back. */
+  footerText(): string
 }): Promise<void> {
-  const { access, preview, editors, settingsRoot, inspector, saveProbe } = options
+  const { access, preview, editors, settingsRoot, inspector } = options
   const entries = await access.list(undefined)
   console.log(`selftest: ${entries.length} entries in ${access.label}`)
   console.log(`selftest: supported extensions ${preview.supported.join(', ')}`)
@@ -853,11 +943,36 @@ async function selfTest(options: {
     const node = editors.root.querySelector(`${FOCUSED} [data-mk-part="explorer.viewpicker"]`)
     return node instanceof HTMLSelectElement ? node : undefined
   }
-  /** The visible tab's mounted viewer surface, or `null` when nothing mounted. */
-  const mountedSurface = (): Element | null =>
+  /**
+   * One node inside the *visible tab of the focused group*.
+   *
+   * Every earlier tab keeps its DOM, hidden, so a bare `document.querySelector` for a hex cell or
+   * a Save button finds the first file ever opened rather than the one under test.
+   */
+  const inFocusedTab = (selector: string): Element | null =>
     editors.root.querySelector(
-      `${FOCUSED} [data-mk-part="explorer.tabcontent"]:not([hidden]) [data-mk-part="viewer"]`,
+      `${FOCUSED} [data-mk-part="explorer.tabcontent"]:not([hidden]) ${selector}`,
     )
+  /** The visible tab's mounted viewer surface, or `null` when nothing mounted. */
+  const mountedSurface = (): Element | null => inFocusedTab('[data-mk-part="viewer"]')
+
+  /** Tabs the host has marked as holding uncommitted work, in the focused group. */
+  const dirtyTabs = (): number =>
+    editors.root.querySelectorAll(
+      `${FOCUSED} [data-mk-part="explorer.filetab"][data-mk-state~="mutating"]`,
+    ).length
+
+  /** Drive the public view picker exactly as a user would; `false` when the stage is not offered. */
+  const showStage = async (stage: string): Promise<boolean> => {
+    const picker = focusedPicker()
+    if (picker === undefined || ![...picker.options].some(option => option.value === stage)) {
+      return false
+    }
+    picker.value = stage
+    picker.dispatchEvent(new Event('change'))
+    await settle()
+    return true
+  }
 
   for (const entry of entries) {
     if (entry.directory) continue
@@ -919,22 +1034,18 @@ async function selfTest(options: {
   const settingsGroups = settingsRoot.querySelectorAll('[data-mk-part="settings.group"]').length
   console.log(`selftest: settings groups=${settingsGroups}`)
 
-  // Prove the save path reaches disk: write through the same ports an editor uses.
-  const target = entries.find(item => item.name === 'savetest.txt')
-  if (target !== undefined && saveProbe !== undefined) {
-    try {
-      const ports = saveProbe(target, new TextEncoder().encode('original text'))
-      const edits = [{ payload: { kind: 'text', text: 'SAVED BY SELFTEST' } }]
-      await (ports.session as { plan(c: unknown): Promise<unknown> }).plan({ edits })
-      const plan = { edits }
-      await (ports.commit as { prepare(p: unknown): Promise<unknown> }).prepare(plan)
-      await (ports.commit as { commit(): Promise<unknown> }).commit()
-      const after = await access.read(target.id, 1024)
-      console.log(`selftest: save -> ${JSON.stringify(new TextDecoder().decode(after))}`)
-    } catch (error) {
-      console.log(`selftest: save FAILED ${String(error)}`)
-    }
-  }
+  await editingProbes({
+    ...options,
+    entries,
+    showStage,
+    inFocusedTab,
+    dirtyTabs,
+    offeredViews: () => {
+      const picker = focusedPicker()
+      return picker === undefined ? [] : [...picker.options].map(item => item.value)
+    },
+  })
+
   // An installed theme must reach the tokens, not just the picker.
   const before = getComputedStyle(document.documentElement).getPropertyValue('--mk-color-accent')
   document.documentElement.setAttribute('data-mk-theme', 'sc2')
@@ -994,40 +1105,6 @@ async function selfTest(options: {
     node => (node.textContent ?? '').split(' ')[0],
   )
   console.log(`selftest: menus=[${menus.join(', ')}] fileEntries=${menuEntries.length}`)
-
-  // The dirty marker must appear on edit and clear on save.
-  if (target !== undefined) {
-    editors.markDirty(target.id, true)
-    const marked = document.querySelectorAll(
-      '[data-mk-part="explorer.filetab"][data-mk-state~="mutating"]',
-    ).length
-    const unsaved = editors.hasUnsaved()
-    editors.markDirty(target.id, false)
-    const cleared = document.querySelectorAll(
-      '[data-mk-part="explorer.filetab"][data-mk-state~="mutating"]',
-    ).length
-    console.log(`selftest: dirty marked=${marked} hasUnsaved=${unsaved} cleared=${cleared}`)
-  }
-
-  // Hex: edit a cell and check the ASCII twin follows and the tab is marked.
-  const bin = entries.find(item => item.name === 'unknown.bin')
-  if (bin !== undefined) {
-    await editors.open(bin)
-    const cell = document.querySelector('[data-mk-part="hex.cell"]') as HTMLElement | null
-    const twin = document.querySelector('[data-mk-part="hex.ascii"] > span') as HTMLElement | null
-    if (cell !== null && twin !== null) {
-      const asciiBefore = twin.textContent
-      cell.textContent = '41'
-      cell.dispatchEvent(new FocusEvent('blur'))
-      await new Promise(resolve => setTimeout(resolve, 120))
-      const marked = document.querySelectorAll(
-        '[data-mk-part="explorer.filetab"][data-mk-state~="mutating"]',
-      ).length
-      console.log(
-        `selftest: hex ascii ${JSON.stringify(asciiBefore)} -> ${JSON.stringify(twin.textContent)} tabMarked=${marked}`,
-      )
-    }
-  }
 
   // Operations: invoke the read-only standard verbs through the subject's own operation session.
   for (const entry of entries.filter(item => !item.directory)) {
@@ -1090,6 +1167,256 @@ async function selfTest(options: {
   }
 
   console.log('selftest: done')
+}
+
+/**
+ * What a `ViewerModule`-hosted editor sees of the four ports, narrowed to what a probe drives.
+ * The ports themselves are `unknown` to the previewer on purpose; nothing in the app but this
+ * probe ever names their methods.
+ */
+interface ProbePorts {
+  readonly session: {
+    readonly targets: readonly { readonly targetId: string; readonly ownerSource: unknown }[]
+    propose(change: unknown): Promise<{
+      readonly valid: boolean
+      readonly diagnostics: readonly { readonly code: string }[]
+    }>
+    plan(change: unknown): Promise<unknown>
+  }
+  readonly commit: {
+    prepare(plan: unknown): Promise<{ readonly state: string; readonly reason?: string }>
+  }
+}
+
+/**
+ * The editing seam, driven on real files through the real controls.
+ *
+ * Every line below is a claim about bytes on disk or about what the shell offered, never about a
+ * port having been called: a save path that reports success without changing the file is exactly
+ * the failure this exists to catch.
+ */
+async function editingProbes(options: {
+  readonly access: FileAccess
+  readonly editors: EditorArea
+  readonly entries: readonly ExplorerEntry[]
+  portsFor(path: string): RendererEditorPorts | undefined
+  footerText(): string
+  showStage(stage: string): Promise<boolean>
+  inFocusedTab(selector: string): Element | null
+  dirtyTabs(): number
+  /** Stage ids the focused tab's view picker offers right now. */
+  offeredViews(): readonly string[]
+}): Promise<void> {
+  const { access, editors, entries, portsFor, footerText, showStage, inFocusedTab, dirtyTabs } =
+    options
+  const decoder = new TextDecoder()
+  const onDisk = async (entry: ExplorerEntry): Promise<string> =>
+    decoder.decode(await access.read(entry.id, 4096))
+  const statusText = (): string => inFocusedTab('[data-mk-part="viewer.status"]')?.textContent ?? ''
+  const click = (selector: string): boolean => {
+    const node = inFocusedTab(selector)
+    if (!(node instanceof HTMLElement)) return false
+    node.click()
+    return true
+  }
+  const find = (name: string): ExplorerEntry | undefined => entries.find(item => item.name === name)
+  /**
+   * Close a tab the way a user does — its own close control — and report whether the arm went
+   * with it. A closed tab that left an arm alive would keep main holding prepared commits for a
+   * file nobody has open.
+   */
+  const closeTab = async (entry: ExplorerEntry): Promise<boolean> => {
+    /*
+     * Every tab on this file, not just the focused one. A split group can hold a second tab on the
+     * same path, and each holds its own arm — so "closing released the arm" is only a claim worth
+     * printing once no tab has the file open at all.
+     */
+    const controls = [
+      ...editors.root.querySelectorAll(
+        `[data-mk-part="explorer.filetab-close"][aria-label="Close ${entry.name}"]`,
+      ),
+    ]
+    if (controls.length === 0) return false
+    for (const control of controls) {
+      if (control instanceof HTMLElement) control.click()
+      await new Promise(resolve => setTimeout(resolve, 200))
+    }
+    return portsFor(entry.id) === undefined
+  }
+
+  // ------------------------------------------------------------------ text: save, then conflict
+  const text = find('savetest.json')
+  if (text === undefined) console.log('selftest: edit no savetest.json fixture')
+  else {
+    try {
+      await editors.open(text)
+      await settle()
+      const before = await onDisk(text)
+      if (!(await showStage('text'))) {
+        console.log('selftest: edit text stage was not offered for savetest.json')
+      } else {
+        const area = inFocusedTab('[data-mk-part="editor.text"]')
+        if (!(area instanceof HTMLTextAreaElement)) {
+          console.log('selftest: edit no textarea mounted for savetest.json')
+        } else {
+          area.value = '{"note":"SAVED BY SELFTEST"}'
+          // The toolbar's first button is Save; clicking it is the whole user-visible save path.
+          const clicked = click('[data-mk-part="editor.toolbar"] button')
+          await new Promise(resolve => setTimeout(resolve, 400))
+          const after = await onDisk(text)
+          console.log(
+            `selftest: edit text save clicked=${clicked} status=${JSON.stringify(statusText())} ` +
+              `disk ${JSON.stringify(before)} -> ${JSON.stringify(after)} ` +
+              `changed=${after !== before} dirtyTabs=${dirtyTabs()}`,
+          )
+
+          /*
+           * Save again without reopening. The arm is pinned to the revision the subject was opened
+           * at and the file has moved on, so the coordinator must refuse with a conflict — and the
+           * status line must say that, not "failed".
+           */
+          area.value = '{"note":"SECOND WRITE"}'
+          click('[data-mk-part="editor.toolbar"] button')
+          await new Promise(resolve => setTimeout(resolve, 400))
+          console.log(
+            `selftest: edit stale save editor=${JSON.stringify(statusText())} ` +
+              `footer=${JSON.stringify(footerText())} disk unchanged=${(await onDisk(text)) === after}`,
+          )
+        }
+      }
+    } catch (error) {
+      console.log(`selftest: edit text FAILED ${String(error)}`)
+    }
+  }
+
+  // ------------------------------------------------------------------ writer refusal, with reason
+  if (text !== undefined) {
+    const ports = portsFor(text.id)
+    const target = (ports as unknown as ProbePorts | undefined)?.session.targets[0]
+    if (ports === undefined || target === undefined) {
+      console.log('selftest: edit refusal probe has no arm for savetest.json')
+    } else {
+      try {
+        const probe = ports as unknown as ProbePorts
+        const refused = {
+          targets: probe.session.targets,
+          edits: [{ operation: 'delete', targetId: target.targetId, source: target.ownerSource }],
+          provenance: { actor: 'user' },
+        }
+        const validation = await probe.session.propose(refused)
+        const prepared = await probe.commit.prepare(await probe.session.plan(refused))
+        console.log(
+          `selftest: edit writer refusal valid=${validation.valid} ` +
+            `codes=[${validation.diagnostics.map(item => item.code).join(', ')}] ` +
+            `prepare=${prepared.state}/${prepared.reason ?? '-'} footer=${JSON.stringify(footerText())}`,
+        )
+      } catch (error) {
+        console.log(`selftest: edit writer refusal FAILED ${String(error)}`)
+      }
+    }
+  }
+
+  // ------------------------------------------------------------------ hex: one byte, to disk
+  const binary = find('savehex.json')
+  if (binary === undefined) console.log('selftest: edit no savehex.json fixture')
+  else {
+    try {
+      await editors.open(binary)
+      await settle()
+      const before = await onDisk(binary)
+      if (!(await showStage('hex'))) {
+        console.log('selftest: edit hex stage was not offered for savehex.json')
+      } else {
+        const cell = inFocusedTab('[data-mk-part="hex.cell"]')
+        const twin = inFocusedTab('[data-mk-part="hex.ascii"] > span')
+        if (!(cell instanceof HTMLElement) || !(twin instanceof HTMLElement)) {
+          console.log('selftest: edit no hex grid mounted for savehex.json')
+        } else {
+          const asciiBefore = twin.textContent
+          cell.textContent = '5a'
+          cell.dispatchEvent(new FocusEvent('blur'))
+          await new Promise(resolve => setTimeout(resolve, 200))
+          const markedWhileDirty = dirtyTabs()
+          const clicked = click('[data-mk-part="hex.toolbar"] [data-mk-part="operations.button"]')
+          await new Promise(resolve => setTimeout(resolve, 600))
+          const after = await onDisk(binary)
+          console.log(
+            `selftest: edit hex ascii ${JSON.stringify(asciiBefore)} -> ` +
+              `${JSON.stringify(twin.textContent)} dirtyTabs=${markedWhileDirty} ` +
+              `save clicked=${clicked} status=${JSON.stringify(statusText())} ` +
+              `disk ${JSON.stringify(before)} -> ${JSON.stringify(after)} changed=${after !== before} ` +
+              `dirtyTabsAfter=${dirtyTabs()}`,
+          )
+        }
+      }
+      // Closing the tab must release the arm: main's prepared commits belong to the session.
+      console.log(`selftest: edit hex tab closed, arm released=${await closeTab(binary)}`)
+    } catch (error) {
+      console.log(`selftest: edit hex FAILED ${String(error)}`)
+    }
+  }
+
+  /*
+   * The Monaco stage, which is an editor from an extension rather than from `@modkitx-x3/ui`.
+   * It gets the same ports as the other two, so this line says whether an independently authored
+   * editor can save through this seam. Kept in the run because "the code tab cannot save" is a
+   * regression the app would otherwise never notice.
+   */
+  const code = find('savecode.json')
+  if (code !== undefined) {
+    try {
+      await editors.open(code)
+      await settle()
+      const before = await onDisk(code)
+      if (!(await showStage('code'))) {
+        console.log('selftest: edit code stage was not offered for savecode.json')
+      } else {
+        /*
+         * Monaco creates itself asynchronously and hangs its instance off the surface when it is
+         * ready. Reading that handle too early leaves the buffer untouched, the Save control
+         * disabled, and a probe that reports nothing rather than a result — so wait for it.
+         */
+        let editor: { setValue(value: string): void } | undefined
+        for (let attempt = 0; attempt < 20 && editor === undefined; attempt += 1) {
+          const surface = inFocusedTab('[data-mk-part="viewer"]')
+          editor = (surface as { __mkEditor?: { setValue(value: string): void } } | null)
+            ?.__mkEditor
+          if (editor === undefined) await settle()
+        }
+        editor?.setValue('{"code":"SAVED BY SELFTEST"}')
+        await settle()
+        const control = inFocusedTab('[data-mk-part="operations.button"]')
+        const enabled = control instanceof HTMLButtonElement && !control.disabled
+        const clicked = click('[data-mk-part="operations.button"]')
+        await new Promise(resolve => setTimeout(resolve, 400))
+        const after = await onDisk(code)
+        console.log(
+          `selftest: edit code editor=${editor !== undefined} save clicked=${clicked} ` +
+            `enabled=${enabled} status=${JSON.stringify(statusText())} ` +
+            `disk ${JSON.stringify(before)} -> ${JSON.stringify(after)} changed=${after !== before}`,
+        )
+      }
+    } catch (error) {
+      console.log(`selftest: edit code FAILED ${String(error)}`)
+    }
+  }
+
+  // ------------------------------------------------------------------ no arm, therefore no editor
+  const locked = find('readonly.json')
+  if (locked === undefined) console.log('selftest: edit no readonly.json fixture')
+  else {
+    try {
+      await editors.open(locked)
+      await settle()
+      const views = options.offeredViews()
+      console.log(
+        `selftest: edit read-only views [${views.join(', ')}] arm=${portsFor(locked.id) !== undefined} ` +
+          `footer=${JSON.stringify(footerText())} disk=${JSON.stringify(await onDisk(locked))}`,
+      )
+    } catch (error) {
+      console.log(`selftest: edit read-only FAILED ${String(error)}`)
+    }
+  }
 }
 
 boot().catch((error: unknown) => {

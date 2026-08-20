@@ -14,10 +14,10 @@
 import type { PreviewStage } from '@modkitx-x3/ui'
 import type { OperationSession } from '@modkitx-x3/sdk'
 
-import { PREVIEW_STAGES } from '../generated/viewer-catalog.js'
+import { PREVIEW_STAGES, PREVIEW_STAGES_READONLY } from '../generated/viewer-catalog.js'
 import { createArchiveStage } from './archive-stage.js'
 import { imageEditStage } from './image-edit-stage.js'
-import { APP_STAGE_POLICY, orderStages } from './view-policy.js'
+import { APP_STAGE_POLICY, orderStages, readOnlyStages } from './view-policy.js'
 
 export interface ElectronStageOptions {
   /** Operation session for the subject a stage was mounted for, when the host has one. */
@@ -33,6 +33,17 @@ function appStage(id: string, module: PreviewStage['module']): PreviewStage {
 export function createElectronStages(options: ElectronStageOptions): readonly PreviewStage[] {
   return orderStages<PreviewStage>([
     ...PREVIEW_STAGES,
+    appStage('archive', createArchiveStage({ operationsFor: options.operationsFor })),
+    appStage('image-edit', imageEditStage),
+  ])
+}
+
+/** The same stages for a subject this host cannot write; see `readOnlyStages` for the rule. */
+export function createElectronReadOnlyStages(
+  options: ElectronStageOptions,
+): readonly PreviewStage[] {
+  return orderStages<PreviewStage>([
+    ...readOnlyStages(PREVIEW_STAGES, PREVIEW_STAGES_READONLY),
     appStage('archive', createArchiveStage({ operationsFor: options.operationsFor })),
     appStage('image-edit', imageEditStage),
   ])
