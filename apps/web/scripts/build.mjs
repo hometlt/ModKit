@@ -4,9 +4,14 @@
  *   node scripts/build.mjs                     build
  *   node scripts/build.mjs --serve             build and serve on 8732
  *   node scripts/build.mjs --serve --port 8744 build and serve on another port
+ *   node scripts/build.mjs --out <dir>         build somewhere else than dist-app/
  *
  * Output goes to `dist-app/`, not `dist/`: `dist/` is the package's compiled library surface that
  * other roots import, and overwriting it with a bundle would break them.
+ *
+ * `--out` exists so a test can build the real thing into a scratch directory and serve it, without
+ * touching the committed `dist-app` (which is rebuilt and committed deliberately, not as a side
+ * effect of running the suite). Everything else about the build is identical.
  */
 import { build } from 'esbuild'
 import { createServer } from 'node:http'
@@ -25,20 +30,39 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 const here = dirname(fileURLToPath(import.meta.url))
 const appRoot = resolve(here, '..')
 const repoRoot = resolve(appRoot, '..', '..')
-const dist = join(appRoot, 'dist-app')
+const outIndex = process.argv.indexOf('--out')
+const requestedOut = outIndex === -1 ? undefined : process.argv[outIndex + 1]
+if (outIndex !== -1 && (requestedOut === undefined || requestedOut.startsWith('--'))) {
+  console.error('--out needs a directory')
+  process.exit(1)
+}
+const dist = requestedOut === undefined ? join(appRoot, 'dist-app') : resolve(requestedOut)
 
 // A clean output every time: hashed chunks and copied artifacts of a previous build must not
 // linger next to the current ones (a stale chunk is unreachable but still served).
 rmSync(dist, { recursive: true, force: true })
 mkdirSync(dist, { recursive: true })
 
+/*
+ * Two page entries in one graph. `main.js` is the PWA shell; `embed.js` is the custom-element
+ * entry a third-party page loads with a single script tag (`src/embed.ts`). They are built
+ * together, with splitting on, so everything both of them use — the ui viewers, the host, the
+ * generated catalog — lands in a shared chunk and an embedding page that also happens to open the
+ * app downloads it once. Splitting is what makes them one deployment rather than two bundles that
+ * merely sit in the same folder.
+ */
 await build({
-  entryPoints: [join(appRoot, 'src', 'shell.ts')],
-  outfile: join(dist, 'main.js'),
+  entryPoints: {
+    main: join(appRoot, 'src', 'shell.ts'),
+    embed: join(appRoot, 'src', 'embed.ts'),
+  },
+  outdir: dist,
   bundle: true,
+  splitting: true,
   format: 'esm',
   platform: 'browser',
   target: ['chrome120', 'firefox121', 'safari17'],
+  chunkNames: 'chunks/[name]-[hash]',
   absWorkingDir: repoRoot,
   logLevel: 'warning',
 })
