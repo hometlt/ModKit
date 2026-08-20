@@ -32,6 +32,41 @@ await build({
   target: ['node20'],
   // Supplied by the VS Code runtime; bundling it would shadow the real API.
   external: ['vscode'],
+  /*
+   * The Node worker backend locates its worker bootstrap with
+   * `new URL('./worker-bootstrap.js', import.meta.url)`, and `import.meta` is empty in a CommonJS
+   * output — which VS Code requires for an extension entry point. Pointing it at this bundle's own
+   * file makes that expression resolve to `dist-app/worker-bootstrap.js`, which is the sibling
+   * built below. Without this the URL is `undefined` and every codec spawn fails at `new Worker`.
+   * The bootstrap is a published entry precisely so it can survive bundling as its own file.
+   */
+  banner: {
+    // `'use strict'` is repeated here because a banner displaces esbuild's own directive out of
+    // the prologue position, which would silently take the whole bundle out of strict mode.
+    js:
+      `'use strict';\n` +
+      `const __modkitBundleUrl = require('node:url').pathToFileURL(__filename).href;`,
+  },
+  define: { 'import.meta.url': '__modkitBundleUrl' },
+  absWorkingDir: repoRoot,
+  logLevel: 'warning',
+})
+
+const bootstrapEntry = join(repoRoot, 'packages', 'host', 'dist', 'node', 'worker-bootstrap.js')
+if (!existsSync(bootstrapEntry)) {
+  console.error(`missing ${bootstrapEntry} — run pnpm build (tsc -b) before bundling the extension`)
+  process.exit(1)
+}
+// Its own self-contained ES module: a worker thread is its own entry point, and the bootstrap
+// verifies artifact bytes against the inventory's digests, so it must not be reached through a
+// bundle that could have rewritten it.
+await build({
+  entryPoints: [bootstrapEntry],
+  outfile: join(dist, 'worker-bootstrap.js'),
+  bundle: true,
+  format: 'esm',
+  platform: 'node',
+  target: ['node20'],
   absWorkingDir: repoRoot,
   logLevel: 'warning',
 })
@@ -56,20 +91,32 @@ if (!existsSync(stylesheet)) {
 }
 cpSync(stylesheet, join(dist, 'modkit-ui.css'))
 
+// Shell chrome only: the shipped stylesheet has no layout for the `workbench` parts on purpose, so
+// the host places them. Everything else the page draws comes from `modkit-ui.css`.
+cpSync(join(appRoot, 'app.css'), join(dist, 'app.css'))
+
 // ---------------------------------------------------------------- manifest
 const manifestPath = join(appRoot, 'package.json')
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
 const contributes = JSON.parse(readFileSync(join(appRoot, 'contributes.generated.json'), 'utf8'))
 
-const previous = JSON.stringify(manifest.contributes ?? null)
+const previous = JSON.stringify([manifest.contributes ?? null, manifest.activationEvents ?? null])
 manifest.contributes = contributes
-// Every command in the generated catalog is an activation point; VS Code 1.75+ infers these, but
-// declaring them keeps the extension loadable on older hosts too.
-manifest.activationEvents = contributes.commands.map(command => `onCommand:${command.command}`)
+// Every command and every custom editor in the generated catalog is an activation point; VS Code
+// 1.75+ infers the commands, but a custom editor still has to be declared or the provider is never
+// registered and "Reopen Editor With… → Modkit Asset Preview" opens an editor nothing resolves.
+manifest.activationEvents = [
+  ...contributes.commands.map(command => `onCommand:${command.command}`),
+  ...contributes.customEditors.map(editor => `onCustomEditor:${editor.viewType}`),
+  // The tree views are the other way in: opening the Modkit container has to start the host.
+  ...Object.values(contributes.views)
+    .flat()
+    .map(view => `onView:${view.id}`),
+]
 
-if (JSON.stringify(manifest.contributes) !== previous) {
+if (JSON.stringify([manifest.contributes, manifest.activationEvents]) !== previous) {
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
-  console.log('manifest contributes synced from contributes.generated.json')
+  console.log('manifest contributes and activation events synced from contributes.generated.json')
 }
 
 console.log(`built ${dist}`)

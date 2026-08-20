@@ -2,9 +2,32 @@
   "schemaVersion": 1,
   "commands": [
     { "command": "modkit.explainResolution", "title": "Modkit: Explain Resolution" },
-    { "command": "modkit.openWith", "title": "Modkit: Open With…" },
-    { "command": "modkit.showHostProfile", "title": "Modkit: Show Host Profile" }
+    { "command": "modkit.openWith", "title": "Modkit: Open Active File in Workbench" },
+    { "command": "modkit.showHostProfile", "title": "Modkit: Open Workbench" }
   ],
+  "configuration": {
+    "title": "Modkit MK3",
+    "properties": {
+      "modkit.extensions": {
+        "type": "array",
+        "default": [],
+        "markdownDescription": "Extension directories to load beside the ones that ship with this build. Each item is either a path, or an object with `path`, an optional `id` the directory is expected to declare, and an optional `enabled` flag. Directories named here are loaded as installed artifacts and never run in the extension host process.",
+        "items": {
+          "anyOf": [
+            { "type": "string" },
+            {
+              "type": "object",
+              "properties": {
+                "path": { "type": "string" },
+                "id": { "type": "string" },
+                "enabled": { "type": "boolean", "default": true }
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
   "customEditors": [
     {
       "viewType": "modkit.genericAssetPreview",
@@ -13,6 +36,15 @@
       "priority": "option"
     }
   ],
+  "viewsContainers": {
+    "activitybar": [
+      {
+        "id": "modkit",
+        "title": "Modkit",
+        "icon": "media/icon-128.png"
+      }
+    ]
+  },
   "views": {
     "modkit": [
       { "id": "modkit.assets", "name": "Assets" },
