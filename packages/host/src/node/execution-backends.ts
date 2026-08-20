@@ -12,6 +12,7 @@
 
 import type { Diagnostic } from '@modkitx-x3/core'
 import {
+  linkedInProcessBackend,
   TRUSTED_IN_PROCESS_EXECUTION_BACKEND,
   createExecutionBackendRegistry,
   type ExecutionBackend,
@@ -40,13 +41,23 @@ export interface NodeExecutionBackendsOptions {
   readonly bootstrapUrl?: URL
   /** Register the in-process backend too (default true; the gate still requires the artifact decision). */
   readonly trustedInProcess?: boolean
+  /**
+   * Modules the application imported at build time, keyed by the linked entrypoint href
+   * (`linkedExtensionInputs(...).modules`). When present, the in-process backend serves these
+   * before falling back to dynamic import.
+   */
+  readonly linkedModules?: ReadonlyMap<string, Readonly<Record<string, unknown>>>
 }
 
 export function createNodeExecutionBackends(
   options: NodeExecutionBackendsOptions = {},
 ): ExecutionBackendRegistry {
   const backends: ExecutionBackend[] = []
-  if (options.trustedInProcess !== false) backends.push(TRUSTED_IN_PROCESS_EXECUTION_BACKEND)
+  if (options.linkedModules !== undefined && options.linkedModules.size > 0) {
+    backends.push(linkedInProcessBackend(options.linkedModules))
+  } else if (options.trustedInProcess !== false) {
+    backends.push(TRUSTED_IN_PROCESS_EXECUTION_BACKEND)
+  }
   backends.push(
     createNodeWorkerBackend({
       ...(options.policy === undefined ? {} : { policy: options.policy }),

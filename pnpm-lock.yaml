@@ -11,6 +11,9 @@ importers:
       '@modkitx-x3/core':
         specifier: workspace:*
         version: link:packages/core
+      '@modkitx-x3/extensions':
+        specifier: workspace:*
+        version: link:packages/extensions-linked
       '@modkitx-x3/host':
         specifier: workspace:*
         version: link:packages/host
@@ -549,6 +552,12 @@ importers:
         version: link:../../_shared/codec-kit
 
   packages/core: {}
+
+  packages/extensions-linked:
+    dependencies:
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../host
 
   packages/host:
     dependencies:

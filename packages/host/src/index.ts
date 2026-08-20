@@ -145,6 +145,7 @@ export {
 export {
   createExecutionBackendRegistry,
   DEFAULT_EXECUTION_BACKENDS,
+  linkedInProcessBackend,
   TRUSTED_IN_PROCESS_EXECUTION_BACKEND,
   type ExecutionBackend,
   type ExecutionBackendActivation,
@@ -194,3 +195,13 @@ export {
   type HostComposition,
   type HostCompositionOptions,
 } from './composition.js'
+export {
+  defineLinkedExtension,
+  linkedExtensionInputs,
+  type LinkedContributionExclusion,
+  type LinkedContributionInit,
+  type LinkedExtension,
+  type LinkedExtensionInit,
+  type LinkedExtensionSet,
+  type LinkedModule,
+} from './linked.js'

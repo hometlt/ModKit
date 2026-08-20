@@ -35,6 +35,8 @@ import { uint64, type Diagnostic } from '@modkitx-x3/core'
 import { createHostTopology, type AssetSession, type PermissionGrant } from '@modkitx-x3/sdk'
 import type { SubjectOpenSnapshot } from '../subject-rpc.js'
 import { createSubjectEditing, type SubjectEditing } from '../subject-editing.js'
+import { createSubjectServices } from '../subject-services.js'
+import { linkedExtensionInputs, type LinkedExtension } from '../linked.js'
 import { createEvidenceRegistry, createRawWriter } from '../editing-evidence.js'
 import { createFileEditingBackend } from './file-editing-backend.js'
 import {
@@ -56,6 +58,13 @@ export interface ModkitOptions {
    * set). Loaded as `bundled` — the caller vouches for them — but still executed worker-brokered.
    */
   readonly extensions: readonly (string | ExtensionRootRequest)[]
+  /**
+   * Extensions the application imported at build time (`import { images } from
+   * '@modkitx-x3/extensions'`). Static `import` is the connection mechanism and the trust
+   * decision in one: linked code runs in-process, exactly like the rest of the caller's bundle.
+   * `extensions`/`userExtensions` stay the dynamic lane — directories, verified, worker-executed.
+   */
+  readonly modules?: readonly LinkedExtension[]
   /** Extension directories supplied by the *end user* of the caller's product (`installed`). */
   readonly userExtensions?: readonly (string | ExtensionRootRequest)[]
   /** Absolute directories subjects may be opened from. Empty opens nothing, by design. */
@@ -155,20 +164,54 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
 
   // the caller's set and the end user's set, loaded independently: one broken directory becomes a
   // record beside the others, never an exception that takes the host down
+  const linked = linkedExtensionInputs(options.modules ?? [])
   const bundled = await loadExtensionRoots(asRequests(options.extensions), { origin: 'bundled' })
   const installed = await loadExtensionRoots(asRequests(options.userExtensions ?? []), {
     origin: 'installed',
-    claimed: bundled.coordinates,
+    claimed: [...linked.coordinates, ...bundled.coordinates],
   })
 
-  const services = await createNodeSubjectServices({
+  const services: NodeSubjectServices = await createNodeSubjectServices({
     topology: modkitTopology(),
     realms: { host: MODKIT_REALM, workers: MODKIT_WORKER_REALM },
-    extensions: [...bundled.inputs, ...installed.inputs],
+    extensions: [...linked.inputs, ...bundled.inputs, ...installed.inputs],
     ...(options.policy === undefined ? {} : { policy: options.policy }),
+    ...(linked.modules.size === 0 ? {} : { linkedModules: linked.modules }),
     ...(options.bootstrapUrl === undefined ? {} : { bootstrapUrl: options.bootstrapUrl }),
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
   })
+
+  /*
+   * Two resolution lanes over one inventory, because the two connection mechanisms declare
+   * different execution environments. Directory extensions activate for the worker realm
+   * (`node-worker`) — isolation is the point of loading by directory. Linked contributions declare
+   * `trusted-in-process` for the host realm (`node`), because the import was the trust decision.
+   * A subject is opened through the worker lane first; only when nothing there claims it does the
+   * trusted lane answer — so a codec available both ways still runs isolated.
+   */
+  const trustedLane =
+    linked.inputs.length === 0
+      ? undefined
+      : createSubjectServices({
+          inventory: services.inventory,
+          target: services.host.target,
+          executionBackends: services.executionBackends,
+          ...(services.serviceDefinitions === undefined
+            ? {}
+            : { serviceDefinitions: services.serviceDefinitions }),
+        })
+  const subjects =
+    trustedLane === undefined
+      ? services
+      : {
+          ...services,
+          open: async (request: Parameters<typeof services.open>[0]) => {
+            const viaWorkers = await services.open(request)
+            if (viaWorkers.state === 'opened') return viaWorkers
+            const viaTrusted = await trustedLane.open(request)
+            return viaTrusted.state === 'opened' ? viaTrusted : viaWorkers
+          },
+        }
 
   /*
    * One editing authority for the whole host: the backend is confined to `writableRoots`, so even
@@ -191,7 +234,7 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
     value: undefined,
   }
   const opener = createPathSubjectOpener({
-    subjects: services,
+    subjects,
     roots,
     grant,
     intent: options.intent ?? 'full',
@@ -204,7 +247,11 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
   return Object.freeze({
     services,
     extensionFailures: Object.freeze([...bundled.failures, ...installed.failures]),
-    extensionCoordinates: Object.freeze([...bundled.coordinates, ...installed.coordinates]),
+    extensionCoordinates: Object.freeze([
+      ...linked.coordinates,
+      ...bundled.coordinates,
+      ...installed.coordinates,
+    ]),
 
     async open(path: string, signal?: AbortSignal): Promise<ModkitOpened> {
       lastOpened.value = undefined

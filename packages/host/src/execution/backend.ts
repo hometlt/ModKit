@@ -201,6 +201,42 @@ export const TRUSTED_IN_PROCESS_EXECUTION_BACKEND: ExecutionBackend = Object.fre
   },
 } satisfies ExecutionBackend)
 
+/**
+ * The in-process backend of a host with statically linked extensions.
+ *
+ * Same profile and same gate as `TRUSTED_IN_PROCESS_EXECUTION_BACKEND`; the difference is where
+ * the module comes from. A linked entrypoint (`modkit-linked://…`, minted by
+ * `defineLinkedExtension`) is served from the registry of modules the application imported at
+ * build time — that code is already in the process, and `import()` of a synthetic URL would be
+ * both impossible and beside the point. Anything not in the registry falls back to the plain
+ * dynamic `import()`, so one backend serves a host that mixes linked and directory extensions.
+ */
+export function linkedInProcessBackend(
+  linked: ReadonlyMap<string, Readonly<Record<string, unknown>>>,
+): ExecutionBackend {
+  return Object.freeze({
+    profile: 'trusted-in-process',
+    supports: (_target: RuntimeTarget, variant: RuntimeVariantDeclaration) =>
+      variant.executionProfile === 'trusted-in-process',
+    async activate(context: ExecutionBackendActivation): Promise<ExecutionModuleLease> {
+      throwIfAborted(context.signal)
+      const preLinked = linked.get(context.entrypoint.href)
+      if (preLinked !== undefined) {
+        return Object.freeze({ module: preLinked, release: async () => undefined })
+      }
+      if (context.entrypoint.protocol === 'modkit-linked:') {
+        throw new ModkitError({
+          code: 'x3.host/linked-module-missing',
+          message: `no linked module was registered for ${context.entrypoint.href}`,
+          context: { entrypoint: context.entrypoint.href },
+        })
+      }
+      const module = (await import(context.entrypoint.href)) as Record<string, unknown>
+      return Object.freeze({ module, release: async () => undefined })
+    },
+  } satisfies ExecutionBackend)
+}
+
 /** Compatibility composition used until an application supplies explicit worker/process realms. */
 export const DEFAULT_EXECUTION_BACKENDS: ExecutionBackendRegistry = createExecutionBackendRegistry([
   TRUSTED_IN_PROCESS_EXECUTION_BACKEND,

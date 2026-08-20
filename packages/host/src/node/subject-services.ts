@@ -52,6 +52,8 @@ export interface NodeSubjectServicesOptions {
   readonly bootstrapUrl?: URL
   /** Register the in-process backend too (default true; the gate still requires the artifact decision). */
   readonly trustedInProcess?: boolean
+  /** Statically linked modules (see `linkedExtensionInputs`), served by the in-process backend. */
+  readonly linkedModules?: ReadonlyMap<string, Readonly<Record<string, unknown>>>
 }
 
 export interface NodeSubjectServices extends SubjectServices {
@@ -80,6 +82,7 @@ export async function createNodeSubjectServices(
     ...(options.trustedInProcess === undefined
       ? {}
       : { trustedInProcess: options.trustedInProcess }),
+    ...(options.linkedModules === undefined ? {} : { linkedModules: options.linkedModules }),
   })
   const [host, workers] = await Promise.all([
     createHostComposition({
