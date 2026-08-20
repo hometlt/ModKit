@@ -774,7 +774,30 @@ export function createCommitCoordinator(options: HostCommitCoordinatorOptions): 
       proven = false
     }
     if (!proven) {
-      return { state: 'rejected', reason: 'fidelity-unproven', diagnostics: [] }
+      /*
+       * "Unproven" has two very different causes and one used to look like the other: no evidence
+       * record covers this claim (the host's policy is incomplete), or a record exists and the
+       * plan came from a writer this host pinned away (`expectedWriter`). The second sent an
+       * implementer to audit an evidence registry that was fine. The diagnostic names which.
+       */
+      const pinned =
+        options.expectedWriter !== undefined &&
+        fidelity !== undefined &&
+        fidelity.writer.providerId !== options.expectedWriter.providerId
+      return {
+        state: 'rejected',
+        reason: 'fidelity-unproven',
+        diagnostics: [
+          {
+            severity: 'error',
+            code: pinned ? 'x3.host/fidelity-writer-pinned' : 'x3.host/fidelity-evidence-missing',
+            message: pinned
+              ? `this host pinned writes to «${options.expectedWriter?.providerId}», and this plan came from «${fidelity?.writer.providerId}»`
+              : `no fidelity evidence covers ${plan.fidelity.roundTrip}/preservesUnknownData=${String(plan.fidelity.preservesUnknownData)} for this plan`,
+            path: [],
+          },
+        ],
+      }
     }
     if (
       (plan.fidelity.roundTrip === 'lossy' || plan.fidelity.roundTrip === 'none') &&

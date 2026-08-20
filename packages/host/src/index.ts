@@ -86,6 +86,7 @@ export {
   createRawWriter,
   HOST_RAW_WRITER_EVIDENCE_ID,
   HOST_RAW_WRITER_EVIDENCE_RECORD,
+  ZIP_VERBATIM_REASSEMBLY_RECORDS,
   HOST_RAW_WRITER_IDENTITY,
   type EvidenceRegistry,
   type FidelityEvidenceRecord,

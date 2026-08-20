@@ -107,6 +107,16 @@ export interface SubjectEditingOptions {
   readonly payloads?: PayloadStore
   /** Path B: a resolved writer provider for this subject's format/representation. */
   readonly writer?: Writer
+  /**
+   * Pin every plan to one writer identity.
+   *
+   * Only for a host where exactly one writer can produce a plan. It is a **trap for any host that
+   * also offers Path A**: a codec-produced plan carries the codec's identity, not this one, so
+   * pinning turns every mutating operation into `fidelity-unproven` — a refusal whose message
+   * points at the evidence registry while the actual cause is this line. Leave it unset unless
+   * you mean "no writer but this one may ever write here", and never set it beside `operations`
+   * that mutate.
+   */
   readonly expectedWriter?: WriterIdentity
   readonly expectedEvidenceContext?: HostCommitCoordinatorOptions['expectedEvidenceContext']
   readonly digest?: (value: unknown) => string

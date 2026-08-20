@@ -285757,6 +285757,42 @@ var HOST_RAW_WRITER_EVIDENCE_RECORD = Object.freeze({
   inputClass: "any",
   provenAt: "2026-08-19T00:00:00Z"
 });
+var ZIP_VERBATIM_REASSEMBLY_RECORDS = Object.freeze([
+  Object.freeze({
+    writer: Object.freeze({
+      providerId: "org.modkitx/archive-zip",
+      providerVersion: "1.0.0",
+      artifactDigest: "x3:org.modkitx/archive-zip@1.0.0",
+      formatId: "zip",
+      representationId: "archive-namespace"
+    }),
+    claim: Object.freeze({ roundTrip: "semantic", preservesUnknownData: true }),
+    evidenceId: "zip-verbatim-reassembly-v1",
+    corpusId: "modkitX3/packages/host/test/archive-edits.test.ts",
+    corpusDigest: "none:proof-suite",
+    conformanceProfile: "org.modkitx/codec-contribution-v1",
+    optionsFingerprint: "options:stored-additions",
+    inputClass: "zip-classic",
+    provenAt: "2026-08-19T00:00:00Z"
+  }),
+  Object.freeze({
+    writer: Object.freeze({
+      providerId: "org.modkitx/archive-zip",
+      providerVersion: "1.0.0",
+      artifactDigest: "x3:org.modkitx/archive-zip@1.0.0",
+      formatId: "zip",
+      representationId: "archive-namespace"
+    }),
+    claim: Object.freeze({ roundTrip: "semantic", preservesUnknownData: false }),
+    evidenceId: "zip-verbatim-reassembly-non-canonical-v1",
+    corpusId: "modkitX3/packages/host/test/archive-edits.test.ts",
+    corpusDigest: "none:proof-suite",
+    conformanceProfile: "org.modkitx/codec-contribution-v1",
+    optionsFingerprint: "options:stored-additions",
+    inputClass: "zip-non-canonical-layout",
+    provenAt: "2026-08-19T00:00:00Z"
+  })
+]);
 var GUARANTEE_STRENGTH = Object.freeze({
   "best-effort": 0,
   recoverable: 1,
@@ -287230,597 +287266,6 @@ function validateTokenValue(tokenName, value2) {
   })();
   return ok2 ? { valid: true } : { valid: false, reason: `value is not a valid ${token.type}` };
 }
-var TOKEN_NAMES = Object.freeze([
-  "palette.neutral.050",
-  "palette.neutral.100",
-  "palette.neutral.200",
-  "palette.neutral.300",
-  "palette.neutral.400",
-  "palette.neutral.500",
-  "palette.neutral.600",
-  "palette.neutral.700",
-  "palette.neutral.800",
-  "palette.neutral.900",
-  "palette.accent.050",
-  "palette.accent.100",
-  "palette.accent.200",
-  "palette.accent.300",
-  "palette.accent.400",
-  "palette.accent.500",
-  "palette.accent.600",
-  "palette.accent.700",
-  "palette.accent.800",
-  "palette.accent.900",
-  "palette.ok.050",
-  "palette.ok.100",
-  "palette.ok.200",
-  "palette.ok.300",
-  "palette.ok.400",
-  "palette.ok.500",
-  "palette.ok.600",
-  "palette.ok.700",
-  "palette.ok.800",
-  "palette.ok.900",
-  "palette.warn.050",
-  "palette.warn.100",
-  "palette.warn.200",
-  "palette.warn.300",
-  "palette.warn.400",
-  "palette.warn.500",
-  "palette.warn.600",
-  "palette.warn.700",
-  "palette.warn.800",
-  "palette.warn.900",
-  "palette.error.050",
-  "palette.error.100",
-  "palette.error.200",
-  "palette.error.300",
-  "palette.error.400",
-  "palette.error.500",
-  "palette.error.600",
-  "palette.error.700",
-  "palette.error.800",
-  "palette.error.900",
-  "palette.info.050",
-  "palette.info.100",
-  "palette.info.200",
-  "palette.info.300",
-  "palette.info.400",
-  "palette.info.500",
-  "palette.info.600",
-  "palette.info.700",
-  "palette.info.800",
-  "palette.info.900",
-  "color.bg",
-  "color.surface",
-  "color.raised",
-  "color.sunken",
-  "color.overlay",
-  "color.scrim",
-  "color.fg",
-  "color.fg-muted",
-  "color.fg-subtle",
-  "color.fg-inverse",
-  "color.fg-disabled",
-  "color.fg-link",
-  "color.fg-destructive",
-  "color.border",
-  "color.border-strong",
-  "color.separator",
-  "color.accent",
-  "color.accent-fg",
-  "color.accent-muted",
-  "color.accent-muted-fg",
-  "color.focus",
-  "color.hover",
-  "color.active",
-  "color.selection",
-  "color.selection-inactive",
-  "color.selection-fg",
-  "color.match-highlight",
-  "color.drop-target",
-  "color.readonly",
-  "status.ok",
-  "status.ok-fg",
-  "status.ok-bg",
-  "status.ok-border",
-  "status.warn",
-  "status.warn-fg",
-  "status.warn-bg",
-  "status.warn-border",
-  "status.error",
-  "status.error-fg",
-  "status.error-bg",
-  "status.error-border",
-  "status.info",
-  "status.info-fg",
-  "status.info-bg",
-  "status.info-border",
-  "color.scrollbar-track",
-  "color.scrollbar-thumb",
-  "color.scrollbar-thumb-hover",
-  "color.scrollbar-thumb-active",
-  "color.scrollbar-shadow",
-  "color.canvas-bg",
-  "color.canvas-grid",
-  "color.canvas-gizmo",
-  "color.axis-x",
-  "color.axis-y",
-  "color.axis-z",
-  "color.canvas-selection",
-  "chart.categorical-1",
-  "chart.categorical-2",
-  "chart.categorical-3",
-  "chart.categorical-4",
-  "chart.categorical-5",
-  "chart.categorical-6",
-  "color.graph-node",
-  "color.graph-edge",
-  "color.graph-edge-dead",
-  "color.diff-added",
-  "color.diff-removed",
-  "color.diff-changed",
-  "space.0",
-  "space.1",
-  "space.2",
-  "space.3",
-  "space.4",
-  "space.5",
-  "space.6",
-  "space.7",
-  "space.8",
-  "radius.none",
-  "radius.sm",
-  "radius.md",
-  "radius.lg",
-  "radius.pill",
-  "font.sans",
-  "font.mono",
-  "font.size-xs",
-  "font.size-sm",
-  "font.size-md",
-  "font.size-lg",
-  "font.size-xl",
-  "font.weight-normal",
-  "font.weight-medium",
-  "font.weight-bold",
-  "line.tight",
-  "line.normal",
-  "line.loose",
-  "size.row",
-  "size.control",
-  "size.icon",
-  "size.touch",
-  "size.scrollbar",
-  "size.scrollbar-thin",
-  "z.base",
-  "z.sticky",
-  "z.dropdown",
-  "z.overlay",
-  "z.modal",
-  "z.toast",
-  "motion.fast",
-  "motion.normal",
-  "motion.slow",
-  "motion.ease",
-  "elevation.1",
-  "elevation.2",
-  "elevation.3",
-  "shadow.focus-ring",
-  "tree.indent-level",
-  "card.grid-columns",
-  "explorer.menu-x",
-  "explorer.menu-y",
-  "table.row-height",
-  "table.header-bg",
-  "table.cell-padding-x",
-  "tree.indent",
-  "tree.row-height",
-  "hex.byte-gap",
-  "hex.gutter-fg",
-  "text.line-height",
-  "shell.rail-width",
-  "shell.splitter-size",
-  "toolbar.height",
-  "panel.padding",
-  "transport.track-height"
-]);
-var RAMPS = {
-  neutral: [
-    "#fafafa",
-    "#f0f0f0",
-    "#e0e0e0",
-    "#c6c6c6",
-    "#9a9a9a",
-    "#6e6e6e",
-    "#4a4a4a",
-    "#333333",
-    "#232323",
-    "#141414"
-  ],
-  accent: [
-    "#e8f2fc",
-    "#c7e0f7",
-    "#9ccaf0",
-    "#6bafe6",
-    "#3b93db",
-    "#0078d4",
-    "#005fb8",
-    "#004a93",
-    "#00376e",
-    "#002649"
-  ],
-  ok: [
-    "#e6f5e9",
-    "#c3e7cb",
-    "#97d5a5",
-    "#6bc27f",
-    "#4fb265",
-    "#2ea043",
-    "#238636",
-    "#1a6b2a",
-    "#13501f",
-    "#0c3514"
-  ],
-  warn: [
-    "#fcf3d8",
-    "#f7e3a6",
-    "#f0cf6e",
-    "#e5ba3c",
-    "#d9a520",
-    "#bf8700",
-    "#9a6d00",
-    "#7a5600",
-    "#5a3f00",
-    "#3b2900"
-  ],
-  error: [
-    "#fde8e8",
-    "#fac7c7",
-    "#f49b9b",
-    "#ec6f6f",
-    "#e14b4b",
-    "#cf2222",
-    "#a81b1b",
-    "#851515",
-    "#620f0f",
-    "#400a0a"
-  ],
-  info: [
-    "#e6f4fb",
-    "#c0e3f5",
-    "#8ecdec",
-    "#5cb6e2",
-    "#33a2d8",
-    "#0f8bc7",
-    "#0b6e9e",
-    "#085576",
-    "#063d54",
-    "#042634"
-  ]
-};
-var STEPS = ["050", "100", "200", "300", "400", "500", "600", "700", "800", "900"];
-function rampValues(overrides = {}) {
-  const out = {};
-  for (const [hue, ramp] of Object.entries({ ...RAMPS, ...overrides })) {
-    ramp.forEach((value2, index) => {
-      out[`palette.${hue}.${STEPS[index]}`] = value2;
-    });
-  }
-  return out;
-}
-var STRUCTURE = {
-  "space.0": "0",
-  "space.1": "2px",
-  "space.2": "4px",
-  "space.3": "8px",
-  "space.4": "12px",
-  "space.5": "16px",
-  "space.6": "24px",
-  "space.7": "32px",
-  "space.8": "48px",
-  "radius.none": "0",
-  "radius.sm": "2px",
-  "radius.md": "4px",
-  "radius.lg": "8px",
-  "radius.pill": "9999px",
-  "font.sans": "'Segoe UI Variable Text', 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
-  "font.mono": "ui-monospace, 'Cascadia Mono', 'JetBrains Mono', Consolas, 'Courier New', monospace",
-  "font.size-xs": "11px",
-  "font.size-sm": "12px",
-  "font.size-md": "13px",
-  "font.size-lg": "15px",
-  "font.size-xl": "19px",
-  "font.weight-normal": "400",
-  "font.weight-medium": "600",
-  "font.weight-bold": "700",
-  "line.tight": "1.2",
-  "line.normal": "1.45",
-  "line.loose": "1.7",
-  "size.row": "22px",
-  "size.control": "26px",
-  "size.icon": "16px",
-  "size.touch": "44px",
-  "size.scrollbar": "10px",
-  "size.scrollbar-thin": "6px",
-  "z.base": "0",
-  "z.sticky": "10",
-  "z.dropdown": "20",
-  "z.overlay": "30",
-  "z.modal": "40",
-  "z.toast": "50",
-  "motion.fast": "80ms",
-  "motion.normal": "140ms",
-  "motion.slow": "240ms",
-  "motion.ease": "cubic-bezier(0.2, 0, 0.13, 1)"
-};
-var CHART_DARK = {
-  "chart.categorical-1": "#4daafc",
-  "chart.categorical-2": "#89d185",
-  "chart.categorical-3": "#e5ba3c",
-  "chart.categorical-4": "#f49b9b",
-  "chart.categorical-5": "#c58af9",
-  "chart.categorical-6": "#4ec9b0"
-};
-var CHART_LIGHT = {
-  "chart.categorical-1": "#005fb8",
-  "chart.categorical-2": "#238636",
-  "chart.categorical-3": "#9a6d00",
-  "chart.categorical-4": "#a81b1b",
-  "chart.categorical-5": "#7a3fb5",
-  "chart.categorical-6": "#0b6e9e"
-};
-var PALETTES = Object.freeze([
-  {
-    id: "modkit-dark",
-    displayName: "Modkit Dark",
-    appearance: "dark",
-    isDefaultFor: "dark",
-    values: Object.freeze({
-      ...rampValues(),
-      ...STRUCTURE,
-      ...CHART_DARK,
-      "color.bg": "#1f1f1f",
-      "color.surface": "#1f1f1f",
-      "color.raised": "#252526",
-      "color.sunken": "#181818",
-      "color.overlay": "#2c2c2d",
-      "color.scrim": "rgba(0, 0, 0, 0.55)",
-      "color.fg": "#cccccc",
-      "color.fg-muted": "#9d9d9d",
-      "color.fg-subtle": "#7a7a7a",
-      "color.fg-inverse": "#ffffff",
-      "color.fg-disabled": "#5a5a5a",
-      "color.fg-link": "#4daafc",
-      "color.fg-destructive": "#f14c4c",
-      "color.border": "#2b2b2b",
-      "color.border-strong": "#3c3c3c",
-      "color.separator": "#2b2b2b",
-      "color.accent": "#0078d4",
-      "color.accent-fg": "#ffffff",
-      "color.accent-muted": "#04395e",
-      "color.accent-muted-fg": "#ffffff",
-      "color.focus": "#0078d4",
-      "color.hover": "#2a2d2e",
-      "color.active": "#37373d",
-      "color.selection": "#04395e",
-      "color.selection-inactive": "#2e2e2e",
-      "color.selection-fg": "#ffffff",
-      "color.match-highlight": "#623315",
-      "color.drop-target": "#0078d4",
-      "color.readonly": "#262626",
-      "status.ok": "#89d185",
-      "status.ok-fg": "#0c3514",
-      "status.ok-bg": "#143620",
-      "status.ok-border": "#2ea043",
-      "status.warn": "#cca700",
-      "status.warn-fg": "#3b2900",
-      "status.warn-bg": "#3a2f00",
-      "status.warn-border": "#bf8700",
-      "status.error": "#f14c4c",
-      "status.error-fg": "#400a0a",
-      "status.error-bg": "#3a1414",
-      "status.error-border": "#cf2222",
-      "status.info": "#3794ff",
-      "status.info-fg": "#042634",
-      "status.info-bg": "#10293d",
-      "status.info-border": "#0f8bc7",
-      "color.scrollbar-track": "rgba(0, 0, 0, 0.16)",
-      "color.scrollbar-thumb": "rgba(121, 121, 121, 0.4)",
-      "color.scrollbar-thumb-hover": "rgba(150, 150, 150, 0.7)",
-      "color.scrollbar-thumb-active": "rgba(180, 180, 180, 0.9)",
-      "color.scrollbar-shadow": "rgba(0, 0, 0, 0.36)",
-      "color.canvas-bg": "#141414",
-      "color.canvas-grid": "#2b2b2b",
-      "color.canvas-gizmo": "#9d9d9d",
-      "color.axis-x": "#ff3366",
-      "color.axis-y": "#33ff88",
-      "color.axis-z": "#3388ff",
-      "color.canvas-selection": "#f5a623",
-      "color.graph-node": "#3c3c3c",
-      "color.graph-edge": "#5a5a5a",
-      "color.graph-edge-dead": "#f14c4c",
-      "color.diff-added": "#1b3a24",
-      "color.diff-removed": "#3a1d1d",
-      "color.diff-changed": "#2e2a17",
-      "elevation.1": "0 1px 2px rgba(0, 0, 0, 0.4)",
-      "elevation.2": "0 2px 8px rgba(0, 0, 0, 0.5)",
-      "elevation.3": "0 8px 24px rgba(0, 0, 0, 0.6)",
-      "shadow.focus-ring": "0 0 0 1px #0078d4"
-    })
-  },
-  {
-    id: "modkit-light",
-    displayName: "Modkit Light",
-    appearance: "light",
-    isDefaultFor: "light",
-    values: Object.freeze({
-      ...rampValues(),
-      ...STRUCTURE,
-      ...CHART_LIGHT,
-      "color.bg": "#ffffff",
-      "color.surface": "#ffffff",
-      "color.raised": "#f8f8f8",
-      "color.sunken": "#f0f0f0",
-      "color.overlay": "#ffffff",
-      "color.scrim": "rgba(0, 0, 0, 0.3)",
-      "color.fg": "#3b3b3b",
-      "color.fg-muted": "#616161",
-      "color.fg-subtle": "#8b8b8b",
-      "color.fg-inverse": "#ffffff",
-      "color.fg-disabled": "#a6a6a6",
-      "color.fg-link": "#005fb8",
-      "color.fg-destructive": "#cf2222",
-      "color.border": "#e0e0e0",
-      "color.border-strong": "#c6c6c6",
-      "color.separator": "#ececec",
-      "color.accent": "#005fb8",
-      "color.accent-fg": "#ffffff",
-      "color.accent-muted": "#cfe4fa",
-      "color.accent-muted-fg": "#0a3d63",
-      "color.focus": "#005fb8",
-      "color.hover": "#e8e8e8",
-      "color.active": "#dcdcdc",
-      "color.selection": "#cfe4fa",
-      "color.selection-inactive": "#e4e6f1",
-      "color.selection-fg": "#1a1a1a",
-      "color.match-highlight": "#fdea9b",
-      "color.drop-target": "#005fb8",
-      "color.readonly": "#f5f5f5",
-      "status.ok": "#238636",
-      "status.ok-fg": "#0c3514",
-      "status.ok-bg": "#e6f5e9",
-      "status.ok-border": "#97d5a5",
-      "status.warn": "#9a6d00",
-      "status.warn-fg": "#3b2900",
-      "status.warn-bg": "#fcf3d8",
-      "status.warn-border": "#f0cf6e",
-      "status.error": "#cf2222",
-      "status.error-fg": "#400a0a",
-      "status.error-bg": "#fde8e8",
-      "status.error-border": "#f49b9b",
-      "status.info": "#0b6e9e",
-      "status.info-fg": "#042634",
-      "status.info-bg": "#e6f4fb",
-      "status.info-border": "#8ecdec",
-      "color.scrollbar-track": "rgba(0, 0, 0, 0.05)",
-      "color.scrollbar-thumb": "rgba(100, 100, 100, 0.4)",
-      "color.scrollbar-thumb-hover": "rgba(80, 80, 80, 0.6)",
-      "color.scrollbar-thumb-active": "rgba(60, 60, 60, 0.8)",
-      "color.scrollbar-shadow": "rgba(0, 0, 0, 0.12)",
-      "color.canvas-bg": "#f4f4f4",
-      "color.canvas-grid": "#e0e0e0",
-      "color.canvas-gizmo": "#616161",
-      "color.axis-x": "#c02047",
-      "color.axis-y": "#1f8f4d",
-      "color.axis-z": "#1f6fd0",
-      "color.canvas-selection": "#c96a00",
-      "color.graph-node": "#e0e0e0",
-      "color.graph-edge": "#9a9a9a",
-      "color.graph-edge-dead": "#cf2222",
-      "color.diff-added": "#e2f6e7",
-      "color.diff-removed": "#fbe6e6",
-      "color.diff-changed": "#fbf3d6",
-      "elevation.1": "0 1px 2px rgba(0, 0, 0, 0.12)",
-      "elevation.2": "0 2px 8px rgba(0, 0, 0, 0.16)",
-      "elevation.3": "0 8px 24px rgba(0, 0, 0, 0.2)",
-      "shadow.focus-ring": "0 0 0 1px #005fb8"
-    })
-  },
-  {
-    id: "modkit-high-contrast",
-    displayName: "Modkit High Contrast",
-    appearance: "dark",
-    values: Object.freeze({
-      ...rampValues({
-        neutral: [
-          "#ffffff",
-          "#ffffff",
-          "#e0e0e0",
-          "#c6c6c6",
-          "#9a9a9a",
-          "#6e6e6e",
-          "#4a4a4a",
-          "#333333",
-          "#1a1a1a",
-          "#000000"
-        ]
-      }),
-      ...STRUCTURE,
-      ...CHART_DARK,
-      "color.bg": "#000000",
-      "color.surface": "#000000",
-      "color.raised": "#0d0d0d",
-      "color.sunken": "#000000",
-      "color.overlay": "#000000",
-      "color.scrim": "rgba(0, 0, 0, 0.8)",
-      "color.fg": "#ffffff",
-      "color.fg-muted": "#ffffff",
-      "color.fg-subtle": "#d6d6d6",
-      "color.fg-inverse": "#000000",
-      "color.fg-disabled": "#a6a6a6",
-      "color.fg-link": "#3794ff",
-      "color.fg-destructive": "#f48771",
-      "color.border": "#6fc3df",
-      "color.border-strong": "#ffffff",
-      "color.separator": "#6fc3df",
-      "color.accent": "#0078d4",
-      "color.accent-fg": "#ffffff",
-      "color.accent-muted": "#000000",
-      "color.accent-muted-fg": "#ffffff",
-      "color.focus": "#f38518",
-      "color.hover": "#0d0d0d",
-      "color.active": "#1a1a1a",
-      "color.selection": "#000000",
-      "color.selection-inactive": "#000000",
-      "color.selection-fg": "#ffffff",
-      "color.match-highlight": "#000000",
-      "color.drop-target": "#f38518",
-      "color.readonly": "#0d0d0d",
-      "status.ok": "#89d185",
-      "status.ok-fg": "#000000",
-      "status.ok-bg": "#000000",
-      "status.ok-border": "#89d185",
-      "status.warn": "#ffd700",
-      "status.warn-fg": "#000000",
-      "status.warn-bg": "#000000",
-      "status.warn-border": "#ffd700",
-      "status.error": "#f48771",
-      "status.error-fg": "#000000",
-      "status.error-bg": "#000000",
-      "status.error-border": "#f48771",
-      "status.info": "#3794ff",
-      "status.info-fg": "#000000",
-      "status.info-bg": "#000000",
-      "status.info-border": "#3794ff",
-      "color.scrollbar-track": "#000000",
-      "color.scrollbar-thumb": "#6fc3df",
-      "color.scrollbar-thumb-hover": "#ffffff",
-      "color.scrollbar-thumb-active": "#f38518",
-      "color.scrollbar-shadow": "#6fc3df",
-      "color.canvas-bg": "#000000",
-      "color.canvas-grid": "#6fc3df",
-      "color.canvas-gizmo": "#ffffff",
-      "color.axis-x": "#ff6b8a",
-      "color.axis-y": "#4dff9e",
-      "color.axis-z": "#6bb6ff",
-      "color.canvas-selection": "#f38518",
-      "color.graph-node": "#000000",
-      "color.graph-edge": "#6fc3df",
-      "color.graph-edge-dead": "#f48771",
-      "color.diff-added": "#000000",
-      "color.diff-removed": "#000000",
-      "color.diff-changed": "#000000",
-      "elevation.1": "0 0 0 1px #6fc3df",
-      "elevation.2": "0 0 0 1px #6fc3df",
-      "elevation.3": "0 0 0 1px #ffffff",
-      "shadow.focus-ring": "0 0 0 2px #f38518"
-    })
-  }
-]);
-var PALETTES_BY_ID = new Map(
-  PALETTES.map((palette) => [palette.id, palette])
-);
 function requireElement(value2) {
   if (typeof value2 !== "object" || value2 === null || !("style" in value2) || typeof value2.style !== "object") {
     throw new TypeError("token target must be a DOM element");
@@ -290889,6 +290334,15 @@ function createEditorArea(document2, options) {
     get groupCount() {
       return groups.length;
     },
+    async close(entryId) {
+      for (const group of groups) {
+        const tab = group.tabs.find((item) => item.entry.id === entryId);
+        if (tab === void 0) continue;
+        await closeTab(group, tab);
+        return !group.tabs.includes(tab);
+      }
+      return false;
+    },
     async open(entry) {
       const group = focused;
       const existing = group.tabs.find((tab2) => tab2.entry.id === entry.id);
@@ -291544,7 +290998,7 @@ var TOKENS2 = Object.freeze([...tier12, ...tier22, ...tier32]);
 var TOKENS_BY_NAME2 = new Map(
   TOKENS2.map((token) => [token.name, token])
 );
-var TOKEN_NAMES2 = Object.freeze([
+var TOKEN_NAMES = Object.freeze([
   "palette.neutral.050",
   "palette.neutral.100",
   "palette.neutral.200",
@@ -291739,7 +291193,7 @@ var TOKEN_NAMES2 = Object.freeze([
   "panel.padding",
   "transport.track-height"
 ]);
-var RAMPS2 = {
+var RAMPS = {
   neutral: [
     "#fafafa",
     "#f0f0f0",
@@ -291813,17 +291267,17 @@ var RAMPS2 = {
     "#042634"
   ]
 };
-var STEPS2 = ["050", "100", "200", "300", "400", "500", "600", "700", "800", "900"];
-function rampValues2(overrides = {}) {
+var STEPS = ["050", "100", "200", "300", "400", "500", "600", "700", "800", "900"];
+function rampValues(overrides = {}) {
   const out = {};
-  for (const [hue, ramp] of Object.entries({ ...RAMPS2, ...overrides })) {
+  for (const [hue, ramp] of Object.entries({ ...RAMPS, ...overrides })) {
     ramp.forEach((value2, index) => {
-      out[`palette.${hue}.${STEPS2[index]}`] = value2;
+      out[`palette.${hue}.${STEPS[index]}`] = value2;
     });
   }
   return out;
 }
-var STRUCTURE2 = {
+var STRUCTURE = {
   "space.0": "0",
   "space.1": "2px",
   "space.2": "4px",
@@ -291868,7 +291322,7 @@ var STRUCTURE2 = {
   "motion.slow": "240ms",
   "motion.ease": "cubic-bezier(0.2, 0, 0.13, 1)"
 };
-var CHART_DARK2 = {
+var CHART_DARK = {
   "chart.categorical-1": "#4daafc",
   "chart.categorical-2": "#89d185",
   "chart.categorical-3": "#e5ba3c",
@@ -291876,7 +291330,7 @@ var CHART_DARK2 = {
   "chart.categorical-5": "#c58af9",
   "chart.categorical-6": "#4ec9b0"
 };
-var CHART_LIGHT2 = {
+var CHART_LIGHT = {
   "chart.categorical-1": "#005fb8",
   "chart.categorical-2": "#238636",
   "chart.categorical-3": "#9a6d00",
@@ -291884,16 +291338,16 @@ var CHART_LIGHT2 = {
   "chart.categorical-5": "#7a3fb5",
   "chart.categorical-6": "#0b6e9e"
 };
-var PALETTES2 = Object.freeze([
+var PALETTES = Object.freeze([
   {
     id: "modkit-dark",
     displayName: "Modkit Dark",
     appearance: "dark",
     isDefaultFor: "dark",
     values: Object.freeze({
-      ...rampValues2(),
-      ...STRUCTURE2,
-      ...CHART_DARK2,
+      ...rampValues(),
+      ...STRUCTURE,
+      ...CHART_DARK,
       "color.bg": "#1f1f1f",
       "color.surface": "#1f1f1f",
       "color.raised": "#252526",
@@ -291969,9 +291423,9 @@ var PALETTES2 = Object.freeze([
     appearance: "light",
     isDefaultFor: "light",
     values: Object.freeze({
-      ...rampValues2(),
-      ...STRUCTURE2,
-      ...CHART_LIGHT2,
+      ...rampValues(),
+      ...STRUCTURE,
+      ...CHART_LIGHT,
       "color.bg": "#ffffff",
       "color.surface": "#ffffff",
       "color.raised": "#f8f8f8",
@@ -292046,7 +291500,7 @@ var PALETTES2 = Object.freeze([
     displayName: "Modkit High Contrast",
     appearance: "dark",
     values: Object.freeze({
-      ...rampValues2({
+      ...rampValues({
         neutral: [
           "#ffffff",
           "#ffffff",
@@ -292060,8 +291514,8 @@ var PALETTES2 = Object.freeze([
           "#000000"
         ]
       }),
-      ...STRUCTURE2,
-      ...CHART_DARK2,
+      ...STRUCTURE,
+      ...CHART_DARK,
       "color.bg": "#000000",
       "color.surface": "#000000",
       "color.raised": "#0d0d0d",
@@ -292132,8 +291586,8 @@ var PALETTES2 = Object.freeze([
     })
   }
 ]);
-var PALETTES_BY_ID2 = new Map(
-  PALETTES2.map((palette) => [palette.id, palette])
+var PALETTES_BY_ID = new Map(
+  PALETTES.map((palette) => [palette.id, palette])
 );
 var THEME_ATTRIBUTE = "data-mk-theme";
 var DENSITY_ATTRIBUTE = "data-mk-density";

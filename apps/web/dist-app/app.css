@@ -219,13 +219,33 @@ body {
   overflow: auto;
 }
 
-/* A composite stage stacks its parts; each shipped module owns one of them. */
-.web-stage-part {
-  display: flex;
-  flex-direction: column;
+.web-inspector-edit {
+  flex: 0 0 auto;
+}
+
+/*
+ * The Edit panel's form — this app's *layout* choice only.
+ *
+ * The shipped stylesheet now styles the `form.*` family (chrome, controls, the disabled and error
+ * states), so nothing here restates a colour, a border or a button shape. What remains is the one
+ * genuine decision a hosting surface owns: these rows read label-beside-control, because the panel
+ * is narrow and stacked rows would double its height.
+ */
+[data-mk-part='form.row'] {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+[data-mk-part='form.label'] {
+  flex: 0 0 auto;
+  min-width: 7rem;
+  color: var(--mk-color-fg-muted);
+}
+
+[data-mk-part='form.input'] {
+  flex: 1 1 14rem;
   min-width: 0;
-  min-height: 0;
-  overflow: auto;
 }
 
 [data-mk-part='explorer.tabcontent'] > .web-stage-part:first-child {

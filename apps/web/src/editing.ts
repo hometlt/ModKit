@@ -51,6 +51,7 @@ import type {
   ValidationResult,
 } from '@modkitx-x3/sdk'
 import {
+  ZIP_VERBATIM_REASSEMBLY_RECORDS,
   createEvidenceRegistry,
   createRawWriter,
   createSubjectEditing,
@@ -384,40 +385,15 @@ const firstMessage = (diagnostics: readonly Diagnostic[]): string | undefined =>
  * and a desktop application are two different places to decide what may be written, even when they
  * happen to accept the same proofs today.
  */
-const ZIP_WRITER = Object.freeze({
-  providerId: 'org.modkitx/archive-zip',
-  providerVersion: '1.0.0',
-  artifactDigest: 'none:extension-artifact-not-pinned',
-  formatId: 'zip',
-  representationId: 'archive-namespace',
-})
-
-const zipEvidenceRecord = (
-  preservesUnknownData: boolean,
-  evidenceId: string,
-  inputClass: string,
-): FidelityEvidenceRecord =>
-  Object.freeze({
-    writer: ZIP_WRITER,
-    claim: Object.freeze({ roundTrip: 'semantic' as const, preservesUnknownData }),
-    evidenceId,
-    corpusId: 'modkitX3/packages/host/test/archive-edits.test.ts',
-    corpusDigest: 'none:proof-suite',
-    conformanceProfile: 'org.modkitx/codec-contribution-v1',
-    optionsFingerprint: 'options:stored-additions',
-    inputClass,
-    provenAt: '2026-08-19T00:00:00Z',
-  })
-
-export const WEB_EDIT_EVIDENCE: EvidenceRegistry = createEvidenceRegistry()
-  .with(zipEvidenceRecord(true, 'zip-verbatim-reassembly-v1', 'zip-classic'))
-  .with(
-    zipEvidenceRecord(
-      false,
-      'zip-verbatim-reassembly-non-canonical-v1',
-      'zip-non-canonical-layout',
-    ),
-  )
+/*
+ * This app's acceptance decision, over facts the host publishes: the records themselves live in
+ * `ZIP_VERBATIM_REASSEMBLY_RECORDS` (one place, so two apps cannot drift about what was proven),
+ * and taking them is still this application's own choice — nothing is registered by default.
+ */
+export const WEB_EDIT_EVIDENCE: EvidenceRegistry = ZIP_VERBATIM_REASSEMBLY_RECORDS.reduce(
+  (registry, record) => registry.with(record),
+  createEvidenceRegistry(),
+)
 
 // ---------------------------------------------------------------------------------------------
 // the arm

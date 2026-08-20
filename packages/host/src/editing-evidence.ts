@@ -208,6 +208,59 @@ export const HOST_RAW_WRITER_EVIDENCE_RECORD: FidelityEvidenceRecord = Object.fr
   provenAt: '2026-08-19T00:00:00Z',
 })
 
+/**
+ * What the in-repo archive proof establishes about the ZIP codec's re-assembly.
+ *
+ * These are *facts about a proof*, not a decision: which writer, which claim, which corpus, run
+ * when. The decision — whether this host accepts them — stays with each application, which must
+ * pass them to `createEvidenceRegistry` explicitly; nothing here is registered by default.
+ *
+ * They live in one place because two applications had re-typed the same corpus coordinates
+ * verbatim, and coordinates that are re-typed are coordinates that drift: an app that updates its
+ * copy after a proof changes, beside one that does not, is two hosts disagreeing about what has
+ * been proven while both look correct.
+ *
+ * Two records because the codec downgrades its own claim honestly: an archive whose layout the
+ * central directory does not fully account for cannot promise every unknown byte survives, and
+ * "keeps them" and "does not" are different claims needing different evidence.
+ */
+export const ZIP_VERBATIM_REASSEMBLY_RECORDS: readonly FidelityEvidenceRecord[] = Object.freeze([
+  Object.freeze({
+    writer: Object.freeze({
+      providerId: 'org.modkitx/archive-zip',
+      providerVersion: '1.0.0',
+      artifactDigest: 'x3:org.modkitx/archive-zip@1.0.0',
+      formatId: 'zip',
+      representationId: 'archive-namespace',
+    }),
+    claim: Object.freeze({ roundTrip: 'semantic' as const, preservesUnknownData: true }),
+    evidenceId: 'zip-verbatim-reassembly-v1',
+    corpusId: 'modkitX3/packages/host/test/archive-edits.test.ts',
+    corpusDigest: 'none:proof-suite',
+    conformanceProfile: 'org.modkitx/codec-contribution-v1',
+    optionsFingerprint: 'options:stored-additions',
+    inputClass: 'zip-classic',
+    provenAt: '2026-08-19T00:00:00Z',
+  }),
+  Object.freeze({
+    writer: Object.freeze({
+      providerId: 'org.modkitx/archive-zip',
+      providerVersion: '1.0.0',
+      artifactDigest: 'x3:org.modkitx/archive-zip@1.0.0',
+      formatId: 'zip',
+      representationId: 'archive-namespace',
+    }),
+    claim: Object.freeze({ roundTrip: 'semantic' as const, preservesUnknownData: false }),
+    evidenceId: 'zip-verbatim-reassembly-non-canonical-v1',
+    corpusId: 'modkitX3/packages/host/test/archive-edits.test.ts',
+    corpusDigest: 'none:proof-suite',
+    conformanceProfile: 'org.modkitx/codec-contribution-v1',
+    optionsFingerprint: 'options:stored-additions',
+    inputClass: 'zip-non-canonical-layout',
+    provenAt: '2026-08-19T00:00:00Z',
+  }),
+])
+
 export interface EvidenceRegistry {
   /** The `evidenceFor` a `CommitCoordinator`/`createSubjectEditing` takes. */
   evidenceFor(plan: AssetEditPlan): FidelityEvidence | undefined

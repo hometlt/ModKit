@@ -2647,6 +2647,86 @@
     overflow: auto;
   }
 
+  /* ---------------------------------------------------------------- forms (any surface) */
+  /*
+   * The generic form family. It exists because `settings.*` is named for the settings surface,
+   * and a form inside a workbench panel (an Edit panel, a dialog) should not have to borrow that
+   * vocabulary to be visible. Deliberately the same metrics as settings: two surfaces that look
+   * different for no reason are two surfaces a user has to learn twice.
+   *
+   * `base.css` strips `button` bare, so `form.button` must carry its own chrome or a form ships
+   * invisible controls — which is exactly what happened before this block existed.
+   */
+  [data-mk-part='form'] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--mk-space-3);
+    padding: var(--mk-space-3);
+  }
+
+  [data-mk-part='form.row'] {
+    display: flex;
+    max-width: 70ch;
+    flex-direction: column;
+    gap: var(--mk-space-1);
+  }
+
+  [data-mk-part='form.label'] {
+    font-weight: var(--mk-font-weight-medium);
+  }
+
+  [data-mk-part='form.description'] {
+    max-width: 70ch;
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-sm);
+  }
+
+  [data-mk-part='form.control'] {
+    margin-top: var(--mk-space-1);
+  }
+
+  [data-mk-part='form.input'],
+  [data-mk-part='form.select'] {
+    height: var(--mk-size-control);
+    max-width: 70ch;
+    padding-inline: var(--mk-space-2);
+    color: var(--mk-color-fg);
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-md);
+    background: var(--mk-color-sunken);
+  }
+
+  [data-mk-part='form.actions'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--mk-space-2);
+    align-items: center;
+  }
+
+  [data-mk-part='form.button'] {
+    height: var(--mk-size-control);
+    padding-inline: var(--mk-space-3);
+    color: var(--mk-color-fg);
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-md);
+    background: var(--mk-color-raised);
+    cursor: pointer;
+  }
+
+  [data-mk-part='form.button']:disabled {
+    color: var(--mk-color-fg-muted);
+    cursor: not-allowed;
+  }
+
+  [data-mk-part='form.status'] {
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-xs);
+  }
+
+  [data-mk-part='form.status'][data-mk-state~='error'] {
+    color: var(--mk-status-error);
+  }
+
   [data-mk-part='settings.row'] {
     display: flex;
     max-width: 70ch;

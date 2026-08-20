@@ -57,6 +57,15 @@ export interface EditorArea {
   hasUnsaved(): boolean
   /** Open (or focus) a file in the currently focused group. */
   open(entry: ExplorerEntry): Promise<void>
+  /**
+   * Close a file's tab wherever it is open, as its own close control would.
+   *
+   * Resolves `true` when the tab is gone and `false` when nothing was open for that id or the
+   * host's `confirmClose` cancelled — so "reopen this file at its new revision" is one awaited
+   * call. Both shipped hosts were synthesising a click on the close button and polling the DOM
+   * until the element disappeared, which is a component's internals doing duty as an API.
+   */
+  close(entryId: string): Promise<boolean>
   /** Add a group beside the focused one and make it the target for the next open. */
   split(): void
   /** Number of groups, for hosts that expose "close split" affordances. */
@@ -379,6 +388,18 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
 
     get groupCount() {
       return groups.length
+    },
+
+    async close(entryId) {
+      for (const group of groups) {
+        const tab = group.tabs.find(item => item.entry.id === entryId)
+        if (tab === undefined) continue
+        await closeTab(group, tab)
+        // `closeTab` honours `confirmClose`: a cancelled close leaves the tab in place, and
+        // reporting that truthfully is what lets a caller decide whether to reopen
+        return !group.tabs.includes(tab)
+      }
+      return false
     },
 
     async open(entry) {
