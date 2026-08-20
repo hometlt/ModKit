@@ -61599,7 +61599,7 @@ async function boot() {
   const subtle = {
     digest: (algorithm, data) => crypto.subtle.digest(algorithm, data)
   };
-  let composed;
+  const host = {};
   const extensionsUi = mountExtensionsUi(document, {
     store: extensionStore,
     catalog: WEB_EXTENSION_CATALOG,
@@ -61609,7 +61609,7 @@ async function boot() {
       if (picker === void 0) throw new Error("this browser has no folder picker");
       return await picker.call(window);
     },
-    conflicts: () => composed?.userExtensionConflicts ?? [],
+    conflicts: () => host.services?.userExtensionConflicts ?? [],
     onChanged: (loaded) => {
       console.info(
         `[extensions] ${loaded.inputs.length} user extension(s) loaded. Reload the page to compose a host with a changed list: this app builds its inventory once, at startup.`
@@ -61642,7 +61642,7 @@ async function boot() {
       console.info(`[worker] ${diagnostic2.severity} ${diagnostic2.code}: ${diagnostic2.message}`);
     }
   });
-  composed = services;
+  host.services = services;
   await extensionsUi.reload();
   const workbench = mountWebWorkbench(
     document,

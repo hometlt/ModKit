@@ -115,7 +115,7 @@ export const namespaceViewer: ViewerModule = defineViewerModule({
   },
 })
 
-export default namespaceViewer/** Bytes as a container listing shows them: exact under 1 KiB, one decimal above. */
+export default namespaceViewer /** Bytes as a container listing shows them: exact under 1 KiB, one decimal above. */
 function formatEntryBytes(value: bigint): string {
   if (value < 1024n) return `${value} B`
   const units = ['KiB', 'MiB', 'GiB', 'TiB']
@@ -154,8 +154,7 @@ function describeEntry(entry: NamespaceEntry): string {
     // shifted into the reader's own offset
     parts.push(`${new Date(entry.modifiedAt).toISOString().replace('T', ' ').slice(0, 19)} UTC`)
   }
-  if (entry.checksum !== undefined) parts.push(`${entry.checksum.algorithm} ${entry.checksum.value}`)
+  if (entry.checksum !== undefined)
+    parts.push(`${entry.checksum.algorithm} ${entry.checksum.value}`)
   return parts.join(' · ')
 }
-
-
