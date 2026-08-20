@@ -1,3 +1,18 @@
+/**
+ * Workbench frame — title bar, activity bar, sidebar, main area, panel, status bar.
+ *
+ * **The frame carries no layout, and that is a decision rather than an omission.** This module
+ * stamps the `workbench.*` parts and nothing else: `modkit-ui.css` has no geometry rules for them,
+ * so every host writes its own grid (the PWA in `apps/web/app.css`, Electron in its renderer
+ * stylesheet). Shipping a default here would be the friendlier answer for a new host, and it was
+ * considered; it was not taken because two hosts that already have grids would then be overriding
+ * a third one, and a wrong override is harder to see than an absent rule.
+ *
+ * The consequence a theme author must know: **geometry is not part of the styling contract.** A
+ * theme may colour `[data-mk-part="workbench.sidebar"]`, but it cannot assume the sidebar is on
+ * the left, or that the panel is horizontal, because the host decides both. Parts and tokens are
+ * the contract; the arrangement is the application's.
+ */
 import { setPart, setState, type StateName } from '../parts.js'
 import { safeViewerText } from '../viewer/index.js'
 
