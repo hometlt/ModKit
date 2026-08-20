@@ -480,7 +480,12 @@ export function createImageEditor(host: HTMLElement, options: ImageEditorOptions
           const point = toImage(event)
           anchor = point
           last = point
-          canvas.setPointerCapture(event.pointerId)
+          try {
+            canvas.setPointerCapture(event.pointerId)
+          } catch {
+            // Synthetic accessibility/test activation has no active platform pointer to capture;
+            // the edit itself is still well-defined and the matching pointerup remains on canvas.
+          }
 
           if (state.tool === 'eyedropper') {
             const offset = (point[1] * width() + point[0]) * 4

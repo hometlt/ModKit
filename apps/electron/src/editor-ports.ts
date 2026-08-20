@@ -193,6 +193,9 @@ export function normalizeChangeSet(
   return {
     targets: declared,
     edits,
+    ...(isRecord(change['semanticIntent'])
+      ? { semanticIntent: change['semanticIntent'] as NonNullable<ChangeSet['semanticIntent']> }
+      : {}),
     provenance: { actor: actor === 'automation' || actor === 'agent' ? actor : 'user' },
   }
 }

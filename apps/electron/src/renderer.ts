@@ -76,6 +76,7 @@ interface HostBridge {
     readonly root?: string
     readonly entry?: ExplorerEntry
     readonly selfTest?: boolean
+    readonly selfTestPngOnly?: boolean
   }>
   registerFileTypes(extensions: readonly string[]): Promise<{ readonly message: string }>
   confirmClose(name: string): Promise<'save' | 'discard' | 'cancel'>
@@ -352,6 +353,14 @@ async function boot(): Promise<void> {
   }
 
   const stages = createElectronStages({ operationsFor })
+  const imageEditingStages = createElectronStages({
+    operationsFor,
+    imageEditing: true,
+    onImageCommitted: async descriptor => {
+      const record = subjectsByDescriptor.get(descriptorKey(descriptor))
+      return record === undefined ? false : reopenSubject(record.path)
+    },
+  })
   const readOnlyStages = createElectronReadOnlyStages({ operationsFor })
 
   /**
@@ -365,6 +374,8 @@ async function boot(): Promise<void> {
   interface PreparedOpen {
     readonly session?: PreviewSessionLike
     readonly ports?: RendererEditorPorts
+    /** Main resolved the PNG/RGBA8 semantic writer for this subject. */
+    readonly imageEditing?: boolean
     dispose(): Promise<void>
   }
   interface PreviewSessionLike {
@@ -492,6 +503,11 @@ async function boot(): Promise<void> {
         dispose: release,
       },
       ...(ports === undefined ? {} : { ports }),
+      ...(ports !== undefined &&
+      (snapshot.descriptor as { readonly identity?: { readonly formatId?: unknown } }).identity
+        ?.formatId === 'png'
+        ? { imageEditing: true }
+        : {}),
       dispose: release,
     }
   }
@@ -503,10 +519,13 @@ async function boot(): Promise<void> {
    * per-subject answer has to be a choice between instances. Both share the session handed over in
    * `pendingOpens`, so a subject is still opened exactly once.
    */
-  const previewFor = (editable: boolean): PreviewResolver =>
+  const previewFor = (
+    availableStages: ReturnType<typeof createElectronStages>,
+    editable: boolean,
+  ): PreviewResolver =>
     createCodecPreview({
       supported: profile.supportedExtensions,
-      stages: editable ? stages : readOnlyStages,
+      stages: availableStages,
       fallback: PREVIEW_FALLBACK,
       async openSession(entry) {
         return pendingOpens.get(entry.id)?.session
@@ -526,8 +545,9 @@ async function boot(): Promise<void> {
         : {}),
     })
 
-  const editablePreview = previewFor(true)
-  const readOnlyPreview = previewFor(false)
+  const editablePreview = previewFor(stages, true)
+  const imageEditablePreview = previewFor(imageEditingStages, true)
+  const readOnlyPreview = previewFor(readOnlyStages, false)
 
   /** Offer every applicable stage, then start on the one the host's plan selected. */
   const preview: PreviewResolver = {
@@ -537,7 +557,12 @@ async function boot(): Promise<void> {
       pendingOpens.set(entry.id, prepared)
       let handle
       try {
-        const resolver = prepared.ports === undefined ? readOnlyPreview : editablePreview
+        const resolver =
+          prepared.ports === undefined
+            ? readOnlyPreview
+            : prepared.imageEditing === true
+              ? imageEditablePreview
+              : editablePreview
         handle = await resolver.open(container, entry, bytes, signal)
       } catch (error) {
         await prepared.dispose()
@@ -1097,6 +1122,7 @@ async function boot(): Promise<void> {
           showSurface('workspace')
         },
         unresolvedCodes: path => unresolvedCodes.get(path) ?? [],
+        pngOnly: initial.selfTestPngOnly === true,
       })
   }
 }
@@ -1130,6 +1156,8 @@ async function selfTest(options: {
   showWorkspace(): void
   /** Diagnostic codes of the last open on this path that no codec claimed. */
   unresolvedCodes(path: string): readonly string[]
+  /** A focused live proof of the PNG writer lifecycle and on-disk round trip. */
+  readonly pngOnly?: boolean
 }): Promise<void> {
   const { access, preview, editors, settingsRoot, inspector } = options
   const entries = await access.list(undefined)
@@ -1175,6 +1203,18 @@ async function selfTest(options: {
     picker.dispatchEvent(new Event('change'))
     await settle()
     return true
+  }
+
+  if (options.pngOnly === true) {
+    await imageEditingProbe({
+      editors,
+      entries,
+      subjectFor: options.subjectFor,
+      showStage,
+      inFocusedTab,
+    })
+    console.log('selftest: done')
+    return
   }
 
   for (const entry of entries) {
@@ -1700,6 +1740,7 @@ async function editingProbes(options: {
   readonly access: FileAccess
   readonly editors: EditorArea
   readonly entries: readonly ExplorerEntry[]
+  subjectFor(path: string | undefined): InspectorSubject | undefined
   portsFor(path: string): RendererEditorPorts | undefined
   footerText(): string
   showStage(stage: string): Promise<boolean>
@@ -1902,6 +1943,8 @@ async function editingProbes(options: {
     }
   }
 
+  await imageEditingProbe(options)
+
   // ------------------------------------------------------------------ no arm, therefore no editor
   const locked = find('readonly.json')
   if (locked === undefined) console.log('selftest: edit no readonly.json fixture')
@@ -1917,6 +1960,123 @@ async function editingProbes(options: {
     } catch (error) {
       console.log(`selftest: edit read-only FAILED ${String(error)}`)
     }
+  }
+}
+
+/** Drive one visible pixel through the real PNG editor, host writer, disk commit, and reopen. */
+async function imageEditingProbe(options: {
+  readonly editors: EditorArea
+  readonly entries: readonly ExplorerEntry[]
+  subjectFor(path: string | undefined): InspectorSubject | undefined
+  showStage(stage: string): Promise<boolean>
+  inFocusedTab(selector: string): Element | null
+}): Promise<void> {
+  const { editors, entries, subjectFor, showStage, inFocusedTab } = options
+  const image = entries.find(item => item.name === 'sample.png')
+  if (image === undefined) {
+    console.log('selftest: edit no sample.png fixture for pixel editing')
+    return
+  }
+
+  try {
+    await editors.open(image)
+    await settle()
+    if (!(await showStage('image-edit'))) {
+      console.log('selftest: edit image stage was not offered for sample.png')
+      return
+    }
+
+    const canvas = inFocusedTab('[data-mk-part="image.canvas"]')
+    const swatch = inFocusedTab('[data-mk-part="imageedit.swatch"]')
+    const fill = inFocusedTab('[data-mk-part="imageedit.tool"][title="Flood fill"]')
+    const apply = inFocusedTab(
+      '[data-mk-part="imageedit.action"][title="Commit the edited pixels"]',
+    )
+    if (
+      !(canvas instanceof HTMLCanvasElement) ||
+      !(swatch instanceof HTMLInputElement) ||
+      !(fill instanceof HTMLElement) ||
+      !(apply instanceof HTMLButtonElement)
+    ) {
+      console.log('selftest: edit image controls did not mount for sample.png')
+      return
+    }
+
+    const pixel = (target: HTMLCanvasElement): readonly number[] => {
+      const context = target.getContext('2d', { willReadFrequently: true })
+      return context === null ? [] : [...context.getImageData(0, 0, 1, 1).data]
+    }
+    const before = pixel(canvas)
+    const width = canvas.width
+    const height = canvas.height
+    const colour = before[0] === 255 && before[1] === 0 ? '#00ff00' : '#ff0000'
+    swatch.value = colour
+    swatch.dispatchEvent(new Event('input', { bubbles: true }))
+    fill.click()
+    const box = canvas.getBoundingClientRect()
+    if (box.width === 0 || box.height === 0) {
+      console.log('selftest: edit image canvas has no visible pointer area')
+      return
+    }
+    const pointer = {
+      bubbles: true,
+      pointerId: 71,
+      pointerType: 'mouse',
+      clientX: box.left + box.width / 2,
+      clientY: box.top + box.height / 2,
+    }
+    canvas.dispatchEvent(new PointerEvent('pointerdown', { ...pointer, buttons: 1 }))
+    canvas.dispatchEvent(new PointerEvent('pointerup', { ...pointer, buttons: 0 }))
+    await settle()
+
+    const changedInMemory = pixel(canvas)
+    const revision = String(subjectFor(image.id)?.descriptor['revision'] ?? '')
+    const warning =
+      inFocusedTab('[data-mk-part="imageedit.warning"]')?.textContent?.includes(
+        'Metadata and unknown PNG chunks are removed',
+      ) === true
+    const enabled = !apply.disabled
+    console.log(
+      `selftest: edit image applying enabled=${enabled} warning=${warning} ` +
+        `pixel=[${before.join(',')}]->memory=[${changedInMemory.join(',')}]`,
+    )
+    apply.click()
+
+    let reopened = false
+    let lastProgress = ''
+    for (let attempt = 0; attempt < 200; attempt += 1) {
+      await new Promise(resolve => setTimeout(resolve, 100))
+      if (attempt % 20 === 19) {
+        const progress =
+          inFocusedTab('[data-mk-part="image.readout"]')?.textContent?.trim() ?? 'stage unmounted'
+        if (progress !== lastProgress) {
+          console.log(`selftest: edit image progress ${JSON.stringify(progress)}`)
+          lastProgress = progress
+        }
+      }
+      const next = subjectFor(image.id)
+      if (next !== undefined && String(next.descriptor['revision'] ?? '') !== revision) {
+        reopened = true
+        break
+      }
+    }
+    if (reopened) {
+      await settle()
+      await showStage('image-edit')
+    }
+    const reopenedCanvas = inFocusedTab('[data-mk-part="image.canvas"]')
+    const after =
+      reopened && reopenedCanvas instanceof HTMLCanvasElement ? pixel(reopenedCanvas) : []
+    console.log(
+      `selftest: edit image writer=png/rgba8@semantic warning=${warning} ` +
+        `size=${width}x${height}->${reopenedCanvas instanceof HTMLCanvasElement ? `${reopenedCanvas.width}x${reopenedCanvas.height}` : '-'} ` +
+        `pixel=[${before.join(',')}]->memory=[${changedInMemory.join(',')}]->disk=[${after.join(',')}] ` +
+        `applyEnabled=${enabled} reopened=${reopened} changed=${
+          after.join(',') === changedInMemory.join(',') && after.join(',') !== before.join(',')
+        }`,
+    )
+  } catch (error) {
+    console.log(`selftest: edit image FAILED ${String(error)}`)
   }
 }
 

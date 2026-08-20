@@ -882,6 +882,12 @@
     font-variant-numeric: tabular-nums;
   }
 
+  [data-mk-part='imageedit.warning'] {
+    margin: 0;
+    color: var(--mk-status-warn-fg);
+    font-size: var(--mk-font-size-sm);
+  }
+
   /* The marquee is an overlay outline; a dashed border keeps it legible on any image. */
   [data-mk-part='imageedit.marquee'] {
     position: absolute;

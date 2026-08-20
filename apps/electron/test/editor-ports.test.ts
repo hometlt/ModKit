@@ -160,6 +160,24 @@ describe('normalizeChangeSet', () => {
     expect(normalizeChangeSet(authored, [TARGET])).toEqual(authored)
   })
 
+  it('preserves semantic writer intent while it normalizes the editor payload', () => {
+    const authored: ChangeSet = {
+      targets: [TARGET],
+      edits: [
+        {
+          operation: 'replace',
+          targetId: TARGET.targetId,
+          source: TARGET.ownerSource,
+          payload: { kind: 'inline', bytes: new Uint8Array(2 * 1 * 4) },
+        },
+      ],
+      semanticIntent: { width: 2, height: 1 },
+      provenance: { actor: 'user' },
+    }
+
+    expect(normalizeChangeSet(authored, [TARGET]).semanticIntent).toEqual({ width: 2, height: 1 })
+  })
+
   it('places a legacy byte-range edit (the hex editor) on the host-known target', () => {
     // What `hexEditor` authors today: no targets, no operation, `bindingId` instead of `targetId`.
     const legacy = {

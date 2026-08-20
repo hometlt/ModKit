@@ -124,6 +124,7 @@ async function createWindow() {
     createSubjectEditing,
     createRawWriter,
     createEvidenceRegistry,
+    resolveFormatWriter,
   } = await root
 
   const repositoryRoot = path.resolve(__dirname, '..', '..', '..')
@@ -342,6 +343,14 @@ async function createWindow() {
       notEditable.push(`the file is not writable (${error.code ?? 'EACCES'})`)
     }
     const writable = notEditable.length === 0
+    const budget = {
+      maxInputBytes: BigInt(MAXIMUM_SUBJECT_BYTES),
+      maxDepth: 256,
+      maxNodes: 1_000_000,
+      maxScalarBytes: MAXIMUM_SUBJECT_BYTES,
+      maxDiagnostics: 10_000,
+      deadlineMs: 30_000,
+    }
     const result = await subjectServices.open({
       source,
       path: file,
@@ -350,14 +359,7 @@ async function createWindow() {
         id: `electron:${randomUUID()}`,
         classes: writable ? ['read-source', 'write-source'] : ['read-source'],
       },
-      budget: {
-        maxInputBytes: BigInt(MAXIMUM_SUBJECT_BYTES),
-        maxDepth: 256,
-        maxNodes: 1_000_000,
-        maxScalarBytes: MAXIMUM_SUBJECT_BYTES,
-        maxDiagnostics: 10_000,
-        deadlineMs: 30_000,
-      },
+      budget,
       ...(signal === undefined ? {} : { signal }),
     })
     if (result.state === 'unresolved') {
@@ -430,19 +432,87 @@ async function createWindow() {
      * namespace — `createSubjectEditing` throws), and a file the OS will not let us replace. The
      * second was already decided above, because it also decides the open grant.
      */
-    if (writable) {
+    const formatId = result.descriptor.identity?.formatId
+    const editGrant = {
+      id: `electron:${sessionId}`,
+      classes: ['read-source', 'write-source'],
+    }
+    let pixelWriter
+    if (writable && formatId === 'png') {
+      pixelWriter = await resolveFormatWriter({
+        services: subjectServices,
+        opened: result,
+        grant: editGrant,
+        budgets: budget,
+        representationId: 'rgba8',
+        mutationMode: 'mutate',
+        minimumRoundTrip: 'semantic',
+      })
+      for (const diagnostic of pixelWriter.diagnostics) {
+        console.log(`[writer] ${diagnostic.code}: ${diagnostic.message}`)
+      }
+      if (pixelWriter.writer === undefined) {
+        notEditable.push('the PNG/RGBA8 semantic writer did not resolve')
+      }
+    }
+    if (writable && (formatId !== 'png' || pixelWriter?.writer !== undefined)) {
       try {
-        editingBySession.set(
-          sessionId,
-          createSubjectEditing({
-            opened: result,
-            grant: { id: `electron:${sessionId}`, classes: ['read-source', 'write-source'] },
-            backendFor: () => editingBackend,
-            evidenceFor: plan => evidence.evidenceFor(plan),
-            writer: rawWriter,
-          }),
-        )
+        const selectedWriter = pixelWriter?.writer ?? rawWriter
+        const editing = createSubjectEditing({
+          opened: result,
+          grant: editGrant,
+          backendFor: () => editingBackend,
+          evidenceFor: plan => {
+            const registered = evidence.evidenceFor(plan)
+            if (registered !== undefined) return registered
+            if (
+              pixelWriter?.writer !== undefined &&
+              plan.fidelity.roundTrip === 'semantic' &&
+              plan.fidelity.preservesUnknownData === false
+            ) {
+              return {
+                roundTrip: 'semantic',
+                preservesUnknownData: false,
+                evidenceId: 'png-encoder-v1',
+                corpusId: 'modkitX3/packages/host/test/media-edits.test.ts',
+                corpusDigest: 'none:proof-suite',
+                conformanceProfile: 'common.edit/writer-v1',
+                writer: pixelWriter.writer.identity,
+                optionsFingerprint: 'options:none',
+                inputClass: 'rgba8',
+                provenAt: '2026-08-19T00:00:00Z',
+              }
+            }
+            return undefined
+          },
+          writer: selectedWriter,
+        })
+        /*
+         * `resolveFormatWriter` returned a service lease. The subject RPC releases an editing arm
+         * by disposing its edit session, so bind the lease to that same lifetime. A tab switch
+         * calls the renderer adapter's no-op dispose; closing the tab reaches this one.
+         */
+        const leasedSession = editing.session
+        let released = false
+        const editingForSession =
+          pixelWriter?.release === undefined || leasedSession === undefined
+            ? editing
+            : Object.freeze({
+                ...editing,
+                session: Object.freeze({
+                  ...leasedSession,
+                  async dispose() {
+                    await leasedSession.dispose()
+                    if (!released) {
+                      released = true
+                      await pixelWriter.release()
+                    }
+                  },
+                }),
+              })
+        editingBySession.set(sessionId, editingForSession)
       } catch (error) {
+        await pixelWriter?.release?.()
         notEditable.push(String(error.message ?? error))
       }
     }
@@ -698,7 +768,12 @@ async function createWindow() {
   ipcMain.handle('modkit.initial-file', async () => {
     if (openIndex !== -1 && process.argv[openIndex + 1] !== undefined) {
       const target = process.argv[openIndex + 1]
-      return { present: true, root: target, selfTest: process.argv.includes('--selftest') }
+      return {
+        present: true,
+        root: target,
+        selfTest: process.argv.includes('--selftest'),
+        selfTestPngOnly: process.argv.includes('--selftest-png'),
+      }
     }
     const candidate = process.argv
       .slice(1)

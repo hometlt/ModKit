@@ -124,6 +124,7 @@ export const PARTS = Object.freeze([
   'imageedit.action',
   'imageedit.marquee',
   'imageedit.status',
+  'imageedit.warning',
 
   // audio stage
   'audio',

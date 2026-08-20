@@ -16,25 +16,47 @@ import type { OperationSession } from '@modkitx-x3/sdk'
 
 import { PREVIEW_STAGES, PREVIEW_STAGES_READONLY } from '../generated/viewer-catalog.js'
 import { createArchiveStage } from './archive-stage.js'
-import { imageEditStage } from './image-edit-stage.js'
+import { createImageEditStage } from './image-edit-stage.js'
 import { APP_STAGE_POLICY, orderStages, readOnlyStages } from './view-policy.js'
 
 export interface ElectronStageOptions {
   /** Operation session for the subject a stage was mounted for, when the host has one. */
   operationsFor(descriptor: Record<string, unknown>): Promise<OperationSession | undefined>
+  /** Include the pixel editor only for a subject whose PNG/RGBA8 writer resolved in main. */
+  readonly imageEditing?: boolean
+  /** Reopen a PNG after the semantic encoder commits its new bytes. */
+  readonly onImageCommitted?: (descriptor: Record<string, unknown>) => Promise<boolean>
 }
 
-function appStage(id: string, module: PreviewStage['module']): PreviewStage {
+function appStage(id: string, module: PreviewStage['module'], editable = false): PreviewStage {
   const policy = APP_STAGE_POLICY.find(item => item.id === id)
   if (policy === undefined) throw new TypeError(`no app stage policy for ${id}`)
-  return { id: policy.id, label: policy.label, contract: policy.contract, module }
+  return {
+    id: policy.id,
+    label: policy.label,
+    contract: policy.contract,
+    module,
+    ...(editable ? { editable: true } : {}),
+  }
 }
 
 export function createElectronStages(options: ElectronStageOptions): readonly PreviewStage[] {
   return orderStages<PreviewStage>([
     ...PREVIEW_STAGES,
     appStage('archive', createArchiveStage({ operationsFor: options.operationsFor })),
-    appStage('image-edit', imageEditStage),
+    ...(options.imageEditing === true
+      ? [
+          appStage(
+            'image-edit',
+            createImageEditStage({
+              ...(options.onImageCommitted === undefined
+                ? {}
+                : { onCommitted: options.onImageCommitted }),
+            }),
+            true,
+          ),
+        ]
+      : []),
   ])
 }
 
@@ -45,6 +67,5 @@ export function createElectronReadOnlyStages(
   return orderStages<PreviewStage>([
     ...readOnlyStages(PREVIEW_STAGES, PREVIEW_STAGES_READONLY),
     appStage('archive', createArchiveStage({ operationsFor: options.operationsFor })),
-    appStage('image-edit', imageEditStage),
   ])
 }
