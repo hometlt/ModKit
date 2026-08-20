@@ -1,0 +1,864 @@
+/**
+ * Modkit viewers as ordinary web components — a real stage inside somebody else's page.
+ *
+ * The PWA is one consumer of the open path; this is the other. A third-party site loads one module
+ * script and writes `<modkit-viewer src="./data/table.csv" view="table">`, and gets exactly what
+ * the workbench shows: the build-time attested catalog, the same digest verification, the same
+ * module workers. **Nothing evaluates extension code on the page thread** — the execution registry
+ * holds the browser worker backend alone, so an embedding page cannot end up running a codec in its
+ * own realm even by accident.
+ *
+ * ## The embedding contract
+ *
+ * **Assets.** `asset-base` points at a served copy of this app's `dist-app` (the catalog is
+ * compiled into `embed.js`; the base supplies `worker-entry.js`, `chunks/*`, `vendor/*`,
+ * `extensions/**` and `modkit-ui.css`). It defaults to the directory `embed.js` itself was loaded
+ * from, so «host the built app somewhere and point one script tag at it» is the whole deployment.
+ *
+ * **Origins.** The asset base must be *same-origin* with the embedding page. This is not a
+ * preference: `new Worker(url, { type: 'module' })` fetches its script in same-origin mode, so a
+ * cross-origin worker entry is refused by the browser however generous the CORS headers are. The
+ * element therefore checks the origin *before* it composes anything and states the refusal in its
+ * own box (`crossOriginRefusal`) rather than letting a `SecurityError` surface as an empty frame or
+ * a load that never settles. Reverse-proxy the assets under your own origin, or copy them there.
+ * `src` is a different question and is answered by the network: it is fetched relative to the
+ * *document*, so a cross-origin `src` works whenever the file's own server sends CORS headers, and
+ * a failure shows the status line it failed with.
+ *
+ * **CSP.** Measured against the demo page, which ships the policy it needs and is asserted to raise
+ * zero `securitypolicyviolation` events (`apps/web/test/embed.test.ts`):
+ *
+ *   default-src 'none'; script-src 'self' blob:; worker-src 'self' blob:; connect-src 'self';
+ *   img-src 'self' blob: data:; media-src 'self' blob:; style-src 'self'; font-src 'self'
+ *
+ * `script-src blob:` and `worker-src blob:` are the load-bearing pair: verified extension modules
+ * are handed to the worker as blob URLs, which is what keeps a codec's bytes measured before they
+ * are evaluable. `connect-src` covers this element's own fetches (the file at `src`, the stylesheet,
+ * every attested artifact). The stylesheet is adopted as a *constructable* sheet, which is not
+ * inline style and needs no `'unsafe-inline'`; the `<style>` fallback below does, which is stated
+ * where it happens.
+ *
+ * **Styling.** Each element renders into an open shadow root with `modkit-ui.css` adopted inside
+ * it, fetched once per asset base. The sheet's `:root` selectors are rewritten to `:host` on the
+ * way in (`shadowScopedCss`), because `:root` cannot match inside a shadow tree and the tokens
+ * would otherwise resolve to nothing. Consequences, both intended: the host page's styles do not
+ * reach modkit's DOM, and modkit's rules touch nothing outside the element. Theme and density are
+ * read from `data-mk-theme` / `data-mk-density` on the element itself.
+ *
+ * **Read-only.** v1 passes no `editorPorts`, so every editable stage drops exactly as it did in the
+ * PWA before the File System Access arm landed: an embedded viewer shows a file, it never saves one.
+ *
+ * **Extensions are the catalog, and only the catalog.** There is deliberately no way for the
+ * embedding page to name extension URLs of its own. That needs a trust story this build does not
+ * have (an attestation for a catalog fetched by URL); shipping a weaker one would hand any page
+ * that embeds a viewer a way to run unattested code under the modkit name.
+ *
+ * The pure half of this module (attribute parsing, asset-base resolution, the stylesheet rewrite,
+ * the stage preference, the shared-host keying) is DOM-free and unit-tested in Node; the element
+ * class is built inside `defineModkitElements`, so importing this file where `HTMLElement` does not
+ * exist is harmless.
+ */
+
+import {
+  revisionId,
+  type AnyDescriptor,
+  type ArtifactByteSource,
+  type OperationSession,
+} from '@modkitx-x3/sdk'
+import type {
+  BrowserBlobConstructorLike,
+  BrowserMessageChannelConstructorLike,
+  BrowserObjectUrlLike,
+} from '@modkitx-x3/host/browser'
+import {
+  createCodecPreview,
+  element,
+  EXPLORER_MAXIMUM_BYTES,
+  setPart,
+  setState,
+  setViewerText,
+  type ExplorerEntry,
+  type PreviewHandle,
+  type PreviewSession,
+  type PreviewStage,
+} from '@modkitx-x3/ui'
+
+import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
+import { createSingleFileAccess, type WebBlobSlice, type WebFileLike } from './files.js'
+import { createWebSubjectServices, type WebSubjectServices } from './subjects.js'
+import { createWebPreviewStages, stageIdOf, WEB_PREVIEW_FALLBACK } from './views.js'
+
+/** The element name this module registers by default. */
+export const MODKIT_VIEWER_TAG = 'modkit-viewer'
+
+/**
+ * What an element is doing, mirrored to `data-mk-state` on the element itself.
+ *
+ * On the element rather than only inside the shadow root, so a host page can style or await it
+ * without reaching through the boundary: `modkit-viewer[data-mk-state='error']` is a selector the
+ * embedding page owns.
+ */
+export type EmbedState = 'empty' | 'loading' | 'ready' | 'error'
+
+/** Largest file an embedded viewer reads into memory. The workbench's own ceiling. */
+export const EMBED_MAXIMUM_BYTES = EXPLORER_MAXIMUM_BYTES
+
+/**
+ * The element's own chrome inside the shadow root. Tokens only, no literals.
+ *
+ * The `:host` block is half layout and half defence. A shadow root blocks the host page's
+ * *selectors* but not its *inheritance*: `body { text-transform: uppercase; letter-spacing: .1em }`
+ * reaches straight through the boundary and would arrive as uppercase, letter-spaced hex dumps. So
+ * every inherited text property is reset at the host and re-stated from tokens on the frame. What
+ * is deliberately **not** reset is what a page should still control: `visibility` (a hidden
+ * container must hide the viewer too), `direction` and `writing-mode` (an RTL page means it), and
+ * anything a page sets on the element itself — a rule in the outer tree always beats `:host`, so
+ * `modkit-viewer { block-size: 30rem }` still works.
+ */
+export const EMBED_CHROME_CSS = `
+:host {
+  display: block;
+  box-sizing: border-box;
+  min-block-size: 12rem;
+  color: initial;
+  font: initial;
+  letter-spacing: initial;
+  word-spacing: initial;
+  text-align: initial;
+  text-indent: initial;
+  text-transform: initial;
+  text-shadow: initial;
+  white-space: initial;
+  list-style: initial;
+  tab-size: initial;
+}
+:host([hidden]) {
+  display: none;
+}
+.modkit-embed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mk-space-2);
+  box-sizing: border-box;
+  block-size: 100%;
+  min-block-size: inherit;
+  padding: var(--mk-space-2);
+  color: var(--mk-color-fg);
+  background: var(--mk-color-surface);
+  border: 1px solid var(--mk-color-border);
+  border-radius: var(--mk-radius-md);
+  font-family: var(--mk-font-sans);
+  font-size: var(--mk-font-size-md);
+  line-height: var(--mk-line-normal);
+}
+.modkit-embed__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mk-space-2);
+}
+.modkit-embed__title {
+  overflow: hidden;
+  color: var(--mk-color-fg-muted);
+  font-size: var(--mk-font-size-sm);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.modkit-embed__stage {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  overflow: auto;
+}
+.modkit-embed__status {
+  color: var(--mk-color-fg-muted);
+  font-size: var(--mk-font-size-sm);
+}
+.modkit-embed__status[data-mk-state~='error'] {
+  padding: var(--mk-space-2);
+  color: var(--mk-status-error-fg);
+  border: 1px solid var(--mk-status-error-border);
+  border-radius: var(--mk-radius-sm);
+  background: var(--mk-status-error-bg);
+}
+.modkit-embed__status[hidden] {
+  display: none;
+}
+`
+
+const describe = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error)
+
+// ---------------------------------------------------------------------------------------------
+// the pure half: attributes, asset base, stylesheet scoping, stage preference
+
+/**
+ * Where this element's assets live, always with a trailing slash.
+ *
+ * An `asset-base` attribute is resolved against the *document*, because that is the base every
+ * other URL on the page is written against. Absent, the default is the directory `embed.js` itself
+ * came from — the deployment story is then «serve `dist-app`, point one script tag at it».
+ */
+export function resolveAssetBase(
+  attribute: string | undefined,
+  scriptUrl: string,
+  documentBase: string,
+): string {
+  const resolved =
+    attribute === undefined || attribute === ''
+      ? new URL('./', scriptUrl)
+      : new URL(attribute, documentBase)
+  const href = resolved.href
+  return href.endsWith('/') ? href : `${href}/`
+}
+
+/**
+ * Why this element will not compose a host here, or `undefined` when it may.
+ *
+ * Stated up front rather than discovered on the first `new Worker(...)`: the worker script is
+ * fetched in same-origin mode, so a cross-origin asset base is not a CORS problem a server can fix.
+ */
+export function crossOriginRefusal(assetBase: string, pageOrigin: string): string | undefined {
+  let origin: string
+  try {
+    origin = new URL(assetBase).origin
+  } catch {
+    return `asset-base «${assetBase}» is not a URL this page can resolve.`
+  }
+  if (origin === pageOrigin) return undefined
+  return (
+    `The modkit assets at ${origin} are cross-origin to this page (${pageOrigin}). A module ` +
+    'worker script is fetched in same-origin mode, so no CORS header can make that work: serve ' +
+    'the modkit assets from this origin (copy or reverse-proxy them) and point asset-base there.'
+  )
+}
+
+/** The display / detection name: the `name` attribute, else the basename of `src`. */
+export function displayNameFor(
+  src: string | undefined,
+  name: string | undefined,
+  documentBase: string,
+): string {
+  if (name !== undefined && name !== '') return name
+  if (src === undefined || src === '') return 'file'
+  try {
+    const last = new URL(src, documentBase).pathname.split('/').pop()
+    return last === undefined || last === '' ? 'file' : decodeURIComponent(last)
+  } catch {
+    return 'file'
+  }
+}
+
+/**
+ * The stage list with one id moved to the front.
+ *
+ * `createCodecPreview` mounts the first *applicable* stage, so preference is expressed by order and
+ * nothing else has to change. An id no stage carries, or one whose contract this subject does not
+ * publish, therefore falls back to the resolver's own default — and the picker still offers every
+ * stage, because the list is reordered rather than filtered.
+ */
+export function preferStage(
+  stages: readonly PreviewStage[],
+  preferred: string | undefined,
+): readonly PreviewStage[] {
+  if (preferred === undefined || preferred === '') return stages
+  const chosen = stages.filter(stage => stageIdOf(stage) === preferred)
+  if (chosen.length === 0) return stages
+  return Object.freeze([...chosen, ...stages.filter(stage => stageIdOf(stage) !== preferred)])
+}
+
+/**
+ * `modkit-ui.css` as a shadow root can use it.
+ *
+ * The shipped sheet defines every token under `:root`, which matches the document element and
+ * nothing else — inside a shadow tree it matches nothing at all, and every `var(--mk-…)` would
+ * resolve to its fallback (that is, to nothing). `:host` is the shadow-tree spelling of the same
+ * thing, and it keeps the specificity relationship the sheet was written with: `:root[data-mk-theme]`
+ * becomes `:host([data-mk-theme])`, which still beats bare `:host`.
+ */
+export function shadowScopedCss(text: string): string {
+  return text
+    .replace(/:root:not\(([^)]*)\)/gu, ':host(:not($1))')
+    .replace(/:root(\[[^\]]*\])/gu, ':host($1)')
+    .replace(/:root\b/gu, ':host')
+}
+
+/**
+ * Compose once per asset base, share for the page's lifetime.
+ *
+ * Not reference-counted, deliberately. Composing a host spawns module workers and re-verifies every
+ * attested artifact's bytes; a page that moves a `<modkit-viewer>` between containers fires
+ * disconnect/connect and would pay all of that again, and tearing a host down while an open is in
+ * flight would have to cancel work the element no longer owns. What *is* released per element is
+ * the thing that actually holds memory: the opened subject's session, disposed when the element's
+ * preview unmounts. The host is a few workers and an inventory, and it stays.
+ */
+export function shareByAssetBase<Value>(
+  cache: Map<string, Promise<Value>>,
+  assetBase: string,
+  create: (assetBase: string) => Promise<Value>,
+): Promise<Value> {
+  const known = cache.get(assetBase)
+  if (known !== undefined) return known
+  const created = create(assetBase)
+  cache.set(assetBase, created)
+  // A failed composition must not be cached as the answer for the rest of the page's life.
+  created.catch(() => cache.delete(assetBase))
+  return created
+}
+
+// ---------------------------------------------------------------------------------------------
+// the shared host
+
+/** Stylesheets for one asset base, in whichever of the two forms this browser supports. */
+export interface EmbedStyles {
+  /** Constructable sheets, ready to adopt. Absent when the browser has no `CSSStyleSheet()`. */
+  readonly sheets?: readonly CSSStyleSheet[]
+  /** The same CSS as text, for the `<style>` element fallback. */
+  readonly text: string
+}
+
+/** Everything the elements on one asset base share. */
+export interface EmbedHost {
+  readonly assetBase: string
+  readonly services: WebSubjectServices
+  readonly stages: readonly PreviewStage[]
+  readonly styles: EmbedStyles
+  /**
+   * Live operation sessions by descriptor identity. The container stage asks for one by descriptor
+   * (`WebViewContext`), exactly as it does in the workbench: `createCodecPreview` hands a viewer a
+   * descriptor and nothing else, so whoever opened the subject has to keep the session reachable.
+   */
+  readonly operations: Map<string, OperationSession>
+}
+
+const embedHosts = new Map<string, Promise<EmbedHost>>()
+
+/** Identity of a mounted descriptor — the key a stage can look its session up by. */
+const descriptorKey = (descriptor: AnyDescriptor): string =>
+  `${descriptor.subjectUri} :: ${descriptor.revision}`
+
+async function loadStyles(assetBase: string): Promise<EmbedStyles> {
+  const response = await fetch(new URL('modkit-ui.css', assetBase).href)
+  if (!response.ok) {
+    throw new Error(`modkit-ui.css could not be fetched from ${assetBase} (${response.status})`)
+  }
+  const text = `${shadowScopedCss(await response.text())}\n${EMBED_CHROME_CSS}`
+  if (typeof CSSStyleSheet !== 'function') return { text }
+  try {
+    const sheet = new CSSStyleSheet()
+    sheet.replaceSync(text)
+    return { sheets: Object.freeze([sheet]), text }
+  } catch {
+    /*
+     * No constructable stylesheets (older Safari, and any engine that refuses `replaceSync`). The
+     * element then appends a `<style>` into its own shadow root with the same text. It is scoped
+     * identically — a `<style>` in a shadow root does not escape it — and differs in exactly one
+     * way worth stating: it is an inline stylesheet, so a host page under `style-src 'self'` alone
+     * will see it refused and must allow `'unsafe-inline'` (or use a browser from this decade).
+     */
+    return { text }
+  }
+}
+
+async function composeEmbedHost(assetBase: string): Promise<EmbedHost> {
+  const services = await createWebSubjectServices({
+    baseUrl: assetBase,
+    catalog: WEB_EXTENSION_CATALOG,
+    identity: embedIdentity(),
+    dom: {
+      fetch: (url, init) => fetch(url, init),
+      subtle: {
+        digest: (algorithm, data) =>
+          crypto.subtle.digest(algorithm, data as Uint8Array<ArrayBuffer>),
+      },
+      // the structural DOM shapes take readonly parts / any blob; the platform types are wider
+      Blob: Blob as unknown as BrowserBlobConstructorLike,
+      objectUrls: URL as unknown as BrowserObjectUrlLike,
+      Worker,
+      MessageChannel: MessageChannel as unknown as BrowserMessageChannelConstructorLike,
+    },
+  })
+  const operations = new Map<string, OperationSession>()
+  const stages = createWebPreviewStages({
+    operationsFor: descriptor => operations.get(descriptorKey(descriptor)),
+  })
+  const styles = await loadStyles(assetBase)
+  return Object.freeze({ assetBase, services, stages, styles, operations })
+}
+
+/** The one host for this asset base, composed on first use. */
+export function embedHostFor(assetBase: string): Promise<EmbedHost> {
+  return shareByAssetBase(embedHosts, assetBase, composeEmbedHost)
+}
+
+/** The browser does not report OS/arch portably; a real host adapter supplies this. */
+function embedIdentity(): { operatingSystem: 'windows' | 'darwin' | 'linux'; architecture: 'x64' } {
+  const agent = navigator.userAgent
+  const operatingSystem = agent.includes('Windows')
+    ? 'windows'
+    : agent.includes('Mac')
+      ? 'darwin'
+      : 'linux'
+  return { operatingSystem, architecture: 'x64' }
+}
+
+// ---------------------------------------------------------------------------------------------
+// bytes in
+
+/** A `Blob` or `File` as this module reads one. Structural, so a test needs no platform Blob. */
+export interface EmbedBlobLike {
+  readonly size: number
+  readonly name?: string
+  readonly lastModified?: number
+  slice(start: number, end: number): WebBlobSlice
+}
+
+/** One blob presented as the file the explorer's `FileAccess` is built from. */
+export function fileLikeFrom(blob: EmbedBlobLike, fallbackName: string): WebFileLike {
+  const name = blob.name === undefined || blob.name === '' ? fallbackName : blob.name
+  return {
+    name,
+    size: blob.size,
+    lastModified: blob.lastModified ?? 0,
+    slice: (start, end) => blob.slice(start, end),
+  }
+}
+
+/** Bytes in memory as the random-access source `openSubject` asks for. */
+function bytesSource(name: string, bytes: Uint8Array, token: string): ArtifactByteSource {
+  const uri = `memory://modkit-embed/${encodeURIComponent(name)}`
+  return {
+    kind: 'bytes',
+    ref: { id: uri, uri },
+    revision: revisionId(token),
+    size: BigInt(bytes.byteLength),
+    async read(offset, length) {
+      const start = Number(offset)
+      return bytes.slice(start, Math.min(bytes.byteLength, start + length))
+    },
+    async *stream(range) {
+      const start = Number(range?.offset ?? 0n)
+      const end = range?.length === undefined ? bytes.byteLength : start + Number(range.length)
+      yield bytes.slice(start, Math.min(bytes.byteLength, end))
+    },
+  }
+}
+
+let openCount = 0
+
+/**
+ * Open one subject through the shared host, as a `PreviewSession`.
+ *
+ * The grant carries `read-source` and nothing else: this element has no writer, so asking for
+ * `write-source` would be asking for something it could not use. `undefined` means no codec claimed
+ * the file, and `createCodecPreview` then shows its text/hex fallback rather than an empty box.
+ */
+async function openEmbedSession(
+  host: EmbedHost,
+  entry: ExplorerEntry,
+  bytes: Uint8Array,
+  signal?: AbortSignal,
+): Promise<PreviewSession | undefined> {
+  openCount += 1
+  const result = await host.services.open({
+    source: bytesSource(entry.name, bytes, `provider-token:embed-${openCount}-${bytes.byteLength}`),
+    path: entry.name,
+    intent: 'full',
+    grant: { id: `modkit-embed-${openCount}`, classes: ['read-source'] },
+    budget: {
+      maxInputBytes: BigInt(EMBED_MAXIMUM_BYTES),
+      maxDepth: 256,
+      maxNodes: 1_000_000,
+      maxScalarBytes: 64 * 1024 * 1024,
+      maxDiagnostics: 10_000,
+      deadlineMs: 30_000,
+    },
+    ...(signal === undefined ? {} : { signal }),
+  })
+  if (result.state === 'unresolved') return undefined
+  /*
+   * `AssetSession` answers exactly the questions `PreviewSession` asks, but its `dataSource` is
+   * generic over the known contracts while the previewer calls it with plain strings. One narrow
+   * structural view keeps that in a single place — the same one the workbench takes.
+   */
+  const session = result.session as unknown as {
+    descriptor(): Promise<Record<string, unknown>>
+    dataSource(contract: string, major: number): Promise<{ value: unknown }>
+    operations(): OperationSession
+    dispose(): Promise<void>
+  }
+  const key = descriptorKey(result.descriptor)
+  const operations = session.operations()
+  host.operations.set(key, operations)
+  return {
+    descriptor: () => session.descriptor(),
+    dataSource: (contract: string, major: number) => session.dataSource(contract, major),
+    async operations() {
+      return operations
+    },
+    async dispose() {
+      host.operations.delete(key)
+      await session.dispose()
+    },
+  }
+}
+
+// ---------------------------------------------------------------------------------------------
+// the element
+
+export interface DefineModkitElementsOptions {
+  /** Element name to register. A page that already owns `modkit-viewer` can rename ours. */
+  readonly tagName?: string
+  /** Default `asset-base` for elements that declare none. Defaults to this module's own URL. */
+  readonly assetBase?: string
+  /** Registry to define into. Defaults to the page's `customElements`. */
+  readonly registry?: CustomElementRegistry
+}
+
+/** Attribute names that make an element reload; everything else is presentation. */
+const RELOADING_ATTRIBUTES = Object.freeze(['src', 'name', 'asset-base'])
+const OBSERVED_ATTRIBUTES = Object.freeze([
+  ...RELOADING_ATTRIBUTES,
+  'view',
+  'data-mk-theme',
+  'data-mk-density',
+])
+
+/**
+ * Register the modkit elements.
+ *
+ * Idempotent: registering a name the registry already holds is a no-op, so a page that loads
+ * `embed.js` twice (a bundler and a script tag, say) gets one definition rather than an exception.
+ * Returns the name that is now defined.
+ */
+export function defineModkitElements(options: DefineModkitElementsOptions = {}): string {
+  const tagName = options.tagName ?? MODKIT_VIEWER_TAG
+  const registry = options.registry ?? globalThis.customElements
+  const base = globalThis.HTMLElement
+  if (registry === undefined || typeof base !== 'function') {
+    throw new TypeError('modkit elements need a DOM with customElements and HTMLElement')
+  }
+  if (registry.get(tagName) !== undefined) return tagName
+  const defaultAssetBase = options.assetBase ?? import.meta.url
+
+  class ModkitViewerElement extends base {
+    static get observedAttributes(): readonly string[] {
+      return OBSERVED_ATTRIBUTES
+    }
+
+    readonly #shadow: ShadowRoot
+    readonly #frame: HTMLElement
+    readonly #title: HTMLElement
+    readonly #picker: HTMLSelectElement
+    readonly #stage: HTMLElement
+    readonly #status: HTMLElement
+    #handle: PreviewHandle | undefined
+    #abort: AbortController | undefined
+    #blob: EmbedBlobLike | undefined
+    #styled = false
+    /** Bumped by every load; a load whose token is stale mounts nothing. */
+    #generation = 0
+
+    constructor() {
+      super()
+      this.#shadow = this.attachShadow({ mode: 'open' })
+      const document = this.ownerDocument
+      const frame = document.createElement('div')
+      frame.className = 'modkit-embed'
+      const header = document.createElement('div')
+      header.className = 'modkit-embed__header'
+      setPart(header, 'explorer.header')
+      const title = element(header, 'span', { part: 'explorer.breadcrumb' })
+      title.className = 'modkit-embed__title'
+      const picker = document.createElement('select')
+      picker.className = 'modkit-embed__picker'
+      picker.hidden = true
+      picker.setAttribute('aria-label', 'View')
+      setPart(picker, 'viewpicker.select')
+      header.append(picker)
+      const stage = document.createElement('div')
+      stage.className = 'modkit-embed__stage'
+      setPart(stage, 'explorer.stage')
+      const status = document.createElement('output')
+      status.className = 'modkit-embed__status'
+      setPart(status, 'explorer.status')
+      frame.append(header, stage, status)
+      this.#shadow.append(frame)
+      this.#frame = frame
+      this.#title = title
+      this.#picker = picker
+      this.#stage = stage
+      this.#status = status
+      picker.addEventListener('change', () => {
+        void this.#show(picker.value)
+      })
+    }
+
+    /**
+     * Bytes supplied by the page instead of `src` — a `File` from its own picker, a `Blob` it
+     * built. Setting it reloads; `src` is ignored while it is set, because a page that handed us
+     * bytes meant those bytes.
+     */
+    get file(): EmbedBlobLike | undefined {
+      return this.#blob
+    }
+
+    set file(value: EmbedBlobLike | undefined) {
+      this.#blob = value
+      if (this.isConnected) void this.#load()
+    }
+
+    /** The preferred stage id, reflected to the `view` attribute. */
+    get view(): string {
+      return this.getAttribute('view') ?? ''
+    }
+
+    set view(value: string) {
+      if (value === '') this.removeAttribute('view')
+      else this.setAttribute('view', value)
+    }
+
+    /** The stage on screen right now, or `''` before anything mounted. */
+    get activeView(): string {
+      return this.#handle?.activeView ?? ''
+    }
+
+    /** Stages this subject can be shown as, in the order the picker offers them. */
+    get views(): readonly { readonly id: string; readonly label: string }[] {
+      return this.#handle?.views ?? []
+    }
+
+    connectedCallback(): void {
+      this.#mirrorAppearance()
+      void this.#load()
+    }
+
+    disconnectedCallback(): void {
+      // Supersede any load in flight, then release the subject. A page that re-parents the element
+      // gets a fresh load on the next connect, which is cheap next to holding a worker session open
+      // for a node that may never come back.
+      this.#generation += 1
+      this.#abort?.abort()
+      this.#abort = undefined
+      void this.#unmount()
+    }
+
+    attributeChangedCallback(name: string, previous: string | null, next: string | null): void {
+      if (previous === next) return
+      if (name === 'data-mk-theme' || name === 'data-mk-density') {
+        this.#mirrorAppearance()
+        return
+      }
+      if (!this.isConnected) return
+      if (name === 'view') {
+        // A stage switch is not a reopen: when the subject already offers the stage, show it.
+        const wanted = next ?? ''
+        if (this.#handle?.views.some(view => view.id === wanted) === true) {
+          void this.#show(wanted)
+          return
+        }
+      }
+      if (name !== 'view' && !RELOADING_ATTRIBUTES.includes(name)) return
+      void this.#load()
+    }
+
+    /**
+     * Theme and density, copied from the element onto the frame.
+     *
+     * `data-mk-theme` is answered by `:host([data-mk-theme='…'])` in the rewritten sheet, so the
+     * element alone would do — but `data-mk-density` is authored as a bare attribute selector
+     * (`[data-mk-density='compact']`), which cannot match a shadow host from inside the tree. The
+     * frame carries both so one attribute on the element reaches every viewer under it.
+     */
+    #mirrorAppearance(): void {
+      for (const name of ['data-mk-theme', 'data-mk-density']) {
+        const value = this.getAttribute(name)
+        if (value === null) this.#frame.removeAttribute(name)
+        else this.#frame.setAttribute(name, value)
+      }
+    }
+
+    #say(message: string, state: EmbedState): void {
+      setViewerText(this.#status, message, 2000)
+      this.#status.hidden = message === ''
+      setState(this.#status, state === 'error' ? ['error'] : [])
+      this.setAttribute('data-mk-state', state)
+    }
+
+    #fail(reason: string): void {
+      this.#say(reason, 'error')
+      this.dispatchEvent(
+        new CustomEvent('modkit-viewer-error', { detail: { reason }, bubbles: false }),
+      )
+    }
+
+    async #unmount(): Promise<void> {
+      const handle = this.#handle
+      this.#handle = undefined
+      this.#picker.hidden = true
+      this.#picker.replaceChildren()
+      if (handle !== undefined) {
+        try {
+          await handle.unmount()
+        } catch (error) {
+          console.warn('[modkit-viewer] unmount failed', error)
+        }
+      }
+      this.#stage.replaceChildren()
+    }
+
+    async #show(viewId: string): Promise<void> {
+      const handle = this.#handle
+      if (handle === undefined || viewId === '' || handle.activeView === viewId) return
+      try {
+        await handle.show(viewId)
+        this.#picker.value = handle.activeView
+      } catch (error) {
+        this.#fail(`«${viewId}» could not be shown: ${describe(error)}`)
+      }
+    }
+
+    /** The bytes to open: the `file` property when the page set one, else `src`. */
+    async #read(name: string, signal: AbortSignal): Promise<WebFileLike> {
+      const blob = this.#blob
+      if (blob !== undefined) return fileLikeFrom(blob, name)
+      const src = this.getAttribute('src') ?? ''
+      const target = new URL(src, this.ownerDocument.baseURI)
+      const response = await fetch(target.href, { signal })
+      if (!response.ok) {
+        throw new Error(
+          `${target.href} could not be fetched (${response.status} ${response.statusText})`,
+        )
+      }
+      return fileLikeFrom(await response.blob(), name)
+    }
+
+    async #load(): Promise<void> {
+      const generation = (this.#generation += 1)
+      this.#abort?.abort()
+      const controller = new AbortController()
+      this.#abort = controller
+      const current = (): boolean => generation === this.#generation && !controller.signal.aborted
+      await this.#unmount()
+      const name = displayNameFor(
+        this.getAttribute('src') ?? undefined,
+        this.getAttribute('name') ?? undefined,
+        this.ownerDocument.baseURI,
+      )
+      setViewerText(this.#title, name, 300)
+      if (this.#blob === undefined && (this.getAttribute('src') ?? '') === '') {
+        /*
+         * Not a failure. A page that appends the element and assigns `.file` a tick later passes
+         * through this state, and so does one that will set `src` when its own data arrives.
+         */
+        this.#say('Waiting for a file: set the src attribute or assign the file property.', 'empty')
+        return
+      }
+      this.#say(`Loading ${name}…`, 'loading')
+      try {
+        const assetBase = resolveAssetBase(
+          this.getAttribute('asset-base') ?? undefined,
+          defaultAssetBase,
+          this.ownerDocument.baseURI,
+        )
+        const refusal = crossOriginRefusal(assetBase, this.ownerDocument.location?.origin ?? '')
+        if (refusal !== undefined) {
+          this.#fail(refusal)
+          return
+        }
+        const host = await embedHostFor(assetBase)
+        if (!current()) return
+        this.#applyStyles(host.styles)
+        const file = await this.#read(name, controller.signal)
+        if (!current()) return
+        // The name the codecs will detect on, which is the honest thing to show in the header: a
+        // `file` property carries its own name and it is not the one the attributes implied.
+        setViewerText(this.#title, file.name, 300)
+        if (file.size > EMBED_MAXIMUM_BYTES) {
+          this.#fail(
+            `${name} is ${file.size} bytes; this element reads at most ${EMBED_MAXIMUM_BYTES}.`,
+          )
+          return
+        }
+        const { access, entry } = createSingleFileAccess(file)
+        const bytes = await access.read(entry.id, EMBED_MAXIMUM_BYTES, controller.signal)
+        if (!current()) return
+        /*
+         * One previewer per load, because the preferred stage is per element. It is a closure over
+         * the shared host's stage list — the stages themselves, the inventory and the workers are
+         * composed once per asset base.
+         *
+         * No `editorPorts`: every editable stage drops, which is the honest shape of a viewer that
+         * has no way to write a file back.
+         */
+        const previewer = createCodecPreview({
+          supported: host.services.supportedExtensions,
+          stages: preferStage(host.stages, this.getAttribute('view') ?? undefined),
+          fallback: WEB_PREVIEW_FALLBACK,
+          openSession: (openedEntry, openedBytes, signal) =>
+            openEmbedSession(host, openedEntry, openedBytes, signal),
+        })
+        const handle = await previewer.open(this.#stage, entry, bytes, controller.signal)
+        if (!current()) {
+          await handle?.unmount()
+          return
+        }
+        if (handle === undefined) {
+          this.#fail(`${name} could not be shown: no stage matched what the codecs published.`)
+          return
+        }
+        this.#handle = handle
+        this.#drawPicker(handle)
+        this.#say('', 'ready')
+        this.dispatchEvent(
+          new CustomEvent('modkit-viewer-ready', {
+            detail: { name, view: handle.activeView, views: handle.views.map(view => view.id) },
+            bubbles: false,
+          }),
+        )
+      } catch (error) {
+        if (!current()) return
+        this.#fail(`${name}: ${describe(error)}`)
+      }
+    }
+
+    #drawPicker(handle: PreviewHandle): void {
+      this.#picker.replaceChildren()
+      for (const view of handle.views) {
+        const option = this.ownerDocument.createElement('option')
+        option.value = view.id
+        setViewerText(option, view.label, 128)
+        this.#picker.append(option)
+      }
+      this.#picker.value = handle.activeView
+      this.#picker.hidden = handle.views.length < 2
+    }
+
+    #applyStyles(styles: EmbedStyles): void {
+      if (this.#styled) return
+      this.#styled = true
+      const sheets = styles.sheets
+      if (sheets !== undefined) {
+        this.#shadow.adoptedStyleSheets = [...sheets]
+        return
+      }
+      const style = this.ownerDocument.createElement('style')
+      style.textContent = styles.text
+      this.#shadow.prepend(style)
+    }
+  }
+
+  registry.define(tagName, ModkitViewerElement)
+  return tagName
+}
+
+/*
+ * Self-registration. This module is the `embed.js` entry, and a consumer's whole integration is one
+ * script tag — so loading it defines the elements. Guarded, because the same file is compiled into
+ * this package's library output and may be imported where there is no DOM at all.
+ */
+if (
+  typeof globalThis.customElements !== 'undefined' &&
+  typeof globalThis.HTMLElement === 'function'
+)
+  defineModkitElements()

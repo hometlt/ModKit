@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ridgeline Survey — field data</title>
+    <!--
+      This page is a stand-in for somebody else's website. It shares nothing with the Modkit PWA:
+      its own markup, its own typography, its own colours, no import of the app shell. The whole
+      integration is the one module script below plus <modkit-viewer> elements.
+
+      The policy is the embedding contract, measured rather than guessed (apps/web/test/embed.test.ts
+      asserts this page raises no securitypolicyviolation at all):
+        script-src 'self' blob:  the entry, its chunks, and the verified extension modules the
+                                 worker imports as blob URLs
+        worker-src 'self' blob:  the module worker every codec runs in
+        connect-src 'self'       the files at src=, modkit-ui.css, every attested artifact
+        img-src / media-src      what the image, vector and media stages hand the platform
+        style-src 'self'         enough, because the stylesheet is adopted as a constructable
+                                 sheet rather than injected as inline CSS
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self' blob:; worker-src 'self' blob:; connect-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; style-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'"
+    />
+    <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png" />
+    <link rel="stylesheet" href="./embed-demo.css" />
+    <script type="module" src="./embed.js"></script>
+  </head>
+  <body>
+    <header class="site-head">
+      <p class="site-mark">Ridgeline Survey</p>
+      <nav class="site-nav">
+        <a href="#roster">Roster</a>
+        <a href="#marker">Marker</a>
+        <a href="#raw">Raw capture</a>
+        <a href="#missing">Missing</a>
+      </nav>
+    </header>
+
+    <main class="site">
+      <h1>Field data, October run</h1>
+      <p class="lede" id="site-lede">
+        Everything below is served straight out of our own bucket. The viewers are Modkit custom
+        elements: one script tag, four tags, no build step on our side.
+      </p>
+
+      <section id="roster">
+        <h2>Team roster</h2>
+        <p>
+          A comma-separated capture, asked for as a table. The codec decides what it can publish;
+          the <code>view</code> attribute only says which of those we would rather see first.
+        </p>
+        <figure class="viewer">
+          <modkit-viewer
+            id="roster-viewer"
+            src="./samples/sample.csv"
+            view="table"
+            data-mk-theme="modkit-light"
+          ></modkit-viewer>
+          <figcaption>sample.csv &mdash; delimited table</figcaption>
+        </figure>
+      </section>
+
+      <section id="marker">
+        <h2>Trail marker</h2>
+        <p>A vector drawing, rendered by the vector stage. Same element, different file.</p>
+        <figure class="viewer">
+          <modkit-viewer
+            id="marker-viewer"
+            src="./samples/sample.svg"
+            name="trail-marker.svg"
+            data-mk-theme="modkit-light"
+          ></modkit-viewer>
+          <figcaption>sample.svg &mdash; vector scene</figcaption>
+        </figure>
+      </section>
+
+      <section id="raw">
+        <h2>Camera thumbnail</h2>
+        <p>
+          A raster image. Nothing on this page knows what a PNG is &mdash; the extension that does
+          runs in a worker, and its bytes were measured against the build&rsquo;s attestation before
+          anything evaluated them.
+        </p>
+        <figure class="viewer">
+          <modkit-viewer
+            id="thumb-viewer"
+            src="./icon-192.png"
+            data-mk-theme="modkit-dark"
+          ></modkit-viewer>
+          <figcaption>icon-192.png &mdash; raster image</figcaption>
+        </figure>
+      </section>
+
+      <section id="missing">
+        <h2>A file we forgot to upload</h2>
+        <p>
+          Left in on purpose. A viewer that cannot fetch its file says so where the file would have
+          been, rather than sitting there as an empty rectangle.
+        </p>
+        <figure class="viewer">
+          <modkit-viewer
+            id="missing-viewer"
+            src="./samples/october-run.bin"
+            data-mk-theme="modkit-light"
+          ></modkit-viewer>
+          <figcaption>october-run.bin &mdash; not on the server</figcaption>
+        </figure>
+      </section>
+    </main>
+
+    <footer class="site-foot">
+      <p>Ridgeline Survey &mdash; a demonstration host page, not a Modkit product surface.</p>
+    </footer>
+  </body>
+</html>
