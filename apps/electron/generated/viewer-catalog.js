@@ -6,7 +6,6 @@ import {
   hexViewer,
   imageViewer,
   modelViewer,
-  monacoViewer,
   tableViewer,
   textEditor,
   treeViewer,
@@ -14,7 +13,7 @@ import {
   videoViewer,
   virtualTextViewer,
 } from '@modkitx-x3/ui'
-import { monacoEditor } from '../../../extensions/common/ui-monaco/src/index.js'
+import { monacoEditor, monacoViewer } from '../../../extensions/common/ui-monaco/src/index.js'
 
 export const PREVIEW_STAGES = Object.freeze([
   {

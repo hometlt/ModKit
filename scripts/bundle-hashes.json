@@ -16,7 +16,7 @@
   "packages/host/dist/execution/index.js": "798bc102b93d0e2dfd0f44d0713e6c13400a405c81e5e951036f5e8a8a2db316",
   "packages/host/dist/node/worker-bootstrap.js": "04ae1c60c2bb0e6ba5589cf583f3771a862ef60338b61e894017414a53232374",
   "packages/host/dist/browser/worker-entry.js": "a802543c2d1616e884d1a3963b100e6f66db8927889d8841c2f3461f3e9df969",
-  "packages/ui/dist/index.js": "dab3bb4bf237adf11574a2cadd7bce6e9f5eb711481b8e91f16d53f4e5bac5b4",
+  "packages/ui/dist/index.js": "d9fff8d802bbc0038145fe41487beaeb966b7fa411aa692e5343ecc4cf1281d5",
   "packages/ui/dist/viewer/index.js": "0733736aa32e6f298219ecd4ec031cd78ad976e96a5f5ca3fdc301d7683c26e6",
   "packages/ui/dist/code/index.js": "c076c4a16e896173480106562a53bdf1013c85887194cc8493bcf8bf3411a35e",
   "packages/ui/dist/text-virtual/index.js": "c559ea2cec953adfecb554bcefb1351055219eee405bd784a032eb3416e477a8",

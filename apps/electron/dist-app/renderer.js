@@ -282998,6 +282998,26 @@ function isSubscriptionId(value2) {
 function isMethodName(value2) {
   return METHOD_NAME.test(value2);
 }
+var WIRE_TYPED_ARRAYS = Object.freeze({
+  bytes: Uint8Array,
+  i8: Int8Array,
+  u8c: Uint8ClampedArray,
+  i16: Int16Array,
+  u16: Uint16Array,
+  i32: Int32Array,
+  u32: Uint32Array,
+  f32: Float32Array,
+  f64: Float64Array,
+  i64: BigInt64Array,
+  u64: BigUint64Array
+});
+function wireTypedArrayCode(view) {
+  for (const [code, constructor] of Object.entries(WIRE_TYPED_ARRAYS)) {
+    if (view.constructor === constructor)
+      return code;
+  }
+  return void 0;
+}
 var MAX_OPTIONAL_METHODS = 64;
 function handleRef(id, kind, contract2, data, has) {
   return Object.freeze({
@@ -283129,7 +283149,11 @@ function validateInner(value2, limits, measure, depth, path, handles) {
   }
   if (value2 === null)
     return void 0;
-  if (value2 instanceof Uint8Array) {
+  if (ArrayBuffer.isView(value2) && !(value2 instanceof DataView)) {
+    const kind = value2.constructor.name;
+    if (wireTypedArrayCode(value2) === void 0) {
+      return { code: "bad-value", message: `${kind} is not a wire value`, path };
+    }
     if (SHARED !== void 0 && value2.buffer instanceof SHARED) {
       return {
         code: "shared-buffer",
@@ -283140,14 +283164,14 @@ function validateInner(value2, limits, measure, depth, path, handles) {
     if (value2.buffer.detached === true) {
       return {
         code: "bad-value",
-        message: "a Uint8Array over a detached buffer cannot cross (it was transferred already)",
+        message: `a ${kind} over a detached buffer cannot cross (it was transferred already)`,
         path
       };
     }
     if (value2.byteOffset !== 0 || value2.byteLength !== value2.buffer.byteLength) {
       return {
         code: "partial-typed-array",
-        message: "a Uint8Array must own its whole buffer (slice() before sending)",
+        message: `a ${kind} must own its whole buffer (slice() before sending)`,
         path
       };
     }
@@ -283162,8 +283186,12 @@ function validateInner(value2, limits, measure, depth, path, handles) {
     measure.buffers.push(value2.buffer);
     return void 0;
   }
-  if (ArrayBuffer.isView(value2) || value2 instanceof ArrayBuffer) {
-    return { code: "bad-value", message: "only Uint8Array binary payloads are allowed", path };
+  if (value2 instanceof DataView || value2 instanceof ArrayBuffer) {
+    return {
+      code: "bad-value",
+      message: "binary payloads must be a typed array that names its element type",
+      path
+    };
   }
   if (Array.isArray(value2)) {
     if (value2.length > limits.maxArrayLength) {
@@ -283835,6 +283863,38 @@ function normalizeProgress(value2) {
     ...typeof message === "string" ? { message: message.slice(0, 1024) } : {}
   };
 }
+function lazyStream(start) {
+  return {
+    [Symbol.asyncIterator]() {
+      let iterator;
+      const open = async () => {
+        if (iterator === void 0) {
+          const stream = await start();
+          iterator = stream[Symbol.asyncIterator]();
+        }
+        return iterator;
+      };
+      return {
+        async next(...args) {
+          return (await open()).next(...args);
+        },
+        async return(value2) {
+          if (iterator === void 0)
+            return { done: true, value: value2 };
+          return await iterator.return?.(value2) ?? { done: true, value: value2 };
+        },
+        async throw(error) {
+          if (iterator === void 0)
+            throw error;
+          const thrown = await iterator.throw?.(error);
+          if (thrown === void 0)
+            throw error;
+          return thrown;
+        }
+      };
+    }
+  };
+}
 function isAbortSignal(value2) {
   return typeof AbortSignal !== "undefined" && value2 instanceof AbortSignal;
 }
@@ -283990,7 +284050,7 @@ var EndpointImpl = class {
     for (const [name, method] of Object.entries(surface.methods)) {
       if (method.optional === true && present !== void 0 && !present.includes(name))
         continue;
-      object[name] = async (...rawArgs) => {
+      const invoke = async (...rawArgs) => {
         const args = [...rawArgs];
         let signal;
         let onProgress;
@@ -284039,6 +284099,7 @@ var EndpointImpl = class {
             return outcome.events;
         }
       };
+      object[name] = method.kind === "iterable" || method.kind === "events" ? (...rawArgs) => lazyStream(() => invoke(...rawArgs)) : invoke;
     }
     if (surface.releaseVia !== void 0) {
       const inner = object[surface.releaseVia];
@@ -285375,9 +285436,13 @@ function createEndpoint(options) {
 // packages/host/dist/execution/message-port.js
 function framePortFromMessagePort(port, options = {}) {
   const style = options.listener ?? (typeof port.addEventListener === "function" ? "event-target" : "emitter-value");
+  const moves = (options.transfer ?? (style === "emitter-event" ? "copy" : "move")) === "move";
   return {
     post(frame, transfer) {
-      port.postMessage(frame, [...transfer]);
+      if (moves)
+        port.postMessage(frame, [...transfer]);
+      else
+        port.postMessage(frame);
     },
     onFrame(handler) {
       if (style === "event-target") {
@@ -285514,19 +285579,107 @@ function createStandardSurfaceRegistry(options = {}) {
 
 // packages/host/dist/subject-rpc.js
 var SUBJECT_SERVICES = Object.freeze({ contract: "x3.app/subject-services", major: 1 });
+var SUBJECT_EDITING = Object.freeze({ contract: "x3.app/subject-editing", major: 1 });
+var SUBJECT_SERVICES_URL = "x3-app://subject-services";
 var subjectServicesSurface = {
   ...SUBJECT_SERVICES,
   methods: {
     /** `open(path)` → an inert snapshot (opened carries a `sessionId` to attach). */
     open: { kind: "value", signal: "last" },
     /** `attach(sessionId)` → the live session under `x3.abi/asset-session@1`. */
-    attach: { kind: "lease", result: ABI_ASSET_SESSION, wrapper: "bare" }
+    attach: { kind: "lease", result: ABI_ASSET_SESSION, wrapper: "bare" },
+    /** `edit(sessionId)` → the editing arm, when this host can write this subject. */
+    edit: { kind: "lease", result: SUBJECT_EDITING, wrapper: "bare" }
+  }
+};
+var subjectEditingSurface = {
+  ...SUBJECT_EDITING,
+  releaseVia: "dispose",
+  methods: {
+    state: { kind: "value" },
+    propose: { kind: "value", signal: "last", arity: 1 },
+    plan: { kind: "value", signal: "last", arity: 1 },
+    prepare: { kind: "value", signal: "last", arity: 1 },
+    commit: { kind: "value", signal: "last", arity: 1 },
+    dispose: { kind: "value" }
   }
 };
 function subjectRpcSurfaces() {
-  return createStandardSurfaceRegistry({ surfaces: [subjectServicesSurface] });
+  return createStandardSurfaceRegistry({
+    surfaces: [subjectServicesSurface, subjectEditingSurface]
+  });
 }
 var SUBJECT_RPC_LIMITS = protocolLimits({ defaultCallDeadlineMs: 6e4 });
+async function connectSubjectRpc(options) {
+  const endpoint = createEndpoint({
+    role: "host",
+    port: framePortFromMessagePort(options.port, options.listener === void 0 ? {} : { listener: options.listener }),
+    session: options.session,
+    generation: options.generation ?? 1,
+    surfaces: subjectRpcSurfaces(),
+    limits: SUBJECT_RPC_LIMITS,
+    ...options.onDiagnostic === void 0 ? {} : {
+      onDiagnostic: (diagnostic2) => options.onDiagnostic?.(diagnostic2)
+    },
+    onFailure: (failure) => {
+      options.onDiagnostic?.({
+        code: "x3.app/subject-rpc-failed",
+        message: `${failure.code}: ${failure.message}`
+      });
+    }
+  });
+  const loaded = await endpoint.load({
+    moduleUrl: options.moduleUrl ?? SUBJECT_SERVICES_URL,
+    contributionId: options.contributionId ?? "org.modkitx.app/subject-services",
+    variantId: "main",
+    artifactDigest: "sha256:app-composition"
+  });
+  const services = endpoint.materialize(loaded.root);
+  return {
+    async open(path) {
+      const snapshot = await services.open(path);
+      if (snapshot.state !== "opened")
+        return { state: "unresolved", snapshot };
+      const proxy = await services.attach(snapshot.sessionId);
+      const session = {
+        ...snapshot.presentation === void 0 ? {} : { presentation: snapshot.presentation },
+        // the descriptor already crossed inside the snapshot; asking again would re-run the codec
+        descriptor: async () => snapshot.descriptor,
+        dataSource: (contract2, major) => proxy.dataSource(contract2, major),
+        operations: () => proxy.operations(),
+        dispose: () => proxy.dispose()
+      };
+      return { state: "opened", snapshot, session };
+    },
+    edit: (sessionId) => services.edit(sessionId),
+    close: (reason) => endpoint.close(reason)
+  };
+}
+
+// packages/host/dist/editing-evidence.js
+var HOST_RAW_WRITER_IDENTITY = Object.freeze({
+  providerId: "org.modkitx.host/raw-writer",
+  providerVersion: "1.0.0",
+  artifactDigest: "host:raw-writer",
+  formatId: "*",
+  representationId: "source"
+});
+var RAW_CLAIM = Object.freeze({
+  roundTrip: "byte-identical",
+  preservesUnknownData: true
+});
+var HOST_RAW_WRITER_EVIDENCE_ID = "host:raw-writer/by-construction";
+var HOST_RAW_WRITER_EVIDENCE_RECORD = Object.freeze({
+  writer: HOST_RAW_WRITER_IDENTITY,
+  claim: RAW_CLAIM,
+  evidenceId: HOST_RAW_WRITER_EVIDENCE_ID,
+  corpusId: "by-construction: literal replacement, no re-encoding",
+  corpusDigest: "none:by-construction",
+  conformanceProfile: "org.modkitx/raw-writer-v1",
+  optionsFingerprint: "options:none",
+  inputClass: "any",
+  provenAt: "2026-08-19T00:00:00Z"
+});
 
 // packages/host/dist/editing.js
 var GUARANTEE_STRENGTH = Object.freeze({
@@ -285545,6 +285698,7 @@ var NO_STAGED_PAYLOADS = Object.freeze({
     });
   }
 });
+var DEFAULT_INLINE_PAYLOAD_BYTES = 16 * 1024 * 1024;
 
 // packages/host/dist/data-sources.js
 var DEFAULT_CHUNK_BYTES = 64 * 1024;
@@ -285554,47 +285708,13 @@ var ELECTRON_SUBJECT_SERVICES_URL = "x3-app://electron/subject-services";
 
 // apps/electron/src/subject-client.ts
 async function connectElectronSubjectClient(options) {
-  const endpoint = createEndpoint({
-    role: "host",
-    port: framePortFromMessagePort(options.port),
+  return connectSubjectRpc({
+    port: options.port,
     session: options.session,
-    generation: 1,
-    surfaces: subjectRpcSurfaces(),
-    limits: protocolLimits({ defaultCallDeadlineMs: 6e4 }),
-    ...options.onDiagnostic === void 0 ? {} : {
-      onDiagnostic: (diagnostic2) => options.onDiagnostic?.(diagnostic2)
-    },
-    onFailure: (failure) => {
-      options.onDiagnostic?.({
-        code: "x3.app/subject-rpc-failed",
-        message: `${failure.code}: ${failure.message}`
-      });
-    }
-  });
-  const loaded = await endpoint.load({
     moduleUrl: ELECTRON_SUBJECT_SERVICES_URL,
     contributionId: "org.modkitx.app.electron/subject-services",
-    variantId: "main",
-    artifactDigest: "sha256:app-composition"
+    ...options.onDiagnostic === void 0 ? {} : { onDiagnostic: options.onDiagnostic }
   });
-  const services = endpoint.materialize(loaded.root);
-  return {
-    async open(path) {
-      const snapshot = await services.open(path);
-      if (snapshot.state !== "opened") return { state: "unresolved", snapshot };
-      const proxy = await services.attach(snapshot.sessionId);
-      const session = {
-        ...snapshot.presentation === void 0 ? {} : { presentation: snapshot.presentation },
-        // the descriptor already crossed inside the snapshot; asking again would re-run the codec
-        descriptor: async () => snapshot.descriptor,
-        dataSource: (contract2, major) => proxy.dataSource(contract2, major),
-        operations: () => proxy.operations(),
-        dispose: () => proxy.dispose()
-      };
-      return { state: "opened", snapshot, session };
-    },
-    close: (reason) => endpoint.close(reason)
-  };
 }
 
 // packages/ui/dist/parts.js
@@ -285637,6 +285757,7 @@ var PARTS = Object.freeze([
   "namespace.list",
   "namespace.item",
   "namespace.label",
+  "namespace.detail",
   "namespace.children",
   // transport
   "transport",
@@ -286613,6 +286734,10 @@ var namespaceViewer = defineViewerModule({
           part: "namespace.label"
         });
         button.type = "button";
+        const detail = describeEntry(entry);
+        if (detail !== "") {
+          setViewerText(element(item, "span", { part: "namespace.detail" }), detail);
+        }
         const activate = async () => {
           if (entry.kind === "directory") {
             let nested = item.querySelector(":scope > ul");
@@ -286645,6 +286770,36 @@ var namespaceViewer = defineViewerModule({
     });
   }
 });
+function formatEntryBytes(value2) {
+  if (value2 < 1024n)
+    return `${value2} B`;
+  const units = ["KiB", "MiB", "GiB", "TiB"];
+  let scaled = Number(value2) / 1024;
+  let unit = 0;
+  while (scaled >= 1024 && unit < units.length - 1) {
+    scaled /= 1024;
+    unit += 1;
+  }
+  return `${scaled.toFixed(1)} ${units[unit]}`;
+}
+function describeEntry(entry) {
+  if (entry.kind === "directory")
+    return "";
+  const parts = [];
+  if (entry.size !== void 0)
+    parts.push(formatEntryBytes(entry.size));
+  if (entry.compression !== void 0) {
+    parts.push(entry.storedSize === void 0 ? entry.compression : `${entry.compression} ${formatEntryBytes(entry.storedSize)}`);
+  } else if (entry.storedSize !== void 0) {
+    parts.push(`stored ${formatEntryBytes(entry.storedSize)}`);
+  }
+  if (entry.modifiedAt !== void 0) {
+    parts.push(`${new Date(entry.modifiedAt).toISOString().replace("T", " ").slice(0, 19)} UTC`);
+  }
+  if (entry.checksum !== void 0)
+    parts.push(`${entry.checksum.algorithm} ${entry.checksum.value}`);
+  return parts.join(" \xB7 ");
+}
 
 // packages/ui/dist/panels/index.js
 function renderDiagnostics(root, descriptor) {
@@ -289012,6 +289167,23 @@ var BYTE_RANGE_SOURCE = Object.freeze({
   major: 1
 });
 var HEX_BYTE = /^[0-9a-f]{1,2}$/iu;
+function hexChangeSet(runs, targets) {
+  const target = targets[0];
+  if (target === void 0)
+    throw new TypeError("the edit session carries no target to write to");
+  return {
+    targets,
+    edits: runs.map((run) => ({
+      operation: "replace",
+      targetId: target.targetId,
+      source: target.ownerSource,
+      range: { kind: "bytes", offset: run.offset, length: BigInt(run.bytes.length) },
+      payload: { kind: "inline", bytes: run.bytes },
+      label: "Edit bytes"
+    })),
+    provenance: { actor: "user" }
+  };
+}
 function coalesceHexEdits(edits) {
   const sorted = [...edits].sort((left, right) => left.offset < right.offset ? -1 : 1);
   const runs = [];
@@ -289069,16 +289241,7 @@ var hexEditor = {
       if (pending.size === 0)
         return;
       const runs = coalesceHexEdits([...pending.values()]);
-      void args.edit.propose({
-        baseRevisions: { content: args.descriptor.revision },
-        edits: runs.map((run) => ({
-          kind: "bytes",
-          bindingId: "content",
-          range: { kind: "bytes", offset: run.offset, length: BigInt(run.bytes.length) },
-          payload: { kind: "inline", bytes: run.bytes }
-        })),
-        provenance: { origin: "hex-editor" }
-      });
+      void args.edit.propose(hexChangeSet(runs, args.edit.targets));
     };
     const setByte = (absolute, base, next) => {
       const key = absolute.toString(10);
@@ -289113,6 +289276,9 @@ var hexEditor = {
       windowOffset = view.offset;
       original = view.bytes;
       pending.clear();
+      drawWindow();
+    };
+    const drawWindow = () => {
       grid.replaceChildren();
       for (let row = 0; row < original.length; row += 16) {
         const line = element(grid, "div", { part: "hex.row" });
@@ -289184,21 +289350,13 @@ var hexEditor = {
       if (pending.size === 0)
         return;
       const runs = coalesceHexEdits([...pending.values()]);
-      const change = {
-        baseRevisions: { content: args.descriptor.revision },
-        edits: runs.map((run) => ({
-          kind: "bytes",
-          bindingId: "content",
-          range: { kind: "bytes", offset: run.offset, length: BigInt(run.bytes.length) },
-          payload: { kind: "inline", bytes: run.bytes }
-        })),
-        provenance: { origin: "hex-editor" }
-      };
+      const change = hexChangeSet(runs, args.edit.targets);
       setViewerText(status2, "Validating\u2026");
       const validation = await args.edit.propose(change);
-      if (validation.state === "invalid") {
+      if (!validation.valid) {
         setState(root, ["error"]);
-        setViewerText(status2, "Rejected by validation");
+        const first2 = validation.diagnostics[0];
+        setViewerText(status2, first2 === void 0 ? "Rejected by validation" : `Rejected: ${first2.message}`);
         return;
       }
       const plan = await args.edit.plan(change);
@@ -289208,22 +289366,39 @@ var hexEditor = {
         return;
       }
       const prepared = await args.commit.prepare(plan, { grant: authorization.grant });
-      const state = prepared.state;
-      if (state !== "prepared") {
+      if (prepared.state !== "ready") {
         setState(root, ["error"]);
-        setViewerText(status2, `Prepare failed: ${state ?? "unknown"}`);
+        setViewerText(status2, prepared.state === "conflict" ? "Conflict: the source changed" : `Prepare rejected: ${prepared.reason}`);
         return;
       }
-      await args.commit.commit(prepared.prepared, {
+      const receipt = await args.commit.commit(prepared.prepared, {
         grant: authorization.grant
       });
+      if (receipt.state !== "committed") {
+        setState(root, ["error"]);
+        setViewerText(status2, receipt.state === "not-applied" ? `Save rejected: ${receipt.reason}` : `Save ${receipt.state}`);
+        return;
+      }
+      const updated = new Uint8Array(original);
+      for (const run of runs) {
+        const start = Number(run.offset - windowOffset);
+        if (start >= 0 && start + run.bytes.length <= updated.length)
+          updated.set(run.bytes, start);
+      }
+      original = updated;
+      pending.clear();
+      drawWindow();
       setState(root, []);
-      setViewerText(status2, `Committed ${runs.length} range(s)`);
-      await renderWindow();
+      setViewerText(status2, `Committed ${runs.length} range(s) \u2014 reopen the file before editing it again`);
     };
     go.addEventListener("click", () => void renderWindow());
     revert.addEventListener("click", () => void renderWindow());
-    save.addEventListener("click", () => void commit());
+    save.addEventListener("click", () => {
+      commit().catch((error) => {
+        setState(root, ["error"]);
+        setViewerText(status2, `Save failed: ${error instanceof Error ? error.message : String(error)}`);
+      });
+    });
     await renderWindow();
     return {
       async update(next) {
@@ -289859,7 +290034,7 @@ function createExplorer(document2, options) {
           if (picked === void 0)
             return;
           await explorer.setAccess(picked.access);
-          await explorer.open(picked.entry);
+          await activate(picked.entry);
         } catch (error) {
           say(`Could not open the file: ${describe2(error)}`, "error");
         }
@@ -289978,18 +290153,14 @@ function createExplorer(document2, options) {
           // No arrow here: the tree draws its own twisty for `hasChildren`, and a second
           // chevron in the icon slot reads as two arrows on every folder.
           icon: entry.directory ? "\u{1F5C0}" : supported.has(extensionOf(entry.name)) ? "\u25C6" : "\xB7",
-          ...entry.size === void 0 || entry.directory ? {} : { badge: formatBytes(entry.size) },
+          ...entry.size === void 0 || entry.directory ? {} : { badge: formatBytes(entry.size), size: entry.size },
           kind: entry.directory ? "directory" : extensionOf(entry.name)
         }));
       },
       onActivate(node) {
         if (node.kind === "directory")
           return;
-        const entry = nodeToEntry(node);
-        if (options.onOpen !== void 0)
-          options.onOpen(entry);
-        else
-          void preview(entry);
+        void activate(nodeToEntry(node));
       },
       matches(node) {
         return query === void 0 ? true : matches2(node.label, query);
@@ -290001,27 +290172,35 @@ function createExplorer(document2, options) {
   const nodeToEntry = (node) => ({
     id: node.id,
     name: node.label,
-    directory: node.kind === "directory"
+    directory: node.kind === "directory",
+    ...node.size === void 0 ? {} : { size: node.size }
   });
+  const activate = async (entry) => {
+    if (options.onOpen !== void 0)
+      options.onOpen(entry);
+    else
+      await preview(entry);
+  };
   if (options.acceptDrop !== void 0) {
+    const dropZone = options.dropTarget ?? (options.onOpen === void 0 ? previewPane : root);
     setPart(previewPane, "explorer.preview");
     const stop = (event) => {
       event.preventDefault();
       event.stopPropagation();
     };
-    previewPane.addEventListener("dragover", (event) => {
+    dropZone.addEventListener("dragover", (event) => {
       stop(event);
       if (event.dataTransfer !== null)
         event.dataTransfer.dropEffect = "copy";
-      setState(previewPane, ["drop-target"]);
+      setState(dropZone, ["drop-target"]);
     });
-    previewPane.addEventListener("dragleave", (event) => {
+    dropZone.addEventListener("dragleave", (event) => {
       stop(event);
-      setState(previewPane, []);
+      setState(dropZone, []);
     });
-    previewPane.addEventListener("drop", (event) => {
+    dropZone.addEventListener("drop", (event) => {
       stop(event);
-      setState(previewPane, []);
+      setState(dropZone, []);
       const transfer = event.dataTransfer;
       if (transfer === null)
         return;
@@ -290036,7 +290215,7 @@ function createExplorer(document2, options) {
           if (result.access !== void 0)
             await explorer.setAccess(result.access);
           if (result.entry !== void 0)
-            await explorer.open(result.entry);
+            await activate(result.entry);
           else
             say("Folder opened. Pick a file in the tree.");
         } catch (error) {
@@ -290281,6 +290460,8 @@ function createCodecPreview(options) {
       const resolved2 = externallyOpened !== void 0;
       const session = externallyOpened ?? builtinSession(bytes, options.fallback);
       const descriptor = await session.descriptor();
+      const operations = await session.operations?.().catch(() => void 0);
+      const ports = await options.editorPorts?.(entry, bytes);
       const traits = new Set(traitsOf(descriptor));
       const published = new Set(publishedContracts(descriptor));
       const candidates = resolved2 ? options.stages : fallbackStages(options.fallback);
@@ -290291,7 +290472,7 @@ function createCodecPreview(options) {
         return stage === void 0 ? [] : [stage];
       });
       const usable = planned.filter((stage) => published.has(stage.contract) && (stage.trait === void 0 || traits.has(stage.trait)) && // An editable stage without ports could never save; offering it would be a lie.
-      (stage.editable !== true || options.editorPorts !== void 0));
+      (stage.editable !== true || ports !== void 0));
       if (usable.length === 0) {
         await session.dispose();
         return void 0;
@@ -290315,16 +290496,16 @@ function createCodecPreview(options) {
           priority: 100,
           bindings: [{ bindingId: "content", contract: stage.contract, major: 1 }]
         };
-        const ports = stage.editable === true ? options.editorPorts?.(entry, bytes) : void 0;
+        const stagePorts = stage.editable === true ? ports : void 0;
         const mounted = await stage.module.mount({
           container,
           descriptor,
           slot,
-          ...ports === void 0 ? {} : {
-            edit: ports.session,
-            commit: ports.commit,
-            payloads: ports.payloads,
-            authorization: ports.authorization
+          ...stagePorts === void 0 ? {} : {
+            edit: stagePorts.edit,
+            commit: stagePorts.commit,
+            payloads: stagePorts.payloads,
+            authorization: stagePorts.authorization
           },
           sources: {
             async get(binding) {
@@ -290344,7 +290525,7 @@ function createCodecPreview(options) {
               };
             }
           },
-          operations: void 0,
+          operations,
           ...signal === void 0 ? {} : { signal }
         });
         active = mounted;
@@ -290369,10 +290550,20 @@ function createCodecPreview(options) {
 function fallbackStages(fallback2) {
   const stages = [];
   if (fallback2?.text !== void 0) {
-    stages.push({ label: "Text", contract: "common.view/text-data-source", module: fallback2.text });
+    stages.push({
+      id: "text",
+      label: "Text",
+      contract: "common.view/text-data-source",
+      module: fallback2.text
+    });
   }
   if (fallback2?.hex !== void 0) {
-    stages.push({ label: "Hex", contract: "common.view/byte-range-source", module: fallback2.hex });
+    stages.push({
+      id: "hex",
+      label: "Hex",
+      contract: "common.view/byte-range-source",
+      module: fallback2.hex
+    });
   }
   return stages;
 }
@@ -290941,6 +291132,13 @@ function createSettingsUi(document2, options) {
     render(host2) {
       const intro = element(host2, "p", { part: "settings.description" });
       intro.textContent = `Extensions are listed in ${options.store.location}. Each entry is an id, a path the host loads from, and whether it is enabled. The same file is read by the desktop app, the web app and a headless run.`;
+      const readOnly = options.extensionsReadOnly;
+      if (readOnly !== void 0) {
+        element(host2, "p", {
+          part: "settings.description",
+          text: safeViewerText(readOnly, 400)
+        });
+      }
       const list2 = element(host2, "div", { part: "settings.list" });
       const draw = () => {
         list2.replaceChildren();
@@ -290952,38 +291150,49 @@ function createSettingsUi(document2, options) {
         }
         for (const entry of current.extensions) {
           const item = element(list2, "div", { part: "settings.extension" });
-          const toggle = element(item, "input", {
-            part: "settings.toggle"
-          });
-          toggle.type = "checkbox";
-          toggle.checked = entry.enabled;
-          toggle.setAttribute("aria-label", `Enable ${entry.id}`);
-          toggle.addEventListener("change", () => {
-            void persist({
-              ...current,
-              extensions: current.extensions.map((other) => other.id === entry.id ? { ...other, enabled: toggle.checked } : other)
-            }).then(draw);
-          });
+          if (readOnly === void 0) {
+            const toggle = element(item, "input", {
+              part: "settings.toggle"
+            });
+            toggle.type = "checkbox";
+            toggle.checked = entry.enabled;
+            toggle.setAttribute("aria-label", `Enable ${entry.id}`);
+            toggle.addEventListener("change", () => {
+              void persist({
+                ...current,
+                extensions: current.extensions.map((other) => other.id === entry.id ? { ...other, enabled: toggle.checked } : other)
+              }).then(draw);
+            });
+          } else {
+            element(item, "div", {
+              part: "settings.description",
+              text: entry.enabled ? "enabled" : "disabled"
+            });
+          }
           const text2 = element(item, "div", { part: "settings.extension-text" });
           element(text2, "div", { part: "settings.label", text: safeViewerText(entry.id, 200) });
           element(text2, "div", {
             part: "settings.description",
             text: safeViewerText(entry.path, 400)
           });
-          const remove = element(item, "button", {
-            part: "settings.remove",
-            text: "Remove"
-          });
-          remove.type = "button";
-          remove.addEventListener("click", () => {
-            void persist({
-              ...current,
-              extensions: current.extensions.filter((other) => other.id !== entry.id)
-            }).then(draw);
-          });
+          if (readOnly === void 0) {
+            const remove = element(item, "button", {
+              part: "settings.remove",
+              text: "Remove"
+            });
+            remove.type = "button";
+            remove.addEventListener("click", () => {
+              void persist({
+                ...current,
+                extensions: current.extensions.filter((other) => other.id !== entry.id)
+              }).then(draw);
+            });
+          }
         }
       };
       draw();
+      if (readOnly !== void 0)
+        return;
       const adder = element(host2, "div", { part: "settings.adder" });
       const id = element(adder, "input", { part: "settings.input" });
       id.placeholder = "publisher/name";
@@ -293908,22 +294117,31 @@ function createMonacoEditor(options = {}) {
       const subscription = editor2.onDidChangeModelContent(syncDirty);
       save.addEventListener("click", async () => {
         const next = editor2.getValue();
+        const target = args.edit.targets[0];
+        if (target === void 0) {
+          status2.textContent = "Nothing to save: this session carries no writable target";
+          root.dataset.mkState = "error";
+          return;
+        }
         const change = {
-          baseRevisions: { content: args.descriptor.revision },
+          targets: args.edit.targets,
           edits: [
             {
-              kind: "text",
-              bindingId: "content",
+              operation: "replace",
+              targetId: target.targetId,
+              source: target.ownerSource,
               range: { kind: "utf16", offset: 0, length: baseline.length },
-              payload: { kind: "text", text: next }
+              payload: { kind: "text", text: next },
+              label: "Edit text"
             }
           ],
-          provenance: { origin: "ui-monaco" }
+          provenance: { actor: "user" }
         };
         status2.textContent = "Validating\u2026";
         const validation = await args.edit.propose(change);
-        if (validation?.state === "invalid") {
-          status2.textContent = "Rejected by validation";
+        if (validation?.valid === false) {
+          const first2 = validation.diagnostics?.[0];
+          status2.textContent = first2 === void 0 ? "Rejected by validation" : `Rejected: ${first2.message}`;
           root.dataset.mkState = "error";
           return;
         }
@@ -293934,12 +294152,17 @@ function createMonacoEditor(options = {}) {
           return;
         }
         const prepared = await args.commit.prepare(plan, { grant: authorization.grant });
-        if (prepared?.state !== "prepared") {
-          status2.textContent = `Prepare failed: ${prepared?.state ?? "unknown"}`;
+        if (prepared?.state !== "ready") {
+          status2.textContent = prepared?.state === "conflict" ? "Conflict: the source changed" : `Prepare rejected: ${prepared?.reason ?? prepared?.state ?? "unknown"}`;
           root.dataset.mkState = "error";
           return;
         }
-        await args.commit.commit(prepared.prepared, { grant: authorization.grant });
+        const receipt = await args.commit.commit(prepared.prepared, { grant: authorization.grant });
+        if (receipt?.state !== void 0 && receipt.state !== "committed") {
+          status2.textContent = receipt.state === "not-applied" ? `Save rejected: ${receipt.reason ?? "not applied"}` : `Save ${receipt.state}`;
+          root.dataset.mkState = "error";
+          return;
+        }
         baseline = next;
         syncDirty();
         status2.textContent = "Committed";
@@ -294007,7 +294230,7 @@ var PREVIEW_STAGES = Object.freeze([
   }
 ]);
 var PREVIEW_STAGES_READONLY = Object.freeze([
-  { id: "code", label: "Code", contract: "common.view/text-data-source", module: monacoEditor },
+  { id: "code", label: "Code", contract: "common.view/text-data-source", module: monacoViewer },
   { id: "video", label: "Video", contract: "common.view/video-media-source", module: videoViewer },
   { id: "image", label: "Image", contract: "common.view/raster-image-source", module: imageViewer },
   { id: "audio", label: "Audio", contract: "common.view/audio-media-source", module: audioViewer },
@@ -294036,89 +294259,186 @@ var PREVIEW_STAGES_READONLY = Object.freeze([
 ]);
 var PREVIEW_FALLBACK = Object.freeze({ text: boundedTextViewer, hex: hexViewer });
 
-// apps/electron/src/editing.ts
-function bytesOf(edits, fallback2) {
-  const encoder3 = new TextEncoder();
-  for (const edit2 of edits) {
-    const payload = edit2.payload;
-    if (payload === void 0) continue;
-    if (payload.kind === "text" && typeof payload.text === "string") {
-      return encoder3.encode(payload.text);
-    }
-    if (payload.bytes instanceof Uint8Array) return payload.bytes;
-  }
-  return fallback2;
+// apps/electron/src/editor-ports.ts
+var RENDERER_GRANT = Object.freeze({ snapshotId: "renderer", permissions: [], sourceIds: [] });
+var REFUSAL_REASONS = Object.freeze({
+  "plan-invalid": "the change did not describe a valid edit of this file",
+  "permission-missing": "this session may not write the file",
+  "write-scope-mismatch": "the edit named a file outside what this session may write",
+  "guarantee-unachievable": "the host cannot promise this write safely enough",
+  "fidelity-unproven": "no evidence backs the writer fidelity claim for this change",
+  "confirmation-required": "a lossy write needs a confirmation this host does not ask for",
+  "payload-unavailable": "the edited bytes never reached the writer",
+  "stale-revision": "the file changed on disk after the change was prepared",
+  cancelled: "the save was cancelled"
+});
+function refusalMessage(reason) {
+  const plain = REFUSAL_REASONS[reason];
+  return plain === void 0 ? `save refused: ${reason}` : `save refused: ${plain} (${reason})`;
 }
-function createFileEditorPorts(broker2, entry, original, log2, onDirty) {
-  const revision = `content-length:${original.length}`;
-  let pending;
-  const session = {
-    revision,
-    targets: [],
-    state() {
-      return { kind: pending === void 0 ? "clean" : "dirty" };
-    },
-    async propose(change) {
-      pending = bytesOf(change.edits ?? [], pending ?? original);
-      onDirty?.(true);
-      return { state: "valid", diagnostics: [] };
-    },
-    async plan(change) {
-      pending = bytesOf(change.edits ?? [], original);
-      onDirty?.(true);
+function prepareStatus(result) {
+  if (result.state === "ready") return void 0;
+  if (result.state === "conflict") {
+    return {
+      message: `save refused: the file changed on disk while it was open (${result.conflicts.length} conflict(s))`,
+      failed: true
+    };
+  }
+  return { message: refusalMessage(result.reason), failed: true };
+}
+function commitStatus(result) {
+  switch (result.state) {
+    case "committed":
+      return { message: "saved", failed: false };
+    case "not-applied":
+      return { message: refusalMessage(result.reason ?? "unknown"), failed: true };
+    case "rolled-back":
       return {
-        baseRevisions: { content: revision },
-        edits: change.edits ?? [],
-        provenance: { origin: "modkit-desktop" }
+        message: "save failed: the write was rolled back and the file is unchanged",
+        failed: true
       };
-    },
-    async dispose() {
-      pending = void 0;
-      onDirty?.(false);
+    case "partially-applied":
+      return { message: "save partially applied: recovery is available", failed: true };
+    default:
+      return { message: `save ${result.state}`, failed: true };
+  }
+}
+var isRecord2 = (value2) => typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
+function normalizeChangeSet(change, targets) {
+  if (!isRecord2(change) || !Array.isArray(change["edits"])) {
+    throw new TypeError("an editor change set must carry an `edits` array");
+  }
+  const authored = change["edits"];
+  const declared = Array.isArray(change["targets"]) ? change["targets"] : targets;
+  const provenance = isRecord2(change["provenance"]) ? change["provenance"] : {};
+  const actor = provenance["actor"];
+  const target = declared[0];
+  const edits = authored.map((item) => {
+    if (!isRecord2(item)) throw new TypeError("an edit must be an object");
+    if (typeof item["operation"] === "string") return item;
+    if (target === void 0) {
+      throw new TypeError("this subject publishes no edit target, so an edit cannot be placed");
     }
+    const payload = item["payload"];
+    if (!isRecord2(payload) || typeof payload["kind"] !== "string") {
+      throw new TypeError("a legacy edit must carry an inline or text payload");
+    }
+    const range2 = item["range"];
+    return {
+      operation: "replace",
+      targetId: target.targetId,
+      source: target.ownerSource,
+      ...isRecord2(range2) ? { range: range2 } : {},
+      payload
+    };
+  });
+  return {
+    targets: declared,
+    edits,
+    provenance: { actor: actor === "automation" || actor === "agent" ? actor : "user" }
+  };
+}
+async function createRendererEditorPorts(options) {
+  const { arm } = options;
+  const state = await arm.state();
+  const targets = state.targets;
+  const preparedIds = /* @__PURE__ */ new WeakMap();
+  let pending;
+  const report = (status2) => {
+    options.onStatus?.(status2);
+  };
+  const markPending = (change) => {
+    pending = change;
+    options.onDirty?.(true);
+    return change;
+  };
+  const markSaved = () => {
+    pending = void 0;
+    options.onDirty?.(false);
+  };
+  const session = {
+    revision: state.revision,
+    targets,
+    state: () => "live",
+    propose: async (change) => arm.propose(markPending(normalizeChangeSet(change, targets))),
+    plan: async (change) => arm.plan(markPending(normalizeChangeSet(change, targets))),
+    dispose: async () => {
+    }
+  };
+  const prepare = async (plan) => {
+    const result = await arm.prepare(plan);
+    const refusal = prepareStatus(result);
+    if (refusal !== void 0) report(refusal);
+    return result;
+  };
+  const commitPrepared = async (preparedId) => {
+    const result = await arm.commit(preparedId);
+    report(commitStatus(result));
+    if (result.state === "committed") markSaved();
+    return result.state === "not-applied" ? { state: result.state } : { state: result.state, receipt: result.receipt };
   };
   const commit = {
     async prepare(plan) {
-      pending = bytesOf(plan.edits ?? [], pending ?? original);
-      return { state: "prepared", prepared: { plan }, diagnostics: [] };
+      const result = await prepare(plan);
+      if (result.state !== "ready") return result;
+      const handle = Object.freeze({ preparedId: result.preparedId });
+      preparedIds.set(handle, result.preparedId);
+      return { state: "ready", prepared: handle };
     },
-    async commit() {
-      if (pending === void 0) {
-        log2("nothing to save");
-        return { state: "committed", revision };
+    async commit(prepared) {
+      const preparedId = preparedIds.get(prepared) ?? prepared.preparedId;
+      if (preparedId === void 0) {
+        report({ message: "nothing prepared to save", failed: true });
+        return { state: "not-applied" };
       }
-      const result = await broker2.request("filesystem.write-file", {
-        path: entry.id,
-        bytes: pending
-      });
-      log2(`saved ${result.bytes} bytes to ${result.path}`);
-      pending = void 0;
-      onDirty?.(false);
-      return { state: "committed", revision: `content-length:${result.bytes}` };
+      return commitPrepared(preparedId);
+    },
+    async undo() {
+      const reason = "this host does not replay commits yet";
+      report({ message: `undo refused: ${reason}`, failed: true });
+      return { state: "not-applied", reason };
+    },
+    async redo() {
+      const reason = "this host does not replay commits yet";
+      report({ message: `redo refused: ${reason}`, failed: true });
+      return { state: "not-applied", reason };
     }
   };
   const payloads = {
     async open() {
-      return {
-        value: original,
-        async release() {
-        }
-      };
+      throw new Error("this host does not stage payloads: edits travel inline");
     }
   };
   const authorization = {
     async request() {
-      return { grant: { id: "desktop-user", scope: "file" } };
+      return { grant: RENDERER_GRANT };
     }
   };
   return {
-    session,
+    edit: session,
     commit,
     payloads,
     authorization,
     async save() {
-      await commit.commit();
-    }
+      const change = pending;
+      if (change === void 0) {
+        report({ message: "nothing to save", failed: false });
+        return;
+      }
+      const validation = await arm.propose(change);
+      if (!validation.valid) {
+        const first2 = validation.diagnostics[0];
+        report({
+          message: `save refused: ${first2 === void 0 ? "the writer rejected the change" : first2.message}`,
+          failed: true
+        });
+        return;
+      }
+      const result = await prepare(await arm.plan(change));
+      if (result.state !== "ready") return;
+      await commitPrepared(result.preparedId);
+    },
+    dispose: () => arm.dispose()
   };
 }
 
@@ -294209,6 +294529,15 @@ function orderStages(stages) {
     [...stages].sort(
       (left, right) => STAGE_ORDER.indexOf(stageId2(left)) - STAGE_ORDER.indexOf(stageId2(right))
     )
+  );
+}
+function readOnlyStages(editable, readOnly) {
+  const byId = new Map(editable.map((stage) => [stageId2(stage), stage]));
+  return Object.freeze(
+    readOnly.filter((stage) => {
+      const counterpart = byId.get(stageId2(stage));
+      return counterpart?.editable !== true || counterpart.module !== stage.module;
+    })
   );
 }
 function publishedContracts2(descriptor) {
@@ -294677,6 +295006,13 @@ function createElectronStages(options) {
     appStage("image-edit", imageEditStage)
   ]);
 }
+function createElectronReadOnlyStages(options) {
+  return orderStages([
+    ...readOnlyStages(PREVIEW_STAGES, PREVIEW_STAGES_READONLY),
+    appStage("archive", createArchiveStage({ operationsFor: options.operationsFor })),
+    appStage("image-edit", imageEditStage)
+  ]);
+}
 
 // apps/electron/src/renderer.ts
 globalThis.MonacoEnvironment = {
@@ -294834,63 +295170,108 @@ async function boot() {
     return record.operations;
   };
   const stages = createElectronStages({ operationsFor });
-  const codecPreview = createCodecPreview({
-    supported: profile.supportedExtensions,
-    stages,
-    fallback: PREVIEW_FALLBACK,
-    async openSession(entry) {
-      const result = await subjectClient.open(entry.id);
-      if (result.state === "unresolved") {
-        const detail = result.snapshot.diagnostics[0]?.message ?? `${result.snapshot.reason}; using the explicit text/hex fallback`;
-        setFooter(entry.id, detail, result.snapshot.reason !== "no-candidate");
-        subjectsByPath.delete(entry.id);
-        return void 0;
-      }
-      const snapshot = result.snapshot;
-      const boundary = snapshot.diagnostics.some(
-        (item) => item.code === "x3.host/full-process-authority"
-      ) ? " \xB7 full process authority" : snapshot.diagnostics.some((item) => item.code === "x3.host/worker-shared-process") ? " \xB7 worker" : "";
-      setFooter(
-        entry.id,
-        `${snapshot.selected.contributionId}/${snapshot.selected.variantId} \xB7 ${Math.round(
-          snapshot.selected.confidence * 100
-        )}%${boundary}`
-      );
-      const record = {
-        path: entry.id,
-        descriptor: snapshot.descriptor,
-        session: result.session,
-        planActive: result.session.presentation?.activeStage
-      };
-      subjectsByPath.set(entry.id, record);
-      subjectsByDescriptor.set(descriptorKey(snapshot.descriptor), record);
-      return {
+  const readOnlyStages2 = createElectronReadOnlyStages({ operationsFor });
+  const pendingOpens = /* @__PURE__ */ new Map();
+  const portsByPath = /* @__PURE__ */ new Map();
+  const readOnlyNotes = /* @__PURE__ */ new Map();
+  async function prepareOpen(entry) {
+    const result = await subjectClient.open(entry.id);
+    if (result.state === "unresolved") {
+      const detail = result.snapshot.diagnostics[0]?.message ?? `${result.snapshot.reason}; using the explicit text/hex fallback`;
+      setFooter(entry.id, detail, result.snapshot.reason !== "no-candidate");
+      subjectsByPath.delete(entry.id);
+      readOnlyNotes.delete(entry.id);
+      return { dispose: async () => void 0 };
+    }
+    const snapshot = result.snapshot;
+    const boundary = snapshot.diagnostics.some(
+      (item) => item.code === "x3.host/full-process-authority"
+    ) ? " \xB7 full process authority" : snapshot.diagnostics.some((item) => item.code === "x3.host/worker-shared-process") ? " \xB7 worker" : "";
+    setFooter(
+      entry.id,
+      `${snapshot.selected.contributionId}/${snapshot.selected.variantId} \xB7 ${Math.round(
+        snapshot.selected.confidence * 100
+      )}%${boundary}`
+    );
+    const record = {
+      path: entry.id,
+      descriptor: snapshot.descriptor,
+      session: result.session,
+      planActive: result.session.presentation?.activeStage
+    };
+    subjectsByPath.set(entry.id, record);
+    subjectsByDescriptor.set(descriptorKey(snapshot.descriptor), record);
+    let ports;
+    try {
+      const arm = await subjectClient.edit(snapshot.sessionId);
+      ports = await createRendererEditorPorts({
+        arm,
+        onStatus: (status2) => setFooter(entry.id, status2.message, status2.failed),
+        onDirty: (dirty) => editors.markDirty(entry.id, dirty)
+      });
+      portsByPath.set(entry.id, ports);
+      readOnlyNotes.delete(entry.id);
+    } catch (error) {
+      const stated = snapshot.diagnostics.find((item) => item.code === "x3.app/subject-not-editable");
+      const because = stated?.message ?? (error instanceof Error ? error.message : String(error));
+      readOnlyNotes.set(entry.id, `read-only: ${because}`);
+      console.log(`[editing] ${entry.id} is read-only here: ${because}`);
+    }
+    const release = async () => {
+      subjectsByPath.delete(entry.id);
+      subjectsByDescriptor.delete(descriptorKey(snapshot.descriptor));
+      if (ports !== void 0 && portsByPath.get(entry.id) === ports) portsByPath.delete(entry.id);
+      await ports?.dispose().catch((error) => {
+        console.warn(`[editing] releasing the arm failed: ${String(error)}`);
+      });
+      await result.session.dispose();
+    };
+    return {
+      session: {
         descriptor: async () => snapshot.descriptor,
         dataSource: (contract2, major) => result.session.dataSource(contract2, major),
-        dispose: async () => {
-          subjectsByPath.delete(entry.id);
-          subjectsByDescriptor.delete(descriptorKey(snapshot.descriptor));
-          await result.session.dispose();
-        }
-      };
+        dispose: release
+      },
+      ...ports === void 0 ? {} : { ports },
+      dispose: release
+    };
+  }
+  const previewFor = (editable) => createCodecPreview({
+    supported: profile.supportedExtensions,
+    stages: editable ? stages : readOnlyStages2,
+    fallback: PREVIEW_FALLBACK,
+    async openSession(entry) {
+      return pendingOpens.get(entry.id)?.session;
     },
-    // Editable stages get a real save path: bytes go through the broker to an atomic write.
-    editorPorts: (entry, bytes) => {
-      const ports = createFileEditorPorts(
-        bridge,
-        entry,
-        bytes,
-        (line) => setFooter(entry.id, line),
-        (dirty) => editors.markDirty(entry.id, dirty)
-      );
-      openPorts.set(entry.id, ports);
-      return ports;
-    }
+    ...editable ? {
+      // Every editable stage saves through main's editing backend under the granted roots.
+      // There is no other write path in this renderer.
+      editorPorts: (entry) => {
+        const ports = portsByPath.get(entry.id);
+        if (ports === void 0) {
+          throw new Error(`no editing arm is held for ${entry.id}`);
+        }
+        return ports;
+      }
+    } : {}
   });
+  const editablePreview = previewFor(true);
+  const readOnlyPreview = previewFor(false);
   const preview = {
-    supported: codecPreview.supported,
+    supported: editablePreview.supported,
     async open(container, entry, bytes, signal) {
-      const handle = await codecPreview.open(container, entry, bytes, signal);
+      const prepared = await prepareOpen(entry);
+      pendingOpens.set(entry.id, prepared);
+      let handle;
+      try {
+        const resolver = prepared.ports === void 0 ? readOnlyPreview : editablePreview;
+        handle = await resolver.open(container, entry, bytes, signal);
+      } catch (error) {
+        await prepared.dispose();
+        throw error;
+      } finally {
+        pendingOpens.delete(entry.id);
+      }
       if (handle === void 0) return void 0;
       const wanted = preferredStage(
         handle.views.map((view) => view.id),
@@ -294901,7 +295282,6 @@ async function boot() {
     }
   };
   let access;
-  const openPorts = /* @__PURE__ */ new Map();
   const inspector = createInspectorDock(document);
   const inspectorSubject = (path) => {
     const record = path === void 0 ? void 0 : subjectsByPath.get(path);
@@ -294928,12 +295308,13 @@ async function boot() {
       return host.confirmClose(entry.name);
     },
     async save(entry) {
-      await openPorts.get(entry.id)?.save();
+      await portsByPath.get(entry.id)?.save();
     },
     onStatus(status2) {
+      const note = status2.path === void 0 ? void 0 : readOnlyNotes.get(status2.path);
       setFooter(
         status2.path ?? "",
-        [status2.view, status2.detail].filter(Boolean).join(" \xB7 "),
+        [status2.view, status2.detail, note].filter(Boolean).join(" \xB7 "),
         status2.severity === "error"
       );
       if (status2.severity !== "busy") showInspector(status2.path);
@@ -295219,7 +295600,8 @@ async function boot() {
         settingsRoot: settingsUi.root,
         inspector,
         subjectFor: inspectorSubject,
-        saveProbe: (entry, bytes) => createFileEditorPorts(bridge, entry, bytes, (line) => setFooter(entry.id, line))
+        portsFor: (path) => portsByPath.get(path),
+        footerText: () => `${footerPath.textContent ?? ""} \xB7 ${footerDetail.textContent ?? ""}`
       });
   }
 }
@@ -295227,7 +295609,7 @@ var settle = async () => {
   await new Promise((resolve3) => setTimeout(resolve3, 60));
 };
 async function selfTest(options) {
-  const { access, preview, editors, settingsRoot, inspector, saveProbe } = options;
+  const { access, preview, editors, settingsRoot, inspector } = options;
   const entries2 = await access.list(void 0);
   console.log(`selftest: ${entries2.length} entries in ${access.label}`);
   console.log(`selftest: supported extensions ${preview.supported.join(", ")}`);
@@ -295236,9 +295618,23 @@ async function selfTest(options) {
     const node = editors.root.querySelector(`${FOCUSED} [data-mk-part="explorer.viewpicker"]`);
     return node instanceof HTMLSelectElement ? node : void 0;
   };
-  const mountedSurface = () => editors.root.querySelector(
-    `${FOCUSED} [data-mk-part="explorer.tabcontent"]:not([hidden]) [data-mk-part="viewer"]`
+  const inFocusedTab = (selector) => editors.root.querySelector(
+    `${FOCUSED} [data-mk-part="explorer.tabcontent"]:not([hidden]) ${selector}`
   );
+  const mountedSurface = () => inFocusedTab('[data-mk-part="viewer"]');
+  const dirtyTabs = () => editors.root.querySelectorAll(
+    `${FOCUSED} [data-mk-part="explorer.filetab"][data-mk-state~="mutating"]`
+  ).length;
+  const showStage = async (stage) => {
+    const picker = focusedPicker();
+    if (picker === void 0 || ![...picker.options].some((option2) => option2.value === stage)) {
+      return false;
+    }
+    picker.value = stage;
+    picker.dispatchEvent(new Event("change"));
+    await settle();
+    return true;
+  };
   for (const entry of entries2) {
     if (entry.directory) continue;
     try {
@@ -295286,21 +295682,17 @@ async function selfTest(options) {
   console.log(`selftest: after split groups=${editors.groupCount}, rendered=${groups}`);
   const settingsGroups = settingsRoot.querySelectorAll('[data-mk-part="settings.group"]').length;
   console.log(`selftest: settings groups=${settingsGroups}`);
-  const target = entries2.find((item) => item.name === "savetest.txt");
-  if (target !== void 0 && saveProbe !== void 0) {
-    try {
-      const ports = saveProbe(target, new TextEncoder().encode("original text"));
-      const edits = [{ payload: { kind: "text", text: "SAVED BY SELFTEST" } }];
-      await ports.session.plan({ edits });
-      const plan = { edits };
-      await ports.commit.prepare(plan);
-      await ports.commit.commit();
-      const after3 = await access.read(target.id, 1024);
-      console.log(`selftest: save -> ${JSON.stringify(new TextDecoder().decode(after3))}`);
-    } catch (error) {
-      console.log(`selftest: save FAILED ${String(error)}`);
+  await editingProbes({
+    ...options,
+    entries: entries2,
+    showStage,
+    inFocusedTab,
+    dirtyTabs,
+    offeredViews: () => {
+      const picker = focusedPicker();
+      return picker === void 0 ? [] : [...picker.options].map((item) => item.value);
     }
-  }
+  });
   const before = getComputedStyle(document.documentElement).getPropertyValue("--mk-color-accent");
   document.documentElement.setAttribute("data-mk-theme", "sc2");
   const after2 = getComputedStyle(document.documentElement).getPropertyValue("--mk-color-accent");
@@ -295350,36 +295742,6 @@ async function selfTest(options) {
     (node) => (node.textContent ?? "").split("\u2003")[0]
   );
   console.log(`selftest: menus=[${menus.join(", ")}] fileEntries=${menuEntries.length}`);
-  if (target !== void 0) {
-    editors.markDirty(target.id, true);
-    const marked2 = document.querySelectorAll(
-      '[data-mk-part="explorer.filetab"][data-mk-state~="mutating"]'
-    ).length;
-    const unsaved = editors.hasUnsaved();
-    editors.markDirty(target.id, false);
-    const cleared = document.querySelectorAll(
-      '[data-mk-part="explorer.filetab"][data-mk-state~="mutating"]'
-    ).length;
-    console.log(`selftest: dirty marked=${marked2} hasUnsaved=${unsaved} cleared=${cleared}`);
-  }
-  const bin = entries2.find((item) => item.name === "unknown.bin");
-  if (bin !== void 0) {
-    await editors.open(bin);
-    const cell = document.querySelector('[data-mk-part="hex.cell"]');
-    const twin = document.querySelector('[data-mk-part="hex.ascii"] > span');
-    if (cell !== null && twin !== null) {
-      const asciiBefore = twin.textContent;
-      cell.textContent = "41";
-      cell.dispatchEvent(new FocusEvent("blur"));
-      await new Promise((resolve3) => setTimeout(resolve3, 120));
-      const marked2 = document.querySelectorAll(
-        '[data-mk-part="explorer.filetab"][data-mk-state~="mutating"]'
-      ).length;
-      console.log(
-        `selftest: hex ascii ${JSON.stringify(asciiBefore)} -> ${JSON.stringify(twin.textContent)} tabMarked=${marked2}`
-      );
-    }
-  }
   for (const entry of entries2.filter((item) => !item.directory)) {
     const subject = options.subjectFor(entry.id);
     if (subject === void 0) continue;
@@ -295432,6 +295794,165 @@ async function selfTest(options) {
     }
   }
   console.log("selftest: done");
+}
+async function editingProbes(options) {
+  const { access, editors, entries: entries2, portsFor, footerText, showStage, inFocusedTab, dirtyTabs } = options;
+  const decoder = new TextDecoder();
+  const onDisk = async (entry) => decoder.decode(await access.read(entry.id, 4096));
+  const statusText = () => inFocusedTab('[data-mk-part="viewer.status"]')?.textContent ?? "";
+  const click = (selector) => {
+    const node = inFocusedTab(selector);
+    if (!(node instanceof HTMLElement)) return false;
+    node.click();
+    return true;
+  };
+  const find = (name) => entries2.find((item) => item.name === name);
+  const closeTab = async (entry) => {
+    const controls = [
+      ...editors.root.querySelectorAll(
+        `[data-mk-part="explorer.filetab-close"][aria-label="Close ${entry.name}"]`
+      )
+    ];
+    if (controls.length === 0) return false;
+    for (const control of controls) {
+      if (control instanceof HTMLElement) control.click();
+      await new Promise((resolve3) => setTimeout(resolve3, 200));
+    }
+    return portsFor(entry.id) === void 0;
+  };
+  const text2 = find("savetest.json");
+  if (text2 === void 0) console.log("selftest: edit no savetest.json fixture");
+  else {
+    try {
+      await editors.open(text2);
+      await settle();
+      const before = await onDisk(text2);
+      if (!await showStage("text")) {
+        console.log("selftest: edit text stage was not offered for savetest.json");
+      } else {
+        const area = inFocusedTab('[data-mk-part="editor.text"]');
+        if (!(area instanceof HTMLTextAreaElement)) {
+          console.log("selftest: edit no textarea mounted for savetest.json");
+        } else {
+          area.value = '{"note":"SAVED BY SELFTEST"}';
+          const clicked = click('[data-mk-part="editor.toolbar"] button');
+          await new Promise((resolve3) => setTimeout(resolve3, 400));
+          const after2 = await onDisk(text2);
+          console.log(
+            `selftest: edit text save clicked=${clicked} status=${JSON.stringify(statusText())} disk ${JSON.stringify(before)} -> ${JSON.stringify(after2)} changed=${after2 !== before} dirtyTabs=${dirtyTabs()}`
+          );
+          area.value = '{"note":"SECOND WRITE"}';
+          click('[data-mk-part="editor.toolbar"] button');
+          await new Promise((resolve3) => setTimeout(resolve3, 400));
+          console.log(
+            `selftest: edit stale save editor=${JSON.stringify(statusText())} footer=${JSON.stringify(footerText())} disk unchanged=${await onDisk(text2) === after2}`
+          );
+        }
+      }
+    } catch (error) {
+      console.log(`selftest: edit text FAILED ${String(error)}`);
+    }
+  }
+  if (text2 !== void 0) {
+    const ports = portsFor(text2.id);
+    const target = ports?.session.targets[0];
+    if (ports === void 0 || target === void 0) {
+      console.log("selftest: edit refusal probe has no arm for savetest.json");
+    } else {
+      try {
+        const probe = ports;
+        const refused = {
+          targets: probe.session.targets,
+          edits: [{ operation: "delete", targetId: target.targetId, source: target.ownerSource }],
+          provenance: { actor: "user" }
+        };
+        const validation = await probe.session.propose(refused);
+        const prepared = await probe.commit.prepare(await probe.session.plan(refused));
+        console.log(
+          `selftest: edit writer refusal valid=${validation.valid} codes=[${validation.diagnostics.map((item) => item.code).join(", ")}] prepare=${prepared.state}/${prepared.reason ?? "-"} footer=${JSON.stringify(footerText())}`
+        );
+      } catch (error) {
+        console.log(`selftest: edit writer refusal FAILED ${String(error)}`);
+      }
+    }
+  }
+  const binary = find("savehex.json");
+  if (binary === void 0) console.log("selftest: edit no savehex.json fixture");
+  else {
+    try {
+      await editors.open(binary);
+      await settle();
+      const before = await onDisk(binary);
+      if (!await showStage("hex")) {
+        console.log("selftest: edit hex stage was not offered for savehex.json");
+      } else {
+        const cell = inFocusedTab('[data-mk-part="hex.cell"]');
+        const twin = inFocusedTab('[data-mk-part="hex.ascii"] > span');
+        if (!(cell instanceof HTMLElement) || !(twin instanceof HTMLElement)) {
+          console.log("selftest: edit no hex grid mounted for savehex.json");
+        } else {
+          const asciiBefore = twin.textContent;
+          cell.textContent = "5a";
+          cell.dispatchEvent(new FocusEvent("blur"));
+          await new Promise((resolve3) => setTimeout(resolve3, 200));
+          const markedWhileDirty = dirtyTabs();
+          const clicked = click('[data-mk-part="hex.toolbar"] [data-mk-part="operations.button"]');
+          await new Promise((resolve3) => setTimeout(resolve3, 600));
+          const after2 = await onDisk(binary);
+          console.log(
+            `selftest: edit hex ascii ${JSON.stringify(asciiBefore)} -> ${JSON.stringify(twin.textContent)} dirtyTabs=${markedWhileDirty} save clicked=${clicked} status=${JSON.stringify(statusText())} disk ${JSON.stringify(before)} -> ${JSON.stringify(after2)} changed=${after2 !== before} dirtyTabsAfter=${dirtyTabs()}`
+          );
+        }
+      }
+      console.log(`selftest: edit hex tab closed, arm released=${await closeTab(binary)}`);
+    } catch (error) {
+      console.log(`selftest: edit hex FAILED ${String(error)}`);
+    }
+  }
+  const code = find("savecode.json");
+  if (code !== void 0) {
+    try {
+      await editors.open(code);
+      await settle();
+      const before = await onDisk(code);
+      if (!await showStage("code")) {
+        console.log("selftest: edit code stage was not offered for savecode.json");
+      } else {
+        let editor2;
+        for (let attempt = 0; attempt < 20 && editor2 === void 0; attempt += 1) {
+          const surface = inFocusedTab('[data-mk-part="viewer"]');
+          editor2 = surface?.__mkEditor;
+          if (editor2 === void 0) await settle();
+        }
+        editor2?.setValue('{"code":"SAVED BY SELFTEST"}');
+        await settle();
+        const control = inFocusedTab('[data-mk-part="operations.button"]');
+        const enabled = control instanceof HTMLButtonElement && !control.disabled;
+        const clicked = click('[data-mk-part="operations.button"]');
+        await new Promise((resolve3) => setTimeout(resolve3, 400));
+        const after2 = await onDisk(code);
+        console.log(
+          `selftest: edit code editor=${editor2 !== void 0} save clicked=${clicked} enabled=${enabled} status=${JSON.stringify(statusText())} disk ${JSON.stringify(before)} -> ${JSON.stringify(after2)} changed=${after2 !== before}`
+        );
+      }
+    } catch (error) {
+      console.log(`selftest: edit code FAILED ${String(error)}`);
+    }
+  }
+  const locked = find("readonly.json");
+  if (locked === void 0) console.log("selftest: edit no readonly.json fixture");
+  else {
+    try {
+      await editors.open(locked);
+      await settle();
+      const views = options.offeredViews();
+      console.log(
+        `selftest: edit read-only views [${views.join(", ")}] arm=${portsFor(locked.id) !== void 0} footer=${JSON.stringify(footerText())} disk=${JSON.stringify(await onDisk(locked))}`
+      );
+    } catch (error) {
+      console.log(`selftest: edit read-only FAILED ${String(error)}`);
+    }
+  }
 }
 boot().catch((error) => {
   const failure = document.createElement("p");
