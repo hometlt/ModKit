@@ -15,6 +15,7 @@ import {
   setViewerText,
   ViewerMountScope,
 } from '../viewer/index.js'
+import { handleEditorSaveRequest } from './commands.js'
 
 const TEXT_DATA_SOURCE = Object.freeze({
   bindingId: bindingId('editor-text'),
@@ -93,6 +94,7 @@ export function createTextEditorModule(options: TextEditorModuleOptions = {}): E
       })
       toolbar.setAttribute('aria-label', 'Editing actions')
       const save = element(toolbar, 'button', { text: 'Save' }) as HTMLButtonElement
+      save.dataset['modkitAction'] = 'save'
       const undo = element(toolbar, 'button', { text: 'Undo' }) as HTMLButtonElement
       const redo = element(toolbar, 'button', { text: 'Redo' }) as HTMLButtonElement
       const status = element(toolbar, 'output', { text: 'Ready', part: 'viewer.status' })
@@ -114,8 +116,8 @@ export function createTextEditorModule(options: TextEditorModuleOptions = {}): E
       const request = async (plan: AssetEditPlan) =>
         args.authorization.request(plan, { signal: scope.signal })
 
-      const saveChange = async () => {
-        if (busy || scope.signal.aborted) return
+      const saveChange = async (): Promise<boolean> => {
+        if (busy || scope.signal.aborted) return false
         busy = true
         save.disabled = true
         setViewerText(status, 'Validating…')
@@ -126,13 +128,13 @@ export function createTextEditorModule(options: TextEditorModuleOptions = {}): E
           const validation = await args.edit.propose(change)
           if (!validation.valid) {
             setViewerText(status, 'Validation rejected the change')
-            return
+            return false
           }
           const plan = await args.edit.plan(change)
           const authorization = await request(plan)
           if (authorization === undefined) {
             setViewerText(status, 'Save cancelled')
-            return
+            return false
           }
           const prepared = await args.commit.prepare(plan, {
             grant: authorization.grant,
@@ -148,7 +150,7 @@ export function createTextEditorModule(options: TextEditorModuleOptions = {}): E
                 ? 'Conflict: source changed'
                 : rejectionText('Save rejected', prepared.reason),
             )
-            return
+            return false
           }
           setViewerText(status, 'Saving…')
           const result = await args.commit.commit(prepared.prepared, {
@@ -162,6 +164,7 @@ export function createTextEditorModule(options: TextEditorModuleOptions = {}): E
             undo.disabled = result.receipt.undo === 'none'
             redo.disabled = true
             setViewerText(status, 'Saved')
+            return true
           } else {
             setViewerText(
               status,
@@ -171,9 +174,11 @@ export function createTextEditorModule(options: TextEditorModuleOptions = {}): E
                   ? 'Write failed; changes rolled back'
                   : 'Partially saved; recovery is available',
             )
+            return false
           }
         } catch (error) {
           setViewerText(status, error instanceof Error ? error.message : String(error))
+          return false
         } finally {
           busy = false
           save.disabled = false
@@ -209,10 +214,12 @@ export function createTextEditorModule(options: TextEditorModuleOptions = {}): E
       }
 
       save.addEventListener('click', saveChange)
+      const removeSaveRequest = handleEditorSaveRequest(root, saveChange)
       undo.addEventListener('click', () => void replay('undo'))
       redo.addEventListener('click', () => void replay('redo'))
       scope.cleanup(() => {
         save.removeEventListener('click', saveChange)
+        removeSaveRequest()
       })
 
       return Object.freeze({
@@ -231,5 +238,12 @@ export function createTextEditorModule(options: TextEditorModuleOptions = {}): E
 }
 
 export const textEditor = createTextEditorModule()
+
+export {
+  EDITOR_SAVE_REQUEST,
+  handleEditorSaveRequest,
+  requestEditorSave,
+  type EditorSaveRequestDetail,
+} from './commands.js'
 
 export default textEditor

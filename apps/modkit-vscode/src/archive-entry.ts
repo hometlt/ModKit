@@ -1,8 +1,8 @@
 /** Pure policy and rendering helpers for the composite archive-entry stage. */
+import { CONTAINER_EXTRACT_OPERATION_ID } from '@modkitx-x3/core'
 
 export const ARCHIVE_ENTRY_PREVIEW_BYTES = 64 * 1024
 export const ARCHIVE_LISTING_PAGES = 25
-export const ENTRY_EXTRACT_SUFFIX = '.extract-entry'
 
 export interface ArchiveOperationFacts {
   readonly id: string
@@ -11,7 +11,7 @@ export interface ArchiveOperationFacts {
   readonly state: string
 }
 
-/** The extraction convention is read-only by construction; mutating lookalikes never qualify. */
+/** Select the platform-owned container member read; local lookalikes never qualify. */
 export function findArchiveExtractOperation(
   operations: readonly ArchiveOperationFacts[],
 ): ArchiveOperationFacts | undefined {
@@ -19,7 +19,7 @@ export function findArchiveExtractOperation(
     operation =>
       operation.state === 'available' &&
       !operation.mutatesSource &&
-      operation.id.endsWith(ENTRY_EXTRACT_SUFFIX),
+      operation.id === CONTAINER_EXTRACT_OPERATION_ID,
   )
 }
 

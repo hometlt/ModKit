@@ -22,7 +22,7 @@ import {
   type SettingsDocument,
   type SettingsStore,
   type ThemeChoice,
-} from '@modkitx-x3/ui'
+} from '@modkitx-x3/ui/settings'
 import { applyDensity, applyTheme } from '@modkitx-x3/ui/tokens'
 
 /** The `localStorage` surface this module uses. */

@@ -1,5 +1,4 @@
 import {
-  DEFAULT_SETTINGS,
   EXPLORER_MAXIMUM_BYTES,
   EXTENSION_ROOT_FAILURE_CODES,
   ViewerMountScope,
@@ -7,6 +6,8 @@ import {
   WEB_EXTENSION_CATALOG,
   WEB_PREVIEW_FALLBACK,
   catalogCoordinates,
+  codecFidelityEvidenceRecords,
+  compareUtf8,
   containerCoordinate,
   createBrowserEditingBackend,
   createCodecPreview,
@@ -16,7 +17,6 @@ import {
   createExplorer,
   createIndexedDbExtensionStore,
   createRawWriter,
-  createSettingsUi,
   createSingleFileAccess,
   createSubjectEditing,
   createSurface,
@@ -26,24 +26,923 @@ import {
   defineViewerModule,
   describeFileCapability,
   diagnostic,
-  diagnosticsPanel,
   element,
+  init_define_MODKIT_EMBED_EXTENSION_ORIGINS,
   isWritableHandle,
   loadUserExtensionRoots,
   mountWebWorkbench,
-  normalizeSettings,
-  operationToolbar,
   presentationSlotId,
   probeWebFacilities,
   requestUserExtensionPermission,
   revisionId,
-  serializeSettings,
   setPart,
   setState,
   setViewerText
-} from "./chunks/chunk-BPPL6S5J.js";
+} from "./chunks/chunk-QVNY3HUK.js";
+
+// apps/web/src/shell.ts
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/ui/dist/settings/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var PARTS = Object.freeze([
+  // shared surface
+  "viewer",
+  "viewer.toolbar",
+  "viewer.status",
+  "viewer.empty",
+  // bounded + virtual text
+  "text",
+  "text.line",
+  "virtual-text",
+  "virtual-text.line",
+  // hex
+  "hex",
+  "hex.toolbar",
+  "hex.offset-input",
+  "hex.go",
+  "hex.content",
+  "hex.row",
+  "hex.gutter",
+  "hex.cell",
+  "hex.ascii",
+  // tree
+  "tree",
+  "tree.list",
+  "tree.item",
+  "tree.label",
+  "tree.children",
+  // table
+  "table",
+  "table.caption",
+  "table.body",
+  "table.row",
+  "table.cell",
+  "table.next",
+  // namespace
+  "namespace",
+  "namespace.list",
+  "namespace.item",
+  "namespace.label",
+  "namespace.detail",
+  "namespace.children",
+  // transport
+  "transport",
+  "transport.status",
+  "transport.controls",
+  "transport.button",
+  "transport.track",
+  // diagnostics panel
+  "diagnostics",
+  "diagnostics.group",
+  "diagnostics.heading",
+  "diagnostics.list",
+  "diagnostics.item",
+  "diagnostics.message",
+  // operation toolbar
+  "operations",
+  "operations.status",
+  "operations.button",
+  // search field (PR3 member) and filter chrome
+  "search",
+  "search.input",
+  "search.toggles",
+  "search.toggle",
+  "search.status",
+  "search.nav",
+  "search.message",
+  "filter-bar",
+  "filter-bar.facets",
+  "filter-bar.facet",
+  // format inspector
+  "format",
+  "format.header",
+  "format.badge",
+  "format.body",
+  // metadata and properties (MK2 assets-viewer parity)
+  "metadata",
+  "metadata.group",
+  "metadata.heading",
+  "metadata.row",
+  "metadata.label",
+  "metadata.value",
+  "properties",
+  "properties.row",
+  "properties.name",
+  "properties.value",
+  "properties.origin",
+  // image stage
+  "image",
+  "image.canvas",
+  "image.toolbar",
+  "image.readout",
+  // image editing surface (MK2 assetsTextureViewer parity)
+  "imageedit",
+  "imageedit.tools",
+  "imageedit.tool",
+  "imageedit.options",
+  "imageedit.swatch",
+  "imageedit.size",
+  "imageedit.actions",
+  "imageedit.action",
+  "imageedit.marquee",
+  "imageedit.status",
+  "imageedit.warning",
+  // audio stage
+  "audio",
+  "audio.waveform",
+  "audio.toolbar",
+  "audio.readout",
+  "audio.player",
+  // vector stage
+  "vector",
+  "vector.image",
+  "vector.readout",
+  // video stage
+  "video",
+  "video.player",
+  "video.readout",
+  // model stage
+  "model",
+  "model.canvas",
+  "model.readout",
+  "model.toolbar",
+  // view gizmo — its own component, usable by any 3D stage
+  "gizmo",
+  "gizmo.svg",
+  "gizmo.axis",
+  "gizmo.handle",
+  "gizmo.label",
+  // archive explorer composite
+  "archive",
+  "archive.tree",
+  "archive.entries",
+  "archive.preview",
+  // file tree (MK2 archive explorer chrome)
+  "filetree",
+  "filetree.toolbar",
+  "filetree.list",
+  "filetree.node",
+  "filetree.row",
+  "filetree.twisty",
+  "filetree.icon",
+  "filetree.label",
+  "filetree.badge",
+  "filetree.children",
+  "filetree.empty",
+  // explorer: tree + preview shell shared by every host that browses real files
+  "explorer",
+  "explorer.toolbar",
+  "explorer.action",
+  "explorer.sidebar",
+  "explorer.preview",
+  "explorer.dropzone",
+  "explorer.status",
+  "explorer.tabs",
+  "explorer.tab",
+  "explorer.stage",
+  "explorer.placeholder",
+  // preview header and view picker
+  "explorer.header",
+  "explorer.breadcrumb",
+  "explorer.crumb",
+  "explorer.viewpicker",
+  // editor area: one or more groups, each with its own tab strip
+  "explorer.editors",
+  "explorer.group",
+  "explorer.tabstrip",
+  "explorer.filetab",
+  "explorer.filetab-close",
+  "explorer.tabcontent",
+  "explorer.split",
+  // right-click menu on a tab: Close / Close Others / Close to the Right / Close All
+  "explorer.tabmenu",
+  "explorer.tabmenu-item",
+  // custom window chrome, drawn by the app when the native frame is hidden
+  "titlebar",
+  "titlebar.drag",
+  "titlebar.title",
+  "titlebar.controls",
+  "titlebar.button",
+  "titlebar.menu",
+  "titlebar.menu-item",
+  "titlebar.menu-panel",
+  "titlebar.menu-entry",
+  "titlebar.menu-separator",
+  // settings surface
+  "settings",
+  "settings.groups",
+  "settings.group",
+  "settings.pane",
+  "settings.row",
+  "settings.label",
+  "settings.description",
+  "settings.control",
+  "settings.select",
+  "settings.input",
+  "settings.list",
+  "settings.extension",
+  "settings.extension-text",
+  "settings.toggle",
+  "settings.remove",
+  "settings.adder",
+  "settings.add",
+  "settings.close",
+  "settings.status",
+  // generic form vocabulary — any surface that collects input (an edit panel, a dialog).
+  // Named generically because the settings.* family is named for the settings surface, and a
+  // theme styling a form should not have to know which surface hosts it.
+  "form",
+  "form.row",
+  "form.label",
+  "form.description",
+  "form.control",
+  "form.input",
+  "form.select",
+  "form.actions",
+  "form.button",
+  "form.status",
+  // collapsible property sections
+  "accordion",
+  "accordion.section",
+  "accordion.header",
+  "accordion.twisty",
+  "accordion.title",
+  "accordion.hint",
+  "accordion.body",
+  "accordion.field",
+  "accordion.field-name",
+  "accordion.field-value",
+  // shell chrome
+  "shell",
+  "shell.header",
+  "shell.breadcrumb",
+  "shell.crumb",
+  "shell.crumb-icon",
+  "shell.crumb-more",
+  "shell.footer",
+  "shell.footer-start",
+  "shell.footer-end",
+  "shell.status-item",
+  // application workbench
+  "workbench",
+  "workbench.titlebar",
+  "workbench.activitybar",
+  "workbench.sidebar",
+  "workbench.main",
+  "workbench.panel",
+  "workbench.statusbar",
+  "workbench.host-status",
+  // view picker
+  "viewpicker",
+  "viewpicker.modes",
+  "viewpicker.mode",
+  "viewpicker.select",
+  // subject card composition
+  "card",
+  "card.section",
+  "card.header",
+  "card.portrait",
+  "card.identity",
+  "card.title",
+  "card.subtitle",
+  "card.ref",
+  "card.locale",
+  "card.chips",
+  "card.chip",
+  "card.description",
+  "card.note",
+  "card.statrow",
+  "card.stat",
+  "card.stat-icon",
+  "card.stat-value",
+  "card.stat-delta",
+  "card.grid",
+  "card.grid-cell",
+  "card.grid-hotkey",
+  "card.grid-icon",
+  "card.fields",
+  "card.field",
+  "card.field-name",
+  "card.field-value",
+  "card.links",
+  "card.link-item",
+  "card.subcards",
+  "card.subcard",
+  "card.subcard-head",
+  "card.subcard-body",
+  "card.custom",
+  // relation graph
+  "graph",
+  "graph.sidebar",
+  "graph.sidebar-head",
+  "graph.types",
+  "graph.type",
+  "graph.type-swatch",
+  "graph.type-count",
+  "graph.main",
+  "graph.controls",
+  "graph.control",
+  "graph.canvas",
+  "graph.status",
+  "graph.hint",
+  "graph.footer",
+  "graph.footer-group",
+  "graph.footer-item",
+  // editor
+  "editor",
+  "editor.toolbar",
+  "editor.text"
+]);
+var PART_SET = new Set(PARTS);
+var PART_ATTRIBUTE = "data-mk-part";
+var STATE_ATTRIBUTE = "data-mk-state";
+var STATES = Object.freeze([
+  "loading",
+  "empty",
+  "error",
+  "disabled",
+  "readonly",
+  "truncated",
+  "over-budget",
+  "degraded",
+  "active",
+  "stale",
+  "mutating",
+  "invalid",
+  "no-match",
+  "selected",
+  /** A drop is hovering over this surface and would be accepted. */
+  "drop-target"
+]);
+var STATE_SET = new Set(STATES);
+function setPart2(element22, part) {
+  if (!PART_SET.has(part)) throw new TypeError(`unregistered part: ${part}`);
+  element22.setAttribute(PART_ATTRIBUTE, part);
+}
+function setState2(element22, states) {
+  for (const state of states) {
+    if (!STATE_SET.has(state)) throw new TypeError(`unregistered state: ${state}`);
+  }
+  if (states.length === 0) element22.removeAttribute(STATE_ATTRIBUTE);
+  else element22.setAttribute(STATE_ATTRIBUTE, [...new Set(states)].join(" "));
+}
+var VIEWER_CSP = Object.freeze({
+  defaultSrc: "'none'",
+  scriptSrc: "'self'",
+  styleSrc: "'self'",
+  // C1 in ADR-UI-001. `style-src-attr` does not inherit from `style-src`, so the ban on the
+  // `style` attribute has to be stated here or it is not enforced at all. Components set dynamic
+  // values through CSSOM (`style.setProperty`), which this does not block.
+  styleSrcAttr: "'none'",
+  imgSrc: "'self' blob: data:",
+  // The audio and video stages hand a codec-owned encoded representation to the platform player
+  // as a blob; without this the policy falls through to default-src 'none' and playback dies.
+  mediaSrc: "'self' blob:",
+  fontSrc: "'self'",
+  connectSrc: "'self'",
+  workerSrc: "'self' blob:",
+  frameSrc: "'none'"
+});
+var VIEWER_CSP_TRUSTED_EDITOR = Object.freeze({
+  ...VIEWER_CSP,
+  styleSrc: "'self' 'unsafe-inline'",
+  // Measured: the editor renders each visible line as markup carrying a `style` attribute with its
+  // computed `top` and `height`. Under `style-src-attr 'none'` those attributes are refused, the
+  // lines never reach their positions, and the text visibly jumps as the view scrolls. This is the
+  // C1 exclusion the ADR anticipates for a trusted in-process editor, scoped to that host only.
+  styleSrcAttr: "'unsafe-inline'",
+  // The editor's icon font is inlined as a data URI by the bundler; `font-src 'self'` alone
+  // rejects it and the glyphs fall back to tofu.
+  fontSrc: "'self' data:"
+});
+var policyText = (policy) => Object.entries(policy).map(
+  ([name, value]) => `${name.replace(/[A-Z]/gu, (match) => `-${match.toLowerCase()}`)} ${value}`
+).join("; ");
+var VIEWER_CSP_TEXT = policyText(VIEWER_CSP);
+var VIEWER_CSP_TRUSTED_EDITOR_TEXT = policyText(VIEWER_CSP_TRUSTED_EDITOR);
+var HOSTILE_TEXT = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/gu;
+function safeViewerText(value, maximum = 1e6) {
+  const text = String(value);
+  const bounded = text.length > maximum ? `${text.slice(0, maximum)}\u2026` : text;
+  return bounded.replace(HOSTILE_TEXT, (character) => {
+    const code = character.codePointAt(0)?.toString(16).toUpperCase().padStart(4, "0") ?? "0000";
+    return `\\u{${code}}`;
+  });
+}
+function setViewerText2(node, value, maximum) {
+  node.textContent = safeViewerText(value, maximum);
+}
+function element2(parent, tag, options = {}) {
+  const node = parent.ownerDocument.createElement(tag);
+  if (options.className !== void 0) node.className = options.className;
+  if (options.role !== void 0) node.setAttribute("role", options.role);
+  if (options.text !== void 0) setViewerText2(node, options.text);
+  if (options.part !== void 0) setPart2(node, options.part);
+  if (options.state !== void 0) setState2(node, options.state);
+  parent.append(node);
+  return node;
+}
+var RECENT_LIMIT = 10;
+var SETTINGS_SCHEMA_VERSION = 1;
+var DEFAULT_SETTINGS = Object.freeze({
+  schemaVersion: SETTINGS_SCHEMA_VERSION,
+  appearance: Object.freeze({ theme: "modkit-dark", density: "compact" }),
+  extensions: Object.freeze([]),
+  recent: Object.freeze([]),
+  disabledContributions: Object.freeze([])
+});
+var isRecord = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var asText = (value) => typeof value === "string" && value.trim() !== "" ? value.trim() : void 0;
+function normalizeSettings(value) {
+  const problems = [];
+  if (!isRecord(value)) {
+    return {
+      document: DEFAULT_SETTINGS,
+      problems: value === void 0 ? [] : ["settings root is not an object; defaults were used"]
+    };
+  }
+  const version = value["schemaVersion"];
+  if (version !== void 0 && version !== SETTINGS_SCHEMA_VERSION) {
+    problems.push(
+      `unknown schemaVersion ${String(version)}; expected ${SETTINGS_SCHEMA_VERSION}. Unrecognised fields were ignored.`
+    );
+  }
+  const appearanceInput = isRecord(value["appearance"]) ? value["appearance"] : {};
+  const theme = asText(appearanceInput["theme"]) ?? DEFAULT_SETTINGS.appearance.theme;
+  const densityInput = appearanceInput["density"];
+  const density = densityInput === "compact" || densityInput === "comfortable" ? densityInput : DEFAULT_SETTINGS.appearance.density;
+  if (densityInput !== void 0 && densityInput !== density) {
+    problems.push(`appearance.density "${String(densityInput)}" is not valid; used "${density}"`);
+  }
+  const extensions = [];
+  const seen = /* @__PURE__ */ new Map();
+  const listInput = value["extensions"];
+  if (listInput !== void 0 && !Array.isArray(listInput)) {
+    problems.push("extensions must be an array; it was ignored");
+  } else {
+    for (const [index, item] of (listInput ?? []).entries()) {
+      if (!isRecord(item)) {
+        problems.push(`extensions[${index}] is not an object; ignored`);
+        continue;
+      }
+      const id = asText(item["id"]);
+      const path = asText(item["path"]);
+      if (id === void 0 || path === void 0) {
+        problems.push(`extensions[${index}] needs both "id" and "path"; ignored`);
+        continue;
+      }
+      const entry = {
+        id,
+        path,
+        // Absent means enabled: adding a path to the file is how a user asks for an extension.
+        enabled: item["enabled"] !== false,
+        ...isRecord(item["options"]) ? { options: Object.freeze({ ...item["options"] }) } : {}
+      };
+      const existing = seen.get(id);
+      if (existing === void 0) {
+        seen.set(id, extensions.length);
+        extensions.push(entry);
+      } else {
+        problems.push(`extensions[${index}] duplicates id "${id}"; the later entry won`);
+        extensions[existing] = entry;
+      }
+    }
+  }
+  const recent = [];
+  const recentInput = value["recent"];
+  if (recentInput !== void 0 && !Array.isArray(recentInput)) {
+    problems.push("recent must be an array; it was ignored");
+  } else {
+    const seenPaths = /* @__PURE__ */ new Set();
+    for (const item of recentInput ?? []) {
+      if (!isRecord(item)) continue;
+      const path = asText(item["path"]);
+      if (path === void 0 || seenPaths.has(path)) continue;
+      seenPaths.add(path);
+      recent.push({ path, kind: item["kind"] === "file" ? "file" : "folder" });
+      if (recent.length >= RECENT_LIMIT) break;
+    }
+  }
+  const disabled = [];
+  const disabledInput = value["disabledContributions"];
+  if (disabledInput !== void 0 && !Array.isArray(disabledInput)) {
+    problems.push("disabledContributions must be an array; it was ignored");
+  } else {
+    const seenIds = /* @__PURE__ */ new Set();
+    for (const [index, item] of (disabledInput ?? []).entries()) {
+      const id = asText(item);
+      if (id === void 0) {
+        problems.push(`disabledContributions[${index}] is not a contribution id; ignored`);
+        continue;
+      }
+      if (seenIds.has(id)) continue;
+      seenIds.add(id);
+      disabled.push(id);
+    }
+    disabled.sort(compareUtf8);
+  }
+  return {
+    document: Object.freeze({
+      schemaVersion: SETTINGS_SCHEMA_VERSION,
+      appearance: Object.freeze({ theme, density }),
+      extensions: Object.freeze(extensions),
+      recent: Object.freeze(recent),
+      disabledContributions: Object.freeze(disabled)
+    }),
+    problems: Object.freeze(problems)
+  };
+}
+function serializeSettings(document2) {
+  return `${JSON.stringify(
+    {
+      schemaVersion: document2.schemaVersion,
+      appearance: { theme: document2.appearance.theme, density: document2.appearance.density },
+      // Recency is meaningful order, so this list is written as-is rather than sorted.
+      recent: document2.recent.map((entry) => ({ path: entry.path, kind: entry.kind })),
+      // A set: sorted, so the same choice made in two hosts produces the same bytes.
+      disabledContributions: [...document2.disabledContributions].sort(compareUtf8),
+      extensions: [...document2.extensions].sort((a, b) => compareUtf8(a.id, b.id)).map((entry) => ({
+        id: entry.id,
+        path: entry.path,
+        enabled: entry.enabled,
+        ...entry.options === void 0 ? {} : { options: entry.options }
+      }))
+    },
+    null,
+    2
+  )}
+`;
+}
+function createSettingsUi(document2, options) {
+  const root = document2.createElement("div");
+  root.className = "modkit-viewer modkit-settings";
+  setPart2(root, "settings");
+  const groupList = element2(root, "nav", { part: "settings.groups" });
+  groupList.setAttribute("aria-label", "Settings groups");
+  if (options.onClose !== void 0) {
+    const close = element2(groupList, "button", {
+      part: "settings.close",
+      text: "\u2190 Back"
+    });
+    close.type = "button";
+    close.title = "Close settings (Esc)";
+    close.addEventListener("click", () => options.onClose?.());
+    root.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") options.onClose?.();
+    });
+    root.tabIndex = -1;
+  }
+  const pane = element2(root, "div", { part: "settings.pane" });
+  const status = element2(root, "output", { part: "settings.status" });
+  let current = DEFAULT_SETTINGS;
+  let activeGroup = "appearance";
+  const say = (message, bad = false) => {
+    status.textContent = message;
+    setState2(status, bad ? ["error"] : []);
+  };
+  const persist = async (next) => {
+    try {
+      await options.store.write(next);
+      current = next;
+      options.onChange?.(next);
+      say(`Saved to ${options.store.location}`);
+    } catch (error) {
+      say(`Could not save: ${error instanceof Error ? error.message : String(error)}`, true);
+    }
+  };
+  const row = (host, label, description) => {
+    const wrapper = element2(host, "div", { part: "settings.row" });
+    element2(wrapper, "div", { part: "settings.label", text: label });
+    element2(wrapper, "div", { part: "settings.description", text: description });
+    return element2(wrapper, "div", { part: "settings.control" });
+  };
+  const appearanceGroup = {
+    id: "appearance",
+    label: "Appearance",
+    render(host) {
+      if (options.themes.length > 0) {
+        const control = row(host, "Color theme", "Applies immediately and to every viewer surface.");
+        const select = element2(control, "select", { part: "settings.select" });
+        select.setAttribute("aria-label", "Color theme");
+        for (const theme of options.themes) {
+          const option = document2.createElement("option");
+          option.value = theme.id;
+          option.textContent = theme.label;
+          select.append(option);
+        }
+        select.value = current.appearance.theme;
+        select.addEventListener("change", () => {
+          const appearance = { ...current.appearance, theme: select.value };
+          options.onAppearance?.(appearance);
+          void persist({ ...current, appearance });
+        });
+      }
+      const densityControl = row(
+        host,
+        "Density",
+        "Compact matches VS Code list metrics; comfortable suits touch and larger displays."
+      );
+      const density = element2(densityControl, "select", {
+        part: "settings.select"
+      });
+      density.setAttribute("aria-label", "Density");
+      for (const value of ["compact", "comfortable"]) {
+        const option = document2.createElement("option");
+        option.value = value;
+        option.textContent = value[0]?.toUpperCase() + value.slice(1);
+        density.append(option);
+      }
+      density.value = current.appearance.density;
+      density.addEventListener("change", () => {
+        const appearance = {
+          ...current.appearance,
+          density: density.value
+        };
+        options.onAppearance?.(appearance);
+        void persist({ ...current, appearance });
+      });
+    }
+  };
+  const extensionsGroup = {
+    id: "extensions",
+    label: "Extensions",
+    render(host) {
+      const intro = element2(host, "p", { part: "settings.description" });
+      intro.textContent = `Extensions are listed in ${options.store.location}. Each entry is an id, a path the host loads from, and whether it is enabled. The same file is read by the desktop app, the web app and a headless run.`;
+      const readOnly = options.extensionsReadOnly;
+      if (readOnly !== void 0) {
+        element2(host, "p", {
+          part: "settings.description",
+          text: safeViewerText(readOnly, 400)
+        });
+      }
+      const list = element2(host, "div", { part: "settings.list" });
+      const draw = () => {
+        list.replaceChildren();
+        if (current.extensions.length === 0) {
+          element2(list, "p", {
+            part: "settings.description",
+            text: "No extensions are configured yet."
+          });
+        }
+        for (const entry of current.extensions) {
+          const item = element2(list, "div", { part: "settings.extension" });
+          if (readOnly === void 0) {
+            const toggle = element2(item, "input", {
+              part: "settings.toggle"
+            });
+            toggle.type = "checkbox";
+            toggle.checked = entry.enabled;
+            toggle.setAttribute("aria-label", `Enable ${entry.id}`);
+            toggle.addEventListener("change", () => {
+              void persist({
+                ...current,
+                extensions: current.extensions.map(
+                  (other) => other.id === entry.id ? { ...other, enabled: toggle.checked } : other
+                )
+              }).then(draw);
+            });
+          } else {
+            element2(item, "div", {
+              part: "settings.description",
+              text: entry.enabled ? "enabled" : "disabled"
+            });
+          }
+          const text = element2(item, "div", { part: "settings.extension-text" });
+          element2(text, "div", { part: "settings.label", text: safeViewerText(entry.id, 200) });
+          element2(text, "div", {
+            part: "settings.description",
+            text: safeViewerText(entry.path, 400)
+          });
+          if (readOnly === void 0) {
+            const remove = element2(item, "button", {
+              part: "settings.remove",
+              text: "Remove"
+            });
+            remove.type = "button";
+            remove.addEventListener("click", () => {
+              void persist({
+                ...current,
+                extensions: current.extensions.filter((other) => other.id !== entry.id)
+              }).then(draw);
+            });
+          }
+        }
+      };
+      draw();
+      if (readOnly !== void 0) return;
+      const adder = element2(host, "div", { part: "settings.adder" });
+      const id = element2(adder, "input", { part: "settings.input" });
+      id.placeholder = "publisher/name";
+      id.setAttribute("aria-label", "Extension id");
+      const path = element2(adder, "input", { part: "settings.input" });
+      path.placeholder = "path, package or URL";
+      path.setAttribute("aria-label", "Extension location");
+      const add = (entry) => {
+        void persist({
+          ...current,
+          extensions: [...current.extensions.filter((other) => other.id !== entry.id), entry]
+        }).then(draw);
+      };
+      const addButton = element2(adder, "button", {
+        part: "settings.add",
+        text: "Add"
+      });
+      addButton.type = "button";
+      addButton.addEventListener("click", () => {
+        const entryId = id.value.trim();
+        const entryPath = path.value.trim();
+        if (entryId === "" || entryPath === "") {
+          say("An extension needs both an id and a location.", true);
+          return;
+        }
+        add({ id: entryId, path: entryPath, enabled: true });
+        id.value = "";
+        path.value = "";
+      });
+      if (options.browseForExtension !== void 0) {
+        const browse = element2(adder, "button", {
+          part: "settings.add",
+          text: "Browse\u2026"
+        });
+        browse.type = "button";
+        browse.addEventListener("click", () => {
+          void (async () => {
+            const picked = await options.browseForExtension?.();
+            if (picked !== void 0) add({ ...picked, enabled: true });
+          })();
+        });
+      }
+    }
+  };
+  const registerFileTypes = options.registerFileTypes;
+  const associationsGroup = {
+    id: "associations",
+    label: "File associations",
+    render(host) {
+      const types = [...options.associableTypes ?? []].sort();
+      element2(host, "p", {
+        part: "settings.description",
+        text: "Make this app the default for the formats its codecs can open. Registration is per-user and reversible from the operating system, and nothing is written until you apply it."
+      });
+      if (types.length === 0) {
+        element2(host, "p", {
+          part: "settings.description",
+          text: "No codecs are loaded, so there is nothing to associate."
+        });
+        return;
+      }
+      const chosen = new Set(types);
+      const list = element2(host, "div", { part: "settings.list" });
+      for (const type of types) {
+        const item = element2(list, "div", { part: "settings.extension" });
+        const toggle = element2(item, "input", { part: "settings.toggle" });
+        toggle.type = "checkbox";
+        toggle.checked = true;
+        toggle.setAttribute("aria-label", `Associate .${type}`);
+        toggle.addEventListener("change", () => {
+          if (toggle.checked) chosen.add(type);
+          else chosen.delete(type);
+        });
+        const text = element2(item, "div", { part: "settings.extension-text" });
+        element2(text, "div", { part: "settings.label", text: `.${type}` });
+      }
+      const actions = element2(host, "div", { part: "settings.adder" });
+      const all = element2(actions, "button", {
+        part: "settings.add",
+        text: "Select all"
+      });
+      all.type = "button";
+      all.addEventListener("click", () => {
+        for (const node of list.querySelectorAll("input")) {
+          node.checked = true;
+          node.dispatchEvent(new Event("change"));
+        }
+      });
+      const none = element2(actions, "button", {
+        part: "settings.add",
+        text: "Select none"
+      });
+      none.type = "button";
+      none.addEventListener("click", () => {
+        for (const node of list.querySelectorAll("input")) {
+          node.checked = false;
+          node.dispatchEvent(new Event("change"));
+        }
+      });
+      const apply = element2(actions, "button", {
+        part: "settings.add",
+        text: "Set as default app"
+      });
+      apply.type = "button";
+      apply.addEventListener("click", () => {
+        void (async () => {
+          if (chosen.size === 0) {
+            say("Pick at least one file type first.", true);
+            return;
+          }
+          try {
+            apply.disabled = true;
+            say(await registerFileTypes?.([...chosen]) ?? "Nothing to register.");
+          } catch (error) {
+            say(
+              `Could not register: ${error instanceof Error ? error.message : String(error)}`,
+              true
+            );
+          } finally {
+            apply.disabled = false;
+          }
+        })();
+      });
+    }
+  };
+  const extraGroups = options.extraGroups ?? [];
+  const extraIds = /* @__PURE__ */ new Set();
+  for (const group of extraGroups) {
+    if (group.id.trim() === "" || group.label.trim() === "") {
+      throw new Error("settings extra groups require a non-empty id and label");
+    }
+    if (extraIds.has(group.id)) throw new Error(`duplicate settings group id: ${group.id}`);
+    extraIds.add(group.id);
+  }
+  const extrasById = new Map(extraGroups.map((group) => [group.id, group]));
+  const primaryGroups = [appearanceGroup, extensionsGroup].map(
+    (group) => extrasById.get(group.id) ?? group
+  );
+  const primaryIds = new Set(primaryGroups.map((group) => group.id));
+  const additionalGroups = extraGroups.filter(
+    (group) => !primaryIds.has(group.id) && !(options.registerFileTypes !== void 0 && group.id === associationsGroup.id)
+  );
+  const groups = [
+    ...primaryGroups,
+    ...additionalGroups,
+    ...options.registerFileTypes === void 0 ? [] : [extrasById.get(associationsGroup.id) ?? associationsGroup]
+  ];
+  function showActiveGroup() {
+    const group = groups.find((item) => item.id === activeGroup) ?? groups[0];
+    if (group !== void 0) showGroup(group);
+  }
+  const groupContext = {
+    get settings() {
+      return current;
+    },
+    report: say,
+    refresh() {
+      showActiveGroup();
+    }
+  };
+  const showGroup = (group) => {
+    activeGroup = group.id;
+    pane.replaceChildren();
+    for (const node of groupList.querySelectorAll('[data-mk-part="settings.group"]')) {
+      const selected = node.getAttribute("data-group") === group.id;
+      node.setAttribute("aria-selected", String(selected));
+      setState2(node, selected ? ["selected"] : []);
+    }
+    group.render(pane, groupContext);
+  };
+  for (const group of groups) {
+    const button2 = element2(groupList, "button", {
+      part: "settings.group",
+      text: group.label
+    });
+    button2.type = "button";
+    button2.dataset["group"] = group.id;
+    button2.setAttribute("role", "tab");
+    button2.addEventListener("click", () => {
+      showGroup(group);
+    });
+  }
+  const ui = {
+    root,
+    async reload() {
+      const { document: loaded, problems } = await options.store.read();
+      current = loaded;
+      options.onAppearance?.(loaded.appearance);
+      say(
+        problems.length === 0 ? `Loaded from ${options.store.location}` : `Loaded with ${problems.length} problem(s): ${problems.join("; ")}`,
+        problems.length > 0
+      );
+      for (const group of groups) await group.reload?.(groupContext);
+      showActiveGroup();
+    },
+    showGroup(groupId) {
+      const group = groups.find((item) => item.id === groupId);
+      if (group === void 0) return false;
+      showGroup(group);
+      return true;
+    },
+    destroy() {
+      for (const group of groups) group.destroy?.();
+      root.remove();
+    }
+  };
+  return ui;
+}
 
 // apps/web/src/extensions-ui.ts
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var USER_EXTENSION_TRUST_SENTENCE = "A folder you add here is trusted because you picked it and for no other reason \u2014 nothing is signed and nobody has reviewed it; this page hashes every file as it reads them so that a file changed afterwards is refused instead of run, and user extensions always run in a worker, never on the page.";
 var USER_EXTENSION_PROVENANCE_NOTE = "Bundled extensions carry digests this app recorded when it was built. Folders you added carry digests this page computed itself just now \u2014 a measurement of the bytes it read, not a claim about who wrote them.";
 var bundledProvenance = (root) => `Bundled with this build, served from ${root}; its digests were recorded when the app was built.`;
@@ -254,6 +1153,7 @@ function mountExtensionsUi(documentRef, options) {
 }
 
 // apps/web/src/editing.ts
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var WEB_SOURCE_SCHEME = "file-picker://";
 var sourceUriFor = (entryId) => `${WEB_SOURCE_SCHEME}${encodeURIComponent(entryId)}`;
 var sourceRevisionToken = (snapshot) => `provider-token:${snapshot.size}-${snapshot.lastModified}`;
@@ -339,15 +1239,15 @@ async function requestWriteAccess(access) {
     };
   }
 }
-var isRecord = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var isRecord2 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 function byteRuns(value) {
   if (!Array.isArray(value) || value.length === 0) return void 0;
   const runs = [];
   for (const item of value) {
-    if (!isRecord(item)) return void 0;
+    if (!isRecord2(item)) return void 0;
     const range = item["range"];
     const payload = item["payload"];
-    if (!isRecord(range) || !isRecord(payload)) return void 0;
+    if (!isRecord2(range) || !isRecord2(payload)) return void 0;
     if (range["kind"] !== "bytes" || typeof range["offset"] !== "bigint") return void 0;
     if (payload["kind"] !== "inline" || !(payload["bytes"] instanceof Uint8Array)) return void 0;
     const offset = Number(range["offset"]);
@@ -370,7 +1270,7 @@ function mergeByteRuns(runs, original) {
   return { offset: start, bytes: window2 };
 }
 function normalizeChangeSet(change, targets, original) {
-  if (!isRecord(change)) return void 0;
+  if (!isRecord2(change)) return void 0;
   const declared = change["targets"];
   if (Array.isArray(declared) && declared.length > 0) return change;
   const target = targets[0];
@@ -423,33 +1323,14 @@ function describeRejection(reason) {
   }
 }
 var firstMessage = (diagnostics) => diagnostics[0]?.message;
-var ZIP_WRITER = Object.freeze({
-  providerId: "org.modkitx/archive-zip",
-  providerVersion: "1.0.0",
-  artifactDigest: "none:extension-artifact-not-pinned",
-  formatId: "zip",
-  representationId: "archive-namespace"
-});
-var zipEvidenceRecord = (preservesUnknownData, evidenceId, inputClass) => Object.freeze({
-  writer: ZIP_WRITER,
-  claim: Object.freeze({ roundTrip: "semantic", preservesUnknownData }),
-  evidenceId,
-  corpusId: "modkitX3/packages/host/test/archive-edits.test.ts",
-  corpusDigest: "none:proof-suite",
-  conformanceProfile: "org.modkitx/codec-contribution-v1",
-  optionsFingerprint: "options:stored-additions",
-  inputClass,
-  provenAt: "2026-08-19T00:00:00Z"
-});
-var WEB_EDIT_EVIDENCE = createEvidenceRegistry().with(zipEvidenceRecord(true, "zip-verbatim-reassembly-v1", "zip-classic")).with(
-  zipEvidenceRecord(
-    false,
-    "zip-verbatim-reassembly-non-canonical-v1",
-    "zip-non-canonical-layout"
-  )
-);
+function webEditEvidence(inventory, descriptor) {
+  if (descriptor.interpretation !== "codec") return createEvidenceRegistry();
+  return codecFidelityEvidenceRecords(inventory, {
+    codecId: descriptor.identity.codecId,
+    formatId: descriptor.identity.formatId
+  }).reduce((registry, record) => registry.with(record), createEvidenceRegistry());
+}
 function createWebEditingArm(options) {
-  const evidence = WEB_EDIT_EVIDENCE;
   const writer = createRawWriter();
   const backend = createBrowserEditingBackend({
     handleFor: options.handleFor,
@@ -595,6 +1476,7 @@ function createWebEditingArm(options) {
     editorFor(request) {
       let editing;
       try {
+        const evidence = webEditEvidence(options.inventory, request.opened.descriptor);
         editing = createSubjectEditing({
           opened: request.opened,
           grant: request.grant,
@@ -608,8 +1490,8 @@ function createWebEditingArm(options) {
            * which was right while the raw writer was the only thing that could produce a plan here
            * — and is wrong the moment this app offers a codec's mutating operations, because those
            * plans are the codec's and their evidence names the codec. The pin is not the check it
-           * looks like either: `WEB_EDIT_EVIDENCE` already names, record by record, which writer
-           * proved which claim, and a claim with no record is still refused as `fidelity-unproven`.
+           * looks like either: this subject's inventory-derived registry already names, record by
+           * record, which writer proved which claim, and an absent record is still refused.
            */
           ...options.maxInlinePayloadBytes === void 0 ? {} : { maxInlinePayloadBytes: options.maxInlinePayloadBytes }
         });
@@ -642,7 +1524,11 @@ function createWebEditingArm(options) {
   return Object.freeze(arm);
 }
 
+// apps/web/src/edit-panel.ts
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
 // apps/web/src/edit-operations.ts
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function metadataEntries(descriptor, groupId) {
   if (!("metadata" in descriptor)) return [];
   return descriptor.metadata.find((group) => group.id === groupId)?.entries ?? [];
@@ -1126,6 +2012,601 @@ function createEditPanel(options) {
 }
 
 // apps/web/src/inspector.ts
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/ui/dist/panels/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var PARTS2 = Object.freeze([
+  // shared surface
+  "viewer",
+  "viewer.toolbar",
+  "viewer.status",
+  "viewer.empty",
+  // bounded + virtual text
+  "text",
+  "text.line",
+  "virtual-text",
+  "virtual-text.line",
+  // hex
+  "hex",
+  "hex.toolbar",
+  "hex.offset-input",
+  "hex.go",
+  "hex.content",
+  "hex.row",
+  "hex.gutter",
+  "hex.cell",
+  "hex.ascii",
+  // tree
+  "tree",
+  "tree.list",
+  "tree.item",
+  "tree.label",
+  "tree.children",
+  // table
+  "table",
+  "table.caption",
+  "table.body",
+  "table.row",
+  "table.cell",
+  "table.next",
+  // namespace
+  "namespace",
+  "namespace.list",
+  "namespace.item",
+  "namespace.label",
+  "namespace.detail",
+  "namespace.children",
+  // transport
+  "transport",
+  "transport.status",
+  "transport.controls",
+  "transport.button",
+  "transport.track",
+  // diagnostics panel
+  "diagnostics",
+  "diagnostics.group",
+  "diagnostics.heading",
+  "diagnostics.list",
+  "diagnostics.item",
+  "diagnostics.message",
+  // operation toolbar
+  "operations",
+  "operations.status",
+  "operations.button",
+  // search field (PR3 member) and filter chrome
+  "search",
+  "search.input",
+  "search.toggles",
+  "search.toggle",
+  "search.status",
+  "search.nav",
+  "search.message",
+  "filter-bar",
+  "filter-bar.facets",
+  "filter-bar.facet",
+  // format inspector
+  "format",
+  "format.header",
+  "format.badge",
+  "format.body",
+  // metadata and properties (MK2 assets-viewer parity)
+  "metadata",
+  "metadata.group",
+  "metadata.heading",
+  "metadata.row",
+  "metadata.label",
+  "metadata.value",
+  "properties",
+  "properties.row",
+  "properties.name",
+  "properties.value",
+  "properties.origin",
+  // image stage
+  "image",
+  "image.canvas",
+  "image.toolbar",
+  "image.readout",
+  // image editing surface (MK2 assetsTextureViewer parity)
+  "imageedit",
+  "imageedit.tools",
+  "imageedit.tool",
+  "imageedit.options",
+  "imageedit.swatch",
+  "imageedit.size",
+  "imageedit.actions",
+  "imageedit.action",
+  "imageedit.marquee",
+  "imageedit.status",
+  "imageedit.warning",
+  // audio stage
+  "audio",
+  "audio.waveform",
+  "audio.toolbar",
+  "audio.readout",
+  "audio.player",
+  // vector stage
+  "vector",
+  "vector.image",
+  "vector.readout",
+  // video stage
+  "video",
+  "video.player",
+  "video.readout",
+  // model stage
+  "model",
+  "model.canvas",
+  "model.readout",
+  "model.toolbar",
+  // view gizmo — its own component, usable by any 3D stage
+  "gizmo",
+  "gizmo.svg",
+  "gizmo.axis",
+  "gizmo.handle",
+  "gizmo.label",
+  // archive explorer composite
+  "archive",
+  "archive.tree",
+  "archive.entries",
+  "archive.preview",
+  // file tree (MK2 archive explorer chrome)
+  "filetree",
+  "filetree.toolbar",
+  "filetree.list",
+  "filetree.node",
+  "filetree.row",
+  "filetree.twisty",
+  "filetree.icon",
+  "filetree.label",
+  "filetree.badge",
+  "filetree.children",
+  "filetree.empty",
+  // explorer: tree + preview shell shared by every host that browses real files
+  "explorer",
+  "explorer.toolbar",
+  "explorer.action",
+  "explorer.sidebar",
+  "explorer.preview",
+  "explorer.dropzone",
+  "explorer.status",
+  "explorer.tabs",
+  "explorer.tab",
+  "explorer.stage",
+  "explorer.placeholder",
+  // preview header and view picker
+  "explorer.header",
+  "explorer.breadcrumb",
+  "explorer.crumb",
+  "explorer.viewpicker",
+  // editor area: one or more groups, each with its own tab strip
+  "explorer.editors",
+  "explorer.group",
+  "explorer.tabstrip",
+  "explorer.filetab",
+  "explorer.filetab-close",
+  "explorer.tabcontent",
+  "explorer.split",
+  // right-click menu on a tab: Close / Close Others / Close to the Right / Close All
+  "explorer.tabmenu",
+  "explorer.tabmenu-item",
+  // custom window chrome, drawn by the app when the native frame is hidden
+  "titlebar",
+  "titlebar.drag",
+  "titlebar.title",
+  "titlebar.controls",
+  "titlebar.button",
+  "titlebar.menu",
+  "titlebar.menu-item",
+  "titlebar.menu-panel",
+  "titlebar.menu-entry",
+  "titlebar.menu-separator",
+  // settings surface
+  "settings",
+  "settings.groups",
+  "settings.group",
+  "settings.pane",
+  "settings.row",
+  "settings.label",
+  "settings.description",
+  "settings.control",
+  "settings.select",
+  "settings.input",
+  "settings.list",
+  "settings.extension",
+  "settings.extension-text",
+  "settings.toggle",
+  "settings.remove",
+  "settings.adder",
+  "settings.add",
+  "settings.close",
+  "settings.status",
+  // generic form vocabulary — any surface that collects input (an edit panel, a dialog).
+  // Named generically because the settings.* family is named for the settings surface, and a
+  // theme styling a form should not have to know which surface hosts it.
+  "form",
+  "form.row",
+  "form.label",
+  "form.description",
+  "form.control",
+  "form.input",
+  "form.select",
+  "form.actions",
+  "form.button",
+  "form.status",
+  // collapsible property sections
+  "accordion",
+  "accordion.section",
+  "accordion.header",
+  "accordion.twisty",
+  "accordion.title",
+  "accordion.hint",
+  "accordion.body",
+  "accordion.field",
+  "accordion.field-name",
+  "accordion.field-value",
+  // shell chrome
+  "shell",
+  "shell.header",
+  "shell.breadcrumb",
+  "shell.crumb",
+  "shell.crumb-icon",
+  "shell.crumb-more",
+  "shell.footer",
+  "shell.footer-start",
+  "shell.footer-end",
+  "shell.status-item",
+  // application workbench
+  "workbench",
+  "workbench.titlebar",
+  "workbench.activitybar",
+  "workbench.sidebar",
+  "workbench.main",
+  "workbench.panel",
+  "workbench.statusbar",
+  "workbench.host-status",
+  // view picker
+  "viewpicker",
+  "viewpicker.modes",
+  "viewpicker.mode",
+  "viewpicker.select",
+  // subject card composition
+  "card",
+  "card.section",
+  "card.header",
+  "card.portrait",
+  "card.identity",
+  "card.title",
+  "card.subtitle",
+  "card.ref",
+  "card.locale",
+  "card.chips",
+  "card.chip",
+  "card.description",
+  "card.note",
+  "card.statrow",
+  "card.stat",
+  "card.stat-icon",
+  "card.stat-value",
+  "card.stat-delta",
+  "card.grid",
+  "card.grid-cell",
+  "card.grid-hotkey",
+  "card.grid-icon",
+  "card.fields",
+  "card.field",
+  "card.field-name",
+  "card.field-value",
+  "card.links",
+  "card.link-item",
+  "card.subcards",
+  "card.subcard",
+  "card.subcard-head",
+  "card.subcard-body",
+  "card.custom",
+  // relation graph
+  "graph",
+  "graph.sidebar",
+  "graph.sidebar-head",
+  "graph.types",
+  "graph.type",
+  "graph.type-swatch",
+  "graph.type-count",
+  "graph.main",
+  "graph.controls",
+  "graph.control",
+  "graph.canvas",
+  "graph.status",
+  "graph.hint",
+  "graph.footer",
+  "graph.footer-group",
+  "graph.footer-item",
+  // editor
+  "editor",
+  "editor.toolbar",
+  "editor.text"
+]);
+var PART_SET2 = new Set(PARTS2);
+var PART_ATTRIBUTE2 = "data-mk-part";
+var STATE_ATTRIBUTE2 = "data-mk-state";
+var STATES2 = Object.freeze([
+  "loading",
+  "empty",
+  "error",
+  "disabled",
+  "readonly",
+  "truncated",
+  "over-budget",
+  "degraded",
+  "active",
+  "stale",
+  "mutating",
+  "invalid",
+  "no-match",
+  "selected",
+  /** A drop is hovering over this surface and would be accepted. */
+  "drop-target"
+]);
+var STATE_SET2 = new Set(STATES2);
+function setPart3(element22, part) {
+  if (!PART_SET2.has(part)) throw new TypeError(`unregistered part: ${part}`);
+  element22.setAttribute(PART_ATTRIBUTE2, part);
+}
+function setState3(element22, states) {
+  for (const state of states) {
+    if (!STATE_SET2.has(state)) throw new TypeError(`unregistered state: ${state}`);
+  }
+  if (states.length === 0) element22.removeAttribute(STATE_ATTRIBUTE2);
+  else element22.setAttribute(STATE_ATTRIBUTE2, [...new Set(states)].join(" "));
+}
+var VIEWER_CSP2 = Object.freeze({
+  defaultSrc: "'none'",
+  scriptSrc: "'self'",
+  styleSrc: "'self'",
+  // C1 in ADR-UI-001. `style-src-attr` does not inherit from `style-src`, so the ban on the
+  // `style` attribute has to be stated here or it is not enforced at all. Components set dynamic
+  // values through CSSOM (`style.setProperty`), which this does not block.
+  styleSrcAttr: "'none'",
+  imgSrc: "'self' blob: data:",
+  // The audio and video stages hand a codec-owned encoded representation to the platform player
+  // as a blob; without this the policy falls through to default-src 'none' and playback dies.
+  mediaSrc: "'self' blob:",
+  fontSrc: "'self'",
+  connectSrc: "'self'",
+  workerSrc: "'self' blob:",
+  frameSrc: "'none'"
+});
+var VIEWER_CSP_TRUSTED_EDITOR2 = Object.freeze({
+  ...VIEWER_CSP2,
+  styleSrc: "'self' 'unsafe-inline'",
+  // Measured: the editor renders each visible line as markup carrying a `style` attribute with its
+  // computed `top` and `height`. Under `style-src-attr 'none'` those attributes are refused, the
+  // lines never reach their positions, and the text visibly jumps as the view scrolls. This is the
+  // C1 exclusion the ADR anticipates for a trusted in-process editor, scoped to that host only.
+  styleSrcAttr: "'unsafe-inline'",
+  // The editor's icon font is inlined as a data URI by the bundler; `font-src 'self'` alone
+  // rejects it and the glyphs fall back to tofu.
+  fontSrc: "'self' data:"
+});
+var policyText2 = (policy) => Object.entries(policy).map(
+  ([name, value]) => `${name.replace(/[A-Z]/gu, (match) => `-${match.toLowerCase()}`)} ${value}`
+).join("; ");
+var VIEWER_CSP_TEXT2 = policyText2(VIEWER_CSP2);
+var VIEWER_CSP_TRUSTED_EDITOR_TEXT2 = policyText2(VIEWER_CSP_TRUSTED_EDITOR2);
+var HOSTILE_TEXT2 = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/gu;
+function safeViewerText2(value, maximum = 1e6) {
+  const text = String(value);
+  const bounded = text.length > maximum ? `${text.slice(0, maximum)}\u2026` : text;
+  return bounded.replace(HOSTILE_TEXT2, (character) => {
+    const code = character.codePointAt(0)?.toString(16).toUpperCase().padStart(4, "0") ?? "0000";
+    return `\\u{${code}}`;
+  });
+}
+function setViewerText3(node, value, maximum) {
+  node.textContent = safeViewerText2(value, maximum);
+}
+function requireContainer(value) {
+  if (typeof value !== "object" || value === null || !("ownerDocument" in value) || !("replaceChildren" in value) || typeof value.replaceChildren !== "function") {
+    throw new TypeError("viewer container must be a DOM element");
+  }
+  return value;
+}
+function createSurface2(container, label) {
+  const host = requireContainer(container);
+  const root = host.ownerDocument.createElement("section");
+  root.className = "modkit-viewer";
+  root.tabIndex = 0;
+  root.setAttribute("role", "region");
+  root.setAttribute("aria-label", label);
+  root.dataset["modkitViewer"] = label;
+  setPart3(root, "viewer");
+  host.replaceChildren(root);
+  return root;
+}
+function element3(parent, tag, options = {}) {
+  const node = parent.ownerDocument.createElement(tag);
+  if (options.className !== void 0) node.className = options.className;
+  if (options.role !== void 0) node.setAttribute("role", options.role);
+  if (options.text !== void 0) setViewerText3(node, options.text);
+  if (options.part !== void 0) setPart3(node, options.part);
+  if (options.state !== void 0) setState3(node, options.state);
+  parent.append(node);
+  return node;
+}
+var ViewerMountScope2 = class {
+  controller = new AbortController();
+  signal = this.controller.signal;
+  #leases = [];
+  #cleanup = [];
+  #closed = false;
+  constructor(parent) {
+    if (parent?.aborted) this.controller.abort(parent.reason);
+    else if (parent !== void 0) {
+      const abort = () => this.controller.abort(parent.reason);
+      parent.addEventListener("abort", abort, { once: true });
+      this.#cleanup.push(() => parent.removeEventListener("abort", abort));
+    }
+  }
+  lease(lease) {
+    this.#leases.push(lease);
+    return lease;
+  }
+  cleanup(callback) {
+    this.#cleanup.push(callback);
+  }
+  async close() {
+    if (this.#closed) return;
+    this.#closed = true;
+    this.controller.abort("viewer-unmounted");
+    for (const callback of this.#cleanup.reverse()) await callback();
+    for (const lease of this.#leases.reverse()) await lease.release();
+  }
+};
+function createViewerMount(root, scope, initial, render) {
+  let state = initial;
+  return Object.freeze({
+    async update(args) {
+      if (scope.signal.aborted) return;
+      state = args;
+      root.setAttribute("aria-label", safeViewerText2(args.slot.contributionId, 512));
+      await render(state);
+    },
+    async unmount() {
+      await scope.close();
+      root.remove();
+    }
+  });
+}
+function defineViewerModule2(module) {
+  return Object.freeze(module);
+}
+function operationById(descriptor, operationId) {
+  return descriptor.operations.find((operation) => operation.id === operationId);
+}
+async function invokeOperation(descriptor, operations, operationId, input, options) {
+  const declaration = operationById(descriptor, operationId);
+  if (declaration === void 0) {
+    return {
+      state: "rejected",
+      reason: "not-declared",
+      diagnostics: []
+    };
+  }
+  if (declaration.state !== "available") {
+    return {
+      state: "rejected",
+      reason: declaration.state === "dependency-required" ? "dependency-required" : "disabled",
+      diagnostics: []
+    };
+  }
+  return operations.invoke(declaration.handlerId, input, {
+    ...options?.signal === void 0 ? {} : { signal: options.signal },
+    ...options?.onProgress === void 0 ? {} : {
+      onProgress: (progress) => options.onProgress?.(progress.completed, progress.total, progress.message)
+    }
+  });
+}
+function diagnosticsBySeverity(diagnostics) {
+  const unique = /* @__PURE__ */ new Map();
+  for (const item of diagnostics) unique.set(item.id, item);
+  const values = [...unique.values()];
+  return Object.freeze({
+    error: Object.freeze(values.filter((item) => item.severity === "error")),
+    warning: Object.freeze(values.filter((item) => item.severity === "warning")),
+    information: Object.freeze(values.filter((item) => item.severity === "information")),
+    hint: Object.freeze(values.filter((item) => item.severity === "hint"))
+  });
+}
+function renderDiagnostics(root, descriptor) {
+  root.replaceChildren();
+  const grouped = diagnosticsBySeverity(descriptor.diagnostics);
+  for (const severity of ["error", "warning", "information", "hint"]) {
+    const section = element3(root, "section", { part: "diagnostics.group" });
+    section.dataset["severity"] = severity;
+    element3(section, "h2", {
+      text: `${severity} (${grouped[severity].length})`,
+      part: "diagnostics.heading"
+    });
+    const list = element3(section, "ul", { part: "diagnostics.list" });
+    for (const diagnostic2 of grouped[severity]) {
+      const item = element3(list, "li", { part: "diagnostics.item" });
+      item.dataset["severity"] = severity;
+      const button2 = element3(item, "button", {
+        text: diagnostic2.message,
+        part: "diagnostics.message"
+      });
+      button2.type = "button";
+      button2.dataset["diagnosticId"] = diagnostic2.id;
+      button2.addEventListener("click", () => {
+        root.dispatchEvent(
+          new CustomEvent("modkit-diagnostic-jump", {
+            bubbles: true,
+            detail: { id: diagnostic2.id, range: diagnostic2.range }
+          })
+        );
+      });
+    }
+  }
+}
+var diagnosticsPanel = defineViewerModule2({
+  abiVersion: 1,
+  async mount(args) {
+    const scope = new ViewerMountScope2(args.signal);
+    const root = createSurface2(args.container, "Diagnostics");
+    renderDiagnostics(root, args.descriptor);
+    return createViewerMount(root, scope, args, ({ descriptor }) => {
+      renderDiagnostics(root, descriptor);
+    });
+  }
+});
+function renderToolbar(root, descriptor, operations, signal) {
+  root.replaceChildren();
+  const status = element3(root, "output", { text: "Ready", part: "operations.status" });
+  for (const operation of descriptor.operations) {
+    if (operation.mutatesSource === true) continue;
+    const button2 = element3(root, "button", {
+      text: operation.id,
+      part: "operations.button"
+    });
+    button2.type = "button";
+    button2.disabled = operation.state !== "available";
+    if (operation.state !== "available") {
+      button2.title = operation.reason;
+      continue;
+    }
+    button2.addEventListener("click", () => {
+      button2.disabled = true;
+      invokeOperation(descriptor, operations, operation.id, null, {
+        signal,
+        onProgress: (completed, total, message) => setViewerText3(status, `${message ?? "Working"}: ${completed}/${total ?? "?"}`)
+      }).then(
+        (result) => setViewerText3(
+          status,
+          result.state === "ok" ? `${operation.id}: complete` : result.reason
+        )
+      ).catch(
+        (error) => setViewerText3(
+          status,
+          `${operation.id}: ${error instanceof Error ? error.message : String(error)}`
+        )
+      ).finally(() => {
+        button2.disabled = false;
+      });
+    });
+  }
+}
+var operationToolbar = defineViewerModule2({
+  abiVersion: 1,
+  async mount(args) {
+    const scope = new ViewerMountScope2(args.signal);
+    const root = createSurface2(args.container, "Operations");
+    renderToolbar(root, args.descriptor, args.operations, scope.signal);
+    return createViewerMount(root, scope, args, ({ descriptor }) => {
+      renderToolbar(root, descriptor, args.operations, scope.signal);
+    });
+  }
+});
+
+// apps/web/src/inspector.ts
 var NON_MUTATING_OPERATION_IDS = Object.freeze([
   "view.inspect",
   "asset.validate",
@@ -1258,7 +2739,11 @@ function createInspector(document2, options = {}) {
   };
 }
 
+// apps/web/src/settings.ts
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
 // packages/ui/dist/tokens/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var t = (name, tier, type, description, extra = {}) => ({ name, tier, type, isPublic: true, description, ...extra });
 var PALETTE_STEPS = [
   "050",
@@ -2074,6 +3559,7 @@ var SAMPLES = Object.freeze([
   { path: "./samples/sample.ini", label: "sample.ini \u2014 INI tree" },
   { path: "./samples/sample.svg", label: "sample.svg \u2014 vector scene" },
   { path: "./samples/sample.md", label: "sample.md \u2014 markdown document" },
+  { path: "./samples/sample.mp3", label: "sample.mp3 \u2014 one second of MP3 silence" },
   { path: "./samples/sample.zip", label: "sample.zip \u2014 container namespace" }
 ]);
 var describe3 = (error) => error instanceof Error ? error.message : String(error);
@@ -2272,6 +3758,7 @@ async function boot() {
   let markDirty = () => void 0;
   let focused;
   const editing = createWebEditingArm({
+    inventory: services.main.inventory,
     handleFor: (sourceId) => writableHandles.get(sourceId),
     onNotice(message) {
       say(message);

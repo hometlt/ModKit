@@ -20,6 +20,7 @@ import {
   ViewerMountScope,
 } from '../viewer/index.js'
 import { HexWindowModel, HEX_WINDOW_BYTES } from '../hex/index.js'
+import { handleEditorSaveRequest } from '../editor/commands.js'
 
 /**
  * The binding this editor reads.
@@ -96,6 +97,7 @@ export const hexEditor: EditorModule = {
   async mount(args): Promise<EditorMount> {
     const scope = new ViewerMountScope(args.signal)
     const root = createSurface(args.container, 'Hex editor')
+    root.dataset['modkitEditor'] = 'hex'
     const lease = (await args.sources.get(BYTE_RANGE_SOURCE)) as
       { value: ByteRangeSource; release(): Promise<void> } | undefined
     if (lease === undefined) throw new TypeError('hex editor binding is unavailable')
@@ -117,6 +119,7 @@ export const hexEditor: EditorModule = {
       part: 'operations.button',
     }) as HTMLButtonElement
     save.type = 'button'
+    save.dataset['modkitAction'] = 'save'
     save.disabled = true
     const revert = element(toolbar, 'button', {
       text: 'Revert',
@@ -281,8 +284,8 @@ export const hexEditor: EditorModule = {
       syncDirty()
     }
 
-    const commit = async (): Promise<void> => {
-      if (pending.size === 0) return
+    const commit = async (): Promise<boolean> => {
+      if (pending.size === 0) return true
       const runs = coalesceHexEdits([...pending.values()])
       const change = hexChangeSet(runs, args.edit.targets)
       setViewerText(status, 'Validating…')
@@ -297,13 +300,13 @@ export const hexEditor: EditorModule = {
           status,
           first === undefined ? 'Rejected by validation' : `Rejected: ${first.message}`,
         )
-        return
+        return false
       }
       const plan = await args.edit.plan(change)
       const authorization = await args.authorization.request(plan)
       if (authorization === undefined) {
         setViewerText(status, 'Not authorised')
-        return
+        return false
       }
       const prepared = await args.commit.prepare(plan, { grant: authorization.grant })
       // `ready` is what a CommitCoordinator answers with (13D `PrepareCommitResult`); this used to
@@ -317,7 +320,7 @@ export const hexEditor: EditorModule = {
             ? 'Conflict: the source changed'
             : `Prepare rejected: ${prepared.reason}`,
         )
-        return
+        return false
       }
       const receipt = await args.commit.commit(prepared.prepared, {
         grant: authorization.grant,
@@ -330,7 +333,7 @@ export const hexEditor: EditorModule = {
             ? `Save rejected: ${receipt.reason}`
             : `Save ${receipt.state}`,
         )
-        return
+        return false
       }
       /*
        * Fold what was committed into the bytes on screen. Re-reading is not an option (the source
@@ -355,6 +358,7 @@ export const hexEditor: EditorModule = {
         status,
         `Committed ${runs.length} range(s) — reopen the file before editing it again`,
       )
+      return true
     }
 
     go.addEventListener('click', () => void renderWindow())
@@ -369,6 +373,7 @@ export const hexEditor: EditorModule = {
         )
       })
     })
+    const removeSaveRequest = handleEditorSaveRequest(root, commit)
 
     await renderWindow()
 
@@ -378,6 +383,7 @@ export const hexEditor: EditorModule = {
         await renderWindow()
       },
       async unmount() {
+        removeSaveRequest()
         await scope.close()
         root.remove()
       },

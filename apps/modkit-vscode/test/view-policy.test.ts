@@ -3,11 +3,13 @@
  * descriptor produced by the real open path, so a codec that changes what it publishes changes
  * this test rather than quietly changing the product.
  *
- * The catalog itself lives in `../src/stages.ts`, which imports `@modkitx-x3/ui` and therefore the
- * DOM; the policy under test is deliberately DOM-free, so the stage *facts* are restated here in
- * the same shape the catalog uses. `stages.contract.test.ts`-style drift is covered by
- * `orderStages`, which throws on an id the order does not rank.
+ * The catalog itself lives in `../src/stages.ts`, which imports explicit `@modkitx-x3/ui/*`
+ * surfaces and therefore the DOM; the policy under test is deliberately DOM-free, so the stage
+ * *facts* are restated here in the same shape the catalog uses. `orderStages` throws on an id the
+ * order does not rank, while the source-boundary test below keeps unrelated UI scenes out of the
+ * webview graph.
  */
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { createNodeSubjectServices, loadExtensionRoots } from '@modkitx-x3/host/node'
@@ -124,6 +126,35 @@ async function openJsonDescriptor(): Promise<Record<string, unknown>> {
 }
 
 describe('VS Code view policy', () => {
+  it('imports only the UI surfaces that the stage catalog enables', () => {
+    const source = readFileSync(new URL('../src/stages.ts', import.meta.url), 'utf8')
+    const importedSurfaces = [...source.matchAll(/from '@modkitx-x3\/ui\/([^']+)'/gu)].map(
+      match => match[1],
+    )
+
+    expect(importedSurfaces).toEqual([
+      'audio',
+      'code',
+      'editor',
+      'explorer',
+      'hex',
+      'hex-editor',
+      'image',
+      'metadata',
+      'model',
+      'table',
+      'text-virtual',
+      'tree',
+      'vector',
+      'video',
+    ])
+    expect(source).not.toMatch(/from '@modkitx-x3\/ui'/u)
+    expect(source).not.toContain('@modkitx-x3/ui/graph')
+    expect(source).not.toContain('@modkitx-x3/ui/monaco')
+    expect(source).not.toContain('@modkitx-x3/ui/settings')
+    expect(source).not.toContain('@modkitx-x3/ui/workbench')
+  })
+
   it('ranks every stage the catalog declares, with no duplicates', () => {
     const ordered = orderStages(CATALOG)
     expect(ordered.map(stageIdOf)).toEqual(

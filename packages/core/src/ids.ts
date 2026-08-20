@@ -124,6 +124,9 @@ export const OPERATION_DOMAINS = Object.freeze([
 
 export type OperationDomain = (typeof OPERATION_DOMAINS)[number]
 
+/** Standard container member read: `{ entryId }` in, extracted `bytes` out. */
+export const CONTAINER_EXTRACT_OPERATION_ID = 'container.extract' as const
+
 export const SHARED_OPERATION_IDS = Object.freeze([
   'view.render',
   'view.inspect',
@@ -142,7 +145,7 @@ export const SHARED_OPERATION_IDS = Object.freeze([
   'source.save-as',
   'export.raw',
   'export.convert',
-  'container.extract',
+  CONTAINER_EXTRACT_OPERATION_ID,
   'container.pack',
   'asset.search',
   'asset.validate',

@@ -18,6 +18,7 @@ import {
   type ArtifactByteSource,
   type AssetEditPlan,
   type ChangeSet,
+  type AnyDescriptor,
 } from '@modkitx-x3/sdk'
 import type { OpenedSubject, SubjectEditorPorts } from '@modkitx-x3/host'
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
@@ -30,7 +31,7 @@ import {
   requestWriteAccess,
   sourceRevisionToken,
   sourceUriFor,
-  WEB_EDIT_EVIDENCE,
+  webEditEvidence,
 } from '../src/editing.js'
 import { createSingleFileAccess, type WebFileAccess, type WebFileLike } from '../src/files.js'
 import { applicableStages, createWebPreviewStages, stageIdOf } from '../src/views.js'
@@ -233,6 +234,7 @@ async function editable(
   const notices: string[] = []
   const dirty: (readonly [string, boolean])[] = []
   const arm = createWebEditingArm({
+    inventory: host.main.inventory,
     handleFor: sourceId => (sourceId === sourceUriFor(file.name) ? file.handle : undefined),
     onNotice: message => void notices.push(message),
     onDirty: (entryId, value) => void dirty.push([entryId, value]),
@@ -563,17 +565,27 @@ describe('what this app accepts as proof of a fidelity claim', () => {
   ): AssetEditPlan =>
     ({ fidelity: { roundTrip, preservesUnknownData } }) as unknown as AssetEditPlan
 
-  it('proves the raw writer byte-identical claim by construction', () => {
-    const evidence = WEB_EDIT_EVIDENCE.evidenceFor(claiming('byte-identical', true))
+  const zipEvidence = async () => {
+    const host = await services()
+    return webEditEvidence(host.main.inventory, {
+      interpretation: 'codec',
+      identity: { codecId: 'org.modkitx/archive-zip', formatId: 'zip' },
+    } as unknown as AnyDescriptor)
+  }
+
+  it('proves the raw writer byte-identical claim by construction', async () => {
+    const evidence = (await zipEvidence()).evidenceFor(claiming('byte-identical', true))
     expect(evidence?.writer.providerId).toBe('org.modkitx.host/raw-writer')
     expect(evidence?.corpusDigest).toBe('none:by-construction')
   })
 
-  it('proves the ZIP codec semantic re-assembly from a corpus run, both ways', () => {
-    const canonical = WEB_EDIT_EVIDENCE.evidenceFor(claiming('semantic', true))
-    const other = WEB_EDIT_EVIDENCE.evidenceFor(claiming('semantic', false))
+  it('proves the ZIP codec semantic re-assembly from inventory, both ways', async () => {
+    const registry = await zipEvidence()
+    const canonical = registry.evidenceFor(claiming('semantic', true))
+    const other = registry.evidenceFor(claiming('semantic', false))
     expect(canonical?.writer.providerId).toBe('org.modkitx/archive-zip')
     expect(canonical?.evidenceId).toBe('zip-verbatim-reassembly-v1')
+    expect(canonical?.writer.artifactDigest).not.toBe('none:extension-artifact-not-pinned')
     expect(other?.evidenceId).toBe('zip-verbatim-reassembly-non-canonical-v1')
     /*
      * The two claims are different claims and get different records; neither stands in for the
@@ -584,9 +596,10 @@ describe('what this app accepts as proof of a fidelity claim', () => {
     expect(other?.preservesUnknownData).toBe(false)
   })
 
-  it('refuses a claim no record covers, which is what makes the list mean anything', () => {
-    expect(WEB_EDIT_EVIDENCE.evidenceFor(claiming('byte-identical', false))).toBeUndefined()
-    expect(WEB_EDIT_EVIDENCE.evidenceFor(claiming('lossy', true))).toBeUndefined()
-    expect(WEB_EDIT_EVIDENCE.evidenceFor(claiming('none', false))).toBeUndefined()
+  it('refuses a claim no record covers, which is what makes the list mean anything', async () => {
+    const registry = await zipEvidence()
+    expect(registry.evidenceFor(claiming('byte-identical', false))).toBeUndefined()
+    expect(registry.evidenceFor(claiming('lossy', true))).toBeUndefined()
+    expect(registry.evidenceFor(claiming('none', false))).toBeUndefined()
   })
 })

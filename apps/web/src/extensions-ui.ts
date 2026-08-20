@@ -20,7 +20,7 @@
  * reports through `onChanged` and lets the composition root decide when to rebuild.
  */
 
-import { element, type PartName } from '@modkitx-x3/ui'
+import { element, type PartName } from '@modkitx-x3/ui/viewer'
 import type { BrowserSubtleCryptoLike } from '@modkitx-x3/host/browser'
 import {
   containerCoordinate,

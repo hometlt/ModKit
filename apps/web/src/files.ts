@@ -20,7 +20,7 @@
  * module is unit-tested in Node against fakes and runs unchanged in the page. Nothing here reads
  * bytes eagerly: the explorer decides when to read and how much.
  */
-import type { ExplorerEntry, FileAccess } from '@modkitx-x3/ui'
+import type { ExplorerEntry, FileAccess } from '@modkitx-x3/ui/explorer'
 
 // ---------------------------------------------------------------------------------------------
 // structural platform shapes

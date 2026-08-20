@@ -24,6 +24,7 @@ export function fileKindOf(name: string): string {
   return /^[a-z0-9_-]{1,16}$/u.test(kind) ? kind : 'file'
 }
 import { element, setPart, setState, safeViewerText } from '../viewer/index.js'
+import { requestEditorSave } from '../editor/commands.js'
 import type { ExplorerEntry, PreviewHandle, PreviewResolver } from './index.js'
 
 export interface EditorAreaOptions {
@@ -66,6 +67,8 @@ export interface EditorArea {
    * until the element disappeared, which is a component's internals doing duty as an API.
    */
   close(entryId: string): Promise<boolean>
+  /** Save an open tab through its mounted editor, or the host fallback when it has none. */
+  save(entryId: string): Promise<boolean>
   /** Add a group beside the focused one and make it the target for the next open. */
   split(): void
   /** Number of groups, for hosts that expose "close split" affordances. */
@@ -225,7 +228,7 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
     if (tab.dirty === true && options.confirmClose !== undefined) {
       const answer = await options.confirmClose(tab.entry)
       if (answer === 'cancel') return
-      if (answer === 'save') await options.save?.(tab.entry)
+      if (answer === 'save' && !(await saveTab(tab))) return
     }
     tab.run?.abort()
     await tab.handle?.unmount()
@@ -260,6 +263,14 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
       const first = groups[0]
       if (first !== undefined) focus(first)
     }
+  }
+
+  async function saveTab(tab: OpenTab): Promise<boolean> {
+    const editorAnswer = await requestEditorSave(tab.content)
+    if (editorAnswer !== undefined) return editorAnswer
+    if (options.save === undefined) return false
+    await options.save(tab.entry)
+    return true
   }
 
   // ------------------------------------------------------------------ tab menu
@@ -398,6 +409,14 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
         // `closeTab` honours `confirmClose`: a cancelled close leaves the tab in place, and
         // reporting that truthfully is what lets a caller decide whether to reopen
         return !group.tabs.includes(tab)
+      }
+      return false
+    },
+
+    async save(entryId) {
+      for (const group of groups) {
+        const tab = group.tabs.find(item => item.entry.id === entryId)
+        if (tab !== undefined) return saveTab(tab)
       }
       return false
     },

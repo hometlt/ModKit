@@ -10,6 +10,7 @@ export {
   traitId,
   operationId,
   OPERATION_DOMAINS,
+  CONTAINER_EXTRACT_OPERATION_ID,
   SHARED_OPERATION_IDS,
   parseQualifiedId,
   type QualifiedIdLiteral,

@@ -92,7 +92,13 @@ interface Wired {
   readonly workspace: string
 }
 
-async function wire(files: Readonly<Record<string, string>>): Promise<Wired> {
+async function wire(
+  files: Readonly<Record<string, string>>,
+  lifecycle?: {
+    readonly onDirty?: (path: string, dirty: boolean) => void
+    readonly onSaveRequested?: (path: string) => void
+  },
+): Promise<Wired> {
   const workspace = mkdtempSync(join(tmpdir(), 'modkit-vscode-rpc-'))
   cleanup.push(() => rmSync(workspace, { recursive: true, force: true }))
   for (const [name, text] of Object.entries(files)) writeFileSync(join(workspace, name), text)
@@ -110,6 +116,10 @@ async function wire(files: Readonly<Record<string, string>>): Promise<Wired> {
     session: 'vscode-test',
     roots: () => [workspace],
     confirmClose: async () => 'discard',
+    ...(lifecycle?.onDirty === undefined ? {} : { onDocumentDirty: lifecycle.onDirty }),
+    ...(lifecycle?.onSaveRequested === undefined
+      ? {}
+      : { onDocumentSaveRequested: lifecycle.onSaveRequested }),
   })
   const page = createBridge({ channel: channels.page, idPrefix: 'page' })
   const client = await connectSubjectRpc({
@@ -127,6 +137,33 @@ async function wire(files: Readonly<Record<string, string>>): Promise<Wired> {
 }
 
 describe('the VS Code subject bridge', () => {
+  it('carries native custom-document dirty, save, and revert lifecycle over the shell channel', async () => {
+    const dirty: [string, boolean][] = []
+    const saveRequested: string[] = []
+    const { page, served, workspace } = await wire(
+      { 'asset.txt': 'before' },
+      {
+        onDirty: (path, state) => dirty.push([path, state]),
+        onSaveRequested: path => saveRequested.push(path),
+      },
+    )
+    const path = join(workspace, 'asset.txt')
+    const requests: string[] = []
+    page.serve(async request => {
+      requests.push(request.op)
+      return request.op === 'document-save' || request.op === 'document-revert'
+    })
+
+    page.emit({ op: 'document-dirty', path, dirty: true })
+    page.emit({ op: 'document-save-requested', path })
+    await served.saveDocument(path)
+    await served.revertDocument(path)
+
+    expect(dirty).toEqual([[path, true]])
+    expect(saveRequested).toEqual([path])
+    expect(requests).toEqual(['document-save', 'document-revert'])
+  })
+
   it('opens a subject over the JSON channel and hands the page its descriptor', async () => {
     const { client, workspace } = await wire({
       'sample.json': '{"name":"Modkit","items":[1,2,3]}',

@@ -85,12 +85,14 @@ export {
   type ProviderActivationOptions,
 } from './service-leases.js'
 export {
+  codecFidelityEvidenceRecords,
   createEvidenceRegistry,
   createRawWriter,
   HOST_RAW_WRITER_EVIDENCE_ID,
   HOST_RAW_WRITER_EVIDENCE_RECORD,
   HOST_RAW_WRITER_IDENTITY,
   type EvidenceRegistry,
+  type CodecFidelityEvidenceSelection,
   type FidelityEvidenceRecord,
   type RawWriterOptions,
 } from './editing-evidence.js'

@@ -66,10 +66,11 @@
  * **Read-only.** v1 passes no `editorPorts`, so every editable stage drops exactly as it did in the
  * PWA before the File System Access arm landed: an embedded viewer shows a file, it never saves one.
  *
- * **Extensions are the catalog, and only the catalog.** There is deliberately no way for the
- * embedding page to name extension URLs of its own. That needs a trust story this build does not
- * have (an attestation for a catalog fetched by URL); shipping a weaker one would hand any page
- * that embeds a viewer a way to run unattested code under the modkit name.
+ * **Extension catalogs.** The bundled catalog is always present. A deployment may additionally
+ * compile an origin allowlist into `embed.js`; an element may point `extension-catalog` at a JSON
+ * catalog from one of those origins. The page cannot extend the list. Catalog files remain
+ * worker-only and every module byte is verified against the catalog's digest before evaluation.
+ * A deployment with the default empty list admits no URL catalog at all.
  *
  * The pure half of this module (attribute parsing, asset-base resolution, the stylesheet rewrite,
  * the stage preference, the shared-host keying) is DOM-free and unit-tested in Node; the element
@@ -90,20 +91,21 @@ import type {
 } from '@modkitx-x3/host/browser'
 import {
   createCodecPreview,
-  element,
   EXPLORER_MAXIMUM_BYTES,
-  setPart,
-  setState,
-  setViewerText,
   type ExplorerEntry,
   type PreviewHandle,
   type PreviewSession,
   type PreviewStage,
-} from '@modkitx-x3/ui'
+} from '@modkitx-x3/ui/explorer'
+import { element, setPart, setState, setViewerText } from '@modkitx-x3/ui/viewer'
 
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
 import { createSingleFileAccess, type WebBlobSlice, type WebFileLike } from './files.js'
-import { createWebSubjectServices, type WebSubjectServices } from './subjects.js'
+import {
+  createWebSubjectServices,
+  type WebExtensionCatalog,
+  type WebSubjectServices,
+} from './subjects.js'
 import { createWebPreviewStages, stageIdOf, WEB_PREVIEW_FALLBACK } from './views.js'
 
 /** The element name this module registers by default. */
@@ -208,6 +210,123 @@ const describe = (error: unknown): string =>
 
 // ---------------------------------------------------------------------------------------------
 // the pure half: attributes, asset base, stylesheet scoping, stage preference
+
+/** Replaced with a JSON array by the web build; source/test imports fail closed to an empty list. */
+declare const __MODKIT_EMBED_EXTENSION_ORIGINS__: unknown
+
+const compiledExtensionOrigins: unknown =
+  typeof __MODKIT_EMBED_EXTENSION_ORIGINS__ === 'undefined'
+    ? []
+    : __MODKIT_EMBED_EXTENSION_ORIGINS__
+
+/** URL-catalog origins approved by the deployer that built this exact `embed.js`. */
+export const EMBED_EXTENSION_ORIGINS: readonly string[] = Object.freeze(
+  Array.isArray(compiledExtensionOrigins)
+    ? compiledExtensionOrigins.flatMap(value => {
+        if (typeof value !== 'string') return []
+        try {
+          const url = new URL(value)
+          return url.protocol === 'http:' || url.protocol === 'https:' ? [url.origin] : []
+        } catch {
+          return []
+        }
+      })
+    : [],
+)
+
+/** Resolve the page-authored catalog attribute; the trust decision is deliberately separate. */
+export function resolveExtensionCatalogUrl(attribute: string, documentBase: string): string {
+  return new URL(attribute, documentBase).href
+}
+
+/**
+ * Refuse a URL whose origin was not compiled into this deployment.
+ *
+ * `allowedOrigins` exists for the pure contract test. The element never reads an allowlist from
+ * an attribute or property and always calls this with the frozen build constant above.
+ */
+export function extensionCatalogRefusal(
+  catalogUrl: string,
+  allowedOrigins: readonly string[] = EMBED_EXTENSION_ORIGINS,
+): string | undefined {
+  let url: URL
+  try {
+    url = new URL(catalogUrl)
+  } catch {
+    return `extension-catalog «${catalogUrl}» is not a valid URL.`
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return `extension-catalog must use http or https; ${url.protocol} is not admitted.`
+  }
+  const allowed = new Set(
+    allowedOrigins.flatMap(value => {
+      try {
+        return [new URL(value).origin]
+      } catch {
+        return []
+      }
+    }),
+  )
+  if (allowed.has(url.origin)) return undefined
+  return (
+    `The extension catalog origin ${url.origin} is not in this embed.js build-time allowlist. ` +
+    'The embedding page cannot add an origin; the deployer must rebuild embed.js with it.'
+  )
+}
+
+const record = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+const strings = (value: unknown): value is readonly string[] =>
+  Array.isArray(value) && value.every(item => typeof item === 'string')
+const digest = (value: unknown): value is string =>
+  typeof value === 'string' && /^sha256:[a-f0-9]{64}$/u.test(value)
+const pairs = (value: unknown, check: (item: unknown) => boolean): boolean =>
+  Array.isArray(value) &&
+  value.every(
+    item =>
+      Array.isArray(item) && item.length === 2 && typeof item[0] === 'string' && check(item[1]),
+  )
+
+/** Fail-closed structural boundary for a catalog fetched as untyped JSON. */
+export function parseWebExtensionCatalog(value: unknown): WebExtensionCatalog {
+  if (
+    !record(value) ||
+    value['schemaVersion'] !== 1 ||
+    !Array.isArray(value['extensions']) ||
+    !Array.isArray(value['excluded'])
+  ) {
+    throw new TypeError('extension catalog must be a schemaVersion 1 object with array entries')
+  }
+  for (const excluded of value['excluded']) {
+    if (
+      !record(excluded) ||
+      typeof excluded['name'] !== 'string' ||
+      typeof excluded['reason'] !== 'string'
+    ) {
+      throw new TypeError('extension catalog exclusions require string name and reason fields')
+    }
+  }
+  for (const entry of value['extensions']) {
+    if (
+      !record(entry) ||
+      typeof entry['name'] !== 'string' ||
+      typeof entry['source'] !== 'string' ||
+      typeof entry['artifactRoot'] !== 'string' ||
+      !record(entry['containers']) ||
+      !strings(entry['files']) ||
+      !pairs(entry['documents'], () => true) ||
+      !pairs(entry['documentDigests'], digest) ||
+      !record(entry['artifact']) ||
+      typeof entry['artifact']['inventoryRecordId'] !== 'string' ||
+      !digest(entry['artifact']['artifactDigest']) ||
+      !record(entry['artifact']['fileDigests']) ||
+      !Object.values(entry['artifact']['fileDigests']).every(digest)
+    ) {
+      throw new TypeError('extension catalog contains a malformed extension entry')
+    }
+  }
+  return value as unknown as WebExtensionCatalog
+}
 
 /**
  * Where this element's assets live, always with a trailing slash.
@@ -369,10 +488,42 @@ async function loadStyles(assetBase: string): Promise<EmbedStyles> {
   }
 }
 
-async function composeEmbedHost(assetBase: string): Promise<EmbedHost> {
+async function fetchExtensionCatalog(catalogUrl: string): Promise<WebExtensionCatalog> {
+  let response: Response
+  try {
+    response = await fetch(catalogUrl, { credentials: 'omit' })
+  } catch (error) {
+    throw new Error(`extension catalog ${catalogUrl} could not be fetched: ${describe(error)}`)
+  }
+  if (!response.ok) {
+    throw new Error(
+      `extension catalog ${catalogUrl} could not be fetched (${response.status} ${response.statusText})`,
+    )
+  }
+  try {
+    return parseWebExtensionCatalog(await response.json())
+  } catch (error) {
+    throw new Error(`extension catalog ${catalogUrl} is invalid: ${describe(error)}`)
+  }
+}
+
+async function composeEmbedHost(
+  assetBase: string,
+  extensionCatalogUrl?: string,
+): Promise<EmbedHost> {
+  const additionalCatalogs =
+    extensionCatalogUrl === undefined
+      ? []
+      : [
+          {
+            catalog: await fetchExtensionCatalog(extensionCatalogUrl),
+            baseUrl: extensionCatalogUrl,
+          },
+        ]
   const services = await createWebSubjectServices({
     baseUrl: assetBase,
     catalog: WEB_EXTENSION_CATALOG,
+    additionalCatalogs,
     identity: embedIdentity(),
     dom: {
       fetch: (url, init) => fetch(url, init),
@@ -395,9 +546,10 @@ async function composeEmbedHost(assetBase: string): Promise<EmbedHost> {
   return Object.freeze({ assetBase, services, stages, styles, operations })
 }
 
-/** The one host for this asset base, composed on first use. */
-export function embedHostFor(assetBase: string): Promise<EmbedHost> {
-  return shareByAssetBase(embedHosts, assetBase, composeEmbedHost)
+/** The one host for this asset/catalog pair, composed on first use. */
+export function embedHostFor(assetBase: string, extensionCatalogUrl?: string): Promise<EmbedHost> {
+  const key = JSON.stringify([assetBase, extensionCatalogUrl ?? null])
+  return shareByAssetBase(embedHosts, key, () => composeEmbedHost(assetBase, extensionCatalogUrl))
 }
 
 /** The browser does not report OS/arch portably; a real host adapter supplies this. */
@@ -525,7 +677,7 @@ export interface DefineModkitElementsOptions {
 }
 
 /** Attribute names that make an element reload; everything else is presentation. */
-const RELOADING_ATTRIBUTES = Object.freeze(['src', 'name', 'asset-base'])
+const RELOADING_ATTRIBUTES = Object.freeze(['src', 'name', 'asset-base', 'extension-catalog'])
 const OBSERVED_ATTRIBUTES = Object.freeze([
   ...RELOADING_ATTRIBUTES,
   'view',
@@ -792,7 +944,27 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
           this.#fail(refusal)
           return
         }
-        const host = await embedHostFor(assetBase)
+        const catalogAttribute = this.getAttribute('extension-catalog') ?? ''
+        let extensionCatalogUrl: string | undefined
+        if (catalogAttribute !== '') {
+          try {
+            extensionCatalogUrl = resolveExtensionCatalogUrl(
+              catalogAttribute,
+              this.ownerDocument.baseURI,
+            )
+          } catch {
+            this.#fail(
+              `extension-catalog «${catalogAttribute}» is not a URL this page can resolve.`,
+            )
+            return
+          }
+          const catalogRefusal = extensionCatalogRefusal(extensionCatalogUrl)
+          if (catalogRefusal !== undefined) {
+            this.#fail(catalogRefusal)
+            return
+          }
+        }
+        const host = await embedHostFor(assetBase, extensionCatalogUrl)
         if (!current()) return
         this.#applyStyles(host.styles)
         const file = await this.#read(name, controller.signal)

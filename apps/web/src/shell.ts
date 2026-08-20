@@ -41,17 +41,13 @@ import {
   createCodecPreview,
   createEditorArea,
   createExplorer,
-  createSettingsUi,
-  element,
   EXPLORER_MAXIMUM_BYTES,
-  setPart,
-  setState,
-  setViewerText,
   type EditorArea,
   type ExplorerEntry,
   type PreviewResolver,
-  type SettingsDocument,
-} from '@modkitx-x3/ui'
+} from '@modkitx-x3/ui/explorer'
+import { createSettingsUi, type SettingsDocument } from '@modkitx-x3/ui/settings'
+import { element, setPart, setState, setViewerText } from '@modkitx-x3/ui/viewer'
 
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
 import { createWebTopology, mountWebWorkbench, probeWebFacilities } from './index.js'
@@ -418,6 +414,7 @@ async function boot(): Promise<void> {
   let focused: string | undefined
 
   const editing = createWebEditingArm({
+    inventory: services.main.inventory,
     handleFor: sourceId => writableHandles.get(sourceId),
     onNotice(message) {
       say(message)

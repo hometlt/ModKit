@@ -10,12 +10,14 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { uint64 } from '@modkitx-x3/core'
 import { createHostTopology, type ChangeSet, type PermissionGrant } from '@modkitx-x3/sdk'
 import {
+  codecFidelityEvidenceRecords,
   createEvidenceRegistry,
   createRawWriter,
   createSubjectEditing,
   HOST_RAW_WRITER_EVIDENCE_RECORD,
   HOST_RAW_WRITER_IDENTITY,
   type ExtensionInput,
+  type Inventory,
 } from '@modkitx-x3/host'
 import {
   createFileEditingBackend,
@@ -31,6 +33,7 @@ import {
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const textJsonDir = join(repoRoot, 'extensions', 'common', 'text-json')
+const archivesDir = join(repoRoot, 'extensions', 'common', 'archives')
 
 const HOST = 'org.example.app/host'
 const WORKERS = 'org.example.app/workers'
@@ -156,6 +159,58 @@ describe('F3 evidence registry', () => {
         diagnostics: [],
       })?.evidenceId,
     ).toBe('png-encoder-v1')
+  })
+
+  it('joins bundled codec proof citations with inventory-owned writer coordinates', async () => {
+    const input: ExtensionInput = {
+      ...(await loadExtensionDirectory(archivesDir)),
+      execution: { origin: 'bundled', allowTrustedInProcess: true },
+    }
+    const proofHost = await createNodeSubjectServices({
+      topology,
+      realms: { host: HOST, workers: WORKERS },
+      extensions: [input],
+      policy: workerBackendPolicy({ loadDeadlineMs: 15_000, defaultCallDeadlineMs: 15_000 }),
+    })
+    const records = codecFidelityEvidenceRecords(proofHost.inventory, {
+      codecId: 'org.modkitx/archive-zip',
+      formatId: 'zip',
+    })
+    expect(records.map(record => record.evidenceId)).toEqual([
+      'zip-verbatim-reassembly-v1',
+      'zip-verbatim-reassembly-non-canonical-v1',
+    ])
+    const zip = proofHost.inventory.extensions[0]?.contributions.find(
+      contribution => contribution.manifest?.id === 'org.modkitx/archive-zip',
+    )
+    expect(records[0]?.writer).toEqual({
+      providerId: 'org.modkitx/archive-zip',
+      providerVersion: proofHost.inventory.extensions[0]?.manifest.version,
+      artifactDigest: zip?.record?.artifactDigest,
+      formatId: 'zip',
+      representationId: 'archive-namespace',
+    })
+
+    const installed = {
+      ...proofHost.inventory,
+      extensions: proofHost.inventory.extensions.map(extension => ({
+        ...extension,
+        origin: 'installed' as const,
+      })),
+    } satisfies Inventory
+    expect(
+      codecFidelityEvidenceRecords(installed, {
+        codecId: 'org.modkitx/archive-zip',
+        formatId: 'zip',
+      }),
+    ).toEqual([])
+    expect(
+      codecFidelityEvidenceRecords(installed, {
+        codecId: 'org.modkitx/archive-zip',
+        formatId: 'zip',
+        acceptedOrigins: ['installed'],
+      }),
+    ).toHaveLength(2)
   })
 })
 

@@ -18,6 +18,7 @@ import { pathToFileURL } from 'node:url'
 import * as vscode from 'vscode'
 
 import type { CloseAnswer, WebviewChannel } from './bridge.js'
+import { CustomDocumentState } from './custom-document.js'
 import { withExtensionRoot } from './extension-roots.js'
 import {
   catalogCandidates,
@@ -34,6 +35,18 @@ import { describeOpenTarget } from './uri.js'
 
 const VIEW_TYPE = 'modkit.workbench'
 const CUSTOM_EDITOR_TYPE = 'modkit.genericAssetPreview'
+
+class ModkitCustomDocument implements vscode.CustomDocument {
+  readonly state: CustomDocumentState
+
+  constructor(readonly uri: vscode.Uri) {
+    this.state = new CustomDocumentState(uri.fsPath)
+  }
+
+  dispose(): void {
+    // The resolved panel owns the bridge session and detaches it from `state` on disposal.
+  }
+}
 
 /** Nonce for the webview CSP. A fresh one per load, so a cached script cannot be replayed. */
 function nonce(): string {
@@ -308,7 +321,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // ---------------------------------------------------------------- webviews
   const live = new Set<VsCodeServed>()
 
-  const attach = (webview: vscode.Webview, openPath?: string): VsCodeServed => {
+  const attach = (
+    webview: vscode.Webview,
+    openPath?: string,
+    lifecycle?: {
+      readonly onDirty: (path: string, dirty: boolean) => void
+      readonly onSaveRequested: (path: string) => void
+    },
+  ): VsCodeServed => {
     const channel: WebviewChannel = {
       post: message => {
         void webview.postMessage(message)
@@ -325,6 +345,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       roots,
       confirmClose,
       configuration,
+      ...(lifecycle === undefined
+        ? {}
+        : {
+            onDocumentDirty: lifecycle.onDirty,
+            onDocumentSaveRequested: lifecycle.onSaveRequested,
+          }),
       onDiagnostic: diagnostic => log(`[subject-rpc] ${diagnostic.code}: ${diagnostic.message}`),
     })
     live.add(served)
@@ -453,10 +479,30 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   )
 
   // ---------------------------------------------------------------- custom editor
-  const customEditor: vscode.CustomReadonlyEditorProvider<vscode.CustomDocument> = {
-    openCustomDocument(uri) {
-      return { uri, dispose: () => undefined }
+  const customDocumentChanged = new vscode.EventEmitter<
+    vscode.CustomDocumentContentChangeEvent<ModkitCustomDocument>
+  >()
+  context.subscriptions.push(customDocumentChanged)
+
+  const checkCancellation = (token: vscode.CancellationToken): void => {
+    if (token.isCancellationRequested) throw new vscode.CancellationError()
+  }
+
+  const customEditor: vscode.CustomEditorProvider<ModkitCustomDocument> = {
+    onDidChangeCustomDocument: customDocumentChanged.event,
+
+    async openCustomDocument(uri, openContext, token) {
+      checkCancellation(token)
+      if (openContext.backupId !== undefined) {
+        log(`restoring custom document from checkpoint ${openContext.backupId}`)
+        await vscode.workspace.fs.copy(vscode.Uri.parse(openContext.backupId), uri, {
+          overwrite: true,
+        })
+        checkCancellation(token)
+      }
+      return new ModkitCustomDocument(uri)
     },
+
     resolveCustomEditor(document, panel) {
       panel.webview.options = webviewOptions()
       const target = describeOpenTarget(document.uri)
@@ -466,11 +512,63 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         return
       }
       granted.add(dirname(target.path))
-      const served = attach(panel.webview, target.path)
+      const served = attach(panel.webview, target.path, {
+        onDirty(path, dirty) {
+          if (path !== document.state.path) return
+          if (document.state.markDirty(dirty) === 'became-dirty') {
+            customDocumentChanged.fire({ document })
+          }
+        },
+        onSaveRequested(path) {
+          if (path === document.state.path) {
+            void vscode.commands.executeCommand('workbench.action.files.save')
+          }
+        },
+      })
+      document.state.attach(served)
       panel.onDidDispose(() => {
+        document.state.detach(served)
         live.delete(served)
         void served.close('the asset editor was closed')
       })
+    },
+
+    async saveCustomDocument(document, token) {
+      checkCancellation(token)
+      await document.state.save()
+      checkCancellation(token)
+    },
+
+    async saveCustomDocumentAs(document, destination, token) {
+      checkCancellation(token)
+      await document.state.save()
+      checkCancellation(token)
+      if (destination.toString() !== document.uri.toString()) {
+        await vscode.workspace.fs.copy(document.uri, destination, { overwrite: true })
+      }
+    },
+
+    async revertCustomDocument(document, token) {
+      checkCancellation(token)
+      await document.state.revert()
+      checkCancellation(token)
+    },
+
+    async backupCustomDocument(document, backupContext, token) {
+      checkCancellation(token)
+      /*
+       * The editor buffers live in the isolated webview, not in an extension-host mirror. The safe
+       * hot-exit checkpoint is therefore: commit through the same native save path, then copy the
+       * exact committed bytes to VS Code's backup destination. It may save earlier than shutdown,
+       * but it never fabricates or drops an editor-specific buffer.
+       */
+      await document.state.save()
+      checkCancellation(token)
+      await vscode.workspace.fs.copy(document.uri, backupContext.destination, { overwrite: true })
+      return {
+        id: backupContext.destination.toString(),
+        delete: () => vscode.workspace.fs.delete(backupContext.destination),
+      }
     },
   }
   context.subscriptions.push(

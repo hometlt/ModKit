@@ -23,23 +23,23 @@ Every reference codec also publishes `common.view/byte-range-source@1`; it is ad
 codec-kit. Every row currently has at least one metadata group and parameters on every declared
 trait in the measured fixture.
 
-| Codec    | Additional standard data sources | Metadata                                               | Operations                   |
-| -------- | -------------------------------- | ------------------------------------------------------ | ---------------------------- |
-| ZIP      | tree, namespace-entry            | ZIP directory counts and sizes                         | shared three + extract-entry |
-| PNG      | tree, raster-image               | dimensions, bit depth, channels, chunks/frames         | shared three                 |
-| JPEG     | tree, raster-image               | dimensions, components, JFIF/EXIF/segments             | shared three                 |
-| MP3      | tree, transport, audio-media     | MPEG/ID3 stream facts                                  | shared three                 |
-| Ogg      | tree, transport, audio-media     | pages, logical streams, codecs, duration               | shared three                 |
-| MP4      | tree, transport, video-media     | brand, box/track counts, duration                      | shared three                 |
-| WebM     | tree, transport, video-media     | doctype and track count                                | shared three                 |
-| SVG      | text, tree, vector-scene         | bounds and scene-element counts                        | shared three                 |
-| OBJ      | text, tree, model-scene          | geometry, groups, materials and bounds                 | shared three                 |
-| glTF     | text, tree, model-scene          | scene/resource/material/animation counts               | shared three                 |
-| Markdown | text, tree                       | lines, outline, links and block counts                 | shared three                 |
-| RTF      | tree                             | groups, control words, flow and embedded-object counts | shared three                 |
+| Codec    | Additional standard data sources | Metadata                                               | Operations                       |
+| -------- | -------------------------------- | ------------------------------------------------------ | -------------------------------- |
+| ZIP      | tree, namespace-entry            | ZIP directory counts and sizes                         | shared three + container.extract |
+| PNG      | tree, raster-image               | dimensions, bit depth, channels, chunks/frames         | shared three                     |
+| JPEG     | tree, raster-image               | dimensions, components, JFIF/EXIF/segments             | shared three                     |
+| MP3      | tree, transport, audio-media     | MPEG/ID3 stream facts                                  | shared three                     |
+| Ogg      | tree, transport, audio-media     | pages, logical streams, codecs, duration               | shared three                     |
+| MP4      | tree, transport, video-media     | brand, box/track counts, duration                      | shared three                     |
+| WebM     | tree, transport, video-media     | doctype and track count                                | shared three                     |
+| SVG      | text, tree, vector-scene         | bounds and scene-element counts                        | shared three                     |
+| OBJ      | text, tree, model-scene          | geometry, groups, materials and bounds                 | shared three                     |
+| glTF     | text, tree, model-scene          | scene/resource/material/animation counts               | shared three                     |
+| Markdown | text, tree                       | lines, outline, links and block counts                 | shared three                     |
+| RTF      | tree                             | groups, control words, flow and embedded-object counts | shared three                     |
 
 The shared operations are `view.inspect`, `asset.validate`, and `export.raw`. ZIP additionally
-declares `org.modkitx/archive-zip.extract-entry`. All are read-only in this slice.
+declares the shared `container.extract` operation. All are read-only in this slice.
 
 ### UI gaps found in the baseline
 

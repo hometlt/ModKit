@@ -295,6 +295,10 @@ export interface VsCodeServeOptions {
   readonly budget?: ResourceBudget
   /** Confirm discarding unsaved work; a webview iframe cannot show a modal of its own. */
   readonly confirmClose?: (message: string, savable: boolean) => Promise<CloseAnswer>
+  /** Native custom-document dirty state, emitted only for the provider's opened path. */
+  readonly onDocumentDirty?: (path: string, dirty: boolean) => void
+  /** Route an in-page Save button through VS Code's native save command. */
+  readonly onDocumentSaveRequested?: (path: string) => void
   readonly onDiagnostic?: (diagnostic: { code: string; message: string }) => void
   /**
    * Reading and writing this window's Modkit configuration.
@@ -330,6 +334,10 @@ export interface VsCodeServed {
   publishRoots(): void
   /** Show one line in the page's status area (an extension that failed to load, say). */
   notice(text: string, severity?: 'info' | 'error'): void
+  /** Ask the mounted editor buffer to commit; resolves only after the webview reports success. */
+  saveDocument(path: string): Promise<void>
+  /** Discard the mounted editor buffer and reopen the file from disk. */
+  revertDocument(path: string): Promise<void>
   close(reason: string): Promise<void>
 }
 
@@ -611,8 +619,13 @@ function serveVsCode(
 
   // The page's own status line, mirrored so the output channel records what the user saw.
   bridge.onEvent(event => {
-    if (event.op !== 'status') return
-    options.onDiagnostic?.({ code: 'x3.app/vscode-webview-status', message: event.text })
+    if (event.op === 'status') {
+      options.onDiagnostic?.({ code: 'x3.app/vscode-webview-status', message: event.text })
+    } else if (event.op === 'document-dirty') {
+      options.onDocumentDirty?.(event.path, event.dirty)
+    } else if (event.op === 'document-save-requested') {
+      options.onDocumentSaveRequested?.(event.path)
+    }
   })
 
   return {
@@ -632,6 +645,16 @@ function serveVsCode(
     },
     notice(text: string, severity: 'info' | 'error' = 'info') {
       bridge.emit({ op: 'notice', text, severity })
+    },
+    async saveDocument(path: string) {
+      if ((await bridge.request({ op: 'document-save', path: resolve(path) })) !== true) {
+        throw new Error('the webview did not confirm that the custom document was saved')
+      }
+    },
+    async revertDocument(path: string) {
+      if ((await bridge.request({ op: 'document-revert', path: resolve(path) })) !== true) {
+        throw new Error('the webview did not confirm that the custom document was reverted')
+      }
     },
     async close(reason: string) {
       bridge.dispose()

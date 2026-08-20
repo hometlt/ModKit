@@ -270,6 +270,75 @@ const traitDeclarationSchema = {
   },
 } as const
 
+const fidelityNotesSchema = { type: 'array', items: nonEmptyString } as const
+
+const fidelityClaimSchema = {
+  oneOf: [
+    {
+      type: 'object',
+      additionalProperties: false,
+      required: ['roundTrip', 'preservesUnknownData'],
+      properties: {
+        roundTrip: { const: 'byte-identical' },
+        preservesUnknownData: { const: true },
+        notes: fidelityNotesSchema,
+      },
+    },
+    {
+      type: 'object',
+      additionalProperties: false,
+      required: ['roundTrip', 'preservesUnknownData'],
+      properties: {
+        roundTrip: { const: 'semantic' },
+        preservesUnknownData: { type: 'boolean' },
+        notes: fidelityNotesSchema,
+      },
+    },
+    {
+      type: 'object',
+      additionalProperties: false,
+      required: ['roundTrip', 'preservesUnknownData'],
+      properties: {
+        roundTrip: { enum: ['lossy', 'none'] },
+        preservesUnknownData: { const: false },
+        notes: fidelityNotesSchema,
+      },
+    },
+  ],
+} as const
+
+const codecFidelityEvidenceSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'formatId',
+    'representationId',
+    'claim',
+    'evidenceId',
+    'corpusId',
+    'corpusDigest',
+    'conformanceProfile',
+    'optionsFingerprint',
+    'inputClass',
+    'provenAt',
+  ],
+  properties: {
+    formatId: nonEmptyString,
+    representationId: nonEmptyString,
+    claim: fidelityClaimSchema,
+    evidenceId: nonEmptyString,
+    corpusId: nonEmptyString,
+    corpusDigest: nonEmptyString,
+    conformanceProfile: qualifiedId,
+    optionsFingerprint: nonEmptyString,
+    inputClass: nonEmptyString,
+    provenAt: {
+      type: 'string',
+      pattern: '^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$',
+    },
+  },
+} as const
+
 const codecContributionRequired = [
   'formatRefs',
   'roles',
@@ -309,6 +378,7 @@ const codecContributionProperties = {
   requires: { type: 'array', items: contractRequirementSchema },
   operations: { type: 'array', items: operationDeclSchema },
   traitDeclarations: { type: 'array', items: traitDeclarationSchema },
+  fidelityEvidence: { type: 'array', items: codecFidelityEvidenceSchema },
   implementationTier: {
     type: 'object',
     additionalProperties: false,

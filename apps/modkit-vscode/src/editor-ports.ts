@@ -32,7 +32,7 @@ export interface WebviewEditorPorts {
   readonly payloads: unknown
   readonly authorization: unknown
   /** Commit whatever is pending. Used by "save before closing"; a no-op when nothing is. */
-  save(): Promise<void>
+  save(): Promise<boolean>
   /** Prepare and commit a plan produced by a codec operation (ADR-HOST-002 Path A). */
   applyPlan(plan: AssetEditPlan): Promise<WebviewEditorStatus>
   /** Release the arm (and with it the extension host's prepared commits for this subject). */
@@ -231,11 +231,11 @@ export async function createWebviewEditorPorts(
     payloads,
     authorization,
     async save() {
-      if (pending === undefined) return
+      if (pending === undefined) return true
       const prepared = await commit.prepare(pending)
       const ready = prepared as unknown as { state: string; prepared?: object }
-      if (ready.state !== 'ready' || ready.prepared === undefined) return
-      await commit.commit(ready.prepared)
+      if (ready.state !== 'ready' || ready.prepared === undefined) return false
+      return (await commit.commit(ready.prepared)).state === 'committed'
     },
     async applyPlan(plan) {
       try {

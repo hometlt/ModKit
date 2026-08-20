@@ -256,7 +256,38 @@ export const validateCodecContributionSemantics: SpecSemanticValidator = manifes
       ['spec', 'operations'],
       'operation handler ID',
     ),
+    ...duplicateFieldDiagnostics(
+      spec.fidelityEvidence?.map(item => item.evidenceId) ?? [],
+      ['spec', 'fidelityEvidence'],
+      'fidelity evidence ID',
+    ),
   ]
+  const formatIds = new Set(spec.formatRefs.map(format => format.formatId))
+  const representationIds = new Set(
+    spec.representations.map(representation => representation.id as string),
+  )
+  spec.fidelityEvidence?.forEach((item, index) => {
+    if (!formatIds.has(item.formatId)) {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'x3.sdk/fidelity-evidence-format-unknown',
+          `fidelity evidence ${item.evidenceId} names undeclared format ${item.formatId}`,
+          ['spec', 'fidelityEvidence', index, 'formatId'],
+        ),
+      )
+    }
+    if (!representationIds.has(item.representationId)) {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'x3.sdk/fidelity-evidence-representation-unknown',
+          `fidelity evidence ${item.evidenceId} names undeclared representation ${item.representationId}`,
+          ['spec', 'fidelityEvidence', index, 'representationId'],
+        ),
+      )
+    }
+  })
   const expectedProbeKind =
     spec.sourceTopology === 'namespace'
       ? 'namespace'

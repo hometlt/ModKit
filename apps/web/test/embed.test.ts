@@ -126,14 +126,22 @@ const failures: string[] = []
 
 beforeAll(async () => {
   scratch = mkdtempSync(join(tmpdir(), 'modkit-embed-'))
+  // The deployer chooses the remote-catalog origins before building. Starting this origin first
+  // gives the build the exact origin (including its random port) to compile into embed.js.
+  otherOrigin = await serve(scratch)
   /*
    * The real build, into a scratch directory. Synchronous on purpose: nothing else may run while
    * esbuild writes, and vitest's `fileParallelism: false` already means no other suite is live.
    */
   execFileSync(process.execPath, [resolve('apps/web/scripts/build.mjs'), '--out', scratch], {
     cwd: resolve('.'),
+    env: { ...process.env, MODKIT_EMBED_EXTENSION_ORIGINS: otherOrigin.origin },
     stdio: 'pipe',
   })
+  writeFileSync(
+    join(scratch, 'remote-catalog.json'),
+    JSON.stringify({ schemaVersion: 1, extensions: [], excluded: [] }),
+  )
   /*
    * The same page again, under the policy `packages/ui` publishes for a viewer host. An embedding
    * page that already applies `VIEWER_CSP` should need no relaxation to embed one of these, and
@@ -148,7 +156,6 @@ beforeAll(async () => {
     demo.replace(declared, VIEWER_CSP_TEXT),
   )
   pageOrigin = await serve(scratch)
-  otherOrigin = await serve(scratch)
   /*
    * A third variant, written once the second origin has a port: same page, but its `connect-src`
    * also names that origin. `src` is the one URL an element fetches that need not be same-origin,
@@ -490,6 +497,51 @@ describe('modkit-viewer on a third-party page', () => {
     await probe.close()
     return answer
   }
+
+  const probeCatalog = async (
+    catalogUrl: string,
+    pageAddedOrigin?: string,
+  ): Promise<{ readonly state: string; readonly status: string }> => {
+    const probe = await browser.newPage()
+    await probe.goto(`${pageOrigin.origin}/embed-demo-cors.html`, { waitUntil: 'load' })
+    const answer = await probe.evaluate(
+      async ({ catalogUrl: target, pageAddedOrigin: attempted }) => {
+        const node = document.createElement('modkit-viewer')
+        node.setAttribute('src', './samples/sample.csv')
+        node.setAttribute('extension-catalog', target)
+        // Deliberately meaningless: the component has no page-owned allowlist input.
+        if (attempted !== undefined) node.setAttribute('extension-origins', attempted)
+        document.body.append(node)
+        for (let attempt = 0; attempt < 300; attempt += 1) {
+          const state = node.getAttribute('data-mk-state')
+          if (state === 'ready' || state === 'error') break
+          await new Promise(done => setTimeout(done, 100))
+        }
+        return {
+          state: node.getAttribute('data-mk-state') ?? '',
+          status: node.shadowRoot?.querySelector('.modkit-embed__status')?.textContent ?? '',
+        }
+      },
+      { catalogUrl, pageAddedOrigin },
+    )
+    await probe.close()
+    return answer
+  }
+
+  it('loads a catalog from the origin compiled into embed.js', async () => {
+    const answer = await probeCatalog(`${otherOrigin.origin}/remote-catalog.json`)
+    expect(answer).toEqual({ state: 'ready', status: '' })
+    expect(otherOrigin.hits.filter(path => path === '/remote-catalog.json')).toHaveLength(1)
+  })
+
+  it('refuses a page-added catalog origin before fetching it', async () => {
+    const attacker = 'https://extensions.invalid'
+    const answer = await probeCatalog(`${attacker}/catalog.json`, attacker)
+    expect(answer.state).toBe('error')
+    expect(answer.status).toContain(attacker)
+    expect(answer.status).toContain('build-time allowlist')
+    expect(answer.status).toContain('cannot add an origin')
+  })
 
   it('opens a cross-origin src when it is CORS-served and the page policy allows the origin', async () => {
     const answer = await probeSrc(

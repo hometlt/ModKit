@@ -17,7 +17,7 @@
  * It also names the keys, because VS Code's own Settings UI edits exactly the same two and a user
  * who prefers that should not have to guess what this page is writing.
  */
-import { element, safeViewerText, setPart, setState } from '@modkitx-x3/ui'
+import { element, safeViewerText, setPart, setState } from '@modkitx-x3/ui/viewer'
 
 import type { ShellRequest, ShellSettingsView } from './bridge.js'
 

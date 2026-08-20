@@ -23,18 +23,18 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
   extensions: [
     {
       artifact: {
-        artifactDigest: 'sha256:4f591f6c093a0bdfcf511dce103a9fead169e32b0407aa20e8e1bcadc275501c',
+        artifactDigest: 'sha256:4d6f6189e46a0ac709481c65a08f3de2d166c1c1d5832f50e9579839292ce6dc',
         fileDigests: {
           'README.md': 'sha256:2c8abea7cb674e2a423eb034a51b47053744d502a154578889c541bfb110ea72',
           'contributions/codec-zip.json':
-            'sha256:4601074c28e23bb8ed5e942355618277c0bec91012dba68c18a339c5b326bd41',
+            'sha256:6496c4891be1f42fefca18349b10c8cab1ea719340f9c7ab9e7365e06825b84a',
           'package.json': 'sha256:70196adc05d186774fcce8ebbf05a3b1166b70201583199fb2fc292e55abcbd4',
           'src/formats/zip/codec.js':
-            'sha256:bca306ffccc0c6ed8f2bd22e8d246d4d5f8b9cfe01c8192bea7ff88605a0105a',
+            'sha256:17db3590d5ec0d65fd241f1661600126dfe2d1d137ebdeadf7cb905dd5f4fbc2',
           'src/index.js': 'sha256:121004c40bd5560b35a26034c291429f1d103e68698c7e1aaf5cf8456890dc95',
         },
         inventoryRecordId:
-          'artifact:sha256:4f591f6c093a0bdfcf511dce103a9fead169e32b0407aa20e8e1bcadc275501c',
+          'artifact:sha256:4d6f6189e46a0ac709481c65a08f3de2d166c1c1d5832f50e9579839292ce6dc',
       },
       artifactRoot: 'extensions/archives/',
       containers: {
@@ -77,7 +77,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       documentDigests: [
         [
           'contributions/codec-zip.json',
-          'sha256:4601074c28e23bb8ed5e942355618277c0bec91012dba68c18a339c5b326bd41',
+          'sha256:6496c4891be1f42fefca18349b10c8cab1ea719340f9c7ab9e7365e06825b84a',
         ],
       ],
       documents: [
@@ -120,6 +120,38 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 maxNodes: 1000000,
                 maxScalarBytes: 104857600,
               },
+              fidelityEvidence: [
+                {
+                  claim: {
+                    preservesUnknownData: true,
+                    roundTrip: 'semantic',
+                  },
+                  conformanceProfile: 'org.modkitx/codec-contribution-v1',
+                  corpusDigest: 'none:proof-suite',
+                  corpusId: 'modkitX3/packages/host/test/archive-edits.test.ts',
+                  evidenceId: 'zip-verbatim-reassembly-v1',
+                  formatId: 'zip',
+                  inputClass: 'zip-classic',
+                  optionsFingerprint: 'options:stored-additions',
+                  provenAt: '2026-08-19T00:00:00Z',
+                  representationId: 'archive-namespace',
+                },
+                {
+                  claim: {
+                    preservesUnknownData: false,
+                    roundTrip: 'semantic',
+                  },
+                  conformanceProfile: 'org.modkitx/codec-contribution-v1',
+                  corpusDigest: 'none:proof-suite',
+                  corpusId: 'modkitX3/packages/host/test/archive-edits.test.ts',
+                  evidenceId: 'zip-verbatim-reassembly-non-canonical-v1',
+                  formatId: 'zip',
+                  inputClass: 'zip-non-canonical-layout',
+                  optionsFingerprint: 'options:stored-additions',
+                  provenAt: '2026-08-19T00:00:00Z',
+                  representationId: 'archive-namespace',
+                },
+              ],
               formatRefs: [
                 {
                   formatId: 'zip',
@@ -171,7 +203,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 },
                 {
                   handlerId: 'extract-entry',
-                  id: 'org.modkitx/archive-zip.extract-entry',
+                  id: 'container.extract',
                   mutatesSource: false,
                   outputKinds: ['bytes'],
                   requiredPermissions: ['read-source'],

@@ -25,6 +25,7 @@
  * Monaco is Electron-only (it needs a relaxed CSP and a trusted in-process editor); the browser
  * uses the bounded and virtual text viewers.
  */
+import { CONTAINER_EXTRACT_OPERATION_ID } from '@modkitx-x3/core'
 import {
   bindingId,
   presentationSlotId,
@@ -38,29 +39,29 @@ import {
   type ViewerModule,
   type ViewerMount,
 } from '@modkitx-x3/sdk'
+import { audioViewer } from '@modkitx-x3/ui/audio'
+import { boundedTextViewer } from '@modkitx-x3/ui/code'
+import { textEditor } from '@modkitx-x3/ui/editor'
+import type { PreviewStage } from '@modkitx-x3/ui/explorer'
+import { hexViewer } from '@modkitx-x3/ui/hex'
+import { hexEditor } from '@modkitx-x3/ui/hex-editor'
+import { imageViewer } from '@modkitx-x3/ui/image'
+import { metadataPanel } from '@modkitx-x3/ui/metadata'
+import { modelViewer } from '@modkitx-x3/ui/model'
+import { namespaceViewer } from '@modkitx-x3/ui/namespace'
+import { tableViewer } from '@modkitx-x3/ui/table'
+import { virtualTextViewer } from '@modkitx-x3/ui/text-virtual'
+import { transportViewer } from '@modkitx-x3/ui/transport'
+import { treeViewer } from '@modkitx-x3/ui/tree'
+import { vectorViewer } from '@modkitx-x3/ui/vector'
+import { videoViewer } from '@modkitx-x3/ui/video'
 import {
-  audioViewer,
-  boundedTextViewer,
   defineViewerModule,
   element,
-  hexEditor,
-  hexViewer,
-  imageViewer,
-  metadataPanel,
-  modelViewer,
-  namespaceViewer,
   requireContainer,
   setViewerText,
-  tableViewer,
-  textEditor,
-  transportViewer,
-  treeViewer,
   unknownSourceLease,
-  vectorViewer,
-  videoViewer,
-  virtualTextViewer,
-  type PreviewStage,
-} from '@modkitx-x3/ui'
+} from '@modkitx-x3/ui/viewer'
 
 /** How many bytes of an archive entry the inline preview reads. */
 export const ARCHIVE_ENTRY_PREVIEW_BYTES = 64 * 1024
@@ -201,9 +202,6 @@ const audioStage: ViewerModule = compositeStage([
 // ---------------------------------------------------------------------------------------------
 // archive / namespace stage
 
-/** The convention this host uses to find "give me one entry's bytes" among a codec's operations. */
-const ENTRY_EXTRACT_SUFFIX = '.extract-entry'
-
 const previewText = (bytes: Uint8Array): string | undefined => {
   if (bytes.includes(0)) return undefined
   try {
@@ -232,9 +230,9 @@ const hexDump = (bytes: Uint8Array): string => {
  *
  * The tree is the shipped namespace viewer. `openEntry` answers with a *reference* — an id and a
  * URI for a nested source — never bytes, because reopening a nested source is the host's job and
- * this host has no namespace routing yet. So the pane below states that reference, and for the
- * bytes it invokes the codec's own non-mutating entry-extraction operation when the descriptor
- * declares one. When it does not, it says so instead of showing an empty box.
+ * this host has no namespace routing yet. So the pane below states that reference and invokes the
+ * platform-owned `container.extract` operation with the namespace's opaque entry id. When the
+ * subject does not declare that contract, it says so instead of showing an empty box.
  */
 function archiveStage(context: WebViewContext): ViewerModule {
   return defineViewerModule({
@@ -291,7 +289,7 @@ function archiveStage(context: WebViewContext): ViewerModule {
         operation =>
           operation.state === 'available' &&
           !operation.mutatesSource &&
-          operation.id.endsWith(ENTRY_EXTRACT_SUFFIX),
+          operation.id === CONTAINER_EXTRACT_OPERATION_ID,
       )
 
       const show = (detail: { readonly entryId?: unknown; readonly source?: unknown }): void => {
@@ -301,7 +299,7 @@ function archiveStage(context: WebViewContext): ViewerModule {
           status,
           `${entryId} → ${reference?.uri ?? 'no source reference'}${
             extract === undefined
-              ? ' · this codec declares no non-mutating entry-extraction operation, so the bytes ' +
+              ? ' · this subject declares no available container.extract operation, so the bytes ' +
                 'cannot be read in this host yet'
               : ''
           }`,
@@ -322,8 +320,8 @@ function archiveStage(context: WebViewContext): ViewerModule {
               setViewerText(body, `the namespace does not list an entry with id ${entryId}`)
               return
             }
-            // `{ path }` is the input shape the bundled container codecs declare for extraction.
-            const input: JsonValue = { path }
+            // Entry ids are opaque and come from the namespace source that owns this operation.
+            const input: JsonValue = { entryId }
             const result = await operations.invoke(extract.handlerId, input, {
               ...(args.signal === undefined ? {} : { signal: args.signal }),
             })

@@ -630,6 +630,7 @@ export { createGrantedRoots, type GrantedRoots, type PathTools } from './roots.j
 // S14: main owns the editing authority (backend, grant, writer, prepared commits) and hands
 // the renderer ids; these are the pieces its bootstrap composes
 export {
+  codecFidelityEvidenceRecords,
   createEvidenceRegistry,
   createRawWriter,
   createSubjectEditing,

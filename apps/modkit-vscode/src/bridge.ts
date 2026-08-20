@@ -112,6 +112,9 @@ export interface ShellConfigureResult {
 export type ShellRequest =
   | { readonly op: 'list'; readonly path?: string }
   | { readonly op: 'read'; readonly path: string; readonly maxBytes: number }
+  /** Native CustomEditorProvider lifecycle, extension host → its one resolved webview. */
+  | { readonly op: 'document-save'; readonly path: string }
+  | { readonly op: 'document-revert'; readonly path: string }
   /** A webview iframe cannot show a modal of its own, so the prompt happens in the editor. */
   | { readonly op: 'confirm'; readonly message: string; readonly savable: boolean }
   /*
@@ -132,6 +135,10 @@ export type ShellEvent =
   | { readonly op: 'notice'; readonly text: string; readonly severity: 'info' | 'error' }
   /** The webview's status line, mirrored into the extension's output channel. */
   | { readonly op: 'status'; readonly text: string }
+  /** The custom document's native dirty indicator follows this one opened path only. */
+  | { readonly op: 'document-dirty'; readonly path: string; readonly dirty: boolean }
+  /** An in-page Save button delegates to VS Code so the provider, title marker and Ctrl+S agree. */
+  | { readonly op: 'document-save-requested'; readonly path: string }
 
 interface RequestEnvelope {
   readonly modkit: 1

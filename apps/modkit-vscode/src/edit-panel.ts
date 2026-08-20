@@ -12,7 +12,7 @@ import {
   setState,
   setViewerText,
   ViewerMountScope,
-} from '@modkitx-x3/ui'
+} from '@modkitx-x3/ui/viewer'
 import type { AnyDescriptor, AssetEditPlan, ViewerModule } from '@modkitx-x3/sdk'
 
 import {

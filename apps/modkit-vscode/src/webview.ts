@@ -17,15 +17,13 @@ import {
   createCodecPreview,
   createEditorArea,
   createExplorer,
-  element,
-  setState,
-  setViewerText,
   EXPLORER_MAXIMUM_BYTES,
   type EditorArea,
   type ExplorerEntry,
   type FileAccess,
   type PreviewResolver,
-} from '@modkitx-x3/ui'
+} from '@modkitx-x3/ui/explorer'
+import { element, setState, setViewerText } from '@modkitx-x3/ui/viewer'
 import { createWorkbench } from '@modkitx-x3/ui/workbench'
 import { connectSubjectRpc, type SubjectPreviewSession } from '@modkitx-x3/host'
 
@@ -188,6 +186,11 @@ async function mount(
   /** Entry id of the focused tab — the only tab that can receive a keystroke. */
   let focused: string | undefined
 
+  const markDirty = (entryId: string, dirty: boolean): void => {
+    editors.markDirty(entryId, dirty)
+    if (entryId === snapshot.openPath) bridge.emit({ op: 'document-dirty', path: entryId, dirty })
+  }
+
   const recordForDescriptor = (descriptor: Record<string, unknown>): SubjectRecord | undefined =>
     [...subjects.values()].find(record => record.descriptor === descriptor)
 
@@ -265,7 +268,7 @@ async function mount(
         const ports = await createWebviewEditorPorts({
           arm,
           onStatus: message => say(`${entry.name} · ${message}`),
-          onDirty: dirty => editors.markDirty(entry.id, dirty),
+          onDirty: dirty => markDirty(entry.id, dirty),
         })
         openPorts.set(entry.id, ports)
         return ports
@@ -311,7 +314,10 @@ async function mount(
       return answer === 'save' || answer === 'discard' ? answer : 'cancel'
     },
     async save(entry) {
-      await openPorts.get(entry.id)?.save()
+      const ports = openPorts.get(entry.id)
+      if (ports === undefined || !(await ports.save())) {
+        throw new Error(`${entry.name} could not be saved by its editing arm`)
+      }
     },
     onStatus(status) {
       say([status.path, status.view, status.detail].filter(Boolean).join(' · '))
@@ -328,7 +334,56 @@ async function mount(
   editors.root.addEventListener('input', event => {
     const target = event.target
     if (!(target instanceof HTMLElement) || target.dataset['mkPart'] !== 'editor.text') return
-    if (focused !== undefined) editors.markDirty(focused, true)
+    if (focused !== undefined) markDirty(focused, true)
+  })
+  editors.root.addEventListener(
+    'click',
+    event => {
+      if (snapshot.openPath === undefined || focused !== snapshot.openPath) return
+      const target = event.target
+      if (!(target instanceof Element)) return
+      const save = target.closest<HTMLElement>('[data-modkit-action="save"]')
+      if (save === null) return
+      // The provider calls the editor command directly after VS Code dispatches Save. Stopping the
+      // page button here avoids committing once in the page and then a second time through Ctrl+S.
+      event.preventDefault()
+      event.stopPropagation()
+      bridge.emit({ op: 'document-save-requested', path: snapshot.openPath })
+    },
+    true,
+  )
+
+  /*
+   * The native CustomEditorProvider asks the buffer that is already mounted here. Saving through
+   * the editor-area command reaches text before it has produced an edit plan and hex after it has;
+   * reverting drops the whole mounted revision and reopens disk bytes under a fresh session.
+   */
+  bridge.serve(async request => {
+    if (request.op !== 'document-save' && request.op !== 'document-revert') {
+      throw new Error('the webview only serves custom-document lifecycle requests')
+    }
+    if (snapshot.openPath === undefined || request.path !== snapshot.openPath) {
+      throw new Error('the custom-document request does not name this webview document')
+    }
+    if (request.op === 'document-save') {
+      const record = subjects.get(request.path)
+      if (record === undefined) throw new Error('the custom document is not open')
+      const entry = record.entry
+      if (!(await editors.save(request.path))) throw new Error('the mounted editor refused to save')
+      markDirty(request.path, false)
+      if (!(await editors.close(request.path))) {
+        throw new Error('the saved custom document could not close its stale revision')
+      }
+      await editors.open(entry)
+      return true
+    }
+    const record = subjects.get(request.path)
+    if (record === undefined) throw new Error('the custom document is not open')
+    const entry = record.entry
+    markDirty(request.path, false)
+    if (!(await editors.close(request.path))) throw new Error('the custom document could not close')
+    await editors.open(entry)
+    return true
   })
 
   // ---------------------------------------------------------------- explorer

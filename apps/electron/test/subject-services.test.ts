@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { revisionId, type ArtifactByteSource, type PresentationSlot } from '@modkitx-x3/sdk'
 import type { Diagnostic } from '@modkitx-x3/core'
 import {
+  codecFidelityEvidenceRecords,
   createElectronSubjectServices,
   ELECTRON_WORKER_REALM,
   resolveElectronPresentationPlan,
@@ -31,6 +32,10 @@ function memorySource(text: string): ArtifactByteSource {
 }
 
 describe('Electron host-owned subject services', () => {
+  it('re-exports every host editing helper that the CommonJS main process composes', () => {
+    expect(codecFidelityEvidenceRecords).toBeTypeOf('function')
+  })
+
   it('loads a generated bundled input and opens JSON in the worker realm: portable variant, worker-brokered, provider proxied through the host', async () => {
     const backendDiagnostics: Diagnostic[] = []
     const services = await createElectronSubjectServices(

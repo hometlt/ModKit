@@ -121,6 +121,19 @@ body {
   padding: var(--mk-space-3);
 }
 
+/*
+ * The settings section is the same panel, but in the editor area rather than the rail.
+ *
+ * The main area clips (`overflow: hidden`) and is sized by the grid, so a child that is content
+ * height would simply be cut off. A definite height plus its own scroller is what lets a list of
+ * forty-odd contributions be read.
+ */
+.vscode-host-panel[data-surface='settings'] {
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+}
+
 .vscode-host-panel h2 {
   margin: var(--mk-space-2) 0 0;
   color: var(--mk-color-fg);
@@ -145,4 +158,19 @@ body {
 
 .vscode-host-panel li:nth-child(odd) {
   background: var(--mk-color-raised);
+}
+
+/* The composite archive stage gives the tree the flexible pane and bounds the selected bytes. */
+[data-mk-part='explorer.tabcontent'] > .vscode-stage-part:first-child {
+  flex: 1 1 auto;
+}
+
+.vscode-archive-entry {
+  flex: 0 0 auto;
+  max-height: 18rem;
+  padding: var(--mk-space-2);
+  overflow: auto;
+  border-top: 1px solid var(--mk-color-border);
+  font-family: var(--mk-font-mono);
+  font-size: var(--mk-font-size-xs);
 }

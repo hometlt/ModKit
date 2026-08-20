@@ -81,6 +81,7 @@ var OPERATION_DOMAINS = Object.freeze([
   "save",
   "runtime"
 ]);
+var CONTAINER_EXTRACT_OPERATION_ID = "container.extract";
 var SHARED_OPERATION_IDS = Object.freeze([
   "view.render",
   "view.inspect",
@@ -99,7 +100,7 @@ var SHARED_OPERATION_IDS = Object.freeze([
   "source.save-as",
   "export.raw",
   "export.convert",
-  "container.extract",
+  CONTAINER_EXTRACT_OPERATION_ID,
   "container.pack",
   "asset.search",
   "asset.validate",
@@ -618,6 +619,7 @@ export {
   errorCode,
   traitId,
   OPERATION_DOMAINS,
+  CONTAINER_EXTRACT_OPERATION_ID,
   SHARED_OPERATION_IDS,
   operationId,
   parseQualifiedId,

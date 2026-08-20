@@ -164,7 +164,7 @@ describe('inspector operation policy', () => {
         { id: 'asset.validate', handlerId: 'validate', mutatesSource: false },
         { id: 'export.raw', handlerId: 'export-raw', mutatesSource: false },
         { id: 'edit.field', handlerId: 'set-text', mutatesSource: true },
-        { id: 'org.modkitx/archive-zip.extract-entry', handlerId: 'x', mutatesSource: false },
+        { id: 'org.example/archive.extract-entry', handlerId: 'x', mutatesSource: false },
       ]),
     )
     expect(filtered.operations.map(operation => operation.id)).toEqual(NON_MUTATING_OPERATION_IDS)

@@ -62,7 +62,7 @@ const ZIP = descriptorWith(
     { id: 'view.inspect', handlerId: 'inspect', mutatesSource: false, state: 'available' },
     { id: 'export.raw', handlerId: 'export-raw', mutatesSource: false, state: 'available' },
     {
-      id: 'org.modkitx/archive-zip.extract-entry',
+      id: 'container.extract',
       handlerId: 'extract-entry',
       mutatesSource: false,
       state: 'available',
@@ -149,8 +149,8 @@ describe('inspector panels', () => {
 })
 
 describe('archive entry extraction', () => {
-  it('picks the codec vendor-scoped operation, never the standard whole-subject verbs', () => {
-    expect(entryPreviewOperations(ZIP)).toEqual(['org.modkitx/archive-zip.extract-entry'])
+  it('picks only the standard container member operation', () => {
+    expect(entryPreviewOperations(ZIP)).toEqual(['container.extract'])
   })
 
   it('never offers a mutating or unavailable operation', () => {
@@ -160,6 +160,12 @@ describe('archive entry extraction', () => {
       [
         { id: 'org.x/write', handlerId: 'w', mutatesSource: true, state: 'available' },
         { id: 'org.x/off', handlerId: 'o', mutatesSource: false, state: 'disabled' },
+        {
+          id: 'org.example/archive.extract-entry',
+          handlerId: 'local-lookalike',
+          mutatesSource: false,
+          state: 'available',
+        },
       ],
     )
     expect(entryPreviewOperations(guarded)).toEqual([])

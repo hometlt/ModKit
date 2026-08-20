@@ -1484,7 +1484,13 @@ describe('13C real-browser viewer host', () => {
     const editor = page.getByRole('textbox', { name: 'Editable text' })
     expect(await editor.inputValue()).toBe('before')
     await editor.fill('after')
-    await page.getByRole('button', { name: 'Save' }).click()
+    expect(
+      await page.evaluate(async () => {
+        const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
+        const typed = ui as unknown as typeof import('@modkitx-x3/ui')
+        return typed.requestEditorSave(document.querySelector('#app') as HTMLElement)
+      }),
+    ).toBe(true)
     await page.waitForFunction(() => document.querySelector('output')?.textContent === 'Saved')
     expect(
       await page.evaluate(() =>
@@ -1907,6 +1913,7 @@ describe('13C real-browser viewer host', () => {
       const typed = ui as unknown as typeof import('@modkitx-x3/ui')
       const root = document.querySelector('#app') as HTMLElement
       let unmounts = 0
+      let saves = 0
       const preview: import('@modkitx-x3/ui').PreviewResolver = {
         supported: [],
         async open(container, entry) {
@@ -1916,6 +1923,14 @@ describe('13C real-browser viewer host', () => {
             container.textContent = `${entry.name}:${view}`
           }
           render(active)
+          const editor = document.createElement('div')
+          editor.dataset['modkitEditor'] = 'fixture'
+          editor.hidden = true
+          container.append(editor)
+          typed.handleEditorSaveRequest(editor, async () => {
+            saves += 1
+            return true
+          })
           return {
             views: [
               { id: 'text', label: 'Text' },
@@ -1943,11 +1958,25 @@ describe('13C real-browser viewer host', () => {
       root.replaceChildren(area.root)
       await area.open({ id: '/a.txt', name: 'a.txt', directory: false })
       await area.open({ id: '/b.txt', name: 'b.txt', directory: false })
+      const saved = await area.save('/a.txt')
       ;(globalThis as unknown as Record<string, unknown>)['editorAreaFixture'] = {
         area,
         unmounts: () => unmounts,
+        saves: () => saves,
+        saved,
       }
     })
+
+    expect(
+      await page.evaluate(() => {
+        const fixture = (
+          globalThis as unknown as {
+            editorAreaFixture: { saves(): number; saved: boolean }
+          }
+        ).editorAreaFixture
+        return { saves: fixture.saves(), saved: fixture.saved }
+      }),
+    ).toEqual({ saves: 1, saved: true })
 
     expect(await page.getByRole('tab').allTextContents()).toEqual(['a.txt×', 'b.txt×'])
     await page.getByText('a.txt', { exact: true }).click()
@@ -1987,5 +2016,79 @@ describe('13C real-browser viewer host', () => {
         ).editorAreaFixture.unmounts(),
       ),
     ).toBe(3)
+  })
+
+  it('hosts extra settings groups in one shell and replaces a built-in group by id', async () => {
+    await reset()
+    const result = await page.evaluate(async () => {
+      const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
+      const typed = ui as unknown as typeof import('@modkitx-x3/ui')
+      const root = document.querySelector('#app') as HTMLElement
+      const store = typed.createMemorySettingsStore({
+        ...typed.DEFAULT_SETTINGS,
+        appearance: { theme: 'host-theme', density: 'compact' },
+      })
+      let reloads = 0
+      let destroyed = 0
+      const settings = typed.createSettingsUi(document, {
+        store,
+        themes: [],
+        registerFileTypes: async () => 'registered',
+        extraGroups: [
+          {
+            id: 'extensions',
+            label: 'Extensions',
+            render(host, context) {
+              host.textContent = `Host extensions · ${context.settings.appearance.theme}`
+            },
+            reload(context) {
+              reloads += 1
+              context.report('Host extension report loaded')
+            },
+            destroy() {
+              destroyed += 1
+            },
+          },
+          {
+            id: 'codecs',
+            label: 'Codecs',
+            render(host) {
+              host.textContent = 'Host codecs'
+            },
+          },
+        ],
+      })
+      root.replaceChildren(settings.root)
+      await settings.reload()
+      const labels = [...settings.root.querySelectorAll('[data-mk-part="settings.group"]')].map(
+        node => node.textContent,
+      )
+      const showedExtensions = settings.showGroup('extensions')
+      const extensionText = settings.root.querySelector(
+        '[data-mk-part="settings.pane"]',
+      )?.textContent
+      const refusedUnknown = settings.showGroup('missing')
+      const status = settings.root.querySelector('[data-mk-part="settings.status"]')?.textContent
+      settings.destroy()
+      return {
+        labels,
+        showedExtensions,
+        extensionText,
+        refusedUnknown,
+        status,
+        reloads,
+        destroyed,
+      }
+    })
+
+    expect(result).toEqual({
+      labels: ['Appearance', 'Extensions', 'Codecs', 'File associations'],
+      showedExtensions: true,
+      extensionText: 'Host extensions · host-theme',
+      refusedUnknown: false,
+      status: 'Host extension report loaded',
+      reloads: 1,
+      destroyed: 1,
+    })
   })
 })

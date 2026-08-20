@@ -12,11 +12,25 @@
  * The root barrel is deliberately measured, not forbidden: an app that wants everything may take
  * everything. What the gate forbids is a *subpath* import paying for the barrel.
  */
-import { resolve } from 'node:path'
+import { readdirSync, readFileSync } from 'node:fs'
+import { join, relative, resolve } from 'node:path'
 import { build } from 'esbuild'
 import { describe, expect, it } from 'vitest'
 
 const repoRoot = resolve(import.meta.dirname, '..', '..')
+
+function productionSources(root: string): readonly string[] {
+  const files: string[] = []
+  const visit = (directory: string): void => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const path = join(directory, entry.name)
+      if (entry.isDirectory()) visit(path)
+      else if (entry.isFile() && /\.[cm]?[jt]sx?$/u.test(entry.name)) files.push(path)
+    }
+  }
+  visit(root)
+  return files.sort()
+}
 
 async function bundled(
   source: string,
@@ -58,6 +72,21 @@ const expectNone = (text: string, except: readonly string[] = []): void => {
 }
 
 describe('minimal builds stay minimal', () => {
+  it('keeps production web and VS Code graphs on explicit UI surface imports', () => {
+    const rootImports: string[] = []
+    for (const appRoot of ['apps/web/src', 'apps/modkit-vscode/src']) {
+      for (const file of productionSources(resolve(repoRoot, appRoot))) {
+        const lines = readFileSync(file, 'utf8').split('\n')
+        lines.forEach((line, index) => {
+          if (/from ['"]@modkitx-x3\/ui['"]/u.test(line)) {
+            rootImports.push(`${relative(repoRoot, file)}:${index + 1}`)
+          }
+        })
+      }
+    }
+    expect(rootImports).toEqual([])
+  })
+
   it('an image-viewer consumer gets the image viewer and none of the rest', async () => {
     const text = await bundled(
       `export { imageViewer } from '@modkitx-x3/ui/image'\n` +

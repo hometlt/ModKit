@@ -6,6 +6,53 @@ overrides a canonical or detailed owner.
 
 ---
 
+## PLAN_FABLE_NEXT closure — editing parity, host contracts and app boundaries (Fable, 2026-08-20)
+
+All nine implementation items in `PLAN_FABLE_NEXT_2026-08-20.md` are closed, with the remaining
+real-VS-Code limitation kept as a validation boundary rather than hidden as implementation debt.
+
+**Editing parity (`9cfafec`, `4d6c277`, `cfe59f7`).** VS Code now exposes mutating codec
+operations and exact archive-entry bytes; the PWA's generated valid MP3 fixture completes a live
+Chromium edit/save/reopen loop; packed library installation is proved from tarballs in a clean
+consumer. Electron resolves the PNG `png/rgba8@semantic` writer, authors an RGBA semantic intent,
+discloses the metadata-loss boundary, commits and reopens the changed pixel. JPEG remains read-only
+because it has no matching semantic writer.
+
+**Archive and fidelity contracts.** `container.extract` is a core-owned standard operation with a
+typed `{ entryId }` input; ZIP publishes it and each application resolves that exact id rather than
+knowing a codec-private spelling. Codec contributions also publish fidelity-evidence coordinates.
+The host joins those declarations to the selected inventory record's real `providerVersion` and
+`artifactDigest`, so neither Electron nor web carries copied ZIP proof literals. The final live
+Electron smoke caught that its ESM adapter had not re-exported the new helper to the CommonJS main
+process (writable subjects degraded to read-only); the adapter export and an exact-surface
+regression test now protect that runtime composition boundary.
+
+**One settings surface.** `createSettingsUi({ extraGroups })` accepts host groups with stable
+context plus reload/destroy hooks; an extra group with a built-in id replaces it in its established
+position. Electron now mounts Appearance, Extensions, Codecs and File associations in one settings
+root rather than maintaining a second page.
+
+**Embed trust.** `<modkit-viewer extension-catalog="…">` accepts an HTTP(S) catalog only when its
+exact origin was baked into the build through `MODKIT_EMBED_EXTENSION_ORIGINS`. Runtime globals and
+page attributes cannot expand the list. Catalog shape and declared digests are checked, installed
+inventory origin is preserved, and remote code remains worker-only. Chromium proves both a
+build-pinned other-origin catalog and refusal before fetch for a page-invented origin.
+
+**Native VS Code document lifecycle.** The extension implements `CustomEditorProvider`, including
+dirty events, save, revert, save-as and backup/restore. Editor Save buttons request native VS Code
+save; the mounted text/hex editor commits first, then the webview drops the stale revision and
+reopens from disk. The pure `CustomDocumentState` and structural duplex bridge tests cover lifecycle
+ordering; `ext:build` proves the production CommonJS extension and webview bundles compose. A live
+VS Code window is still unavailable in this environment.
+
+**Explicit app graphs.** Production web sources no longer import the UI root barrel. The VS Code
+stage catalog imports explicit surface subpaths and a source-boundary test refuses root, graph,
+Monaco, settings or shell/workbench imports there. The measured reductions are deliberately small
+(PWA control bundle −94 bytes; webview −98 bytes) because esbuild already tree-shook the barrel;
+the durable result is that future root exports cannot silently widen these app graphs.
+
+---
+
 ## Вкладки, минимальные сборки, документация — блок по списку владельца (Fable, 2026-08-20)
 
 Владелец передал список из 12 задач (вкладки, документация RU, инструкция ИИ-агенту, принцип
@@ -336,9 +383,10 @@ a whole-source rewrite (archive repack, image encode) exceeds 1 MiB with the fir
 anything larger is still refused, and staged payloads — which no codec can produce yet — remain
 the honest fix.
 
-**Open requests from the agents, not yet done.** `NamespaceEntry` carries no compression/CRC/
-timestamp and `openEntry` returns a `zip-entry:` ref nothing resolves, so an archive viewer's only
-byte path is the `extract-entry` operation (sdk decision); `defineWriter` takes one offer, so
+**Open requests from the agents, not yet done.** `openEntry` returns a `zip-entry:` ref nothing
+resolves; archive viewers now use the shared `container.extract` contract (`{ entryId }` to bytes)
+instead of recognizing a codec-local operation, while reopening nested sources remains future work.
+`defineWriter` takes one offer, so
 multi-format extensions hand-roll the module envelope, and the text change-set validator is
 duplicated six times (codec-kit); a codec cannot declare an operation `disabled` with a reason
 (codec-kit); `vitest.config.ts` does not include `extensions/**`; `apps/web/dist-app/extensions/**`

@@ -5,8 +5,8 @@
  * `createBrowserEditingBackend` (File System Access writable streams, with a pre-image rollback),
  * `createSubjectEditing` (13D targets, grant snapshot, commit coordinator, and the four
  * `editorPorts` a `@modkitx-x3/ui` editor stage expects) and `createRawWriter` +
- * `createEvidenceRegistry` (literal replacements, byte-identical, proven by construction — see
- * `WEB_EDIT_EVIDENCE` for the records this application adds to that floor).
+ * `createEvidenceRegistry` (literal replacements, byte-identical, proven by construction) plus
+ * the opened codec's proof citations materialized from the trusted host inventory.
  *
  * What this module adds is everything the *browser* makes true and the host cannot know:
  *
@@ -39,6 +39,7 @@
 import { diagnostic, type Diagnostic } from '@modkitx-x3/core'
 import type {
   AssetEditPlan,
+  AnyDescriptor,
   ChangeSet,
   CommitCoordinator,
   CommitRejection,
@@ -51,11 +52,11 @@ import type {
   ValidationResult,
 } from '@modkitx-x3/sdk'
 import {
+  codecFidelityEvidenceRecords,
   createEvidenceRegistry,
   createRawWriter,
   createSubjectEditing,
-  type EvidenceRegistry,
-  type FidelityEvidenceRecord,
+  type Inventory,
   type OpenedSubject,
   type SubjectEditing,
   type SubjectEditorPorts,
@@ -364,65 +365,24 @@ const firstMessage = (diagnostics: readonly Diagnostic[]): string | undefined =>
 // fidelity evidence policy
 
 /**
- * Which fidelity claims this application is willing to commit, and what proves each
- * (ADR-HOST-002 §6). A claim with no record is `fidelity-unproven` and nothing is written — the
- * right default, and the reason this list is explicit rather than a blanket "trust the codec".
- *
- * The registry's own record covers every `{byte-identical, preservesUnknownData: true}` plan: the
- * host raw writer's (Path B, the text and hex editors) and the metadata edits of the PNG, JPEG and
- * MP3 codecs, which splice one byte range and leave every other byte where it was.
- *
- * A ZIP edit is a different fact. The codec re-assembles the whole archive, so it claims
- * `semantic`, and what proves the re-assembly is verbatim is a corpus run rather than a
- * construction argument: `packages/host/test/archive-edits.test.ts` compares every kept entry's
- * local header, compressed data and central-directory record byte for byte against an independent
- * ZIP reader, and checks a kept deflated entry still inflates. Two records, because the codec
- * downgrades its own claim honestly for an archive whose layout the central directory does not
- * account for, and "keeps every unknown byte" and "does not" are two different claims.
- *
- * This is *this app's* policy, held here rather than shared with the Electron host: a browser tab
- * and a desktop application are two different places to decide what may be written, even when they
- * happen to accept the same proofs today.
+ * This app accepts the raw writer's structural record plus declarations from the bundled codec
+ * that actually opened the subject. Provider version and artifact digest come from inventory;
+ * installed extensions cannot self-vouch because the host helper's default origin is bundled.
  */
-const ZIP_WRITER = Object.freeze({
-  providerId: 'org.modkitx/archive-zip',
-  providerVersion: '1.0.0',
-  artifactDigest: 'none:extension-artifact-not-pinned',
-  formatId: 'zip',
-  representationId: 'archive-namespace',
-})
-
-const zipEvidenceRecord = (
-  preservesUnknownData: boolean,
-  evidenceId: string,
-  inputClass: string,
-): FidelityEvidenceRecord =>
-  Object.freeze({
-    writer: ZIP_WRITER,
-    claim: Object.freeze({ roundTrip: 'semantic' as const, preservesUnknownData }),
-    evidenceId,
-    corpusId: 'modkitX3/packages/host/test/archive-edits.test.ts',
-    corpusDigest: 'none:proof-suite',
-    conformanceProfile: 'org.modkitx/codec-contribution-v1',
-    optionsFingerprint: 'options:stored-additions',
-    inputClass,
-    provenAt: '2026-08-19T00:00:00Z',
-  })
-
-export const WEB_EDIT_EVIDENCE: EvidenceRegistry = createEvidenceRegistry()
-  .with(zipEvidenceRecord(true, 'zip-verbatim-reassembly-v1', 'zip-classic'))
-  .with(
-    zipEvidenceRecord(
-      false,
-      'zip-verbatim-reassembly-non-canonical-v1',
-      'zip-non-canonical-layout',
-    ),
-  )
+export function webEditEvidence(inventory: Inventory, descriptor: AnyDescriptor) {
+  if (descriptor.interpretation !== 'codec') return createEvidenceRegistry()
+  return codecFidelityEvidenceRecords(inventory, {
+    codecId: descriptor.identity.codecId,
+    formatId: descriptor.identity.formatId,
+  }).reduce((registry, record) => registry.with(record), createEvidenceRegistry())
+}
 
 // ---------------------------------------------------------------------------------------------
 // the arm
 
 export interface WebEditingArmOptions {
+  /** Trusted inventory that selected the codec and attested its artifact coordinates. */
+  readonly inventory: Inventory
   /** The writable handle behind a source id; `undefined` means "this host cannot write it". */
   handleFor(sourceId: string): WebWritableFileHandleLike | undefined
   /** One sentence about what a save just did, or why it did not. */
@@ -502,7 +462,6 @@ export interface WebEditingArm {
  * one hazard `createRawWriter` documents.
  */
 export function createWebEditingArm(options: WebEditingArmOptions): WebEditingArm {
-  const evidence = WEB_EDIT_EVIDENCE
   const writer = createRawWriter()
   const backend = createBrowserEditingBackend({
     handleFor: options.handleFor,
@@ -694,6 +653,7 @@ export function createWebEditingArm(options: WebEditingArmOptions): WebEditingAr
     editorFor(request) {
       let editing: SubjectEditing
       try {
+        const evidence = webEditEvidence(options.inventory, request.opened.descriptor)
         editing = createSubjectEditing({
           opened: request.opened,
           grant: request.grant,
@@ -707,8 +667,8 @@ export function createWebEditingArm(options: WebEditingArmOptions): WebEditingAr
            * which was right while the raw writer was the only thing that could produce a plan here
            * — and is wrong the moment this app offers a codec's mutating operations, because those
            * plans are the codec's and their evidence names the codec. The pin is not the check it
-           * looks like either: `WEB_EDIT_EVIDENCE` already names, record by record, which writer
-           * proved which claim, and a claim with no record is still refused as `fidelity-unproven`.
+           * looks like either: this subject's inventory-derived registry already names, record by
+           * record, which writer proved which claim, and an absent record is still refused.
            */
           ...(options.maxInlinePayloadBytes === undefined
             ? {}

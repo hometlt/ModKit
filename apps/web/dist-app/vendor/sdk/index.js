@@ -100,8 +100,8 @@ import {
   writerOfferV1Schema,
   writerRequirementV1Schema,
   writerSelectionKey
-} from "../../chunks/chunk-2UBMYNBR.js";
-import "../../chunks/chunk-5WZM3EQ3.js";
+} from "../../chunks/chunk-CISYZWWS.js";
+import "../../chunks/chunk-VKK5N7MR.js";
 export {
   A1_SPEC_SCHEMA_ENTRIES,
   ARCHITECTURES,

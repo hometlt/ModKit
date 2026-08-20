@@ -280,6 +280,12 @@ export interface NamespaceEntry {
   readonly revision: RevisionId
 }
 
+/** Input contract of the shared `container.extract` operation. */
+export interface ContainerExtractInput {
+  /** Opaque id returned by the same subject's `NamespaceEntrySource.list`. */
+  readonly entryId: string
+}
+
 export interface NamespaceEntrySource {
   list(prefix: string, page: PageRequest, signal?: AbortSignal): Promise<Page<NamespaceEntry>>
   /** Returns a leased source reference, never eager decoded bytes. */

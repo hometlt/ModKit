@@ -163,6 +163,9 @@ describe('PWA product path — catalog → composition → worker-brokered open'
     const inputs = catalogToExtensionInputs(catalog, ORIGIN)
     expect(inputs.every(input => input.execution?.allowTrustedInProcess === false)).toBe(true)
     expect(inputs[0]?.artifact.artifactRoot.href.startsWith(`${ORIGIN}extensions/`)).toBe(true)
+    expect(catalogToExtensionInputs(catalog, ORIGIN, 'installed')[0]?.execution?.origin).toBe(
+      'installed',
+    )
   })
 
   it('opens a real PNG through the browser topology: portable variant, worker-brokered in the worker realm, tree data source answers over the RPC', async () => {
@@ -245,7 +248,8 @@ describe('PWA product path — catalog → composition → worker-brokered open'
     } as WebExtensionCatalog
     const services = await createWebSubjectServices({
       baseUrl: ORIGIN,
-      catalog: tampered,
+      catalog: { schemaVersion: 1, extensions: [], excluded: [] },
+      additionalCatalogs: [{ catalog: tampered, baseUrl: ORIGIN }],
       identity,
       probe,
       dom: {
@@ -258,6 +262,9 @@ describe('PWA product path — catalog → composition → worker-brokered open'
       },
       moduleMap: nodeModuleMap,
     })
+    expect(
+      services.main.inventory.extensions.every(extension => extension.origin === 'installed'),
+    ).toBe(true)
     const result = await services.open({
       source: fileSource(join(repositoryRoot, 'apps', 'web', 'public', 'favicon-32.png'), 'x.png'),
       path: 'x.png',

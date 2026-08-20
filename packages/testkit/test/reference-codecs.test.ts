@@ -421,7 +421,9 @@ describe('reference codec specification stress suite', () => {
     const namespace = await session.dataSource('common.view/namespace-entry-source', 1)
     const page = await (namespace.value as NamespaceEntrySource).list('', { limit: 10 })
     expect(page.items).toMatchObject([{ path: 'hello.txt', kind: 'file', size: 9n }])
-    expect(await session.operations().invoke('extract-entry', { path: 'hello.txt' })).toMatchObject(
+    const [entry] = page.items
+    if (entry === undefined) throw new Error('ZIP namespace listed no entry')
+    expect(await session.operations().invoke('extract-entry', { entryId: entry.id })).toMatchObject(
       {
         state: 'ok',
         output: { kind: 'bytes', value: new TextEncoder().encode('hello zip') },
@@ -434,12 +436,22 @@ describe('reference codec specification stress suite', () => {
     const codec = await codecFor('zip')
     const source = byteSource('zip', deflated)
     const deflatedSession = await codec.open(inputFor(source), 'inspect', budget)
+    const deflatedNamespace = await deflatedSession.dataSource(
+      'common.view/namespace-entry-source',
+      1,
+    )
+    const deflatedPage = await (deflatedNamespace.value as NamespaceEntrySource).list('', {
+      limit: 10,
+    })
+    const [deflatedEntry] = deflatedPage.items
+    if (deflatedEntry === undefined) throw new Error('deflated ZIP namespace listed no entry')
     expect(
-      await deflatedSession.operations().invoke('extract-entry', { path: 'compressed.txt' }),
+      await deflatedSession.operations().invoke('extract-entry', { entryId: deflatedEntry.id }),
     ).toMatchObject({
       state: 'ok',
       output: { kind: 'bytes', value: new TextEncoder().encode('portable deflate') },
     })
+    await deflatedNamespace.release()
     await deflatedSession.dispose()
   })
 

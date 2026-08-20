@@ -28,17 +28,20 @@
  */
 
 import { diagnostic } from '@modkitx-x3/core'
-import type {
-  AssetEditPlan,
-  ChangeSet,
-  FidelityClaim,
-  FidelityEvidence,
-  SourceEdit,
-  ValidationResult,
-  Writer,
-  WriterIdentity,
-  WriterOffer,
+import {
+  CODEC_CONTRIBUTION_CONTRACT,
+  type CodecContributionSpecV1,
+  type AssetEditPlan,
+  type ChangeSet,
+  type FidelityClaim,
+  type FidelityEvidence,
+  type SourceEdit,
+  type ValidationResult,
+  type Writer,
+  type WriterIdentity,
+  type WriterOffer,
 } from '@modkitx-x3/sdk'
+import type { ExtensionOrigin, Inventory } from './inventory.js'
 
 /** Identity of the host's own raw writer (plans an editor's byte/text edits with no format code). */
 export const HOST_RAW_WRITER_IDENTITY: WriterIdentity = Object.freeze({
@@ -189,6 +192,78 @@ export interface FidelityEvidenceRecord {
   readonly optionsFingerprint: string
   readonly inputClass: string
   readonly provenAt: string
+}
+
+export interface CodecFidelityEvidenceSelection {
+  readonly codecId: string
+  readonly formatId: string
+  /**
+   * Extension origins whose authored citations this host accepts. The default is bundled only:
+   * an installed extension may describe its proof, but cannot make an application trust it merely
+   * by installing itself.
+   */
+  readonly acceptedOrigins?: readonly ExtensionOrigin[]
+}
+
+/**
+ * Materialize one opened codec's proof citations with writer coordinates from trusted inventory.
+ *
+ * The contribution owns corpus/evidence coordinates. Inventory owns provider version and artifact
+ * digest. Keeping that join here means applications choose a trust origin and a selected codec,
+ * but never learn ZIP-, PNG-, or vendor-specific proof literals.
+ */
+export function codecFidelityEvidenceRecords(
+  inventory: Inventory,
+  selection: CodecFidelityEvidenceSelection,
+): readonly FidelityEvidenceRecord[] {
+  const accepted = new Set<ExtensionOrigin>(selection.acceptedOrigins ?? ['bundled'])
+  const records: FidelityEvidenceRecord[] = []
+  for (const extension of inventory.extensions) {
+    if (!accepted.has(extension.origin)) continue
+    for (const contribution of extension.contributions) {
+      const manifest = contribution.manifest
+      const inventoryRecord = contribution.record
+      if (
+        !contribution.activationEligible ||
+        manifest === undefined ||
+        inventoryRecord === undefined ||
+        manifest.contract.id !== CODEC_CONTRIBUTION_CONTRACT ||
+        manifest.contract.major !== 1 ||
+        manifest.id !== selection.codecId
+      ) {
+        continue
+      }
+      const spec = manifest.spec as unknown as CodecContributionSpecV1
+      for (const declaration of spec.fidelityEvidence ?? []) {
+        if (declaration.formatId !== selection.formatId) continue
+        records.push(
+          Object.freeze({
+            writer: Object.freeze({
+              providerId: manifest.id,
+              providerVersion: extension.manifest.version,
+              artifactDigest: inventoryRecord.artifactDigest,
+              formatId: declaration.formatId,
+              representationId: declaration.representationId,
+            }),
+            claim: Object.freeze({
+              ...declaration.claim,
+              ...(declaration.claim.notes === undefined
+                ? {}
+                : { notes: Object.freeze([...declaration.claim.notes]) }),
+            }),
+            evidenceId: declaration.evidenceId,
+            corpusId: declaration.corpusId,
+            corpusDigest: declaration.corpusDigest,
+            conformanceProfile: declaration.conformanceProfile,
+            optionsFingerprint: declaration.optionsFingerprint,
+            inputClass: declaration.inputClass,
+            provenAt: declaration.provenAt,
+          }),
+        )
+      }
+    }
+  }
+  return Object.freeze(records)
 }
 
 /**

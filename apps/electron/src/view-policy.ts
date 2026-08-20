@@ -17,6 +17,7 @@
  * Kept free of `@modkitx-x3/ui` and of the DOM so the rules are unit-testable in Node; the module
  * bindings live in `./stages.ts` and `./inspector.ts`.
  */
+import { CONTAINER_EXTRACT_OPERATION_ID } from '@modkitx-x3/core'
 
 /** Slot ids in the order the picker offers them. Anything not listed here is not offered. */
 export const STAGE_ORDER: readonly string[] = Object.freeze([
@@ -226,17 +227,18 @@ export function applicablePanels(
 /**
  * Operations that can hand back the bytes of one contained entry.
  *
- * The standard verbs (`view.inspect`, `asset.validate`, `export.raw`, `edit.field`) act on the
- * subject as a whole; a codec that can extract a member declares it under its own vendor scope, so
- * an id carrying `/` is the app's rule for "this one takes an entry". Mutating and unavailable
- * operations are never offered — browsing an archive must not be able to write to it.
+ * `container.extract` is the platform contract: an opaque namespace `{ entryId }` goes in and
+ * extracted bytes come out. Exact matching prevents a codec-local lookalike from becoming a read
+ * capability; mutating and unavailable declarations are refused too.
  */
 export function entryPreviewOperations(descriptor: Record<string, unknown>): readonly string[] {
   return Object.freeze(
     descriptorOperations(descriptor)
       .filter(
         operation =>
-          operation.state === 'available' && !operation.mutatesSource && operation.id.includes('/'),
+          operation.state === 'available' &&
+          !operation.mutatesSource &&
+          operation.id === CONTAINER_EXTRACT_OPERATION_ID,
       )
       .map(operation => operation.id),
   )

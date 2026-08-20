@@ -1,5 +1,6 @@
 import {
   CANCELLED_CODE,
+  CONTAINER_EXTRACT_OPERATION_ID,
   DisposableStore,
   ModkitError,
   OPERATION_DOMAINS,
@@ -35,9 +36,10 @@ import {
   uint64,
   uniqueSortedUtf8,
   versionRangeTargetsMajor
-} from "../../chunks/chunk-5WZM3EQ3.js";
+} from "../../chunks/chunk-VKK5N7MR.js";
 export {
   CANCELLED_CODE,
+  CONTAINER_EXTRACT_OPERATION_ID,
   DisposableStore,
   ModkitError,
   OPERATION_DOMAINS,

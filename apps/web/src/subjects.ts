@@ -26,6 +26,7 @@ import {
   registerServiceDefinitionsOrThrow,
   serviceDefinitionSurfaces,
   type ExtensionInput,
+  type ExtensionOrigin,
   type HostComposition,
   type SubjectServices,
 } from '@modkitx-x3/host'
@@ -95,6 +96,7 @@ export interface WebExtensionCatalogEntry {
 export function catalogToExtensionInputs(
   catalog: WebExtensionCatalog,
   baseUrl: string | URL,
+  origin: ExtensionOrigin = 'bundled',
 ): readonly ExtensionInput[] {
   const base = new URL(baseUrl)
   return catalog.extensions.map(entry => ({
@@ -110,8 +112,14 @@ export function catalogToExtensionInputs(
       verifyArtifactDigest: expected => expected === entry.artifact.artifactDigest,
       fileDigests: entry.artifact.fileDigests,
     },
-    execution: { origin: 'bundled', allowTrustedInProcess: false },
+    execution: { origin, allowTrustedInProcess: false },
   }))
+}
+
+/** A catalog fetched from a deployer-approved URL, resolved relative to its own document. */
+export interface WebExtensionCatalogSource {
+  readonly catalog: WebExtensionCatalog
+  readonly baseUrl: string | URL
 }
 
 /**
@@ -177,6 +185,8 @@ export interface WebSubjectServicesOptions {
   /** Origin + base path the app is served from; catalog roots and the module map resolve here. */
   readonly baseUrl: string | URL
   readonly catalog: WebExtensionCatalog
+  /** Additional attested catalogs. Their code remains worker-only and is inventoried as installed. */
+  readonly additionalCatalogs?: readonly WebExtensionCatalogSource[]
   /**
    * Folders the user granted, already loaded by `loadUserExtensionRoots`.
    *
@@ -231,7 +241,12 @@ export async function createWebSubjectServices(
 ): Promise<WebSubjectServices> {
   const probe = options.probe ?? probeWebFacilities()
   const topology = createWebTopology(options.identity, probe)
-  const catalogInputs = catalogToExtensionInputs(options.catalog, options.baseUrl)
+  const catalogInputs = [
+    ...catalogToExtensionInputs(options.catalog, options.baseUrl),
+    ...(options.additionalCatalogs ?? []).flatMap(source =>
+      catalogToExtensionInputs(source.catalog, source.baseUrl, 'installed'),
+    ),
+  ]
   const user = options.userExtensions ?? NO_USER_EXTENSION_ROOTS
   // First wins, second reported. A caller that passed the catalog's coordinates as `claimed`
   // has already seen these; a caller that did not still cannot end up with two loaded claimants,

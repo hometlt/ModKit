@@ -2,13 +2,13 @@ import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../chunks/chunk-4NYZ5JHY.js";
+} from "../../chunks/chunk-YH4GRUBU.js";
 import {
   revisionId
-} from "../../chunks/chunk-2UBMYNBR.js";
+} from "../../chunks/chunk-CISYZWWS.js";
 import {
   canonicalJsonStringify
-} from "../../chunks/chunk-5WZM3EQ3.js";
+} from "../../chunks/chunk-VKK5N7MR.js";
 
 // extensions/_shared/codec-kit/src/index.js
 var INSPECTION_OPERATIONS = Object.freeze([

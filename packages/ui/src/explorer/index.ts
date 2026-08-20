@@ -448,3 +448,16 @@ export function createExplorer(document: Document, options: ExplorerOptions): Ex
 function describe(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
+
+export {
+  createCodecPreview,
+  type CodecPreviewOptions,
+  type PreviewSession,
+  type PreviewStage,
+} from './preview.js'
+export {
+  createEditorArea,
+  type EditorArea,
+  type EditorAreaOptions,
+  type EditorStatus,
+} from './editors.js'

@@ -159,12 +159,12 @@ describe('web preview policy', () => {
     await reference.release()
     await namespace.release()
 
-    const extract = descriptor.operations.find(operation => operation.id.endsWith('.extract-entry'))
+    const extract = descriptor.operations.find(operation => operation.id === 'container.extract')
     expect(extract?.mutatesSource).toBe(false)
     if (extract === undefined) throw new Error('the container declares no entry extraction')
     const invoked = await result.session
       .operations()
-      .invoke(extract.handlerId, { path: 'readme.txt' })
+      .invoke(extract.handlerId, { entryId: first.id })
     expect(invoked.state).toBe('ok')
     if (invoked.state !== 'ok' || invoked.output.kind !== 'bytes') {
       throw new Error('entry extraction did not answer with bytes')

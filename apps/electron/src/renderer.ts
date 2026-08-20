@@ -39,7 +39,7 @@ import { PREVIEW_FALLBACK } from '../generated/viewer-catalog.js'
 import { editOffer, editSelfTestLine } from './edit-operations.js'
 import { createEditPanel } from './edit-panel.js'
 import {
-  createExtensionsPage,
+  createExtensionsSettingsGroups,
   type BrowseResult,
   type ExtensionsReport,
 } from './extensions-page.js'
@@ -772,6 +772,12 @@ async function boot(): Promise<void> {
 
   // ---------------------------------------------------------------- settings
   const store = settingsStore(settingsBridge)
+  const extensionsSettings = createExtensionsSettingsGroups({
+    store,
+    report: () => extensions.report(),
+    browse: () => extensions.browse(),
+    apply: () => reloadExtensions(),
+  })
 
   const settingsUi = createSettingsUi(document, {
     store,
@@ -793,6 +799,7 @@ async function boot(): Promise<void> {
     async registerFileTypes(extensions) {
       return (await host.registerFileTypes(extensions)).message
     },
+    extraGroups: extensionsSettings.groups,
     onClose() {
       toggleSettings(false)
     },
@@ -820,33 +827,19 @@ async function boot(): Promise<void> {
     return report
   }
 
-  const extensionsPage = createExtensionsPage(document, {
-    store,
-    report: () => extensions.report(),
-    browse: () => extensions.browse(),
-    apply: () => reloadExtensions(),
-    onClose() {
-      showSurface('workspace')
-    },
-  })
-
-  type Surface = 'workspace' | 'settings' | 'extensions'
+  type Surface = 'workspace' | 'settings'
   let surface: Surface = 'workspace'
-  function showSurface(next: Surface): void {
+  function showSurface(next: Surface, groupId?: string): void {
     surface = next
-    body.replaceChildren(
-      next === 'settings'
-        ? settingsUi.root
-        : next === 'extensions'
-          ? extensionsPage.root
-          : workspace,
-    )
+    body.replaceChildren(next === 'settings' ? settingsUi.root : workspace)
     setFooter(
-      next === 'workspace' ? '' : next === 'settings' ? 'Settings' : 'Extensions & Codecs',
+      next === 'workspace' ? '' : 'Settings',
       next === 'workspace' ? 'Ready' : `${store.location} · realm ${profile.renderer.realmId}`,
     )
-    if (next === 'settings') void settingsUi.reload()
-    if (next === 'extensions') void extensionsPage.reload()
+    if (next === 'settings') {
+      if (groupId !== undefined) settingsUi.showGroup(groupId)
+      void settingsUi.reload()
+    }
   }
   /** Kept as its own name because the menu, the shortcut and four call sites all mean "settings". */
   function toggleSettings(open = surface !== 'settings'): void {
@@ -905,7 +898,7 @@ async function boot(): Promise<void> {
     toggleSettings()
   })
   on('extensions', () => {
-    showSurface(surface === 'extensions' ? 'workspace' : 'extensions')
+    showSurface('settings', 'extensions')
   })
   on('split', () => {
     if (surface !== 'workspace') showSurface('workspace')
@@ -1114,9 +1107,9 @@ async function boot(): Promise<void> {
         subjectFor: inspectorSubject,
         portsFor: path => portsByPath.get(path),
         footerText: () => `${footerPath.textContent ?? ''} · ${footerDetail.textContent ?? ''}`,
-        extensionsRoot: extensionsPage.root,
+        extensionsRoot: settingsUi.root,
         showExtensions: () => {
-          showSurface('extensions')
+          showSurface('settings', 'extensions')
         },
         showWorkspace: () => {
           showSurface('workspace')

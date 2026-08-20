@@ -15,7 +15,7 @@
  * input and now skips mutating operations itself. This app's filter is therefore not a second
  * mutating rule, it is the `null`-input rule: `view.inspect`, `asset.validate` and `export.raw` are
  * the standard verbs that take no input, and a codec's own operations (`media.seek`, an archive's
- * `extract-entry`) take one this toolbar does not collect. They are named in the heading rather
+ * `container.extract`) take one this toolbar does not collect. They are named in the heading rather
  * than silently dropped. The *mutating* ones are the Edit panel's, which is given the whole
  * descriptor — filtering what the panel is shown would be this app contradicting itself.
  */
@@ -29,7 +29,8 @@ import type {
   ViewerSources,
 } from '@modkitx-x3/sdk'
 import { presentationSlotId } from '@modkitx-x3/sdk'
-import { diagnosticsPanel, element, operationToolbar, setViewerText } from '@modkitx-x3/ui'
+import { diagnosticsPanel, operationToolbar } from '@modkitx-x3/ui/panels'
+import { element, setViewerText } from '@modkitx-x3/ui/viewer'
 
 import { declaredMutatingOperations, editOffer } from './edit-operations.js'
 

@@ -882,7 +882,7 @@ const definition = Object.freeze({
   format: Object.freeze({ id: 'zip', label: 'ZIP archive', mediaType: 'application/zip' }),
   operations: Object.freeze([
     Object.freeze({
-      id: 'org.modkitx/archive-zip.extract-entry',
+      id: 'container.extract',
       handlerId: 'extract-entry',
       mutatesSource: false,
       requiredPermissions: Object.freeze(['read-source']),
@@ -914,7 +914,7 @@ const definition = Object.freeze({
           entry.kind === 'file' ? `${entry.size} bytes, method ${entry.method}` : 'directory',
       })),
     })
-    const byName = new Map(entries.map(entry => [entry.name, entry]))
+    const byId = new Map(entries.map(entry => [entry.id, entry]))
     return {
       summary: {
         format: 'zip',
@@ -965,10 +965,12 @@ const definition = Object.freeze({
       handlers: {
         'extract-entry': async input => {
           if (input === null || typeof input !== 'object' || Array.isArray(input)) {
-            throw new TypeError('extract-entry requires {path}')
+            throw new TypeError('container.extract requires {entryId}')
           }
-          const entry = byName.get(String(input.path ?? ''))
-          if (entry === undefined) throw new TypeError('ZIP entry path was not found')
+          const entry = byId.get(String(input.entryId ?? ''))
+          if (entry === undefined || entry.kind !== 'file') {
+            throw new TypeError('ZIP file entry id was not found')
+          }
           return { kind: 'bytes', value: await extract(bytes, entry) }
         },
         'edit-structure': editStructureHandler(

@@ -6,15 +6,18 @@ import {
   createSingleFileAccess,
   createWebPreviewStages,
   createWebSubjectServices,
+  define_MODKIT_EMBED_EXTENSION_ORIGINS_default,
   element,
+  init_define_MODKIT_EMBED_EXTENSION_ORIGINS,
   revisionId,
   setPart,
   setState,
   setViewerText,
   stageIdOf
-} from "./chunks/chunk-BPPL6S5J.js";
+} from "./chunks/chunk-QVNY3HUK.js";
 
 // apps/web/src/embed.ts
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var MODKIT_VIEWER_TAG = "modkit-viewer";
 var EMBED_MAXIMUM_BYTES = EXPLORER_MAXIMUM_BYTES;
 var EMBED_CHROME_CSS = `
@@ -87,6 +90,65 @@ var EMBED_CHROME_CSS = `
 }
 `;
 var describe = (error) => error instanceof Error ? error.message : String(error);
+var compiledExtensionOrigins = typeof define_MODKIT_EMBED_EXTENSION_ORIGINS_default === "undefined" ? [] : define_MODKIT_EMBED_EXTENSION_ORIGINS_default;
+var EMBED_EXTENSION_ORIGINS = Object.freeze(
+  Array.isArray(compiledExtensionOrigins) ? compiledExtensionOrigins.flatMap((value) => {
+    if (typeof value !== "string") return [];
+    try {
+      const url = new URL(value);
+      return url.protocol === "http:" || url.protocol === "https:" ? [url.origin] : [];
+    } catch {
+      return [];
+    }
+  }) : []
+);
+function resolveExtensionCatalogUrl(attribute, documentBase) {
+  return new URL(attribute, documentBase).href;
+}
+function extensionCatalogRefusal(catalogUrl, allowedOrigins = EMBED_EXTENSION_ORIGINS) {
+  let url;
+  try {
+    url = new URL(catalogUrl);
+  } catch {
+    return `extension-catalog \xAB${catalogUrl}\xBB is not a valid URL.`;
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    return `extension-catalog must use http or https; ${url.protocol} is not admitted.`;
+  }
+  const allowed = new Set(
+    allowedOrigins.flatMap((value) => {
+      try {
+        return [new URL(value).origin];
+      } catch {
+        return [];
+      }
+    })
+  );
+  if (allowed.has(url.origin)) return void 0;
+  return `The extension catalog origin ${url.origin} is not in this embed.js build-time allowlist. The embedding page cannot add an origin; the deployer must rebuild embed.js with it.`;
+}
+var record = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var strings = (value) => Array.isArray(value) && value.every((item) => typeof item === "string");
+var digest = (value) => typeof value === "string" && /^sha256:[a-f0-9]{64}$/u.test(value);
+var pairs = (value, check) => Array.isArray(value) && value.every(
+  (item) => Array.isArray(item) && item.length === 2 && typeof item[0] === "string" && check(item[1])
+);
+function parseWebExtensionCatalog(value) {
+  if (!record(value) || value["schemaVersion"] !== 1 || !Array.isArray(value["extensions"]) || !Array.isArray(value["excluded"])) {
+    throw new TypeError("extension catalog must be a schemaVersion 1 object with array entries");
+  }
+  for (const excluded of value["excluded"]) {
+    if (!record(excluded) || typeof excluded["name"] !== "string" || typeof excluded["reason"] !== "string") {
+      throw new TypeError("extension catalog exclusions require string name and reason fields");
+    }
+  }
+  for (const entry of value["extensions"]) {
+    if (!record(entry) || typeof entry["name"] !== "string" || typeof entry["source"] !== "string" || typeof entry["artifactRoot"] !== "string" || !record(entry["containers"]) || !strings(entry["files"]) || !pairs(entry["documents"], () => true) || !pairs(entry["documentDigests"], digest) || !record(entry["artifact"]) || typeof entry["artifact"]["inventoryRecordId"] !== "string" || !digest(entry["artifact"]["artifactDigest"]) || !record(entry["artifact"]["fileDigests"]) || !Object.values(entry["artifact"]["fileDigests"]).every(digest)) {
+      throw new TypeError("extension catalog contains a malformed extension entry");
+    }
+  }
+  return value;
+}
 function resolveAssetBase(attribute, scriptUrl, documentBase) {
   const resolved = attribute === void 0 || attribute === "" ? new URL("./", scriptUrl) : new URL(attribute, documentBase);
   const href = resolved.href;
@@ -144,10 +206,35 @@ ${EMBED_CHROME_CSS}`;
     return { text };
   }
 }
-async function composeEmbedHost(assetBase) {
+async function fetchExtensionCatalog(catalogUrl) {
+  let response;
+  try {
+    response = await fetch(catalogUrl, { credentials: "omit" });
+  } catch (error) {
+    throw new Error(`extension catalog ${catalogUrl} could not be fetched: ${describe(error)}`);
+  }
+  if (!response.ok) {
+    throw new Error(
+      `extension catalog ${catalogUrl} could not be fetched (${response.status} ${response.statusText})`
+    );
+  }
+  try {
+    return parseWebExtensionCatalog(await response.json());
+  } catch (error) {
+    throw new Error(`extension catalog ${catalogUrl} is invalid: ${describe(error)}`);
+  }
+}
+async function composeEmbedHost(assetBase, extensionCatalogUrl) {
+  const additionalCatalogs = extensionCatalogUrl === void 0 ? [] : [
+    {
+      catalog: await fetchExtensionCatalog(extensionCatalogUrl),
+      baseUrl: extensionCatalogUrl
+    }
+  ];
   const services = await createWebSubjectServices({
     baseUrl: assetBase,
     catalog: WEB_EXTENSION_CATALOG,
+    additionalCatalogs,
     identity: embedIdentity(),
     dom: {
       fetch: (url, init) => fetch(url, init),
@@ -168,8 +255,9 @@ async function composeEmbedHost(assetBase) {
   const styles = await loadStyles(assetBase);
   return Object.freeze({ assetBase, services, stages, styles, operations });
 }
-function embedHostFor(assetBase) {
-  return shareByAssetBase(embedHosts, assetBase, composeEmbedHost);
+function embedHostFor(assetBase, extensionCatalogUrl) {
+  const key = JSON.stringify([assetBase, extensionCatalogUrl ?? null]);
+  return shareByAssetBase(embedHosts, key, () => composeEmbedHost(assetBase, extensionCatalogUrl));
 }
 function embedIdentity() {
   const agent = navigator.userAgent;
@@ -238,7 +326,7 @@ async function openEmbedSession(host, entry, bytes, signal) {
     }
   };
 }
-var RELOADING_ATTRIBUTES = Object.freeze(["src", "name", "asset-base"]);
+var RELOADING_ATTRIBUTES = Object.freeze(["src", "name", "asset-base", "extension-catalog"]);
 var OBSERVED_ATTRIBUTES = Object.freeze([
   ...RELOADING_ATTRIBUTES,
   "view",
@@ -461,7 +549,27 @@ function defineModkitElements(options = {}) {
           this.#fail(refusal);
           return;
         }
-        const host = await embedHostFor(assetBase);
+        const catalogAttribute = this.getAttribute("extension-catalog") ?? "";
+        let extensionCatalogUrl;
+        if (catalogAttribute !== "") {
+          try {
+            extensionCatalogUrl = resolveExtensionCatalogUrl(
+              catalogAttribute,
+              this.ownerDocument.baseURI
+            );
+          } catch {
+            this.#fail(
+              `extension-catalog \xAB${catalogAttribute}\xBB is not a URL this page can resolve.`
+            );
+            return;
+          }
+          const catalogRefusal = extensionCatalogRefusal(extensionCatalogUrl);
+          if (catalogRefusal !== void 0) {
+            this.#fail(catalogRefusal);
+            return;
+          }
+        }
+        const host = await embedHostFor(assetBase, extensionCatalogUrl);
         if (!current()) return;
         this.#applyStyles(host.styles);
         const file = await this.#read(name, controller.signal);
@@ -536,14 +644,18 @@ if (typeof globalThis.customElements !== "undefined" && typeof globalThis.HTMLEl
   defineModkitElements();
 export {
   EMBED_CHROME_CSS,
+  EMBED_EXTENSION_ORIGINS,
   EMBED_MAXIMUM_BYTES,
   MODKIT_VIEWER_TAG,
   crossOriginRefusal,
   defineModkitElements,
   displayNameFor,
   embedHostFor,
+  extensionCatalogRefusal,
   fileLikeFrom,
+  parseWebExtensionCatalog,
   preferStage,
   resolveAssetBase,
+  resolveExtensionCatalogUrl,
   shareByAssetBase
 };

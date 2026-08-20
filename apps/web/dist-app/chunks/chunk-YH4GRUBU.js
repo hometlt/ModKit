@@ -6,7 +6,7 @@ import {
   validateSubjectDescriptorV2,
   writerOfferSatisfies,
   writerSelectionKey
-} from "./chunk-2UBMYNBR.js";
+} from "./chunk-CISYZWWS.js";
 import {
   ModkitError,
   canonicalJsonStringify,
@@ -15,7 +15,7 @@ import {
   isCancellation,
   throwIfAborted,
   uint64
-} from "./chunk-5WZM3EQ3.js";
+} from "./chunk-VKK5N7MR.js";
 
 // packages/host/dist/index.js
 var RESTRICTED_LINKED_EXECUTION = Object.freeze({

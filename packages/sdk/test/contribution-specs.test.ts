@@ -446,6 +446,65 @@ describe('A-1 contribution spec schemas', () => {
     ).toBe(true)
   })
 
+  it('validates codec fidelity citations and their declared format/representation coordinates', async () => {
+    const proof = {
+      formatId: 'json',
+      representationId: 'native',
+      claim: { roundTrip: 'semantic' as const, preservesUnknownData: true },
+      evidenceId: 'json-roundtrip-v1',
+      corpusId: 'corpus:json-roundtrip',
+      corpusDigest: 'sha256:proof',
+      conformanceProfile: 'org.example/json-roundtrip-v1',
+      optionsFingerprint: 'options:none',
+      inputClass: 'json-document',
+      provenAt: '2026-08-20T00:00:00Z',
+    }
+    const valid = await validateContributionManifest(
+      manifest(CODEC_CONTRIBUTION_CONTRACT, 'org.example/json-proof', {
+        ...codecSpec,
+        fidelityEvidence: [proof],
+      }),
+      registry,
+    )
+    expect(valid.specState).toBe('validated')
+
+    const unknown = await validateContributionManifest(
+      manifest(CODEC_CONTRIBUTION_CONTRACT, 'org.example/json-proof-bad-ref', {
+        ...codecSpec,
+        fidelityEvidence: [
+          { ...proof, formatId: 'other' },
+          { ...proof, evidenceId: 'json-other-representation', representationId: 'other' },
+        ],
+      }),
+      registry,
+    )
+    expect(unknown.specState).toBe('invalid')
+    expect(unknown.diagnostics.map(diagnostic => diagnostic.code)).toEqual(
+      expect.arrayContaining([
+        'x3.sdk/fidelity-evidence-format-unknown',
+        'x3.sdk/fidelity-evidence-representation-unknown',
+      ]),
+    )
+
+    const malformed = await validateContributionManifest(
+      manifest(CODEC_CONTRIBUTION_CONTRACT, 'org.example/json-proof-malformed', {
+        ...codecSpec,
+        fidelityEvidence: [
+          {
+            ...proof,
+            claim: { roundTrip: 'byte-identical', preservesUnknownData: false },
+            provenAt: 'yesterday',
+          },
+        ],
+      } as unknown as CodecContributionSpecV1Wire),
+      registry,
+    )
+    expect(malformed.specState).toBe('invalid')
+    expect(
+      malformed.diagnostics.some(diagnostic => diagnostic.code === 'x3.sdk/invalid-spec'),
+    ).toBe(true)
+  })
+
   it('rejects duplicate schema and full registration keys deterministically', () => {
     const firstSchemaEntry = A1_SPEC_SCHEMA_ENTRIES[0]
     if (firstSchemaEntry === undefined) throw new Error('A-1 schema entries are empty')

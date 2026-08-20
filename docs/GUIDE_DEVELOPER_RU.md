@@ -154,6 +154,27 @@ Monaco, Extension Manager — это проверяется гейтом мин�
 Контракт встраивания (CSP, origin, Shadow DOM) описан в шапке `apps/web/src/embed.ts` — он
 **измерен** тестами, а не предположен.
 
+Если embed должен принимать каталог расширений по URL, origin разрешает **сборка**, а не страница:
+
+```sh
+MODKIT_EMBED_EXTENSION_ORIGINS=https://extensions.example \
+  pnpm --filter @modkitx-x3/web-app app:build
+```
+
+После этого страница может выбрать каталог только с этого точного origin (схема, host и port):
+
+```html
+<modkit-viewer
+  src="./assets/diagram.svg"
+  extension-catalog="https://extensions.example/modkit/catalog.json"
+></modkit-viewer>
+```
+
+Список origin'ов запекается в `embed.js`; атрибут или глобальная переменная страницы расширить его
+не могут. Каталог структурно проверяется, каждый файл расширения затем проверяется по объявленному
+SHA-256, а код удалённого каталога получает только worker-realm. Пустой список означает fail
+closed: произвольные URL не загружаются.
+
 ### 3.2 Headless-конвертер / Node-библиотека
 
 Блоки: `core + sdk + host` + нужные кодеки. Ни вьюверов, ни UI (гейт проверяет: в бандле нет
@@ -259,6 +280,12 @@ await modkit.close()
 уже даёт VS Code (наш бандл расширения его не содержит — проверено аудитом). Webview — потребитель
 через RPC, хоста не держит. Эталон: `apps/modkit-vscode` (транспорт — `framePortFromJsonPort`,
 опция `framePort` у `exposeSubjectRpc`/`connectSubjectRpc`).
+
+Эталон регистрирует полноценный `CustomEditorProvider`: изменение webview переводит документ в
+native dirty-state, Ctrl+S вызывает сохранение смонтированного редактора, Revert перечитывает
+диск, Backup сначала фиксирует изолированный webview-буфер и сохраняет его точные байты. Поэтому
+кнопка Save внутри редактора должна посылать запрос VS Code, а не самостоятельно обходить
+документную модель.
 
 ### 3.4 Полноценное Electron-приложение
 

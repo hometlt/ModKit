@@ -20,10 +20,14 @@ import {
   defineModkitElements,
   displayNameFor,
   EMBED_CHROME_CSS,
+  EMBED_EXTENSION_ORIGINS,
+  extensionCatalogRefusal,
   fileLikeFrom,
   MODKIT_VIEWER_TAG,
+  parseWebExtensionCatalog,
   preferStage,
   resolveAssetBase,
+  resolveExtensionCatalogUrl,
   shareByAssetBase,
 } from '../src/embed.js'
 import { repositoryRoot } from './browser-harness.js'
@@ -82,6 +86,72 @@ describe('origin refusal', () => {
 
   it('refuses an asset base that is not a URL at all', () => {
     expect(crossOriginRefusal('not a url', 'https://example.test')).toContain('not a URL')
+  })
+})
+
+describe('build-pinned extension catalog origins', () => {
+  it('fails closed in an unconfigured source build and ignores page globals', () => {
+    ;(globalThis as Record<string, unknown>)['MODKIT_EMBED_EXTENSION_ORIGINS'] = [
+      'https://extensions.test',
+    ]
+    expect(EMBED_EXTENSION_ORIGINS).toEqual([])
+    expect(Object.isFrozen(EMBED_EXTENSION_ORIGINS)).toBe(true)
+    expect(extensionCatalogRefusal('https://extensions.test/catalog.json')).toContain(
+      'build-time allowlist',
+    )
+    delete (globalThis as Record<string, unknown>)['MODKIT_EMBED_EXTENSION_ORIGINS']
+  })
+
+  it('admits exactly an approved origin, not a sibling subdomain or port', () => {
+    const allowed = ['https://extensions.test']
+    expect(
+      extensionCatalogRefusal('https://extensions.test/catalogs/stable.json', allowed),
+    ).toBeUndefined()
+    expect(extensionCatalogRefusal('https://cdn.extensions.test/catalog.json', allowed)).toContain(
+      'not in this embed.js build-time allowlist',
+    )
+    expect(extensionCatalogRefusal('https://extensions.test:444/catalog.json', allowed)).toContain(
+      'not in this embed.js build-time allowlist',
+    )
+  })
+
+  it('resolves a relative catalog against the page and refuses non-network schemes', () => {
+    expect(resolveExtensionCatalogUrl('./catalog.json', DOCUMENT)).toBe(
+      'https://example.test/notes/october/catalog.json',
+    )
+    expect(extensionCatalogRefusal('data:application/json,{}', ['null'])).toContain(
+      'must use http or https',
+    )
+  })
+
+  it('accepts the catalog envelope and rejects malformed digest coordinates', () => {
+    expect(parseWebExtensionCatalog({ schemaVersion: 1, extensions: [], excluded: [] })).toEqual({
+      schemaVersion: 1,
+      extensions: [],
+      excluded: [],
+    })
+    expect(() =>
+      parseWebExtensionCatalog({
+        schemaVersion: 1,
+        excluded: [],
+        extensions: [
+          {
+            name: 'bad',
+            source: 'bad',
+            artifactRoot: './bad/',
+            containers: {},
+            files: ['index.js'],
+            documents: [],
+            documentDigests: [],
+            artifact: {
+              inventoryRecordId: 'bad',
+              artifactDigest: 'chosen-by-the-page',
+              fileDigests: { 'index.js': 'also-chosen-by-the-page' },
+            },
+          },
+        ],
+      }),
+    ).toThrow('malformed extension entry')
   })
 })
 

@@ -7,20 +7,33 @@ describe('the VS Code archive entry pane', () => {
   it('selects only an available non-mutating extraction operation', () => {
     const selected = findArchiveExtractOperation([
       {
-        id: 'codec.extract-entry',
+        id: 'container.extract',
         handlerId: 'mutating-lookalike',
         mutatesSource: true,
         state: 'available',
       },
-      { id: 'codec.extract-entry', handlerId: 'disabled', mutatesSource: false, state: 'disabled' },
+      { id: 'container.extract', handlerId: 'disabled', mutatesSource: false, state: 'disabled' },
       {
-        id: 'zip.extract-entry',
+        id: 'container.extract',
         handlerId: 'extract-entry',
         mutatesSource: false,
         state: 'available',
       },
     ])
     expect(selected?.handlerId).toBe('extract-entry')
+  })
+
+  it('rejects a codec-local operation that merely resembles the standard contract', () => {
+    expect(
+      findArchiveExtractOperation([
+        {
+          id: 'org.example/archive.extract-entry',
+          handlerId: 'local-lookalike',
+          mutatesSource: false,
+          state: 'available',
+        },
+      ]),
+    ).toBeUndefined()
   })
 
   it('shows valid UTF-8 as text and binary bytes as a bounded hex dump', () => {

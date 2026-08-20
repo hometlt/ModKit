@@ -7,9 +7,9 @@
  * module and listens for the `modkit-open-source` event it already dispatches.
  *
  * Why an operation and not `openEntry`: the namespace contract's `openEntry` hands back an
- * `AssetSourceRef` — an identity, deliberately not bytes — so a container's member content comes
- * from the codec's own extraction operation (`{ path }` in, bytes out). Opening the entry as a
- * subject of its own is a different feature and is not attempted here.
+ * `AssetSourceRef` — an identity, deliberately not bytes. The platform-owned `container.extract`
+ * operation turns the namespace's opaque `{ entryId }` into bytes without this app knowing a ZIP
+ * handler or path convention. Opening the entry as its own subject is a different feature.
  */
 import {
   createSurface,
@@ -137,7 +137,7 @@ export function createArchiveStage(options: ArchiveStageOptions): ViewerModule {
           setState(previewPane, ['degraded'])
           setViewerText(
             status,
-            `${entry.path}: this codec declares no entry-extraction operation, so its bytes cannot be read here.`,
+            `${entry.path}: this subject declares no available container.extract operation, so its bytes cannot be read here.`,
           )
           return
         }
@@ -157,7 +157,7 @@ export function createArchiveStage(options: ArchiveStageOptions): ViewerModule {
             .filter(item => item.id === id)
             .map(item => item.handlerId ?? '')[0]
           if (handler === undefined || handler === '') continue
-          const result = await operations.invoke(handler, { path: entry.path, entryId } as never, {
+          const result = await operations.invoke(handler, { entryId } as never, {
             signal: scope.signal,
           })
           if (result.state !== 'ok') continue

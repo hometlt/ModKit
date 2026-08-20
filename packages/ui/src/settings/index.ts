@@ -22,6 +22,30 @@ export interface ThemeChoice {
   readonly label: string
 }
 
+/** Host-owned state exposed to a settings group without giving it ownership of the shell. */
+export interface SettingsUiGroupContext {
+  readonly settings: SettingsDocument
+  report(message: string, bad?: boolean): void
+  /** Redraw the currently selected group after its host-owned state changes. */
+  refresh(): void
+}
+
+/**
+ * A host-specific group rendered inside the portable settings surface.
+ *
+ * An extra group whose id matches a built-in group replaces that group in place. This lets a host
+ * provide a richer implementation of (for example) `extensions` without drawing a second settings
+ * page or changing where menus and shortcuts navigate.
+ */
+export interface SettingsUiGroup {
+  readonly id: string
+  readonly label: string
+  render(host: HTMLElement, context: SettingsUiGroupContext): void
+  /** Refresh host-owned state whenever the settings surface reloads. */
+  reload?(context: SettingsUiGroupContext): void | Promise<void>
+  destroy?(): void
+}
+
 export interface SettingsUiOptions {
   readonly store: SettingsStore
   /** Themes this host ships. Empty disables the appearance group's theme picker. */
@@ -51,6 +75,8 @@ export interface SettingsUiOptions {
    * is right for a host with an install path.
    */
   readonly extensionsReadOnly?: string
+  /** Host-specific groups, or replacements for built-in groups with the same id. */
+  readonly extraGroups?: readonly SettingsUiGroup[]
   /** Shown as a close affordance. Absent means the host closes the panel its own way. */
   onClose?(): void
 }
@@ -58,13 +84,17 @@ export interface SettingsUiOptions {
 export interface SettingsUi {
   readonly root: HTMLElement
   reload(): Promise<void>
+  /** Select a group by id. Returns false when no such group exists. */
+  showGroup(groupId: string): boolean
   destroy(): void
 }
 
 interface Group {
   readonly id: string
   readonly label: string
-  render(host: HTMLElement): void
+  render(host: HTMLElement, context: SettingsUiGroupContext): void
+  reload?(context: SettingsUiGroupContext): void | Promise<void>
+  destroy?(): void
 }
 
 export function createSettingsUi(document: Document, options: SettingsUiOptions): SettingsUi {
@@ -391,11 +421,50 @@ export function createSettingsUi(document: Document, options: SettingsUiOptions)
     },
   }
 
+  const extraGroups = options.extraGroups ?? []
+  const extraIds = new Set<string>()
+  for (const group of extraGroups) {
+    if (group.id.trim() === '' || group.label.trim() === '') {
+      throw new Error('settings extra groups require a non-empty id and label')
+    }
+    if (extraIds.has(group.id)) throw new Error(`duplicate settings group id: ${group.id}`)
+    extraIds.add(group.id)
+  }
+
+  // New groups sit before file associations, while a matching id replaces a built-in at its
+  // established position. Electron therefore gets Appearance · Extensions · Codecs · File
+  // associations, with its host-aware Extensions implementation in the one expected place.
+  const extrasById = new Map(extraGroups.map(group => [group.id, group] as const))
+  const primaryGroups = [appearanceGroup, extensionsGroup].map(
+    group => extrasById.get(group.id) ?? group,
+  )
+  const primaryIds = new Set(primaryGroups.map(group => group.id))
+  const additionalGroups = extraGroups.filter(
+    group =>
+      !primaryIds.has(group.id) &&
+      !(options.registerFileTypes !== undefined && group.id === associationsGroup.id),
+  )
   const groups: readonly Group[] = [
-    appearanceGroup,
-    extensionsGroup,
-    ...(options.registerFileTypes === undefined ? [] : [associationsGroup]),
+    ...primaryGroups,
+    ...additionalGroups,
+    ...(options.registerFileTypes === undefined
+      ? []
+      : [extrasById.get(associationsGroup.id) ?? associationsGroup]),
   ]
+
+  function showActiveGroup(): void {
+    const group = groups.find(item => item.id === activeGroup) ?? groups[0]
+    if (group !== undefined) showGroup(group)
+  }
+  const groupContext: SettingsUiGroupContext = {
+    get settings() {
+      return current
+    },
+    report: say,
+    refresh() {
+      showActiveGroup()
+    },
+  }
 
   const showGroup = (group: Group): void => {
     activeGroup = group.id
@@ -405,9 +474,8 @@ export function createSettingsUi(document: Document, options: SettingsUiOptions)
       node.setAttribute('aria-selected', String(selected))
       setState(node, selected ? ['selected'] : [])
     }
-    group.render(pane)
+    group.render(pane, groupContext)
   }
-
   for (const group of groups) {
     const button = element(groupList, 'button', {
       part: 'settings.group',
@@ -428,17 +496,25 @@ export function createSettingsUi(document: Document, options: SettingsUiOptions)
       const { document: loaded, problems } = await options.store.read()
       current = loaded
       options.onAppearance?.(loaded.appearance)
-      const group = groups.find(item => item.id === activeGroup) ?? groups[0]
-      if (group !== undefined) showGroup(group)
       say(
         problems.length === 0
           ? `Loaded from ${options.store.location}`
           : `Loaded with ${problems.length} problem(s): ${problems.join('; ')}`,
         problems.length > 0,
       )
+      for (const group of groups) await group.reload?.(groupContext)
+      showActiveGroup()
+    },
+
+    showGroup(groupId) {
+      const group = groups.find(item => item.id === groupId)
+      if (group === undefined) return false
+      showGroup(group)
+      return true
     },
 
     destroy() {
+      for (const group of groups) group.destroy?.()
       root.remove()
     },
   }

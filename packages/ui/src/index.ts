@@ -50,7 +50,15 @@ export {
   type ViewGizmo,
   type ViewGizmoOptions,
 } from './model/gizmo.js'
-export { textEditor, createTextEditorModule, defineEditorModule } from './editor/index.js'
+export {
+  textEditor,
+  createTextEditorModule,
+  defineEditorModule,
+  EDITOR_SAVE_REQUEST,
+  handleEditorSaveRequest,
+  requestEditorSave,
+  type EditorSaveRequestDetail,
+} from './editor/index.js'
 export { hexEditor } from './hex-editor/index.js'
 export {
   compileSearch,
@@ -166,6 +174,8 @@ export {
   type SettingsDocument,
   type SettingsStore,
   type SettingsUi,
+  type SettingsUiGroup,
+  type SettingsUiGroupContext,
   type SettingsUiOptions,
   type ThemeChoice,
 } from './settings/index.js'

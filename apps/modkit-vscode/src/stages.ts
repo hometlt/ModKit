@@ -10,22 +10,20 @@
  * editor, and a VS Code webview gets neither. The bounded and virtual text viewers cover reading;
  * the text editor stage covers writing.
  */
-import {
-  audioViewer,
-  boundedTextViewer,
-  hexEditor,
-  hexViewer,
-  imageViewer,
-  metadataPanel,
-  modelViewer,
-  tableViewer,
-  textEditor,
-  treeViewer,
-  vectorViewer,
-  videoViewer,
-  virtualTextViewer,
-  type PreviewStage,
-} from '@modkitx-x3/ui'
+import { audioViewer } from '@modkitx-x3/ui/audio'
+import { boundedTextViewer } from '@modkitx-x3/ui/code'
+import { textEditor } from '@modkitx-x3/ui/editor'
+import type { PreviewStage } from '@modkitx-x3/ui/explorer'
+import { hexViewer } from '@modkitx-x3/ui/hex'
+import { hexEditor } from '@modkitx-x3/ui/hex-editor'
+import { imageViewer } from '@modkitx-x3/ui/image'
+import { metadataPanel } from '@modkitx-x3/ui/metadata'
+import { modelViewer } from '@modkitx-x3/ui/model'
+import { tableViewer } from '@modkitx-x3/ui/table'
+import { virtualTextViewer } from '@modkitx-x3/ui/text-virtual'
+import { treeViewer } from '@modkitx-x3/ui/tree'
+import { vectorViewer } from '@modkitx-x3/ui/vector'
+import { videoViewer } from '@modkitx-x3/ui/video'
 
 import { orderStages } from './view-policy.js'
 import { vscodeArchiveStage } from './archive-stage.js'

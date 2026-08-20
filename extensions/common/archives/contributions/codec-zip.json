@@ -110,7 +110,7 @@
         "outputKinds": ["bytes"]
       },
       {
-        "id": "org.modkitx/archive-zip.extract-entry",
+        "id": "container.extract",
         "handlerId": "extract-entry",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
@@ -151,6 +151,38 @@
         "id": "content.binary",
         "representation": "source",
         "presence": "will-expose"
+      }
+    ],
+    "fidelityEvidence": [
+      {
+        "formatId": "zip",
+        "representationId": "archive-namespace",
+        "claim": {
+          "roundTrip": "semantic",
+          "preservesUnknownData": true
+        },
+        "evidenceId": "zip-verbatim-reassembly-v1",
+        "corpusId": "modkitX3/packages/host/test/archive-edits.test.ts",
+        "corpusDigest": "none:proof-suite",
+        "conformanceProfile": "org.modkitx/codec-contribution-v1",
+        "optionsFingerprint": "options:stored-additions",
+        "inputClass": "zip-classic",
+        "provenAt": "2026-08-19T00:00:00Z"
+      },
+      {
+        "formatId": "zip",
+        "representationId": "archive-namespace",
+        "claim": {
+          "roundTrip": "semantic",
+          "preservesUnknownData": false
+        },
+        "evidenceId": "zip-verbatim-reassembly-non-canonical-v1",
+        "corpusId": "modkitX3/packages/host/test/archive-edits.test.ts",
+        "corpusDigest": "none:proof-suite",
+        "conformanceProfile": "org.modkitx/codec-contribution-v1",
+        "optionsFingerprint": "options:stored-additions",
+        "inputClass": "zip-non-canonical-layout",
+        "provenAt": "2026-08-19T00:00:00Z"
       }
     ],
     "implementationTier": {

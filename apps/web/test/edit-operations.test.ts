@@ -70,7 +70,7 @@ const ZIP_OPERATIONS: readonly OperationFacts[] = [
   { id: 'asset.validate', handlerId: 'validate', mutatesSource: false },
   { id: 'export.raw', handlerId: 'export-raw', mutatesSource: false },
   {
-    id: 'org.modkitx/archive-zip.extract-entry',
+    id: 'container.extract',
     handlerId: 'extract-entry',
     mutatesSource: false,
   },
@@ -208,9 +208,9 @@ describe('the toolbar rule stays out of the panel’s way', () => {
       'asset.validate',
       'export.raw',
     ])
-    // the archive's own extraction operation is non-mutating but takes `{ path }`
+    // the standard archive extraction operation is non-mutating but takes `{ entryId }`
     expect(declinedNonMutatingOperations(subject).map(operation => operation.id)).toEqual([
-      'org.modkitx/archive-zip.extract-entry',
+      'container.extract',
     ])
     // and no mutating operation is ever counted as declined-by-the-toolbar: they are the panel's
     expect(declinedNonMutatingOperations(subject).some(operation => operation.mutatesSource)).toBe(

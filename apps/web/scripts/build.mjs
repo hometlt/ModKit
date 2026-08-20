@@ -38,6 +38,38 @@ if (outIndex !== -1 && (requestedOut === undefined || requestedOut.startsWith('-
 }
 const dist = requestedOut === undefined ? join(appRoot, 'dist-app') : resolve(requestedOut)
 
+/**
+ * URL catalogs are trusted by origin, and the trust decision belongs to whoever deploys this
+ * build. The page receives no runtime API for changing this list: esbuild substitutes the frozen
+ * JSON value into embed.js. A comma-separated environment value keeps CI/deployment wiring plain.
+ */
+const embedExtensionOrigins = Object.freeze(
+  [
+    ...new Set(
+      (process.env['MODKIT_EMBED_EXTENSION_ORIGINS'] ?? '')
+        .split(',')
+        .map(value => value.trim())
+        .filter(value => value !== '')
+        .map(value => {
+          let url
+          try {
+            url = new URL(value)
+          } catch {
+            throw new TypeError(`invalid MODKIT_EMBED_EXTENSION_ORIGINS entry: ${value}`)
+          }
+          if (
+            (url.protocol !== 'http:' && url.protocol !== 'https:') ||
+            url.username !== '' ||
+            url.password !== ''
+          ) {
+            throw new TypeError(`embed extension origin must be an http(s) origin: ${value}`)
+          }
+          return url.origin
+        }),
+    ),
+  ].sort(),
+)
+
 // A clean output every time: hashed chunks and copied artifacts of a previous build must not
 // linger next to the current ones (a stale chunk is unreachable but still served).
 rmSync(dist, { recursive: true, force: true })
@@ -64,6 +96,9 @@ await build({
   target: ['chrome120', 'firefox121', 'safari17'],
   chunkNames: 'chunks/[name]-[hash]',
   absWorkingDir: repoRoot,
+  define: {
+    __MODKIT_EMBED_EXTENSION_ORIGINS__: JSON.stringify(embedExtensionOrigins),
+  },
   logLevel: 'warning',
 })
 

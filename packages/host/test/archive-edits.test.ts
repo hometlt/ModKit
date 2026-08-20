@@ -561,10 +561,15 @@ describe('A4 — ZIP editing on the 13D seam (ADR-HOST-002 Path A)', () => {
     // reading is untouched
     const inspected = await result.session.operations().invoke('inspect', {})
     expect(inspected.state).toBe('ok')
+    const namespace = await result.session.dataSource('common.view/namespace-entry-source', 1)
+    const page = await (namespace.value as NamespaceEntrySource).list('', { limit: 10 })
+    const readme = page.items.find(item => item.path === 'readme.txt')
+    if (readme === undefined) throw new Error('read-only ZIP did not list readme.txt')
     const extracted = await result.session
       .operations()
-      .invoke('extract-entry', { path: 'readme.txt' })
+      .invoke('extract-entry', { entryId: readme.id })
     expect(extracted.state).toBe('ok')
+    await namespace.release()
     await result.session.dispose()
     expect(Buffer.compare(readFileSync(path), original)).toBe(0)
   }, 60_000)

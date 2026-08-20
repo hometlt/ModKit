@@ -1,13 +1,10 @@
 /**
- * The Extensions & Codecs page — where a user connects a third-party extension and switches
- * individual codecs off.
+ * Electron's Extensions & Codecs settings groups — where a user connects a third-party extension
+ * and switches individual codecs off.
  *
- * It is a second settings surface beside the shared `createSettingsUi`, not a group inside it,
- * because everything it draws needs an answer the portable settings component cannot have: what
- * the *host* made of the folder the user named. A settings file can say `org.example/thing lives
- * here`; only the composition can say whether that directory declared an extension, whether its
- * coordinate collided with a bundled one, and which contributions the inventory ended up holding.
- * Main answers all three over `modkitExtensions`, and this page shows those answers verbatim.
+ * Everything it draws needs an answer the portable settings component cannot have: what the host
+ * made of the folder the user named. Main answers that over `modkitExtensions`; these groups plug
+ * the answer into `createSettingsUi(extraGroups)` without creating a second settings shell.
  *
  * It stamps the `settings.*` part vocabulary — the same grid, rows, list and status the shared
  * page uses — so a theme that styles the settings surface styles this one too, and the user cannot
@@ -19,10 +16,11 @@
 import {
   element,
   safeViewerText,
-  setPart,
   setState,
   type SettingsDocument,
   type SettingsStore,
+  type SettingsUiGroup,
+  type SettingsUiGroupContext,
 } from '@modkitx-x3/ui'
 
 // ---------------------------------------------------------------------------------------------
@@ -108,7 +106,7 @@ export type BrowseResult =
 // ---------------------------------------------------------------------------------------------
 // the page
 
-export interface ExtensionsPageOptions {
+export interface ExtensionsSettingsGroupsOptions {
   /** The very same portable document the shared settings page edits. */
   readonly store: SettingsStore
   /** What the running composition holds right now. */
@@ -123,20 +121,10 @@ export interface ExtensionsPageOptions {
    * offer it would have to say "restart to apply" in the same sentence the switch is drawn in.
    */
   apply(): Promise<ExtensionsReport>
-  onClose?(): void
 }
 
-export interface ExtensionsPage {
-  readonly root: HTMLElement
-  /** Re-read the settings document and the composition report, then redraw. */
-  reload(): Promise<void>
-  destroy(): void
-}
-
-interface PageGroup {
-  readonly id: string
-  readonly label: string
-  render(host: HTMLElement): void
+export interface ExtensionsSettingsGroups {
+  readonly groups: readonly SettingsUiGroup[]
 }
 
 const CONTRACT_LABELS: Readonly<Record<string, string>> = Object.freeze({
@@ -154,37 +142,11 @@ function contractLabel(contribution: ContributionReport): string {
   return CONTRACT_LABELS[contribution.contract] ?? contribution.contract
 }
 
-export function createExtensionsPage(
-  document: Document,
-  options: ExtensionsPageOptions,
-): ExtensionsPage {
-  const root = document.createElement('div')
-  root.className = 'modkit-viewer modkit-settings'
-  setPart(root, 'settings')
-  root.dataset['surface'] = 'extensions'
-
-  const groupList = element(root, 'nav', { part: 'settings.groups' })
-  groupList.setAttribute('aria-label', 'Extension settings groups')
-
-  if (options.onClose !== undefined) {
-    const close = element(groupList, 'button', {
-      part: 'settings.close',
-      text: '← Back',
-    }) as HTMLButtonElement
-    close.type = 'button'
-    close.title = 'Close this page (Esc)'
-    close.addEventListener('click', () => options.onClose?.())
-    root.addEventListener('keydown', event => {
-      if (event.key === 'Escape') options.onClose?.()
-    })
-    root.tabIndex = -1
-  }
-
-  const pane = element(root, 'div', { part: 'settings.pane' })
-  const status = element(root, 'output', { part: 'settings.status' })
-
+export function createExtensionsSettingsGroups(
+  options: ExtensionsSettingsGroupsOptions,
+): ExtensionsSettingsGroups {
   let report: ExtensionsReport | undefined
-  let activeGroup = 'extensions'
+  let groupContext: SettingsUiGroupContext | undefined
   /** Busy while main recomposes: a second toggle mid-flight would compose against stale bytes. */
   let busy = false
   /**
@@ -201,9 +163,10 @@ export function createExtensionsPage(
   const refusals: { root: string; code: string; message: string }[] = []
 
   const say = (message: string, bad = false): void => {
-    status.textContent = safeViewerText(message, 600)
-    setState(status, bad ? ['error'] : [])
+    groupContext?.report(safeViewerText(message, 600), bad)
   }
+
+  const draw = (): void => groupContext?.refresh()
 
   const describe = (error: unknown): string =>
     error instanceof Error ? error.message : String(error)
@@ -523,40 +486,15 @@ export function createExtensionsPage(
     }
   }
 
-  const groups: readonly PageGroup[] = [
-    { id: 'extensions', label: 'Extensions', render: renderExtensions },
-    { id: 'codecs', label: 'Codecs', render: renderCodecs },
-  ]
-
-  function draw(): void {
-    pane.replaceChildren()
-    for (const node of groupList.querySelectorAll('[data-mk-part="settings.group"]')) {
-      const selected = node.getAttribute('data-group') === activeGroup
-      node.setAttribute('aria-selected', String(selected))
-      setState(node, selected ? ['selected'] : [])
-    }
-    const group = groups.find(item => item.id === activeGroup) ?? groups[0]
-    group?.render(pane)
-  }
-
-  for (const group of groups) {
-    const button = element(groupList, 'button', {
-      part: 'settings.group',
-      text: group.label,
-    }) as HTMLButtonElement
-    button.type = 'button'
-    button.dataset['group'] = group.id
-    button.setAttribute('role', 'tab')
-    button.addEventListener('click', () => {
-      activeGroup = group.id
-      draw()
-    })
-  }
-
-  return {
-    root,
-
-    async reload() {
+  const extensionsGroup: SettingsUiGroup = {
+    id: 'extensions',
+    label: 'Extensions',
+    render(host, context) {
+      groupContext = context
+      renderExtensions(host)
+    },
+    async reload(context) {
+      groupContext = context
       try {
         report = await options.report()
         say(summarise(report))
@@ -565,9 +503,18 @@ export function createExtensionsPage(
       }
       draw()
     },
+  }
 
-    destroy() {
-      root.remove()
+  const codecsGroup: SettingsUiGroup = {
+    id: 'codecs',
+    label: 'Codecs',
+    render(host, context) {
+      groupContext = context
+      renderCodecs(host)
     },
+  }
+
+  return {
+    groups: [extensionsGroup, codecsGroup],
   }
 }

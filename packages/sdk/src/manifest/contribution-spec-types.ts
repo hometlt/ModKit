@@ -197,6 +197,39 @@ export interface ImplementationTierRecord extends ImplementationTierClaim {
   readonly conformanceProfile: ConformanceProfileId
 }
 
+/**
+ * An authored citation for a codec fidelity proof. The writer's provider/version/artifact
+ * coordinates are deliberately absent: the host derives those from the inventory record that
+ * carried this declaration, so applications never have to copy extension identity literals.
+ */
+export interface CodecFidelityEvidenceDeclaration {
+  readonly formatId: string
+  readonly representationId: string
+  readonly claim:
+    | {
+        readonly roundTrip: 'byte-identical'
+        readonly preservesUnknownData: true
+        readonly notes?: readonly string[]
+      }
+    | {
+        readonly roundTrip: 'semantic'
+        readonly preservesUnknownData: boolean
+        readonly notes?: readonly string[]
+      }
+    | {
+        readonly roundTrip: 'lossy' | 'none'
+        readonly preservesUnknownData: false
+        readonly notes?: readonly string[]
+      }
+  readonly evidenceId: string
+  readonly corpusId: string
+  readonly corpusDigest: string
+  readonly conformanceProfile: string
+  readonly optionsFingerprint: string
+  readonly inputClass: string
+  readonly provenAt: string
+}
+
 interface CodecContributionSpecV1Base<
   DataSourceContract extends string = string,
   Ids extends ContributionSpecIdPlane = ValidatedContributionSpecIdPlane,
@@ -212,6 +245,7 @@ interface CodecContributionSpecV1Base<
   readonly requires?: readonly Ids['requirement'][]
   readonly operations: readonly OperationDecl<Ids>[]
   readonly traitDeclarations?: readonly TraitDeclaration<Ids>[]
+  readonly fidelityEvidence?: readonly CodecFidelityEvidenceDeclaration[]
   readonly implementationTier: ImplementationTierClaim
   readonly budgets: ResourceBudgetWire
 }

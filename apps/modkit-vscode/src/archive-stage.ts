@@ -3,11 +3,11 @@ import type { JsonValue, NamespaceEntrySource, ViewerModule } from '@modkitx-x3/
 import {
   defineViewerModule,
   element,
-  namespaceViewer,
   requireContainer,
   setViewerText,
   unknownSourceLease,
-} from '@modkitx-x3/ui'
+} from '@modkitx-x3/ui/viewer'
+import { namespaceViewer } from '@modkitx-x3/ui/namespace'
 
 import {
   ARCHIVE_ENTRY_PREVIEW_BYTES,
@@ -67,7 +67,7 @@ export const vscodeArchiveStage: ViewerModule = defineViewerModule({
         status,
         `${entryId} → ${reference?.uri ?? 'no source reference'}${
           extract === undefined
-            ? ' · this codec declares no non-mutating entry-extraction operation, so bytes are unavailable'
+            ? ' · this subject declares no available container.extract operation, so bytes are unavailable'
             : ''
         }`,
       )
@@ -82,7 +82,7 @@ export const vscodeArchiveStage: ViewerModule = defineViewerModule({
             setViewerText(body, `the namespace does not list an entry with id ${entryId}`)
             return
           }
-          const input: JsonValue = { path }
+          const input: JsonValue = { entryId }
           const result = await args.operations.invoke(extract.handlerId, input, {
             ...(args.signal === undefined ? {} : { signal: args.signal }),
           })
