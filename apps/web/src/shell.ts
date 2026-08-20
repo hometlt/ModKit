@@ -12,6 +12,11 @@
  * Nothing here decides what a subject can be shown as. `createCodecPreview` answers that from the
  * descriptor the worker sent back, over the stage list in `./views.js`.
  *
+ * Nothing here decides what a subject can be *saved* as either. `./editing.js` composes the browser
+ * editing backend, the raw writer and the commit coordinator; this file holds what only a session
+ * can know — which entry has a writable handle, which revision each tab pinned, and which grant a
+ * subject was opened under — and hands `editorPorts` to the previewer for exactly those subjects.
+ *
  * Two deliberate departures from the shipped explorer's own affordances: the single preview pane is
  * replaced by the editor area (tabs and split groups), so this file owns "open a file" and "accept a
  * drop" rather than letting the explorer preview into a pane that is no longer in the document.
@@ -21,7 +26,9 @@ import {
   type AnyDescriptor,
   type ArtifactByteSource,
   type OperationSession,
+  type PermissionGrant,
 } from '@modkitx-x3/sdk'
+import type { OpenedSubject } from '@modkitx-x3/host'
 import type {
   BrowserBlobConstructorLike,
   BrowserMessageChannelConstructorLike,
@@ -38,6 +45,8 @@ import {
   setState,
   setViewerText,
   type EditorArea,
+  type ExplorerEntry,
+  type PreviewResolver,
   type SettingsDocument,
 } from '@modkitx-x3/ui'
 
@@ -48,10 +57,21 @@ import {
   createDirectoryAccess,
   createSingleFileAccess,
   describeFileCapability,
+  isWritableHandle,
   type WebDirectoryHandleLike,
   type WebFileAccess,
+  type WebFileHandleLike,
   type WebFileLike,
+  type WebWritableFileHandleLike,
 } from './files.js'
+import {
+  createWebEditingArm,
+  describeEditability,
+  requestWriteAccess,
+  sourceRevisionToken,
+  sourceUriFor,
+  type EditabilityReport,
+} from './editing.js'
 import { createInspector, type Inspector, type InspectorTarget } from './inspector.js'
 import {
   applyAppearance,
@@ -59,7 +79,7 @@ import {
   EXTENSIONS_READ_ONLY_REASON,
   WEB_THEMES,
 } from './settings.js'
-import { createWebPreviewStages, READ_ONLY_NOTICE, WEB_PREVIEW_FALLBACK } from './views.js'
+import { createWebPreviewStages, WEB_EDITING_NOTICE, WEB_PREVIEW_FALLBACK } from './views.js'
 
 /** Served resources the app offers as a starting point when no folder can be granted. */
 const SAMPLES: readonly { readonly path: string; readonly label: string }[] = Object.freeze([
@@ -92,13 +112,20 @@ function identity(): { operatingSystem: 'windows' | 'darwin' | 'linux'; architec
   return { operatingSystem, architecture: 'x64' }
 }
 
-/** Bytes the explorer already read, as the random-access source `openSubject` asks for. */
-function bytesSource(name: string, bytes: Uint8Array, token: string): ArtifactByteSource {
-  const uri = `file-picker://${encodeURIComponent(name)}`
+/**
+ * Bytes the explorer already read, as the random-access source `openSubject` asks for.
+ *
+ * The id is the *entry id*, not the file name: two files with the same name in different folders
+ * of one grant are two subjects, and the editing arm looks a writable handle up by this id. The
+ * revision is the file's own `size`/`lastModified` pair, so the backend can re-derive it from the
+ * live handle and refuse a write to a file that changed under the tab.
+ */
+function bytesSource(entryId: string, bytes: Uint8Array, token: string): ArtifactByteSource {
+  const uri = sourceUriFor(entryId)
   return {
     kind: 'bytes',
     ref: { id: uri, uri },
-    revision: revisionId(`provider-token:${token}`),
+    revision: revisionId(token),
     size: BigInt(bytes.byteLength),
     async read(offset, length) {
       const start = Number(offset)
@@ -116,17 +143,37 @@ function bytesSource(name: string, bytes: Uint8Array, token: string): ArtifactBy
 const descriptorKey = (descriptor: AnyDescriptor): string =>
   `${descriptor.subjectUri} :: ${descriptor.revision}`
 
-async function pickFile(): Promise<WebFileLike | undefined> {
-  const picker = (window as { showOpenFilePicker?: () => Promise<{ getFile(): Promise<File> }[]> })
+/**
+ * One file and — when the browser gave one — the handle behind it.
+ *
+ * The handle is the whole difference between a file this page can save and one it can only read:
+ * `showOpenFilePicker` yields one, an `<input type="file">` yields a `File` and nothing else.
+ * Dropping it on the floor (as this function used to) is what made every opened file view-only.
+ */
+interface PickedFile {
+  readonly file: WebFileLike
+  readonly handle?: WebFileHandleLike
+}
+
+async function pickFile(): Promise<PickedFile | undefined> {
+  const picker = (window as { showOpenFilePicker?: () => Promise<WebFileHandleLike[]> })
     .showOpenFilePicker
   if (picker !== undefined) {
     const [handle] = await picker.call(window)
-    return handle === undefined ? undefined : await handle.getFile()
+    if (handle === undefined) return undefined
+    return { file: await handle.getFile(), handle }
   }
   return new Promise(resolve => {
     const input = document.createElement('input')
     input.type = 'file'
-    input.addEventListener('change', () => resolve(input.files?.[0] ?? undefined), { once: true })
+    input.addEventListener(
+      'change',
+      () => {
+        const chosen = input.files?.[0]
+        resolve(chosen === undefined ? undefined : { file: chosen })
+      },
+      { once: true },
+    )
     input.click()
   })
 }
@@ -216,25 +263,90 @@ async function boot(): Promise<void> {
       .catch((error: unknown) => console.warn('inspector failed', error))
   }
 
+  // ---------------------------------------------------------------- editing arm
+  /*
+   * Everything a save needs, kept by the shell because the shell is what opened the subject and
+   * what holds the handles. `./editing.js` owns the composition; this owns the session state.
+   */
+  let access: WebFileAccess | undefined
+  /** The revision token each tab pinned, taken from the handle *before* the bytes were read. */
+  const pinnedRevisions = new Map<string, string>()
+  /** Writable handles by source id — exactly what the editing backend resolves a write through. */
+  const writableHandles = new Map<string, WebWritableFileHandleLike>()
+  /** The opened subject behind each tab, so an editable stage can be given ports for it. */
+  const openedSubjects = new Map<
+    string,
+    { readonly opened: OpenedSubject; readonly grant: PermissionGrant }
+  >()
+  /** Why each open tab does or does not get the editors, decided before its stages are chosen. */
+  const editability = new Map<string, EditabilityReport>()
+
+  /**
+   * The host rail's live editing line. Made here and appended into the rail below, so everything
+   * that has something to say about editing can say it without waiting for the rail to exist.
+   */
+  const editingStatus = document.createElement('p')
+  setPart(editingStatus, 'settings.status')
+  setViewerText(editingStatus, 'No file is open yet, so nothing is editable.')
+  const noteEditing = (message: string): void => setViewerText(editingStatus, message, 400)
+  /** Bound once the editor area exists; the arm is built before it and needs to mark its tabs. */
+  let markDirty: (entryId: string, dirty: boolean) => void = () => undefined
+  /** Entry id of the focused tab, which is the only tab that can receive a keystroke. */
+  let focused: string | undefined
+
+  const editing = createWebEditingArm({
+    handleFor: sourceId => writableHandles.get(sourceId),
+    onNotice(message) {
+      say(message)
+      noteEditing(message)
+    },
+    onDirty: (entryId, dirty) => markDirty(entryId, dirty),
+    /*
+     * Reached from an editor's Save click, which is the only place the browser will honour
+     * `requestPermission`. Asking on load is both refused by the browser and rude.
+     */
+    async ensureWriteAccess(entryId) {
+      const current = await describeEditability(access, entryId)
+      if (current.state === 'granted' || current.state === 'no-permission-surface') return 'granted'
+      if (current.state !== 'prompt') {
+        noteEditing(current.sentence)
+        return 'denied'
+      }
+      const asked = await requestWriteAccess(access)
+      noteEditing(asked.sentence)
+      return asked.state === 'granted' ? 'granted' : asked.state === 'denied' ? 'denied' : 'prompt'
+    },
+  })
+
   // ---------------------------------------------------------------- preview policy
   let openCount = 0
   const stages = createWebPreviewStages({
     operationsFor: descriptor => operationSessions.get(descriptorKey(descriptor)),
   })
 
-  const preview = createCodecPreview({
+  const previewBase = {
     supported: services.supportedExtensions,
     stages,
     fallback: WEB_PREVIEW_FALLBACK,
-    // No `editorPorts`: every `editable` stage is dropped before it mounts. See views.ts.
-    async openSession(entry, bytes, signal) {
+    async openSession(entry: ExplorerEntry, bytes: Uint8Array, signal?: AbortSignal) {
       openCount += 1
-      const token = `${entry.name}-${bytes.byteLength}-${openCount}`.replace(/[^a-z0-9-]/giu, '-')
+      /*
+       * A file this session can write is opened under a grant that says so, and pinned to the
+       * revision its handle reported. A file it cannot write keeps the old read-only grant and a
+       * token that only has to be unique — no backend will ever be asked to honour it.
+       */
+      const writable = editability.get(entry.id)?.editable === true
+      const token =
+        pinnedRevisions.get(entry.id) ?? `provider-token:${bytes.byteLength}-${openCount}`
+      const grant: PermissionGrant = {
+        id: `pwa-${openCount}`,
+        classes: writable ? ['read-source', 'write-source'] : ['read-source'],
+      }
       const result = await services.open({
-        source: bytesSource(entry.name, bytes, token),
+        source: bytesSource(entry.id, bytes, token),
         path: entry.name,
         intent: 'full',
-        grant: { id: `pwa-${openCount}`, classes: ['read-source'] },
+        grant,
         budget: {
           maxInputBytes: BigInt(EXPLORER_MAXIMUM_BYTES),
           maxDepth: 256,
@@ -273,28 +385,104 @@ async function boot(): Promise<void> {
       const operations = session.operations()
       operationSessions.set(key, operations)
       inspected.set(entry.id, { label: entry.name, descriptor: result.descriptor, operations })
+      openedSubjects.set(entry.id, { opened: result, grant })
       inspecting = undefined
       inspect(entry.id)
       return {
         descriptor: () => session.descriptor(),
-        dataSource: (contract, major) => session.dataSource(contract, major),
+        dataSource: (contract: string, major: number) => session.dataSource(contract, major),
         async dispose() {
           operationSessions.delete(key)
           inspected.delete(entry.id)
+          openedSubjects.delete(entry.id)
+          writableHandles.delete(sourceUriFor(entry.id))
           if (inspecting === entry.id) inspect(undefined)
           await session.dispose()
         },
       }
     },
+  }
+
+  /*
+   * Two resolvers over the same open path, because `createCodecPreview` decides once, at
+   * construction, whether *any* editable stage may appear — the presence of `editorPorts` is the
+   * switch. Editability, though, is per file: this folder's PNG has a writable handle and the
+   * sample fetched from the app origin does not. So the app builds both and picks per open, which
+   * keeps the honest rule ("no editor without a save path") at file granularity.
+   */
+  const readOnlyPreview = createCodecPreview(previewBase)
+  const editablePreview = createCodecPreview({
+    ...previewBase,
+    editorPorts(entry, bytes) {
+      const record = openedSubjects.get(entry.id)
+      const ports =
+        record === undefined
+          ? undefined
+          : editing.portsFor({
+              entryId: entry.id,
+              name: entry.name,
+              opened: record.opened,
+              grant: record.grant,
+              bytes,
+            })
+      /*
+       * `createSubjectEditing` names the edit session `edit`; `createCodecPreview` reads it as
+       * `session`. Mapped here rather than pretending the two shapes are the same one.
+       */
+      return {
+        session: ports?.edit,
+        commit: ports?.commit,
+        payloads: ports?.payloads,
+        authorization: ports?.authorization,
+      }
+    },
   })
 
-  // ---------------------------------------------------------------- editors + explorer
-  let access: WebFileAccess | undefined
+  const preview: PreviewResolver = {
+    supported: readOnlyPreview.supported,
+    async open(container, entry, bytes, signal) {
+      const decision = await describeEditability(access, entry.id, entry.name)
+      /*
+       * A pinned revision is part of being editable: without the handle snapshot this tab read
+       * before its bytes, the backend would compute a revision the plan never expected and every
+       * save would look like a conflict. Refusing the editors is the honest form of that.
+       */
+      const source = sourceUriFor(entry.id)
+      const handle = access?.handleOf(entry.id)
+      const editable = decision.editable && pinnedRevisions.has(entry.id)
+      if (editable && isWritableHandle(handle)) writableHandles.set(source, handle)
+      else writableHandles.delete(source)
+      editability.set(entry.id, editable ? decision : { ...decision, editable: false })
+      noteEditing(decision.sentence)
+      const resolver = editable ? editablePreview : readOnlyPreview
+      return resolver.open(container, entry, bytes, signal)
+    },
+  }
 
+  // ---------------------------------------------------------------- editors + explorer
   const editors: EditorArea = createEditorArea(document, {
     preview,
+    async confirmClose(entry) {
+      /*
+       * No "save" option: the Save button lives inside the editor stage and the shell has no way
+       * to press it for a tab that is closing. Offering a button that would do nothing is worse
+       * than offering two that do what they say.
+       */
+      return window.confirm(`${entry.name} has unsaved changes. Close the tab and discard them?`)
+        ? 'discard'
+        : 'cancel'
+    },
     async read(entry, signal) {
       if (access === undefined) throw new Error('no folder or file is open')
+      /*
+       * The revision is pinned from the handle *before* the bytes are read, never after: if the
+       * file changes in between, the tab holds the older bytes and the pin is the older revision,
+       * so a later save is refused as a conflict. Pinning afterwards would silently bless the
+       * change and overwrite it.
+       */
+      const snapshot = await access.snapshotOf(entry.id, signal)
+      if (snapshot === undefined) pinnedRevisions.delete(entry.id)
+      else pinnedRevisions.set(entry.id, sourceRevisionToken(snapshot))
       /*
        * Refuse rather than truncate. `read` caps at the limit, and a codec handed the first 64 MiB
        * of a larger file would detect and describe something that is not the file — the explorer's
@@ -315,7 +503,22 @@ async function boot(): Promise<void> {
       // The panel is about the focused tab, so switching tabs re-targets it rather than
       // leaving the last opened file's diagnostics on screen.
       inspect(status.path)
+      focused = status.path
     },
+  })
+  markDirty = (entryId, dirty) => editors.markDirty(entryId, dirty)
+
+  /*
+   * The hex editor reports unsaved work through `edit.propose` on every changed byte, so the arm
+   * marks its tab. The text editor proposes only when Save is pressed, and a textarea that has
+   * been typed into but not saved would look clean until then — so typing is observed here. The
+   * event bubbles out of the stage, and only the focused tab can receive one, which is why the
+   * focused path is the right tab to mark.
+   */
+  editors.root.addEventListener('input', event => {
+    const target = event.target
+    if (!(target instanceof HTMLElement) || target.dataset['mkPart'] !== 'editor.text') return
+    if (focused !== undefined) editors.markDirty(focused, true)
   })
 
   const explorer = createExplorer(document, {
@@ -341,9 +544,15 @@ async function boot(): Promise<void> {
   singlePane.replaceWith(editors.root)
 
   /*
-   * "Open file…" and the drop target are the shell's, not the explorer's: the explorer would route
-   * both into the preview pane that is no longer in the document, and a browser drop carries `File`
-   * objects rather than paths, so each dropped file is its own one-entry access.
+   * "Open file…" and the drop target are the shell's, not the explorer's: in the `packages/ui` this
+   * worktree was cut from, the explorer routes both into the preview pane that is no longer in the
+   * document, and a browser drop carries `File` objects rather than paths, so each dropped file is
+   * its own one-entry access.
+   *
+   * Upstream has since given `createExplorer` an `onOpen`-routed file picker and a nominable
+   * `dropTarget`. Once this sits on top of that, both of these move back into the explorer's own
+   * options — but the handle must travel with the file either way (see `pickFile`), because a file
+   * that arrives without one can never be saved back.
    */
   const toolbar = explorer.root.querySelector('[data-mk-part="explorer.toolbar"]')
   const toolbarAction = (label: string, title: string, run: () => void): void => {
@@ -357,8 +566,8 @@ async function boot(): Promise<void> {
     button.addEventListener('click', run)
   }
 
-  async function openFile(file: WebFileLike): Promise<void> {
-    const picked = createSingleFileAccess(file)
+  async function openFile(file: WebFileLike, handle?: WebFileHandleLike): Promise<void> {
+    const picked = createSingleFileAccess(file, handle)
     access = picked.access
     await explorer.setAccess(picked.access)
     await editors.open(picked.entry)
@@ -367,14 +576,30 @@ async function boot(): Promise<void> {
   toolbarAction('Open file…', 'Open a single file in a new tab', () => {
     void (async () => {
       try {
-        const file = await pickFile()
-        if (file !== undefined) await openFile(file)
+        const picked = await pickFile()
+        if (picked !== undefined) await openFile(picked.file, picked.handle)
       } catch (error) {
         say(`Could not open the file: ${describe(error)}`)
       }
     })()
   })
   toolbarAction('Split editor', 'Open the next file beside this one', () => editors.split())
+  /*
+   * The gesture the browser insists on. `requestPermission` is only honoured while the page holds
+   * transient user activation, so it is a click and never boot; the same request also happens on a
+   * Save click, which is why this control is a convenience rather than a precondition.
+   */
+  toolbarAction(
+    'Enable editing',
+    'Ask this browser for permission to write the file or folder you picked',
+    () => {
+      void (async () => {
+        const asked = await requestWriteAccess(access)
+        say(asked.sentence)
+        noteEditing(asked.sentence)
+      })()
+    },
+  )
 
   const stopEvent = (event: DragEvent): void => {
     event.preventDefault()
@@ -459,7 +684,13 @@ async function boot(): Promise<void> {
       `shared memory ${probe.sharedMemory ? 'yes' : 'no'}`,
   })
   element(sidebar, 'p', { part: 'settings.description', text: capability.notice })
-  element(sidebar, 'p', { part: 'settings.description', text: READ_ONLY_NOTICE })
+  element(sidebar, 'p', { part: 'settings.description', text: WEB_EDITING_NOTICE })
+  /*
+   * The live half of that notice: which of the two the file in front of you is, and what the last
+   * save actually did. `noteEditing` writes here, so the claim on screen is about this session and
+   * not a general statement about browsers.
+   */
+  sidebar.append(editingStatus)
   element(sidebar, 'h2', { text: 'Facilities' })
   const facilities = element(sidebar, 'ul', { part: 'settings.list' })
   for (const facility of services.main.profile.facilities) {
@@ -538,8 +769,206 @@ async function boot(): Promise<void> {
   const requested = query.get('open')
   if (requested !== null) await openServed(requested)
 
+  // ---------------------------------------------------------------- the save path, in the page
+  /**
+   * Drive an entire save in the running browser, over a handle held in memory.
+   *
+   * The real `showDirectoryPicker` needs a user gesture an automated run cannot produce, so this
+   * substitutes exactly the one thing that gesture would have produced — a handle with
+   * `createWritable()` — and leaves everything else real: the same `WebFileAccess` shape, the same
+   * codecs in the same module workers, the same stage list, the same editing backend, the same
+   * commit coordinator, the same DOM events a person's clicks raise. What it proves is the write
+   * path end to end; what it deliberately cannot prove is the browser's own permission dialog.
+   */
+  async function probeEditing(log: (line: string) => void): Promise<void> {
+    const encoder = new TextEncoder()
+    const decoder = new TextDecoder()
+    const settle = (): Promise<void> => new Promise(resolve => setTimeout(resolve, 60))
+    const until = async (test: () => boolean): Promise<boolean> => {
+      for (let attempt = 0; attempt < 60; attempt += 1) {
+        if (test()) return true
+        await settle()
+      }
+      return test()
+    }
+
+    /** One in-memory file behind a handle that behaves like the File System Access one. */
+    const memoryFile = (name: string, text: string) => {
+      let content = encoder.encode(text)
+      let modified = 1_000
+      const handle: WebWritableFileHandleLike = {
+        kind: 'file',
+        name,
+        async getFile() {
+          const held = content
+          return {
+            name,
+            size: held.byteLength,
+            lastModified: modified,
+            slice: (start: number, end: number) => ({
+              async arrayBuffer() {
+                const part = held.slice(start, end)
+                const copy = new ArrayBuffer(part.byteLength)
+                new Uint8Array(copy).set(part)
+                return copy
+              },
+            }),
+          }
+        },
+        async createWritable() {
+          const chunks: Uint8Array[] = []
+          return {
+            async write(data: Uint8Array) {
+              chunks.push(data.slice())
+            },
+            async close() {
+              const total = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0)
+              const next = new Uint8Array(total)
+              let at = 0
+              for (const chunk of chunks) {
+                next.set(chunk, at)
+                at += chunk.byteLength
+              }
+              content = next
+              // a real write moves the mtime, which is what the revision guard reads
+              modified += 1
+            },
+          }
+        },
+        async queryPermission() {
+          return 'granted' as const
+        },
+        async requestPermission() {
+          return 'granted' as const
+        },
+      }
+      return {
+        handle,
+        entry: { id: name, name, directory: false, size: content.byteLength },
+        text: () => decoder.decode(content),
+        size: () => content.byteLength,
+        modified: () => modified,
+      }
+    }
+
+    const first = memoryFile('selftest-text.csv', 'a,b\n1,2\n')
+    const second = memoryFile('selftest-hex.csv', 'a,b\n3,4\n')
+    const files = [first, second]
+    const byId = new Map(files.map(file => [file.entry.id, file]))
+    const memory: WebFileAccess = {
+      label: 'in-memory grant',
+      writeGrant: first.handle,
+      async list(entryId) {
+        return entryId === undefined ? files.map(file => file.entry) : []
+      },
+      sizeOf: entryId => byId.get(entryId)?.size(),
+      handleOf: entryId => byId.get(entryId)?.handle,
+      async snapshotOf(entryId) {
+        const file = byId.get(entryId)
+        return file === undefined ? undefined : { size: file.size(), lastModified: file.modified() }
+      },
+      async read(entryId) {
+        const file = byId.get(entryId)
+        if (file === undefined) throw new TypeError(`${entryId} is not in the memory grant`)
+        return encoder.encode(file.text())
+      },
+    }
+
+    /*
+     * Every lookup is scoped to the *focused* group. The area splits earlier in this run, so a
+     * document-wide `querySelector` would answer with the first group's picker and quietly test
+     * the wrong file — which is exactly what it did before this scope existed.
+     */
+    const group = (): HTMLElement => {
+      const active = editors.root.querySelector(
+        '[data-mk-part="explorer.group"][data-mk-state~="active"]',
+      )
+      return active instanceof HTMLElement ? active : editors.root
+    }
+    const picker = (): HTMLSelectElement | undefined => {
+      const node = group().querySelector('[data-mk-part="explorer.viewpicker"]')
+      return node instanceof HTMLSelectElement ? node : undefined
+    }
+    const visible = (node: Element): boolean =>
+      node.closest('[data-mk-part="explorer.tabcontent"]')?.hasAttribute('hidden') !== true
+    const saveButton = (): HTMLButtonElement | undefined =>
+      [...group().querySelectorAll('button')].find(
+        button => button.textContent === 'Save' && visible(button),
+      )
+    const inStage = (part: string): Element | undefined =>
+      [...group().querySelectorAll(`[data-mk-part="${part}"]`)].find(visible)
+    const showView = async (id: string): Promise<boolean> => {
+      const select = picker()
+      if (select === undefined || ![...select.options].some(option => option.value === id)) {
+        log(`selftest: ${id} was not offered for the focused tab`)
+        return false
+      }
+      select.value = id
+      select.dispatchEvent(new Event('change'))
+      await settle()
+      return true
+    }
+
+    access = memory
+    await explorer.setAccess(memory)
+
+    // ---- a writable handle offers the editors
+    await editors.open(first.entry)
+    await settle()
+    const views = [...(picker()?.options ?? [])].map(option => option.value)
+    log(`selftest: writable file offers [${views.join(', ')}]`)
+    log(`selftest: editing line says "${editingStatus.textContent ?? ''}"`)
+
+    // ---- the text editor writes the bytes the user typed
+    if (await showView('text-editor')) {
+      const area = inStage('editor.text')
+      if (area instanceof HTMLTextAreaElement) {
+        area.value = 'a,b\n9,9\n'
+        area.dispatchEvent(new Event('input', { bubbles: true }))
+        const tab = [...group().querySelectorAll('[data-mk-part="explorer.filetab"]')].find(
+          node => node.getAttribute('title') === first.entry.id,
+        )
+        log(`selftest: tab state after typing = ${tab?.getAttribute('data-mk-state') ?? 'none'}`)
+        saveButton()?.click()
+        await until(() => first.text() === 'a,b\n9,9\n')
+        log(`selftest: text save wrote ${JSON.stringify(first.text())}`)
+        log(`selftest: after text save "${editingStatus.textContent ?? ''}"`)
+      } else {
+        log('selftest: the text editor mounted no textarea')
+      }
+    }
+
+    // ---- the hex editor writes one byte, through the same backend
+    await editors.open(second.entry)
+    await settle()
+    if (await showView('hex-editor')) {
+      const cell = inStage('hex.cell')
+      if (cell instanceof HTMLElement) {
+        cell.textContent = '5a'
+        cell.dispatchEvent(new Event('blur'))
+        await settle()
+        saveButton()?.click()
+        await until(() => second.text().startsWith('Z'))
+        log(`selftest: hex save wrote ${JSON.stringify(second.text())}`)
+      } else {
+        log('selftest: the hex editor mounted no cells')
+      }
+      // ---- and the revision guard refuses the next save from the same tab
+      const again = [...group().querySelectorAll('[data-mk-part="hex.cell"]')].filter(visible)[1]
+      if (again instanceof HTMLElement) {
+        again.textContent = '59'
+        again.dispatchEvent(new Event('blur'))
+        await settle()
+        saveButton()?.click()
+        await until(() => (editingStatus.textContent ?? '').includes('changed on disk'))
+        log(`selftest: second save from a stale tab -> "${editingStatus.textContent ?? ''}"`)
+        log(`selftest: file is still ${JSON.stringify(second.text())}`)
+      }
+    }
+  }
+
   if (query.get('selftest') !== null) {
-    await selfTest({ openServed, editors, settingsView, inspector })
+    await selfTest({ openServed, editors, settingsView, inspector, probeEditing })
   }
 }
 
@@ -551,6 +980,8 @@ interface SelfTestParts {
   readonly editors: EditorArea
   readonly settingsView: HTMLElement
   readonly inspector: Inspector
+  /** Drives a real save over an in-memory handle; see `probeEditing` in `boot`. */
+  probeEditing(log: (line: string) => void): Promise<void>
 }
 
 /**
@@ -620,8 +1051,19 @@ async function selfTest(parts: SelfTestParts): Promise<void> {
   ).length
   log(`selftest: inspector operations=${operations} diagnosticGroups=${diagnostics}`)
 
+  /*
+   * Served samples reach the page through a same-origin fetch, so they have no writable handle and
+   * must offer no editor. This is the half of the editing rule that has to stay true.
+   */
   const editable = [...(picker()?.options ?? [])].some(option => option.value.endsWith('-editor'))
-  log(`selftest: editable stages offered=${editable} (expected false: no browser editing backend)`)
+  log(`selftest: editable stages for a fetched sample=${editable} (expected false: no handle)`)
+
+  // The other half: a file that does have a handle is edited, saved and guarded, for real.
+  try {
+    await parts.probeEditing(log)
+  } catch (error) {
+    log(`selftest: editing probe FAILED ${describe(error)}`)
+  }
 
   for (const theme of WEB_THEMES) {
     document.documentElement.setAttribute('data-mk-theme', theme.id)

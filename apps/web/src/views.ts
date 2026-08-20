@@ -8,11 +8,14 @@
  *
  * Two rules are worth stating because they are load-bearing:
  *
- *  - **Editable stages are declared and then dropped.** The text and hex *editors* are listed with
- *    `editable: true`, and this host never passes `editorPorts`, so `createCodecPreview` removes
- *    them before anything mounts. That is deliberate: the browser has no editing backend yet, and
- *    an editor that could never save is a lie. Listing them keeps the reason visible instead of
- *    hiding it behind an absent import.
+ *  - **Editable stages are offered only for a file this page can write.** The text and hex
+ *    *editors* are listed with `editable: true`, and `createCodecPreview` drops them unless the
+ *    host passes `editorPorts`. The shell now passes them — but per subject: a file picked through
+ *    `showOpenFilePicker`/`showDirectoryPicker` has a handle with `createWritable()` and gets the
+ *    editors; a file that arrived through a plain file input, a drop or a same-origin fetch has no
+ *    handle, can never be saved back, and gets none. Write permission that the browser has already
+ *    denied drops them too. An editor that could never save would still be a lie; the difference is
+ *    that the app now knows exactly which files those are (see `./editing.js`).
  *  - **A stage is gated by its contract, not by a trait, unless the trait is what a viewer needs.**
  *    PNG publishes a tree data source while declaring only image traits; requiring
  *    `structure.hierarchy` there would hide a tree the codec really does publish. The text stages
@@ -444,15 +447,15 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
     },
     { id: 'hex', label: 'Hex', contract: 'common.view/byte-range-source', module: hexViewer },
     /*
-     * Declared, never mounted here: this host passes no `editorPorts`, so `createCodecPreview`
-     * drops both before the first stage appears. See the module comment.
+     * Mounted only for a subject the shell handed `editorPorts` for — a file with a File System
+     * Access handle whose write permission the browser has not refused. See the module comment.
      *
-     * The cast records a gap in the ui package rather than hiding one: `PreviewStage.module` is
-     * typed `ViewerModule`, while its own documentation says an `editable` stage carries an
-     * `EditorModule` (which takes four more mount arguments). Widening that field to
-     * `ViewerModule | EditorModule` is a Root change; until then a first-party host cannot name an
-     * editor stage in TypeScript at all — Electron only gets away with it through an untyped
-     * generated catalog.
+     * The cast records a gap in the ui package rather than hiding one: in the `packages/ui` this
+     * worktree was cut from, `PreviewStage.module` is typed `ViewerModule`, while its own
+     * documentation says an `editable` stage carries an `EditorModule` (which takes four more
+     * mount arguments), so a first-party host cannot name an editor stage in TypeScript at all.
+     * The widening to `ViewerModule | EditorModule` has since landed upstream: once this sits on
+     * top of it, both casts here become plain `module: textEditor` / `module: hexEditor`.
      */
     {
       id: 'text-editor',
@@ -478,7 +481,15 @@ export const WEB_PREVIEW_FALLBACK = Object.freeze({ text: boundedTextViewer, hex
 /** The stage ids that only ever appear when a host supplies editor ports. */
 export const EDITABLE_STAGE_IDS = Object.freeze(['text-editor', 'hex-editor'])
 
-/** Why the editable stages are missing, in the words the UI shows. */
-export const READ_ONLY_NOTICE =
-  'Viewing only: this build has no browser editing backend, so the text and hex editors are ' +
-  'declared and then dropped — an editor that could never save would be a lie.'
+/**
+ * What this build can and cannot edit, in the words the UI shows.
+ *
+ * It replaces the old "viewing only, no browser editing backend" line, which stopped being true
+ * when the File System Access backend was wired in. The sentence that matters is the second one:
+ * the editors follow the *handle*, not the file type, and there is one kind of open file that can
+ * never get them.
+ */
+export const WEB_EDITING_NOTICE =
+  'Editing: a file opened through the file or folder picker has a writable handle, so it gets the ' +
+  'text and hex editors and saves in place once you allow write access. A file that arrived by ' +
+  'drop, by a plain file input or by a same-origin fetch has no handle and stays view-only.'
