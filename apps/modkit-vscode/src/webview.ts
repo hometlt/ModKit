@@ -18,6 +18,7 @@ import {
   createEditorArea,
   createExplorer,
   element,
+  setState,
   setViewerText,
   EXPLORER_MAXIMUM_BYTES,
   type EditorArea,
@@ -29,6 +30,7 @@ import { createWorkbench } from '@modkitx-x3/ui/workbench'
 import { connectSubjectRpc, type SubjectPreviewSession } from '@modkitx-x3/host'
 
 import { createBridge, type ShellEntry, type WebviewChannel } from './bridge.js'
+import { createVsCodeSettingsView } from './settings-view.js'
 import { createWebviewEditorPorts, type WebviewEditorPorts } from './editor-ports.js'
 import { createVsCodePreviewStages, VSCODE_PREVIEW_FALLBACK } from './stages.js'
 import { preferredStage } from './view-policy.js'
@@ -315,11 +317,68 @@ async function mount(
   if (singlePane === null) throw new Error('explorer has no preview pane to replace')
   singlePane.replaceWith(editors.root)
 
-  workbench.setMain(explorer.root)
   workbench.setSidebar(hostPanel(snapshot))
+
+  // ---------------------------------------------------------------- activities
+  /*
+   * Two things can occupy the editor area, chosen from the workbench's own activity bar: the file
+   * tree with its tabs, and the settings section that manages extensions and codecs. The settings
+   * section goes in the *main* area rather than the sidebar because it lists every contribution
+   * the inventory holds, and a switch beside a codec id does not fit a 17rem rail.
+   *
+   * The host rail stays in the sidebar throughout: it describes the realm this page runs in, which
+   * is true whichever activity is showing.
+   *
+   * The settings view holds no host and no configuration API — every switch on it is a shell
+   * request the extension side answers, which is the only honest path from a webview.
+   */
+  const settingsView = createVsCodeSettingsView(document, {
+    request: request => bridge.request(request),
+    onStatus: say,
+  })
+  const activities: readonly {
+    readonly id: string
+    readonly label: string
+    readonly content: HTMLElement
+  }[] = [
+    { id: 'files', label: 'Files', content: explorer.root },
+    { id: 'settings', label: 'Extensions', content: settingsView.root },
+  ]
+  const showActivity = (id: string): void => {
+    const chosen = activities.find(item => item.id === id) ?? activities[0]
+    if (chosen === undefined) return
+    workbench.setMain(chosen.content)
+    for (const node of workbench.activitybar.querySelectorAll('[data-activity]')) {
+      const selected = node.getAttribute('data-activity') === chosen.id
+      node.setAttribute('aria-selected', String(selected))
+      setState(node, selected ? ['selected'] : [])
+    }
+    if (chosen.id === 'settings') void settingsView.reload()
+  }
+  for (const item of activities) {
+    // `settings.group` rather than a new part: this is exactly the control that family names — a
+    // tab that chooses which pane is shown — and the part vocabulary is a contract, not a label.
+    const button = element(workbench.activitybar, 'button', {
+      part: 'settings.group',
+      text: item.label,
+    }) as HTMLButtonElement
+    button.type = 'button'
+    button.dataset['activity'] = item.id
+    button.setAttribute('role', 'tab')
+    button.addEventListener('click', () => showActivity(item.id))
+  }
+  showActivity('files')
+
+  /** Opening a file from anywhere must bring the file area back, or the tab opens out of sight. */
+  const showFiles = (): void => {
+    showActivity('files')
+  }
 
   // ---------------------------------------------------------------- host traffic
   const openPath = async (path: string, name: string): Promise<void> => {
+    // The editor area lives in the file activity; opening while settings are showing would mount
+    // the tab where nobody can see it.
+    showFiles()
     const entry: ExplorerEntry = { id: path, name, directory: false }
     await editors.open(entry)
   }

@@ -155,6 +155,171 @@ export function configuredExtensionRoots(
   return { roots: Object.freeze(roots), problems: Object.freeze(problems) }
 }
 
+/**
+ * Append one directory to a `modkit.extensions` value, keeping everything the user authored.
+ *
+ * The setting is hand-written as often as not — a mix of bare strings and entry objects, in an
+ * order that may mean something to whoever wrote it. Rewriting it into a canonical shape would
+ * lose that, so the new folder is appended as a plain string and every existing item is passed
+ * through untouched.
+ *
+ * `caseSensitive` is asked for rather than guessed: on Windows two spellings of one path are the
+ * same directory and adding both would load it twice, on Linux they are two directories and
+ * refusing the second would be wrong.
+ */
+export function withExtensionRoot(
+  value: unknown,
+  root: string,
+  options: { readonly caseSensitive: boolean },
+): { readonly next: readonly unknown[]; readonly added: boolean; readonly reason?: string } {
+  const existing = Array.isArray(value) ? value : []
+  if (!Array.isArray(value) && value !== undefined && value !== null) {
+    return {
+      next: [root],
+      added: true,
+      reason: 'modkit.extensions was not a list; it has been replaced with this one folder',
+    }
+  }
+  const fold = (path: string): string => (options.caseSensitive ? path : path.toLowerCase())
+  const wanted = fold(root)
+  const already = existing.some(item => {
+    if (typeof item === 'string') return fold(item) === wanted
+    if (typeof item !== 'object' || item === null) return false
+    const path = (item as ConfiguredExtensionEntry).path
+    return typeof path === 'string' && fold(path) === wanted
+  })
+  if (already) {
+    return { next: existing, added: false, reason: `${root} is already in modkit.extensions` }
+  }
+  return { next: [...existing, root], added: true }
+}
+
+/**
+ * Read the `modkit.disabledContributions` setting.
+ *
+ * A list of contribution ids the user switched off — one level below `modkit.extensions`, which
+ * switches whole directories. The value is a set, so it is deduplicated and sorted here and a
+ * malformed entry is reported rather than silently ignored: a typo that quietly disables nothing
+ * is worse than a typo that says so, because the user's next move is to look for the bug in the
+ * codec.
+ */
+export function configuredDisabledContributions(value: unknown): {
+  readonly ids: readonly string[]
+  readonly problems: readonly string[]
+} {
+  if (value === undefined || value === null) return { ids: Object.freeze([]), problems: [] }
+  if (!Array.isArray(value)) {
+    return {
+      ids: Object.freeze([]),
+      problems: Object.freeze(['modkit.disabledContributions must be a list of contribution ids']),
+    }
+  }
+  const ids: string[] = []
+  const problems: string[] = []
+  const seen = new Set<string>()
+  for (const [index, item] of value.entries()) {
+    if (typeof item !== 'string' || item.trim().length === 0) {
+      problems.push(`modkit.disabledContributions[${index}] is not a contribution id`)
+      continue
+    }
+    const id = item.trim()
+    if (seen.has(id)) continue
+    seen.add(id)
+    ids.push(id)
+  }
+  return { ids: Object.freeze(ids.sort()), problems: Object.freeze(problems) }
+}
+
+/**
+ * One entry of `modkit.extensions` as a settings surface shows it.
+ *
+ * `index` is the position in the raw setting, and it is the only handle the webview ever gets: the
+ * page describes *which* entry the user pointed at, and the extension side — the only side that
+ * may touch configuration — does the array surgery. A page that rewrote the array itself would be
+ * deciding what the user's hand-written setting looks like.
+ */
+export interface ConfiguredExtensionView {
+  readonly index: number
+  readonly path: string
+  readonly id?: string
+  readonly enabled: boolean
+}
+
+/** Describe `modkit.extensions` for display, keeping the positions the writers below need. */
+export function describeConfiguredExtensions(value: unknown): readonly ConfiguredExtensionView[] {
+  if (!Array.isArray(value)) return Object.freeze([])
+  const views: ConfiguredExtensionView[] = []
+  for (const [index, item] of value.entries()) {
+    if (typeof item === 'string') {
+      if (item.length > 0) views.push({ index, path: item, enabled: true })
+      continue
+    }
+    if (typeof item !== 'object' || item === null) continue
+    const entry = item as ConfiguredExtensionEntry
+    if (typeof entry.path !== 'string' || entry.path.length === 0) continue
+    views.push({
+      index,
+      path: entry.path,
+      ...(typeof entry.id === 'string' && entry.id.length > 0 ? { id: entry.id } : {}),
+      enabled: entry.enabled !== false,
+    })
+  }
+  return Object.freeze(views)
+}
+
+/**
+ * Switch one entry of `modkit.extensions` on or off.
+ *
+ * A bare string has nowhere to record "off", so it becomes the entry-object form — the only
+ * rewrite this function ever performs, and the only one it can perform without losing the answer.
+ * Every other item is passed through exactly as the user wrote it.
+ */
+export function withExtensionEnabled(
+  value: unknown,
+  index: number,
+  enabled: boolean,
+): { readonly next: readonly unknown[]; readonly changed: boolean } {
+  if (!Array.isArray(value) || index < 0 || index >= value.length) {
+    return { next: Array.isArray(value) ? value : [], changed: false }
+  }
+  const next = value.map((item, position) => {
+    if (position !== index) return item
+    if (typeof item === 'string') return { path: item, enabled }
+    if (typeof item !== 'object' || item === null) return item
+    return { ...(item as ConfiguredExtensionEntry), enabled }
+  })
+  return { next, changed: true }
+}
+
+/** Drop one entry of `modkit.extensions`, leaving every other item as it was. */
+export function withoutExtension(
+  value: unknown,
+  index: number,
+): { readonly next: readonly unknown[]; readonly changed: boolean } {
+  if (!Array.isArray(value) || index < 0 || index >= value.length) {
+    return { next: Array.isArray(value) ? value : [], changed: false }
+  }
+  return { next: value.filter((_item, position) => position !== index), changed: true }
+}
+
+/**
+ * Switch one contribution on or off in a `modkit.disabledContributions` value.
+ *
+ * The setting is a set, so the result is deduplicated and sorted — the same normalisation
+ * `configuredDisabledContributions` applies when reading it, so a write and a read agree.
+ */
+export function withContributionDisabled(
+  value: unknown,
+  id: string,
+  disabled: boolean,
+): { readonly next: readonly string[]; readonly changed: boolean } {
+  const current = configuredDisabledContributions(value).ids
+  const has = current.includes(id)
+  if (has === disabled) return { next: current, changed: false }
+  const next = disabled ? [...current, id].sort() : current.filter(other => other !== id)
+  return { next: Object.freeze(next), changed: true }
+}
+
 /** Drop duplicates (a workspace folder that is also in the setting) keeping the first request. */
 export function dedupeRoots(
   requests: readonly ExtensionRootRequestLike[],

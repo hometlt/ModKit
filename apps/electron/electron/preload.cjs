@@ -69,6 +69,24 @@ contextBridge.exposeInMainWorld('modkitSettings', {
   write: text => ipcRenderer.invoke('modkit.settings.write', text),
 })
 
+/*
+ * Managing extensions and codecs.
+ *
+ * Separate from `modkitSettings`, which only moves the JSON document: these three ask main to act
+ * on it — show a native folder dialog, recompose the running host, describe what is loaded now.
+ * None of them names a filesystem path the renderer chose, and `browse` deliberately does not go
+ * through the broker's `dialog.open-directory`: that channel *grants* the folder to the renderer's
+ * file access, and connecting an extension must not widen what the renderer may read.
+ */
+contextBridge.exposeInMainWorld('modkitExtensions', {
+  /** What the current composition loaded, refused, and which contributions it holds. */
+  report: () => ipcRenderer.invoke('modkit.extensions.report'),
+  /** Recompose from the settings file as it stands now; resolves with the new report. */
+  reload: () => ipcRenderer.invoke('modkit.extensions.reload'),
+  /** Native directory dialog plus a probe: the coordinate the folder declares, or why not. */
+  browse: () => ipcRenderer.invoke('modkit.extensions.browse'),
+})
+
 /** Window chrome. Separate from the broker: this touches the window, never the user's files. */
 contextBridge.exposeInMainWorld('modkitWindow', {
   send: command => ipcRenderer.invoke('modkit.window', command),

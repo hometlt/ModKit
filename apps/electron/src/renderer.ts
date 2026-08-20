@@ -38,6 +38,11 @@ import type { OperationSession } from '@modkitx-x3/sdk'
 import { PREVIEW_FALLBACK } from '../generated/viewer-catalog.js'
 import { editOffer, editSelfTestLine } from './edit-operations.js'
 import { createEditPanel } from './edit-panel.js'
+import {
+  createExtensionsPage,
+  type BrowseResult,
+  type ExtensionsReport,
+} from './extensions-page.js'
 import { createRendererEditorPorts, type RendererEditorPorts } from './editor-ports.js'
 import { createInspectorDock, type InspectorSubject } from './inspector.js'
 import { createElectronReadOnlyStages, createElectronStages } from './stages.js'
@@ -91,6 +96,7 @@ interface MenuBridge {
       | 'open-folder'
       | 'open-file'
       | 'settings'
+      | 'extensions'
       | 'split'
       | 'default-app'
       | 'open-recent'
@@ -106,11 +112,23 @@ interface SettingsBridge {
   write(text: string): Promise<{ readonly location: string }>
 }
 
+/**
+ * Managing extensions and codecs, which the settings bridge deliberately does not cover: those two
+ * only move the JSON document, these three ask main to act on it — pick a folder, recompose the
+ * running host, describe what is loaded now.
+ */
+interface ExtensionsBridge {
+  report(): Promise<ExtensionsReport>
+  reload(): Promise<ExtensionsReport>
+  browse(): Promise<BrowseResult>
+}
+
 const broker = (globalThis as { modkitBroker?: Broker }).modkitBroker
 const host = (globalThis as { modkitHost?: HostBridge }).modkitHost
 const files = (globalThis as { modkitFiles?: { pathFor(file: File): string } }).modkitFiles
 const menu = (globalThis as { modkitMenu?: MenuBridge }).modkitMenu
 const settingsBridge = (globalThis as { modkitSettings?: SettingsBridge }).modkitSettings
+const extensionsBridge = (globalThis as { modkitExtensions?: ExtensionsBridge }).modkitExtensions
 const subjects = (globalThis as { modkitSubjects?: SubjectBridge }).modkitSubjects
 const windowBridge = (
   globalThis as {
@@ -256,14 +274,16 @@ async function boot(): Promise<void> {
     broker === undefined ||
     menu === undefined ||
     settingsBridge === undefined ||
+    extensionsBridge === undefined ||
     subjects === undefined
   ) {
     throw new Error(
-      'preload bridge is missing: host, broker, menu, settings or subjects is undefined',
+      'preload bridge is missing: host, broker, menu, settings, extensions or subjects is undefined',
     )
   }
   // Bound locally: the narrowing above does not reach the nested helpers declared later.
   const bridge = broker
+  const extensions = extensionsBridge
   const { port: subjectPort, session: subjectSession } = await acquireSubjectPort(subjects)
   const subjectClient = await connectElectronSubjectClient({
     port: subjectPort,
@@ -359,6 +379,8 @@ async function boot(): Promise<void> {
   const portsByPath = new Map<string, RendererEditorPorts>()
   /** Why a tab has no editors, kept so the footer keeps saying it after the open report. */
   const readOnlyNotes = new Map<string, string>()
+  /** Diagnostic codes of an open no codec claimed, so a verification run can read them back. */
+  const unresolvedCodes = new Map<string, readonly string[]>()
   /** The entry each open path was opened from, so a committed edit can reopen the same tab. */
   const openedEntries = new Map<string, ExplorerEntry>()
   /**
@@ -388,10 +410,22 @@ async function boot(): Promise<void> {
         `${result.snapshot.reason}; using the explicit text/hex fallback`
       setFooter(entry.id, detail, result.snapshot.reason !== 'no-candidate')
       subjectsByPath.delete(entry.id)
-      readOnlyNotes.delete(entry.id)
+      /*
+       * The reason rides along with every later status report for this tab.
+       *
+       * `onStatus` fires again on each stage switch, and without this the sentence explaining why
+       * the file is showing raw bytes would be overwritten by the first view change — which is the
+       * moment a user goes looking for it.
+       */
+      readOnlyNotes.set(entry.id, detail)
+      unresolvedCodes.set(
+        entry.id,
+        result.snapshot.diagnostics.map(item => item.code),
+      )
       return { dispose: async () => undefined }
     }
     const snapshot = result.snapshot
+    unresolvedCodes.delete(entry.id)
     const boundary = snapshot.diagnostics.some(
       item => item.code === 'x3.host/full-process-authority',
     )
@@ -542,13 +576,39 @@ async function boot(): Promise<void> {
       (node): node is HTMLElement => node instanceof HTMLElement && node.title === path,
     )
 
-  const reopenSubject = async (path: string): Promise<boolean> => {
-    const entry = openedEntries.get(path)
-    if (entry === undefined) return false
+  /** Every path with a tab open right now, in tab order, duplicates included across groups. */
+  const tabPaths = (): readonly string[] =>
+    [...editors.root.querySelectorAll('[data-mk-part="explorer.filetab"]')].flatMap(node =>
+      node instanceof HTMLElement && node.title !== '' ? [node.title] : [],
+    )
+
+  /** Ask every tab on this path to close, through the control a user would click. */
+  const closeTabsOn = (path: string): void => {
     for (const tab of tabsOn(path)) {
       const close = tab.querySelector('[data-mk-part="explorer.filetab-close"]')
       if (close instanceof HTMLElement) close.click()
     }
+  }
+
+  /**
+   * Wait until none of these paths has a tab any more.
+   *
+   * Closing unmounts the stage and disposes the session and the editing arm asynchronously, and
+   * the whole point of closing before a recomposition is that those sessions are gone before the
+   * old composition is dropped. Recomposing while they are still in flight would leave the worker
+   * leases of a host nothing points at any more.
+   */
+  const settleClosed = async (paths: readonly string[]): Promise<void> => {
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      if (!paths.some(path => tabsOn(path).length > 0)) return
+      await new Promise(resolve => setTimeout(resolve, 50))
+    }
+  }
+
+  const reopenSubject = async (path: string): Promise<boolean> => {
+    const entry = openedEntries.get(path)
+    if (entry === undefined) return false
+    closeTabsOn(path)
     // `closeTab` unmounts the stage and disposes the arm asynchronously; opening before it has
     // finished would find the old tab and only focus it.
     for (let attempt = 0; attempt < 60 && tabsOn(path).length > 0; attempt += 1) {
@@ -714,15 +774,58 @@ async function boot(): Promise<void> {
   })
   await settingsUi.reload()
 
-  let settingsOpen = false
-  function toggleSettings(open = !settingsOpen): void {
-    settingsOpen = open
-    body.replaceChildren(settingsOpen ? settingsUi.root : workspace)
-    setFooter(
-      settingsOpen ? 'Settings' : '',
-      settingsOpen ? `${store.location} · realm ${profile.renderer.realmId}` : 'Ready',
+  // ---------------------------------------------------------------- extensions and codecs
+  /**
+   * Recompose the host from the settings file, then reopen whatever was open.
+   *
+   * Closing the tabs first is what disposes the sessions of the *old* composition — a worker lease
+   * ends with the session that holds it — and reopening them is what makes a codec the user just
+   * switched off actually stop serving the file on screen. Doing it in this order is the whole
+   * difference between "applies immediately" and "applies whenever you happen to reopen the tab".
+   */
+  async function reloadExtensions(): Promise<ExtensionsReport> {
+    const reopening = [...new Set(tabPaths())]
+    for (const path of reopening) closeTabsOn(path)
+    await settleClosed(reopening)
+    const report = await extensions.reload()
+    for (const path of reopening) {
+      const entry = openedEntries.get(path)
+      if (entry !== undefined) await editors.open(entry)
+    }
+    return report
+  }
+
+  const extensionsPage = createExtensionsPage(document, {
+    store,
+    report: () => extensions.report(),
+    browse: () => extensions.browse(),
+    apply: () => reloadExtensions(),
+    onClose() {
+      showSurface('workspace')
+    },
+  })
+
+  type Surface = 'workspace' | 'settings' | 'extensions'
+  let surface: Surface = 'workspace'
+  function showSurface(next: Surface): void {
+    surface = next
+    body.replaceChildren(
+      next === 'settings'
+        ? settingsUi.root
+        : next === 'extensions'
+          ? extensionsPage.root
+          : workspace,
     )
-    if (settingsOpen) void settingsUi.reload()
+    setFooter(
+      next === 'workspace' ? '' : next === 'settings' ? 'Settings' : 'Extensions & Codecs',
+      next === 'workspace' ? 'Ready' : `${store.location} · realm ${profile.renderer.realmId}`,
+    )
+    if (next === 'settings') void settingsUi.reload()
+    if (next === 'extensions') void extensionsPage.reload()
+  }
+  /** Kept as its own name because the menu, the shortcut and four call sites all mean "settings". */
+  function toggleSettings(open = surface !== 'settings'): void {
+    showSurface(open ? 'settings' : 'workspace')
   }
 
   // ---------------------------------------------------------------- open helpers
@@ -732,7 +835,7 @@ async function boot(): Promise<void> {
     })) as { canceled: boolean; root?: string }
     if (result.canceled || result.root === undefined) return undefined
     access = accessFor(result.root)
-    if (settingsOpen) toggleSettings(false)
+    if (surface !== 'workspace') showSurface('workspace')
     await remember({ path: result.root, kind: 'folder' })
     return access
   }
@@ -745,7 +848,7 @@ async function boot(): Promise<void> {
     })) as { canceled: boolean; root?: string; entry?: ExplorerEntry }
     if (result.canceled || result.root === undefined || result.entry === undefined) return undefined
     access = accessFor(result.root)
-    if (settingsOpen) toggleSettings(false)
+    if (surface !== 'workspace') showSurface('workspace')
     await remember({ path: result.entry.id, kind: 'file' })
     return { access, entry: result.entry }
   }
@@ -776,12 +879,15 @@ async function boot(): Promise<void> {
   on('settings', () => {
     toggleSettings()
   })
+  on('extensions', () => {
+    showSurface(surface === 'extensions' ? 'workspace' : 'extensions')
+  })
   on('split', () => {
-    if (settingsOpen) toggleSettings(false)
+    if (surface !== 'workspace') showSurface('workspace')
     editors.split()
   })
   on('inspector', () => {
-    if (settingsOpen) toggleSettings(false)
+    if (surface !== 'workspace') showSurface('workspace')
     toggleInspector()
   })
   on('default-app', () => {
@@ -794,7 +900,7 @@ async function boot(): Promise<void> {
     if (entry === undefined) return
     void (async () => {
       try {
-        if (settingsOpen) toggleSettings(false)
+        if (surface !== 'workspace') showSurface('workspace')
         /*
          * Re-grant before listing. Filesystem grants are per-session and live in the main process,
          * so a path picked from Recent after a restart has no grant and `directory.list` rejects
@@ -933,6 +1039,7 @@ async function boot(): Promise<void> {
     { separator: true },
     { label: 'Set as Default App…', command: 'default-app' },
     { label: 'Settings', command: 'settings', hint: 'Ctrl+,' },
+    { label: 'Extensions & Codecs…', command: 'extensions', hint: 'Ctrl+Shift+X' },
   ])
   addMenu('View', [
     { label: 'Split Editor', command: 'split', hint: 'Ctrl+Backslash' },
@@ -946,7 +1053,15 @@ async function boot(): Promise<void> {
     if (!event.ctrlKey && !event.metaKey) return
     const key = event.key.toLowerCase()
     const command =
-      key === 'k' ? 'open-folder' : key === 'o' ? 'open-file' : key === ',' ? 'settings' : undefined
+      key === 'x' && event.shiftKey
+        ? 'extensions'
+        : key === 'k'
+          ? 'open-folder'
+          : key === 'o'
+            ? 'open-file'
+            : key === ','
+              ? 'settings'
+              : undefined
     if (command === undefined) return
     event.preventDefault()
     commands[command]?.()
@@ -974,6 +1089,14 @@ async function boot(): Promise<void> {
         subjectFor: inspectorSubject,
         portsFor: path => portsByPath.get(path),
         footerText: () => `${footerPath.textContent ?? ''} · ${footerDetail.textContent ?? ''}`,
+        extensionsRoot: extensionsPage.root,
+        showExtensions: () => {
+          showSurface('extensions')
+        },
+        showWorkspace: () => {
+          showSurface('workspace')
+        },
+        unresolvedCodes: path => unresolvedCodes.get(path) ?? [],
       })
   }
 }
@@ -1001,6 +1124,12 @@ async function selfTest(options: {
   portsFor(path: string): RendererEditorPorts | undefined
   /** Whatever the status line currently says, so a refusal can be read back. */
   footerText(): string
+  /** The Extensions & Codecs page, driven through its own switches like a user would. */
+  readonly extensionsRoot: HTMLElement
+  showExtensions(): void
+  showWorkspace(): void
+  /** Diagnostic codes of the last open on this path that no codec claimed. */
+  unresolvedCodes(path: string): readonly string[]
 }): Promise<void> {
   const { access, preview, editors, settingsRoot, inspector } = options
   const entries = await access.list(undefined)
@@ -1107,6 +1236,12 @@ async function selfTest(options: {
 
   const settingsGroups = settingsRoot.querySelectorAll('[data-mk-part="settings.group"]').length
   console.log(`selftest: settings groups=${settingsGroups}`)
+
+  try {
+    await extensionProbes({ ...options, entries })
+  } catch (error) {
+    console.log(`selftest: extension probes FAILED ${String(error)}`)
+  }
 
   /*
    * A probe that throws must not take the run with it. `boot()` catches, replaces the page with a
@@ -1289,6 +1424,253 @@ interface ProbePorts {
   readonly commit: {
     prepare(plan: unknown): Promise<{ readonly state: string; readonly reason?: string }>
   }
+}
+
+/**
+ * The Extensions & Codecs page, driven through its own switches.
+ *
+ * Every claim below is about what the *host* did afterwards, never about a checkbox having been
+ * clicked: a settings page whose switches write a file and change nothing is precisely the failure
+ * this exists to catch. So each toggle is followed by reopening the file and reading which stages
+ * the shell offered — the same thing a user would look at.
+ */
+async function extensionProbes(options: {
+  readonly editors: EditorArea
+  readonly entries: readonly ExplorerEntry[]
+  readonly extensionsRoot: HTMLElement
+  showExtensions(): void
+  showWorkspace(): void
+  unresolvedCodes(path: string): readonly string[]
+}): Promise<void> {
+  const { editors, extensionsRoot } = options
+  const PNG_CODEC = 'org.modkitx/image-png'
+
+  /*
+   * Start from an empty editor area.
+   *
+   * Applying a change reopens whatever was open, and the sweep above left every sample file in a
+   * tab — so without this each of the four recompositions below would reopen eighteen subjects and
+   * the probe would be measuring the sweep rather than the switch. No tab is dirty yet (the
+   * editing probes run after this one), so nothing is being discarded.
+   */
+  const closeEverything = async (): Promise<number> => {
+    const controls = [...editors.root.querySelectorAll('[data-mk-part="explorer.filetab-close"]')]
+    for (const control of controls) {
+      if (control instanceof HTMLElement) control.click()
+    }
+    for (let attempt = 0; attempt < 80; attempt += 1) {
+      if (editors.root.querySelectorAll('[data-mk-part="explorer.filetab"]').length === 0) break
+      await new Promise(resolve => setTimeout(resolve, 50))
+    }
+    return controls.length
+  }
+  console.log(`selftest: extensions closed ${await closeEverything()} tab(s) before switching`)
+
+  options.showExtensions()
+  await settle()
+  const groupButtons = [...extensionsRoot.querySelectorAll('[data-mk-part="settings.group"]')]
+  console.log(
+    `selftest: extensions page groups=[${groupButtons
+      .map(node => node.textContent ?? '')
+      .join(', ')}]`,
+  )
+
+  const status = (): string =>
+    extensionsRoot.querySelector('[data-mk-part="settings.status"]')?.textContent ?? ''
+
+  /** Move to a group of the page by clicking its tab, exactly as a user reaches it. */
+  const showGroup = async (label: string): Promise<boolean> => {
+    const button = groupButtons.find(node => node.textContent === label)
+    if (!(button instanceof HTMLElement)) return false
+    button.click()
+    await settle()
+    return true
+  }
+
+  /**
+   * Wait for main to finish recomposing.
+   *
+   * The page says so itself: every switch reports "applied" (or "failed") on its status line once
+   * the new composition is live and the tabs have been reopened. Polling that line is what a human
+   * watching the page would do.
+   */
+  const settleApplied = async (): Promise<string> => {
+    for (let attempt = 0; attempt < 600; attempt += 1) {
+      const text = status()
+      if (text.includes('applied.') || text.includes('failed')) return text
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
+    return `TIMEOUT ${status()}`
+  }
+
+  /** The stages the shell offers for this file, read from the focused group's own picker. */
+  const openAndDescribe = async (entry: ExplorerEntry): Promise<string> => {
+    options.showWorkspace()
+    await editors.open(entry)
+    await settle()
+    const picker = editors.root.querySelector(
+      '[data-mk-part="explorer.group"][data-mk-state~="active"] [data-mk-part="explorer.viewpicker"]',
+    )
+    const views =
+      picker instanceof HTMLSelectElement ? [...picker.options].map(item => item.value) : []
+    const codes = options.unresolvedCodes(entry.id)
+    return (
+      `views [${views.join(', ')}]` +
+      (codes.length === 0 ? '' : ` unresolved codes [${codes.join(', ')}]`)
+    )
+  }
+
+  const closeAllAndShowPage = async (): Promise<void> => {
+    await closeEverything()
+    options.showExtensions()
+    await settle()
+  }
+
+  /** The switch for one contribution, found by the id it names — never by position. */
+  const codecToggle = (id: string): HTMLInputElement | undefined => {
+    const node = extensionsRoot.querySelector(
+      `[data-mk-part="settings.toggle"][data-contribution="${id}"]`,
+    )
+    return node instanceof HTMLInputElement ? node : undefined
+  }
+
+  // ---------------------------------------------------------------- a codec, switched off and on
+  const png = options.entries.find(entry => entry.name.toLowerCase().endsWith('.png'))
+  if (png === undefined) {
+    console.log('selftest: extensions no .png sample to switch a codec off for')
+  } else {
+    console.log(`selftest: extensions ${png.name} before ${await openAndDescribe(png)}`)
+    await closeAllAndShowPage()
+    if (!(await showGroup('Codecs'))) {
+      console.log('selftest: extensions page has no Codecs group')
+    } else {
+      const off = codecToggle(PNG_CODEC)
+      if (off === undefined) {
+        console.log(`selftest: extensions no switch for ${PNG_CODEC}`)
+      } else {
+        off.checked = false
+        off.dispatchEvent(new Event('change'))
+        console.log(`selftest: extensions disable ${PNG_CODEC} -> ${await settleApplied()}`)
+        console.log(`selftest: extensions ${png.name} disabled ${await openAndDescribe(png)}`)
+
+        await closeAllAndShowPage()
+        await showGroup('Codecs')
+        const on = codecToggle(PNG_CODEC)
+        if (on === undefined) {
+          // The whole reason a disabled contribution stays in the inventory: without the record
+          // there would be no switch left to turn it back on.
+          console.log(`selftest: extensions ${PNG_CODEC} VANISHED while disabled`)
+        } else {
+          console.log(`selftest: extensions disabled switch still listed, checked=${on.checked}`)
+          on.checked = true
+          on.dispatchEvent(new Event('change'))
+          console.log(`selftest: extensions enable ${PNG_CODEC} -> ${await settleApplied()}`)
+          console.log(`selftest: extensions ${png.name} re-enabled ${await openAndDescribe(png)}`)
+        }
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------- connecting folders
+  await closeAllAndShowPage()
+  await showGroup('Extensions')
+  const addButton = extensionsRoot.querySelector('[data-action="add-folder"]')
+  if (!(addButton instanceof HTMLElement)) {
+    console.log('selftest: extensions page has no Add extension folder control')
+    return
+  }
+
+  /** Every id the Codecs group currently lists, read from the switches themselves. */
+  const listedContributions = async (): Promise<readonly string[]> => {
+    await showGroup('Codecs')
+    const ids = [...extensionsRoot.querySelectorAll('[data-mk-part="settings.toggle"]')].flatMap(
+      node => {
+        const id = node instanceof HTMLInputElement ? node.dataset['contribution'] : undefined
+        return id === undefined ? [] : [id]
+      },
+    )
+    await showGroup('Extensions')
+    return ids
+  }
+
+  const before = await listedContributions()
+  addButton.click()
+  console.log(`selftest: extensions add folder #1 -> ${await settleApplied()}`)
+  const after = await listedContributions()
+  const gained = after.filter(id => !before.includes(id))
+  console.log(
+    `selftest: extensions codecs ${before.length} -> ${after.length}, new [${gained.join(', ')}]`,
+  )
+
+  /*
+   * Switching the whole extension off, which is a different seam from switching one codec off: a
+   * disabled entry is never offered to the loader at all, so its contributions leave the inventory
+   * rather than staying in it inert. Both halves are checked, because "the switch wrote the file"
+   * and "the host stopped loading it" are two different claims.
+   */
+  const extensionToggle = (id: string): HTMLInputElement | undefined => {
+    const node = extensionsRoot.querySelector(
+      `[data-mk-part="settings.toggle"][data-extension="${id}"]`,
+    )
+    return node instanceof HTMLInputElement ? node : undefined
+  }
+  const connected = gained[0]
+  if (connected === undefined) {
+    console.log('selftest: extensions the connected folder contributed nothing to switch off')
+  } else {
+    const owner = extensionToggle('org.example/fixture-thirdparty')
+    if (owner === undefined) {
+      console.log('selftest: extensions no switch for the connected extension')
+    } else {
+      owner.checked = false
+      owner.dispatchEvent(new Event('change'))
+      console.log(`selftest: extensions disable the connected folder -> ${await settleApplied()}`)
+      const off = await listedContributions()
+      console.log(
+        `selftest: extensions codecs ${after.length} -> ${off.length}, ` +
+          `${connected} listed=${off.includes(connected)}`,
+      )
+      const again = extensionToggle('org.example/fixture-thirdparty')
+      if (again !== undefined) {
+        again.checked = true
+        again.dispatchEvent(new Event('change'))
+        console.log(`selftest: extensions enable the connected folder -> ${await settleApplied()}`)
+        const back = await listedContributions()
+        console.log(
+          `selftest: extensions codecs ${off.length} -> ${back.length}, ` +
+            `${connected} listed=${back.includes(connected)}`,
+        )
+      }
+    }
+  }
+
+  // A folder that is not an extension: it must say so, verbatim, and not disappear.
+  const addAgain = extensionsRoot.querySelector('[data-action="add-folder"]')
+  if (addAgain instanceof HTMLElement) {
+    addAgain.click()
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      if (status().includes('not added')) break
+      await new Promise(resolve => setTimeout(resolve, 50))
+    }
+    console.log(`selftest: extensions add folder #2 status ${JSON.stringify(status())}`)
+    const refused = [
+      ...extensionsRoot.querySelectorAll(
+        '[data-mk-part="settings.extension"][data-mk-state~="error"]',
+      ),
+    ].map(node => node.textContent ?? '')
+    console.log(`selftest: extensions refused rows ${JSON.stringify(refused)}`)
+  }
+
+  // Leave the settings file as it was found: a temp fixture path must not outlive the run.
+  const remove = [...extensionsRoot.querySelectorAll('[data-mk-part="settings.remove"]')].find(
+    node => node.textContent === 'Remove',
+  )
+  if (remove instanceof HTMLElement) {
+    remove.click()
+    console.log(`selftest: extensions remove connected folder -> ${await settleApplied()}`)
+  }
+  options.showWorkspace()
+  await settle()
 }
 
 /**
@@ -1586,7 +1968,7 @@ async function editOperationProbes(options: {
   const panelStatus = (): string =>
     inspector.root.querySelector('[data-mk-part="operations.status"]')?.textContent ?? ''
   const panelNotes = (): string =>
-    inspector.root.querySelector('[data-mk-part="settings.status"]')?.textContent ?? ''
+    inspector.root.querySelector('[data-mk-part="form.status"]')?.textContent ?? ''
   const panelFailed = (): boolean =>
     inspector.root.querySelector('[data-mk-part="operations.status"][data-mk-state~="error"]') !==
     null
@@ -1624,7 +2006,7 @@ async function editOperationProbes(options: {
     formId: string,
     values: Readonly<Record<string, string>>,
   ): Promise<string> => {
-    const picker = inspector.root.querySelector('[data-mk-part="settings.select"]')
+    const picker = inspector.root.querySelector('[data-mk-part="form.select"]')
     if (!(picker instanceof HTMLSelectElement)) return 'no form picker mounted'
     if (![...picker.options].some(option => option.value === formId)) {
       return `form ${formId} is not offered (offers ${[...picker.options].map(item => item.value).join(', ')})`
@@ -1639,7 +2021,7 @@ async function editOperationProbes(options: {
      */
     const expected = `Last change: ${picker.selectedOptions[0]?.textContent ?? ''}`
     for (const [name, value] of Object.entries(values)) {
-      const input = inspector.root.querySelector(`[data-mk-part="settings.input"][name="${name}"]`)
+      const input = inspector.root.querySelector(`[data-mk-part="form.input"][name="${name}"]`)
       if (!(input instanceof HTMLInputElement)) return `field ${name} is not on the form`
       input.value = value
     }
@@ -1681,7 +2063,7 @@ async function editOperationProbes(options: {
        * this loop is waiting for.
        */
       if (attempt > 20 && attempt % 20 === 0) {
-        if (inspector.root.querySelector('[data-mk-part="settings.select"]') === null) {
+        if (inspector.root.querySelector('[data-mk-part="form.select"]') === null) {
           await openEditPanel(path)
         }
       }

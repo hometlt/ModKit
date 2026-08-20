@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
   "commands": [
+    { "command": "modkit.addExtensionFolder", "title": "Modkit: Add Extension Folder…" },
     { "command": "modkit.explainResolution", "title": "Modkit: Explain Resolution" },
     { "command": "modkit.openWith", "title": "Modkit: Open Active File in Workbench" },
     { "command": "modkit.showHostProfile", "title": "Modkit: Open Workbench" }
@@ -25,6 +26,12 @@
             }
           ]
         }
+      },
+      "modkit.disabledContributions": {
+        "type": "array",
+        "default": [],
+        "markdownDescription": "Contribution ids to switch off, one level below `modkit.extensions`: an extension may ship several codecs and you may want only some of them. A disabled contribution stays in the inventory and loses activation, so a file only it could read opens as raw bytes with the diagnostic `x3.host/contribution-disabled` — and the switch is still there to turn it back on. Takes effect when the window reloads.",
+        "items": { "type": "string" }
       }
     }
   },

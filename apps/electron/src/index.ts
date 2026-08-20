@@ -1,4 +1,10 @@
-import { canonicalJsonStringify, ModkitError, uint64, type Diagnostic } from '@modkitx-x3/core'
+import {
+  canonicalJsonStringify,
+  compareUtf8,
+  ModkitError,
+  uint64,
+  type Diagnostic,
+} from '@modkitx-x3/core'
 import {
   createHostTopology,
   type AnyDescriptor,
@@ -15,7 +21,9 @@ import {
   serviceDefinitionSurfaces,
   type ExecutionBackendRegistry,
   type ExtensionInput,
+  type ExtensionOrigin,
   type HostComposition,
+  type Inventory,
   type SubjectOpenRequest,
   type SubjectServices,
 } from '@modkitx-x3/host'
@@ -300,6 +308,11 @@ export interface ElectronAppOptions {
   readonly executionBackends?: ExecutionBackendRegistry
   /** Backend diagnostics (worker shared-process notice, restarts, crashes, capped worker stdio). */
   readonly onDiagnostic?: (diagnostic: Diagnostic) => void
+  /**
+   * Contribution ids the user switched off. Applied to all three realms so the renderer's snapshot
+   * and the worker realm agree with the inventory resolution runs against.
+   */
+  readonly disabledContributions?: readonly string[]
 }
 
 /** What loaded from where, and what did not — the settings UI and the status bar report it. */
@@ -376,19 +389,30 @@ export async function createElectronApp(
       policy: ELECTRON_WORKER_POLICY,
       ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
     })
+  const disabled =
+    options.disabledContributions === undefined
+      ? {}
+      : { disabledContributions: options.disabledContributions }
   const [main, renderer, workers] = await Promise.all([
     createHostComposition({
       topology,
       realmId: ELECTRON_MAIN_REALM,
       extensions,
       executionBackends,
+      ...disabled,
     }),
-    createHostComposition({ topology, realmId: ELECTRON_RENDERER_REALM, extensions }),
+    createHostComposition({
+      topology,
+      realmId: ELECTRON_RENDERER_REALM,
+      extensions,
+      ...disabled,
+    }),
     createHostComposition({
       topology,
       realmId: ELECTRON_WORKER_REALM,
       extensions,
       executionBackends,
+      ...disabled,
     }),
   ])
   return Object.freeze({ topology, main, renderer, workers, executionBackends })
@@ -407,6 +431,144 @@ export interface ElectronSubjectServicesOptions {
    * the in-process boundary, and a broken one is reported instead of stopping the application.
    */
   readonly userRoots?: readonly (string | ExtensionRootRequest)[]
+  /**
+   * Contribution ids the user switched off (settings). They stay in the inventory, lose
+   * `activationEligible`, and carry `x3.host/contribution-disabled` — so the settings page can
+   * show the switch in its off position and the inspector can say why nothing resolved.
+   */
+  readonly disabledContributions?: readonly string[]
+}
+
+/**
+ * Contribution ids the user switched off in the settings document.
+ *
+ * Threaded straight into `createHostComposition`, which keeps the record in the inventory with
+ * `activationEligible: false` and the `x3.host/contribution-disabled` diagnostic. That is the
+ * whole point: a codec the user turned off must still be *listed*, or the settings page has no
+ * switch to turn back on.
+ */
+export const CONTRIBUTION_DISABLED_CODE = 'x3.host/contribution-disabled'
+
+/** One contribution as a settings page lists it: identity, kind, owner and switch position. */
+export interface ElectronContributionRow {
+  /** Qualified contribution id. Absent when the envelope did not parse — then there is no switch. */
+  readonly id?: string
+  readonly displayName: string
+  /** The contract it implements (`org.modkitx/codec-contribution`) and that contract's major. */
+  readonly contract?: string
+  readonly contractMajor?: number
+  /** `publisher/id` of the extension that ships it. */
+  readonly extension: string
+  readonly origin: ExtensionOrigin
+  readonly activationEligible: boolean
+  /** True when the host refused activation because this contribution is switched off. */
+  readonly disabled: boolean
+  /** Manifest path inside the extension — the only identity an unparsed record has. */
+  readonly path: string
+}
+
+/**
+ * Flatten the inventory into the rows a settings page draws, sorted by owner then id.
+ *
+ * Every contribution is listed, including the ones the host refused: a page that showed only what
+ * activated could never offer the switch that turns a disabled codec back on.
+ */
+export function describeInventoryContributions(
+  inventory: Inventory,
+): readonly ElectronContributionRow[] {
+  const rows = inventory.extensions.flatMap(extension => {
+    const owner = `${extension.manifest.publisher}/${extension.manifest.id}`
+    return extension.contributions.map((contribution): ElectronContributionRow => {
+      const manifest = contribution.manifest
+      return {
+        ...(manifest === undefined ? {} : { id: manifest.id }),
+        displayName: manifest?.displayName ?? contribution.path,
+        ...(manifest === undefined
+          ? {}
+          : { contract: manifest.contract.id, contractMajor: manifest.contract.major }),
+        extension: owner,
+        origin: extension.origin,
+        activationEligible: contribution.activationEligible,
+        disabled: contribution.diagnostics.some(item => item.code === CONTRIBUTION_DISABLED_CODE),
+        path: contribution.path,
+      }
+    })
+  })
+  return Object.freeze(
+    rows.sort((left, right) => {
+      const owner = compareUtf8(left.extension, right.extension)
+      return owner === 0 ? compareUtf8(left.id ?? left.path, right.id ?? right.path) : owner
+    }),
+  )
+}
+
+/**
+ * The host's own "this codec is switched off" diagnostics for the codecs that declare this file's
+ * extension.
+ *
+ * A disabled contribution never becomes a resolution candidate, so an unresolved open carries no
+ * candidate diagnostics at all and the application would have nothing to show but "no codec
+ * claimed it" — which is true and useless, because the user is the one who switched the codec off
+ * thirty seconds earlier.
+ *
+ * The filter reads `spec.match.extensions`, the same declared hint `supportedExtensionHints` reads
+ * for file pickers. It is a *hint* used to explain, never to decide: nothing here selects a codec
+ * or changes an outcome, and the diagnostics returned are the host's own objects, with the host's
+ * own code and wording, passed through unchanged.
+ */
+export function disabledContributionNotices(
+  inventory: Inventory,
+  path: string,
+): readonly Diagnostic[] {
+  const dot = path.lastIndexOf('.')
+  const suffix = dot < 0 ? '' : path.slice(dot + 1).toLowerCase()
+  if (suffix === '') return Object.freeze([])
+  const notices = inventory.extensions.flatMap(extension =>
+    extension.contributions.flatMap(contribution => {
+      const manifest = contribution.manifest
+      if (manifest?.contract.id !== 'org.modkitx/codec-contribution') return []
+      const spec = manifest.spec as { readonly match?: { readonly extensions?: unknown } }
+      const hints = Array.isArray(spec.match?.extensions) ? spec.match.extensions : []
+      if (!hints.some(hint => typeof hint === 'string' && hint.toLowerCase() === suffix)) return []
+      return contribution.diagnostics.filter(item => item.code === CONTRIBUTION_DISABLED_CODE)
+    }),
+  )
+  return Object.freeze(notices)
+}
+
+/** What probing one directory answered: the coordinate it declares, or why it is not usable. */
+export type ElectronExtensionProbe =
+  | { readonly state: 'extension'; readonly root: string; readonly id: string }
+  | {
+      readonly state: 'refused'
+      readonly root: string
+      readonly code: string
+      readonly message: string
+    }
+
+/**
+ * Ask what a directory the user picked actually is, before it is written into the settings file.
+ *
+ * The settings document keys an extension by identity, and only the directory knows its own
+ * coordinate — so the answer has to come from the loader rather than from a guess at the folder
+ * name. `claimed` is passed so a directory that duplicates something already loaded is refused
+ * here, with the loader's own words, instead of being written and then silently ignored at the
+ * next composition.
+ */
+export async function probeElectronExtensionRoot(
+  root: string,
+  claimed: readonly string[] = [],
+): Promise<ElectronExtensionProbe> {
+  const loaded = await loadExtensionRoots([{ root }], { origin: 'installed', claimed })
+  const coordinate = loaded.coordinates[0]
+  if (coordinate !== undefined) return { state: 'extension', root, id: coordinate }
+  const failure = loaded.failures[0]
+  return {
+    state: 'refused',
+    root,
+    code: failure?.code ?? 'x3.host/extension-root-unreadable',
+    message: failure?.message ?? 'the directory could not be read',
+  }
 }
 
 export async function createElectronSubjectServices(
@@ -440,7 +602,12 @@ export async function createElectronSubjectServices(
     foreignSurfaces: () => serviceDefinitionSurfaces(definitions),
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
   })
-  const application = await createElectronApp(bundled, { executionBackends })
+  const application = await createElectronApp(bundled, {
+    executionBackends,
+    ...(options.disabledContributions === undefined
+      ? {}
+      : { disabledContributions: options.disabledContributions }),
+  })
   await registerServiceDefinitionsOrThrow(application.main.inventory, definitions)
   // codecs are resolved against main's inventory and activated for the worker realm: portable
   // variants, worker-brokered; the gate refuses (never downgrades) a candidate without a boundary

@@ -18,12 +18,14 @@ import { pathToFileURL } from 'node:url'
 import * as vscode from 'vscode'
 
 import type { CloseAnswer, WebviewChannel } from './bridge.js'
+import { withExtensionRoot } from './extension-roots.js'
 import {
   catalogCandidates,
   createVsCodeSubjectHost,
   VSCODE_MAXIMUM_SUBJECT_BYTES,
   VSCODE_SUBJECT_CONTRIBUTION_ID,
   VSCODE_SUBJECT_SERVICES_URL,
+  type VsCodeConfigurationPort,
   type VsCodeServed,
   type VsCodeSubjectHost,
 } from './host.js'
@@ -205,6 +207,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     catalogCandidates: catalogCandidates(extensionRoot, repositoryRoot),
     workspaceFolders: workspaceFolders(),
     configuredExtensions: vscode.workspace.getConfiguration('modkit').get('extensions'),
+    configuredDisabledContributions: vscode.workspace
+      .getConfiguration('modkit')
+      .get('disabledContributions'),
     // the bootstrap this extension ships beside its own bundle: a CommonJS entry has no
     // `import.meta.url` for the backend to resolve it from
     bootstrapUrl: pathToFileURL(join(extensionRoot, 'dist-app', 'worker-bootstrap.js')),
@@ -230,7 +235,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   for (const failure of host.extensions.failures) {
     log(`extension NOT loaded: ${failure.root} — ${failure.code}: ${failure.message}`)
   }
-  for (const problem of host.extensions.problems) log(`modkit.extensions: ${problem}`)
+  for (const problem of host.extensions.problems) log(`modkit settings: ${problem}`)
+  for (const id of host.extensions.disabledContributions) {
+    log(`contribution disabled by modkit.disabledContributions: ${id}`)
+  }
   if (host.extensions.failures.length > 0 || host.extensions.problems.length > 0) {
     void vscode.window.showWarningMessage(
       `Modkit: ${host.extensions.failures.length + host.extensions.problems.length} extension ` +
@@ -242,6 +250,53 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   /** Directories the user reached outside the workspace (a single file opened by name). */
   const granted = new Set<string>()
   const roots = (): readonly string[] => [...new Set([...workspaceFolders(), ...granted])]
+
+  // ---------------------------------------------------------------- configuration
+  /*
+   * The only place in this product that writes a VS Code setting.
+   *
+   * The webview asks for a change over the shell channel and this answers it, because
+   * `getConfiguration().update` exists only on the extension side — a page that could reach it
+   * would have become an extension host. Writes land in the workspace when one is open (a folder
+   * of extensions is usually a property of the project) and in the user's settings otherwise.
+   */
+  const configurationScope: 'workspace' | 'user' =
+    (vscode.workspace.workspaceFolders ?? []).length > 0 ? 'workspace' : 'user'
+  const configurationTarget =
+    configurationScope === 'workspace'
+      ? vscode.ConfigurationTarget.Workspace
+      : vscode.ConfigurationTarget.Global
+
+  /** Composed once at activation, so a write asks the user to reload rather than pretending. */
+  const askToReload = (message: string): void => {
+    void vscode.window.showInformationMessage(message, 'Reload Window').then(choice => {
+      if (choice === 'Reload Window') {
+        void vscode.commands.executeCommand('workbench.action.reloadWindow')
+      }
+    })
+  }
+
+  const configuration: VsCodeConfigurationPort = {
+    scope: configurationScope,
+    readExtensions: () => vscode.workspace.getConfiguration('modkit').get('extensions'),
+    readDisabledContributions: () =>
+      vscode.workspace.getConfiguration('modkit').get('disabledContributions'),
+    async write(key, value) {
+      await vscode.workspace.getConfiguration('modkit').update(key, [...value], configurationTarget)
+      log(`modkit.${key} written (${configurationScope}): ${JSON.stringify(value)}`)
+      askToReload(`Modkit: modkit.${key} was updated. Reload the window for it to take effect.`)
+    },
+    async pickFolder() {
+      const picked = await vscode.window.showOpenDialog({
+        canSelectFiles: false,
+        canSelectFolders: true,
+        canSelectMany: false,
+        openLabel: 'Add extension folder',
+        title: 'Add a Modkit extension folder',
+      })
+      return picked?.[0]?.fsPath
+    },
+  }
 
   const confirmClose = async (message: string, savable: boolean): Promise<CloseAnswer> => {
     const choices = savable ? ['Save', 'Discard'] : ['Discard']
@@ -269,6 +324,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       session,
       roots,
       confirmClose,
+      configuration,
       onDiagnostic: diagnostic => log(`[subject-rpc] ${diagnostic.code}: ${diagnostic.message}`),
     })
     live.add(served)
@@ -352,6 +408,31 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       })()
     }),
 
+    /*
+     * Connect a folder without opening the workbench first.
+     *
+     * The same write the settings view performs, reached from the command palette — one code path,
+     * because two ways of appending to a setting would eventually disagree about what a duplicate
+     * is or which target to write.
+     */
+    vscode.commands.registerCommand('modkit.addExtensionFolder', () => {
+      void (async () => {
+        const picked = await configuration.pickFolder()
+        if (picked === undefined) return
+        const root = resolve(picked)
+        const { next, added, reason } = withExtensionRoot(configuration.readExtensions(), root, {
+          caseSensitive: process.platform !== 'win32' && process.platform !== 'darwin',
+        })
+        if (!added) {
+          log(`modkit.extensions unchanged: ${reason ?? 'already present'}`)
+          void vscode.window.showInformationMessage(`Modkit: ${reason ?? 'already present'}`)
+          return
+        }
+        // `write` logs, and asks to reload — this extension host composed once at activation.
+        await configuration.write('extensions', next)
+      })()
+    }),
+
     vscode.commands.registerCommand('modkit.explainResolution', () => {
       const lines = [
         `topology: ${host.services.host.topology.topologyId}`,
@@ -361,6 +442,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         `webview: ${host.webview.profile.realmId} — ${host.webview.profile.facilities.length} facilities`,
         `extensions: ${host.extensions.bundled.length + host.extensions.installed.length} loaded, ` +
           `${host.extensions.failures.length + host.extensions.problems.length} refused`,
+        `contributions: ${host.contributions.length} inventoried, ` +
+          `${host.contributions.filter(row => row.disabled).length} switched off`,
         `detectable types: ${host.supportedExtensions.length}`,
         `diagnostics: ${host.services.host.inventory.diagnostics.length}`,
       ]
