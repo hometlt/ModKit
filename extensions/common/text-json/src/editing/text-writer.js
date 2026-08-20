@@ -89,7 +89,42 @@ async function planTextEdits(change) {
   return change.edits
 }
 
-const textWriter = formatId =>
+/**
+ * Whole-source syntax check, where one is possible with what every runtime has.
+ *
+ * A writer's `validate` sees only the ChangeSet — never the source bytes — so a *range* edit can
+ * never be syntax-checked here: splicing three characters into a document you cannot read proves
+ * nothing about the result. A *whole-source* text payload is different: the payload IS the entire
+ * future file, and refusing a payload that is not valid JSON is the one moment the user can still
+ * do something about it — the raw byte splicer would put the corruption on disk.
+ *
+ * Only the strict `json` offer checks today, because `JSON.parse` is the one parser every runtime
+ * ships. `jsonc` deliberately does not: its comment-tolerant parser (`jsonc-parser`) is not
+ * vendored for browser workers, and importing it here — even behind a literal dynamic import —
+ * would make the verified loader refuse this whole module in the browser, taking the PWA's text
+ * saves with it. When that parser is vendored, this hook is where it plugs in.
+ */
+function jsonSyntaxDiagnostics(change) {
+  for (const edit of change.edits) {
+    if (edit.operation !== 'replace' || edit.range !== undefined) continue
+    if (edit.payload.kind !== 'text') continue
+    try {
+      JSON.parse(edit.payload.text)
+    } catch (cause) {
+      return [
+        error(
+          'org.modkitx/text-writer-syntax-invalid',
+          `the replacement is not valid JSON, and saving it would corrupt the file: ${
+            cause instanceof Error ? cause.message : String(cause)
+          }`,
+        ),
+      ]
+    }
+  }
+  return []
+}
+
+const textWriter = (formatId, syntaxDiagnostics) =>
   defineWriter({
     providerId: PROVIDER_ID,
     providerVersion: '1.0.0',
@@ -101,13 +136,27 @@ const textWriter = formatId =>
     minimumRoundTrip: 'byte-identical',
     fidelityEvidenceId: EVIDENCE_ID,
     fidelity: Object.freeze({ roundTrip: 'byte-identical', preservesUnknownData: true }),
-    validate: async change => validateTextChange(change),
-    planEdits: planTextEdits,
+    validate: async change => {
+      const carried = validateTextChange(change)
+      if (!carried.valid || syntaxDiagnostics === undefined) return carried
+      const syntax = syntaxDiagnostics(change)
+      return syntax.length === 0
+        ? carried
+        : Object.freeze({ valid: false, diagnostics: Object.freeze(syntax) })
+    },
+    planEdits: async change => {
+      // plan re-validates, so a caller that skips propose still cannot commit a refused change
+      const syntax = syntaxDiagnostics === undefined ? [] : syntaxDiagnostics(change)
+      if (syntax.length > 0) {
+        throw new TypeError(syntax.map(item => item.message).join('; '))
+      }
+      return planTextEdits(change)
+    },
   })
 
 /** offerId → the single-format writer module that serves it. */
 const OFFERS = Object.freeze({
-  'json-source': textWriter('json'),
+  'json-source': textWriter('json', jsonSyntaxDiagnostics),
   'jsonc-source': textWriter('jsonc'),
 })
 

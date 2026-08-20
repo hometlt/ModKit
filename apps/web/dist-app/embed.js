@@ -12,7 +12,7 @@ import {
   setState,
   setViewerText,
   stageIdOf
-} from "./chunks/chunk-TYPACVW4.js";
+} from "./chunks/chunk-QKTN2POI.js";
 
 // apps/web/src/embed.ts
 var MODKIT_VIEWER_TAG = "modkit-viewer";

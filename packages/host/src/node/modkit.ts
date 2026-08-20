@@ -36,6 +36,8 @@ import { createHostTopology, type AssetSession, type PermissionGrant } from '@mo
 import type { SubjectOpenSnapshot } from '../subject-rpc.js'
 import { createSubjectEditing, type SubjectEditing } from '../subject-editing.js'
 import { createSubjectServices } from '../subject-services.js'
+import { resolveFormatWriter } from '../format-writer.js'
+import { DEFAULT_SUBJECT_OPEN_BUDGET } from './subject-opener.js'
 import { linkedExtensionInputs, type LinkedExtension } from '../linked.js'
 import { createEvidenceRegistry, createRawWriter } from '../editing-evidence.js'
 import { createFileEditingBackend } from './file-editing-backend.js'
@@ -271,18 +273,65 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
       const session = result.session
       let editing: SubjectEditing | undefined
       const opened = lastOpened.value
+      let releaseWriter: (() => Promise<void>) | undefined
       if (
         editingBackend !== undefined &&
         opened !== undefined &&
         inside(writableRoots, resolve(path))
       ) {
+        /*
+         * The format's own writer first, the raw byte splicer as the stated fallback. The
+         * difference is what `propose` refuses: a raw writer accepts a whole-source replace that
+         * corrupts a JSON file — "these bytes at this range" is its entire contract — while the
+         * format writer refuses it while the user can still do something about it. The
+         * diagnostics say which one this subject got, and why.
+         */
+        const resolution = await resolveFormatWriter({
+          services,
+          opened,
+          grant,
+          budgets: DEFAULT_SUBJECT_OPEN_BUDGET,
+        })
+        for (const item of resolution.diagnostics) options.onDiagnostic?.(item)
+        releaseWriter = resolution.release
         try {
           editing = createSubjectEditing({
             opened,
             grant,
             backendFor: () => editingBackend,
-            evidenceFor: plan => evidence.evidenceFor(plan),
-            writer,
+            /*
+             * Evidence policy of this facade: the raw writer's by-construction record, plus a
+             * vouching rule for facet-resolved writers claiming byte-identical round trip with
+             * unknown data preserved — that claim class is what the in-repo writer proofs
+             * (`packages/host/test/text-writers.test.ts`) establish for every shipped offer, and
+             * a facade that resolved the writer through its own definitions is citing its own
+             * host's attestation, not a third party's. Anything lossier stays unvouched and the
+             * coordinator refuses it as `fidelity-unproven`, which is the honest default.
+             */
+            evidenceFor: plan => {
+              const registered = evidence.evidenceFor(plan)
+              if (registered !== undefined) return registered
+              if (
+                resolution.writer !== undefined &&
+                plan.fidelity.roundTrip === 'byte-identical' &&
+                plan.fidelity.preservesUnknownData === true
+              ) {
+                return {
+                  roundTrip: 'byte-identical',
+                  preservesUnknownData: true,
+                  evidenceId: 'facade:facet-writer/byte-identical',
+                  corpusId: 'modkitX3/packages/host/test/text-writers.test.ts',
+                  corpusDigest: 'none:byte-identical-by-contract',
+                  conformanceProfile: 'common.edit/writer-v1' as never,
+                  writer: resolution.writer.identity,
+                  optionsFingerprint: 'options:none',
+                  inputClass: 'facet-resolved',
+                  provenAt: '2026-08-20T00:00:00Z',
+                }
+              }
+              return undefined
+            },
+            writer: resolution.writer ?? writer,
           })
         } catch (error) {
           // a subject shape editing does not support yet still opens read-only; the caller sees why
@@ -300,6 +349,7 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
         ...(editing === undefined ? {} : { editing }),
         close: async () => {
           liveSessions.delete(session)
+          await releaseWriter?.()
           await session.dispose()
         },
       })

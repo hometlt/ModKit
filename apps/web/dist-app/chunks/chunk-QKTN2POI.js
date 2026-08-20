@@ -42908,7 +42908,7 @@ function presentationSlotId(value2) {
   return value2;
 }
 
-// packages/ui/dist/parts.js
+// packages/ui/dist/index.js
 var PARTS = Object.freeze([
   // shared surface
   "viewer",
@@ -43240,22 +43240,16 @@ var STATES = Object.freeze([
 ]);
 var STATE_SET = new Set(STATES);
 function setPart(element2, part) {
-  if (!PART_SET.has(part))
-    throw new TypeError(`unregistered part: ${part}`);
+  if (!PART_SET.has(part)) throw new TypeError(`unregistered part: ${part}`);
   element2.setAttribute(PART_ATTRIBUTE, part);
 }
 function setState(element2, states) {
   for (const state of states) {
-    if (!STATE_SET.has(state))
-      throw new TypeError(`unregistered state: ${state}`);
+    if (!STATE_SET.has(state)) throw new TypeError(`unregistered state: ${state}`);
   }
-  if (states.length === 0)
-    element2.removeAttribute(STATE_ATTRIBUTE);
-  else
-    element2.setAttribute(STATE_ATTRIBUTE, [...new Set(states)].join(" "));
+  if (states.length === 0) element2.removeAttribute(STATE_ATTRIBUTE);
+  else element2.setAttribute(STATE_ATTRIBUTE, [...new Set(states)].join(" "));
 }
-
-// packages/ui/dist/viewer/index.js
 var VIEWER_CSP = Object.freeze({
   defaultSrc: "'none'",
   scriptSrc: "'self'",
@@ -43285,7 +43279,9 @@ var VIEWER_CSP_TRUSTED_EDITOR = Object.freeze({
   // rejects it and the glyphs fall back to tofu.
   fontSrc: "'self' data:"
 });
-var policyText = (policy) => Object.entries(policy).map(([name, value2]) => `${name.replace(/[A-Z]/gu, (match) => `-${match.toLowerCase()}`)} ${value2}`).join("; ");
+var policyText = (policy) => Object.entries(policy).map(
+  ([name, value2]) => `${name.replace(/[A-Z]/gu, (match) => `-${match.toLowerCase()}`)} ${value2}`
+).join("; ");
 var VIEWER_CSP_TEXT = policyText(VIEWER_CSP);
 var VIEWER_CSP_TRUSTED_EDITOR_TEXT = policyText(VIEWER_CSP_TRUSTED_EDITOR);
 var HOSTILE_TEXT = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/gu;
@@ -43320,16 +43316,11 @@ function createSurface(container, label) {
 }
 function element(parent, tag, options = {}) {
   const node = parent.ownerDocument.createElement(tag);
-  if (options.className !== void 0)
-    node.className = options.className;
-  if (options.role !== void 0)
-    node.setAttribute("role", options.role);
-  if (options.text !== void 0)
-    setViewerText(node, options.text);
-  if (options.part !== void 0)
-    setPart(node, options.part);
-  if (options.state !== void 0)
-    setState(node, options.state);
+  if (options.className !== void 0) node.className = options.className;
+  if (options.role !== void 0) node.setAttribute("role", options.role);
+  if (options.text !== void 0) setViewerText(node, options.text);
+  if (options.part !== void 0) setPart(node, options.part);
+  if (options.state !== void 0) setState(node, options.state);
   parent.append(node);
   return node;
 }
@@ -43343,8 +43334,7 @@ var ViewerMountScope = class {
   #cleanup = [];
   #closed = false;
   constructor(parent) {
-    if (parent?.aborted)
-      this.controller.abort(parent.reason);
+    if (parent?.aborted) this.controller.abort(parent.reason);
     else if (parent !== void 0) {
       const abort = () => this.controller.abort(parent.reason);
       parent.addEventListener("abort", abort, { once: true });
@@ -43359,22 +43349,18 @@ var ViewerMountScope = class {
     this.#cleanup.push(callback);
   }
   async close() {
-    if (this.#closed)
-      return;
+    if (this.#closed) return;
     this.#closed = true;
     this.controller.abort("viewer-unmounted");
-    for (const callback of this.#cleanup.reverse())
-      await callback();
-    for (const lease of this.#leases.reverse())
-      await lease.release();
+    for (const callback of this.#cleanup.reverse()) await callback();
+    for (const lease of this.#leases.reverse()) await lease.release();
   }
 };
 function createViewerMount(root, scope, initial, render2) {
   let state = initial;
   return Object.freeze({
     async update(args) {
-      if (scope.signal.aborted)
-        return;
+      if (scope.signal.aborted) return;
       state = args;
       root.setAttribute("aria-label", safeViewerText(args.slot.contributionId, 512));
       await render2(state);
@@ -43416,8 +43402,7 @@ async function invokeOperation(descriptor, operations, operationId4, input, opti
 }
 function diagnosticsBySeverity(diagnostics) {
   const unique = /* @__PURE__ */ new Map();
-  for (const item of diagnostics)
-    unique.set(item.id, item);
+  for (const item of diagnostics) unique.set(item.id, item);
   const values = [...unique.values()];
   return Object.freeze({
     error: Object.freeze(values.filter((item) => item.severity === "error")),
@@ -43428,12 +43413,752 @@ function diagnosticsBySeverity(diagnostics) {
 }
 function unknownSourceLease(sources, slot, contract) {
   const binding = bindingFor(slot, contract);
-  if (binding === void 0 || !("contract" in binding))
-    return Promise.resolve(void 0);
+  if (binding === void 0 || !("contract" in binding)) return Promise.resolve(void 0);
   return sources.get(binding);
 }
-
-// packages/ui/dist/tokens/registry.js
+var MAX_MATERIALIZED_BYTES = 16 * 1024 * 1024;
+var MAX_MATERIALIZED_LINE_BYTES = 1024 * 1024;
+var BoundedTextModel = class {
+  constructor(source) {
+    this.source = source;
+  }
+  source;
+  async load(signal) {
+    const info = await this.source.info();
+    if (info.bytes > BigInt(MAX_MATERIALIZED_BYTES) || info.longestLineBytes === "unknown" || info.longestLineBytes > MAX_MATERIALIZED_LINE_BYTES) {
+      throw new RangeError("bounded text policy rejected this source");
+    }
+    const slice = await this.source.slice(
+      {
+        kind: "from-line",
+        line: 0,
+        lineCount: info.lines === "unknown" ? Number.MAX_SAFE_INTEGER : Math.max(1, info.lines),
+        maxBytes: MAX_MATERIALIZED_BYTES
+      },
+      signal
+    );
+    if (!slice.complete) throw new RangeError("bounded text source exceeded materialization limit");
+    return slice.text;
+  }
+  async search(pattern, signal) {
+    let matches22 = 0;
+    for await (const range of this.source.search({ pattern }, signal)) {
+      void range;
+      matches22 += 1;
+    }
+    return matches22;
+  }
+};
+var boundedTextViewer = defineViewerModule({
+  abiVersion: 1,
+  async mount(args) {
+    const scope = new ViewerMountScope(args.signal);
+    const root = createSurface(args.container, "Bounded text viewer");
+    const lease = await unknownSourceLease(args.sources, args.slot, "common.view/text-data-source");
+    if (lease === void 0) throw new TypeError("bounded text binding is unavailable");
+    scope.lease(lease);
+    const model = new BoundedTextModel(lease.value);
+    const toolbar = element(root, "div", {
+      className: "modkit-viewer__toolbar",
+      role: "search",
+      part: "viewer.toolbar"
+    });
+    const search = element(toolbar, "input");
+    search.type = "search";
+    search.setAttribute("aria-label", "Search text");
+    const searchButton = element(toolbar, "button", { text: "Search" });
+    searchButton.type = "button";
+    const status = element(toolbar, "output", { text: "Ready", part: "viewer.status" });
+    const content = element(root, "pre", { className: "modkit-viewer__code", part: "text" });
+    content.tabIndex = 0;
+    content.setAttribute("aria-label", "Text content");
+    setViewerText(content, await model.load(scope.signal), MAX_MATERIALIZED_BYTES);
+    const runSearch = async () => {
+      const pattern = safeViewerText(search.value, 4096);
+      setViewerText(status, pattern === "" ? "Enter a search term" : "Searching\u2026");
+      if (pattern === "") return;
+      const matches22 = await model.search(pattern, scope.signal);
+      setViewerText(status, `${matches22} match${matches22 === 1 ? "" : "es"}`);
+    };
+    searchButton.addEventListener("click", runSearch);
+    search.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") void runSearch();
+    });
+    scope.cleanup(() => searchButton.removeEventListener("click", runSearch));
+    return createViewerMount(root, scope, args, ({ descriptor }) => {
+      root.dataset["revision"] = descriptor.revision;
+    });
+  }
+});
+var VIRTUAL_TEXT_PAGE_BYTES = 64 * 1024;
+var VirtualTextModel = class {
+  constructor(source) {
+    this.source = source;
+  }
+  source;
+  #cursor;
+  async first(line = 0, signal) {
+    const page = await this.source.slice(
+      { kind: "from-line", line, lineCount: 200, maxBytes: VIRTUAL_TEXT_PAGE_BYTES },
+      signal
+    );
+    this.#cursor = page.complete ? void 0 : page.nextCursor;
+    return page;
+  }
+  async next(signal) {
+    if (this.#cursor === void 0) return void 0;
+    const page = await this.source.slice(
+      { kind: "from-cursor", cursor: this.#cursor, maxBytes: VIRTUAL_TEXT_PAGE_BYTES },
+      signal
+    );
+    this.#cursor = page.complete ? void 0 : page.nextCursor;
+    return page;
+  }
+};
+var virtualTextViewer = defineViewerModule({
+  abiVersion: 1,
+  async mount(args) {
+    const scope = new ViewerMountScope(args.signal);
+    const root = createSurface(args.container, "Virtual text viewer");
+    const lease = await unknownSourceLease(args.sources, args.slot, "common.view/text-data-source");
+    if (lease === void 0) throw new TypeError("virtual text binding is unavailable");
+    scope.lease(lease);
+    const model = new VirtualTextModel(lease.value);
+    const viewport = element(root, "pre", {
+      className: "modkit-viewer__virtual-text",
+      part: "virtual-text"
+    });
+    viewport.tabIndex = 0;
+    viewport.setAttribute("aria-live", "polite");
+    const more = element(root, "button", { text: "Load next page" });
+    more.type = "button";
+    const renderPage = (page, append) => {
+      if (page === void 0) {
+        more.disabled = true;
+        return;
+      }
+      const text = append ? `${viewport.textContent ?? ""}${page.text}` : page.text;
+      setViewerText(viewport, text, 2 * VIRTUAL_TEXT_PAGE_BYTES);
+      more.disabled = page.complete;
+      viewport.dataset["fromLine"] = String(page.fromLine);
+    };
+    renderPage(await model.first(0, scope.signal), false);
+    const next = async () => renderPage(await model.next(scope.signal), true);
+    more.addEventListener("click", next);
+    scope.cleanup(() => more.removeEventListener("click", next));
+    return createViewerMount(root, scope, args, ({ descriptor }) => {
+      root.dataset["revision"] = descriptor.revision;
+    });
+  }
+});
+var HEX_WINDOW_BYTES = 4096;
+var HexWindowModel = class {
+  constructor(source) {
+    this.source = source;
+  }
+  source;
+  async read(offset, signal) {
+    if (offset < 0n) throw new RangeError("hex offset must be non-negative");
+    const size = await this.source.size();
+    if (offset > size) throw new RangeError("hex offset exceeds source size");
+    const length = Number(
+      size - offset > BigInt(HEX_WINDOW_BYTES) ? HEX_WINDOW_BYTES : size - offset
+    );
+    const bytes2 = await this.source.read(offset, length, signal);
+    const lines = [];
+    for (let index = 0; index < bytes2.length; index += 16) {
+      const chunk = bytes2.slice(index, index + 16);
+      const address = (offset + BigInt(index)).toString(16).padStart(16, "0");
+      const hex = [...chunk].map((value2) => value2.toString(16).padStart(2, "0")).join(" ");
+      const ascii = [...chunk].map((value2) => value2 >= 32 && value2 <= 126 ? String.fromCharCode(value2) : ".").join("");
+      lines.push(`${address}  ${hex.padEnd(47)}  ${ascii}`);
+    }
+    return { offset, bytes: bytes2, text: lines.join("\n") };
+  }
+};
+var hexViewer = defineViewerModule({
+  abiVersion: 1,
+  async mount(args) {
+    const scope = new ViewerMountScope(args.signal);
+    const root = createSurface(args.container, "Hex viewer");
+    const lease = await unknownSourceLease(args.sources, args.slot, "common.view/byte-range-source");
+    if (lease === void 0) throw new TypeError("hex binding is unavailable");
+    scope.lease(lease);
+    const model = new HexWindowModel(lease.value);
+    const controls = element(root, "div", {
+      className: "modkit-viewer__toolbar",
+      part: "hex.toolbar"
+    });
+    const offset = element(controls, "input", { part: "hex.offset-input" });
+    offset.type = "text";
+    offset.inputMode = "numeric";
+    offset.value = "0";
+    offset.setAttribute("aria-label", "Byte offset");
+    const go = element(controls, "button", { text: "Go", part: "hex.go" });
+    go.type = "button";
+    const content = element(root, "pre", { className: "modkit-viewer__hex", part: "hex.content" });
+    content.tabIndex = 0;
+    const render2 = async () => {
+      const value2 = /^(?:0x)?[0-9a-f]+$/iu.test(offset.value.trim()) ? BigInt(offset.value.trim()) : -1n;
+      const window = await model.read(value2, scope.signal);
+      setViewerText(content, window.text);
+      content.dataset["offset"] = window.offset.toString(10);
+    };
+    await render2();
+    go.addEventListener("click", render2);
+    scope.cleanup(() => go.removeEventListener("click", render2));
+    return createViewerMount(root, scope, args, ({ descriptor }) => {
+      root.dataset["revision"] = descriptor.revision;
+    });
+  }
+});
+var LazyTreeModel = class {
+  constructor(source) {
+    this.source = source;
+  }
+  source;
+  #facts = /* @__PURE__ */ new Map();
+  root() {
+    return this.source.root();
+  }
+  async facts(node) {
+    const existing = this.#facts.get(node.id);
+    if (existing !== void 0) return existing;
+    const value2 = await this.source.facts(node);
+    this.#facts.set(node.id, value2);
+    return value2;
+  }
+  children(node, cursor2, signal) {
+    return this.source.children(
+      node,
+      { limit: 200, ...cursor2 === void 0 ? {} : { cursor: cursor2 } },
+      signal
+    );
+  }
+};
+var treeViewer = defineViewerModule({
+  abiVersion: 1,
+  async mount(args) {
+    const scope = new ViewerMountScope(args.signal);
+    const root = createSurface(args.container, "Tree viewer");
+    root.setAttribute("role", "tree");
+    const lease = await unknownSourceLease(args.sources, args.slot, "common.view/tree-data-source");
+    if (lease === void 0) throw new TypeError("tree binding is unavailable");
+    scope.lease(lease);
+    const model = new LazyTreeModel(lease.value);
+    const list = element(root, "ul", { className: "modkit-viewer__tree", part: "tree.list" });
+    list.setAttribute("role", "group");
+    const renderNode = async (node, parent) => {
+      const facts = await model.facts(node);
+      const item = element(parent, "li", { part: "tree.item" });
+      item.setAttribute("role", "treeitem");
+      item.dataset["nodeId"] = node.id;
+      item.setAttribute("aria-expanded", node.hasChildren ? "false" : "undefined");
+      const label = element(item, "button", {
+        text: facts.label,
+        part: "tree.label"
+      });
+      label.type = "button";
+      label.disabled = !node.hasChildren;
+      if (facts.preview !== void 0) label.title = facts.preview;
+      const children = element(item, "ul", { part: "tree.children" });
+      children.hidden = true;
+      children.setAttribute("role", "group");
+      let loaded = false;
+      const expand = async () => {
+        if (!loaded) {
+          const page = await model.children(node, void 0, scope.signal);
+          for (const child of page.items) await renderNode(child, children);
+          loaded = true;
+        }
+        children.hidden = !children.hidden;
+        item.setAttribute("aria-expanded", String(!children.hidden));
+      };
+      label.addEventListener("click", expand);
+      scope.cleanup(() => label.removeEventListener("click", expand));
+      setViewerText(label, facts.label);
+    };
+    await renderNode(await model.root(), list);
+    return createViewerMount(root, scope, args, ({ descriptor }) => {
+      root.dataset["revision"] = descriptor.revision;
+    });
+  }
+});
+var TABLE_PAGE_ROWS = 200;
+var LazyTableModel = class {
+  constructor(source) {
+    this.source = source;
+  }
+  source;
+  #cursor;
+  shape() {
+    return this.source.shape();
+  }
+  async first(from = 0, signal) {
+    const page = await this.source.rows({ kind: "range", from, count: TABLE_PAGE_ROWS }, signal);
+    this.#cursor = page.nextCursor;
+    return page;
+  }
+  async next(signal) {
+    if (this.#cursor === void 0) return void 0;
+    const page = await this.source.rows(
+      { kind: "cursor", cursor: this.#cursor, count: TABLE_PAGE_ROWS },
+      signal
+    );
+    this.#cursor = page.nextCursor;
+    return page;
+  }
+};
+var tableViewer = defineViewerModule({
+  abiVersion: 1,
+  async mount(args) {
+    const scope = new ViewerMountScope(args.signal);
+    const root = createSurface(args.container, "Table viewer");
+    const lease = await unknownSourceLease(args.sources, args.slot, "common.view/table-data-source");
+    if (lease === void 0) throw new TypeError("table binding is unavailable");
+    scope.lease(lease);
+    const model = new LazyTableModel(lease.value);
+    const table = element(root, "table", {
+      className: "modkit-viewer__table",
+      part: "table"
+    });
+    const caption = table.createCaption();
+    setPart(caption, "table.caption");
+    const shape = await model.shape();
+    setViewerText(caption, `${shape.rows} rows, ${shape.columns} columns`);
+    const body = table.createTBody();
+    setPart(body, "table.body");
+    const render2 = (rows) => {
+      body.replaceChildren();
+      for (const row of rows) {
+        const tr = body.insertRow();
+        setPart(tr, "table.row");
+        tr.dataset["row"] = String(row.index);
+        for (const value2 of row.cells) {
+          const cell = tr.insertCell();
+          setPart(cell, "table.cell");
+          setViewerText(cell, value2);
+        }
+      }
+    };
+    const first = await model.first(0, scope.signal);
+    render2(first.items);
+    const next = element(root, "button", {
+      text: "Next rows",
+      part: "table.next"
+    });
+    next.type = "button";
+    next.disabled = first.nextCursor === void 0;
+    const advance = async () => {
+      const page = await model.next(scope.signal);
+      if (page === void 0) {
+        next.disabled = true;
+        return;
+      }
+      render2(page.items);
+      next.disabled = page.nextCursor === void 0;
+    };
+    next.addEventListener("click", advance);
+    scope.cleanup(() => next.removeEventListener("click", advance));
+    return createViewerMount(root, scope, args, ({ descriptor }) => {
+      root.dataset["revision"] = descriptor.revision;
+    });
+  }
+});
+var TransportModel = class {
+  constructor(source) {
+    this.source = source;
+  }
+  source;
+  snapshot(signal) {
+    return this.source.snapshot(signal);
+  }
+  events(signal) {
+    return this.source.events(signal);
+  }
+};
+var transportViewer = defineViewerModule({
+  abiVersion: 1,
+  async mount(args) {
+    const scope = new ViewerMountScope(args.signal);
+    const root = createSurface(args.container, "Transport controls");
+    const lease = await unknownSourceLease(args.sources, args.slot, "common.view/transport-source");
+    if (lease === void 0) throw new TypeError("transport binding is unavailable");
+    scope.lease(lease);
+    const model = new TransportModel(lease.value);
+    const status = element(root, "output", { text: "Loading", part: "transport.status" });
+    const controls = element(root, "div", {
+      className: "modkit-viewer__transport",
+      part: "transport.controls"
+    });
+    let descriptor = args.descriptor;
+    let snapshot2;
+    const render2 = (value2) => {
+      snapshot2 = value2;
+      controls.replaceChildren();
+      setViewerText(status, `${value2.state} \xB7 ${value2.positionMs} / ${value2.durationMs} ms`);
+      const commands = [
+        ["Play or pause", value2.controls.playPause, null],
+        ["Seek to start", value2.controls.seek, { positionMs: 0 }],
+        ["Normal speed", value2.controls.setRate, { rate: 1 }]
+      ];
+      for (const [label, operation, input] of commands) {
+        if (operation === void 0) continue;
+        const button = element(controls, "button", {
+          text: label,
+          part: "transport.button"
+        });
+        button.type = "button";
+        const invoke = async () => {
+          const result = await invokeOperation(descriptor, args.operations, operation, input, {
+            signal: scope.signal
+          });
+          setViewerText(status, result.state === "ok" ? `${label}: complete` : result.reason);
+        };
+        button.addEventListener("click", invoke);
+        scope.cleanup(() => button.removeEventListener("click", invoke));
+      }
+      for (const track of value2.tracks) {
+        const item = element(controls, "span", {
+          text: track.label ?? track.id,
+          part: "transport.track"
+        });
+        item.setAttribute("role", "status");
+        item.dataset["selected"] = String(track.selected);
+      }
+    };
+    render2(await model.snapshot(scope.signal));
+    const consume = async () => {
+      try {
+        for await (const event of model.events(scope.signal)) {
+          if (event.kind === "snapshot") render2(event.snapshot);
+          else setViewerText(status, event.diagnostic.message);
+        }
+      } catch (error) {
+        if (!scope.signal.aborted) throw error;
+      }
+    };
+    void consume();
+    return createViewerMount(root, scope, args, (update) => {
+      descriptor = update.descriptor;
+      root.dataset["revision"] = descriptor.revision;
+      render2(snapshot2);
+    });
+  }
+});
+function normalizeNamespacePath(value2) {
+  if (value2.includes("\\") || value2.startsWith("/") || value2.includes("\0")) {
+    throw new TypeError("namespace path is not relative and portable");
+  }
+  const parts = value2.split("/").filter((part) => part !== "" && part !== ".");
+  if (parts.some((part) => part === "..")) throw new TypeError("namespace traversal is forbidden");
+  return parts.join("/");
+}
+var NamespaceModel = class {
+  constructor(source) {
+    this.source = source;
+  }
+  source;
+  #identities = /* @__PURE__ */ new Map();
+  async list(prefix, cursor2, signal) {
+    const normalized = normalizeNamespacePath(prefix);
+    const page = await this.source.list(
+      normalized,
+      { limit: 200, ...cursor2 === void 0 ? {} : { cursor: cursor2 } },
+      signal
+    );
+    for (const entry2 of page.items) {
+      const path = normalizeNamespacePath(entry2.path);
+      const identity = `${path}\0${entry2.revision}`;
+      const existing = this.#identities.get(entry2.id);
+      if (existing !== void 0 && existing !== identity) {
+        throw new TypeError(`namespace entry identity changed: ${entry2.id}`);
+      }
+      this.#identities.set(entry2.id, identity);
+    }
+    return page;
+  }
+};
+var namespaceViewer = defineViewerModule({
+  abiVersion: 1,
+  async mount(args) {
+    const scope = new ViewerMountScope(args.signal);
+    const root = createSurface(args.container, "Namespace tree");
+    root.setAttribute("role", "tree");
+    const lease = await unknownSourceLease(
+      args.sources,
+      args.slot,
+      "common.view/namespace-entry-source"
+    );
+    if (lease === void 0) throw new TypeError("namespace binding is unavailable");
+    scope.lease(lease);
+    const source = lease.value;
+    const model = new NamespaceModel(source);
+    const list = element(root, "ul", { part: "namespace.list" });
+    list.setAttribute("role", "group");
+    const renderPrefix = async (prefix, parent) => {
+      const page = await model.list(prefix, void 0, scope.signal);
+      const seen = /* @__PURE__ */ new Set();
+      for (const entry2 of page.items) {
+        if (seen.has(entry2.id)) throw new TypeError(`duplicate namespace entry id: ${entry2.id}`);
+        seen.add(entry2.id);
+        const item = element(parent, "li", { part: "namespace.item" });
+        item.setAttribute("role", "treeitem");
+        item.dataset["entryId"] = entry2.id;
+        item.dataset["revision"] = entry2.revision;
+        const button = element(item, "button", {
+          text: entry2.name,
+          part: "namespace.label"
+        });
+        button.type = "button";
+        const detail = describeEntry(entry2);
+        if (detail !== "") {
+          setViewerText(element(item, "span", { part: "namespace.detail" }), detail);
+        }
+        const activate = async () => {
+          if (entry2.kind === "directory") {
+            let nested = item.querySelector(":scope > ul");
+            if (nested === null) {
+              nested = element(item, "ul", { part: "namespace.children" });
+              nested.setAttribute("role", "group");
+              await renderPrefix(entry2.path, nested);
+            }
+            nested.hidden = !nested.hidden;
+            return;
+          }
+          const opened = await source.openEntry(entry2.id, scope.signal);
+          try {
+            root.dispatchEvent(
+              new CustomEvent("modkit-open-source", {
+                bubbles: true,
+                detail: { source: opened.value, entryId: entry2.id, revision: entry2.revision }
+              })
+            );
+          } finally {
+            await opened.release();
+          }
+        };
+        button.addEventListener("click", activate);
+        scope.cleanup(() => button.removeEventListener("click", activate));
+        setViewerText(button, entry2.name);
+      }
+    };
+    await renderPrefix("", list);
+    return createViewerMount(root, scope, args, ({ descriptor }) => {
+      root.dataset["revision"] = descriptor.revision;
+    });
+  }
+});
+function formatEntryBytes(value2) {
+  if (value2 < 1024n) return `${value2} B`;
+  const units = ["KiB", "MiB", "GiB", "TiB"];
+  let scaled = Number(value2) / 1024;
+  let unit = 0;
+  while (scaled >= 1024 && unit < units.length - 1) {
+    scaled /= 1024;
+    unit += 1;
+  }
+  return `${scaled.toFixed(1)} ${units[unit]}`;
+}
+function describeEntry(entry2) {
+  if (entry2.kind === "directory") return "";
+  const parts = [];
+  if (entry2.size !== void 0) parts.push(formatEntryBytes(entry2.size));
+  if (entry2.compression !== void 0) {
+    parts.push(
+      entry2.storedSize === void 0 ? entry2.compression : `${entry2.compression} ${formatEntryBytes(entry2.storedSize)}`
+    );
+  } else if (entry2.storedSize !== void 0) {
+    parts.push(`stored ${formatEntryBytes(entry2.storedSize)}`);
+  }
+  if (entry2.modifiedAt !== void 0) {
+    parts.push(`${new Date(entry2.modifiedAt).toISOString().replace("T", " ").slice(0, 19)} UTC`);
+  }
+  if (entry2.checksum !== void 0)
+    parts.push(`${entry2.checksum.algorithm} ${entry2.checksum.value}`);
+  return parts.join(" \xB7 ");
+}
+function renderDiagnostics(root, descriptor) {
+  root.replaceChildren();
+  const grouped = diagnosticsBySeverity(descriptor.diagnostics);
+  for (const severity of ["error", "warning", "information", "hint"]) {
+    const section = element(root, "section", { part: "diagnostics.group" });
+    section.dataset["severity"] = severity;
+    element(section, "h2", {
+      text: `${severity} (${grouped[severity].length})`,
+      part: "diagnostics.heading"
+    });
+    const list = element(section, "ul", { part: "diagnostics.list" });
+    for (const diagnostic2 of grouped[severity]) {
+      const item = element(list, "li", { part: "diagnostics.item" });
+      item.dataset["severity"] = severity;
+      const button = element(item, "button", {
+        text: diagnostic2.message,
+        part: "diagnostics.message"
+      });
+      button.type = "button";
+      button.dataset["diagnosticId"] = diagnostic2.id;
+      button.addEventListener("click", () => {
+        root.dispatchEvent(
+          new CustomEvent("modkit-diagnostic-jump", {
+            bubbles: true,
+            detail: { id: diagnostic2.id, range: diagnostic2.range }
+          })
+        );
+      });
+    }
+  }
+}
+var diagnosticsPanel = defineViewerModule({
+  abiVersion: 1,
+  async mount(args) {
+    const scope = new ViewerMountScope(args.signal);
+    const root = createSurface(args.container, "Diagnostics");
+    renderDiagnostics(root, args.descriptor);
+    return createViewerMount(root, scope, args, ({ descriptor }) => {
+      renderDiagnostics(root, descriptor);
+    });
+  }
+});
+function renderToolbar(root, descriptor, operations, signal) {
+  root.replaceChildren();
+  const status = element(root, "output", { text: "Ready", part: "operations.status" });
+  for (const operation of descriptor.operations) {
+    if (operation.mutatesSource === true) continue;
+    const button = element(root, "button", {
+      text: operation.id,
+      part: "operations.button"
+    });
+    button.type = "button";
+    button.disabled = operation.state !== "available";
+    if (operation.state !== "available") {
+      button.title = operation.reason;
+      continue;
+    }
+    button.addEventListener("click", () => {
+      button.disabled = true;
+      invokeOperation(descriptor, operations, operation.id, null, {
+        signal,
+        onProgress: (completed, total, message) => setViewerText(status, `${message ?? "Working"}: ${completed}/${total ?? "?"}`)
+      }).then(
+        (result) => setViewerText(
+          status,
+          result.state === "ok" ? `${operation.id}: complete` : result.reason
+        )
+      ).catch(
+        (error) => setViewerText(
+          status,
+          `${operation.id}: ${error instanceof Error ? error.message : String(error)}`
+        )
+      ).finally(() => {
+        button.disabled = false;
+      });
+    });
+  }
+}
+var operationToolbar = defineViewerModule({
+  abiVersion: 1,
+  async mount(args) {
+    const scope = new ViewerMountScope(args.signal);
+    const root = createSurface(args.container, "Operations");
+    renderToolbar(root, args.descriptor, args.operations, scope.signal);
+    return createViewerMount(root, scope, args, ({ descriptor }) => {
+      renderToolbar(root, descriptor, args.operations, scope.signal);
+    });
+  }
+});
+function resolved(descriptor) {
+  return "identity" in descriptor ? descriptor : void 0;
+}
+function renderMetadata(root, descriptor) {
+  root.replaceChildren();
+  const groups = resolved(descriptor)?.metadata ?? [];
+  if (groups.length === 0) {
+    element(root, "p", { text: "No metadata reported by the codec.", part: "viewer.empty" });
+    return;
+  }
+  for (const group of groups) {
+    const section = element(root, "section", { part: "metadata.group" });
+    element(section, "h3", { text: group.label, part: "metadata.heading" });
+    const list = element(section, "dl");
+    for (const entry2 of group.entries) {
+      const row = element(list, "div", { part: "metadata.row" });
+      element(row, "dt", { text: entry2.key, part: "metadata.label" });
+      const value2 = element(row, "dd", { part: "metadata.value" });
+      setViewerText(value2, entry2.value, 4096);
+      value2.title = String(entry2.value);
+    }
+  }
+}
+var metadataPanel = defineViewerModule({
+  abiVersion: 1,
+  async mount(args) {
+    const scope = new ViewerMountScope(args.signal);
+    const root = createSurface(args.container, "Metadata");
+    const body = element(root, "div", { part: "metadata" });
+    renderMetadata(body, args.descriptor);
+    return createViewerMount(root, scope, args, ({ descriptor }) => {
+      root.dataset["revision"] = descriptor.revision;
+      renderMetadata(body, descriptor);
+    });
+  }
+});
+function renderProperties(root, descriptor) {
+  root.replaceChildren();
+  const rows = [
+    { name: "subject", value: descriptor.subjectUri, origin: "identity" },
+    { name: "revision", value: descriptor.revision, origin: "identity" },
+    {
+      name: "interpretation",
+      value: String(resolved(descriptor)?.interpretation ?? "unresolved"),
+      origin: "identity"
+    }
+  ];
+  const identity = resolved(descriptor)?.identity;
+  if (identity !== void 0) {
+    if (identity.formatId !== void 0)
+      rows.push({ name: "format", value: identity.formatId, origin: "identity" });
+    if (identity.codecId !== void 0)
+      rows.push({ name: "codec", value: identity.codecId, origin: "identity" });
+    if (identity.confidence !== void 0)
+      rows.push({ name: "confidence", value: identity.confidence.toFixed(2), origin: "detection" });
+  }
+  for (const trait of descriptor.traits) {
+    const parameters = Object.entries(trait.parameters ?? {});
+    rows.push({
+      name: trait.id,
+      value: parameters.length === 0 ? trait.state : `${trait.state} \xB7 ${parameters.map(([key3, item]) => `${key3}=${String(item)}`).join(", ")}`,
+      origin: "trait"
+    });
+  }
+  for (const operation of descriptor.operations) {
+    rows.push({
+      name: operation.id,
+      value: `${operation.state}${operation.mutatesSource ? " \xB7 mutates source" : ""}`,
+      origin: "operation"
+    });
+  }
+  for (const row of rows) {
+    const line = element(root, "div", { part: "properties.row" });
+    element(line, "span", { text: row.name, part: "properties.name" });
+    element(line, "span", { text: row.value, part: "properties.value" });
+    element(line, "span", { text: row.origin, part: "properties.origin" });
+  }
+}
+var propertiesTable = defineViewerModule({
+  abiVersion: 1,
+  async mount(args) {
+    const scope = new ViewerMountScope(args.signal);
+    const root = createSurface(args.container, "Properties");
+    const body = element(root, "div", { part: "properties" });
+    body.setAttribute("role", "table");
+    renderProperties(body, args.descriptor);
+    return createViewerMount(root, scope, args, ({ descriptor }) => {
+      root.dataset["revision"] = descriptor.revision;
+      renderProperties(body, descriptor);
+    });
+  }
+});
 var t = (name, tier, type, description, extra = {}) => ({ name, tier, type, isPublic: true, description, ...extra });
 var PALETTE_STEPS = [
   "050",
@@ -43448,7 +44173,9 @@ var PALETTE_STEPS = [
   "900"
 ];
 var PALETTE_HUES = ["neutral", "accent", "ok", "warn", "error", "info"];
-var tier1 = PALETTE_HUES.flatMap((hue) => PALETTE_STEPS.map((step) => t(`palette.${hue}.${step}`, 1, "color", `${hue} ramp step ${step}`)));
+var tier1 = PALETTE_HUES.flatMap(
+  (hue) => PALETTE_STEPS.map((step) => t(`palette.${hue}.${step}`, 1, "color", `${hue} ramp step ${step}`))
+);
 var tier2 = [
   // surfaces
   t("color.bg", 2, "color", "window ground behind everything"),
@@ -43507,7 +44234,9 @@ var tier2 = [
   t("color.axis-z", 2, "color", "Z axis handle and line"),
   t("color.canvas-selection", 2, "color", "selected geometry outline"),
   // graph / chart categorical ramp
-  ...["1", "2", "3", "4", "5", "6"].map((n) => t(`chart.categorical-${n}`, 2, "color", `categorical series ${n}`)),
+  ...["1", "2", "3", "4", "5", "6"].map(
+    (n) => t(`chart.categorical-${n}`, 2, "color", `categorical series ${n}`)
+  ),
   t("color.graph-node", 2, "color", "relation-graph node fill"),
   t("color.graph-edge", 2, "color", "relation-graph edge stroke"),
   t("color.graph-edge-dead", 2, "color", "unresolved reference edge"),
@@ -43516,9 +44245,13 @@ var tier2 = [
   t("color.diff-removed", 2, "color", "removed line or cell wash"),
   t("color.diff-changed", 2, "color", "changed line or cell wash"),
   // space
-  ...["0", "1", "2", "3", "4", "5", "6", "7", "8"].map((n) => t(`space.${n}`, 2, "length", `spacing step ${n}`)),
+  ...["0", "1", "2", "3", "4", "5", "6", "7", "8"].map(
+    (n) => t(`space.${n}`, 2, "length", `spacing step ${n}`)
+  ),
   // radius
-  ...["none", "sm", "md", "lg", "pill"].map((r) => t(`radius.${r}`, 2, "length", `corner radius ${r}`)),
+  ...["none", "sm", "md", "lg", "pill"].map(
+    (r) => t(`radius.${r}`, 2, "length", `corner radius ${r}`)
+  ),
   // type
   t("font.sans", 2, "font-family", "UI typeface stack"),
   t("font.mono", 2, "font-family", "monospace stack for IDs, code, offsets"),
@@ -43533,9 +44266,13 @@ var tier2 = [
   t("size.scrollbar", 2, "length", "scrollbar thickness"),
   t("size.scrollbar-thin", 2, "length", "scrollbar thickness inside dense panes"),
   // layering
-  ...["base", "sticky", "dropdown", "overlay", "modal", "toast"].map((z) => t(`z.${z}`, 2, "z-index", `stacking band: ${z}`)),
+  ...["base", "sticky", "dropdown", "overlay", "modal", "toast"].map(
+    (z) => t(`z.${z}`, 2, "z-index", `stacking band: ${z}`)
+  ),
   // motion
-  ...["fast", "normal", "slow"].map((d) => t(`motion.${d}`, 2, "duration", `transition duration ${d}`)),
+  ...["fast", "normal", "slow"].map(
+    (d) => t(`motion.${d}`, 2, "duration", `transition duration ${d}`)
+  ),
   t("motion.ease", 2, "easing", "default easing curve"),
   // elevation
   ...["1", "2", "3"].map((e) => t(`elevation.${e}`, 2, "shadow", `elevation level ${e}`)),
@@ -43564,7 +44301,9 @@ var tier3 = [
   c("transport.track-height", "transport", "length", "space.2", "transport scrub track height")
 ];
 var TOKENS = Object.freeze([...tier1, ...tier2, ...tier3]);
-var TOKENS_BY_NAME = new Map(TOKENS.map((token) => [token.name, token]));
+var TOKENS_BY_NAME = new Map(
+  TOKENS.map((token) => [token.name, token])
+);
 function cssVariableName(tokenName) {
   return `--mk-${tokenName.replace(/\./gu, "-")}`;
 }
@@ -43579,13 +44318,11 @@ var FONT_FAMILY = /^[-\w\s.,'"()]+$/u;
 var FORBIDDEN = /url\(|expression\(|javascript:|@import|[;{}]|<|>/iu;
 function validateTokenValue(tokenName, value2) {
   const token = TOKENS_BY_NAME.get(tokenName);
-  if (token === void 0)
-    return { valid: false, reason: `unknown token: ${tokenName}` };
+  if (token === void 0) return { valid: false, reason: `unknown token: ${tokenName}` };
   if (typeof value2 !== "string" || value2.length === 0) {
     return { valid: false, reason: "value must be a non-empty string" };
   }
-  if (value2.length > 256)
-    return { valid: false, reason: "value exceeds 256 characters" };
+  if (value2.length > 256) return { valid: false, reason: "value exceeds 256 characters" };
   if (FORBIDDEN.test(value2)) {
     return { valid: false, reason: "value contains a resource load or declaration escape" };
   }
@@ -43613,8 +44350,6 @@ function validateTokenValue(tokenName, value2) {
   })();
   return ok ? { valid: true } : { valid: false, reason: `value is not a valid ${token.type}` };
 }
-
-// packages/ui/dist/tokens/generated.js
 var TOKEN_NAMES = Object.freeze([
   "palette.neutral.050",
   "palette.neutral.100",
@@ -43810,8 +44545,6 @@ var TOKEN_NAMES = Object.freeze([
   "panel.padding",
   "transport.track-height"
 ]);
-
-// packages/ui/dist/tokens/palettes.js
 var RAMPS = {
   neutral: [
     "#fafafa",
@@ -44205,11 +44938,9 @@ var PALETTES = Object.freeze([
     })
   }
 ]);
-var PALETTES_BY_ID = new Map(PALETTES.map((palette) => [palette.id, palette]));
-
-// packages/ui/dist/tokens/index.js
-var THEME_ATTRIBUTE = "data-mk-theme";
-var DENSITY_ATTRIBUTE = "data-mk-density";
+var PALETTES_BY_ID = new Map(
+  PALETTES.map((palette) => [palette.id, palette])
+);
 function requireElement(value2) {
   if (typeof value2 !== "object" || value2 === null || !("style" in value2) || typeof value2.style !== "object") {
     throw new TypeError("token target must be a DOM element");
@@ -44224,2709 +44955,6 @@ function setToken(element2, name, value2) {
   }
   target.style.setProperty(cssVariableName(name), value2);
 }
-function applyTheme(root, theme) {
-  const target = requireElement(root);
-  if (theme === void 0)
-    target.removeAttribute(THEME_ATTRIBUTE);
-  else
-    target.setAttribute(THEME_ATTRIBUTE, theme);
-}
-function applyDensity(root, density) {
-  requireElement(root).setAttribute(DENSITY_ATTRIBUTE, density);
-}
-
-// packages/ui/dist/primitives/file-tree.js
-function createFileTree(document, options) {
-  const root = document.createElement("div");
-  root.className = "modkit-filetree";
-  setPart(root, "filetree");
-  const toolbar = document.createElement("div");
-  toolbar.className = "modkit-filetree__toolbar";
-  toolbar.setAttribute("role", "toolbar");
-  toolbar.setAttribute("aria-label", `${options.label} actions`);
-  setPart(toolbar, "filetree.toolbar");
-  root.append(toolbar);
-  const list = document.createElement("div");
-  list.className = "modkit-filetree__list";
-  list.setAttribute("role", "tree");
-  list.setAttribute("aria-label", options.label);
-  list.tabIndex = 0;
-  setPart(list, "filetree.list");
-  root.append(list);
-  const rows = /* @__PURE__ */ new Map();
-  let order = [];
-  let active;
-  const controller = new AbortController();
-  const setActive = (row, focus = true) => {
-    if (active !== void 0) {
-      active.element.setAttribute("aria-selected", "false");
-      setState(active.element, []);
-      active.element.tabIndex = -1;
-    }
-    active = row;
-    if (row === void 0)
-      return;
-    row.element.setAttribute("aria-selected", "true");
-    setState(row.element, ["selected"]);
-    row.element.tabIndex = 0;
-    if (focus)
-      row.element.focus();
-    options.onSelect?.(row.node);
-  };
-  const rebuildOrder = () => {
-    order = [...rows.values()].filter((row) => row.element.isConnected && row.element.offsetParent !== null).sort((left, right) => {
-      const position = left.element.compareDocumentPosition(right.element);
-      return position & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
-    });
-  };
-  const renderRow = (node, depth, host) => {
-    const element2 = document.createElement("div");
-    element2.className = "modkit-filetree__node";
-    element2.setAttribute("role", "treeitem");
-    element2.setAttribute("aria-level", String(depth + 1));
-    element2.setAttribute("aria-selected", "false");
-    element2.tabIndex = -1;
-    element2.dataset["nodeId"] = node.id;
-    if (node.kind !== void 0)
-      element2.dataset["kind"] = node.kind;
-    setPart(element2, "filetree.node");
-    const line = document.createElement("div");
-    line.className = "modkit-filetree__row";
-    setPart(line, "filetree.row");
-    setToken(line, "tree.indent-level", String(depth));
-    element2.append(line);
-    const twisty = document.createElement("span");
-    twisty.className = "modkit-filetree__twisty";
-    twisty.setAttribute("aria-hidden", "true");
-    setPart(twisty, "filetree.twisty");
-    twisty.textContent = node.hasChildren ? "\u203A" : "";
-    line.append(twisty);
-    if (node.icon !== void 0) {
-      const icon = document.createElement("span");
-      icon.className = "modkit-filetree__icon";
-      icon.setAttribute("aria-hidden", "true");
-      icon.textContent = safeViewerText(node.icon, 4);
-      setPart(icon, "filetree.icon");
-      line.append(icon);
-    }
-    const label = document.createElement("span");
-    label.className = "modkit-filetree__label";
-    label.textContent = safeViewerText(node.label, 512);
-    setPart(label, "filetree.label");
-    line.append(label);
-    if (node.badge !== void 0) {
-      const badge = document.createElement("span");
-      badge.className = "modkit-filetree__badge";
-      badge.textContent = safeViewerText(node.badge, 32);
-      setPart(badge, "filetree.badge");
-      line.append(badge);
-    }
-    const childrenHost = document.createElement("div");
-    childrenHost.className = "modkit-filetree__children";
-    childrenHost.setAttribute("role", "group");
-    childrenHost.hidden = true;
-    setPart(childrenHost, "filetree.children");
-    element2.append(childrenHost);
-    const row = { node, depth, element: element2, childrenHost, expanded: false, loaded: false };
-    if (node.hasChildren)
-      element2.setAttribute("aria-expanded", "false");
-    line.addEventListener("click", () => {
-      setActive(row);
-      if (node.hasChildren)
-        void toggle(row);
-      else
-        options.onActivate?.(node);
-    });
-    line.addEventListener("dblclick", () => options.onActivate?.(node));
-    host.append(element2);
-    rows.set(node.id, row);
-    return row;
-  };
-  const loadInto = async (row, host, depth) => {
-    const children = await options.loadChildren(row?.node, controller.signal);
-    host.replaceChildren();
-    if (children.length === 0 && row === void 0) {
-      const empty = document.createElement("p");
-      empty.className = "modkit-filetree__empty";
-      empty.textContent = "Nothing to show.";
-      setPart(empty, "filetree.empty");
-      host.append(empty);
-      return;
-    }
-    for (const child of children)
-      renderRow(child, depth, host);
-    if (row !== void 0)
-      row.loaded = true;
-    applyFilter();
-    rebuildOrder();
-  };
-  const toggle = async (row) => {
-    if (!row.node.hasChildren)
-      return;
-    row.expanded = !row.expanded;
-    row.element.setAttribute("aria-expanded", String(row.expanded));
-    row.childrenHost.hidden = !row.expanded;
-    setState(row.element, row.expanded ? ["active"] : []);
-    if (row.expanded && !row.loaded) {
-      setState(row.element, ["loading"]);
-      await loadInto(row, row.childrenHost, row.depth + 1);
-      setState(row.element, ["active"]);
-    }
-    rebuildOrder();
-  };
-  function applyFilter() {
-    const predicate = options.matches;
-    if (predicate === void 0) {
-      for (const row of rows.values())
-        row.element.hidden = false;
-      rebuildOrder();
-      return;
-    }
-    const keep = /* @__PURE__ */ new Set();
-    const visit = (row) => {
-      const children = [...rows.values()].filter((other) => other.element.parentElement === row.childrenHost);
-      let descendant = false;
-      for (const child of children)
-        descendant = visit(child) || descendant;
-      const self = predicate(row.node);
-      if (self || descendant)
-        keep.add(row.node.id);
-      return self || descendant;
-    };
-    for (const row of rows.values()) {
-      if (row.element.parentElement === list)
-        visit(row);
-    }
-    for (const row of rows.values())
-      row.element.hidden = !keep.has(row.node.id);
-    rebuildOrder();
-  }
-  list.addEventListener("keydown", (event) => {
-    if (order.length === 0)
-      rebuildOrder();
-    const index = active === void 0 ? -1 : order.indexOf(active);
-    const move = (to) => {
-      const next = order[Math.max(0, Math.min(order.length - 1, to))];
-      if (next !== void 0)
-        setActive(next);
-    };
-    switch (event.key) {
-      case "ArrowDown":
-        event.preventDefault();
-        move(index + 1);
-        break;
-      case "ArrowUp":
-        event.preventDefault();
-        move(index - 1);
-        break;
-      case "ArrowRight":
-        event.preventDefault();
-        if (active !== void 0 && active.node.hasChildren && !active.expanded)
-          void toggle(active);
-        else
-          move(index + 1);
-        break;
-      case "ArrowLeft":
-        event.preventDefault();
-        if (active !== void 0 && active.expanded)
-          void toggle(active);
-        else
-          move(index - 1);
-        break;
-      case "Home":
-        event.preventDefault();
-        move(0);
-        break;
-      case "End":
-        event.preventDefault();
-        move(order.length - 1);
-        break;
-      case "Enter":
-      case " ":
-        event.preventDefault();
-        if (active !== void 0) {
-          if (active.node.hasChildren)
-            void toggle(active);
-          else
-            options.onActivate?.(active.node);
-        }
-        break;
-      default:
-        break;
-    }
-  });
-  const refresh = async () => {
-    rows.clear();
-    active = void 0;
-    await loadInto(void 0, list, 0);
-  };
-  return {
-    root,
-    toolbar,
-    refresh,
-    collapseAll() {
-      for (const row of rows.values()) {
-        if (!row.expanded)
-          continue;
-        row.expanded = false;
-        row.childrenHost.hidden = true;
-        row.element.setAttribute("aria-expanded", "false");
-        setState(row.element, []);
-      }
-      rebuildOrder();
-    },
-    async expandAll() {
-      for (const row of [...rows.values()]) {
-        if (row.node.hasChildren && !row.expanded)
-          await toggle(row);
-      }
-    },
-    applyFilter,
-    selected: () => active?.node,
-    destroy() {
-      controller.abort("file-tree-destroyed");
-      root.remove();
-    }
-  };
-}
-
-// packages/ui/dist/search/matcher.js
-var WORD = /[A-Za-z0-9_]/u;
-function isWordChar(character) {
-  return character.length > 0 && WORD.test(character);
-}
-function hasWordBoundary(text, start, end) {
-  return !isWordChar(text.charAt(start - 1)) && !isWordChar(text.charAt(end));
-}
-function wholeWordSource(source) {
-  return `(?<![A-Za-z0-9_])(?:${source})(?![A-Za-z0-9_])`;
-}
-function escapeRegExp(text) {
-  return text.replace(/[\\^$+?.()|[\]{}*]/gu, "\\$&");
-}
-function globSource(query) {
-  return `^${query.split("*").map(escapeRegExp).join(".*")}$`;
-}
-function compileSearch(query, options = {}) {
-  const caseSensitive = options.caseSensitive ?? false;
-  const wholeWord = options.wholeWord ?? false;
-  const mode = options.mode ?? "plain";
-  if (query.length === 0)
-    return { kind: "empty" };
-  if (mode === "glob") {
-    if (!query.includes("*")) {
-      return {
-        kind: "plain",
-        needle: caseSensitive ? query : query.toLowerCase(),
-        caseSensitive,
-        wholeWord
-      };
-    }
-    try {
-      return { kind: "regex", regex: new RegExp(globSource(query), caseSensitive ? "u" : "iu") };
-    } catch (error) {
-      return { kind: "invalid", message: describe(error) };
-    }
-  }
-  if (mode === "plain") {
-    return {
-      kind: "plain",
-      needle: caseSensitive ? query : query.toLowerCase(),
-      caseSensitive,
-      wholeWord
-    };
-  }
-  try {
-    const source = wholeWord ? wholeWordSource(query) : query;
-    return { kind: "regex", regex: new RegExp(source, caseSensitive ? "u" : "iu") };
-  } catch (error) {
-    return { kind: "invalid", message: describe(error) };
-  }
-}
-function describe(error) {
-  return error instanceof Error ? error.message : "Invalid regular expression";
-}
-function matches2(text, compiled) {
-  switch (compiled.kind) {
-    case "empty":
-      return true;
-    case "invalid":
-      return false;
-    case "regex":
-      return compiled.regex.test(text);
-    case "plain":
-      return matchRanges(text, compiled, true).length > 0;
-    default:
-      return false;
-  }
-}
-function matchRanges(text, compiled, firstOnly = false) {
-  if (compiled.kind === "empty" || compiled.kind === "invalid")
-    return [];
-  if (compiled.kind === "regex") {
-    const ranges2 = [];
-    const scanner = new RegExp(compiled.regex.source, compiled.regex.flags.includes("g") ? compiled.regex.flags : `${compiled.regex.flags}g`);
-    let guard = 0;
-    for (const match of text.matchAll(scanner)) {
-      if (match.index === void 0)
-        continue;
-      const end = match.index + match[0].length;
-      ranges2.push({ start: match.index, end });
-      if (firstOnly)
-        break;
-      if (match[0].length === 0)
-        break;
-      guard += 1;
-      if (guard > 1e4)
-        break;
-    }
-    return ranges2;
-  }
-  const needle = compiled.needle;
-  if (needle.length === 0)
-    return [];
-  const haystack = compiled.caseSensitive ? text : text.toLowerCase();
-  const ranges = [];
-  let at = haystack.indexOf(needle);
-  while (at >= 0) {
-    const end = at + needle.length;
-    if (!compiled.wholeWord || hasWordBoundary(text, at, end)) {
-      ranges.push({ start: at, end });
-      if (firstOnly)
-        break;
-    }
-    at = haystack.indexOf(needle, at + Math.max(1, needle.length));
-  }
-  return ranges;
-}
-
-// packages/ui/dist/primitives/search-field.js
-var TOGGLES = [
-  { id: "case", label: "Aa", title: "Match case" },
-  { id: "word", label: "ab", title: "Match whole word" },
-  { id: "regex", label: ".*", title: "Use regular expression" }
-];
-var GLOB_TOGGLE = { id: "glob", label: "*", title: "Use glob pattern" };
-function createSearchField(document, options) {
-  const root = document.createElement("div");
-  root.className = "modkit-search";
-  setPart(root, "search");
-  root.setAttribute("role", "search");
-  const input = document.createElement("input");
-  input.type = "search";
-  input.className = "modkit-search__input";
-  input.placeholder = options.placeholder ?? "Filter\u2026";
-  input.setAttribute("aria-label", options.label ?? "Filter");
-  input.value = options.initial?.query ?? "";
-  setPart(input, "search.input");
-  root.append(input);
-  const toggleBar = document.createElement("div");
-  toggleBar.className = "modkit-search__toggles";
-  setPart(toggleBar, "search.toggles");
-  toggleBar.setAttribute("role", "group");
-  toggleBar.setAttribute("aria-label", "Filter options");
-  root.append(toggleBar);
-  const specs = options.allowGlob === true ? [...TOGGLES, GLOB_TOGGLE] : TOGGLES;
-  const buttons = /* @__PURE__ */ new Map();
-  for (const spec of specs) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "modkit-search__toggle";
-    button.textContent = spec.label;
-    button.title = spec.title;
-    button.setAttribute("aria-label", spec.title);
-    button.setAttribute("aria-pressed", "false");
-    setPart(button, "search.toggle");
-    toggleBar.append(button);
-    buttons.set(spec.id, button);
-  }
-  const status = document.createElement("output");
-  status.className = "modkit-search__status";
-  setPart(status, "search.status");
-  root.append(status);
-  const message = document.createElement("p");
-  message.className = "modkit-search__message";
-  setPart(message, "search.message");
-  root.append(message);
-  let nav;
-  if (options.onNavigate !== void 0) {
-    nav = document.createElement("div");
-    nav.className = "modkit-search__nav";
-    setPart(nav, "search.nav");
-    for (const [label, direction, title] of [
-      ["\u2039", -1, "Previous match"],
-      ["\u203A", 1, "Next match"]
-    ]) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.textContent = label;
-      button.title = title;
-      button.setAttribute("aria-label", title);
-      button.addEventListener("click", () => options.onNavigate?.(direction));
-      nav.append(button);
-    }
-    root.append(nav);
-  }
-  let caseSensitive = options.initial?.caseSensitive ?? false;
-  let wholeWord = options.initial?.wholeWord ?? false;
-  let mode = options.initial?.mode ?? "plain";
-  const syncToggleUi = () => {
-    buttons.get("case")?.setAttribute("aria-pressed", String(caseSensitive));
-    buttons.get("word")?.setAttribute("aria-pressed", String(wholeWord));
-    buttons.get("regex")?.setAttribute("aria-pressed", String(mode === "regex"));
-    buttons.get("glob")?.setAttribute("aria-pressed", String(mode === "glob"));
-    for (const [id, button] of buttons) {
-      const pressed = button.getAttribute("aria-pressed") === "true";
-      setState(button, pressed ? ["active"] : []);
-      if (id === "word")
-        button.disabled = mode === "glob";
-    }
-  };
-  let current = buildState();
-  function buildState() {
-    const query = input.value;
-    return {
-      query,
-      caseSensitive,
-      wholeWord,
-      mode,
-      compiled: compileSearch(query, { caseSensitive, wholeWord, mode })
-    };
-  }
-  function render2() {
-    const compiled = current.compiled;
-    const invalid2 = compiled.kind === "invalid";
-    message.textContent = compiled.kind === "invalid" ? compiled.message : "";
-    const count2 = options.countMatches?.(current);
-    const states = [];
-    if (invalid2)
-      states.push("invalid");
-    if (!invalid2 && count2 === 0 && compiled.kind !== "empty")
-      states.push("no-match");
-    setState(root, states);
-    input.setAttribute("aria-invalid", String(invalid2));
-    status.textContent = invalid2 ? "invalid" : compiled.kind === "empty" || count2 === void 0 ? "" : count2 === 1 ? "1 match" : `${count2} matches`;
-    if (nav !== void 0) {
-      for (const button of nav.querySelectorAll("button")) {
-        button.disabled = invalid2 || count2 === void 0 || count2 === 0;
-      }
-    }
-  }
-  let timer;
-  const emit = () => {
-    current = buildState();
-    render2();
-    options.onChange(current);
-  };
-  const schedule = () => {
-    const delay = options.debounceMs ?? 0;
-    if (delay <= 0) {
-      emit();
-      return;
-    }
-    if (timer !== void 0)
-      clearTimeout(timer);
-    timer = setTimeout(emit, delay);
-  };
-  input.addEventListener("input", schedule);
-  input.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      options.onNavigate?.(event.shiftKey ? -1 : 1);
-    }
-    if (event.key === "Escape" && input.value !== "") {
-      event.preventDefault();
-      input.value = "";
-      emit();
-    }
-  });
-  buttons.get("case")?.addEventListener("click", () => {
-    caseSensitive = !caseSensitive;
-    syncToggleUi();
-    emit();
-  });
-  buttons.get("word")?.addEventListener("click", () => {
-    wholeWord = !wholeWord;
-    syncToggleUi();
-    emit();
-  });
-  buttons.get("regex")?.addEventListener("click", () => {
-    mode = mode === "regex" ? "plain" : "regex";
-    syncToggleUi();
-    emit();
-  });
-  buttons.get("glob")?.addEventListener("click", () => {
-    mode = mode === "glob" ? "plain" : "glob";
-    syncToggleUi();
-    emit();
-  });
-  syncToggleUi();
-  render2();
-  return {
-    root,
-    get state() {
-      return current;
-    },
-    refresh: render2,
-    focus: () => input.focus(),
-    destroy: () => {
-      if (timer !== void 0)
-        clearTimeout(timer);
-      root.remove();
-    }
-  };
-}
-
-// packages/ui/dist/explorer/index.js
-var EXPLORER_MAXIMUM_BYTES = 64 * 1024 * 1024;
-var extensionOf = (name) => {
-  const dot = name.lastIndexOf(".");
-  return dot <= 0 ? "" : name.slice(dot + 1).toLowerCase();
-};
-var formatBytes = (bytes2) => {
-  if (bytes2 < 1024)
-    return `${bytes2} B`;
-  if (bytes2 < 1024 * 1024)
-    return `${(bytes2 / 1024).toFixed(1)} KiB`;
-  return `${(bytes2 / (1024 * 1024)).toFixed(1)} MiB`;
-};
-function createExplorer(document, options) {
-  const maximumBytes = options.maximumBytes ?? EXPLORER_MAXIMUM_BYTES;
-  const supported = new Set(options.preview.supported.map((item) => item.toLowerCase()));
-  const root = document.createElement("div");
-  root.className = "modkit-viewer modkit-explorer";
-  setPart(root, "explorer");
-  const toolbar = element(root, "div", { part: "explorer.toolbar", role: "toolbar" });
-  toolbar.setAttribute("aria-label", "Explorer actions");
-  if (options.showToolbar === false)
-    toolbar.hidden = true;
-  const sidebar = element(root, "div", { part: "explorer.sidebar" });
-  const previewPane = element(root, "div", { part: "explorer.preview" });
-  const previewHeader = element(previewPane, "div", { part: "explorer.header" });
-  const breadcrumb = element(previewHeader, "div", { part: "explorer.breadcrumb" });
-  const viewPicker = element(previewHeader, "select", {
-    part: "explorer.viewpicker"
-  });
-  viewPicker.setAttribute("aria-label", "Preview view");
-  previewHeader.hidden = true;
-  const stage = element(previewPane, "div", { part: "explorer.stage" });
-  const status = element(root, "output", { part: "explorer.status" });
-  let access;
-  let tree;
-  let query;
-  let mounted;
-  let previewRun;
-  let destroyed = false;
-  const say = (message, state = void 0) => {
-    status.textContent = message;
-    setState(status, state === void 0 ? [] : [state]);
-  };
-  const placeholder = (message) => {
-    stage.replaceChildren();
-    element(stage, "p", { part: "explorer.placeholder", text: message });
-  };
-  const action = (label, title, run) => {
-    const node = element(toolbar, "button", {
-      part: "explorer.action",
-      text: label
-    });
-    node.type = "button";
-    node.title = title;
-    node.addEventListener("click", run);
-    return node;
-  };
-  if (options.openFolder !== void 0) {
-    action("Open folder\u2026", "Grant access to a folder and browse it", () => {
-      void (async () => {
-        try {
-          const next = await options.openFolder?.();
-          if (next !== void 0)
-            await explorer.setAccess(next);
-        } catch (error) {
-          say(`Could not open the folder: ${describe2(error)}`, "error");
-        }
-      })();
-    });
-  }
-  if (options.openFile !== void 0) {
-    action("Open file\u2026", "Open a single file for preview", () => {
-      void (async () => {
-        try {
-          const picked = await options.openFile?.();
-          if (picked === void 0)
-            return;
-          await explorer.setAccess(picked.access);
-          await activate(picked.entry);
-        } catch (error) {
-          say(`Could not open the file: ${describe2(error)}`, "error");
-        }
-      })();
-    });
-  }
-  const registerFileTypes = options.registerFileTypes;
-  if (registerFileTypes !== void 0) {
-    action("Set as default app\u2026", "Register this app for the file types it can preview", () => {
-      void (async () => {
-        try {
-          say(await registerFileTypes());
-        } catch (error) {
-          say(`Could not register file types: ${describe2(error)}`, "error");
-        }
-      })();
-    });
-  }
-  const search = createSearchField(document, {
-    label: "Filter files",
-    placeholder: "Filter",
-    onChange(state) {
-      query = state.query === "" ? void 0 : state.compiled;
-      tree?.applyFilter();
-    }
-  });
-  sidebar.append(search.root);
-  async function unmountPrevious() {
-    previewRun?.abort();
-    previewRun = void 0;
-    if (mounted === void 0)
-      return;
-    const previous = mounted;
-    mounted = void 0;
-    await previous.unmount();
-    previewHeader.hidden = true;
-    breadcrumb.textContent = "";
-    viewPicker.replaceChildren();
-  }
-  viewPicker.addEventListener("change", () => {
-    const current = mounted;
-    if (current === void 0)
-      return;
-    const selected = viewPicker.value;
-    say(`Opening ${breadcrumb.textContent ?? "view"}\u2026`, "loading");
-    void current.show(selected).then(() => {
-      if (mounted === current)
-        say(`${breadcrumb.textContent ?? ""} \xB7 ${selected}`);
-    }).catch((error) => {
-      if (mounted === current)
-        say(`Could not change view: ${describe2(error)}`, "error");
-    });
-  });
-  async function preview(entry2) {
-    if (access === void 0)
-      return;
-    await unmountPrevious();
-    stage.replaceChildren();
-    if (entry2.size !== void 0 && entry2.size > maximumBytes) {
-      placeholder(`${entry2.name} is ${formatBytes(entry2.size)}, over the ${formatBytes(maximumBytes)} preview limit.`);
-      say(`${entry2.name} \u2014 too large`, "error");
-      return;
-    }
-    const run = new AbortController();
-    previewRun = run;
-    say(`Opening ${entry2.name}\u2026`, "loading");
-    try {
-      const bytes2 = await access.read(entry2.id, maximumBytes, run.signal);
-      if (run.signal.aborted)
-        return;
-      const handle = await options.preview.open(stage, entry2, bytes2, run.signal);
-      if (run.signal.aborted) {
-        await handle?.unmount();
-        return;
-      }
-      if (handle === void 0) {
-        placeholder(`Nothing could render \u201C${entry2.name}\u201D. The host publishes no codec for it and no built-in text or hex viewer was configured.`);
-        say(`${entry2.name} \u2014 no viewer`);
-        return;
-      }
-      mounted = handle;
-      breadcrumb.textContent = safeViewerText(entry2.name, 300);
-      viewPicker.replaceChildren(...handle.views.map((view) => {
-        const option = document.createElement("option");
-        option.value = view.id;
-        option.textContent = view.label;
-        return option;
-      }));
-      viewPicker.value = handle.activeView;
-      viewPicker.hidden = handle.views.length <= 1;
-      previewHeader.hidden = false;
-      say(`${entry2.name} \xB7 ${formatBytes(bytes2.length)}`);
-    } catch (error) {
-      if (run.signal.aborted)
-        return;
-      placeholder(`Could not preview ${entry2.name}: ${describe2(error)}`);
-      say(`${entry2.name} \u2014 failed`, "error");
-    } finally {
-      if (previewRun === run)
-        previewRun = void 0;
-    }
-  }
-  async function buildTree() {
-    tree?.destroy();
-    if (access === void 0)
-      return;
-    const current = access;
-    tree = createFileTree(document, {
-      label: current.label,
-      async loadChildren(node, signal) {
-        const entries = await current.list(node?.id, signal);
-        return [...entries].sort((a, b) => a.directory === b.directory ? a.name.localeCompare(b.name) : a.directory ? -1 : 1).map((entry2) => ({
-          id: entry2.id,
-          label: entry2.name,
-          hasChildren: entry2.directory,
-          // No arrow here: the tree draws its own twisty for `hasChildren`, and a second
-          // chevron in the icon slot reads as two arrows on every folder.
-          icon: entry2.directory ? "\u{1F5C0}" : supported.has(extensionOf(entry2.name)) ? "\u25C6" : "\xB7",
-          ...entry2.size === void 0 || entry2.directory ? {} : { badge: formatBytes(entry2.size), size: entry2.size },
-          kind: entry2.directory ? "directory" : extensionOf(entry2.name)
-        }));
-      },
-      onActivate(node) {
-        if (node.kind === "directory")
-          return;
-        void activate(nodeToEntry(node));
-      },
-      matches(node) {
-        return query === void 0 ? true : matches2(node.label, query);
-      }
-    });
-    sidebar.append(tree.root);
-    await tree.refresh();
-  }
-  const nodeToEntry = (node) => ({
-    id: node.id,
-    name: node.label,
-    directory: node.kind === "directory",
-    ...node.size === void 0 ? {} : { size: node.size }
-  });
-  const activate = async (entry2) => {
-    if (options.onOpen !== void 0)
-      options.onOpen(entry2);
-    else
-      await preview(entry2);
-  };
-  if (options.acceptDrop !== void 0) {
-    const dropZone = options.dropTarget ?? (options.onOpen === void 0 ? previewPane : root);
-    setPart(previewPane, "explorer.preview");
-    const stop = (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-    };
-    dropZone.addEventListener("dragover", (event) => {
-      stop(event);
-      if (event.dataTransfer !== null)
-        event.dataTransfer.dropEffect = "copy";
-      setState(dropZone, ["drop-target"]);
-    });
-    dropZone.addEventListener("dragleave", (event) => {
-      stop(event);
-      setState(dropZone, []);
-    });
-    dropZone.addEventListener("drop", (event) => {
-      stop(event);
-      setState(dropZone, []);
-      const transfer = event.dataTransfer;
-      if (transfer === null)
-        return;
-      void (async () => {
-        try {
-          say("Reading dropped item\u2026", "loading");
-          const result = await options.acceptDrop?.(transfer);
-          if (result === void 0) {
-            say("The dropped item could not be read.", "error");
-            return;
-          }
-          if (result.access !== void 0)
-            await explorer.setAccess(result.access);
-          if (result.entry !== void 0)
-            await activate(result.entry);
-          else
-            say("Folder opened. Pick a file in the tree.");
-        } catch (error) {
-          say(`Drop failed: ${describe2(error)}`, "error");
-        }
-      })();
-    });
-  }
-  placeholder(options.openFolder === void 0 ? "Drop a file here to preview it." : "Open a folder, or drop a file here to preview it.");
-  say("Ready");
-  const explorer = {
-    root,
-    async setAccess(next) {
-      access = next;
-      await buildTree();
-      say("");
-    },
-    async open(entry2) {
-      if (access === void 0)
-        throw new TypeError("no file access is configured");
-      await preview(entry2);
-    },
-    destroy() {
-      if (destroyed)
-        return;
-      destroyed = true;
-      void unmountPrevious();
-      tree?.destroy();
-      search.destroy();
-      root.remove();
-    }
-  };
-  return explorer;
-}
-function describe2(error) {
-  return error instanceof Error ? error.message : String(error);
-}
-
-// packages/ui/dist/explorer/builtin.js
-var encoder2 = new TextEncoder();
-function decodeUtf8(bytes2) {
-  try {
-    return new TextDecoder("utf-8", { fatal: true }).decode(bytes2);
-  } catch {
-    return void 0;
-  }
-}
-function looksTextual(bytes2) {
-  return !bytes2.includes(0) && decodeUtf8(bytes2) !== void 0;
-}
-function indexText(text) {
-  const lineStarts = [0];
-  const kinds = /* @__PURE__ */ new Set();
-  for (const match of text.matchAll(/\r\n|\r|\n/gu)) {
-    const value2 = match[0];
-    kinds.add(value2 === "\r\n" ? "crlf" : value2 === "\r" ? "cr" : "lf");
-    lineStarts.push((match.index ?? 0) + value2.length);
-  }
-  let longestLineBytes = 0;
-  for (let line = 0; line < lineStarts.length; line += 1) {
-    const start = lineStarts[line] ?? text.length;
-    const next = lineStarts[line + 1] ?? text.length;
-    const withoutNewline = text.slice(start, next).replace(/\r\n$|\r$|\n$/u, "");
-    longestLineBytes = Math.max(longestLineBytes, encoder2.encode(withoutNewline).byteLength);
-  }
-  const values = [...kinds];
-  return Object.freeze({
-    lineStarts: Object.freeze(lineStarts),
-    newline: values.length > 1 ? "mixed" : values[0] ?? "lf",
-    longestLineBytes
-  });
-}
-function ensurePositivePage(value2, name) {
-  if (!Number.isSafeInteger(value2) || value2 <= 0) {
-    throw new RangeError(`${name} must be a positive safe integer`);
-  }
-}
-function ensureLine(value2) {
-  if (!Number.isSafeInteger(value2) || value2 < 0) {
-    throw new RangeError("text line must be a non-negative safe integer");
-  }
-}
-var cursor = (character, line) => `c${character}-l${line}`;
-function parseCursor(value2) {
-  const match = /^c(0|[1-9][0-9]*)-l(0|[1-9][0-9]*)$/u.exec(value2);
-  const character = Number(match?.[1]);
-  const line = Number(match?.[2]);
-  if (match === null || !Number.isSafeInteger(character) || !Number.isSafeInteger(line)) {
-    throw new RangeError("invalid built-in text cursor");
-  }
-  return { character, line };
-}
-function truncateUtf8(value2, maximumBytes) {
-  if (encoder2.encode(value2).byteLength <= maximumBytes)
-    return value2;
-  let result = "";
-  let used = 0;
-  for (const character of value2) {
-    const size = encoder2.encode(character).byteLength;
-    if (used + size > maximumBytes) {
-      if (result === "")
-        throw new RangeError("text page maxBytes cannot fit the next code point");
-      break;
-    }
-    result += character;
-    used += size;
-  }
-  return result;
-}
-function cursorLine(index, character) {
-  let result = 0;
-  for (let line = 1; line < index.lineStarts.length; line += 1) {
-    if ((index.lineStarts[line] ?? Number.MAX_SAFE_INTEGER) > character)
-      break;
-    result = line;
-  }
-  return result;
-}
-function linesInRange(index, fromLine, endCharacter) {
-  let last = fromLine;
-  for (let line = fromLine + 1; line < index.lineStarts.length; line += 1) {
-    if ((index.lineStarts[line] ?? Number.MAX_SAFE_INTEGER) >= endCharacter)
-      break;
-    last = line;
-  }
-  return last - fromLine + 1;
-}
-function builtinTextSource(bytes2) {
-  const text = decodeUtf8(bytes2);
-  if (text === void 0 || bytes2.includes(0)) {
-    throw new TypeError("built-in text source requires complete NUL-free UTF-8 input");
-  }
-  const index = indexText(text);
-  const slice = async (request, signal) => {
-    signal?.throwIfAborted();
-    ensurePositivePage(request.maxBytes, "text page maxBytes");
-    let fromLine;
-    let start;
-    let requestedEnd;
-    if (request.kind === "from-line") {
-      ensureLine(request.line);
-      ensurePositivePage(request.lineCount, "text page lineCount");
-      fromLine = request.line;
-      start = index.lineStarts[fromLine] ?? text.length;
-      requestedEnd = index.lineStarts[fromLine + request.lineCount] ?? text.length;
-    } else {
-      const parsed = parseCursor(request.cursor);
-      if (parsed.character > text.length || parsed.line >= index.lineStarts.length) {
-        throw new RangeError("built-in text cursor points beyond the source");
-      }
-      fromLine = parsed.line;
-      start = parsed.character;
-      requestedEnd = text.length;
-    }
-    const page = truncateUtf8(text.slice(start, requestedEnd), request.maxBytes);
-    const actualEnd = start + page.length;
-    const nextLine = cursorLine(index, actualEnd);
-    const lineCount = page === "" ? 0 : linesInRange(index, fromLine, actualEnd);
-    if (actualEnd >= text.length) {
-      return { complete: true, text: page, fromLine, lineCount };
-    }
-    return {
-      complete: false,
-      text: page,
-      fromLine,
-      lineCount,
-      nextCursor: cursor(actualEnd, nextLine)
-    };
-  };
-  return Object.freeze({
-    async info() {
-      return {
-        bytes: BigInt(bytes2.byteLength),
-        encoding: "utf-8",
-        bom: bytes2[0] === 239 && bytes2[1] === 187 && bytes2[2] === 191,
-        newline: index.newline,
-        lines: index.lineStarts.length,
-        longestLineBytes: index.longestLineBytes
-      };
-    },
-    slice,
-    async *search(query, signal) {
-      signal?.throwIfAborted();
-      const flags = query.caseSensitive === true ? "gu" : "giu";
-      const pattern = query.regex === true ? query.pattern : query.pattern.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
-      const expression = new RegExp(pattern, flags);
-      for (const match of text.matchAll(expression)) {
-        signal?.throwIfAborted();
-        const character = match.index ?? 0;
-        const byteOffset = encoder2.encode(text.slice(0, character)).byteLength;
-        const byteLength = encoder2.encode(match[0]).byteLength;
-        yield Object.freeze({
-          byteOffset: uint64(BigInt(byteOffset)),
-          byteLength: uint64(BigInt(byteLength))
-        });
-        if (match[0] === "")
-          expression.lastIndex += 1;
-      }
-    }
-  });
-}
-function builtinByteRangeSource(bytes2) {
-  return Object.freeze({
-    async size() {
-      return BigInt(bytes2.byteLength);
-    },
-    async read(offset, length, signal) {
-      signal?.throwIfAborted();
-      if (offset < 0n || !Number.isSafeInteger(length) || length < 0) {
-        throw new RangeError("byte range must use a non-negative offset and safe length");
-      }
-      if (offset >= BigInt(bytes2.byteLength))
-        return new Uint8Array();
-      const start = Number(offset);
-      return bytes2.slice(start, Math.min(start + length, bytes2.byteLength));
-    }
-  });
-}
-
-// packages/ui/dist/explorer/preview.js
-var traitsOf = (descriptor) => {
-  const traits = descriptor["traits"];
-  if (!Array.isArray(traits))
-    return [];
-  return traits.map((item) => String(item.id ?? ""));
-};
-var publishedContracts = (descriptor) => {
-  const sources = descriptor["dataSources"];
-  if (!Array.isArray(sources))
-    return [];
-  return sources.map((item) => String(item.contract ?? ""));
-};
-var stageId = (stage) => stage.id ?? stage.contract;
-function createCodecPreview(options) {
-  const supported = [
-    ...new Set((options.supported ?? []).map((extension) => extension.replace(/^\./u, "").toLowerCase()))
-  ];
-  return {
-    supported,
-    async open(container, entry2, bytes2, signal) {
-      const externallyOpened = await options.openSession?.(entry2, bytes2, signal);
-      const resolved2 = externallyOpened !== void 0;
-      const session = externallyOpened ?? builtinSession(bytes2, options.fallback);
-      const descriptor = await session.descriptor();
-      const operations = await session.operations?.().catch(() => void 0);
-      const ports = await options.editorPorts?.(entry2, bytes2);
-      const traits = new Set(traitsOf(descriptor));
-      const published = new Set(publishedContracts(descriptor));
-      const candidates = resolved2 ? options.stages : fallbackStages(options.fallback);
-      const planned = session.presentation === void 0 ? candidates : session.presentation.slots.flatMap((slot) => {
-        if (slot.kind !== "stage")
-          return [];
-        const stage = candidates.find((candidate) => stageId(candidate) === slot.slotId);
-        return stage === void 0 ? [] : [stage];
-      });
-      const usable = planned.filter((stage) => published.has(stage.contract) && (stage.trait === void 0 || traits.has(stage.trait)) && // An editable stage without ports could never save; offering it would be a lie.
-      (stage.editable !== true || ports !== void 0));
-      if (usable.length === 0) {
-        await session.dispose();
-        return void 0;
-      }
-      let active;
-      const plannedActive = session.presentation?.activeStage;
-      let activeId = plannedActive !== void 0 && usable.some((stage) => stageId(stage) === plannedActive) ? plannedActive : usable[0] === void 0 ? "" : stageId(usable[0]);
-      const show = async (viewId) => {
-        const stage = usable.find((item) => stageId(item) === viewId);
-        if (stage === void 0)
-          throw new Error(`unknown view: ${viewId}`);
-        await active?.unmount();
-        active = void 0;
-        container.replaceChildren();
-        activeId = viewId;
-        const slot = {
-          slotId: `explorer:${stageId(stage)}`,
-          kind: "primary",
-          contributionId: "org.modkitx.ui/explorer",
-          extensionId: "org.modkitx.ui",
-          priority: 100,
-          bindings: [{ bindingId: "content", contract: stage.contract, major: 1 }]
-        };
-        const stagePorts = stage.editable === true ? ports : void 0;
-        const mounted = await stage.module.mount({
-          container,
-          descriptor,
-          slot,
-          ...stagePorts === void 0 ? {} : {
-            edit: stagePorts.edit,
-            commit: stagePorts.commit,
-            payloads: stagePorts.payloads,
-            authorization: stagePorts.authorization
-          },
-          sources: {
-            async get(binding) {
-              const lease = await session.dataSource(binding.contract, binding.major ?? 1);
-              return {
-                value: lease.value,
-                async release() {
-                }
-              };
-            },
-            async getUnknown(binding) {
-              const lease = await session.dataSource(binding.contract, binding.major ?? 1);
-              return {
-                value: lease.value,
-                async release() {
-                }
-              };
-            }
-          },
-          operations,
-          ...signal === void 0 ? {} : { signal }
-        });
-        active = mounted;
-        activeId = viewId;
-      };
-      await show(activeId);
-      return {
-        views: usable.map((stage) => ({ id: stageId(stage), label: stage.label })),
-        get activeView() {
-          return activeId;
-        },
-        show,
-        async unmount() {
-          await active?.unmount();
-          await session.dispose();
-          container.replaceChildren();
-        }
-      };
-    }
-  };
-}
-function fallbackStages(fallback) {
-  const stages = [];
-  if (fallback?.text !== void 0) {
-    stages.push({
-      id: "text",
-      label: "Text",
-      contract: "common.view/text-data-source",
-      module: fallback.text
-    });
-  }
-  if (fallback?.hex !== void 0) {
-    stages.push({
-      id: "hex",
-      label: "Hex",
-      contract: "common.view/byte-range-source",
-      module: fallback.hex
-    });
-  }
-  return stages;
-}
-function builtinSession(bytes2, fallback) {
-  const textual = fallback?.text !== void 0 && looksTextual(bytes2);
-  const sources = {};
-  if (textual)
-    sources["common.view/text-data-source"] = builtinTextSource(bytes2);
-  if (fallback?.hex !== void 0) {
-    sources["common.view/byte-range-source"] = builtinByteRangeSource(bytes2);
-  }
-  return {
-    async descriptor() {
-      return {
-        subjectUri: "memory://explorer/builtin",
-        revision: `content-hash.sha256:builtin-${bytes2.length}`,
-        operations: [],
-        diagnostics: [],
-        // `content.text` only when the bytes really decode: a binary must not claim to be text.
-        traits: textual ? [{ id: "content.text" }] : [],
-        dataSources: Object.keys(sources).map((contract) => ({ contract }))
-      };
-    },
-    async dataSource(contract) {
-      const value2 = sources[contract];
-      if (value2 === void 0)
-        throw new Error(`built-in preview has no ${contract}`);
-      return { value: value2 };
-    },
-    async dispose() {
-    }
-  };
-}
-
-// packages/ui/dist/explorer/editors.js
-function fileKindOf(name) {
-  const dot = name.lastIndexOf(".");
-  if (dot <= 0 || dot === name.length - 1)
-    return "file";
-  const kind = name.slice(dot + 1).toLowerCase();
-  return /^[a-z0-9_-]{1,16}$/u.test(kind) ? kind : "file";
-}
-var describe3 = (error) => error instanceof Error ? error.message : String(error);
-var formatBytes2 = (bytes2) => {
-  if (bytes2 < 1024)
-    return `${bytes2} B`;
-  if (bytes2 < 1024 * 1024)
-    return `${(bytes2 / 1024).toFixed(1)} KiB`;
-  return `${(bytes2 / (1024 * 1024)).toFixed(1)} MiB`;
-};
-function createEditorArea(document, options) {
-  const root = document.createElement("div");
-  setPart(root, "explorer.editors");
-  const groups = [];
-  let focused;
-  let destroyed = false;
-  let openMenu;
-  const report = (status) => {
-    options.onStatus?.(status);
-  };
-  function drawBreadcrumb(group, entry2) {
-    group.breadcrumb.replaceChildren();
-    if (entry2 === void 0)
-      return;
-    const parts = entry2.id.split(/[\\/]/u).filter(Boolean);
-    for (const [index, part] of parts.slice(-4).entries()) {
-      if (index > 0)
-        element(group.breadcrumb, "span", { part: "explorer.crumb", text: "\u203A" });
-      element(group.breadcrumb, "span", {
-        part: "explorer.crumb",
-        text: safeViewerText(part, 120)
-      });
-    }
-  }
-  function syncPicker(group) {
-    const handle = group.active?.handle;
-    group.picker.replaceChildren();
-    if (handle === void 0 || handle.views.length === 0) {
-      group.picker.disabled = true;
-      return;
-    }
-    for (const view of handle.views) {
-      const option = document.createElement("option");
-      option.value = view.id;
-      option.textContent = view.label;
-      group.picker.append(option);
-    }
-    group.picker.value = handle.activeView;
-    group.picker.disabled = handle.views.length < 2;
-  }
-  function placeholder(group, message) {
-    group.stage.replaceChildren();
-    element(group.stage, "p", { part: "explorer.placeholder", text: message });
-  }
-  async function activate(group, tab) {
-    for (const other of group.tabs) {
-      const selected = other === tab;
-      other.button.setAttribute("aria-selected", String(selected));
-      setState(other.button, selected ? ["selected"] : []);
-      other.content.hidden = !selected;
-    }
-    group.active = tab;
-    drawBreadcrumb(group, tab.entry);
-    if (tab.handle === void 0) {
-      await load(group, tab);
-      return;
-    }
-    syncPicker(group);
-    report({
-      path: tab.entry.id,
-      view: group.picker.selectedOptions[0]?.textContent ?? "",
-      detail: tab.entry.name,
-      severity: "info"
-    });
-  }
-  async function load(group, tab) {
-    tab.run?.abort();
-    const run = new AbortController();
-    tab.run = run;
-    tab.content.replaceChildren();
-    report({ path: tab.entry.id, detail: `Opening ${tab.entry.name}\u2026`, severity: "busy" });
-    try {
-      const bytes2 = await options.read(tab.entry, run.signal);
-      if (run.signal.aborted)
-        return;
-      const handle = await options.preview.open(tab.content, tab.entry, bytes2, run.signal);
-      if (run.signal.aborted) {
-        await handle?.unmount();
-        return;
-      }
-      if (handle === void 0) {
-        placeholder({ ...group, stage: tab.content }, `Nothing could render \u201C${tab.entry.name}\u201D.`);
-        report({ path: tab.entry.id, detail: "no viewer", severity: "error" });
-        return;
-      }
-      tab.handle = handle;
-      syncPicker(group);
-      report({
-        path: tab.entry.id,
-        view: handle.views.find((view) => view.id === handle.activeView)?.label ?? "",
-        detail: formatBytes2(bytes2.length),
-        severity: "info"
-      });
-    } catch (error) {
-      if (run.signal.aborted)
-        return;
-      placeholder({ ...group, stage: tab.content }, `Could not preview ${tab.entry.name}: ${describe3(error)}`);
-      report({ path: tab.entry.id, detail: describe3(error), severity: "error" });
-    }
-  }
-  async function closeTab(group, tab) {
-    if (tab.dirty === true && options.confirmClose !== void 0) {
-      const answer = await options.confirmClose(tab.entry);
-      if (answer === "cancel")
-        return;
-      if (answer === "save")
-        await options.save?.(tab.entry);
-    }
-    tab.run?.abort();
-    await tab.handle?.unmount();
-    const index = group.tabs.indexOf(tab);
-    if (index !== -1)
-      group.tabs.splice(index, 1);
-    tab.button.remove();
-    tab.content.remove();
-    if (group.active === tab) {
-      group.active = void 0;
-      const next = group.tabs[Math.max(0, index - 1)];
-      if (next !== void 0) {
-        await activate(group, next);
-      } else {
-        drawBreadcrumb(group, void 0);
-        syncPicker(group);
-        placeholder(group, "No file open in this group.");
-      }
-    }
-    if (group.tabs.length === 0 && groups.length > 1 && group !== groups[0]) {
-      groups.splice(groups.indexOf(group), 1);
-      group.root.remove();
-      const first = groups[0];
-      if (first !== void 0)
-        focus(first);
-    }
-  }
-  function openTabMenu(group, tab, x, y) {
-    closeTabMenu();
-    const menu = element(root, "div", { part: "explorer.tabmenu" });
-    menu.setAttribute("role", "menu");
-    setToken(menu, "explorer.menu-x", `${Math.round(x)}px`);
-    setToken(menu, "explorer.menu-y", `${Math.round(y)}px`);
-    const item = (label, enabled, run) => {
-      const node = element(menu, "button", { part: "explorer.tabmenu-item", text: label });
-      node.setAttribute("type", "button");
-      node.setAttribute("role", "menuitem");
-      if (!enabled) {
-        node.setAttribute("disabled", "");
-        setState(node, ["disabled"]);
-        return;
-      }
-      node.addEventListener("click", () => {
-        closeTabMenu();
-        run();
-      });
-    };
-    const index = group.tabs.indexOf(tab);
-    const others = group.tabs.filter((other) => other !== tab);
-    const toRight = group.tabs.slice(index + 1);
-    item("Close", true, () => void closeTab(group, tab));
-    item("Close Others", others.length > 0, () => {
-      void (async () => {
-        for (const other of [...others])
-          await closeTab(group, other);
-      })();
-    });
-    item("Close to the Right", toRight.length > 0, () => {
-      void (async () => {
-        for (const other of [...toRight])
-          await closeTab(group, other);
-      })();
-    });
-    item("Close All", group.tabs.length > 0, () => {
-      void (async () => {
-        for (const other of [...group.tabs])
-          await closeTab(group, other);
-      })();
-    });
-    const dismiss = (event) => {
-      if (event.target instanceof Node && menu.contains(event.target))
-        return;
-      closeTabMenu();
-    };
-    root.ownerDocument.addEventListener("pointerdown", dismiss, { capture: true });
-    root.ownerDocument.addEventListener("keydown", escapeMenu, true);
-    openMenu = { element: menu, dismiss };
-  }
-  function escapeMenu(event) {
-    if (event.key === "Escape")
-      closeTabMenu();
-  }
-  function closeTabMenu() {
-    if (openMenu === void 0)
-      return;
-    root.ownerDocument.removeEventListener("pointerdown", openMenu.dismiss, { capture: true });
-    root.ownerDocument.removeEventListener("keydown", escapeMenu, true);
-    openMenu.element.remove();
-    openMenu = void 0;
-  }
-  function focus(group) {
-    focused = group;
-    for (const item of groups)
-      setState(item.root, item === group ? ["active"] : []);
-  }
-  function createGroup() {
-    const groupRoot = element(root, "div", { part: "explorer.group" });
-    const strip = element(groupRoot, "div", { part: "explorer.tabstrip", role: "tablist" });
-    strip.setAttribute("aria-label", "Open files");
-    const header = element(groupRoot, "div", { part: "explorer.header" });
-    const breadcrumb = element(header, "nav", { part: "explorer.breadcrumb" });
-    breadcrumb.setAttribute("aria-label", "File path");
-    const picker = element(header, "select", { part: "explorer.viewpicker" });
-    picker.setAttribute("aria-label", "View");
-    picker.disabled = true;
-    const stage = element(groupRoot, "div", { part: "explorer.stage" });
-    const group = { root: groupRoot, strip, breadcrumb, picker, stage, tabs: [] };
-    groupRoot.addEventListener("pointerdown", () => {
-      focus(group);
-    });
-    picker.addEventListener("change", () => {
-      const handle = group.active?.handle;
-      if (handle === void 0)
-        return;
-      void handle.show(picker.value).then(() => {
-        report({
-          ...group.active === void 0 ? {} : { path: group.active.entry.id },
-          view: picker.selectedOptions[0]?.textContent ?? picker.value,
-          detail: group.active?.entry.name ?? "",
-          severity: "info"
-        });
-      });
-    });
-    groups.push(group);
-    placeholder(group, "No file open in this group.");
-    return group;
-  }
-  focused = createGroup();
-  focus(focused);
-  const area = {
-    root,
-    get groupCount() {
-      return groups.length;
-    },
-    async open(entry2) {
-      const group = focused;
-      const existing = group.tabs.find((tab2) => tab2.entry.id === entry2.id);
-      if (existing !== void 0) {
-        await activate(group, existing);
-        return;
-      }
-      const button = element(group.strip, "div", { part: "explorer.filetab" });
-      button.setAttribute("role", "tab");
-      button.title = entry2.id;
-      button.setAttribute("data-mk-kind", fileKindOf(entry2.name));
-      if (group.tabs.length === 0)
-        group.stage.replaceChildren();
-      const content = element(group.stage, "div", { part: "explorer.tabcontent" });
-      const tab = { entry: entry2, button, content };
-      const label = element(button, "span", { text: safeViewerText(entry2.name, 120) });
-      label.addEventListener("click", () => {
-        focus(group);
-        void activate(group, tab);
-      });
-      button.addEventListener("contextmenu", (event) => {
-        event.preventDefault();
-        focus(group);
-        openTabMenu(group, tab, event.clientX, event.clientY);
-      });
-      const close = element(button, "button", { part: "explorer.filetab-close", text: "\xD7" });
-      close.setAttribute("type", "button");
-      close.setAttribute("aria-label", `Close ${entry2.name}`);
-      close.addEventListener("click", (event) => {
-        event.stopPropagation();
-        void closeTab(group, tab);
-      });
-      group.tabs.push(tab);
-      await activate(group, tab);
-    },
-    markDirty(entryId, dirty) {
-      for (const group of groups) {
-        for (const tab of group.tabs) {
-          if (tab.entry.id !== entryId)
-            continue;
-          tab.dirty = dirty;
-          setState(tab.button, dirty ? ["mutating"] : tab === group.active ? ["selected"] : []);
-          if (dirty && tab === group.active)
-            setState(tab.button, ["selected", "mutating"]);
-        }
-      }
-    },
-    hasUnsaved() {
-      return groups.some((group) => group.tabs.some((tab) => tab.dirty === true));
-    },
-    split() {
-      focus(createGroup());
-    },
-    destroy() {
-      if (destroyed)
-        return;
-      destroyed = true;
-      closeTabMenu();
-      for (const group of groups) {
-        for (const tab of group.tabs) {
-          tab.run?.abort();
-          void tab.handle?.unmount();
-        }
-      }
-      root.remove();
-    }
-  };
-  return area;
-}
-
-// packages/ui/dist/settings/model.js
-var RECENT_LIMIT = 10;
-var SETTINGS_SCHEMA_VERSION = 1;
-var DEFAULT_SETTINGS = Object.freeze({
-  schemaVersion: SETTINGS_SCHEMA_VERSION,
-  appearance: Object.freeze({ theme: "modkit-dark", density: "compact" }),
-  extensions: Object.freeze([]),
-  recent: Object.freeze([])
-});
-var isRecord2 = (value2) => typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
-var asText = (value2) => typeof value2 === "string" && value2.trim() !== "" ? value2.trim() : void 0;
-function normalizeSettings(value2) {
-  const problems = [];
-  if (!isRecord2(value2)) {
-    return {
-      document: DEFAULT_SETTINGS,
-      problems: value2 === void 0 ? [] : ["settings root is not an object; defaults were used"]
-    };
-  }
-  const version = value2["schemaVersion"];
-  if (version !== void 0 && version !== SETTINGS_SCHEMA_VERSION) {
-    problems.push(`unknown schemaVersion ${String(version)}; expected ${SETTINGS_SCHEMA_VERSION}. Unrecognised fields were ignored.`);
-  }
-  const appearanceInput = isRecord2(value2["appearance"]) ? value2["appearance"] : {};
-  const theme = asText(appearanceInput["theme"]) ?? DEFAULT_SETTINGS.appearance.theme;
-  const densityInput = appearanceInput["density"];
-  const density = densityInput === "compact" || densityInput === "comfortable" ? densityInput : DEFAULT_SETTINGS.appearance.density;
-  if (densityInput !== void 0 && densityInput !== density) {
-    problems.push(`appearance.density "${String(densityInput)}" is not valid; used "${density}"`);
-  }
-  const extensions = [];
-  const seen = /* @__PURE__ */ new Map();
-  const listInput = value2["extensions"];
-  if (listInput !== void 0 && !Array.isArray(listInput)) {
-    problems.push("extensions must be an array; it was ignored");
-  } else {
-    for (const [index, item] of (listInput ?? []).entries()) {
-      if (!isRecord2(item)) {
-        problems.push(`extensions[${index}] is not an object; ignored`);
-        continue;
-      }
-      const id = asText(item["id"]);
-      const path = asText(item["path"]);
-      if (id === void 0 || path === void 0) {
-        problems.push(`extensions[${index}] needs both "id" and "path"; ignored`);
-        continue;
-      }
-      const entry2 = {
-        id,
-        path,
-        // Absent means enabled: adding a path to the file is how a user asks for an extension.
-        enabled: item["enabled"] !== false,
-        ...isRecord2(item["options"]) ? { options: Object.freeze({ ...item["options"] }) } : {}
-      };
-      const existing = seen.get(id);
-      if (existing === void 0) {
-        seen.set(id, extensions.length);
-        extensions.push(entry2);
-      } else {
-        problems.push(`extensions[${index}] duplicates id "${id}"; the later entry won`);
-        extensions[existing] = entry2;
-      }
-    }
-  }
-  const recent = [];
-  const recentInput = value2["recent"];
-  if (recentInput !== void 0 && !Array.isArray(recentInput)) {
-    problems.push("recent must be an array; it was ignored");
-  } else {
-    const seenPaths = /* @__PURE__ */ new Set();
-    for (const item of recentInput ?? []) {
-      if (!isRecord2(item))
-        continue;
-      const path = asText(item["path"]);
-      if (path === void 0 || seenPaths.has(path))
-        continue;
-      seenPaths.add(path);
-      recent.push({ path, kind: item["kind"] === "file" ? "file" : "folder" });
-      if (recent.length >= RECENT_LIMIT)
-        break;
-    }
-  }
-  return {
-    document: Object.freeze({
-      schemaVersion: SETTINGS_SCHEMA_VERSION,
-      appearance: Object.freeze({ theme, density }),
-      extensions: Object.freeze(extensions),
-      recent: Object.freeze(recent)
-    }),
-    problems: Object.freeze(problems)
-  };
-}
-function serializeSettings(document) {
-  return `${JSON.stringify({
-    schemaVersion: document.schemaVersion,
-    appearance: { theme: document.appearance.theme, density: document.appearance.density },
-    // Recency is meaningful order, so this list is written as-is rather than sorted.
-    recent: document.recent.map((entry2) => ({ path: entry2.path, kind: entry2.kind })),
-    extensions: [...document.extensions].sort((a, b) => compareUtf8(a.id, b.id)).map((entry2) => ({
-      id: entry2.id,
-      path: entry2.path,
-      enabled: entry2.enabled,
-      ...entry2.options === void 0 ? {} : { options: entry2.options }
-    }))
-  }, null, 2)}
-`;
-}
-
-// packages/ui/dist/settings/index.js
-function createSettingsUi(document, options) {
-  const root = document.createElement("div");
-  root.className = "modkit-viewer modkit-settings";
-  setPart(root, "settings");
-  const groupList = element(root, "nav", { part: "settings.groups" });
-  groupList.setAttribute("aria-label", "Settings groups");
-  if (options.onClose !== void 0) {
-    const close = element(groupList, "button", {
-      part: "settings.close",
-      text: "\u2190 Back"
-    });
-    close.type = "button";
-    close.title = "Close settings (Esc)";
-    close.addEventListener("click", () => options.onClose?.());
-    root.addEventListener("keydown", (event) => {
-      if (event.key === "Escape")
-        options.onClose?.();
-    });
-    root.tabIndex = -1;
-  }
-  const pane = element(root, "div", { part: "settings.pane" });
-  const status = element(root, "output", { part: "settings.status" });
-  let current = DEFAULT_SETTINGS;
-  let activeGroup = "appearance";
-  const say = (message, bad = false) => {
-    status.textContent = message;
-    setState(status, bad ? ["error"] : []);
-  };
-  const persist = async (next) => {
-    try {
-      await options.store.write(next);
-      current = next;
-      options.onChange?.(next);
-      say(`Saved to ${options.store.location}`);
-    } catch (error) {
-      say(`Could not save: ${error instanceof Error ? error.message : String(error)}`, true);
-    }
-  };
-  const row = (host, label, description) => {
-    const wrapper = element(host, "div", { part: "settings.row" });
-    element(wrapper, "div", { part: "settings.label", text: label });
-    element(wrapper, "div", { part: "settings.description", text: description });
-    return element(wrapper, "div", { part: "settings.control" });
-  };
-  const appearanceGroup = {
-    id: "appearance",
-    label: "Appearance",
-    render(host) {
-      if (options.themes.length > 0) {
-        const control = row(host, "Color theme", "Applies immediately and to every viewer surface.");
-        const select = element(control, "select", { part: "settings.select" });
-        select.setAttribute("aria-label", "Color theme");
-        for (const theme of options.themes) {
-          const option = document.createElement("option");
-          option.value = theme.id;
-          option.textContent = theme.label;
-          select.append(option);
-        }
-        select.value = current.appearance.theme;
-        select.addEventListener("change", () => {
-          const appearance = { ...current.appearance, theme: select.value };
-          options.onAppearance?.(appearance);
-          void persist({ ...current, appearance });
-        });
-      }
-      const densityControl = row(host, "Density", "Compact matches VS Code list metrics; comfortable suits touch and larger displays.");
-      const density = element(densityControl, "select", {
-        part: "settings.select"
-      });
-      density.setAttribute("aria-label", "Density");
-      for (const value2 of ["compact", "comfortable"]) {
-        const option = document.createElement("option");
-        option.value = value2;
-        option.textContent = value2[0]?.toUpperCase() + value2.slice(1);
-        density.append(option);
-      }
-      density.value = current.appearance.density;
-      density.addEventListener("change", () => {
-        const appearance = {
-          ...current.appearance,
-          density: density.value
-        };
-        options.onAppearance?.(appearance);
-        void persist({ ...current, appearance });
-      });
-    }
-  };
-  const extensionsGroup = {
-    id: "extensions",
-    label: "Extensions",
-    render(host) {
-      const intro = element(host, "p", { part: "settings.description" });
-      intro.textContent = `Extensions are listed in ${options.store.location}. Each entry is an id, a path the host loads from, and whether it is enabled. The same file is read by the desktop app, the web app and a headless run.`;
-      const readOnly = options.extensionsReadOnly;
-      if (readOnly !== void 0) {
-        element(host, "p", {
-          part: "settings.description",
-          text: safeViewerText(readOnly, 400)
-        });
-      }
-      const list = element(host, "div", { part: "settings.list" });
-      const draw = () => {
-        list.replaceChildren();
-        if (current.extensions.length === 0) {
-          element(list, "p", {
-            part: "settings.description",
-            text: "No extensions are configured yet."
-          });
-        }
-        for (const entry2 of current.extensions) {
-          const item = element(list, "div", { part: "settings.extension" });
-          if (readOnly === void 0) {
-            const toggle = element(item, "input", {
-              part: "settings.toggle"
-            });
-            toggle.type = "checkbox";
-            toggle.checked = entry2.enabled;
-            toggle.setAttribute("aria-label", `Enable ${entry2.id}`);
-            toggle.addEventListener("change", () => {
-              void persist({
-                ...current,
-                extensions: current.extensions.map((other) => other.id === entry2.id ? { ...other, enabled: toggle.checked } : other)
-              }).then(draw);
-            });
-          } else {
-            element(item, "div", {
-              part: "settings.description",
-              text: entry2.enabled ? "enabled" : "disabled"
-            });
-          }
-          const text = element(item, "div", { part: "settings.extension-text" });
-          element(text, "div", { part: "settings.label", text: safeViewerText(entry2.id, 200) });
-          element(text, "div", {
-            part: "settings.description",
-            text: safeViewerText(entry2.path, 400)
-          });
-          if (readOnly === void 0) {
-            const remove = element(item, "button", {
-              part: "settings.remove",
-              text: "Remove"
-            });
-            remove.type = "button";
-            remove.addEventListener("click", () => {
-              void persist({
-                ...current,
-                extensions: current.extensions.filter((other) => other.id !== entry2.id)
-              }).then(draw);
-            });
-          }
-        }
-      };
-      draw();
-      if (readOnly !== void 0)
-        return;
-      const adder = element(host, "div", { part: "settings.adder" });
-      const id = element(adder, "input", { part: "settings.input" });
-      id.placeholder = "publisher/name";
-      id.setAttribute("aria-label", "Extension id");
-      const path = element(adder, "input", { part: "settings.input" });
-      path.placeholder = "path, package or URL";
-      path.setAttribute("aria-label", "Extension location");
-      const add = (entry2) => {
-        void persist({
-          ...current,
-          extensions: [...current.extensions.filter((other) => other.id !== entry2.id), entry2]
-        }).then(draw);
-      };
-      const addButton = element(adder, "button", {
-        part: "settings.add",
-        text: "Add"
-      });
-      addButton.type = "button";
-      addButton.addEventListener("click", () => {
-        const entryId = id.value.trim();
-        const entryPath = path.value.trim();
-        if (entryId === "" || entryPath === "") {
-          say("An extension needs both an id and a location.", true);
-          return;
-        }
-        add({ id: entryId, path: entryPath, enabled: true });
-        id.value = "";
-        path.value = "";
-      });
-      if (options.browseForExtension !== void 0) {
-        const browse = element(adder, "button", {
-          part: "settings.add",
-          text: "Browse\u2026"
-        });
-        browse.type = "button";
-        browse.addEventListener("click", () => {
-          void (async () => {
-            const picked = await options.browseForExtension?.();
-            if (picked !== void 0)
-              add({ ...picked, enabled: true });
-          })();
-        });
-      }
-    }
-  };
-  const registerFileTypes = options.registerFileTypes;
-  const associationsGroup = {
-    id: "associations",
-    label: "File associations",
-    render(host) {
-      const types = [...options.associableTypes ?? []].sort();
-      element(host, "p", {
-        part: "settings.description",
-        text: "Make this app the default for the formats its codecs can open. Registration is per-user and reversible from the operating system, and nothing is written until you apply it."
-      });
-      if (types.length === 0) {
-        element(host, "p", {
-          part: "settings.description",
-          text: "No codecs are loaded, so there is nothing to associate."
-        });
-        return;
-      }
-      const chosen = new Set(types);
-      const list = element(host, "div", { part: "settings.list" });
-      for (const type of types) {
-        const item = element(list, "div", { part: "settings.extension" });
-        const toggle = element(item, "input", { part: "settings.toggle" });
-        toggle.type = "checkbox";
-        toggle.checked = true;
-        toggle.setAttribute("aria-label", `Associate .${type}`);
-        toggle.addEventListener("change", () => {
-          if (toggle.checked)
-            chosen.add(type);
-          else
-            chosen.delete(type);
-        });
-        const text = element(item, "div", { part: "settings.extension-text" });
-        element(text, "div", { part: "settings.label", text: `.${type}` });
-      }
-      const actions = element(host, "div", { part: "settings.adder" });
-      const all = element(actions, "button", {
-        part: "settings.add",
-        text: "Select all"
-      });
-      all.type = "button";
-      all.addEventListener("click", () => {
-        for (const node of list.querySelectorAll("input")) {
-          node.checked = true;
-          node.dispatchEvent(new Event("change"));
-        }
-      });
-      const none = element(actions, "button", {
-        part: "settings.add",
-        text: "Select none"
-      });
-      none.type = "button";
-      none.addEventListener("click", () => {
-        for (const node of list.querySelectorAll("input")) {
-          node.checked = false;
-          node.dispatchEvent(new Event("change"));
-        }
-      });
-      const apply = element(actions, "button", {
-        part: "settings.add",
-        text: "Set as default app"
-      });
-      apply.type = "button";
-      apply.addEventListener("click", () => {
-        void (async () => {
-          if (chosen.size === 0) {
-            say("Pick at least one file type first.", true);
-            return;
-          }
-          try {
-            apply.disabled = true;
-            say(await registerFileTypes?.([...chosen]) ?? "Nothing to register.");
-          } catch (error) {
-            say(`Could not register: ${error instanceof Error ? error.message : String(error)}`, true);
-          } finally {
-            apply.disabled = false;
-          }
-        })();
-      });
-    }
-  };
-  const groups = [
-    appearanceGroup,
-    extensionsGroup,
-    ...options.registerFileTypes === void 0 ? [] : [associationsGroup]
-  ];
-  const showGroup = (group) => {
-    activeGroup = group.id;
-    pane.replaceChildren();
-    for (const node of groupList.querySelectorAll('[data-mk-part="settings.group"]')) {
-      const selected = node.getAttribute("data-group") === group.id;
-      node.setAttribute("aria-selected", String(selected));
-      setState(node, selected ? ["selected"] : []);
-    }
-    group.render(pane);
-  };
-  for (const group of groups) {
-    const button = element(groupList, "button", {
-      part: "settings.group",
-      text: group.label
-    });
-    button.type = "button";
-    button.dataset["group"] = group.id;
-    button.setAttribute("role", "tab");
-    button.addEventListener("click", () => {
-      showGroup(group);
-    });
-  }
-  const ui = {
-    root,
-    async reload() {
-      const { document: loaded, problems } = await options.store.read();
-      current = loaded;
-      options.onAppearance?.(loaded.appearance);
-      const group = groups.find((item) => item.id === activeGroup) ?? groups[0];
-      if (group !== void 0)
-        showGroup(group);
-      say(problems.length === 0 ? `Loaded from ${options.store.location}` : `Loaded with ${problems.length} problem(s): ${problems.join("; ")}`, problems.length > 0);
-    },
-    destroy() {
-      root.remove();
-    }
-  };
-  return ui;
-}
-
-// packages/ui/dist/code/index.js
-var MAX_MATERIALIZED_BYTES = 16 * 1024 * 1024;
-var MAX_MATERIALIZED_LINE_BYTES = 1024 * 1024;
-var BoundedTextModel = class {
-  source;
-  constructor(source) {
-    this.source = source;
-  }
-  async load(signal) {
-    const info = await this.source.info();
-    if (info.bytes > BigInt(MAX_MATERIALIZED_BYTES) || info.longestLineBytes === "unknown" || info.longestLineBytes > MAX_MATERIALIZED_LINE_BYTES) {
-      throw new RangeError("bounded text policy rejected this source");
-    }
-    const slice = await this.source.slice({
-      kind: "from-line",
-      line: 0,
-      lineCount: info.lines === "unknown" ? Number.MAX_SAFE_INTEGER : Math.max(1, info.lines),
-      maxBytes: MAX_MATERIALIZED_BYTES
-    }, signal);
-    if (!slice.complete)
-      throw new RangeError("bounded text source exceeded materialization limit");
-    return slice.text;
-  }
-  async search(pattern, signal) {
-    let matches3 = 0;
-    for await (const range of this.source.search({ pattern }, signal)) {
-      void range;
-      matches3 += 1;
-    }
-    return matches3;
-  }
-};
-var boundedTextViewer = defineViewerModule({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope(args.signal);
-    const root = createSurface(args.container, "Bounded text viewer");
-    const lease = await unknownSourceLease(args.sources, args.slot, "common.view/text-data-source");
-    if (lease === void 0)
-      throw new TypeError("bounded text binding is unavailable");
-    scope.lease(lease);
-    const model = new BoundedTextModel(lease.value);
-    const toolbar = element(root, "div", {
-      className: "modkit-viewer__toolbar",
-      role: "search",
-      part: "viewer.toolbar"
-    });
-    const search = element(toolbar, "input");
-    search.type = "search";
-    search.setAttribute("aria-label", "Search text");
-    const searchButton = element(toolbar, "button", { text: "Search" });
-    searchButton.type = "button";
-    const status = element(toolbar, "output", { text: "Ready", part: "viewer.status" });
-    const content = element(root, "pre", { className: "modkit-viewer__code", part: "text" });
-    content.tabIndex = 0;
-    content.setAttribute("aria-label", "Text content");
-    setViewerText(content, await model.load(scope.signal), MAX_MATERIALIZED_BYTES);
-    const runSearch = async () => {
-      const pattern = safeViewerText(search.value, 4096);
-      setViewerText(status, pattern === "" ? "Enter a search term" : "Searching\u2026");
-      if (pattern === "")
-        return;
-      const matches3 = await model.search(pattern, scope.signal);
-      setViewerText(status, `${matches3} match${matches3 === 1 ? "" : "es"}`);
-    };
-    searchButton.addEventListener("click", runSearch);
-    search.addEventListener("keydown", (event) => {
-      if (event.key === "Enter")
-        void runSearch();
-    });
-    scope.cleanup(() => searchButton.removeEventListener("click", runSearch));
-    return createViewerMount(root, scope, args, ({ descriptor }) => {
-      root.dataset["revision"] = descriptor.revision;
-    });
-  }
-});
-
-// packages/ui/dist/text-virtual/index.js
-var VIRTUAL_TEXT_PAGE_BYTES = 64 * 1024;
-var VirtualTextModel = class {
-  source;
-  #cursor;
-  constructor(source) {
-    this.source = source;
-  }
-  async first(line = 0, signal) {
-    const page = await this.source.slice({ kind: "from-line", line, lineCount: 200, maxBytes: VIRTUAL_TEXT_PAGE_BYTES }, signal);
-    this.#cursor = page.complete ? void 0 : page.nextCursor;
-    return page;
-  }
-  async next(signal) {
-    if (this.#cursor === void 0)
-      return void 0;
-    const page = await this.source.slice({ kind: "from-cursor", cursor: this.#cursor, maxBytes: VIRTUAL_TEXT_PAGE_BYTES }, signal);
-    this.#cursor = page.complete ? void 0 : page.nextCursor;
-    return page;
-  }
-};
-var virtualTextViewer = defineViewerModule({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope(args.signal);
-    const root = createSurface(args.container, "Virtual text viewer");
-    const lease = await unknownSourceLease(args.sources, args.slot, "common.view/text-data-source");
-    if (lease === void 0)
-      throw new TypeError("virtual text binding is unavailable");
-    scope.lease(lease);
-    const model = new VirtualTextModel(lease.value);
-    const viewport = element(root, "pre", {
-      className: "modkit-viewer__virtual-text",
-      part: "virtual-text"
-    });
-    viewport.tabIndex = 0;
-    viewport.setAttribute("aria-live", "polite");
-    const more = element(root, "button", { text: "Load next page" });
-    more.type = "button";
-    const renderPage = (page, append) => {
-      if (page === void 0) {
-        more.disabled = true;
-        return;
-      }
-      const text = append ? `${viewport.textContent ?? ""}${page.text}` : page.text;
-      setViewerText(viewport, text, 2 * VIRTUAL_TEXT_PAGE_BYTES);
-      more.disabled = page.complete;
-      viewport.dataset["fromLine"] = String(page.fromLine);
-    };
-    renderPage(await model.first(0, scope.signal), false);
-    const next = async () => renderPage(await model.next(scope.signal), true);
-    more.addEventListener("click", next);
-    scope.cleanup(() => more.removeEventListener("click", next));
-    return createViewerMount(root, scope, args, ({ descriptor }) => {
-      root.dataset["revision"] = descriptor.revision;
-    });
-  }
-});
-
-// packages/ui/dist/hex/index.js
-var HEX_WINDOW_BYTES = 4096;
-var HexWindowModel = class {
-  source;
-  constructor(source) {
-    this.source = source;
-  }
-  async read(offset, signal) {
-    if (offset < 0n)
-      throw new RangeError("hex offset must be non-negative");
-    const size = await this.source.size();
-    if (offset > size)
-      throw new RangeError("hex offset exceeds source size");
-    const length = Number(size - offset > BigInt(HEX_WINDOW_BYTES) ? HEX_WINDOW_BYTES : size - offset);
-    const bytes2 = await this.source.read(offset, length, signal);
-    const lines = [];
-    for (let index = 0; index < bytes2.length; index += 16) {
-      const chunk = bytes2.slice(index, index + 16);
-      const address = (offset + BigInt(index)).toString(16).padStart(16, "0");
-      const hex = [...chunk].map((value2) => value2.toString(16).padStart(2, "0")).join(" ");
-      const ascii = [...chunk].map((value2) => value2 >= 32 && value2 <= 126 ? String.fromCharCode(value2) : ".").join("");
-      lines.push(`${address}  ${hex.padEnd(47)}  ${ascii}`);
-    }
-    return { offset, bytes: bytes2, text: lines.join("\n") };
-  }
-};
-var hexViewer = defineViewerModule({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope(args.signal);
-    const root = createSurface(args.container, "Hex viewer");
-    const lease = await unknownSourceLease(args.sources, args.slot, "common.view/byte-range-source");
-    if (lease === void 0)
-      throw new TypeError("hex binding is unavailable");
-    scope.lease(lease);
-    const model = new HexWindowModel(lease.value);
-    const controls = element(root, "div", {
-      className: "modkit-viewer__toolbar",
-      part: "hex.toolbar"
-    });
-    const offset = element(controls, "input", { part: "hex.offset-input" });
-    offset.type = "text";
-    offset.inputMode = "numeric";
-    offset.value = "0";
-    offset.setAttribute("aria-label", "Byte offset");
-    const go = element(controls, "button", { text: "Go", part: "hex.go" });
-    go.type = "button";
-    const content = element(root, "pre", { className: "modkit-viewer__hex", part: "hex.content" });
-    content.tabIndex = 0;
-    const render2 = async () => {
-      const value2 = /^(?:0x)?[0-9a-f]+$/iu.test(offset.value.trim()) ? BigInt(offset.value.trim()) : -1n;
-      const window = await model.read(value2, scope.signal);
-      setViewerText(content, window.text);
-      content.dataset["offset"] = window.offset.toString(10);
-    };
-    await render2();
-    go.addEventListener("click", render2);
-    scope.cleanup(() => go.removeEventListener("click", render2));
-    return createViewerMount(root, scope, args, ({ descriptor }) => {
-      root.dataset["revision"] = descriptor.revision;
-    });
-  }
-});
-
-// packages/ui/dist/tree/index.js
-var LazyTreeModel = class {
-  source;
-  #facts = /* @__PURE__ */ new Map();
-  constructor(source) {
-    this.source = source;
-  }
-  root() {
-    return this.source.root();
-  }
-  async facts(node) {
-    const existing = this.#facts.get(node.id);
-    if (existing !== void 0)
-      return existing;
-    const value2 = await this.source.facts(node);
-    this.#facts.set(node.id, value2);
-    return value2;
-  }
-  children(node, cursor2, signal) {
-    return this.source.children(node, { limit: 200, ...cursor2 === void 0 ? {} : { cursor: cursor2 } }, signal);
-  }
-};
-var treeViewer = defineViewerModule({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope(args.signal);
-    const root = createSurface(args.container, "Tree viewer");
-    root.setAttribute("role", "tree");
-    const lease = await unknownSourceLease(args.sources, args.slot, "common.view/tree-data-source");
-    if (lease === void 0)
-      throw new TypeError("tree binding is unavailable");
-    scope.lease(lease);
-    const model = new LazyTreeModel(lease.value);
-    const list = element(root, "ul", { className: "modkit-viewer__tree", part: "tree.list" });
-    list.setAttribute("role", "group");
-    const renderNode = async (node, parent) => {
-      const facts = await model.facts(node);
-      const item = element(parent, "li", { part: "tree.item" });
-      item.setAttribute("role", "treeitem");
-      item.dataset["nodeId"] = node.id;
-      item.setAttribute("aria-expanded", node.hasChildren ? "false" : "undefined");
-      const label = element(item, "button", {
-        text: facts.label,
-        part: "tree.label"
-      });
-      label.type = "button";
-      label.disabled = !node.hasChildren;
-      if (facts.preview !== void 0)
-        label.title = facts.preview;
-      const children = element(item, "ul", { part: "tree.children" });
-      children.hidden = true;
-      children.setAttribute("role", "group");
-      let loaded = false;
-      const expand = async () => {
-        if (!loaded) {
-          const page = await model.children(node, void 0, scope.signal);
-          for (const child of page.items)
-            await renderNode(child, children);
-          loaded = true;
-        }
-        children.hidden = !children.hidden;
-        item.setAttribute("aria-expanded", String(!children.hidden));
-      };
-      label.addEventListener("click", expand);
-      scope.cleanup(() => label.removeEventListener("click", expand));
-      setViewerText(label, facts.label);
-    };
-    await renderNode(await model.root(), list);
-    return createViewerMount(root, scope, args, ({ descriptor }) => {
-      root.dataset["revision"] = descriptor.revision;
-    });
-  }
-});
-
-// packages/ui/dist/table/index.js
-var TABLE_PAGE_ROWS = 200;
-var LazyTableModel = class {
-  source;
-  #cursor;
-  constructor(source) {
-    this.source = source;
-  }
-  shape() {
-    return this.source.shape();
-  }
-  async first(from = 0, signal) {
-    const page = await this.source.rows({ kind: "range", from, count: TABLE_PAGE_ROWS }, signal);
-    this.#cursor = page.nextCursor;
-    return page;
-  }
-  async next(signal) {
-    if (this.#cursor === void 0)
-      return void 0;
-    const page = await this.source.rows({ kind: "cursor", cursor: this.#cursor, count: TABLE_PAGE_ROWS }, signal);
-    this.#cursor = page.nextCursor;
-    return page;
-  }
-};
-var tableViewer = defineViewerModule({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope(args.signal);
-    const root = createSurface(args.container, "Table viewer");
-    const lease = await unknownSourceLease(args.sources, args.slot, "common.view/table-data-source");
-    if (lease === void 0)
-      throw new TypeError("table binding is unavailable");
-    scope.lease(lease);
-    const model = new LazyTableModel(lease.value);
-    const table = element(root, "table", {
-      className: "modkit-viewer__table",
-      part: "table"
-    });
-    const caption = table.createCaption();
-    setPart(caption, "table.caption");
-    const shape = await model.shape();
-    setViewerText(caption, `${shape.rows} rows, ${shape.columns} columns`);
-    const body = table.createTBody();
-    setPart(body, "table.body");
-    const render2 = (rows) => {
-      body.replaceChildren();
-      for (const row of rows) {
-        const tr = body.insertRow();
-        setPart(tr, "table.row");
-        tr.dataset["row"] = String(row.index);
-        for (const value2 of row.cells) {
-          const cell = tr.insertCell();
-          setPart(cell, "table.cell");
-          setViewerText(cell, value2);
-        }
-      }
-    };
-    const first = await model.first(0, scope.signal);
-    render2(first.items);
-    const next = element(root, "button", {
-      text: "Next rows",
-      part: "table.next"
-    });
-    next.type = "button";
-    next.disabled = first.nextCursor === void 0;
-    const advance = async () => {
-      const page = await model.next(scope.signal);
-      if (page === void 0) {
-        next.disabled = true;
-        return;
-      }
-      render2(page.items);
-      next.disabled = page.nextCursor === void 0;
-    };
-    next.addEventListener("click", advance);
-    scope.cleanup(() => next.removeEventListener("click", advance));
-    return createViewerMount(root, scope, args, ({ descriptor }) => {
-      root.dataset["revision"] = descriptor.revision;
-    });
-  }
-});
-
-// packages/ui/dist/transport/index.js
-var TransportModel = class {
-  source;
-  constructor(source) {
-    this.source = source;
-  }
-  snapshot(signal) {
-    return this.source.snapshot(signal);
-  }
-  events(signal) {
-    return this.source.events(signal);
-  }
-};
-var transportViewer = defineViewerModule({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope(args.signal);
-    const root = createSurface(args.container, "Transport controls");
-    const lease = await unknownSourceLease(args.sources, args.slot, "common.view/transport-source");
-    if (lease === void 0)
-      throw new TypeError("transport binding is unavailable");
-    scope.lease(lease);
-    const model = new TransportModel(lease.value);
-    const status = element(root, "output", { text: "Loading", part: "transport.status" });
-    const controls = element(root, "div", {
-      className: "modkit-viewer__transport",
-      part: "transport.controls"
-    });
-    let descriptor = args.descriptor;
-    let snapshot2;
-    const render2 = (value2) => {
-      snapshot2 = value2;
-      controls.replaceChildren();
-      setViewerText(status, `${value2.state} \xB7 ${value2.positionMs} / ${value2.durationMs} ms`);
-      const commands = [
-        ["Play or pause", value2.controls.playPause, null],
-        ["Seek to start", value2.controls.seek, { positionMs: 0 }],
-        ["Normal speed", value2.controls.setRate, { rate: 1 }]
-      ];
-      for (const [label, operation, input] of commands) {
-        if (operation === void 0)
-          continue;
-        const button = element(controls, "button", {
-          text: label,
-          part: "transport.button"
-        });
-        button.type = "button";
-        const invoke = async () => {
-          const result = await invokeOperation(descriptor, args.operations, operation, input, {
-            signal: scope.signal
-          });
-          setViewerText(status, result.state === "ok" ? `${label}: complete` : result.reason);
-        };
-        button.addEventListener("click", invoke);
-        scope.cleanup(() => button.removeEventListener("click", invoke));
-      }
-      for (const track of value2.tracks) {
-        const item = element(controls, "span", {
-          text: track.label ?? track.id,
-          part: "transport.track"
-        });
-        item.setAttribute("role", "status");
-        item.dataset["selected"] = String(track.selected);
-      }
-    };
-    render2(await model.snapshot(scope.signal));
-    const consume = async () => {
-      try {
-        for await (const event of model.events(scope.signal)) {
-          if (event.kind === "snapshot")
-            render2(event.snapshot);
-          else
-            setViewerText(status, event.diagnostic.message);
-        }
-      } catch (error) {
-        if (!scope.signal.aborted)
-          throw error;
-      }
-    };
-    void consume();
-    return createViewerMount(root, scope, args, (update) => {
-      descriptor = update.descriptor;
-      root.dataset["revision"] = descriptor.revision;
-      render2(snapshot2);
-    });
-  }
-});
-
-// packages/ui/dist/namespace/index.js
-function normalizeNamespacePath(value2) {
-  if (value2.includes("\\") || value2.startsWith("/") || value2.includes("\0")) {
-    throw new TypeError("namespace path is not relative and portable");
-  }
-  const parts = value2.split("/").filter((part) => part !== "" && part !== ".");
-  if (parts.some((part) => part === ".."))
-    throw new TypeError("namespace traversal is forbidden");
-  return parts.join("/");
-}
-var NamespaceModel = class {
-  source;
-  #identities = /* @__PURE__ */ new Map();
-  constructor(source) {
-    this.source = source;
-  }
-  async list(prefix, cursor2, signal) {
-    const normalized = normalizeNamespacePath(prefix);
-    const page = await this.source.list(normalized, { limit: 200, ...cursor2 === void 0 ? {} : { cursor: cursor2 } }, signal);
-    for (const entry2 of page.items) {
-      const path = normalizeNamespacePath(entry2.path);
-      const identity = `${path}\0${entry2.revision}`;
-      const existing = this.#identities.get(entry2.id);
-      if (existing !== void 0 && existing !== identity) {
-        throw new TypeError(`namespace entry identity changed: ${entry2.id}`);
-      }
-      this.#identities.set(entry2.id, identity);
-    }
-    return page;
-  }
-};
-var namespaceViewer = defineViewerModule({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope(args.signal);
-    const root = createSurface(args.container, "Namespace tree");
-    root.setAttribute("role", "tree");
-    const lease = await unknownSourceLease(args.sources, args.slot, "common.view/namespace-entry-source");
-    if (lease === void 0)
-      throw new TypeError("namespace binding is unavailable");
-    scope.lease(lease);
-    const source = lease.value;
-    const model = new NamespaceModel(source);
-    const list = element(root, "ul", { part: "namespace.list" });
-    list.setAttribute("role", "group");
-    const renderPrefix = async (prefix, parent) => {
-      const page = await model.list(prefix, void 0, scope.signal);
-      const seen = /* @__PURE__ */ new Set();
-      for (const entry2 of page.items) {
-        if (seen.has(entry2.id))
-          throw new TypeError(`duplicate namespace entry id: ${entry2.id}`);
-        seen.add(entry2.id);
-        const item = element(parent, "li", { part: "namespace.item" });
-        item.setAttribute("role", "treeitem");
-        item.dataset["entryId"] = entry2.id;
-        item.dataset["revision"] = entry2.revision;
-        const button = element(item, "button", {
-          text: entry2.name,
-          part: "namespace.label"
-        });
-        button.type = "button";
-        const detail = describeEntry(entry2);
-        if (detail !== "") {
-          setViewerText(element(item, "span", { part: "namespace.detail" }), detail);
-        }
-        const activate = async () => {
-          if (entry2.kind === "directory") {
-            let nested = item.querySelector(":scope > ul");
-            if (nested === null) {
-              nested = element(item, "ul", { part: "namespace.children" });
-              nested.setAttribute("role", "group");
-              await renderPrefix(entry2.path, nested);
-            }
-            nested.hidden = !nested.hidden;
-            return;
-          }
-          const opened = await source.openEntry(entry2.id, scope.signal);
-          try {
-            root.dispatchEvent(new CustomEvent("modkit-open-source", {
-              bubbles: true,
-              detail: { source: opened.value, entryId: entry2.id, revision: entry2.revision }
-            }));
-          } finally {
-            await opened.release();
-          }
-        };
-        button.addEventListener("click", activate);
-        scope.cleanup(() => button.removeEventListener("click", activate));
-        setViewerText(button, entry2.name);
-      }
-    };
-    await renderPrefix("", list);
-    return createViewerMount(root, scope, args, ({ descriptor }) => {
-      root.dataset["revision"] = descriptor.revision;
-    });
-  }
-});
-function formatEntryBytes(value2) {
-  if (value2 < 1024n)
-    return `${value2} B`;
-  const units = ["KiB", "MiB", "GiB", "TiB"];
-  let scaled = Number(value2) / 1024;
-  let unit = 0;
-  while (scaled >= 1024 && unit < units.length - 1) {
-    scaled /= 1024;
-    unit += 1;
-  }
-  return `${scaled.toFixed(1)} ${units[unit]}`;
-}
-function describeEntry(entry2) {
-  if (entry2.kind === "directory")
-    return "";
-  const parts = [];
-  if (entry2.size !== void 0)
-    parts.push(formatEntryBytes(entry2.size));
-  if (entry2.compression !== void 0) {
-    parts.push(entry2.storedSize === void 0 ? entry2.compression : `${entry2.compression} ${formatEntryBytes(entry2.storedSize)}`);
-  } else if (entry2.storedSize !== void 0) {
-    parts.push(`stored ${formatEntryBytes(entry2.storedSize)}`);
-  }
-  if (entry2.modifiedAt !== void 0) {
-    parts.push(`${new Date(entry2.modifiedAt).toISOString().replace("T", " ").slice(0, 19)} UTC`);
-  }
-  if (entry2.checksum !== void 0)
-    parts.push(`${entry2.checksum.algorithm} ${entry2.checksum.value}`);
-  return parts.join(" \xB7 ");
-}
-
-// packages/ui/dist/panels/index.js
-function renderDiagnostics(root, descriptor) {
-  root.replaceChildren();
-  const grouped = diagnosticsBySeverity(descriptor.diagnostics);
-  for (const severity of ["error", "warning", "information", "hint"]) {
-    const section = element(root, "section", { part: "diagnostics.group" });
-    section.dataset["severity"] = severity;
-    element(section, "h2", {
-      text: `${severity} (${grouped[severity].length})`,
-      part: "diagnostics.heading"
-    });
-    const list = element(section, "ul", { part: "diagnostics.list" });
-    for (const diagnostic2 of grouped[severity]) {
-      const item = element(list, "li", { part: "diagnostics.item" });
-      item.dataset["severity"] = severity;
-      const button = element(item, "button", {
-        text: diagnostic2.message,
-        part: "diagnostics.message"
-      });
-      button.type = "button";
-      button.dataset["diagnosticId"] = diagnostic2.id;
-      button.addEventListener("click", () => {
-        root.dispatchEvent(new CustomEvent("modkit-diagnostic-jump", {
-          bubbles: true,
-          detail: { id: diagnostic2.id, range: diagnostic2.range }
-        }));
-      });
-    }
-  }
-}
-var diagnosticsPanel = defineViewerModule({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope(args.signal);
-    const root = createSurface(args.container, "Diagnostics");
-    renderDiagnostics(root, args.descriptor);
-    return createViewerMount(root, scope, args, ({ descriptor }) => {
-      renderDiagnostics(root, descriptor);
-    });
-  }
-});
-function renderToolbar(root, descriptor, operations, signal) {
-  root.replaceChildren();
-  const status = element(root, "output", { text: "Ready", part: "operations.status" });
-  for (const operation of descriptor.operations) {
-    if (operation.mutatesSource === true)
-      continue;
-    const button = element(root, "button", {
-      text: operation.id,
-      part: "operations.button"
-    });
-    button.type = "button";
-    button.disabled = operation.state !== "available";
-    if (operation.state !== "available") {
-      button.title = operation.reason;
-      continue;
-    }
-    button.addEventListener("click", () => {
-      button.disabled = true;
-      invokeOperation(descriptor, operations, operation.id, null, {
-        signal,
-        onProgress: (completed, total, message) => setViewerText(status, `${message ?? "Working"}: ${completed}/${total ?? "?"}`)
-      }).then((result) => setViewerText(status, result.state === "ok" ? `${operation.id}: complete` : result.reason)).catch((error) => setViewerText(status, `${operation.id}: ${error instanceof Error ? error.message : String(error)}`)).finally(() => {
-        button.disabled = false;
-      });
-    });
-  }
-}
-var operationToolbar = defineViewerModule({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope(args.signal);
-    const root = createSurface(args.container, "Operations");
-    renderToolbar(root, args.descriptor, args.operations, scope.signal);
-    return createViewerMount(root, scope, args, ({ descriptor }) => {
-      renderToolbar(root, descriptor, args.operations, scope.signal);
-    });
-  }
-});
-
-// packages/ui/dist/metadata/index.js
-function resolved(descriptor) {
-  return "identity" in descriptor ? descriptor : void 0;
-}
-function renderMetadata(root, descriptor) {
-  root.replaceChildren();
-  const groups = resolved(descriptor)?.metadata ?? [];
-  if (groups.length === 0) {
-    element(root, "p", { text: "No metadata reported by the codec.", part: "viewer.empty" });
-    return;
-  }
-  for (const group of groups) {
-    const section = element(root, "section", { part: "metadata.group" });
-    element(section, "h3", { text: group.label, part: "metadata.heading" });
-    const list = element(section, "dl");
-    for (const entry2 of group.entries) {
-      const row = element(list, "div", { part: "metadata.row" });
-      element(row, "dt", { text: entry2.key, part: "metadata.label" });
-      const value2 = element(row, "dd", { part: "metadata.value" });
-      setViewerText(value2, entry2.value, 4096);
-      value2.title = String(entry2.value);
-    }
-  }
-}
-var metadataPanel = defineViewerModule({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope(args.signal);
-    const root = createSurface(args.container, "Metadata");
-    const body = element(root, "div", { part: "metadata" });
-    renderMetadata(body, args.descriptor);
-    return createViewerMount(root, scope, args, ({ descriptor }) => {
-      root.dataset["revision"] = descriptor.revision;
-      renderMetadata(body, descriptor);
-    });
-  }
-});
-function renderProperties(root, descriptor) {
-  root.replaceChildren();
-  const rows = [
-    { name: "subject", value: descriptor.subjectUri, origin: "identity" },
-    { name: "revision", value: descriptor.revision, origin: "identity" },
-    {
-      name: "interpretation",
-      value: String(resolved(descriptor)?.interpretation ?? "unresolved"),
-      origin: "identity"
-    }
-  ];
-  const identity = resolved(descriptor)?.identity;
-  if (identity !== void 0) {
-    if (identity.formatId !== void 0)
-      rows.push({ name: "format", value: identity.formatId, origin: "identity" });
-    if (identity.codecId !== void 0)
-      rows.push({ name: "codec", value: identity.codecId, origin: "identity" });
-    if (identity.confidence !== void 0)
-      rows.push({ name: "confidence", value: identity.confidence.toFixed(2), origin: "detection" });
-  }
-  for (const trait of descriptor.traits) {
-    const parameters = Object.entries(trait.parameters ?? {});
-    rows.push({
-      name: trait.id,
-      value: parameters.length === 0 ? trait.state : `${trait.state} \xB7 ${parameters.map(([key3, item]) => `${key3}=${String(item)}`).join(", ")}`,
-      origin: "trait"
-    });
-  }
-  for (const operation of descriptor.operations) {
-    rows.push({
-      name: operation.id,
-      value: `${operation.state}${operation.mutatesSource ? " \xB7 mutates source" : ""}`,
-      origin: "operation"
-    });
-  }
-  for (const row of rows) {
-    const line = element(root, "div", { part: "properties.row" });
-    element(line, "span", { text: row.name, part: "properties.name" });
-    element(line, "span", { text: row.value, part: "properties.value" });
-    element(line, "span", { text: row.origin, part: "properties.origin" });
-  }
-}
-var propertiesTable = defineViewerModule({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope(args.signal);
-    const root = createSurface(args.container, "Properties");
-    const body = element(root, "div", { part: "properties" });
-    body.setAttribute("role", "table");
-    renderProperties(body, args.descriptor);
-    return createViewerMount(root, scope, args, ({ descriptor }) => {
-      root.dataset["revision"] = descriptor.revision;
-      renderProperties(body, descriptor);
-    });
-  }
-});
-
-// packages/ui/dist/media/encoded.js
 async function collectEncodedMedia(source, maximumBytes, signal) {
   const descriptor = await source.descriptor();
   if (descriptor.bytes > BigInt(maximumBytes) || descriptor.bytes > BigInt(Number.MAX_SAFE_INTEGER)) {
@@ -46936,8 +44964,7 @@ async function collectEncodedMedia(source, maximumBytes, signal) {
   const bytes2 = new Uint8Array(total);
   let offset = 0;
   while (offset < total) {
-    if (signal?.aborted)
-      throw new DOMException("operation cancelled", "AbortError");
+    if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
     const chunk = await source.read(BigInt(offset), Math.min(1024 * 1024, total - offset), signal);
     if (chunk.byteLength === 0 || chunk.byteLength > total - offset) {
       throw new RangeError("encoded media ended outside its declared size");
@@ -46947,26 +44974,27 @@ async function collectEncodedMedia(source, maximumBytes, signal) {
   }
   return { mediaType: descriptor.mediaType, bytes: bytes2 };
 }
-
-// packages/ui/dist/image/index.js
 var IMAGE_MAXIMUM_BYTES = 64 * 1024 * 1024;
 async function loadBitmap(source, signal) {
   const info = await source.info(signal);
   const decodedBytes = info.width * info.height * 4;
   if (info.decodedAccess && source.readRegion !== void 0 && Number.isSafeInteger(decodedBytes) && decodedBytes <= IMAGE_MAXIMUM_BYTES) {
-    const region = await source.readRegion({
-      x: 0,
-      y: 0,
-      width: info.width,
-      height: info.height,
-      frame: 0,
-      mipLevel: 0,
-      layer: 0,
-      face: 0,
-      slice: 0,
-      pixelFormat: "rgba8",
-      maxBytes: IMAGE_MAXIMUM_BYTES
-    }, signal);
+    const region = await source.readRegion(
+      {
+        x: 0,
+        y: 0,
+        width: info.width,
+        height: info.height,
+        frame: 0,
+        mipLevel: 0,
+        layer: 0,
+        face: 0,
+        slice: 0,
+        pixelFormat: "rgba8",
+        maxBytes: IMAGE_MAXIMUM_BYTES
+      },
+      signal
+    );
     const pixels = new Uint8ClampedArray(region.pixels.byteLength);
     pixels.set(region.pixels);
     const bitmap2 = await createImageBitmap(new ImageData(pixels, region.width, region.height));
@@ -46974,7 +45002,9 @@ async function loadBitmap(source, signal) {
   }
   const encoded = await source.encoded(signal);
   const media = await collectEncodedMedia(encoded, IMAGE_MAXIMUM_BYTES, signal);
-  const bitmap = await createImageBitmap(new Blob([media.bytes], { type: media.mediaType }));
+  const bitmap = await createImageBitmap(
+    new Blob([media.bytes], { type: media.mediaType })
+  );
   return { bitmap, bytes: media.bytes.byteLength };
 }
 function drawChecker(context, width, height) {
@@ -46988,8 +45018,7 @@ function drawChecker(context, width, height) {
   }
 }
 function isolateChannel(context, width, height, channel) {
-  if (channel === "rgb")
-    return;
+  if (channel === "rgb") return;
   const frame = context.getImageData(0, 0, width, height);
   const data = frame.data;
   const index = channel === "r" ? 0 : channel === "g" ? 1 : channel === "b" ? 2 : 3;
@@ -47013,9 +45042,12 @@ var imageViewer = defineViewerModule({
     const readout = element(stage, "output", { part: "image.readout" });
     const canvas = element(stage, "canvas", { part: "image.canvas" });
     canvas.tabIndex = 0;
-    const lease = await unknownSourceLease(args.sources, args.slot, "common.view/raster-image-source");
-    if (lease === void 0)
-      throw new TypeError("image binding is unavailable");
+    const lease = await unknownSourceLease(
+      args.sources,
+      args.slot,
+      "common.view/raster-image-source"
+    );
+    if (lease === void 0) throw new TypeError("image binding is unavailable");
     scope.lease(lease);
     let model;
     let zoom = 1;
@@ -47023,11 +45055,9 @@ var imageViewer = defineViewerModule({
     let background = "checker";
     let channel = "rgb";
     const context = canvas.getContext("2d");
-    if (context === null)
-      throw new TypeError("2d canvas context is unavailable");
+    if (context === null) throw new TypeError("2d canvas context is unavailable");
     const paint = () => {
-      if (model === void 0)
-        return;
+      if (model === void 0) return;
       const { bitmap } = model;
       const box = stage.getBoundingClientRect();
       const available = {
@@ -47041,15 +45071,17 @@ var imageViewer = defineViewerModule({
       canvas.height = height;
       setToken(canvas, "size.icon", `${Math.min(width, 4096)}px`);
       context.imageSmoothingEnabled = scale < 1;
-      if (background === "checker")
-        drawChecker(context, width, height);
+      if (background === "checker") drawChecker(context, width, height);
       else {
         context.fillStyle = background === "dark" ? "#141414" : "#f4f4f4";
         context.fillRect(0, 0, width, height);
       }
       context.drawImage(bitmap, 0, 0, width, height);
       isolateChannel(context, width, height, channel);
-      setViewerText(readout, `${bitmap.width}\xD7${bitmap.height} \xB7 ${(model.bytes / 1024).toFixed(1)} KiB \xB7 ${Math.round(scale * 100)}%${channel === "rgb" ? "" : ` \xB7 channel ${channel.toUpperCase()}`}`);
+      setViewerText(
+        readout,
+        `${bitmap.width}\xD7${bitmap.height} \xB7 ${(model.bytes / 1024).toFixed(1)} KiB \xB7 ${Math.round(scale * 100)}%${channel === "rgb" ? "" : ` \xB7 channel ${channel.toUpperCase()}`}`
+      );
     };
     const button = (label, title, onClick) => {
       const node = element(toolbar, "button", {
@@ -47106,8 +45138,6 @@ var imageViewer = defineViewerModule({
     });
   }
 });
-
-// packages/ui/dist/image/edit.js
 var TOOLS = Object.freeze([
   { id: "select", label: "\u25AD", hint: "Select a rectangular region" },
   { id: "brush", label: "\u270E", hint: "Brush" },
@@ -47119,15 +45149,12 @@ var TOOLS = Object.freeze([
   { id: "gradient", label: "\u25A4", hint: "Linear gradient" },
   { id: "eyedropper", label: "\u2299", hint: "Pick a colour" }
 ]);
-
-// packages/ui/dist/audio/index.js
 var AUDIO_MAXIMUM_BYTES = 96 * 1024 * 1024;
 var WAVEFORM_BUCKETS = 900;
 function computePeaks(channelData, buckets) {
   const frames = channelData[0]?.length ?? 0;
   const peaks = new Float32Array(buckets * 2);
-  if (frames === 0)
-    return peaks;
+  if (frames === 0) return peaks;
   const step = Math.max(1, Math.floor(frames / buckets));
   for (let bucket = 0; bucket < buckets; bucket += 1) {
     const from = bucket * step;
@@ -47137,10 +45164,8 @@ function computePeaks(channelData, buckets) {
     for (const channel of channelData) {
       for (let at = from; at < to; at += 1) {
         const value2 = channel[at];
-        if (value2 < minimum)
-          minimum = value2;
-        if (value2 > maximum)
-          maximum = value2;
+        if (value2 < minimum) minimum = value2;
+        if (value2 > maximum) maximum = value2;
       }
     }
     peaks[bucket * 2] = minimum;
@@ -47152,13 +45177,15 @@ async function loadWaveform(source, signal) {
   const encoded = await source.encoded(void 0, signal);
   const media = await collectEncodedMedia(encoded, AUDIO_MAXIMUM_BYTES, signal);
   const AudioContextCtor = globalThis.AudioContext ?? globalThis.webkitAudioContext;
-  if (AudioContextCtor === void 0)
-    throw new TypeError("no platform audio decoder is available");
+  if (AudioContextCtor === void 0) throw new TypeError("no platform audio decoder is available");
   const context = new AudioContextCtor();
   try {
     const copy = media.bytes.slice().buffer;
     const buffer = await context.decodeAudioData(copy);
-    const channels = Array.from({ length: buffer.numberOfChannels }, (_, index) => buffer.getChannelData(index));
+    const channels = Array.from(
+      { length: buffer.numberOfChannels },
+      (_, index) => buffer.getChannelData(index)
+    );
     return {
       model: {
         peaks: computePeaks(channels, WAVEFORM_BUCKETS),
@@ -47191,18 +45218,19 @@ var audioViewer = defineViewerModule({
     canvas.setAttribute("role", "img");
     const player = element(stage, "audio", { part: "audio.player" });
     player.controls = true;
-    const lease = await unknownSourceLease(args.sources, args.slot, "common.view/audio-media-source");
-    if (lease === void 0)
-      throw new TypeError("audio binding is unavailable");
+    const lease = await unknownSourceLease(
+      args.sources,
+      args.slot,
+      "common.view/audio-media-source"
+    );
+    if (lease === void 0) throw new TypeError("audio binding is unavailable");
     scope.lease(lease);
     let model;
     let cursor2 = 0;
     const context = canvas.getContext("2d");
-    if (context === null)
-      throw new TypeError("2d canvas context is unavailable");
+    if (context === null) throw new TypeError("2d canvas context is unavailable");
     const paint = () => {
-      if (model === void 0)
-        return;
+      if (model === void 0) return;
       const box = stage.getBoundingClientRect();
       const width = Math.max(160, Math.round(box.width - 16));
       const height = 120;
@@ -47233,11 +45261,13 @@ var audioViewer = defineViewerModule({
         context.fillStyle = styles.getPropertyValue("--mk-color-accent").trim() || "#0078d4";
         context.fillRect(Math.round(cursor2 / model.duration * width), 0, 2, height);
       }
-      setViewerText(readout, `${clock(cursor2)} / ${clock(model.duration)} \xB7 ${model.channels}ch \xB7 ${(model.sampleRate / 1e3).toFixed(1)} kHz \xB7 ${(model.bytes / 1024).toFixed(0)} KiB`);
+      setViewerText(
+        readout,
+        `${clock(cursor2)} / ${clock(model.duration)} \xB7 ${model.channels}ch \xB7 ${(model.sampleRate / 1e3).toFixed(1)} kHz \xB7 ${(model.bytes / 1024).toFixed(0)} KiB`
+      );
     };
     canvas.addEventListener("click", (event) => {
-      if (model === void 0)
-        return;
+      if (model === void 0) return;
       const box = canvas.getBoundingClientRect();
       cursor2 = (event.clientX - box.left) / box.width * model.duration;
       paint();
@@ -47246,7 +45276,9 @@ var audioViewer = defineViewerModule({
     try {
       const loaded = await loadWaveform(lease.value, scope.signal);
       model = loaded.model;
-      const objectUrl = URL.createObjectURL(new Blob([loaded.bytes], { type: loaded.mediaType }));
+      const objectUrl = URL.createObjectURL(
+        new Blob([loaded.bytes], { type: loaded.mediaType })
+      );
       player.src = objectUrl;
       scope.cleanup(() => URL.revokeObjectURL(objectUrl));
       setState(stage, []);
@@ -47266,8 +45298,6 @@ var audioViewer = defineViewerModule({
     });
   }
 });
-
-// packages/ui/dist/vector/index.js
 var VECTOR_MAXIMUM_TEXT_BYTES = 32 * 1024 * 1024;
 var vectorViewer = defineViewerModule({
   abiVersion: 1,
@@ -47278,9 +45308,12 @@ var vectorViewer = defineViewerModule({
     const readout = element(stage, "output", { part: "vector.readout" });
     const image = element(stage, "img", { part: "vector.image" });
     image.alt = "Vector scene preview";
-    const lease = await unknownSourceLease(args.sources, args.slot, "common.view/vector-scene-source");
-    if (lease === void 0)
-      throw new TypeError("vector binding is unavailable");
+    const lease = await unknownSourceLease(
+      args.sources,
+      args.slot,
+      "common.view/vector-scene-source"
+    );
+    if (lease === void 0) throw new TypeError("vector binding is unavailable");
     scope.lease(lease);
     setState(stage, ["loading"]);
     try {
@@ -47296,10 +45329,15 @@ var vectorViewer = defineViewerModule({
       if (textBytes > VECTOR_MAXIMUM_TEXT_BYTES) {
         throw new RangeError(`vector document exceeds the stage budget: ${textBytes} bytes`);
       }
-      const objectUrl = URL.createObjectURL(new Blob([document.text], { type: `${document.mediaType};charset=utf-8` }));
+      const objectUrl = URL.createObjectURL(
+        new Blob([document.text], { type: `${document.mediaType};charset=utf-8` })
+      );
       image.src = objectUrl;
       scope.cleanup(() => URL.revokeObjectURL(objectUrl));
-      setViewerText(readout, `${info.nodes} nodes \xB7 ${info.paths} paths \xB7 ${info.shapes} shapes \xB7 ${info.textNodes} text nodes`);
+      setViewerText(
+        readout,
+        `${info.nodes} nodes \xB7 ${info.paths} paths \xB7 ${info.shapes} shapes \xB7 ${info.textNodes} text nodes`
+      );
       setState(stage, []);
     } catch (error) {
       setState(stage, ["error"]);
@@ -47314,8 +45352,6 @@ var vectorViewer = defineViewerModule({
     });
   }
 });
-
-// packages/ui/dist/video/index.js
 var VIDEO_MAXIMUM_BYTES = 256 * 1024 * 1024;
 var videoViewer = defineViewerModule({
   abiVersion: 1,
@@ -47327,9 +45363,12 @@ var videoViewer = defineViewerModule({
     const player = element(stage, "video", { part: "video.player" });
     player.controls = true;
     player.preload = "metadata";
-    const lease = await unknownSourceLease(args.sources, args.slot, "common.view/video-media-source");
-    if (lease === void 0)
-      throw new TypeError("video binding is unavailable");
+    const lease = await unknownSourceLease(
+      args.sources,
+      args.slot,
+      "common.view/video-media-source"
+    );
+    if (lease === void 0) throw new TypeError("video binding is unavailable");
     scope.lease(lease);
     setState(stage, ["loading"]);
     try {
@@ -47339,10 +45378,15 @@ var videoViewer = defineViewerModule({
         source.encoded(scope.signal)
       ]);
       const media = await collectEncodedMedia(encoded, VIDEO_MAXIMUM_BYTES, scope.signal);
-      const objectUrl = URL.createObjectURL(new Blob([media.bytes], { type: media.mediaType }));
+      const objectUrl = URL.createObjectURL(
+        new Blob([media.bytes], { type: media.mediaType })
+      );
       player.src = objectUrl;
       scope.cleanup(() => URL.revokeObjectURL(objectUrl));
-      setViewerText(readout, `${info.tracks.filter((track) => track.kind === "video").length} video \xB7 ${info.tracks.filter((track) => track.kind === "audio").length} audio \xB7 ${info.durationMs === "unknown" ? "duration unknown" : `${info.durationMs} ms`}`);
+      setViewerText(
+        readout,
+        `${info.tracks.filter((track) => track.kind === "video").length} video \xB7 ${info.tracks.filter((track) => track.kind === "audio").length} audio \xB7 ${info.durationMs === "unknown" ? "duration unknown" : `${info.durationMs} ms`}`
+      );
       setState(stage, []);
     } catch (error) {
       setState(stage, ["error"]);
@@ -47357,8 +45401,6 @@ var videoViewer = defineViewerModule({
     });
   }
 });
-
-// packages/ui/dist/model/orbit.js
 var PITCH_MINIMUM = -1.4;
 var PITCH_MAXIMUM = 1.5;
 var DRAG_RADIANS_PER_PIXEL = 8e-3;
@@ -47385,8 +45427,7 @@ function createOrbitController(initial = {}) {
   const listeners = /* @__PURE__ */ new Set();
   const emit = () => {
     const pose = { yaw, pitch, distanceScale };
-    for (const listener of listeners)
-      listener(pose);
+    for (const listener of listeners) listener(pose);
   };
   const controller = {
     get pose() {
@@ -47421,13 +45462,16 @@ function createOrbitController(initial = {}) {
       emit();
     },
     zoom(wheelDelta) {
-      distanceScale = clamp(distanceScale * (wheelDelta > 0 ? WHEEL_OUT : WHEEL_IN), DISTANCE_MINIMUM, DISTANCE_MAXIMUM);
+      distanceScale = clamp(
+        distanceScale * (wheelDelta > 0 ? WHEEL_OUT : WHEEL_IN),
+        DISTANCE_MINIMUM,
+        DISTANCE_MAXIMUM
+      );
       emit();
     },
     snapTo(axis) {
       const pose = AXIS_POSE[axis];
-      if (pose === void 0)
-        throw new TypeError(`unknown view axis: ${String(axis)}`);
+      if (pose === void 0) throw new TypeError(`unknown view axis: ${String(axis)}`);
       yaw = pose[0];
       pitch = pose[1];
       emit();
@@ -47439,10 +45483,8 @@ function createOrbitController(initial = {}) {
       emit();
     },
     set(pose) {
-      if (pose.yaw !== void 0)
-        yaw = pose.yaw;
-      if (pose.pitch !== void 0)
-        pitch = clamp(pose.pitch, PITCH_MINIMUM, PITCH_MAXIMUM);
+      if (pose.yaw !== void 0) yaw = pose.yaw;
+      if (pose.pitch !== void 0) pitch = clamp(pose.pitch, PITCH_MINIMUM, PITCH_MAXIMUM);
       if (pose.distanceScale !== void 0) {
         distanceScale = clamp(pose.distanceScale, DISTANCE_MINIMUM, DISTANCE_MAXIMUM);
       }
@@ -47453,48 +45495,55 @@ function createOrbitController(initial = {}) {
       let lastX = 0;
       let lastY = 0;
       const options = signal === void 0 ? {} : { signal };
-      host.addEventListener("pointerdown", (event) => {
-        dragging = true;
-        lastX = event.clientX;
-        lastY = event.clientY;
-        host.setPointerCapture(event.pointerId);
-      }, options);
-      host.addEventListener("pointermove", (event) => {
-        if (!dragging)
-          return;
-        controller.orbit(event.clientX - lastX, event.clientY - lastY);
-        lastX = event.clientX;
-        lastY = event.clientY;
-      }, options);
+      host.addEventListener(
+        "pointerdown",
+        (event) => {
+          dragging = true;
+          lastX = event.clientX;
+          lastY = event.clientY;
+          host.setPointerCapture(event.pointerId);
+        },
+        options
+      );
+      host.addEventListener(
+        "pointermove",
+        (event) => {
+          if (!dragging) return;
+          controller.orbit(event.clientX - lastX, event.clientY - lastY);
+          lastX = event.clientX;
+          lastY = event.clientY;
+        },
+        options
+      );
       const stop = () => {
         dragging = false;
       };
       host.addEventListener("pointerup", stop, options);
       host.addEventListener("pointercancel", stop, options);
-      host.addEventListener("wheel", (event) => {
-        event.preventDefault();
-        controller.zoom(event.deltaY);
-      }, { passive: false, ...options });
-      host.addEventListener("keydown", (event) => {
-        const step = event.shiftKey ? 40 : 12;
-        if (event.key === "ArrowLeft")
-          controller.orbit(-step, 0);
-        else if (event.key === "ArrowRight")
-          controller.orbit(step, 0);
-        else if (event.key === "ArrowUp")
-          controller.orbit(0, -step);
-        else if (event.key === "ArrowDown")
-          controller.orbit(0, step);
-        else if (event.key === "+" || event.key === "=")
-          controller.zoom(-1);
-        else if (event.key === "-")
-          controller.zoom(1);
-        else if (event.key === "0")
-          controller.reset();
-        else
-          return;
-        event.preventDefault();
-      }, options);
+      host.addEventListener(
+        "wheel",
+        (event) => {
+          event.preventDefault();
+          controller.zoom(event.deltaY);
+        },
+        { passive: false, ...options }
+      );
+      host.addEventListener(
+        "keydown",
+        (event) => {
+          const step = event.shiftKey ? 40 : 12;
+          if (event.key === "ArrowLeft") controller.orbit(-step, 0);
+          else if (event.key === "ArrowRight") controller.orbit(step, 0);
+          else if (event.key === "ArrowUp") controller.orbit(0, -step);
+          else if (event.key === "ArrowDown") controller.orbit(0, step);
+          else if (event.key === "+" || event.key === "=") controller.zoom(-1);
+          else if (event.key === "-") controller.zoom(1);
+          else if (event.key === "0") controller.reset();
+          else return;
+          event.preventDefault();
+        },
+        options
+      );
       return stop;
     },
     onChange(listener) {
@@ -47504,8 +45553,6 @@ function createOrbitController(initial = {}) {
   };
   return controller;
 }
-
-// packages/ui/dist/model/gizmo.js
 var SVG_NS = "http://www.w3.org/2000/svg";
 var GIZMO_SIZE = 80;
 var CENTER = GIZMO_SIZE / 2;
@@ -47565,8 +45612,7 @@ function createViewGizmo(host, options = {}) {
     const activate = () => options.onAxis?.(spec.key);
     hit.addEventListener("click", activate);
     hit.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter" && event.key !== " ")
-        return;
+      if (event.key !== "Enter" && event.key !== " ") return;
       event.preventDefault();
       activate();
     });
@@ -47615,8 +45661,6 @@ function createViewGizmo(host, options = {}) {
     }
   };
 }
-
-// packages/ui/dist/model/index.js
 var MODEL_MAXIMUM_PRIMITIVE_BYTES = 64 * 1024 * 1024;
 async function loadModelStage(source, signal) {
   const [info, meshes] = await Promise.all([
@@ -47629,16 +45673,14 @@ async function loadModelStage(source, signal) {
 }
 function drawPrimitive(canvas, primitive, basis, distanceScale) {
   const context = canvas.getContext("2d");
-  if (context === null)
-    throw new TypeError("2d canvas context is unavailable");
+  if (context === null) throw new TypeError("2d canvas context is unavailable");
   const width = 720;
   const height = 480;
   canvas.width = width;
   canvas.height = height;
   context.clearRect(0, 0, width, height);
   const positions = primitive.positions;
-  if (positions.length < 3)
-    return;
+  if (positions.length < 3) return;
   if (positions.length % 3 !== 0 || !positions.every(Number.isFinite)) {
     throw new TypeError("model primitive positions are malformed");
   }
@@ -47741,14 +45783,20 @@ var modelViewer = defineViewerModule({
     canvas.tabIndex = 0;
     const camera = createOrbitController();
     const gizmo = createViewGizmo(stage, { onAxis: (axis) => camera.snapTo(axis) });
-    const lease = await unknownSourceLease(args.sources, args.slot, "common.view/model-scene-source");
-    if (lease === void 0)
-      throw new TypeError("model binding is unavailable");
+    const lease = await unknownSourceLease(
+      args.sources,
+      args.slot,
+      "common.view/model-scene-source"
+    );
+    if (lease === void 0) throw new TypeError("model binding is unavailable");
     scope.lease(lease);
     setState(stage, ["loading"]);
     try {
       const model = await loadModelStage(lease.value, scope.signal);
-      setViewerText(readout, `${model.info.nodes} nodes \xB7 ${model.info.meshes} meshes \xB7 ${model.info.primitives} primitives \xB7 ${model.info.materials} materials`);
+      setViewerText(
+        readout,
+        `${model.info.nodes} nodes \xB7 ${model.info.meshes} meshes \xB7 ${model.info.primitives} primitives \xB7 ${model.info.materials} materials`
+      );
       if (model.primitive === void 0) {
         canvas.remove();
         gizmo.destroy();
@@ -47792,8 +45840,6 @@ var modelViewer = defineViewerModule({
     });
   }
 });
-
-// packages/ui/dist/editor/index.js
 var TEXT_DATA_SOURCE = Object.freeze({
   bindingId: bindingId("editor-text"),
   contract: "common.view/text-data-source",
@@ -47806,14 +45852,16 @@ async function loadText(source, maximum, signal) {
   const info = await source.info();
   if (info.bytes > BigInt(maximum))
     throw new RangeError("editor source exceeds bounded text budget");
-  const slice = await source.slice({
-    kind: "from-line",
-    line: 0,
-    lineCount: info.lines === "unknown" ? Number.MAX_SAFE_INTEGER : Math.max(1, info.lines),
-    maxBytes: maximum
-  }, signal);
-  if (!slice.complete)
-    throw new RangeError("editor source requires a streaming editor");
+  const slice = await source.slice(
+    {
+      kind: "from-line",
+      line: 0,
+      lineCount: info.lines === "unknown" ? Number.MAX_SAFE_INTEGER : Math.max(1, info.lines),
+      maxBytes: maximum
+    },
+    signal
+  );
+  if (!slice.complete) throw new RangeError("editor source requires a streaming editor");
   return slice.text;
 }
 function defaultChangeSet(text, targets) {
@@ -47842,8 +45890,7 @@ function createTextEditorModule(options = {}) {
       root.dataset["modkitEditor"] = "text";
       root.dataset["revision"] = args.descriptor.revision;
       const lease = await args.sources.get(TEXT_DATA_SOURCE);
-      if (lease === void 0)
-        throw new TypeError("text editor data-source binding is unavailable");
+      if (lease === void 0) throw new TypeError("text editor data-source binding is unavailable");
       scope.lease(lease);
       const toolbar = element(root, "div", {
         className: "modkit-editor__toolbar",
@@ -47870,8 +45917,7 @@ function createTextEditorModule(options = {}) {
       let lastReceipt;
       const request = async (plan) => args.authorization.request(plan, { signal: scope.signal });
       const saveChange = async () => {
-        if (busy || scope.signal.aborted)
-          return;
+        if (busy || scope.signal.aborted) return;
         busy = true;
         save.disabled = true;
         setViewerText(status, "Validating\u2026");
@@ -47894,7 +45940,10 @@ function createTextEditorModule(options = {}) {
             signal: scope.signal
           });
           if (prepared.state !== "ready") {
-            setViewerText(status, prepared.state === "conflict" ? "Conflict: source changed" : rejectionText("Save rejected", prepared.reason));
+            setViewerText(
+              status,
+              prepared.state === "conflict" ? "Conflict: source changed" : rejectionText("Save rejected", prepared.reason)
+            );
             return;
           }
           setViewerText(status, "Saving\u2026");
@@ -47910,7 +45959,10 @@ function createTextEditorModule(options = {}) {
             redo.disabled = true;
             setViewerText(status, "Saved");
           } else {
-            setViewerText(status, result.state === "not-applied" ? rejectionText("Not saved", result.reason) : result.state === "rolled-back" ? "Write failed; changes rolled back" : "Partially saved; recovery is available");
+            setViewerText(
+              status,
+              result.state === "not-applied" ? rejectionText("Not saved", result.reason) : result.state === "rolled-back" ? "Write failed; changes rolled back" : "Partially saved; recovery is available"
+            );
           }
         } catch (error) {
           setViewerText(status, error instanceof Error ? error.message : String(error));
@@ -47920,8 +45972,7 @@ function createTextEditorModule(options = {}) {
         }
       };
       const replay = async (kind) => {
-        if (busy || lastPlan === void 0 || lastReceipt === void 0)
-          return;
+        if (busy || lastPlan === void 0 || lastReceipt === void 0) return;
         busy = true;
         const authorization = await request(lastPlan);
         if (authorization === void 0) {
@@ -47938,7 +45989,10 @@ function createTextEditorModule(options = {}) {
           redo.disabled = kind === "redo";
           setViewerText(status, kind === "undo" ? "Undone" : "Redone");
         } else {
-          setViewerText(status, result.state === "not-applied" ? rejectionText(`${kind === "undo" ? "Undo" : "Redo"} rejected`, result.reason) : `${kind === "undo" ? "Undo" : "Redo"} failed`);
+          setViewerText(
+            status,
+            result.state === "not-applied" ? rejectionText(`${kind === "undo" ? "Undo" : "Redo"} rejected`, result.reason) : `${kind === "undo" ? "Undo" : "Redo"} failed`
+          );
         }
         busy = false;
       };
@@ -47963,8 +46017,6 @@ function createTextEditorModule(options = {}) {
   });
 }
 var textEditor = createTextEditorModule();
-
-// packages/ui/dist/hex-editor/index.js
 var BYTE_RANGE_SOURCE = Object.freeze({
   bindingId: bindingId("editor-hex"),
   contract: "common.view/byte-range-source",
@@ -47973,8 +46025,7 @@ var BYTE_RANGE_SOURCE = Object.freeze({
 var HEX_BYTE = /^[0-9a-f]{1,2}$/iu;
 function hexChangeSet(runs, targets) {
   const target = targets[0];
-  if (target === void 0)
-    throw new TypeError("the edit session carries no target to write to");
+  if (target === void 0) throw new TypeError("the edit session carries no target to write to");
   return {
     targets,
     edits: runs.map((run) => ({
@@ -48007,8 +46058,7 @@ var hexEditor = {
     const scope = new ViewerMountScope(args.signal);
     const root = createSurface(args.container, "Hex editor");
     const lease = await args.sources.get(BYTE_RANGE_SOURCE);
-    if (lease === void 0)
-      throw new TypeError("hex editor binding is unavailable");
+    if (lease === void 0) throw new TypeError("hex editor binding is unavailable");
     scope.lease(lease);
     const source = lease.value;
     const model = new HexWindowModel(source);
@@ -48042,17 +46092,14 @@ var hexEditor = {
     const asciiCells = /* @__PURE__ */ new Map();
     const printable = (value2) => value2 >= 32 && value2 <= 126 ? String.fromCharCode(value2) : ".";
     const announce = () => {
-      if (pending.size === 0)
-        return;
+      if (pending.size === 0) return;
       const runs = coalesceHexEdits([...pending.values()]);
       void args.edit.propose(hexChangeSet(runs, args.edit.targets));
     };
     const setByte = (absolute, base, next) => {
       const key3 = absolute.toString(10);
-      if (next === base)
-        pending.delete(key3);
-      else
-        pending.set(key3, { offset: absolute, before: base, after: next });
+      if (next === base) pending.delete(key3);
+      else pending.set(key3, { offset: absolute, before: base, after: next });
       const hex = hexCells.get(key3);
       if (hex !== void 0) {
         hex.textContent = next.toString(16).padStart(2, "0");
@@ -48102,11 +46149,9 @@ var hexEditor = {
           hexCells.set(absolute.toString(10), cell);
           cell.addEventListener("beforeinput", (event) => {
             const data = event.data;
-            if (data === null)
-              return;
+            if (data === null) return;
             const current = (cell.textContent ?? "").replace(/\s/gu, "");
-            if (!/^[0-9a-f]$/iu.test(data) || current.length >= 2)
-              event.preventDefault();
+            if (!/^[0-9a-f]$/iu.test(data) || current.length >= 2) event.preventDefault();
           });
           cell.addEventListener("blur", () => {
             const text = (cell.textContent ?? "").trim();
@@ -48130,8 +46175,7 @@ var hexEditor = {
           asciiCells.set(absolute.toString(10), glyph);
           glyph.addEventListener("beforeinput", (event) => {
             const data = event.data;
-            if (data === null)
-              return;
+            if (data === null) return;
             if (data.length !== 1 || data.charCodeAt(0) < 32 || data.charCodeAt(0) > 126) {
               event.preventDefault();
             }
@@ -48151,8 +46195,7 @@ var hexEditor = {
       syncDirty();
     };
     const commit = async () => {
-      if (pending.size === 0)
-        return;
+      if (pending.size === 0) return;
       const runs = coalesceHexEdits([...pending.values()]);
       const change = hexChangeSet(runs, args.edit.targets);
       setViewerText(status, "Validating\u2026");
@@ -48160,7 +46203,10 @@ var hexEditor = {
       if (!validation.valid) {
         setState(root, ["error"]);
         const first = validation.diagnostics[0];
-        setViewerText(status, first === void 0 ? "Rejected by validation" : `Rejected: ${first.message}`);
+        setViewerText(
+          status,
+          first === void 0 ? "Rejected by validation" : `Rejected: ${first.message}`
+        );
         return;
       }
       const plan = await args.edit.plan(change);
@@ -48172,7 +46218,10 @@ var hexEditor = {
       const prepared = await args.commit.prepare(plan, { grant: authorization.grant });
       if (prepared.state !== "ready") {
         setState(root, ["error"]);
-        setViewerText(status, prepared.state === "conflict" ? "Conflict: the source changed" : `Prepare rejected: ${prepared.reason}`);
+        setViewerText(
+          status,
+          prepared.state === "conflict" ? "Conflict: the source changed" : `Prepare rejected: ${prepared.reason}`
+        );
         return;
       }
       const receipt = await args.commit.commit(prepared.prepared, {
@@ -48180,27 +46229,35 @@ var hexEditor = {
       });
       if (receipt.state !== "committed") {
         setState(root, ["error"]);
-        setViewerText(status, receipt.state === "not-applied" ? `Save rejected: ${receipt.reason}` : `Save ${receipt.state}`);
+        setViewerText(
+          status,
+          receipt.state === "not-applied" ? `Save rejected: ${receipt.reason}` : `Save ${receipt.state}`
+        );
         return;
       }
       const updated = new Uint8Array(original);
       for (const run of runs) {
         const start = Number(run.offset - windowOffset);
-        if (start >= 0 && start + run.bytes.length <= updated.length)
-          updated.set(run.bytes, start);
+        if (start >= 0 && start + run.bytes.length <= updated.length) updated.set(run.bytes, start);
       }
       original = updated;
       pending.clear();
       drawWindow();
       setState(root, []);
-      setViewerText(status, `Committed ${runs.length} range(s) \u2014 reopen the file before editing it again`);
+      setViewerText(
+        status,
+        `Committed ${runs.length} range(s) \u2014 reopen the file before editing it again`
+      );
     };
     go.addEventListener("click", () => void renderWindow());
     revert.addEventListener("click", () => void renderWindow());
     save.addEventListener("click", () => {
       commit().catch((error) => {
         setState(root, ["error"]);
-        setViewerText(status, `Save failed: ${error instanceof Error ? error.message : String(error)}`);
+        setViewerText(
+          status,
+          `Save failed: ${error instanceof Error ? error.message : String(error)}`
+        );
       });
     });
     await renderWindow();
@@ -48216,60 +46273,1868 @@ var hexEditor = {
     };
   }
 };
-
-// packages/ui/dist/workbench/index.js
-function createWorkbench(document, options) {
+var WORD = /[A-Za-z0-9_]/u;
+function isWordChar(character) {
+  return character.length > 0 && WORD.test(character);
+}
+function hasWordBoundary(text, start, end) {
+  return !isWordChar(text.charAt(start - 1)) && !isWordChar(text.charAt(end));
+}
+function wholeWordSource(source) {
+  return `(?<![A-Za-z0-9_])(?:${source})(?![A-Za-z0-9_])`;
+}
+function escapeRegExp(text) {
+  return text.replace(/[\\^$+?.()|[\]{}*]/gu, "\\$&");
+}
+function globSource(query) {
+  return `^${query.split("*").map(escapeRegExp).join(".*")}$`;
+}
+function compileSearch(query, options = {}) {
+  const caseSensitive = options.caseSensitive ?? false;
+  const wholeWord = options.wholeWord ?? false;
+  const mode = options.mode ?? "plain";
+  if (query.length === 0) return { kind: "empty" };
+  if (mode === "glob") {
+    if (!query.includes("*")) {
+      return {
+        kind: "plain",
+        needle: caseSensitive ? query : query.toLowerCase(),
+        caseSensitive,
+        wholeWord
+      };
+    }
+    try {
+      return { kind: "regex", regex: new RegExp(globSource(query), caseSensitive ? "u" : "iu") };
+    } catch (error) {
+      return { kind: "invalid", message: describe(error) };
+    }
+  }
+  if (mode === "plain") {
+    return {
+      kind: "plain",
+      needle: caseSensitive ? query : query.toLowerCase(),
+      caseSensitive,
+      wholeWord
+    };
+  }
+  try {
+    const source = wholeWord ? wholeWordSource(query) : query;
+    return { kind: "regex", regex: new RegExp(source, caseSensitive ? "u" : "iu") };
+  } catch (error) {
+    return { kind: "invalid", message: describe(error) };
+  }
+}
+function describe(error) {
+  return error instanceof Error ? error.message : "Invalid regular expression";
+}
+function matches2(text, compiled) {
+  switch (compiled.kind) {
+    case "empty":
+      return true;
+    case "invalid":
+      return false;
+    case "regex":
+      return compiled.regex.test(text);
+    case "plain":
+      return matchRanges(text, compiled, true).length > 0;
+    default:
+      return false;
+  }
+}
+function matchRanges(text, compiled, firstOnly = false) {
+  if (compiled.kind === "empty" || compiled.kind === "invalid") return [];
+  if (compiled.kind === "regex") {
+    const ranges2 = [];
+    const scanner = new RegExp(
+      compiled.regex.source,
+      compiled.regex.flags.includes("g") ? compiled.regex.flags : `${compiled.regex.flags}g`
+    );
+    let guard = 0;
+    for (const match of text.matchAll(scanner)) {
+      if (match.index === void 0) continue;
+      const end = match.index + match[0].length;
+      ranges2.push({ start: match.index, end });
+      if (firstOnly) break;
+      if (match[0].length === 0) break;
+      guard += 1;
+      if (guard > 1e4) break;
+    }
+    return ranges2;
+  }
+  const needle = compiled.needle;
+  if (needle.length === 0) return [];
+  const haystack = compiled.caseSensitive ? text : text.toLowerCase();
+  const ranges = [];
+  let at = haystack.indexOf(needle);
+  while (at >= 0) {
+    const end = at + needle.length;
+    if (!compiled.wholeWord || hasWordBoundary(text, at, end)) {
+      ranges.push({ start: at, end });
+      if (firstOnly) break;
+    }
+    at = haystack.indexOf(needle, at + Math.max(1, needle.length));
+  }
+  return ranges;
+}
+function createFileTree(document, options) {
   const root = document.createElement("div");
-  root.className = "modkit-viewer modkit-workbench";
-  setPart(root, "workbench");
-  const titlebar = document.createElement("header");
-  titlebar.textContent = safeViewerText(options.title, 256);
-  setPart(titlebar, "workbench.titlebar");
-  const activitybar = document.createElement("nav");
-  activitybar.setAttribute("aria-label", "Workbench activities");
-  setPart(activitybar, "workbench.activitybar");
-  const sidebar = document.createElement("aside");
-  setPart(sidebar, "workbench.sidebar");
-  const main = document.createElement("main");
-  setPart(main, "workbench.main");
-  const panel = document.createElement("section");
-  setPart(panel, "workbench.panel");
-  const statusbar = document.createElement("footer");
-  setPart(statusbar, "workbench.statusbar");
-  const hostStatus = document.createElement("span");
-  setPart(hostStatus, "workbench.host-status");
-  statusbar.append(hostStatus);
-  root.append(titlebar, activitybar, sidebar, main, panel, statusbar);
-  const setHostState = (state) => {
-    const reasons = state.degradedReasons ?? [];
-    hostStatus.textContent = `${safeViewerText(state.label, 128)} \xB7 ${state.facilities.length} facilities`;
-    hostStatus.title = reasons.length === 0 ? state.facilities.join(", ") : reasons.join("\n");
-    const states = reasons.length === 0 ? [] : ["degraded"];
-    setState(hostStatus, states);
+  root.className = "modkit-filetree";
+  setPart(root, "filetree");
+  const toolbar = document.createElement("div");
+  toolbar.className = "modkit-filetree__toolbar";
+  toolbar.setAttribute("role", "toolbar");
+  toolbar.setAttribute("aria-label", `${options.label} actions`);
+  setPart(toolbar, "filetree.toolbar");
+  root.append(toolbar);
+  const list = document.createElement("div");
+  list.className = "modkit-filetree__list";
+  list.setAttribute("role", "tree");
+  list.setAttribute("aria-label", options.label);
+  list.tabIndex = 0;
+  setPart(list, "filetree.list");
+  root.append(list);
+  const rows = /* @__PURE__ */ new Map();
+  let order = [];
+  let active;
+  const controller = new AbortController();
+  const setActive = (row, focus = true) => {
+    if (active !== void 0) {
+      active.element.setAttribute("aria-selected", "false");
+      setState(active.element, []);
+      active.element.tabIndex = -1;
+    }
+    active = row;
+    if (row === void 0) return;
+    row.element.setAttribute("aria-selected", "true");
+    setState(row.element, ["selected"]);
+    row.element.tabIndex = 0;
+    if (focus) row.element.focus();
+    options.onSelect?.(row.node);
   };
-  const replace = (target, content) => {
-    target.replaceChildren(...content === void 0 ? [] : [content]);
+  const rebuildOrder = () => {
+    order = [...rows.values()].filter((row) => row.element.isConnected && row.element.offsetParent !== null).sort((left, right) => {
+      const position = left.element.compareDocumentPosition(right.element);
+      return position & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+    });
   };
-  setHostState(options.host ?? {
-    label: "Host unavailable",
-    facilities: [],
-    degradedReasons: ["No host profile"]
+  const renderRow = (node, depth, host) => {
+    const element2 = document.createElement("div");
+    element2.className = "modkit-filetree__node";
+    element2.setAttribute("role", "treeitem");
+    element2.setAttribute("aria-level", String(depth + 1));
+    element2.setAttribute("aria-selected", "false");
+    element2.tabIndex = -1;
+    element2.dataset["nodeId"] = node.id;
+    if (node.kind !== void 0) element2.dataset["kind"] = node.kind;
+    setPart(element2, "filetree.node");
+    const line = document.createElement("div");
+    line.className = "modkit-filetree__row";
+    setPart(line, "filetree.row");
+    setToken(line, "tree.indent-level", String(depth));
+    element2.append(line);
+    const twisty = document.createElement("span");
+    twisty.className = "modkit-filetree__twisty";
+    twisty.setAttribute("aria-hidden", "true");
+    setPart(twisty, "filetree.twisty");
+    twisty.textContent = node.hasChildren ? "\u203A" : "";
+    line.append(twisty);
+    if (node.icon !== void 0) {
+      const icon = document.createElement("span");
+      icon.className = "modkit-filetree__icon";
+      icon.setAttribute("aria-hidden", "true");
+      icon.textContent = safeViewerText(node.icon, 4);
+      setPart(icon, "filetree.icon");
+      line.append(icon);
+    }
+    const label = document.createElement("span");
+    label.className = "modkit-filetree__label";
+    label.textContent = safeViewerText(node.label, 512);
+    setPart(label, "filetree.label");
+    line.append(label);
+    if (node.badge !== void 0) {
+      const badge = document.createElement("span");
+      badge.className = "modkit-filetree__badge";
+      badge.textContent = safeViewerText(node.badge, 32);
+      setPart(badge, "filetree.badge");
+      line.append(badge);
+    }
+    const childrenHost = document.createElement("div");
+    childrenHost.className = "modkit-filetree__children";
+    childrenHost.setAttribute("role", "group");
+    childrenHost.hidden = true;
+    setPart(childrenHost, "filetree.children");
+    element2.append(childrenHost);
+    const row = { node, depth, element: element2, childrenHost, expanded: false, loaded: false };
+    if (node.hasChildren) element2.setAttribute("aria-expanded", "false");
+    line.addEventListener("click", () => {
+      setActive(row);
+      if (node.hasChildren) void toggle(row);
+      else options.onActivate?.(node);
+    });
+    line.addEventListener("dblclick", () => options.onActivate?.(node));
+    host.append(element2);
+    rows.set(node.id, row);
+    return row;
+  };
+  const loadInto = async (row, host, depth) => {
+    const children = await options.loadChildren(row?.node, controller.signal);
+    host.replaceChildren();
+    if (children.length === 0 && row === void 0) {
+      const empty = document.createElement("p");
+      empty.className = "modkit-filetree__empty";
+      empty.textContent = "Nothing to show.";
+      setPart(empty, "filetree.empty");
+      host.append(empty);
+      return;
+    }
+    for (const child of children) renderRow(child, depth, host);
+    if (row !== void 0) row.loaded = true;
+    applyFilter();
+    rebuildOrder();
+  };
+  const toggle = async (row) => {
+    if (!row.node.hasChildren) return;
+    row.expanded = !row.expanded;
+    row.element.setAttribute("aria-expanded", String(row.expanded));
+    row.childrenHost.hidden = !row.expanded;
+    setState(row.element, row.expanded ? ["active"] : []);
+    if (row.expanded && !row.loaded) {
+      setState(row.element, ["loading"]);
+      await loadInto(row, row.childrenHost, row.depth + 1);
+      setState(row.element, ["active"]);
+    }
+    rebuildOrder();
+  };
+  function applyFilter() {
+    const predicate = options.matches;
+    if (predicate === void 0) {
+      for (const row of rows.values()) row.element.hidden = false;
+      rebuildOrder();
+      return;
+    }
+    const keep = /* @__PURE__ */ new Set();
+    const visit = (row) => {
+      const children = [...rows.values()].filter(
+        (other) => other.element.parentElement === row.childrenHost
+      );
+      let descendant = false;
+      for (const child of children) descendant = visit(child) || descendant;
+      const self = predicate(row.node);
+      if (self || descendant) keep.add(row.node.id);
+      return self || descendant;
+    };
+    for (const row of rows.values()) {
+      if (row.element.parentElement === list) visit(row);
+    }
+    for (const row of rows.values()) row.element.hidden = !keep.has(row.node.id);
+    rebuildOrder();
+  }
+  list.addEventListener("keydown", (event) => {
+    if (order.length === 0) rebuildOrder();
+    const index = active === void 0 ? -1 : order.indexOf(active);
+    const move = (to) => {
+      const next = order[Math.max(0, Math.min(order.length - 1, to))];
+      if (next !== void 0) setActive(next);
+    };
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        move(index + 1);
+        break;
+      case "ArrowUp":
+        event.preventDefault();
+        move(index - 1);
+        break;
+      case "ArrowRight":
+        event.preventDefault();
+        if (active !== void 0 && active.node.hasChildren && !active.expanded) void toggle(active);
+        else move(index + 1);
+        break;
+      case "ArrowLeft":
+        event.preventDefault();
+        if (active !== void 0 && active.expanded) void toggle(active);
+        else move(index - 1);
+        break;
+      case "Home":
+        event.preventDefault();
+        move(0);
+        break;
+      case "End":
+        event.preventDefault();
+        move(order.length - 1);
+        break;
+      case "Enter":
+      case " ":
+        event.preventDefault();
+        if (active !== void 0) {
+          if (active.node.hasChildren) void toggle(active);
+          else options.onActivate?.(active.node);
+        }
+        break;
+      default:
+        break;
+    }
   });
-  return Object.freeze({
+  const refresh = async () => {
+    rows.clear();
+    active = void 0;
+    await loadInto(void 0, list, 0);
+  };
+  return {
     root,
-    activitybar,
-    sidebar,
-    main,
-    panel,
-    setHostState,
-    setSidebar: (content) => replace(sidebar, content),
-    setMain: (content) => replace(main, content),
-    setPanel: (content) => replace(panel, content),
-    dispose: () => root.remove()
+    toolbar,
+    refresh,
+    collapseAll() {
+      for (const row of rows.values()) {
+        if (!row.expanded) continue;
+        row.expanded = false;
+        row.childrenHost.hidden = true;
+        row.element.setAttribute("aria-expanded", "false");
+        setState(row.element, []);
+      }
+      rebuildOrder();
+    },
+    async expandAll() {
+      for (const row of [...rows.values()]) {
+        if (row.node.hasChildren && !row.expanded) await toggle(row);
+      }
+    },
+    applyFilter,
+    selected: () => active?.node,
+    destroy() {
+      controller.abort("file-tree-destroyed");
+      root.remove();
+    }
+  };
+}
+var TOGGLES = [
+  { id: "case", label: "Aa", title: "Match case" },
+  { id: "word", label: "ab", title: "Match whole word" },
+  { id: "regex", label: ".*", title: "Use regular expression" }
+];
+var GLOB_TOGGLE = { id: "glob", label: "*", title: "Use glob pattern" };
+function createSearchField(document, options) {
+  const root = document.createElement("div");
+  root.className = "modkit-search";
+  setPart(root, "search");
+  root.setAttribute("role", "search");
+  const input = document.createElement("input");
+  input.type = "search";
+  input.className = "modkit-search__input";
+  input.placeholder = options.placeholder ?? "Filter\u2026";
+  input.setAttribute("aria-label", options.label ?? "Filter");
+  input.value = options.initial?.query ?? "";
+  setPart(input, "search.input");
+  root.append(input);
+  const toggleBar = document.createElement("div");
+  toggleBar.className = "modkit-search__toggles";
+  setPart(toggleBar, "search.toggles");
+  toggleBar.setAttribute("role", "group");
+  toggleBar.setAttribute("aria-label", "Filter options");
+  root.append(toggleBar);
+  const specs = options.allowGlob === true ? [...TOGGLES, GLOB_TOGGLE] : TOGGLES;
+  const buttons = /* @__PURE__ */ new Map();
+  for (const spec of specs) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "modkit-search__toggle";
+    button.textContent = spec.label;
+    button.title = spec.title;
+    button.setAttribute("aria-label", spec.title);
+    button.setAttribute("aria-pressed", "false");
+    setPart(button, "search.toggle");
+    toggleBar.append(button);
+    buttons.set(spec.id, button);
+  }
+  const status = document.createElement("output");
+  status.className = "modkit-search__status";
+  setPart(status, "search.status");
+  root.append(status);
+  const message = document.createElement("p");
+  message.className = "modkit-search__message";
+  setPart(message, "search.message");
+  root.append(message);
+  let nav;
+  if (options.onNavigate !== void 0) {
+    nav = document.createElement("div");
+    nav.className = "modkit-search__nav";
+    setPart(nav, "search.nav");
+    for (const [label, direction, title] of [
+      ["\u2039", -1, "Previous match"],
+      ["\u203A", 1, "Next match"]
+    ]) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = label;
+      button.title = title;
+      button.setAttribute("aria-label", title);
+      button.addEventListener("click", () => options.onNavigate?.(direction));
+      nav.append(button);
+    }
+    root.append(nav);
+  }
+  let caseSensitive = options.initial?.caseSensitive ?? false;
+  let wholeWord = options.initial?.wholeWord ?? false;
+  let mode = options.initial?.mode ?? "plain";
+  const syncToggleUi = () => {
+    buttons.get("case")?.setAttribute("aria-pressed", String(caseSensitive));
+    buttons.get("word")?.setAttribute("aria-pressed", String(wholeWord));
+    buttons.get("regex")?.setAttribute("aria-pressed", String(mode === "regex"));
+    buttons.get("glob")?.setAttribute("aria-pressed", String(mode === "glob"));
+    for (const [id, button] of buttons) {
+      const pressed = button.getAttribute("aria-pressed") === "true";
+      setState(button, pressed ? ["active"] : []);
+      if (id === "word") button.disabled = mode === "glob";
+    }
+  };
+  let current = buildState();
+  function buildState() {
+    const query = input.value;
+    return {
+      query,
+      caseSensitive,
+      wholeWord,
+      mode,
+      compiled: compileSearch(query, { caseSensitive, wholeWord, mode })
+    };
+  }
+  function render2() {
+    const compiled = current.compiled;
+    const invalid2 = compiled.kind === "invalid";
+    message.textContent = compiled.kind === "invalid" ? compiled.message : "";
+    const count2 = options.countMatches?.(current);
+    const states = [];
+    if (invalid2) states.push("invalid");
+    if (!invalid2 && count2 === 0 && compiled.kind !== "empty") states.push("no-match");
+    setState(root, states);
+    input.setAttribute("aria-invalid", String(invalid2));
+    status.textContent = invalid2 ? "invalid" : compiled.kind === "empty" || count2 === void 0 ? "" : count2 === 1 ? "1 match" : `${count2} matches`;
+    if (nav !== void 0) {
+      for (const button of nav.querySelectorAll("button")) {
+        button.disabled = invalid2 || count2 === void 0 || count2 === 0;
+      }
+    }
+  }
+  let timer;
+  const emit = () => {
+    current = buildState();
+    render2();
+    options.onChange(current);
+  };
+  const schedule = () => {
+    const delay = options.debounceMs ?? 0;
+    if (delay <= 0) {
+      emit();
+      return;
+    }
+    if (timer !== void 0) clearTimeout(timer);
+    timer = setTimeout(emit, delay);
+  };
+  input.addEventListener("input", schedule);
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      options.onNavigate?.(event.shiftKey ? -1 : 1);
+    }
+    if (event.key === "Escape" && input.value !== "") {
+      event.preventDefault();
+      input.value = "";
+      emit();
+    }
+  });
+  buttons.get("case")?.addEventListener("click", () => {
+    caseSensitive = !caseSensitive;
+    syncToggleUi();
+    emit();
+  });
+  buttons.get("word")?.addEventListener("click", () => {
+    wholeWord = !wholeWord;
+    syncToggleUi();
+    emit();
+  });
+  buttons.get("regex")?.addEventListener("click", () => {
+    mode = mode === "regex" ? "plain" : "regex";
+    syncToggleUi();
+    emit();
+  });
+  buttons.get("glob")?.addEventListener("click", () => {
+    mode = mode === "glob" ? "plain" : "glob";
+    syncToggleUi();
+    emit();
+  });
+  syncToggleUi();
+  render2();
+  return {
+    root,
+    get state() {
+      return current;
+    },
+    refresh: render2,
+    focus: () => input.focus(),
+    destroy: () => {
+      if (timer !== void 0) clearTimeout(timer);
+      root.remove();
+    }
+  };
+}
+var EXPLORER_MAXIMUM_BYTES = 64 * 1024 * 1024;
+var extensionOf = (name) => {
+  const dot = name.lastIndexOf(".");
+  return dot <= 0 ? "" : name.slice(dot + 1).toLowerCase();
+};
+var formatBytes = (bytes2) => {
+  if (bytes2 < 1024) return `${bytes2} B`;
+  if (bytes2 < 1024 * 1024) return `${(bytes2 / 1024).toFixed(1)} KiB`;
+  return `${(bytes2 / (1024 * 1024)).toFixed(1)} MiB`;
+};
+function createExplorer(document, options) {
+  const maximumBytes = options.maximumBytes ?? EXPLORER_MAXIMUM_BYTES;
+  const supported = new Set(options.preview.supported.map((item) => item.toLowerCase()));
+  const root = document.createElement("div");
+  root.className = "modkit-viewer modkit-explorer";
+  setPart(root, "explorer");
+  const toolbar = element(root, "div", { part: "explorer.toolbar", role: "toolbar" });
+  toolbar.setAttribute("aria-label", "Explorer actions");
+  if (options.showToolbar === false) toolbar.hidden = true;
+  const sidebar = element(root, "div", { part: "explorer.sidebar" });
+  const previewPane = element(root, "div", { part: "explorer.preview" });
+  const previewHeader = element(previewPane, "div", { part: "explorer.header" });
+  const breadcrumb = element(previewHeader, "div", { part: "explorer.breadcrumb" });
+  const viewPicker = element(previewHeader, "select", {
+    part: "explorer.viewpicker"
+  });
+  viewPicker.setAttribute("aria-label", "Preview view");
+  previewHeader.hidden = true;
+  const stage = element(previewPane, "div", { part: "explorer.stage" });
+  const status = element(root, "output", { part: "explorer.status" });
+  let access;
+  let tree;
+  let query;
+  let mounted;
+  let previewRun;
+  let destroyed = false;
+  const say = (message, state = void 0) => {
+    status.textContent = message;
+    setState(status, state === void 0 ? [] : [state]);
+  };
+  const placeholder = (message) => {
+    stage.replaceChildren();
+    element(stage, "p", { part: "explorer.placeholder", text: message });
+  };
+  const action = (label, title, run) => {
+    const node = element(toolbar, "button", {
+      part: "explorer.action",
+      text: label
+    });
+    node.type = "button";
+    node.title = title;
+    node.addEventListener("click", run);
+    return node;
+  };
+  if (options.openFolder !== void 0) {
+    action("Open folder\u2026", "Grant access to a folder and browse it", () => {
+      void (async () => {
+        try {
+          const next = await options.openFolder?.();
+          if (next !== void 0) await explorer.setAccess(next);
+        } catch (error) {
+          say(`Could not open the folder: ${describe2(error)}`, "error");
+        }
+      })();
+    });
+  }
+  if (options.openFile !== void 0) {
+    action("Open file\u2026", "Open a single file for preview", () => {
+      void (async () => {
+        try {
+          const picked = await options.openFile?.();
+          if (picked === void 0) return;
+          await explorer.setAccess(picked.access);
+          await activate(picked.entry);
+        } catch (error) {
+          say(`Could not open the file: ${describe2(error)}`, "error");
+        }
+      })();
+    });
+  }
+  const registerFileTypes = options.registerFileTypes;
+  if (registerFileTypes !== void 0) {
+    action("Set as default app\u2026", "Register this app for the file types it can preview", () => {
+      void (async () => {
+        try {
+          say(await registerFileTypes());
+        } catch (error) {
+          say(`Could not register file types: ${describe2(error)}`, "error");
+        }
+      })();
+    });
+  }
+  const search = createSearchField(document, {
+    label: "Filter files",
+    placeholder: "Filter",
+    onChange(state) {
+      query = state.query === "" ? void 0 : state.compiled;
+      tree?.applyFilter();
+    }
+  });
+  sidebar.append(search.root);
+  async function unmountPrevious() {
+    previewRun?.abort();
+    previewRun = void 0;
+    if (mounted === void 0) return;
+    const previous = mounted;
+    mounted = void 0;
+    await previous.unmount();
+    previewHeader.hidden = true;
+    breadcrumb.textContent = "";
+    viewPicker.replaceChildren();
+  }
+  viewPicker.addEventListener("change", () => {
+    const current = mounted;
+    if (current === void 0) return;
+    const selected = viewPicker.value;
+    say(`Opening ${breadcrumb.textContent ?? "view"}\u2026`, "loading");
+    void current.show(selected).then(() => {
+      if (mounted === current) say(`${breadcrumb.textContent ?? ""} \xB7 ${selected}`);
+    }).catch((error) => {
+      if (mounted === current) say(`Could not change view: ${describe2(error)}`, "error");
+    });
+  });
+  async function preview(entry2) {
+    if (access === void 0) return;
+    await unmountPrevious();
+    stage.replaceChildren();
+    if (entry2.size !== void 0 && entry2.size > maximumBytes) {
+      placeholder(
+        `${entry2.name} is ${formatBytes(entry2.size)}, over the ${formatBytes(maximumBytes)} preview limit.`
+      );
+      say(`${entry2.name} \u2014 too large`, "error");
+      return;
+    }
+    const run = new AbortController();
+    previewRun = run;
+    say(`Opening ${entry2.name}\u2026`, "loading");
+    try {
+      const bytes2 = await access.read(entry2.id, maximumBytes, run.signal);
+      if (run.signal.aborted) return;
+      const handle = await options.preview.open(stage, entry2, bytes2, run.signal);
+      if (run.signal.aborted) {
+        await handle?.unmount();
+        return;
+      }
+      if (handle === void 0) {
+        placeholder(
+          `Nothing could render \u201C${entry2.name}\u201D. The host publishes no codec for it and no built-in text or hex viewer was configured.`
+        );
+        say(`${entry2.name} \u2014 no viewer`);
+        return;
+      }
+      mounted = handle;
+      breadcrumb.textContent = safeViewerText(entry2.name, 300);
+      viewPicker.replaceChildren(
+        ...handle.views.map((view) => {
+          const option = document.createElement("option");
+          option.value = view.id;
+          option.textContent = view.label;
+          return option;
+        })
+      );
+      viewPicker.value = handle.activeView;
+      viewPicker.hidden = handle.views.length <= 1;
+      previewHeader.hidden = false;
+      say(`${entry2.name} \xB7 ${formatBytes(bytes2.length)}`);
+    } catch (error) {
+      if (run.signal.aborted) return;
+      placeholder(`Could not preview ${entry2.name}: ${describe2(error)}`);
+      say(`${entry2.name} \u2014 failed`, "error");
+    } finally {
+      if (previewRun === run) previewRun = void 0;
+    }
+  }
+  async function buildTree() {
+    tree?.destroy();
+    if (access === void 0) return;
+    const current = access;
+    tree = createFileTree(document, {
+      label: current.label,
+      async loadChildren(node, signal) {
+        const entries = await current.list(node?.id, signal);
+        return [...entries].sort(
+          (a, b) => a.directory === b.directory ? a.name.localeCompare(b.name) : a.directory ? -1 : 1
+        ).map((entry2) => ({
+          id: entry2.id,
+          label: entry2.name,
+          hasChildren: entry2.directory,
+          // No arrow here: the tree draws its own twisty for `hasChildren`, and a second
+          // chevron in the icon slot reads as two arrows on every folder.
+          icon: entry2.directory ? "\u{1F5C0}" : supported.has(extensionOf(entry2.name)) ? "\u25C6" : "\xB7",
+          ...entry2.size === void 0 || entry2.directory ? {} : { badge: formatBytes(entry2.size), size: entry2.size },
+          kind: entry2.directory ? "directory" : extensionOf(entry2.name)
+        }));
+      },
+      onActivate(node) {
+        if (node.kind === "directory") return;
+        void activate(nodeToEntry(node));
+      },
+      matches(node) {
+        return query === void 0 ? true : matches2(node.label, query);
+      }
+    });
+    sidebar.append(tree.root);
+    await tree.refresh();
+  }
+  const nodeToEntry = (node) => ({
+    id: node.id,
+    name: node.label,
+    directory: node.kind === "directory",
+    ...node.size === void 0 ? {} : { size: node.size }
+  });
+  const activate = async (entry2) => {
+    if (options.onOpen !== void 0) options.onOpen(entry2);
+    else await preview(entry2);
+  };
+  if (options.acceptDrop !== void 0) {
+    const dropZone = options.dropTarget ?? (options.onOpen === void 0 ? previewPane : root);
+    setPart(previewPane, "explorer.preview");
+    const stop = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    dropZone.addEventListener("dragover", (event) => {
+      stop(event);
+      if (event.dataTransfer !== null) event.dataTransfer.dropEffect = "copy";
+      setState(dropZone, ["drop-target"]);
+    });
+    dropZone.addEventListener("dragleave", (event) => {
+      stop(event);
+      setState(dropZone, []);
+    });
+    dropZone.addEventListener("drop", (event) => {
+      stop(event);
+      setState(dropZone, []);
+      const transfer = event.dataTransfer;
+      if (transfer === null) return;
+      void (async () => {
+        try {
+          say("Reading dropped item\u2026", "loading");
+          const result = await options.acceptDrop?.(transfer);
+          if (result === void 0) {
+            say("The dropped item could not be read.", "error");
+            return;
+          }
+          if (result.access !== void 0) await explorer.setAccess(result.access);
+          if (result.entry !== void 0) await activate(result.entry);
+          else say("Folder opened. Pick a file in the tree.");
+        } catch (error) {
+          say(`Drop failed: ${describe2(error)}`, "error");
+        }
+      })();
+    });
+  }
+  placeholder(
+    options.openFolder === void 0 ? "Drop a file here to preview it." : "Open a folder, or drop a file here to preview it."
+  );
+  say("Ready");
+  const explorer = {
+    root,
+    async setAccess(next) {
+      access = next;
+      await buildTree();
+      say("");
+    },
+    async open(entry2) {
+      if (access === void 0) throw new TypeError("no file access is configured");
+      await preview(entry2);
+    },
+    destroy() {
+      if (destroyed) return;
+      destroyed = true;
+      void unmountPrevious();
+      tree?.destroy();
+      search.destroy();
+      root.remove();
+    }
+  };
+  return explorer;
+}
+function describe2(error) {
+  return error instanceof Error ? error.message : String(error);
+}
+var encoder2 = new TextEncoder();
+function decodeUtf8(bytes2) {
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes2);
+  } catch {
+    return void 0;
+  }
+}
+function looksTextual(bytes2) {
+  return !bytes2.includes(0) && decodeUtf8(bytes2) !== void 0;
+}
+function indexText(text) {
+  const lineStarts = [0];
+  const kinds = /* @__PURE__ */ new Set();
+  for (const match of text.matchAll(/\r\n|\r|\n/gu)) {
+    const value2 = match[0];
+    kinds.add(value2 === "\r\n" ? "crlf" : value2 === "\r" ? "cr" : "lf");
+    lineStarts.push((match.index ?? 0) + value2.length);
+  }
+  let longestLineBytes = 0;
+  for (let line = 0; line < lineStarts.length; line += 1) {
+    const start = lineStarts[line] ?? text.length;
+    const next = lineStarts[line + 1] ?? text.length;
+    const withoutNewline = text.slice(start, next).replace(/\r\n$|\r$|\n$/u, "");
+    longestLineBytes = Math.max(longestLineBytes, encoder2.encode(withoutNewline).byteLength);
+  }
+  const values = [...kinds];
+  return Object.freeze({
+    lineStarts: Object.freeze(lineStarts),
+    newline: values.length > 1 ? "mixed" : values[0] ?? "lf",
+    longestLineBytes
   });
 }
-
-// packages/ui/dist/index.js
+function ensurePositivePage(value2, name) {
+  if (!Number.isSafeInteger(value2) || value2 <= 0) {
+    throw new RangeError(`${name} must be a positive safe integer`);
+  }
+}
+function ensureLine(value2) {
+  if (!Number.isSafeInteger(value2) || value2 < 0) {
+    throw new RangeError("text line must be a non-negative safe integer");
+  }
+}
+var cursor = (character, line) => `c${character}-l${line}`;
+function parseCursor(value2) {
+  const match = /^c(0|[1-9][0-9]*)-l(0|[1-9][0-9]*)$/u.exec(value2);
+  const character = Number(match?.[1]);
+  const line = Number(match?.[2]);
+  if (match === null || !Number.isSafeInteger(character) || !Number.isSafeInteger(line)) {
+    throw new RangeError("invalid built-in text cursor");
+  }
+  return { character, line };
+}
+function truncateUtf8(value2, maximumBytes) {
+  if (encoder2.encode(value2).byteLength <= maximumBytes) return value2;
+  let result = "";
+  let used = 0;
+  for (const character of value2) {
+    const size = encoder2.encode(character).byteLength;
+    if (used + size > maximumBytes) {
+      if (result === "") throw new RangeError("text page maxBytes cannot fit the next code point");
+      break;
+    }
+    result += character;
+    used += size;
+  }
+  return result;
+}
+function cursorLine(index, character) {
+  let result = 0;
+  for (let line = 1; line < index.lineStarts.length; line += 1) {
+    if ((index.lineStarts[line] ?? Number.MAX_SAFE_INTEGER) > character) break;
+    result = line;
+  }
+  return result;
+}
+function linesInRange(index, fromLine, endCharacter) {
+  let last = fromLine;
+  for (let line = fromLine + 1; line < index.lineStarts.length; line += 1) {
+    if ((index.lineStarts[line] ?? Number.MAX_SAFE_INTEGER) >= endCharacter) break;
+    last = line;
+  }
+  return last - fromLine + 1;
+}
+function builtinTextSource(bytes2) {
+  const text = decodeUtf8(bytes2);
+  if (text === void 0 || bytes2.includes(0)) {
+    throw new TypeError("built-in text source requires complete NUL-free UTF-8 input");
+  }
+  const index = indexText(text);
+  const slice = async (request, signal) => {
+    signal?.throwIfAborted();
+    ensurePositivePage(request.maxBytes, "text page maxBytes");
+    let fromLine;
+    let start;
+    let requestedEnd;
+    if (request.kind === "from-line") {
+      ensureLine(request.line);
+      ensurePositivePage(request.lineCount, "text page lineCount");
+      fromLine = request.line;
+      start = index.lineStarts[fromLine] ?? text.length;
+      requestedEnd = index.lineStarts[fromLine + request.lineCount] ?? text.length;
+    } else {
+      const parsed = parseCursor(request.cursor);
+      if (parsed.character > text.length || parsed.line >= index.lineStarts.length) {
+        throw new RangeError("built-in text cursor points beyond the source");
+      }
+      fromLine = parsed.line;
+      start = parsed.character;
+      requestedEnd = text.length;
+    }
+    const page = truncateUtf8(text.slice(start, requestedEnd), request.maxBytes);
+    const actualEnd = start + page.length;
+    const nextLine = cursorLine(index, actualEnd);
+    const lineCount = page === "" ? 0 : linesInRange(index, fromLine, actualEnd);
+    if (actualEnd >= text.length) {
+      return { complete: true, text: page, fromLine, lineCount };
+    }
+    return {
+      complete: false,
+      text: page,
+      fromLine,
+      lineCount,
+      nextCursor: cursor(actualEnd, nextLine)
+    };
+  };
+  return Object.freeze({
+    async info() {
+      return {
+        bytes: BigInt(bytes2.byteLength),
+        encoding: "utf-8",
+        bom: bytes2[0] === 239 && bytes2[1] === 187 && bytes2[2] === 191,
+        newline: index.newline,
+        lines: index.lineStarts.length,
+        longestLineBytes: index.longestLineBytes
+      };
+    },
+    slice,
+    async *search(query, signal) {
+      signal?.throwIfAborted();
+      const flags = query.caseSensitive === true ? "gu" : "giu";
+      const pattern = query.regex === true ? query.pattern : query.pattern.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+      const expression = new RegExp(pattern, flags);
+      for (const match of text.matchAll(expression)) {
+        signal?.throwIfAborted();
+        const character = match.index ?? 0;
+        const byteOffset = encoder2.encode(text.slice(0, character)).byteLength;
+        const byteLength = encoder2.encode(match[0]).byteLength;
+        yield Object.freeze({
+          byteOffset: uint64(BigInt(byteOffset)),
+          byteLength: uint64(BigInt(byteLength))
+        });
+        if (match[0] === "") expression.lastIndex += 1;
+      }
+    }
+  });
+}
+function builtinByteRangeSource(bytes2) {
+  return Object.freeze({
+    async size() {
+      return BigInt(bytes2.byteLength);
+    },
+    async read(offset, length, signal) {
+      signal?.throwIfAborted();
+      if (offset < 0n || !Number.isSafeInteger(length) || length < 0) {
+        throw new RangeError("byte range must use a non-negative offset and safe length");
+      }
+      if (offset >= BigInt(bytes2.byteLength)) return new Uint8Array();
+      const start = Number(offset);
+      return bytes2.slice(start, Math.min(start + length, bytes2.byteLength));
+    }
+  });
+}
+var traitsOf = (descriptor) => {
+  const traits = descriptor["traits"];
+  if (!Array.isArray(traits)) return [];
+  return traits.map((item) => String(item.id ?? ""));
+};
+var publishedContracts = (descriptor) => {
+  const sources = descriptor["dataSources"];
+  if (!Array.isArray(sources)) return [];
+  return sources.map((item) => String(item.contract ?? ""));
+};
+var stageId = (stage) => stage.id ?? stage.contract;
+function createCodecPreview(options) {
+  const supported = [
+    ...new Set(
+      (options.supported ?? []).map((extension) => extension.replace(/^\./u, "").toLowerCase())
+    )
+  ];
+  return {
+    supported,
+    async open(container, entry2, bytes2, signal) {
+      const externallyOpened = await options.openSession?.(entry2, bytes2, signal);
+      const resolved2 = externallyOpened !== void 0;
+      const session = externallyOpened ?? builtinSession(bytes2, options.fallback);
+      const descriptor = await session.descriptor();
+      const operations = await session.operations?.().catch(() => void 0);
+      const ports = await options.editorPorts?.(entry2, bytes2);
+      const traits = new Set(traitsOf(descriptor));
+      const published = new Set(publishedContracts(descriptor));
+      const candidates = resolved2 ? options.stages : fallbackStages(options.fallback);
+      const planned = session.presentation === void 0 ? candidates : session.presentation.slots.flatMap((slot) => {
+        if (slot.kind !== "stage") return [];
+        const stage = candidates.find((candidate) => stageId(candidate) === slot.slotId);
+        return stage === void 0 ? [] : [stage];
+      });
+      const usable = planned.filter(
+        (stage) => published.has(stage.contract) && (stage.trait === void 0 || traits.has(stage.trait)) && // An editable stage without ports could never save; offering it would be a lie.
+        (stage.editable !== true || ports !== void 0)
+      );
+      if (usable.length === 0) {
+        await session.dispose();
+        return void 0;
+      }
+      let active;
+      const plannedActive = session.presentation?.activeStage;
+      let activeId = plannedActive !== void 0 && usable.some((stage) => stageId(stage) === plannedActive) ? plannedActive : usable[0] === void 0 ? "" : stageId(usable[0]);
+      const show = async (viewId) => {
+        const stage = usable.find((item) => stageId(item) === viewId);
+        if (stage === void 0) throw new Error(`unknown view: ${viewId}`);
+        await active?.unmount();
+        active = void 0;
+        container.replaceChildren();
+        activeId = viewId;
+        const slot = {
+          slotId: `explorer:${stageId(stage)}`,
+          kind: "primary",
+          contributionId: "org.modkitx.ui/explorer",
+          extensionId: "org.modkitx.ui",
+          priority: 100,
+          bindings: [{ bindingId: "content", contract: stage.contract, major: 1 }]
+        };
+        const stagePorts = stage.editable === true ? ports : void 0;
+        const mounted = await stage.module.mount({
+          container,
+          descriptor,
+          slot,
+          ...stagePorts === void 0 ? {} : {
+            edit: stagePorts.edit,
+            commit: stagePorts.commit,
+            payloads: stagePorts.payloads,
+            authorization: stagePorts.authorization
+          },
+          sources: {
+            async get(binding) {
+              const lease = await session.dataSource(binding.contract, binding.major ?? 1);
+              return {
+                value: lease.value,
+                async release() {
+                }
+              };
+            },
+            async getUnknown(binding) {
+              const lease = await session.dataSource(binding.contract, binding.major ?? 1);
+              return {
+                value: lease.value,
+                async release() {
+                }
+              };
+            }
+          },
+          operations,
+          ...signal === void 0 ? {} : { signal }
+        });
+        active = mounted;
+        activeId = viewId;
+      };
+      await show(activeId);
+      return {
+        views: usable.map((stage) => ({ id: stageId(stage), label: stage.label })),
+        get activeView() {
+          return activeId;
+        },
+        show,
+        async unmount() {
+          await active?.unmount();
+          await session.dispose();
+          container.replaceChildren();
+        }
+      };
+    }
+  };
+}
+function fallbackStages(fallback) {
+  const stages = [];
+  if (fallback?.text !== void 0) {
+    stages.push({
+      id: "text",
+      label: "Text",
+      contract: "common.view/text-data-source",
+      module: fallback.text
+    });
+  }
+  if (fallback?.hex !== void 0) {
+    stages.push({
+      id: "hex",
+      label: "Hex",
+      contract: "common.view/byte-range-source",
+      module: fallback.hex
+    });
+  }
+  return stages;
+}
+function builtinSession(bytes2, fallback) {
+  const textual = fallback?.text !== void 0 && looksTextual(bytes2);
+  const sources = {};
+  if (textual) sources["common.view/text-data-source"] = builtinTextSource(bytes2);
+  if (fallback?.hex !== void 0) {
+    sources["common.view/byte-range-source"] = builtinByteRangeSource(bytes2);
+  }
+  return {
+    async descriptor() {
+      return {
+        subjectUri: "memory://explorer/builtin",
+        revision: `content-hash.sha256:builtin-${bytes2.length}`,
+        operations: [],
+        diagnostics: [],
+        // `content.text` only when the bytes really decode: a binary must not claim to be text.
+        traits: textual ? [{ id: "content.text" }] : [],
+        dataSources: Object.keys(sources).map((contract) => ({ contract }))
+      };
+    },
+    async dataSource(contract) {
+      const value2 = sources[contract];
+      if (value2 === void 0) throw new Error(`built-in preview has no ${contract}`);
+      return { value: value2 };
+    },
+    async dispose() {
+    }
+  };
+}
+function fileKindOf(name) {
+  const dot = name.lastIndexOf(".");
+  if (dot <= 0 || dot === name.length - 1) return "file";
+  const kind = name.slice(dot + 1).toLowerCase();
+  return /^[a-z0-9_-]{1,16}$/u.test(kind) ? kind : "file";
+}
+var describe3 = (error) => error instanceof Error ? error.message : String(error);
+var formatBytes2 = (bytes2) => {
+  if (bytes2 < 1024) return `${bytes2} B`;
+  if (bytes2 < 1024 * 1024) return `${(bytes2 / 1024).toFixed(1)} KiB`;
+  return `${(bytes2 / (1024 * 1024)).toFixed(1)} MiB`;
+};
+function createEditorArea(document, options) {
+  const root = document.createElement("div");
+  setPart(root, "explorer.editors");
+  const groups = [];
+  let focused;
+  let destroyed = false;
+  let openMenu;
+  const report = (status) => {
+    options.onStatus?.(status);
+  };
+  function drawBreadcrumb(group, entry2) {
+    group.breadcrumb.replaceChildren();
+    if (entry2 === void 0) return;
+    const parts = entry2.id.split(/[\\/]/u).filter(Boolean);
+    for (const [index, part] of parts.slice(-4).entries()) {
+      if (index > 0) element(group.breadcrumb, "span", { part: "explorer.crumb", text: "\u203A" });
+      element(group.breadcrumb, "span", {
+        part: "explorer.crumb",
+        text: safeViewerText(part, 120)
+      });
+    }
+  }
+  function syncPicker(group) {
+    const handle = group.active?.handle;
+    group.picker.replaceChildren();
+    if (handle === void 0 || handle.views.length === 0) {
+      group.picker.disabled = true;
+      return;
+    }
+    for (const view of handle.views) {
+      const option = document.createElement("option");
+      option.value = view.id;
+      option.textContent = view.label;
+      group.picker.append(option);
+    }
+    group.picker.value = handle.activeView;
+    group.picker.disabled = handle.views.length < 2;
+  }
+  function placeholder(group, message) {
+    group.stage.replaceChildren();
+    element(group.stage, "p", { part: "explorer.placeholder", text: message });
+  }
+  async function activate(group, tab) {
+    for (const other of group.tabs) {
+      const selected = other === tab;
+      other.button.setAttribute("aria-selected", String(selected));
+      setState(other.button, selected ? ["selected"] : []);
+      other.content.hidden = !selected;
+    }
+    group.active = tab;
+    drawBreadcrumb(group, tab.entry);
+    if (tab.handle === void 0) {
+      await load(group, tab);
+      return;
+    }
+    syncPicker(group);
+    report({
+      path: tab.entry.id,
+      view: group.picker.selectedOptions[0]?.textContent ?? "",
+      detail: tab.entry.name,
+      severity: "info"
+    });
+  }
+  async function load(group, tab) {
+    tab.run?.abort();
+    const run = new AbortController();
+    tab.run = run;
+    tab.content.replaceChildren();
+    report({ path: tab.entry.id, detail: `Opening ${tab.entry.name}\u2026`, severity: "busy" });
+    try {
+      const bytes2 = await options.read(tab.entry, run.signal);
+      if (run.signal.aborted) return;
+      const handle = await options.preview.open(tab.content, tab.entry, bytes2, run.signal);
+      if (run.signal.aborted) {
+        await handle?.unmount();
+        return;
+      }
+      if (handle === void 0) {
+        placeholder({ ...group, stage: tab.content }, `Nothing could render \u201C${tab.entry.name}\u201D.`);
+        report({ path: tab.entry.id, detail: "no viewer", severity: "error" });
+        return;
+      }
+      tab.handle = handle;
+      syncPicker(group);
+      report({
+        path: tab.entry.id,
+        view: handle.views.find((view) => view.id === handle.activeView)?.label ?? "",
+        detail: formatBytes2(bytes2.length),
+        severity: "info"
+      });
+    } catch (error) {
+      if (run.signal.aborted) return;
+      placeholder(
+        { ...group, stage: tab.content },
+        `Could not preview ${tab.entry.name}: ${describe3(error)}`
+      );
+      report({ path: tab.entry.id, detail: describe3(error), severity: "error" });
+    }
+  }
+  async function closeTab(group, tab) {
+    if (tab.dirty === true && options.confirmClose !== void 0) {
+      const answer = await options.confirmClose(tab.entry);
+      if (answer === "cancel") return;
+      if (answer === "save") await options.save?.(tab.entry);
+    }
+    tab.run?.abort();
+    await tab.handle?.unmount();
+    const index = group.tabs.indexOf(tab);
+    if (index !== -1) group.tabs.splice(index, 1);
+    tab.button.remove();
+    tab.content.remove();
+    if (group.active === tab) {
+      group.active = void 0;
+      const next = group.tabs[Math.max(0, index - 1)];
+      if (next !== void 0) {
+        await activate(group, next);
+      } else {
+        drawBreadcrumb(group, void 0);
+        syncPicker(group);
+        placeholder(group, "No file open in this group.");
+      }
+    }
+    if (group.tabs.length === 0 && groups.length > 1 && group !== groups[0]) {
+      groups.splice(groups.indexOf(group), 1);
+      group.root.remove();
+      const first = groups[0];
+      if (first !== void 0) focus(first);
+    }
+  }
+  function openTabMenu(group, tab, x, y) {
+    closeTabMenu();
+    const menu = element(root, "div", { part: "explorer.tabmenu" });
+    menu.setAttribute("role", "menu");
+    setToken(menu, "explorer.menu-x", `${Math.round(x)}px`);
+    setToken(menu, "explorer.menu-y", `${Math.round(y)}px`);
+    const item = (label, enabled, run) => {
+      const node = element(menu, "button", { part: "explorer.tabmenu-item", text: label });
+      node.setAttribute("type", "button");
+      node.setAttribute("role", "menuitem");
+      if (!enabled) {
+        node.setAttribute("disabled", "");
+        setState(node, ["disabled"]);
+        return;
+      }
+      node.addEventListener("click", () => {
+        closeTabMenu();
+        run();
+      });
+    };
+    const index = group.tabs.indexOf(tab);
+    const others = group.tabs.filter((other) => other !== tab);
+    const toRight = group.tabs.slice(index + 1);
+    item("Close", true, () => void closeTab(group, tab));
+    item("Close Others", others.length > 0, () => {
+      void (async () => {
+        for (const other of [...others]) await closeTab(group, other);
+      })();
+    });
+    item("Close to the Right", toRight.length > 0, () => {
+      void (async () => {
+        for (const other of [...toRight]) await closeTab(group, other);
+      })();
+    });
+    item("Close All", group.tabs.length > 0, () => {
+      void (async () => {
+        for (const other of [...group.tabs]) await closeTab(group, other);
+      })();
+    });
+    const dismiss = (event) => {
+      if (event.target instanceof Node && menu.contains(event.target)) return;
+      closeTabMenu();
+    };
+    root.ownerDocument.addEventListener("pointerdown", dismiss, { capture: true });
+    root.ownerDocument.addEventListener("keydown", escapeMenu, true);
+    openMenu = { element: menu, dismiss };
+  }
+  function escapeMenu(event) {
+    if (event.key === "Escape") closeTabMenu();
+  }
+  function closeTabMenu() {
+    if (openMenu === void 0) return;
+    root.ownerDocument.removeEventListener("pointerdown", openMenu.dismiss, { capture: true });
+    root.ownerDocument.removeEventListener("keydown", escapeMenu, true);
+    openMenu.element.remove();
+    openMenu = void 0;
+  }
+  function focus(group) {
+    focused = group;
+    for (const item of groups) setState(item.root, item === group ? ["active"] : []);
+  }
+  function createGroup() {
+    const groupRoot = element(root, "div", { part: "explorer.group" });
+    const strip = element(groupRoot, "div", { part: "explorer.tabstrip", role: "tablist" });
+    strip.setAttribute("aria-label", "Open files");
+    const header = element(groupRoot, "div", { part: "explorer.header" });
+    const breadcrumb = element(header, "nav", { part: "explorer.breadcrumb" });
+    breadcrumb.setAttribute("aria-label", "File path");
+    const picker = element(header, "select", { part: "explorer.viewpicker" });
+    picker.setAttribute("aria-label", "View");
+    picker.disabled = true;
+    const stage = element(groupRoot, "div", { part: "explorer.stage" });
+    const group = { root: groupRoot, strip, breadcrumb, picker, stage, tabs: [] };
+    groupRoot.addEventListener("pointerdown", () => {
+      focus(group);
+    });
+    picker.addEventListener("change", () => {
+      const handle = group.active?.handle;
+      if (handle === void 0) return;
+      void handle.show(picker.value).then(() => {
+        report({
+          ...group.active === void 0 ? {} : { path: group.active.entry.id },
+          view: picker.selectedOptions[0]?.textContent ?? picker.value,
+          detail: group.active?.entry.name ?? "",
+          severity: "info"
+        });
+      });
+    });
+    groups.push(group);
+    placeholder(group, "No file open in this group.");
+    return group;
+  }
+  focused = createGroup();
+  focus(focused);
+  const area = {
+    root,
+    get groupCount() {
+      return groups.length;
+    },
+    async open(entry2) {
+      const group = focused;
+      const existing = group.tabs.find((tab2) => tab2.entry.id === entry2.id);
+      if (existing !== void 0) {
+        await activate(group, existing);
+        return;
+      }
+      const button = element(group.strip, "div", { part: "explorer.filetab" });
+      button.setAttribute("role", "tab");
+      button.title = entry2.id;
+      button.setAttribute("data-mk-kind", fileKindOf(entry2.name));
+      if (group.tabs.length === 0) group.stage.replaceChildren();
+      const content = element(group.stage, "div", { part: "explorer.tabcontent" });
+      const tab = { entry: entry2, button, content };
+      const label = element(button, "span", { text: safeViewerText(entry2.name, 120) });
+      label.addEventListener("click", () => {
+        focus(group);
+        void activate(group, tab);
+      });
+      button.addEventListener("contextmenu", (event) => {
+        event.preventDefault();
+        focus(group);
+        openTabMenu(group, tab, event.clientX, event.clientY);
+      });
+      const close = element(button, "button", { part: "explorer.filetab-close", text: "\xD7" });
+      close.setAttribute("type", "button");
+      close.setAttribute("aria-label", `Close ${entry2.name}`);
+      close.addEventListener("click", (event) => {
+        event.stopPropagation();
+        void closeTab(group, tab);
+      });
+      group.tabs.push(tab);
+      await activate(group, tab);
+    },
+    markDirty(entryId, dirty) {
+      for (const group of groups) {
+        for (const tab of group.tabs) {
+          if (tab.entry.id !== entryId) continue;
+          tab.dirty = dirty;
+          setState(tab.button, dirty ? ["mutating"] : tab === group.active ? ["selected"] : []);
+          if (dirty && tab === group.active) setState(tab.button, ["selected", "mutating"]);
+        }
+      }
+    },
+    hasUnsaved() {
+      return groups.some((group) => group.tabs.some((tab) => tab.dirty === true));
+    },
+    split() {
+      focus(createGroup());
+    },
+    destroy() {
+      if (destroyed) return;
+      destroyed = true;
+      closeTabMenu();
+      for (const group of groups) {
+        for (const tab of group.tabs) {
+          tab.run?.abort();
+          void tab.handle?.unmount();
+        }
+      }
+      root.remove();
+    }
+  };
+  return area;
+}
+var RECENT_LIMIT = 10;
+var SETTINGS_SCHEMA_VERSION = 1;
+var DEFAULT_SETTINGS = Object.freeze({
+  schemaVersion: SETTINGS_SCHEMA_VERSION,
+  appearance: Object.freeze({ theme: "modkit-dark", density: "compact" }),
+  extensions: Object.freeze([]),
+  recent: Object.freeze([])
+});
+var isRecord2 = (value2) => typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
+var asText = (value2) => typeof value2 === "string" && value2.trim() !== "" ? value2.trim() : void 0;
+function normalizeSettings(value2) {
+  const problems = [];
+  if (!isRecord2(value2)) {
+    return {
+      document: DEFAULT_SETTINGS,
+      problems: value2 === void 0 ? [] : ["settings root is not an object; defaults were used"]
+    };
+  }
+  const version = value2["schemaVersion"];
+  if (version !== void 0 && version !== SETTINGS_SCHEMA_VERSION) {
+    problems.push(
+      `unknown schemaVersion ${String(version)}; expected ${SETTINGS_SCHEMA_VERSION}. Unrecognised fields were ignored.`
+    );
+  }
+  const appearanceInput = isRecord2(value2["appearance"]) ? value2["appearance"] : {};
+  const theme = asText(appearanceInput["theme"]) ?? DEFAULT_SETTINGS.appearance.theme;
+  const densityInput = appearanceInput["density"];
+  const density = densityInput === "compact" || densityInput === "comfortable" ? densityInput : DEFAULT_SETTINGS.appearance.density;
+  if (densityInput !== void 0 && densityInput !== density) {
+    problems.push(`appearance.density "${String(densityInput)}" is not valid; used "${density}"`);
+  }
+  const extensions = [];
+  const seen = /* @__PURE__ */ new Map();
+  const listInput = value2["extensions"];
+  if (listInput !== void 0 && !Array.isArray(listInput)) {
+    problems.push("extensions must be an array; it was ignored");
+  } else {
+    for (const [index, item] of (listInput ?? []).entries()) {
+      if (!isRecord2(item)) {
+        problems.push(`extensions[${index}] is not an object; ignored`);
+        continue;
+      }
+      const id = asText(item["id"]);
+      const path = asText(item["path"]);
+      if (id === void 0 || path === void 0) {
+        problems.push(`extensions[${index}] needs both "id" and "path"; ignored`);
+        continue;
+      }
+      const entry2 = {
+        id,
+        path,
+        // Absent means enabled: adding a path to the file is how a user asks for an extension.
+        enabled: item["enabled"] !== false,
+        ...isRecord2(item["options"]) ? { options: Object.freeze({ ...item["options"] }) } : {}
+      };
+      const existing = seen.get(id);
+      if (existing === void 0) {
+        seen.set(id, extensions.length);
+        extensions.push(entry2);
+      } else {
+        problems.push(`extensions[${index}] duplicates id "${id}"; the later entry won`);
+        extensions[existing] = entry2;
+      }
+    }
+  }
+  const recent = [];
+  const recentInput = value2["recent"];
+  if (recentInput !== void 0 && !Array.isArray(recentInput)) {
+    problems.push("recent must be an array; it was ignored");
+  } else {
+    const seenPaths = /* @__PURE__ */ new Set();
+    for (const item of recentInput ?? []) {
+      if (!isRecord2(item)) continue;
+      const path = asText(item["path"]);
+      if (path === void 0 || seenPaths.has(path)) continue;
+      seenPaths.add(path);
+      recent.push({ path, kind: item["kind"] === "file" ? "file" : "folder" });
+      if (recent.length >= RECENT_LIMIT) break;
+    }
+  }
+  return {
+    document: Object.freeze({
+      schemaVersion: SETTINGS_SCHEMA_VERSION,
+      appearance: Object.freeze({ theme, density }),
+      extensions: Object.freeze(extensions),
+      recent: Object.freeze(recent)
+    }),
+    problems: Object.freeze(problems)
+  };
+}
+function serializeSettings(document) {
+  return `${JSON.stringify(
+    {
+      schemaVersion: document.schemaVersion,
+      appearance: { theme: document.appearance.theme, density: document.appearance.density },
+      // Recency is meaningful order, so this list is written as-is rather than sorted.
+      recent: document.recent.map((entry2) => ({ path: entry2.path, kind: entry2.kind })),
+      extensions: [...document.extensions].sort((a, b) => compareUtf8(a.id, b.id)).map((entry2) => ({
+        id: entry2.id,
+        path: entry2.path,
+        enabled: entry2.enabled,
+        ...entry2.options === void 0 ? {} : { options: entry2.options }
+      }))
+    },
+    null,
+    2
+  )}
+`;
+}
+function createSettingsUi(document, options) {
+  const root = document.createElement("div");
+  root.className = "modkit-viewer modkit-settings";
+  setPart(root, "settings");
+  const groupList = element(root, "nav", { part: "settings.groups" });
+  groupList.setAttribute("aria-label", "Settings groups");
+  if (options.onClose !== void 0) {
+    const close = element(groupList, "button", {
+      part: "settings.close",
+      text: "\u2190 Back"
+    });
+    close.type = "button";
+    close.title = "Close settings (Esc)";
+    close.addEventListener("click", () => options.onClose?.());
+    root.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") options.onClose?.();
+    });
+    root.tabIndex = -1;
+  }
+  const pane = element(root, "div", { part: "settings.pane" });
+  const status = element(root, "output", { part: "settings.status" });
+  let current = DEFAULT_SETTINGS;
+  let activeGroup = "appearance";
+  const say = (message, bad = false) => {
+    status.textContent = message;
+    setState(status, bad ? ["error"] : []);
+  };
+  const persist = async (next) => {
+    try {
+      await options.store.write(next);
+      current = next;
+      options.onChange?.(next);
+      say(`Saved to ${options.store.location}`);
+    } catch (error) {
+      say(`Could not save: ${error instanceof Error ? error.message : String(error)}`, true);
+    }
+  };
+  const row = (host, label, description) => {
+    const wrapper = element(host, "div", { part: "settings.row" });
+    element(wrapper, "div", { part: "settings.label", text: label });
+    element(wrapper, "div", { part: "settings.description", text: description });
+    return element(wrapper, "div", { part: "settings.control" });
+  };
+  const appearanceGroup = {
+    id: "appearance",
+    label: "Appearance",
+    render(host) {
+      if (options.themes.length > 0) {
+        const control = row(host, "Color theme", "Applies immediately and to every viewer surface.");
+        const select = element(control, "select", { part: "settings.select" });
+        select.setAttribute("aria-label", "Color theme");
+        for (const theme of options.themes) {
+          const option = document.createElement("option");
+          option.value = theme.id;
+          option.textContent = theme.label;
+          select.append(option);
+        }
+        select.value = current.appearance.theme;
+        select.addEventListener("change", () => {
+          const appearance = { ...current.appearance, theme: select.value };
+          options.onAppearance?.(appearance);
+          void persist({ ...current, appearance });
+        });
+      }
+      const densityControl = row(
+        host,
+        "Density",
+        "Compact matches VS Code list metrics; comfortable suits touch and larger displays."
+      );
+      const density = element(densityControl, "select", {
+        part: "settings.select"
+      });
+      density.setAttribute("aria-label", "Density");
+      for (const value2 of ["compact", "comfortable"]) {
+        const option = document.createElement("option");
+        option.value = value2;
+        option.textContent = value2[0]?.toUpperCase() + value2.slice(1);
+        density.append(option);
+      }
+      density.value = current.appearance.density;
+      density.addEventListener("change", () => {
+        const appearance = {
+          ...current.appearance,
+          density: density.value
+        };
+        options.onAppearance?.(appearance);
+        void persist({ ...current, appearance });
+      });
+    }
+  };
+  const extensionsGroup = {
+    id: "extensions",
+    label: "Extensions",
+    render(host) {
+      const intro = element(host, "p", { part: "settings.description" });
+      intro.textContent = `Extensions are listed in ${options.store.location}. Each entry is an id, a path the host loads from, and whether it is enabled. The same file is read by the desktop app, the web app and a headless run.`;
+      const readOnly = options.extensionsReadOnly;
+      if (readOnly !== void 0) {
+        element(host, "p", {
+          part: "settings.description",
+          text: safeViewerText(readOnly, 400)
+        });
+      }
+      const list = element(host, "div", { part: "settings.list" });
+      const draw = () => {
+        list.replaceChildren();
+        if (current.extensions.length === 0) {
+          element(list, "p", {
+            part: "settings.description",
+            text: "No extensions are configured yet."
+          });
+        }
+        for (const entry2 of current.extensions) {
+          const item = element(list, "div", { part: "settings.extension" });
+          if (readOnly === void 0) {
+            const toggle = element(item, "input", {
+              part: "settings.toggle"
+            });
+            toggle.type = "checkbox";
+            toggle.checked = entry2.enabled;
+            toggle.setAttribute("aria-label", `Enable ${entry2.id}`);
+            toggle.addEventListener("change", () => {
+              void persist({
+                ...current,
+                extensions: current.extensions.map(
+                  (other) => other.id === entry2.id ? { ...other, enabled: toggle.checked } : other
+                )
+              }).then(draw);
+            });
+          } else {
+            element(item, "div", {
+              part: "settings.description",
+              text: entry2.enabled ? "enabled" : "disabled"
+            });
+          }
+          const text = element(item, "div", { part: "settings.extension-text" });
+          element(text, "div", { part: "settings.label", text: safeViewerText(entry2.id, 200) });
+          element(text, "div", {
+            part: "settings.description",
+            text: safeViewerText(entry2.path, 400)
+          });
+          if (readOnly === void 0) {
+            const remove = element(item, "button", {
+              part: "settings.remove",
+              text: "Remove"
+            });
+            remove.type = "button";
+            remove.addEventListener("click", () => {
+              void persist({
+                ...current,
+                extensions: current.extensions.filter((other) => other.id !== entry2.id)
+              }).then(draw);
+            });
+          }
+        }
+      };
+      draw();
+      if (readOnly !== void 0) return;
+      const adder = element(host, "div", { part: "settings.adder" });
+      const id = element(adder, "input", { part: "settings.input" });
+      id.placeholder = "publisher/name";
+      id.setAttribute("aria-label", "Extension id");
+      const path = element(adder, "input", { part: "settings.input" });
+      path.placeholder = "path, package or URL";
+      path.setAttribute("aria-label", "Extension location");
+      const add = (entry2) => {
+        void persist({
+          ...current,
+          extensions: [...current.extensions.filter((other) => other.id !== entry2.id), entry2]
+        }).then(draw);
+      };
+      const addButton = element(adder, "button", {
+        part: "settings.add",
+        text: "Add"
+      });
+      addButton.type = "button";
+      addButton.addEventListener("click", () => {
+        const entryId = id.value.trim();
+        const entryPath = path.value.trim();
+        if (entryId === "" || entryPath === "") {
+          say("An extension needs both an id and a location.", true);
+          return;
+        }
+        add({ id: entryId, path: entryPath, enabled: true });
+        id.value = "";
+        path.value = "";
+      });
+      if (options.browseForExtension !== void 0) {
+        const browse = element(adder, "button", {
+          part: "settings.add",
+          text: "Browse\u2026"
+        });
+        browse.type = "button";
+        browse.addEventListener("click", () => {
+          void (async () => {
+            const picked = await options.browseForExtension?.();
+            if (picked !== void 0) add({ ...picked, enabled: true });
+          })();
+        });
+      }
+    }
+  };
+  const registerFileTypes = options.registerFileTypes;
+  const associationsGroup = {
+    id: "associations",
+    label: "File associations",
+    render(host) {
+      const types = [...options.associableTypes ?? []].sort();
+      element(host, "p", {
+        part: "settings.description",
+        text: "Make this app the default for the formats its codecs can open. Registration is per-user and reversible from the operating system, and nothing is written until you apply it."
+      });
+      if (types.length === 0) {
+        element(host, "p", {
+          part: "settings.description",
+          text: "No codecs are loaded, so there is nothing to associate."
+        });
+        return;
+      }
+      const chosen = new Set(types);
+      const list = element(host, "div", { part: "settings.list" });
+      for (const type of types) {
+        const item = element(list, "div", { part: "settings.extension" });
+        const toggle = element(item, "input", { part: "settings.toggle" });
+        toggle.type = "checkbox";
+        toggle.checked = true;
+        toggle.setAttribute("aria-label", `Associate .${type}`);
+        toggle.addEventListener("change", () => {
+          if (toggle.checked) chosen.add(type);
+          else chosen.delete(type);
+        });
+        const text = element(item, "div", { part: "settings.extension-text" });
+        element(text, "div", { part: "settings.label", text: `.${type}` });
+      }
+      const actions = element(host, "div", { part: "settings.adder" });
+      const all = element(actions, "button", {
+        part: "settings.add",
+        text: "Select all"
+      });
+      all.type = "button";
+      all.addEventListener("click", () => {
+        for (const node of list.querySelectorAll("input")) {
+          node.checked = true;
+          node.dispatchEvent(new Event("change"));
+        }
+      });
+      const none = element(actions, "button", {
+        part: "settings.add",
+        text: "Select none"
+      });
+      none.type = "button";
+      none.addEventListener("click", () => {
+        for (const node of list.querySelectorAll("input")) {
+          node.checked = false;
+          node.dispatchEvent(new Event("change"));
+        }
+      });
+      const apply = element(actions, "button", {
+        part: "settings.add",
+        text: "Set as default app"
+      });
+      apply.type = "button";
+      apply.addEventListener("click", () => {
+        void (async () => {
+          if (chosen.size === 0) {
+            say("Pick at least one file type first.", true);
+            return;
+          }
+          try {
+            apply.disabled = true;
+            say(await registerFileTypes?.([...chosen]) ?? "Nothing to register.");
+          } catch (error) {
+            say(
+              `Could not register: ${error instanceof Error ? error.message : String(error)}`,
+              true
+            );
+          } finally {
+            apply.disabled = false;
+          }
+        })();
+      });
+    }
+  };
+  const groups = [
+    appearanceGroup,
+    extensionsGroup,
+    ...options.registerFileTypes === void 0 ? [] : [associationsGroup]
+  ];
+  const showGroup = (group) => {
+    activeGroup = group.id;
+    pane.replaceChildren();
+    for (const node of groupList.querySelectorAll('[data-mk-part="settings.group"]')) {
+      const selected = node.getAttribute("data-group") === group.id;
+      node.setAttribute("aria-selected", String(selected));
+      setState(node, selected ? ["selected"] : []);
+    }
+    group.render(pane);
+  };
+  for (const group of groups) {
+    const button = element(groupList, "button", {
+      part: "settings.group",
+      text: group.label
+    });
+    button.type = "button";
+    button.dataset["group"] = group.id;
+    button.setAttribute("role", "tab");
+    button.addEventListener("click", () => {
+      showGroup(group);
+    });
+  }
+  const ui = {
+    root,
+    async reload() {
+      const { document: loaded, problems } = await options.store.read();
+      current = loaded;
+      options.onAppearance?.(loaded.appearance);
+      const group = groups.find((item) => item.id === activeGroup) ?? groups[0];
+      if (group !== void 0) showGroup(group);
+      say(
+        problems.length === 0 ? `Loaded from ${options.store.location}` : `Loaded with ${problems.length} problem(s): ${problems.join("; ")}`,
+        problems.length > 0
+      );
+    },
+    destroy() {
+      root.remove();
+    }
+  };
+  return ui;
+}
 var contributionManifests = Object.freeze(["./contributions/*.json"]);
 
 // apps/web/generated/extension-catalog.js
@@ -60335,6 +60200,444 @@ var NO_USER_EXTENSION_ROOTS = Object.freeze({
   serve: async (url) => notFound(url)
 });
 
+// packages/ui/dist/workbench/index.js
+var PARTS2 = Object.freeze([
+  // shared surface
+  "viewer",
+  "viewer.toolbar",
+  "viewer.status",
+  "viewer.empty",
+  // bounded + virtual text
+  "text",
+  "text.line",
+  "virtual-text",
+  "virtual-text.line",
+  // hex
+  "hex",
+  "hex.toolbar",
+  "hex.offset-input",
+  "hex.go",
+  "hex.content",
+  "hex.row",
+  "hex.gutter",
+  "hex.cell",
+  "hex.ascii",
+  // tree
+  "tree",
+  "tree.list",
+  "tree.item",
+  "tree.label",
+  "tree.children",
+  // table
+  "table",
+  "table.caption",
+  "table.body",
+  "table.row",
+  "table.cell",
+  "table.next",
+  // namespace
+  "namespace",
+  "namespace.list",
+  "namespace.item",
+  "namespace.label",
+  "namespace.detail",
+  "namespace.children",
+  // transport
+  "transport",
+  "transport.status",
+  "transport.controls",
+  "transport.button",
+  "transport.track",
+  // diagnostics panel
+  "diagnostics",
+  "diagnostics.group",
+  "diagnostics.heading",
+  "diagnostics.list",
+  "diagnostics.item",
+  "diagnostics.message",
+  // operation toolbar
+  "operations",
+  "operations.status",
+  "operations.button",
+  // search field (PR3 member) and filter chrome
+  "search",
+  "search.input",
+  "search.toggles",
+  "search.toggle",
+  "search.status",
+  "search.nav",
+  "search.message",
+  "filter-bar",
+  "filter-bar.facets",
+  "filter-bar.facet",
+  // format inspector
+  "format",
+  "format.header",
+  "format.badge",
+  "format.body",
+  // metadata and properties (MK2 assets-viewer parity)
+  "metadata",
+  "metadata.group",
+  "metadata.heading",
+  "metadata.row",
+  "metadata.label",
+  "metadata.value",
+  "properties",
+  "properties.row",
+  "properties.name",
+  "properties.value",
+  "properties.origin",
+  // image stage
+  "image",
+  "image.canvas",
+  "image.toolbar",
+  "image.readout",
+  // image editing surface (MK2 assetsTextureViewer parity)
+  "imageedit",
+  "imageedit.tools",
+  "imageedit.tool",
+  "imageedit.options",
+  "imageedit.swatch",
+  "imageedit.size",
+  "imageedit.actions",
+  "imageedit.action",
+  "imageedit.marquee",
+  "imageedit.status",
+  // audio stage
+  "audio",
+  "audio.waveform",
+  "audio.toolbar",
+  "audio.readout",
+  "audio.player",
+  // vector stage
+  "vector",
+  "vector.image",
+  "vector.readout",
+  // video stage
+  "video",
+  "video.player",
+  "video.readout",
+  // model stage
+  "model",
+  "model.canvas",
+  "model.readout",
+  "model.toolbar",
+  // view gizmo — its own component, usable by any 3D stage
+  "gizmo",
+  "gizmo.svg",
+  "gizmo.axis",
+  "gizmo.handle",
+  "gizmo.label",
+  // archive explorer composite
+  "archive",
+  "archive.tree",
+  "archive.entries",
+  "archive.preview",
+  // file tree (MK2 archive explorer chrome)
+  "filetree",
+  "filetree.toolbar",
+  "filetree.list",
+  "filetree.node",
+  "filetree.row",
+  "filetree.twisty",
+  "filetree.icon",
+  "filetree.label",
+  "filetree.badge",
+  "filetree.children",
+  "filetree.empty",
+  // explorer: tree + preview shell shared by every host that browses real files
+  "explorer",
+  "explorer.toolbar",
+  "explorer.action",
+  "explorer.sidebar",
+  "explorer.preview",
+  "explorer.dropzone",
+  "explorer.status",
+  "explorer.tabs",
+  "explorer.tab",
+  "explorer.stage",
+  "explorer.placeholder",
+  // preview header and view picker
+  "explorer.header",
+  "explorer.breadcrumb",
+  "explorer.crumb",
+  "explorer.viewpicker",
+  // editor area: one or more groups, each with its own tab strip
+  "explorer.editors",
+  "explorer.group",
+  "explorer.tabstrip",
+  "explorer.filetab",
+  "explorer.filetab-close",
+  "explorer.tabcontent",
+  "explorer.split",
+  // right-click menu on a tab: Close / Close Others / Close to the Right / Close All
+  "explorer.tabmenu",
+  "explorer.tabmenu-item",
+  // custom window chrome, drawn by the app when the native frame is hidden
+  "titlebar",
+  "titlebar.drag",
+  "titlebar.title",
+  "titlebar.controls",
+  "titlebar.button",
+  "titlebar.menu",
+  "titlebar.menu-item",
+  "titlebar.menu-panel",
+  "titlebar.menu-entry",
+  "titlebar.menu-separator",
+  // settings surface
+  "settings",
+  "settings.groups",
+  "settings.group",
+  "settings.pane",
+  "settings.row",
+  "settings.label",
+  "settings.description",
+  "settings.control",
+  "settings.select",
+  "settings.input",
+  "settings.list",
+  "settings.extension",
+  "settings.extension-text",
+  "settings.toggle",
+  "settings.remove",
+  "settings.adder",
+  "settings.add",
+  "settings.close",
+  "settings.status",
+  // generic form vocabulary — any surface that collects input (an edit panel, a dialog).
+  // Named generically because the settings.* family is named for the settings surface, and a
+  // theme styling a form should not have to know which surface hosts it.
+  "form",
+  "form.row",
+  "form.label",
+  "form.description",
+  "form.control",
+  "form.input",
+  "form.select",
+  "form.actions",
+  "form.button",
+  "form.status",
+  // collapsible property sections
+  "accordion",
+  "accordion.section",
+  "accordion.header",
+  "accordion.twisty",
+  "accordion.title",
+  "accordion.hint",
+  "accordion.body",
+  "accordion.field",
+  "accordion.field-name",
+  "accordion.field-value",
+  // shell chrome
+  "shell",
+  "shell.header",
+  "shell.breadcrumb",
+  "shell.crumb",
+  "shell.crumb-icon",
+  "shell.crumb-more",
+  "shell.footer",
+  "shell.footer-start",
+  "shell.footer-end",
+  "shell.status-item",
+  // application workbench
+  "workbench",
+  "workbench.titlebar",
+  "workbench.activitybar",
+  "workbench.sidebar",
+  "workbench.main",
+  "workbench.panel",
+  "workbench.statusbar",
+  "workbench.host-status",
+  // view picker
+  "viewpicker",
+  "viewpicker.modes",
+  "viewpicker.mode",
+  "viewpicker.select",
+  // subject card composition
+  "card",
+  "card.section",
+  "card.header",
+  "card.portrait",
+  "card.identity",
+  "card.title",
+  "card.subtitle",
+  "card.ref",
+  "card.locale",
+  "card.chips",
+  "card.chip",
+  "card.description",
+  "card.note",
+  "card.statrow",
+  "card.stat",
+  "card.stat-icon",
+  "card.stat-value",
+  "card.stat-delta",
+  "card.grid",
+  "card.grid-cell",
+  "card.grid-hotkey",
+  "card.grid-icon",
+  "card.fields",
+  "card.field",
+  "card.field-name",
+  "card.field-value",
+  "card.links",
+  "card.link-item",
+  "card.subcards",
+  "card.subcard",
+  "card.subcard-head",
+  "card.subcard-body",
+  "card.custom",
+  // relation graph
+  "graph",
+  "graph.sidebar",
+  "graph.sidebar-head",
+  "graph.types",
+  "graph.type",
+  "graph.type-swatch",
+  "graph.type-count",
+  "graph.main",
+  "graph.controls",
+  "graph.control",
+  "graph.canvas",
+  "graph.status",
+  "graph.hint",
+  "graph.footer",
+  "graph.footer-group",
+  "graph.footer-item",
+  // editor
+  "editor",
+  "editor.toolbar",
+  "editor.text"
+]);
+var PART_SET2 = new Set(PARTS2);
+var PART_ATTRIBUTE2 = "data-mk-part";
+var STATE_ATTRIBUTE2 = "data-mk-state";
+var STATES2 = Object.freeze([
+  "loading",
+  "empty",
+  "error",
+  "disabled",
+  "readonly",
+  "truncated",
+  "over-budget",
+  "degraded",
+  "active",
+  "stale",
+  "mutating",
+  "invalid",
+  "no-match",
+  "selected",
+  /** A drop is hovering over this surface and would be accepted. */
+  "drop-target"
+]);
+var STATE_SET2 = new Set(STATES2);
+function setPart2(element2, part) {
+  if (!PART_SET2.has(part)) throw new TypeError(`unregistered part: ${part}`);
+  element2.setAttribute(PART_ATTRIBUTE2, part);
+}
+function setState2(element2, states) {
+  for (const state of states) {
+    if (!STATE_SET2.has(state)) throw new TypeError(`unregistered state: ${state}`);
+  }
+  if (states.length === 0) element2.removeAttribute(STATE_ATTRIBUTE2);
+  else element2.setAttribute(STATE_ATTRIBUTE2, [...new Set(states)].join(" "));
+}
+var VIEWER_CSP2 = Object.freeze({
+  defaultSrc: "'none'",
+  scriptSrc: "'self'",
+  styleSrc: "'self'",
+  // C1 in ADR-UI-001. `style-src-attr` does not inherit from `style-src`, so the ban on the
+  // `style` attribute has to be stated here or it is not enforced at all. Components set dynamic
+  // values through CSSOM (`style.setProperty`), which this does not block.
+  styleSrcAttr: "'none'",
+  imgSrc: "'self' blob: data:",
+  // The audio and video stages hand a codec-owned encoded representation to the platform player
+  // as a blob; without this the policy falls through to default-src 'none' and playback dies.
+  mediaSrc: "'self' blob:",
+  fontSrc: "'self'",
+  connectSrc: "'self'",
+  workerSrc: "'self' blob:",
+  frameSrc: "'none'"
+});
+var VIEWER_CSP_TRUSTED_EDITOR2 = Object.freeze({
+  ...VIEWER_CSP2,
+  styleSrc: "'self' 'unsafe-inline'",
+  // Measured: the editor renders each visible line as markup carrying a `style` attribute with its
+  // computed `top` and `height`. Under `style-src-attr 'none'` those attributes are refused, the
+  // lines never reach their positions, and the text visibly jumps as the view scrolls. This is the
+  // C1 exclusion the ADR anticipates for a trusted in-process editor, scoped to that host only.
+  styleSrcAttr: "'unsafe-inline'",
+  // The editor's icon font is inlined as a data URI by the bundler; `font-src 'self'` alone
+  // rejects it and the glyphs fall back to tofu.
+  fontSrc: "'self' data:"
+});
+var policyText2 = (policy) => Object.entries(policy).map(
+  ([name, value2]) => `${name.replace(/[A-Z]/gu, (match) => `-${match.toLowerCase()}`)} ${value2}`
+).join("; ");
+var VIEWER_CSP_TEXT2 = policyText2(VIEWER_CSP2);
+var VIEWER_CSP_TRUSTED_EDITOR_TEXT2 = policyText2(VIEWER_CSP_TRUSTED_EDITOR2);
+var HOSTILE_TEXT2 = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/gu;
+function safeViewerText2(value2, maximum = 1e6) {
+  const text = String(value2);
+  const bounded = text.length > maximum ? `${text.slice(0, maximum)}\u2026` : text;
+  return bounded.replace(HOSTILE_TEXT2, (character) => {
+    const code = character.codePointAt(0)?.toString(16).toUpperCase().padStart(4, "0") ?? "0000";
+    return `\\u{${code}}`;
+  });
+}
+function createWorkbench(document, options) {
+  const root = document.createElement("div");
+  root.className = "modkit-viewer modkit-workbench";
+  setPart2(root, "workbench");
+  const titlebar = document.createElement("header");
+  titlebar.textContent = safeViewerText2(options.title, 256);
+  setPart2(titlebar, "workbench.titlebar");
+  const activitybar = document.createElement("nav");
+  activitybar.setAttribute("aria-label", "Workbench activities");
+  setPart2(activitybar, "workbench.activitybar");
+  const sidebar = document.createElement("aside");
+  setPart2(sidebar, "workbench.sidebar");
+  const main = document.createElement("main");
+  setPart2(main, "workbench.main");
+  const panel = document.createElement("section");
+  setPart2(panel, "workbench.panel");
+  const statusbar = document.createElement("footer");
+  setPart2(statusbar, "workbench.statusbar");
+  const hostStatus = document.createElement("span");
+  setPart2(hostStatus, "workbench.host-status");
+  statusbar.append(hostStatus);
+  root.append(titlebar, activitybar, sidebar, main, panel, statusbar);
+  const setHostState = (state) => {
+    const reasons = state.degradedReasons ?? [];
+    hostStatus.textContent = `${safeViewerText2(state.label, 128)} \xB7 ${state.facilities.length} facilities`;
+    hostStatus.title = reasons.length === 0 ? state.facilities.join(", ") : reasons.join("\n");
+    const states = reasons.length === 0 ? [] : ["degraded"];
+    setState2(hostStatus, states);
+  };
+  const replace = (target, content) => {
+    target.replaceChildren(...content === void 0 ? [] : [content]);
+  };
+  setHostState(
+    options.host ?? {
+      label: "Host unavailable",
+      facilities: [],
+      degradedReasons: ["No host profile"]
+    }
+  );
+  return Object.freeze({
+    root,
+    activitybar,
+    sidebar,
+    main,
+    panel,
+    setHostState,
+    setSidebar: (content) => replace(sidebar, content),
+    setMain: (content) => replace(main, content),
+    setPanel: (content) => replace(panel, content),
+    dispose: () => root.remove()
+  });
+}
+
 // apps/web/src/extension-store.ts
 var USER_EXTENSION_DATABASE = "org.modkitx.app.web/extensions";
 var USER_EXTENSION_STORE = "roots";
@@ -60897,8 +61200,6 @@ export {
   element,
   diagnosticsPanel,
   operationToolbar,
-  applyTheme,
-  applyDensity,
   EXPLORER_MAXIMUM_BYTES,
   createExplorer,
   createCodecPreview,

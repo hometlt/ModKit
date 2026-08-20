@@ -205,3 +205,8 @@ export {
   type LinkedExtensionSet,
   type LinkedModule,
 } from './linked.js'
+export {
+  resolveFormatWriter,
+  type FormatWriterRequest,
+  type FormatWriterResolution,
+} from './format-writer.js'

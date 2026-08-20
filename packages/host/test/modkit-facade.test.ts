@@ -180,3 +180,94 @@ describe('disabling a contribution (the settings-page seam)', () => {
     }
   })
 })
+
+describe('the format writer is preferred over the raw byte splicer (Path B reaches products)', () => {
+  const textDir = join(repoRoot, 'extensions', 'common', 'text-json')
+
+  it('a JSON subject validates through its own writer: corruption refused, a real edit commits', async () => {
+    const heard: string[] = []
+    const jsonHost = await createModkit({
+      extensions: [textDir],
+      roots: [scratch],
+      writableRoots: [join(scratch, 'writable')],
+      onDiagnostic: item => heard.push(`${item.code}: ${item.message}`),
+    })
+    try {
+      const path = join(scratch, 'writable', 'config.json')
+      writeFileSync(path, '{\n  "name": "original"\n}\n')
+      const opened = await jsonHost.open(path)
+      expect(opened.snapshot.state).toBe('opened')
+      const ports = opened.editing?.editorPorts
+      if (ports === undefined) throw new Error('no editor ports')
+      // the host said which writer serves this subject, by name
+      expect(heard.join('\n')).toMatch(/format-writer-selected.*text-json-writer/u)
+
+      const edit = ports.edit as EditSession
+      const target = edit.targets[0]
+      if (target === undefined) throw new Error('no target')
+      const change = (text: string) => ({
+        targets: edit.targets,
+        edits: [
+          {
+            operation: 'replace' as const,
+            targetId: target.targetId,
+            source: target.ownerSource,
+            payload: { kind: 'text' as const, text },
+          },
+        ],
+        provenance: { actor: 'user' as const },
+      })
+
+      /*
+       * The whole point of the slice. The raw writer accepts this — "these bytes" is its entire
+       * contract — and the corruption lands on disk. The format's own writer refuses it at
+       * propose, while the user can still do something about it.
+       */
+      const corrupted = await edit.propose(change('{ definitely not json'))
+      expect(corrupted.valid).toBe(false)
+      expect(corrupted.diagnostics.length).toBeGreaterThan(0)
+
+      const good = await edit.propose(change('{\n  "name": "edited"\n}\n'))
+      expect(good.valid).toBe(true)
+      const plan = await edit.plan(change('{\n  "name": "edited"\n}\n'))
+      const commit = ports.commit as CommitCoordinator
+      const authorization = await (
+        ports.authorization as { request(p: AssetEditPlan): Promise<{ grant: unknown }> }
+      ).request(plan)
+      const prepared = await commit.prepare(plan, { grant: authorization.grant as never })
+      expect(prepared.state).toBe('ready')
+      if (prepared.state !== 'ready') return
+      const receipt = await commit.commit(prepared.prepared, {
+        grant: authorization.grant as never,
+      })
+      expect(receipt.state).toBe('committed')
+      expect(readFileSync(path, 'utf8')).toBe('{\n  "name": "edited"\n}\n')
+      await opened.close()
+    } finally {
+      await jsonHost.close()
+    }
+  }, 60_000)
+
+  it('a format with no matching writer falls back to raw, and the diagnostics say so', async () => {
+    const heard: string[] = []
+    const pngHost = await createModkit({
+      extensions: [imagesDir],
+      roots: [scratch],
+      writableRoots: [join(scratch, 'writable')],
+      onDiagnostic: item => heard.push(`${item.code}: ${item.message}`),
+    })
+    try {
+      const path = join(scratch, 'writable', 'fallback.png')
+      writeFileSync(path, readFileSync(pngFixture))
+      const opened = await pngHost.open(path)
+      expect(opened.snapshot.state).toBe('opened')
+      expect(opened.editing).toBeDefined()
+      // the PNG encoder offers rgba8 at semantic — not source at byte-identical — so the default
+      // request is honestly unresolved and the raw splicer serves, with the reason on record
+      expect(heard.join('\n')).toMatch(/format-writer-unresolved.*png\/source/u)
+      await opened.close()
+    } finally {
+      await pngHost.close()
+    }
+  }, 60_000)
+})
