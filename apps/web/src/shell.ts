@@ -218,6 +218,14 @@ async function boot(): Promise<void> {
     digest: (algorithm: string, data: Uint8Array) =>
       crypto.subtle.digest(algorithm, data as Uint8Array<ArrayBuffer>),
   }
+  /*
+   * Filled once the host exists. The panel renders — and therefore asks for conflicts — during
+   * `reload()`, which runs *before* the composition, because the folders have to be read before
+   * the inventory is built. Reading the binding directly here is a temporal dead zone and the app
+   * fails to boot with "Cannot access 'services' before initialization"; a holder says plainly
+   * that there are no conflicts to report yet, because nothing has been composed to conflict.
+   */
+  let composed: WebSubjectServices | undefined
   const extensionsUi = mountExtensionsUi(document, {
     store: extensionStore,
     catalog: WEB_EXTENSION_CATALOG,
@@ -228,7 +236,7 @@ async function boot(): Promise<void> {
       if (picker === undefined) throw new Error('this browser has no folder picker')
       return (await picker.call(window)) as never
     },
-    conflicts: () => services.userExtensionConflicts,
+    conflicts: () => composed?.userExtensionConflicts ?? [],
     onChanged: loaded => {
       // `say` is not in scope yet at boot; the status line is created below, so report where a
       // user is already looking for load news
@@ -266,6 +274,10 @@ async function boot(): Promise<void> {
       console.info(`[worker] ${diagnostic.severity} ${diagnostic.code}: ${diagnostic.message}`)
     },
   })
+
+  composed = services
+  // conflicts are only knowable once both lists are in one inventory; the panel re-reads them
+  await extensionsUi.reload()
 
   const workbench = mountWebWorkbench(
     document,
