@@ -62,6 +62,12 @@ const PUBLISHED_ENTRIES = [
   'packages/ui/dist/vector/index.js',
   'packages/ui/dist/video/index.js',
   'packages/ui/dist/model/index.js',
+  // the three subpaths the minimal-build lane added: explorer (previewer/tabs), the hex
+  // editor, and the encoded-media helper — every exports-map entry must be listed here, or the
+  // determinism case reports the honest bundle as a surprise
+  'packages/ui/dist/explorer/index.js',
+  'packages/ui/dist/hex-editor/index.js',
+  'packages/ui/dist/media/encoded.js',
 ]
 
 /**
