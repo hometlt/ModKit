@@ -91024,7 +91024,7 @@ var init_korean = __esm({
 function normalizeNFD(str) {
   return normalize2(str, "NFD", nfdCache);
 }
-function normalize2(str, form, normalizedCache) {
+function normalize2(str, form2, normalizedCache) {
   if (!str) {
     return str;
   }
@@ -91034,7 +91034,7 @@ function normalize2(str, form, normalizedCache) {
   }
   let res;
   if (nonAsciiCharactersPattern.test(str)) {
-    res = str.normalize(form);
+    res = str.normalize(form2);
   } else {
     res = str;
   }
@@ -282114,13 +282114,13 @@ function dataSourceSurfaceDiagnostics(surface, path) {
       );
     }
   }
-  for (const field of surface.fields ?? []) {
-    if (Object.hasOwn(surface.methods, field)) {
+  for (const field2 of surface.fields ?? []) {
+    if (Object.hasOwn(surface.methods, field2)) {
       diagnostics.push(
         diagnostic(
           "error",
           "x3.sdk/surface-field-is-method",
-          `\xAB${field}\xBB cannot be both a field and a method`,
+          `\xAB${field2}\xBB cannot be both a field and a method`,
           [...path, "fields"]
         )
       );
@@ -283459,12 +283459,12 @@ var FRAME_KEYS = {
 function isMessageId(value2) {
   return Number.isSafeInteger(value2) && value2 >= 1;
 }
-function checkExactKeys(record, required, optional) {
-  for (const key2 of required) {
+function checkExactKeys(record, required2, optional) {
+  for (const key2 of required2) {
     if (!Object.hasOwn(record, key2))
       return { code: "missing-key", message: `missing key \xAB${key2}\xBB`, path: [key2] };
   }
-  const allowed = /* @__PURE__ */ new Set([...ENVELOPE_KEYS, ...required, ...optional]);
+  const allowed = /* @__PURE__ */ new Set([...ENVELOPE_KEYS, ...required2, ...optional]);
   for (const key2 of Object.keys(record)) {
     if (FORBIDDEN_KEYS.has(key2))
       return { code: "forbidden-key", message: `key \xAB${key2}\xBB is forbidden`, path: [key2] };
@@ -283799,18 +283799,18 @@ function assertSurface(surface) {
       });
     }
     const seen = /* @__PURE__ */ new Set();
-    for (const field of surface.fields) {
-      if (typeof field !== "string" || !isMethodName(field) || seen.has(field)) {
-        return invalidSurface(`field name \xAB${String(field)}\xBB is not lowerCamel or repeats`, {
+    for (const field2 of surface.fields) {
+      if (typeof field2 !== "string" || !isMethodName(field2) || seen.has(field2)) {
+        return invalidSurface(`field name \xAB${String(field2)}\xBB is not lowerCamel or repeats`, {
           surface: surfaceKey(surface.contract, surface.major)
         });
       }
-      if (Object.hasOwn(surface.methods, field)) {
-        return invalidSurface(`\xAB${field}\xBB cannot be both a field and a method`, {
+      if (Object.hasOwn(surface.methods, field2)) {
+        return invalidSurface(`\xAB${field2}\xBB cannot be both a field and a method`, {
           surface: surfaceKey(surface.contract, surface.major)
         });
       }
-      seen.add(field);
+      seen.add(field2);
     }
   }
 }
@@ -284097,10 +284097,10 @@ var EndpointImpl = class {
   materialize(remote) {
     const surface = this.requireSurface(remote.contract, remote.major);
     const object2 = {};
-    for (const field of surface.fields ?? []) {
-      if (Object.hasOwn(remote.data, field)) {
-        Object.defineProperty(object2, field, {
-          value: remote.data[field],
+    for (const field2 of surface.fields ?? []) {
+      if (Object.hasOwn(remote.data, field2)) {
+        Object.defineProperty(object2, field2, {
+          value: remote.data[field2],
           enumerable: true,
           writable: false
         });
@@ -285473,17 +285473,17 @@ var EndpointImpl = class {
     if (fields === void 0 || fields.length === 0) return void 0;
     if (typeof target !== "object" || target === null) return void 0;
     const data = {};
-    for (const field of fields) {
-      const value2 = target[field];
+    for (const field2 of fields) {
+      const value2 = target[field2];
       if (value2 === void 0) continue;
       const checked = validateWireValue(value2, this.limits, "forbid");
       if (!checked.ok) {
         throw new ModkitError({
           code: "x3.host/rpc-bad-return",
-          message: `field \xAB${field}\xBB of ${surface.contract}@${surface.major} is not a wire value: ${checked.violation.message}`
+          message: `field \xAB${field2}\xBB of ${surface.contract}@${surface.major} is not a wire value: ${checked.violation.message}`
         });
       }
-      data[field] = value2;
+      data[field2] = value2;
     }
     return Object.keys(data).length === 0 ? void 0 : Object.freeze(data);
   }
@@ -285699,7 +285699,7 @@ async function connectSubjectRpc(options) {
     surfaces: subjectRpcSurfaces(),
     limits: SUBJECT_RPC_LIMITS,
     ...options.onDiagnostic === void 0 ? {} : {
-      onDiagnostic: (diagnostic9) => options.onDiagnostic?.(diagnostic9)
+      onDiagnostic: (diagnostic10) => options.onDiagnostic?.(diagnostic10)
     },
     onFailure: (failure) => {
       options.onDiagnostic?.({
@@ -285992,6 +285992,19 @@ var PARTS = Object.freeze([
   "settings.add",
   "settings.close",
   "settings.status",
+  // generic form vocabulary — any surface that collects input (an edit panel, a dialog).
+  // Named generically because the settings.* family is named for the settings surface, and a
+  // theme styling a form should not have to know which surface hosts it.
+  "form",
+  "form.row",
+  "form.label",
+  "form.description",
+  "form.control",
+  "form.input",
+  "form.select",
+  "form.actions",
+  "form.button",
+  "form.status",
   // collapsible property sections
   "accordion",
   "accordion.section",
@@ -286891,6 +286904,7 @@ function renderToolbar(root, descriptor, operations, signal) {
   root.replaceChildren();
   const status2 = element(root, "output", { text: "Ready", part: "operations.status" });
   for (const operation of descriptor.operations) {
+    if (operation.mutatesSource === true) continue;
     const button = element(root, "button", {
       text: operation.id,
       part: "operations.button"
@@ -286901,14 +286915,24 @@ function renderToolbar(root, descriptor, operations, signal) {
       button.title = operation.reason;
       continue;
     }
-    button.addEventListener("click", async () => {
+    button.addEventListener("click", () => {
       button.disabled = true;
-      const result = await invokeOperation(descriptor, operations, operation.id, null, {
+      invokeOperation(descriptor, operations, operation.id, null, {
         signal,
         onProgress: (completed, total, message) => setViewerText(status2, `${message ?? "Working"}: ${completed}/${total ?? "?"}`)
+      }).then(
+        (result) => setViewerText(
+          status2,
+          result.state === "ok" ? `${operation.id}: complete` : result.reason
+        )
+      ).catch(
+        (error) => setViewerText(
+          status2,
+          `${operation.id}: ${error instanceof Error ? error.message : String(error)}`
+        )
+      ).finally(() => {
+        button.disabled = false;
       });
-      setViewerText(status2, result.state === "ok" ? `${operation.id}: complete` : result.reason);
-      button.disabled = false;
     });
   }
 }
@@ -290750,7 +290774,6 @@ function createEditorArea(document2, options) {
     tab.content.remove();
     if (group.active === tab) {
       group.active = void 0;
-      group.stage.replaceChildren();
       const next = group.tabs[Math.max(0, index - 1)];
       if (next !== void 0) {
         await activate(group, next);
@@ -295022,6 +295045,545 @@ var PREVIEW_STAGES_READONLY = Object.freeze([
 ]);
 var PREVIEW_FALLBACK = Object.freeze({ text: boundedTextViewer, hex: hexViewer });
 
+// apps/electron/src/view-policy.ts
+var STAGE_ORDER = Object.freeze([
+  "code",
+  "video",
+  "image",
+  "image-edit",
+  "audio",
+  "model",
+  "vector",
+  "archive",
+  "table",
+  "tree",
+  "text",
+  "virtual-text",
+  "hex"
+]);
+var APP_STAGE_POLICY = Object.freeze([
+  Object.freeze({
+    id: "archive",
+    label: "Archive",
+    contract: "common.view/namespace-entry-source"
+  }),
+  Object.freeze({
+    id: "image-edit",
+    label: "Image (edit)",
+    contract: "common.view/raster-image-source"
+  })
+]);
+var PANEL_POLICY = Object.freeze([
+  Object.freeze({ id: "operations", label: "Operations" }),
+  Object.freeze({ id: "edit", label: "Edit", requires: "editing" }),
+  Object.freeze({
+    id: "transport",
+    label: "Transport",
+    contract: "common.view/transport-source"
+  }),
+  Object.freeze({ id: "metadata", label: "Metadata" }),
+  Object.freeze({ id: "properties", label: "Properties" }),
+  Object.freeze({ id: "diagnostics", label: "Diagnostics" })
+]);
+var stageId2 = (stage) => stage.id ?? stage.contract;
+function orderStages(stages) {
+  for (const stage of stages) {
+    if (!STAGE_ORDER.includes(stageId2(stage))) {
+      throw new TypeError(`stage ${stageId2(stage)} is not ranked in STAGE_ORDER`);
+    }
+  }
+  const seen = /* @__PURE__ */ new Set();
+  for (const stage of stages) {
+    if (seen.has(stageId2(stage))) throw new TypeError(`duplicate stage id: ${stageId2(stage)}`);
+    seen.add(stageId2(stage));
+  }
+  return Object.freeze(
+    [...stages].sort(
+      (left, right) => STAGE_ORDER.indexOf(stageId2(left)) - STAGE_ORDER.indexOf(stageId2(right))
+    )
+  );
+}
+function readOnlyStages(editable, readOnly) {
+  const byId = new Map(editable.map((stage) => [stageId2(stage), stage]));
+  return Object.freeze(
+    readOnly.filter((stage) => {
+      const counterpart = byId.get(stageId2(stage));
+      return counterpart?.editable !== true || counterpart.module !== stage.module;
+    })
+  );
+}
+function publishedContracts2(descriptor) {
+  const sources = descriptor["dataSources"];
+  if (!Array.isArray(sources)) return [];
+  return sources.map((item) => String(item.contract ?? ""));
+}
+function descriptorOperations(descriptor) {
+  const operations = descriptor["operations"];
+  if (!Array.isArray(operations)) return [];
+  return operations.map((item) => {
+    const value2 = item;
+    return {
+      id: String(value2["id"] ?? ""),
+      handlerId: String(value2["handlerId"] ?? ""),
+      mutatesSource: value2["mutatesSource"] === true,
+      state: String(value2["state"] ?? "")
+    };
+  });
+}
+function applicablePanels(descriptor, options = {}) {
+  const published = new Set(publishedContracts2(descriptor));
+  return Object.freeze(
+    PANEL_POLICY.filter(
+      (panel) => (panel.contract === void 0 || published.has(panel.contract)) && (panel.requires !== "editing" || options.editing === true)
+    )
+  );
+}
+function entryPreviewOperations(descriptor) {
+  return Object.freeze(
+    descriptorOperations(descriptor).filter(
+      (operation) => operation.state === "available" && !operation.mutatesSource && operation.id.includes("/")
+    ).map((operation) => operation.id)
+  );
+}
+function preferredStage(applicable, planActive) {
+  if (planActive !== void 0 && applicable.includes(planActive)) return planActive;
+  return applicable[0];
+}
+function selfTestLine(name, views, mounted) {
+  return `selftest: ${name} -> views [${views.join(", ")}] mounted=${String(mounted)}`;
+}
+
+// apps/electron/src/edit-operations.ts
+var BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+function base64OfUtf8(text2) {
+  const bytes = new TextEncoder().encode(text2);
+  let out = "";
+  for (let at = 0; at < bytes.length; at += 3) {
+    const first2 = bytes[at] ?? 0;
+    const second = bytes[at + 1];
+    const third = bytes[at + 2];
+    const triple = first2 << 16 | (second ?? 0) << 8 | (third ?? 0);
+    out += BASE64[triple >> 18 & 63] ?? "";
+    out += BASE64[triple >> 12 & 63] ?? "";
+    out += second === void 0 ? "=" : BASE64[triple >> 6 & 63] ?? "";
+    out += third === void 0 ? "=" : BASE64[triple & 63] ?? "";
+  }
+  return out;
+}
+var required = (values, name, label) => {
+  const value2 = values.get(name) ?? "";
+  if (value2 === "") throw new TypeError(`${label} is required`);
+  return value2;
+};
+var field = (name, label, initial, options = {}) => Object.freeze({
+  name,
+  label,
+  kind: options.kind ?? "text",
+  initial,
+  required: true,
+  ...options.hint === void 0 ? {} : { hint: options.hint }
+});
+var form = (definition) => Object.freeze(definition);
+var FORMS_BY_HANDLER = /* @__PURE__ */ new Map([
+  [
+    "set-text",
+    Object.freeze([
+      form({
+        id: "png-set-text",
+        label: "Set a PNG text field",
+        operationId: "edit.field",
+        handlerId: "set-text",
+        summary: "Sets or replaces one tEXt chunk; every other byte of the file is kept.",
+        fields: Object.freeze([
+          field("keyword", "Keyword", "Description", {
+            hint: "1\u201379 Latin-1 characters, no NUL (Title, Author, Description, \u2026)"
+          }),
+          field("text", "Text", "set from the Modkit inspector", { hint: "Latin-1, no NUL" })
+        ]),
+        build: (values) => ({
+          keyword: required(values, "keyword", "Keyword"),
+          text: values.get("text") ?? ""
+        })
+      })
+    ])
+  ],
+  [
+    "set-text-frame",
+    Object.freeze([
+      form({
+        id: "mp3-set-text-frame",
+        label: "Set an ID3v2 text frame",
+        operationId: "edit.field",
+        handlerId: "set-text-frame",
+        summary: "Sets or replaces one ID3v2 text frame, creating the tag when the file has none; the audio is never moved.",
+        fields: Object.freeze([
+          field("keyword", "Frame", "TIT2", {
+            hint: "a four-character text frame id: TIT2, TPE1, TALB, \u2026 (TXXX has another shape)"
+          }),
+          field("text", "Text", "set from the Modkit inspector")
+        ]),
+        build: (values) => ({
+          keyword: required(values, "keyword", "Frame"),
+          text: values.get("text") ?? ""
+        })
+      })
+    ])
+  ],
+  [
+    "set-comment",
+    Object.freeze([
+      form({
+        id: "jpeg-set-comment",
+        label: "Set the JPEG comment",
+        operationId: "edit.field",
+        handlerId: "set-comment",
+        summary: "Writes the COM segment after the APP block, replacing it in place if it exists.",
+        fields: Object.freeze([field("text", "Comment", "set from the Modkit inspector")]),
+        build: (values) => ({ text: values.get("text") ?? "" })
+      })
+    ])
+  ],
+  [
+    "remove-segment",
+    Object.freeze([
+      form({
+        id: "jpeg-remove-segment",
+        label: "Remove a JPEG metadata segment",
+        operationId: "edit.structure",
+        handlerId: "remove-segment",
+        summary: "Drops one metadata segment. A marker that carries the image is refused by the codec.",
+        fields: Object.freeze([
+          field("marker", "Marker", "APP0", {
+            hint: "a metadata marker name, e.g. APP0, APP1, COM"
+          })
+        ]),
+        build: (values) => ({ marker: required(values, "marker", "Marker") })
+      })
+    ])
+  ],
+  [
+    "edit-structure",
+    Object.freeze([
+      form({
+        id: "zip-add-entry",
+        label: "Add an entry to the archive",
+        operationId: "edit.structure",
+        handlerId: "edit-structure",
+        summary: "Adds one stored entry and repacks the archive; every kept entry is copied byte for byte.",
+        fields: Object.freeze([
+          field("path", "Entry path", "added/hello.txt", { hint: "a path inside the archive" }),
+          field("content", "Contents", "added from the Modkit inspector\n", {
+            kind: "content",
+            hint: "text; this host sends it as UTF-8 bytes"
+          })
+        ]),
+        build: (values) => ({
+          add: [
+            {
+              path: required(values, "path", "Entry path"),
+              bytes: base64OfUtf8(values.get("content") ?? "")
+            }
+          ]
+        })
+      }),
+      form({
+        id: "zip-remove-entry",
+        label: "Remove an entry from the archive",
+        operationId: "edit.structure",
+        handlerId: "edit-structure",
+        summary: "Removes one entry and repacks; the other entries keep their exact bytes.",
+        fields: Object.freeze([
+          field("path", "Entry path", "readme.txt", {
+            hint: "the path of an entry the archive already holds"
+          })
+        ]),
+        build: (values) => ({ remove: [required(values, "path", "Entry path")] })
+      }),
+      form({
+        id: "zip-rename-entry",
+        label: "Rename an entry in the archive",
+        operationId: "edit.structure",
+        handlerId: "edit-structure",
+        summary: "Renames one entry without touching its data or its compression.",
+        fields: Object.freeze([
+          field("from", "From", "readme.txt"),
+          field("to", "To", "docs/readme.txt", {
+            hint: "a file cannot be renamed into a directory marker, or the other way round"
+          })
+        ]),
+        build: (values) => ({
+          rename: [{ from: required(values, "from", "From"), to: required(values, "to", "To") }]
+        })
+      })
+    ])
+  ],
+  [
+    "edit-content",
+    Object.freeze([
+      form({
+        id: "zip-replace-entry",
+        label: "Replace an entry's contents",
+        operationId: "edit.content",
+        handlerId: "edit-content",
+        summary: "Replaces one file entry's payload (stored, fresh CRC); nothing else moves.",
+        fields: Object.freeze([
+          field("path", "Entry path", "readme.txt"),
+          field("content", "Contents", "replaced from the Modkit inspector\n", {
+            kind: "content",
+            hint: "text; this host sends it as UTF-8 bytes"
+          })
+        ]),
+        build: (values) => ({
+          path: required(values, "path", "Entry path"),
+          bytes: base64OfUtf8(values.get("content") ?? "")
+        })
+      })
+    ])
+  ]
+]);
+function editOffer(descriptor, options) {
+  if (!options.editable) return Object.freeze({ forms: [], unsupported: [] });
+  const forms = [];
+  const unsupported = [];
+  for (const operation of descriptorOperations(descriptor)) {
+    if (!operation.mutatesSource || operation.state !== "available") continue;
+    const known = FORMS_BY_HANDLER.get(operation.handlerId)?.filter(
+      (form2) => form2.operationId === operation.id
+    );
+    if (known === void 0 || known.length === 0) {
+      unsupported.push({
+        operationId: operation.id,
+        handlerId: operation.handlerId,
+        reason: `this host cannot construct the input for \xAB${operation.handlerId}\xBB yet`
+      });
+      continue;
+    }
+    forms.push(...known);
+  }
+  return Object.freeze({ forms: Object.freeze(forms), unsupported: Object.freeze(unsupported) });
+}
+function offersEditOperations(descriptor, options) {
+  const offer = editOffer(descriptor, options);
+  return offer.forms.length > 0 || offer.unsupported.length > 0;
+}
+var INVOKE_REASONS = Object.freeze({
+  "not-declared": "this codec does not declare that operation",
+  disabled: "the codec disabled this operation for this file",
+  "dependency-required": "the operation needs a dependency this host has not resolved",
+  "permission-missing": "this session was not opened with permission to write the file",
+  "input-not-serializable": "the values could not be sent to the codec",
+  "handler-unregistered": "the codec registered no handler for that operation",
+  cancelled: "the operation was cancelled",
+  "stale-revision": "the file changed on disk after it was opened"
+});
+function invokeRefusalMessage(result) {
+  const plain = INVOKE_REASONS[result.reason];
+  const detail = result.diagnostics?.[0]?.message;
+  const head = plain === void 0 ? result.reason : `${plain} (${result.reason})`;
+  return detail === void 0 ? `refused: ${head}` : `refused: ${head} \u2014 ${detail}`;
+}
+function editPlanFromOperationOutput(output) {
+  const value2 = output;
+  if (value2?.kind !== "edit-plan" || typeof value2.plan !== "object" || value2.plan === null) {
+    throw new TypeError(
+      `the operation returned \xAB${String(value2?.kind ?? "nothing")}\xBB, not an edit plan`
+    );
+  }
+  return value2.plan;
+}
+function editSelfTestLine(name, formId, status2, changed) {
+  return `selftest: edit-op ${name} ${formId} status=${JSON.stringify(status2)} changed=${String(changed)}`;
+}
+var isRejected = (result) => result.state === "rejected";
+
+// apps/electron/src/edit-panel.ts
+var asRecord = (descriptor) => descriptor;
+function fidelityNote(plan) {
+  if (plan.fidelity.preservesUnknownData) return "";
+  const notes = plan.fidelity.notes ?? [];
+  return notes.length === 0 ? " (this rewrite does not keep bytes the format does not account for)" : ` (${notes.join("; ")})`;
+}
+function withoutMutatingOperations(descriptor) {
+  const record = asRecord(descriptor);
+  const operations = record["operations"];
+  if (!Array.isArray(operations)) return descriptor;
+  const kept = operations.filter(
+    (item) => item.mutatesSource !== true
+  );
+  if (kept.length === operations.length) return descriptor;
+  return { ...record, operations: kept };
+}
+var nonMutatingOperationToolbar = defineViewerModule({
+  abiVersion: 1,
+  async mount(args) {
+    const mounted = await operationToolbar.mount({
+      ...args,
+      descriptor: withoutMutatingOperations(args.descriptor)
+    });
+    return {
+      async update(next) {
+        await mounted.update({ ...next, descriptor: withoutMutatingOperations(next.descriptor) });
+      },
+      unmount: () => mounted.unmount()
+    };
+  }
+});
+function createEditPanel(options) {
+  return defineViewerModule({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope(args.signal);
+      const root = createSurface(args.container, "Edit");
+      const descriptor = asRecord(args.descriptor);
+      const ports = options.portsFor(descriptor);
+      const offer = editOffer(descriptor, { editable: ports !== void 0 });
+      const chooser = element(root, "div", { part: "form.row" });
+      element(chooser, "label", { part: "form.label", text: "Operation" });
+      const picker = element(chooser, "select", { part: "form.select" });
+      if (!(picker instanceof HTMLSelectElement)) throw new TypeError("no select element");
+      picker.setAttribute("aria-label", "Mutating operation");
+      const summary = element(root, "p", { part: "form.description" });
+      const pane = element(root, "div", { part: "settings.pane" });
+      const controls = element(root, "div", { part: "form.control" });
+      const apply2 = element(controls, "button", { part: "operations.button", text: "Apply" });
+      apply2.setAttribute("type", "button");
+      const status2 = element(root, "output", { part: "operations.status" });
+      const notes = element(root, "div", { part: "form.status" });
+      const say = (message, failed) => {
+        setViewerText(status2, message);
+        setState(status2, failed ? ["error"] : []);
+        options.onStatus?.({ message, failed });
+      };
+      const drawNotes = () => {
+        notes.replaceChildren();
+        const previous = options.lastOutcome(descriptor);
+        if (previous !== void 0) {
+          element(notes, "div", { part: "form.description", text: `Last change: ${previous}` });
+        }
+        for (const item of offer.unsupported) {
+          element(notes, "div", {
+            part: "form.description",
+            text: `${item.operationId}: not available in this host yet \u2014 ${item.reason}`
+          });
+        }
+      };
+      const inputs = /* @__PURE__ */ new Map();
+      const selectedForm = () => offer.forms.find((form2) => form2.id === picker.value) ?? offer.forms[0];
+      const drawFields = () => {
+        inputs.clear();
+        pane.replaceChildren();
+        const form2 = selectedForm();
+        if (form2 === void 0) {
+          setViewerText(summary, "This subject declares no mutating operation this host can drive.");
+          apply2.setAttribute("disabled", "");
+          return;
+        }
+        apply2.removeAttribute("disabled");
+        setViewerText(summary, `${form2.summary} (${form2.operationId} \u2192 ${form2.handlerId})`);
+        for (const field2 of form2.fields) {
+          const row = element(pane, "div", { part: "form.row" });
+          element(row, "label", { part: "form.label", text: field2.label });
+          const input = element(row, "input", { part: "form.input" });
+          if (!(input instanceof HTMLInputElement)) continue;
+          input.type = "text";
+          input.name = field2.name;
+          input.value = field2.initial;
+          input.setAttribute("aria-label", field2.label);
+          if (field2.hint !== void 0) input.title = field2.hint;
+          inputs.set(field2.name, input);
+          if (field2.hint !== void 0) {
+            element(row, "span", { part: "form.description", text: field2.hint });
+          }
+        }
+      };
+      const run = async () => {
+        const form2 = selectedForm();
+        if (form2 === void 0 || ports === void 0) {
+          say("this host holds no editing arm for the file, so nothing can be applied", true);
+          return;
+        }
+        const values = /* @__PURE__ */ new Map();
+        for (const [name, input2] of inputs) values.set(name, input2.value);
+        let input;
+        try {
+          input = form2.build(values);
+        } catch (error) {
+          say(`cannot apply: ${error instanceof Error ? error.message : String(error)}`, true);
+          return;
+        }
+        say(`${form2.label}: invoking ${form2.handlerId}\u2026`, false);
+        let result;
+        try {
+          result = await args.operations.invoke(form2.handlerId, input, { signal: scope.signal });
+        } catch (error) {
+          say(
+            `refused by the codec: ${error instanceof Error ? error.message : String(error)}`,
+            true
+          );
+          return;
+        }
+        if (isRejected(result)) {
+          say(invokeRefusalMessage(result), true);
+          return;
+        }
+        let plan;
+        try {
+          plan = editPlanFromOperationOutput(result.output);
+        } catch (error) {
+          say(error instanceof Error ? error.message : String(error), true);
+          return;
+        }
+        const applied = await ports.applyPlan(plan);
+        if (applied.failed) {
+          say(applied.message, true);
+          return;
+        }
+        const outcome = `${form2.label} \u2014 ${applied.message}${fidelityNote(plan)}`;
+        options.recordOutcome(descriptor, outcome);
+        say(`${outcome}; reopening the file to show it as it now is`, false);
+        if (scope.signal.aborted) return;
+        const reopened = await options.reopen(descriptor);
+        if (!reopened && !scope.signal.aborted) {
+          say(`${outcome}; the tab could not be reopened, so this view is stale`, true);
+        }
+      };
+      apply2.addEventListener("click", () => {
+        apply2.setAttribute("disabled", "");
+        void run().catch((error) => {
+          say(error instanceof Error ? error.message : String(error), true);
+        }).finally(() => {
+          if (!scope.signal.aborted) apply2.removeAttribute("disabled");
+        });
+      });
+      for (const form2 of offer.forms) {
+        const option2 = element(picker, "option", { text: form2.label });
+        option2.setAttribute("value", form2.id);
+      }
+      picker.addEventListener("change", drawFields);
+      drawFields();
+      drawNotes();
+      const declared = descriptorOperations(descriptor).filter((item) => item.mutatesSource).length;
+      if (offer.forms.length === 0) {
+        setState(root, ["degraded"]);
+        say(
+          offer.unsupported.length === 0 ? "nothing here can change this file" : `${offer.unsupported.length} of ${declared} mutating operation(s) declared, none drivable here`,
+          false
+        );
+      } else {
+        say(`${offer.forms.length} form(s) over ${declared} mutating operation(s)`, false);
+      }
+      return {
+        async update() {
+        },
+        async unmount() {
+          await scope.close();
+          root.remove();
+        }
+      };
+    }
+  });
+}
+
 // apps/electron/src/editor-ports.ts
 var RENDERER_GRANT = Object.freeze({ snapshotId: "renderer", permissions: [], sourceIds: [] });
 var REFUSAL_REASONS = Object.freeze({
@@ -295136,9 +295698,10 @@ async function createRendererEditorPorts(options) {
   };
   const commitPrepared = async (preparedId) => {
     const result = await arm.commit(preparedId);
-    report(commitStatus(result));
+    const status2 = commitStatus(result);
+    report(status2);
     if (result.state === "committed") markSaved();
-    return result.state === "not-applied" ? { state: result.state } : { state: result.state, receipt: result.receipt };
+    return result.state === "not-applied" ? { state: result.state, status: status2 } : { state: result.state, receipt: result.receipt, status: status2 };
   };
   const commit = {
     async prepare(plan) {
@@ -295154,7 +295717,8 @@ async function createRendererEditorPorts(options) {
         report({ message: "nothing prepared to save", failed: true });
         return { state: "not-applied" };
       }
-      return commitPrepared(preparedId);
+      const committed = await commitPrepared(preparedId);
+      return committed.receipt === void 0 ? { state: committed.state } : { state: committed.state, receipt: committed.receipt };
     },
     async undo() {
       const reason = "this host does not replay commits yet";
@@ -295201,6 +295765,13 @@ async function createRendererEditorPorts(options) {
       if (result.state !== "ready") return;
       await commitPrepared(result.preparedId);
     },
+    async applyPlan(plan) {
+      const prepared = await prepare(plan);
+      if (prepared.state !== "ready") {
+        return prepareStatus(prepared) ?? { message: "save refused", failed: true };
+      }
+      return (await commitPrepared(prepared.preparedId)).status;
+    },
     dispose: () => arm.dispose()
   };
 }
@@ -295237,121 +295808,19 @@ async function mountViewer(request) {
   });
 }
 
-// apps/electron/src/view-policy.ts
-var STAGE_ORDER = Object.freeze([
-  "code",
-  "video",
-  "image",
-  "image-edit",
-  "audio",
-  "model",
-  "vector",
-  "archive",
-  "table",
-  "tree",
-  "text",
-  "virtual-text",
-  "hex"
-]);
-var APP_STAGE_POLICY = Object.freeze([
-  Object.freeze({
-    id: "archive",
-    label: "Archive",
-    contract: "common.view/namespace-entry-source"
-  }),
-  Object.freeze({
-    id: "image-edit",
-    label: "Image (edit)",
-    contract: "common.view/raster-image-source"
-  })
-]);
-var PANEL_POLICY = Object.freeze([
-  Object.freeze({ id: "operations", label: "Operations" }),
-  Object.freeze({
-    id: "transport",
-    label: "Transport",
-    contract: "common.view/transport-source"
-  }),
-  Object.freeze({ id: "metadata", label: "Metadata" }),
-  Object.freeze({ id: "properties", label: "Properties" }),
-  Object.freeze({ id: "diagnostics", label: "Diagnostics" })
-]);
-var stageId2 = (stage) => stage.id ?? stage.contract;
-function orderStages(stages) {
-  for (const stage of stages) {
-    if (!STAGE_ORDER.includes(stageId2(stage))) {
-      throw new TypeError(`stage ${stageId2(stage)} is not ranked in STAGE_ORDER`);
-    }
-  }
-  const seen = /* @__PURE__ */ new Set();
-  for (const stage of stages) {
-    if (seen.has(stageId2(stage))) throw new TypeError(`duplicate stage id: ${stageId2(stage)}`);
-    seen.add(stageId2(stage));
-  }
-  return Object.freeze(
-    [...stages].sort(
-      (left, right) => STAGE_ORDER.indexOf(stageId2(left)) - STAGE_ORDER.indexOf(stageId2(right))
-    )
-  );
-}
-function readOnlyStages(editable, readOnly) {
-  const byId = new Map(editable.map((stage) => [stageId2(stage), stage]));
-  return Object.freeze(
-    readOnly.filter((stage) => {
-      const counterpart = byId.get(stageId2(stage));
-      return counterpart?.editable !== true || counterpart.module !== stage.module;
-    })
-  );
-}
-function publishedContracts2(descriptor) {
-  const sources = descriptor["dataSources"];
-  if (!Array.isArray(sources)) return [];
-  return sources.map((item) => String(item.contract ?? ""));
-}
-function descriptorOperations(descriptor) {
-  const operations = descriptor["operations"];
-  if (!Array.isArray(operations)) return [];
-  return operations.map((item) => {
-    const value2 = item;
-    return {
-      id: String(value2["id"] ?? ""),
-      handlerId: String(value2["handlerId"] ?? ""),
-      mutatesSource: value2["mutatesSource"] === true,
-      state: String(value2["state"] ?? "")
-    };
-  });
-}
-function applicablePanels(descriptor) {
-  const published = new Set(publishedContracts2(descriptor));
-  return Object.freeze(
-    PANEL_POLICY.filter((panel) => panel.contract === void 0 || published.has(panel.contract))
-  );
-}
-function entryPreviewOperations(descriptor) {
-  return Object.freeze(
-    descriptorOperations(descriptor).filter(
-      (operation) => operation.state === "available" && !operation.mutatesSource && operation.id.includes("/")
-    ).map((operation) => operation.id)
-  );
-}
-function preferredStage(applicable, planActive) {
-  if (planActive !== void 0 && applicable.includes(planActive)) return planActive;
-  return applicable[0];
-}
-function selfTestLine(name, views, mounted) {
-  return `selftest: ${name} -> views [${views.join(", ")}] mounted=${String(mounted)}`;
-}
-
 // apps/electron/src/inspector.ts
-var PANEL_MODULES = Object.freeze({
-  operations: operationToolbar,
-  transport: transportViewer,
-  metadata: metadataPanel,
-  properties: propertiesTable,
-  diagnostics: diagnosticsPanel
-});
-var NEEDS_OPERATIONS = /* @__PURE__ */ new Set(["operations", "transport"]);
-function createInspectorDock(document2) {
+var NEEDS_OPERATIONS = /* @__PURE__ */ new Set(["operations", "transport", "edit"]);
+function createInspectorDock(document2, options) {
+  const PANEL_MODULES = Object.freeze({
+    // The shipped toolbar invokes with a `null` input, which no mutating operation accepts; the
+    // wrapper hands it the read-only verbs and the Edit panel owns the rest.
+    operations: nonMutatingOperationToolbar,
+    edit: options.editPanel,
+    transport: transportViewer,
+    metadata: metadataPanel,
+    properties: propertiesTable,
+    diagnostics: diagnosticsPanel
+  });
   const root = document2.createElement("aside");
   setPart(root, "workbench.panel");
   root.setAttribute("aria-label", "Inspector");
@@ -295434,7 +295903,14 @@ function createInspectorDock(document2) {
     },
     async show(subject) {
       current = subject;
-      offered = subject === void 0 ? [] : Object.freeze(applicablePanels(subject.descriptor).map((panel) => panel.id));
+      offered = subject === void 0 ? [] : Object.freeze(
+        applicablePanels(subject.descriptor, {
+          // Both halves have to hold: main will write this subject, and the codec declares a
+          // mutating operation this app can build an input for. Either missing and the panel
+          // is not drawn at all — a tab is never given a control that must refuse.
+          editing: offersEditOperations(subject.descriptor, { editable: subject.editable })
+        }).map((panel) => panel.id)
+      );
       active = active !== void 0 && offered.includes(active) ? active : offered[0];
       drawModes();
       await draw();
@@ -295937,7 +296413,11 @@ async function boot() {
   const pendingOpens = /* @__PURE__ */ new Map();
   const portsByPath = /* @__PURE__ */ new Map();
   const readOnlyNotes = /* @__PURE__ */ new Map();
+  const openedEntries = /* @__PURE__ */ new Map();
+  const editOutcomes = /* @__PURE__ */ new Map();
+  const subjectUriOf = (descriptor) => String(descriptor["subjectUri"] ?? "");
   async function prepareOpen(entry) {
+    openedEntries.set(entry.id, entry);
     const result = await subjectClient.open(entry.id);
     if (result.state === "unresolved") {
       const detail = result.snapshot.diagnostics[0]?.message ?? `${result.snapshot.reason}; using the explicit text/hex fallback`;
@@ -296045,13 +296525,52 @@ async function boot() {
     }
   };
   let access;
-  const inspector = createInspectorDock(document);
+  const recordFor = (descriptor) => subjectsByDescriptor.get(descriptorKey(descriptor));
+  const tabsOn = (path) => [...editors.root.querySelectorAll('[data-mk-part="explorer.filetab"]')].filter(
+    (node) => node instanceof HTMLElement && node.title === path
+  );
+  const reopenSubject = async (path) => {
+    const entry = openedEntries.get(path);
+    if (entry === void 0) return false;
+    for (const tab of tabsOn(path)) {
+      const close = tab.querySelector('[data-mk-part="explorer.filetab-close"]');
+      if (close instanceof HTMLElement) close.click();
+    }
+    for (let attempt = 0; attempt < 60 && tabsOn(path).length > 0; attempt += 1) {
+      await new Promise((resolve3) => setTimeout(resolve3, 50));
+    }
+    if (tabsOn(path).length > 0) return false;
+    await editors.open(entry);
+    return true;
+  };
+  const editPanel = createEditPanel({
+    portsFor: (descriptor) => {
+      const record = recordFor(descriptor);
+      return record === void 0 ? void 0 : portsByPath.get(record.path);
+    },
+    reopen: async (descriptor) => {
+      const record = recordFor(descriptor);
+      return record === void 0 ? false : reopenSubject(record.path);
+    },
+    lastOutcome: (descriptor) => editOutcomes.get(subjectUriOf(descriptor)),
+    recordOutcome: (descriptor, outcome) => {
+      editOutcomes.set(subjectUriOf(descriptor), outcome);
+    },
+    // The panel is chrome beside the tab, so its result belongs on the same status line every
+    // other editing surface reports to.
+    onStatus: (status2) => {
+      setFooter(footerPath.textContent ?? "", status2.message, status2.failed);
+    }
+  });
+  const inspector = createInspectorDock(document, { editPanel });
   const inspectorSubject = (path) => {
     const record = path === void 0 ? void 0 : subjectsByPath.get(path);
     if (record === void 0) return void 0;
     return {
       path: record.path,
       descriptor: record.descriptor,
+      // Main's own answer: an arm exists exactly for a subject it is willing to write.
+      editable: portsByPath.has(record.path),
       dataSource: (contract2, major) => record.session.dataSource(contract2, major),
       operations: () => operationsFor(record.descriptor)
     };
@@ -296371,6 +296890,7 @@ async function boot() {
 var settle = async () => {
   await new Promise((resolve3) => setTimeout(resolve3, 60));
 };
+var NUL = "\0";
 async function selfTest(options) {
   const { access, preview, editors, settingsRoot, inspector } = options;
   const entries2 = await access.list(void 0);
@@ -296445,17 +296965,35 @@ async function selfTest(options) {
   console.log(`selftest: after split groups=${editors.groupCount}, rendered=${groups}`);
   const settingsGroups = settingsRoot.querySelectorAll('[data-mk-part="settings.group"]').length;
   console.log(`selftest: settings groups=${settingsGroups}`);
-  await editingProbes({
-    ...options,
-    entries: entries2,
-    showStage,
-    inFocusedTab,
-    dirtyTabs,
-    offeredViews: () => {
-      const picker = focusedPicker();
-      return picker === void 0 ? [] : [...picker.options].map((item) => item.value);
-    }
-  });
+  try {
+    await editingProbes({
+      ...options,
+      entries: entries2,
+      showStage,
+      inFocusedTab,
+      dirtyTabs,
+      offeredViews: () => {
+        const picker = focusedPicker();
+        return picker === void 0 ? [] : [...picker.options].map((item) => item.value);
+      }
+    });
+  } catch (error) {
+    console.log(`selftest: edit probes FAILED ${String(error)}`);
+  }
+  try {
+    await editOperationProbes({
+      access,
+      editors,
+      entries: entries2,
+      inspector,
+      subjectFor: options.subjectFor,
+      portsFor: options.portsFor,
+      showStage,
+      footerText: options.footerText
+    });
+  } catch (error) {
+    console.log(`selftest: edit-op probes FAILED ${String(error)}`);
+  }
   const before = getComputedStyle(document.documentElement).getPropertyValue("--mk-color-accent");
   document.documentElement.setAttribute("data-mk-theme", "sc2");
   const after2 = getComputedStyle(document.documentElement).getPropertyValue("--mk-color-accent");
@@ -296618,19 +297156,19 @@ async function editingProbes(options) {
   }
   if (text2 !== void 0) {
     const ports = portsFor(text2.id);
-    const target = ports?.session.targets[0];
+    const target = ports?.edit.targets[0];
     if (ports === void 0 || target === void 0) {
       console.log("selftest: edit refusal probe has no arm for savetest.json");
     } else {
       try {
         const probe = ports;
         const refused = {
-          targets: probe.session.targets,
+          targets: probe.edit.targets,
           edits: [{ operation: "delete", targetId: target.targetId, source: target.ownerSource }],
           provenance: { actor: "user" }
         };
-        const validation = await probe.session.propose(refused);
-        const prepared = await probe.commit.prepare(await probe.session.plan(refused));
+        const validation = await probe.edit.propose(refused);
+        const prepared = await probe.commit.prepare(await probe.edit.plan(refused));
         console.log(
           `selftest: edit writer refusal valid=${validation.valid} codes=[${validation.diagnostics.map((item) => item.code).join(", ")}] prepare=${prepared.state}/${prepared.reason ?? "-"} footer=${JSON.stringify(footerText())}`
         );
@@ -296715,6 +297253,205 @@ async function editingProbes(options) {
     } catch (error) {
       console.log(`selftest: edit read-only FAILED ${String(error)}`);
     }
+  }
+}
+async function editOperationProbes(options) {
+  const { access, editors, entries: entries2, inspector, showStage } = options;
+  const find = (name) => entries2.find((item) => item.name === name);
+  const rawOnDisk = async (entry) => {
+    const bytes = await access.read(entry.id, 256 * 1024);
+    let text2 = "";
+    for (let at = 0; at < bytes.length; at += 4096) {
+      text2 += String.fromCharCode(...bytes.subarray(at, Math.min(at + 4096, bytes.length)));
+    }
+    return text2;
+  };
+  const labels = (part) => [
+    ...editors.root.querySelectorAll(
+      `[data-mk-part="explorer.group"][data-mk-state~="active"] [data-mk-part="explorer.tabcontent"]:not([hidden]) [data-mk-part="${part}"]`
+    )
+  ].map((node) => (node.textContent ?? "").trim());
+  const metadataOf = (subject) => {
+    const groups = subject?.descriptor["metadata"];
+    return Array.isArray(groups) ? groups : [];
+  };
+  const metadataGroups = (subject) => metadataOf(subject).map((group) => String(group.id ?? ""));
+  const metadataValue = (subject, groupId, key) => {
+    const group = metadataOf(subject).find((item) => String(item.id ?? "") === groupId);
+    const entry = group?.entries?.find((item) => String(item.key ?? "") === key);
+    return entry === void 0 ? "-" : String(entry.value);
+  };
+  const panelStatus = () => inspector.root.querySelector('[data-mk-part="operations.status"]')?.textContent ?? "";
+  const panelNotes = () => inspector.root.querySelector('[data-mk-part="settings.status"]')?.textContent ?? "";
+  const panelFailed = () => inspector.root.querySelector('[data-mk-part="operations.status"][data-mk-state~="error"]') !== null;
+  const subjectAfterReopen = async (path) => {
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      const subject = options.subjectFor(path);
+      if (subject !== void 0) return subject;
+      await new Promise((resolve3) => setTimeout(resolve3, 100));
+    }
+    return void 0;
+  };
+  const openEditPanel = async (path) => {
+    const subject = options.subjectFor(path);
+    if (subject === void 0) return false;
+    await inspector.show(subject);
+    if (!inspector.panels.includes("edit")) return false;
+    await inspector.select("edit");
+    await settle();
+    return true;
+  };
+  const applyForm = async (path, formId, values) => {
+    const picker = inspector.root.querySelector('[data-mk-part="settings.select"]');
+    if (!(picker instanceof HTMLSelectElement)) return "no form picker mounted";
+    if (![...picker.options].some((option2) => option2.value === formId)) {
+      return `form ${formId} is not offered (offers ${[...picker.options].map((item) => item.value).join(", ")})`;
+    }
+    picker.value = formId;
+    picker.dispatchEvent(new Event("change"));
+    await settle();
+    const expected = `Last change: ${picker.selectedOptions[0]?.textContent ?? ""}`;
+    for (const [name, value2] of Object.entries(values)) {
+      const input = inspector.root.querySelector(`[data-mk-part="settings.input"][name="${name}"]`);
+      if (!(input instanceof HTMLInputElement)) return `field ${name} is not on the form`;
+      input.value = value2;
+    }
+    const apply2 = inspector.root.querySelector('[data-mk-part="operations.button"]');
+    if (!(apply2 instanceof HTMLElement)) return "no Apply control mounted";
+    const noteBefore = panelNotes();
+    apply2.click();
+    for (let attempt = 0; attempt < 1200; attempt += 1) {
+      await new Promise((resolve3) => setTimeout(resolve3, 100));
+      if (panelFailed()) return panelStatus();
+      const note = panelNotes();
+      if (note !== noteBefore && note.includes(expected) && options.subjectFor(path) !== void 0) {
+        return note;
+      }
+      if (attempt > 20 && attempt % 20 === 0) {
+        if (inspector.root.querySelector('[data-mk-part="settings.select"]') === null) {
+          await openEditPanel(path);
+        }
+      }
+    }
+    return `timed out: ${panelStatus()}`;
+  };
+  const archive = find("sample.zip");
+  if (archive === void 0) console.log("selftest: edit-op no sample.zip fixture");
+  else {
+    await editors.open(archive);
+    await settle();
+    await showStage("archive");
+    const before = labels("namespace.label");
+    const offered = await openEditPanel(archive.id);
+    if (!offered) {
+      console.log(
+        `selftest: edit-op sample.zip no Edit panel (panels ${inspector.panels.join(", ")})`
+      );
+    } else {
+      const status2 = await applyForm(archive.id, "zip-add-entry", {
+        path: "added/hello.txt",
+        content: "added by the selftest\n"
+      });
+      await showStage("archive");
+      const after2 = labels("namespace.label");
+      console.log(
+        editSelfTestLine(
+          "sample.zip",
+          "zip-add-entry",
+          status2,
+          (await rawOnDisk(archive)).includes("added/hello.txt")
+        )
+      );
+      console.log(
+        `selftest: edit-op sample.zip entries [${before.join(" | ")}] -> [${after2.join(" | ")}]`
+      );
+      await openEditPanel(archive.id);
+      const removal = await applyForm(archive.id, "zip-remove-entry", { path: "data/values.csv" });
+      await showStage("archive");
+      const removed = labels("namespace.label");
+      console.log(
+        editSelfTestLine(
+          "sample.zip",
+          "zip-remove-entry",
+          removal,
+          !(await rawOnDisk(archive)).includes("data/values.csv")
+        )
+      );
+      console.log(`selftest: edit-op sample.zip entries after remove [${removed.join(" | ")}]`);
+      await openEditPanel(archive.id);
+      const refused = await applyForm(archive.id, "zip-remove-entry", { path: "never/here.txt" });
+      console.log(`selftest: edit-op sample.zip refusal status=${JSON.stringify(refused)}`);
+    }
+  }
+  const png = find("sample.png");
+  if (png === void 0) console.log("selftest: edit-op no sample.png fixture");
+  else {
+    await editors.open(png);
+    await settle();
+    const before = metadataValue(options.subjectFor(png.id), "png-image", "chunks");
+    if (!await openEditPanel(png.id)) {
+      console.log(
+        `selftest: edit-op sample.png no Edit panel (panels ${inspector.panels.join(", ")})`
+      );
+    } else {
+      const status2 = await applyForm(png.id, "png-set-text", {
+        keyword: "Description",
+        text: "set by the selftest"
+      });
+      const bytes = await rawOnDisk(png);
+      const after2 = metadataValue(await subjectAfterReopen(png.id), "png-image", "chunks");
+      console.log(
+        editSelfTestLine(
+          "sample.png",
+          "png-set-text",
+          status2,
+          bytes.includes(`tEXtDescription${NUL}set by the selftest`)
+        )
+      );
+      console.log(`selftest: edit-op sample.png chunks ${before} -> ${after2}`);
+    }
+  }
+  const mp3 = find("sample.mp3");
+  if (mp3 === void 0) console.log("selftest: edit-op no sample.mp3 fixture");
+  else {
+    await editors.open(mp3);
+    await settle();
+    const before = metadataGroups(options.subjectFor(mp3.id));
+    if (!await openEditPanel(mp3.id)) {
+      console.log(
+        `selftest: edit-op sample.mp3 no Edit panel (panels ${inspector.panels.join(", ")})`
+      );
+    } else {
+      const status2 = await applyForm(mp3.id, "mp3-set-text-frame", {
+        keyword: "TIT2",
+        text: "Selftest title"
+      });
+      const bytes = await rawOnDisk(mp3);
+      const after2 = metadataGroups(await subjectAfterReopen(mp3.id));
+      console.log(
+        editSelfTestLine(
+          "sample.mp3",
+          "mp3-set-text-frame",
+          status2,
+          bytes.startsWith("ID3") && bytes.includes("TIT2") && bytes.includes("Selftest title")
+        )
+      );
+      console.log(
+        `selftest: edit-op sample.mp3 metadata [${before.join(", ")}] -> [${after2.join(", ")}]`
+      );
+    }
+  }
+  const locked = find("readonly.png");
+  if (locked === void 0) console.log("selftest: edit-op no readonly.png fixture");
+  else {
+    await editors.open(locked);
+    await settle();
+    const subject = options.subjectFor(locked.id);
+    if (subject !== void 0) await inspector.show(subject);
+    const mutating = (subject?.descriptor["operations"] ?? []).filter((item) => item.mutatesSource === true).length;
+    console.log(
+      `selftest: edit-op readonly.png arm=${options.portsFor(locked.id) !== void 0} declaredMutating=${mutating} panels [${inspector.panels.join(", ")}] editOffered=${inspector.panels.includes("edit")} forms=${editOffer(subject?.descriptor ?? {}, { editable: subject?.editable === true }).forms.length} footer=${JSON.stringify(options.footerText())}`
+    );
   }
 }
 boot().catch((error) => {

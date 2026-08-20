@@ -1741,6 +1741,93 @@ describe('13C real-browser viewer host', () => {
     })
   })
 
+  it('shows exactly one tab at a time: the inactive content is hidden, kept mounted, and switching flips it', async () => {
+    await reset()
+    await page.setViewportSize({ width: 1000, height: 700 })
+    await page.evaluate(async () => {
+      const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
+      const typed = ui as unknown as typeof import('@modkitx-x3/ui')
+      const root = document.querySelector('#app') as HTMLElement
+      root.style.setProperty('height', '600px')
+      let mounts = 0
+      const preview: import('@modkitx-x3/ui').PreviewResolver = {
+        supported: [],
+        async open(container, entry) {
+          mounts += 1
+          const body = document.createElement('p')
+          body.textContent = `content of ${entry.name}`
+          container.append(body)
+          return {
+            views: [{ id: 'text', label: 'Text' }],
+            activeView: 'text',
+            async show() {},
+            async unmount() {
+              container.replaceChildren()
+            },
+          }
+        },
+      }
+      const area = typed.createEditorArea(document, {
+        preview,
+        async read() {
+          return new Uint8Array()
+        },
+      })
+      root.replaceChildren(area.root)
+      area.root.style.setProperty('height', '600px')
+      await area.open({ id: '/first.txt', name: 'first.txt', directory: false })
+      await area.open({ id: '/second.txt', name: 'second.txt', directory: false })
+      ;(globalThis as unknown as Record<string, unknown>)['tabsFixture'] = {
+        area,
+        mounts: () => mounts,
+      }
+    })
+
+    const state = () =>
+      page.evaluate(() => {
+        const contents = [
+          ...document.querySelectorAll('[data-mk-part="explorer.tabcontent"]'),
+        ] as HTMLElement[]
+        return contents.map(node => ({
+          text: node.textContent ?? '',
+          hidden: node.hidden,
+          // the regression: `hidden` was set but authored `display: flex` defeated it, so every
+          // open file rendered stacked one under another — computed display is the fact
+          display: getComputedStyle(node).display,
+          height: node.getBoundingClientRect().height,
+        }))
+      })
+
+    let contents = await state()
+    expect(contents).toHaveLength(2)
+    const visible = contents.filter(item => item.display !== 'none')
+    expect(visible).toHaveLength(1)
+    expect(visible[0]?.text).toContain('second.txt')
+    const concealed = contents.find(item => item.display === 'none')
+    expect(concealed?.hidden).toBe(true)
+    expect(concealed?.height).toBe(0)
+
+    // switching activates the other tab without a second mount of anything
+    await page.evaluate(async () => {
+      const fixture = (
+        globalThis as unknown as {
+          tabsFixture: { area: import('@modkitx-x3/ui').EditorArea; mounts: () => number }
+        }
+      ).tabsFixture
+      await fixture.area.open({ id: '/first.txt', name: 'first.txt', directory: false })
+    })
+    contents = await state()
+    const nowVisible = contents.filter(item => item.display !== 'none')
+    expect(nowVisible).toHaveLength(1)
+    expect(nowVisible[0]?.text).toContain('first.txt')
+    // both stayed mounted — the tab state survives independently of the viewer instance,
+    // and re-activating did not create a second interface for the same file
+    const mounts = await page.evaluate(() =>
+      (globalThis as unknown as { tabsFixture: { mounts: () => number } }).tabsFixture.mounts(),
+    )
+    expect(mounts).toBe(2)
+  })
+
   it('gives the editor area the full pane even when the host hides the toolbar', async () => {
     await reset()
     // Layout is the claim here, and the page links the shipped stylesheet, so the measurement

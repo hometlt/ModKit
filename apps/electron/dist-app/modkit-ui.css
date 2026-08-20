@@ -6,8 +6,17 @@
 @layer mk.reset, mk.tokens, mk.base, mk.primitives, mk.components, mk.theme, mk.app;
 
 @layer mk.tokens {
+  /*
+   * Every token block selects ":root, :host" (a selector LIST, deliberately not
+   * ":where(:root, :host)", whose zero specificity would break the theme cascade): ":root"
+   * matches nothing inside a shadow tree, so a bare-:root sheet adopted into one resolves every
+   * token to nothing — the embedded element had to regex-rewrite the shipped stylesheet to be
+   * usable at all. In a normal document ":host" matches nothing and costs nothing.
+   */
+
   /* Complete light palette on bare :root, so an unstamped document always resolves. */
-  :root {
+  :root,
+  :host {
     color-scheme: light;
     --mk-palette-neutral-050: #fafafa;
     --mk-palette-neutral-100: #f0f0f0;
@@ -215,7 +224,8 @@
    * pins the OS palette. Keep it at (0,2,0) so source order decides and the explicit choice wins.
    */
   @media (prefers-color-scheme: dark) {
-    :root:not([data-mk-theme]) {
+    :root:not([data-mk-theme]),
+    :host(:not([data-mk-theme])) {
       color-scheme: dark;
       --mk-palette-neutral-050: #fafafa;
       --mk-palette-neutral-100: #f0f0f0;
@@ -400,7 +410,8 @@
   }
 
   /* Explicit choices win in both directions. */
-  :root[data-mk-theme='modkit-dark'] {
+  :root[data-mk-theme='modkit-dark'],
+  :host([data-mk-theme='modkit-dark']) {
     color-scheme: dark;
     --mk-palette-neutral-050: #fafafa;
     --mk-palette-neutral-100: #f0f0f0;
@@ -582,7 +593,8 @@
     --mk-shadow-focus-ring: 0 0 0 1px #0078d4;
   }
 
-  :root[data-mk-theme='modkit-light'] {
+  :root[data-mk-theme='modkit-light'],
+  :host([data-mk-theme='modkit-light']) {
     color-scheme: light;
     --mk-palette-neutral-050: #fafafa;
     --mk-palette-neutral-100: #f0f0f0;
@@ -764,7 +776,8 @@
     --mk-shadow-focus-ring: 0 0 0 1px #005fb8;
   }
 
-  :root[data-mk-theme='modkit-high-contrast'] {
+  :root[data-mk-theme='modkit-high-contrast'],
+  :host([data-mk-theme='modkit-high-contrast']) {
     color-scheme: dark;
     --mk-palette-neutral-050: #ffffff;
     --mk-palette-neutral-100: #ffffff;
@@ -947,7 +960,8 @@
   }
 
   /* Adapter, not a user-selectable theme: the host's own theme drives every role. */
-  :root[data-mk-theme='vscode-adapter'] {
+  :root[data-mk-theme='vscode-adapter'],
+  :host([data-mk-theme='vscode-adapter']) {
     --mk-palette-neutral-050: #fafafa;
     --mk-palette-neutral-100: #f0f0f0;
     --mk-palette-neutral-200: #e0e0e0;
@@ -1147,7 +1161,8 @@
 
   /* Forced colors: hand every semantic role to the system palette (BRIEF-13C C-15). */
   @media (forced-colors: active) {
-    :root {
+    :root,
+    :host {
       --mk-color-bg: Canvas;
       --mk-color-surface: Canvas;
       --mk-color-raised: Canvas;
@@ -1292,13 +1307,16 @@
   }
 
   /* Density. Compact matches VS Code list metrics; comfortable suits web and Electron. */
-  [data-mk-density='compact'] {
+  /* The :host twins let density be set on an embedded element itself, not only inside it. */
+  [data-mk-density='compact'],
+  :host([data-mk-density='compact']) {
     --mk-size-row: 22px;
     --mk-size-control: 24px;
     --mk-panel-padding: var(--mk-space-2);
   }
 
-  [data-mk-density='comfortable'] {
+  [data-mk-density='comfortable'],
+  :host([data-mk-density='comfortable']) {
     --mk-size-row: 28px;
     --mk-size-control: 32px;
     --mk-panel-padding: var(--mk-space-4);
@@ -1404,6 +1422,18 @@
 /* Authored. Every rule targets the public `data-mk-part` vocabulary, never a private class. */
 
 @layer mk.components {
+  /*
+   * The `hidden` attribute is a semantic promise component code relies on (the editor area
+   * switches tabs by flipping it), and any authored `display` on the same part silently defeats
+   * the UA's `[hidden] { display: none }` — which is exactly how every open tab rendered stacked
+   * one under another: `explorer.tabcontent` has `display: flex`, so `content.hidden = true` did
+   * nothing. `!important` is justified here precisely because it restores a UA semantic rather
+   * than fighting one; scoped to the part vocabulary so it governs only our components.
+   */
+  [data-mk-part][hidden] {
+    display: none !important;
+  }
+
   /* ---------------------------------------------------------------- shared chrome */
   [data-mk-part='viewer.toolbar'],
   [data-mk-part='hex.toolbar'],

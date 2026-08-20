@@ -38,7 +38,7 @@ import {
   setPart,
   setState,
   setViewerText
-} from "./chunks/chunk-QKTN2POI.js";
+} from "./chunks/chunk-SICN3ZNF.js";
 
 // apps/web/src/extensions-ui.ts
 var USER_EXTENSION_TRUST_SENTENCE = "A folder you add here is trusted because you picked it and for no other reason \u2014 nothing is signed and nobody has reviewed it; this page hashes every file as it reads them so that a file changed afterwards is refused instead of run, and user extensions always run in a worker, never on the page.";

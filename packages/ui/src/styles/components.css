@@ -1,6 +1,18 @@
 /* Authored. Every rule targets the public `data-mk-part` vocabulary, never a private class. */
 
 @layer mk.components {
+  /*
+   * The `hidden` attribute is a semantic promise component code relies on (the editor area
+   * switches tabs by flipping it), and any authored `display` on the same part silently defeats
+   * the UA's `[hidden] { display: none }` — which is exactly how every open tab rendered stacked
+   * one under another: `explorer.tabcontent` has `display: flex`, so `content.hidden = true` did
+   * nothing. `!important` is justified here precisely because it restores a UA semantic rather
+   * than fighting one; scoped to the part vocabulary so it governs only our components.
+   */
+  [data-mk-part][hidden] {
+    display: none !important;
+  }
+
   /* ---------------------------------------------------------------- shared chrome */
   [data-mk-part='viewer.toolbar'],
   [data-mk-part='hex.toolbar'],
