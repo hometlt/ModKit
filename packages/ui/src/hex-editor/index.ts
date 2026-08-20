@@ -186,6 +186,19 @@ export const hexEditor: EditorModule = {
       windowOffset = view.offset
       original = view.bytes
       pending.clear()
+      drawWindow()
+    }
+
+    /**
+     * Draw the grid from the bytes this editor already holds.
+     *
+     * Separate from `renderWindow` because after a commit there is nothing left to read: the source
+     * was opened at a revision the commit has just superseded, so asking it again refuses with
+     * "changed on disk while it was open" — and since the Save handler discards its promise, that
+     * refusal surfaced as an unhandled rejection while the grid kept showing pre-save bytes. The
+     * editor knows exactly what it wrote, so it draws that instead of asking.
+     */
+    const drawWindow = (): void => {
       grid.replaceChildren()
 
       for (let row = 0; row < original.length; row += 16) {
@@ -319,14 +332,43 @@ export const hexEditor: EditorModule = {
         )
         return
       }
+      /*
+       * Fold what was committed into the bytes on screen. Re-reading is not an option (the source
+       * is pinned to the revision this commit superseded), and leaving the grid on the old bytes
+       * would show the file as it no longer is.
+       */
+      const updated = new Uint8Array(original)
+      for (const run of runs) {
+        const start = Number(run.offset - windowOffset)
+        if (start >= 0 && start + run.bytes.length <= updated.length) updated.set(run.bytes, start)
+      }
+      original = updated
+      pending.clear()
+      drawWindow()
       setState(root, [])
-      setViewerText(status, `Committed ${runs.length} range(s)`)
-      await renderWindow()
+      /*
+       * The session still holds the revision it opened with, so a second save from this tab is a
+       * conflict by construction. Saying so is better than letting the next Save fail with a word
+       * the user has no way to connect to this one.
+       */
+      setViewerText(
+        status,
+        `Committed ${runs.length} range(s) — reopen the file before editing it again`,
+      )
     }
 
     go.addEventListener('click', () => void renderWindow())
     revert.addEventListener('click', () => void renderWindow())
-    save.addEventListener('click', () => void commit())
+    save.addEventListener('click', () => {
+      // no bare `void`: a rejection here is the one thing the user most needs to be told about
+      commit().catch((error: unknown) => {
+        setState(root, ['error'])
+        setViewerText(
+          status,
+          `Save failed: ${error instanceof Error ? error.message : String(error)}`,
+        )
+      })
+    })
 
     await renderWindow()
 

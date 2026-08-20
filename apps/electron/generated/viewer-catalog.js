@@ -6,6 +6,7 @@ import {
   hexViewer,
   imageViewer,
   modelViewer,
+  monacoViewer,
   tableViewer,
   textEditor,
   treeViewer,
@@ -58,7 +59,7 @@ export const PREVIEW_STAGES = Object.freeze([
 ])
 
 export const PREVIEW_STAGES_READONLY = Object.freeze([
-  { id: 'code', label: 'Code', contract: 'common.view/text-data-source', module: monacoEditor },
+  { id: 'code', label: 'Code', contract: 'common.view/text-data-source', module: monacoViewer },
   { id: 'video', label: 'Video', contract: 'common.view/video-media-source', module: videoViewer },
   { id: 'image', label: 'Image', contract: 'common.view/raster-image-source', module: imageViewer },
   { id: 'audio', label: 'Audio', contract: 'common.view/audio-media-source', module: audioViewer },

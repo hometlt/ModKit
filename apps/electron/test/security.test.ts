@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   createGrantedRoots,
   type PathTools,
+  ELECTRON_BROKER_CHANNELS,
   ELECTRON_SECURE_WEB_PREFERENCES,
   assertElectronBrokerRequest,
   createElectronApp,
@@ -142,6 +143,24 @@ describe('extended broker channels', () => {
         payload: { requestId: 'r1' },
       }),
     ).not.toThrow()
+  })
+
+  /*
+   * One write authority. Saving goes through the subject RPC's editing arm, where main holds the
+   * grant, the coordinator and the file backend; a path-named whole-file write beside it would let
+   * the renderer replace any file in a granted root with no revision check and no receipt.
+   */
+  it('offers the renderer no way to write a file by naming its path', () => {
+    expect(ELECTRON_BROKER_CHANNELS).not.toContain('filesystem.write-file')
+    expect(ELECTRON_BROKER_CHANNELS.filter(channel => /write|replace|delete/u.test(channel)))
+      // the handle-based facility operation is not a path the renderer can name
+      .toEqual(['filesystem.atomic-replace'])
+    expect(() =>
+      assertElectronBrokerRequest({
+        channel: 'filesystem.write-file',
+        payload: { path: win('C:', 'data', 'a.json'), bytes: new Uint8Array([1]) },
+      }),
+    ).toThrow()
   })
 
   it('rejects malformed payloads on those channels', () => {

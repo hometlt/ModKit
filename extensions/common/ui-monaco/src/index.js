@@ -226,22 +226,40 @@ export function createMonacoEditor(options = {}) {
 
       save.addEventListener('click', async () => {
         const next = editor.getValue()
+        /*
+         * The 13D `ChangeSet`: `{ targets, edits: SourceEdit[], provenance: { actor } }`. This
+         * used to be hand-built with `baseRevisions`, `bindingId` and a bare `kind` — fields no
+         * contract declares — so `createRawWriter`, which reads `change.targets` first thing, could
+         * never accept it. The Code tab offered a Save that could not work.
+         */
+        const target = args.edit.targets[0]
+        if (target === undefined) {
+          status.textContent = 'Nothing to save: this session carries no writable target'
+          root.dataset.mkState = 'error'
+          return
+        }
         const change = {
-          baseRevisions: { content: args.descriptor.revision },
+          targets: args.edit.targets,
           edits: [
             {
-              kind: 'text',
-              bindingId: 'content',
+              operation: 'replace',
+              targetId: target.targetId,
+              source: target.ownerSource,
               range: { kind: 'utf16', offset: 0, length: baseline.length },
               payload: { kind: 'text', text: next },
+              label: 'Edit text',
             },
           ],
-          provenance: { origin: 'ui-monaco' },
+          provenance: { actor: 'user' },
         }
         status.textContent = 'Validating…'
+        // `ValidationResult` is `{ valid, diagnostics }`; looking for a `state` of `invalid` meant
+        // a refused change went on to be planned and prepared as if the writer had accepted it
         const validation = await args.edit.propose(change)
-        if (validation?.state === 'invalid') {
-          status.textContent = 'Rejected by validation'
+        if (validation?.valid === false) {
+          const first = validation.diagnostics?.[0]
+          status.textContent =
+            first === undefined ? 'Rejected by validation' : `Rejected: ${first.message}`
           root.dataset.mkState = 'error'
           return
         }
@@ -252,12 +270,25 @@ export function createMonacoEditor(options = {}) {
           return
         }
         const prepared = await args.commit.prepare(plan, { grant: authorization.grant })
-        if (prepared?.state !== 'prepared') {
-          status.textContent = `Prepare failed: ${prepared?.state ?? 'unknown'}`
+        // `ready` is what a CommitCoordinator answers with; `prepared` is a state no coordinator
+        // produces, so every save reported a failure *after* the plan had already been made
+        if (prepared?.state !== 'ready') {
+          status.textContent =
+            prepared?.state === 'conflict'
+              ? 'Conflict: the source changed'
+              : `Prepare rejected: ${prepared?.reason ?? prepared?.state ?? 'unknown'}`
           root.dataset.mkState = 'error'
           return
         }
-        await args.commit.commit(prepared.prepared, { grant: authorization.grant })
+        const receipt = await args.commit.commit(prepared.prepared, { grant: authorization.grant })
+        if (receipt?.state !== undefined && receipt.state !== 'committed') {
+          status.textContent =
+            receipt.state === 'not-applied'
+              ? `Save rejected: ${receipt.reason ?? 'not applied'}`
+              : `Save ${receipt.state}`
+          root.dataset.mkState = 'error'
+          return
+        }
         baseline = next
         syncDirty()
         status.textContent = 'Committed'

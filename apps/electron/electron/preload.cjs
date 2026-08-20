@@ -20,7 +20,6 @@ const CHANNELS = Object.freeze([
   'dialog.reopen-recent',
   'directory.list',
   'filesystem.read-file',
-  'filesystem.write-file',
   'process.launch',
 ])
 

@@ -25,6 +25,9 @@ const previewPolicy = Object.freeze([
     label: 'Code',
     contributionId: 'org.modkitx.ui-monaco/code-stage',
     module: 'monacoEditor',
+    // the same Monaco, constructed `readOnly`; without it a subject this host cannot write showed
+    // an editor with a Save that could not work, or lost the Code tab altogether
+    readOnlyModule: 'monacoViewer',
     editable: true,
   },
   {

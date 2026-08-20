@@ -111,6 +111,36 @@ export function orderStages<Stage extends StageFacts>(stages: readonly Stage[]):
   )
 }
 
+/** A stage plus the two facts the read-only rule needs: its module and whether it edits. */
+export interface StageBinding extends StageFacts {
+  readonly module: unknown
+  readonly editable?: boolean
+}
+
+/**
+ * The stage list for a subject this host cannot write.
+ *
+ * Not "the editable list minus the editors": the generated catalog ships a read-only counterpart
+ * per slot — the plain viewer over the same contract — so a read-only subject still shows its text
+ * and its bytes. The one case that must drop is a slot whose read-only entry is *the same module*
+ * as its editable one: the generator falls back to the editable module when a contribution
+ * declares no read-only substitute, and mounting an `EditorModule` with no ports gives a Save
+ * control that throws. Identity comparison, not a name list, so a fixed contribution restores the
+ * slot with no change here.
+ */
+export function readOnlyStages<Stage extends StageBinding>(
+  editable: readonly Stage[],
+  readOnly: readonly Stage[],
+): readonly Stage[] {
+  const byId = new Map(editable.map(stage => [stageId(stage), stage]))
+  return Object.freeze(
+    readOnly.filter(stage => {
+      const counterpart = byId.get(stageId(stage))
+      return counterpart?.editable !== true || counterpart.module !== stage.module
+    }),
+  )
+}
+
 /** Data sources the descriptor publishes, as plain contract names. */
 export function publishedContracts(descriptor: Record<string, unknown>): readonly string[] {
   const sources = descriptor['dataSources']
