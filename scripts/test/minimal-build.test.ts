@@ -87,19 +87,17 @@ describe('minimal builds stay minimal', () => {
   }, 60_000)
 
   it('a headless host carries no UI vocabulary at all', async () => {
-    const text = await bundled(
-      `export { createModkit } from '@modkitx-x3/host/node'\n`,
-      { platform: 'node' },
-    )
+    const text = await bundled(`export { createModkit } from '@modkitx-x3/host/node'\n`, {
+      platform: 'node',
+    })
     expect(text.includes('data-mk-part'), 'UI leaked into the headless host').toBe(false)
     expect(text.includes('monaco-editor'), 'monaco leaked into the headless host').toBe(false)
   }, 60_000)
 
   it('a linked extension carries its codecs, not a user interface', async () => {
-    const text = await bundled(
-      `export { images } from '@modkitx-x3/extensions/images'\n`,
-      { platform: 'node' },
-    )
+    const text = await bundled(`export { images } from '@modkitx-x3/extensions/images'\n`, {
+      platform: 'node',
+    })
     expect(text).toContain('image-png')
     expect(text.includes('data-mk-part'), 'UI leaked into a linked extension').toBe(false)
   }, 60_000)
