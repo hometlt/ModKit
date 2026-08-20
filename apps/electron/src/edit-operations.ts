@@ -29,6 +29,12 @@ export interface EditOperationField {
   readonly label: string
   /** `text` is taken as written; `content` is UTF-8 encoded and base64'd for a bytes parameter. */
   readonly kind: 'text' | 'content'
+  /*
+   * Both kinds are collected through a single-line control, whose value sanitisation strips
+   * newlines — so a default containing one declares something the control cannot hold, and the
+   * user silently gets different bytes than the table promised. Keep defaults single-line until
+   * there is a multi-line control to collect them with.
+   */
   /** Prefilled so the control is usable without knowing the format's vocabulary by heart. */
   readonly initial: string
   /** Shown beside the field; says what the codec will accept, in the codec's own words. */
@@ -216,7 +222,7 @@ const FORMS_BY_HANDLER: ReadonlyMap<string, readonly EditOperationForm[]> = new 
           'Adds one stored entry and repacks the archive; every kept entry is copied byte for byte.',
         fields: Object.freeze([
           field('path', 'Entry path', 'added/hello.txt', { hint: 'a path inside the archive' }),
-          field('content', 'Contents', 'added from the Modkit inspector\n', {
+          field('content', 'Contents', 'added from the Modkit inspector', {
             kind: 'content',
             hint: 'text; this host sends it as UTF-8 bytes',
           }),
@@ -272,7 +278,7 @@ const FORMS_BY_HANDLER: ReadonlyMap<string, readonly EditOperationForm[]> = new 
         summary: "Replaces one file entry's payload (stored, fresh CRC); nothing else moves.",
         fields: Object.freeze([
           field('path', 'Entry path', 'readme.txt'),
-          field('content', 'Contents', 'replaced from the Modkit inspector\n', {
+          field('content', 'Contents', 'replaced from the Modkit inspector', {
             kind: 'content',
             hint: 'text; this host sends it as UTF-8 bytes',
           }),

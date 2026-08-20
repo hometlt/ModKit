@@ -293948,7 +293948,7 @@ var FORMS_BY_HANDLER = /* @__PURE__ */ new Map([
         summary: "Adds one stored entry and repacks the archive; every kept entry is copied byte for byte.",
         fields: Object.freeze([
           field("path", "Entry path", "added/hello.txt", { hint: "a path inside the archive" }),
-          field("content", "Contents", "added from the Modkit inspector\n", {
+          field("content", "Contents", "added from the Modkit inspector", {
             kind: "content",
             hint: "text; this host sends it as UTF-8 bytes"
           })
@@ -294004,7 +294004,7 @@ var FORMS_BY_HANDLER = /* @__PURE__ */ new Map([
         summary: "Replaces one file entry's payload (stored, fresh CRC); nothing else moves.",
         fields: Object.freeze([
           field("path", "Entry path", "readme.txt"),
-          field("content", "Contents", "replaced from the Modkit inspector\n", {
+          field("content", "Contents", "replaced from the Modkit inspector", {
             kind: "content",
             hint: "text; this host sends it as UTF-8 bytes"
           })
