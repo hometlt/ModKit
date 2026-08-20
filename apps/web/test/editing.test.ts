@@ -13,7 +13,12 @@
  * handle never offers them, and a writer's refusal arrives with the writer's own reason attached.
  */
 import { afterEach, describe, expect, it } from 'vitest'
-import { revisionId, type ArtifactByteSource, type ChangeSet } from '@modkitx-x3/sdk'
+import {
+  revisionId,
+  type ArtifactByteSource,
+  type AssetEditPlan,
+  type ChangeSet,
+} from '@modkitx-x3/sdk'
 import type { OpenedSubject, SubjectEditorPorts } from '@modkitx-x3/host'
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
 import { createWebSubjectServices, type WebSubjectServices } from '../src/subjects.js'
@@ -25,6 +30,7 @@ import {
   requestWriteAccess,
   sourceRevisionToken,
   sourceUriFor,
+  WEB_EDIT_EVIDENCE,
 } from '../src/editing.js'
 import { createSingleFileAccess, type WebFileAccess, type WebFileLike } from '../src/files.js'
 import { applicableStages, createWebPreviewStages, stageIdOf } from '../src/views.js'
@@ -535,5 +541,52 @@ describe('browser editing — change-set translation', () => {
     // a change that is neither shape is refused rather than guessed at
     expect(normalizeChangeSet({ edits: [] }, targets, encoder.encode('abcdef'))).toBeUndefined()
     expect(normalizeChangeSet('nonsense', targets, encoder.encode('abcdef'))).toBeUndefined()
+  })
+})
+
+// ---------------------------------------------------------------------------------------------
+// the fidelity evidence policy
+
+/**
+ * What this application accepts as proof of a fidelity claim (ADR-HOST-002 §6).
+ *
+ * The list is the whole point: a claim with no record is `fidelity-unproven` and nothing is
+ * written. Path A made it load-bearing — a codec's plan claims what the codec did, and the ZIP
+ * codec's archive re-assembly is `semantic`, which the raw writer's by-construction record does
+ * not and must not cover.
+ */
+describe('what this app accepts as proof of a fidelity claim', () => {
+  /** A plan is only ever matched on its claim; the rest is what the coordinator checks. */
+  const claiming = (
+    roundTrip: AssetEditPlan['fidelity']['roundTrip'],
+    preservesUnknownData: boolean,
+  ): AssetEditPlan =>
+    ({ fidelity: { roundTrip, preservesUnknownData } }) as unknown as AssetEditPlan
+
+  it('proves the raw writer byte-identical claim by construction', () => {
+    const evidence = WEB_EDIT_EVIDENCE.evidenceFor(claiming('byte-identical', true))
+    expect(evidence?.writer.providerId).toBe('org.modkitx.host/raw-writer')
+    expect(evidence?.corpusDigest).toBe('none:by-construction')
+  })
+
+  it('proves the ZIP codec semantic re-assembly from a corpus run, both ways', () => {
+    const canonical = WEB_EDIT_EVIDENCE.evidenceFor(claiming('semantic', true))
+    const other = WEB_EDIT_EVIDENCE.evidenceFor(claiming('semantic', false))
+    expect(canonical?.writer.providerId).toBe('org.modkitx/archive-zip')
+    expect(canonical?.evidenceId).toBe('zip-verbatim-reassembly-v1')
+    expect(other?.evidenceId).toBe('zip-verbatim-reassembly-non-canonical-v1')
+    /*
+     * The two claims are different claims and get different records; neither stands in for the
+     * other, and neither names a corpus this app pretends to have run itself.
+     */
+    expect(canonical?.corpusId).toMatch(/archive-edits\.test\.ts/u)
+    expect(canonical?.preservesUnknownData).toBe(true)
+    expect(other?.preservesUnknownData).toBe(false)
+  })
+
+  it('refuses a claim no record covers, which is what makes the list mean anything', () => {
+    expect(WEB_EDIT_EVIDENCE.evidenceFor(claiming('byte-identical', false))).toBeUndefined()
+    expect(WEB_EDIT_EVIDENCE.evidenceFor(claiming('lossy', true))).toBeUndefined()
+    expect(WEB_EDIT_EVIDENCE.evidenceFor(claiming('none', false))).toBeUndefined()
   })
 })

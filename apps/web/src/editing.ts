@@ -5,7 +5,8 @@
  * `createBrowserEditingBackend` (File System Access writable streams, with a pre-image rollback),
  * `createSubjectEditing` (13D targets, grant snapshot, commit coordinator, and the four
  * `editorPorts` a `@modkitx-x3/ui` editor stage expects) and `createRawWriter` +
- * `createEvidenceRegistry` (literal replacements, byte-identical, proven by construction).
+ * `createEvidenceRegistry` (literal replacements, byte-identical, proven by construction — see
+ * `WEB_EDIT_EVIDENCE` for the records this application adds to that floor).
  *
  * What this module adds is everything the *browser* makes true and the host cannot know:
  *
@@ -25,17 +26,26 @@
  *  - **The hex editor speaks a different change shape.** It emits binding-keyed byte runs, not the
  *    `ChangeSet` of `SourceEdit`s that a `Writer` validates. `normalizeChangeSet` translates, and
  *    merges the runs into one contiguous replacement so a multi-run save is one write.
+ *  - **Both edit paths are held in this page, so both go through one composition.** Path B is the
+ *    shipped editors proposing a change set; Path A (ADR-HOST-002) is a codec's mutating operation
+ *    returning an `edit-plan`, which `./edit-panel.ts` drives. `editorFor` hands out both from a
+ *    single `createSubjectEditing`, so a tab's stages and its Edit panel share one grant snapshot
+ *    and one commit coordinator — and Path A's plan is validated by `planFromOperation` before the
+ *    coordinator is asked for anything, which is the check a renderer behind an RPC arm has to ask
+ *    the serving side to make and a page holding the host can simply make itself.
  *
  * Nothing here touches the DOM, so all of it is unit-tested in Node against structural fakes.
  */
 import { diagnostic, type Diagnostic } from '@modkitx-x3/core'
 import type {
+  AssetEditPlan,
   ChangeSet,
   CommitCoordinator,
   CommitRejection,
   CommitResult,
   EditAuthorizationPort,
   EditSession,
+  OperationOutput,
   PermissionGrant,
   SubjectEditTarget,
   ValidationResult,
@@ -44,7 +54,10 @@ import {
   createEvidenceRegistry,
   createRawWriter,
   createSubjectEditing,
+  type EvidenceRegistry,
+  type FidelityEvidenceRecord,
   type OpenedSubject,
+  type SubjectEditing,
   type SubjectEditorPorts,
 } from '@modkitx-x3/host'
 import { createBrowserEditingBackend, type BrowserEditingBackend } from '@modkitx-x3/host/browser'
@@ -348,6 +361,65 @@ const firstMessage = (diagnostics: readonly Diagnostic[]): string | undefined =>
   diagnostics[0]?.message
 
 // ---------------------------------------------------------------------------------------------
+// fidelity evidence policy
+
+/**
+ * Which fidelity claims this application is willing to commit, and what proves each
+ * (ADR-HOST-002 §6). A claim with no record is `fidelity-unproven` and nothing is written — the
+ * right default, and the reason this list is explicit rather than a blanket "trust the codec".
+ *
+ * The registry's own record covers every `{byte-identical, preservesUnknownData: true}` plan: the
+ * host raw writer's (Path B, the text and hex editors) and the metadata edits of the PNG, JPEG and
+ * MP3 codecs, which splice one byte range and leave every other byte where it was.
+ *
+ * A ZIP edit is a different fact. The codec re-assembles the whole archive, so it claims
+ * `semantic`, and what proves the re-assembly is verbatim is a corpus run rather than a
+ * construction argument: `packages/host/test/archive-edits.test.ts` compares every kept entry's
+ * local header, compressed data and central-directory record byte for byte against an independent
+ * ZIP reader, and checks a kept deflated entry still inflates. Two records, because the codec
+ * downgrades its own claim honestly for an archive whose layout the central directory does not
+ * account for, and "keeps every unknown byte" and "does not" are two different claims.
+ *
+ * This is *this app's* policy, held here rather than shared with the Electron host: a browser tab
+ * and a desktop application are two different places to decide what may be written, even when they
+ * happen to accept the same proofs today.
+ */
+const ZIP_WRITER = Object.freeze({
+  providerId: 'org.modkitx/archive-zip',
+  providerVersion: '1.0.0',
+  artifactDigest: 'none:extension-artifact-not-pinned',
+  formatId: 'zip',
+  representationId: 'archive-namespace',
+})
+
+const zipEvidenceRecord = (
+  preservesUnknownData: boolean,
+  evidenceId: string,
+  inputClass: string,
+): FidelityEvidenceRecord =>
+  Object.freeze({
+    writer: ZIP_WRITER,
+    claim: Object.freeze({ roundTrip: 'semantic' as const, preservesUnknownData }),
+    evidenceId,
+    corpusId: 'modkitX3/packages/host/test/archive-edits.test.ts',
+    corpusDigest: 'none:proof-suite',
+    conformanceProfile: 'org.modkitx/codec-contribution-v1',
+    optionsFingerprint: 'options:stored-additions',
+    inputClass,
+    provenAt: '2026-08-19T00:00:00Z',
+  })
+
+export const WEB_EDIT_EVIDENCE: EvidenceRegistry = createEvidenceRegistry()
+  .with(zipEvidenceRecord(true, 'zip-verbatim-reassembly-v1', 'zip-classic'))
+  .with(
+    zipEvidenceRecord(
+      false,
+      'zip-verbatim-reassembly-non-canonical-v1',
+      'zip-non-canonical-layout',
+    ),
+  )
+
+// ---------------------------------------------------------------------------------------------
 // the arm
 
 export interface WebEditingArmOptions {
@@ -378,13 +450,45 @@ export interface WebSubjectEditRequest {
   readonly bytes: Uint8Array
 }
 
+/** What one applied change did, or why it did not, in the words the surfaces show. */
+export interface EditApplyStatus {
+  readonly message: string
+  readonly failed: boolean
+}
+
+/**
+ * One opened subject's whole editing surface — both paths, over one coordinator.
+ *
+ * Path B (the shipped text and hex editors) needs `ports`; Path A (a codec's mutating operation)
+ * needs `planFromOperation` and `applyPlan`. They are handed out together, from one
+ * `createSubjectEditing`, so a tab's stages and its Edit panel share a single grant snapshot and a
+ * single commit coordinator rather than two that happen to agree.
+ */
+export interface WebSubjectEditor {
+  /** The four ports a `@modkitx-x3/ui` editor stage expects. */
+  readonly ports: SubjectEditorPorts
+  /**
+   * Path A's gate: accept an operation's output as an edit plan *for this subject at its open
+   * revision*, or throw with the host's own reason. In-page there is no RPC arm to do this on the
+   * far side, so it is done here — before the coordinator is asked for anything.
+   */
+  planFromOperation(output: OperationOutput): AssetEditPlan
+  /**
+   * `prepare` then `commit`, through the same coordinator every save in this tab goes through.
+   * The panel gains no write authority of its own: it hands over a plan, exactly as an editor does.
+   */
+  applyPlan(plan: AssetEditPlan): Promise<EditApplyStatus>
+}
+
 export interface WebEditingArm {
   /** The 13D backend every subject in this session writes through. */
   readonly backend: BrowserEditingBackend
   /**
-   * Editor ports for one opened subject, or `undefined` when this subject cannot be edited — in
-   * which case the reason has already gone to `onNotice`.
+   * The editing surface for one opened subject, or `undefined` when this subject cannot be edited
+   * — in which case the reason has already gone to `onNotice`.
    */
+  editorFor(request: WebSubjectEditRequest): WebSubjectEditor | undefined
+  /** Just the editor-stage ports; `editorFor(request)?.ports`, named for what the previewer asks. */
   portsFor(request: WebSubjectEditRequest): SubjectEditorPorts | undefined
   dispose(): Promise<void>
 }
@@ -398,7 +502,7 @@ export interface WebEditingArm {
  * one hazard `createRawWriter` documents.
  */
 export function createWebEditingArm(options: WebEditingArmOptions): WebEditingArm {
-  const evidence = createEvidenceRegistry()
+  const evidence = WEB_EDIT_EVIDENCE
   const writer = createRawWriter()
   const backend = createBrowserEditingBackend({
     handleFor: options.handleFor,
@@ -527,13 +631,70 @@ export function createWebEditingArm(options: WebEditingArmOptions): WebEditingAr
     return Object.freeze({ edit, commit, payloads: base.payloads, authorization })
   }
 
+  /**
+   * Path A over one subject's ports: authorize, prepare, commit — and say which of the three
+   * refused, in that layer's own vocabulary. Nothing here writes; the coordinator does.
+   */
+  const applying =
+    (ports: SubjectEditorPorts, request: WebSubjectEditRequest) =>
+    async (plan: AssetEditPlan): Promise<EditApplyStatus> => {
+      /*
+       * The same gate a Save click goes through, for the same reason: `requestPermission` is only
+       * honoured while the page holds transient user activation, and the Apply click is the
+       * activation. It also hands back the host-issued snapshot `prepare` and `commit` validate —
+       * the panel never sees, holds or mints a grant.
+       */
+      const authorized = await ports.authorization.request(plan)
+      if (authorized === undefined) {
+        return {
+          message: `${request.name} was not written: this browser did not grant write access`,
+          failed: true,
+        }
+      }
+      const prepared = await ports.commit.prepare(plan, { grant: authorized.grant })
+      if (prepared.state === 'conflict') {
+        return {
+          message:
+            `refused before writing: ${describeRejection('stale-revision')} ` +
+            `(${prepared.conflicts.length} conflict(s))`,
+          failed: true,
+        }
+      }
+      if (prepared.state === 'rejected') {
+        return {
+          message: `refused before writing: ${describeRejection(prepared.reason)} (${prepared.reason})`,
+          failed: true,
+        }
+      }
+      const result = await ports.commit.commit(prepared.prepared, { grant: authorized.grant })
+      if (result.state === 'committed') {
+        return { message: `applied and written to ${request.name}`, failed: false }
+      }
+      if (result.state === 'not-applied') {
+        return {
+          message: `not applied: ${describeRejection(result.reason)} (${result.reason})`,
+          failed: true,
+        }
+      }
+      if (result.state === 'rolled-back') {
+        return {
+          message: `not applied: the write failed and ${request.name} was rolled back`,
+          failed: true,
+        }
+      }
+      return {
+        message: `${request.name} was only partly written; recovery is in the receipt`,
+        failed: true,
+      }
+    }
+
   const arm: WebEditingArm = {
     backend,
 
-    portsFor(request) {
-      let ports: SubjectEditorPorts | undefined
+    editorFor(request) {
+      let editing: SubjectEditing
       try {
-        ports = createSubjectEditing({
+        editing = createSubjectEditing({
           opened: request.opened,
           grant: request.grant,
           // One backend, and only for a source this session really holds a handle for: an unknown
@@ -541,20 +702,40 @@ export function createWebEditingArm(options: WebEditingArmOptions): WebEditingAr
           backendFor: sourceId => (options.handleFor(sourceId) === undefined ? undefined : backend),
           evidenceFor: plan => evidence.evidenceFor(plan),
           writer,
-          expectedWriter: writer.identity,
+          /*
+           * No `expectedWriter`. It pins every committed plan's evidence to *one* writer identity,
+           * which was right while the raw writer was the only thing that could produce a plan here
+           * — and is wrong the moment this app offers a codec's mutating operations, because those
+           * plans are the codec's and their evidence names the codec. The pin is not the check it
+           * looks like either: `WEB_EDIT_EVIDENCE` already names, record by record, which writer
+           * proved which claim, and a claim with no record is still refused as `fidelity-unproven`.
+           */
           ...(options.maxInlinePayloadBytes === undefined
             ? {}
             : { maxInlinePayloadBytes: options.maxInlinePayloadBytes }),
-        }).editorPorts
+        })
       } catch (error) {
         options.onNotice(`${request.name} cannot be edited here: ${describe(error)}`)
         return undefined
       }
-      if (ports === undefined) {
+      const base = editing.editorPorts
+      if (base === undefined) {
         options.onNotice(`${request.name} cannot be edited here: no writer backs this subject.`)
         return undefined
       }
-      return speaking(ports, request)
+      const ports = speaking(base, request)
+      return Object.freeze({
+        ports,
+        // Bound to the `SubjectEditing` that issued the grant snapshot: the plan is checked against
+        // *this* subject at *this* revision, which is the check a renderer over an RPC arm has to
+        // ask the serving side for and a page holding the host can simply make.
+        planFromOperation: (output: OperationOutput) => editing.planFromOperation(output),
+        applyPlan: applying(ports, request),
+      })
+    },
+
+    portsFor(request) {
+      return arm.editorFor(request)?.ports
     },
 
     async dispose() {
