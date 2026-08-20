@@ -14,7 +14,11 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { MessageChannel } from 'node:worker_threads'
 import { revisionId, type ArtifactByteSource } from '@modkitx-x3/sdk'
-import { installBrowserWorkerEntry, type BrowserWorkerLike } from '@modkitx-x3/host/browser'
+import {
+  installBrowserWorkerEntry,
+  type BrowserObjectUrlLike,
+  type BrowserWorkerLike,
+} from '@modkitx-x3/host/browser'
 import type { WebDomGlobals } from '../src/subjects.js'
 
 export const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
@@ -65,9 +69,17 @@ export class FakeBlob {
   }
 }
 
-export const objectUrls = {
-  createObjectURL: (blob: { readonly source?: string }) =>
-    `data:text/javascript;base64,${Buffer.from(blob.source ?? '', 'utf8').toString('base64')}`,
+/**
+ * The module store. Declared against the real `BrowserObjectUrlLike` (rather than a hand-shaped
+ * parameter that only happens to fit) so this harness is type-checkable: only a blob this file
+ * minted carries source text, and anything else mints an empty module rather than being cast.
+ */
+export const objectUrls: BrowserObjectUrlLike = {
+  createObjectURL: blob =>
+    `data:text/javascript;base64,${Buffer.from(
+      blob instanceof FakeBlob ? blob.source : '',
+      'utf8',
+    ).toString('base64')}`,
   revokeObjectURL: () => undefined,
 }
 

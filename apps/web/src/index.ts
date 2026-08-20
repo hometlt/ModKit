@@ -18,6 +18,7 @@ export {
 } from '@modkitx-x3/host/browser'
 export { createWorkbench, type Workbench } from '@modkitx-x3/ui/workbench'
 export {
+  catalogCoordinates,
   catalogToExtensionInputs,
   createWebSubjectServices,
   resolveModuleMap,
@@ -29,6 +30,42 @@ export {
   type WebSubjectServices,
   type WebSubjectServicesOptions,
 } from './subjects.js'
+/*
+ * User-granted extension folders (S12-web). The loader and the handle store are DOM-free and
+ * belong to this package's library surface; `./extensions-ui.ts` is a page module and is imported
+ * by the shell directly, the way `./settings.ts`'s panel is.
+ */
+export {
+  containerCoordinate,
+  DEFAULT_EXTENSION_ROOT_MAX_FILES,
+  DEFAULT_EXTENSION_ROOT_MAX_TOTAL_BYTES,
+  EXTENSION_ROOT_FAILURE_CODES,
+  extensionCoordinate,
+  isUserExtensionUrl,
+  loadUserExtensionRoots,
+  NO_USER_EXTENSION_ROOTS,
+  queryUserExtensionPermission,
+  requestUserExtensionPermission,
+  USER_EXTENSION_ARTIFACT_ORIGIN,
+  USER_EXTENSION_ORIGIN,
+  userExtensionArtifactRoot,
+  type LoadedUserExtensionRoots,
+  type LoadUserExtensionRootsOptions,
+  type UserExtensionRootFailure,
+  type UserExtensionRootRequest,
+  type WebExtensionDirectoryHandle,
+  type WebGrantQueryable,
+  type WebPermissionState,
+} from './extension-roots.js'
+export {
+  createIndexedDbExtensionStore,
+  createMemoryExtensionStore,
+  USER_EXTENSION_DATABASE,
+  USER_EXTENSION_STORE,
+  type IdbFactoryLike,
+  type StoredUserExtension,
+  type UserExtensionStore,
+} from './extension-store.js'
 
 export const WEB_MAIN_REALM = 'org.modkitx.app.web/main'
 export const WEB_WORKER_REALM = 'org.modkitx.app.web/worker'

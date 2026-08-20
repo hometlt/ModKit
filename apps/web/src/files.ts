@@ -95,7 +95,14 @@ export function describeFileCapability(scope: unknown): FileCapabilityReport {
 const joinPath = (parent: string, name: string): string =>
   parent === '' ? name : `${parent}/${name}`
 
-async function* iterateChildren(
+/**
+ * Children of one directory handle, over whichever iteration surface the handle exposes.
+ *
+ * Exported because `./extension-roots.ts` walks a granted folder for a different reason (reading
+ * an extension, not browsing it) and must not disagree with the explorer about what a folder
+ * contains or which browsers it can read.
+ */
+export async function* iterateDirectoryChildren(
   directory: WebDirectoryHandleLike,
 ): AsyncIterable<WebFileSystemHandleLike> {
   const entries = directory.entries
@@ -160,7 +167,7 @@ export function createDirectoryAccess(
       const prefix = entryId ?? ''
       const listed: ExplorerEntry[] = []
       let truncated = false
-      for await (const handle of iterateChildren(directory)) {
+      for await (const handle of iterateDirectoryChildren(directory)) {
         signal?.throwIfAborted()
         if (listed.length >= MAXIMUM_DIRECTORY_ENTRIES) {
           truncated = true

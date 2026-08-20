@@ -4,16 +4,23 @@
  * the browser worker backend, and opened by the one host pipeline (`openSubject`) for the
  * **worker realm's target** — exactly the shape Electron uses, with the browser as the host.
  *
- * Nothing here evaluates extension code on the page thread: the execution registry holds the
- * worker backend only, and the gate refuses (never downgrades) a variant that has no boundary in
- * this host. DOM globals are injected structurally so this file is unit-tested in Node with
- * fakes and used unchanged in the page.
+ * Since S12-web the composition also takes the folders a user granted (`./extension-roots.ts`).
+ * They join the same pipeline on the same terms — worker-only, verified per file before
+ * evaluation — and differ in exactly one respect, which the UI must keep visible: a catalog
+ * digest is a build-time attestation by a third party, a user-folder digest is this page's own
+ * measurement of bytes the user pointed it at. Neither buys page-thread execution; nothing here
+ * evaluates extension code on the page thread at all, because the execution registry holds the
+ * worker backend only and the gate refuses (never downgrades) a variant with no boundary here.
+ *
+ * DOM globals are injected structurally so this file is unit-tested in Node with fakes and used
+ * unchanged in the page.
  */
 
 import type { Diagnostic } from '@modkitx-x3/core'
 import type { ServiceContractDefinitionRegistry } from '@modkitx-x3/sdk'
 import {
   createBundledServiceDefinitionRegistry,
+  createExecutionBackendRegistry,
   createHostComposition,
   createSubjectServices,
   registerServiceDefinitionsOrThrow,
@@ -23,7 +30,9 @@ import {
   type SubjectServices,
 } from '@modkitx-x3/host'
 import {
-  createBrowserExecutionBackends,
+  browserLoaderHooks,
+  createBrowserWorkerBackend,
+  createDomWorkerRealmFactory,
   DEFAULT_BROWSER_WORKER_POLICY,
   type BrowserBlobConstructorLike,
   type BrowserFetchLike,
@@ -33,6 +42,14 @@ import {
   type BrowserWorkerConstructorLike,
   type BrowserWorkerPolicy,
 } from '@modkitx-x3/host/browser'
+import {
+  containerCoordinate,
+  extensionCoordinate,
+  isUserExtensionUrl,
+  NO_USER_EXTENSION_ROOTS,
+  type LoadedUserExtensionRoots,
+  type UserExtensionRootFailure,
+} from './extension-roots.js'
 import {
   createWebTopology,
   probeWebFacilities,
@@ -97,6 +114,22 @@ export function catalogToExtensionInputs(
   }))
 }
 
+/**
+ * Coordinates the attested catalog claims.
+ *
+ * Pass these to `loadUserExtensionRoots` as `claimed`: the catalog is loaded first, so a user
+ * folder declaring the same `publisher/id` is the second claimant and is reported rather than
+ * silently shadowing (or being shadowed by) the bundled one.
+ */
+export function catalogCoordinates(catalog: WebExtensionCatalog): readonly string[] {
+  const coordinates: string[] = []
+  for (const entry of catalog.extensions) {
+    const coordinate = containerCoordinate(entry.containers)
+    if (coordinate !== undefined) coordinates.push(coordinate)
+  }
+  return Object.freeze(coordinates)
+}
+
 // ---------------------------------------------------------------------------------------------
 // the worker module map
 
@@ -144,9 +177,28 @@ export interface WebSubjectServicesOptions {
   /** Origin + base path the app is served from; catalog roots and the module map resolve here. */
   readonly baseUrl: string | URL
   readonly catalog: WebExtensionCatalog
+  /**
+   * Folders the user granted, already loaded by `loadUserExtensionRoots`.
+   *
+   * Taking the whole load result rather than bare inputs is deliberate: it carries the `fetch`
+   * that answers the synthetic artifact URLs, and installing that fetch is not something a
+   * composition root should be able to forget. The catalog is loaded first, so a user folder
+   * claiming a coordinate the catalog already claims is dropped here too and reported on
+   * `userExtensionConflicts` — first wins, second reported, exactly as the Node loader resolves it.
+   */
+  readonly userExtensions?: LoadedUserExtensionRoots
   readonly identity: WebRuntimeIdentity
   readonly dom: WebDomGlobals
   readonly probe?: WebFacilityProbe
+  /**
+   * Ceilings the verified loader applies to one artifact's module graph at activation. Left
+   * unset it keeps the loader's own defaults; a host that serves user folders may want them
+   * tighter, and this is the only way to reach them.
+   */
+  readonly loaderLimits?: {
+    readonly maxFiles?: number
+    readonly maxTotalBytes?: number
+  }
   /** Overrides the module map (tests point bare specifiers at file: URLs). */
   readonly moduleMap?: Readonly<Record<string, string>>
   readonly workerUrl?: string
@@ -170,6 +222,8 @@ export interface WebSubjectServicesOptions {
 export interface WebSubjectServices extends SubjectServices {
   readonly main: HostComposition
   readonly worker: HostComposition
+  /** User folders dropped here because the catalog already claims their coordinate. */
+  readonly userExtensionConflicts: readonly UserExtensionRootFailure[]
 }
 
 export async function createWebSubjectServices(
@@ -177,30 +231,89 @@ export async function createWebSubjectServices(
 ): Promise<WebSubjectServices> {
   const probe = options.probe ?? probeWebFacilities()
   const topology = createWebTopology(options.identity, probe)
-  const extensions = catalogToExtensionInputs(options.catalog, options.baseUrl)
+  const catalogInputs = catalogToExtensionInputs(options.catalog, options.baseUrl)
+  const user = options.userExtensions ?? NO_USER_EXTENSION_ROOTS
+  // First wins, second reported. A caller that passed the catalog's coordinates as `claimed`
+  // has already seen these; a caller that did not still cannot end up with two loaded claimants,
+  // because resolution order would then decide which extension a user actually gets.
+  const claimed = new Set<string>()
+  for (const input of catalogInputs) {
+    const coordinate = extensionCoordinate(input)
+    if (coordinate !== undefined) claimed.add(coordinate)
+  }
+  const userInputs: ExtensionInput[] = []
+  const userExtensionConflicts: UserExtensionRootFailure[] = []
+  for (const [index, input] of user.inputs.entries()) {
+    const coordinate = user.coordinates[index] ?? extensionCoordinate(input)
+    if (coordinate !== undefined && claimed.has(coordinate)) {
+      userExtensionConflicts.push({
+        root: input.source,
+        rootId: user.rootIds[index] ?? input.source,
+        code: 'x3.host/extension-coordinate-conflict',
+        message: `«${coordinate}» is already loaded from another root; this one is ignored`,
+      })
+      continue
+    }
+    if (coordinate !== undefined) claimed.add(coordinate)
+    userInputs.push(input)
+  }
+  const extensions = [...catalogInputs, ...userInputs]
   const definitions =
     options.serviceDefinitions === false
       ? undefined
       : options.serviceDefinitions === undefined || options.serviceDefinitions === 'bundled'
         ? createBundledServiceDefinitionRegistry()
         : options.serviceDefinitions
-  const executionBackends = createBrowserExecutionBackends({
-    workerUrl: options.workerUrl ?? new URL(WEB_WORKER_ENTRY, options.baseUrl).href,
-    Worker: options.dom.Worker,
-    MessageChannel: options.dom.MessageChannel,
-    fetch: options.dom.fetch,
+  /*
+   * The artifact byte source. `user.serve` answers exactly the synthetic
+   * `https://user-extension.invalid/<root>/…` URLs of the folders that loaded, from the granted
+   * handles; everything else is the page's own fetch. The verified loader, the digests and the
+   * blob module URLs are untouched — a user folder is a different *source of bytes*, not a
+   * different loading path, which is why there is no second, unverified way in.
+   */
+  const pageFetch = options.dom.fetch
+  const fetch: BrowserFetchLike = (url, init) =>
+    isUserExtensionUrl(url) ? user.serve(url, init) : pageFetch(url, init)
+  /*
+   * Composed by hand rather than through `createBrowserExecutionBackends` for one reason: that
+   * helper does not forward the verified loader's `maxFiles`/`maxTotalBytes`, and a host that
+   * loads folders it did not build needs those ceilings reachable. Everything else here is that
+   * helper's body verbatim; if the host package starts forwarding them, this collapses back to
+   * the one call.
+   */
+  const loaderHooks = browserLoaderHooks({
+    fetch,
     subtle: options.dom.subtle,
     Blob: options.dom.Blob,
     objectUrls: options.dom.objectUrls,
     moduleMap: options.moduleMap ?? resolveModuleMap(options.baseUrl),
-    policy: options.policy ?? DEFAULT_BROWSER_WORKER_POLICY,
-    // Bound late: definitions are inventoried after the backends exist, and workers read the
-    // surfaces per spawn.
-    ...(definitions === undefined
-      ? {}
-      : { foreignSurfaces: () => serviceDefinitionSurfaces(definitions) }),
-    ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
   })
+  const executionBackends = createExecutionBackendRegistry([
+    createBrowserWorkerBackend({
+      realm: createDomWorkerRealmFactory({
+        workerUrl: options.workerUrl ?? new URL(WEB_WORKER_ENTRY, options.baseUrl).href,
+        Worker: options.dom.Worker,
+        MessageChannel: options.dom.MessageChannel,
+        ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
+      }),
+      loader: {
+        ...loaderHooks,
+        ...(options.loaderLimits?.maxFiles === undefined
+          ? {}
+          : { maxFiles: options.loaderLimits.maxFiles }),
+        ...(options.loaderLimits?.maxTotalBytes === undefined
+          ? {}
+          : { maxTotalBytes: options.loaderLimits.maxTotalBytes }),
+      },
+      policy: options.policy ?? DEFAULT_BROWSER_WORKER_POLICY,
+      // Bound late: definitions are inventoried after the backends exist, and workers read the
+      // surfaces per spawn.
+      ...(definitions === undefined
+        ? {}
+        : { foreignSurfaces: () => serviceDefinitionSurfaces(definitions) }),
+      ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
+    }),
+  ])
   const [main, worker] = await Promise.all([
     createHostComposition({ topology, realmId: WEB_MAIN_REALM, extensions, executionBackends }),
     createHostComposition({ topology, realmId: WEB_WORKER_REALM, extensions, executionBackends }),
@@ -216,5 +329,10 @@ export async function createWebSubjectServices(
     executionBackends,
     ...(definitions === undefined ? {} : { serviceDefinitions: definitions }),
   })
-  return Object.freeze({ ...services, main, worker })
+  return Object.freeze({
+    ...services,
+    main,
+    worker,
+    userExtensionConflicts: Object.freeze(userExtensionConflicts),
+  })
 }

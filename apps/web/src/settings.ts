@@ -5,10 +5,12 @@
  * only the storage differs, which is the whole point of `SettingsStore` being an interface. Here it
  * is one `localStorage` key, written canonically so the bytes match what another host would write.
  *
- * The extensions list is deliberately not writable. This host loads exactly the bundled, attested
- * catalog its build served; there is no verified path for a user-supplied extension in the browser
- * yet, so a write that would add or enable one is refused *with the reason* rather than accepted
- * and silently ignored on the next boot.
+ * The extensions list inside the settings document is deliberately not writable, and the reason
+ * has changed since S12-web: a user *can* now add an extension (a granted folder — see
+ * `./extension-roots.ts`), but this host still has no enable/disable switch for an inventoried
+ * extension, and the folder list lives in IndexedDB rather than in the portable settings document
+ * because a directory handle cannot be serialised to text. So a write to `extensions` is refused
+ * *with the reason* rather than accepted and silently ignored on the next boot.
  *
  * `Storage` is taken structurally so the store is tested in Node against a plain map.
  */
@@ -32,8 +34,9 @@ export interface WebStorageLike {
 export const SETTINGS_STORAGE_KEY = 'org.modkitx.app.web/settings'
 
 export const EXTENSIONS_READ_ONLY_REASON =
-  'this host serves only the extensions its build attested, so user-supplied extensions cannot be ' +
-  'added, removed or disabled here yet'
+  'this host has no enable/disable switch for an inventoried extension yet, so the settings ' +
+  'extension list cannot be written here; add or remove your own extension folders in the ' +
+  'Extensions panel instead'
 
 /**
  * Every theme the build links.

@@ -13,7 +13,11 @@ import { MessageChannel } from 'node:worker_threads'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { Diagnostic } from '@modkitx-x3/core'
 import { revisionId, type ArtifactByteSource } from '@modkitx-x3/sdk'
-import { installBrowserWorkerEntry, type BrowserWorkerLike } from '@modkitx-x3/host/browser'
+import {
+  installBrowserWorkerEntry,
+  type BrowserObjectUrlLike,
+  type BrowserWorkerLike,
+} from '@modkitx-x3/host/browser'
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
 import {
   catalogToExtensionInputs,
@@ -63,9 +67,12 @@ class FakeBlob {
     void options
   }
 }
-const objectUrls = {
-  createObjectURL: (blob: { readonly source?: string }) =>
-    `data:text/javascript;base64,${Buffer.from(blob.source ?? '', 'utf8').toString('base64')}`,
+const objectUrls: BrowserObjectUrlLike = {
+  createObjectURL: blob =>
+    `data:text/javascript;base64,${Buffer.from(
+      blob instanceof FakeBlob ? blob.source : '',
+      'utf8',
+    ).toString('base64')}`,
   revokeObjectURL: () => undefined,
 }
 
