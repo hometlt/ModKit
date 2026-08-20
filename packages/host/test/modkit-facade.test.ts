@@ -150,3 +150,33 @@ describe('createModkit — the Node library facade', () => {
     // deliberately not closed here; afterAll's modkit.close() must not hang or throw on it
   })
 })
+
+describe('disabling a contribution (the settings-page seam)', () => {
+  it('a disabled codec stays listed, loses activation, and the subject answers unresolved', async () => {
+    const disabled = await createModkit({
+      extensions: [imagesDir],
+      roots: [scratch],
+      disabledContributions: ['org.modkitx/image-png'],
+    })
+    try {
+      const path = join(scratch, 'disabled.png')
+      writeFileSync(path, readFileSync(pngFixture))
+      const opened = await disabled.open(path)
+      // resolution never selects it…
+      expect(opened.snapshot.state).toBe('unresolved')
+      // …but the record still exists, with the reason on it — that is what lets a settings page
+      // show the switch in its off position instead of the codec vanishing
+      const contribution = disabled.services.inventory.extensions
+        .flatMap(extension => extension.contributions)
+        .find(item => item.manifest?.id === 'org.modkitx/image-png')
+      if (contribution === undefined) throw new Error('disabled contribution vanished')
+      expect(contribution.activationEligible).toBe(false)
+      expect(contribution.diagnostics.map(item => item.code)).toContain(
+        'x3.host/contribution-disabled',
+      )
+      await opened.close()
+    } finally {
+      await disabled.close()
+    }
+  })
+})

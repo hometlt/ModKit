@@ -180,10 +180,25 @@ function snapshotExecutionPolicy(value: ExtensionInput['execution']): {
   }
 }
 
+export interface InventoryBuildOptions {
+  /**
+   * Contribution ids (`org.modkitx/image-png`) the user switched off.
+   *
+   * A disabled contribution stays in the inventory — listed, inspectable, its manifest readable —
+   * and loses `activationEligible`, so resolution never selects it. That is what "выключить кодек"
+   * has to mean in this architecture: the record keeps existing (a settings page has to show what
+   * is disabled, or the user cannot turn it back on), and the *host* is what refuses to run it,
+   * not a filter each application reimplements.
+   */
+  readonly disabledContributions?: readonly string[]
+}
+
 export async function buildInventory(
   inputs: readonly ExtensionInput[],
   registry: ContributionContractRegistry,
+  options: InventoryBuildOptions = {},
 ): Promise<Inventory> {
+  const disabled = new Set(options.disabledContributions ?? [])
   const diagnostics: Diagnostic[] = []
   const extensions: InventoryExtension[] = []
 
@@ -241,6 +256,18 @@ export async function buildInventory(
       const localDiagnostics = [...result.diagnostics]
       let inventoryEligible = result.inventoryEligible
       let activationEligible = result.activationEligible && execution.valid
+      const manifestId = result.manifest?.id
+      if (manifestId !== undefined && disabled.has(manifestId)) {
+        activationEligible = false
+        localDiagnostics.push(
+          diagnostic(
+            'information',
+            'x3.host/contribution-disabled',
+            `«${manifestId}» is disabled by host settings; it stays listed and can be re-enabled`,
+            [input.source, entry.path],
+          ),
+        )
+      }
       let facts: readonly InventoryFact[] = []
       let record: InventoryRecord | undefined
       if (ownedManifest !== undefined && result.inventoryEligible) {

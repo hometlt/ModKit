@@ -80,6 +80,12 @@ export interface ModkitOptions {
   readonly policy?: WorkerBackendPolicy
   /** Where the worker bootstrap lives — required when the caller bundles to CommonJS. */
   readonly bootstrapUrl?: URL
+  /**
+   * Contribution ids (codecs, writers, providers) the user switched off. They stay listed in the
+   * inventory — a settings page must show what is disabled or it cannot be re-enabled — and lose
+   * activation eligibility, so resolution never selects them.
+   */
+  readonly disabledContributions?: readonly string[]
   readonly onDiagnostic?: (diagnostic: Diagnostic) => void
 }
 
@@ -177,6 +183,9 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
     extensions: [...linked.inputs, ...bundled.inputs, ...installed.inputs],
     ...(options.policy === undefined ? {} : { policy: options.policy }),
     ...(linked.modules.size === 0 ? {} : { linkedModules: linked.modules }),
+    ...(options.disabledContributions === undefined
+      ? {}
+      : { disabledContributions: options.disabledContributions }),
     ...(options.bootstrapUrl === undefined ? {} : { bootstrapUrl: options.bootstrapUrl }),
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
   })
