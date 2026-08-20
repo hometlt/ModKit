@@ -14,7 +14,7 @@
  * crosses. It is the same adapter Electron's renderer uses, for the same reason.
  */
 
-import type { SubjectEditingArm } from '@modkitx-x3/host'
+import type { SubjectEditingArm, SubjectEditingPrepareResult } from '@modkitx-x3/host'
 import type {
   AssetEditPlan,
   ChangeSet,
@@ -33,8 +33,15 @@ export interface WebviewEditorPorts {
   readonly authorization: unknown
   /** Commit whatever is pending. Used by "save before closing"; a no-op when nothing is. */
   save(): Promise<void>
+  /** Prepare and commit a plan produced by a codec operation (ADR-HOST-002 Path A). */
+  applyPlan(plan: AssetEditPlan): Promise<WebviewEditorStatus>
   /** Release the arm (and with it the extension host's prepared commits for this subject). */
   dispose(): Promise<void>
+}
+
+export interface WebviewEditorStatus {
+  readonly message: string
+  readonly failed: boolean
 }
 
 /** A marker the page passes around; the real grant snapshot never leaves the serving side. */
@@ -48,6 +55,72 @@ export interface WebviewEditorPortsOptions {
   readonly onDirty?: (dirty: boolean) => void
 }
 
+const REFUSAL_REASONS: Readonly<Record<string, string>> = Object.freeze({
+  'plan-invalid': 'the change did not describe a valid edit of this file',
+  'permission-missing': 'this session may not write the file',
+  'write-scope-mismatch': 'the edit named a file outside what this session may write',
+  'guarantee-unachievable': 'the host cannot promise this write safely enough',
+  'fidelity-unproven': 'no evidence backs the writer fidelity claim for this change',
+  'confirmation-required': 'a lossy write needs a confirmation this host does not ask for',
+  'payload-unavailable': 'the edited bytes never reached the writer',
+  'stale-revision': 'the file changed on disk after the change was prepared',
+  cancelled: 'the save was cancelled',
+})
+
+/** Keep the coordinator's raw reason code in every human-readable refusal. */
+export function refusalMessage(reason: string): string {
+  const plain = REFUSAL_REASONS[reason]
+  return plain === undefined ? `save refused: ${reason}` : `save refused: ${plain} (${reason})`
+}
+
+const diagnosticDetail = (
+  diagnostics: readonly { readonly message: string }[] | undefined,
+): string => {
+  const first = diagnostics?.[0]?.message
+  return first === undefined ? '' : ` — ${first}`
+}
+
+export function prepareStatus(
+  result: SubjectEditingPrepareResult,
+): WebviewEditorStatus | undefined {
+  if (result.state === 'ready') return undefined
+  if (result.state === 'conflict') {
+    return {
+      message: `save refused: the file changed on disk while it was open (${result.conflicts.length} conflict(s))`,
+      failed: true,
+    }
+  }
+  return {
+    message: `${refusalMessage(result.reason)}${diagnosticDetail(result.diagnostics)}`,
+    failed: true,
+  }
+}
+
+export function commitStatus(result: {
+  readonly state: string
+  readonly reason?: string
+  readonly diagnostics?: readonly { readonly message: string }[]
+}): WebviewEditorStatus {
+  switch (result.state) {
+    case 'committed':
+      return { message: 'saved', failed: false }
+    case 'not-applied':
+      return {
+        message: `${refusalMessage(result.reason ?? 'unknown')}${diagnosticDetail(result.diagnostics)}`,
+        failed: true,
+      }
+    case 'rolled-back':
+      return {
+        message: 'save failed: the write was rolled back and the file is unchanged',
+        failed: true,
+      }
+    case 'partially-applied':
+      return { message: 'save partially applied: recovery is available', failed: true }
+    default:
+      return { message: `save ${result.state}`, failed: true }
+  }
+}
+
 export async function createWebviewEditorPorts(
   options: WebviewEditorPortsOptions,
 ): Promise<WebviewEditorPorts> {
@@ -58,6 +131,36 @@ export async function createWebviewEditorPorts(
   const preparedIds = new WeakMap<object, string>()
   /** The last plan the editor asked for, so "save before closing" has something to commit. */
   let pending: AssetEditPlan | undefined
+
+  const report = (status: WebviewEditorStatus): void => {
+    options.onStatus?.(status.message)
+  }
+
+  const preparePlan = async (plan: AssetEditPlan): Promise<SubjectEditingPrepareResult> => {
+    const result = await arm.prepare(plan)
+    const refusal = prepareStatus(result)
+    if (refusal !== undefined) report(refusal)
+    return result
+  }
+
+  const commitPrepared = async (
+    preparedId: string,
+  ): Promise<{
+    readonly state: string
+    readonly receipt?: CommitReceipt
+    readonly status: WebviewEditorStatus
+  }> => {
+    const result = await arm.commit(preparedId)
+    const status = commitStatus(result)
+    report(status)
+    if (result.state === 'committed') {
+      pending = undefined
+      options.onDirty?.(false)
+    }
+    return result.state === 'not-applied'
+      ? { state: result.state, status }
+      : { state: result.state, receipt: result.receipt, status }
+  }
 
   const session = {
     revision: state.revision,
@@ -78,15 +181,8 @@ export async function createWebviewEditorPorts(
 
   const commit = {
     async prepare(plan: AssetEditPlan): Promise<PrepareCommitResult> {
-      const result = await arm.prepare(plan)
-      if (result.state !== 'ready') {
-        options.onStatus?.(
-          result.state === 'conflict'
-            ? 'the file changed on disk while it was open, so the save was refused'
-            : `save rejected: ${result.reason}`,
-        )
-        return result as unknown as PrepareCommitResult
-      }
+      const result = await preparePlan(plan)
+      if (result.state !== 'ready') return result as unknown as PrepareCommitResult
       // the ui hands this object back to `commit`; the id rides along in a side table so nothing
       // resembling a prepared commit is ever fabricated here
       const handle = Object.freeze({ preparedId: result.preparedId })
@@ -100,15 +196,8 @@ export async function createWebviewEditorPorts(
         options.onStatus?.('nothing prepared to save')
         return { state: 'not-applied' }
       }
-      const result = await arm.commit(preparedId)
-      if (result.state === 'committed') {
-        pending = undefined
-        options.onDirty?.(false)
-        options.onStatus?.('saved')
-      } else {
-        options.onStatus?.(`save ${result.state.replace('-', ' ')}`)
-      }
-      return result.state === 'not-applied'
+      const result = await commitPrepared(preparedId)
+      return result.receipt === undefined
         ? { state: result.state }
         : { state: result.state, receipt: result.receipt }
     },
@@ -147,6 +236,22 @@ export async function createWebviewEditorPorts(
       const ready = prepared as unknown as { state: string; prepared?: object }
       if (ready.state !== 'ready' || ready.prepared === undefined) return
       await commit.commit(ready.prepared)
+    },
+    async applyPlan(plan) {
+      try {
+        const prepared = await preparePlan(plan)
+        if (prepared.state !== 'ready') {
+          return prepareStatus(prepared) ?? { message: 'save refused', failed: true }
+        }
+        return (await commitPrepared(prepared.preparedId)).status
+      } catch (error) {
+        const status = {
+          message: `the host refused the plan: ${error instanceof Error ? error.message : String(error)}`,
+          failed: true,
+        }
+        report(status)
+        return status
+      }
     },
     dispose: () => arm.dispose(),
   }

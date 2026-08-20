@@ -32,13 +32,18 @@ export const STAGE_ORDER: readonly string[] = Object.freeze([
   'text',
   'text-virtual',
   'text-editor',
+  'edit',
   'metadata',
   'hex',
   'hex-editor',
 ])
 
 /** The stage ids that only ever appear when this host can write the subject behind the tab. */
-export const EDITABLE_STAGE_IDS: readonly string[] = Object.freeze(['text-editor', 'hex-editor'])
+export const EDITABLE_STAGE_IDS: readonly string[] = Object.freeze([
+  'text-editor',
+  'edit',
+  'hex-editor',
+])
 
 /** The minimum a policy rule needs to know about a stage; `PreviewStage` is a superset. */
 export interface StageFacts {
@@ -63,6 +68,30 @@ export function descriptorTraits(descriptor: Record<string, unknown>): readonly 
   const traits = descriptor['traits']
   if (!Array.isArray(traits)) return []
   return traits.map(item => String((item as { id?: unknown }).id ?? ''))
+}
+
+export interface DescriptorOperation {
+  readonly id: string
+  readonly handlerId: string
+  readonly mutatesSource: boolean
+  readonly state: string
+}
+
+/** Operation facts a webview policy may inspect without trusting the RPC object's shape. */
+export function descriptorOperations(
+  descriptor: Record<string, unknown>,
+): readonly DescriptorOperation[] {
+  const operations = descriptor['operations']
+  if (!Array.isArray(operations)) return []
+  return operations.map(item => {
+    const value = item as Record<string, unknown>
+    return {
+      id: String(value['id'] ?? ''),
+      handlerId: String(value['handlerId'] ?? ''),
+      mutatesSource: value['mutatesSource'] === true,
+      state: String(value['state'] ?? ''),
+    }
+  })
 }
 
 /**

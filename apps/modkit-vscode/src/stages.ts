@@ -18,7 +18,6 @@ import {
   imageViewer,
   metadataPanel,
   modelViewer,
-  namespaceViewer,
   tableViewer,
   textEditor,
   treeViewer,
@@ -29,6 +28,8 @@ import {
 } from '@modkitx-x3/ui'
 
 import { orderStages } from './view-policy.js'
+import { vscodeArchiveStage } from './archive-stage.js'
+import { createVsCodeEditPanel, type EditPanelOptions } from './edit-panel.js'
 
 /**
  * Every first-party stage this host offers, in policy order.
@@ -36,7 +37,7 @@ import { orderStages } from './view-policy.js'
  * `orderStages` sorts and validates: the list below may be written in any order, and an id that
  * is not ranked is a composition error rather than a stage that silently never appears.
  */
-export function createVsCodePreviewStages(): readonly PreviewStage[] {
+export function createVsCodePreviewStages(context: EditPanelOptions): readonly PreviewStage[] {
   return orderStages<PreviewStage>([
     {
       id: 'image',
@@ -72,7 +73,7 @@ export function createVsCodePreviewStages(): readonly PreviewStage[] {
       id: 'entries',
       label: 'Entries',
       contract: 'common.view/namespace-entry-source',
-      module: namespaceViewer,
+      module: vscodeArchiveStage,
     },
     { id: 'table', label: 'Table', contract: 'common.view/table-data-source', module: tableViewer },
     { id: 'tree', label: 'Tree', contract: 'common.view/tree-data-source', module: treeViewer },
@@ -101,6 +102,13 @@ export function createVsCodePreviewStages(): readonly PreviewStage[] {
       contract: 'common.view/text-data-source',
       module: textEditor,
       trait: 'content.text',
+      editable: true,
+    },
+    {
+      id: 'edit',
+      label: 'Edit',
+      contract: 'common.view/byte-range-source',
+      module: createVsCodeEditPanel(context),
       editable: true,
     },
     /*

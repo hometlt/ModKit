@@ -59,6 +59,12 @@ const CATALOG: readonly StageFacts[] = [
     trait: 'content.text',
     editable: true,
   },
+  {
+    id: 'edit',
+    label: 'Edit',
+    contract: 'common.view/byte-range-source',
+    editable: true,
+  },
   { id: 'metadata', label: 'Metadata', contract: 'common.view/byte-range-source' },
   { id: 'hex', label: 'Hex', contract: 'common.view/byte-range-source' },
   {
@@ -152,6 +158,7 @@ describe('VS Code view policy', () => {
 
     const editable = applicableStages(CATALOG, descriptor, { editorPorts: true }).map(stageIdOf)
     expect(editable).toContain('hex-editor')
+    expect(editable).toContain('edit')
     expect(editable.filter(id => !readOnly.includes(id))).toEqual(
       expect.arrayContaining(['hex-editor']),
     )

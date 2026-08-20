@@ -159,3 +159,18 @@ body {
 .vscode-host-panel li:nth-child(odd) {
   background: var(--mk-color-raised);
 }
+
+/* The composite archive stage gives the tree the flexible pane and bounds the selected bytes. */
+[data-mk-part='explorer.tabcontent'] > .vscode-stage-part:first-child {
+  flex: 1 1 auto;
+}
+
+.vscode-archive-entry {
+  flex: 0 0 auto;
+  max-height: 18rem;
+  padding: var(--mk-space-2);
+  overflow: auto;
+  border-top: 1px solid var(--mk-color-border);
+  font-family: var(--mk-font-mono);
+  font-size: var(--mk-font-size-xs);
+}

@@ -32,6 +32,7 @@ import { connectSubjectRpc, type SubjectPreviewSession } from '@modkitx-x3/host'
 import { createBridge, type ShellEntry, type WebviewChannel } from './bridge.js'
 import { createVsCodeSettingsView } from './settings-view.js'
 import { createWebviewEditorPorts, type WebviewEditorPorts } from './editor-ports.js'
+import { reopenCommittedEntry } from './edit-reopen.js'
 import { createVsCodePreviewStages, VSCODE_PREVIEW_FALLBACK } from './stages.js'
 import { preferredStage } from './view-policy.js'
 
@@ -173,6 +174,7 @@ async function mount(
   // ---------------------------------------------------------------- subjects
   /** One record per open subject: what `editorPorts` and the status line need afterwards. */
   interface SubjectRecord {
+    readonly entry: ExplorerEntry
     readonly sessionId: string
     readonly session: SubjectPreviewSession
     readonly descriptor: Record<string, unknown>
@@ -181,12 +183,37 @@ async function mount(
   const subjects = new Map<string, SubjectRecord>()
   /** Live editor ports per open file, so "save before closing" commits the very ports in use. */
   const openPorts = new Map<string, WebviewEditorPorts>()
+  /** Last successful Path A outcome per file, retained across the mandatory reopen. */
+  const editOutcomes = new Map<string, string>()
   /** Entry id of the focused tab — the only tab that can receive a keystroke. */
   let focused: string | undefined
 
+  const recordForDescriptor = (descriptor: Record<string, unknown>): SubjectRecord | undefined =>
+    [...subjects.values()].find(record => record.descriptor === descriptor)
+
   const codecPreview = createCodecPreview({
     supported: snapshot.supportedExtensions,
-    stages: createVsCodePreviewStages(),
+    stages: createVsCodePreviewStages({
+      portsFor(descriptor) {
+        const record = recordForDescriptor(descriptor)
+        return record === undefined ? undefined : openPorts.get(record.entry.id)
+      },
+      async reopen(descriptor) {
+        const record = recordForDescriptor(descriptor)
+        return record === undefined ? false : reopenCommittedEntry(editors, record.entry)
+      },
+      lastOutcome(descriptor) {
+        const record = recordForDescriptor(descriptor)
+        return record === undefined ? undefined : editOutcomes.get(record.entry.id)
+      },
+      recordOutcome(descriptor, outcome) {
+        const record = recordForDescriptor(descriptor)
+        if (record !== undefined) editOutcomes.set(record.entry.id, outcome)
+      },
+      onStatus(status) {
+        say(status.message)
+      },
+    }),
     fallback: VSCODE_PREVIEW_FALLBACK,
 
     async openSession(entry) {
@@ -204,6 +231,7 @@ async function mount(
           `${Math.round(opened.selected.confidence * 100)}%`,
       )
       subjects.set(entry.id, {
+        entry,
         sessionId: opened.sessionId,
         session: result.session,
         descriptor: opened.descriptor,
