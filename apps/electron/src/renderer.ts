@@ -36,6 +36,8 @@ import { applyDensity, applyTheme } from '@modkitx-x3/ui/tokens'
 import type { OperationSession } from '@modkitx-x3/sdk'
 
 import { PREVIEW_FALLBACK } from '../generated/viewer-catalog.js'
+import { editOffer, editSelfTestLine } from './edit-operations.js'
+import { createEditPanel } from './edit-panel.js'
 import { createRendererEditorPorts, type RendererEditorPorts } from './editor-ports.js'
 import { createInspectorDock, type InspectorSubject } from './inspector.js'
 import { createElectronReadOnlyStages, createElectronStages } from './stages.js'
@@ -357,6 +359,18 @@ async function boot(): Promise<void> {
   const portsByPath = new Map<string, RendererEditorPorts>()
   /** Why a tab has no editors, kept so the footer keeps saying it after the open report. */
   const readOnlyNotes = new Map<string, string>()
+  /** The entry each open path was opened from, so a committed edit can reopen the same tab. */
+  const openedEntries = new Map<string, ExplorerEntry>()
+  /**
+   * What the last applied mutating operation did, per file.
+   *
+   * Applying one reopens the tab, which remounts the panel that reported it — so the panel would
+   * come back with no memory of the change the user just made. The shell keeps the sentence and
+   * hands it back on the next mount.
+   */
+  const editOutcomes = new Map<string, string>()
+  const subjectUriOf = (descriptor: Record<string, unknown>): string =>
+    String(descriptor['subjectUri'] ?? '')
 
   /**
    * Open the subject, then ask main whether it will write it.
@@ -366,6 +380,7 @@ async function boot(): Promise<void> {
    * *before* mounting, so it drops the editors instead of drawing a Save that fails at the end.
    */
   async function prepareOpen(entry: ExplorerEntry): Promise<PreparedOpen> {
+    openedEntries.set(entry.id, entry)
     const result = await subjectClient.open(entry.id)
     if (result.state === 'unresolved') {
       const detail =
@@ -510,13 +525,69 @@ async function boot(): Promise<void> {
   let access: FileAccess | undefined
 
   // ---------------------------------------------------------------- inspector
-  const inspector = createInspectorDock(document)
+  /** The record a viewer holding only a descriptor belongs to, or nothing once its tab closed. */
+  const recordFor = (descriptor: Record<string, unknown>): SubjectRecord | undefined =>
+    subjectsByDescriptor.get(descriptorKey(descriptor))
+
+  /**
+   * Close and reopen the tab on `path`, so its stages read the bytes that are on disk now.
+   *
+   * A committed edit moves the subject's revision; the open session is pinned to the old one and
+   * every stage in the tab is showing it. This host has no refresh-in-place, so it does the honest
+   * thing and reopens — through the tab's own close control and `editors.open`, the two things a
+   * user would do, which also releases the arm and leases a fresh one at the new revision.
+   */
+  const tabsOn = (path: string): readonly HTMLElement[] =>
+    [...editors.root.querySelectorAll('[data-mk-part="explorer.filetab"]')].filter(
+      (node): node is HTMLElement => node instanceof HTMLElement && node.title === path,
+    )
+
+  const reopenSubject = async (path: string): Promise<boolean> => {
+    const entry = openedEntries.get(path)
+    if (entry === undefined) return false
+    for (const tab of tabsOn(path)) {
+      const close = tab.querySelector('[data-mk-part="explorer.filetab-close"]')
+      if (close instanceof HTMLElement) close.click()
+    }
+    // `closeTab` unmounts the stage and disposes the arm asynchronously; opening before it has
+    // finished would find the old tab and only focus it.
+    for (let attempt = 0; attempt < 60 && tabsOn(path).length > 0; attempt += 1) {
+      await new Promise(resolve => setTimeout(resolve, 50))
+    }
+    if (tabsOn(path).length > 0) return false
+    await editors.open(entry)
+    return true
+  }
+
+  const editPanel = createEditPanel({
+    portsFor: descriptor => {
+      const record = recordFor(descriptor)
+      return record === undefined ? undefined : portsByPath.get(record.path)
+    },
+    reopen: async descriptor => {
+      const record = recordFor(descriptor)
+      return record === undefined ? false : reopenSubject(record.path)
+    },
+    lastOutcome: descriptor => editOutcomes.get(subjectUriOf(descriptor)),
+    recordOutcome: (descriptor, outcome) => {
+      editOutcomes.set(subjectUriOf(descriptor), outcome)
+    },
+    // The panel is chrome beside the tab, so its result belongs on the same status line every
+    // other editing surface reports to.
+    onStatus: status => {
+      setFooter(footerPath.textContent ?? '', status.message, status.failed)
+    },
+  })
+
+  const inspector = createInspectorDock(document, { editPanel })
   const inspectorSubject = (path: string | undefined): InspectorSubject | undefined => {
     const record = path === undefined ? undefined : subjectsByPath.get(path)
     if (record === undefined) return undefined
     return {
       path: record.path,
       descriptor: record.descriptor,
+      // Main's own answer: an arm exists exactly for a subject it is willing to write.
+      editable: portsByPath.has(record.path),
       dataSource: (contract, major) => record.session.dataSource(contract, major),
       operations: () => operationsFor(record.descriptor),
     }
@@ -912,6 +983,9 @@ const settle = async (): Promise<void> => {
   await new Promise(resolve => setTimeout(resolve, 60))
 }
 
+/** The separator inside a PNG `tEXt` chunk, written as an escape so no source carries a NUL. */
+const NUL = '\u0000'
+
 /**
  * Drive the previewer without a human: list the granted folder, open every file, and report what
  * mounted. Verification has to reach the codecs, the tabs and the split, not just the window.
@@ -1034,17 +1108,41 @@ async function selfTest(options: {
   const settingsGroups = settingsRoot.querySelectorAll('[data-mk-part="settings.group"]').length
   console.log(`selftest: settings groups=${settingsGroups}`)
 
-  await editingProbes({
-    ...options,
-    entries,
-    showStage,
-    inFocusedTab,
-    dirtyTabs,
-    offeredViews: () => {
-      const picker = focusedPicker()
-      return picker === undefined ? [] : [...picker.options].map(item => item.value)
-    },
-  })
+  /*
+   * A probe that throws must not take the run with it. `boot()` catches, replaces the page with a
+   * failure notice and logs nothing — so the run ends with no `selftest: done`, the process never
+   * exits, and every harness reports a timeout instead of the one line that says what broke.
+   */
+  try {
+    await editingProbes({
+      ...options,
+      entries,
+      showStage,
+      inFocusedTab,
+      dirtyTabs,
+      offeredViews: () => {
+        const picker = focusedPicker()
+        return picker === undefined ? [] : [...picker.options].map(item => item.value)
+      },
+    })
+  } catch (error) {
+    console.log(`selftest: edit probes FAILED ${String(error)}`)
+  }
+
+  try {
+    await editOperationProbes({
+      access,
+      editors,
+      entries,
+      inspector,
+      subjectFor: options.subjectFor,
+      portsFor: options.portsFor,
+      showStage,
+      footerText: options.footerText,
+    })
+  } catch (error) {
+    console.log(`selftest: edit-op probes FAILED ${String(error)}`)
+  }
 
   // An installed theme must reach the tokens, not just the picker.
   const before = getComputedStyle(document.documentElement).getPropertyValue('--mk-color-accent')
@@ -1173,9 +1271,14 @@ async function selfTest(options: {
  * What a `ViewerModule`-hosted editor sees of the four ports, narrowed to what a probe drives.
  * The ports themselves are `unknown` to the previewer on purpose; nothing in the app but this
  * probe ever names their methods.
+ *
+ * The edit session is called `edit`, which is the name `createCodecPreview` and `EditorModule.mount`
+ * both use. Naming it `session` here read as `undefined` at run time and threw before the probe
+ * could print anything — and because the throw escaped to `boot().catch`, the whole self-test
+ * stopped at that line with no `selftest: done`, which is indistinguishable from a hang.
  */
 interface ProbePorts {
-  readonly session: {
+  readonly edit: {
     readonly targets: readonly { readonly targetId: string; readonly ownerSource: unknown }[]
     propose(change: unknown): Promise<{
       readonly valid: boolean
@@ -1292,19 +1395,19 @@ async function editingProbes(options: {
   // ------------------------------------------------------------------ writer refusal, with reason
   if (text !== undefined) {
     const ports = portsFor(text.id)
-    const target = (ports as unknown as ProbePorts | undefined)?.session.targets[0]
+    const target = (ports as unknown as ProbePorts | undefined)?.edit.targets[0]
     if (ports === undefined || target === undefined) {
       console.log('selftest: edit refusal probe has no arm for savetest.json')
     } else {
       try {
         const probe = ports as unknown as ProbePorts
         const refused = {
-          targets: probe.session.targets,
+          targets: probe.edit.targets,
           edits: [{ operation: 'delete', targetId: target.targetId, source: target.ownerSource }],
           provenance: { actor: 'user' },
         }
-        const validation = await probe.session.propose(refused)
-        const prepared = await probe.commit.prepare(await probe.session.plan(refused))
+        const validation = await probe.edit.propose(refused)
+        const prepared = await probe.commit.prepare(await probe.edit.plan(refused))
         console.log(
           `selftest: edit writer refusal valid=${validation.valid} ` +
             `codes=[${validation.diagnostics.map(item => item.code).join(', ')}] ` +
@@ -1416,6 +1519,310 @@ async function editingProbes(options: {
     } catch (error) {
       console.log(`selftest: edit read-only FAILED ${String(error)}`)
     }
+  }
+}
+
+/**
+ * The mutating operations (ADR-HOST-002 Path A), driven through the Edit panel's own controls.
+ *
+ * Every line below is a claim about bytes on disk *and* about what the app shows after the commit:
+ * an operation that reported success and left the tab showing the old file would be exactly as
+ * useless as one that wrote nothing.
+ */
+async function editOperationProbes(options: {
+  readonly access: FileAccess
+  readonly editors: EditorArea
+  readonly entries: readonly ExplorerEntry[]
+  readonly inspector: ReturnType<typeof createInspectorDock>
+  subjectFor(path: string | undefined): InspectorSubject | undefined
+  portsFor(path: string): RendererEditorPorts | undefined
+  showStage(stage: string): Promise<boolean>
+  footerText(): string
+}): Promise<void> {
+  const { access, editors, entries, inspector, showStage } = options
+  const find = (name: string): ExplorerEntry | undefined => entries.find(item => item.name === name)
+
+  /** Latin-1 view of a file's first bytes, so a binary can be searched without decoding it. */
+  const rawOnDisk = async (entry: ExplorerEntry): Promise<string> => {
+    const bytes = await access.read(entry.id, 256 * 1024)
+    let text = ''
+    for (let at = 0; at < bytes.length; at += 4096) {
+      text += String.fromCharCode(...bytes.subarray(at, Math.min(at + 4096, bytes.length)))
+    }
+    return text
+  }
+
+  /** The tree/namespace labels the focused tab is showing right now. */
+  const labels = (part: string): readonly string[] =>
+    [
+      ...editors.root.querySelectorAll(
+        `[data-mk-part="explorer.group"][data-mk-state~="active"] ` +
+          `[data-mk-part="explorer.tabcontent"]:not([hidden]) [data-mk-part="${part}"]`,
+      ),
+    ].map(node => (node.textContent ?? '').trim())
+
+  interface MetadataGroup {
+    readonly id?: unknown
+    readonly entries?: readonly { readonly key?: unknown; readonly value?: unknown }[]
+  }
+  const metadataOf = (subject: InspectorSubject | undefined): readonly MetadataGroup[] => {
+    const groups = subject?.descriptor['metadata']
+    return Array.isArray(groups) ? (groups as readonly MetadataGroup[]) : []
+  }
+  /** Metadata group ids the subject's descriptor publishes, as the Metadata panel reads them. */
+  const metadataGroups = (subject: InspectorSubject | undefined): readonly string[] =>
+    metadataOf(subject).map(group => String(group.id ?? ''))
+  /** One published metadata value, which is how the app itself reads a codec's facts back. */
+  const metadataValue = (
+    subject: InspectorSubject | undefined,
+    groupId: string,
+    key: string,
+  ): string => {
+    const group = metadataOf(subject).find(item => String(item.id ?? '') === groupId)
+    const entry = group?.entries?.find(item => String(item.key ?? '') === key)
+    return entry === undefined ? '-' : String(entry.value)
+  }
+
+  const panelStatus = (): string =>
+    inspector.root.querySelector('[data-mk-part="operations.status"]')?.textContent ?? ''
+  const panelNotes = (): string =>
+    inspector.root.querySelector('[data-mk-part="settings.status"]')?.textContent ?? ''
+  const panelFailed = (): boolean =>
+    inspector.root.querySelector('[data-mk-part="operations.status"][data-mk-state~="error"]') !==
+    null
+
+  /**
+   * The subject record for a path once the reopen has registered it again.
+   *
+   * Between the tab closing and the file opening again there is no record at all, so reading the
+   * descriptor straight after an apply reports "nothing" for a codec fact that is simply not back
+   * yet — which would read as a missing value rather than a slow one.
+   */
+  const subjectAfterReopen = async (path: string): Promise<InspectorSubject | undefined> => {
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      const subject = options.subjectFor(path)
+      if (subject !== undefined) return subject
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
+    return undefined
+  }
+
+  /** Show the Edit panel for the focused tab; `false` when the app does not offer one. */
+  const openEditPanel = async (path: string): Promise<boolean> => {
+    const subject = options.subjectFor(path)
+    if (subject === undefined) return false
+    await inspector.show(subject)
+    if (!inspector.panels.includes('edit')) return false
+    await inspector.select('edit')
+    await settle()
+    return true
+  }
+
+  /** Drive the panel the way a user does: pick the form, fill the fields, click Apply. */
+  const applyForm = async (
+    path: string,
+    formId: string,
+    values: Readonly<Record<string, string>>,
+  ): Promise<string> => {
+    const picker = inspector.root.querySelector('[data-mk-part="settings.select"]')
+    if (!(picker instanceof HTMLSelectElement)) return 'no form picker mounted'
+    if (![...picker.options].some(option => option.value === formId)) {
+      return `form ${formId} is not offered (offers ${[...picker.options].map(item => item.value).join(', ')})`
+    }
+    picker.value = formId
+    picker.dispatchEvent(new Event('change'))
+    await settle()
+    /*
+     * What this apply's own note will say. The dock describes whatever tab is focused, and the
+     * reopen focuses others on the way, so "a note appeared" is not the same claim as "this file's
+     * change landed" — without the label a probe happily prints the previous file's outcome.
+     */
+    const expected = `Last change: ${picker.selectedOptions[0]?.textContent ?? ''}`
+    for (const [name, value] of Object.entries(values)) {
+      const input = inspector.root.querySelector(`[data-mk-part="settings.input"][name="${name}"]`)
+      if (!(input instanceof HTMLInputElement)) return `field ${name} is not on the form`
+      input.value = value
+    }
+    const apply = inspector.root.querySelector('[data-mk-part="operations.button"]')
+    if (!(apply instanceof HTMLElement)) return 'no Apply control mounted'
+    // A repeat of the same form on the same file would leave the same note; only a *new* one
+    // counts as this apply having landed.
+    const noteBefore = panelNotes()
+    apply.click()
+    /*
+     * The apply invokes the codec, commits through the arm and reopens the tab; the panel is
+     * remounted by that reopen, and its "Last change" note is what says the round trip finished.
+     * The budget is generous because the reopen re-mounts every stage of the file — an archive or
+     * a model stage takes seconds on a loaded machine, and a probe that gave up first would report
+     * a timeout for a save that worked.
+     */
+    for (let attempt = 0; attempt < 1200; attempt += 1) {
+      await new Promise(resolve => setTimeout(resolve, 100))
+      if (panelFailed()) return panelStatus()
+      /*
+       * The panel that reported the outcome was remounted by the reopen, so its status line is
+       * back to describing the subject; the note it kept is what says what the change did. It
+       * counts only when it is this form's note, on a subject that is open again — otherwise the
+       * probe would report whichever tab the dock happened to be describing mid-reopen.
+       */
+      const note = panelNotes()
+      if (
+        note !== noteBefore &&
+        note.includes(expected) &&
+        options.subjectFor(path) !== undefined
+      ) {
+        return note
+      }
+      /*
+       * Closing the tab makes the dock describe whatever tab the close focused, which can move
+       * the active panel off Edit before the file is opened again. Put it back the way a user
+       * would — every two seconds, not on every tick: showing the dock leases the subject's
+       * operation session over the RPC, and asking ten times a second starves the very reopen
+       * this loop is waiting for.
+       */
+      if (attempt > 20 && attempt % 20 === 0) {
+        if (inspector.root.querySelector('[data-mk-part="settings.select"]') === null) {
+          await openEditPanel(path)
+        }
+      }
+    }
+    return `timed out: ${panelStatus()}`
+  }
+
+  // ------------------------------------------------------------------ archive: add, then remove
+  const archive = find('sample.zip')
+  if (archive === undefined) console.log('selftest: edit-op no sample.zip fixture')
+  else {
+    await editors.open(archive)
+    await settle()
+    await showStage('archive')
+    const before = labels('namespace.label')
+    const offered = await openEditPanel(archive.id)
+    if (!offered) {
+      console.log(
+        `selftest: edit-op sample.zip no Edit panel (panels ${inspector.panels.join(', ')})`,
+      )
+    } else {
+      const status = await applyForm(archive.id, 'zip-add-entry', {
+        path: 'added/hello.txt',
+        content: 'added by the selftest\n',
+      })
+      await showStage('archive')
+      const after = labels('namespace.label')
+      console.log(
+        editSelfTestLine(
+          'sample.zip',
+          'zip-add-entry',
+          status,
+          (await rawOnDisk(archive)).includes('added/hello.txt'),
+        ),
+      )
+      console.log(
+        `selftest: edit-op sample.zip entries [${before.join(' | ')}] -> [${after.join(' | ')}]`,
+      )
+
+      await openEditPanel(archive.id)
+      const removal = await applyForm(archive.id, 'zip-remove-entry', { path: 'data/values.csv' })
+      await showStage('archive')
+      const removed = labels('namespace.label')
+      console.log(
+        editSelfTestLine(
+          'sample.zip',
+          'zip-remove-entry',
+          removal,
+          !(await rawOnDisk(archive)).includes('data/values.csv'),
+        ),
+      )
+      console.log(`selftest: edit-op sample.zip entries after remove [${removed.join(' | ')}]`)
+
+      // A refusal keeps its reason: the codec knows the entry is not there and says so.
+      await openEditPanel(archive.id)
+      const refused = await applyForm(archive.id, 'zip-remove-entry', { path: 'never/here.txt' })
+      console.log(`selftest: edit-op sample.zip refusal status=${JSON.stringify(refused)}`)
+    }
+  }
+
+  // ------------------------------------------------------------------ PNG: one tEXt field
+  const png = find('sample.png')
+  if (png === undefined) console.log('selftest: edit-op no sample.png fixture')
+  else {
+    await editors.open(png)
+    await settle()
+    const before = metadataValue(options.subjectFor(png.id), 'png-image', 'chunks')
+    if (!(await openEditPanel(png.id))) {
+      console.log(
+        `selftest: edit-op sample.png no Edit panel (panels ${inspector.panels.join(', ')})`,
+      )
+    } else {
+      const status = await applyForm(png.id, 'png-set-text', {
+        keyword: 'Description',
+        text: 'set by the selftest',
+      })
+      const bytes = await rawOnDisk(png)
+      const after = metadataValue(await subjectAfterReopen(png.id), 'png-image', 'chunks')
+      console.log(
+        editSelfTestLine(
+          'sample.png',
+          'png-set-text',
+          status,
+          bytes.includes(`tEXtDescription${NUL}set by the selftest`),
+        ),
+      )
+      console.log(`selftest: edit-op sample.png chunks ${before} -> ${after}`)
+    }
+  }
+
+  // ------------------------------------------------------------------ MP3: one ID3v2 text frame
+  const mp3 = find('sample.mp3')
+  if (mp3 === undefined) console.log('selftest: edit-op no sample.mp3 fixture')
+  else {
+    await editors.open(mp3)
+    await settle()
+    const before = metadataGroups(options.subjectFor(mp3.id))
+    if (!(await openEditPanel(mp3.id))) {
+      console.log(
+        `selftest: edit-op sample.mp3 no Edit panel (panels ${inspector.panels.join(', ')})`,
+      )
+    } else {
+      const status = await applyForm(mp3.id, 'mp3-set-text-frame', {
+        keyword: 'TIT2',
+        text: 'Selftest title',
+      })
+      const bytes = await rawOnDisk(mp3)
+      const after = metadataGroups(await subjectAfterReopen(mp3.id))
+      console.log(
+        editSelfTestLine(
+          'sample.mp3',
+          'mp3-set-text-frame',
+          status,
+          bytes.startsWith('ID3') && bytes.includes('TIT2') && bytes.includes('Selftest title'),
+        ),
+      )
+      console.log(
+        `selftest: edit-op sample.mp3 metadata [${before.join(', ')}] -> [${after.join(', ')}]`,
+      )
+    }
+  }
+
+  // ------------------------------------------------- a subject this host will not write offers none
+  const locked = find('readonly.png')
+  if (locked === undefined) console.log('selftest: edit-op no readonly.png fixture')
+  else {
+    await editors.open(locked)
+    await settle()
+    const subject = options.subjectFor(locked.id)
+    if (subject !== undefined) await inspector.show(subject)
+    const mutating = (
+      (subject?.descriptor['operations'] as readonly { mutatesSource?: unknown }[] | undefined) ??
+      []
+    ).filter(item => item.mutatesSource === true).length
+    console.log(
+      `selftest: edit-op readonly.png arm=${options.portsFor(locked.id) !== undefined} ` +
+        `declaredMutating=${mutating} panels [${inspector.panels.join(', ')}] ` +
+        `editOffered=${inspector.panels.includes('edit')} ` +
+        `forms=${editOffer(subject?.descriptor ?? {}, { editable: subject?.editable === true }).forms.length} ` +
+        `footer=${JSON.stringify(options.footerText())}`,
+    )
   }
 }
 

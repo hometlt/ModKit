@@ -43,6 +43,15 @@ export interface RendererEditorPorts {
    * caller: the buffer lives in the editor, so the last proposal is the only thing the host holds.
    */
   save(): Promise<void>
+  /**
+   * ADR-HOST-002 Path A: commit a plan a *codec operation* produced.
+   *
+   * There is no change set and no writer here — the codec already turned the user's input into
+   * `SourceEdit`s and the host only has to prepare and commit them. It is the same two arm calls
+   * `save()` ends in, and deliberately the same code path: the Edit panel gains no write authority
+   * of its own, it hands a plan to the arm exactly as the editors hand one.
+   */
+  applyPlan(plan: AssetEditPlan): Promise<EditorStatus>
   /** Release the arm (and with it main's prepared commits for this subject). */
   dispose(): Promise<void>
 }
@@ -244,13 +253,14 @@ export async function createRendererEditorPorts(
 
   const commitPrepared = async (
     preparedId: string,
-  ): Promise<{ state: string; receipt?: CommitReceipt }> => {
+  ): Promise<{ state: string; receipt?: CommitReceipt; status: EditorStatus }> => {
     const result = await arm.commit(preparedId)
-    report(commitStatus(result))
+    const status = commitStatus(result)
+    report(status)
     if (result.state === 'committed') markSaved()
     return result.state === 'not-applied'
-      ? { state: result.state }
-      : { state: result.state, receipt: result.receipt }
+      ? { state: result.state, status }
+      : { state: result.state, receipt: result.receipt, status }
   }
 
   const commit = {
@@ -270,7 +280,11 @@ export async function createRendererEditorPorts(
         report({ message: 'nothing prepared to save', failed: true })
         return { state: 'not-applied' }
       }
-      return commitPrepared(preparedId)
+      // The ui's commit port takes the 13D result shape; the status line was already told.
+      const committed = await commitPrepared(preparedId)
+      return committed.receipt === undefined
+        ? { state: committed.state }
+        : { state: committed.state, receipt: committed.receipt }
     },
     async undo(): Promise<{ state: string; reason: string }> {
       const reason = 'this host does not replay commits yet'
@@ -321,6 +335,15 @@ export async function createRendererEditorPorts(
       const result = await prepare(await arm.plan(change))
       if (result.state !== 'ready') return
       await commitPrepared(result.preparedId)
+    },
+    async applyPlan(plan: AssetEditPlan): Promise<EditorStatus> {
+      const prepared = await prepare(plan)
+      if (prepared.state !== 'ready') {
+        // `prepare` already reported it; returning the same words keeps the panel and the status
+        // line saying one thing.
+        return prepareStatus(prepared) ?? { message: 'save refused', failed: true }
+      }
+      return (await commitPrepared(prepared.preparedId)).status
     },
     dispose: () => arm.dispose(),
   }

@@ -64,10 +64,18 @@ export interface PanelPolicy {
   readonly id: string
   readonly label: string
   readonly contract?: string
+  /**
+   * `editing` means the panel is offered only for a subject this host will write — the tab holds
+   * an S14 editing arm *and* the subject declares a mutating operation this app can drive. The
+   * descriptor alone cannot decide it: a codec declares its operations as available whatever grant
+   * the subject was opened under, so the answer comes from the shell and is passed in.
+   */
+  readonly requires?: 'editing'
 }
 
 export const PANEL_POLICY: readonly PanelPolicy[] = Object.freeze([
   Object.freeze({ id: 'operations', label: 'Operations' }),
+  Object.freeze({ id: 'edit', label: 'Edit', requires: 'editing' as const }),
   Object.freeze({
     id: 'transport',
     label: 'Transport',
@@ -197,11 +205,21 @@ export function applicableStages<Stage extends StageFacts>(
   )
 }
 
-/** Inspector surfaces this subject supports. Descriptor-only panels are always applicable. */
-export function applicablePanels(descriptor: Record<string, unknown>): readonly PanelPolicy[] {
+/**
+ * Inspector surfaces this subject supports. Descriptor-only panels are always applicable; a panel
+ * that `requires: 'editing'` is offered only when the shell says this subject is editable here.
+ */
+export function applicablePanels(
+  descriptor: Record<string, unknown>,
+  options: { readonly editing?: boolean } = {},
+): readonly PanelPolicy[] {
   const published = new Set(publishedContracts(descriptor))
   return Object.freeze(
-    PANEL_POLICY.filter(panel => panel.contract === undefined || published.has(panel.contract)),
+    PANEL_POLICY.filter(
+      panel =>
+        (panel.contract === undefined || published.has(panel.contract)) &&
+        (panel.requires !== 'editing' || options.editing === true),
+    ),
   )
 }
 

@@ -209,11 +209,16 @@ const FILES = [
  * Samples written without the write permission, so the host must refuse an editing arm for them.
  * On Windows this clears the write bit into the FILE_ATTRIBUTE_READONLY flag, which is exactly
  * what `fs.access(W_OK)` reports there.
+ *
+ * `readonly.png` carries the second half of the rule: its codec *does* declare a mutating
+ * operation (`edit.field`), so the app dropping the Edit panel for it is a decision about this
+ * host's write authority and not an accident of the file having nothing to edit.
  */
-const READ_ONLY = ['readonly.json']
+const READ_ONLY = ['readonly.json', 'readonly.png']
 
 const COPIES = [
   ['sample.png', join(synthetic, 'minimal.png')],
+  ['readonly.png', join(synthetic, 'minimal.png')],
   ['sample.jpg', join(repoRoot, 'assets', 'themes', 'nexus-forge', 'preview-electron.jpg')],
 ]
 
@@ -232,9 +237,13 @@ export function buildSampleFolder(target) {
     rmSync(join(directory, name), { force: true })
     writeFileSync(join(directory, name), text, 'utf8')
   }
-  for (const name of READ_ONLY) chmodSync(join(directory, name), 0o444)
-  for (const [name, from] of COPIES) copyFileSync(from, join(directory, name))
+  for (const [name, from] of COPIES) {
+    rmSync(join(directory, name), { force: true })
+    copyFileSync(from, join(directory, name))
+  }
   for (const [name, bytes] of BINARIES) writeFileSync(join(directory, name), bytes)
+  // Last, so a sample that is both copied and read-only is copied before the bit is cleared.
+  for (const name of READ_ONLY) chmodSync(join(directory, name), 0o444)
 
   // The UVM fixture is a real GLB carried as base64 so the repository stays text-only there.
   const glb = readFileSync(
