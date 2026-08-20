@@ -231,3 +231,72 @@ describe('editing over the subject RPC (S14)', () => {
     await opened.session.dispose()
   }, 60_000)
 })
+
+describe('plan validation across the wire (A12 request 4)', () => {
+  it('a plan naming another subject is refused by name, before the coordinator sees it', async () => {
+    const { client, path } = await servingPair({ editable: true })
+    const opened = await client.open(path)
+    if (opened.state !== 'opened') throw new Error('open failed')
+    const arm = await client.edit(opened.snapshot.sessionId)
+    const state = await arm.state()
+    const target = state.targets[0]
+    if (target === undefined) throw new Error('no target')
+
+    // an honestly-made plan, then re-targeted: the shape every field-level check would pass,
+    // except the one that matters — whose subject it is
+    const change: ChangeSet = {
+      targets: state.targets,
+      edits: [
+        {
+          operation: 'replace',
+          targetId: target.targetId,
+          source: target.ownerSource,
+          range: { kind: 'utf16', offset: 0, length: 1 },
+          payload: { kind: 'text', text: 'X' },
+        },
+      ],
+      provenance: { actor: 'user' },
+    }
+    const plan = await arm.plan(change)
+    const foreign = {
+      ...plan,
+      targets: plan.targets.map(item => ({
+        ...item,
+        targetId: 'someone-elses-target',
+        ownerSource: { ...item.ownerSource, id: 'file:///elsewhere/other.json' },
+      })),
+      edits: plan.edits.map(item => ({
+        ...item,
+        targetId: 'someone-elses-target',
+        source: { ...item.source, id: 'file:///elsewhere/other.json' },
+      })),
+    }
+
+    /*
+     * Before the served `prepare` ran `planFromOperation`, this refusal came back as a
+     * grant-scope side effect (`permission-missing`) — true, but useless to act on. The named
+     * refusal says what actually happened: this plan is not this subject.
+     */
+    await expect(arm.prepare(foreign as never)).rejects.toMatchObject({
+      code: 'x3.host/edit-plan-subject-mismatch',
+    })
+
+    // and a stale-revision plan is the same refusal, not a late conflict
+    const stale = {
+      ...plan,
+      targets: plan.targets.map(item => ({
+        ...item,
+        expectedRevision: {
+          ...item.expectedRevision,
+          compositionFingerprint: 'fingerprint-of-some-other-open',
+        },
+      })),
+    }
+    await expect(arm.prepare(stale as never)).rejects.toMatchObject({
+      code: 'x3.host/edit-plan-subject-mismatch',
+    })
+
+    await arm.dispose()
+    await opened.session.dispose()
+  }, 60_000)
+})
