@@ -271,3 +271,48 @@ describe('the format writer is preferred over the raw byte splicer (Path B reach
     }
   }, 60_000)
 })
+
+describe('a switched-off codec is named, not merely absent (A14 request 5)', () => {
+  it('an unresolved open says which contribution matched the file and could not run', async () => {
+    const disabled = await createModkit({
+      extensions: [imagesDir],
+      roots: [scratch],
+      disabledContributions: ['org.modkitx/image-png'],
+    })
+    try {
+      const path = join(scratch, 'explained.png')
+      writeFileSync(path, readFileSync(pngFixture))
+      const opened = await disabled.open(path)
+      expect(opened.snapshot.state).toBe('unresolved')
+      if (opened.snapshot.state !== 'unresolved') return
+      /*
+       * "Nothing claimed this file" and "you switched off the thing that claims it" are different
+       * facts. Before this, the second looked exactly like the first, and an application had to
+       * guess the reason back from the file's suffix.
+       */
+      const suppressed = opened.snapshot.diagnostics.find(
+        item => item.code === 'x3.host/candidate-suppressed',
+      )
+      if (suppressed === undefined) throw new Error('no suppression diagnostic')
+      expect(suppressed.message).toContain('org.modkitx/image-png')
+      expect(suppressed.message).toContain('x3.host/contribution-disabled')
+      await opened.close()
+    } finally {
+      await disabled.close()
+    }
+  }, 60_000)
+
+  it('a file no codec claims carries no suppression noise', async () => {
+    const m = await host()
+    const path = join(scratch, 'nobody-claims-this.bin')
+    writeFileSync(path, Buffer.from([0x00, 0x01, 0x02, 0x03]))
+    const opened = await m.open(path)
+    expect(opened.snapshot.state).toBe('unresolved')
+    if (opened.snapshot.state !== 'unresolved') return
+    // the diagnostic exists to explain a real suppression, not to editorialise about every miss
+    expect(
+      opened.snapshot.diagnostics.filter(item => item.code === 'x3.host/candidate-suppressed'),
+    ).toEqual([])
+    await opened.close()
+  }, 60_000)
+})

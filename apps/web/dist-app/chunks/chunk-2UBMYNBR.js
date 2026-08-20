@@ -22,7 +22,7 @@ import {
   uint64,
   uniqueSortedUtf8,
   versionRangeTargetsMajor
-} from "./chunk-OTHYGRZO.js";
+} from "./chunk-5WZM3EQ3.js";
 
 // node_modules/.pnpm/ajv@8.20.0/node_modules/ajv/dist/runtime/ucs2length.js
 var require_ucs2length = __commonJS({
@@ -96,7 +96,27 @@ var require_equal = __commonJS({
   }
 });
 
-// packages/sdk/dist/schemas/patterns.js
+// packages/sdk/dist/index.js
+var func1Module = __toESM(require_ucs2length(), 1);
+var func1Module2 = __toESM(require_ucs2length(), 1);
+var func1Module3 = __toESM(require_ucs2length(), 1);
+var func2Module = __toESM(require_ucs2length(), 1);
+var func0Module = __toESM(require_equal(), 1);
+var func1Module4 = __toESM(require_ucs2length(), 1);
+var func0Module2 = __toESM(require_equal(), 1);
+var func3Module = __toESM(require_ucs2length(), 1);
+var func2Module2 = __toESM(require_ucs2length(), 1);
+var func0Module3 = __toESM(require_equal(), 1);
+var func1Module5 = __toESM(require_ucs2length(), 1);
+var func1Module6 = __toESM(require_ucs2length(), 1);
+var func1Module7 = __toESM(require_ucs2length(), 1);
+var func2Module3 = __toESM(require_ucs2length(), 1);
+var func2Module4 = __toESM(require_ucs2length(), 1);
+var func0Module4 = __toESM(require_equal(), 1);
+var func2Module5 = __toESM(require_ucs2length(), 1);
+var func1Module8 = __toESM(require_ucs2length(), 1);
+var func1Module9 = __toESM(require_ucs2length(), 1);
+var func1Module10 = __toESM(require_ucs2length(), 1);
 var DOTTED_PATTERN = "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
 var NAMESPACED_DOTTED_PATTERN = "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
 var OPERATION_PATTERN = "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$";
@@ -113,8 +133,6 @@ var RANGE_ATOM = `(?:${RANGE_EXACT}|${RANGE_WILDCARD}|${RANGE_CARET}|${RANGE_COM
 var VERSION_RANGE_PATTERN = `^(?:\\*|x|${RANGE_ATOM}(?: ${RANGE_ATOM})*)$`;
 var RELATIVE_ENTRYPOINT_PATTERN = "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$";
 var METHOD_NAME_PATTERN = "^[a-z][a-zA-Z0-9]{0,63}$";
-
-// packages/sdk/dist/schemas/extension-manifest.js
 var REQUIREMENT_SCOPE_KINDS = Object.freeze([
   "contribution",
   "offer",
@@ -185,8 +203,6 @@ deepFreeze(requirementScopeSchema);
 deepFreeze(extensionRequirementSchema);
 deepFreeze(extensionManifestSchema);
 deepFreeze(modkitBlockSchema);
-
-// packages/sdk/dist/schemas/contribution-manifest.js
 var EXECUTION_PROFILES = Object.freeze([
   "browser-sandbox",
   "worker-brokered",
@@ -304,8 +320,6 @@ deepFreeze(runtimeTargetConstraintSchema);
 deepFreeze(runtimeVariantDeclarationSchema);
 deepFreeze(scopedContractRequirementSchema);
 deepFreeze(contributionManifestSchema);
-
-// packages/sdk/dist/asset-capabilities/data-source-ids.js
 var STANDARD_DATA_SOURCE_CONTRACTS = Object.freeze([
   "common.view/text-data-source",
   "common.view/byte-range-source",
@@ -321,8 +335,6 @@ var STANDARD_DATA_SOURCE_CONTRACTS = Object.freeze([
   "common.view/relation-graph-source",
   "common.view/subject-facts-source"
 ]);
-
-// packages/sdk/dist/schemas/contribution-specs.js
 var nonEmptyString = { type: "string", minLength: 1 };
 var qualifiedId = { type: "string", pattern: QUALIFIED_PATTERN };
 var namespacedDottedId = { type: "string", pattern: NAMESPACED_DOTTED_PATTERN };
@@ -1016,8 +1028,6 @@ deepFreeze(dataSourceMethodSurfaceV1Schema);
 deepFreeze(dataSourceSurfaceV1Schema);
 deepFreeze(dataSourceContractDefinitionSpecV1Schema);
 deepFreeze(contractDefinitionSpecV1Schema);
-
-// packages/sdk/dist/editing.js
 var WRITER_CONTRACT_ID = "common.edit/writer";
 var WRITER_FACET_MATCHER_PROFILE = "org.modkitx/writer-facet-matcher";
 var writerSurface = {
@@ -1041,15 +1051,11 @@ function writerOfferSatisfies(request, offer) {
 function writerSelectionKey(request) {
   return `writer:${request.formatId}:${request.representationId}:${request.mutationMode}:${request.minimumRoundTrip}`;
 }
-
-// packages/sdk/dist/manifest/operation-permissions.js
 function operationScopedPermissionClasses(operations) {
   const out = /* @__PURE__ */ new Set();
   for (const operation of operations ?? []) {
-    for (const item of operation.requiredPermissions ?? [])
-      out.add(item);
-    if (operation.mutatesSource === true)
-      out.add("write-source");
+    for (const item of operation.requiredPermissions ?? []) out.add(item);
+    if (operation.mutatesSource === true) out.add("write-source");
   }
   out.delete("read-source");
   return out;
@@ -1058,8 +1064,6 @@ function activationRequiredPermissionClasses(requested, operations) {
   const scoped = operationScopedPermissionClasses(operations);
   return Object.freeze(requested.filter((item) => !scoped.has(item)));
 }
-
-// packages/sdk/dist/subjects/refs.js
 var REVISION_KINDS = Object.freeze([
   "content-hash",
   "git-object",
@@ -1077,16 +1081,14 @@ function serializeRevisionRef(ref) {
   if (!REVISION_KINDS.includes(ref.kind)) {
     throw new TypeError(`invalid revision kind: ${String(ref.kind)}`);
   }
-  if (ref.value.length === 0)
-    throw new TypeError("revision value must be non-empty");
+  if (ref.value.length === 0) throw new TypeError("revision value must be non-empty");
   if (ref.algorithm !== void 0 && !new RegExp(`^${REVISION_ALGORITHM_PATTERN}$`).test(ref.algorithm)) {
     throw new TypeError(`invalid revision algorithm: ${ref.algorithm}`);
   }
   return `${ref.kind}${ref.algorithm === void 0 ? "" : `.${ref.algorithm}`}:${encodeURIComponent(ref.value)}`;
 }
 function parseRevisionRef(value2) {
-  if (!REVISION_ID.test(value2))
-    return void 0;
+  if (!REVISION_ID.test(value2)) return void 0;
   const colon = value2.indexOf(":");
   const coordinate = value2.slice(0, colon);
   const dot = coordinate.indexOf(".");
@@ -1095,8 +1097,7 @@ function parseRevisionRef(value2) {
   const encoded = value2.slice(colon + 1);
   try {
     const decoded = decodeURIComponent(encoded);
-    if (decoded.length === 0 || encodeURIComponent(decoded) !== encoded)
-      return void 0;
+    if (decoded.length === 0 || encodeURIComponent(decoded) !== encoded) return void 0;
     return Object.freeze({
       kind,
       value: decoded,
@@ -1117,8 +1118,7 @@ function assertSubjectIdentity(identity) {
   if (typeof identity.kind !== "string" || typeof identity.key !== "string") {
     throw new TypeError("subject identity kind and key must be strings");
   }
-  if (identity.kind === "" && identity.key === "")
-    return;
+  if (identity.kind === "" && identity.key === "") return;
   if (!isQualifiedId(identity.kind)) {
     throw new TypeError(`nested subject kind must be a qualified id: ${identity.kind}`);
   }
@@ -1148,8 +1148,7 @@ function sourceIdChain(source) {
   return chain.reverse();
 }
 function sourceFromIdChain(chain) {
-  if (chain.length === 0)
-    throw new TypeError("subject source chain must be non-empty");
+  if (chain.length === 0) throw new TypeError("subject source chain must be non-empty");
   let source;
   for (const id of chain) {
     if (typeof id !== "string" || id.length === 0) {
@@ -1172,14 +1171,15 @@ function serializeSubjectRef(ref) {
     ];
     return `${EXTENDED_SUBJECT_PREFIX}${encodeURIComponent(JSON.stringify(payload))}`;
   }
-  if (ref.identity.key === "" && ref.identity.kind === "")
-    return ref.source.id;
+  if (ref.identity.key === "" && ref.identity.kind === "") return ref.source.id;
   return `${ref.source.id}#${encodeURIComponent(ref.identity.kind)}/${encodeURIComponent(ref.identity.key)}`;
 }
 function parseSubjectRef(uri, workspace) {
   if (uri.startsWith(EXTENDED_SUBJECT_PREFIX)) {
     try {
-      const payload = JSON.parse(decodeURIComponent(uri.slice(EXTENDED_SUBJECT_PREFIX.length)));
+      const payload = JSON.parse(
+        decodeURIComponent(uri.slice(EXTENDED_SUBJECT_PREFIX.length))
+      );
       if (!Array.isArray(payload) || payload.length !== 5 || payload[0] !== 1) {
         throw new TypeError("invalid extended subject reference");
       }
@@ -1198,32 +1198,32 @@ function parseSubjectRef(uri, workspace) {
         identity
       };
     } catch (error) {
-      throw new TypeError(`invalid extended subject reference: ${error instanceof Error ? error.message : String(error)}`);
+      throw new TypeError(
+        `invalid extended subject reference: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
   const hash = uri.indexOf("#");
-  if (hash === -1)
-    return rootSubject({ id: uri }, workspace);
+  if (hash === -1) return rootSubject({ id: uri }, workspace);
   const fragment = uri.slice(hash + 1);
   const slash = fragment.indexOf("/");
-  if (slash === -1)
-    throw new TypeError("nested subject reference must include a non-empty key");
+  if (slash === -1) throw new TypeError("nested subject reference must include a non-empty key");
   try {
     const kind = decodeURIComponent(fragment.slice(0, slash));
     const key2 = decodeURIComponent(fragment.slice(slash + 1));
     return nestedSubject(rootSubject({ id: uri.slice(0, hash) }, workspace), kind, key2);
   } catch (error) {
-    throw new TypeError(`invalid nested subject reference: ${error instanceof Error ? error.message : String(error)}`);
+    throw new TypeError(
+      `invalid nested subject reference: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
-
-// packages/sdk/dist/schemas/subject-descriptor.js
 var sourceSpanValueSchema = { oneOf: sourceSpanSchema.oneOf };
 var nonEmptyString2 = { type: "string", minLength: 1 };
 var nonWhitespaceString = { type: "string", pattern: "\\S" };
 var revisionString = { type: "string", pattern: REVISION_ID_PATTERN };
 var namespacedDottedId2 = { type: "string", pattern: NAMESPACED_DOTTED_PATTERN };
-var operationId3 = { type: "string", pattern: OPERATION_PATTERN };
+var operationId22 = { type: "string", pattern: OPERATION_PATTERN };
 var stringArray = { type: "array", items: { type: "string" } };
 var jsonValueRef = { $ref: "#/$defs/jsonValue" };
 var jsonValueSchema = {
@@ -1281,7 +1281,7 @@ var derivationRecipeSchema = {
     extensionId: { type: "string", pattern: QUALIFIED_PATTERN },
     extensionVersion: { type: "string", pattern: SEMVER_PATTERN },
     contributionId: { type: "string", pattern: QUALIFIED_PATTERN },
-    operation: operationId3,
+    operation: operationId22,
     parameters: jsonValueRef
   }
 };
@@ -1417,7 +1417,7 @@ var jsonSchemaRefSchema2 = {
   properties: { $ref: nonEmptyString2 }
 };
 var operationProperties = {
-  id: operationId3,
+  id: operationId22,
   handlerId: nonEmptyString2,
   mutatesSource: { type: "boolean" },
   inputSchema: jsonSchemaRefSchema2
@@ -1711,8 +1711,6 @@ var subjectDescriptorV2InferenceSchema = {
 var anyDescriptorV2Schema = subjectDescriptorV2Schema;
 deepFreeze(subjectDescriptorV2Schema);
 deepFreeze(subjectDescriptorV2InferenceSchema);
-
-// packages/sdk/dist/manifest/validators.generated/sourceSpanV1.js
 var sourceSpanV1 = validate20;
 var pattern4 = new RegExp("^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$", "u");
 function validate20(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
@@ -2302,9 +2300,6 @@ function validate20(data, { instancePath = "", parentData, parentDataProperty, r
   return errors === 0;
 }
 validate20.evaluated = { "dynamicProps": true, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/extensionManifestV1.js
-var func1Module = __toESM(require_ucs2length(), 1);
 var extensionManifestV1 = validate202;
 var schema31 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/extension-manifest.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "publisher", "id", "version", "license", "contributionManifests"], "properties": { "schemaVersion": { "const": 1 }, "publisher": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "license": { "type": "string", "minLength": 1 }, "contributionManifests": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "dependsOn": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/extension-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["extension", "mode", "scope"], "properties": { "extension": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } } } } };
 var pattern42 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
@@ -2734,9 +2729,6 @@ function validate202(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate202.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/extensionManifestModkitBlockV1.js
-var func1Module2 = __toESM(require_ucs2length(), 1);
 var extensionManifestModkitBlockV1 = validate203;
 var schema312 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/extension-manifest-modkit-block.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "publisher", "id", "contributionManifests"], "properties": { "schemaVersion": { "const": 1 }, "publisher": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "contributionManifests": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "dependsOn": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/extension-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["extension", "mode", "scope"], "properties": { "extension": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } } } } };
 var pattern43 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
@@ -3103,9 +3095,6 @@ function validate203(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate203.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/extensionRequirementV1.js
-var func1Module3 = __toESM(require_ucs2length(), 1);
 var extensionRequirementV1 = validate204;
 var schema313 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/extension-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["extension", "mode", "scope"], "properties": { "extension": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } };
 var pattern44 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
@@ -3306,10 +3295,6 @@ function validate204(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate204.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/codecContributionSpecV1.js
-var func2Module = __toESM(require_ucs2length(), 1);
-var func0Module = __toESM(require_equal(), 1);
 var codecContributionSpecV1 = validate205;
 var schema314 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/codec-contribution-spec.v1.schema.json", "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["formatRefs", "roles", "sourceTopology", "artifactStages", "openIntents", "match", "probe", "representations", "publishesDataSources", "operations", "implementationTier", "budgets"], "properties": { "formatRefs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["formatId", "label"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "label": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "roles": { "type": "array", "items": { "enum": ["container", "media", "byte-transform", "semantic", "index", "sidecar"] }, "minItems": 1 }, "artifactStages": { "type": "array", "items": { "enum": ["authored", "compiled", "runtime"] }, "minItems": 1 }, "openIntents": { "type": "array", "items": { "enum": ["probe", "inspect", "thumbnail", "full", "stream", "export"] }, "minItems": 1 }, "match": { "type": "object", "additionalProperties": false, "properties": { "extensions": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "mediaTypes": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "pathGlobs": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "signatures": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["from", "offset", "bytesHex"], "properties": { "from": { "enum": ["start", "end"] }, "offset": { "type": "integer", "minimum": 0, "maximum": 4096 }, "bytesHex": { "type": "string", "pattern": "^(?:[0-9a-f]{2}){1,64}$" }, "maskHex": { "type": "string", "pattern": "^(?:[0-9a-f]{2}){1,64}$" } } }, "maxItems": 8 } } }, "companions": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "patterns", "searchScopes"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "role": { "type": "string", "minLength": 1 }, "required": { "type": "boolean" }, "patterns": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }, "expected": { "type": "object", "additionalProperties": false, "properties": { "all": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "any": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "none": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } } } }, "searchScopes": { "type": "array", "minItems": 1, "items": { "enum": ["sibling-directory", "current-mount", "enclosing-container", "workspace-dependency-layer", "explicit-user-selection"] } } } } }, "representations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "contract", "major", "stage", "lossy"], "properties": { "id": { "type": "string", "minLength": 1 }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "stage": { "enum": ["authored", "compiled", "runtime"] }, "lossy": { "type": "boolean" } } }, "minItems": 1 }, "publishesDataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "requires": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "operations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "mutatesSource"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "requiredPermissions": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } }, "requiresContract": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "outputKinds": { "type": "array", "items": { "enum": ["json", "bytes", "stream", "source", "artifact", "none", "edit-plan", "transaction"] } } } } }, "traitDeclarations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "representation", "presence"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "representation": { "enum": ["source", "compiled", "runtime"] }, "presence": { "enum": ["may-expose", "will-expose"] }, "prerequisites": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } } } }, "implementationTier": { "type": "object", "additionalProperties": false, "required": ["claimed"], "properties": { "claimed": { "enum": [1, 2, 3, 4, 5] } } }, "budgets": { "type": "object", "additionalProperties": false, "required": ["maxInputBytes", "maxDepth", "maxNodes", "maxScalarBytes", "maxDiagnostics"], "properties": { "maxInputBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "maxDepth": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxNodes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxScalarBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxDiagnostics": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "deadlineMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "sourceTopology": { "enum": ["single", "bundle"] }, "probe": { "type": "object", "additionalProperties": false, "required": ["kind", "ranges", "maxBytes"], "properties": { "kind": { "const": "bytes" }, "ranges": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["from", "length"], "properties": { "from": { "enum": ["start", "end"] }, "length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["formatRefs", "roles", "sourceTopology", "artifactStages", "openIntents", "match", "probe", "representations", "publishesDataSources", "operations", "implementationTier", "budgets"], "properties": { "formatRefs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["formatId", "label"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "label": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "roles": { "type": "array", "items": { "enum": ["container", "media", "byte-transform", "semantic", "index", "sidecar"] }, "minItems": 1 }, "artifactStages": { "type": "array", "items": { "enum": ["authored", "compiled", "runtime"] }, "minItems": 1 }, "openIntents": { "type": "array", "items": { "enum": ["probe", "inspect", "thumbnail", "full", "stream", "export"] }, "minItems": 1 }, "match": { "type": "object", "additionalProperties": false, "properties": { "extensions": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "mediaTypes": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "pathGlobs": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "signatures": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["from", "offset", "bytesHex"], "properties": { "from": { "enum": ["start", "end"] }, "offset": { "type": "integer", "minimum": 0, "maximum": 4096 }, "bytesHex": { "type": "string", "pattern": "^(?:[0-9a-f]{2}){1,64}$" }, "maskHex": { "type": "string", "pattern": "^(?:[0-9a-f]{2}){1,64}$" } } }, "maxItems": 8 } } }, "companions": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "patterns", "searchScopes"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "role": { "type": "string", "minLength": 1 }, "required": { "type": "boolean" }, "patterns": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }, "expected": { "type": "object", "additionalProperties": false, "properties": { "all": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "any": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "none": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } } } }, "searchScopes": { "type": "array", "minItems": 1, "items": { "enum": ["sibling-directory", "current-mount", "enclosing-container", "workspace-dependency-layer", "explicit-user-selection"] } } } } }, "representations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "contract", "major", "stage", "lossy"], "properties": { "id": { "type": "string", "minLength": 1 }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "stage": { "enum": ["authored", "compiled", "runtime"] }, "lossy": { "type": "boolean" } } }, "minItems": 1 }, "publishesDataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "requires": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "operations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "mutatesSource"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "requiredPermissions": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } }, "requiresContract": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "outputKinds": { "type": "array", "items": { "enum": ["json", "bytes", "stream", "source", "artifact", "none", "edit-plan", "transaction"] } } } } }, "traitDeclarations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "representation", "presence"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "representation": { "enum": ["source", "compiled", "runtime"] }, "presence": { "enum": ["may-expose", "will-expose"] }, "prerequisites": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } } } }, "implementationTier": { "type": "object", "additionalProperties": false, "required": ["claimed"], "properties": { "claimed": { "enum": [1, 2, 3, 4, 5] } } }, "budgets": { "type": "object", "additionalProperties": false, "required": ["maxInputBytes", "maxDepth", "maxNodes", "maxScalarBytes", "maxDiagnostics"], "properties": { "maxInputBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "maxDepth": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxNodes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxScalarBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxDiagnostics": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "deadlineMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "sourceTopology": { "const": "namespace" }, "probe": { "type": "object", "additionalProperties": false, "required": ["kind", "maxEntries", "maxDepth", "maxPathBytes"], "properties": { "kind": { "const": "namespace" }, "prefixes": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "maxEntries": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxDepth": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxPathBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["formatRefs", "roles", "sourceTopology", "artifactStages", "openIntents", "match", "probe", "representations", "publishesDataSources", "operations", "implementationTier", "budgets"], "properties": { "formatRefs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["formatId", "label"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "label": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "roles": { "type": "array", "items": { "enum": ["container", "media", "byte-transform", "semantic", "index", "sidecar"] }, "minItems": 1 }, "artifactStages": { "type": "array", "items": { "enum": ["authored", "compiled", "runtime"] }, "minItems": 1 }, "openIntents": { "type": "array", "items": { "enum": ["probe", "inspect", "thumbnail", "full", "stream", "export"] }, "minItems": 1 }, "match": { "type": "object", "additionalProperties": false, "properties": { "extensions": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "mediaTypes": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "pathGlobs": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "signatures": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["from", "offset", "bytesHex"], "properties": { "from": { "enum": ["start", "end"] }, "offset": { "type": "integer", "minimum": 0, "maximum": 4096 }, "bytesHex": { "type": "string", "pattern": "^(?:[0-9a-f]{2}){1,64}$" }, "maskHex": { "type": "string", "pattern": "^(?:[0-9a-f]{2}){1,64}$" } } }, "maxItems": 8 } } }, "companions": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "patterns", "searchScopes"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "role": { "type": "string", "minLength": 1 }, "required": { "type": "boolean" }, "patterns": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }, "expected": { "type": "object", "additionalProperties": false, "properties": { "all": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "any": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "none": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } } } }, "searchScopes": { "type": "array", "minItems": 1, "items": { "enum": ["sibling-directory", "current-mount", "enclosing-container", "workspace-dependency-layer", "explicit-user-selection"] } } } } }, "representations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "contract", "major", "stage", "lossy"], "properties": { "id": { "type": "string", "minLength": 1 }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "stage": { "enum": ["authored", "compiled", "runtime"] }, "lossy": { "type": "boolean" } } }, "minItems": 1 }, "publishesDataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "requires": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "operations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "mutatesSource"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "requiredPermissions": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } }, "requiresContract": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "outputKinds": { "type": "array", "items": { "enum": ["json", "bytes", "stream", "source", "artifact", "none", "edit-plan", "transaction"] } } } } }, "traitDeclarations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "representation", "presence"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "representation": { "enum": ["source", "compiled", "runtime"] }, "presence": { "enum": ["may-expose", "will-expose"] }, "prerequisites": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } } } }, "implementationTier": { "type": "object", "additionalProperties": false, "required": ["claimed"], "properties": { "claimed": { "enum": [1, 2, 3, 4, 5] } } }, "budgets": { "type": "object", "additionalProperties": false, "required": ["maxInputBytes", "maxDepth", "maxNodes", "maxScalarBytes", "maxDiagnostics"], "properties": { "maxInputBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "maxDepth": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxNodes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxScalarBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxDiagnostics": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "deadlineMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "sourceTopology": { "const": "derived" }, "probe": { "type": "object", "additionalProperties": false, "required": ["kind", "maxSubjects", "maxRelationDepth"], "properties": { "kind": { "const": "derived" }, "maxSubjects": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxRelationDepth": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] };
 var func14 = Object.prototype.hasOwnProperty;
@@ -4264,20 +4249,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                             let i12 = data36.length;
                             let j0;
                             if (i12 > 1) {
-                              outer0: for (; i12--; ) {
-                                for (j0 = i12; j0--; ) {
-                                  if (func0(data36[i12], data36[j0])) {
-                                    const err84 = { instancePath: instancePath + "/companions/" + i8 + "/expected/all/" + i10 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/all/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i12, j: j0 }, message: "must NOT have duplicate items (items ## " + j0 + " and " + i12 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err84];
-                                    } else {
-                                      vErrors.push(err84);
+                              outer0:
+                                for (; i12--; ) {
+                                  for (j0 = i12; j0--; ) {
+                                    if (func0(data36[i12], data36[j0])) {
+                                      const err84 = { instancePath: instancePath + "/companions/" + i8 + "/expected/all/" + i10 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/all/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i12, j: j0 }, message: "must NOT have duplicate items (items ## " + j0 + " and " + i12 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err84];
+                                      } else {
+                                        vErrors.push(err84);
+                                      }
+                                      errors++;
+                                      break outer0;
                                     }
-                                    errors++;
-                                    break outer0;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err85 = { instancePath: instancePath + "/companions/" + i8 + "/expected/all/" + i10 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/all/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -4408,20 +4394,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                             let i15 = data42.length;
                             let j1;
                             if (i15 > 1) {
-                              outer1: for (; i15--; ) {
-                                for (j1 = i15; j1--; ) {
-                                  if (func0(data42[i15], data42[j1])) {
-                                    const err96 = { instancePath: instancePath + "/companions/" + i8 + "/expected/any/" + i13 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/any/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i15, j: j1 }, message: "must NOT have duplicate items (items ## " + j1 + " and " + i15 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err96];
-                                    } else {
-                                      vErrors.push(err96);
+                              outer1:
+                                for (; i15--; ) {
+                                  for (j1 = i15; j1--; ) {
+                                    if (func0(data42[i15], data42[j1])) {
+                                      const err96 = { instancePath: instancePath + "/companions/" + i8 + "/expected/any/" + i13 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/any/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i15, j: j1 }, message: "must NOT have duplicate items (items ## " + j1 + " and " + i15 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err96];
+                                      } else {
+                                        vErrors.push(err96);
+                                      }
+                                      errors++;
+                                      break outer1;
                                     }
-                                    errors++;
-                                    break outer1;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err97 = { instancePath: instancePath + "/companions/" + i8 + "/expected/any/" + i13 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/any/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -4552,20 +4539,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                             let i18 = data48.length;
                             let j2;
                             if (i18 > 1) {
-                              outer2: for (; i18--; ) {
-                                for (j2 = i18; j2--; ) {
-                                  if (func0(data48[i18], data48[j2])) {
-                                    const err108 = { instancePath: instancePath + "/companions/" + i8 + "/expected/none/" + i16 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/none/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i18, j: j2 }, message: "must NOT have duplicate items (items ## " + j2 + " and " + i18 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err108];
-                                    } else {
-                                      vErrors.push(err108);
+                              outer2:
+                                for (; i18--; ) {
+                                  for (j2 = i18; j2--; ) {
+                                    if (func0(data48[i18], data48[j2])) {
+                                      const err108 = { instancePath: instancePath + "/companions/" + i8 + "/expected/none/" + i16 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/none/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i18, j: j2 }, message: "must NOT have duplicate items (items ## " + j2 + " and " + i18 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err108];
+                                      } else {
+                                        vErrors.push(err108);
+                                      }
+                                      errors++;
+                                      break outer2;
                                     }
-                                    errors++;
-                                    break outer2;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err109 = { instancePath: instancePath + "/companions/" + i8 + "/expected/none/" + i16 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/none/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -7362,20 +7350,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                             let i43 = data152.length;
                             let j4;
                             if (i43 > 1) {
-                              outer3: for (; i43--; ) {
-                                for (j4 = i43; j4--; ) {
-                                  if (func0(data152[i43], data152[j4])) {
-                                    const err360 = { instancePath: instancePath + "/companions/" + i39 + "/expected/all/" + i41 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/all/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i43, j: j4 }, message: "must NOT have duplicate items (items ## " + j4 + " and " + i43 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err360];
-                                    } else {
-                                      vErrors.push(err360);
+                              outer3:
+                                for (; i43--; ) {
+                                  for (j4 = i43; j4--; ) {
+                                    if (func0(data152[i43], data152[j4])) {
+                                      const err360 = { instancePath: instancePath + "/companions/" + i39 + "/expected/all/" + i41 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/all/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i43, j: j4 }, message: "must NOT have duplicate items (items ## " + j4 + " and " + i43 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err360];
+                                      } else {
+                                        vErrors.push(err360);
+                                      }
+                                      errors++;
+                                      break outer3;
                                     }
-                                    errors++;
-                                    break outer3;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err361 = { instancePath: instancePath + "/companions/" + i39 + "/expected/all/" + i41 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/all/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -7506,20 +7495,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                             let i46 = data158.length;
                             let j5;
                             if (i46 > 1) {
-                              outer4: for (; i46--; ) {
-                                for (j5 = i46; j5--; ) {
-                                  if (func0(data158[i46], data158[j5])) {
-                                    const err372 = { instancePath: instancePath + "/companions/" + i39 + "/expected/any/" + i44 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/any/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i46, j: j5 }, message: "must NOT have duplicate items (items ## " + j5 + " and " + i46 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err372];
-                                    } else {
-                                      vErrors.push(err372);
+                              outer4:
+                                for (; i46--; ) {
+                                  for (j5 = i46; j5--; ) {
+                                    if (func0(data158[i46], data158[j5])) {
+                                      const err372 = { instancePath: instancePath + "/companions/" + i39 + "/expected/any/" + i44 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/any/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i46, j: j5 }, message: "must NOT have duplicate items (items ## " + j5 + " and " + i46 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err372];
+                                      } else {
+                                        vErrors.push(err372);
+                                      }
+                                      errors++;
+                                      break outer4;
                                     }
-                                    errors++;
-                                    break outer4;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err373 = { instancePath: instancePath + "/companions/" + i39 + "/expected/any/" + i44 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/any/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -7650,20 +7640,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                             let i49 = data164.length;
                             let j6;
                             if (i49 > 1) {
-                              outer5: for (; i49--; ) {
-                                for (j6 = i49; j6--; ) {
-                                  if (func0(data164[i49], data164[j6])) {
-                                    const err384 = { instancePath: instancePath + "/companions/" + i39 + "/expected/none/" + i47 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/none/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i49, j: j6 }, message: "must NOT have duplicate items (items ## " + j6 + " and " + i49 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err384];
-                                    } else {
-                                      vErrors.push(err384);
+                              outer5:
+                                for (; i49--; ) {
+                                  for (j6 = i49; j6--; ) {
+                                    if (func0(data164[i49], data164[j6])) {
+                                      const err384 = { instancePath: instancePath + "/companions/" + i39 + "/expected/none/" + i47 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/none/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i49, j: j6 }, message: "must NOT have duplicate items (items ## " + j6 + " and " + i49 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err384];
+                                      } else {
+                                        vErrors.push(err384);
+                                      }
+                                      errors++;
+                                      break outer5;
                                     }
-                                    errors++;
-                                    break outer5;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err385 = { instancePath: instancePath + "/companions/" + i39 + "/expected/none/" + i47 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/none/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -10474,20 +10465,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                               let i74 = data268.length;
                               let j8;
                               if (i74 > 1) {
-                                outer6: for (; i74--; ) {
-                                  for (j8 = i74; j8--; ) {
-                                    if (func0(data268[i74], data268[j8])) {
-                                      const err637 = { instancePath: instancePath + "/companions/" + i70 + "/expected/all/" + i72 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/all/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i74, j: j8 }, message: "must NOT have duplicate items (items ## " + j8 + " and " + i74 + " are identical)" };
-                                      if (vErrors === null) {
-                                        vErrors = [err637];
-                                      } else {
-                                        vErrors.push(err637);
+                                outer6:
+                                  for (; i74--; ) {
+                                    for (j8 = i74; j8--; ) {
+                                      if (func0(data268[i74], data268[j8])) {
+                                        const err637 = { instancePath: instancePath + "/companions/" + i70 + "/expected/all/" + i72 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/all/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i74, j: j8 }, message: "must NOT have duplicate items (items ## " + j8 + " and " + i74 + " are identical)" };
+                                        if (vErrors === null) {
+                                          vErrors = [err637];
+                                        } else {
+                                          vErrors.push(err637);
+                                        }
+                                        errors++;
+                                        break outer6;
                                       }
-                                      errors++;
-                                      break outer6;
                                     }
                                   }
-                                }
                               }
                             } else {
                               const err638 = { instancePath: instancePath + "/companions/" + i70 + "/expected/all/" + i72 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/all/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -10618,20 +10610,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                               let i77 = data274.length;
                               let j9;
                               if (i77 > 1) {
-                                outer7: for (; i77--; ) {
-                                  for (j9 = i77; j9--; ) {
-                                    if (func0(data274[i77], data274[j9])) {
-                                      const err649 = { instancePath: instancePath + "/companions/" + i70 + "/expected/any/" + i75 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/any/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i77, j: j9 }, message: "must NOT have duplicate items (items ## " + j9 + " and " + i77 + " are identical)" };
-                                      if (vErrors === null) {
-                                        vErrors = [err649];
-                                      } else {
-                                        vErrors.push(err649);
+                                outer7:
+                                  for (; i77--; ) {
+                                    for (j9 = i77; j9--; ) {
+                                      if (func0(data274[i77], data274[j9])) {
+                                        const err649 = { instancePath: instancePath + "/companions/" + i70 + "/expected/any/" + i75 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/any/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i77, j: j9 }, message: "must NOT have duplicate items (items ## " + j9 + " and " + i77 + " are identical)" };
+                                        if (vErrors === null) {
+                                          vErrors = [err649];
+                                        } else {
+                                          vErrors.push(err649);
+                                        }
+                                        errors++;
+                                        break outer7;
                                       }
-                                      errors++;
-                                      break outer7;
                                     }
                                   }
-                                }
                               }
                             } else {
                               const err650 = { instancePath: instancePath + "/companions/" + i70 + "/expected/any/" + i75 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/any/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -10762,20 +10755,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                               let i80 = data280.length;
                               let j10;
                               if (i80 > 1) {
-                                outer8: for (; i80--; ) {
-                                  for (j10 = i80; j10--; ) {
-                                    if (func0(data280[i80], data280[j10])) {
-                                      const err661 = { instancePath: instancePath + "/companions/" + i70 + "/expected/none/" + i78 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/none/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i80, j: j10 }, message: "must NOT have duplicate items (items ## " + j10 + " and " + i80 + " are identical)" };
-                                      if (vErrors === null) {
-                                        vErrors = [err661];
-                                      } else {
-                                        vErrors.push(err661);
+                                outer8:
+                                  for (; i80--; ) {
+                                    for (j10 = i80; j10--; ) {
+                                      if (func0(data280[i80], data280[j10])) {
+                                        const err661 = { instancePath: instancePath + "/companions/" + i70 + "/expected/none/" + i78 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/none/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i80, j: j10 }, message: "must NOT have duplicate items (items ## " + j10 + " and " + i80 + " are identical)" };
+                                        if (vErrors === null) {
+                                          vErrors = [err661];
+                                        } else {
+                                          vErrors.push(err661);
+                                        }
+                                        errors++;
+                                        break outer8;
                                       }
-                                      errors++;
-                                      break outer8;
                                     }
                                   }
-                                }
                               }
                             } else {
                               const err662 = { instancePath: instancePath + "/companions/" + i70 + "/expected/none/" + i78 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/none/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -12607,9 +12601,6 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate205.evaluated = { "dynamicProps": true, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/serviceProviderContributionSpecV1.js
-var func1Module4 = __toESM(require_ucs2length(), 1);
 var serviceProviderContributionSpecV1 = validate206;
 var schema315 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/service-provider-contribution-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["provides", "lifecycleScope"], "properties": { "provides": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["offerId", "contract", "major", "version"], "properties": { "offerId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "facet": { "title": "JsonValue" } } }, "minItems": 1 }, "requires": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "inputs": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "outputs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "representation", "presence"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "representation": { "enum": ["source", "compiled", "runtime"] }, "presence": { "enum": ["may-expose", "will-expose"] }, "prerequisites": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } } } }, "protocolOperations": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "replacement": { "type": "object", "additionalProperties": false, "required": ["target", "compatible"], "properties": { "target": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } }, "compatible": { "type": "boolean" } } }, "lifecycleScope": { "enum": ["session", "operation", "process"] }, "applicableVariants": { "type": "array", "items": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" } } } };
 var pattern46 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*$", "u");
@@ -13600,10 +13591,6 @@ function validate206(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate206.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/viewerContributionSpecV1.js
-var func0Module2 = __toESM(require_equal(), 1);
-var func3Module = __toESM(require_ucs2length(), 1);
 var viewerContributionSpecV1 = validate207;
 var schema316 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/viewer-contribution-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["kind", "consumesDataSources", "priority"], "properties": { "kind": { "enum": ["stage", "tree", "panel", "toolbar", "transport", "status", "fallback"] }, "requiresTraits": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "requiresOperations": { "type": "array", "items": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" } }, "consumesDataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "applicability": { "type": "object", "additionalProperties": false, "properties": { "interpretation": { "enum": ["none", "codec", "any"] }, "sourceBytes": { "type": "object", "additionalProperties": false, "properties": { "maximum": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, "longestLineBytes": { "type": "object", "additionalProperties": false, "required": ["maximum", "whenUnknown"], "properties": { "maximum": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "whenUnknown": { "enum": ["eligible", "ineligible"] } } } } }, "hosts": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "priority": { "type": "number" }, "conflicts": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "singletonGroup": { "type": "string", "minLength": 1 } } };
 var func16 = Object.prototype.hasOwnProperty;
@@ -13775,20 +13762,21 @@ function validate207(data, { instancePath = "", parentData, parentDataProperty, 
                 let i2 = data5.length;
                 let j0;
                 if (i2 > 1) {
-                  outer0: for (; i2--; ) {
-                    for (j0 = i2; j0--; ) {
-                      if (func02(data5[i2], data5[j0])) {
-                        const err13 = { instancePath: instancePath + "/requiresTraits/" + i0 + "/states", schemaPath: "#/properties/requiresTraits/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i2, j: j0 }, message: "must NOT have duplicate items (items ## " + j0 + " and " + i2 + " are identical)" };
-                        if (vErrors === null) {
-                          vErrors = [err13];
-                        } else {
-                          vErrors.push(err13);
+                  outer0:
+                    for (; i2--; ) {
+                      for (j0 = i2; j0--; ) {
+                        if (func02(data5[i2], data5[j0])) {
+                          const err13 = { instancePath: instancePath + "/requiresTraits/" + i0 + "/states", schemaPath: "#/properties/requiresTraits/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i2, j: j0 }, message: "must NOT have duplicate items (items ## " + j0 + " and " + i2 + " are identical)" };
+                          if (vErrors === null) {
+                            vErrors = [err13];
+                          } else {
+                            vErrors.push(err13);
+                          }
+                          errors++;
+                          break outer0;
                         }
-                        errors++;
-                        break outer0;
                       }
                     }
-                  }
                 }
               } else {
                 const err14 = { instancePath: instancePath + "/requiresTraits/" + i0 + "/states", schemaPath: "#/properties/requiresTraits/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -14407,10 +14395,6 @@ function validate207(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate207.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/editorContributionSpecV1.js
-var func2Module2 = __toESM(require_ucs2length(), 1);
-var func0Module3 = __toESM(require_equal(), 1);
 var editorContributionSpecV1 = validate208;
 var schema317 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/editor-contribution-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["sessionModel", "selectionKinds", "semanticLocationKinds", "requiresTransactions", "requiresOperations", "consumesDataSources", "writer", "priority"], "properties": { "sessionModel": { "enum": ["single-subject", "multi-subject", "workspace"] }, "selectionKinds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }, "semanticLocationKinds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }, "requiresTransactions": { "type": "boolean" }, "requiresOperations": { "type": "array", "items": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "uniqueItems": true }, "consumesDataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] }, "uniqueItems": true }, "writer": { "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "mutationMode", "minimumRoundTrip"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "mutationMode": { "enum": ["export-only", "mutate"] }, "minimumRoundTrip": { "enum": ["byte-identical", "semantic", "lossy", "none"] } } }, "hosts": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }, "priority": { "type": "number" }, "scaleLimits": { "type": "object", "additionalProperties": false, "properties": { "maximumSubjects": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maximumRows": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maximumSourceBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } } } };
 var func17 = Object.prototype.hasOwnProperty;
@@ -14971,20 +14955,21 @@ function validate208(data, { instancePath = "", parentData, parentDataProperty, 
         let i7 = data8.length;
         let j3;
         if (i7 > 1) {
-          outer0: for (; i7--; ) {
-            for (j3 = i7; j3--; ) {
-              if (func03(data8[i7], data8[j3])) {
-                const err43 = { instancePath: instancePath + "/consumesDataSources", schemaPath: "#/properties/consumesDataSources/uniqueItems", keyword: "uniqueItems", params: { i: i7, j: j3 }, message: "must NOT have duplicate items (items ## " + j3 + " and " + i7 + " are identical)" };
-                if (vErrors === null) {
-                  vErrors = [err43];
-                } else {
-                  vErrors.push(err43);
+          outer0:
+            for (; i7--; ) {
+              for (j3 = i7; j3--; ) {
+                if (func03(data8[i7], data8[j3])) {
+                  const err43 = { instancePath: instancePath + "/consumesDataSources", schemaPath: "#/properties/consumesDataSources/uniqueItems", keyword: "uniqueItems", params: { i: i7, j: j3 }, message: "must NOT have duplicate items (items ## " + j3 + " and " + i7 + " are identical)" };
+                  if (vErrors === null) {
+                    vErrors = [err43];
+                  } else {
+                    vErrors.push(err43);
+                  }
+                  errors++;
+                  break outer0;
                 }
-                errors++;
-                break outer0;
               }
             }
-          }
         }
       } else {
         const err44 = { instancePath: instancePath + "/consumesDataSources", schemaPath: "#/properties/consumesDataSources/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -15318,9 +15303,6 @@ function validate208(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate208.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/writerRequirementV1.js
-var func1Module5 = __toESM(require_ucs2length(), 1);
 var writerRequirementV1 = validate209;
 var schema318 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/writer-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "mutationMode", "minimumRoundTrip"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "mutationMode": { "enum": ["export-only", "mutate"] }, "minimumRoundTrip": { "enum": ["byte-identical", "semantic", "lossy", "none"] } } };
 var func18 = func1Module5.default?.default ?? func1Module5.default;
@@ -15464,9 +15446,6 @@ function validate209(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate209.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/writerOfferV1.js
-var func1Module6 = __toESM(require_ucs2length(), 1);
 var writerOfferV1 = validate2010;
 var schema319 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/writer-offer.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "mutationMode", "minimumRoundTrip", "providerId", "fidelityEvidenceId"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "mutationMode": { "enum": ["export-only", "mutate"] }, "minimumRoundTrip": { "enum": ["byte-identical", "semantic", "lossy", "none"] }, "providerId": { "type": "string", "minLength": 1 }, "fidelityEvidenceId": { "type": "string", "minLength": 1 } } };
 var func19 = func1Module6.default?.default ?? func1Module6.default;
@@ -15672,9 +15651,6 @@ function validate2010(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2010.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/traitDefinitionSpecV1.js
-var func1Module7 = __toESM(require_ucs2length(), 1);
 var traitDefinitionSpecV1 = validate2011;
 var schema3110 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/trait-definition-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "id", "version", "scope", "parametersSchema", "transport"], "properties": { "schemaVersion": { "const": 1 }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "scope": { "anyOf": [{ "enum": ["source", "asset", "subject", "workspace", "service", "operation", "view-session", "representation"] }, { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }] }, "parametersSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "transport": { "enum": ["json", "structured-clone"] }, "documentation": { "type": "string", "minLength": 1 }, "imports": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "range"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } } } };
 var pattern49 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
@@ -16073,9 +16049,6 @@ function validate2011(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2011.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/contractDefinitionSpecV1.js
-var func2Module3 = __toESM(require_ucs2length(), 1);
 var contractDefinitionSpecV1 = validate2012;
 var schema3111 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/contract-definition-spec.v1.schema.json", "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["schemaVersion", "kind", "contract", "major", "offerFacet", "requestFacet", "matching", "conformanceProfile"], "properties": { "schemaVersion": { "const": 1 }, "kind": { "const": "service" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "offerFacet": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["presence"], "properties": { "presence": { "const": "forbidden" } } }, { "type": "object", "additionalProperties": false, "required": ["presence", "schema"], "properties": { "presence": { "enum": ["optional", "required"] }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } } } }] }, "requestFacet": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["presence"], "properties": { "presence": { "const": "forbidden" } } }, { "type": "object", "additionalProperties": false, "required": ["presence", "schema"], "properties": { "presence": { "enum": ["optional", "required"] }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } } } }] }, "matching": { "type": "object", "additionalProperties": false, "required": ["profile", "major"], "properties": { "profile": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "configuration": { "title": "JsonValue" } } }, "conformanceProfile": { "type": "string", "minLength": 1 }, "surface": { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } } } }, { "type": "object", "additionalProperties": false, "required": ["schemaVersion", "kind", "contract", "major", "schema", "conformanceProfile"], "properties": { "schemaVersion": { "const": 1 }, "kind": { "const": "data-source" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "conformanceProfile": { "type": "string", "minLength": 1 }, "surface": { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } } } }] };
 var func111 = Object.prototype.hasOwnProperty;
@@ -19443,10 +19416,6 @@ function validate2012(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2012.evaluated = { "dynamicProps": true, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/subjectDescriptorV2.js
-var func2Module4 = __toESM(require_ucs2length(), 1);
-var func0Module4 = __toESM(require_equal(), 1);
 var subjectDescriptorV2 = validate2013;
 var schema3112 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/subject-descriptor.v2.schema.json", "$defs": { "jsonValue": { "title": "JsonValue", "oneOf": [{ "type": "null" }, { "type": "boolean" }, { "type": "number" }, { "type": "string" }, { "type": "array", "items": { "$ref": "#/$defs/jsonValue" } }, { "type": "object", "additionalProperties": { "$ref": "#/$defs/jsonValue" } }] } }, "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["schemaVersion", "subjectUri", "origin", "traits", "operations", "constraints", "dataSources", "diagnostics", "revision", "interpretation", "candidates"], "properties": { "schemaVersion": { "const": 2 }, "subjectUri": { "type": "string", "pattern": "\\S" }, "origin": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "binding"], "properties": { "kind": { "const": "single" }, "binding": { "type": "object", "additionalProperties": false, "required": ["id", "role", "source", "required", "ownership", "revision"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "required": { "type": "boolean" }, "ownership": { "enum": ["owned", "companion", "external"] }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "bindings"], "properties": { "kind": { "const": "bundle" }, "bindings": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "role", "source", "required", "ownership", "revision"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "required": { "type": "boolean" }, "ownership": { "enum": ["owned", "companion", "external"] }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "primary": { "type": "string", "minLength": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "root", "revision"], "properties": { "kind": { "const": "namespace" }, "root": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "inputs"], "properties": { "kind": { "const": "derived" }, "inputs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["bindingId", "role", "subjectUri", "revision", "compositionFingerprint"], "properties": { "bindingId": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "subjectUri": { "type": "string", "minLength": 1 }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "compositionFingerprint": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "recipe": { "type": "object", "additionalProperties": false, "required": ["extensionId", "extensionVersion", "contributionId", "operation"], "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "extensionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "operation": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "parameters": { "$ref": "#/$defs/jsonValue" } } }, "materialization": { "type": "object", "additionalProperties": false, "required": ["source", "revision"], "properties": { "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } } } }] }, "traits": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "descriptorVersion", "state"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "descriptorVersion": { "const": 1 }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "parameters": { "$ref": "#/$defs/jsonValue" }, "state": { "const": "available" } } }, { "type": "object", "additionalProperties": false, "required": ["id", "descriptorVersion", "state", "diagnosticIds"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "descriptorVersion": { "const": 1 }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "parameters": { "$ref": "#/$defs/jsonValue" }, "state": { "enum": ["partial", "disabled", "dependency-required"] }, "diagnosticIds": { "type": "array", "items": { "type": "string" }, "minItems": 1 } } }] } }, "operations": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "state", "mutatesSource"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "state": { "const": "available" } } }, { "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "state", "mutatesSource", "reason"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "state": { "enum": ["disabled", "dependency-required"] }, "reason": { "type": "string", "minLength": 1 } } }] } }, "constraints": { "type": "object", "additionalProperties": false, "required": ["readOnly", "seekable", "randomAccess", "trusted"], "properties": { "readOnly": { "type": "boolean" }, "seekable": { "type": "boolean" }, "randomAccess": { "type": "boolean" }, "trusted": { "type": "boolean" }, "maxDecodedBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "unsupportedFeatures": { "type": "array", "items": { "type": "string" } } } }, "dataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "diagnostics": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "code", "category", "severity", "message"], "properties": { "id": { "type": "string", "minLength": 1 }, "code": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "category": { "enum": ["syntax", "structure", "fidelity", "dependency", "security", "performance", "operation", "io", "unknown"] }, "severity": { "enum": ["error", "warning", "information", "hint"] }, "message": { "type": "string" }, "source": { "type": "object", "additionalProperties": false, "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" } } }, "path": { "type": "array", "items": { "oneOf": [{ "type": "string" }, { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }] } }, "range": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, { "type": "object", "additionalProperties": false, "required": ["utf16Offset", "utf16Length", "line", "column"], "properties": { "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength", "utf16Offset", "utf16Length", "line", "column"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }] }, "data": { "$ref": "#/$defs/jsonValue" }, "relatedIds": { "type": "array", "items": { "type": "string" } } } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "interpretation": { "const": "none" }, "candidates": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["codecId", "confidence", "evidence", "requiredRanges"], "properties": { "codecId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "confidence": { "type": "number", "minimum": 0, "maximum": 1 }, "evidence": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["kind", "weight"], "properties": { "kind": { "enum": ["magic", "structure", "companion", "context", "extension", "user-override"] }, "weight": { "type": "number" }, "note": { "type": "string" } } } }, "requiredRanges": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, { "type": "object", "additionalProperties": false, "required": ["utf16Offset", "utf16Length", "line", "column"], "properties": { "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength", "utf16Offset", "utf16Length", "line", "column"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }] } }, "diagnostics": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "code", "category", "severity", "message"], "properties": { "id": { "type": "string", "minLength": 1 }, "code": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "category": { "enum": ["syntax", "structure", "fidelity", "dependency", "security", "performance", "operation", "io", "unknown"] }, "severity": { "enum": ["error", "warning", "information", "hint"] }, "message": { "type": "string" }, "source": { "type": "object", "additionalProperties": false, "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" } } }, "path": { "type": "array", "items": { "oneOf": [{ "type": "string" }, { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }] } }, "range": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, { "type": "object", "additionalProperties": false, "required": ["utf16Offset", "utf16Length", "line", "column"], "properties": { "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength", "utf16Offset", "utf16Length", "line", "column"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }] }, "data": { "$ref": "#/$defs/jsonValue" }, "relatedIds": { "type": "array", "items": { "type": "string" } } } } } } } } } }, { "type": "object", "additionalProperties": false, "required": ["schemaVersion", "subjectUri", "origin", "traits", "operations", "constraints", "dataSources", "diagnostics", "revision", "interpretation", "identity", "metadata"], "properties": { "schemaVersion": { "const": 2 }, "subjectUri": { "type": "string", "pattern": "\\S" }, "origin": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "binding"], "properties": { "kind": { "const": "single" }, "binding": { "type": "object", "additionalProperties": false, "required": ["id", "role", "source", "required", "ownership", "revision"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "required": { "type": "boolean" }, "ownership": { "enum": ["owned", "companion", "external"] }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "bindings"], "properties": { "kind": { "const": "bundle" }, "bindings": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "role", "source", "required", "ownership", "revision"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "required": { "type": "boolean" }, "ownership": { "enum": ["owned", "companion", "external"] }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "primary": { "type": "string", "minLength": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "root", "revision"], "properties": { "kind": { "const": "namespace" }, "root": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "inputs"], "properties": { "kind": { "const": "derived" }, "inputs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["bindingId", "role", "subjectUri", "revision", "compositionFingerprint"], "properties": { "bindingId": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "subjectUri": { "type": "string", "minLength": 1 }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "compositionFingerprint": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "recipe": { "type": "object", "additionalProperties": false, "required": ["extensionId", "extensionVersion", "contributionId", "operation"], "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "extensionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "operation": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "parameters": { "$ref": "#/$defs/jsonValue" } } }, "materialization": { "type": "object", "additionalProperties": false, "required": ["source", "revision"], "properties": { "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } } } }] }, "traits": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "descriptorVersion", "state"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "descriptorVersion": { "const": 1 }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "parameters": { "$ref": "#/$defs/jsonValue" }, "state": { "const": "available" } } }, { "type": "object", "additionalProperties": false, "required": ["id", "descriptorVersion", "state", "diagnosticIds"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "descriptorVersion": { "const": 1 }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "parameters": { "$ref": "#/$defs/jsonValue" }, "state": { "enum": ["partial", "disabled", "dependency-required"] }, "diagnosticIds": { "type": "array", "items": { "type": "string" }, "minItems": 1 } } }] } }, "operations": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "state", "mutatesSource"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "state": { "const": "available" } } }, { "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "state", "mutatesSource", "reason"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "state": { "enum": ["disabled", "dependency-required"] }, "reason": { "type": "string", "minLength": 1 } } }] } }, "constraints": { "type": "object", "additionalProperties": false, "required": ["readOnly", "seekable", "randomAccess", "trusted"], "properties": { "readOnly": { "type": "boolean" }, "seekable": { "type": "boolean" }, "randomAccess": { "type": "boolean" }, "trusted": { "type": "boolean" }, "maxDecodedBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "unsupportedFeatures": { "type": "array", "items": { "type": "string" } } } }, "dataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/relation-graph-source", "common.view/subject-facts-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "diagnostics": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "code", "category", "severity", "message"], "properties": { "id": { "type": "string", "minLength": 1 }, "code": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "category": { "enum": ["syntax", "structure", "fidelity", "dependency", "security", "performance", "operation", "io", "unknown"] }, "severity": { "enum": ["error", "warning", "information", "hint"] }, "message": { "type": "string" }, "source": { "type": "object", "additionalProperties": false, "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" } } }, "path": { "type": "array", "items": { "oneOf": [{ "type": "string" }, { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }] } }, "range": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, { "type": "object", "additionalProperties": false, "required": ["utf16Offset", "utf16Length", "line", "column"], "properties": { "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength", "utf16Offset", "utf16Length", "line", "column"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }] }, "data": { "$ref": "#/$defs/jsonValue" }, "relatedIds": { "type": "array", "items": { "type": "string" } } } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "interpretation": { "const": "codec" }, "identity": { "type": "object", "additionalProperties": false, "required": ["codecId", "codecVersion", "formatId", "formatLabel", "confidence", "detection"], "properties": { "codecId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "codecVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "formatId": { "type": "string", "minLength": 1 }, "formatLabel": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 }, "confidence": { "type": "number", "minimum": 0, "maximum": 1 }, "detection": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["kind", "weight"], "properties": { "kind": { "enum": ["magic", "structure", "companion", "context", "extension", "user-override"] }, "weight": { "type": "number" }, "note": { "type": "string" } } } } } }, "metadata": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "label", "entries"], "properties": { "id": { "type": "string", "minLength": 1 }, "label": { "type": "string" }, "entries": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["key", "value"], "properties": { "key": { "type": "string", "minLength": 1 }, "value": { "$ref": "#/$defs/jsonValue" } } } } } } }, "companions": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "bindingIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": true }, "cardinality": { "const": "one" }, "state": { "const": "resolved" }, "bindingIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true, "maxItems": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "bindingIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": true }, "cardinality": { "const": "one-or-more" }, "state": { "const": "resolved" }, "bindingIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "bindingIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": false }, "cardinality": { "const": "zero-or-one" }, "state": { "const": "resolved" }, "bindingIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true, "maxItems": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "bindingIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": false }, "cardinality": { "const": "many" }, "state": { "const": "resolved" }, "bindingIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "diagnosticIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": true }, "cardinality": { "enum": ["one", "one-or-more"] }, "state": { "const": "missing" }, "diagnosticIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": false }, "cardinality": { "enum": ["zero-or-one", "many"] }, "state": { "const": "missing" }, "diagnosticIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "candidates", "diagnosticIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": true }, "cardinality": { "const": "one" }, "state": { "const": "ambiguous" }, "candidates": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["source", "revision"], "properties": { "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" } } }, "minItems": 2, "uniqueItems": true }, "diagnosticIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "candidates", "diagnosticIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": false }, "cardinality": { "const": "zero-or-one" }, "state": { "const": "ambiguous" }, "candidates": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["source", "revision"], "properties": { "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" } } }, "minItems": 2, "uniqueItems": true }, "diagnosticIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }] } } } }] };
 var func112 = Object.prototype.hasOwnProperty;
@@ -31668,20 +31637,21 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
                           let i52 = data388.length;
                           let j6;
                           if (i52 > 1) {
-                            outer0: for (; i52--; ) {
-                              for (j6 = i52; j6--; ) {
-                                if (func04(data388[i52], data388[j6])) {
-                                  const err1059 = { instancePath: instancePath + "/companions/" + i37 + "/candidates", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/6/properties/candidates/uniqueItems", keyword: "uniqueItems", params: { i: i52, j: j6 }, message: "must NOT have duplicate items (items ## " + j6 + " and " + i52 + " are identical)" };
-                                  if (vErrors === null) {
-                                    vErrors = [err1059];
-                                  } else {
-                                    vErrors.push(err1059);
+                            outer0:
+                              for (; i52--; ) {
+                                for (j6 = i52; j6--; ) {
+                                  if (func04(data388[i52], data388[j6])) {
+                                    const err1059 = { instancePath: instancePath + "/companions/" + i37 + "/candidates", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/6/properties/candidates/uniqueItems", keyword: "uniqueItems", params: { i: i52, j: j6 }, message: "must NOT have duplicate items (items ## " + j6 + " and " + i52 + " are identical)" };
+                                    if (vErrors === null) {
+                                      vErrors = [err1059];
+                                    } else {
+                                      vErrors.push(err1059);
+                                    }
+                                    errors++;
+                                    break outer0;
                                   }
-                                  errors++;
-                                  break outer0;
                                 }
                               }
-                            }
                           }
                         } else {
                           const err1060 = { instancePath: instancePath + "/companions/" + i37 + "/candidates", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/6/properties/candidates/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -32146,20 +32116,21 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
                             let i57 = data403.length;
                             let j8;
                             if (i57 > 1) {
-                              outer1: for (; i57--; ) {
-                                for (j8 = i57; j8--; ) {
-                                  if (func04(data403[i57], data403[j8])) {
-                                    const err1101 = { instancePath: instancePath + "/companions/" + i37 + "/candidates", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/7/properties/candidates/uniqueItems", keyword: "uniqueItems", params: { i: i57, j: j8 }, message: "must NOT have duplicate items (items ## " + j8 + " and " + i57 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err1101];
-                                    } else {
-                                      vErrors.push(err1101);
+                              outer1:
+                                for (; i57--; ) {
+                                  for (j8 = i57; j8--; ) {
+                                    if (func04(data403[i57], data403[j8])) {
+                                      const err1101 = { instancePath: instancePath + "/companions/" + i37 + "/candidates", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/7/properties/candidates/uniqueItems", keyword: "uniqueItems", params: { i: i57, j: j8 }, message: "must NOT have duplicate items (items ## " + j8 + " and " + i57 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err1101];
+                                      } else {
+                                        vErrors.push(err1101);
+                                      }
+                                      errors++;
+                                      break outer1;
                                     }
-                                    errors++;
-                                    break outer1;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err1102 = { instancePath: instancePath + "/companions/" + i37 + "/candidates", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/7/properties/candidates/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -32341,9 +32312,6 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2013.evaluated = { "dynamicProps": true, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/contributionManifestV1.js
-var func2Module5 = __toESM(require_ucs2length(), 1);
 var contributionManifestV1 = validate2014;
 var schema3113 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/contribution-manifest.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "contract", "id", "displayName", "spec"], "properties": { "schemaVersion": { "const": 1 }, "contract": { "type": "object", "additionalProperties": false, "required": ["id", "major"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "displayName": { "type": "string", "minLength": 1 }, "status": { "enum": ["supported", "partial", "unsupported", "experimental"] }, "runtimeVariants": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/runtime-variant-declaration.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["variantId", "entrypoint", "target", "executionProfile", "requestedPermissionClasses"], "properties": { "variantId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "entrypoint": { "type": "string", "pattern": "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$" }, "target": { "type": "object", "additionalProperties": false, "properties": { "environments": { "type": "array", "items": { "enum": ["browser-main", "browser-worker", "node", "node-worker", "wasm", "native", "external-tool"] }, "minItems": 1 }, "operatingSystems": { "type": "array", "items": { "enum": ["any", "windows", "linux", "darwin", "android", "ios"] }, "minItems": 1 }, "architectures": { "type": "array", "items": { "enum": ["any", "x86", "x64", "arm32", "arm64", "wasm32"] }, "minItems": 1 }, "requiredHostCapabilities": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "requiredWebApis": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "externalTools": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, "executionProfile": { "enum": ["browser-sandbox", "worker-brokered", "process-brokered", "wasm-brokered", "trusted-in-process", "remote-provider"] }, "requestedPermissionClasses": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } } } } }, "dependsOn": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/scoped-contract-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["contract", "major", "mode", "scope"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } } }, "limitations": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "spec": { "title": "JsonValue" } } };
 var func113 = Object.prototype.hasOwnProperty;
@@ -33272,9 +33240,6 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2014.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/runtimeVariantDeclarationV1.js
-var func1Module8 = __toESM(require_ucs2length(), 1);
 var runtimeVariantDeclarationV1 = validate2015;
 var schema3114 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/runtime-variant-declaration.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["variantId", "entrypoint", "target", "executionProfile", "requestedPermissionClasses"], "properties": { "variantId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "entrypoint": { "type": "string", "pattern": "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$" }, "target": { "type": "object", "additionalProperties": false, "properties": { "environments": { "type": "array", "items": { "enum": ["browser-main", "browser-worker", "node", "node-worker", "wasm", "native", "external-tool"] }, "minItems": 1 }, "operatingSystems": { "type": "array", "items": { "enum": ["any", "windows", "linux", "darwin", "android", "ios"] }, "minItems": 1 }, "architectures": { "type": "array", "items": { "enum": ["any", "x86", "x64", "arm32", "arm64", "wasm32"] }, "minItems": 1 }, "requiredHostCapabilities": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "requiredWebApis": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "externalTools": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, "executionProfile": { "enum": ["browser-sandbox", "worker-brokered", "process-brokered", "wasm-brokered", "trusted-in-process", "remote-provider"] }, "requestedPermissionClasses": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } } } };
 var pattern413 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*$", "u");
@@ -33680,9 +33645,6 @@ function validate2015(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2015.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/scopedContractRequirementV1.js
-var func1Module9 = __toESM(require_ucs2length(), 1);
 var scopedContractRequirementV1 = validate2016;
 var schema3115 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/scoped-contract-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["contract", "major", "mode", "scope"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } };
 var pattern414 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
@@ -33924,9 +33886,6 @@ function validate2016(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2016.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/dataSourceContractDefinitionV1.js
-var func1Module10 = __toESM(require_ucs2length(), 1);
 var dataSourceContractDefinitionV1 = validate2017;
 var schema3116 = { "type": "object", "additionalProperties": false, "required": ["schemaVersion", "kind", "contract", "major", "schema", "conformanceProfile"], "properties": { "schemaVersion": { "const": 1 }, "kind": { "const": "data-source" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "conformanceProfile": { "type": "string", "minLength": 1 }, "surface": { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } } } };
 var pattern415 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
@@ -35376,8 +35335,6 @@ function validate2017(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2017.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/dataSourceSurfaceV1.js
 var dataSourceSurfaceV1 = validate2018;
 var schema3117 = { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } };
 var pattern416 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
@@ -36595,8 +36552,6 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2018.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/dataSourceMethodSurfaceV1.js
 var dataSourceMethodSurfaceV1 = validate2019;
 var schema3118 = { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] };
 var pattern417 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
@@ -37638,8 +37593,6 @@ function validate2019(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2019.evaluated = { "dynamicProps": true, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated.js
 var PRECOMPILED_SCHEMA_VALIDATORS = /* @__PURE__ */ new Map([
   ['{\n  "$id": "https://schemas.modkitx.org/x3/source-span.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "oneOf": [\n    {\n      "additionalProperties": false,\n      "properties": {\n        "byteLength": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        },\n        "byteOffset": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        }\n      },\n      "required": [\n        "byteOffset",\n        "byteLength"\n      ],\n      "type": "object"\n    },\n    {\n      "additionalProperties": false,\n      "properties": {\n        "column": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "line": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Length": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Offset": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        }\n      },\n      "required": [\n        "utf16Offset",\n        "utf16Length",\n        "line",\n        "column"\n      ],\n      "type": "object"\n    },\n    {\n      "additionalProperties": false,\n      "properties": {\n        "byteLength": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        },\n        "byteOffset": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        },\n        "column": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "line": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Length": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Offset": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        }\n      },\n      "required": [\n        "byteOffset",\n        "byteLength",\n        "utf16Offset",\n        "utf16Length",\n        "line",\n        "column"\n      ],\n      "type": "object"\n    }\n  ]\n}\n', sourceSpanV1],
   ['{\n  "$id": "https://schemas.modkitx.org/x3/extension-manifest.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "contributionManifests": {\n      "items": {\n        "minLength": 1,\n        "type": "string"\n      },\n      "type": "array"\n    },\n    "dependsOn": {\n      "items": {\n        "$id": "https://schemas.modkitx.org/x3/extension-requirement.v1.schema.json",\n        "$schema": "https://json-schema.org/draft/2020-12/schema",\n        "additionalProperties": false,\n        "properties": {\n          "extension": {\n            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n            "type": "string"\n          },\n          "mode": {\n            "enum": [\n              "required",\n              "default",\n              "suggested",\n              "integrates"\n            ]\n          },\n          "range": {\n            "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n            "type": "string"\n          },\n          "scope": {\n            "additionalProperties": false,\n            "properties": {\n              "id": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "kind": {\n                "enum": [\n                  "contribution",\n                  "offer",\n                  "operation",\n                  "intent",\n                  "variant",\n                  "profile",\n                  "projection",\n                  "slot"\n                ]\n              }\n            },\n            "required": [\n              "kind",\n              "id"\n            ],\n            "type": "object"\n          }\n        },\n        "required": [\n          "extension",\n          "mode",\n          "scope"\n        ],\n        "type": "object"\n      },\n      "type": "array"\n    },\n    "id": {\n      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n      "type": "string"\n    },\n    "license": {\n      "minLength": 1,\n      "type": "string"\n    },\n    "publisher": {\n      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n      "type": "string"\n    },\n    "schemaVersion": {\n      "const": 1\n    },\n    "version": {\n      "pattern": "^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)(?:-((?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\\\.(?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\\\+([0-9a-zA-Z-]+(?:\\\\.[0-9a-zA-Z-]+)*))?$",\n      "type": "string"\n    }\n  },\n  "required": [\n    "schemaVersion",\n    "publisher",\n    "id",\n    "version",\n    "license",\n    "contributionManifests"\n  ],\n  "type": "object"\n}\n', extensionManifestV1],
@@ -40233,14 +40186,22 @@ var PRECOMPILED_SCHEMA_VALIDATORS = /* @__PURE__ */ new Map([
   ['{\n  "additionalProperties": false,\n  "properties": {\n    "fields": {\n      "items": {\n        "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",\n        "type": "string"\n      },\n      "maxItems": 64,\n      "type": "array",\n      "uniqueItems": true\n    },\n    "methods": {\n      "additionalProperties": {\n        "oneOf": [\n          {\n            "additionalProperties": false,\n            "properties": {\n              "arity": {\n                "maximum": 16,\n                "minimum": 0,\n                "type": "integer"\n              },\n              "kind": {\n                "const": "lease"\n              },\n              "limits": {\n                "additionalProperties": false,\n                "properties": {\n                  "maxBytes": {\n                    "maximum": 9007199254740991,\n                    "minimum": 0,\n                    "type": "integer"\n                  },\n                  "maxPageItems": {\n                    "maximum": 9007199254740991,\n                    "minimum": 1,\n                    "type": "integer"\n                  },\n                  "maxStringLength": {\n                    "maximum": 9007199254740991,\n                    "minimum": 0,\n                    "type": "integer"\n                  }\n                },\n                "type": "object"\n              },\n              "optional": {\n                "type": "boolean"\n              },\n              "progress": {\n                "additionalProperties": false,\n                "properties": {\n                  "arg": {\n                    "maximum": 16,\n                    "minimum": 0,\n                    "type": "integer"\n                  },\n                  "key": {\n                    "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",\n                    "type": "string"\n                  }\n                },\n                "required": [\n                  "arg",\n                  "key"\n                ],\n                "type": "object"\n              },\n              "result": {\n                "additionalProperties": false,\n                "properties": {\n                  "contract": {\n                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                    "type": "string"\n                  },\n                  "major": {\n                    "maximum": 9007199254740991,\n                    "minimum": 0,\n                    "type": "integer"\n                  }\n                },\n                "required": [\n                  "contract",\n                  "major"\n                ],\n                "type": "object"\n              },\n              "signal": {\n                "anyOf": [\n                  {\n                    "enum": [\n                      "last",\n                      "none"\n                    ]\n                  },\n                  {\n                    "additionalProperties": false,\n                    "properties": {\n                      "arg": {\n                        "maximum": 16,\n                        "minimum": 0,\n                        "type": "integer"\n                      },\n                      "key": {\n                        "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",\n                        "type": "string"\n                      }\n                    },\n                    "required": [\n                      "arg",\n                      "key"\n                    ],\n                    "type": "object"\n                  }\n                ]\n              },\n              "wrapper": {\n                "enum": [\n                  "lease",\n                  "bare"\n                ]\n              }\n            },\n            "required": [\n              "kind",\n              "result"\n            ],\n            "type": "object"\n          },\n          {\n            "additionalProperties": false,\n            "properties": {\n              "arity": {\n                "maximum": 16,\n                "minimum": 0,\n                "type": "integer"\n              },\n              "kind": {\n                "enum": [\n                  "value",\n                  "leased-value",\n                  "iterable",\n                  "events"\n                ]\n              },\n              "limits": {\n                "additionalProperties": false,\n                "properties": {\n                  "maxBytes": {\n                    "maximum": 9007199254740991,\n                    "minimum": 0,\n                    "type": "integer"\n                  },\n                  "maxPageItems": {\n                    "maximum": 9007199254740991,\n                    "minimum": 1,\n                    "type": "integer"\n                  },\n                  "maxStringLength": {\n                    "maximum": 9007199254740991,\n                    "minimum": 0,\n                    "type": "integer"\n                  }\n                },\n                "type": "object"\n              },\n              "optional": {\n                "type": "boolean"\n              },\n              "progress": {\n                "additionalProperties": false,\n                "properties": {\n                  "arg": {\n                    "maximum": 16,\n                    "minimum": 0,\n                    "type": "integer"\n                  },\n                  "key": {\n                    "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",\n                    "type": "string"\n                  }\n                },\n                "required": [\n                  "arg",\n                  "key"\n                ],\n                "type": "object"\n              },\n              "signal": {\n                "anyOf": [\n                  {\n                    "enum": [\n                      "last",\n                      "none"\n                    ]\n                  },\n                  {\n                    "additionalProperties": false,\n                    "properties": {\n                      "arg": {\n                        "maximum": 16,\n                        "minimum": 0,\n                        "type": "integer"\n                      },\n                      "key": {\n                        "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",\n                        "type": "string"\n                      }\n                    },\n                    "required": [\n                      "arg",\n                      "key"\n                    ],\n                    "type": "object"\n                  }\n                ]\n              }\n            },\n            "required": [\n              "kind"\n            ],\n            "type": "object"\n          }\n        ]\n      },\n      "minProperties": 1,\n      "propertyNames": {\n        "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",\n        "type": "string"\n      },\n      "type": "object"\n    },\n    "releaseVia": {\n      "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",\n      "type": "string"\n    }\n  },\n  "required": [\n    "methods"\n  ],\n  "type": "object"\n}\n', dataSourceSurfaceV1],
   ['{\n  "oneOf": [\n    {\n      "additionalProperties": false,\n      "properties": {\n        "arity": {\n          "maximum": 16,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "kind": {\n          "const": "lease"\n        },\n        "limits": {\n          "additionalProperties": false,\n          "properties": {\n            "maxBytes": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "maxPageItems": {\n              "maximum": 9007199254740991,\n              "minimum": 1,\n              "type": "integer"\n            },\n            "maxStringLength": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            }\n          },\n          "type": "object"\n        },\n        "optional": {\n          "type": "boolean"\n        },\n        "progress": {\n          "additionalProperties": false,\n          "properties": {\n            "arg": {\n              "maximum": 16,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "key": {\n              "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",\n              "type": "string"\n            }\n          },\n          "required": [\n            "arg",\n            "key"\n          ],\n          "type": "object"\n        },\n        "result": {\n          "additionalProperties": false,\n          "properties": {\n            "contract": {\n              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n              "type": "string"\n            },\n            "major": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            }\n          },\n          "required": [\n            "contract",\n            "major"\n          ],\n          "type": "object"\n        },\n        "signal": {\n          "anyOf": [\n            {\n              "enum": [\n                "last",\n                "none"\n              ]\n            },\n            {\n              "additionalProperties": false,\n              "properties": {\n                "arg": {\n                  "maximum": 16,\n                  "minimum": 0,\n                  "type": "integer"\n                },\n                "key": {\n                  "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",\n                  "type": "string"\n                }\n              },\n              "required": [\n                "arg",\n                "key"\n              ],\n              "type": "object"\n            }\n          ]\n        },\n        "wrapper": {\n          "enum": [\n            "lease",\n            "bare"\n          ]\n        }\n      },\n      "required": [\n        "kind",\n        "result"\n      ],\n      "type": "object"\n    },\n    {\n      "additionalProperties": false,\n      "properties": {\n        "arity": {\n          "maximum": 16,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "kind": {\n          "enum": [\n            "value",\n            "leased-value",\n            "iterable",\n            "events"\n          ]\n        },\n        "limits": {\n          "additionalProperties": false,\n          "properties": {\n            "maxBytes": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "maxPageItems": {\n              "maximum": 9007199254740991,\n              "minimum": 1,\n              "type": "integer"\n            },\n            "maxStringLength": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            }\n          },\n          "type": "object"\n        },\n        "optional": {\n          "type": "boolean"\n        },\n        "progress": {\n          "additionalProperties": false,\n          "properties": {\n            "arg": {\n              "maximum": 16,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "key": {\n              "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",\n              "type": "string"\n            }\n          },\n          "required": [\n            "arg",\n            "key"\n          ],\n          "type": "object"\n        },\n        "signal": {\n          "anyOf": [\n            {\n              "enum": [\n                "last",\n                "none"\n              ]\n            },\n            {\n              "additionalProperties": false,\n              "properties": {\n                "arg": {\n                  "maximum": 16,\n                  "minimum": 0,\n                  "type": "integer"\n                },\n                "key": {\n                  "pattern": "^[a-z][a-zA-Z0-9]{0,63}$",\n                  "type": "string"\n                }\n              },\n              "required": [\n                "arg",\n                "key"\n              ],\n              "type": "object"\n            }\n          ]\n        }\n      },\n      "required": [\n        "kind"\n      ],\n      "type": "object"\n    }\n  ]\n}\n', dataSourceMethodSurfaceV1]
 ]);
-
-// packages/sdk/dist/manifest/validate.js
 var platformValidators = PRECOMPILED_SCHEMA_VALIDATORS;
 function toPath(error) {
-  return error.instancePath.split("/").filter((part) => part.length > 0).map((part) => /^\d+$/.test(part) ? Number(part) : part.replaceAll("~1", "/").replaceAll("~0", "~"));
+  return error.instancePath.split("/").filter((part) => part.length > 0).map(
+    (part) => /^\d+$/.test(part) ? Number(part) : part.replaceAll("~1", "/").replaceAll("~0", "~")
+  );
 }
 function schemaDiagnostics(errors, code) {
-  return (errors ?? []).map((error) => diagnostic("error", code, `${error.instancePath || "/"} ${error.message ?? "schema violation"}`, toPath(error), { keyword: error.keyword, params: error.params }));
+  return (errors ?? []).map(
+    (error) => diagnostic(
+      "error",
+      code,
+      `${error.instancePath || "/"} ${error.message ?? "schema violation"}`,
+      toPath(error),
+      { keyword: error.keyword, params: error.params }
+    )
+  );
 }
 function isPromiseLike(value2) {
   return (typeof value2 === "object" || typeof value2 === "function") && value2 !== null && typeof value2.then === "function";
@@ -40254,7 +40215,13 @@ function materializePath(node) {
   return reversed.reverse();
 }
 function nonJsonDiagnostic(path, reason) {
-  return diagnostic("error", "x3.sdk/non-json-wire-value", `${path.length === 0 ? "/" : `/${path.join("/")}`} is not JSON-wire-safe: ${reason}`, path, { reason });
+  return diagnostic(
+    "error",
+    "x3.sdk/non-json-wire-value",
+    `${path.length === 0 ? "/" : `/${path.join("/")}`} is not JSON-wire-safe: ${reason}`,
+    path,
+    { reason }
+  );
 }
 function assignJsonValue(parent, key2, value2) {
   Object.defineProperty(parent, key2, {
@@ -40273,15 +40240,13 @@ function snapshotJsonWireValue(root) {
   const active = /* @__PURE__ */ new WeakSet();
   while (pending.length > 0) {
     const current = pending.pop();
-    if (current === void 0)
-      break;
+    if (current === void 0) break;
     if (current.exit !== void 0) {
       active.delete(current.exit);
       continue;
     }
     const { value: value2, path, parent, key: key2 } = current;
-    if (parent === void 0 || key2 === void 0)
-      continue;
+    if (parent === void 0 || key2 === void 0) continue;
     if (value2 === null || typeof value2 === "string" || typeof value2 === "boolean") {
       assignJsonValue(parent, key2, value2);
       continue;
@@ -40317,7 +40282,10 @@ function snapshotJsonWireValue(root) {
       if (ownNames.length !== value2.length + 1 || !ownNames.includes("length")) {
         return {
           diagnostics: [
-            nonJsonDiagnostic(materializePath(path), "arrays must be dense and have no extra properties")
+            nonJsonDiagnostic(
+              materializePath(path),
+              "arrays must be dense and have no extra properties"
+            )
           ]
         };
       }
@@ -40334,7 +40302,10 @@ function snapshotJsonWireValue(root) {
         if (!descriptor.enumerable || !("value" in descriptor)) {
           return {
             diagnostics: [
-              nonJsonDiagnostic(materializePath(childPath), "elements must be enumerable data values")
+              nonJsonDiagnostic(
+                materializePath(childPath),
+                "elements must be enumerable data values"
+              )
             ]
           };
         }
@@ -40346,7 +40317,10 @@ function snapshotJsonWireValue(root) {
     if (prototype !== Object.prototype && prototype !== null) {
       return {
         diagnostics: [
-          nonJsonDiagnostic(materializePath(path), "objects must have Object.prototype or a null prototype")
+          nonJsonDiagnostic(
+            materializePath(path),
+            "objects must have Object.prototype or a null prototype"
+          )
         ]
       };
     }
@@ -40357,7 +40331,10 @@ function snapshotJsonWireValue(root) {
       if (!descriptor.enumerable || !("value" in descriptor)) {
         return {
           diagnostics: [
-            nonJsonDiagnostic(materializePath(childPath), "fields must be enumerable data properties")
+            nonJsonDiagnostic(
+              materializePath(childPath),
+              "fields must be enumerable data properties"
+            )
           ]
         };
       }
@@ -40366,19 +40343,16 @@ function snapshotJsonWireValue(root) {
   }
   return { value: holder.value, diagnostics: [] };
 }
-function deepFreeze2(value2) {
-  if (value2 === null || typeof value2 !== "object")
-    return value2;
+function deepFreeze6(value2) {
+  if (value2 === null || typeof value2 !== "object") return value2;
   const pending = [value2];
   const visited = /* @__PURE__ */ new WeakSet();
   while (pending.length > 0) {
     const current = pending.pop();
-    if (current === void 0 || visited.has(current))
-      continue;
+    if (current === void 0 || visited.has(current)) continue;
     visited.add(current);
     for (const child of Object.values(current)) {
-      if (child !== null && typeof child === "object")
-        pending.push(child);
+      if (child !== null && typeof child === "object") pending.push(child);
     }
     Object.freeze(current);
   }
@@ -40393,7 +40367,7 @@ function snapshotJsonWireData(value2) {
       context: { diagnostics: snapshot.diagnostics }
     });
   }
-  return deepFreeze2(snapshot.value);
+  return deepFreeze6(snapshot.value);
 }
 function snapshotJsonWireObject(value2) {
   return snapshotJsonWireData(value2);
@@ -40407,8 +40381,7 @@ async function validateWithSchema(schema, value2, code = "x3.sdk/schema-violatio
       diagnostics: [nonJsonDiagnostic([], "value could not be inspected as inert data")]
     };
   }
-  if (valueSnapshot.diagnostics.length > 0)
-    return [...valueSnapshot.diagnostics];
+  if (valueSnapshot.diagnostics.length > 0) return [...valueSnapshot.diagnostics];
   let schemaSnapshot;
   let schemaCacheKey;
   try {
@@ -40416,13 +40389,25 @@ async function validateWithSchema(schema, value2, code = "x3.sdk/schema-violatio
     schemaCacheKey = canonicalJsonStringify(schemaSnapshot);
   } catch (error) {
     return [
-      diagnostic("error", "x3.sdk/invalid-schema-authority", "the selected JSON Schema is not inert JSON data", [], { error: error instanceof Error ? error.message : String(error) })
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-schema-authority",
+        "the selected JSON Schema is not inert JSON data",
+        [],
+        { error: error instanceof Error ? error.message : String(error) }
+      )
     ];
   }
   const validate = suppliedValidator ?? platformValidators.get(schemaCacheKey);
   if (validate === void 0) {
     return [
-      diagnostic("error", "x3.sdk/invalid-schema-authority", "the selected JSON Schema has no CSP-safe precompiled validator", [], { reason: "precompiled-validator-missing" })
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-schema-authority",
+        "the selected JSON Schema has no CSP-safe precompiled validator",
+        [],
+        { reason: "precompiled-validator-missing" }
+      )
     ];
   }
   try {
@@ -40431,8 +40416,7 @@ async function validateWithSchema(schema, value2, code = "x3.sdk/schema-violatio
       await result;
       return [];
     }
-    if (result)
-      return [];
+    if (result) return [];
   } catch (error) {
     const asyncErrors = error?.errors;
     if (asyncErrors !== void 0 && asyncErrors !== null) {
@@ -40440,24 +40424,26 @@ async function validateWithSchema(schema, value2, code = "x3.sdk/schema-violatio
     }
     const reason = error instanceof Error ? error.message : String(error);
     return [
-      diagnostic("error", "x3.sdk/schema-evaluation-failed", `the selected JSON Schema failed while evaluating inert wire data: ${reason}`, [], { error: reason })
+      diagnostic(
+        "error",
+        "x3.sdk/schema-evaluation-failed",
+        `the selected JSON Schema failed while evaluating inert wire data: ${reason}`,
+        [],
+        { error: reason }
+      )
     ];
   }
   return schemaDiagnostics(validate.errors, code);
 }
-
-// packages/sdk/dist/asset-capabilities/types.js
 function contributionId(value2) {
-  if (!isQualifiedId(value2))
-    throw new TypeError(`invalid contribution id: ${value2}`);
+  if (!isQualifiedId(value2)) throw new TypeError(`invalid contribution id: ${value2}`);
   return value2;
 }
 function isRevisionId(value2) {
   return parseRevisionRef(value2) !== void 0;
 }
 function revisionId(value2) {
-  if (!isRevisionId(value2))
-    throw new TypeError("revision id must be a canonical kind-tagged value");
+  if (!isRevisionId(value2)) throw new TypeError("revision id must be a canonical kind-tagged value");
   return value2;
 }
 function revisionIdFromRef(ref) {
@@ -40465,8 +40451,7 @@ function revisionIdFromRef(ref) {
 }
 function revisionRefFromId(value2) {
   const parsed = parseRevisionRef(value2);
-  if (parsed === void 0)
-    throw new TypeError("invalid branded revision id");
+  if (parsed === void 0) throw new TypeError("invalid branded revision id");
   return parsed;
 }
 function assetSourceRefFromSourceRef(source, uri) {
@@ -40488,8 +40473,6 @@ function sourceRefFromAssetSourceRef(ref) {
   }
   return Object.freeze({ id: ref.id, ...parent === void 0 ? {} : { parent } });
 }
-
-// packages/sdk/dist/host-facilities.generated.js
 var STANDARD_HOST_FACILITY_IDS = Object.freeze([
   "clipboard.write",
   "credential.broker",
@@ -40523,8 +40506,6 @@ var STANDARD_HOST_FACILITY_IDS = Object.freeze([
 var LEGACY_HOST_FACILITY_ALIASES = Object.freeze([
   "editor.monaco"
 ]);
-
-// packages/sdk/dist/host-profile.js
 var HOST_TRANSPORT_KINDS = Object.freeze([
   "in-process",
   "structured-clone",
@@ -40557,14 +40538,29 @@ function hostFacilityId(value2) {
   return value2;
 }
 function hostFacilityDiagnostics(values, path = []) {
-  if (values === void 0)
-    return [];
+  if (values === void 0) return [];
   const diagnostics = [];
   values.forEach((value2, index) => {
     if (!isHostFacilityId(value2)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/unknown-host-facility", `unknown unqualified host facility \xAB${value2}\xBB`, [...path, index], { facility: value2 }));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/unknown-host-facility",
+          `unknown unqualified host facility \xAB${value2}\xBB`,
+          [...path, index],
+          { facility: value2 }
+        )
+      );
     } else if (legacyFacilities.has(value2)) {
-      diagnostics.push(diagnostic("warning", "x3.sdk/legacy-host-facility", `host facility \xAB${value2}\xBB is a transitional compatibility alias`, [...path, index], { facility: value2 }));
+      diagnostics.push(
+        diagnostic(
+          "warning",
+          "x3.sdk/legacy-host-facility",
+          `host facility \xAB${value2}\xBB is a transitional compatibility alias`,
+          [...path, index],
+          { facility: value2 }
+        )
+      );
     }
   });
   return diagnostics;
@@ -40578,12 +40574,10 @@ function invalidProfile(message, context) {
 }
 function exactKeys(value2, allowed, field) {
   const extra = Object.keys(value2).filter((key2) => !allowed.includes(key2));
-  if (extra.length > 0)
-    invalidProfile(`${field} contains unsupported fields`, { field, extra });
+  if (extra.length > 0) invalidProfile(`${field} contains unsupported fields`, { field, extra });
 }
 function nonEmpty(value2, field) {
-  if (value2.trim().length === 0)
-    return invalidProfile(`${field} must not be empty`, { field });
+  if (value2.trim().length === 0) return invalidProfile(`${field} must not be empty`, { field });
   return value2;
 }
 function count(value2, field) {
@@ -40602,29 +40596,42 @@ function normalizeStrings(values) {
 }
 function createHostRealmProfile(profile) {
   const snapshot = snapshotJsonWireData(profile);
-  exactKeys(snapshot, ["schemaVersion", "realmId", "revision", "target", "facilities", "budgets", "policy"], "profile");
-  if (snapshot.schemaVersion !== 1)
-    invalidProfile("host profile schemaVersion must be 1");
-  exactKeys(snapshot.target, [
-    "environment",
-    "operatingSystem",
-    "architecture",
-    "webApis",
-    "externalTools",
-    "hostCapabilities",
-    "grantedPermissions"
-  ], "target");
-  exactKeys(snapshot.budgets, [
-    "maxConcurrentTasks",
-    "maxWorkerCount",
-    "maxResidentBytes",
-    "maxTransferBytes",
-    "defaultDeadlineMs"
-  ], "budgets");
+  exactKeys(
+    snapshot,
+    ["schemaVersion", "realmId", "revision", "target", "facilities", "budgets", "policy"],
+    "profile"
+  );
+  if (snapshot.schemaVersion !== 1) invalidProfile("host profile schemaVersion must be 1");
+  exactKeys(
+    snapshot.target,
+    [
+      "environment",
+      "operatingSystem",
+      "architecture",
+      "webApis",
+      "externalTools",
+      "hostCapabilities",
+      "grantedPermissions"
+    ],
+    "target"
+  );
+  exactKeys(
+    snapshot.budgets,
+    [
+      "maxConcurrentTasks",
+      "maxWorkerCount",
+      "maxResidentBytes",
+      "maxTransferBytes",
+      "defaultDeadlineMs"
+    ],
+    "budgets"
+  );
   exactKeys(snapshot.policy, ["id", "revision", "digest"], "policy");
   const rawTarget = snapshot.target;
   if ("hostCapabilities" in rawTarget || "grantedPermissions" in rawTarget) {
-    return invalidProfile("target.hostCapabilities and target.grantedPermissions are projections and cannot be authored in a host profile");
+    return invalidProfile(
+      "target.hostCapabilities and target.grantedPermissions are projections and cannot be authored in a host profile"
+    );
   }
   if (!RUNTIME_ENVIRONMENTS.includes(rawTarget.environment)) {
     invalidProfile("target.environment is not registered", { environment: rawTarget.environment });
@@ -40672,14 +40679,12 @@ function createHostRealmProfile(profile) {
 function createHostTopology(topology) {
   const snapshot = snapshotJsonWireData(topology);
   exactKeys(snapshot, ["schemaVersion", "topologyId", "realms", "links"], "topology");
-  if (snapshot.schemaVersion !== 1)
-    return invalidProfile("host topology schemaVersion must be 1");
+  if (snapshot.schemaVersion !== 1) return invalidProfile("host topology schemaVersion must be 1");
   const realms = snapshot.realms.map(createHostRealmProfile);
   realms.sort((left, right) => compareUtf8(left.realmId, right.realmId));
   const realmIds = /* @__PURE__ */ new Set();
   for (const realm of realms) {
-    if (realmIds.has(realm.realmId))
-      return invalidProfile(`duplicate realmId \xAB${realm.realmId}\xBB`);
+    if (realmIds.has(realm.realmId)) return invalidProfile(`duplicate realmId \xAB${realm.realmId}\xBB`);
     realmIds.add(realm.realmId);
   }
   const links = snapshot.links.map((link) => {
@@ -40690,8 +40695,7 @@ function createHostTopology(topology) {
         toRealm: link.toRealm
       });
     }
-    if (link.fromRealm === link.toRealm)
-      return invalidProfile("transport link must cross realms");
+    if (link.fromRealm === link.toRealm) return invalidProfile("transport link must cross realms");
     const transports = uniqueSortedUtf8(link.transports);
     if (transports.length === 0 || transports.some((value2) => !transportKinds.has(value2))) {
       return invalidProfile("transport link must declare known transport kinds");
@@ -40702,12 +40706,16 @@ function createHostTopology(topology) {
       transports: Object.freeze(transports)
     });
   });
-  links.sort((left, right) => compareUtf8(`${left.fromRealm}\0${left.toRealm}`, `${right.fromRealm}\0${right.toRealm}`));
+  links.sort(
+    (left, right) => compareUtf8(
+      `${left.fromRealm}\0${left.toRealm}`,
+      `${right.fromRealm}\0${right.toRealm}`
+    )
+  );
   const seenLinks = /* @__PURE__ */ new Set();
   for (const link of links) {
     const key2 = `${link.fromRealm}\0${link.toRealm}`;
-    if (seenLinks.has(key2))
-      return invalidProfile("duplicate directed transport link", { key: key2 });
+    if (seenLinks.has(key2)) return invalidProfile("duplicate directed transport link", { key: key2 });
     seenLinks.add(key2);
   }
   return Object.freeze({
@@ -40728,8 +40736,6 @@ function runtimeTargetForHostRealm(profile, grantedPermissions) {
 function hostRealmCacheKey(profile) {
   return canonicalJsonStringify(createHostRealmProfile(profile));
 }
-
-// packages/sdk/dist/manifest/spec-registry.js
 function invalidRegistration(message, context) {
   throw new ModkitError({
     code: "x3.sdk/invalid-spec-registration",
@@ -40738,10 +40744,8 @@ function invalidRegistration(message, context) {
   });
 }
 function safeContextValue(value2) {
-  if (value2 === null || typeof value2 === "string" || typeof value2 === "boolean")
-    return value2;
-  if (typeof value2 === "number")
-    return Number.isFinite(value2) ? value2 : String(value2);
+  if (value2 === null || typeof value2 === "string" || typeof value2 === "boolean") return value2;
+  if (typeof value2 === "number") return Number.isFinite(value2) ? value2 : String(value2);
   return typeof value2;
 }
 function validatedCoordinate(contractValue, majorValue) {
@@ -40823,12 +40827,20 @@ function createSpecSchemaRegistry(entries) {
       if (typeof project !== "function") {
         invalidRegistration("spec inventory projector must be a function", coordinate);
       }
-      const conformanceProfile = validatedConformanceProfile(conformanceProfileValue, coordinate.contract, coordinate.major);
+      const conformanceProfile = validatedConformanceProfile(
+        conformanceProfileValue,
+        coordinate.contract,
+        coordinate.major
+      );
       registration = mode === "executable" ? Object.freeze({
         mode: "executable",
         project,
         conformanceProfile,
-        moduleAbi: validatedModuleAbi(candidate.moduleAbi, coordinate.contract, coordinate.major)
+        moduleAbi: validatedModuleAbi(
+          candidate.moduleAbi,
+          coordinate.contract,
+          coordinate.major
+        )
       }) : Object.freeze({
         mode: "data-only",
         project,
@@ -40853,7 +40865,11 @@ function createSpecSchemaRegistry(entries) {
     }
     map.set(key2, entry);
   }
-  const list = Object.freeze([...map.values()].sort((left, right) => compareUtf8(left.contract, right.contract) || left.major - right.major));
+  const list = Object.freeze(
+    [...map.values()].sort(
+      (left, right) => compareUtf8(left.contract, right.contract) || left.major - right.major
+    )
+  );
   return {
     getEntry: (contract, major) => map.get(`${contract}@${major}`),
     get: (contract, major) => map.get(`${contract}@${major}`)?.schema,
@@ -40865,10 +40881,16 @@ function duplicateVariantDiagnostics(manifest) {
   const diagnostics = [];
   (manifest.runtimeVariants ?? []).forEach((variant, index) => {
     const previous = first.get(variant.variantId);
-    if (previous === void 0)
-      first.set(variant.variantId, index);
+    if (previous === void 0) first.set(variant.variantId, index);
     else {
-      diagnostics.push(diagnostic("error", "x3.sdk/duplicate-runtime-variant", `runtime variant ${variant.variantId} duplicates index ${previous}`, ["runtimeVariants", index, "variantId"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-runtime-variant",
+          `runtime variant ${variant.variantId} duplicates index ${previous}`,
+          ["runtimeVariants", index, "variantId"]
+        )
+      );
     }
   });
   return diagnostics;
@@ -40878,31 +40900,51 @@ function envelopeRangeDiagnostics(manifest) {
   manifest.dependsOn?.forEach((requirement, index) => {
     const parsed = requirement.range === void 0 ? void 0 : parseVersionRange(requirement.range);
     if (requirement.range !== void 0 && (parsed === void 0 || !versionRangeTargetsMajor(parsed, requirement.major))) {
-      diagnostics.push(diagnostic("error", "x3.sdk/invalid-contract-range", `contract range ${requirement.range} cannot be evaluated safely`, ["dependsOn", index, "range"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-contract-range",
+          `contract range ${requirement.range} cannot be evaluated safely`,
+          ["dependsOn", index, "range"]
+        )
+      );
     }
   });
   return diagnostics;
 }
 function runtimeFacilityDiagnostics(manifest) {
-  return (manifest.runtimeVariants ?? []).flatMap((variant, index) => hostFacilityDiagnostics(variant.target.requiredHostCapabilities, [
-    "runtimeVariants",
-    index,
-    "target",
-    "requiredHostCapabilities"
-  ]));
+  return (manifest.runtimeVariants ?? []).flatMap(
+    (variant, index) => hostFacilityDiagnostics(variant.target.requiredHostCapabilities, [
+      "runtimeVariants",
+      index,
+      "target",
+      "requiredHostCapabilities"
+    ])
+  );
 }
 async function runSemanticValidator(validator, manifest) {
-  if (validator === void 0)
-    return [];
+  if (validator === void 0) return [];
   try {
     const result = await validator(manifest);
-    if (!Array.isArray(result) || !result.every((item) => typeof item === "object" && item !== null && !Array.isArray(item) && typeof item.code === "string" && isQualifiedId(item.code) && ["error", "warning", "information", "hint"].includes(String(item.severity)) && typeof item.message === "string" && (item.path === void 0 || Array.isArray(item.path) && item.path.every((part) => typeof part === "string" || Number.isSafeInteger(part))))) {
+    if (!Array.isArray(result) || !result.every(
+      (item) => typeof item === "object" && item !== null && !Array.isArray(item) && typeof item.code === "string" && isQualifiedId(item.code) && ["error", "warning", "information", "hint"].includes(
+        String(item.severity)
+      ) && typeof item.message === "string" && (item.path === void 0 || Array.isArray(item.path) && item.path.every(
+        (part) => typeof part === "string" || Number.isSafeInteger(part)
+      ))
+    )) {
       throw new TypeError("semantic validator returned malformed diagnostics");
     }
     return [...result];
   } catch (error) {
     return [
-      diagnostic("error", "x3.sdk/semantic-validator-failed", "the host-owned contribution semantic validator threw", ["spec"], { error: error instanceof Error ? error.message : String(error) })
+      diagnostic(
+        "error",
+        "x3.sdk/semantic-validator-failed",
+        "the host-owned contribution semantic validator threw",
+        ["spec"],
+        { error: error instanceof Error ? error.message : String(error) }
+      )
     ];
   }
 }
@@ -40916,10 +40958,14 @@ function normalizeContributionManifest(wire) {
       id: contractId(contract.id)
     }),
     ...dependsOn === void 0 ? {} : {
-      dependsOn: Object.freeze(dependsOn.map((requirement) => Object.freeze({
-        ...requirement,
-        contract: contractId(requirement.contract)
-      })))
+      dependsOn: Object.freeze(
+        dependsOn.map(
+          (requirement) => Object.freeze({
+            ...requirement,
+            contract: contractId(requirement.contract)
+          })
+        )
+      )
     }
   });
 }
@@ -40933,7 +40979,13 @@ async function validateContributionManifest(value2, registry) {
       inventoryEligible: false,
       activationEligible: false,
       diagnostics: [
-        diagnostic("error", "x3.sdk/non-json-wire-value", "contribution manifest must be inert JSON data", [], { error: error instanceof Error ? error.message : String(error) })
+        diagnostic(
+          "error",
+          "x3.sdk/non-json-wire-value",
+          "contribution manifest must be inert JSON data",
+          [],
+          { error: error instanceof Error ? error.message : String(error) }
+        )
       ]
     };
   }
@@ -40971,11 +41023,21 @@ async function validateContributionManifest(value2, registry) {
       diagnostics: [
         ...envelopeDiagnostics,
         ...manifestDiagnostics,
-        diagnostic("warning", "x3.sdk/unknown-contract", `contract \xAB${manifest.contract.id}\xBB major ${manifest.contract.major} has no registered spec schema \u2014 contribution stays inspectable data and is not activatable`, ["contract"])
+        diagnostic(
+          "warning",
+          "x3.sdk/unknown-contract",
+          `contract \xAB${manifest.contract.id}\xBB major ${manifest.contract.major} has no registered spec schema \u2014 contribution stays inspectable data and is not activatable`,
+          ["contract"]
+        )
       ]
     };
   }
-  const specDiagnostics = (await validateWithSchema(registration.schema, manifest.spec, "x3.sdk/invalid-spec", registration.validator)).map((d) => ({ ...d, path: ["spec", ...d.path ?? []] }));
+  const specDiagnostics = (await validateWithSchema(
+    registration.schema,
+    manifest.spec,
+    "x3.sdk/invalid-spec",
+    registration.validator
+  )).map((d) => ({ ...d, path: ["spec", ...d.path ?? []] }));
   if (hasErrors(specDiagnostics)) {
     return {
       manifest,
@@ -41007,12 +41069,22 @@ async function validateContributionManifest(value2, registry) {
       diagnostics: [
         ...envelopeDiagnostics,
         ...specDiagnostics,
-        diagnostic("warning", "x3.sdk/schema-only-contract", `contract \xAB${manifest.contract.id}\xBB major ${manifest.contract.major} has a schema but no executable registration quartet`, ["contract"])
+        diagnostic(
+          "warning",
+          "x3.sdk/schema-only-contract",
+          `contract \xAB${manifest.contract.id}\xBB major ${manifest.contract.major} has a schema but no executable registration quartet`,
+          ["contract"]
+        )
       ]
     };
   }
   if (registration.registration.mode === "executable" && (manifest.runtimeVariants?.length ?? 0) === 0) {
-    const missingVariant = diagnostic("error", "x3.sdk/executable-without-runtime-variant", "an executable contribution requires at least one runtime variant", ["runtimeVariants"]);
+    const missingVariant = diagnostic(
+      "error",
+      "x3.sdk/executable-without-runtime-variant",
+      "an executable contribution requires at least one runtime variant",
+      ["runtimeVariants"]
+    );
     return {
       manifest,
       specState: "invalid",
@@ -41027,7 +41099,12 @@ async function validateContributionManifest(value2, registry) {
     };
   }
   if (registration.registration.mode === "data-only" && (manifest.runtimeVariants?.length ?? 0) > 0) {
-    const unexpectedVariant = diagnostic("error", "x3.sdk/data-only-with-runtime-variant", "a data-only contribution cannot declare runtime variants", ["runtimeVariants"]);
+    const unexpectedVariant = diagnostic(
+      "error",
+      "x3.sdk/data-only-with-runtime-variant",
+      "a data-only contribution cannot declare runtime variants",
+      ["runtimeVariants"]
+    );
     return {
       manifest,
       specState: "invalid",
@@ -41049,8 +41126,6 @@ async function validateContributionManifest(value2, registry) {
     diagnostics: [...envelopeDiagnostics, ...specDiagnostics, ...semanticDiagnostics]
   };
 }
-
-// packages/sdk/dist/asset-capabilities/standard-traits.js
 var TRAIT_IDS = Object.freeze([
   "content.metadata",
   "content.binary",
@@ -41132,26 +41207,46 @@ var STANDARD_TRAIT_SET = new Set(TRAIT_IDS);
 function isStandardTraitId(value2) {
   return STANDARD_TRAIT_SET.has(value2);
 }
-
-// packages/sdk/dist/manifest/contribution-contract-registry.js
 var CODEC_CONTRIBUTION_CONTRACT = contractId("org.modkitx/codec-contribution");
-var SERVICE_PROVIDER_CONTRIBUTION_CONTRACT = contractId("org.modkitx/service-provider-contribution");
-var VIEWER_CONTRIBUTION_CONTRACT = contractId("org.modkitx/viewer-contribution");
-var EDITOR_CONTRIBUTION_CONTRACT = contractId("org.modkitx/editor-contribution");
-var TRAIT_DEFINITION_CONTRIBUTION_CONTRACT = contractId("org.modkitx/trait-definition");
-var CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT = contractId("org.modkitx/contract-definition");
-var TRAIT_DEFINITION_FACT = contractId("org.modkitx.inventory/trait-definition");
-var CONTRACT_DEFINITION_FACT = contractId("org.modkitx.inventory/contract-definition");
-var EDITOR_CONTRIBUTION_FACT = contractId("org.modkitx.inventory/editor-contribution");
+var SERVICE_PROVIDER_CONTRIBUTION_CONTRACT = contractId(
+  "org.modkitx/service-provider-contribution"
+);
+var VIEWER_CONTRIBUTION_CONTRACT = contractId(
+  "org.modkitx/viewer-contribution"
+);
+var EDITOR_CONTRIBUTION_CONTRACT = contractId(
+  "org.modkitx/editor-contribution"
+);
+var TRAIT_DEFINITION_CONTRIBUTION_CONTRACT = contractId(
+  "org.modkitx/trait-definition"
+);
+var CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT = contractId(
+  "org.modkitx/contract-definition"
+);
+var TRAIT_DEFINITION_FACT = contractId(
+  "org.modkitx.inventory/trait-definition"
+);
+var CONTRACT_DEFINITION_FACT = contractId(
+  "org.modkitx.inventory/contract-definition"
+);
+var EDITOR_CONTRIBUTION_FACT = contractId(
+  "org.modkitx.inventory/editor-contribution"
+);
 function duplicateFieldDiagnostics(values, path, label) {
   const first = /* @__PURE__ */ new Map();
   const diagnostics = [];
   values.forEach((value2, index) => {
     const previous = first.get(value2);
-    if (previous === void 0)
-      first.set(value2, index);
+    if (previous === void 0) first.set(value2, index);
     else {
-      diagnostics.push(diagnostic("error", "x3.sdk/duplicate-semantic-id", `${label} ${value2} duplicates index ${previous}`, [...path, index]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-semantic-id",
+          `${label} ${value2} duplicates index ${previous}`,
+          [...path, index]
+        )
+      );
     }
   });
   return diagnostics;
@@ -41159,18 +41254,33 @@ function duplicateFieldDiagnostics(values, path, label) {
 function requirementRangeDiagnostics(requirement, path) {
   const parsed = requirement.range === void 0 ? void 0 : parseVersionRange(requirement.range);
   return requirement.range !== void 0 && (parsed === void 0 || !versionRangeTargetsMajor(parsed, requirement.major)) ? [
-    diagnostic("error", "x3.sdk/invalid-contract-range", `contract range ${requirement.range} cannot be evaluated safely`, [...path, "range"])
+    diagnostic(
+      "error",
+      "x3.sdk/invalid-contract-range",
+      `contract range ${requirement.range} cannot be evaluated safely`,
+      [...path, "range"]
+    )
   ] : [];
 }
 function traitDefinitionRangeDiagnostics(id, range, path) {
   if (isStandardTraitId(id)) {
     return range === void 0 ? [] : [
-      diagnostic("error", "x3.sdk/standard-trait-versioned", `standard trait ${id} does not use an extension definition range`, [...path, "definitionRange"])
+      diagnostic(
+        "error",
+        "x3.sdk/standard-trait-versioned",
+        `standard trait ${id} does not use an extension definition range`,
+        [...path, "definitionRange"]
+      )
     ];
   }
   if (range === void 0 || parseVersionRange(range) === void 0) {
     return [
-      diagnostic("error", "x3.sdk/custom-trait-definition-unbound", `custom trait ${id} must declare a safe definition range`, [...path, "definitionRange"])
+      diagnostic(
+        "error",
+        "x3.sdk/custom-trait-definition-unbound",
+        `custom trait ${id} must declare a safe definition range`,
+        [...path, "definitionRange"]
+      )
     ];
   }
   return [];
@@ -41178,12 +41288,22 @@ function traitDefinitionRangeDiagnostics(id, range, path) {
 function traitDefinitionOfferDiagnostics(id, version, path) {
   if (isStandardTraitId(id)) {
     return version === void 0 ? [] : [
-      diagnostic("error", "x3.sdk/standard-trait-versioned", `standard trait ${id} does not use an extension definition version`, [...path, "definitionVersion"])
+      diagnostic(
+        "error",
+        "x3.sdk/standard-trait-versioned",
+        `standard trait ${id} does not use an extension definition version`,
+        [...path, "definitionVersion"]
+      )
     ];
   }
   if (version === void 0 || parseSemver(version) === void 0) {
     return [
-      diagnostic("error", "x3.sdk/custom-trait-definition-unbound", `custom trait ${id} must declare one exact safe definition version`, [...path, "definitionVersion"])
+      diagnostic(
+        "error",
+        "x3.sdk/custom-trait-definition-unbound",
+        `custom trait ${id} must declare one exact safe definition version`,
+        [...path, "definitionVersion"]
+      )
     ];
   }
   return [];
@@ -41192,58 +41312,99 @@ var validateCodecContributionSemantics = (manifest) => {
   const spec = manifest.spec;
   const localCodecPrefix = manifest.id;
   const diagnostics = [
-    ...duplicateFieldDiagnostics(spec.formatRefs.map((format) => format.formatId), ["spec", "formatRefs"], "format ID"),
-    ...duplicateFieldDiagnostics(spec.representations.map((representation) => representation.id), ["spec", "representations"], "representation ID"),
-    ...duplicateFieldDiagnostics(spec.companions?.map((companion) => companion.id) ?? [], ["spec", "companions"], "companion rule ID"),
-    ...duplicateFieldDiagnostics(spec.traitDeclarations?.map((declaration) => `${declaration.id}\0${declaration.representation}`) ?? [], ["spec", "traitDeclarations"], "trait declaration coordinate"),
-    ...duplicateFieldDiagnostics(spec.operations.map((operation) => operation.id), ["spec", "operations"], "operation ID"),
-    ...duplicateFieldDiagnostics(spec.operations.map((operation) => operation.handlerId), ["spec", "operations"], "operation handler ID")
+    ...duplicateFieldDiagnostics(
+      spec.formatRefs.map((format) => format.formatId),
+      ["spec", "formatRefs"],
+      "format ID"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.representations.map((representation) => representation.id),
+      ["spec", "representations"],
+      "representation ID"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.companions?.map((companion) => companion.id) ?? [],
+      ["spec", "companions"],
+      "companion rule ID"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.traitDeclarations?.map(
+        (declaration) => `${declaration.id}\0${declaration.representation}`
+      ) ?? [],
+      ["spec", "traitDeclarations"],
+      "trait declaration coordinate"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.operations.map((operation) => operation.id),
+      ["spec", "operations"],
+      "operation ID"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.operations.map((operation) => operation.handlerId),
+      ["spec", "operations"],
+      "operation handler ID"
+    )
   ];
   const expectedProbeKind = spec.sourceTopology === "namespace" ? "namespace" : spec.sourceTopology === "derived" ? "derived" : "bytes";
   if (spec.probe.kind !== expectedProbeKind) {
-    diagnostics.push(diagnostic("error", "x3.sdk/probe-topology-mismatch", `topology ${spec.sourceTopology} requires a ${expectedProbeKind} probe policy`, ["spec", "probe", "kind"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/probe-topology-mismatch",
+        `topology ${spec.sourceTopology} requires a ${expectedProbeKind} probe policy`,
+        ["spec", "probe", "kind"]
+      )
+    );
   }
   spec.requires?.forEach((requirement, index) => {
     diagnostics.push(...requirementRangeDiagnostics(requirement, ["spec", "requires", index]));
   });
   spec.traitDeclarations?.forEach((claim, index) => {
-    diagnostics.push(...traitDefinitionOfferDiagnostics(claim.id, claim.definitionVersion, [
-      "spec",
-      "traitDeclarations",
-      index
-    ]));
-    claim.prerequisites?.forEach((requirement, requirementIndex) => {
-      diagnostics.push(...requirementRangeDiagnostics(requirement, [
+    diagnostics.push(
+      ...traitDefinitionOfferDiagnostics(claim.id, claim.definitionVersion, [
         "spec",
         "traitDeclarations",
-        index,
-        "prerequisites",
-        requirementIndex
-      ]));
+        index
+      ])
+    );
+    claim.prerequisites?.forEach((requirement, requirementIndex) => {
+      diagnostics.push(
+        ...requirementRangeDiagnostics(requirement, [
+          "spec",
+          "traitDeclarations",
+          index,
+          "prerequisites",
+          requirementIndex
+        ])
+      );
     });
   });
   spec.companions?.forEach((companion, companionIndex) => {
     for (const selector of ["all", "any", "none"]) {
       companion.expected?.[selector]?.forEach((requirement, requirementIndex) => {
-        diagnostics.push(...traitDefinitionRangeDiagnostics(requirement.id, requirement.definitionRange, [
-          "spec",
-          "companions",
-          companionIndex,
-          "expected",
-          selector,
-          requirementIndex
-        ]));
+        diagnostics.push(
+          ...traitDefinitionRangeDiagnostics(requirement.id, requirement.definitionRange, [
+            "spec",
+            "companions",
+            companionIndex,
+            "expected",
+            selector,
+            requirementIndex
+          ])
+        );
       });
     }
   });
   spec.operations.forEach((operation, index) => {
     if (operation.requiresContract !== void 0) {
-      diagnostics.push(...requirementRangeDiagnostics(operation.requiresContract, [
-        "spec",
-        "operations",
-        index,
-        "requiresContract"
-      ]));
+      diagnostics.push(
+        ...requirementRangeDiagnostics(operation.requiresContract, [
+          "spec",
+          "operations",
+          index,
+          "requiresContract"
+        ])
+      );
     }
     const shared = SHARED_OPERATION_IDS.includes(operation.id);
     const canonicalDomain = OPERATION_DOMAINS.some((domain) => {
@@ -41253,28 +41414,40 @@ var validateCodecContributionSemantics = (manifest) => {
     const localSuffix = operation.id.startsWith(`${localCodecPrefix}.`) ? operation.id.slice(localCodecPrefix.length + 1) : void 0;
     const codecLocal = localSuffix !== void 0 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(localSuffix);
     if (!shared && !canonicalDomain && !codecLocal) {
-      diagnostics.push(diagnostic("error", "x3.sdk/invalid-operation-namespace", `operation ${operation.id} is not shared, canonical-domain, or local to ${manifest.id}`, ["spec", "operations", index, "id"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-operation-namespace",
+          `operation ${operation.id} is not shared, canonical-domain, or local to ${manifest.id}`,
+          ["spec", "operations", index, "id"]
+        )
+      );
     }
   });
   const requiredPermissions = /* @__PURE__ */ new Set(["read-source"]);
   spec.operations.forEach((operation) => {
-    if (operation.mutatesSource)
-      requiredPermissions.add("write-source");
+    if (operation.mutatesSource) requiredPermissions.add("write-source");
     operation.requiredPermissions?.forEach((permission) => requiredPermissions.add(permission));
   });
   manifest.runtimeVariants?.forEach((variant, variantIndex) => {
     const requested = new Set(variant.requestedPermissionClasses);
     for (const permission of requiredPermissions) {
       if (!requested.has(permission)) {
-        diagnostics.push(diagnostic("error", "x3.sdk/variant-permission-underdeclared", `runtime variant ${variant.variantId} does not request ${permission}`, ["runtimeVariants", variantIndex, "requestedPermissionClasses"]));
+        diagnostics.push(
+          diagnostic(
+            "error",
+            "x3.sdk/variant-permission-underdeclared",
+            `runtime variant ${variant.variantId} does not request ${permission}`,
+            ["runtimeVariants", variantIndex, "requestedPermissionClasses"]
+          )
+        );
       }
     }
   });
   return diagnostics;
 };
 function isPortableOperationReference(id) {
-  if (SHARED_OPERATION_IDS.includes(id))
-    return true;
+  if (SHARED_OPERATION_IDS.includes(id)) return true;
   if (OPERATION_DOMAINS.some((domain) => {
     const prefix = `${domain}.`;
     return id.startsWith(prefix) && isSegment(id.slice(prefix.length));
@@ -41287,20 +41460,37 @@ function isPortableOperationReference(id) {
 var validateViewerContributionSemantics = (manifest) => {
   const spec = manifest.spec;
   const diagnostics = [
-    ...duplicateFieldDiagnostics(spec.requiresTraits?.map((requirement) => requirement.id) ?? [], ["spec", "requiresTraits"], "trait requirement"),
-    ...duplicateFieldDiagnostics(spec.requiresOperations ?? [], ["spec", "requiresOperations"], "operation requirement")
+    ...duplicateFieldDiagnostics(
+      spec.requiresTraits?.map((requirement) => requirement.id) ?? [],
+      ["spec", "requiresTraits"],
+      "trait requirement"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.requiresOperations ?? [],
+      ["spec", "requiresOperations"],
+      "operation requirement"
+    )
   ];
   spec.requiresOperations?.forEach((id, index) => {
     if (!isPortableOperationReference(id)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/invalid-operation-namespace", `viewer operation requirement ${id} is not shared, canonical-domain, or qualified-local`, ["spec", "requiresOperations", index]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-operation-namespace",
+          `viewer operation requirement ${id} is not shared, canonical-domain, or qualified-local`,
+          ["spec", "requiresOperations", index]
+        )
+      );
     }
   });
   spec.requiresTraits?.forEach((requirement, index) => {
-    diagnostics.push(...traitDefinitionRangeDiagnostics(requirement.id, requirement.definitionRange, [
-      "spec",
-      "requiresTraits",
-      index
-    ]));
+    diagnostics.push(
+      ...traitDefinitionRangeDiagnostics(requirement.id, requirement.definitionRange, [
+        "spec",
+        "requiresTraits",
+        index
+      ])
+    );
   });
   return diagnostics;
 };
@@ -41315,22 +41505,58 @@ var EDITING_OPERATION_IDS = Object.freeze([
 var validateEditorContributionSemantics = (manifest) => {
   const spec = manifest.spec;
   const diagnostics = [
-    ...duplicateFieldDiagnostics(spec.requiresOperations, ["spec", "requiresOperations"], "operation"),
-    ...duplicateFieldDiagnostics(spec.consumesDataSources.map((source) => `${source.contract}@${source.major}`), ["spec", "consumesDataSources"], "data-source requirement")
+    ...duplicateFieldDiagnostics(
+      spec.requiresOperations,
+      ["spec", "requiresOperations"],
+      "operation"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.consumesDataSources.map((source) => `${source.contract}@${source.major}`),
+      ["spec", "consumesDataSources"],
+      "data-source requirement"
+    )
   ];
   spec.requiresOperations.forEach((id, index) => {
     if (!EDITING_OPERATION_IDS.includes(id)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/invalid-editor-operation", `editor operation ${id} is not one of the shared editing operations`, ["spec", "requiresOperations", index]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-editor-operation",
+          `editor operation ${id} is not one of the shared editing operations`,
+          ["spec", "requiresOperations", index]
+        )
+      );
     }
   });
   if (!spec.requiresOperations.some((id) => id.startsWith("edit."))) {
-    diagnostics.push(diagnostic("error", "x3.sdk/editor-edit-operation-missing", "an editor contribution requires an explicit edit operation", ["spec", "requiresOperations"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/editor-edit-operation-missing",
+        "an editor contribution requires an explicit edit operation",
+        ["spec", "requiresOperations"]
+      )
+    );
   }
   if (spec.requiresTransactions && !spec.requiresOperations.some((id) => id === "source.save" || id === "source.save-as")) {
-    diagnostics.push(diagnostic("error", "x3.sdk/editor-save-operation-missing", "a transactional editor requires source.save or source.save-as", ["spec", "requiresOperations"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/editor-save-operation-missing",
+        "a transactional editor requires source.save or source.save-as",
+        ["spec", "requiresOperations"]
+      )
+    );
   }
   if (spec.requiresTransactions && spec.writer.mutationMode !== "mutate") {
-    diagnostics.push(diagnostic("error", "x3.sdk/editor-writer-mode-mismatch", "a transactional editor requires a mutating writer", ["spec", "writer", "mutationMode"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/editor-writer-mode-mismatch",
+        "a transactional editor requires a mutating writer",
+        ["spec", "writer", "mutationMode"]
+      )
+    );
   }
   return diagnostics;
 };
@@ -41338,21 +41564,48 @@ var validateTraitDefinitionSemantics = (manifest) => {
   const spec = manifest.spec;
   const diagnostics = [];
   if (parseSemver(spec.version) === void 0) {
-    diagnostics.push(diagnostic("error", "x3.sdk/invalid-definition-version", `trait definition version ${spec.version} cannot be evaluated safely`, ["spec", "version"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-definition-version",
+        `trait definition version ${spec.version} cannot be evaluated safely`,
+        ["spec", "version"]
+      )
+    );
   }
   const seen = /* @__PURE__ */ new Map();
   spec.imports?.forEach((dependency, index) => {
     if (dependency.id === spec.id) {
-      diagnostics.push(diagnostic("error", "x3.sdk/self-definition-import", `trait definition ${spec.id} cannot import itself`, ["spec", "imports", index, "id"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/self-definition-import",
+          `trait definition ${spec.id} cannot import itself`,
+          ["spec", "imports", index, "id"]
+        )
+      );
     }
     const previous = seen.get(dependency.id);
-    if (previous === void 0)
-      seen.set(dependency.id, index);
+    if (previous === void 0) seen.set(dependency.id, index);
     else {
-      diagnostics.push(diagnostic("error", "x3.sdk/duplicate-definition-import", `trait import ${dependency.id} duplicates index ${previous}`, ["spec", "imports", index, "id"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-definition-import",
+          `trait import ${dependency.id} duplicates index ${previous}`,
+          ["spec", "imports", index, "id"]
+        )
+      );
     }
     if (parseVersionRange(dependency.range) === void 0) {
-      diagnostics.push(diagnostic("error", "x3.sdk/invalid-definition-range", `trait import range ${dependency.range} cannot be evaluated safely`, ["spec", "imports", index, "range"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-definition-range",
+          `trait import range ${dependency.range} cannot be evaluated safely`,
+          ["spec", "imports", index, "range"]
+        )
+      );
     }
   });
   return diagnostics;
@@ -41361,7 +41614,12 @@ var validateContractDefinitionSemantics = (manifest) => {
   const spec = manifest.spec;
   if (!Number.isSafeInteger(spec.major) || spec.major < 0) {
     return [
-      diagnostic("error", "x3.sdk/invalid-contract-major", `contract definition major ${spec.major} is not a safe non-negative integer`, ["spec", "major"])
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-contract-major",
+        `contract definition major ${spec.major} is not a safe non-negative integer`,
+        ["spec", "major"]
+      )
     ];
   }
   if (spec.surface !== void 0) {
@@ -41374,14 +41632,35 @@ function dataSourceSurfaceDiagnostics(surface, path) {
   if (surface.releaseVia !== void 0) {
     const target = surface.methods[surface.releaseVia];
     if (target === void 0) {
-      diagnostics.push(diagnostic("error", "x3.sdk/surface-release-via-unknown", `releaseVia \xAB${surface.releaseVia}\xBB does not name a declared method`, [...path, "releaseVia"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/surface-release-via-unknown",
+          `releaseVia \xAB${surface.releaseVia}\xBB does not name a declared method`,
+          [...path, "releaseVia"]
+        )
+      );
     } else if (target.kind !== "value") {
-      diagnostics.push(diagnostic("error", "x3.sdk/surface-release-via-kind", `releaseVia \xAB${surface.releaseVia}\xBB must name a value method, found ${target.kind}`, [...path, "releaseVia"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/surface-release-via-kind",
+          `releaseVia \xAB${surface.releaseVia}\xBB must name a value method, found ${target.kind}`,
+          [...path, "releaseVia"]
+        )
+      );
     }
   }
   for (const field of surface.fields ?? []) {
     if (Object.hasOwn(surface.methods, field)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/surface-field-is-method", `\xAB${field}\xBB cannot be both a field and a method`, [...path, "fields"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/surface-field-is-method",
+          `\xAB${field}\xBB cannot be both a field and a method`,
+          [...path, "fields"]
+        )
+      );
     }
   }
   return diagnostics;
@@ -41389,41 +41668,69 @@ function dataSourceSurfaceDiagnostics(surface, path) {
 var validateServiceProviderContributionSemantics = (manifest) => {
   const spec = manifest.spec;
   const diagnostics = [
-    ...duplicateFieldDiagnostics(spec.provides.map((offer) => offer.offerId), ["spec", "provides"], "offer ID"),
-    ...duplicateFieldDiagnostics(spec.outputs?.map((output) => `${output.id}\0${output.representation}`) ?? [], ["spec", "outputs"], "trait declaration coordinate")
+    ...duplicateFieldDiagnostics(
+      spec.provides.map((offer) => offer.offerId),
+      ["spec", "provides"],
+      "offer ID"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.outputs?.map((output) => `${output.id}\0${output.representation}`) ?? [],
+      ["spec", "outputs"],
+      "trait declaration coordinate"
+    )
   ];
   spec.requires?.forEach((requirement, index) => {
     diagnostics.push(...requirementRangeDiagnostics(requirement, ["spec", "requires", index]));
   });
   spec.outputs?.forEach((claim, index) => {
-    diagnostics.push(...traitDefinitionOfferDiagnostics(claim.id, claim.definitionVersion, [
-      "spec",
-      "outputs",
-      index
-    ]));
-    claim.prerequisites?.forEach((requirement, requirementIndex) => {
-      diagnostics.push(...requirementRangeDiagnostics(requirement, [
+    diagnostics.push(
+      ...traitDefinitionOfferDiagnostics(claim.id, claim.definitionVersion, [
         "spec",
         "outputs",
-        index,
-        "prerequisites",
-        requirementIndex
-      ]));
+        index
+      ])
+    );
+    claim.prerequisites?.forEach((requirement, requirementIndex) => {
+      diagnostics.push(
+        ...requirementRangeDiagnostics(requirement, [
+          "spec",
+          "outputs",
+          index,
+          "prerequisites",
+          requirementIndex
+        ])
+      );
     });
   });
   if (spec.replacement !== void 0) {
-    diagnostics.push(...requirementRangeDiagnostics(spec.replacement.target, ["spec", "replacement", "target"]));
+    diagnostics.push(
+      ...requirementRangeDiagnostics(spec.replacement.target, ["spec", "replacement", "target"])
+    );
   }
   const variants = new Set((manifest.runtimeVariants ?? []).map((variant) => variant.variantId));
   spec.provides.forEach((offer, index) => {
     const version = parseSemver(offer.version);
     if (version === void 0 || version.major !== offer.major) {
-      diagnostics.push(diagnostic("error", "x3.sdk/offer-major-mismatch", `offer ${offer.offerId} version ${offer.version} does not match major ${offer.major}`, ["spec", "provides", index, "version"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/offer-major-mismatch",
+          `offer ${offer.offerId} version ${offer.version} does not match major ${offer.major}`,
+          ["spec", "provides", index, "version"]
+        )
+      );
     }
   });
   spec.applicableVariants?.forEach((variantId, index) => {
     if (!variants.has(variantId)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/unknown-applicable-variant", `applicable variant ${variantId} is not declared by the envelope`, ["spec", "applicableVariants", index]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/unknown-applicable-variant",
+          `applicable variant ${variantId} is not declared by the envelope`,
+          ["spec", "applicableVariants", index]
+        )
+      );
     }
   });
   return diagnostics;
@@ -41439,10 +41746,8 @@ function invalidOpenRegistration(message, context) {
   });
 }
 function safeRegistrationContextValue(value2) {
-  if (value2 === null || typeof value2 === "string" || typeof value2 === "boolean")
-    return value2;
-  if (typeof value2 === "number")
-    return Number.isFinite(value2) ? value2 : String(value2);
+  if (value2 === null || typeof value2 === "string" || typeof value2 === "boolean") return value2;
+  if (typeof value2 === "number") return Number.isFinite(value2) ? value2 : String(value2);
   return typeof value2;
 }
 function validatedRegistrationCoordinate(value2) {
@@ -41458,7 +41763,10 @@ function validatedRegistrationCoordinate(value2) {
     });
   }
   if (!Number.isSafeInteger(major) || major < 0) {
-    return invalidOpenRegistration("contribution contract major must be a safe non-negative integer", { contract: id, major: safeRegistrationContextValue(major) });
+    return invalidOpenRegistration(
+      "contribution contract major must be a safe non-negative integer",
+      { contract: id, major: safeRegistrationContextValue(major) }
+    );
   }
   return Object.freeze({ id: contractId(id), major });
 }
@@ -41504,7 +41812,9 @@ function createContributionContractRegistry(entries) {
     if (typeof authoredEntry !== "object" || authoredEntry === null || Array.isArray(authoredEntry)) {
       invalidOpenRegistration("contribution contract registration must be an object", {});
     }
-    const coordinate = validatedRegistrationCoordinate(authoredEntry.contract);
+    const coordinate = validatedRegistrationCoordinate(
+      authoredEntry.contract
+    );
     const mode = authoredEntry.mode;
     const conformanceProfileValue = authoredEntry.conformanceProfile;
     const project = authoredEntry.project;
@@ -41535,7 +41845,11 @@ function createContributionContractRegistry(entries) {
         major: coordinate.major
       });
     }
-    const conformanceProfile = validatedRegistrationProfile(conformanceProfileValue, coordinate.id, coordinate.major);
+    const conformanceProfile = validatedRegistrationProfile(
+      conformanceProfileValue,
+      coordinate.id,
+      coordinate.major
+    );
     const base = {
       contract: coordinate,
       schema: snapshotJsonWireObject(authoredEntry.schema),
@@ -41547,7 +41861,11 @@ function createContributionContractRegistry(entries) {
     const entry = mode === "executable" ? Object.freeze({
       ...base,
       mode: "executable",
-      moduleAbi: validatedRegistrationModuleAbi(authoredEntry.moduleAbi, coordinate.id, coordinate.major)
+      moduleAbi: validatedRegistrationModuleAbi(
+        authoredEntry.moduleAbi,
+        coordinate.id,
+        coordinate.major
+      )
     }) : Object.freeze({ ...base, mode: "data-only" });
     const registrationKey2 = key(entry.contract.id, entry.contract.major);
     if (map.has(registrationKey2)) {
@@ -41559,24 +41877,30 @@ function createContributionContractRegistry(entries) {
     }
     map.set(registrationKey2, entry);
   }
-  const list = Object.freeze([...map.values()].sort((left, right) => compareUtf8(left.contract.id, right.contract.id) || left.contract.major - right.contract.major));
-  const validationRegistry = createSpecSchemaRegistry(list.map((entry) => ({
-    contract: entry.contract.id,
-    major: entry.contract.major,
-    schema: entry.schema,
-    ...entry.validator === void 0 ? {} : { validator: entry.validator },
-    validateSemantics: entry.validateSemantics,
-    registration: entry.mode === "executable" ? {
-      mode: "executable",
-      project: entry.project,
-      moduleAbi: entry.moduleAbi,
-      conformanceProfile: entry.conformanceProfile
-    } : {
-      mode: "data-only",
-      project: entry.project,
-      conformanceProfile: entry.conformanceProfile
-    }
-  })));
+  const list = Object.freeze(
+    [...map.values()].sort(
+      (left, right) => compareUtf8(left.contract.id, right.contract.id) || left.contract.major - right.contract.major
+    )
+  );
+  const validationRegistry = createSpecSchemaRegistry(
+    list.map((entry) => ({
+      contract: entry.contract.id,
+      major: entry.contract.major,
+      schema: entry.schema,
+      ...entry.validator === void 0 ? {} : { validator: entry.validator },
+      validateSemantics: entry.validateSemantics,
+      registration: entry.mode === "executable" ? {
+        mode: "executable",
+        project: entry.project,
+        moduleAbi: entry.moduleAbi,
+        conformanceProfile: entry.conformanceProfile
+      } : {
+        mode: "data-only",
+        project: entry.project,
+        conformanceProfile: entry.conformanceProfile
+      }
+    }))
+  );
   return {
     get: (contract, major) => map.get(key(contract, major)),
     list: () => list,
@@ -41640,34 +41964,23 @@ var A1_SPEC_SCHEMA_ENTRIES = [
     }
   }
 ];
-
-// packages/sdk/dist/service-contracts.js
 function foreignServiceContractId(contract) {
-  if (!isQualifiedId(contract))
-    throw new TypeError(`invalid foreign service contract: ${contract}`);
+  if (!isQualifiedId(contract)) throw new TypeError(`invalid foreign service contract: ${contract}`);
   return contract;
 }
-
-// packages/sdk/dist/manifest/patterns.js
 function normalize(path) {
   return path.startsWith("./") ? path.slice(2) : path;
 }
 function validateContributionPattern(pattern) {
   const diagnostics = [];
   const bad = (message) => diagnostics.push(diagnostic("error", "x3.sdk/invalid-contribution-pattern", message, [pattern]));
-  if (pattern.trim().length === 0)
-    bad("empty pattern");
-  if (/^([/\\]|[A-Za-z]:)/.test(pattern))
-    bad("absolute paths are forbidden");
-  if (pattern.includes("\\"))
-    bad("use forward slashes");
-  if (pattern.split("/").includes(".."))
-    bad("`..` segments are forbidden");
-  if (pattern.includes("**"))
-    bad("recursive `**` is forbidden");
+  if (pattern.trim().length === 0) bad("empty pattern");
+  if (/^([/\\]|[A-Za-z]:)/.test(pattern)) bad("absolute paths are forbidden");
+  if (pattern.includes("\\")) bad("use forward slashes");
+  if (pattern.split("/").includes("..")) bad("`..` segments are forbidden");
+  if (pattern.includes("**")) bad("recursive `**` is forbidden");
   const stars = pattern.split("*").length - 1;
-  if (stars > 1)
-    bad("at most one shallow `*` is allowed");
+  if (stars > 1) bad("at most one shallow `*` is allowed");
   return diagnostics;
 }
 function toRegExp(pattern) {
@@ -41676,37 +41989,54 @@ function toRegExp(pattern) {
 }
 function expandContributionManifests(patterns, files) {
   const diagnostics = [];
-  for (const pattern of patterns)
-    diagnostics.push(...validateContributionPattern(pattern));
-  if (diagnostics.length > 0)
-    return { entries: [], diagnostics };
+  for (const pattern of patterns) diagnostics.push(...validateContributionPattern(pattern));
+  if (diagnostics.length > 0) return { entries: [], diagnostics };
   const normalizedFiles = files.map(normalize);
   const regexes = patterns.map(toRegExp);
   const entries = [];
   for (const file of normalizedFiles) {
     const matched = [];
     for (let i = 0; i < patterns.length; i += 1) {
-      if (regexes[i].test(file))
-        matched.push(patterns[i]);
+      if (regexes[i].test(file)) matched.push(patterns[i]);
     }
     if (matched.length > 1) {
-      diagnostics.push(diagnostic("error", "x3.sdk/duplicate-pattern-match", `\xAB${file}\xBB matches ${matched.length} declarations`, [file], { patterns: matched }));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-pattern-match",
+          `\xAB${file}\xBB matches ${matched.length} declarations`,
+          [file],
+          { patterns: matched }
+        )
+      );
     } else if (matched.length === 1) {
       entries.push({ pattern: matched[0], path: file });
     } else if (file.endsWith("/contribution.manifest.json")) {
-      diagnostics.push(diagnostic("error", "x3.sdk/orphan-contribution-manifest", `\xAB${file}\xBB is not covered by any contributionManifests declaration`, [file]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/orphan-contribution-manifest",
+          `\xAB${file}\xBB is not covered by any contributionManifests declaration`,
+          [file]
+        )
+      );
     }
   }
   for (const pattern of patterns) {
     if (!entries.some((entry) => entry.pattern === pattern)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/pattern-without-matches", `\xAB${pattern}\xBB matched no files (optional groups do not exist in v1)`, [pattern]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/pattern-without-matches",
+          `\xAB${pattern}\xBB matched no files (optional groups do not exist in v1)`,
+          [pattern]
+        )
+      );
     }
   }
   entries.sort((a, b) => compareUtf8(a.path, b.path));
   return { entries, diagnostics };
 }
-
-// packages/sdk/dist/manifest/normalize.js
 function isRecord(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
 }
@@ -41716,17 +42046,28 @@ function patternDiagnostics(manifest) {
 function rangeDiagnostics(manifest) {
   const out = [];
   manifest.dependsOn?.forEach((requirement, index) => {
-    if (requirement.range === void 0)
-      return;
+    if (requirement.range === void 0) return;
     if (parseVersionRange(requirement.range) === void 0) {
-      out.push(diagnostic("error", "x3.sdk/invalid-version-range", `\xAB${requirement.range}\xBB is not a range this resolver can evaluate (MK3/23 \xA74 subset)`, ["dependsOn", index, "range"]));
+      out.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-version-range",
+          `\xAB${requirement.range}\xBB is not a range this resolver can evaluate (MK3/23 \xA74 subset)`,
+          ["dependsOn", index, "range"]
+        )
+      );
     }
   });
   return out;
 }
 function exactVersionDiagnostics(manifest) {
   return parseSemver(manifest.version) === void 0 ? [
-    diagnostic("error", "x3.sdk/invalid-extension-version", "extension version must be an exactly evaluable SemVer with safe numeric components", ["version"])
+    diagnostic(
+      "error",
+      "x3.sdk/invalid-extension-version",
+      "extension version must be an exactly evaluable SemVer with safe numeric components",
+      ["version"]
+    )
   ] : [];
 }
 async function normalizeExtensionManifest(input) {
@@ -41750,7 +42091,11 @@ async function normalizeExtensionManifest(input) {
   } catch (error) {
     return {
       diagnostics: [
-        diagnostic("error", "x3.sdk/non-json-authored-container", `authored container must be inert JSON data: ${error instanceof Error ? error.message : String(error)}`)
+        diagnostic(
+          "error",
+          "x3.sdk/non-json-authored-container",
+          `authored container must be inert JSON data: ${error instanceof Error ? error.message : String(error)}`
+        )
       ]
     };
   }
@@ -41761,21 +42106,28 @@ async function normalizeExtensionManifest(input) {
   if (hasBlock && hasStandalone) {
     return {
       diagnostics: [
-        diagnostic("error", "x3.sdk/two-authored-containers", "both package.json#modkit and modkit.extension.json exist \u2014 exactly one authored container per artifact (packaging error)")
+        diagnostic(
+          "error",
+          "x3.sdk/two-authored-containers",
+          "both package.json#modkit and modkit.extension.json exist \u2014 exactly one authored container per artifact (packaging error)"
+        )
       ]
     };
   }
   if (!hasBlock && !hasStandalone) {
     return {
       diagnostics: [
-        diagnostic("error", "x3.sdk/no-authored-container", "neither package.json#modkit nor modkit.extension.json found")
+        diagnostic(
+          "error",
+          "x3.sdk/no-authored-container",
+          "neither package.json#modkit nor modkit.extension.json found"
+        )
       ]
     };
   }
   if (hasStandalone) {
     const diagnostics2 = await validateWithSchema(extensionManifestSchema, standaloneInput);
-    if (hasErrors(diagnostics2))
-      return { container: "standalone", diagnostics: diagnostics2 };
+    if (hasErrors(diagnostics2)) return { container: "standalone", diagnostics: diagnostics2 };
     const manifest2 = standaloneInput;
     const all2 = [
       ...diagnostics2,
@@ -41789,20 +42141,40 @@ async function normalizeExtensionManifest(input) {
   const blockRecord = block;
   for (const field of ["version", "license"]) {
     if (field in blockRecord) {
-      diagnostics.push(diagnostic("error", "x3.sdk/npm-field-duplicated-in-block", `\xAB${field}\xBB belongs to the top-level package.json only (Q76 packaging error)`, ["modkit", field]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/npm-field-duplicated-in-block",
+          `\xAB${field}\xBB belongs to the top-level package.json only (Q76 packaging error)`,
+          ["modkit", field]
+        )
+      );
     }
   }
   diagnostics.push(...await validateWithSchema(modkitBlockSchema, blockRecord));
   const version = packageJson["version"];
   if (typeof version !== "string" || parseSemver(version) === void 0) {
-    diagnostics.push(diagnostic("error", "x3.sdk/invalid-npm-version", "package.json must carry a valid SemVer `version` (inherited into the normalized manifest)", ["version"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-npm-version",
+        "package.json must carry a valid SemVer `version` (inherited into the normalized manifest)",
+        ["version"]
+      )
+    );
   }
   const license = packageJson["license"];
   if (typeof license !== "string" || license.length === 0) {
-    diagnostics.push(diagnostic("error", "x3.sdk/invalid-npm-license", "package.json must carry a non-empty `license` (inherited into the normalized manifest)", ["license"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-npm-license",
+        "package.json must carry a non-empty `license` (inherited into the normalized manifest)",
+        ["license"]
+      )
+    );
   }
-  if (hasErrors(diagnostics))
-    return { container: "package-json", diagnostics };
+  if (hasErrors(diagnostics)) return { container: "package-json", diagnostics };
   const manifest = snapshotJsonWireObject({
     schemaVersion: 1,
     publisher: blockRecord["publisher"],
@@ -41823,38 +42195,28 @@ async function normalizeExtensionManifest(input) {
   ];
   return hasErrors(all) ? { container: "package-json", diagnostics: all } : { container: "package-json", manifest, diagnostics: all };
 }
-
-// packages/sdk/dist/security/grant.js
 function grantValidity(grant, now = Date.now()) {
-  if (grant.expiresAt === void 0)
-    return { state: "valid" };
+  if (grant.expiresAt === void 0) return { state: "valid" };
   const parsed = Date.parse(grant.expiresAt);
-  if (Number.isNaN(parsed))
-    return { state: "malformed", value: grant.expiresAt };
+  if (Number.isNaN(parsed)) return { state: "malformed", value: grant.expiresAt };
   return parsed > now ? { state: "valid" } : { state: "expired", at: grant.expiresAt };
 }
 function intersectClasses(a, b) {
   return uniqueSortedUtf8(a.filter((cls) => b.includes(cls)));
 }
 function intersectStrings(a, b) {
-  if (a === void 0)
-    return b === void 0 ? void 0 : [...b];
-  if (b === void 0)
-    return [...a];
+  if (a === void 0) return b === void 0 ? void 0 : [...b];
+  if (b === void 0) return [...a];
   return uniqueSortedUtf8(a.filter((item) => b.includes(item)));
 }
 function narrowPaths(parent, requestedRoots) {
-  if (parent === void 0)
-    return void 0;
-  if (requestedRoots === void 0)
-    return [...parent];
+  if (parent === void 0) return void 0;
+  if (requestedRoots === void 0) return [...parent];
   return parent.filter((scope) => requestedRoots.includes(scope.root));
 }
 function narrowNetwork(parent, requestedOrigins) {
-  if (parent === void 0)
-    return void 0;
-  if (requestedOrigins === void 0)
-    return [...parent];
+  if (parent === void 0) return void 0;
+  if (requestedOrigins === void 0) return [...parent];
   return parent.map((scope) => ({
     ...scope,
     origins: scope.origins.filter((origin) => requestedOrigins.includes(origin))
@@ -41875,10 +42237,11 @@ function narrowGrant(parent, request) {
   }
   if (request.operation !== void 0 && policy?.operationClasses !== void 0) {
     const ceiling = policy.operationClasses[request.operation];
-    if (ceiling !== void 0)
-      allowed = intersectClasses(allowed, ceiling);
+    if (ceiling !== void 0) allowed = intersectClasses(allowed, ceiling);
   }
-  const missing = uniqueSortedUtf8(request.requestedClasses.filter((cls) => !allowed.includes(cls)));
+  const missing = uniqueSortedUtf8(
+    request.requestedClasses.filter((cls) => !allowed.includes(cls))
+  );
   const sourceScope = intersectStrings(parent.sourceScope, request.requestedSourceRoots);
   const filesystem = narrowPaths(parent.filesystem, request.requestedSourceRoots);
   const network = narrowNetwork(parent.network, request.requestedOrigins);
@@ -41905,11 +42268,8 @@ function assertNotWider(parent, child) {
     });
   }
 }
-
-// packages/sdk/dist/asset-capabilities/data-sources.js
 function foreignDataSource(contract, major) {
-  if (!isQualifiedId(contract))
-    throw new TypeError(`invalid foreign data-source id: ${contract}`);
+  if (!isQualifiedId(contract)) throw new TypeError(`invalid foreign data-source id: ${contract}`);
   if (STANDARD_DATA_SOURCE_CONTRACTS.includes(contract)) {
     throw new TypeError(`known data-source contract must use its typed reference: ${contract}`);
   }
@@ -41929,7 +42289,9 @@ function dataSourceRefFromWire(ref) {
     return Object.freeze({ ...ref });
   }
   if (!STANDARD_DATA_SOURCE_CONTRACTS.includes(ref.contract) || ref.major !== 1) {
-    throw new TypeError(`unknown data-source reference must be explicitly opaque: ${ref.contract}@${ref.major}`);
+    throw new TypeError(
+      `unknown data-source reference must be explicitly opaque: ${ref.contract}@${ref.major}`
+    );
   }
   return Object.freeze({ ...ref });
 }
@@ -41944,14 +42306,14 @@ function compareRegistration(a, b) {
   return compareUtf8(a.contract, b.contract) || a.major - b.major || compareUtf8(a.ownerExtensionId, b.ownerExtensionId);
 }
 function rejection(reason, spec, index) {
-  const diagnostic2 = {
+  const diagnostic8 = {
     id: `data-source-registration-${index}`,
     code: `x3.sdk/data-source-${reason}`,
     category: reason === "reserved-namespace" ? "security" : "structure",
     severity: "error",
     message: `data-source contract ${spec.contract}@${spec.major} rejected: ${reason}`
   };
-  return { state: "rejected", reason, diagnostics: [diagnostic2] };
+  return { state: "rejected", reason, diagnostics: [diagnostic8] };
 }
 function malformedBatchDiagnostic(message) {
   return {
@@ -41972,16 +42334,14 @@ var PROVENANCE_KEYS = [
   "manifestPath"
 ];
 function hasExactStringKeys(value2, keys) {
-  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
-    return false;
+  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2)) return false;
   const record = value2;
   const own = Object.keys(record).sort(compareUtf8);
   const expected = [...keys].sort(compareUtf8);
   return own.length === expected.length && own.every((key2, index) => key2 === expected[index]) && keys.every((key2) => typeof record[key2] === "string" && record[key2].trim() !== "");
 }
 function isInventoryEntry(value2) {
-  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
-    return false;
+  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2)) return false;
   const record = value2;
   const keys = Object.keys(record).sort(compareUtf8);
   return keys.length === 2 && keys[0] === "definition" && keys[1] === "provenance" && hasExactStringKeys(record.provenance, PROVENANCE_KEYS);
@@ -42006,33 +42366,41 @@ function createDataSourceRegistry(options) {
       let ownedEntries;
       try {
         const snapshot = snapshotJsonWireData(entries);
-        if (!Array.isArray(snapshot))
-          throw new TypeError("data-source inventory must be an array");
-        const checks = await Promise.all(snapshot.map((entry) => {
-          if (!isInventoryEntry(entry)) {
-            return Promise.resolve([
-              malformedBatchDiagnostic("data-source inventory entry must bind definition and provenance")
-            ]);
-          }
-          return validateWithSchema(dataSourceContractDefinitionSpecV1Schema, entry.definition);
-        }));
+        if (!Array.isArray(snapshot)) throw new TypeError("data-source inventory must be an array");
+        const checks = await Promise.all(
+          snapshot.map((entry) => {
+            if (!isInventoryEntry(entry)) {
+              return Promise.resolve([
+                malformedBatchDiagnostic(
+                  "data-source inventory entry must bind definition and provenance"
+                )
+              ]);
+            }
+            return validateWithSchema(
+              dataSourceContractDefinitionSpecV1Schema,
+              entry.definition
+            );
+          })
+        );
         const invalid = checks.findIndex((diagnostics2) => diagnostics2.length > 0);
         if (invalid !== -1) {
           throw new TypeError(`data-source inventory item ${invalid} violates its schema authority`);
         }
         ownedEntries = snapshot;
       } catch (error) {
-        const diagnostic2 = malformedBatchDiagnostic(`data-source inventory rejected before policy evaluation: ${error instanceof Error ? error.message : String(error)}`);
+        const diagnostic8 = malformedBatchDiagnostic(
+          `data-source inventory rejected before policy evaluation: ${error instanceof Error ? error.message : String(error)}`
+        );
         return {
           state: "rejected",
           results: [
             {
               state: "rejected",
               reason: "schema-invalid",
-              diagnostics: [diagnostic2]
+              diagnostics: [diagnostic8]
             }
           ],
-          diagnostics: [diagnostic2]
+          diagnostics: [diagnostic8]
         };
       }
       const counts = /* @__PURE__ */ new Map();
@@ -42040,51 +42408,67 @@ function createDataSourceRegistry(options) {
         const key2 = registrationKey(spec.contract, spec.major);
         counts.set(key2, (counts.get(key2) ?? 0) + 1);
       }
-      const results = await Promise.all(ownedEntries.map(async ({ definition: spec, provenance }, index) => {
-        const key2 = registrationKey(spec.contract, spec.major);
-        if ((counts.get(key2) ?? 0) > 1)
-          return rejection("duplicate", spec, index);
-        if (!isQualifiedId(spec.contract) || !Number.isSafeInteger(spec.major) || spec.major < 0 || spec.schema.$ref.trim() === "") {
-          return rejection("schema-invalid", spec, index);
-        }
-        try {
-          if (isNamespaceOwner(contractNamespace(spec.contract), ownerExtensionId) !== true) {
-            return rejection("reserved-namespace", spec, index);
+      const results = await Promise.all(
+        ownedEntries.map(
+          async ({ definition: spec, provenance }, index) => {
+            const key2 = registrationKey(spec.contract, spec.major);
+            if ((counts.get(key2) ?? 0) > 1) return rejection("duplicate", spec, index);
+            if (!isQualifiedId(spec.contract) || !Number.isSafeInteger(spec.major) || spec.major < 0 || spec.schema.$ref.trim() === "") {
+              return rejection("schema-invalid", spec, index);
+            }
+            try {
+              if (isNamespaceOwner(contractNamespace(spec.contract), ownerExtensionId) !== true) {
+                return rejection("reserved-namespace", spec, index);
+              }
+            } catch {
+              return rejection("reserved-namespace", spec, index);
+            }
+            if (spec.conformanceProfile.trim() === "") {
+              return rejection("conformance-missing", spec, index);
+            }
+            if (provenance.ownerExtensionId !== ownerExtensionId || provenance.artifactRoot.trim() === "" || provenance.manifestPath.trim() === "" || provenance.manifestDigest.trim() === "" || provenance.artifactDigest.trim() === "") {
+              return rejection("schema-invalid", spec, index);
+            }
+            const definition = Object.freeze({ ...spec, ownerExtensionId, provenance });
+            let validation;
+            try {
+              validation = await validateDefinition(definition);
+            } catch {
+              return rejection("schema-invalid", spec, index);
+            }
+            if (validation?.state !== "valid") {
+              const reason = validation?.state === "invalid" && (validation.reason === "schema-invalid" || validation.reason === "conformance-missing") ? validation.reason : "schema-invalid";
+              return rejection(reason, spec, index);
+            }
+            return { state: "registered" };
           }
-        } catch {
-          return rejection("reserved-namespace", spec, index);
-        }
-        if (spec.conformanceProfile.trim() === "") {
-          return rejection("conformance-missing", spec, index);
-        }
-        if (provenance.ownerExtensionId !== ownerExtensionId || provenance.artifactRoot.trim() === "" || provenance.manifestPath.trim() === "" || provenance.manifestDigest.trim() === "" || provenance.artifactDigest.trim() === "") {
-          return rejection("schema-invalid", spec, index);
-        }
-        const definition = Object.freeze({ ...spec, ownerExtensionId, provenance });
-        let validation;
-        try {
-          validation = await validateDefinition(definition);
-        } catch {
-          return rejection("schema-invalid", spec, index);
-        }
-        if (validation?.state !== "valid") {
-          const reason = validation?.state === "invalid" && (validation.reason === "schema-invalid" || validation.reason === "conformance-missing") ? validation.reason : "schema-invalid";
-          return rejection(reason, spec, index);
-        }
-        return { state: "registered" };
-      }));
-      const diagnostics = results.flatMap((result) => result.state === "rejected" ? result.diagnostics : []);
-      if (diagnostics.length > 0)
-        return { state: "rejected", results, diagnostics };
+        )
+      );
+      const diagnostics = results.flatMap(
+        (result) => result.state === "rejected" ? result.diagnostics : []
+      );
+      if (diagnostics.length > 0) return { state: "rejected", results, diagnostics };
       if (ownerGenerations.get(ownerExtensionId) !== generation) {
-        const staleResults = ownedEntries.map(({ definition }, index) => rejection("stale-update", definition, index));
-        const staleDiagnostics = staleResults.flatMap((result) => result.state === "rejected" ? result.diagnostics : []);
+        const staleResults = ownedEntries.map(
+          ({ definition }, index) => rejection("stale-update", definition, index)
+        );
+        const staleDiagnostics = staleResults.flatMap(
+          (result) => result.state === "rejected" ? result.diagnostics : []
+        );
         const diagnostics2 = staleDiagnostics.length > 0 ? staleDiagnostics : [malformedBatchDiagnostic("data-source inventory update was superseded")];
         return { state: "rejected", results: staleResults, diagnostics: diagnostics2 };
       }
-      const retained = new Map([...registrations].filter(([, registration]) => registration.ownerExtensionId !== ownerExtensionId));
-      const conflictResults = ownedEntries.map(({ definition }, index) => retained.has(registrationKey(definition.contract, definition.major)) ? rejection("major-conflict", definition, index) : { state: "registered" });
-      const conflictDiagnostics = conflictResults.flatMap((result) => result.state === "rejected" ? result.diagnostics : []);
+      const retained = new Map(
+        [...registrations].filter(
+          ([, registration]) => registration.ownerExtensionId !== ownerExtensionId
+        )
+      );
+      const conflictResults = ownedEntries.map(
+        ({ definition }, index) => retained.has(registrationKey(definition.contract, definition.major)) ? rejection("major-conflict", definition, index) : { state: "registered" }
+      );
+      const conflictDiagnostics = conflictResults.flatMap(
+        (result) => result.state === "rejected" ? result.diagnostics : []
+      );
       if (conflictDiagnostics.length > 0) {
         return {
           state: "rejected",
@@ -42092,12 +42476,14 @@ function createDataSourceRegistry(options) {
           diagnostics: conflictDiagnostics
         };
       }
-      const committed = ownedEntries.map(({ definition: spec, provenance }) => Object.freeze({
-        ...spec,
-        schema: Object.freeze({ ...spec.schema }),
-        ownerExtensionId,
-        provenance: Object.freeze({ ...provenance })
-      }));
+      const committed = ownedEntries.map(
+        ({ definition: spec, provenance }) => Object.freeze({
+          ...spec,
+          schema: Object.freeze({ ...spec.schema }),
+          ownerExtensionId,
+          provenance: Object.freeze({ ...provenance })
+        })
+      );
       registrations = retained;
       for (const registration of committed) {
         registrations.set(registrationKey(registration.contract, registration.major), registration);
@@ -42109,7 +42495,11 @@ function createDataSourceRegistry(options) {
     },
     unregisterOwner(ownerExtensionId) {
       beginOwnerUpdate(ownerExtensionId);
-      registrations = new Map([...registrations].filter(([, registration]) => registration.ownerExtensionId !== ownerExtensionId));
+      registrations = new Map(
+        [...registrations].filter(
+          ([, registration]) => registration.ownerExtensionId !== ownerExtensionId
+        )
+      );
     },
     lookup(contract, major) {
       return registrations.get(registrationKey(contract, major));
@@ -42122,7 +42512,9 @@ function createDataSourceRegistry(options) {
       if (!isQualifiedId(ref.contract) || !Number.isSafeInteger(ref.major) || ref.major < 0) {
         return void 0;
       }
-      const isStandard = STANDARD_DATA_SOURCE_CONTRACTS.includes(ref.contract);
+      const isStandard = STANDARD_DATA_SOURCE_CONTRACTS.includes(
+        ref.contract
+      );
       if (isStandard && (ref.major !== 1 || "opaque" in ref && ref.opaque === true)) {
         return void 0;
       }
@@ -42130,8 +42522,6 @@ function createDataSourceRegistry(options) {
     }
   };
 }
-
-// packages/sdk/dist/asset-capabilities/data-source-surfaces.js
 var ENCODED_MEDIA_SURFACE_ID = "common.view/encoded-media";
 var ENCODED_MEDIA = Object.freeze({
   contract: contractId(ENCODED_MEDIA_SURFACE_ID),
@@ -42260,18 +42650,14 @@ var AUXILIARY_DATA_SOURCE_SURFACES = deepFreeze({
   [ENCODED_MEDIA_SURFACE_ID]: encodedMediaSurface
 });
 function standardDataSourceSurfaceFor(contract, major) {
-  if (major !== 1)
-    return void 0;
+  if (major !== 1) return void 0;
   if (STANDARD_DATA_SOURCE_CONTRACTS.includes(contract)) {
     return STANDARD_DATA_SOURCE_SURFACES[contract];
   }
-  if (contract === ENCODED_MEDIA_SURFACE_ID)
-    return AUXILIARY_DATA_SOURCE_SURFACES[contract];
+  if (contract === ENCODED_MEDIA_SURFACE_ID) return AUXILIARY_DATA_SOURCE_SURFACES[contract];
   return void 0;
 }
 var ENCODED_MEDIA_SURFACE_CONTRACT = contractId(ENCODED_MEDIA_SURFACE_ID);
-
-// packages/sdk/dist/asset-capabilities/validate-descriptor.js
 function normalizeSourceSpan(span) {
   if (typeof span.byteOffset === "string" && typeof span.byteLength === "string") {
     return Object.freeze({
@@ -42321,10 +42707,14 @@ function normalizeCompanion(item) {
   if (item.state === "ambiguous") {
     return Object.freeze({
       ...item,
-      candidates: Object.freeze(item.candidates.map((candidate) => Object.freeze({
-        source: freezeSource(candidate.source),
-        revision: revisionId(candidate.revision)
-      }))),
+      candidates: Object.freeze(
+        item.candidates.map(
+          (candidate) => Object.freeze({
+            source: freezeSource(candidate.source),
+            revision: revisionId(candidate.revision)
+          })
+        )
+      ),
       diagnosticIds: Object.freeze([...item.diagnosticIds])
     });
   }
@@ -42355,7 +42745,11 @@ function normalizeOrigin(origin) {
     case "derived":
       return Object.freeze({
         kind: "derived",
-        inputs: Object.freeze(origin.inputs.map((input) => Object.freeze({ ...input, revision: revisionId(input.revision) }))),
+        inputs: Object.freeze(
+          origin.inputs.map(
+            (input) => Object.freeze({ ...input, revision: revisionId(input.revision) })
+          )
+        ),
         ...origin.recipe === void 0 ? {} : {
           recipe: Object.freeze({
             ...origin.recipe,
@@ -42382,13 +42776,18 @@ async function validateSubjectDescriptorV2(value2) {
   } catch (error) {
     return {
       diagnostics: [
-        diagnostic("error", "x3.sdk/non-json-subject-descriptor", "subject descriptor must be inert JSON data", [], { error: error instanceof Error ? error.message : String(error) })
+        diagnostic(
+          "error",
+          "x3.sdk/non-json-subject-descriptor",
+          "subject descriptor must be inert JSON data",
+          [],
+          { error: error instanceof Error ? error.message : String(error) }
+        )
       ]
     };
   }
   const schemaDiagnostics2 = await validateWithSchema(subjectDescriptorV2Schema, snapshot);
-  if (hasErrors(schemaDiagnostics2))
-    return { diagnostics: schemaDiagnostics2 };
+  if (hasErrors(schemaDiagnostics2)) return { diagnostics: schemaDiagnostics2 };
   const wire = snapshot;
   const semanticDiagnostics = [];
   const validateSubjectUri = (uri, path) => {
@@ -42397,61 +42796,131 @@ async function validateSubjectDescriptorV2(value2) {
         throw new TypeError("subject reference is not in canonical form");
       }
     } catch (error) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-subject-reference", `subject reference ${uri} is not a canonical restorable identity`, path, { error: error instanceof Error ? error.message : String(error) }));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-subject-reference",
+          `subject reference ${uri} is not a canonical restorable identity`,
+          path,
+          { error: error instanceof Error ? error.message : String(error) }
+        )
+      );
     }
   };
   validateSubjectUri(wire.subjectUri, ["subjectUri"]);
   if (wire.origin.kind === "derived") {
-    wire.origin.inputs.forEach((input, index) => validateSubjectUri(input.subjectUri, ["origin", "inputs", index, "subjectUri"]));
+    wire.origin.inputs.forEach(
+      (input, index) => validateSubjectUri(input.subjectUri, ["origin", "inputs", index, "subjectUri"])
+    );
   }
   const validateDiagnosticCode = (item, path) => {
     if (!isQualifiedId(item.code)) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-persistent-diagnostic-code", `persistent diagnostic code ${item.code} is not a qualified id`, [...path, "code"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-persistent-diagnostic-code",
+          `persistent diagnostic code ${item.code} is not a qualified id`,
+          [...path, "code"]
+        )
+      );
     }
   };
   wire.diagnostics.forEach((item, index) => validateDiagnosticCode(item, ["diagnostics", index]));
   if (wire.interpretation === "none") {
-    wire.candidates.forEach((candidate, candidateIndex) => candidate.diagnostics?.forEach((item, diagnosticIndex) => validateDiagnosticCode(item, [
-      "candidates",
-      candidateIndex,
-      "diagnostics",
-      diagnosticIndex
-    ])));
+    wire.candidates.forEach(
+      (candidate, candidateIndex) => candidate.diagnostics?.forEach(
+        (item, diagnosticIndex) => validateDiagnosticCode(item, [
+          "candidates",
+          candidateIndex,
+          "diagnostics",
+          diagnosticIndex
+        ])
+      )
+    );
   }
   if (wire.interpretation === "codec" && parseSemver(wire.identity.codecVersion) === void 0) {
-    semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-codec-version", `codec version ${wire.identity.codecVersion} cannot be evaluated safely`, ["identity", "codecVersion"]));
+    semanticDiagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-codec-version",
+        `codec version ${wire.identity.codecVersion} cannot be evaluated safely`,
+        ["identity", "codecVersion"]
+      )
+    );
   }
   const knownDiagnostics = /* @__PURE__ */ new Set();
   wire.diagnostics.forEach((item, index) => {
     if (knownDiagnostics.has(item.id)) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-descriptor-diagnostic", `diagnostic id ${item.id} is declared more than once`, ["diagnostics", index, "id"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-descriptor-diagnostic",
+          `diagnostic id ${item.id} is declared more than once`,
+          ["diagnostics", index, "id"]
+        )
+      );
     }
     knownDiagnostics.add(item.id);
   });
   const traitIds = /* @__PURE__ */ new Set();
   wire.traits.forEach((trait, index) => {
     if (traitIds.has(trait.id)) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-descriptor-trait", `trait ${trait.id} is declared more than once`, ["traits", index, "id"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-descriptor-trait",
+          `trait ${trait.id} is declared more than once`,
+          ["traits", index, "id"]
+        )
+      );
     }
     traitIds.add(trait.id);
     if (isStandardTraitId(trait.id)) {
       if (trait.definitionVersion !== void 0) {
-        semanticDiagnostics.push(diagnostic("error", "x3.sdk/standard-trait-versioned", `standard trait ${trait.id} cannot bind an extension definition version`, ["traits", index, "definitionVersion"]));
+        semanticDiagnostics.push(
+          diagnostic(
+            "error",
+            "x3.sdk/standard-trait-versioned",
+            `standard trait ${trait.id} cannot bind an extension definition version`,
+            ["traits", index, "definitionVersion"]
+          )
+        );
       }
     } else {
       if (trait.definitionVersion === void 0 || parseSemver(trait.definitionVersion) === void 0) {
-        semanticDiagnostics.push(diagnostic("error", "x3.sdk/custom-trait-definition-unbound", `custom trait ${trait.id} must bind an exact installed definition version`, ["traits", index, "definitionVersion"]));
+        semanticDiagnostics.push(
+          diagnostic(
+            "error",
+            "x3.sdk/custom-trait-definition-unbound",
+            `custom trait ${trait.id} must bind an exact installed definition version`,
+            ["traits", index, "definitionVersion"]
+          )
+        );
       }
     }
     if (trait.state !== "available") {
       const diagnosticIds = /* @__PURE__ */ new Set();
       for (const id of trait.diagnosticIds) {
         if (diagnosticIds.has(id)) {
-          semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-trait-diagnostic", `trait diagnostic ${id} is referenced more than once`, ["traits", index, "diagnosticIds"]));
+          semanticDiagnostics.push(
+            diagnostic(
+              "error",
+              "x3.sdk/duplicate-trait-diagnostic",
+              `trait diagnostic ${id} is referenced more than once`,
+              ["traits", index, "diagnosticIds"]
+            )
+          );
         }
         diagnosticIds.add(id);
         if (!knownDiagnostics.has(id)) {
-          semanticDiagnostics.push(diagnostic("error", "x3.sdk/unknown-trait-diagnostic", `trait diagnostic ${id} is not present in descriptor diagnostics`, ["traits", index, "diagnosticIds"]));
+          semanticDiagnostics.push(
+            diagnostic(
+              "error",
+              "x3.sdk/unknown-trait-diagnostic",
+              `trait diagnostic ${id} is not present in descriptor diagnostics`,
+              ["traits", index, "diagnosticIds"]
+            )
+          );
         }
       }
     }
@@ -42461,29 +42930,64 @@ async function validateSubjectDescriptorV2(value2) {
   const handlerIds = /* @__PURE__ */ new Set();
   wire.operations.forEach((operation, index) => {
     if (operationIds.has(operation.id)) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-descriptor-operation", `operation ${operation.id} is declared more than once`, ["operations", index, "id"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-descriptor-operation",
+          `operation ${operation.id} is declared more than once`,
+          ["operations", index, "id"]
+        )
+      );
     }
     operationIds.add(operation.id);
     if (handlerIds.has(operation.handlerId)) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-descriptor-handler", `handler ${operation.handlerId} is bound to more than one operation`, ["operations", index, "handlerId"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-descriptor-handler",
+          `handler ${operation.handlerId} is bound to more than one operation`,
+          ["operations", index, "handlerId"]
+        )
+      );
     }
     handlerIds.add(operation.handlerId);
     try {
       operationId(operation.id, { contributionId: operationOwner });
     } catch {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-descriptor-operation", `operation ${operation.id} is not owned by ${operationOwner}`, ["operations", index, "id"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-descriptor-operation",
+          `operation ${operation.id} is not owned by ${operationOwner}`,
+          ["operations", index, "id"]
+        )
+      );
     }
   });
   if (wire.origin.kind === "bundle") {
     const bindingIds = /* @__PURE__ */ new Set();
     wire.origin.bindings.forEach((binding, index) => {
       if (bindingIds.has(binding.id)) {
-        semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-origin-binding", `origin binding id ${binding.id} is duplicated`, ["origin", "bindings", index, "id"]));
+        semanticDiagnostics.push(
+          diagnostic(
+            "error",
+            "x3.sdk/duplicate-origin-binding",
+            `origin binding id ${binding.id} is duplicated`,
+            ["origin", "bindings", index, "id"]
+          )
+        );
       }
       bindingIds.add(binding.id);
     });
     if (wire.origin.primary !== void 0 && !bindingIds.has(wire.origin.primary)) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/unknown-origin-primary", `origin primary ${wire.origin.primary} does not name a bundle binding`, ["origin", "primary"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/unknown-origin-primary",
+          `origin primary ${wire.origin.primary} does not name a bundle binding`,
+          ["origin", "primary"]
+        )
+      );
     }
   }
   if (wire.interpretation === "codec") {
@@ -42492,24 +42996,52 @@ async function validateSubjectDescriptorV2(value2) {
     const bundleBindings = wire.origin.kind === "bundle" ? new Map(wire.origin.bindings.map((binding) => [binding.id, binding])) : /* @__PURE__ */ new Map();
     (wire.companions ?? []).forEach((companion, index) => {
       if (companionIds.has(companion.id)) {
-        semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-companion-state", `companion requirement ${companion.id} is declared more than once`, ["companions", index, "id"]));
+        semanticDiagnostics.push(
+          diagnostic(
+            "error",
+            "x3.sdk/duplicate-companion-state",
+            `companion requirement ${companion.id} is declared more than once`,
+            ["companions", index, "id"]
+          )
+        );
       }
       companionIds.add(companion.id);
       if (companion.state === "resolved") {
         if ((companion.cardinality === "one" || companion.cardinality === "zero-or-one") && companion.bindingIds.length !== 1) {
-          semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-companion-cardinality", `resolved companion ${companion.id} must name exactly one binding for ${companion.cardinality}`, ["companions", index, "bindingIds"]));
+          semanticDiagnostics.push(
+            diagnostic(
+              "error",
+              "x3.sdk/invalid-companion-cardinality",
+              `resolved companion ${companion.id} must name exactly one binding for ${companion.cardinality}`,
+              ["companions", index, "bindingIds"]
+            )
+          );
         }
         companion.bindingIds.forEach((bindingId2, bindingIndex) => {
           const binding = bundleBindings.get(bindingId2);
           if (binding === void 0 || binding.ownership !== "companion" || binding.role !== companion.role || binding.required !== companion.required || companionBindingIds.has(bindingId2)) {
-            semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-companion-binding", `resolved companion ${companion.id} does not name a distinct matching companion binding`, ["companions", index, "bindingIds", bindingIndex]));
+            semanticDiagnostics.push(
+              diagnostic(
+                "error",
+                "x3.sdk/invalid-companion-binding",
+                `resolved companion ${companion.id} does not name a distinct matching companion binding`,
+                ["companions", index, "bindingIds", bindingIndex]
+              )
+            );
           }
           companionBindingIds.add(bindingId2);
         });
       } else {
         for (const id of companion.diagnosticIds ?? []) {
           if (!knownDiagnostics.has(id)) {
-            semanticDiagnostics.push(diagnostic("error", "x3.sdk/unknown-companion-diagnostic", `companion diagnostic ${id} is not present in descriptor diagnostics`, ["companions", index, "diagnosticIds"]));
+            semanticDiagnostics.push(
+              diagnostic(
+                "error",
+                "x3.sdk/unknown-companion-diagnostic",
+                `companion diagnostic ${id} is not present in descriptor diagnostics`,
+                ["companions", index, "diagnosticIds"]
+              )
+            );
           }
         }
         if (companion.state === "ambiguous") {
@@ -42517,7 +43049,14 @@ async function validateSubjectDescriptorV2(value2) {
           companion.candidates.forEach((candidate, candidateIndex) => {
             const key2 = canonicalJsonStringify(candidate);
             if (candidates.has(key2)) {
-              semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-companion-candidate", `ambiguous companion ${companion.id} repeats one candidate`, ["companions", index, "candidates", candidateIndex]));
+              semanticDiagnostics.push(
+                diagnostic(
+                  "error",
+                  "x3.sdk/duplicate-companion-candidate",
+                  `ambiguous companion ${companion.id} repeats one candidate`,
+                  ["companions", index, "candidates", candidateIndex]
+                )
+              );
             }
             candidates.add(key2);
           });
@@ -42527,7 +43066,14 @@ async function validateSubjectDescriptorV2(value2) {
     if (wire.origin.kind === "bundle") {
       wire.origin.bindings.forEach((binding, index) => {
         if (binding.ownership === "companion" && !companionBindingIds.has(binding.id)) {
-          semanticDiagnostics.push(diagnostic("error", "x3.sdk/untracked-companion-binding", `companion binding ${binding.id} has no resolved requirement state`, ["origin", "bindings", index, "id"]));
+          semanticDiagnostics.push(
+            diagnostic(
+              "error",
+              "x3.sdk/untracked-companion-binding",
+              `companion binding ${binding.id} has no resolved requirement state`,
+              ["origin", "bindings", index, "id"]
+            )
+          );
         }
       });
     }
@@ -42536,7 +43082,14 @@ async function validateSubjectDescriptorV2(value2) {
     const inputIds = /* @__PURE__ */ new Set();
     wire.origin.inputs.forEach((input, index) => {
       if (inputIds.has(input.bindingId)) {
-        semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-derived-input", `derived input binding ${input.bindingId} is duplicated`, ["origin", "inputs", index, "bindingId"]));
+        semanticDiagnostics.push(
+          diagnostic(
+            "error",
+            "x3.sdk/duplicate-derived-input",
+            `derived input binding ${input.bindingId} is duplicated`,
+            ["origin", "inputs", index, "bindingId"]
+          )
+        );
       }
       inputIds.add(input.bindingId);
     });
@@ -42551,7 +43104,14 @@ async function validateSubjectDescriptorV2(value2) {
         contributionId: wire.origin.recipe.contributionId
       });
     } catch {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-derivation-operation", `derivation recipe ${wire.origin.recipe.extensionId}@${wire.origin.recipe.extensionVersion}#${wire.origin.recipe.contributionId} cannot own ${wire.origin.recipe.operation}`, ["origin", "recipe"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-derivation-operation",
+          `derivation recipe ${wire.origin.recipe.extensionId}@${wire.origin.recipe.extensionVersion}#${wire.origin.recipe.contributionId} cannot own ${wire.origin.recipe.operation}`,
+          ["origin", "recipe"]
+        )
+      );
     }
   }
   if (hasErrors(semanticDiagnostics)) {
@@ -42567,32 +43127,38 @@ async function validateSubjectDescriptorV2(value2) {
     }),
     diagnostics: Object.freeze(wire.diagnostics.map(normalizeDiagnostic)),
     dataSources: Object.freeze(wire.dataSources.map(dataSourceRefFromWire)),
-    traits: Object.freeze(wire.traits.map((item) => Object.freeze({ ...item, id: traitId(item.id) }))),
-    operations: Object.freeze(wire.operations.map((item) => Object.freeze({
-      ...item,
-      id: operationId(item.id, { contributionId: operationOwner })
-    })))
+    traits: Object.freeze(
+      wire.traits.map((item) => Object.freeze({ ...item, id: traitId(item.id) }))
+    ),
+    operations: Object.freeze(
+      wire.operations.map(
+        (item) => Object.freeze({
+          ...item,
+          id: operationId(item.id, { contributionId: operationOwner })
+        })
+      )
+    )
   };
-  const descriptor = Object.freeze(wire.interpretation === "none" ? { ...base, candidates: Object.freeze(wire.candidates.map(normalizeDetection)) } : {
-    ...base,
-    ...wire.companions === void 0 ? {} : { companions: Object.freeze(wire.companions.map(normalizeCompanion)) }
-  });
+  const descriptor = Object.freeze(
+    wire.interpretation === "none" ? { ...base, candidates: Object.freeze(wire.candidates.map(normalizeDetection)) } : {
+      ...base,
+      ...wire.companions === void 0 ? {} : { companions: Object.freeze(wire.companions.map(normalizeCompanion)) }
+    }
+  );
   return { descriptor, diagnostics: [...schemaDiagnostics2, ...semanticDiagnostics] };
 }
-
-// packages/sdk/dist/asset-capabilities/presentation.js
 function bindingId(value2) {
-  if (!isSegment(value2))
-    throw new TypeError(`invalid binding id: ${value2}`);
+  if (!isSegment(value2)) throw new TypeError(`invalid binding id: ${value2}`);
   return value2;
 }
 function presentationSlotId(value2) {
-  if (!isSegment(value2))
-    throw new TypeError(`invalid presentation slot id: ${value2}`);
+  if (!isSegment(value2)) throw new TypeError(`invalid presentation slot id: ${value2}`);
   return value2;
 }
 function definePresentationPlan(plan) {
-  const stageIds = new Set(plan.slots.filter((slot) => slot.kind === "stage").map((slot) => slot.slotId));
+  const stageIds = new Set(
+    plan.slots.filter((slot) => slot.kind === "stage").map((slot) => slot.slotId)
+  );
   if (plan.activeStage === void 0) {
     if (plan.fallback === void 0 || plan.fallback.kind !== "fallback" || plan.alternateStages.length !== 0) {
       throw new TypeError("a fallback-only presentation plan cannot declare stage alternates");
@@ -42609,8 +43175,6 @@ function definePresentationPlan(plan) {
   }
   return snapshotJsonWireData(plan);
 }
-
-// packages/sdk/dist/asset-capabilities/v1-projection.js
 var V1_PROJECTION_UNAVAILABLE_CODE = "org.modkitx/compat-v1-projection-unavailable";
 
 export {

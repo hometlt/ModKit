@@ -12,7 +12,7 @@ import {
   setState,
   setViewerText,
   stageIdOf
-} from "./chunks/chunk-IDRNYFTJ.js";
+} from "./chunks/chunk-BPPL6S5J.js";
 
 // apps/web/src/embed.ts
 var MODKIT_VIEWER_TAG = "modkit-viewer";

@@ -652,21 +652,50 @@ function noServiceResolver(): ContractResolverPort {
   }
 }
 
+/**
+ * A contribution whose match rules claimed this file but which could not be a candidate.
+ *
+ * "No codec claimed this file" and "a codec claimed it and you switched it off" are different
+ * facts, and only the first was ever reported: an ineligible contribution dropped out before its
+ * rules were even consulted, so an unresolved open carried no trace of it. An application then had
+ * to re-derive the reason from the file's suffix and the switched-off codecs' declared extensions —
+ * a guess, at the one moment the host knew the answer exactly.
+ */
+export interface SuppressedCandidate {
+  readonly contributionId: string
+  readonly extensionId: string
+  /** Why it could not run — the contribution's own diagnostic codes (e.g. disabled by settings). */
+  readonly reasons: readonly string[]
+}
+
 function runnableCandidates(
   options: OpenSubjectOptions,
   offers: readonly ProviderOffer[],
   signatureWindows: SignatureWindows | undefined,
+  suppressed: SuppressedCandidate[] = [],
 ): readonly RunnableCandidate[] {
   const candidates: RunnableCandidate[] = []
   const path = options.path ?? options.source.ref.uri
   for (const extension of options.inventory.extensions) {
     for (const contribution of extension.contributions) {
       const manifest = contribution.manifest
-      if (
-        !contribution.activationEligible ||
-        manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT ||
-        manifest.contract.major !== 1
-      ) {
+      if (manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT || manifest.contract.major !== 1) {
+        continue
+      }
+      if (!contribution.activationEligible) {
+        /*
+         * Consult the rules anyway, purely to answer "would this have claimed the file?". No code
+         * runs and no offer is taken: an ineligible contribution stays ineligible. What changes is
+         * that the host can now say which switched-off codec the user is missing.
+         */
+        const spec = manifest.spec as unknown as CodecContributionSpecV1Wire | undefined
+        if (spec?.match !== undefined && matchesSpec(spec, path, options.mediaType)) {
+          suppressed.push({
+            contributionId: manifest.id,
+            extensionId: extension.manifest?.id ?? extension.source,
+            reasons: contribution.diagnostics.map(item => item.code),
+          })
+        }
         continue
       }
       const spec = manifest.spec as unknown as CodecContributionSpecV1Wire
@@ -805,7 +834,20 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
   // NXT-101B: one bounded head/tail read per open, sized by the declared signature needs of the
   // inventory (nothing is read when no codec declares signatures); no extension code runs here
   const signatureWindows = await readSignatureWindows(options)
-  const candidates = runnableCandidates(options, offers, signatureWindows)
+  const suppressed: SuppressedCandidate[] = []
+  const candidates = runnableCandidates(options, offers, signatureWindows, suppressed)
+  for (const item of suppressed) {
+    diagnostics.push(
+      diagnostic(
+        'information',
+        'x3.host/candidate-suppressed',
+        `«${item.contributionId}» matches this file but cannot run${
+          item.reasons.length === 0 ? '' : `: ${item.reasons.join(', ')}`
+        }`,
+        [item.extensionId, item.contributionId],
+      ),
+    )
+  }
   if (candidates.length > maxCandidates) {
     diagnostics.push(
       errorDiagnostic(

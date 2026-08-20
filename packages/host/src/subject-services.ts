@@ -13,7 +13,7 @@
  * bundled definition registry below is only for inputs the host already vouches for.
  */
 
-import { ModkitError, type Diagnostic } from '@modkitx-x3/core'
+import { compareUtf8, ModkitError, type Diagnostic } from '@modkitx-x3/core'
 import type {
   ArtifactByteSource,
   DefinitionInventoryResult,
@@ -27,7 +27,7 @@ import type {
 } from '@modkitx-x3/sdk'
 import type { DataSourceSurfaceSource } from './execution/index.js'
 import type { ExecutionBackendRegistry } from './execution/backend.js'
-import type { Inventory } from './inventory.js'
+import type { ExtensionOrigin, Inventory } from './inventory.js'
 import {
   createServiceContractDefinitionRegistry,
   createServiceFacetMatcherProfileRegistry,
@@ -79,6 +79,64 @@ export interface SubjectServicesOptions {
  * The extension hints of every codec contribution in the inventory (`spec.match.extensions`),
  * lowercase, unique, sorted. A hint for a picker — never a detection decision.
  */
+/** The host's own code for "this contribution is switched off by settings". */
+export const CONTRIBUTION_DISABLED_CODE = 'x3.host/contribution-disabled'
+
+/**
+ * One row per contribution in the inventory, for a settings surface that lists them.
+ *
+ * Sits beside `supportedExtensionHints` because it answers the same class of question — "what does
+ * this inventory hold, for a user to look at" — and lives here rather than in each application
+ * because two of them had written the same twenty-five lines. A row keeps *unparsed* records too:
+ * a contribution whose envelope did not parse still has a path, and a settings page that silently
+ * omitted it would be hiding the one record its owner most needs to see.
+ */
+export interface InventoryContributionRow {
+  /** Qualified contribution id. Absent when the envelope did not parse — then there is no switch. */
+  readonly id?: string
+  readonly displayName: string
+  /** The contract it implements and that contract's major, when the envelope parsed. */
+  readonly contract?: string
+  readonly contractMajor?: number
+  /** `publisher/id` of the extension that ships it. */
+  readonly extension: string
+  readonly origin: ExtensionOrigin
+  readonly activationEligible: boolean
+  /** True when the host refused activation because this contribution is switched off. */
+  readonly disabled: boolean
+  /** Manifest path inside the extension — the only identity an unparsed record has. */
+  readonly path: string
+}
+
+export function describeInventoryContributions(
+  inventory: Inventory,
+): readonly InventoryContributionRow[] {
+  const rows = inventory.extensions.flatMap(extension => {
+    const owner = `${extension.manifest.publisher}/${extension.manifest.id}`
+    return extension.contributions.map((contribution): InventoryContributionRow => {
+      const manifest = contribution.manifest
+      return {
+        ...(manifest === undefined ? {} : { id: manifest.id }),
+        displayName: manifest?.displayName ?? contribution.path,
+        ...(manifest === undefined
+          ? {}
+          : { contract: manifest.contract.id, contractMajor: manifest.contract.major }),
+        extension: owner,
+        origin: extension.origin,
+        activationEligible: contribution.activationEligible,
+        disabled: contribution.diagnostics.some(item => item.code === CONTRIBUTION_DISABLED_CODE),
+        path: contribution.path,
+      }
+    })
+  })
+  return Object.freeze(
+    rows.sort((left, right) => {
+      const owner = compareUtf8(left.extension, right.extension)
+      return owner === 0 ? compareUtf8(left.id ?? left.path, right.id ?? right.path) : owner
+    }),
+  )
+}
+
 export function supportedExtensionHints(inventory: Inventory): readonly string[] {
   return Object.freeze(
     [

@@ -6,9 +6,6 @@ import {
   WEB_EDITING_NOTICE,
   WEB_EXTENSION_CATALOG,
   WEB_PREVIEW_FALLBACK,
-  ZIP_VERBATIM_REASSEMBLY_RECORDS,
-  applyDensity,
-  applyTheme,
   catalogCoordinates,
   containerCoordinate,
   createBrowserEditingBackend,
@@ -44,7 +41,7 @@ import {
   setPart,
   setState,
   setViewerText
-} from "./chunks/chunk-IDRNYFTJ.js";
+} from "./chunks/chunk-BPPL6S5J.js";
 
 // apps/web/src/extensions-ui.ts
 var USER_EXTENSION_TRUST_SENTENCE = "A folder you add here is trusted because you picked it and for no other reason \u2014 nothing is signed and nobody has reviewed it; this page hashes every file as it reads them so that a file changed afterwards is refused instead of run, and user extensions always run in a worker, never on the page.";
@@ -426,9 +423,30 @@ function describeRejection(reason) {
   }
 }
 var firstMessage = (diagnostics) => diagnostics[0]?.message;
-var WEB_EDIT_EVIDENCE = ZIP_VERBATIM_REASSEMBLY_RECORDS.reduce(
-  (registry, record) => registry.with(record),
-  createEvidenceRegistry()
+var ZIP_WRITER = Object.freeze({
+  providerId: "org.modkitx/archive-zip",
+  providerVersion: "1.0.0",
+  artifactDigest: "none:extension-artifact-not-pinned",
+  formatId: "zip",
+  representationId: "archive-namespace"
+});
+var zipEvidenceRecord = (preservesUnknownData, evidenceId, inputClass) => Object.freeze({
+  writer: ZIP_WRITER,
+  claim: Object.freeze({ roundTrip: "semantic", preservesUnknownData }),
+  evidenceId,
+  corpusId: "modkitX3/packages/host/test/archive-edits.test.ts",
+  corpusDigest: "none:proof-suite",
+  conformanceProfile: "org.modkitx/codec-contribution-v1",
+  optionsFingerprint: "options:stored-additions",
+  inputClass,
+  provenAt: "2026-08-19T00:00:00Z"
+});
+var WEB_EDIT_EVIDENCE = createEvidenceRegistry().with(zipEvidenceRecord(true, "zip-verbatim-reassembly-v1", "zip-classic")).with(
+  zipEvidenceRecord(
+    false,
+    "zip-verbatim-reassembly-non-canonical-v1",
+    "zip-non-canonical-layout"
+  )
 );
 function createWebEditingArm(options) {
   const evidence = WEB_EDIT_EVIDENCE;
@@ -1238,6 +1256,760 @@ function createInspector(document2, options = {}) {
       root.remove();
     }
   };
+}
+
+// packages/ui/dist/tokens/index.js
+var t = (name, tier, type, description, extra = {}) => ({ name, tier, type, isPublic: true, description, ...extra });
+var PALETTE_STEPS = [
+  "050",
+  "100",
+  "200",
+  "300",
+  "400",
+  "500",
+  "600",
+  "700",
+  "800",
+  "900"
+];
+var PALETTE_HUES = ["neutral", "accent", "ok", "warn", "error", "info"];
+var tier1 = PALETTE_HUES.flatMap(
+  (hue) => PALETTE_STEPS.map((step) => t(`palette.${hue}.${step}`, 1, "color", `${hue} ramp step ${step}`))
+);
+var tier2 = [
+  // surfaces
+  t("color.bg", 2, "color", "window ground behind everything"),
+  t("color.surface", 2, "color", "default component surface"),
+  t("color.raised", 2, "color", "surface above the default plane"),
+  t("color.sunken", 2, "color", "inset surface such as an input well"),
+  t("color.overlay", 2, "color", "floating surface: menu, popover, dialog"),
+  t("color.scrim", 2, "color", "dimming layer behind a modal"),
+  // text
+  t("color.fg", 2, "color", "primary text"),
+  t("color.fg-muted", 2, "color", "secondary text"),
+  t("color.fg-subtle", 2, "color", "tertiary text and placeholders"),
+  t("color.fg-inverse", 2, "color", "text on an accent fill"),
+  t("color.fg-disabled", 2, "color", "disabled text"),
+  t("color.fg-link", 2, "color", "hyperlink text"),
+  t("color.fg-destructive", 2, "color", "destructive action text"),
+  // lines
+  t("color.border", 2, "color", "default separator and component border"),
+  t("color.border-strong", 2, "color", "emphasised border"),
+  t("color.separator", 2, "color", "hairline between list sections"),
+  // interaction
+  t("color.accent", 2, "color", "primary action fill"),
+  t("color.accent-fg", 2, "color", "text on the accent fill"),
+  t("color.accent-muted", 2, "color", "low-emphasis accent wash"),
+  t("color.accent-muted-fg", 2, "color", "text on the accent wash"),
+  t("color.focus", 2, "color", "focus ring"),
+  t("color.hover", 2, "color", "hover wash"),
+  t("color.active", 2, "color", "pressed wash"),
+  t("color.selection", 2, "color", "active selection fill"),
+  t("color.selection-inactive", 2, "color", "selection fill when the surface is unfocused"),
+  t("color.selection-fg", 2, "color", "text on a selection fill"),
+  t("color.match-highlight", 2, "color", "search match highlight"),
+  t("color.drop-target", 2, "color", "drag-and-drop target indicator"),
+  t("color.readonly", 2, "color", "read-only field wash"),
+  // status
+  ...["ok", "warn", "error", "info"].flatMap((s) => [
+    t(`status.${s}`, 2, "color", `${s} indicator colour`),
+    t(`status.${s}-fg`, 2, "color", `text on a ${s} fill`),
+    t(`status.${s}-bg`, 2, "color", `${s} background wash`),
+    t(`status.${s}-border`, 2, "color", `${s} border`)
+  ]),
+  // scrollbars
+  t("color.scrollbar-track", 2, "color", "scrollbar trough"),
+  t("color.scrollbar-thumb", 2, "color", "scrollbar thumb"),
+  t("color.scrollbar-thumb-hover", 2, "color", "scrollbar thumb, hovered"),
+  t("color.scrollbar-thumb-active", 2, "color", "scrollbar thumb while dragging"),
+  t("color.scrollbar-shadow", 2, "color", "hairline separating a scrolled pane from its content"),
+  // canvas / GPU surfaces — these are not UI chrome and need their own roles
+  t("color.canvas-bg", 2, "color", "canvas or WebGL scene ground"),
+  t("color.canvas-grid", 2, "color", "scene grid lines"),
+  t("color.canvas-gizmo", 2, "color", "scene gizmo and axis handles"),
+  // Axis identity is a convention users read at a glance (X red, Y green, Z blue), so the three
+  // get their own roles rather than borrowing from the categorical ramp, which a theme may reorder.
+  t("color.axis-x", 2, "color", "X axis handle and line"),
+  t("color.axis-y", 2, "color", "Y axis handle and line"),
+  t("color.axis-z", 2, "color", "Z axis handle and line"),
+  t("color.canvas-selection", 2, "color", "selected geometry outline"),
+  // graph / chart categorical ramp
+  ...["1", "2", "3", "4", "5", "6"].map(
+    (n) => t(`chart.categorical-${n}`, 2, "color", `categorical series ${n}`)
+  ),
+  t("color.graph-node", 2, "color", "relation-graph node fill"),
+  t("color.graph-edge", 2, "color", "relation-graph edge stroke"),
+  t("color.graph-edge-dead", 2, "color", "unresolved reference edge"),
+  // diff
+  t("color.diff-added", 2, "color", "added line or cell wash"),
+  t("color.diff-removed", 2, "color", "removed line or cell wash"),
+  t("color.diff-changed", 2, "color", "changed line or cell wash"),
+  // space
+  ...["0", "1", "2", "3", "4", "5", "6", "7", "8"].map(
+    (n) => t(`space.${n}`, 2, "length", `spacing step ${n}`)
+  ),
+  // radius
+  ...["none", "sm", "md", "lg", "pill"].map(
+    (r) => t(`radius.${r}`, 2, "length", `corner radius ${r}`)
+  ),
+  // type
+  t("font.sans", 2, "font-family", "UI typeface stack"),
+  t("font.mono", 2, "font-family", "monospace stack for IDs, code, offsets"),
+  ...["xs", "sm", "md", "lg", "xl"].map((s) => t(`font.size-${s}`, 2, "length", `font size ${s}`)),
+  ...["normal", "medium", "bold"].map((w) => t(`font.weight-${w}`, 2, "number", `font weight ${w}`)),
+  ...["tight", "normal", "loose"].map((l) => t(`line.${l}`, 2, "number", `line height ${l}`)),
+  // metrics
+  t("size.row", 2, "length", "list and table row height"),
+  t("size.control", 2, "length", "default control height"),
+  t("size.icon", 2, "length", "default icon box"),
+  t("size.touch", 2, "length", "minimum touch target"),
+  t("size.scrollbar", 2, "length", "scrollbar thickness"),
+  t("size.scrollbar-thin", 2, "length", "scrollbar thickness inside dense panes"),
+  // layering
+  ...["base", "sticky", "dropdown", "overlay", "modal", "toast"].map(
+    (z) => t(`z.${z}`, 2, "z-index", `stacking band: ${z}`)
+  ),
+  // motion
+  ...["fast", "normal", "slow"].map(
+    (d) => t(`motion.${d}`, 2, "duration", `transition duration ${d}`)
+  ),
+  t("motion.ease", 2, "easing", "default easing curve"),
+  // elevation
+  ...["1", "2", "3"].map((e) => t(`elevation.${e}`, 2, "shadow", `elevation level ${e}`)),
+  t("shadow.focus-ring", 2, "shadow", "focus ring shadow")
+];
+var c = (name, component, type, derivesFrom, description) => t(name, 3, type, description, { component, derivesFrom });
+var runtime = (name, component, type, runtimeDefault, description) => t(name, 3, type, description, { component, runtimeDefault });
+var tier3 = [
+  runtime("tree.indent-level", "tree", "number", "0", "nesting depth of the current tree row"),
+  runtime("card.grid-columns", "card", "number", "5", "column count of the current card grid"),
+  // Context-menu placement is per-instance pixel geometry, which C3 routes through tokens.
+  runtime("explorer.menu-x", "explorer", "length", "0px", "context menu left offset"),
+  runtime("explorer.menu-y", "explorer", "length", "0px", "context menu top offset"),
+  c("table.row-height", "table", "length", "size.row", "table row height"),
+  c("table.header-bg", "table", "color", "color.raised", "table header background"),
+  c("table.cell-padding-x", "table", "length", "space.2", "table cell horizontal padding"),
+  c("tree.indent", "tree", "length", "space.4", "tree nesting indent per level"),
+  c("tree.row-height", "tree", "length", "size.row", "tree row height"),
+  c("hex.byte-gap", "hex", "length", "space.1", "gap between hex byte columns"),
+  c("hex.gutter-fg", "hex", "color", "color.fg-subtle", "hex offset gutter text"),
+  c("text.line-height", "text", "number", "line.normal", "text stage line height"),
+  c("shell.rail-width", "shell", "length", "space.8", "default side rail width"),
+  c("shell.splitter-size", "shell", "length", "space.1", "splitter hit area thickness"),
+  c("toolbar.height", "toolbar", "length", "size.control", "toolbar height"),
+  c("panel.padding", "panel", "length", "space.3", "panel content padding"),
+  c("transport.track-height", "transport", "length", "space.2", "transport scrub track height")
+];
+var TOKENS = Object.freeze([...tier1, ...tier2, ...tier3]);
+var TOKENS_BY_NAME = new Map(
+  TOKENS.map((token) => [token.name, token])
+);
+var TOKEN_NAMES = Object.freeze([
+  "palette.neutral.050",
+  "palette.neutral.100",
+  "palette.neutral.200",
+  "palette.neutral.300",
+  "palette.neutral.400",
+  "palette.neutral.500",
+  "palette.neutral.600",
+  "palette.neutral.700",
+  "palette.neutral.800",
+  "palette.neutral.900",
+  "palette.accent.050",
+  "palette.accent.100",
+  "palette.accent.200",
+  "palette.accent.300",
+  "palette.accent.400",
+  "palette.accent.500",
+  "palette.accent.600",
+  "palette.accent.700",
+  "palette.accent.800",
+  "palette.accent.900",
+  "palette.ok.050",
+  "palette.ok.100",
+  "palette.ok.200",
+  "palette.ok.300",
+  "palette.ok.400",
+  "palette.ok.500",
+  "palette.ok.600",
+  "palette.ok.700",
+  "palette.ok.800",
+  "palette.ok.900",
+  "palette.warn.050",
+  "palette.warn.100",
+  "palette.warn.200",
+  "palette.warn.300",
+  "palette.warn.400",
+  "palette.warn.500",
+  "palette.warn.600",
+  "palette.warn.700",
+  "palette.warn.800",
+  "palette.warn.900",
+  "palette.error.050",
+  "palette.error.100",
+  "palette.error.200",
+  "palette.error.300",
+  "palette.error.400",
+  "palette.error.500",
+  "palette.error.600",
+  "palette.error.700",
+  "palette.error.800",
+  "palette.error.900",
+  "palette.info.050",
+  "palette.info.100",
+  "palette.info.200",
+  "palette.info.300",
+  "palette.info.400",
+  "palette.info.500",
+  "palette.info.600",
+  "palette.info.700",
+  "palette.info.800",
+  "palette.info.900",
+  "color.bg",
+  "color.surface",
+  "color.raised",
+  "color.sunken",
+  "color.overlay",
+  "color.scrim",
+  "color.fg",
+  "color.fg-muted",
+  "color.fg-subtle",
+  "color.fg-inverse",
+  "color.fg-disabled",
+  "color.fg-link",
+  "color.fg-destructive",
+  "color.border",
+  "color.border-strong",
+  "color.separator",
+  "color.accent",
+  "color.accent-fg",
+  "color.accent-muted",
+  "color.accent-muted-fg",
+  "color.focus",
+  "color.hover",
+  "color.active",
+  "color.selection",
+  "color.selection-inactive",
+  "color.selection-fg",
+  "color.match-highlight",
+  "color.drop-target",
+  "color.readonly",
+  "status.ok",
+  "status.ok-fg",
+  "status.ok-bg",
+  "status.ok-border",
+  "status.warn",
+  "status.warn-fg",
+  "status.warn-bg",
+  "status.warn-border",
+  "status.error",
+  "status.error-fg",
+  "status.error-bg",
+  "status.error-border",
+  "status.info",
+  "status.info-fg",
+  "status.info-bg",
+  "status.info-border",
+  "color.scrollbar-track",
+  "color.scrollbar-thumb",
+  "color.scrollbar-thumb-hover",
+  "color.scrollbar-thumb-active",
+  "color.scrollbar-shadow",
+  "color.canvas-bg",
+  "color.canvas-grid",
+  "color.canvas-gizmo",
+  "color.axis-x",
+  "color.axis-y",
+  "color.axis-z",
+  "color.canvas-selection",
+  "chart.categorical-1",
+  "chart.categorical-2",
+  "chart.categorical-3",
+  "chart.categorical-4",
+  "chart.categorical-5",
+  "chart.categorical-6",
+  "color.graph-node",
+  "color.graph-edge",
+  "color.graph-edge-dead",
+  "color.diff-added",
+  "color.diff-removed",
+  "color.diff-changed",
+  "space.0",
+  "space.1",
+  "space.2",
+  "space.3",
+  "space.4",
+  "space.5",
+  "space.6",
+  "space.7",
+  "space.8",
+  "radius.none",
+  "radius.sm",
+  "radius.md",
+  "radius.lg",
+  "radius.pill",
+  "font.sans",
+  "font.mono",
+  "font.size-xs",
+  "font.size-sm",
+  "font.size-md",
+  "font.size-lg",
+  "font.size-xl",
+  "font.weight-normal",
+  "font.weight-medium",
+  "font.weight-bold",
+  "line.tight",
+  "line.normal",
+  "line.loose",
+  "size.row",
+  "size.control",
+  "size.icon",
+  "size.touch",
+  "size.scrollbar",
+  "size.scrollbar-thin",
+  "z.base",
+  "z.sticky",
+  "z.dropdown",
+  "z.overlay",
+  "z.modal",
+  "z.toast",
+  "motion.fast",
+  "motion.normal",
+  "motion.slow",
+  "motion.ease",
+  "elevation.1",
+  "elevation.2",
+  "elevation.3",
+  "shadow.focus-ring",
+  "tree.indent-level",
+  "card.grid-columns",
+  "explorer.menu-x",
+  "explorer.menu-y",
+  "table.row-height",
+  "table.header-bg",
+  "table.cell-padding-x",
+  "tree.indent",
+  "tree.row-height",
+  "hex.byte-gap",
+  "hex.gutter-fg",
+  "text.line-height",
+  "shell.rail-width",
+  "shell.splitter-size",
+  "toolbar.height",
+  "panel.padding",
+  "transport.track-height"
+]);
+var RAMPS = {
+  neutral: [
+    "#fafafa",
+    "#f0f0f0",
+    "#e0e0e0",
+    "#c6c6c6",
+    "#9a9a9a",
+    "#6e6e6e",
+    "#4a4a4a",
+    "#333333",
+    "#232323",
+    "#141414"
+  ],
+  accent: [
+    "#e8f2fc",
+    "#c7e0f7",
+    "#9ccaf0",
+    "#6bafe6",
+    "#3b93db",
+    "#0078d4",
+    "#005fb8",
+    "#004a93",
+    "#00376e",
+    "#002649"
+  ],
+  ok: [
+    "#e6f5e9",
+    "#c3e7cb",
+    "#97d5a5",
+    "#6bc27f",
+    "#4fb265",
+    "#2ea043",
+    "#238636",
+    "#1a6b2a",
+    "#13501f",
+    "#0c3514"
+  ],
+  warn: [
+    "#fcf3d8",
+    "#f7e3a6",
+    "#f0cf6e",
+    "#e5ba3c",
+    "#d9a520",
+    "#bf8700",
+    "#9a6d00",
+    "#7a5600",
+    "#5a3f00",
+    "#3b2900"
+  ],
+  error: [
+    "#fde8e8",
+    "#fac7c7",
+    "#f49b9b",
+    "#ec6f6f",
+    "#e14b4b",
+    "#cf2222",
+    "#a81b1b",
+    "#851515",
+    "#620f0f",
+    "#400a0a"
+  ],
+  info: [
+    "#e6f4fb",
+    "#c0e3f5",
+    "#8ecdec",
+    "#5cb6e2",
+    "#33a2d8",
+    "#0f8bc7",
+    "#0b6e9e",
+    "#085576",
+    "#063d54",
+    "#042634"
+  ]
+};
+var STEPS = ["050", "100", "200", "300", "400", "500", "600", "700", "800", "900"];
+function rampValues(overrides = {}) {
+  const out = {};
+  for (const [hue, ramp] of Object.entries({ ...RAMPS, ...overrides })) {
+    ramp.forEach((value, index) => {
+      out[`palette.${hue}.${STEPS[index]}`] = value;
+    });
+  }
+  return out;
+}
+var STRUCTURE = {
+  "space.0": "0",
+  "space.1": "2px",
+  "space.2": "4px",
+  "space.3": "8px",
+  "space.4": "12px",
+  "space.5": "16px",
+  "space.6": "24px",
+  "space.7": "32px",
+  "space.8": "48px",
+  "radius.none": "0",
+  "radius.sm": "2px",
+  "radius.md": "4px",
+  "radius.lg": "8px",
+  "radius.pill": "9999px",
+  "font.sans": "'Segoe UI Variable Text', 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+  "font.mono": "ui-monospace, 'Cascadia Mono', 'JetBrains Mono', Consolas, 'Courier New', monospace",
+  "font.size-xs": "11px",
+  "font.size-sm": "12px",
+  "font.size-md": "13px",
+  "font.size-lg": "15px",
+  "font.size-xl": "19px",
+  "font.weight-normal": "400",
+  "font.weight-medium": "600",
+  "font.weight-bold": "700",
+  "line.tight": "1.2",
+  "line.normal": "1.45",
+  "line.loose": "1.7",
+  "size.row": "22px",
+  "size.control": "26px",
+  "size.icon": "16px",
+  "size.touch": "44px",
+  "size.scrollbar": "10px",
+  "size.scrollbar-thin": "6px",
+  "z.base": "0",
+  "z.sticky": "10",
+  "z.dropdown": "20",
+  "z.overlay": "30",
+  "z.modal": "40",
+  "z.toast": "50",
+  "motion.fast": "80ms",
+  "motion.normal": "140ms",
+  "motion.slow": "240ms",
+  "motion.ease": "cubic-bezier(0.2, 0, 0.13, 1)"
+};
+var CHART_DARK = {
+  "chart.categorical-1": "#4daafc",
+  "chart.categorical-2": "#89d185",
+  "chart.categorical-3": "#e5ba3c",
+  "chart.categorical-4": "#f49b9b",
+  "chart.categorical-5": "#c58af9",
+  "chart.categorical-6": "#4ec9b0"
+};
+var CHART_LIGHT = {
+  "chart.categorical-1": "#005fb8",
+  "chart.categorical-2": "#238636",
+  "chart.categorical-3": "#9a6d00",
+  "chart.categorical-4": "#a81b1b",
+  "chart.categorical-5": "#7a3fb5",
+  "chart.categorical-6": "#0b6e9e"
+};
+var PALETTES = Object.freeze([
+  {
+    id: "modkit-dark",
+    displayName: "Modkit Dark",
+    appearance: "dark",
+    isDefaultFor: "dark",
+    values: Object.freeze({
+      ...rampValues(),
+      ...STRUCTURE,
+      ...CHART_DARK,
+      "color.bg": "#1f1f1f",
+      "color.surface": "#1f1f1f",
+      "color.raised": "#252526",
+      "color.sunken": "#181818",
+      "color.overlay": "#2c2c2d",
+      "color.scrim": "rgba(0, 0, 0, 0.55)",
+      "color.fg": "#cccccc",
+      "color.fg-muted": "#9d9d9d",
+      "color.fg-subtle": "#7a7a7a",
+      "color.fg-inverse": "#ffffff",
+      "color.fg-disabled": "#5a5a5a",
+      "color.fg-link": "#4daafc",
+      "color.fg-destructive": "#f14c4c",
+      "color.border": "#2b2b2b",
+      "color.border-strong": "#3c3c3c",
+      "color.separator": "#2b2b2b",
+      "color.accent": "#0078d4",
+      "color.accent-fg": "#ffffff",
+      "color.accent-muted": "#04395e",
+      "color.accent-muted-fg": "#ffffff",
+      "color.focus": "#0078d4",
+      "color.hover": "#2a2d2e",
+      "color.active": "#37373d",
+      "color.selection": "#04395e",
+      "color.selection-inactive": "#2e2e2e",
+      "color.selection-fg": "#ffffff",
+      "color.match-highlight": "#623315",
+      "color.drop-target": "#0078d4",
+      "color.readonly": "#262626",
+      "status.ok": "#89d185",
+      "status.ok-fg": "#0c3514",
+      "status.ok-bg": "#143620",
+      "status.ok-border": "#2ea043",
+      "status.warn": "#cca700",
+      "status.warn-fg": "#3b2900",
+      "status.warn-bg": "#3a2f00",
+      "status.warn-border": "#bf8700",
+      "status.error": "#f14c4c",
+      "status.error-fg": "#400a0a",
+      "status.error-bg": "#3a1414",
+      "status.error-border": "#cf2222",
+      "status.info": "#3794ff",
+      "status.info-fg": "#042634",
+      "status.info-bg": "#10293d",
+      "status.info-border": "#0f8bc7",
+      "color.scrollbar-track": "rgba(0, 0, 0, 0.16)",
+      "color.scrollbar-thumb": "rgba(121, 121, 121, 0.4)",
+      "color.scrollbar-thumb-hover": "rgba(150, 150, 150, 0.7)",
+      "color.scrollbar-thumb-active": "rgba(180, 180, 180, 0.9)",
+      "color.scrollbar-shadow": "rgba(0, 0, 0, 0.36)",
+      "color.canvas-bg": "#141414",
+      "color.canvas-grid": "#2b2b2b",
+      "color.canvas-gizmo": "#9d9d9d",
+      "color.axis-x": "#ff3366",
+      "color.axis-y": "#33ff88",
+      "color.axis-z": "#3388ff",
+      "color.canvas-selection": "#f5a623",
+      "color.graph-node": "#3c3c3c",
+      "color.graph-edge": "#5a5a5a",
+      "color.graph-edge-dead": "#f14c4c",
+      "color.diff-added": "#1b3a24",
+      "color.diff-removed": "#3a1d1d",
+      "color.diff-changed": "#2e2a17",
+      "elevation.1": "0 1px 2px rgba(0, 0, 0, 0.4)",
+      "elevation.2": "0 2px 8px rgba(0, 0, 0, 0.5)",
+      "elevation.3": "0 8px 24px rgba(0, 0, 0, 0.6)",
+      "shadow.focus-ring": "0 0 0 1px #0078d4"
+    })
+  },
+  {
+    id: "modkit-light",
+    displayName: "Modkit Light",
+    appearance: "light",
+    isDefaultFor: "light",
+    values: Object.freeze({
+      ...rampValues(),
+      ...STRUCTURE,
+      ...CHART_LIGHT,
+      "color.bg": "#ffffff",
+      "color.surface": "#ffffff",
+      "color.raised": "#f8f8f8",
+      "color.sunken": "#f0f0f0",
+      "color.overlay": "#ffffff",
+      "color.scrim": "rgba(0, 0, 0, 0.3)",
+      "color.fg": "#3b3b3b",
+      "color.fg-muted": "#616161",
+      "color.fg-subtle": "#8b8b8b",
+      "color.fg-inverse": "#ffffff",
+      "color.fg-disabled": "#a6a6a6",
+      "color.fg-link": "#005fb8",
+      "color.fg-destructive": "#cf2222",
+      "color.border": "#e0e0e0",
+      "color.border-strong": "#c6c6c6",
+      "color.separator": "#ececec",
+      "color.accent": "#005fb8",
+      "color.accent-fg": "#ffffff",
+      "color.accent-muted": "#cfe4fa",
+      "color.accent-muted-fg": "#0a3d63",
+      "color.focus": "#005fb8",
+      "color.hover": "#e8e8e8",
+      "color.active": "#dcdcdc",
+      "color.selection": "#cfe4fa",
+      "color.selection-inactive": "#e4e6f1",
+      "color.selection-fg": "#1a1a1a",
+      "color.match-highlight": "#fdea9b",
+      "color.drop-target": "#005fb8",
+      "color.readonly": "#f5f5f5",
+      "status.ok": "#238636",
+      "status.ok-fg": "#0c3514",
+      "status.ok-bg": "#e6f5e9",
+      "status.ok-border": "#97d5a5",
+      "status.warn": "#9a6d00",
+      "status.warn-fg": "#3b2900",
+      "status.warn-bg": "#fcf3d8",
+      "status.warn-border": "#f0cf6e",
+      "status.error": "#cf2222",
+      "status.error-fg": "#400a0a",
+      "status.error-bg": "#fde8e8",
+      "status.error-border": "#f49b9b",
+      "status.info": "#0b6e9e",
+      "status.info-fg": "#042634",
+      "status.info-bg": "#e6f4fb",
+      "status.info-border": "#8ecdec",
+      "color.scrollbar-track": "rgba(0, 0, 0, 0.05)",
+      "color.scrollbar-thumb": "rgba(100, 100, 100, 0.4)",
+      "color.scrollbar-thumb-hover": "rgba(80, 80, 80, 0.6)",
+      "color.scrollbar-thumb-active": "rgba(60, 60, 60, 0.8)",
+      "color.scrollbar-shadow": "rgba(0, 0, 0, 0.12)",
+      "color.canvas-bg": "#f4f4f4",
+      "color.canvas-grid": "#e0e0e0",
+      "color.canvas-gizmo": "#616161",
+      "color.axis-x": "#c02047",
+      "color.axis-y": "#1f8f4d",
+      "color.axis-z": "#1f6fd0",
+      "color.canvas-selection": "#c96a00",
+      "color.graph-node": "#e0e0e0",
+      "color.graph-edge": "#9a9a9a",
+      "color.graph-edge-dead": "#cf2222",
+      "color.diff-added": "#e2f6e7",
+      "color.diff-removed": "#fbe6e6",
+      "color.diff-changed": "#fbf3d6",
+      "elevation.1": "0 1px 2px rgba(0, 0, 0, 0.12)",
+      "elevation.2": "0 2px 8px rgba(0, 0, 0, 0.16)",
+      "elevation.3": "0 8px 24px rgba(0, 0, 0, 0.2)",
+      "shadow.focus-ring": "0 0 0 1px #005fb8"
+    })
+  },
+  {
+    id: "modkit-high-contrast",
+    displayName: "Modkit High Contrast",
+    appearance: "dark",
+    values: Object.freeze({
+      ...rampValues({
+        neutral: [
+          "#ffffff",
+          "#ffffff",
+          "#e0e0e0",
+          "#c6c6c6",
+          "#9a9a9a",
+          "#6e6e6e",
+          "#4a4a4a",
+          "#333333",
+          "#1a1a1a",
+          "#000000"
+        ]
+      }),
+      ...STRUCTURE,
+      ...CHART_DARK,
+      "color.bg": "#000000",
+      "color.surface": "#000000",
+      "color.raised": "#0d0d0d",
+      "color.sunken": "#000000",
+      "color.overlay": "#000000",
+      "color.scrim": "rgba(0, 0, 0, 0.8)",
+      "color.fg": "#ffffff",
+      "color.fg-muted": "#ffffff",
+      "color.fg-subtle": "#d6d6d6",
+      "color.fg-inverse": "#000000",
+      "color.fg-disabled": "#a6a6a6",
+      "color.fg-link": "#3794ff",
+      "color.fg-destructive": "#f48771",
+      "color.border": "#6fc3df",
+      "color.border-strong": "#ffffff",
+      "color.separator": "#6fc3df",
+      "color.accent": "#0078d4",
+      "color.accent-fg": "#ffffff",
+      "color.accent-muted": "#000000",
+      "color.accent-muted-fg": "#ffffff",
+      "color.focus": "#f38518",
+      "color.hover": "#0d0d0d",
+      "color.active": "#1a1a1a",
+      "color.selection": "#000000",
+      "color.selection-inactive": "#000000",
+      "color.selection-fg": "#ffffff",
+      "color.match-highlight": "#000000",
+      "color.drop-target": "#f38518",
+      "color.readonly": "#0d0d0d",
+      "status.ok": "#89d185",
+      "status.ok-fg": "#000000",
+      "status.ok-bg": "#000000",
+      "status.ok-border": "#89d185",
+      "status.warn": "#ffd700",
+      "status.warn-fg": "#000000",
+      "status.warn-bg": "#000000",
+      "status.warn-border": "#ffd700",
+      "status.error": "#f48771",
+      "status.error-fg": "#000000",
+      "status.error-bg": "#000000",
+      "status.error-border": "#f48771",
+      "status.info": "#3794ff",
+      "status.info-fg": "#000000",
+      "status.info-bg": "#000000",
+      "status.info-border": "#3794ff",
+      "color.scrollbar-track": "#000000",
+      "color.scrollbar-thumb": "#6fc3df",
+      "color.scrollbar-thumb-hover": "#ffffff",
+      "color.scrollbar-thumb-active": "#f38518",
+      "color.scrollbar-shadow": "#6fc3df",
+      "color.canvas-bg": "#000000",
+      "color.canvas-grid": "#6fc3df",
+      "color.canvas-gizmo": "#ffffff",
+      "color.axis-x": "#ff6b8a",
+      "color.axis-y": "#4dff9e",
+      "color.axis-z": "#6bb6ff",
+      "color.canvas-selection": "#f38518",
+      "color.graph-node": "#000000",
+      "color.graph-edge": "#6fc3df",
+      "color.graph-edge-dead": "#f48771",
+      "color.diff-added": "#000000",
+      "color.diff-removed": "#000000",
+      "color.diff-changed": "#000000",
+      "elevation.1": "0 0 0 1px #6fc3df",
+      "elevation.2": "0 0 0 1px #6fc3df",
+      "elevation.3": "0 0 0 1px #ffffff",
+      "shadow.focus-ring": "0 0 0 2px #f38518"
+    })
+  }
+]);
+var PALETTES_BY_ID = new Map(
+  PALETTES.map((palette) => [palette.id, palette])
+);
+var THEME_ATTRIBUTE = "data-mk-theme";
+var DENSITY_ATTRIBUTE = "data-mk-density";
+function requireElement(value) {
+  if (typeof value !== "object" || value === null || !("style" in value) || typeof value.style !== "object") {
+    throw new TypeError("token target must be a DOM element");
+  }
+  return value;
+}
+function applyTheme(root, theme) {
+  const target = requireElement(root);
+  if (theme === void 0) target.removeAttribute(THEME_ATTRIBUTE);
+  else target.setAttribute(THEME_ATTRIBUTE, theme);
+}
+function applyDensity(root, density) {
+  requireElement(root).setAttribute(DENSITY_ATTRIBUTE, density);
 }
 
 // apps/web/src/settings.ts
