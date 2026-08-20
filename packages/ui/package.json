@@ -109,6 +109,18 @@
     "./settings": {
       "types": "./dist/settings/index.d.ts",
       "default": "./dist/settings/index.js"
+    },
+    "./explorer": {
+      "types": "./dist/explorer/index.d.ts",
+      "default": "./dist/explorer/index.js"
+    },
+    "./hex-editor": {
+      "types": "./dist/hex-editor/index.d.ts",
+      "default": "./dist/hex-editor/index.js"
+    },
+    "./media": {
+      "types": "./dist/media/encoded.d.ts",
+      "default": "./dist/media/encoded.js"
     }
   },
   "files": [
@@ -126,5 +138,6 @@
   "dependencies": {
     "@modkitx-x3/core": "workspace:*",
     "@modkitx-x3/sdk": "workspace:*"
-  }
+  },
+  "sideEffects": false
 }
