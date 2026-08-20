@@ -53,6 +53,7 @@ export const PARTS = Object.freeze([
   'namespace.list',
   'namespace.item',
   'namespace.label',
+  'namespace.detail',
   'namespace.children',
 
   // transport

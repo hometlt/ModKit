@@ -254,7 +254,29 @@ export interface NamespaceEntry {
   readonly path: string
   readonly name: string
   readonly kind: 'file' | 'directory'
+  /** Size of the entry's content once extracted. */
   readonly size?: bigint
+  /**
+   * Size as the container stores it, when that differs from `size`.
+   *
+   * Optional because not every namespace compresses, and absent is not zero: a container that does
+   * not know must not claim a ratio of one.
+   */
+  readonly storedSize?: bigint
+  /**
+   * How the container stores this entry, in the container's own vocabulary (`stored`, `deflate`,
+   * `lzma`…). Free-form on purpose: a fixed enumeration here would either exclude formats this
+   * lab has not met or force every container to lie about which of the listed methods it used.
+   */
+  readonly compression?: string
+  /** Last modification the container records, as epoch milliseconds UTC. */
+  readonly modifiedAt?: number
+  /**
+   * An integrity value the container carries for this entry — the container's own, not one this
+   * host computed. `algorithm` names it (`crc-32`, `sha-256`) so a consumer never has to infer
+   * the algorithm from the length of the value.
+   */
+  readonly checksum?: { readonly algorithm: string; readonly value: string }
   readonly revision: RevisionId
 }
 

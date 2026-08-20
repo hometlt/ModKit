@@ -49,6 +49,49 @@ const CRC_TABLE = (() => {
   return table
 })()
 
+/**
+ * ZIP's method numbers, for the ones a reader can name honestly.
+ *
+ * The contract asks for the container's own vocabulary rather than an enumeration, so an unknown
+ * method is reported as its number instead of being flattened into "unknown" — a user looking at
+ * `method 14` can search for it; a user looking at "unknown" cannot.
+ */
+function compressionName(method) {
+  if (method === 0) return 'stored'
+  if (method === 8) return 'deflate'
+  if (method === 9) return 'deflate64'
+  if (method === 12) return 'bzip2'
+  if (method === 14) return 'lzma'
+  if (method === 93) return 'zstd'
+  if (method === 95) return 'xz'
+  return `method ${method}`
+}
+
+/**
+ * MS-DOS date/time → epoch milliseconds.
+ *
+ * The fields carry no zone, and ZIP's own definition is local time on the machine that wrote the
+ * archive; there is no way to recover which zone that was. Reading it as UTC is the one choice that
+ * is stable everywhere and never silently shifts a listing by the reader's own offset. Seconds have
+ * two-second resolution because the format stores them halved — an entry's stamp is not more
+ * precise than that, and rounding it up would invent precision.
+ *
+ * A zero date field means "not recorded", which is different from 1980-01-01, so it answers
+ * `undefined` rather than a date nobody set.
+ */
+function dosTimestamp(dosDate, dosTime) {
+  if (dosDate === 0) return undefined
+  const year = 1980 + ((dosDate >> 9) & 0x7f)
+  const month = (dosDate >> 5) & 0x0f
+  const day = dosDate & 0x1f
+  const hour = (dosTime >> 11) & 0x1f
+  const minute = (dosTime >> 5) & 0x3f
+  const second = (dosTime & 0x1f) * 2
+  if (month < 1 || month > 12 || day < 1 || day > 31) return undefined
+  if (hour > 23 || minute > 59 || second > 59) return undefined
+  return Date.UTC(year, month - 1, day, hour, minute, second)
+}
+
 function crc32(bytes) {
   let crc = 0xffffffff
   for (let index = 0; index < bytes.byteLength; index += 1) {
@@ -101,6 +144,8 @@ function parseZip(bytes, maxEntries) {
     }
     const flags = u16(bytes, offset + 8)
     const method = u16(bytes, offset + 10)
+    const dosTime = u16(bytes, offset + 12)
+    const dosDate = u16(bytes, offset + 14)
     const crc = u32(bytes, offset + 16)
     const compressedSize = u32(bytes, offset + 20)
     const size = u32(bytes, offset + 24)
@@ -122,6 +167,8 @@ function parseZip(bytes, maxEntries) {
         kind: name.endsWith('/') ? 'directory' : 'file',
         flags,
         method,
+        dosTime,
+        dosDate,
         crc,
         compressedSize,
         size,
@@ -788,7 +835,21 @@ function namespaceSource(entries, source) {
           path: entry.name,
           name: entry.name.replace(/\/$/u, '').split('/').at(-1),
           kind: entry.kind,
-          ...(entry.kind === 'file' ? { size: BigInt(entry.size) } : {}),
+          ...(entry.kind === 'file'
+            ? {
+                size: BigInt(entry.size),
+                storedSize: BigInt(entry.compressedSize),
+                compression: compressionName(entry.method),
+                // the container's own CRC-32, not a digest this codec computed
+                checksum: {
+                  algorithm: 'crc-32',
+                  value: entry.crc.toString(16).padStart(8, '0'),
+                },
+              }
+            : {}),
+          ...(dosTimestamp(entry.dosDate, entry.dosTime) === undefined
+            ? {}
+            : { modifiedAt: dosTimestamp(entry.dosDate, entry.dosTime) }),
           revision: source.revision,
         }),
       )

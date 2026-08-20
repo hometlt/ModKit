@@ -25,6 +25,7 @@ import {
   type AssetEditPlan,
   type FidelityEvidence,
   type JsonValue,
+  type NamespaceEntrySource,
   type PermissionGrant,
 } from '@modkitx-x3/sdk'
 import { createSubjectEditing, type ExtensionInput, type OpenedSubject } from '@modkitx-x3/host'
@@ -383,6 +384,50 @@ async function commitOperation(
 }
 
 describe('A4 — ZIP editing on the 13D seam (ADR-HOST-002 Path A)', () => {
+  it('lists what the container knows about an entry: stored size, method, timestamp and its own CRC', async () => {
+    /*
+     * A namespace listing that carries only a name and a size is not an archive viewer. The ZIP
+     * codec has always parsed the compression method, the compressed size and the CRC-32 out of the
+     * central directory — it simply never published them, so no host could show a column it had no
+     * data for.
+     */
+    const { result } = await openArchive('listing.zip', fixture(), READ)
+    const session = result.session
+    const lease = await session.dataSource('common.view/namespace-entry-source', 1)
+    const namespace = lease.value as NamespaceEntrySource
+    const page = await namespace.list('', { limit: 20 })
+    const byPath = new Map(page.items.map(entry => [entry.path, entry]))
+
+    const stored = byPath.get('readme.txt')
+    const deflated = byPath.get('data/notes.md')
+    const directory = byPath.get('keep/')
+    if (stored === undefined || deflated === undefined || directory === undefined) {
+      throw new Error(`missing entries: ${[...byPath.keys()].join(', ')}`)
+    }
+
+    // a stored entry: the two sizes agree, and saying so is the honest answer, not a missing field
+    expect(stored.compression).toBe('stored')
+    expect(stored.storedSize).toBe(stored.size)
+    // a deflated one really is smaller, which is the fact a ratio column exists to show
+    expect(deflated.compression).toBe('deflate')
+    if (deflated.storedSize === undefined || deflated.size === undefined) throw new Error('sizes')
+    expect(deflated.storedSize).toBeLessThan(deflated.size)
+
+    // the container's own CRC-32, named so a consumer never infers the algorithm from a length
+    expect(stored.checksum?.algorithm).toBe('crc-32')
+    expect(stored.checksum?.value).toMatch(/^[0-9a-f]{8}$/u)
+
+    // MS-DOS date/time carries no zone; it is read as UTC rather than shifted by the reader's own
+    expect(stored.modifiedAt).toBe(Date.UTC(2025, 0, 1, 12, 0, 0))
+
+    // a directory marker has no content to describe, and inventing zeroes for it would be a lie
+    expect(directory.kind).toBe('directory')
+    expect(directory.storedSize).toBeUndefined()
+    expect(directory.checksum).toBeUndefined()
+
+    await lease.release?.()
+  })
+
   it('edit.structure adds and removes entries worker-brokered; kept entries are copied byte for byte and a kept deflated entry still inflates', async () => {
     const original = fixture()
     const { path, result } = await openArchive('structure.zip', original, WRITE)

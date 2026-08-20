@@ -42948,6 +42948,7 @@ var PARTS = Object.freeze([
   "namespace.list",
   "namespace.item",
   "namespace.label",
+  "namespace.detail",
   "namespace.children",
   // transport
   "transport",
@@ -43924,6 +43925,10 @@ var namespaceViewer = defineViewerModule({
           part: "namespace.label"
         });
         button2.type = "button";
+        const detail = describeEntry(entry2);
+        if (detail !== "") {
+          setViewerText(element(item, "span", { part: "namespace.detail" }), detail);
+        }
         const activate = async () => {
           if (entry2.kind === "directory") {
             let nested = item.querySelector(":scope > ul");
@@ -43956,6 +43961,36 @@ var namespaceViewer = defineViewerModule({
     });
   }
 });
+function formatEntryBytes(value2) {
+  if (value2 < 1024n)
+    return `${value2} B`;
+  const units = ["KiB", "MiB", "GiB", "TiB"];
+  let scaled = Number(value2) / 1024;
+  let unit = 0;
+  while (scaled >= 1024 && unit < units.length - 1) {
+    scaled /= 1024;
+    unit += 1;
+  }
+  return `${scaled.toFixed(1)} ${units[unit]}`;
+}
+function describeEntry(entry2) {
+  if (entry2.kind === "directory")
+    return "";
+  const parts = [];
+  if (entry2.size !== void 0)
+    parts.push(formatEntryBytes(entry2.size));
+  if (entry2.compression !== void 0) {
+    parts.push(entry2.storedSize === void 0 ? entry2.compression : `${entry2.compression} ${formatEntryBytes(entry2.storedSize)}`);
+  } else if (entry2.storedSize !== void 0) {
+    parts.push(`stored ${formatEntryBytes(entry2.storedSize)}`);
+  }
+  if (entry2.modifiedAt !== void 0) {
+    parts.push(`${new Date(entry2.modifiedAt).toISOString().replace("T", " ").slice(0, 19)} UTC`);
+  }
+  if (entry2.checksum !== void 0)
+    parts.push(`${entry2.checksum.algorithm} ${entry2.checksum.value}`);
+  return parts.join(" \xB7 ");
+}
 
 // packages/ui/dist/panels/index.js
 function renderDiagnostics(root, descriptor) {
@@ -48230,15 +48265,15 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
   extensions: [
     {
       artifact: {
-        artifactDigest: "sha256:695e0cec1587e349bae679935812c468a23077c68a3f15cea850beb2e0f7f526",
+        artifactDigest: "sha256:4f591f6c093a0bdfcf511dce103a9fead169e32b0407aa20e8e1bcadc275501c",
         fileDigests: {
           "README.md": "sha256:2c8abea7cb674e2a423eb034a51b47053744d502a154578889c541bfb110ea72",
           "contributions/codec-zip.json": "sha256:4601074c28e23bb8ed5e942355618277c0bec91012dba68c18a339c5b326bd41",
           "package.json": "sha256:70196adc05d186774fcce8ebbf05a3b1166b70201583199fb2fc292e55abcbd4",
-          "src/formats/zip/codec.js": "sha256:20238e2ac3607f3cd32cea4ab2823578cb3ba272fe583dd24084c8bcb97e367e",
+          "src/formats/zip/codec.js": "sha256:bca306ffccc0c6ed8f2bd22e8d246d4d5f8b9cfe01c8192bea7ff88605a0105a",
           "src/index.js": "sha256:121004c40bd5560b35a26034c291429f1d103e68698c7e1aaf5cf8456890dc95"
         },
-        inventoryRecordId: "artifact:sha256:695e0cec1587e349bae679935812c468a23077c68a3f15cea850beb2e0f7f526"
+        inventoryRecordId: "artifact:sha256:4f591f6c093a0bdfcf511dce103a9fead169e32b0407aa20e8e1bcadc275501c"
       },
       artifactRoot: "extensions/archives/",
       containers: {

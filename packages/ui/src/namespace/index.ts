@@ -75,6 +75,10 @@ export const namespaceViewer: ViewerModule = defineViewerModule({
           part: 'namespace.label',
         }) as HTMLButtonElement
         button.type = 'button'
+        const detail = describeEntry(entry)
+        if (detail !== '') {
+          setViewerText(element(item, 'span', { part: 'namespace.detail' }), detail)
+        }
         const activate = async () => {
           if (entry.kind === 'directory') {
             let nested = item.querySelector(':scope > ul') as HTMLElement | null
@@ -111,4 +115,47 @@ export const namespaceViewer: ViewerModule = defineViewerModule({
   },
 })
 
-export default namespaceViewer
+export default namespaceViewer/** Bytes as a container listing shows them: exact under 1 KiB, one decimal above. */
+function formatEntryBytes(value: bigint): string {
+  if (value < 1024n) return `${value} B`
+  const units = ['KiB', 'MiB', 'GiB', 'TiB']
+  let scaled = Number(value) / 1024
+  let unit = 0
+  while (scaled >= 1024 && unit < units.length - 1) {
+    scaled /= 1024
+    unit += 1
+  }
+  return `${scaled.toFixed(1)} ${units[unit]}`
+}
+
+/**
+ * What the container knows about one entry, in one line.
+ *
+ * Only what this entry actually carries: a container that records no timestamp or no checksum must
+ * not appear to record a zero one. The compression is shown with the stored size beside it because
+ * neither means much alone — "deflate" without a ratio says nothing about what was saved, and a
+ * stored size without the method looks like a contradiction of the real size.
+ */
+function describeEntry(entry: NamespaceEntry): string {
+  if (entry.kind === 'directory') return ''
+  const parts: string[] = []
+  if (entry.size !== undefined) parts.push(formatEntryBytes(entry.size))
+  if (entry.compression !== undefined) {
+    parts.push(
+      entry.storedSize === undefined
+        ? entry.compression
+        : `${entry.compression} ${formatEntryBytes(entry.storedSize)}`,
+    )
+  } else if (entry.storedSize !== undefined) {
+    parts.push(`stored ${formatEntryBytes(entry.storedSize)}`)
+  }
+  if (entry.modifiedAt !== undefined) {
+    // the container's stamp carries no zone, so it is read and shown as UTC rather than silently
+    // shifted into the reader's own offset
+    parts.push(`${new Date(entry.modifiedAt).toISOString().replace('T', ' ').slice(0, 19)} UTC`)
+  }
+  if (entry.checksum !== undefined) parts.push(`${entry.checksum.algorithm} ${entry.checksum.value}`)
+  return parts.join(' · ')
+}
+
+
