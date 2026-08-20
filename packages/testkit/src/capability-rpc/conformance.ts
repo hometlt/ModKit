@@ -519,12 +519,23 @@ const CASES: readonly ConformanceCase[] = [
       assert(bytes instanceof Uint8Array, 'bytes must arrive as a Uint8Array')
       assertEqual([...bytes], [9, 8, 7], 'bytes content')
       const found: string[] = []
+      /*
+       * Iterated directly, with no `await` on the call. A streaming method is declared to *return*
+       * an `AsyncIterable`, which is what it returns in process, and a viewer writes exactly this.
+       * A proxy that answered with a promise instead broke every such consumer the moment the
+       * source came from another realm — and only there.
+       */
+      const search = asFn<(q: string) => AsyncIterable<string>>(session, 'search')
+      for await (const item of search('a')) found.push(item)
+      assertEqual(found, ['alpha', 'beta', 'gamma'], 'iterable items')
+      // and awaiting first still works: an async iterable is not a thenable
+      const alsoFound: string[] = []
       for await (const item of await asFn<(q: string) => Promise<AsyncIterable<string>>>(
         session,
         'search',
       )('a'))
-        found.push(item)
-      assertEqual(found, ['alpha', 'beta', 'gamma'], 'iterable items')
+        alsoFound.push(item)
+      assertEqual(alsoFound, found, 'awaited iterable items')
       await lease.release()
       const { world, worker } = ctx
       if (world !== undefined)
@@ -660,9 +671,10 @@ const CASES: readonly ConformanceCase[] = [
         Array.from({ length: 64 }, (_, i) => i * 2),
         'call/reply correlation',
       )
-      const events = asFn<() => Promise<AsyncIterable<{ tick: number }>>>(session, 'events')
+      const events = asFn<() => AsyncIterable<{ tick: number }>>(session, 'events')
       const seen: number[] = []
-      for await (const event of await events()) seen.push(event.tick)
+      // direct iteration, the shape a transport bar writes against `TransportSource.events`
+      for await (const event of events()) seen.push(event.tick)
       assertEqual(
         seen,
         Array.from({ length: eventCount }, (_, i) => i),

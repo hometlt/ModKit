@@ -299,6 +299,45 @@ function normalizeProgress(value: unknown): ProgressDto | undefined {
   }
 }
 
+/**
+ * An async iterable whose underlying call is made on first iteration.
+ *
+ * Used for proxied `iterable`/`events` methods so the proxy matches the declared signature: the
+ * contract says the method returns an `AsyncIterable`, and a consumer writes `for await` over the
+ * call. A stream nobody iterates costs nothing — no frame is sent — and closing one that never
+ * started does not start it just to release it.
+ */
+function lazyStream(start: () => Promise<unknown>): AsyncIterable<unknown> {
+  return {
+    [Symbol.asyncIterator](): AsyncIterator<unknown> {
+      let iterator: AsyncIterator<unknown> | undefined
+      const open = async (): Promise<AsyncIterator<unknown>> => {
+        if (iterator === undefined) {
+          const stream = (await start()) as AsyncIterable<unknown>
+          iterator = stream[Symbol.asyncIterator]()
+        }
+        return iterator
+      }
+      return {
+        async next(...args: [] | [undefined]): Promise<IteratorResult<unknown>> {
+          return (await open()).next(...args)
+        },
+        async return(value?: unknown): Promise<IteratorResult<unknown>> {
+          // never opened: there is nothing on the far side to close
+          if (iterator === undefined) return { done: true, value }
+          return (await iterator.return?.(value)) ?? { done: true, value }
+        },
+        async throw(error?: unknown): Promise<IteratorResult<unknown>> {
+          if (iterator === undefined) throw error
+          const thrown = await iterator.throw?.(error)
+          if (thrown === undefined) throw error
+          return thrown
+        },
+      }
+    },
+  }
+}
+
 function isAbortSignal(value: unknown): value is AbortSignal {
   return typeof AbortSignal !== 'undefined' && value instanceof AbortSignal
 }
@@ -495,7 +534,7 @@ class EndpointImpl implements Endpoint {
       // protocol 1.1: an optional method the peer's object does not implement is not defined,
       // so `typeof source.readRegion === 'function'` answers truthfully across the boundary
       if (method.optional === true && present !== undefined && !present.includes(name)) continue
-      object[name] = async (...rawArgs: unknown[]) => {
+      const invoke = async (...rawArgs: unknown[]): Promise<unknown> => {
         const args = [...rawArgs]
         let signal: AbortSignal | undefined
         let onProgress: ((progress: ProgressDto) => void) | undefined
@@ -547,6 +586,22 @@ class EndpointImpl implements Endpoint {
             return outcome.events
         }
       }
+      /*
+       * A streaming method returns the stream, not a promise of one.
+       *
+       * `TransportSource.events(signal?): AsyncIterable<TransportEvent>` — and every other
+       * `iterable`/`events` method — is declared to return something directly iterable, which is
+       * what it does in process. Making the proxy `async` turned that into a `Promise`, and
+       * `for await (const event of source.events(signal))` then failed with "not a function or its
+       * return value is not async iterable": a viewer written against the contract broke the moment
+       * the source came from another realm, and only there. The call is still asynchronous — it is
+       * deferred to the first `next()`, so nothing is sent for a stream nobody iterates, and a
+       * caller who `await`s the method still gets the iterable back (it is not a thenable).
+       */
+      object[name] =
+        method.kind === 'iterable' || method.kind === 'events'
+          ? (...rawArgs: unknown[]) => lazyStream(() => invoke(...rawArgs))
+          : invoke
     }
     if (surface.releaseVia !== undefined) {
       const inner = object[surface.releaseVia] as (...args: unknown[]) => Promise<unknown>
