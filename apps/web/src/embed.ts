@@ -25,18 +25,34 @@
  * *document*, so a cross-origin `src` works whenever the file's own server sends CORS headers, and
  * a failure shows the status line it failed with.
  *
- * **CSP.** Measured against the demo page, which ships the policy it needs and is asserted to raise
- * zero `securitypolicyviolation` events (`apps/web/test/embed.test.ts`):
+ * **CSP.** Measured in Chromium, one directive at a time, against the demo page — which ships this
+ * policy and is asserted to raise zero `securitypolicyviolation` events (`test/embed.test.ts`):
  *
  *   default-src 'none'; script-src 'self' blob:; worker-src 'self' blob:; connect-src 'self';
  *   img-src 'self' blob: data:; media-src 'self' blob:; style-src 'self'; font-src 'self'
  *
- * `script-src blob:` and `worker-src blob:` are the load-bearing pair: verified extension modules
- * are handed to the worker as blob URLs, which is what keeps a codec's bytes measured before they
- * are evaluable. `connect-src` covers this element's own fetches (the file at `src`, the stylesheet,
- * every attested artifact). The stylesheet is adopted as a *constructable* sheet, which is not
- * inline style and needs no `'unsafe-inline'`; the `<style>` fallback below does, which is stated
- * where it happens.
+ * What each part is actually for, and which parts the measurement found load-bearing:
+ *
+ *  - `script-src 'self'` — the entry and its chunks. `worker-src 'self'` — the module worker, whose
+ *    script is a plain same-origin URL.
+ *  - `connect-src 'self'` — every fetch this element makes: the file at `src`, the stylesheet, each
+ *    attested artifact.
+ *  - `img-src 'self' blob: data:` and `media-src 'self' blob:` — what the image, vector and media
+ *    stages hand the platform. Dropping `blob:` from `img-src` was the one removal that *did* bite:
+ *    the stage still mounts and the picture never paints, with `img-src <- blob` refused.
+ *  - `style-src 'self'` — enough, with no `'unsafe-inline'`, because the stylesheet is adopted as a
+ *    *constructable* sheet. The `<style>` fallback below is inline style and would need it, which
+ *    is stated where it happens.
+ *  - `blob:` in `script-src` / `worker-src` — **not exercised** in Chromium. The verified extension
+ *    modules do reach the worker as blob URLs, but a dedicated worker whose script is fetched over
+ *    http(s) does not inherit the document's policy, so those imports are outside the page's CSP
+ *    entirely. Both were removed in turn and nothing was refused. They are kept here because an
+ *    engine that *does* inherit into workers would refuse them, and allowing a blob the page itself
+ *    minted costs nothing.
+ *
+ * The shipped `VIEWER_CSP` from `@modkitx-x3/ui` also works verbatim for an embedding page: the
+ * test serves the same demo under it and asserts zero refusals, so a host that already applies the
+ * viewer policy needs no relaxation to embed one of these.
  *
  * **Styling.** Each element renders into an open shadow root with `modkit-ui.css` adopted inside
  * it, fetched once per asset base. The sheet's `:root` selectors are rewritten to `:host` on the

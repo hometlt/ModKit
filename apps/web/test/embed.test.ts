@@ -21,11 +21,12 @@
  */
 import { execFileSync } from 'node:child_process'
 import { createServer, type Server } from 'node:http'
-import { existsSync, mkdtempSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { extname, join, normalize, resolve, sep } from 'node:path'
 import { chromium, type Browser, type Page } from 'playwright-core'
+import { VIEWER_CSP_TEXT } from '@modkitx-x3/ui'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 const chromeCandidates = [
@@ -131,6 +132,19 @@ beforeAll(async () => {
     cwd: resolve('.'),
     stdio: 'pipe',
   })
+  /*
+   * The same page again, under the policy `packages/ui` publishes for a viewer host. An embedding
+   * page that already applies `VIEWER_CSP` should need no relaxation to embed one of these, and
+   * this is the assertion that keeps that true: change the policy in a way that breaks embedding
+   * and it goes red here, in the app that noticed.
+   */
+  const demo = readFileSync(join(scratch, 'embed-demo.html'), 'utf8')
+  const declared = /content="(default-src[^"]*)"/u.exec(demo)?.[1]
+  if (declared === undefined) throw new Error('the demo page no longer declares a CSP to replace')
+  writeFileSync(
+    join(scratch, 'embed-demo-viewer-csp.html'),
+    demo.replace(declared, VIEWER_CSP_TEXT),
+  )
   pageOrigin = await serve(scratch)
   otherOrigin = await serve(scratch)
   const executablePath = chromeCandidates.find(candidate => existsSync(candidate))
@@ -388,6 +402,39 @@ describe('modkit-viewer on a third-party page', () => {
       return answer
     })
     expect(inline).toEqual({ state: 'ready', activeView: 'table', title: 'inline.csv' })
+  })
+
+  it('works verbatim under the VIEWER_CSP the ui package publishes', async () => {
+    const strict = await browser.newPage()
+    const refused: string[] = []
+    strict.on('pageerror', error => refused.push(`pageerror: ${error.message}`))
+    await strict.addInitScript(() => {
+      const seen: string[] = []
+      Object.defineProperty(globalThis, '__cspRefusals', { configurable: true, value: seen })
+      document.addEventListener('securitypolicyviolation', event => {
+        seen.push(`${event.violatedDirective}:${event.blockedURI || 'inline'}`)
+      })
+    })
+    await strict.goto(`${pageOrigin.origin}/embed-demo-viewer-csp.html`, { waitUntil: 'load' })
+    await strict.waitForFunction(
+      () =>
+        [...document.querySelectorAll('modkit-viewer')].every(node => {
+          const state = node.getAttribute('data-mk-state')
+          return state !== null && state !== 'loading'
+        }),
+      undefined,
+      { timeout: 60_000 },
+    )
+    const answer = await strict.evaluate(() => ({
+      ready: [...document.querySelectorAll('modkit-viewer[src]')]
+        .filter(node => node.getAttribute('data-mk-state') === 'ready')
+        .map(node => node.id),
+      refusals: (globalThis as unknown as { __cspRefusals: string[] }).__cspRefusals,
+    }))
+    await strict.close()
+    expect(answer.refusals).toEqual([])
+    expect(answer.ready).toEqual(['roster-viewer', 'marker-viewer', 'thumb-viewer'])
+    expect(refused).toEqual([])
   })
 
   it('refuses a cross-origin asset base with a reason instead of hanging on it', async () => {

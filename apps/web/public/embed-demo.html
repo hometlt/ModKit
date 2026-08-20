@@ -11,13 +11,17 @@
 
       The policy is the embedding contract, measured rather than guessed (apps/web/test/embed.test.ts
       asserts this page raises no securitypolicyviolation at all):
-        script-src 'self' blob:  the entry, its chunks, and the verified extension modules the
-                                 worker imports as blob URLs
-        worker-src 'self' blob:  the module worker every codec runs in
+        script-src 'self'        the entry and its chunks
+        worker-src 'self'        the module worker every codec runs in
         connect-src 'self'       the files at src=, modkit-ui.css, every attested artifact
-        img-src / media-src      what the image, vector and media stages hand the platform
+        img-src / media-src      what the image, vector and media stages hand the platform; the
+                                 blob: in img-src is the one that is really load-bearing, without
+                                 it the image stage mounts and paints nothing
         style-src 'self'         enough, because the stylesheet is adopted as a constructable
                                  sheet rather than injected as inline CSS
+      The blob: in script-src/worker-src is not exercised in Chromium — a worker fetched over http(s)
+      does not inherit this policy, so the verified extension modules it imports as blob URLs are
+      outside it. Kept because an engine that does inherit would refuse them.
     -->
     <meta
       http-equiv="Content-Security-Policy"
