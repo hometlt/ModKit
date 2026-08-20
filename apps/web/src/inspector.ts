@@ -1,18 +1,23 @@
 /**
- * The workbench panel: what the host knows about the file in front of you.
+ * The workbench panel: what the host knows about the file in front of you, and what it can change.
  *
  * The diagnostics panel and the operation toolbar are not stages — their shipped contribution
  * manifests declare them `kind: 'panel'` and `kind: 'toolbar'`, in the `right-panel` and `toolbar`
  * singleton groups — so this application mounts them in the workbench's panel region rather than
- * forcing them into the centre-stage picker.
+ * forcing them into the centre-stage picker. The Edit panel joins them there for the same reason:
+ * it is chrome beside the file, not a way of looking at it.
  *
  * The toolbar is also the one surface that needs a real `OperationSession`: `createCodecPreview`
  * mounts viewers without one, and rightly so. The shell owns the sessions it opened and hands the
  * live one here.
  *
- * Only non-mutating operations are offered. This host has no editing backend and no save path, and
- * the toolbar invokes with a `null` input, so the three standard read-only operations are exactly
- * what it can honestly run.
+ * **Which operations reach which surface.** The shipped `operationToolbar` invokes with a `null`
+ * input and now skips mutating operations itself. This app's filter is therefore not a second
+ * mutating rule, it is the `null`-input rule: `view.inspect`, `asset.validate` and `export.raw` are
+ * the standard verbs that take no input, and a codec's own operations (`media.seek`, an archive's
+ * `extract-entry`) take one this toolbar does not collect. They are named in the heading rather
+ * than silently dropped. The *mutating* ones are the Edit panel's, which is given the whole
+ * descriptor — filtering what the panel is shown would be this app contradicting itself.
  */
 import type {
   AnyDescriptor,
@@ -26,6 +31,8 @@ import type {
 import { presentationSlotId } from '@modkitx-x3/sdk'
 import { diagnosticsPanel, element, operationToolbar, setViewerText } from '@modkitx-x3/ui'
 
+import { declaredMutatingOperations, editOffer } from './edit-operations.js'
+
 /** The standard non-mutating operations, which take no input and change nothing. */
 export const NON_MUTATING_OPERATION_IDS: readonly string[] = Object.freeze([
   'view.inspect',
@@ -33,17 +40,35 @@ export const NON_MUTATING_OPERATION_IDS: readonly string[] = Object.freeze([
   'export.raw',
 ])
 
+/** True for an operation the shipped toolbar can honestly drive with the `null` input it sends. */
+const drivableWithNullInput = (operation: AssetOperationDescriptor): boolean =>
+  !operation.mutatesSource && NON_MUTATING_OPERATION_IDS.includes(operation.id)
+
 /**
- * The same descriptor with only the operations this host will offer.
+ * The same descriptor with only the operations this host will offer in the toolbar.
  *
  * Filtering the descriptor rather than the buttons is what keeps the toolbar honest: it renders
- * exactly what it is given, so a mutating operation is never drawn and then refused on click.
+ * exactly what it is given, so an operation whose input this app does not collect is never drawn
+ * and then refused on click.
  */
 export function nonMutatingDescriptor(descriptor: AnyDescriptor): AnyDescriptor {
-  const operations: readonly AssetOperationDescriptor[] = descriptor.operations.filter(
-    operation => !operation.mutatesSource && NON_MUTATING_OPERATION_IDS.includes(operation.id),
-  )
+  const operations: readonly AssetOperationDescriptor[] =
+    descriptor.operations.filter(drivableWithNullInput)
   return { ...descriptor, operations }
+}
+
+/**
+ * Non-mutating operations the toolbar was not given, because they take an input.
+ *
+ * Named rather than hidden: "this codec has an operation you cannot reach from here" is
+ * information, and a count of buttons that silently disagrees with the descriptor is not.
+ */
+export function declinedNonMutatingOperations(
+  descriptor: AnyDescriptor,
+): readonly AssetOperationDescriptor[] {
+  return descriptor.operations.filter(
+    operation => !operation.mutatesSource && !drivableWithNullInput(operation),
+  )
 }
 
 /** Neither panel consumes a data source; this makes the fact explicit instead of passing a stub. */
@@ -71,6 +96,22 @@ export interface InspectorTarget {
   readonly label: string
   readonly descriptor: AnyDescriptor
   readonly operations: OperationSession
+  /**
+   * Whether this page holds an editing surface for the subject — `describeEditability` said yes
+   * *and* the arm produced one. The Edit panel is offered on this plus a form for at least one of
+   * the subject's mutating operations, and on nothing else.
+   */
+  readonly editable: boolean
+  /** Why the subject is or is not editable here, in the words the host rail already shows. */
+  readonly editNote?: string
+}
+
+export interface InspectorOptions {
+  /**
+   * The Edit panel module, mounted only for a subject this host can honestly offer one for.
+   * Absent means this build ships no mutating surface at all, which is a decision for the shell.
+   */
+  readonly editPanel?: ViewerModule
 }
 
 export interface Inspector {
@@ -80,15 +121,20 @@ export interface Inspector {
   destroy(): Promise<void>
 }
 
-export function createInspector(document: Document): Inspector {
+export function createInspector(document: Document, options: InspectorOptions = {}): Inspector {
   const root = document.createElement('div')
   root.className = 'web-inspector'
 
   const heading = element(root, 'div', { part: 'viewer.status' })
+  // A bare container: each line inside is its own `form.description`, and a part wrapping parts of
+  // the same name would be a styling hook a theme cannot tell apart.
+  const declined = element(root, 'div')
   const toolbarHost = element(root, 'div', { part: 'viewer.toolbar' })
+  const editHost = document.createElement('div')
+  editHost.className = 'web-inspector-edit'
   const diagnosticsHost = document.createElement('div')
   diagnosticsHost.className = 'web-inspector-diagnostics'
-  root.append(diagnosticsHost)
+  root.append(editHost, diagnosticsHost)
 
   let mounted: ViewerMount[] = []
 
@@ -96,7 +142,9 @@ export function createInspector(document: Document): Inspector {
     for (const mount of mounted.reverse()) await mount.unmount()
     mounted = []
     toolbarHost.replaceChildren()
+    editHost.replaceChildren()
     diagnosticsHost.replaceChildren()
+    declined.replaceChildren()
   }
 
   const mount = async (
@@ -117,6 +165,32 @@ export function createInspector(document: Document): Inspector {
     )
   }
 
+  /** One sentence per operation this panel declines to offer, and why. */
+  const drawDeclined = (target: InspectorTarget): void => {
+    const lines: string[] = []
+    const needInput = declinedNonMutatingOperations(target.descriptor)
+    if (needInput.length > 0) {
+      lines.push(
+        `${needInput.map(operation => operation.id).join(', ')}: not in the toolbar — they take ` +
+          'an input it does not collect, so a stage or a panel drives them instead.',
+      )
+    }
+    const mutating = declaredMutatingOperations(target.descriptor)
+    if (mutating.length > 0 && !target.editable) {
+      lines.push(
+        `${mutating.map(operation => operation.id).join(', ')}: no Edit panel — ` +
+          (target.editNote ?? 'this page holds no writable handle for the file.'),
+      )
+    }
+    const offer = editOffer(target.descriptor, { editable: target.editable })
+    if (offer.forms.length === 0) {
+      for (const item of offer.unsupported) {
+        lines.push(`${item.operationId}: no form here — ${item.reason}.`)
+      }
+    }
+    for (const line of lines) element(declined, 'p', { part: 'form.description', text: line })
+  }
+
   return {
     root,
 
@@ -127,11 +201,15 @@ export function createInspector(document: Document): Inspector {
         return
       }
       const offered = nonMutatingDescriptor(target.descriptor)
+      const offer = editOffer(target.descriptor, { editable: target.editable })
       setViewerText(
         heading,
         `${target.label} · ${offered.operations.length} non-mutating operation(s) · ` +
+          `${offer.forms.length} edit form(s) over ` +
+          `${declaredMutatingOperations(target.descriptor).length} mutating operation(s) · ` +
           `${target.descriptor.diagnostics.length} diagnostic(s)`,
       )
+      drawDeclined(target)
       await mount(
         operationToolbar,
         toolbarHost,
@@ -139,6 +217,20 @@ export function createInspector(document: Document): Inspector {
         target,
         offered,
       )
+      /*
+       * The offer rule, applied once, here: editable *and* at least one mutating operation this app
+       * has a form for. The panel checks it again from its own ports — a panel that trusted its
+       * host to have checked would be a panel that draws a form when the host is wrong.
+       */
+      if (options.editPanel !== undefined && offer.forms.length > 0) {
+        await mount(
+          options.editPanel,
+          editHost,
+          panelSlot('edit', 'panel'),
+          target,
+          target.descriptor,
+        )
+      }
       await mount(
         diagnosticsPanel,
         diagnosticsHost,

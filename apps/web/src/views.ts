@@ -484,5 +484,6 @@ export const EDITABLE_STAGE_IDS = Object.freeze(['text-editor', 'hex-editor'])
  */
 export const WEB_EDITING_NOTICE =
   'Editing: a file opened through the file or folder picker has a writable handle, so it gets the ' +
-  'text and hex editors and saves in place once you allow write access. A file that arrived by ' +
-  'drop, by a plain file input or by a same-origin fetch has no handle and stays view-only.'
+  'text and hex editors, an Edit panel for the change operations its codec declares, and saves ' +
+  'in place once you allow write access. A file that arrived by drop, by a plain file input or ' +
+  'by a same-origin fetch has no handle and stays view-only.'

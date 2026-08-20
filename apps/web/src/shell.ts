@@ -16,6 +16,10 @@
  * editing backend, the raw writer and the commit coordinator; this file holds what only a session
  * can know — which entry has a writable handle, which revision each tab pinned, and which grant a
  * subject was opened under — and hands `editorPorts` to the previewer for exactly those subjects.
+ * The same surface carries ADR-HOST-002 Path A: `./edit-panel.js` invokes a codec's mutating
+ * operation and hands the plan back through it, and this file owns the one thing a panel cannot
+ * know — which tab a descriptor belongs to, so a committed change can close and reopen it at the
+ * revision the write just created.
  *
  * Two deliberate departures from the shipped explorer's own affordances: the single preview pane is
  * replaced by the editor area (tabs and split groups), so this file owns "open a file" and "accept a
@@ -28,7 +32,6 @@ import {
   type OperationSession,
   type PermissionGrant,
 } from '@modkitx-x3/sdk'
-import type { OpenedSubject } from '@modkitx-x3/host'
 import type {
   BrowserBlobConstructorLike,
   BrowserMessageChannelConstructorLike,
@@ -73,7 +76,9 @@ import {
   sourceRevisionToken,
   sourceUriFor,
   type EditabilityReport,
+  type WebSubjectEditor,
 } from './editing.js'
+import { createEditPanel } from './edit-panel.js'
 import { createInspector, type Inspector, type InspectorTarget } from './inspector.js'
 import {
   applyAppearance,
@@ -304,7 +309,77 @@ async function boot(): Promise<void> {
   const operationSessions = new Map<string, OperationSession>()
   /** What the panel should show for each open tab, so switching tabs re-targets it. */
   const inspected = new Map<string, InspectorTarget>()
-  const inspector: Inspector = createInspector(document)
+  /** The entry id behind a mounted descriptor, so a panel holding only one finds its tab. */
+  const entryOfDescriptor = new Map<string, string>()
+  /** The entry each open tab was opened from, so a committed edit can reopen the same tab. */
+  const openedEntries = new Map<string, ExplorerEntry>()
+  /**
+   * What the last applied mutating operation did, per file.
+   *
+   * Applying one reopens the tab, which remounts the panel that reported it — so the panel would
+   * come back with no memory of the change the user just made. The shell keeps the sentence and
+   * hands it back on the next mount. It deliberately outlives the tab's dispose.
+   */
+  const editOutcomes = new Map<string, string>()
+  /** The editing surface behind each open tab: the stages' ports and Path A's plan gate. */
+  const subjectEditors = new Map<string, WebSubjectEditor>()
+  const entryIdOf = (descriptor: AnyDescriptor): string | undefined =>
+    entryOfDescriptor.get(descriptorKey(descriptor))
+
+  /**
+   * Close and reopen the tab on `entryId`, so its stages read the bytes the file holds now.
+   *
+   * A committed edit moves the subject's revision; the open session is pinned to the old one and
+   * every stage in the tab is showing it. This host has no refresh-in-place, so it does the honest
+   * thing and reopens — through the tab's own close control and `editors.open`, the two things a
+   * user would do, which also releases the subject's editing surface and composes a fresh one at
+   * the new revision.
+   */
+  const tabsOn = (entryId: string): readonly HTMLElement[] =>
+    [...editors.root.querySelectorAll('[data-mk-part="explorer.filetab"]')].filter(
+      (node): node is HTMLElement => node instanceof HTMLElement && node.title === entryId,
+    )
+
+  const reopenEntry = async (entryId: string): Promise<boolean> => {
+    // Read before closing: the tab's dispose forgets the entry it was opened from.
+    const entry = openedEntries.get(entryId)
+    if (entry === undefined) return false
+    for (const tab of tabsOn(entryId)) {
+      const close = tab.querySelector('[data-mk-part="explorer.filetab-close"]')
+      if (close instanceof HTMLElement) close.click()
+    }
+    // `closeTab` unmounts the stage and disposes the session asynchronously; opening before it has
+    // finished would find the old tab and only focus it.
+    for (let attempt = 0; attempt < 100 && tabsOn(entryId).length > 0; attempt += 1) {
+      await new Promise(resolve => setTimeout(resolve, 50))
+    }
+    if (tabsOn(entryId).length > 0) return false
+    await editors.open(entry)
+    return true
+  }
+
+  const editPanel = createEditPanel({
+    portsFor: descriptor => {
+      const entryId = entryIdOf(descriptor)
+      return entryId === undefined ? undefined : subjectEditors.get(entryId)
+    },
+    reopen: async descriptor => {
+      const entryId = entryIdOf(descriptor)
+      return entryId === undefined ? false : reopenEntry(entryId)
+    },
+    lastOutcome: descriptor => editOutcomes.get(descriptor.subjectUri),
+    recordOutcome: (descriptor, outcome) => {
+      editOutcomes.set(descriptor.subjectUri, outcome)
+    },
+    // The panel is chrome beside the tab, so its result belongs on the same status line and in the
+    // same host-rail sentence every other editing surface in this app reports to.
+    onStatus: status => {
+      say(status.message)
+      noteEditing(status.message)
+    },
+  })
+
+  const inspector: Inspector = createInspector(document, { editPanel })
   workbench.setPanel(inspector.root)
   let inspecting: string | undefined
   const inspect = (entryId: string | undefined): void => {
@@ -325,11 +400,6 @@ async function boot(): Promise<void> {
   const pinnedRevisions = new Map<string, string>()
   /** Writable handles by source id — exactly what the editing backend resolves a write through. */
   const writableHandles = new Map<string, WebWritableFileHandleLike>()
-  /** The opened subject behind each tab, so an editable stage can be given ports for it. */
-  const openedSubjects = new Map<
-    string,
-    { readonly opened: OpenedSubject; readonly grant: PermissionGrant }
-  >()
   /** Why each open tab does or does not get the editors, decided before its stages are chosen. */
   const editability = new Map<string, EditabilityReport>()
 
@@ -436,8 +506,32 @@ async function boot(): Promise<void> {
       const key = descriptorKey(result.descriptor)
       const operations = session.operations()
       operationSessions.set(key, operations)
-      inspected.set(entry.id, { label: entry.name, descriptor: result.descriptor, operations })
-      openedSubjects.set(entry.id, { opened: result, grant })
+      openedEntries.set(entry.id, entry)
+      entryOfDescriptor.set(key, entry.id)
+      /*
+       * One editing surface per opened subject, composed here rather than per stage mount: the
+       * tab's editors (Path B) and its Edit panel (Path A) then share a single grant snapshot and
+       * a single commit coordinator. A subject this page will not write gets none, and with it no
+       * editable stage and no Edit panel — the same fact, said once.
+       */
+      if (writable) {
+        const editor = editing.editorFor({
+          entryId: entry.id,
+          name: entry.name,
+          opened: result,
+          grant,
+          bytes,
+        })
+        if (editor !== undefined) subjectEditors.set(entry.id, editor)
+      }
+      const decision = editability.get(entry.id)
+      inspected.set(entry.id, {
+        label: entry.name,
+        descriptor: result.descriptor,
+        operations,
+        editable: subjectEditors.has(entry.id),
+        ...(decision === undefined ? {} : { editNote: decision.sentence }),
+      })
       inspecting = undefined
       inspect(entry.id)
       return {
@@ -445,8 +539,10 @@ async function boot(): Promise<void> {
         dataSource: (contract: string, major: number) => session.dataSource(contract, major),
         async dispose() {
           operationSessions.delete(key)
+          entryOfDescriptor.delete(key)
           inspected.delete(entry.id)
-          openedSubjects.delete(entry.id)
+          openedEntries.delete(entry.id)
+          subjectEditors.delete(entry.id)
           writableHandles.delete(sourceUriFor(entry.id))
           if (inspecting === entry.id) inspect(undefined)
           await session.dispose()
@@ -463,17 +559,12 @@ async function boot(): Promise<void> {
    */
   const codecPreview = createCodecPreview({
     ...previewBase,
-    editorPorts(entry, bytes) {
-      const record = openedSubjects.get(entry.id)
-      if (record === undefined || editability.get(entry.id)?.editable !== true) return undefined
-      return editing.portsFor({
-        entryId: entry.id,
-        name: entry.name,
-        opened: record.opened,
-        grant: record.grant,
-        bytes,
-      })
-    },
+    /*
+     * `openSession` above ran first and composed the subject's editing surface (or refused to);
+     * this only hands out the half a stage needs. Asking the arm again here would compose a second
+     * coordinator over the same file, and the tab's two edit paths would hold two grant snapshots.
+     */
+    editorPorts: entry => subjectEditors.get(entry.id)?.ports,
   })
 
   const preview: PreviewResolver = {
