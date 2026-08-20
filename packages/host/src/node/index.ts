@@ -57,3 +57,4 @@ export {
   type WorkerBackendPolicyInput,
   type WorkerResourceLimits,
 } from '../execution/worker-policy.js'
+export { createModkit, type Modkit, type ModkitOpened, type ModkitOptions } from './modkit.js'
