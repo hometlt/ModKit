@@ -20,6 +20,51 @@
       "note": "JFIF segment chain; v1 fidelity is header inspection, no pixel decoding"
     },
     {
+      "extension": "mk2/common-images",
+      "contributionId": "org.modkitx/avif",
+      "corpus": "synthetic",
+      "sample": "minimal.avif",
+      "minimumConfidence": 0.9,
+      "dataSource": "tree",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "ISO BMFF ftyp with AVIF brand and bounded ispe/pixi property boxes; metadata-only because no AV1 decoder is claimed"
+    },
+    {
+      "extension": "mk2/common-images",
+      "contributionId": "org.modkitx/astc",
+      "corpus": "synthetic",
+      "sample": "minimal.astc",
+      "minimumConfidence": 0.9,
+      "dataSource": "tree",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "ARM ASTC standalone header and one 4x4 LDR void-extent block; metadata-only without a decoder"
+    },
+    {
+      "extension": "mk2/common-images",
+      "contributionId": "org.modkitx/basis",
+      "corpus": "real",
+      "sample": "packages/image-processing/test/fixtures/basisu/basis_kodim20_etc1s.basis",
+      "minimumConfidence": 0.9,
+      "dataSource": "tree",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "Real BasisU ETC1S fixture from the read-only MK2 checkout; header and every declared slice range are validated"
+    },
+    {
+      "extension": "mk2/common-images",
+      "contributionId": "org.modkitx/exr",
+      "corpus": "synthetic",
+      "sample": "minimal.exr",
+      "minimumConfidence": 0.9,
+      "dataSource": "raster",
+      "expectedFirstPixelRgba": [255, 128, 64, 255],
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "OpenEXR v2 required attributes, scanline offset table and one uncompressed RGBA float pixel; acceptance reads RGBA8"
+    },
+    {
       "extension": "mk2/common-audio",
       "contributionId": "org.modkitx/mp3",
       "corpus": "real",

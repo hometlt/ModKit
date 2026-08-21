@@ -21,7 +21,7 @@
     }
   ],
   "limitations": [
-    "The codec inspects ISO BMFF brands and selected image properties but does not decode AV1 pixels; browser-native AVIF display is a host integration rather than a codec runtime operation.",
+    "The codec validates ISO BMFF boxes, AVIF brands and selected image properties but deliberately publishes no raster source because AV1 pixels are not decoded.",
     "Animated AVIF sequence timing, frame selection, item-property association, and write support are not implemented.",
     "Manifest v1 cannot express the legacy extension-or-signature fallback without turning it into a conjunction; generated routing intentionally uses the extensions while the handwritten compatibility registry retains global structural sniffing."
   ],
@@ -31,7 +31,10 @@
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
-    "match": { "extensions": ["avif", "avifs"] },
+    "match": {
+      "extensions": ["avif", "avifs"],
+      "signatures": [{ "from": "start", "offset": 4, "bytesHex": "66747970" }]
+    },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {
@@ -43,7 +46,6 @@
       }
     ],
     "publishesDataSources": [
-      { "contract": "common.view/raster-image-source", "major": 1 },
       { "contract": "common.view/tree-data-source", "major": 1 },
       { "contract": "common.view/byte-range-source", "major": 1 }
     ],

@@ -283,6 +283,15 @@ const WILDCARD_GLOB = '**/*'
  * a rule that cannot be pointed at a paragraph does not belong here.
  */
 const PORT_SIGNATURES = {
+  'org.modkitx/avif': {
+    source:
+      'ISO/IEC 14496-12 §4.3 (FileTypeBox: the "ftyp" box type at byte 4); the codec probe then requires an AVIF brand',
+    signatures: [{ from: 'start', offset: 4, bytesHex: '66747970' }],
+  },
+  'org.modkitx/basis': {
+    source: 'Basis Universal container specification (file signature "sB" at byte zero)',
+    signatures: [{ from: 'start', offset: 0, bytesHex: '7342' }],
+  },
   'org.modkitx/m3': {
     source:
       'Blizzard M3 container header: reversed little-endian MD33 / MD34 tags at byte zero (M3_FILE_FORMAT_SPECIFICATION, header and index table)',

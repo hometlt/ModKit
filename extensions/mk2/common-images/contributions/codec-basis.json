@@ -21,9 +21,8 @@
     }
   ],
   "limitations": [
-    "Decode transcodes ETC1S or UASTC payloads to RGBA8 through the bundled BasisU WASM module and supports codec-level image and mip selection; image.compressed.read requires an explicit renderer/device-selected target and preserves every selected image mip as GPU blocks.",
-    "Browser main-thread and module-worker transcode use a generated ESM wrapper over the codec-owned BasisU glue and an explicit host-deployed asset URL.",
-    "HDR transcode, write support, and complete host selection for video, arrays, cubemaps, and volumes are not implemented.",
+    "The dependency-free MK3 port validates the Basis Universal header and slice table but deliberately publishes no raster source without a BasisU transcoder.",
+    "ETC1S/UASTC transcode, GPU block selection, HDR output, write support, video, arrays, cubemaps and volumes remain follow-up work.",
     "Manifest v1 cannot express the legacy extension-or-signature fallback without turning it into a conjunction; generated routing intentionally uses the extension while the handwritten compatibility registry retains global structural sniffing."
   ],
   "spec": {
@@ -32,7 +31,10 @@
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
-    "match": { "extensions": ["basis"] },
+    "match": {
+      "extensions": ["basis"],
+      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "7342" }]
+    },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {
@@ -44,7 +46,6 @@
       }
     ],
     "publishesDataSources": [
-      { "contract": "common.view/raster-image-source", "major": 1 },
       { "contract": "common.view/tree-data-source", "major": 1 },
       { "contract": "common.view/byte-range-source", "major": 1 }
     ],

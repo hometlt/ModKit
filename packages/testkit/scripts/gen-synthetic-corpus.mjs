@@ -53,12 +53,21 @@ const bytes = (...values) => Uint8Array.from(values.flat())
 const ascii = text => Uint8Array.from([...text].map(character => character.charCodeAt(0) & 0xff))
 
 const u16le = value => bytes(value & 0xff, (value >>> 8) & 0xff)
+const u24le = value => bytes(value & 0xff, (value >>> 8) & 0xff, (value >>> 16) & 0xff)
 const u32le = value =>
   bytes(value & 0xff, (value >>> 8) & 0xff, (value >>> 16) & 0xff, (value >>> 24) & 0xff)
 const u16be = value => bytes((value >>> 8) & 0xff, value & 0xff)
 const u24be = value => bytes((value >>> 16) & 0xff, (value >>> 8) & 0xff, value & 0xff)
 const u32be = value =>
   bytes((value >>> 24) & 0xff, (value >>> 16) & 0xff, (value >>> 8) & 0xff, value & 0xff)
+
+const u64le = value => concat(u32le(Number(value & 0xffffffffn)), u32le(Number(value >> 32n)))
+
+function f32le(value) {
+  const result = new Uint8Array(4)
+  new DataView(result.buffer).setFloat32(0, value, true)
+  return result
+}
 
 function concat(...parts) {
   const flat = parts.flat()
@@ -179,6 +188,92 @@ function wav() {
   const data = concat(ascii('data'), u32le(4), bytes(0x80, 0xa0, 0x60, 0x80))
   const body = concat(ascii('WAVE'), format, data)
   return concat(ascii('RIFF'), u32le(body.byteLength), body)
+}
+
+/**
+ * ISO/IEC 14496-12 boxes plus AVIF ImageSpatialExtents/PixelInformation properties. This is a
+ * structural inspection fixture: the port explicitly does not claim an AV1 pixel payload.
+ */
+function avif() {
+  const box = (type, ...payload) => {
+    const body = concat(...payload)
+    return concat(u32be(body.byteLength + 8), ascii(type), body)
+  }
+  const ispe = box('ispe', bytes(0, 0, 0, 0), u32be(2), u32be(1))
+  const pixi = box('pixi', bytes(0, 0, 0, 0), bytes(3, 8, 8, 8))
+  return concat(
+    box('ftyp', ascii('avif'), u32be(0), ascii('avif'), ascii('mif1')),
+    box('meta', bytes(0, 0, 0, 0), box('iprp', box('ipco', ispe, pixi))),
+    box('mdat'),
+  )
+}
+
+/**
+ * ARM ASTC container: one 4×4×1 image and one 16-byte LDR void-extent block. The standalone
+ * header stores dimensions and block size but deliberately carries no colour-space profile.
+ */
+function astc() {
+  return concat(
+    bytes(0x13, 0xab, 0xa1, 0x5c),
+    bytes(4, 4, 1),
+    u24le(4),
+    u24le(4),
+    u24le(1),
+    bytes(
+      0xfc,
+      0xfd,
+      0xff,
+      0xff,
+      0xff,
+      0xff,
+      0xff,
+      0xff,
+      0x00,
+      0x00,
+      0x00,
+      0x00,
+      0xff,
+      0xff,
+      0xff,
+      0xff,
+    ),
+  )
+}
+
+/**
+ * OpenEXR v2 scanline file with the required header attributes, one RGBA float pixel, an offset
+ * table and one uncompressed scanline chunk. Values are R=1, G=0.5, B=0.25, A=1.
+ */
+function exr() {
+  const attribute = (name, type, data) =>
+    concat(ascii(name), bytes(0), ascii(type), bytes(0), u32le(data.byteLength), data)
+  const channel = name =>
+    concat(
+      ascii(name),
+      bytes(0),
+      u32le(2), // FLOAT
+      bytes(0, 0, 0, 0), // pLinear + reserved
+      u32le(1),
+      u32le(1),
+    )
+  const channels = concat(channel('R'), channel('G'), channel('B'), channel('A'), bytes(0))
+  const window = concat(u32le(0), u32le(0), u32le(0), u32le(0))
+  const header = concat(
+    bytes(0x76, 0x2f, 0x31, 0x01),
+    u32le(2),
+    attribute('channels', 'chlist', channels),
+    attribute('compression', 'compression', bytes(0)),
+    attribute('dataWindow', 'box2i', window),
+    attribute('displayWindow', 'box2i', window),
+    attribute('lineOrder', 'lineOrder', bytes(0)),
+    attribute('pixelAspectRatio', 'float', f32le(1)),
+    attribute('screenWindowCenter', 'v2f', concat(f32le(0), f32le(0))),
+    attribute('screenWindowWidth', 'float', f32le(1)),
+    bytes(0),
+  )
+  const pixels = concat(f32le(1), f32le(0.5), f32le(0.25), f32le(1))
+  const chunkOffset = BigInt(header.byteLength + 8)
+  return concat(header, u64le(chunkOffset), u32le(0), u32le(pixels.byteLength), pixels)
 }
 
 /**
@@ -718,8 +813,11 @@ function mp3() {
 
 /** Every fixture: file name → builder. The name is what the acceptance corpus refers to. */
 const FIXTURES = {
+  'minimal.astc': astc,
+  'minimal.avif': avif,
   'minimal.big': big,
   'minimal.dds': dds,
+  'minimal.exr': exr,
   'minimal.wav': wav,
   'minimal.bmp': bmp,
   'minimal.gif': gif,

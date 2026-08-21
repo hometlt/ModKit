@@ -65,6 +65,8 @@ export interface Mk2CorpusEntry {
   readonly minimumConfidence: number
   /** Data source contract that must answer its first request. */
   readonly dataSource: 'tree' | 'table' | 'byte-range' | 'model' | 'namespace' | 'raster'
+  /** Optional exact RGBA8 oracle for a raster case's first decoded pixel. */
+  readonly expectedFirstPixelRgba?: readonly [number, number, number, number]
   /**
    * What the host is told the subject is called. `path` passes the corpus-relative path, the way
    * a product opens a file inside a mount. `basename` passes the bare file name, which is what a
@@ -436,6 +438,14 @@ export async function runMk2AcceptanceCase(
         maxBytes: 4,
       })
       if (region.pixels.byteLength !== 4) return fail(`${contract} returned no RGBA pixel`)
+      if (
+        entry.expectedFirstPixelRgba !== undefined &&
+        !entry.expectedFirstPixelRgba.every((value, index) => region.pixels[index] === value)
+      ) {
+        return fail(
+          `${contract} first pixel was ${[...region.pixels].join(',')}, expected ${entry.expectedFirstPixelRgba.join(',')}`,
+        )
+      }
     } else {
       const table = lease.value as unknown as { columns(): Promise<readonly unknown[]> }
       const columns = await table.columns()
