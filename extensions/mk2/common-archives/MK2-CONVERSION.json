@@ -197,7 +197,7 @@
       ],
       "droppedOperations": ["archive.extract", "archive.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/tar": {
       "verdict": "needs-new-contract",
@@ -231,7 +231,7 @@
       ],
       "droppedOperations": ["archive.extract", "archive.inspect", "archive.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/zip": {
       "verdict": "needs-new-contract",
@@ -263,7 +263,7 @@
       ],
       "droppedOperations": ["archive.extract", "archive.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     }
   }
 }

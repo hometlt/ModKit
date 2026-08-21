@@ -21,9 +21,8 @@
     }
   ],
   "limitations": [
-    "Extraction requires a host-injected 7-Zip WASM module; this codec does not fetch or install that runtime.",
-    "Writing is not implemented.",
-    "Browser reachability is not declared because the shared compressed-stream entrypoint imports the Node Brotli backend; splitting runtime-specific entrypoints remains follow-up work."
+    "Portable extraction is intentionally bounded to single-segment frames containing raw or RLE blocks.",
+    "Compressed blocks, dictionaries, content checksums, concatenated frames, and writing are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "zstd", "label": "Zstandard compressed payload" }],
@@ -68,6 +67,13 @@
       {
         "id": "export.raw",
         "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "container.extract",
+        "handlerId": "extract-entry",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]

@@ -340,6 +340,57 @@
       "note": "PE32 x86 console image with a complete optional header and one raw .text section exposed as an inert extractable entry"
     },
     {
+      "extension": "mk2/common-archives",
+      "contributionId": "org.modkitx/zstd",
+      "corpus": "synthetic",
+      "sample": "minimal.zst",
+      "minimumConfidence": 0.9,
+      "dataSource": "namespace",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "payload" },
+        "outputKind": "bytes",
+        "minimumBytes": 6
+      },
+      "note": "RFC 8878 single-segment frame with one final raw block; acceptance validates exact bounded extraction"
+    },
+    {
+      "extension": "mk2/common-archives",
+      "contributionId": "org.modkitx/xz",
+      "corpus": "synthetic",
+      "sample": "minimal.xz",
+      "minimumConfidence": 0.9,
+      "dataSource": "namespace",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "payload" },
+        "outputKind": "bytes",
+        "minimumBytes": 6
+      },
+      "note": "XZ 1.2.1 Check=None stream with one uncompressed LZMA2 chunk; acceptance validates header, block, Index and footer CRC-32 values"
+    },
+    {
+      "extension": "mk2/common-archives",
+      "contributionId": "org.modkitx/rar",
+      "corpus": "synthetic",
+      "sample": "minimal.rar",
+      "minimumConfidence": 0.9,
+      "dataSource": "namespace",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "file-0" },
+        "outputKind": "bytes",
+        "minimumBytes": 6
+      },
+      "note": "RAR4 archive with one stored regular file; acceptance validates header and file CRCs before bounded extraction"
+    },
+    {
       "extension": "mk2/common-audio",
       "contributionId": "org.modkitx/mp3",
       "corpus": "real",

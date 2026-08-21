@@ -1231,6 +1231,92 @@ function mp3() {
   return concat(...Array.from({ length: 39 }, () => frame))
 }
 
+/**
+ * RFC 8878 §3.1.1: one single-segment Zstandard frame containing one final Raw_Block. The
+ * frame-content-size byte and block header both declare the exact six-byte payload.
+ */
+function zstd() {
+  const payload = ascii('hello\n')
+  const blockHeader = (payload.byteLength << 3) | 1 // Raw_Block and Last_Block
+  return concat(
+    bytes(0x28, 0xb5, 0x2f, 0xfd),
+    bytes(0x20), // Single_Segment_Flag, one-byte Frame_Content_Size, no checksum or dictionary
+    bytes(payload.byteLength),
+    u24le(blockHeader),
+    payload,
+  )
+}
+
+/**
+ * XZ file format 1.2.1: Check=None, one Block with one LZMA2 filter, and one uncompressed LZMA2
+ * chunk. All four metadata CRC-32 values and the Index sizes are computed from their real bytes.
+ */
+function xz() {
+  const payload = ascii('hello\n')
+  const streamFlags = bytes(0, 0) // version zero and Check=None
+  const streamHeader = concat(
+    bytes(0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00),
+    streamFlags,
+    u32le(crc32(streamFlags)),
+  )
+  const compressed = concat(
+    bytes(0x01), // uncompressed LZMA2 chunk, reset dictionary
+    u16be(payload.byteLength - 1),
+    payload,
+    bytes(0), // LZMA2 end marker
+  )
+  const blockHeaderWithoutCrc = bytes(
+    2, // (12 / 4) - 1
+    0xc0, // one filter; compressed and uncompressed sizes are present
+    compressed.byteLength,
+    payload.byteLength,
+    0x21, // LZMA2 filter id
+    1, // one property byte
+    0, // 4 KiB dictionary property
+    0, // header padding
+  )
+  const blockHeader = concat(blockHeaderWithoutCrc, u32le(crc32(blockHeaderWithoutCrc)))
+  const blockPadding = new Uint8Array((4 - (compressed.byteLength % 4)) % 4)
+  const unpaddedBlockSize = blockHeader.byteLength + compressed.byteLength
+  const indexWithoutCrc = bytes(0, 1, unpaddedBlockSize, payload.byteLength)
+  const index = concat(indexWithoutCrc, u32le(crc32(indexWithoutCrc)))
+  const backwardAndFlags = concat(u32le(index.byteLength / 4 - 1), streamFlags)
+  const footer = concat(u32le(crc32(backwardAndFlags)), backwardAndFlags, ascii('YZ'))
+  return concat(streamHeader, blockHeader, compressed, blockPadding, index, footer)
+}
+
+/**
+ * RAR 4.x stored archive: a plain main header, one method-0x30 file header and payload, and the
+ * end marker. Header CRC fields are the low 16 bits of CRC-32 as used by the official UnRAR reader.
+ */
+function rar() {
+  const payload = ascii('hello\n')
+  const name = ascii('hello.txt')
+  const header = (type, flags, body) => {
+    const withoutCrc = concat(bytes(type), u16le(flags), u16le(7 + body.byteLength), body)
+    return concat(u16le(crc32(withoutCrc) & 0xffff), withoutCrc)
+  }
+  const main = header(0x73, 0, new Uint8Array(6))
+  const file = header(
+    0x74,
+    0x8000, // LONG_BLOCK: a stored data area follows the header
+    concat(
+      u32le(payload.byteLength),
+      u32le(payload.byteLength),
+      bytes(2), // HOST_WIN32
+      u32le(crc32(payload)),
+      u32le(0), // deterministic DOS timestamp
+      bytes(20), // minimum unpack version
+      bytes(0x30), // stored method
+      u16le(name.byteLength),
+      u32le(0x20), // archive attribute
+      name,
+    ),
+  )
+  const end = header(0x7b, 0x4000, new Uint8Array(0))
+  return concat(bytes(0x52, 0x61, 0x72, 0x21, 0x1a, 0x07, 0x00), main, file, payload, end)
+}
+
 // ---------------------------------------------------------------- the corpus
 
 /** Every fixture: file name → builder. The name is what the acceptance corpus refers to. */
@@ -1254,6 +1340,7 @@ const FIXTURES = {
   'minimal.pcx': pcx,
   'minimal.exe': pe,
   'minimal.pvr': pvr,
+  'minimal.rar': rar,
   'minimal.tga': tga,
   'minimal.tiff': tiff,
   'minimal.wav': wav,
@@ -1271,6 +1358,8 @@ const FIXTURES = {
   'minimal.mp4': mp4,
   'minimal.mpg': mpeg,
   'minimal.webm': webm,
+  'minimal.xz': xz,
+  'minimal.zst': zstd,
 }
 
 const built = new Map(

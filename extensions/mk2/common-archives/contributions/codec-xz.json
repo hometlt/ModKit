@@ -21,9 +21,8 @@
     }
   ],
   "limitations": [
-    "Extraction and writing require a host-injected 7-Zip WASM module; this codec does not fetch or install that runtime.",
-    "Packing accepts exactly one payload.",
-    "Browser reachability is not declared because the shared compressed-stream entrypoint imports the Node Brotli backend; splitting runtime-specific entrypoints remains follow-up work."
+    "Portable extraction is intentionally bounded to one Check=None stream with one LZMA2 filter and uncompressed LZMA2 chunks.",
+    "Compressed LZMA2 chunks, other checks and filters, concatenated streams, stream padding, and writing are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "xz", "label": "XZ compressed payload" }],
@@ -68,6 +67,13 @@
       {
         "id": "export.raw",
         "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "container.extract",
+        "handlerId": "extract-entry",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]
