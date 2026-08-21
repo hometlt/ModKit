@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/service-provider-contribution",
+    "major": 1
+  },
+  "id": "org.modkitx.blizzard/galaxy-language",
+  "displayName": "Galaxy language analysis",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/provider.js",
+      "target": {
+        "environments": ["node"]
+      },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/provider.js",
+      "target": {
+        "environments": ["browser-worker", "node-worker"]
+      },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "provides": [
+      {
+        "offerId": "galaxy-document-analysis-v1",
+        "contract": "common.language/document-analysis",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": {
+          "languageIds": ["galaxy"],
+          "documentKinds": ["galaxy-source"],
+          "extensions": ["galaxy", "ai"]
+        }
+      }
+    ],
+    "lifecycleScope": "session"
+  }
+}

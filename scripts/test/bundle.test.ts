@@ -22,6 +22,7 @@ const PUBLISHED_ENTRIES = [
   'packages/sdk/dist/data-sources.js',
   'packages/sdk/dist/editing.js',
   'packages/sdk/dist/service-contracts.js',
+  'packages/sdk/dist/language/index.js',
   'packages/sdk/dist/text-data/index.js',
   'packages/sdk/dist/formats/index.js',
   'packages/sdk/dist/subjects/index.js',
@@ -35,6 +36,7 @@ const PUBLISHED_ENTRIES = [
   // capability-RPC core (NXT-105) as its own entry so transports/preloads/testkit depend on the
   // protocol alone, without pulling inventory/resolution/gate code into a renderer or worker
   'packages/host/dist/execution/index.js',
+  'packages/host/dist/language/index.js',
   // worker-side bootstrap of the Node worker backend: its own file so `new Worker(url)` finds it
   'packages/host/dist/node/worker-bootstrap.js',
   // worker-side entry of the browser worker backend (S5b): spawned as a module Worker by URL

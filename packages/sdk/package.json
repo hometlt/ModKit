@@ -32,6 +32,10 @@
       "types": "./dist/service-contracts.d.ts",
       "default": "./dist/service-contracts.js"
     },
+    "./language": {
+      "types": "./dist/language/index.d.ts",
+      "default": "./dist/language/index.js"
+    },
     "./text-data": {
       "types": "./dist/text-data/index.d.ts",
       "default": "./dist/text-data/index.js"

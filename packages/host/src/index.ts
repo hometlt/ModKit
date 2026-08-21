@@ -116,6 +116,7 @@ export {
   WRITER_CONTRACT_DEFINITION,
   WRITER_FACET_MATCHER,
 } from './editing-definitions.js'
+export * from './language/index.js'
 export {
   createServiceFacetMatcherProfileRegistry,
   createServiceContractDefinitionRegistry,

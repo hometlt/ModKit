@@ -34,6 +34,7 @@ import {
   registerServiceContractDefinitionsFromInventory,
 } from './service-definitions.js'
 import { registerStandardEditingDefinitions, WRITER_FACET_MATCHER } from './editing-definitions.js'
+import { LANGUAGE_DOCUMENT_MATCHER, registerStandardLanguageDefinitions } from './language/index.js'
 import { openSubject, type OpenSubjectResult } from './subject-open.js'
 
 // ---------------------------------------------------------------------------------------------
@@ -200,7 +201,7 @@ export interface BundledServiceDefinitionRegistryOptions {
  * catalog): every inventoried owner is accepted as the namespace owner of what it defines and
  * schema refs are not validated here. Installed/linked extensions must never be promoted through
  * this registry — they need an explicit namespace-delegation policy, which is not this. The
- * platform's matcher profiles (the writer facet matcher, ADR-HOST-002 §3) are always available.
+ * platform's matcher profiles (editing and language routing) are always available.
  */
 export function createBundledServiceDefinitionRegistry(
   options: BundledServiceDefinitionRegistryOptions = {},
@@ -208,6 +209,7 @@ export function createBundledServiceDefinitionRegistry(
   return createServiceContractDefinitionRegistry({
     matcherProfiles: createServiceFacetMatcherProfileRegistry([
       WRITER_FACET_MATCHER,
+      LANGUAGE_DOCUMENT_MATCHER,
       ...(options.matcherProfiles ?? []),
     ]),
     isNamespaceOwner: () => true,
@@ -216,19 +218,21 @@ export function createBundledServiceDefinitionRegistry(
 }
 
 /**
- * Register the platform's standard editing definitions and then the inventory's service-contract
+ * Register the platform's standard definitions and then the inventory's service-contract
  * definitions, failing closed: one rejected owner is a refused bootstrap
  * (`x3.host/service-definition-rejected` with the diagnostics), never a partially-defined host.
  * A registry that lacks the standard matcher profiles is rejected here too — use
- * `createBundledServiceDefinitionRegistry` or include `WRITER_FACET_MATCHER`.
+ * `createBundledServiceDefinitionRegistry` or include both platform matcher profiles.
  */
 export async function registerServiceDefinitionsOrThrow(
   inventory: Inventory,
   definitions: ServiceContractDefinitionRegistry,
 ): Promise<readonly DefinitionInventoryResult[]> {
-  const standard = await registerStandardEditingDefinitions(definitions)
+  const editing = await registerStandardEditingDefinitions(definitions)
+  const language = await registerStandardLanguageDefinitions(definitions)
   const registrations = [
-    standard,
+    editing,
+    language,
     ...(await registerServiceContractDefinitionsFromInventory(inventory, definitions)),
   ]
   const rejected = registrations.filter(result => result.state === 'rejected')

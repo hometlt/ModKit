@@ -158,6 +158,7 @@ export type {
   ResolveRequest,
 } from './service-contracts.js'
 export { foreignServiceContractId } from './service-contracts.js'
+export * from './language/index.js'
 export type {
   ArtifactSource,
   ArtifactByteSource,

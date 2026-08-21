@@ -24,6 +24,10 @@
       "types": "./dist/execution/index.d.ts",
       "default": "./dist/execution/index.js"
     },
+    "./language": {
+      "types": "./dist/language/index.d.ts",
+      "default": "./dist/language/index.js"
+    },
     "./node/worker-bootstrap": {
       "types": "./dist/node/worker-bootstrap.d.ts",
       "default": "./dist/node/worker-bootstrap.js"

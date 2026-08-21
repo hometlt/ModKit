@@ -156,4 +156,16 @@ describe('minimal builds stay minimal', () => {
     expect(text).not.toContain('file provider refused to escape its confined root boundary')
     expect(text).not.toContain('memory provider exceeded its configured entry boundary')
   }, 60_000)
+
+  it('the language contract subpath carries no host, runtime ABI or presentation contracts', async () => {
+    const text = await bundled(
+      `export { LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT } from '@modkitx-x3/sdk/language'\n`,
+    )
+    expect(text).toContain('common.language/document-analysis')
+    expect(text).not.toContain('service activation cycle detected')
+    expect(text).not.toContain('ModelPrimitive')
+    expect(text).not.toContain('presentationSlotId')
+    expect(text).not.toContain('data-mk-part')
+    expect(text.length).toBeLessThan(2_000)
+  }, 60_000)
 })
