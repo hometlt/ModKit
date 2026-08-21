@@ -107,7 +107,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/cur": {
       "verdict": "needs-new-contract",
@@ -124,7 +124,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.read", "image.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/dds": {
       "verdict": "needs-new-contract",
@@ -173,7 +173,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/hdr": {
       "verdict": "needs-new-contract",
@@ -190,7 +190,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.read", "image.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/ico": {
       "verdict": "needs-new-contract",
@@ -207,7 +207,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.read", "image.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/jpg": {
       "verdict": "mechanical",

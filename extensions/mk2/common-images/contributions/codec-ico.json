@@ -21,9 +21,8 @@
     }
   ],
   "limitations": [
-    "Decode supports PNG-backed icons and common 1, 4, 8, 24, and 32-bit DIB payloads; uncommon payload variants remain unsupported.",
-    "Export writes one PNG-backed icon up to 256 by 256 pixels rather than a multi-size icon set.",
-    "Manifest v1 cannot express the legacy extension-or-signature fallback without turning it into a conjunction; generated routing intentionally uses the extension while the handwritten compatibility registry retains global signature sniffing."
+    "The MK3 port validates every directory range, inspects PNG-backed and DIB entries, and decodes the selected uncompressed 24-bit or 32-bit DIB plus its AND mask to RGBA8.",
+    "PNG-backed pixel-region decoding, indexed/bitfield/compressed DIB decoding, writing, and pixel editing remain unsupported."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "ico", "label": "Windows Icon" }],

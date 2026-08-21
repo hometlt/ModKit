@@ -340,6 +340,53 @@ function gif() {
 }
 
 /**
+ * Radiance RGBE: the required identifier/FORMAT/resolution header followed by one old-style flat
+ * RGBE scanline. Exponent 136 makes the stored 128/64/32 mantissas map exactly to RGBA8 128/64/32.
+ */
+function hdr() {
+  return concat(
+    ascii('#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y 1 +X 1\n'),
+    bytes(0x80, 0x40, 0x20, 0x88),
+  )
+}
+
+/**
+ * Microsoft ICO/CUR directory plus one BITMAPINFOHEADER payload. The DIB height is doubled for
+ * its XOR and AND planes; the one opaque BGRA pixel is followed by a zero transparency-mask row.
+ */
+function iconContainer(type) {
+  const dib = concat(
+    u32le(40),
+    u32le(1),
+    u32le(2),
+    u16le(1),
+    u16le(32),
+    u32le(0),
+    u32le(4),
+    u32le(0),
+    u32le(0),
+    u32le(0),
+    u32le(0),
+    bytes(0x20, 0x40, 0x80, 0xff),
+    new Uint8Array(4),
+  )
+  return concat(
+    u16le(0),
+    u16le(type),
+    u16le(1),
+    bytes(1, 1, 0, 0),
+    u16le(type === 1 ? 1 : 0),
+    u16le(type === 1 ? 32 : 0),
+    u32le(dib.byteLength),
+    u32le(22),
+    dib,
+  )
+}
+
+const ico = () => iconContainer(1)
+const cur = () => iconContainer(2)
+
+/**
  * POSIX ustar archive: IEEE 1003.1 §pax "ustar Interchange Format" — one 512-byte header block
  * with the octal header checksum, one data block, and the two zero blocks that end an archive.
  */
@@ -816,11 +863,14 @@ const FIXTURES = {
   'minimal.astc': astc,
   'minimal.avif': avif,
   'minimal.big': big,
+  'minimal.bmp': bmp,
+  'minimal.cur': cur,
   'minimal.dds': dds,
   'minimal.exr': exr,
-  'minimal.wav': wav,
-  'minimal.bmp': bmp,
   'minimal.gif': gif,
+  'minimal.hdr': hdr,
+  'minimal.ico': ico,
+  'minimal.wav': wav,
   'minimal.m3': m3,
   'minimal.mpq': mpq,
   'minimal.tar': tar,

@@ -65,6 +65,65 @@
       "note": "OpenEXR v2 required attributes, scanline offset table and one uncompressed RGBA float pixel; acceptance reads RGBA8"
     },
     {
+      "extension": "mk2/common-images",
+      "contributionId": "org.modkitx/bmp",
+      "corpus": "synthetic",
+      "sample": "minimal.bmp",
+      "minimumConfidence": 0.9,
+      "dataSource": "raster",
+      "expectedFirstPixelRgba": [128, 64, 32, 255],
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "BITMAPINFOHEADER with one bottom-up 24-bit BI_RGB pixel and row padding; acceptance reads exact RGBA8"
+    },
+    {
+      "extension": "mk2/common-images",
+      "contributionId": "org.modkitx/gif",
+      "corpus": "synthetic",
+      "sample": "minimal.gif",
+      "minimumConfidence": 0.9,
+      "dataSource": "tree",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "GIF89a logical screen, global palette, one minimal LZW image block and trailer; bounded structure walk only"
+    },
+    {
+      "extension": "mk2/common-images",
+      "contributionId": "org.modkitx/hdr",
+      "corpus": "synthetic",
+      "sample": "minimal.hdr",
+      "minimumConfidence": 0.9,
+      "dataSource": "raster",
+      "expectedFirstPixelRgba": [128, 64, 32, 255],
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "Radiance 32-bit_rle_rgbe header and one flat RGBE scanline; acceptance reads the normalized clamped RGBA8 pixel"
+    },
+    {
+      "extension": "mk2/common-images",
+      "contributionId": "org.modkitx/ico",
+      "corpus": "synthetic",
+      "sample": "minimal.ico",
+      "minimumConfidence": 0.9,
+      "dataSource": "raster",
+      "expectedFirstPixelRgba": [128, 64, 32, 255],
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "ICO directory with one 32-bit DIB XOR pixel and AND mask row; acceptance reads exact RGBA8"
+    },
+    {
+      "extension": "mk2/common-images",
+      "contributionId": "org.modkitx/cur",
+      "corpus": "synthetic",
+      "sample": "minimal.cur",
+      "minimumConfidence": 0.9,
+      "dataSource": "raster",
+      "expectedFirstPixelRgba": [128, 64, 32, 255],
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "CUR directory with hotspot 0,0 and one 32-bit DIB XOR pixel plus AND mask; acceptance reads exact RGBA8"
+    },
+    {
       "extension": "mk2/common-audio",
       "contributionId": "org.modkitx/mp3",
       "corpus": "real",

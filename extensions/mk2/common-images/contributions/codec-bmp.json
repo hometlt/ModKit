@@ -21,8 +21,8 @@
     }
   ],
   "limitations": [
-    "The package codec inspects BMP headers and writes BMP output but leaves arbitrary BMP pixel decode to the host image pipeline.",
-    "Manifest v1 cannot express the legacy extension-or-signature fallback without turning it into a conjunction; generated routing intentionally uses the extension while the handwritten compatibility registry retains global signature sniffing."
+    "The MK3 port decodes bounded uncompressed BI_RGB 24-bit and 32-bit rows to RGBA8 and publishes metadata for other structurally valid bitmap headers.",
+    "Indexed pixels, bitfields, RLE/JPEG/PNG compression, color-profile interpretation, writing, and pixel editing remain unsupported."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "bmp", "label": "Windows Bitmap" }],

@@ -21,9 +21,8 @@
     }
   ],
   "limitations": [
-    "Decode supports PNG-backed cursors and common 1, 4, 8, 24, and 32-bit DIB payloads; animated cursors belong to the separate ANI codec.",
-    "Export writes one PNG-backed static cursor up to 256 by 256 pixels and defaults an unspecified hotspot to 0,0.",
-    "Manifest v1 cannot express the legacy extension-or-signature fallback without turning it into a conjunction; generated routing intentionally uses the extension while the handwritten compatibility registry retains global signature sniffing."
+    "The MK3 port validates every directory range, reports cursor hotspots, inspects PNG-backed and DIB entries, and decodes the selected uncompressed 24-bit or 32-bit DIB plus its AND mask to RGBA8.",
+    "PNG-backed pixel-region decoding, indexed/bitfield/compressed DIB decoding, animation, writing, and pixel editing remain unsupported."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "cur", "label": "Windows Cursor" }],

@@ -21,9 +21,8 @@
     }
   ],
   "limitations": [
-    "The package codec inspects GIF frame metadata and writes a single-frame GIF but leaves pixel and animation decode to the host image pipeline.",
-    "Full animation playback and timeline transport remain follow-up work.",
-    "Manifest v1 cannot express the legacy extension-or-signature fallback without turning it into a conjunction; generated routing intentionally uses the extension while the handwritten compatibility registry retains global signature sniffing."
+    "The MK3 port performs a bounded GIF87a/GIF89a block walk and publishes frame, extension, palette, and timing metadata with the original encoded image bytes.",
+    "Native LZW pixel-region decoding, animation playback, timeline transport, writing, and pixel editing remain unsupported."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "gif", "label": "Graphics Interchange Format" }],

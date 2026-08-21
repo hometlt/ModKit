@@ -21,10 +21,8 @@
     }
   ],
   "limitations": [
-    "Decode accepts 32-bit_rle_rgbe scanlines and produces a clamped RGBA8 preview rather than preserving high-dynamic-range samples.",
-    "Orientation signs are reported as metadata but the current pixel output does not normalize every legal Radiance orientation.",
-    "Write accepts RGBA8 input and emits a basic Radiance RGBE image without preserving source exposure, gamma, comments, or scanline compression.",
-    "Manifest v1 cannot express the legacy extension-or-either-header-signature fallback without turning it into a conjunction; generated routing intentionally uses the extension while the handwritten compatibility registry retains global structural sniffing."
+    "The MK3 port decodes flat and modern RLE 32-bit_rle_rgbe scanlines, normalizes the declared X/Y orientation, and produces a clamped RGBA8 preview rather than preserving high-dynamic-range samples.",
+    "Writing, exposure/gamma transforms, tone mapping, color-profile interpretation, and pixel editing remain unsupported."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "hdr", "label": "Radiance RGBE HDR" }],
