@@ -119,6 +119,7 @@ export {
 export * from './language/index.js'
 export * from './runtime/index.js'
 export * from './renderer/index.js'
+export * from './games/index.js'
 export {
   createServiceFacetMatcherProfileRegistry,
   createServiceContractDefinitionRegistry,

@@ -37,6 +37,7 @@ import { registerStandardEditingDefinitions, WRITER_FACET_MATCHER } from './edit
 import { LANGUAGE_DOCUMENT_MATCHER, registerStandardLanguageDefinitions } from './language/index.js'
 import { RUNTIME_PROVIDER_MATCHER, registerStandardRuntimeDefinitions } from './runtime/index.js'
 import { SCENE_RENDERER_MATCHER, registerStandardRendererDefinitions } from './renderer/index.js'
+import { GAME_INSTALLATION_MATCHER, registerStandardGameDefinitions } from './games/index.js'
 import { openSubject, type OpenSubjectResult } from './subject-open.js'
 
 // ---------------------------------------------------------------------------------------------
@@ -203,7 +204,7 @@ export interface BundledServiceDefinitionRegistryOptions {
  * catalog): every inventoried owner is accepted as the namespace owner of what it defines and
  * schema refs are not validated here. Installed/linked extensions must never be promoted through
  * this registry — they need an explicit namespace-delegation policy, which is not this. The
- * platform's matcher profiles (editing, language, runtime and renderer routing) are always
+ * platform's matcher profiles (editing, language, runtime, renderer and game routing) are always
  * available.
  */
 export function createBundledServiceDefinitionRegistry(
@@ -215,6 +216,7 @@ export function createBundledServiceDefinitionRegistry(
       LANGUAGE_DOCUMENT_MATCHER,
       RUNTIME_PROVIDER_MATCHER,
       SCENE_RENDERER_MATCHER,
+      GAME_INSTALLATION_MATCHER,
       ...(options.matcherProfiles ?? []),
     ]),
     isNamespaceOwner: () => true,
@@ -237,11 +239,13 @@ export async function registerServiceDefinitionsOrThrow(
   const language = await registerStandardLanguageDefinitions(definitions)
   const runtime = await registerStandardRuntimeDefinitions(definitions)
   const renderer = await registerStandardRendererDefinitions(definitions)
+  const games = await registerStandardGameDefinitions(definitions)
   const registrations = [
     editing,
     language,
     runtime,
     renderer,
+    games,
     ...(await registerServiceContractDefinitionsFromInventory(inventory, definitions)),
   ]
   const rejected = registrations.filter(result => result.state === 'rejected')

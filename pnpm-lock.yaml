@@ -149,6 +149,15 @@ importers:
         specifier: workspace:*
         version: link:../../../packages/sdk
 
+  extensions/blizzard/starcraft2-game:
+    dependencies:
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../../packages/sdk
+
   extensions/reference/counter-runtime:
     dependencies:
       '@modkitx-x3/host':

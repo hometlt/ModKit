@@ -24,6 +24,7 @@ const PUBLISHED_ENTRIES = [
   'packages/sdk/dist/service-contracts.js',
   'packages/sdk/dist/language/index.js',
   'packages/sdk/dist/renderer/index.js',
+  'packages/sdk/dist/games/index.js',
   'packages/sdk/dist/runtime/index.js',
   'packages/sdk/dist/text-data/index.js',
   'packages/sdk/dist/formats/index.js',
@@ -40,6 +41,7 @@ const PUBLISHED_ENTRIES = [
   'packages/host/dist/execution/index.js',
   'packages/host/dist/language/index.js',
   'packages/host/dist/renderer/index.js',
+  'packages/host/dist/games/index.js',
   'packages/host/dist/runtime/index.js',
   // worker-side bootstrap of the Node worker backend: its own file so `new Worker(url)` finds it
   'packages/host/dist/node/worker-bootstrap.js',

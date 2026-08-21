@@ -194,4 +194,17 @@ describe('minimal builds stay minimal', () => {
     expect(text).not.toContain('data-mk-part')
     expect(text.length).toBeLessThan(2_500)
   }, 60_000)
+
+  it('the games contract subpath carries no language, runtime, renderer or host implementation', async () => {
+    const text = await bundled(
+      `export { GAME_INSTALLATION_DISCOVERY_CONTRACT } from '@modkitx-x3/sdk/games'\n`,
+    )
+    expect(text).toContain('common.game/installation-discovery')
+    expect(text).not.toContain('common.language/document-analysis')
+    expect(text).not.toContain('common.runtime/provider')
+    expect(text).not.toContain('common.render/scene-3d')
+    expect(text).not.toContain('service activation cycle detected')
+    expect(text).not.toContain('data-mk-part')
+    expect(text.length).toBeLessThan(2_500)
+  }, 60_000)
 })

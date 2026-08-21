@@ -154,6 +154,12 @@ export function createHostServiceResolver(
   options: HostServiceResolverOptions,
 ): HostServiceResolver {
   const offers = options.offers ?? offersFromInventory(options.inventory)
+  const target: RuntimeTarget = Object.freeze({
+    ...options.target,
+    grantedPermissions: [
+      ...new Set([...(options.target.grantedPermissions ?? []), ...options.grant.classes]),
+    ].sort(),
+  })
   const activations: ProviderActivation[] = []
   const locks: ProviderPolicyLockEntry[] = []
   const diagnostics: Diagnostic[] = []
@@ -161,7 +167,7 @@ export function createHostServiceResolver(
     createContractResolverPort({
       offers,
       definitions: options.definitions,
-      target: options.target,
+      target,
       onResolved(request: FacetAwareProviderRequest, result) {
         locks.push(buildLockEntry(request, result))
       },
@@ -176,7 +182,7 @@ export function createHostServiceResolver(
         const activation = await activateServiceProvider({
           selection,
           result,
-          target: options.target,
+          target,
           grant,
           executionBackends: options.executionBackends,
           ...(options.policy === undefined ? {} : { policy: options.policy }),

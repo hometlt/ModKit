@@ -24,9 +24,10 @@ runtime/library-пакета и отдельный build-only preset `tsconfig`.
    маршрутизирует renderer provider и доказывает typed geometry → RGBA на живом software backend,
    однако M3/M3A всё ещё не декодирует геометрию, материалы, скелет, анимации и particle/ribbon
    effects, а production WebGL/WebGPU backend отсутствует.
-4. **CASC теперь открывается, installation discovery — нет.** MK3 умеет открыть явно переданный
-   корень SC2 через VFS → Host → CASC, но не имеет реестра игр и Steam/Epic/Blizzard discovery,
-   которые реализует `games`.
+4. **SC2 installation discovery перенесён первым вертикальным срезом.** MK3 теперь маршрутизирует
+   game-neutral discovery contract и подтверждает SC2 по ограниченному набору CASC-маркеров для
+   явно настроенных, стандартных и найденных в Windows Registry путей. Steam/Epic enumeration,
+   другие игры, launch и автоматический mount ещё не перенесены.
 
 ### Block 5 / 1.1: граница реализованного language slice
 
@@ -68,6 +69,20 @@ inventory/resolution/gate activation и живой `reference.software` provider
 lifecycle и интеграция с декодером M3. Поэтому минимальный `PARITY-RENDERER` contract закрыт, но
 широкие строки `rendering-3d` и `models-processing` остаются частичными.
 
+### Block 5 / 2.1: граница реализованного SC2 games slice
+
+Включено: отдельный `sdk/games`, route-aware service contract
+`common.game/installation-discovery@1`, host-owned matcher по стабильному `gameId`, обычная
+inventory/resolution/gate activation и живой `org.modkitx.blizzard/starcraft2-installation` provider.
+Провайдер принимает явно настроенные пути, проверяет ограниченный список стандартных каталогов и
+Windows Registry, затем подтверждает корень только по `.build.info` и директориям
+`SC2Data/{config,data,indices}`. E2E доказывает как синтетический корень, так и установленный
+`C:\Apps\StarCraft II` версии 5.0.16 без копирования приватных игровых данных в репозиторий.
+
+Осознанно не включено: рекурсивное сканирование дисков, Steam/Epic store enumerators, другие игры,
+запуск процесса, VFS/CASC mount и выбор workspace. Поэтому минимальный `PARITY-GAMES` vertical
+slice закрыт и разблокирует `PARITY-MODS`, но широкая строка `games` остаётся частичной.
+
 ## Таблица
 
 | пакет MK2                 | что он давал (проверенная реализация)                                                                                                                   | где это в MK3                                                                                                                            | вердикт                                                                               |
@@ -82,7 +97,7 @@ lifecycle и интеграция с декодером M3. Поэтому ми�
 | `documents-processing`    | Document registry и SC2 DocumentHeader/DocumentInfo/Version parsing и запись                                                                            | Markdown/RTF codecs и общие document/tree contracts; SC2 metadata envelope port-pending                                                  | **частично** — SC2 metadata parser/writer отсутствует                                 |
 | `embed`                   | Framework-neutral custom element и headless browser embed runtime/capture                                                                               | `apps/web/src/embed.ts`, web subjects и UI contracts дают embed/open lifecycle                                                           | **есть**                                                                              |
 | `entity-cards`            | Game-neutral subjects, sections, fields, links, relation graph и card index                                                                             | `SubjectFactsSource`, `RelationGraphSource`, `packages/ui/card` и `packages/ui/graph`                                                    | **есть**                                                                              |
-| `games`                   | Game catalog/registry, install probes/openers и Steam/Epic discovery; node Blizzard/CASC probe                                                          | Только явный VFS root и CASC codec                                                                                                       | **нет — нужно** (`PARITY-GAMES`)                                                      |
+| `games`                   | Game catalog/registry, install probes/openers и Steam/Epic discovery; node Blizzard/CASC probe                                                          | `sdk/games` + host routing + SC2 provider: configured/default/registry; stores, другие игры и mount pending                              | **частично** — минимальный `PARITY-GAMES` vertical slice есть                         |
 | `hex-viewer`              | Random-access pages, typed values, search, annotations и custom element                                                                                 | `packages/ui/hex`, `hex-editor` и SDK byte-range source                                                                                  | **есть**                                                                              |
 | `image-processing`        | Image registry, DDS/TGA/PNG и plugin formats, GPU block decode, encoders, palettes, metadata и node texture tools                                       | PNG/JPEG/DDS работают; raster source и PNG writer provider существуют; остальные MK2 codecs в разной степени pending                     | **частично** — форматное и tooling-покрытие неполное                                  |
 | `knowledge`               | Versioned knowledge/localization packs, deterministic fallback, provenance queries и agent bridge                                                       | Эквивалентного пакета или contribution contract нет                                                                                      | **нет — нужно** (`PARITY-KNOWLEDGE`)                                                  |
@@ -112,10 +127,10 @@ lifecycle и интеграция с декодером M3. Поэтому ми�
 
 - Проверено: **34 runtime/library-пакета + 1 build preset**.
 - **есть:** 8.
-- **частично:** 16.
-- **нет — нужно:** 10.
+- **частично:** 17.
+- **нет — нужно:** 9.
 - **нет — не нужно:** 1.
 
-Contract-этап Block 5 / 1 закрыт. Следующий проход — вертикальный SC2 slice
-`games → mods → data → maps`, потому что отдельный map codec без dependency resolver и data schema
-повторит только имя MK2-поверхности, а не её поведение.
+Contract-этап Block 5 / 1 и первый вертикальный `PARITY-GAMES` slice закрыты. Следующий проход —
+`PARITY-MODS`, затем `data → maps`, потому что отдельный map codec без dependency resolver и data
+schema повторит только имя MK2-поверхности, а не её поведение.
