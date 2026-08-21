@@ -317,6 +317,182 @@ function png() {
 }
 
 /**
+ * DDS: Microsoft DDS Programming Guide — legacy 124-byte header and one BC1/DXT1 4×4 block.
+ * Both endpoints and every selector choose RGB565 red, so an independent decoder must return
+ * sixteen opaque red pixels.
+ */
+function dds() {
+  const output = new Uint8Array(136)
+  output.set(ascii('DDS '), 0)
+  const view = new DataView(output.buffer)
+  view.setUint32(4, 124, true) // dwSize
+  view.setUint32(8, 0x00081007, true) // caps, height, width, pixel format, linear size
+  view.setUint32(12, 4, true)
+  view.setUint32(16, 4, true)
+  view.setUint32(20, 8, true)
+  view.setUint32(28, 1, true)
+  view.setUint32(76, 32, true) // DDS_PIXELFORMAT.dwSize
+  view.setUint32(80, 0x4, true) // DDPF_FOURCC
+  output.set(ascii('DXT1'), 84)
+  view.setUint32(108, 0x1000, true) // DDSCAPS_TEXTURE
+  view.setUint16(128, 0xf800, true)
+  view.setUint16(130, 0x07e0, true)
+  view.setUint32(132, 0, true)
+  return output
+}
+
+/**
+ * M3: the MD34 header and 16-byte section-index layout used by StarCraft II models. The one
+ * section points back to the header, which is sufficient to prove bounded index traversal and a
+ * metadata-only scene without inventing native geometry records.
+ */
+function m3() {
+  const output = new Uint8Array(40)
+  output.set(ascii('43DM'), 0) // little-endian storage of the MD34 tag
+  const view = new DataView(output.buffer)
+  view.setUint32(4, 24, true) // index_offset
+  view.setUint32(8, 1, true) // index_size
+  view.setUint32(12, 1, true) // model reference entries
+  view.setUint32(16, 0, true) // model reference index
+  output.set(ascii('43DM'), 24)
+  view.setUint32(28, 0, true) // section offset
+  view.setUint32(32, 1, true) // repetitions
+  view.setUint32(36, 11, true) // structure version
+  return output
+}
+
+/** Storm's public MPQ crypt table and hash algorithm, used only to build deterministic tables. */
+const MPQ_CRYPT_TABLE = (() => {
+  let seed = 0x00100001
+  const table = new Uint32Array(0x500)
+  for (let slot = 0; slot < 0x100; slot += 1) {
+    let index = slot
+    for (let round = 0; round < 5; round += 1) {
+      seed = (seed * 125 + 3) % 0x2aaaab
+      const high = (seed & 0xffff) << 16
+      seed = (seed * 125 + 3) % 0x2aaaab
+      table[index] = (high | (seed & 0xffff)) >>> 0
+      index += 0x100
+    }
+  }
+  return table
+})()
+
+function mpqHash(input, type) {
+  let seed1 = 0x7fed7fed
+  let seed2 = 0xeeeeeeee
+  for (const original of ascii(input)) {
+    const value = original >= 0x61 && original <= 0x7a ? original - 0x20 : original
+    seed1 = ((MPQ_CRYPT_TABLE[(type << 8) + value] ?? 0) ^ (seed1 + seed2)) >>> 0
+    seed2 = (value + seed1 + seed2 + (seed2 << 5) + 3) >>> 0
+  }
+  return seed1 >>> 0
+}
+
+function mpqEncrypt(data, key) {
+  const output = data.slice()
+  const input = new DataView(data.buffer, data.byteOffset, data.byteLength)
+  const encrypted = new DataView(output.buffer, output.byteOffset, output.byteLength)
+  let seed1 = key >>> 0
+  let seed2 = 0xeeeeeeee
+  for (let offset = 0; offset < data.byteLength; offset += 4) {
+    seed2 = (seed2 + (MPQ_CRYPT_TABLE[0x400 + (seed1 & 0xff)] ?? 0)) >>> 0
+    const plain = input.getUint32(offset, true)
+    encrypted.setUint32(offset, (plain ^ (seed1 + seed2)) >>> 0, true)
+    seed1 = (((~seed1 << 21) + 0x11111111) | (seed1 >>> 11)) >>> 0
+    seed2 = (plain + seed2 + (seed2 << 5) + 3) >>> 0
+  }
+  return output
+}
+
+/**
+ * MPQ v0: one `(listfile)` plus one stored single-unit file. Hash and block tables are encrypted
+ * exactly as Storm expects, so extraction exercises lookup and decryption rather than a fake walk.
+ */
+function mpq() {
+  const listfile = ascii('hello.txt\n')
+  const content = ascii('hello')
+  const hashEntries = 8
+  const blockEntries = 2
+  const listOffset = 32
+  const contentOffset = listOffset + listfile.byteLength
+  const hashOffset = contentOffset + content.byteLength
+  const blockOffset = hashOffset + hashEntries * 16
+  const archiveBytes = blockOffset + blockEntries * 16
+
+  const hashTable = new Uint8Array(hashEntries * 16)
+  hashTable.fill(0xff)
+  const hashView = new DataView(hashTable.buffer)
+  const addHash = (name, blockIndex) => {
+    const start = mpqHash(name, 0) % hashEntries
+    for (let probe = 0; probe < hashEntries; probe += 1) {
+      const slot = (start + probe) % hashEntries
+      const offset = slot * 16
+      if (hashView.getUint32(offset + 12, true) !== 0xffffffff) continue
+      hashView.setUint32(offset, mpqHash(name, 1), true)
+      hashView.setUint32(offset + 4, mpqHash(name, 2), true)
+      hashView.setUint16(offset + 8, 0, true)
+      hashView.setUint16(offset + 10, 0, true)
+      hashView.setUint32(offset + 12, blockIndex, true)
+      return
+    }
+    throw new RangeError('synthetic MPQ hash table is full')
+  }
+  addHash('(listfile)', 0)
+  addHash('hello.txt', 1)
+
+  const blockTable = new Uint8Array(blockEntries * 16)
+  const blockView = new DataView(blockTable.buffer)
+  const addBlock = (index, offset, size) => {
+    const base = index * 16
+    blockView.setUint32(base, offset, true)
+    blockView.setUint32(base + 4, size, true)
+    blockView.setUint32(base + 8, size, true)
+    blockView.setUint32(base + 12, 0x81000000, true)
+  }
+  addBlock(0, listOffset, listfile.byteLength)
+  addBlock(1, contentOffset, content.byteLength)
+
+  const header = new Uint8Array(32)
+  header.set(bytes(0x4d, 0x50, 0x51, 0x1a))
+  const headerView = new DataView(header.buffer)
+  headerView.setUint32(4, 32, true)
+  headerView.setUint32(8, archiveBytes, true)
+  headerView.setUint16(12, 0, true)
+  headerView.setUint16(14, 3, true)
+  headerView.setUint32(16, hashOffset, true)
+  headerView.setUint32(20, blockOffset, true)
+  headerView.setUint32(24, hashEntries, true)
+  headerView.setUint32(28, blockEntries, true)
+
+  return concat(
+    header,
+    listfile,
+    content,
+    mpqEncrypt(hashTable, mpqHash('(hash table)', 3)),
+    mpqEncrypt(blockTable, mpqHash('(block table)', 3)),
+  )
+}
+
+/** EA SAGE BIG4: one stored entry, with the mixed-endian header and null-terminated index path. */
+function big() {
+  const name = ascii('hello.txt\0')
+  const content = ascii('hello')
+  const dataOffset = 16 + 8 + name.byteLength
+  const archiveBytes = dataOffset + content.byteLength
+  return concat(
+    ascii('BIG4'),
+    u32le(archiveBytes),
+    u32be(1),
+    u32be(dataOffset),
+    u32be(dataOffset),
+    u32be(content.byteLength),
+    name,
+    content,
+  )
+}
+
+/**
  * One Ogg page: RFC 3533 §6. A single-segment first page puts its payload at byte 28, which is
  * where the Vorbis/Opus/Theora identification headers live and where the codec signatures point.
  */
@@ -542,9 +718,13 @@ function mp3() {
 
 /** Every fixture: file name → builder. The name is what the acceptance corpus refers to. */
 const FIXTURES = {
+  'minimal.big': big,
+  'minimal.dds': dds,
   'minimal.wav': wav,
   'minimal.bmp': bmp,
   'minimal.gif': gif,
+  'minimal.m3': m3,
+  'minimal.mpq': mpq,
   'minimal.tar': tar,
   'minimal.gz': gz,
   'minimal.png': png,

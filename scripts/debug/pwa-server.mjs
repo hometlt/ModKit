@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
-import { extensionSet } from '../app-extension-sets.mjs'
+import { extensionDirectory, extensionSet } from '../app-extension-sets.mjs'
 
 const root = fileURLToPath(new URL('../..', import.meta.url))
 
@@ -27,7 +27,7 @@ console.log(`debug-pwa: starting extension set ${setName}`)
 const { loadExtensionDirectory } = await import('../../packages/host/dist/node/index.js')
 const extensionInputs = await Promise.all(
   extensionSet(setName).map(directory =>
-    loadExtensionDirectory(join(root, 'extensions', 'common', directory)),
+    loadExtensionDirectory(join(root, 'extensions', ...extensionDirectory(directory))),
   ),
 )
 const serializableInputs = extensionInputs.map(input => ({

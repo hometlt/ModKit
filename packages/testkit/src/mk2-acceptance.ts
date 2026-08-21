@@ -38,7 +38,11 @@ import {
   revisionId,
   type ArtifactByteSource,
   type ByteRangeSource,
+  type JsonValue,
+  type NamespaceEntrySource,
   type OpenIntent,
+  type ModelSceneSource,
+  type RasterImageSource,
   type ResourceBudget,
   type RuntimeTarget,
   type TreeDataSource,
@@ -59,19 +63,26 @@ export interface Mk2CorpusEntry {
   readonly sample: string
   /** Lower bound on the selected candidate's probe confidence. */
   readonly minimumConfidence: number
-  /** Data source contract that must answer its first request; `tree`, `table` or `byte-range`. */
-  readonly dataSource: 'tree' | 'table' | 'byte-range'
+  /** Data source contract that must answer its first request. */
+  readonly dataSource: 'tree' | 'table' | 'byte-range' | 'model' | 'namespace' | 'raster'
   /**
    * What the host is told the subject is called. `path` passes the corpus-relative path, the way
    * a product opens a file inside a mount. `basename` passes the bare file name, which is what a
    * name-based rule cannot survive: it is how a case proves it routes on bytes (NXT-101B).
    */
-  readonly route?: 'path' | 'basename'
+  readonly route?: 'path' | 'basename' | 'opaque'
   /** Assert the selected candidate was admitted by its signature rather than by its name. */
   readonly expectSignatureMatch?: boolean
   /** `probe` is not an open intent; the harness always opens for real. */
   readonly intent?: Exclude<OpenIntent, 'probe'>
   readonly mediaType?: string
+  /** Optional declared handler call used to prove more than namespace enumeration. */
+  readonly operation?: {
+    readonly handlerId: string
+    readonly input: JsonValue
+    readonly outputKind: 'bytes'
+    readonly minimumBytes: number
+  }
   readonly note?: string
 }
 
@@ -145,6 +156,9 @@ const DATA_SOURCE_CONTRACTS = {
   tree: 'common.view/tree-data-source',
   table: 'common.view/table-data-source',
   'byte-range': 'common.view/byte-range-source',
+  model: 'common.view/model-scene-source',
+  namespace: 'common.view/namespace-entry-source',
+  raster: 'common.view/raster-image-source',
 } as const
 
 function directoryExists(path: string): boolean {
@@ -308,7 +322,12 @@ export async function runMk2AcceptanceCase(
   // `path` is the corpus-relative path, the way a product opens a file inside a mount.
   // `basename` deliberately throws the path away: nothing about the name can help, so the only
   // way a candidate can reach probe is the declared byte signature.
-  const path = entry.route === 'basename' ? (entry.sample.split('/').at(-1) ?? '') : entry.sample
+  const path =
+    entry.route === 'basename'
+      ? (entry.sample.split('/').at(-1) ?? '')
+      : entry.route === 'opaque'
+        ? 'opaque.bin'
+        : entry.sample
   const result = await openSubject({
     inventory,
     source,
@@ -391,6 +410,32 @@ export async function runMk2AcceptanceCase(
       const root = await tree.root()
       const facts = await tree.facts(root)
       if (facts.label.length === 0) return fail(`${contract} root node has no label`)
+    } else if (entry.dataSource === 'model') {
+      const model = lease.value as ModelSceneSource
+      const info = await model.info()
+      const nodes = await model.nodes({ limit: 1 })
+      if (info.scenes < 1 || nodes.items.length === 0) {
+        return fail(`${contract} exposes no scene nodes`)
+      }
+    } else if (entry.dataSource === 'namespace') {
+      const namespace = lease.value as NamespaceEntrySource
+      const page = await namespace.list('', { limit: 1 })
+      if (page.items.length === 0) return fail(`${contract} exposes no entries`)
+    } else if (entry.dataSource === 'raster') {
+      const raster = lease.value as RasterImageSource
+      const info = await raster.info()
+      if (info.width < 1 || info.height < 1 || raster.readRegion === undefined) {
+        return fail(`${contract} exposes no decoded pixels`)
+      }
+      const region = await raster.readRegion({
+        x: 0,
+        y: 0,
+        width: 1,
+        height: 1,
+        pixelFormat: 'rgba8',
+        maxBytes: 4,
+      })
+      if (region.pixels.byteLength !== 4) return fail(`${contract} returned no RGBA pixel`)
     } else {
       const table = lease.value as unknown as { columns(): Promise<readonly unknown[]> }
       const columns = await table.columns()
@@ -399,6 +444,32 @@ export async function runMk2AcceptanceCase(
     await lease.release()
   } catch (error) {
     return fail(`${contract} threw: ${error instanceof Error ? error.message : String(error)}`)
+  }
+
+  if (entry.operation !== undefined) {
+    try {
+      const operation = await result.session
+        .operations()
+        .invoke(entry.operation.handlerId, entry.operation.input)
+      if (operation.state !== 'ok') {
+        return fail(`${entry.operation.handlerId} was rejected: ${operation.reason}`)
+      }
+      if (operation.output.kind !== entry.operation.outputKind) {
+        return fail(
+          `${entry.operation.handlerId} returned ${operation.output.kind}, expected ${entry.operation.outputKind}`,
+        )
+      }
+      if (
+        operation.output.kind === 'bytes' &&
+        operation.output.value.byteLength < entry.operation.minimumBytes
+      ) {
+        return fail(`${entry.operation.handlerId} returned too few bytes`)
+      }
+    } catch (error) {
+      return fail(
+        `${entry.operation.handlerId} threw: ${error instanceof Error ? error.message : String(error)}`,
+      )
+    }
   }
 
   await result.session.dispose()

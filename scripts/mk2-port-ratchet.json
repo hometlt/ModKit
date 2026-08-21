@@ -1,0 +1,16 @@
+{
+  "$comment": "Minimum hand-ported MK2 codec counts. Increment in the same change that ports a codec; ports:check rejects both regressions and stale counts.",
+  "schemaVersion": 1,
+  "families": {
+    "adobe-flash": 2,
+    "blizzard-archives": 1,
+    "blizzard-starcraft-2": 1,
+    "common-audio": 4,
+    "common-images": 3,
+    "common-models": 1,
+    "common-vector": 1,
+    "common-video": 4,
+    "ea-archives": 1,
+    "ea-sage": 1
+  }
+}

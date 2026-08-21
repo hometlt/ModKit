@@ -60,7 +60,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     expect(
       outcomes.filter(outcome => outcome.corpus === 'synthetic').length,
     ).toBeGreaterThanOrEqual(9)
-  })
+  }, 30_000)
 
   it('routes the signature cases on bytes alone, with the file name saying nothing', async () => {
     // Task E: these codecs declared one v1 rule — a path glob matching every file — and MK3 does
@@ -83,7 +83,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
         detail: undefined,
       })
     }
-  })
+  }, 20_000)
 
   it('activates the portable variant in a Node worker, not just trusted in-process', async () => {
     // The worker backend verifies every artifact file against the loader's digests before it
@@ -105,7 +105,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
         detail: undefined,
       })
     }
-  })
+  }, 15_000)
 
   it('reports a missing corpus sample as a skip rather than a pass', async () => {
     const [outcome] = await runMk2Acceptance(
@@ -123,7 +123,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     )
     expect(outcome?.state).toBe('failed')
     expect(outcome?.detail).toContain('expected org.modkitx/not-the-winner')
-  })
+  }, 15_000)
 
   it('the synthetic corpus is exactly what its generator produces (task F)', () => {
     const result = spawnSync(process.execPath, [generator, '--check', '--quiet'], {

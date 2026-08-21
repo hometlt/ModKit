@@ -62,9 +62,9 @@
       "sample": "-references/old-modkit-ts/sc2/core.sc2mod/base.sc2data/ui/flash/gameui/ipistol.swf",
       "minimumConfidence": 0.9,
       "dataSource": "tree",
-      "route": "basename",
+      "route": "opaque",
       "expectSignatureMatch": true,
-      "note": "Task E: opened by the bare file name, so only the declared SWF signature can shortlist it"
+      "note": "Task E: opened under an opaque .bin name, so only the declared SWF signature can shortlist it"
     },
     {
       "extension": "mk2/common-audio",
@@ -74,6 +74,60 @@
       "minimumConfidence": 0.9,
       "dataSource": "tree",
       "note": "RIFF/WAVE, 8-bit PCM, four samples; the MK2 checkout has no .wav at all"
+    },
+    {
+      "extension": "mk2/common-images",
+      "contributionId": "org.modkitx/dds",
+      "corpus": "synthetic",
+      "sample": "minimal.dds",
+      "minimumConfidence": 0.9,
+      "dataSource": "raster",
+      "note": "Legacy DDS header and one deterministic BC1/DXT1 block; acceptance reads decoded RGBA pixels"
+    },
+    {
+      "extension": "mk2/blizzard-starcraft-2",
+      "contributionId": "org.modkitx/m3",
+      "corpus": "synthetic",
+      "sample": "minimal.m3",
+      "minimumConfidence": 0.9,
+      "dataSource": "model",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "MD34 header plus one deterministic section-index entry; acceptance reads the metadata-only scene"
+    },
+    {
+      "extension": "mk2/blizzard-archives",
+      "contributionId": "org.modkitx/mpq",
+      "corpus": "synthetic",
+      "sample": "minimal.mpq",
+      "minimumConfidence": 0.9,
+      "dataSource": "namespace",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "hello.txt" },
+        "outputKind": "bytes",
+        "minimumBytes": 5
+      },
+      "note": "MPQ v0 with a real encrypted hash table, encrypted block table, listfile, and stored extraction"
+    },
+    {
+      "extension": "mk2/ea-sage",
+      "contributionId": "org.modkitx/big",
+      "corpus": "synthetic",
+      "sample": "minimal.big",
+      "minimumConfidence": 0.9,
+      "dataSource": "namespace",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "0" },
+        "outputKind": "bytes",
+        "minimumBytes": 5
+      },
+      "note": "BIG4 mixed-endian table with one stored file; acceptance enumerates and extracts it"
     },
     {
       "extension": "mk2/adobe-flash",

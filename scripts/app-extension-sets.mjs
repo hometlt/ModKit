@@ -106,6 +106,68 @@ export const READY_APP_EXTENSIONS = Object.freeze({
     coordinate: 'org.modkitx/ui-monaco',
     contributions: Object.freeze(['org.modkitx.ui-monaco/code-stage']),
   }),
+  'mk2-blizzard-archives': Object.freeze({
+    path: Object.freeze(['mk2', 'blizzard-archives']),
+    coordinate: 'org.modkitx.blizzard/archives',
+    contributions: Object.freeze(['org.modkitx/casc', 'org.modkitx/mpq']),
+  }),
+  'mk2-blizzard-starcraft-2': Object.freeze({
+    path: Object.freeze(['mk2', 'blizzard-starcraft-2']),
+    coordinate: 'org.modkitx.blizzard/starcraft-2',
+    contributions: Object.freeze([
+      'org.modkitx/galaxy',
+      'org.modkitx/m3',
+      'org.modkitx/sc2-bank',
+      'org.modkitx/sc2-data',
+      'org.modkitx/sc2-document-metadata',
+      'org.modkitx/sc2-layout',
+      'org.modkitx/sc2-map',
+      'org.modkitx/sc2-mod',
+      'org.modkitx/sc2-replay',
+      'org.modkitx/sc2-runtime',
+      'org.modkitx/sc2-strings',
+      'org.modkitx/sc2-triggers',
+    ]),
+  }),
+  'mk2-common-images': Object.freeze({
+    path: Object.freeze(['mk2', 'common-images']),
+    coordinate: 'org.modkitx.common/images',
+    contributions: Object.freeze([
+      'org.modkitx/ani',
+      'org.modkitx/astc',
+      'org.modkitx/avif',
+      'org.modkitx/basis',
+      'org.modkitx/bmp',
+      'org.modkitx/cur',
+      'org.modkitx/dds',
+      'org.modkitx/exr',
+      'org.modkitx/gif',
+      'org.modkitx/hdr',
+      'org.modkitx/ico',
+      'org.modkitx/jpg',
+      'org.modkitx/ktx',
+      'org.modkitx/ktx2',
+      'org.modkitx/pal',
+      'org.modkitx/pcx',
+      'org.modkitx/pkm',
+      'org.modkitx/png',
+      'org.modkitx/pvr',
+      'org.modkitx/tga',
+      'org.modkitx/tiff',
+      'org.modkitx/webp',
+    ]),
+  }),
+  'mk2-ea-sage': Object.freeze({
+    path: Object.freeze(['mk2', 'ea-sage']),
+    coordinate: 'org.modkitx.ea/sage',
+    contributions: Object.freeze([
+      'org.modkitx/big',
+      'org.modkitx/cnc3-data',
+      'org.modkitx/cnc3-localization',
+      'org.modkitx/cnc3-map',
+      'org.modkitx/sage-skudef',
+    ]),
+  }),
 })
 
 const structuredText = Object.freeze([
@@ -119,6 +181,12 @@ const structuredText = Object.freeze([
 const media = Object.freeze(['images', 'vector', 'audio', 'video'])
 const modelsAndArchives = Object.freeze(['models', 'archives'])
 const fullCodecs = Object.freeze([...structuredText, 'documents', ...media, ...modelsAndArchives])
+const mk2Extended = Object.freeze([
+  'mk2-blizzard-archives',
+  'mk2-blizzard-starcraft-2',
+  'mk2-common-images',
+  'mk2-ea-sage',
+])
 
 export const APP_EXTENSION_SETS = Object.freeze({
   'structured-text': structuredText,
@@ -127,7 +195,14 @@ export const APP_EXTENSION_SETS = Object.freeze({
   'models-and-archives': modelsAndArchives,
   'full-codecs': fullCodecs,
   'editor-and-documents': Object.freeze(['text-json', 'documents', 'ui-monaco']),
+  'mk2-extended': mk2Extended,
 })
+
+export function extensionDirectory(name) {
+  const extension = READY_APP_EXTENSIONS[name]
+  if (extension === undefined) throw new Error(`unknown application extension directory: ${name}`)
+  return extension.path ?? Object.freeze(['common', name])
+}
 
 export function extensionSet(name) {
   const directories = APP_EXTENSION_SETS[name]

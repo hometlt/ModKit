@@ -9,6 +9,7 @@ import {
   READY_APP_EXTENSIONS,
   expectedContributionIds,
   expectedExtensionCoordinates,
+  extensionDirectory,
   extensionSet,
 } from './app-extension-sets.mjs'
 
@@ -137,7 +138,7 @@ const inputByDirectory = new Map(
   await Promise.all(
     Object.keys(READY_APP_EXTENSIONS).map(async directory => [
       directory,
-      await loadExtensionDirectory(join(root, 'extensions', 'common', directory)),
+      await loadExtensionDirectory(join(root, 'extensions', ...extensionDirectory(directory))),
     ]),
   ),
 )
@@ -248,6 +249,12 @@ await checkApplicationSet(
   { main: { offers: 29, active: 29 } },
 )
 await checkApplicationSet(
+  'headless',
+  'mk2-extended',
+  async extensions => ({ main: (await createAutomationHost(extensions)).composition }),
+  { main: { offers: 41, active: 41 } },
+)
+await checkApplicationSet(
   'pwa',
   'structured-text',
   async extensions => {
@@ -279,6 +286,22 @@ await checkApplicationSet(
     main: { offers: 'none', active: 'none' },
     // 7 codecs + the PNG encoder writer provider (A5, browser-worker variant)
     worker: { offers: 8, active: 8 },
+  },
+)
+await checkApplicationSet(
+  'pwa',
+  'mk2-extended',
+  async extensions => {
+    const app = await web.createWebApp(
+      { operatingSystem: 'linux', architecture: 'x64' },
+      extensions,
+      { main: ['worker.module'], worker: [], sharedMemory: false },
+    )
+    return { main: app.main, worker: app.worker }
+  },
+  {
+    main: { offers: 'none', active: 'none' },
+    worker: { offers: 41, active: 41 },
   },
 )
 await checkApplicationSet(
@@ -323,6 +346,18 @@ await checkApplicationSet(
   },
 )
 await checkApplicationSet(
+  'vscode',
+  'mk2-extended',
+  async extensions => {
+    const app = await vscode.createVsCodeDesktopApp(extensions)
+    return { extensionHost: app.extensionHost, webview: app.webview }
+  },
+  {
+    extensionHost: { offers: 41, active: 41 },
+    webview: { offers: 'none', active: 'none' },
+  },
+)
+await checkApplicationSet(
   'electron',
   'models-and-archives',
   async extensions => {
@@ -346,8 +381,23 @@ await checkApplicationSet(
     renderer: { offers: 'none', active: 'none' },
   },
 )
+await checkApplicationSet(
+  'electron',
+  'mk2-extended',
+  async extensions => {
+    const app = await electron.createElectronApp(extensions)
+    return { main: app.main, renderer: app.renderer }
+  },
+  {
+    main: { offers: 41, active: 41 },
+    renderer: { offers: 'none', active: 'none' },
+  },
+)
 
-if (new Set(Object.values(APP_EXTENSION_SETS).flat()).size !== 14) {
+if (
+  new Set(Object.values(APP_EXTENSION_SETS).flat()).size !==
+  Object.keys(READY_APP_EXTENSIONS).length
+) {
   throw new Error('apps:check: ready extension catalog is not fully covered by the matrix')
 }
 
