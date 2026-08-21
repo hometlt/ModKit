@@ -21,9 +21,8 @@
     }
   ],
   "limitations": [
-    "PVR v3 software preview covers 2D PVRTC1, ETC1/ETC2/EAC, BC1 through BC7, and ASTC block payloads, including selected mip, surface, and face.",
-    "PVR v2, uncompressed/custom formats, PVRTC2, 3D ASTC and volume textures, and Basis Universal payloads inside PVR are metadata-only.",
-    "Encoding remains follow-up work; browser main-thread and module-worker software decode plus descriptor-driven WebGL/WebGPU upload are implemented where the device exposes an exact format."
+    "The MK3 port validates PVR v3 headers and metadata records, walks exact uncompressed custom-format mip ranges, and decodes the first single-surface RGBA8/BGRA8 image when channel type is unsigned normalized.",
+    "Compressed-format software decoding, later mip/surface/face/slice decoding, PVR v2, writing, metadata mutation, and pixel editing remain unsupported."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "pvr", "label": "PowerVR Texture Container" }],

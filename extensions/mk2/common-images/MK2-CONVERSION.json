@@ -239,7 +239,7 @@
       ],
       "droppedOperations": ["image.compressed-read", "image.inspect", "image.read", "image.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/ktx2": {
       "verdict": "needs-new-contract",
@@ -256,7 +256,7 @@
       ],
       "droppedOperations": ["image.compressed-read", "image.inspect", "image.read", "image.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/pal": {
       "verdict": "mechanical",
@@ -304,7 +304,7 @@
       ],
       "droppedOperations": ["image.compressed-read", "image.inspect", "image.read"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/png": {
       "verdict": "needs-new-contract",
@@ -336,7 +336,7 @@
       ],
       "droppedOperations": ["image.compressed-read", "image.inspect", "image.read"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/tga": {
       "verdict": "needs-new-contract",

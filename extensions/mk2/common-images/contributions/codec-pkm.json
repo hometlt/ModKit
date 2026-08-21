@@ -21,10 +21,8 @@
     }
   ],
   "limitations": [
-    "Read, compressed-block access, and RGBA8 software preview cover PKM 1.0 ETC1 plus Ericsson ETCPACK PKM 2.0 identifiers 0, 1, and 3-11; retired identifier 2 is rejected.",
-    "Identifiers 9-11 are explicitly treated as Ericsson ETCPACK sRGB extensions; the standard PKM 2.0 table ends at identifier 8.",
-    "The restrictive ETCPACK fixture license is not copied into this repository; deterministic family-wide RGBA hashes and container fuzzing are local evidence, while independent native-oracle certification remains external.",
-    "Encoding and mip chains remain follow-up work; browser main-thread and module-worker software decode plus descriptor-driven WebGL/WebGPU upload are implemented."
+    "The MK3 port validates PKM 1.0 ETC1 and PKM 2.0/ETCPACK identifiers 0, 1, and 3-11, padded dimensions, block geometry, and the exact compressed payload size; retired identifier 2 is rejected.",
+    "ETC/EAC software decoding, GPU upload, mip chains, encoding, and pixel editing remain unsupported; identifiers 9-11 are reported as ETCPACK sRGB extensions."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "pkm", "label": "PKM ETC Texture" }],

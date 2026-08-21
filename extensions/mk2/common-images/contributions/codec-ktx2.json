@@ -21,12 +21,8 @@
     }
   ],
   "limitations": [
-    "Decode covers the implemented uncompressed Vulkan formats, mapped GPU block formats, BasisLZ/UASTC, and zlib/zstd-supercompressed levels.",
-    "Volume-slice selection, HDR Basis, PVRTC/ATC, and some sRGB or typeless variants remain follow-up work.",
-    "Export writes RGBA8 KTX2 and does not preserve arbitrary source compression, metadata, or subresource layout.",
-    "Manifest v1 cannot express the handwritten registry's extension-or-signature fallback without conjunctive evidence, so generated routing is extension-only.",
-    "Browser main-thread and module-worker paths use explicit URL-based Texture2DDecoder/BasisU ESM-WASM boundaries; uncompressed and built-in BC paths do not require those assets.",
-    "This folder is a manifest-ownership adapter; runtime implementation is shared with the KTX v1 codec."
+    "The MK3 port validates the KTX2 header, complete level index, DFD/KVD/SGD ranges, dimensions, layers, faces, and supercompression declaration and publishes metadata plus encoded payload access.",
+    "Vulkan-format pixel decoding, Basis transcoding, zlib/zstd supercompression decoding, writing, metadata mutation, and pixel editing remain unsupported."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "ktx2", "label": "Khronos Texture v2" }],

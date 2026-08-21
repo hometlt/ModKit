@@ -387,6 +387,71 @@ const ico = () => iconContainer(1)
 const cur = () => iconContainer(2)
 
 /**
+ * KTX 1.1: little-endian header, one KTXorientation key/value record, one uncompressed RGBA8 mip
+ * and one pixel. The level imageSize is four and therefore needs no additional alignment bytes.
+ */
+function ktx() {
+  const orientation = ascii('KTXorientation\0S=r,T=d\0')
+  const orientationPadding = new Uint8Array((4 - (orientation.byteLength % 4)) % 4)
+  const keyValues = concat(u32le(orientation.byteLength), orientation, orientationPadding)
+  return concat(
+    bytes(0xab, 0x4b, 0x54, 0x58, 0x20, 0x31, 0x31, 0xbb, 0x0d, 0x0a, 0x1a, 0x0a),
+    bytes(1, 2, 3, 4),
+    u32le(0x1401),
+    u32le(1),
+    u32le(0x1908),
+    u32le(0x8058),
+    u32le(0x1908),
+    u32le(1),
+    u32le(1),
+    u32le(0),
+    u32le(0),
+    u32le(1),
+    u32le(1),
+    u32le(keyValues.byteLength),
+    keyValues,
+    u32le(4),
+    bytes(0x80, 0x40, 0x20, 0xff),
+  )
+}
+
+/** PKM 1.0 ETC1: one padded 4×4 block carrying eight deterministic compressed bytes. */
+function pkm() {
+  return concat(
+    ascii('PKM 10'),
+    u16be(0),
+    u16be(4),
+    u16be(4),
+    u16be(1),
+    u16be(1),
+    new Uint8Array(8),
+  )
+}
+
+/**
+ * PVR v3: little-endian custom RGBA 8/8/8/8 unsigned-normalized format, one surface/face/mip
+ * and one exact pixel. No metadata records are declared.
+ */
+function pvr() {
+  return concat(
+    ascii('PVR\x03'),
+    u32le(0),
+    ascii('rgba'),
+    bytes(8, 8, 8, 8),
+    u32le(1),
+    u32le(0),
+    u32le(1),
+    u32le(1),
+    u32le(1),
+    u32le(1),
+    u32le(1),
+    u32le(1),
+    u32le(0),
+    bytes(0x80, 0x40, 0x20, 0xff),
+  )
+}
+
+/**
  * POSIX ustar archive: IEEE 1003.1 §pax "ustar Interchange Format" — one 512-byte header block
  * with the octal header checksum, one data block, and the two zero blocks that end an archive.
  */
@@ -870,6 +935,9 @@ const FIXTURES = {
   'minimal.gif': gif,
   'minimal.hdr': hdr,
   'minimal.ico': ico,
+  'minimal.ktx': ktx,
+  'minimal.pkm': pkm,
+  'minimal.pvr': pvr,
   'minimal.wav': wav,
   'minimal.m3': m3,
   'minimal.mpq': mpq,

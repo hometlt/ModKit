@@ -21,10 +21,8 @@
     }
   ],
   "limitations": [
-    "RGBA decode covers the implemented uncompressed 8-bit and single-2D mapped block-compressed formats; image.compressed.read preserves mapped array, cubemap, and 3D block payloads for compatible consumers.",
-    "Export writes RGBA8 KTX1 and does not preserve arbitrary source compression, metadata, or subresource layout.",
-    "Browser main-thread and module-worker paths use explicit URL-based Texture2DDecoder/BasisU ESM-WASM boundaries; uncompressed and built-in BC paths do not require those assets.",
-    "Manifest v1 cannot express the legacy extension-or-signature fallback without making both mandatory; generated routing uses the extension while the handwritten registry retains signature sniffing."
+    "The MK3 port validates KTX1 endianness, key/value records, mip/image ranges, arrays, cubemaps, and depth slices; bounded first-image RGBA8 access is limited to uncompressed unsigned-byte RGB/RGBA.",
+    "Compressed block decoding, later mip/layer/face/slice decoding, writing, metadata mutation, and pixel editing remain unsupported."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "ktx", "label": "Khronos Texture v1" }],

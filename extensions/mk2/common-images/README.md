@@ -25,13 +25,13 @@ renames, converter defaults and v1 operations left without a handler — is data
 | `org.modkitx/hdr`   | `extensions/common/images/codecs/hdr/codec.manifest.json`   | `src/hdr/codec.js`   | ported       |
 | `org.modkitx/ico`   | `extensions/common/images/codecs/ico/codec.manifest.json`   | `src/ico/codec.js`   | ported       |
 | `org.modkitx/jpg`   | `extensions/common/images/codecs/jpg/codec.manifest.json`   | `src/jpg/codec.js`   | ported       |
-| `org.modkitx/ktx`   | `extensions/common/images/codecs/ktx/codec.manifest.json`   | `src/ktx/codec.js`   | port-pending |
-| `org.modkitx/ktx2`  | `extensions/common/images/codecs/ktx2/codec.manifest.json`  | `src/ktx2/codec.js`  | port-pending |
+| `org.modkitx/ktx`   | `extensions/common/images/codecs/ktx/codec.manifest.json`   | `src/ktx/codec.js`   | ported       |
+| `org.modkitx/ktx2`  | `extensions/common/images/codecs/ktx2/codec.manifest.json`  | `src/ktx2/codec.js`  | ported       |
 | `org.modkitx/pal`   | `extensions/common/images/codecs/pal/codec.manifest.json`   | `src/pal/codec.js`   | port-pending |
 | `org.modkitx/pcx`   | `extensions/common/images/codecs/pcx/codec.manifest.json`   | `src/pcx/codec.js`   | port-pending |
-| `org.modkitx/pkm`   | `extensions/common/images/codecs/pkm/codec.manifest.json`   | `src/pkm/codec.js`   | port-pending |
+| `org.modkitx/pkm`   | `extensions/common/images/codecs/pkm/codec.manifest.json`   | `src/pkm/codec.js`   | ported       |
 | `org.modkitx/png`   | `extensions/common/images/codecs/png/codec.manifest.json`   | `src/png/codec.js`   | port-pending |
-| `org.modkitx/pvr`   | `extensions/common/images/codecs/pvr/codec.manifest.json`   | `src/pvr/codec.js`   | port-pending |
+| `org.modkitx/pvr`   | `extensions/common/images/codecs/pvr/codec.manifest.json`   | `src/pvr/codec.js`   | ported       |
 | `org.modkitx/tga`   | `extensions/common/images/codecs/tga/codec.manifest.json`   | `src/tga/codec.js`   | port-pending |
 | `org.modkitx/tiff`  | `extensions/common/images/codecs/tiff/codec.manifest.json`  | `src/tiff/codec.js`  | port-pending |
 | `org.modkitx/webp`  | `extensions/common/images/codecs/webp/codec.manifest.json`  | `src/webp/codec.js`  | ported       |

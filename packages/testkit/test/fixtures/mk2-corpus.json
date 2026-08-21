@@ -124,6 +124,52 @@
       "note": "CUR directory with hotspot 0,0 and one 32-bit DIB XOR pixel plus AND mask; acceptance reads exact RGBA8"
     },
     {
+      "extension": "mk2/common-images",
+      "contributionId": "org.modkitx/ktx",
+      "corpus": "synthetic",
+      "sample": "minimal.ktx",
+      "minimumConfidence": 0.9,
+      "dataSource": "raster",
+      "expectedFirstPixelRgba": [128, 64, 32, 255],
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "KTX1 little-endian RGBA8 texture with orientation metadata and one exact mip pixel"
+    },
+    {
+      "extension": "mk2/common-images",
+      "contributionId": "org.modkitx/ktx2",
+      "corpus": "real",
+      "sample": "packages/image-processing/test/fixtures/basisu/ktx2_2d_uastc.ktx2",
+      "minimumConfidence": 0.9,
+      "dataSource": "tree",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "Real read-only BasisU UASTC KTX2 fixture; validates all six level-index ranges and DFD/KVD ranges without claiming transcoding"
+    },
+    {
+      "extension": "mk2/common-images",
+      "contributionId": "org.modkitx/pkm",
+      "corpus": "synthetic",
+      "sample": "minimal.pkm",
+      "minimumConfidence": 0.9,
+      "dataSource": "tree",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "PKM 1.0 ETC1 header, padded 4x4 block geometry and exact eight-byte compressed payload"
+    },
+    {
+      "extension": "mk2/common-images",
+      "contributionId": "org.modkitx/pvr",
+      "corpus": "synthetic",
+      "sample": "minimal.pvr",
+      "minimumConfidence": 0.9,
+      "dataSource": "raster",
+      "expectedFirstPixelRgba": [128, 64, 32, 255],
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "PVR v3 custom RGBA8888 texture with one surface, face, mip and exact pixel"
+    },
+    {
       "extension": "mk2/common-audio",
       "contributionId": "org.modkitx/mp3",
       "corpus": "real",
