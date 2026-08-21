@@ -21,3 +21,9 @@ XML, applies schema-driven scalar/append/indexed patch rules, resolves parent in
 returns immutable semantic entities with provenance. The bootstrap schema intentionally covers ten
 common classes only; generated full-schema coverage, tokens, localization, references, rename and
 export remain explicit follow-up work.
+
+The extension also provides `common.map/semantic-analysis@1`. It opens bounded, already-extracted
+placed objects, regions and an HMAP terrain summary, publishes the catalog queries required by
+placed units, and binds them to resolved schema-backed entities when the matching catalog snapshot
+is supplied. Container extraction, other map internals, rendering, triggers, localization, writing
+and packing remain outside this slice.

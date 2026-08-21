@@ -40,6 +40,7 @@ import { SCENE_RENDERER_MATCHER, registerStandardRendererDefinitions } from './r
 import { GAME_INSTALLATION_MATCHER, registerStandardGameDefinitions } from './games/index.js'
 import { MOD_WORKSPACE_MATCHER, registerStandardModDefinitions } from './mods/index.js'
 import { DATA_CATALOG_MATCHER, registerStandardDataDefinitions } from './data/index.js'
+import { MAP_SEMANTIC_MATCHER, registerStandardMapDefinitions } from './maps/index.js'
 import { openSubject, type OpenSubjectResult } from './subject-open.js'
 
 // ---------------------------------------------------------------------------------------------
@@ -221,6 +222,7 @@ export function createBundledServiceDefinitionRegistry(
       GAME_INSTALLATION_MATCHER,
       MOD_WORKSPACE_MATCHER,
       DATA_CATALOG_MATCHER,
+      MAP_SEMANTIC_MATCHER,
       ...(options.matcherProfiles ?? []),
     ]),
     isNamespaceOwner: () => true,
@@ -246,6 +248,7 @@ export async function registerServiceDefinitionsOrThrow(
   const games = await registerStandardGameDefinitions(definitions)
   const mods = await registerStandardModDefinitions(definitions)
   const data = await registerStandardDataDefinitions(definitions)
+  const maps = await registerStandardMapDefinitions(definitions)
   const registrations = [
     editing,
     language,
@@ -254,6 +257,7 @@ export async function registerServiceDefinitionsOrThrow(
     games,
     mods,
     data,
+    maps,
     ...(await registerServiceContractDefinitionsFromInventory(inventory, definitions)),
   ]
   const rejected = registrations.filter(result => result.state === 'rejected')

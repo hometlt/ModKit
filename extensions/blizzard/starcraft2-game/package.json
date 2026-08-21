@@ -3,11 +3,12 @@
   "version": "1.0.0",
   "license": "MIT",
   "type": "module",
-  "description": "StarCraft II installation, workspace and semantic catalog providers for MK3.",
+  "description": "StarCraft II installation, workspace, catalog and semantic map providers for MK3.",
   "exports": {
     ".": "./src/provider.js",
     "./workspace": "./src/workspace-provider.js",
     "./data": "./src/data-provider.js",
+    "./maps": "./src/map-provider.js",
     "./linked": "./src/linked.js",
     "./package.json": "./package.json"
   },

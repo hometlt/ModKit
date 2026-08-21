@@ -16,6 +16,8 @@ import {
   revisionId,
   type ArtifactByteSource,
   type DataCatalogAnalysis,
+  type GameInstallationDiscovery,
+  type MapSemanticAnalysis,
   type ModWorkspaceComposition,
   type NamespaceEntrySource,
   type ResourceBudget,
@@ -32,6 +34,11 @@ const m3Path =
 const ddsPath = 'campaigns/liberty.sc2campaign/base.sc2assets/assets/textures/alpha2.dds'
 const mpqPath =
   'mods/liberty.sc2mod/base.sc2data/battlenetcache/fc2161abf876306f1a0467cfacf5e513cba4281fdc13532b440e8c8abb8835ac.s2ma'
+const mapRoot = 'campaigns/liberty.sc2campaign/base.sc2maps/maps/campaign/tarcade.sc2map'
+const { discoverStarcraft2Installations } = (await import(
+  pathToFileURL(join(repoRoot, 'extensions', 'blizzard', 'starcraft2-game', 'src', 'provider.js'))
+    .href
+)) as { readonly discoverStarcraft2Installations: GameInstallationDiscovery['discover'] }
 const { composeStarcraft2Workspace } = (await import(
   pathToFileURL(
     join(repoRoot, 'extensions', 'blizzard', 'starcraft2-game', 'src', 'workspace-provider.js'),
@@ -42,6 +49,11 @@ const { analyzeStarcraft2Data } = (await import(
     join(repoRoot, 'extensions', 'blizzard', 'starcraft2-game', 'src', 'data-provider.js'),
   ).href
 )) as { readonly analyzeStarcraft2Data: DataCatalogAnalysis['analyze'] }
+const { openStarcraft2Map } = (await import(
+  pathToFileURL(
+    join(repoRoot, 'extensions', 'blizzard', 'starcraft2-game', 'src', 'map-provider.js'),
+  ).href
+)) as { readonly openStarcraft2Map: MapSemanticAnalysis['open'] }
 
 const budget: ResourceBudget = {
   maxInputBytes: 268_435_456n,
@@ -75,9 +87,21 @@ function memorySource(bytes: Uint8Array, name: string): ArtifactByteSource {
 
 describe('installed StarCraft II CASC product path', () => {
   it.skipIf(!existsSync(buildInfoPath))(
-    'opens CASC and reopens nested M3, DDS and MPQ bytes through Host',
+    'discovers the install, resolves dependencies and opens a real semantic map through CASC',
     async () => {
       const before = statSync(buildInfoPath)
+      const discovered = await discoverStarcraft2Installations({
+        gameId: 'org.modkitx/starcraft-2',
+        configuredPaths: [sc2Root],
+        maxCandidates: 16,
+      })
+      expect(
+        discovered.installations.some(
+          installation =>
+            installation.normalizedPath.toLowerCase() ===
+            sc2Root.replace(/\\/gu, '/').replace(/\/+$/gu, '').toLowerCase(),
+        ),
+      ).toBe(true)
       const directories = [
         ['mk2', 'blizzard-casc'],
         ['mk2', 'blizzard-models'],
@@ -149,9 +173,9 @@ describe('installed StarCraft II CASC product path', () => {
             )
           }
           const workspace = await composeStarcraft2Workspace({
-            workspaceId: 'installed-retail-void',
+            workspaceId: 'installed-liberty-tarcade',
             gameId: 'org.modkitx/starcraft-2',
-            activeRootId: 'retail:void.sc2mod',
+            activeRootId: 'retail:tarcade.sc2map',
             sources: [
               {
                 sourceId: 'retail-casc',
@@ -160,56 +184,151 @@ describe('installed StarCraft II CASC product path', () => {
                 fingerprint: `${before.size}:${before.mtimeMs}`,
               },
             ],
-            roots: stockRoots.map(name => ({
-              rootId: `retail:${name.toLowerCase()}`,
-              sourceId: 'retail-casc',
-              sourcePath: `mods/${name.toLowerCase()}`,
-              displayName: name,
-              kind: 'mod',
-              declaredDependencies: [],
-            })),
+            roots: [
+              ...stockRoots.map(name => ({
+                rootId: `retail:${name.toLowerCase()}`,
+                sourceId: 'retail-casc',
+                sourcePath: `mods/${name.toLowerCase()}`,
+                displayName: name,
+                kind: 'mod',
+                declaredDependencies: [],
+              })),
+              {
+                rootId: 'retail:liberty.sc2campaign',
+                sourceId: 'retail-casc',
+                sourcePath: 'campaigns/liberty.sc2campaign',
+                displayName: 'Liberty.SC2Campaign',
+                kind: 'campaign',
+                declaredDependencies: [],
+              },
+              {
+                rootId: 'retail:tarcade.sc2map',
+                sourceId: 'retail-casc',
+                sourcePath: mapRoot,
+                displayName: 'TArcade.SC2Map',
+                kind: 'map',
+                declaredDependencies: [{ ref: 'Liberty.SC2Campaign', required: true }],
+              },
+            ],
             maxRoots: 32,
             maxDepth: 16,
           })
           expect(workspace.complete).toBe(true)
-          expect(workspace.loadOrder.map(root => root.displayName)).toEqual(stockRoots)
+          expect(workspace.loadOrder.map(root => root.displayName)).toEqual([
+            'Core.SC2Mod',
+            'Liberty.SC2Mod',
+            'Liberty.SC2Campaign',
+            'TArcade.SC2Map',
+          ])
 
-          const catalogDocuments = await Promise.all(
-            workspace.loadOrder.map(async root => {
-              const path = `${root.sourcePath}/base.sc2data/gamedata/unitdata.xml`
-              const extracted = await casc.session
-                .operations()
-                .invoke('extract-entry', { entryId: path })
-              if (extracted.state !== 'ok' || extracted.output.kind !== 'bytes') {
-                throw new Error(`CASC extraction failed for ${path}`)
-              }
-              return {
-                rootId: root.rootId,
-                path,
-                text: new TextDecoder().decode(extracted.output.value),
-              }
+          const extractCascBytes = async (path: string): Promise<Uint8Array> => {
+            const extracted = await casc.session
+              .operations()
+              .invoke('extract-entry', { entryId: path })
+            if (extracted.state !== 'ok' || extracted.output.kind !== 'bytes') {
+              throw new Error(`CASC extraction failed for ${path}`)
+            }
+            return extracted.output.value
+          }
+
+          const mapDocuments = await Promise.all(
+            ['objects', 'regions', 't3heightmap'].map(async name => {
+              const path = `${mapRoot}/${name}`
+              return { path, bytes: await extractCascBytes(path) }
             }),
           )
+          const mapLimits = {
+            maxDocuments: 8,
+            maxDocumentBytes: 1_000_000,
+            maxTotalBytes: 4_000_000,
+            maxObjects: 10_000,
+            maxRegions: 1_000,
+            maxTerrainCells: 100_000,
+            maxTerrainSamples: 32,
+            maxDepth: 64,
+          } as const
+          const preliminaryMap = await openStarcraft2Map({
+            workspaceId: workspace.workspaceId,
+            gameId: workspace.gameId,
+            mapId: mapRoot,
+            documents: mapDocuments,
+            ...mapLimits,
+          })
+          expect(preliminaryMap.complete).toBe(false)
+          expect(preliminaryMap.catalogQueries).toContainEqual({
+            namespace: 'Unit',
+            entityId: 'Marine',
+          })
+
+          const catalogDocuments = (
+            await Promise.all(
+              workspace.loadOrder.map(async root => {
+                const path = `${root.sourcePath}/base.sc2data/gamedata/unitdata.xml`
+                const page = await namespace.list(path, { limit: 1 })
+                if (page.items[0]?.path !== path) return undefined
+                return {
+                  rootId: root.rootId,
+                  path,
+                  text: new TextDecoder().decode(await extractCascBytes(path)),
+                }
+              }),
+            )
+          ).filter(document => document !== undefined)
           const catalog = await analyzeStarcraft2Data({
             workspaceId: workspace.workspaceId,
             gameId: workspace.gameId,
             documents: catalogDocuments,
-            queries: [{ namespace: 'Unit', entityId: 'Marine' }],
+            queries: preliminaryMap.catalogQueries,
             maxDocuments: 16,
             maxTextBytes: 16_777_216,
             maxEntities: 100_000,
             maxDepth: 128,
           })
           expect(catalog.entityCount).toBeGreaterThan(100)
-          expect(catalog.entities[0]).toMatchObject({
+          const marine = catalog.entities.find(entity => entity.entityId === 'Marine')
+          expect(marine).toMatchObject({
             namespace: 'Unit',
             typeId: 'CUnit',
             entityId: 'Marine',
           })
-          expect(Object.keys(catalog.entities[0]?.fields ?? {})).toEqual(
+          expect(Object.keys(marine?.fields ?? {})).toEqual(
             expect.arrayContaining(['LifeMax', 'Race']),
           )
-          expect(catalog.entities[0]?.sources.length).toBeGreaterThan(0)
+          expect(marine?.sources.length).toBeGreaterThan(0)
+
+          const semanticMap = await openStarcraft2Map({
+            workspaceId: workspace.workspaceId,
+            gameId: workspace.gameId,
+            mapId: mapRoot,
+            documents: mapDocuments,
+            catalog,
+            ...mapLimits,
+          })
+          expect(
+            semanticMap.complete,
+            semanticMap.diagnostics.map(item => `${item.code}: ${item.message}`).join('\n'),
+          ).toBe(true)
+          expect(semanticMap.terrain).toMatchObject({
+            version: 101,
+            width: 257,
+            height: 257,
+            cellCount: 66_049,
+          })
+          expect(semanticMap.regions).toContainEqual(
+            expect.objectContaining({ regionId: 1, name: 'Cheer' }),
+          )
+          const placedMarine = semanticMap.objects.find(
+            object => object.kind === 'unit' && object.typeId === 'Marine',
+          )
+          expect(placedMarine).toMatchObject({
+            catalog: {
+              ref: { namespace: 'Unit', entityId: 'Marine' },
+              entity: { typeId: 'CUnit', fields: { Race: 'Terr' } },
+            },
+          })
+          expect(semanticMap.resolvedCatalogObjects).toBe(
+            semanticMap.objects.filter(object => object.kind === 'unit').length,
+          )
 
           const cancelled = new AbortController()
           cancelled.abort()

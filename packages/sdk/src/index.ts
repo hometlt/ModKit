@@ -164,6 +164,7 @@ export * from './renderer/index.js'
 export * from './games/index.js'
 export * from './mods/index.js'
 export * from './data/index.js'
+export * from './maps/index.js'
 export type {
   ArtifactSource,
   ArtifactByteSource,
