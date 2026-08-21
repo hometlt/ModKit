@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.modkitx/hdr",
+  "displayName": "Radiance RGBE HDR",
+  "status": "supported",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/hdr/codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/hdr/codec.js",
+      "target": { "environments": ["browser-worker", "node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "limitations": [
+    "Decode accepts 32-bit_rle_rgbe scanlines and produces a clamped RGBA8 preview rather than preserving high-dynamic-range samples.",
+    "Orientation signs are reported as metadata but the current pixel output does not normalize every legal Radiance orientation.",
+    "Write accepts RGBA8 input and emits a basic Radiance RGBE image without preserving source exposure, gamma, comments, or scanline compression.",
+    "Manifest v1 cannot express the legacy extension-or-either-header-signature fallback without turning it into a conjunction; generated routing intentionally uses the extension while the handwritten compatibility registry retains global structural sniffing."
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "hdr", "label": "Radiance RGBE HDR" }],
+    "roles": ["media"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored", "compiled", "runtime"],
+    "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
+    "match": {
+      "extensions": ["hdr"],
+      "signatures": [
+        { "from": "start", "offset": 0, "bytesHex": "233f52414449414e4345" },
+        { "from": "start", "offset": 0, "bytesHex": "233f52474245" }
+      ]
+    },
+    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
+    "representations": [
+      {
+        "id": "raster-metadata",
+        "contract": "common.image/raster-metadata",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      { "contract": "common.view/raster-image-source", "major": 1 },
+      { "contract": "common.view/tree-data-source", "major": 1 },
+      { "contract": "common.view/byte-range-source", "major": 1 }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1073741824",
+      "maxDepth": 64,
+      "maxNodes": 100000,
+      "maxScalarBytes": 104857600,
+      "maxDiagnostics": 1000
+    }
+  }
+}

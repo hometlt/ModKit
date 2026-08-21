@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.modkitx/7z",
+  "displayName": "7-Zip archive",
+  "status": "supported",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/7z/codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/7z/codec.js",
+      "target": { "environments": ["browser-worker", "node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "limitations": [
+    "Runtime operations require a host-injected 7zz.wasm binary and the optional 7z-wasm peer package; the codec does not fetch, install, or launch a native 7-Zip executable.",
+    "Browser hosts can use the leaf signature detector, but read/write runtime reachability is currently declared only for Node because the compatibility entrypoint reaches Node-oriented package code.",
+    "The byte API stages complete archives in WASM MEMFS rather than providing ranged or incremental local-file access.",
+    "Multi-volume .7z.001 discovery and native incremental Save are host-owned behaviors outside this codec entry point."
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "7z", "label": "7-Zip archive" }],
+    "roles": ["container"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored", "compiled"],
+    "openIntents": ["probe", "inspect", "full", "export"],
+    "match": {
+      "extensions": ["7z"],
+      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "377abcaf271c" }]
+    },
+    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
+    "representations": [
+      {
+        "id": "archive-namespace",
+        "contract": "common.archive/entry-namespace",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      { "contract": "common.view/namespace-entry-source", "major": 1 },
+      { "contract": "common.view/tree-data-source", "major": 1 },
+      { "contract": "common.view/byte-range-source", "major": 1 }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1073741824",
+      "maxDepth": 64,
+      "maxNodes": 100000,
+      "maxScalarBytes": 104857600,
+      "maxDiagnostics": 1000
+    }
+  }
+}

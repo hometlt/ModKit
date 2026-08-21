@@ -14,3 +14,4 @@ renames, converter defaults and v1 operations left without a handler — is data
 | contribution                  | v1 manifest                                                        | module                         | port         |
 | ----------------------------- | ------------------------------------------------------------------ | ------------------------------ | ------------ |
 | `org.modkitx/emperor-rfh-rfd` | `extensions/ea/emperor/codecs/emperor-rfh-rfd/codec.manifest.json` | `src/emperor-rfh-rfd/codec.js` | port-pending |
+| `org.modkitx/emperor-xbf`     | `extensions/ea/emperor/codecs/emperor-xbf/codec.manifest.json`     | `src/emperor-xbf/codec.js`     | port-pending |

@@ -15,4 +15,8 @@ renames, converter defaults and v1 operations left without a handler — is data
 | ----------------------- | --------------------------------------------------------------- | ------------------------ | ------------ |
 | `org.modkitx/relic`     | `extensions/relic/essence/codecs/relic/codec.manifest.json`     | `src/relic/codec.js`     | port-pending |
 | `org.modkitx/relic-sga` | `extensions/relic/essence/codecs/relic-sga/codec.manifest.json` | `src/relic-sga/codec.js` | port-pending |
+| `org.modkitx/rgt`       | `extensions/relic/essence/codecs/rgt/codec.manifest.json`       | `src/rgt/codec.js`       | port-pending |
 | `org.modkitx/rrtex`     | `extensions/relic/essence/codecs/rrtex/codec.manifest.json`     | `src/rrtex/codec.js`     | port-pending |
+| `org.modkitx/rsh`       | `extensions/relic/essence/codecs/rsh/codec.manifest.json`       | `src/rsh/codec.js`       | port-pending |
+| `org.modkitx/rtx`       | `extensions/relic/essence/codecs/rtx/codec.manifest.json`       | `src/rtx/codec.js`       | port-pending |
+| `org.modkitx/wtp`       | `extensions/relic/essence/codecs/wtp/codec.manifest.json`       | `src/wtp/codec.js`       | port-pending |

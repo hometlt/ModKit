@@ -365,7 +365,19 @@ importers:
         specifier: workspace:*
         version: link:../../_shared/codec-kit
 
+  extensions/mk2/blizzard-common-formats:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../_shared/codec-kit
+
   extensions/mk2/blizzard-diablo:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../_shared/codec-kit
+
+  extensions/mk2/blizzard-starcraft-2:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
@@ -443,6 +455,12 @@ importers:
         specifier: workspace:*
         version: link:../../_shared/codec-kit
 
+  extensions/mk2/ea-sage:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../_shared/codec-kit
+
   extensions/mk2/ea-tiberian-sun:
     dependencies:
       '@modkitx-x3/codec-kit':
@@ -473,6 +491,12 @@ importers:
         specifier: workspace:*
         version: link:../../_shared/codec-kit
 
+  extensions/mk2/microsoft-halo-wars:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../_shared/codec-kit
+
   extensions/mk2/new-world-computing-heroes-3:
     dependencies:
       '@modkitx-x3/codec-kit':
@@ -480,6 +504,12 @@ importers:
         version: link:../../_shared/codec-kit
 
   extensions/mk2/new-world-computing-heroes-4:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../_shared/codec-kit
+
+  extensions/mk2/opensource-spring:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*

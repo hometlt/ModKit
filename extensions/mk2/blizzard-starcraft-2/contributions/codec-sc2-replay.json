@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.modkitx/sc2-replay",
+  "displayName": "StarCraft II replay",
+  "status": "partial",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/sc2-replay/codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/sc2-replay/codec.js",
+      "target": { "environments": ["browser-worker", "node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "limitations": [
+    "The declarative prefilter verifies MPQ user-data magic; the bounded detector additionally requires the exact StarCraft II replay signature inside the declared user-data payload.",
+    "The browser-safe facade retains an injected decoder contract, but the manifest is conservatively Node-only because the repository import-graph validator currently classifies both detector and runtime entrypoints as Node-reaching.",
+    "The Node adapter supplies the current @modkitx/replay parser and analyzer and always requests tracker events.",
+    "Optional protocol streams and build-specific decoding remain dependent on the injected decoder and available protocol data.",
+    "Tracker-authoritative playback and rendering never require sc2-runtime; when the optional integrates edge is active, the replay facade can serialize complete tracker frames for runtime prediction and authoritative divergence correction without importing the runtime codec.",
+    "Replay editing, in-place saving, and save-as writing are not implemented, so support remains partial."
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "sc2-replay", "label": "StarCraft II replay" }],
+    "roles": ["semantic"],
+    "sourceTopology": "single",
+    "artifactStages": ["runtime"],
+    "openIntents": ["probe", "inspect", "full", "export"],
+    "match": { "signatures": [{ "from": "start", "offset": 0, "bytesHex": "4d50511b" }] },
+    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
+    "representations": [
+      {
+        "id": "flow-metadata",
+        "contract": "common.document/flow-metadata",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      { "contract": "common.view/table-data-source", "major": 1 },
+      { "contract": "common.view/tree-data-source", "major": 1 },
+      { "contract": "common.view/byte-range-source", "major": 1 }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1073741824",
+      "maxDepth": 64,
+      "maxNodes": 100000,
+      "maxScalarBytes": 104857600,
+      "maxDiagnostics": 1000
+    }
+  }
+}

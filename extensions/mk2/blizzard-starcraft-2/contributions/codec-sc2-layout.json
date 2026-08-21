@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.modkitx/sc2-layout",
+  "displayName": "StarCraft II Layout",
+  "status": "partial",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/sc2-layout/codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/sc2-layout/codec.js",
+      "target": { "environments": ["browser-worker", "node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "limitations": [
+    "The manifest prefilter requires the canonical extension and Desc XML root; the bounded detector remains responsible for recognizing SC2Layout declarations.",
+    "The available renderer emits structural diagnostic HTML rather than the resolved in-game visual result.",
+    "Reference rename has a codec-owned edit transaction but requires sc2-mod to supply the coordinating catalog rename; dependency-workspace resolution, schema validation, language features, visual rendering, and source saving remain dependency-required or disabled.",
+    "Raw export preserves the original XML bytes; structural HTML export is intentionally not round-trip safe.",
+    "Browser runtime reachability is not declared because the current layout parser import graph reaches Node-only code.",
+    "StarCraft II game contribution metadata remains on the semantic codec until game manifests land in Slice C3."
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "sc2-layout", "label": "StarCraft II Layout" }],
+    "roles": ["semantic"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored", "compiled", "runtime"],
+    "openIntents": ["probe", "inspect", "full", "export"],
+    "match": { "extensions": ["sc2layout"] },
+    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
+    "representations": [
+      {
+        "id": "flow-metadata",
+        "contract": "common.document/flow-metadata",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      { "contract": "common.view/text-data-source", "major": 1 },
+      { "contract": "common.view/table-data-source", "major": 1 },
+      { "contract": "common.view/tree-data-source", "major": 1 },
+      { "contract": "common.view/byte-range-source", "major": 1 }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1073741824",
+      "maxDepth": 64,
+      "maxNodes": 100000,
+      "maxScalarBytes": 104857600,
+      "maxDiagnostics": 1000
+    }
+  }
+}

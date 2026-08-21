@@ -15,8 +15,9 @@
 //
 // What it will NOT do: invent contracts, operations, method surfaces (32 §3), traits or
 // permissions. Anything that cannot be derived from the v1 manifest either keeps a converter
-// default recorded in `--json` output, or the codec is skipped with a reason. `needs new
-// contract` is always skipped — no stubs.
+// default recorded in `--json` output, or the codec is skipped with a reason. A codec whose
+// *extra* v1 plane needs a new contract still gets an honest read/inspection stub when an
+// existing bundled representation can describe that side; the missing plane remains inert debt.
 //
 // The emitted `probe` is honest: real magic from the v1 manifest becomes a real byte compare,
 // and a codec without magic reports `confidence: 0` with a TODO instead of a fake 1.0. `open`
@@ -129,6 +130,69 @@ const FAMILIES = {
     stages: ['authored'],
     extraIntents: [],
   },
+  data: {
+    representationId: 'flow-metadata',
+    representation: 'common.document/flow-metadata',
+    dataSources: ['common.view/table-data-source'],
+    stages: ['authored', 'compiled', 'runtime'],
+    extraIntents: [],
+  },
+  layout: {
+    representationId: 'flow-metadata',
+    representation: 'common.document/flow-metadata',
+    dataSources: ['common.view/text-data-source', 'common.view/table-data-source'],
+    stages: ['authored', 'compiled', 'runtime'],
+    extraIntents: [],
+  },
+  localization: {
+    representationId: 'flow-metadata',
+    representation: 'common.document/flow-metadata',
+    dataSources: ['common.view/text-data-source', 'common.view/table-data-source'],
+    stages: ['authored', 'compiled', 'runtime'],
+    extraIntents: [],
+  },
+  map: {
+    representationId: 'archive-namespace',
+    representation: 'common.archive/entry-namespace',
+    dataSources: ['common.view/namespace-entry-source'],
+    stages: ['authored', 'compiled', 'runtime'],
+    extraIntents: [],
+  },
+  mod: {
+    representationId: 'archive-namespace',
+    representation: 'common.archive/entry-namespace',
+    dataSources: ['common.view/namespace-entry-source'],
+    stages: ['authored', 'compiled', 'runtime'],
+    extraIntents: [],
+  },
+  replay: {
+    representationId: 'flow-metadata',
+    representation: 'common.document/flow-metadata',
+    dataSources: ['common.view/table-data-source'],
+    stages: ['runtime'],
+    extraIntents: [],
+  },
+  runtime: {
+    representationId: 'flow-metadata',
+    representation: 'common.document/flow-metadata',
+    dataSources: ['common.view/text-data-source', 'common.view/table-data-source'],
+    stages: ['runtime'],
+    extraIntents: [],
+  },
+  save: {
+    representationId: 'flow-metadata',
+    representation: 'common.document/flow-metadata',
+    dataSources: ['common.view/table-data-source'],
+    stages: ['runtime'],
+    extraIntents: [],
+  },
+  script: {
+    representationId: 'flow-metadata',
+    representation: 'common.document/flow-metadata',
+    dataSources: ['common.view/text-data-source'],
+    stages: ['authored', 'compiled', 'runtime'],
+    extraIntents: [],
+  },
 }
 
 /** Present in every emitted spec: the two sources codec-kit publishes for any inspection codec. */
@@ -160,6 +224,28 @@ const NAMESPACE_PROBE = { kind: 'namespace', maxEntries: 100000, maxDepth: 64, m
 /** AC §5 rename table from the report; applies to the rework verdicts (task A2). */
 const OPERATION_RENAMES = { 'image.compressed.read': 'image.compressed-read' }
 
+/** Hand ports can expose a shared operation that the v1 manifest did not declare explicitly. */
+const PORT_OPERATIONS = {
+  'org.modkitx/big': [
+    {
+      id: 'container.extract',
+      handlerId: 'extract-entry',
+      mutatesSource: false,
+      requiredPermissions: ['read-source'],
+      outputKinds: ['bytes'],
+    },
+  ],
+  'org.modkitx/mpq': [
+    {
+      id: 'container.extract',
+      handlerId: 'extract-entry',
+      mutatesSource: false,
+      requiredPermissions: ['read-source'],
+      outputKinds: ['bytes'],
+    },
+  ],
+}
+
 /**
  * The v1 spelling of "let the detector decide" is a single path glob matching everything. It is
  * NOT a v2 wildcard — `matchesGlob` compiles it into a regular expression that requires a
@@ -170,7 +256,7 @@ const OPERATION_RENAMES = { 'image.compressed.read': 'image.compressed-read' }
 const WILDCARD_GLOB = '**/*'
 
 /**
- * Task E: signatures for the eight v1 containers whose only match rule was the wildcard glob.
+ * Task E: specification-backed signatures absent from a v1 manifest.
  * These are not derived from the v1 manifest — v1 declared no magic for them — so each entry
  * names the specification clause it comes from, the citation is copied into the generated
  * README, and the addition is recorded in MK2-CONVERSION.json as a converter default.
@@ -179,6 +265,14 @@ const WILDCARD_GLOB = '**/*'
  * a rule that cannot be pointed at a paragraph does not belong here.
  */
 const PORT_SIGNATURES = {
+  'org.modkitx/m3': {
+    source:
+      'Blizzard M3 container header: reversed little-endian MD33 / MD34 tags at byte zero (M3_FILE_FORMAT_SPECIFICATION, header and index table)',
+    signatures: [
+      { from: 'start', offset: 0, bytesHex: '3333444d' },
+      { from: 'start', offset: 0, bytesHex: '3433444d' },
+    ],
+  },
   'org.modkitx/flv': {
     source: 'Adobe Video File Format Specification v10.1 §E.2 (FLV header: "FLV" + version)',
     signatures: [{ from: 'start', offset: 0, bytesHex: '464c5601' }],
@@ -224,6 +318,30 @@ const PORT_SIGNATURES = {
   },
 }
 
+const PORT_LIMITATIONS = {
+  'org.modkitx/big': [
+    'The MK3 port reads BIG4/BIGF tables and stored or RefPack entries; deterministic repacking and all mutation paths remain pending.',
+  ],
+  'org.modkitx/mpq': [
+    'The MK3 port reads classic MPQ v0-v3 hash/block tables and stored or zlib payloads; encrypted, implode, bzip2, patch, high-offset, and writing paths remain pending.',
+  ],
+  'org.modkitx/m3': [
+    'The MK3 port indexes MD33/MD34 sections and publishes a metadata-only scene; decoded geometry, materials, skeletons, animations, external M3A sidecars, and writing remain pending.',
+  ],
+}
+
+const PORT_MAY_EXPOSE_TRAITS = {
+  'org.modkitx/m3': new Set([
+    'model.animations',
+    'model.geometry',
+    'model.materials',
+    'model.skeleton',
+    'model.textures',
+    'scene.cameras',
+    'scene.effects',
+  ]),
+}
+
 /** Prose header of MK2-CONVERSION.json; JSON has no comments, so it is a field. */
 const NOTES_COMMENT = [
   'Inert MK2 \u2192 MK3 conversion notes, generated by scripts/convert-mk2.mjs.',
@@ -232,6 +350,8 @@ const NOTES_COMMENT = [
   '`lostPlanes` are v1 entrypoints a codec contribution has no home for (a viewer is its own',
   'contribution kind, 13C; a language plane has no X3 form) \u2014 the converter drops the plane',
   'instead of inventing a spec for it.',
+  '`contractGaps` are v1 verbs whose extra plane has no bundled X3 contract; the readable',
+  'inspection side may still be a stub, but this debt is not presented as implemented.',
   '`renames` are the AC \u00a75 operation-id fixes the conversion applied.',
   '`converterDefaults` are choices v1 did not make; REPORT \u00a77.6/\u00a77.7 asks each port to narrow them.',
   '`droppedOperations` are v1 operation ids emitted without a handler, spelled as v2 would.',
@@ -244,6 +364,7 @@ const NOTES_COMMENT = [
 const VERDICT_WIRE = {
   mechanical: 'mechanical',
   'convertible with rework': 'convertible-with-rework',
+  'needs new contract': 'needs-new-contract',
 }
 
 const GENERATED_MARKER = '@generated by scripts/convert-mk2.mjs'
@@ -305,9 +426,12 @@ function convertCodec(analysis, codec) {
   const renames = [] // AC §5 operation-id renames the conversion had to apply
   const defaults = [] // choices the converter made because v1 said nothing
   const droppedOperations = [] // v1 operation ids emitted without a handler, i.e. not emitted
+  const contractGaps = analysis.issues
+    .filter(issue => ['absent', 'blocked', 'unclear'].includes(issue.class))
+    .map(issue => String(issue.what))
+    .sort()
   const skip = reason => ({ skipped: reason })
 
-  if (analysis.verdict === 'needs new contract') return skip(analysis.verdict)
   if (analysis.verdict === 'convertible with rework' && !withRework) return skip(analysis.verdict)
   if (manifest.status === 'unsupported') {
     // 27 §0.5.2 / REPORT §9.6: a v1 codec that declares itself unsupported is a format
@@ -325,7 +449,14 @@ function convertCodec(analysis, codec) {
   const localId = String(manifest.id)
   if (!SEGMENT_RE.test(localId)) return skip(`codec id «${localId}» is not a segment (23 §3)`)
 
-  const topology = analysis.topology
+  let topology = analysis.topology
+  if (topology === 'single+namespace') {
+    topology = 'single'
+    defaults.push('sourceTopology:single-from-mixed')
+    notes.push(
+      'v1 accepted both single and namespace sources; emitted the single-file side and recorded the split decision',
+    )
+  }
   if (topology !== 'single' && topology !== 'namespace') {
     return skip(`source topology «${topology}» needs a split decision (report: split)`)
   }
@@ -420,7 +551,11 @@ function convertCodec(analysis, codec) {
     notes.push(`v1 operation «${v1Operation}» has no mechanical handler — port it by hand`)
     droppedOperations.push(String(v1Operation))
   }
+  for (const operation of PORT_OPERATIONS[contributionId] ?? []) {
+    if (!operations.some(existing => existing.id === operation.id)) operations.push(operation)
+  }
   defaults.push('operations:inspection-triple')
+  if (PORT_OPERATIONS[contributionId] !== undefined) defaults.push('operations:narrowed-at-port')
 
   // traits ------------------------------------------------------------------------------
   const traitDeclarations = []
@@ -446,6 +581,13 @@ function convertCodec(analysis, codec) {
         ? -1
         : 1,
   )
+  const mayExposeTraits = PORT_MAY_EXPOSE_TRAITS[contributionId]
+  if (mayExposeTraits !== undefined) {
+    for (const declaration of traitDeclarations) {
+      if (mayExposeTraits.has(declaration.id)) declaration.presence = 'may-expose'
+    }
+    defaults.push('traits:narrowed-at-port')
+  }
 
   // lost planes ---------------------------------------------------------------------------
   // v1 `runtime` becomes the codec module and v1 `detect` folds into its probe. Every other
@@ -514,7 +656,14 @@ function convertCodec(analysis, codec) {
         requestedPermissionClasses,
       },
     ],
-    ...((manifest.limitations ?? []).length === 0 ? {} : { limitations: manifest.limitations }),
+    ...((manifest.limitations ?? []).length === 0 && PORT_LIMITATIONS[contributionId] === undefined
+      ? {}
+      : {
+          limitations: [
+            ...(manifest.limitations ?? []),
+            ...(PORT_LIMITATIONS[contributionId] ?? []),
+          ],
+        }),
     spec: {
       formatRefs: [{ formatId: localId, label: displayName }],
       roles: [X3_ROLE_BY_KIND[manifest.kind] ?? 'semantic'],
@@ -565,6 +714,7 @@ function convertCodec(analysis, codec) {
     notes,
     debt: {
       lostPlanes,
+      contractGaps,
       renames,
       converterDefaults: [...new Set(defaults)].sort(),
       droppedOperations: dedupe(droppedOperations).sort(),
@@ -744,6 +894,7 @@ function conversionNotesSource(group) {
     codecs[codec.contributionId] = {
       verdict: VERDICT_WIRE[codec.verdict] ?? codec.verdict,
       lostPlanes: codec.debt.lostPlanes,
+      contractGaps: codec.debt.contractGaps,
       renames: codec.debt.renames,
       converterDefaults: codec.debt.converterDefaults,
       droppedOperations: codec.debt.droppedOperations,
@@ -758,9 +909,11 @@ function conversionNotesSource(group) {
       repository: 'modkitx',
       manifests: group.codecs.map(codec => codec.sourceRel).sort(),
     },
-    verdict: group.codecs.some(codec => codec.verdict === 'convertible with rework')
-      ? VERDICT_WIRE['convertible with rework']
-      : VERDICT_WIRE.mechanical,
+    verdict: group.codecs.some(codec => codec.verdict === 'needs new contract')
+      ? VERDICT_WIRE['needs new contract']
+      : group.codecs.some(codec => codec.verdict === 'convertible with rework')
+        ? VERDICT_WIRE['convertible with rework']
+        : VERDICT_WIRE.mechanical,
     codecs,
   }
 }

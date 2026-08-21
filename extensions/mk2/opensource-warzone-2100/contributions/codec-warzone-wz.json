@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.modkitx/warzone-wz",
+  "displayName": "Warzone 2100 package",
+  "status": "supported",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/warzone-wz/codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/warzone-wz/codec.js",
+      "target": { "environments": ["browser-worker", "node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "limitations": [
+    "Decoding is entirely `org.modkitx/zip`'s. This codec owns the `.wz` extension and the Warzone-specific package classification; it does not implement a ZIP reader. `.wz` was removed from the common zip codec's `match` in the same change, because a shared codec must not carry one game's extension.",
+    "Node only, because the delegated `org.modkitx/zip` is. Statically importing it reaches `fs/promises` and `buffer` in the ZIP reader, `worker_threads` through fflate's node build, and `fs`/`crypto` through the 7z bridge used for encrypted entries. Declaring browser environments here would be a claim the import graph contradicts, and the catalog validator checks exactly that.",
+    "Classification prefers the package's own root `ruleset.json` over any filename rule, and the path over a bare filename. A renamed `base.wz` is still a campaign ruleset, and a mod named `mp.wz` under `mods/` is still a mod.",
+    "The caller supplies `ruleset.json`; this codec does not read it out of the archive itself, so classification degrades to path and filename when it is not provided.",
+    "Read only. Writing a `.wz` back is not implemented, though the delegated ZIP codec is capable of it.",
+    "`.scd` (Supreme Commander) remains on the common zip codec and is the same shape of misplaced knowledge. Moving it needs a Supreme Commander extension, which does not exist."
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "warzone-wz", "label": "Warzone 2100 package" }],
+    "roles": ["container"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored", "compiled"],
+    "openIntents": ["probe", "inspect", "full", "export"],
+    "match": {
+      "extensions": ["wz"],
+      "signatures": [
+        { "from": "start", "offset": 0, "bytesHex": "504b0304" },
+        { "from": "start", "offset": 0, "bytesHex": "504b0506" }
+      ]
+    },
+    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
+    "representations": [
+      {
+        "id": "archive-namespace",
+        "contract": "common.archive/entry-namespace",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      { "contract": "common.view/namespace-entry-source", "major": 1 },
+      { "contract": "common.view/tree-data-source", "major": 1 },
+      { "contract": "common.view/byte-range-source", "major": 1 }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1073741824",
+      "maxDepth": 64,
+      "maxNodes": 100000,
+      "maxScalarBytes": 104857600,
+      "maxDiagnostics": 1000
+    }
+  }
+}

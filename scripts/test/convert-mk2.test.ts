@@ -17,6 +17,7 @@ afterAll(() => rmSync(scratch, { recursive: true, force: true }))
 
 interface CodecDebt {
   readonly lostPlanes: readonly { readonly plane: string; readonly entrypoint: string }[]
+  readonly contractGaps: readonly string[]
   readonly renames: readonly { readonly from: string; readonly to: string }[]
   readonly converterDefaults: readonly string[]
   readonly droppedOperations: readonly string[]
@@ -128,26 +129,34 @@ describe('MK2 → MK3 converter (OPUS-MK2-01 task A, OPUS-MK2-02 tasks D/D2/E)',
   const out = join(scratch, 'default')
   const first = run(out)
 
-  it('converts mechanical and rework verdicts by default and skips the rest with a reason', () => {
+  it('converts every representable read plane and skips only definitions without a codec form', () => {
     expect(first.status).toBe(0)
     expect(first.json.summary).toMatchObject({
       rework: true,
       extensions: 1,
-      converted: 4,
-      byVerdict: { mechanical: 3, 'convertible with rework': 1 },
+      converted: 6,
+      byVerdict: {
+        mechanical: 4,
+        'convertible with rework': 1,
+        'needs new contract': 1,
+      },
     })
     expect(listFiles(out)).toEqual([
       'acme-pack/MK2-CONVERSION.json',
       'acme-pack/README.md',
+      'acme-pack/contributions/codec-atlas.json',
       'acme-pack/contributions/codec-exotic.json',
       'acme-pack/contributions/codec-namespaced.json',
       'acme-pack/contributions/codec-tile.json',
       'acme-pack/contributions/codec-wildcard.json',
+      'acme-pack/contributions/codec-writer.json',
       'acme-pack/package.json',
+      'acme-pack/src/atlas/codec.js',
       'acme-pack/src/exotic/codec.js',
       'acme-pack/src/namespaced/codec.js',
       'acme-pack/src/tile/codec.js',
       'acme-pack/src/wildcard/codec.js',
+      'acme-pack/src/writer/codec.js',
     ])
   })
 
@@ -244,25 +253,24 @@ describe('MK2 → MK3 converter (OPUS-MK2-01 task A, OPUS-MK2-02 tasks D/D2/E)',
     expect(namespaced).toContain('TODO(port)')
   })
 
-  it('skips what it cannot convert and says why — never a stub', () => {
+  it('emits honest stubs for representable read planes and skips unsupported definitions', () => {
     const reasons = new Map(first.json.skipped.map(item => [item.contributionId, item]))
-    expect(reasons.get('org.acme/writer')).toMatchObject({
+    const writer = first.json.converted.find(item => item.contributionId === 'org.acme/writer')
+    expect(writer).toMatchObject({
       verdict: 'needs new contract',
-      reason: 'needs new contract',
     })
+    expect(writer?.debt.contractGaps.some(gap => gap.includes('write'))).toBe(true)
     // 27 §0.5.2: a v1 codec that declares itself unsupported is a FormatDefinition, and the lab
     // has no format-definition contract yet (REPORT §9.6) — a named skip, not a fake codec.
     expect(reasons.get('org.acme/retired')).toMatchObject({
       verdict: 'mechanical',
       reason: 'format-definition-pending',
     })
-    // mechanical by verdict, but `map` has no bundled representation contract: 27 §6 forbids
-    // inventing one, so the converter refuses instead of guessing.
-    expect(reasons.get('org.acme/atlas')?.verdict).toBe('mechanical')
-    expect(reasons.get('org.acme/atlas')?.reason).toContain('does not invent one')
-    expect(listFiles(out).some(path => path.includes('writer') || path.includes('retired'))).toBe(
-      false,
-    )
+    // `map` now reuses the bundled entry-namespace representation; no new contract is invented.
+    expect(
+      first.json.converted.find(item => item.contributionId === 'org.acme/atlas'),
+    ).toMatchObject({ verdict: 'mechanical' })
+    expect(listFiles(out).some(path => path.includes('retired'))).toBe(false)
   })
 
   it('writes the conversion debt beside the extension as inert data (task D)', () => {
@@ -271,19 +279,24 @@ describe('MK2 → MK3 converter (OPUS-MK2-01 task A, OPUS-MK2-02 tasks D/D2/E)',
     expect(notes.source).toEqual({
       repository: 'modkitx',
       manifests: [
+        'extensions/acme/pack/codecs/atlas/codec.manifest.json',
         'extensions/acme/pack/codecs/exotic/codec.manifest.json',
         'extensions/acme/pack/codecs/namespaced/codec.manifest.json',
         'extensions/acme/pack/codecs/tile/codec.manifest.json',
         'extensions/acme/pack/codecs/wildcard/codec.manifest.json',
+        'extensions/acme/pack/codecs/writer/codec.manifest.json',
       ],
     })
-    // one rework codec in the group makes the group's verdict the weaker of the two
-    expect(notes.verdict).toBe('convertible-with-rework')
+    // a missing extra plane is the weakest verdict in the group, even though its readable side
+    // is still represented by an honest port-pending stub
+    expect(notes.verdict).toBe('needs-new-contract')
     expect(Object.keys(notes.codecs)).toEqual([
+      'org.acme/atlas',
       'org.acme/exotic',
       'org.acme/namespaced',
       'org.acme/tile',
       'org.acme/wildcard',
+      'org.acme/writer',
     ])
 
     // the split verdict is a lost viewer plane, named with the v1 entrypoint that carried it —
@@ -291,6 +304,7 @@ describe('MK2 → MK3 converter (OPUS-MK2-01 task A, OPUS-MK2-02 tasks D/D2/E)',
     const exotic = notes.codecs['org.acme/exotic']
     expect(exotic?.verdict).toBe('convertible-with-rework')
     expect(exotic?.lostPlanes).toEqual([{ plane: 'viewer', entrypoint: './viewer.js' }])
+    expect(exotic?.contractGaps).toEqual([])
     expect(exotic?.lostPlanes.every(lost => lost.plane === 'viewer')).toBe(true)
     expect(exotic?.renames).toEqual([
       { from: 'image.compressed.read', to: 'image.compressed-read' },
@@ -384,7 +398,10 @@ describe('MK2 → MK3 converter (OPUS-MK2-01 task A, OPUS-MK2-02 tasks D/D2/E)',
     const mechanical = run(mechanicalOut, ['--mechanical-only'])
     expect(mechanical.status).toBe(0)
     expect(mechanical.json.summary.rework).toBe(false)
-    expect(mechanical.json.summary.byVerdict).toEqual({ mechanical: 3 })
+    expect(mechanical.json.summary.byVerdict).toEqual({
+      mechanical: 4,
+      'needs new contract': 1,
+    })
     expect(
       mechanical.json.skipped.find(item => item.contributionId === 'org.acme/exotic')?.reason,
     ).toBe('convertible with rework')
@@ -395,7 +412,7 @@ describe('MK2 → MK3 converter (OPUS-MK2-01 task A, OPUS-MK2-02 tasks D/D2/E)',
     const inventory = await inventoryOf(join(out, 'acme-pack'))
     expect(inventory.diagnostics.filter(d => d.severity === 'error')).toEqual([])
     const contributions = inventory.extensions.flatMap(extension => extension.contributions)
-    expect(contributions).toHaveLength(4)
+    expect(contributions).toHaveLength(6)
     for (const contribution of contributions) {
       expect(contribution.diagnostics.filter(d => d.severity === 'error')).toEqual([])
       expect(contribution.specState).toBe('validated')

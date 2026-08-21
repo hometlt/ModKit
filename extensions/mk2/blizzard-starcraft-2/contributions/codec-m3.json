@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.modkitx/m3",
+  "displayName": "StarCraft II M3/M3A",
+  "status": "supported",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/m3/codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/m3/codec.js",
+      "target": { "environments": ["browser-worker", "node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "limitations": [
+    "The browser-main runtime embeds structures.xml; browser-worker remains unavailable until its XML parser path has dedicated worker coverage.",
+    "M3A external-animation sidecars are resolved by the runtime; the v1 companions field names codec IDs rather than same-codec path patterns.",
+    "Game support associations remain documented in the codec README until game manifests land in Slice C3.",
+    "The MK3 port indexes MD33/MD34 sections and publishes a metadata-only scene; decoded geometry, materials, skeletons, animations, external M3A sidecars, and writing remain pending."
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "m3", "label": "StarCraft II M3/M3A" }],
+    "roles": ["media"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored", "compiled", "runtime"],
+    "openIntents": ["probe", "inspect", "full", "export"],
+    "match": {
+      "extensions": ["m3", "m3a"],
+      "signatures": [
+        { "from": "start", "offset": 0, "bytesHex": "3333444d" },
+        { "from": "start", "offset": 0, "bytesHex": "3433444d" }
+      ]
+    },
+    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
+    "representations": [
+      {
+        "id": "geometry-metadata",
+        "contract": "common.model/geometry-metadata",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      { "contract": "common.view/model-scene-source", "major": 1 },
+      { "contract": "common.view/tree-data-source", "major": 1 },
+      { "contract": "common.view/byte-range-source", "major": 1 }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "traitDeclarations": [
+      { "id": "model.animations", "representation": "runtime", "presence": "may-expose" },
+      { "id": "model.geometry", "representation": "runtime", "presence": "may-expose" },
+      { "id": "model.materials", "representation": "runtime", "presence": "may-expose" },
+      { "id": "model.skeleton", "representation": "runtime", "presence": "may-expose" },
+      { "id": "model.textures", "representation": "runtime", "presence": "may-expose" },
+      { "id": "scene.cameras", "representation": "runtime", "presence": "may-expose" },
+      { "id": "scene.effects", "representation": "runtime", "presence": "may-expose" },
+      { "id": "structure.hierarchy", "representation": "runtime", "presence": "will-expose" }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1073741824",
+      "maxDepth": 64,
+      "maxNodes": 100000,
+      "maxScalarBytes": 104857600,
+      "maxDiagnostics": 1000
+    }
+  }
+}

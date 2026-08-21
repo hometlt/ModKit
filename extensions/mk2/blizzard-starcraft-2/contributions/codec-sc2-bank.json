@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.modkitx/sc2-bank",
+  "displayName": "StarCraft II bank",
+  "status": "supported",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/sc2-bank/codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/sc2-bank/codec.js",
+      "target": { "environments": ["browser-worker", "node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "limitations": [
+    "The XML-root prefilter routes structurally valid Bank documents; the bounded detector additionally provides weak extension-only diagnostics for direct Open With callers.",
+    "Detection is portable, but the current semantic runtime is conservatively Node-only because its transitive @modkitx/bank compatibility import is not browser-classified by the repository validator.",
+    "Raw-preserving edit.content patches only the targeted value or type tag, while source.save-as intentionally serializes and normalizes the parsed XML.",
+    "save.sign is document-conditional and requires signature metadata inferred from the player Banks path or supplied explicitly by the caller.",
+    "The codec returns patched or serialized XML to the host and does not perform in-place filesystem writes."
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "sc2-bank", "label": "StarCraft II bank" }],
+    "roles": ["semantic"],
+    "sourceTopology": "single",
+    "artifactStages": ["runtime"],
+    "openIntents": ["probe", "inspect", "full", "export"],
+    "match": {},
+    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
+    "representations": [
+      {
+        "id": "flow-metadata",
+        "contract": "common.document/flow-metadata",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      { "contract": "common.view/table-data-source", "major": 1 },
+      { "contract": "common.view/tree-data-source", "major": 1 },
+      { "contract": "common.view/byte-range-source", "major": 1 }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1073741824",
+      "maxDepth": 64,
+      "maxNodes": 100000,
+      "maxScalarBytes": 104857600,
+      "maxDiagnostics": 1000
+    }
+  }
+}

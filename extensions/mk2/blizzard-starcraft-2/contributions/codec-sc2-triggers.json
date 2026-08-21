@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.modkitx/sc2-triggers",
+  "displayName": "StarCraft II Trigger XML",
+  "status": "partial",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/sc2-triggers/codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/sc2-triggers/codec.js",
+      "target": { "environments": ["browser-worker", "node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "limitations": [
+    "The TriggerData XML root is the declarative prefilter because valid SC2 trigger documents may be extensionless or use several weak extensions; the bounded detector verifies Library, Root, and Element structure.",
+    "Browser hosts can use the bounded detector, but the current Trigger/Galaxy conversion runtime reaches Node-only dependencies.",
+    "Trigger-to-Galaxy conversion works without NativeLib using documented fallbacks; round-trip comparison requires an injected NativeLib and is not an unconditional manifest operation.",
+    "The edit capability covers catalog gamelink/abilcmd rename only, as a text splice that preserves surrounding formatting; ids spelled as raw string literals inside custom ScriptCode blocks are not patched. It requires an injected coordinating catalog because a trigger document cannot confirm the renamed entities exist or that the catalog half of the rename was applied, so edit.content is not an unconditional manifest operation.",
+    "Completion, formatting, identifier-level refactoring, and compilation are unavailable; compilation and execution belong to the separately permissioned sc2-runtime codec.",
+    "StarCraft II game contribution metadata remains on the semantic codec until game manifests land in Slice C3."
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "sc2-triggers", "label": "StarCraft II Trigger XML" }],
+    "roles": ["semantic"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored", "compiled", "runtime"],
+    "openIntents": ["probe", "inspect", "full", "export"],
+    "match": {},
+    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
+    "representations": [
+      {
+        "id": "flow-metadata",
+        "contract": "common.document/flow-metadata",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      { "contract": "common.view/text-data-source", "major": 1 },
+      { "contract": "common.view/tree-data-source", "major": 1 },
+      { "contract": "common.view/byte-range-source", "major": 1 }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1073741824",
+      "maxDepth": 64,
+      "maxNodes": 100000,
+      "maxScalarBytes": 104857600,
+      "maxDiagnostics": 1000
+    }
+  }
+}

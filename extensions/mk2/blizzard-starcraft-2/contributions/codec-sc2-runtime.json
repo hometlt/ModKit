@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.modkitx/sc2-runtime",
+  "displayName": "StarCraft II Runtime",
+  "status": "partial",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/sc2-runtime/codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/sc2-runtime/codec.js",
+      "target": { "environments": ["browser-worker", "node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "limitations": [
+    "The initial provider executes explicit Galaxy/Trigger sources and paths or opt-in bounded automatic discovery through a supplied SC2 GameContentResolver; it does not open or infer an installation itself.",
+    "Catalog-backed fixed-step simulation is available when a resolved catalog is injected. Optional replay assistance consumes normalized semantic commands, reports divergence, corrects from complete tracker frames, and reconstructs backward seeks from a deterministic baseline; concrete selected-content ability resolution, semantic Trigger dependency-closure selection, and asynchronous host-native bridging remain incomplete. Trigger XML is lowered directly to the engine subset, with failures returned as diagnostics.",
+    "Simulation snapshot/restore currently preserves engine state and the deterministic tick but not queued commands, pending semantic events, or the fractional fixed-step accumulator; hosts must snapshot only at a drained tick boundary.",
+    "Runtime diagnostics are structured, but the existing engine's trace covers isolated execution errors only until the engine/sim implementation migration is complete."
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "sc2-runtime", "label": "StarCraft II Runtime" }],
+    "roles": ["semantic"],
+    "sourceTopology": "single",
+    "artifactStages": ["runtime"],
+    "openIntents": ["probe", "inspect", "full", "export"],
+    "match": { "extensions": ["galaxy"] },
+    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
+    "representations": [
+      {
+        "id": "flow-metadata",
+        "contract": "common.document/flow-metadata",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      { "contract": "common.view/text-data-source", "major": 1 },
+      { "contract": "common.view/table-data-source", "major": 1 },
+      { "contract": "common.view/tree-data-source", "major": 1 },
+      { "contract": "common.view/byte-range-source", "major": 1 }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1073741824",
+      "maxDepth": 64,
+      "maxNodes": 100000,
+      "maxScalarBytes": 104857600,
+      "maxDiagnostics": 1000
+    }
+  }
+}

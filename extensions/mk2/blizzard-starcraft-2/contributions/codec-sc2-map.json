@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.modkitx/sc2-map",
+  "displayName": "StarCraft II map",
+  "status": "partial",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/sc2-map/codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["filesystem-read", "process-launch", "read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/sc2-map/codec.js",
+      "target": { "environments": ["browser-worker", "node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["filesystem-read", "process-launch", "read-source"]
+    }
+  ],
+  "limitations": [
+    "The manifest admits map-like roots broadly because extension evidence cannot represent both renamed mounted roots and packed .SC2Map files; the bounded structural detector is authoritative.",
+    "Packed file and archive-entry sources require a host content resolver that exposes mounted map entries; the semantic codec does not decode raw MPQ bytes itself.",
+    "Detection is portable, but the current semantic runtime is conservatively Node-only because its transitive @modkitx/maps-processing/sc2-map-core and @modkitx/maps-processing/sc2-map-image compatibility imports are not browser-classified by the repository validator.",
+    "The runtime renders implemented 2D map layers and extracts mounted entries. Objects/Preload reference rename has a codec-owned edit transaction but requires sc2-mod to supply the coordinating catalog rename; 3D scene construction, map packing, and source save-as remain unavailable.",
+    "Map launch is available only through the Node adapter for a local .SC2Map source and requires a StarCraft II installation plus process-launch permission."
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "sc2-map", "label": "StarCraft II map" }],
+    "roles": ["semantic"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored", "compiled", "runtime"],
+    "openIntents": ["probe", "inspect", "full", "export"],
+    "match": {},
+    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
+    "representations": [
+      {
+        "id": "archive-namespace",
+        "contract": "common.archive/entry-namespace",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      { "contract": "common.view/namespace-entry-source", "major": 1 },
+      { "contract": "common.view/tree-data-source", "major": 1 },
+      { "contract": "common.view/byte-range-source", "major": 1 }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1073741824",
+      "maxDepth": 64,
+      "maxNodes": 100000,
+      "maxScalarBytes": 104857600,
+      "maxDiagnostics": 1000
+    }
+  }
+}

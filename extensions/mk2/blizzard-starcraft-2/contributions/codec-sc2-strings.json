@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.modkitx/sc2-strings",
+  "displayName": "StarCraft II Localization Strings",
+  "status": "partial",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/sc2-strings/codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/sc2-strings/codec.js",
+      "target": { "environments": ["browser-worker", "node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "limitations": [
+    "Declarative routing requires the canonical locale-folder path and an enclosing SC2 mod, map, or campaign artifact; key/value shape remains the bounded detector's responsibility.",
+    "Fallback and comparison require multiple locale layers from a host-supplied GameContentResolver and therefore are not unconditional manifest operations.",
+    "Markup resolution and reference-existence diagnostics require an injected catalog resolver; reference extraction itself remains available without one.",
+    "Edits affect the in-memory raw-preserving line model and export returns serialized text; persisting that text into the originating source remains host-owned.",
+    "Machine translation requires the operation-level network permission and a usable fetch implementation.",
+    "Browser hosts can use the bounded detector, but the current codec runtime reaches Node-only dependencies through the localization package import graph.",
+    "StarCraft II game contribution metadata remains on the semantic codec until game manifests land in Slice C3."
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "sc2-strings", "label": "StarCraft II Localization Strings" }],
+    "roles": ["semantic"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored", "compiled", "runtime"],
+    "openIntents": ["probe", "inspect", "full", "export"],
+    "match": { "extensions": ["txt"], "pathGlobs": ["**/*.SC2Data/LocalizedData/*.txt"] },
+    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
+    "representations": [
+      {
+        "id": "flow-metadata",
+        "contract": "common.document/flow-metadata",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      { "contract": "common.view/text-data-source", "major": 1 },
+      { "contract": "common.view/table-data-source", "major": 1 },
+      { "contract": "common.view/tree-data-source", "major": 1 },
+      { "contract": "common.view/byte-range-source", "major": 1 }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "traitDeclarations": [
+      { "id": "content.text", "representation": "source", "presence": "will-expose" },
+      { "id": "game.localization", "representation": "source", "presence": "will-expose" }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1073741824",
+      "maxDepth": 64,
+      "maxNodes": 100000,
+      "maxScalarBytes": 104857600,
+      "maxDiagnostics": 1000
+    }
+  }
+}

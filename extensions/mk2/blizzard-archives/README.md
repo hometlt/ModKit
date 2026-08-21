@@ -14,3 +14,4 @@ renames, converter defaults and v1 operations left without a handler — is data
 | contribution       | v1 manifest                                                    | module              | port         |
 | ------------------ | -------------------------------------------------------------- | ------------------- | ------------ |
 | `org.modkitx/casc` | `extensions/blizzard/archives/codecs/casc/codec.manifest.json` | `src/casc/codec.js` | port-pending |
+| `org.modkitx/mpq`  | `extensions/blizzard/archives/codecs/mpq/codec.manifest.json`  | `src/mpq/codec.js`  | ported       |

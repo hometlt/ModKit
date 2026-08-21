@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.modkitx/warzone2100-map",
+  "displayName": "Warzone 2100 map and level",
+  "status": "partial",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/warzone2100-map/codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/warzone2100-map/codec.js",
+      "target": { "environments": ["browser-worker", "node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "limitations": [
+    "Terrain only. `game.map` (tiles, heights, gateways) and `ttypes.ttp` (terrain type per texture) are read; the rest of the map bundle is not.",
+    "The `<name>.gam` header beside the bundle directory is not read yet.",
+    "Object tables are not read: `droid.json`/`feature.json`/`struct.json` under `multiplay/maps/` (current) and `dinit.bjo`/`feat.bjo`/`struct.bjo` under `wrf/cam*/` (legacy binary, still what the campaign uses). Both representations ship in 4.7.0 and neither is a superset of the other.",
+    "Read only. Writing is not implemented.",
+    "`game.map` validates only the first three bytes of its signature — `loadMapData_Internal` never compares the trailing space — so a file beginning `map` followed by any byte is accepted, as it is by the engine. `ttypes.ttp` checks all four.",
+    "A `ttypes.ttp` declaring at least MAX_TILE_TEXTURES entries is clamped to 254 rather than rejected, reproducing the engine comment \"Workaround for fugly map editor bug\". The declared count is reported alongside so the discrepancy is visible.",
+    "A terrain value equal to TER_MAX passes validation, because the engine tests `> TER_MAX`. TER_MAX is a sentinel, so this is arguably an engine bug; rejecting it here would refuse files the game loads."
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "warzone2100-map", "label": "Warzone 2100 map and level" }],
+    "roles": ["semantic"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored", "compiled", "runtime"],
+    "openIntents": ["probe", "inspect", "full", "export"],
+    "match": {
+      "extensions": ["gam", "map"],
+      "signatures": [
+        { "from": "start", "offset": 0, "bytesHex": "67616d65" },
+        { "from": "start", "offset": 0, "bytesHex": "6d617020" }
+      ]
+    },
+    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
+    "representations": [
+      {
+        "id": "archive-namespace",
+        "contract": "common.archive/entry-namespace",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      { "contract": "common.view/namespace-entry-source", "major": 1 },
+      { "contract": "common.view/tree-data-source", "major": 1 },
+      { "contract": "common.view/byte-range-source", "major": 1 }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1073741824",
+      "maxDepth": 64,
+      "maxNodes": 100000,
+      "maxScalarBytes": 104857600,
+      "maxDiagnostics": 1000
+    }
+  }
+}

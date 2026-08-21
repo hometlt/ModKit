@@ -11,6 +11,11 @@ The conversion debt of every codec below — planes v2 has no home for, applied
 renames, converter defaults and v1 operations left without a handler — is data in
 `MK2-CONVERSION.json` beside this file.
 
-| contribution              | v1 manifest                                                                 | module                     | port         |
-| ------------------------- | --------------------------------------------------------------------------- | -------------------------- | ------------ |
-| `org.modkitx/warzone-pie` | `extensions/opensource/warzone-2100/codecs/warzone-pie/codec.manifest.json` | `src/warzone-pie/codec.js` | port-pending |
+| contribution                  | v1 manifest                                                                     | module                         | port         |
+| ----------------------------- | ------------------------------------------------------------------------------- | ------------------------------ | ------------ |
+| `org.modkitx/warzone-img`     | `extensions/opensource/warzone-2100/codecs/warzone-img/codec.manifest.json`     | `src/warzone-img/codec.js`     | port-pending |
+| `org.modkitx/warzone-lev`     | `extensions/opensource/warzone-2100/codecs/warzone-lev/codec.manifest.json`     | `src/warzone-lev/codec.js`     | port-pending |
+| `org.modkitx/warzone-pie`     | `extensions/opensource/warzone-2100/codecs/warzone-pie/codec.manifest.json`     | `src/warzone-pie/codec.js`     | port-pending |
+| `org.modkitx/warzone-wrf`     | `extensions/opensource/warzone-2100/codecs/warzone-wrf/codec.manifest.json`     | `src/warzone-wrf/codec.js`     | port-pending |
+| `org.modkitx/warzone-wz`      | `extensions/opensource/warzone-2100/codecs/warzone-wz/codec.manifest.json`      | `src/warzone-wz/codec.js`      | port-pending |
+| `org.modkitx/warzone2100-map` | `extensions/opensource/warzone-2100/codecs/warzone2100-map/codec.manifest.json` | `src/warzone2100-map/codec.js` | port-pending |
