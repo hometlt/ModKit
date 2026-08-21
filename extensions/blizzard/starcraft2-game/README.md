@@ -15,3 +15,9 @@ workspace lock with unresolved/cycle diagnostics.
 
 Content mounting, DocumentInfo decoding, persistent caches, remote depot downloads, disabled-mod
 configuration and edit transactions are deliberately outside this first workspace slice.
+
+The extension also provides `common.data/catalog-analysis@1`. It parses bounded ordered catalog
+XML, applies schema-driven scalar/append/indexed patch rules, resolves parent inheritance and
+returns immutable semantic entities with provenance. The bootstrap schema intentionally covers ten
+common classes only; generated full-schema coverage, tokens, localization, references, rename and
+export remain explicit follow-up work.

@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "license": "MIT",
   "type": "module",
-  "description": "StarCraft II installation discovery and mod workspace providers for MK3.",
+  "description": "StarCraft II installation, workspace and semantic catalog providers for MK3.",
   "exports": {
     ".": "./src/provider.js",
     "./workspace": "./src/workspace-provider.js",
+    "./data": "./src/data-provider.js",
     "./linked": "./src/linked.js",
     "./package.json": "./package.json"
   },
@@ -22,6 +23,9 @@
     "contributionManifests": [
       "./contributions/*.json"
     ]
+  },
+  "dependencies": {
+    "@rgrove/parse-xml": "^4.2.3"
   },
   "peerDependencies": {
     "@modkitx-x3/host": "workspace:*",

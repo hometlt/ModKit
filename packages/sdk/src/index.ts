@@ -163,6 +163,7 @@ export * from './runtime/index.js'
 export * from './renderer/index.js'
 export * from './games/index.js'
 export * from './mods/index.js'
+export * from './data/index.js'
 export type {
   ArtifactSource,
   ArtifactByteSource,

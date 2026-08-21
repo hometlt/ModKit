@@ -2,9 +2,11 @@ import { defineLinkedExtension } from '@modkitx-x3/host'
 
 import providerManifest from '../contributions/provider-installation.json' with { type: 'json' }
 import workspaceManifest from '../contributions/provider-workspace.json' with { type: 'json' }
+import dataManifest from '../contributions/provider-data.json' with { type: 'json' }
 import packageJson from '../package.json' with { type: 'json' }
 import * as provider from './provider.js'
 import * as workspaceProvider from './workspace-provider.js'
+import * as dataProvider from './data-provider.js'
 
 export const starcraft2Game = defineLinkedExtension({
   source: 'linked:extensions/blizzard/starcraft2-game',
@@ -12,9 +14,11 @@ export const starcraft2Game = defineLinkedExtension({
   contributions: [
     { path: 'contributions/provider-installation.json', manifest: providerManifest },
     { path: 'contributions/provider-workspace.json', manifest: workspaceManifest },
+    { path: 'contributions/provider-data.json', manifest: dataManifest },
   ],
   modules: {
     './src/provider.js': provider,
     './src/workspace-provider.js': workspaceProvider,
+    './src/data-provider.js': dataProvider,
   },
 })

@@ -44,6 +44,10 @@
       "types": "./dist/mods/index.d.ts",
       "default": "./dist/mods/index.js"
     },
+    "./data": {
+      "types": "./dist/data/index.d.ts",
+      "default": "./dist/data/index.js"
+    },
     "./node/worker-bootstrap": {
       "types": "./dist/node/worker-bootstrap.d.ts",
       "default": "./dist/node/worker-bootstrap.js"

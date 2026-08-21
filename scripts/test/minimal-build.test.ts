@@ -220,4 +220,16 @@ describe('minimal builds stay minimal', () => {
     expect(text).not.toContain('data-mk-part')
     expect(text.length).toBeLessThan(6_000)
   }, 60_000)
+
+  it('the data contract subpath carries no game parser, renderer or host implementation', async () => {
+    const text = await bundled(
+      `export { DATA_CATALOG_ANALYSIS_CONTRACT } from '@modkitx-x3/sdk/data'\n`,
+    )
+    expect(text).toContain('common.data/catalog-analysis')
+    expect(text).not.toContain('parseXml')
+    expect(text).not.toContain('common.render/scene-3d')
+    expect(text).not.toContain('service activation cycle detected')
+    expect(text).not.toContain('data-mk-part')
+    expect(text.length).toBeLessThan(2_500)
+  }, 60_000)
 })

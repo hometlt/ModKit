@@ -15,6 +15,7 @@ import { loadExtensionDirectory } from '@modkitx-x3/host/node'
 import {
   revisionId,
   type ArtifactByteSource,
+  type DataCatalogAnalysis,
   type ModWorkspaceComposition,
   type NamespaceEntrySource,
   type ResourceBudget,
@@ -36,6 +37,11 @@ const { composeStarcraft2Workspace } = (await import(
     join(repoRoot, 'extensions', 'blizzard', 'starcraft2-game', 'src', 'workspace-provider.js'),
   ).href
 )) as { readonly composeStarcraft2Workspace: ModWorkspaceComposition['compose'] }
+const { analyzeStarcraft2Data } = (await import(
+  pathToFileURL(
+    join(repoRoot, 'extensions', 'blizzard', 'starcraft2-game', 'src', 'data-provider.js'),
+  ).href
+)) as { readonly analyzeStarcraft2Data: DataCatalogAnalysis['analyze'] }
 
 const budget: ResourceBudget = {
   maxInputBytes: 268_435_456n,
@@ -167,6 +173,43 @@ describe('installed StarCraft II CASC product path', () => {
           })
           expect(workspace.complete).toBe(true)
           expect(workspace.loadOrder.map(root => root.displayName)).toEqual(stockRoots)
+
+          const catalogDocuments = await Promise.all(
+            workspace.loadOrder.map(async root => {
+              const path = `${root.sourcePath}/base.sc2data/gamedata/unitdata.xml`
+              const extracted = await casc.session
+                .operations()
+                .invoke('extract-entry', { entryId: path })
+              if (extracted.state !== 'ok' || extracted.output.kind !== 'bytes') {
+                throw new Error(`CASC extraction failed for ${path}`)
+              }
+              return {
+                rootId: root.rootId,
+                path,
+                text: new TextDecoder().decode(extracted.output.value),
+              }
+            }),
+          )
+          const catalog = await analyzeStarcraft2Data({
+            workspaceId: workspace.workspaceId,
+            gameId: workspace.gameId,
+            documents: catalogDocuments,
+            queries: [{ namespace: 'Unit', entityId: 'Marine' }],
+            maxDocuments: 16,
+            maxTextBytes: 16_777_216,
+            maxEntities: 100_000,
+            maxDepth: 128,
+          })
+          expect(catalog.entityCount).toBeGreaterThan(100)
+          expect(catalog.entities[0]).toMatchObject({
+            namespace: 'Unit',
+            typeId: 'CUnit',
+            entityId: 'Marine',
+          })
+          expect(Object.keys(catalog.entities[0]?.fields ?? {})).toEqual(
+            expect.arrayContaining(['LifeMax', 'Race']),
+          )
+          expect(catalog.entities[0]?.sources.length).toBeGreaterThan(0)
 
           const cancelled = new AbortController()
           cancelled.abort()
