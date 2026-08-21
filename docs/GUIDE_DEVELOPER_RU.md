@@ -557,6 +557,7 @@ node -e "import('@modkitx-x3/host/node').then(async ({loadExtensionRoots}) => {
 
 ## 10. Куда смотреть дальше
 
+- `docs/TARGET_STATE_RU.md` — целевое состояние: структура, итоговый функционал и чего не будет.
 - `PLAN_FABLE_NEXT_2026-08-20.md` — текущее состояние и честные ограничения.
 - `IMPLEMENTATION_NOTES.md` — решения и найденные дефекты, новейшие сверху.
 - `docs/GUIDE_AI_AGENT_RU.md` — предписывающая версия этого документа для ИИ-агента.
