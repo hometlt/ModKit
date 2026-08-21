@@ -159,6 +159,7 @@ export type {
 } from './service-contracts.js'
 export { foreignServiceContractId } from './service-contracts.js'
 export * from './language/index.js'
+export * from './runtime/index.js'
 export type {
   ArtifactSource,
   ArtifactByteSource,

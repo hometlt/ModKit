@@ -35,6 +35,7 @@ import {
 } from './service-definitions.js'
 import { registerStandardEditingDefinitions, WRITER_FACET_MATCHER } from './editing-definitions.js'
 import { LANGUAGE_DOCUMENT_MATCHER, registerStandardLanguageDefinitions } from './language/index.js'
+import { RUNTIME_PROVIDER_MATCHER, registerStandardRuntimeDefinitions } from './runtime/index.js'
 import { openSubject, type OpenSubjectResult } from './subject-open.js'
 
 // ---------------------------------------------------------------------------------------------
@@ -201,7 +202,7 @@ export interface BundledServiceDefinitionRegistryOptions {
  * catalog): every inventoried owner is accepted as the namespace owner of what it defines and
  * schema refs are not validated here. Installed/linked extensions must never be promoted through
  * this registry — they need an explicit namespace-delegation policy, which is not this. The
- * platform's matcher profiles (editing and language routing) are always available.
+ * platform's matcher profiles (editing, language routing and runtime routing) are always available.
  */
 export function createBundledServiceDefinitionRegistry(
   options: BundledServiceDefinitionRegistryOptions = {},
@@ -210,6 +211,7 @@ export function createBundledServiceDefinitionRegistry(
     matcherProfiles: createServiceFacetMatcherProfileRegistry([
       WRITER_FACET_MATCHER,
       LANGUAGE_DOCUMENT_MATCHER,
+      RUNTIME_PROVIDER_MATCHER,
       ...(options.matcherProfiles ?? []),
     ]),
     isNamespaceOwner: () => true,
@@ -222,7 +224,7 @@ export function createBundledServiceDefinitionRegistry(
  * definitions, failing closed: one rejected owner is a refused bootstrap
  * (`x3.host/service-definition-rejected` with the diagnostics), never a partially-defined host.
  * A registry that lacks the standard matcher profiles is rejected here too — use
- * `createBundledServiceDefinitionRegistry` or include both platform matcher profiles.
+ * `createBundledServiceDefinitionRegistry` or include all platform matcher profiles.
  */
 export async function registerServiceDefinitionsOrThrow(
   inventory: Inventory,
@@ -230,9 +232,11 @@ export async function registerServiceDefinitionsOrThrow(
 ): Promise<readonly DefinitionInventoryResult[]> {
   const editing = await registerStandardEditingDefinitions(definitions)
   const language = await registerStandardLanguageDefinitions(definitions)
+  const runtime = await registerStandardRuntimeDefinitions(definitions)
   const registrations = [
     editing,
     language,
+    runtime,
     ...(await registerServiceContractDefinitionsFromInventory(inventory, definitions)),
   ]
   const rejected = registrations.filter(result => result.state === 'rejected')

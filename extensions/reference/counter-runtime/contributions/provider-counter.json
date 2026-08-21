@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/service-provider-contribution",
+    "major": 1
+  },
+  "id": "org.modkitx.reference/counter-runtime",
+  "displayName": "Budgeted counter runtime",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/provider.js",
+      "target": {
+        "environments": ["node"]
+      },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/provider.js",
+      "target": {
+        "environments": ["browser-worker", "node-worker"]
+      },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "provides": [
+      {
+        "offerId": "reference-counter-runtime-v1",
+        "contract": "common.runtime/provider",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": {
+          "runtimeIds": ["reference.counter"]
+        }
+      }
+    ],
+    "lifecycleScope": "session"
+  }
+}

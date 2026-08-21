@@ -26,6 +26,7 @@ packages:
   - 'extensions/common/text-toml'
   - 'extensions/common/documents'
   - 'extensions/blizzard/galaxy-language'
+  - 'extensions/reference/counter-runtime'
   # MK2 → MK3 converted staging area (scripts/convert-mk2.mjs). Workspace membership exists so
   # the generated modules can import `@modkitx-x3/codec-kit` by package name instead of by path;
   # none of these is a bootstrap dependency either.

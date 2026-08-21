@@ -16,9 +16,10 @@ runtime/library-пакета и отдельный build-only preset `tsconfig`.
    `layouts-processing`, `localization-processing`, `scripts-processing`, `language-contracts` и
    `lsp`. В MK3 теперь есть исполняемый language-analysis slice, но остальная доменная цепочка и
    полноценный LSP/workspace host всё ещё отсутствуют.
-2. **Нет runtime/world/agent plane.** MK2 содержит budgeted runtime sessions, канонический World
-   linker/scheduler и permission-gated agent operation catalog с двухфазными мутациями. Обычные
-   codec operations MK3 не заменяют эти три поверхности.
+2. **World/agent plane отсутствует, runtime перенесён минимальным срезом.** MK3 теперь имеет
+   budgeted executable runtime sessions, но MK2 дополнительно давал snapshots/events/clock. Кроме
+   того, всё ещё нет канонического World linker/scheduler и permission-gated agent operation
+   catalog с двухфазными мутациями.
 3. **3D-паритет пока метадатный.** M3/M3A открывается, но MK2 дополнительно декодирует геометрию,
    материалы, скелет, анимации, particle/ribbon effects и рендерит через WebGL/Three/headless.
 4. **CASC теперь открывается, installation discovery — нет.** MK3 умеет открыть явно переданный
@@ -37,6 +38,19 @@ protocol-neutral handle пригоден редактору, headless check и �
 merge, watched-file routing, completion, hover, rename, layout/localization language modules и
 полная Galaxy semantic model. Поэтому `language-contracts` закрыт на уровне требуемого общего
 контракта, а более широкая строка `lsp` остаётся частичной.
+
+### Block 5 / 1.2: граница реализованного runtime slice
+
+Включено: отдельный `sdk/runtime`, route-aware service contract
+`common.runtime/provider@1`, leased `common.runtime/session@1`, числовые бюджеты wall time, ticks и
+memory при создании сессии, host-owned matcher и activation adapter, а также живой
+`reference.counter` provider. Ресурсы резервируются до изменения состояния; превышение каждого
+лимита возвращает структурированный `refused` с точными `reason`, `limit` и `requested`.
+
+Осознанно не включено в этот contract pass: snapshots/restore, event stream, virtual clock,
+scheduler/World composition, native runtime adapter, фактическое OS sandboxing и независимое
+измерение памяти/CPU host-ом. Поэтому минимальный `PARITY-RUNTIME` contract закрыт, но более широкая
+MK2 runtime-поверхность в таблице честно остаётся частичной.
 
 ## Таблица
 
@@ -65,7 +79,7 @@ merge, watched-file routing, completion, hover, rename, layout/localization lang
 | `mods-processing`         | SC2 mod reader, dependency resolver, metadata cache, entities, bank list, game-data order, locale/font styles                                           | `org.modkitx/sc2-mod` — port-pending; namespace сам по себе зависимости не разрешает                                                     | **нет — нужно** (`PARITY-MODS`)                                                       |
 | `rendering-3d`            | Renderer registry и полноценные WebGL/Three/WebGPU/headless backends; terrain, battle scene, particles/ribbons, skinning и compressed textures          | UI model surface и generic model contracts есть, реального renderer backend plane нет                                                    | **частично** — нужен отдельный renderer/service contract и реализации                 |
 | `replays-processing`      | Semantic replay registry и injected SC2 playback adapter                                                                                                | `org.modkitx/sc2-replay` — port-pending; generic transport не декодирует replay                                                          | **нет — нужно** (`PARITY-REPLAYS`)                                                    |
-| `runtime`                 | Game-neutral provider registry, sessions, snapshots/events, clocks, cancellation и budgets                                                              | Codec sessions не моделируют game runtime provider                                                                                       | **нет — нужно** (`PARITY-RUNTIME`)                                                    |
+| `runtime`                 | Game-neutral provider registry, sessions, snapshots/events, clocks, cancellation и budgets                                                              | `sdk/runtime` + host activation дают leased budgeted sessions и structured refusal; snapshots/events/clock ещё не перенесены             | **частично** — минимальный `PARITY-RUNTIME` contract есть, полный runtime ещё нет     |
 | `saves-processing`        | Save registry и SC2 bank adapter                                                                                                                        | `org.modkitx/sc2-bank` — port-pending                                                                                                    | **нет — нужно** (`PARITY-SAVES`)                                                      |
 | `scripts-processing`      | Script registry/operations, codec identity и полноценная in-memory TriggerStore model                                                                   | Text codecs/syntax providers и Galaxy language analysis есть; Triggers envelopes pending                                                 | **частично** — нет TriggerStore и полной SC2 script semantics                         |
 | `semantic`                | Game-neutral registries/contracts по data/documents/layouts/localization/maps/mods/replays/saves/scripts                                                | SDK/Host contribution, trait и service registries дают общий механизм, но доменные semantic contracts перенесены не все                  | **частично**                                                                          |
@@ -82,10 +96,10 @@ merge, watched-file routing, completion, hover, rename, layout/localization lang
 
 - Проверено: **34 runtime/library-пакета + 1 build preset**.
 - **есть:** 8.
-- **частично:** 15.
-- **нет — нужно:** 11.
+- **частично:** 16.
+- **нет — нужно:** 10.
 - **нет — не нужно:** 1.
 
-Следующий contract pass — game runtime, затем renderer. После них нужен вертикальный SC2 slice
+Следующий contract pass — renderer. После него нужен вертикальный SC2 slice
 `games → mods → data → maps`, потому что отдельный map codec без dependency resolver и data schema
 повторит только имя MK2-поверхности, а не её поведение.
