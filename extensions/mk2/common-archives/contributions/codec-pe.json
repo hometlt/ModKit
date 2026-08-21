@@ -3,7 +3,7 @@
   "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
   "id": "org.modkitx/pe",
   "displayName": "Windows PE executable",
-  "status": "partial",
+  "status": "supported",
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
@@ -21,10 +21,8 @@
     }
   ],
   "limitations": [
-    "The reader projects sections, resources, metadata, overlays, and recognized embedded containers rather than executing the image.",
-    "Optional installer or self-extracting payload expansion uses the host-injected 7-Zip bridge; core PE inspection remains available without it.",
-    "Repacking only replaces fixed-size sections, non-growing resources, and the overlay; it clears stale Authenticode metadata and recomputes the PE checksum.",
-    "The runtime is currently Node-only because its compatibility entrypoint statically reaches the Node gzip implementation."
+    "The compatibility port validates DOS, PE/COFF, optional, data-directory, and section headers and projects headers, raw sections, and overlay bytes as extractable namespace entries.",
+    "It never loads or executes the image; resource decoding, icon reconstruction, installer/self-extracting expansion, writing, and mutation remain unsupported."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "pe", "label": "Windows PE executable" }],
@@ -48,9 +46,14 @@
         "acm",
         "ime",
         "tsp"
-      ]
+      ],
+      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "4d5a" }]
     },
-    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
+    "probe": {
+      "kind": "bytes",
+      "ranges": [{ "from": "start", "length": 65536 }],
+      "maxBytes": 65536
+    },
     "representations": [
       {
         "id": "archive-namespace",
@@ -83,6 +86,13 @@
       {
         "id": "export.raw",
         "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "container.extract",
+        "handlerId": "extract-entry",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]

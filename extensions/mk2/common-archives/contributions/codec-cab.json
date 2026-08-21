@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
   "id": "org.modkitx/cab",
-  "displayName": "Microsoft CAB/MSI container",
-  "status": "partial",
+  "displayName": "Microsoft Cabinet archive",
+  "status": "supported",
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
@@ -21,23 +21,18 @@
     }
   ],
   "limitations": [
-    "CAB/MSI extraction is delegated to the host-injected 7-Zip WASM runtime; the codec does not use Windows installer APIs, launch installer actions, or require a native executable.",
-    "Browser hosts can use the leaf signature detector, but extraction runtime reachability is currently declared only for Node because the compatibility entrypoint reaches Node-oriented package code.",
-    "Writing CAB or MSI containers is not implemented, and archive payloads are extracted fully into WASM memory.",
-    "The OLE compound-document signature is only an MSI candidate prefilter; structural distinction from unrelated OLE documents is deferred to the 7-Zip bridge."
+    "The compatibility port validates CAB 1.3 headers, folders, CFDATA checksums, safe paths, namespace listing, and extraction for uncompressed non-spanned cabinets.",
+    "MSZIP, Quantum, and LZX compression, split/spanned cabinets, MSI compound documents, writing, and mutation remain unsupported."
   ],
   "spec": {
-    "formatRefs": [{ "formatId": "cab", "label": "Microsoft CAB/MSI container" }],
+    "formatRefs": [{ "formatId": "cab", "label": "Microsoft Cabinet archive" }],
     "roles": ["container"],
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled"],
     "openIntents": ["probe", "inspect", "full", "export"],
     "match": {
-      "extensions": ["cab", "msi"],
-      "signatures": [
-        { "from": "start", "offset": 0, "bytesHex": "4d534346" },
-        { "from": "start", "offset": 0, "bytesHex": "d0cf11e0a1b11ae1" }
-      ]
+      "extensions": ["cab"],
+      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "4d534346" }]
     },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
@@ -72,6 +67,13 @@
       {
         "id": "export.raw",
         "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "container.extract",
+        "handlerId": "extract-entry",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]

@@ -87,7 +87,7 @@
       ],
       "droppedOperations": ["archive.extract", "archive.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/dmg": {
       "verdict": "mechanical",
@@ -134,7 +134,7 @@
       ],
       "droppedOperations": ["archive.extract", "archive.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/lzma": {
       "verdict": "mechanical",
@@ -166,7 +166,7 @@
       ],
       "droppedOperations": ["archive.extract", "archive.inspect", "archive.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/ps1-xa": {
       "verdict": "mechanical",

@@ -291,6 +291,55 @@
       "note": "Classic single-disk ZIP with one stored file; acceptance validates central-directory enumeration and CRC-checked extraction"
     },
     {
+      "extension": "mk2/common-archives",
+      "contributionId": "org.modkitx/cab",
+      "corpus": "synthetic",
+      "sample": "minimal.cab",
+      "minimumConfidence": 0.9,
+      "dataSource": "namespace",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "file-0" },
+        "outputKind": "bytes",
+        "minimumBytes": 6
+      },
+      "note": "CAB 1.3 with one uncompressed folder/file/CFDATA block; acceptance validates namespace enumeration and bounded stored extraction"
+    },
+    {
+      "extension": "mk2/common-archives",
+      "contributionId": "org.modkitx/iso",
+      "corpus": "synthetic",
+      "sample": "minimal.iso",
+      "minimumConfidence": 0.9,
+      "dataSource": "namespace",
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "entry-0" },
+        "outputKind": "bytes",
+        "minimumBytes": 6
+      },
+      "note": "ISO 9660 primary volume, descriptor terminator, paired path tables, root directory and one stored file"
+    },
+    {
+      "extension": "mk2/common-archives",
+      "contributionId": "org.modkitx/pe",
+      "corpus": "synthetic",
+      "sample": "minimal.exe",
+      "minimumConfidence": 0.9,
+      "dataSource": "namespace",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "section-0" },
+        "outputKind": "bytes",
+        "minimumBytes": 512
+      },
+      "note": "PE32 x86 console image with a complete optional header and one raw .text section exposed as an inert extractable entry"
+    },
+    {
       "extension": "mk2/common-audio",
       "contributionId": "org.modkitx/mp3",
       "corpus": "real",

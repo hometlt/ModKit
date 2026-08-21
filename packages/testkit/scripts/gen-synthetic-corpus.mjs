@@ -602,6 +602,147 @@ function zip() {
 }
 
 /**
+ * Microsoft Cabinet SDK layout: one CAB 1.3 folder, one CFFILE and one uncompressed CFDATA block.
+ * A zero CFDATA checksum explicitly means that no checksum was supplied; sizes and offsets remain
+ * normative and point at the six stored bytes.
+ */
+function cab() {
+  const name = ascii('hello.txt\0')
+  const payload = ascii('hello\n')
+  const filesOffset = 36 + 8
+  const dataOffset = filesOffset + 16 + name.byteLength
+  const cabinetBytes = dataOffset + 8 + payload.byteLength
+  return concat(
+    ascii('MSCF'),
+    u32le(0),
+    u32le(cabinetBytes),
+    u32le(0),
+    u32le(filesOffset),
+    u32le(0),
+    bytes(3, 1), // versionMinor 3, versionMajor 1
+    u16le(1), // one CFFOLDER
+    u16le(1), // one CFFILE
+    u16le(0), // no continuation or reserve fields
+    u16le(0),
+    u16le(0),
+    u32le(dataOffset),
+    u16le(1), // one CFDATA block
+    u16le(0), // compression type NONE
+    u32le(payload.byteLength),
+    u32le(0), // offset within the uncompressed folder stream
+    u16le(0), // folder index
+    u16le(0), // date
+    u16le(0), // time
+    u16le(0x20), // archive attribute
+    name,
+    u32le(0), // CFDATA checksum omitted by the format's zero sentinel
+    u16le(payload.byteLength),
+    u16le(payload.byteLength),
+    payload,
+  )
+}
+
+/** ISO 9660 ECMA-119 volume with primary/terminator descriptors, path tables and one file. */
+function iso() {
+  const sectorBytes = 2048
+  const volumeBlocks = 22
+  const rootExtent = 20
+  const fileExtent = 21
+  const payload = ascii('hello\n')
+  const both16 = value => concat(u16le(value), u16be(value))
+  const both32 = value => concat(u32le(value), u32be(value))
+  const directoryRecord = (extent, size, flags, identifier) => {
+    const padding = identifier.byteLength % 2 === 0 ? 1 : 0
+    const record = new Uint8Array(33 + identifier.byteLength + padding)
+    record[0] = record.byteLength
+    record.set(both32(extent), 2)
+    record.set(both32(size), 10)
+    record.set(bytes(126, 1, 1, 0, 0, 0, 0), 18) // 2026-01-01 UTC
+    record[25] = flags
+    record.set(both16(1), 28)
+    record[32] = identifier.byteLength
+    record.set(identifier, 33)
+    return record
+  }
+  const rootRecord = directoryRecord(rootExtent, sectorBytes, 0x02, bytes(0))
+  const parentRecord = directoryRecord(rootExtent, sectorBytes, 0x02, bytes(1))
+  const fileRecord = directoryRecord(fileExtent, payload.byteLength, 0, ascii('HELLO.TXT;1'))
+  const rootDirectory = new Uint8Array(sectorBytes)
+  rootDirectory.set(rootRecord, 0)
+  rootDirectory.set(parentRecord, rootRecord.byteLength)
+  rootDirectory.set(fileRecord, rootRecord.byteLength + parentRecord.byteLength)
+
+  const primary = new Uint8Array(sectorBytes)
+  primary[0] = 1
+  primary.set(ascii('CD001'), 1)
+  primary[6] = 1
+  primary.fill(0x20, 8, 72)
+  primary.set(ascii('MODKITX'), 40)
+  primary.set(both32(volumeBlocks), 80)
+  primary.set(both16(1), 120)
+  primary.set(both16(1), 124)
+  primary.set(both16(sectorBytes), 128)
+  primary.set(both32(10), 132)
+  primary.set(u32le(18), 140)
+  primary.set(u32be(19), 148)
+  primary.set(rootRecord, 156)
+
+  const terminator = new Uint8Array(sectorBytes)
+  terminator[0] = 255
+  terminator.set(ascii('CD001'), 1)
+  terminator[6] = 1
+  const littlePathTable = concat(bytes(1, 0), u32le(rootExtent), u16le(1), bytes(0, 0))
+  const bigPathTable = concat(bytes(1, 0), u32be(rootExtent), u16be(1), bytes(0, 0))
+
+  const output = new Uint8Array(volumeBlocks * sectorBytes)
+  output.set(primary, 16 * sectorBytes)
+  output.set(terminator, 17 * sectorBytes)
+  output.set(littlePathTable, 18 * sectorBytes)
+  output.set(bigPathTable, 19 * sectorBytes)
+  output.set(rootDirectory, rootExtent * sectorBytes)
+  output.set(payload, fileExtent * sectorBytes)
+  return output
+}
+
+/** PE/COFF 8.3: a PE32 x86 console image with one 512-byte `.text` section. */
+function pe() {
+  const output = new Uint8Array(1024)
+  const view = new DataView(output.buffer)
+  output.set(ascii('MZ'), 0)
+  view.setUint32(60, 0x80, true)
+  output.set(bytes(0x50, 0x45, 0, 0), 0x80)
+  const coff = 0x84
+  view.setUint16(coff, 0x014c, true)
+  view.setUint16(coff + 2, 1, true)
+  view.setUint16(coff + 16, 0x00e0, true)
+  view.setUint16(coff + 18, 0x0102, true)
+  const optional = coff + 20
+  view.setUint16(optional, 0x010b, true)
+  view.setUint32(optional + 4, 0x200, true)
+  view.setUint32(optional + 16, 0x1000, true)
+  view.setUint32(optional + 20, 0x1000, true)
+  view.setUint32(optional + 24, 0x2000, true)
+  view.setUint32(optional + 28, 0x00400000, true)
+  view.setUint32(optional + 32, 0x1000, true)
+  view.setUint32(optional + 36, 0x200, true)
+  view.setUint16(optional + 40, 4, true)
+  view.setUint16(optional + 48, 4, true)
+  view.setUint32(optional + 56, 0x2000, true)
+  view.setUint32(optional + 60, 0x200, true)
+  view.setUint16(optional + 68, 3, true)
+  view.setUint32(optional + 92, 16, true)
+  const section = optional + 0xe0
+  output.set(ascii('.text'), section)
+  view.setUint32(section + 8, 1, true)
+  view.setUint32(section + 12, 0x1000, true)
+  view.setUint32(section + 16, 0x200, true)
+  view.setUint32(section + 20, 0x200, true)
+  view.setUint32(section + 36, 0x60000020, true)
+  output[0x200] = 0xc3 // x86 RET
+  return output
+}
+
+/**
  * PNG: ISO/IEC 15948 §5 (signature, chunk layout, CRC) and §11.2 (IHDR, IDAT, IEND). 1×1 truecolour,
  * one scanline with filter type 0, stored in an uncompressed zlib stream so no encoder is involved.
  */
@@ -1099,16 +1240,19 @@ const FIXTURES = {
   'minimal.avif': avif,
   'minimal.big': big,
   'minimal.bmp': bmp,
+  'minimal.cab': cab,
   'minimal.cur': cur,
   'minimal.dds': dds,
   'minimal.exr': exr,
   'minimal.gif': gif,
   'minimal.hdr': hdr,
   'minimal.ico': ico,
+  'minimal.iso': iso,
   'minimal.ktx': ktx,
   'minimal.pkm': pkm,
   'minimal.pal': pal,
   'minimal.pcx': pcx,
+  'minimal.exe': pe,
   'minimal.pvr': pvr,
   'minimal.tga': tga,
   'minimal.tiff': tiff,
