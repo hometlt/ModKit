@@ -1,9 +1,17 @@
-# StarCraft II game discovery
+# StarCraft II game and workspace providers
 
 Provider for `common.game/installation-discovery@1`. It verifies user-selected, platform-default
 and Windows uninstall-registry candidates using the active CASC build record and the bounded
 `SC2Data/config`, `SC2Data/data` and `SC2Data/indices` marker set.
 
 This extension does not recursively scan disks, provision or launch the game, mount CASC content,
-or enumerate Steam/Epic manifests. Mounting and dependency composition belong to the following
-vertical-slice passes.
+or enumerate Steam/Epic manifests. Automatic mounting and semantic data/map composition belong to
+the following vertical-slice passes.
+
+The same extension provides `common.mod/workspace-composition@1`. It consumes bounded, JSON-safe
+source/root descriptors, resolves declared SC2 references by source priority, injects the engine's
+Core/Liberty/Swarm/Void, campaign and multiplayer layering, and returns a deterministic immutable
+workspace lock with unresolved/cycle diagnostics.
+
+Content mounting, DocumentInfo decoding, persistent caches, remote depot downloads, disabled-mod
+configuration and edit transactions are deliberately outside this first workspace slice.

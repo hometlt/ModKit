@@ -48,6 +48,10 @@
       "types": "./dist/games/index.d.ts",
       "default": "./dist/games/index.js"
     },
+    "./mods": {
+      "types": "./dist/mods/index.d.ts",
+      "default": "./dist/mods/index.js"
+    },
     "./text-data": {
       "types": "./dist/text-data/index.d.ts",
       "default": "./dist/text-data/index.js"

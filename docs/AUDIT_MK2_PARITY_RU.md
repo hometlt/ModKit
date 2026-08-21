@@ -24,10 +24,11 @@ runtime/library-пакета и отдельный build-only preset `tsconfig`.
    маршрутизирует renderer provider и доказывает typed geometry → RGBA на живом software backend,
    однако M3/M3A всё ещё не декодирует геометрию, материалы, скелет, анимации и particle/ribbon
    effects, а production WebGL/WebGPU backend отсутствует.
-4. **SC2 installation discovery перенесён первым вертикальным срезом.** MK3 теперь маршрутизирует
-   game-neutral discovery contract и подтверждает SC2 по ограниченному набору CASC-маркеров для
-   явно настроенных, стандартных и найденных в Windows Registry путей. Steam/Epic enumeration,
-   другие игры, launch и автоматический mount ещё не перенесены.
+4. **SC2 installation discovery и bounded workspace composition перенесены двумя первыми
+   вертикальными срезами.** MK3 маршрутизирует game-neutral discovery/workspace contracts,
+   подтверждает установку по ограниченному набору CASC-маркеров и строит dependency-first lock с
+   правилами Core/Liberty/Swarm/Void. Steam/Epic enumeration, другие игры, автоматический mount,
+   полная metadata/cache/edit workspace-модель и следующие `data → maps` ещё не перенесены.
 
 ### Block 5 / 1.1: граница реализованного language slice
 
@@ -83,6 +84,28 @@ Windows Registry, затем подтверждает корень только 
 запуск процесса, VFS/CASC mount и выбор workspace. Поэтому минимальный `PARITY-GAMES` vertical
 slice закрыт и разблокирует `PARITY-MODS`, но широкая строка `games` остаётся частичной.
 
+### Block 5 / 2.2: граница реализованного SC2 mods slice
+
+Включено: отдельный `sdk/mods`, route-aware service contract
+`common.mod/workspace-composition@1`, host-owned matcher по стабильному `gameId`, обычная
+inventory/resolution/gate activation и живой `org.modkitx.blizzard/starcraft2-workspace` provider.
+Game-neutral resolver проверяет bounded graph, детерминированно выдаёт dependency-first
+`ModWorkspaceLock`, фиксирует приоритет источников и оставляет структурированные diagnostics для
+missing/cycle/depth. SC2 provider разрешает path/name refs по приоритету источников и добавляет
+engine-implicit Core/Liberty/Swarm/Void, campaign и multiplayer layering. E2E подтверждает stock
+цепочку не только синтетически: существование четырёх корней проверено через namespace реально
+открытого `C:\Apps\StarCraft II`, после чего из них собран complete lock.
+
+Осознанно не включено: передача VFS/capability-объектов через service wire, автоматический CASC
+mount, чтение `DocumentInfo` самим resolver-ом, persistent metadata/parse caches, remote depot
+downloads, disabled-mod configuration, edit transactions, entities/game-data/localization. Контракт
+принимает только JSON-safe source/root descriptors и уже декодированные declared refs: content
+остаётся у source adapters, интерпретация metadata — у codec. Поэтому минимальный `PARITY-MODS`
+slice закрыт, но широкая строка `mods-processing` остаётся частичной.
+
+Полный критерий вертикального этапа ещё **не пройден**: цепочка `games → mods` доказана, однако
+осмысленное открытие карты требует следующих `PARITY-DATA → PARITY-MAPS`.
+
 ## Таблица
 
 | пакет MK2                 | что он давал (проверенная реализация)                                                                                                                   | где это в MK3                                                                                                                            | вердикт                                                                               |
@@ -107,7 +130,7 @@ slice закрыт и разблокирует `PARITY-MODS`, но широка�
 | `lsp`                     | Protocol-neutral document router, capability merge, watched-file routing и headless checks                                                              | Protocol-neutral route и headless analysis есть; transport/server, capability merge, workspace index и watched files ещё нет             | **частично** — минимальный `PARITY-LSP` contract есть, полный host ещё нет            |
 | `maps-processing`         | Не только map codec: HeightMap, cliff/terrain params, regions, objects, minimap-related data, AI/bank/includes и прочие внутренние файлы SC2Map         | `org.modkitx/sc2-map` — port-pending; MPQ умеет лишь дать байты entries                                                                  | **нет — нужно** (`PARITY-MAPS`)                                                       |
 | `models-processing`       | Registry/open service, decoded render model, textures, materials, skeleton/animations, effect simulation и asset resolver                               | OBJ/glTF codecs и model source; M3/M3A публикует metadata-only scene                                                                     | **частично** — нет decoded M3 render model/effects/sidecars                           |
-| `mods-processing`         | SC2 mod reader, dependency resolver, metadata cache, entities, bank list, game-data order, locale/font styles                                           | `org.modkitx/sc2-mod` — port-pending; namespace сам по себе зависимости не разрешает                                                     | **нет — нужно** (`PARITY-MODS`)                                                       |
+| `mods-processing`         | SC2 mod reader, dependency resolver, metadata cache, entities, bank list, game-data order, locale/font styles                                           | `sdk/mods` + host routing + SC2 provider дают bounded dependency lock; metadata/cache/entities/data/localization ещё pending             | **частично** — минимальный `PARITY-MODS` vertical slice есть                          |
 | `rendering-3d`            | Renderer registry и полноценные WebGL/Three/WebGPU/headless backends; terrain, battle scene, particles/ribbons, skinning и compressed textures          | `sdk/renderer` + host activation и reference software RGBA backend дают общий renderer plane; production GPU backends и SC2 features нет | **частично** — минимальный `PARITY-RENDERER` contract есть, полный renderer ещё нет   |
 | `replays-processing`      | Semantic replay registry и injected SC2 playback adapter                                                                                                | `org.modkitx/sc2-replay` — port-pending; generic transport не декодирует replay                                                          | **нет — нужно** (`PARITY-REPLAYS`)                                                    |
 | `runtime`                 | Game-neutral provider registry, sessions, snapshots/events, clocks, cancellation и budgets                                                              | `sdk/runtime` + host activation дают leased budgeted sessions и structured refusal; snapshots/events/clock ещё не перенесены             | **частично** — минимальный `PARITY-RUNTIME` contract есть, полный runtime ещё нет     |
@@ -127,10 +150,10 @@ slice закрыт и разблокирует `PARITY-MODS`, но широка�
 
 - Проверено: **34 runtime/library-пакета + 1 build preset**.
 - **есть:** 8.
-- **частично:** 17.
-- **нет — нужно:** 9.
+- **частично:** 18.
+- **нет — нужно:** 8.
 - **нет — не нужно:** 1.
 
-Contract-этап Block 5 / 1 и первый вертикальный `PARITY-GAMES` slice закрыты. Следующий проход —
-`PARITY-MODS`, затем `data → maps`, потому что отдельный map codec без dependency resolver и data
-schema повторит только имя MK2-поверхности, а не её поведение.
+Contract-этап Block 5 / 1 и первые вертикальные `PARITY-GAMES → PARITY-MODS` slices закрыты.
+Следующий проход — `PARITY-DATA`, затем `PARITY-MAPS`: полный пользовательский сценарий остаётся
+открыт до schema/catalog/inheritance и семантики внутренних частей карты.

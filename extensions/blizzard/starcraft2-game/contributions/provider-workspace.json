@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/service-provider-contribution",
+    "major": 1
+  },
+  "id": "org.modkitx.blizzard/starcraft2-workspace",
+  "displayName": "StarCraft II mod workspace composition",
+  "status": "supported",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/workspace-provider.js",
+      "target": {
+        "environments": ["node"]
+      },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    },
+    {
+      "variantId": "worker-portable",
+      "entrypoint": "./src/workspace-provider.js",
+      "target": {
+        "environments": ["node-worker", "browser-worker"]
+      },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "provides": [
+      {
+        "offerId": "starcraft2-workspace-v1",
+        "contract": "common.mod/workspace-composition",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": {
+          "gameIds": ["org.modkitx/starcraft-2"]
+        }
+      }
+    ],
+    "lifecycleScope": "session"
+  },
+  "limitations": [
+    "Composition consumes bounded source/root descriptors and declared dependency references; content mounting and DocumentInfo decoding remain owned by source adapters and codecs.",
+    "The first slice emits an immutable dependency lock with StarCraft II engine layering; persistent caches, remote depot downloads, disabled-mod configuration and edit transactions are outside this provider."
+  ]
+}

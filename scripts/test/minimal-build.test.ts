@@ -207,4 +207,17 @@ describe('minimal builds stay minimal', () => {
     expect(text).not.toContain('data-mk-part')
     expect(text.length).toBeLessThan(2_500)
   }, 60_000)
+
+  it('the mods contract subpath carries no language, runtime, renderer or host implementation', async () => {
+    const text = await bundled(
+      `export { MOD_WORKSPACE_COMPOSITION_CONTRACT } from '@modkitx-x3/sdk/mods'\n`,
+    )
+    expect(text).toContain('common.mod/workspace-composition')
+    expect(text).not.toContain('common.language/document-analysis')
+    expect(text).not.toContain('common.runtime/provider')
+    expect(text).not.toContain('common.render/scene-3d')
+    expect(text).not.toContain('service activation cycle detected')
+    expect(text).not.toContain('data-mk-part')
+    expect(text.length).toBeLessThan(6_000)
+  }, 60_000)
 })

@@ -15,6 +15,7 @@ import { loadExtensionDirectory } from '@modkitx-x3/host/node'
 import {
   revisionId,
   type ArtifactByteSource,
+  type ModWorkspaceComposition,
   type NamespaceEntrySource,
   type ResourceBudget,
 } from '@modkitx-x3/sdk'
@@ -30,6 +31,11 @@ const m3Path =
 const ddsPath = 'campaigns/liberty.sc2campaign/base.sc2assets/assets/textures/alpha2.dds'
 const mpqPath =
   'mods/liberty.sc2mod/base.sc2data/battlenetcache/fc2161abf876306f1a0467cfacf5e513cba4281fdc13532b440e8c8abb8835ac.s2ma'
+const { composeStarcraft2Workspace } = (await import(
+  pathToFileURL(
+    join(repoRoot, 'extensions', 'blizzard', 'starcraft2-game', 'src', 'workspace-provider.js'),
+  ).href
+)) as { readonly composeStarcraft2Workspace: ModWorkspaceComposition['compose'] }
 
 const budget: ResourceBudget = {
   maxInputBytes: 268_435_456n,
@@ -128,6 +134,39 @@ describe('installed StarCraft II CASC product path', () => {
           })
           expect(second.items).toHaveLength(1)
           expect(second.items[0]?.id).not.toBe(first.items[0]?.id)
+
+          const stockRoots = ['Core.SC2Mod', 'Liberty.SC2Mod', 'Swarm.SC2Mod', 'Void.SC2Mod']
+          for (const name of stockRoots) {
+            const page = await namespace.list(`mods/${name.toLowerCase()}/`, { limit: 1 })
+            expect(page.items, `${name} has no entry in the installed CASC namespace`).toHaveLength(
+              1,
+            )
+          }
+          const workspace = await composeStarcraft2Workspace({
+            workspaceId: 'installed-retail-void',
+            gameId: 'org.modkitx/starcraft-2',
+            activeRootId: 'retail:void.sc2mod',
+            sources: [
+              {
+                sourceId: 'retail-casc',
+                kind: 'casc',
+                location: pathToFileURL(sc2Root).href,
+                fingerprint: `${before.size}:${before.mtimeMs}`,
+              },
+            ],
+            roots: stockRoots.map(name => ({
+              rootId: `retail:${name.toLowerCase()}`,
+              sourceId: 'retail-casc',
+              sourcePath: `mods/${name.toLowerCase()}`,
+              displayName: name,
+              kind: 'mod',
+              declaredDependencies: [],
+            })),
+            maxRoots: 32,
+            maxDepth: 16,
+          })
+          expect(workspace.complete).toBe(true)
+          expect(workspace.loadOrder.map(root => root.displayName)).toEqual(stockRoots)
 
           const cancelled = new AbortController()
           cancelled.abort()

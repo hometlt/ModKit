@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "license": "MIT",
   "type": "module",
-  "description": "StarCraft II installation discovery provider for MK3.",
+  "description": "StarCraft II installation discovery and mod workspace providers for MK3.",
   "exports": {
     ".": "./src/provider.js",
+    "./workspace": "./src/workspace-provider.js",
     "./linked": "./src/linked.js",
     "./package.json": "./package.json"
   },
