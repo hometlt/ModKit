@@ -21,10 +21,9 @@
     }
   ],
   "limitations": [
-    "Extraction requires a host-injected 7-Zip WASM module; this codec does not fetch or install that runtime.",
-    "The runtime sniffer requires a 13-byte LZMA-alone header beginning with property byte 0x5D; the manifest stays extension-only because the v1 magic matcher cannot express that structural length check.",
-    "Writing is not implemented.",
-    "Browser reachability is not declared because the shared compressed-stream entrypoint imports the Node Brotli backend; splitting runtime-specific entrypoints remains follow-up work."
+    "Portable extraction supports LZMA-alone streams whose 13-byte header declares a finite output size.",
+    "Unknown-size LZMA-alone streams, LZMA2/container wrappers, and writing are not implemented.",
+    "The manifest stays extension-only because LZMA-alone has no fixed magic; probing structurally validates properties and the declared size."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "lzma", "label": "LZMA compressed payload" }],
@@ -66,6 +65,13 @@
       {
         "id": "export.raw",
         "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "container.extract",
+        "handlerId": "extract-entry",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]

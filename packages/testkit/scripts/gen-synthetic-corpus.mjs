@@ -8,8 +8,10 @@
 //
 // The rules this generator holds itself to:
 //
-//   * nothing is copied. Every byte below is written from the format specification named in the
-//     comment above the builder, so the fixture is a reading of the spec, not someone's file.
+//   * nothing is copied from a product or game. Every byte below is written from the format
+//     specification named above the builder. For compression formats whose encoders are far larger
+//     than this corpus generator, a fixed canonical encoder output is retained and independently
+//     decoded by another implementation before landing.
 //   * every fixture is minimal and valid: the smallest structure the spec allows, with real
 //     checksums (CRC-32, Ogg CRC, adler-32, tar checksum) computed, never faked.
 //   * synthetic fixtures prove *structural* opening — probe, descriptor, one data source. They
@@ -62,6 +64,7 @@ const u32be = value =>
   bytes((value >>> 24) & 0xff, (value >>> 16) & 0xff, (value >>> 8) & 0xff, value & 0xff)
 
 const u64le = value => concat(u32le(Number(value & 0xffffffffn)), u32le(Number(value >> 32n)))
+const u64be = value => concat(u32be(Number(value >> 32n)), u32be(Number(value & 0xffffffffn)))
 
 function f32le(value) {
   const result = new Uint8Array(4)
@@ -1333,6 +1336,148 @@ function brotli() {
 }
 
 /**
+ * bzip2 1.0 stream for `hello\n`, emitted by 7-Zip 26.01's BZip2 encoder. BZip2 has no file-name
+ * or timestamp fields, so the fixed stream is deterministic; its block and combined CRCs are real.
+ */
+function bzip2() {
+  return bytes(
+    0x42,
+    0x5a,
+    0x68,
+    0x39,
+    0x31,
+    0x41,
+    0x59,
+    0x26,
+    0x53,
+    0x59,
+    0xc1,
+    0xc0,
+    0x80,
+    0xe2,
+    0x00,
+    0x00,
+    0x01,
+    0x41,
+    0x00,
+    0x00,
+    0x10,
+    0x02,
+    0x44,
+    0xa0,
+    0x00,
+    0x30,
+    0xc0,
+    0xc3,
+    0x06,
+    0x86,
+    0xb8,
+    0x5c,
+    0x5d,
+    0xc9,
+    0x14,
+    0xe1,
+    0x42,
+    0x43,
+    0x07,
+    0x02,
+    0x03,
+    0x88,
+  )
+}
+
+/**
+ * LZMA-alone stream for `hello\n`: property 0x5d (lc=3, lp=0, pb=2), 2 MiB dictionary, known
+ * six-byte output size, and a genuine range-coded LZMA1 payload independently validated by 7-Zip.
+ */
+function lzma() {
+  return bytes(
+    0x5d,
+    0x00,
+    0x00,
+    0x20,
+    0x00,
+    0x06,
+    0x00,
+    0x00,
+    0x00,
+    0x00,
+    0x00,
+    0x00,
+    0x00,
+    0x00,
+    0x34,
+    0x19,
+    0x49,
+    0xee,
+    0x8d,
+    0xdd,
+    0x3d,
+    0x3a,
+    0xdf,
+    0xff,
+    0xff,
+    0xdd,
+    0x12,
+    0x00,
+    0x00,
+  )
+}
+
+/**
+ * Apple UDIF v4 image: one 512-byte raw data fork, an XML resource plist containing a `mish`
+ * block table with one raw chunk and the terminator, then the required 512-byte `koly` trailer.
+ */
+function dmg() {
+  const dataFork = new Uint8Array(512)
+  dataFork.set(ascii('hello\n'))
+  const blockTable = new Uint8Array(284)
+  const blockView = new DataView(blockTable.buffer)
+  blockTable.set(ascii('mish'), 0)
+  blockView.setUint32(4, 1, false)
+  blockTable.set(u64be(0n), 8) // start sector
+  blockTable.set(u64be(1n), 16) // sector count
+  blockTable.set(u64be(0n), 24) // data offset base
+  blockView.setUint32(32, 1, false) // buffers needed
+  blockView.setUint32(36, 2, false) // descriptors including terminator
+  blockView.setUint32(200, 2, false) // entry count
+  blockView.setUint32(204, 1, false) // raw block
+  blockTable.set(u64be(0n), 212) // relative start sector
+  blockTable.set(u64be(1n), 220) // sector count
+  blockTable.set(u64be(0n), 228) // absolute data offset
+  blockTable.set(u64be(512n), 236) // stored bytes
+  blockView.setUint32(244, 0xffffffff, false) // terminator
+  blockTable.set(u64be(1n), 252)
+  blockTable.set(u64be(512n), 268)
+  const blockData = Buffer.from(blockTable).toString('base64')
+  const xml = ascii(
+    `<?xml version="1.0" encoding="UTF-8"?>\n` +
+      `<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n` +
+      `<plist version="1.0"><dict><key>resource-fork</key><dict><key>blkx</key><array>` +
+      `<dict><key>Attributes</key><string>0x0050</string><key>CFName</key>` +
+      `<string>whole disk</string><key>Data</key><data>${blockData}</data><key>ID</key>` +
+      `<string>0</string><key>Name</key><string>whole disk</string></dict>` +
+      `</array></dict></dict></plist>\n`,
+  )
+  const trailer = new Uint8Array(512)
+  const view = new DataView(trailer.buffer)
+  trailer.set(ascii('koly'), 0)
+  view.setUint32(4, 4, false) // UDIF version
+  view.setUint32(8, 512, false) // trailer size
+  view.setUint32(12, 1, false) // flat/raw data fork present
+  trailer.set(u64be(0n), 16) // running data fork offset
+  trailer.set(u64be(0n), 24) // data fork offset
+  trailer.set(u64be(BigInt(dataFork.byteLength)), 32)
+  view.setUint32(56, 1, false) // segment number
+  view.setUint32(60, 1, false) // segment count
+  trailer.set(u64be(BigInt(dataFork.byteLength)), 216) // XML plist offset
+  trailer.set(u64be(BigInt(xml.byteLength)), 224)
+  view.setUint32(488, 1, false) // raw/read-write image variant
+  trailer.set(u64be(1n), 492) // one logical sector
+  return concat(dataFork, xml, trailer)
+}
+
+/**
  * 7z format's SignatureHeader and raw Header grammar with one Folder, one official Copy coder,
  * one CRC-protected SubStream, and one regular UTF-16LE file. Every CRC covers its real field.
  */
@@ -1407,15 +1552,18 @@ const FIXTURES = {
   'minimal.big': big,
   'minimal.bmp': bmp,
   'minimal.br': brotli,
+  'minimal.bz2': bzip2,
   'minimal.cab': cab,
   'minimal.cur': cur,
   'minimal.dds': dds,
+  'minimal.dmg': dmg,
   'minimal.exr': exr,
   'minimal.gif': gif,
   'minimal.hdr': hdr,
   'minimal.ico': ico,
   'minimal.iso': iso,
   'minimal.ktx': ktx,
+  'minimal.lzma': lzma,
   'minimal.pkm': pkm,
   'minimal.pal': pal,
   'minimal.pcx': pcx,

@@ -21,9 +21,9 @@
     }
   ],
   "limitations": [
-    "Extraction and writing require a host-injected 7-Zip WASM module; this codec does not fetch or install that runtime.",
-    "Packing accepts exactly one payload.",
-    "Browser reachability is not declared because the shared compressed-stream entrypoint imports the Node Brotli backend; splitting runtime-specific entrypoints remains follow-up work."
+    "Portable extraction implements standard non-randomized BZip2 blocks and verifies every block CRC plus the combined stream CRC.",
+    "Obsolete randomized blocks, concatenated streams, and writing are not implemented.",
+    "The decoder is self-contained and enforces both decoded-byte and block-count budgets."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "bzip2", "label": "BZip2 compressed payload" }],
@@ -68,6 +68,13 @@
       {
         "id": "export.raw",
         "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "container.extract",
+        "handlerId": "extract-entry",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]

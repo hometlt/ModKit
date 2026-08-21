@@ -18,6 +18,9 @@ const fixtureRoot = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
 
 const cases = Object.freeze([
   { format: 'brotli', fixture: 'minimal.br', entryId: 'payload', extracted: 'payload' },
+  { format: 'bzip2', fixture: 'minimal.bz2', entryId: 'payload', extracted: 'payload' },
+  { format: 'lzma', fixture: 'minimal.lzma', entryId: 'payload', extracted: 'payload' },
+  { format: 'dmg', fixture: 'minimal.dmg', entryId: 'data-fork', extracted: 'disk' },
   { format: '7z', fixture: 'minimal.7z', entryId: 'file-0', extracted: 'payload' },
   { format: 'ps1-xa', fixture: 'minimal.xa', entryId: 'sector-0', extracted: 'source' },
 ] as const)
@@ -129,7 +132,12 @@ describe('ported MK2 archive subset codecs', () => {
     if (result.state !== 'ok' || result.output.kind !== 'bytes') {
       throw new Error(`${testCase.format} extraction did not return bytes`)
     }
-    const expected = testCase.extracted === 'source' ? bytes : new TextEncoder().encode('hello\n')
+    let expected: Uint8Array
+    if (testCase.extracted === 'source') expected = bytes
+    else if (testCase.extracted === 'disk') {
+      expected = new Uint8Array(512)
+      expected.set(new TextEncoder().encode('hello\n'))
+    } else expected = new TextEncoder().encode('hello\n')
     expect(result.output.value).toEqual(expected)
     await namespace.release()
     await session.dispose()
@@ -139,9 +147,12 @@ describe('ported MK2 archive subset codecs', () => {
     const bytes = await fixture(testCase)
     const corrupted = bytes.slice()
     if (testCase.format === 'brotli') corrupted[corrupted.byteLength - 1] = 0x02
+    else if (testCase.format === 'bzip2') corrupted[10] = (corrupted[10] ?? 0) ^ 0xff
+    else if (testCase.format === 'lzma') corrupted[0] = 0xff
+    else if (testCase.format === 'dmg') corrupted[corrupted.byteLength - 512] = 0
     else if (testCase.format === '7z') corrupted[32] = (corrupted[32] ?? 0) ^ 0xff
     else corrupted[8] = (corrupted[8] ?? 0) ^ 0xff
-    await expect(open(testCase, corrupted)).rejects.toThrow(/Brotli|7z|XA/u)
+    await expect(open(testCase, corrupted)).rejects.toThrow(/Brotli|BZip2|LZMA|DMG|7z|XA/u)
   })
 
   it.each(cases)('$format enforces node and scalar budgets', async testCase => {

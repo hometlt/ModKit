@@ -21,9 +21,9 @@
     }
   ],
   "limitations": [
-    "Content detection requires the end-relative UDIF koly trailer, which the v1 fixed-offset magic matcher cannot express.",
-    "Extraction delegates to the host-injected 7-Zip WASM runtime and stages the complete image in memory.",
-    "Images without a UDIF trailer, unsupported encryption variants, and writing are not implemented."
+    "Inspection validates the 512-byte UDIF v4 koly trailer and exposes its declared data, resource, and XML forks with bounded extraction.",
+    "The current byte-probe helper reads from the start, so content confidence is available only when the end-relative trailer falls inside the probe window; extension routing still reaches full validation.",
+    "blkx disk reconstruction/decompression, partition and filesystem walking, segmented or encrypted images, and writing are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "dmg", "label": "Apple DMG disk image" }],
@@ -65,6 +65,13 @@
       {
         "id": "export.raw",
         "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "container.extract",
+        "handlerId": "extract-entry",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]

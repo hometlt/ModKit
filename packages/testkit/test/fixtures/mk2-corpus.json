@@ -438,6 +438,53 @@
       "note": "One CD-ROM XA Mode 2 Form 2 audio sector with duplicated subheader and computed EDC; without a sibling Westwood FAT, acceptance exposes the validated sector anonymously"
     },
     {
+      "extension": "mk2/common-archives",
+      "contributionId": "org.modkitx/bzip2",
+      "corpus": "synthetic",
+      "sample": "minimal.bz2",
+      "minimumConfidence": 0.9,
+      "dataSource": "namespace",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "payload" },
+        "outputKind": "bytes",
+        "minimumBytes": 6
+      },
+      "note": "Canonical BZip2 stream for hello-newline; acceptance decodes all blocks and verifies their CRCs plus the combined stream CRC"
+    },
+    {
+      "extension": "mk2/common-archives",
+      "contributionId": "org.modkitx/lzma",
+      "corpus": "synthetic",
+      "sample": "minimal.lzma",
+      "minimumConfidence": 0.9,
+      "dataSource": "namespace",
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "payload" },
+        "outputKind": "bytes",
+        "minimumBytes": 6
+      },
+      "note": "LZMA-alone stream with standard lc/lp/pb properties, a 2 MiB dictionary and a finite six-byte output size"
+    },
+    {
+      "extension": "mk2/common-archives",
+      "contributionId": "org.modkitx/dmg",
+      "corpus": "synthetic",
+      "sample": "minimal.dmg",
+      "minimumConfidence": 0.9,
+      "dataSource": "namespace",
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "data-fork" },
+        "outputKind": "bytes",
+        "minimumBytes": 512
+      },
+      "note": "Apple UDIF v4 flat image with a 512-byte raw data fork and a structurally valid end-relative koly trailer"
+    },
+    {
       "extension": "mk2/common-audio",
       "contributionId": "org.modkitx/mp3",
       "corpus": "real",
