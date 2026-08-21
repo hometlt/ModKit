@@ -205,6 +205,41 @@
       "note": "PCX v5 with one uncompressed 24-bit planar pixel and declared per-plane row padding"
     },
     {
+      "extension": "mk2/common-images",
+      "contributionId": "org.modkitx/png",
+      "corpus": "synthetic",
+      "sample": "minimal.png",
+      "minimumConfidence": 0.9,
+      "dataSource": "tree",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "PNG truecolor image with independently generated CRCs and zlib stream; compatibility port validates strict chunk structure without claiming pixel decode"
+    },
+    {
+      "extension": "mk2/common-images",
+      "contributionId": "org.modkitx/tga",
+      "corpus": "synthetic",
+      "sample": "minimal.tga",
+      "minimumConfidence": 0.9,
+      "dataSource": "raster",
+      "expectedFirstPixelRgba": [128, 64, 32, 255],
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "TGA 2.0 raw 24-bit truecolor pixel with top-left origin and canonical footer signature"
+    },
+    {
+      "extension": "mk2/common-images",
+      "contributionId": "org.modkitx/tiff",
+      "corpus": "synthetic",
+      "sample": "minimal.tiff",
+      "minimumConfidence": 0.9,
+      "dataSource": "raster",
+      "expectedFirstPixelRgba": [128, 64, 32, 255],
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "TIFF 6.0 little-endian one-page RGBA8 image with bounded IFD and exact uncompressed strip pixel"
+    },
+    {
       "extension": "mk2/common-audio",
       "contributionId": "org.modkitx/mp3",
       "corpus": "real",

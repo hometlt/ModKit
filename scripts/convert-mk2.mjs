@@ -313,6 +313,19 @@ const PORT_SIGNATURES = {
       'ZSoft PCX file header manufacturer byte 0A at byte 0; the codec probe validates version, encoding, dimensions, planes, and stride',
     signatures: [{ from: 'start', offset: 0, bytesHex: '0a' }],
   },
+  'org.modkitx/tga': {
+    source:
+      'Truevision TGA 2.0 footer signature TRUEVISION-XFILE followed by dot and NUL, starting 18 bytes before end of file',
+    signatures: [{ from: 'end', offset: 18, bytesHex: '54525545564953494f4e2d5846494c452e00' }],
+  },
+  'org.modkitx/tiff': {
+    source:
+      'TIFF 6.0 §2 byte-order marker plus version 42: little-endian II 2A 00 or big-endian MM 00 2A',
+    signatures: [
+      { from: 'start', offset: 0, bytesHex: '49492a00' },
+      { from: 'start', offset: 0, bytesHex: '4d4d002a' },
+    ],
+  },
   'org.modkitx/m3': {
     source:
       'Blizzard M3 container header: reversed little-endian MD33 / MD34 tags at byte zero (M3_FILE_FORMAT_SPECIFICATION, header and index table)',

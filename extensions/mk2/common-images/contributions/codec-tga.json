@@ -21,8 +21,9 @@
     }
   ],
   "limitations": [
-    "TGA has no stable file signature; the legacy registry uses the .tga extension and a header plausibility probe.",
-    "Manifest v1 cannot express the legacy extension-or-plausible-header fallback without turning it into a conjunction; generated routing intentionally uses the extension while the handwritten compatibility registry retains global header sniffing."
+    "The compatibility port performs a bounded TGA header walk and decodes raw or RLE non-colormapped truecolor and grayscale payloads while normalizing the declared image origin.",
+    "Color-mapped pixel decoding, TGA writing, metadata editing, and pixel editing remain unsupported.",
+    "Manifest routing uses the TGA 2.0 TRUEVISION-XFILE footer when present; older footerless files remain available through the .tga extension and header plausibility probe."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "tga", "label": "Truevision TGA" }],
@@ -30,7 +31,16 @@
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
-    "match": { "extensions": ["tga"] },
+    "match": {
+      "extensions": ["tga"],
+      "signatures": [
+        {
+          "from": "end",
+          "offset": 18,
+          "bytesHex": "54525545564953494f4e2d5846494c452e00"
+        }
+      ]
+    },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {

@@ -576,6 +576,67 @@ function png() {
 }
 
 /**
+ * Truevision TGA 2.0: one uncompressed 24-bit truecolor pixel with top-left origin, followed by
+ * the extension/developer offsets and the canonical TRUEVISION-XFILE footer signature.
+ */
+function tga() {
+  const header = concat(
+    bytes(1), // one-byte image ID keeps the valid header disjoint from a CUR directory prefix
+    bytes(0), // no color map
+    bytes(2), // uncompressed truecolor
+    new Uint8Array(5), // empty color-map specification
+    u16le(0),
+    u16le(0), // origin
+    u16le(1),
+    u16le(1), // dimensions
+    bytes(24),
+    bytes(0x20), // top-left origin, no alpha bits
+  )
+  const footer = concat(u32le(0), u32le(0), ascii('TRUEVISION-XFILE.\0'))
+  return concat(header, ascii('x'), bytes(0x20, 0x40, 0x80), footer)
+}
+
+/**
+ * TIFF 6.0 little-endian baseline RGB: one IFD, one uncompressed chunky RGBA8 strip and the
+ * required BitsPerSample array stored after the directory. All offsets are derived from the
+ * eleven-entry IFD layout rather than copied from another file.
+ */
+function tiff() {
+  const ifdOffset = 8
+  const entryCount = 11
+  const bitsOffset = ifdOffset + 2 + entryCount * 12 + 4
+  const pixelOffset = bitsOffset + 8
+  const entry = (tag, type, count, valueOrOffset) =>
+    concat(u16le(tag), u16le(type), u32le(count), u32le(valueOrOffset))
+  const directory = concat(
+    u16le(entryCount),
+    entry(256, 3, 1, 1), // ImageWidth
+    entry(257, 3, 1, 1), // ImageLength
+    entry(258, 3, 4, bitsOffset), // BitsPerSample
+    entry(259, 3, 1, 1), // Compression: none
+    entry(262, 3, 1, 2), // PhotometricInterpretation: RGB
+    entry(273, 4, 1, pixelOffset), // StripOffsets
+    entry(274, 3, 1, 1), // Orientation: top-left
+    entry(277, 3, 1, 4), // SamplesPerPixel
+    entry(278, 4, 1, 1), // RowsPerStrip
+    entry(279, 4, 1, 4), // StripByteCounts
+    entry(284, 3, 1, 1), // PlanarConfiguration: chunky
+    u32le(0), // no next IFD
+  )
+  return concat(
+    ascii('II'),
+    u16le(42),
+    u32le(ifdOffset),
+    directory,
+    u16le(8),
+    u16le(8),
+    u16le(8),
+    u16le(8),
+    bytes(0x80, 0x40, 0x20, 0xff),
+  )
+}
+
+/**
  * DDS: Microsoft DDS Programming Guide — legacy 124-byte header and one BC1/DXT1 4×4 block.
  * Both endpoints and every selector choose RGB565 red, so an independent decoder must return
  * sixteen opaque red pixels.
@@ -993,6 +1054,8 @@ const FIXTURES = {
   'minimal.pal': pal,
   'minimal.pcx': pcx,
   'minimal.pvr': pvr,
+  'minimal.tga': tga,
+  'minimal.tiff': tiff,
   'minimal.wav': wav,
   'minimal.m3': m3,
   'minimal.mpq': mpq,

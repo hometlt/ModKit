@@ -21,8 +21,8 @@
     }
   ],
   "limitations": [
-    "The current decoder supports non-interlaced 8-bit grayscale, grayscale-alpha, RGB, and RGBA PNG payloads; indexed-color, interlaced, and other bit depths remain unsupported.",
-    "The current codec exposes RGBA decode and encode rather than preserving the original PNG chunk stream during edits.",
+    "The compatibility port performs a bounded structural walk, validates every chunk CRC and the core IHDR/PLTE/IDAT/IEND ordering rules, and exposes encoded raster metadata without decoded-region access.",
+    "Pixel decoding, PNG writing, metadata editing, and pixel editing remain outside this compatibility port.",
     "Manifest v1 cannot express the legacy extension-or-signature fallback without turning it into a conjunction; generated routing intentionally uses the extension while the handwritten compatibility registry retains global signature sniffing."
   ],
   "spec": {

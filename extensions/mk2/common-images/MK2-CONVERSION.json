@@ -324,7 +324,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.read", "image.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/pvr": {
       "verdict": "convertible-with-rework",
@@ -352,11 +352,12 @@
         "operations:inspection-triple",
         "probe:bytes-4096",
         "representation:common.image/raster-metadata",
+        "signatures:from-specification (Truevision TGA 2.0 footer signature TRUEVISION-XFILE followed by dot and NUL, starting 18 bytes before end of file)",
         "variants:pair"
       ],
       "droppedOperations": ["image.inspect", "image.read", "image.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/tiff": {
       "verdict": "needs-new-contract",
@@ -369,11 +370,12 @@
         "operations:inspection-triple",
         "probe:bytes-4096",
         "representation:common.image/raster-metadata",
+        "signatures:from-specification (TIFF 6.0 §2 byte-order marker plus version 42: little-endian II 2A 00 or big-endian MM 00 2A)",
         "variants:pair"
       ],
       "droppedOperations": ["image.inspect", "image.read", "image.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/webp": {
       "verdict": "mechanical",

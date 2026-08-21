@@ -21,10 +21,8 @@
     }
   ],
   "limitations": [
-    "The local decoder supports selected stripped grayscale, RGB, RGBA, and palette images with no compression or PackBits; the portable tiff dependency provides a best-effort fallback for additional layouts.",
-    "The runtime is conservatively exposed only to Node hosts because the external tiff fallback reaches Node code in the repository import graph; structural detection remains portable.",
-    "Decode returns only the first page, and some planar, tiled, compressed, photometric, or uncommon sample layouts remain unsupported.",
-    "Write emits a single-page, little-endian, uncompressed RGBA8 TIFF rather than preserving source tags or compression.",
+    "The compatibility port performs a bounded endian-aware IFD and strip walk and decodes only the first page of uncompressed chunky RGB8 or RGBA8 files with top-left orientation.",
+    "Compressed, tiled, planar, palette, grayscale, uncommon sample layouts, additional-page pixel decoding, TIFF writing, metadata editing, and pixel editing remain unsupported.",
     "Manifest v1 cannot express the legacy extension-or-either-endian-signature fallback without turning it into a conjunction; generated routing intentionally uses the extensions while the handwritten compatibility registry retains global structural sniffing."
   ],
   "spec": {
@@ -33,7 +31,13 @@
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
-    "match": { "extensions": ["tif", "tiff"] },
+    "match": {
+      "extensions": ["tif", "tiff"],
+      "signatures": [
+        { "from": "start", "offset": 0, "bytesHex": "49492a00" },
+        { "from": "start", "offset": 0, "bytesHex": "4d4d002a" }
+      ]
+    },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {
