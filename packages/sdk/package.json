@@ -40,6 +40,10 @@
       "types": "./dist/runtime/index.d.ts",
       "default": "./dist/runtime/index.js"
     },
+    "./renderer": {
+      "types": "./dist/renderer/index.d.ts",
+      "default": "./dist/renderer/index.js"
+    },
     "./text-data": {
       "types": "./dist/text-data/index.d.ts",
       "default": "./dist/text-data/index.js"

@@ -20,8 +20,10 @@ runtime/library-пакета и отдельный build-only preset `tsconfig`.
    budgeted executable runtime sessions, но MK2 дополнительно давал snapshots/events/clock. Кроме
    того, всё ещё нет канонического World linker/scheduler и permission-gated agent operation
    catalog с двухфазными мутациями.
-3. **3D-паритет пока метадатный.** M3/M3A открывается, но MK2 дополнительно декодирует геометрию,
-   материалы, скелет, анимации, particle/ribbon effects и рендерит через WebGL/Three/headless.
+3. **3D-паритет теперь имеет общий renderer plane, но SC2-модель остаётся метадатной.** MK3
+   маршрутизирует renderer provider и доказывает typed geometry → RGBA на живом software backend,
+   однако M3/M3A всё ещё не декодирует геометрию, материалы, скелет, анимации и particle/ribbon
+   effects, а production WebGL/WebGPU backend отсутствует.
 4. **CASC теперь открывается, installation discovery — нет.** MK3 умеет открыть явно переданный
    корень SC2 через VFS → Host → CASC, но не имеет реестра игр и Steam/Epic/Blizzard discovery,
    которые реализует `games`.
@@ -52,6 +54,20 @@ scheduler/World composition, native runtime adapter, фактическое OS s
 измерение памяти/CPU host-ом. Поэтому минимальный `PARITY-RUNTIME` contract закрыт, но более широкая
 MK2 runtime-поверхность в таблице честно остаётся частичной.
 
+### Block 5 / 1.3: граница реализованного renderer slice
+
+Включено: отдельный `sdk/renderer`, route-aware service contract
+`common.render/scene-3d@1`, host-owned matcher по `rendererId` и `outputKind`, обычная
+inventory/resolution/gate activation и живой `reference.software` provider. Запрос передаёт
+ограниченный scene snapshot с `Float32Array`/`Uint32Array`, column-major camera matrix и viewport;
+результат — принадлежащий frame `Uint8Array` RGBA8 с diagnostics и statistics. E2E действительно
+растеризует индексированный треугольник, а не только проверяет наличие API.
+
+Осознанно не включено в этот contract pass: DOM/canvas mount API, WebGL/WebGPU, texture sampling,
+полный material graph, skinning, animation, particle/ribbon effects, PNG encoding, GPU resource
+lifecycle и интеграция с декодером M3. Поэтому минимальный `PARITY-RENDERER` contract закрыт, но
+широкие строки `rendering-3d` и `models-processing` остаются частичными.
+
 ## Таблица
 
 | пакет MK2                 | что он давал (проверенная реализация)                                                                                                                   | где это в MK3                                                                                                                            | вердикт                                                                               |
@@ -77,7 +93,7 @@ MK2 runtime-поверхность в таблице честно остаётс
 | `maps-processing`         | Не только map codec: HeightMap, cliff/terrain params, regions, objects, minimap-related data, AI/bank/includes и прочие внутренние файлы SC2Map         | `org.modkitx/sc2-map` — port-pending; MPQ умеет лишь дать байты entries                                                                  | **нет — нужно** (`PARITY-MAPS`)                                                       |
 | `models-processing`       | Registry/open service, decoded render model, textures, materials, skeleton/animations, effect simulation и asset resolver                               | OBJ/glTF codecs и model source; M3/M3A публикует metadata-only scene                                                                     | **частично** — нет decoded M3 render model/effects/sidecars                           |
 | `mods-processing`         | SC2 mod reader, dependency resolver, metadata cache, entities, bank list, game-data order, locale/font styles                                           | `org.modkitx/sc2-mod` — port-pending; namespace сам по себе зависимости не разрешает                                                     | **нет — нужно** (`PARITY-MODS`)                                                       |
-| `rendering-3d`            | Renderer registry и полноценные WebGL/Three/WebGPU/headless backends; terrain, battle scene, particles/ribbons, skinning и compressed textures          | UI model surface и generic model contracts есть, реального renderer backend plane нет                                                    | **частично** — нужен отдельный renderer/service contract и реализации                 |
+| `rendering-3d`            | Renderer registry и полноценные WebGL/Three/WebGPU/headless backends; terrain, battle scene, particles/ribbons, skinning и compressed textures          | `sdk/renderer` + host activation и reference software RGBA backend дают общий renderer plane; production GPU backends и SC2 features нет | **частично** — минимальный `PARITY-RENDERER` contract есть, полный renderer ещё нет   |
 | `replays-processing`      | Semantic replay registry и injected SC2 playback adapter                                                                                                | `org.modkitx/sc2-replay` — port-pending; generic transport не декодирует replay                                                          | **нет — нужно** (`PARITY-REPLAYS`)                                                    |
 | `runtime`                 | Game-neutral provider registry, sessions, snapshots/events, clocks, cancellation и budgets                                                              | `sdk/runtime` + host activation дают leased budgeted sessions и structured refusal; snapshots/events/clock ещё не перенесены             | **частично** — минимальный `PARITY-RUNTIME` contract есть, полный runtime ещё нет     |
 | `saves-processing`        | Save registry и SC2 bank adapter                                                                                                                        | `org.modkitx/sc2-bank` — port-pending                                                                                                    | **нет — нужно** (`PARITY-SAVES`)                                                      |
@@ -100,6 +116,6 @@ MK2 runtime-поверхность в таблице честно остаётс
 - **нет — нужно:** 10.
 - **нет — не нужно:** 1.
 
-Следующий contract pass — renderer. После него нужен вертикальный SC2 slice
+Contract-этап Block 5 / 1 закрыт. Следующий проход — вертикальный SC2 slice
 `games → mods → data → maps`, потому что отдельный map codec без dependency resolver и data schema
 повторит только имя MK2-поверхности, а не её поведение.

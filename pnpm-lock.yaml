@@ -158,6 +158,15 @@ importers:
         specifier: workspace:*
         version: link:../../../packages/sdk
 
+  extensions/reference/software-renderer:
+    dependencies:
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../../packages/sdk
+
   extensions/codec-kit/codec-kit:
     dependencies:
       '@modkitx-x3/core':

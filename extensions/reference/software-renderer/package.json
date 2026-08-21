@@ -1,0 +1,37 @@
+{
+  "name": "modkit-extension-x3-software-renderer",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "Reference MK3 software scene renderer provider.",
+  "exports": {
+    ".": "./src/provider.js",
+    "./linked": "./src/linked.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "contributions",
+    "src",
+    "README.md"
+  ],
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "org.modkitx.reference",
+    "id": "software-renderer",
+    "contributionManifests": [
+      "./contributions/*.json"
+    ]
+  },
+  "peerDependencies": {
+    "@modkitx-x3/host": "workspace:*",
+    "@modkitx-x3/sdk": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@modkitx-x3/host": {
+      "optional": true
+    },
+    "@modkitx-x3/sdk": {
+      "optional": true
+    }
+  }
+}

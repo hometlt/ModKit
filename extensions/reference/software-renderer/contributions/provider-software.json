@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/service-provider-contribution",
+    "major": 1
+  },
+  "id": "org.modkitx.reference/software-renderer",
+  "displayName": "Reference software renderer",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/provider.js",
+      "target": {
+        "environments": ["node"]
+      },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/provider.js",
+      "target": {
+        "environments": ["browser-worker", "node-worker"]
+      },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "provides": [
+      {
+        "offerId": "reference-software-renderer-v1",
+        "contract": "common.render/scene-3d",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": {
+          "rendererIds": ["reference.software"],
+          "outputKinds": ["rgba8"]
+        }
+      }
+    ],
+    "lifecycleScope": "session"
+  }
+}

@@ -181,4 +181,17 @@ describe('minimal builds stay minimal', () => {
     expect(text).not.toContain('data-mk-part')
     expect(text.length).toBeLessThan(2_500)
   }, 60_000)
+
+  it('the renderer contract subpath carries neither language, runtime nor host implementation', async () => {
+    const text = await bundled(
+      `export { SCENE_RENDERER_CONTRACT } from '@modkitx-x3/sdk/renderer'\n`,
+    )
+    expect(text).toContain('common.render/scene-3d')
+    expect(text).not.toContain('common.language/document-analysis')
+    expect(text).not.toContain('common.runtime/provider')
+    expect(text).not.toContain('service activation cycle detected')
+    expect(text).not.toContain('presentationSlotId')
+    expect(text).not.toContain('data-mk-part')
+    expect(text.length).toBeLessThan(2_500)
+  }, 60_000)
 })

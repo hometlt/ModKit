@@ -118,6 +118,7 @@ export {
 } from './editing-definitions.js'
 export * from './language/index.js'
 export * from './runtime/index.js'
+export * from './renderer/index.js'
 export {
   createServiceFacetMatcherProfileRegistry,
   createServiceContractDefinitionRegistry,
