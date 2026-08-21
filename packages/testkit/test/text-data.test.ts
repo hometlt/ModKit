@@ -902,7 +902,7 @@ describe('13B text-data providers and codecs', () => {
         )
       }
     }
-    const sharedRoot = join(repositoryRoot, 'extensions', '_shared', 'codec-kit', 'src', 'text')
+    const sharedRoot = join(repositoryRoot, 'extensions', 'codec-kit', 'codec-kit', 'src', 'text')
     for (const path of [
       'index.js',
       'codec-runtime.js',

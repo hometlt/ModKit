@@ -6,7 +6,7 @@ packages:
   - 'apps/*'
   # Optional reference extensions are workspace-linked for conformance tests only. They are not
   # dependencies of core/sdk/vfs/host and therefore do not enter the bootstrap import closure.
-  - 'extensions/_shared/*'
+  - 'extensions/codec-kit/*'
   - 'extensions/common/archives'
   - 'extensions/common/audio'
   - 'extensions/common/images'

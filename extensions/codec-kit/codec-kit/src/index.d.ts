@@ -1,6 +1,7 @@
 import type { Diagnostic } from '@modkitx-x3/core'
 import type {
   ArtifactByteSource,
+  AssetNamespace,
   AssetEditPlan,
   AssetInput,
   AssetRevision,
@@ -83,6 +84,39 @@ export interface InspectionResult {
   readonly maxDecodedBytes?: bigint | number | string
 }
 
+export interface NamespaceMarker {
+  readonly path: string
+  readonly kind: 'file' | 'directory'
+  readonly size?: bigint
+}
+
+export interface NamespaceInspectionContext {
+  readonly budget: ResourceBudget
+  readonly signal?: AbortSignal
+  readonly intent: OpenIntent
+  readonly namespace: AssetNamespace
+  readonly input: Extract<AssetInput, { readonly originKind: 'namespace' }>
+}
+
+export interface NamespaceInspectionResult extends InspectionResult {
+  readonly detection: {
+    readonly confidence: number
+    readonly kind?: 'magic' | 'structure' | 'companion' | 'context' | 'extension' | 'user-override'
+    readonly note?: string
+  }
+}
+
+export interface NamespaceInspectionDefinition {
+  detect(
+    markers: readonly NamespaceMarker[],
+    uri: string,
+  ): Promise<NamespaceInspectionResult['detection']>
+  inspect(
+    namespace: AssetNamespace,
+    context: NamespaceInspectionContext,
+  ): Promise<NamespaceInspectionResult>
+}
+
 export interface InspectionCodecDefinition {
   readonly id: string
   readonly version?: string
@@ -92,6 +126,7 @@ export interface InspectionCodecDefinition {
     readonly mediaType?: string
   }
   readonly operations?: readonly OperationDecl[]
+  readonly namespace?: never
   detect(
     prefix: Uint8Array,
     uri: string,
@@ -101,6 +136,20 @@ export interface InspectionCodecDefinition {
     readonly note?: string
   }>
   inspect(bytes: Uint8Array, context: InspectionContext): Promise<InspectionResult>
+}
+
+export interface NamespaceInspectionCodecDefinition {
+  readonly id: string
+  readonly version?: string
+  readonly format: {
+    readonly id: string
+    readonly label: string
+    readonly mediaType?: string
+  }
+  readonly operations?: readonly OperationDecl[]
+  readonly namespace: NamespaceInspectionDefinition
+  readonly detect?: never
+  readonly inspect?: never
 }
 
 export const INSPECTION_OPERATIONS: readonly OperationDecl[]
@@ -150,7 +199,7 @@ export function createModelSceneSource(input: {
   readonly primitives?: readonly ModelPrimitive[]
 }): ModelSceneSource
 export function createInspectionCodec(
-  definition: InspectionCodecDefinition,
+  definition: InspectionCodecDefinition | NamespaceInspectionCodecDefinition,
   context?: ContributionContext,
 ): Codec
 

@@ -142,11 +142,19 @@ const probePlanSchema = {
     {
       type: 'object',
       additionalProperties: false,
-      required: ['kind', 'maxEntries', 'maxDepth', 'maxPathBytes'],
+      required: ['kind', 'markers', 'maxEntries', 'maxBytes', 'maxDepth', 'maxPathBytes'],
       properties: {
         kind: { const: 'namespace' },
+        markers: {
+          type: 'array',
+          items: nonEmptyString,
+          minItems: 1,
+          maxItems: 256,
+          uniqueItems: true,
+        },
         prefixes: { type: 'array', items: nonEmptyString },
         maxEntries: { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        maxBytes: { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
         maxDepth: { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
         maxPathBytes: { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
       },

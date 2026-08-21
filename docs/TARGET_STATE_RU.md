@@ -24,7 +24,8 @@ modkitX3/
 │   └── testkit                конформанс-набор и приёмочные прогоны
 │
 ├── extensions/
-│   ├── _shared                общий инструментарий кодеков
+│   ├── codec-kit/             общий инструментарий кодеков
+│   │   └── codec-kit          пакет @modkitx-x3/codec-kit
 │   ├── common/                универсальные форматы            ← РАСТЁТ
 │   ├── adobe-flash/           вендорские и игровые семейства   ← ПОЯВЯТСЯ
 │   ├── blizzard-*/  ea-*/  epic-games-*/  unity-engine/  microsoft-age-series/

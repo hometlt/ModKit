@@ -209,6 +209,7 @@ const assetInputSurface = {
   // subject list and its optional materialized requirement/recipe
   fields: [
     'originKind',
+    'root',
     'bindings',
     'revisions',
     'primaryBindingId',

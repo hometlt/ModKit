@@ -117,7 +117,7 @@ await build({
     'vendor/codec-kit/index': join(
       repoRoot,
       'extensions',
-      '_shared',
+      'codec-kit',
       'codec-kit',
       'src',
       'index.js',
@@ -125,7 +125,7 @@ await build({
     'vendor/codec-kit/text/index': join(
       repoRoot,
       'extensions',
-      '_shared',
+      'codec-kit',
       'codec-kit',
       'src',
       'text',

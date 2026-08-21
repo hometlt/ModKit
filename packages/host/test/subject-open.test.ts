@@ -1,10 +1,13 @@
 import { Buffer } from 'node:buffer'
-import { readFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { canonicalJsonStringify, traitId } from '@modkitx-x3/core'
 import {
   buildInventory,
+  artifactNamespaceSourceFromVfsMount,
   createHostContributionContractRegistry,
   createExecutionBackendRegistry,
   createServiceContractDefinitionRegistry,
@@ -19,6 +22,8 @@ import {
   replayPolicyLock,
   resolvePresentationPlan,
 } from '@modkitx-x3/host'
+import { VirtualFileSystem, type VfsMount } from '@modkitx-x3/vfs'
+import { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'
 import { loadExtensionDirectory } from '@modkitx-x3/host/node'
 import {
   bindingId,
@@ -46,6 +51,7 @@ const textJsonDir = join(repoRoot, 'extensions', 'common', 'text-json')
 const hostileProbeDir = join(import.meta.dirname, 'fixtures', 'subject-open-extension')
 const grantsProbeDir = join(import.meta.dirname, 'fixtures', 'subject-open-grants-extension')
 const ambiguousProbeDir = join(import.meta.dirname, 'fixtures', 'subject-open-ambiguous-extension')
+const namespaceProbeDir = join(import.meta.dirname, 'fixtures', 'subject-open-namespace-extension')
 const pngFixture = join(repoRoot, 'apps', 'web', 'public', 'favicon-32.png')
 const uvmFixture = join(
   repoRoot,
@@ -642,6 +648,100 @@ describe('host-owned subject opening pipeline', () => {
     // The 9-byte hostile request was stopped by the wrapper. Only the host's explicit
     // 16-byte UTF-8 fallback sniff reached the underlying source.
     expect(reads).toEqual([16])
+  })
+
+  it('opens a real directory through file VFS, the namespace bridge, Host and codec-kit', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'modkitx-x3-namespace-'))
+    await writeFile(join(directory, 'project.marker'), 'namespace fixture\n')
+    await writeFile(join(directory, 'not-declared.txt'), 'must not be probed\n')
+    const filesystem = new VirtualFileSystem().registerProvider(createFileVfsProvider())
+    const openedMount = await filesystem.openMount(pathToFileURL(directory).href)
+    const accessed: string[] = []
+    const mount: VfsMount = {
+      id: openedMount.id,
+      rootUri: openedMount.rootUri,
+      revision: openedMount.revision,
+      async stat(path, signal) {
+        accessed.push(`stat:${path}`)
+        return openedMount.stat(path, signal)
+      },
+      async *list(path, signal) {
+        accessed.push(`list:${path}`)
+        yield* openedMount.list(path, signal)
+      },
+      async open(path, signal) {
+        accessed.push(`open:${path}`)
+        return openedMount.open(path, signal)
+      },
+      dispose: () => openedMount.dispose(),
+    }
+    filesystem.mount('', mount)
+    const source = artifactNamespaceSourceFromVfsMount(mount)
+    try {
+      const namespaceLease = await source.openNamespace()
+      await expect(namespaceLease.value.open('../outside')).rejects.toMatchObject({
+        code: 'x3.vfs/path-escape-refused',
+      })
+      await namespaceLease.release()
+
+      const execution = countingTrustedBackends()
+      const result = await openSubject({
+        inventory: await bundledInventory(namespaceProbeDir),
+        source,
+        intent: 'full',
+        target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+        grant: { id: 'subject-open-namespace', classes: ['read-source'] },
+        executionBackends: execution.registry,
+        budget,
+      })
+
+      if (result.state !== 'opened') {
+        throw new TypeError(`unexpected ${result.reason}: ${JSON.stringify(result)}`)
+      }
+      expect(result.selected).toMatchObject({
+        contributionId: 'org.example/namespace-project',
+        confidence: 0.99,
+      })
+      expect(result.descriptor).toMatchObject({
+        subjectUri: source.ref.uri,
+        revision: source.revision,
+        origin: { kind: 'namespace', root: source.ref, revision: source.revision },
+        identity: { codecId: 'org.example/namespace-project', formatId: 'namespace-project' },
+        constraints: { seekable: false, randomAccess: false },
+      })
+      expect(parseCodecDetectionSelection(result.detectionSelectionText).selected).toMatchObject({
+        contributionId: 'org.example/namespace-project',
+        sourceTopology: 'namespace',
+        evidence: [expect.objectContaining({ kind: 'structure' })],
+      })
+      expect(result.candidates).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            contributionId: 'org.example/namespace-overread',
+            state: 'rejected',
+            diagnostics: expect.arrayContaining([
+              expect.objectContaining({ code: 'x3.host/namespace-probe-byte-budget-exceeded' }),
+            ]),
+          }),
+          expect.objectContaining({
+            contributionId: 'org.example/namespace-traversal',
+            state: 'rejected',
+            diagnostics: expect.arrayContaining([
+              expect.objectContaining({ code: 'x3.host/namespace-probe-traversal-refused' }),
+            ]),
+          }),
+        ]),
+      )
+      expect(accessed).not.toContain('stat:not-declared.txt')
+      expect(accessed).not.toContain('open:not-declared.txt')
+      expect(accessed.some(item => item.startsWith('list:'))).toBe(false)
+      expect(accessed.filter(item => item.endsWith(':project.marker')).length).toBeGreaterThan(0)
+      await result.session.dispose()
+      expect(execution.releases()).toBe(3)
+    } finally {
+      await filesystem.dispose()
+      await rm(directory, { recursive: true, force: true })
+    }
   })
 
   it('releases every activated candidate before returning an ambiguous result', async () => {

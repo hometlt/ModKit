@@ -447,6 +447,9 @@ function originFrom(input, primary) {
       primary: input.primaryBindingId,
     }
   }
+  if (input.originKind === 'namespace') {
+    return { kind: 'namespace', root: input.root, revision: input.revisions.namespaceRevision }
+  }
   throw new TypeError('inspection codec requires a physical byte input')
 }
 
@@ -471,10 +474,65 @@ function probeLength(plan, size) {
  * operations. Optional custom operations remain format-owned.
  */
 export function createInspectionCodec(definition) {
+  const namespaceDefinition = definition.namespace
   const customOperations = Object.freeze([...(definition.operations ?? [])])
-  const operationDeclarations = Object.freeze([...INSPECTION_OPERATIONS, ...customOperations])
+  const sharedOperations =
+    namespaceDefinition === undefined
+      ? INSPECTION_OPERATIONS
+      : INSPECTION_OPERATIONS.filter(operation => operation.handlerId !== 'export-raw')
+  const operationDeclarations = Object.freeze([...sharedOperations, ...customOperations])
   return Object.freeze({
     async probe(request, signal) {
+      if (namespaceDefinition !== undefined) {
+        if (request.source.kind !== 'namespace' || request.plan.kind !== 'namespace') {
+          throw new TypeError(`${definition.id} requires a namespace probe`)
+        }
+        const namespaceLease = await request.source.openNamespace(signal)
+        try {
+          const markers = []
+          for (const path of request.plan.markers) {
+            let entryLease
+            try {
+              entryLease = await namespaceLease.value.open(path, signal)
+            } catch (error) {
+              const code = error?.code
+              if (code === 'x3.host/namespace-entry-not-found') continue
+              throw error
+            }
+            try {
+              markers.push(
+                Object.freeze({
+                  path,
+                  kind: entryLease.value.kind === 'namespace' ? 'directory' : 'file',
+                  ...(entryLease.value.kind === 'bytes' && entryLease.value.size !== undefined
+                    ? { size: entryLease.value.size }
+                    : {}),
+                }),
+              )
+            } finally {
+              await entryLease.release()
+            }
+          }
+          const detected = await namespaceDefinition.detect(
+            Object.freeze(markers),
+            request.source.ref.uri,
+          )
+          return Object.freeze({
+            codecId: definition.id,
+            confidence: detected.confidence,
+            evidence: Object.freeze([
+              Object.freeze({
+                kind: detected.kind ?? 'structure',
+                weight: detected.confidence,
+                note: detected.note,
+              }),
+            ]),
+            requiredRanges: Object.freeze([]),
+          })
+        } finally {
+          await namespaceLease.release()
+        }
+      }
       if (request.source.kind !== 'bytes' || request.plan.kind !== 'bytes') {
         throw new TypeError(`${definition.id} requires a byte probe`)
       }
@@ -499,7 +557,13 @@ export function createInspectionCodec(definition) {
         ]),
       })
     },
-    async planInput() {
+    async planInput(source) {
+      if (namespaceDefinition !== undefined) {
+        if (source.kind !== 'namespace') {
+          throw new TypeError(`${definition.id} requires a namespace input`)
+        }
+        return Object.freeze({ originKind: 'namespace', requirements: Object.freeze([]) })
+      }
       return Object.freeze({
         originKind: 'single',
         candidate: Object.freeze({ bindingId: 'content', role: 'content', ownership: 'owned' }),
@@ -507,6 +571,100 @@ export function createInspectionCodec(definition) {
       })
     },
     async open(input, intent, budget, signal) {
+      if (namespaceDefinition !== undefined) {
+        if (input.originKind !== 'namespace') {
+          throw new TypeError(`${definition.id} requires a namespace input`)
+        }
+        const namespaceLease = await input.openNamespace(signal)
+        try {
+          const inspection = await namespaceDefinition.inspect(namespaceLease.value, {
+            budget,
+            signal,
+            intent,
+            namespace: namespaceLease.value,
+            input,
+          })
+          const dataSources = new Map(Object.entries(inspection.dataSources ?? {}))
+          const descriptor = await assembleSubjectDescriptor({
+            schemaVersion: 2,
+            subjectUri: input.root.uri,
+            origin: originFrom(input),
+            interpretation: 'codec',
+            identity: {
+              codecId: definition.id,
+              codecVersion: definition.version ?? '1.0.0',
+              formatId: definition.format.id,
+              formatLabel: definition.format.label,
+              ...(definition.format.mediaType === undefined
+                ? {}
+                : { mediaType: definition.format.mediaType }),
+              confidence: inspection.detection.confidence,
+              detection: [
+                {
+                  kind: inspection.detection.kind ?? 'structure',
+                  weight: inspection.detection.confidence,
+                  ...(inspection.detection.note === undefined
+                    ? {}
+                    : { note: inspection.detection.note }),
+                },
+              ],
+            },
+            traits: inspection.traits.map(trait => ({
+              id: trait.id,
+              descriptorVersion: 1,
+              state: 'available',
+              ...(trait.parameters === undefined ? {} : { parameters: trait.parameters }),
+            })),
+            operations: operationDeclarations.map(operation => ({
+              id: operation.id,
+              handlerId: operation.handlerId,
+              mutatesSource: operation.mutatesSource,
+              state: 'available',
+            })),
+            constraints: {
+              readOnly: !operationDeclarations.some(operation => operation.mutatesSource === true),
+              seekable: false,
+              randomAccess: false,
+              trusted: false,
+              ...(inspection.maxDecodedBytes === undefined
+                ? {}
+                : { maxDecodedBytes: String(inspection.maxDecodedBytes) }),
+              ...(inspection.unsupportedFeatures === undefined
+                ? {}
+                : { unsupportedFeatures: inspection.unsupportedFeatures }),
+            },
+            dataSources: [...dataSources.keys()].map(contract => ({ contract, major: 1 })),
+            diagnostics: inspection.diagnostics ?? [],
+            metadata: inspection.metadata,
+            revision: input.revisions.revision,
+          })
+          const handlers = new Map([
+            ['inspect', async () => ({ kind: 'json', value: inspection.summary })],
+            ['validate', async () => ({ kind: 'none' })],
+            ...Object.entries(inspection.handlers ?? {}),
+          ])
+          return createAssetSession({
+            revision: revisionId(input.revisions.revision),
+            descriptor,
+            operationDeclarations,
+            permissionGrant: {
+              id: `${definition.format.id}-inspection-session`,
+              classes: declaredPermissionClasses(operationDeclarations),
+            },
+            handlers,
+            async openDataSource(contract) {
+              const value = dataSources.get(contract)
+              if (value === undefined)
+                throw new TypeError(`${definition.id} does not publish ${contract}`)
+              return simpleLease(value)
+            },
+            release: [() => namespaceLease.release()],
+          }).session
+        } catch (error) {
+          await namespaceLease.release()
+          throw error
+        }
+      }
       if (input.originKind !== 'single' && input.originKind !== 'bundle') {
         throw new TypeError(`${definition.id} requires a single or bundle byte input`)
       }

@@ -219,7 +219,25 @@ const BUDGETS = {
   maxDiagnostics: 1000,
 }
 
-const NAMESPACE_PROBE = { kind: 'namespace', maxEntries: 100000, maxDepth: 64, maxPathBytes: 4096 }
+const DEFAULT_NAMESPACE_PROBE = {
+  kind: 'namespace',
+  markers: ['.modkit-namespace-probe-marker'],
+  maxEntries: 1,
+  maxBytes: PROBE_BYTES,
+  maxDepth: 1,
+  maxPathBytes: 4096,
+}
+
+const NAMESPACE_PROBES = {
+  'org.modkitx/casc': {
+    kind: 'namespace',
+    markers: ['.build.info', 'Data/config', 'Data/data'],
+    maxEntries: 3,
+    maxBytes: 65536,
+    maxDepth: 2,
+    maxPathBytes: 4096,
+  },
+}
 
 /** AC §5 rename table from the report; applies to the rework verdicts (task A2). */
 const OPERATION_RENAMES = { 'image.compressed.read': 'image.compressed-read' }
@@ -679,7 +697,7 @@ function convertCodec(analysis, codec) {
       },
       probe:
         topology === 'namespace'
-          ? NAMESPACE_PROBE
+          ? (NAMESPACE_PROBES[contributionId] ?? DEFAULT_NAMESPACE_PROBE)
           : {
               kind: 'bytes',
               ranges: [{ from: 'start', length: PROBE_BYTES }],

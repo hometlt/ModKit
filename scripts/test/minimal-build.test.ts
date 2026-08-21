@@ -130,4 +130,27 @@ describe('minimal builds stay minimal', () => {
     expect(text).toContain('image-png')
     expect(text.includes('data-mk-part'), 'UI leaked into a linked extension').toBe(false)
   }, 60_000)
+
+  it('the file VFS provider does not carry unrelated provider implementations', async () => {
+    const text = await bundled(
+      `export { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'\n`,
+      { platform: 'node' },
+    )
+    expect(text).toContain('file provider refused to escape its confined root boundary')
+    for (const [label, marker] of [
+      ['memory', 'memory provider exceeded its configured entry boundary'],
+      ['git', 'git provider exceeded its configured checkout boundary'],
+      ['http', 'http provider exceeded its configured response boundary'],
+      ['browser-file', 'browser-file provider exceeded its selected-file boundary'],
+    ] as const) {
+      expect(text.includes(marker), `${label} VFS provider rode along uninvited`).toBe(false)
+    }
+    expect(text.length).toBeLessThan(80_000)
+  }, 60_000)
+
+  it('the portable VFS root carries no provider implementation', async () => {
+    const text = await bundled(`export { VirtualFileSystem } from '@modkitx-x3/vfs'\n`)
+    expect(text).not.toContain('file provider refused to escape its confined root boundary')
+    expect(text).not.toContain('memory provider exceeded its configured entry boundary')
+  }, 60_000)
 })

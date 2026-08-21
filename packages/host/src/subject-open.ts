@@ -15,6 +15,9 @@ import {
   type AnyDescriptor,
   type AnyDescriptorWire,
   type ArtifactByteSource,
+  type ArtifactNamespaceSource,
+  type ArtifactSource,
+  type AssetNamespace,
   type AssetInput,
   type AssetInputPlan,
   type AssetSession,
@@ -27,6 +30,7 @@ import {
   type DetectionResultWire,
   type HostPolicy,
   type Lease,
+  type NamespaceProbePlan,
   type OpenIntent,
   type OperationResult,
   type OperationSession,
@@ -80,20 +84,20 @@ export interface SubjectOpenCandidateExplanation {
 }
 
 export interface SubjectInputResolutionContext {
-  readonly source: ArtifactByteSource
+  readonly source: ArtifactSource
   readonly plan: AssetInputPlan
   readonly detection: DetectionResult
   readonly signal?: AbortSignal
 }
 
-/** Host-owned companion/namespace resolver. The default implementation accepts single files only. */
+/** Host-owned companion/namespace resolver. The default handles direct single and namespace roots. */
 export type SubjectInputResolver = (
   context: SubjectInputResolutionContext,
 ) => AssetInput | Promise<AssetInput>
 
 export interface OpenSubjectOptions {
   readonly inventory: Inventory
-  readonly source: ArtifactByteSource
+  readonly source: ArtifactSource
   readonly path?: string
   readonly mediaType?: string
   readonly intent: Exclude<OpenIntent, 'probe'>
@@ -133,7 +137,7 @@ export interface UnresolvedSubject {
   readonly reason: 'no-candidate' | 'no-match' | 'ambiguous' | 'input-unresolved'
   readonly descriptor: AnyDescriptor
   readonly fallback: {
-    readonly preferred: 'text' | 'hex'
+    readonly preferred: 'text' | 'hex' | 'none'
     readonly available: readonly ('text' | 'hex')[]
   }
   readonly candidates: readonly SubjectOpenCandidateExplanation[]
@@ -393,6 +397,7 @@ function variantRequestsBeyondProbe(
 async function readSignatureWindows(
   options: OpenSubjectOptions,
 ): Promise<SignatureWindows | undefined> {
+  if (options.source.kind !== 'bytes') return undefined
   const ruleSets: (readonly SignatureRule[])[] = []
   for (const extension of options.inventory.extensions) {
     for (const contribution of extension.contributions) {
@@ -523,6 +528,177 @@ function boundedProbeSource(
   })
 }
 
+const NAMESPACE_PATH_ENCODER = new TextEncoder()
+
+function normalizeNamespaceProbePath(path: string, plan: NamespaceProbePlan): string {
+  if (path.includes('\0')) {
+    throw new ModkitError({
+      code: 'x3.host/namespace-probe-path-refused',
+      message: 'namespace probe paths may not contain NUL bytes',
+      context: { path },
+    })
+  }
+  const parts: string[] = []
+  for (const part of path.replaceAll('\\', '/').split('/')) {
+    if (part === '' || part === '.') continue
+    if (part === '..') {
+      throw new ModkitError({
+        code: 'x3.host/namespace-probe-path-refused',
+        message: 'namespace probe paths may not escape their subject root',
+        context: { path },
+      })
+    }
+    parts.push(part)
+  }
+  const normalized = parts.join('/')
+  const pathBytes = NAMESPACE_PATH_ENCODER.encode(normalized).byteLength
+  if (normalized === '' || parts.length > plan.maxDepth || pathBytes > plan.maxPathBytes) {
+    throw new ModkitError({
+      code: 'x3.host/namespace-probe-path-budget-exceeded',
+      message: 'namespace probe marker exceeds its declared path budget',
+      context: {
+        path,
+        depth: parts.length,
+        maxDepth: plan.maxDepth,
+        pathBytes,
+        maxPathBytes: plan.maxPathBytes,
+      },
+    })
+  }
+  return normalized
+}
+
+function boundedNamespaceProbeSource(
+  source: ArtifactNamespaceSource,
+  plan: NamespaceProbePlan,
+): ArtifactNamespaceSource {
+  if (plan.markers.length > plan.maxEntries) {
+    throw new ModkitError({
+      code: 'x3.host/namespace-probe-entry-budget-exceeded',
+      message: 'namespace probe declares more markers than its entry budget permits',
+      context: { markers: plan.markers.length, maxEntries: plan.maxEntries },
+    })
+  }
+  const markers = new Set(plan.markers.map(path => normalizeNamespaceProbePath(path, plan)))
+  if (markers.size !== plan.markers.length) {
+    throw new ModkitError({
+      code: 'x3.host/namespace-probe-marker-duplicate',
+      message: 'namespace probe marker paths must be unique after normalization',
+    })
+  }
+  let openedEntries = 0
+  let consumedBytes = 0n
+  const maximumBytes = BigInt(plan.maxBytes)
+  const consume = (length: bigint): void => {
+    if (length < 0n || consumedBytes + length > maximumBytes) {
+      throw new ModkitError({
+        code: 'x3.host/namespace-probe-byte-budget-exceeded',
+        message: `namespace probe exceeded its declared ${plan.maxBytes}-byte budget`,
+        context: { consumedBytes: String(consumedBytes), requestedBytes: String(length) },
+      })
+    }
+    consumedBytes += length
+  }
+  const guardMarkerSource = (marker: string, value: ArtifactSource): ArtifactSource => {
+    if (value.kind === 'namespace') {
+      return Object.freeze({
+        ...value,
+        async openNamespace(): Promise<Lease<AssetNamespace>> {
+          throw new ModkitError({
+            code: 'x3.host/namespace-probe-traversal-refused',
+            message: `namespace probe marker «${marker}» is opaque; traversal is forbidden`,
+            context: { marker },
+          })
+        },
+      })
+    }
+    return Object.freeze({
+      ...value,
+      async read(offset: bigint, length: number, signal?: AbortSignal) {
+        if (!Number.isSafeInteger(length) || length < 0) {
+          throw new ModkitError({
+            code: 'x3.host/namespace-probe-range-refused',
+            message: 'namespace probe marker reads require a non-negative safe length',
+            context: { marker, offset: String(offset), length },
+          })
+        }
+        consume(BigInt(length))
+        return value.read(offset, length, signal)
+      },
+      async *stream(
+        range?: { readonly offset: bigint; readonly length?: bigint },
+        signal?: AbortSignal,
+      ) {
+        if (range?.length === undefined) {
+          throw new ModkitError({
+            code: 'x3.host/namespace-probe-unbounded-stream-refused',
+            message: 'namespace probe marker streams require an explicit length',
+            context: { marker },
+          })
+        }
+        consume(range.length)
+        yield* value.stream(range, signal)
+      },
+    })
+  }
+  return Object.freeze({
+    ...source,
+    async openNamespace(signal?: AbortSignal): Promise<Lease<AssetNamespace>> {
+      const lease = await source.openNamespace(signal)
+      const guarded: AssetNamespace = Object.freeze({
+        revision: lease.value.revision,
+        async *list(): AsyncIterable<never> {
+          throw new ModkitError({
+            code: 'x3.host/namespace-probe-traversal-refused',
+            message: 'namespace-wide enumeration is forbidden during codec probing',
+          })
+        },
+        async open(path: string, openSignal?: AbortSignal): Promise<Lease<ArtifactSource>> {
+          const normalized = normalizeNamespaceProbePath(path, plan)
+          if (!markers.has(normalized)) {
+            throw new ModkitError({
+              code: 'x3.host/namespace-probe-path-refused',
+              message: `codec attempted to inspect undeclared namespace marker «${normalized}»`,
+              context: { path: normalized, markers: [...markers] },
+            })
+          }
+          openedEntries += 1
+          if (openedEntries > plan.maxEntries) {
+            throw new ModkitError({
+              code: 'x3.host/namespace-probe-entry-budget-exceeded',
+              message: `namespace probe exceeded its declared ${plan.maxEntries}-entry budget`,
+            })
+          }
+          const opened = await lease.value.open(normalized, openSignal)
+          return Object.freeze({
+            value: guardMarkerSource(normalized, opened.value),
+            release: () => opened.release(),
+          })
+        },
+      })
+      return Object.freeze({ value: guarded, release: () => lease.release() })
+    },
+  })
+}
+
+async function probeCodec(
+  codec: Codec,
+  source: ArtifactSource,
+  probe: CodecContributionSpecV1Wire['probe'],
+  signal?: AbortSignal,
+): Promise<DetectionResult> {
+  if (source.kind === 'bytes' && probe.kind === 'bytes') {
+    return codec.probe({ source: boundedProbeSource(source, probe), plan: probe }, signal)
+  }
+  if (source.kind === 'namespace' && probe.kind === 'namespace') {
+    return codec.probe({ source: boundedNamespaceProbeSource(source, probe), plan: probe }, signal)
+  }
+  throw new ModkitError({
+    code: 'x3.host/probe-topology-mismatch',
+    message: `codec probe ${probe.kind} cannot inspect a ${source.kind} subject`,
+  })
+}
+
 function snapshotDetection(value: DetectionResult, contributionId: string): DetectionResult {
   const owned = JSON.parse(canonicalJsonStringify(value)) as DetectionResultWire
   if (
@@ -548,12 +724,56 @@ function snapshotPlan(value: AssetInputPlan): AssetInputPlan {
 
 function defaultResolveInput(context: SubjectInputResolutionContext): AssetInput {
   const plan = context.plan
+  if (plan.originKind === 'namespace' && plan.requirements.length === 0) {
+    if (context.source.kind !== 'namespace') {
+      throw new ModkitError({
+        code: 'x3.host/input-topology-mismatch',
+        message: 'a namespace input plan requires a namespace subject source',
+      })
+    }
+    const source = context.source
+    const compositionFingerprint = canonicalJsonStringify({
+      topology: 'namespace',
+      root: source.ref,
+      revision: source.revision,
+    })
+    return Object.freeze({
+      originKind: 'namespace' as const,
+      root: source.ref,
+      bindings: Object.freeze([]),
+      revisions: Object.freeze({
+        topology: 'namespace' as const,
+        revision: source.revision,
+        namespaceRevision: source.revision,
+        bindings: Object.freeze([]),
+        compositionFingerprint,
+      }),
+      bindingsFor: () => Object.freeze([]),
+      async openBinding(bindingId: string): Promise<never> {
+        throw new ModkitError({
+          code: 'x3.host/unknown-asset-input-binding',
+          message: `namespace asset input has no binding ${bindingId}`,
+        })
+      },
+      async openNamespace(signal?: AbortSignal): Promise<Lease<AssetNamespace>> {
+        throwIfAborted(signal)
+        return source.openNamespace(signal)
+      },
+    })
+  }
   if (plan.originKind !== 'single' || plan.requirements.length !== 0) {
     throw new ModkitError({
       code: 'x3.host/input-resolver-required',
       message: `the default subject input resolver cannot satisfy ${plan.originKind} topology`,
     })
   }
+  if (context.source.kind !== 'bytes') {
+    throw new ModkitError({
+      code: 'x3.host/input-topology-mismatch',
+      message: 'a single-file input plan requires a byte subject source',
+    })
+  }
+  const source = context.source
   const candidate = plan.candidate
   if (
     candidate.bindingId.trim().length === 0 ||
@@ -570,8 +790,8 @@ function defaultResolveInput(context: SubjectInputResolutionContext): AssetInput
     bindingId: candidate.bindingId,
     role: candidate.role,
     ownership: candidate.ownership,
-    source: context.source.ref,
-    revision: context.source.revision,
+    source: source.ref,
+    revision: source.revision,
   })
   const compositionFingerprint = canonicalJsonStringify({
     topology: 'single',
@@ -585,7 +805,7 @@ function defaultResolveInput(context: SubjectInputResolutionContext): AssetInput
     primaryBindingId: binding.bindingId,
     revisions: Object.freeze({
       topology: 'single' as const,
-      revision: context.source.revision,
+      revision: source.revision,
       bindings: Object.freeze([
         Object.freeze({ bindingId: binding.bindingId, revision: binding.revision }),
       ] as const),
@@ -600,7 +820,7 @@ function defaultResolveInput(context: SubjectInputResolutionContext): AssetInput
           message: `asset input has no binding ${bindingId}`,
         })
       }
-      return Object.freeze({ value: context.source, release: async () => undefined })
+      return Object.freeze({ value: source, release: async () => undefined })
     },
   })
 }
@@ -689,7 +909,12 @@ function runnableCandidates(
          * that the host can now say which switched-off codec the user is missing.
          */
         const spec = manifest.spec as unknown as CodecContributionSpecV1Wire | undefined
-        if (spec?.match !== undefined && matchesSpec(spec, path, options.mediaType)) {
+        const claimsSource =
+          spec !== undefined &&
+          (options.source.kind === 'namespace'
+            ? spec.sourceTopology === 'namespace' && spec.probe.kind === 'namespace'
+            : spec.probe.kind === 'bytes' && matchesSpec(spec, path, options.mediaType))
+        if (claimsSource) {
           suppressed.push({
             contributionId: manifest.id,
             extensionId: extension.manifest?.id ?? extension.source,
@@ -699,21 +924,24 @@ function runnableCandidates(
         continue
       }
       const spec = manifest.spec as unknown as CodecContributionSpecV1Wire
-      if (
-        !spec.openIntents.includes(options.intent) ||
-        (spec.sourceTopology !== 'single' && spec.sourceTopology !== 'bundle') ||
-        spec.probe.kind !== 'bytes'
-      ) {
-        continue
-      }
-      // name/media/path rules first; a declared byte signature admits a renamed file (NXT-101B)
-      const byName = matchesSpec(spec, path, options.mediaType)
-      const viaSignature =
-        !byName &&
-        signatureWindows !== undefined &&
-        matchesSignatures(spec.match.signatures, signatureWindows)
-      if (!byName && !viaSignature) {
-        continue
+      if (!spec.openIntents.includes(options.intent)) continue
+      let viaSignature = false
+      if (options.source.kind === 'namespace') {
+        if (spec.sourceTopology !== 'namespace' || spec.probe.kind !== 'namespace') continue
+      } else {
+        if (
+          (spec.sourceTopology !== 'single' && spec.sourceTopology !== 'bundle') ||
+          spec.probe.kind !== 'bytes'
+        ) {
+          continue
+        }
+        // name/media/path rules first; a declared byte signature admits a renamed file (NXT-101B)
+        const byName = matchesSpec(spec, path, options.mediaType)
+        viaSignature =
+          !byName &&
+          signatureWindows !== undefined &&
+          matchesSignatures(spec.match.signatures, signatureWindows)
+        if (!byName && !viaSignature) continue
       }
       for (const offer of offers) {
         if (offer.providerId !== manifest.id) continue
@@ -747,6 +975,30 @@ async function unresolvedDescriptor(
   options: OpenSubjectOptions,
   detections: readonly DetectionResult[],
 ): Promise<AnyDescriptor> {
+  if (options.source.kind === 'namespace') {
+    return assembleSubjectDescriptor({
+      schemaVersion: 2,
+      subjectUri: options.source.ref.uri,
+      origin: {
+        kind: 'namespace',
+        root: options.source.ref,
+        revision: options.source.revision,
+      },
+      interpretation: 'none',
+      candidates: detections,
+      traits: [{ id: 'container.directories', descriptorVersion: 1, state: 'available' }],
+      operations: [],
+      constraints: {
+        readOnly: true,
+        seekable: false,
+        randomAccess: false,
+        trusted: false,
+      },
+      dataSources: [],
+      diagnostics: [],
+      revision: options.source.revision,
+    } as AnyDescriptorWire)
+  }
   return assembleSubjectDescriptor({
     schemaVersion: 2,
     subjectUri: options.source.ref.uri,
@@ -791,9 +1043,10 @@ async function unresolvedDescriptor(
 }
 
 async function textFallbackAvailable(
-  source: ArtifactByteSource,
+  source: ArtifactSource,
   signal?: AbortSignal,
 ): Promise<boolean> {
+  if (source.kind !== 'bytes') return false
   if (source.size === undefined) return false
   const length = Number(source.size > 65_536n ? 65_536n : source.size)
   try {
@@ -805,8 +1058,22 @@ async function textFallbackAvailable(
   }
 }
 
+async function unresolvedFallback(
+  source: ArtifactSource,
+  signal?: AbortSignal,
+): Promise<UnresolvedSubject['fallback']> {
+  if (source.kind === 'namespace') {
+    return Object.freeze({ preferred: 'none' as const, available: Object.freeze([]) })
+  }
+  const text = await textFallbackAvailable(source, signal)
+  return Object.freeze({
+    preferred: text ? ('text' as const) : ('hex' as const),
+    available: Object.freeze(text ? (['text', 'hex'] as const) : (['hex'] as const)),
+  })
+}
+
 /**
- * One public host route from an attested inventory plus a pinned byte source to a session.
+ * One public host route from an attested inventory plus a pinned artifact source to a session.
  * Unknown or ambiguous content returns a validated unresolved descriptor and explicit fallback.
  */
 export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubjectResult> {
@@ -1023,21 +1290,8 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
           ),
           candidate.contributionId,
         )
-        const probeSource = boundedProbeSource(
-          options.source,
-          candidate.spec.probe as Extract<CodecContributionSpecV1Wire['probe'], { kind: 'bytes' }>,
-        )
         const detection = snapshotDetection(
-          await codec.probe(
-            {
-              source: probeSource,
-              plan: candidate.spec.probe as Extract<
-                CodecContributionSpecV1Wire['probe'],
-                { kind: 'bytes' }
-              >,
-            },
-            options.signal,
-          ),
+          await probeCodec(codec, options.source, candidate.spec.probe, options.signal),
           candidate.contributionId,
         )
         detected.push(
@@ -1106,7 +1360,6 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
       options,
       detected.map(candidate => candidate.detection),
     )
-    const text = await textFallbackAvailable(options.source, options.signal)
     return Object.freeze({
       state: 'unresolved' as const,
       reason:
@@ -1116,10 +1369,7 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
             ? ('no-match' as const)
             : ('ambiguous' as const),
       descriptor,
-      fallback: Object.freeze({
-        preferred: text ? ('text' as const) : ('hex' as const),
-        available: Object.freeze(text ? (['text', 'hex'] as const) : (['hex'] as const)),
-      }),
+      fallback: await unresolvedFallback(options.source, options.signal),
       candidates: Object.freeze(explanations),
       diagnostics: Object.freeze(diagnostics),
     })
@@ -1182,11 +1432,13 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
     }
     const rawPlan = best.codec.planInput
       ? await best.codec.planInput(options.source, best.detection, options.signal)
-      : {
-          originKind: 'single' as const,
-          candidate: { bindingId: 'content', role: 'content', ownership: 'owned' as const },
-          requirements: [] as const,
-        }
+      : options.source.kind === 'namespace'
+        ? { originKind: 'namespace' as const, requirements: [] as const }
+        : {
+            originKind: 'single' as const,
+            candidate: { bindingId: 'content', role: 'content', ownership: 'owned' as const },
+            requirements: [] as const,
+          }
     const plan = snapshotPlan(rawPlan)
     const input = await (options.resolveInput ?? defaultResolveInput)({
       source: options.source,
@@ -1282,15 +1534,11 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
       options,
       detected.map(candidate => candidate.detection),
     )
-    const text = await textFallbackAvailable(options.source, options.signal)
     return Object.freeze({
       state: 'unresolved' as const,
       reason: 'input-unresolved' as const,
       descriptor,
-      fallback: Object.freeze({
-        preferred: text ? ('text' as const) : ('hex' as const),
-        available: Object.freeze(text ? (['text', 'hex'] as const) : (['hex'] as const)),
-      }),
+      fallback: await unresolvedFallback(options.source, options.signal),
       candidates: Object.freeze(explanations),
       diagnostics: Object.freeze(diagnostics),
     })

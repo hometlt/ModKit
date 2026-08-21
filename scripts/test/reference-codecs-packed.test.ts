@@ -143,7 +143,7 @@ describe('packed reference codec boundaries', () => {
       const platform = ['core', 'sdk', 'vfs', 'host'].map(name =>
         pack(join(repoRoot, 'packages', name)),
       )
-      const support = pack(join(repoRoot, 'extensions', '_shared', 'codec-kit'))
+      const support = pack(join(repoRoot, 'extensions', 'codec-kit', 'codec-kit'))
       const extensionDirectories = [
         join(repoRoot, 'extensions', 'common', 'archives'),
         join(repoRoot, 'extensions', 'common', 'audio'),

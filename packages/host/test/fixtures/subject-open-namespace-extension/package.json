@@ -1,0 +1,16 @@
+{
+  "name": "subject-open-namespace-fixture",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "org.example",
+    "id": "subject-open-namespace",
+    "contributionManifests": [
+      "./contributions/codec.json",
+      "./contributions/overread.json",
+      "./contributions/traversal.json"
+    ]
+  }
+}

@@ -2,7 +2,7 @@
 
 Status: **Accepted** (2026-08-19, lab Root = Fable by owner decision; S8)
 Applies to: `modkitX3/packages/sdk` (editing ABI surface/definition), `packages/host` (gate,
-subject-open, editing, standard definitions, node file backend), `extensions/_shared/codec-kit`,
+subject-open, editing, standard definitions, node file backend), `extensions/codec-kit/codec-kit`,
 first-party codecs that declare mutating operations, the MK2 converter's vocabulary
 Relates to: BRIEF-13D (owner, `modkitx/docs/tasks-active/platform-architecture/BRIEF_13D_universal_asset_editing.md`,
 R4 "IMPLEMENTED IN THE X3 LAB, NOT PROMOTED"), ADR-HOST-001 (one execution boundary)
@@ -143,9 +143,9 @@ requiredPermissions` plus `write-source` for `mutatesSource` — are **degradabl
   `packages/host/src/subject-editing.ts:138` (`createSubjectEditing`), `:185`
   (`planFromOperation`); `packages/host/src/service-leases.ts:60` (`activateServiceProvider`,
   shared with `subject-open`), `:153` (`createHostServiceResolver`).
-- codec-kit: `extensions/_shared/codec-kit/src/index.js:583` (honest `readOnly`), `:629`
-  (`declaredPermissionClasses` — the session mirrors the manifest), `:665` (`editPlanFromInput`),
-  `:711` (`defineWriter`).
+- codec-kit: `extensions/codec-kit/codec-kit/src/index.js:625`/`:741` (honest `readOnly`), `:787`
+  (`declaredPermissionClasses` — the session mirrors the manifest), `:823` (`editPlanFromInput`),
+  `:869` (`defineWriter`).
 - First mutating operation: `extensions/common/images/src/formats/png/codec.js:250`
   (`EDIT_FIELD_OPERATION`), `:293` (`setTextHandler`); manifest
   `extensions/common/images/contributions/codec-png.json:108` (`edit.field`, `mutatesSource: true`,

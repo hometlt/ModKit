@@ -295,14 +295,28 @@ declare const namespaceCandidate: ArtifactNamespaceSource
 export const candidateNamespace = namespaceCandidate.openNamespace()
 export const namespaceProbe = codec.probe({
   source: namespaceCandidate,
-  plan: { kind: 'namespace', maxEntries: 100, maxDepth: 4, maxPathBytes: 1024 },
+  plan: {
+    kind: 'namespace',
+    markers: ['project.marker'],
+    maxEntries: 100,
+    maxBytes: 4096,
+    maxDepth: 4,
+    maxPathBytes: 1024,
+  },
 })
 
 declare const byteCandidate: ArtifactByteSource
 // @ts-expect-error A byte candidate cannot be paired with a namespace traversal policy.
 codec.probe({
   source: byteCandidate,
-  plan: { kind: 'namespace', maxEntries: 100, maxDepth: 4, maxPathBytes: 1024 },
+  plan: {
+    kind: 'namespace',
+    markers: ['project.marker'],
+    maxEntries: 100,
+    maxBytes: 4096,
+    maxDepth: 4,
+    maxPathBytes: 1024,
+  },
 })
 
 export const derivedInputPlan = {

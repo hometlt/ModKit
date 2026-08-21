@@ -27,6 +27,8 @@ const PUBLISHED_ENTRIES = [
   'packages/sdk/dist/subjects/index.js',
   'packages/sdk/dist/ui-contracts/index.js',
   'packages/vfs/dist/index.js',
+  'packages/vfs/dist/providers/file/index.js',
+  'packages/vfs/dist/providers/memory/index.js',
   'packages/host/dist/index.js',
   'packages/host/dist/node/index.js',
   'packages/host/dist/browser/index.js',

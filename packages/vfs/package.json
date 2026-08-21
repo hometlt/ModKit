@@ -1,9 +1,10 @@
 {
   "name": "@modkitx-x3/vfs",
   "version": "0.1.0",
-  "description": "MK3 clean-core lab: portable source contracts, memory source, random access/streams (BRIEF-12; not a release)",
+  "description": "MK3 clean-core lab: portable VFS contracts with explicitly loaded providers (not a release)",
   "license": "UNLICENSED",
   "type": "module",
+  "sideEffects": false,
   "engines": {
     "node": ">=22"
   },
@@ -11,6 +12,14 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./providers/file": {
+      "types": "./dist/providers/file/index.d.ts",
+      "default": "./dist/providers/file/index.js"
+    },
+    "./providers/memory": {
+      "types": "./dist/providers/memory/index.d.ts",
+      "default": "./dist/providers/memory/index.js"
     }
   },
   "files": [

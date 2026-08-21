@@ -323,6 +323,8 @@ export interface NamespaceAssetInput extends AssetInputBase<
   readonly ResolvedRequirementInputBinding[]
 > {
   readonly originKind: 'namespace'
+  /** Exact host-pinned namespace root; it is not represented as a fake byte binding. */
+  readonly root: AssetSourceRef
   openNamespace(signal?: AbortSignal): Promise<Lease<AssetNamespace>>
 }
 

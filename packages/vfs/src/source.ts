@@ -1,8 +1,7 @@
 /**
- * Portable source contracts (canon §5.9: `vfs` owns source/stream contracts; concrete
- * file/browser adapters are host-owned). Browser-safe: no `node:*` anywhere in this
- * package — the Node file adapter lives in `@modkitx-x3/host/node` (BRIEF-12 §5 S2).
- * Every potentially blocking call takes an `AbortSignal` (BRIEF-12 §3.4).
+ * Portable random-access source contract. Provider implementations live behind explicit
+ * subpath imports; the package root remains browser-safe and provider-neutral.
+ * Every potentially blocking call takes an `AbortSignal`.
  */
 
 import { ModkitError, throwIfAborted } from '@modkitx-x3/core'

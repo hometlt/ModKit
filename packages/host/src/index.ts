@@ -30,6 +30,10 @@ export {
   type ArtifactByteSourceBridgeOptions,
 } from './source-bridge.js'
 export {
+  artifactNamespaceSourceFromVfsMount,
+  type ArtifactNamespaceSourceFromVfsOptions,
+} from './vfs-source.js'
+export {
   openSubject,
   type OpenedSubject,
   type OpenSubjectOptions,

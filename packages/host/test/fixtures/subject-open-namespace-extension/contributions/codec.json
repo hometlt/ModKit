@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/codec-contribution",
+    "major": 1
+  },
+  "id": "org.example/namespace-project",
+  "displayName": "Namespace project fixture",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./codec.mjs",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "namespace-project", "label": "Namespace project" }],
+    "roles": ["semantic"],
+    "sourceTopology": "namespace",
+    "artifactStages": ["authored"],
+    "openIntents": ["probe", "inspect", "full"],
+    "match": {},
+    "probe": {
+      "kind": "namespace",
+      "markers": ["project.marker"],
+      "maxEntries": 1,
+      "maxBytes": 64,
+      "maxDepth": 1,
+      "maxPathBytes": 64
+    },
+    "representations": [
+      {
+        "id": "namespace-project",
+        "contract": "org.example/namespace-project",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1024",
+      "maxDepth": 8,
+      "maxNodes": 8,
+      "maxScalarBytes": 1024,
+      "maxDiagnostics": 8
+    }
+  }
+}

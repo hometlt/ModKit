@@ -404,8 +404,10 @@ describe('A-1 contribution spec schemas', () => {
       sourceTopology: 'namespace',
       probe: {
         kind: 'namespace',
+        markers: ['base/project.marker'],
         prefixes: ['base/'],
         maxEntries: 10_000,
+        maxBytes: 65_536,
         maxDepth: 32,
         maxPathBytes: 4_096,
       },

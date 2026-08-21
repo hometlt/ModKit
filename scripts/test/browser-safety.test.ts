@@ -44,10 +44,14 @@ function offenders(dir: string, exclude?: (path: string) => boolean): string[] {
 }
 
 describe('browser-safety of the portable closure (S2)', () => {
-  it('core, sdk, vfs and ui dist contain no node:* imports', () => {
-    for (const pkg of ['core', 'sdk', 'vfs', 'ui']) {
+  it('core, sdk, portable vfs and ui dist contain no node:* imports', () => {
+    for (const pkg of ['core', 'sdk', 'ui']) {
       expect(offenders(join(root, 'packages', pkg, 'dist')), pkg).toEqual([])
     }
+    const fileProvider = join(root, 'packages', 'vfs', 'dist', 'providers', 'file')
+    expect(
+      offenders(join(root, 'packages', 'vfs', 'dist'), path => path.startsWith(fileProvider)),
+    ).toEqual([])
   })
 
   it('host stays portable outside its explicit /node modules', () => {

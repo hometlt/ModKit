@@ -236,8 +236,10 @@ const stressManifests = [
     match: { pathGlobs: ['**/*.SC2Map'] },
     probe: {
       kind: 'namespace',
+      markers: ['Base.SC2Data', 'DocumentInfo'],
       prefixes: ['Base.SC2Data', 'DocumentInfo'],
       maxEntries: 10_000,
+      maxBytes: 65_536,
       maxDepth: 16,
       maxPathBytes: 4096,
     },

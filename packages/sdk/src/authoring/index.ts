@@ -268,8 +268,10 @@ export function defineCodec(spec: CodecAuthoringSpec): CodecDefinition {
       : spec.probe.kind === 'namespace'
         ? {
             kind: spec.probe.kind,
+            markers: spec.probe.markers,
             ...(spec.probe.prefixes === undefined ? {} : { prefixes: spec.probe.prefixes }),
             maxEntries: spec.probe.maxEntries,
+            maxBytes: spec.probe.maxBytes,
             maxDepth: spec.probe.maxDepth,
             maxPathBytes: spec.probe.maxPathBytes,
           }

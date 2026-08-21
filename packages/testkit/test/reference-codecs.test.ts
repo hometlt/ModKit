@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { deflateRawSync, deflateSync } from 'node:zlib'
 import { build } from 'esbuild'
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import type { InspectionCodecDefinition } from '../../../extensions/_shared/codec-kit/src/index.js'
+import type { InspectionCodecDefinition } from '../../../extensions/codec-kit/codec-kit/src/index.js'
 import {
   A1_SPEC_SCHEMA_ENTRIES,
   createSpecSchemaRegistry,

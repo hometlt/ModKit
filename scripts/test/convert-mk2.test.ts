@@ -219,7 +219,14 @@ describe('MK2 → MK3 converter (OPUS-MK2-01 task A, OPUS-MK2-02 tasks D/D2/E)',
       ],
       spec: {
         sourceTopology: 'namespace',
-        probe: { kind: 'namespace', maxEntries: 100000, maxDepth: 64, maxPathBytes: 4096 },
+        probe: {
+          kind: 'namespace',
+          markers: ['.modkit-namespace-probe-marker'],
+          maxEntries: 1,
+          maxBytes: 4096,
+          maxDepth: 1,
+          maxPathBytes: 4096,
+        },
       },
     })
 

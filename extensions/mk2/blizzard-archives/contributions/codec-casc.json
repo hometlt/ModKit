@@ -33,7 +33,14 @@
     "artifactStages": ["authored", "compiled"],
     "openIntents": ["probe", "inspect", "full", "export"],
     "match": {},
-    "probe": { "kind": "namespace", "maxEntries": 100000, "maxDepth": 64, "maxPathBytes": 4096 },
+    "probe": {
+      "kind": "namespace",
+      "markers": [".build.info", "Data/config", "Data/data"],
+      "maxEntries": 3,
+      "maxBytes": 65536,
+      "maxDepth": 2,
+      "maxPathBytes": 4096
+    },
     "representations": [
       {
         "id": "archive-namespace",

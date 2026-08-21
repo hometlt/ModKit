@@ -223,7 +223,7 @@ await modkit.close() // подметёт забытые сессии
     "@modkitx-x3/sdk": "github:<owner>/<repo>#<sha>&path:/packages/sdk",
     "@modkitx-x3/vfs": "github:<owner>/<repo>#<sha>&path:/packages/vfs",
     "@modkitx-x3/host": "github:<owner>/<repo>#<sha>&path:/packages/host",
-    "@modkitx-x3/codec-kit": "github:<owner>/<repo>#<sha>&path:/extensions/_shared/codec-kit",
+    "@modkitx-x3/codec-kit": "github:<owner>/<repo>#<sha>&path:/extensions/codec-kit/codec-kit",
     "modkit-extension-x3-images": "github:<owner>/<repo>#<sha>&path:/extensions/common/images"
   }
 }
@@ -244,7 +244,7 @@ pnpm -C packages/core pack --pack-destination ../../artifacts
 pnpm -C packages/sdk pack --pack-destination ../../artifacts
 pnpm -C packages/vfs pack --pack-destination ../../artifacts
 pnpm -C packages/host pack --pack-destination ../../artifacts
-pnpm -C extensions/_shared/codec-kit pack --pack-destination ../../../artifacts
+pnpm -C extensions/codec-kit/codec-kit pack --pack-destination ../../../artifacts
 pnpm -C extensions/common/images pack --pack-destination ../../../artifacts
 ```
 
@@ -300,11 +300,11 @@ native dirty-state, Ctrl+S вызывает сохранение смонтир�
 
 Обязательный минимум, чтобы «файл открылся»:
 
-| Что             | Зачем                                                        |
-| --------------- | ------------------------------------------------------------ |
-| host-композиция | инвентарь + гейт + исполнение (`createModkit` делает всё)    |
-| ≥1 кодек        | иначе любой файл — `unresolved` (это ответ, не ошибка)       |
-| источник байтов | `roots` у фасада / `openFileArtifactSource` / FSA в браузере |
+| Что             | Зачем                                                     |
+| --------------- | --------------------------------------------------------- |
+| host-композиция | инвентарь + гейт + исполнение (`createModkit` делает всё) |
+| ≥1 кодек        | иначе любой файл — `unresolved` (это ответ, не ошибка)    |
+| источник        | байты файла или namespace-корень через VFS                |
 
 Всё остальное опционально:
 
@@ -317,6 +317,76 @@ native dirty-state, Ctrl+S вызывает сохранение смонтир�
 | workbench-оболочка | `@modkitx-x3/ui/workbench`                       |
 | настройки          | `@modkitx-x3/ui/settings`                        |
 | Extension Host     | только для динамической установки расширений     |
+
+### 4.1 Каталог как субъект: VFS → Host
+
+Корень `@modkitx-x3/vfs` содержит только нейтральные контракты, registry и монтирование. Провайдер
+подключается отдельным импортом и регистрируется явно: импорт ядра сам по себе не тянет Node API,
+HTTP, Git или любой другой транспорт.
+
+```ts
+import { artifactNamespaceSourceFromVfsMount, openSubject } from '@modkitx-x3/host'
+import { VirtualFileSystem } from '@modkitx-x3/vfs'
+import { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'
+
+const vfs = new VirtualFileSystem().registerProvider(createFileVfsProvider())
+const mount = await vfs.openMount(new URL('file:///C:/project/').href, {
+  limits: { maxEntries: 10_000, maxBytes: 512n * 1024n * 1024n, maxPathBytes: 4096 },
+})
+vfs.mount('', mount)
+
+const source = artifactNamespaceSourceFromVfsMount(mount)
+const opened = await openSubject({
+  inventory,
+  source,
+  intent: 'full',
+  target,
+  grant,
+  budget,
+})
+
+// После закрытия сессии владелец VFS освобождает mount и открытые byte-source.
+await vfs.dispose()
+```
+
+Namespace-кодек объявляет в `probe.markers` точные относительные пути маркеров. Во время probe Host
+запрещает `list()`, `..`, незаявленные пути и неограниченные потоки; лимиты `maxEntries`,
+`maxBytes`, `maxDepth`, `maxPathBytes` дают именованные отказы. Полный обход namespace возможен
+только после выбора кодека и всё равно остаётся внутри границ провайдера.
+
+### 4.2 Собственный VFS-протокол
+
+Внешнее приложение может реализовать публичный `VfsProvider` для API сайта или собственного
+хранилища. Провайдер владеет протоколом и обязан вернуть ограниченный `VfsMount`; ядро не ищет и не
+подхватывает реализации автоматически.
+
+```ts
+import {
+  VirtualFileSystem,
+  type VfsMount,
+  type VfsProvider,
+  type VfsProviderContext,
+} from '@modkitx-x3/vfs'
+
+class SiteApiProvider implements VfsProvider {
+  readonly id = 'com.example.vfs.site-api'
+  readonly scheme = 'site-api'
+
+  async open(uri: string, context: VfsProviderContext): Promise<VfsMount> {
+    // Здесь приложение проверяет authority/tenant и передаёт context.limits/context.signal
+    // своему API-клиенту. stat/list/open обязаны соблюдать эти же границы и confinement.
+    return createSiteApiMount(uri, context)
+  }
+}
+
+const vfs = new VirtualFileSystem()
+vfs.registerProvider(new SiteApiProvider())
+const mount = await vfs.openMount('site-api://tenant/project')
+```
+
+`VfsMount.open()` возвращает portable `RandomAccessSource`; `stat()`/`list()` возвращают только
+`file | directory`. Ошибки границ должны иметь стабильный `ModkitError.code`, чтобы Host и UI могли
+отличить отсутствующий объект от превышения бюджета или попытки выйти из корня.
 
 ---
 

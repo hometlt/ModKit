@@ -99,8 +99,11 @@ export interface ByteProbePlan {
 
 export interface NamespaceProbePlan {
   readonly kind: 'namespace'
+  /** Exact marker paths a codec may inspect; namespace-wide traversal is never a probe. */
+  readonly markers: readonly string[]
   readonly prefixes?: readonly string[]
   readonly maxEntries: number
+  readonly maxBytes: number
   readonly maxDepth: number
   readonly maxPathBytes: number
 }
