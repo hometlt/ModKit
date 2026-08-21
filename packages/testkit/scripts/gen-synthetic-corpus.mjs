@@ -1317,6 +1317,86 @@ function rar() {
   return concat(bytes(0x52, 0x61, 0x72, 0x21, 0x1a, 0x07, 0x00), main, file, payload, end)
 }
 
+/**
+ * RFC 7932 §11.1 trivial compressor: WBITS=22, one uncompressed meta-block, and a final empty
+ * meta-block. The three length bytes are the specification's canonical encoding of len - 1.
+ */
+function brotli() {
+  const payload = ascii('hello\n')
+  const remaining = payload.byteLength - 1
+  return concat(
+    bytes(0x0c),
+    bytes((remaining & 31) << 3, remaining >>> 5, 8 + (remaining >>> 13)),
+    payload,
+    bytes(0x03),
+  )
+}
+
+/**
+ * 7z format's SignatureHeader and raw Header grammar with one Folder, one official Copy coder,
+ * one CRC-protected SubStream, and one regular UTF-16LE file. Every CRC covers its real field.
+ */
+function sevenZip() {
+  const payload = ascii('hello\n')
+  const name = 'hello.txt\0'
+  const utf16Name = new Uint8Array(name.length * 2)
+  for (let index = 0; index < name.length; index += 1) {
+    const code = name.charCodeAt(index)
+    utf16Name[index * 2] = code & 0xff
+    utf16Name[index * 2 + 1] = code >>> 8
+  }
+  const nextHeader = concat(
+    bytes(0x01), // Header
+    bytes(0x04), // MainStreamsInfo
+    bytes(0x06, 0x00, 0x01, 0x09, payload.byteLength, 0x00), // one PackInfo stream
+    bytes(0x07, 0x0b, 0x01, 0x00), // UnpackInfo, one inline Folder
+    bytes(0x01, 0x01, 0x00), // one simple coder, one-byte Copy method id 00
+    bytes(0x0c, payload.byteLength, 0x00), // CodersUnpackSize, end UnpackInfo
+    bytes(0x08, 0x0a, 0x01), // SubStreamsInfo, all CRCs defined
+    u32le(crc32(payload)),
+    bytes(0x00, 0x00), // end SubStreamsInfo and MainStreamsInfo
+    bytes(0x05, 0x01), // FilesInfo, one file
+    bytes(0x11, 1 + utf16Name.byteLength, 0x00),
+    utf16Name,
+    bytes(0x15, 0x06, 0x01, 0x00), // Win32 attributes are defined and inline
+    u32le(0x20),
+    bytes(0x00, 0x00), // end FilesInfo and Header
+  )
+  const startHeader = concat(
+    u64le(BigInt(payload.byteLength)),
+    u64le(BigInt(nextHeader.byteLength)),
+    u32le(crc32(nextHeader)),
+  )
+  return concat(
+    bytes(0x37, 0x7a, 0xbc, 0xaf, 0x27, 0x1c, 0x00, 0x04),
+    u32le(crc32(startHeader)),
+    startHeader,
+    payload,
+    nextHeader,
+  )
+}
+
+/** CD-ROM XA Mode 2 Form 2: duplicated four-byte subheader, 2324 data bytes, and EDC. */
+function ps1Xa() {
+  const sector = new Uint8Array(2336)
+  sector.set(bytes(1, 0, 0x64, 0, 1, 0, 0x64, 0)) // file 1, channel 0, audio/Form 2/real-time
+  sector.set(ascii('hello\n'), 8)
+  const table = new Uint32Array(256)
+  for (let index = 0; index < 256; index += 1) {
+    let value = index
+    for (let bit = 0; bit < 8; bit += 1) {
+      value = (value >>> 1) ^ (value & 1 ? 0xd8018001 : 0)
+    }
+    table[index] = value >>> 0
+  }
+  let edc = 0
+  for (const byte of sector.subarray(0, 2332)) {
+    edc = ((edc >>> 8) ^ (table[(edc ^ byte) & 0xff] ?? 0)) >>> 0
+  }
+  sector.set(u32le(edc), 2332)
+  return sector
+}
+
 // ---------------------------------------------------------------- the corpus
 
 /** Every fixture: file name → builder. The name is what the acceptance corpus refers to. */
@@ -1326,6 +1406,7 @@ const FIXTURES = {
   'minimal.avif': avif,
   'minimal.big': big,
   'minimal.bmp': bmp,
+  'minimal.br': brotli,
   'minimal.cab': cab,
   'minimal.cur': cur,
   'minimal.dds': dds,
@@ -1340,6 +1421,7 @@ const FIXTURES = {
   'minimal.pcx': pcx,
   'minimal.exe': pe,
   'minimal.pvr': pvr,
+  'minimal.7z': sevenZip,
   'minimal.rar': rar,
   'minimal.tga': tga,
   'minimal.tiff': tiff,
@@ -1355,6 +1437,7 @@ const FIXTURES = {
   'minimal.ogg': ogg,
   'minimal.opus': opus,
   'minimal.ogv': ogv,
+  'minimal.xa': ps1Xa,
   'minimal.mp4': mp4,
   'minimal.mpg': mpeg,
   'minimal.webm': webm,

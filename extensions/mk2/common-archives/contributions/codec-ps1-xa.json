@@ -10,20 +10,19 @@
       "entrypoint": "./src/ps1-xa/codec.js",
       "target": { "environments": ["node"] },
       "executionProfile": "trusted-in-process",
-      "requestedPermissionClasses": ["filesystem-read", "read-source"]
+      "requestedPermissionClasses": ["read-source"]
     },
     {
       "variantId": "portable",
       "entrypoint": "./src/ps1-xa/codec.js",
       "target": { "environments": ["browser-worker", "node-worker"] },
       "executionProfile": "worker-brokered",
-      "requestedPermissionClasses": ["filesystem-read", "read-source"]
+      "requestedPermissionClasses": ["read-source"]
     }
   ],
   "limitations": [
-    "The XA payload has no self-contained file index and requires a sibling Westwood PlayStation FAT file.",
-    "The current entrypoint resolves the FAT companion through a host filesystem path, so nested archive entries and browser hosts are not supported.",
-    "The codec is read-only."
+    "The XA payload has no self-contained Westwood file index; without a sibling FAT, the portable codec exposes validated 2336-byte CD-XA sectors with anonymous names.",
+    "Audio, video, and data payload decoding, full 2352-byte raw sectors, writing, and FAT-derived file boundaries are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "ps1-xa", "label": "PlayStation XA indexed stream" }],
@@ -65,6 +64,13 @@
       {
         "id": "export.raw",
         "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "container.extract",
+        "handlerId": "extract-entry",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]

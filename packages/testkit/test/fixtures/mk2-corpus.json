@@ -391,6 +391,53 @@
       "note": "RAR4 archive with one stored regular file; acceptance validates header and file CRCs before bounded extraction"
     },
     {
+      "extension": "mk2/common-archives",
+      "contributionId": "org.modkitx/brotli",
+      "corpus": "synthetic",
+      "sample": "minimal.br",
+      "minimumConfidence": 0.9,
+      "dataSource": "namespace",
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "payload" },
+        "outputKind": "bytes",
+        "minimumBytes": 6
+      },
+      "note": "RFC 7932 trivial-compressor stream with one uncompressed meta-block and final empty meta-block; acceptance validates bounded exact extraction"
+    },
+    {
+      "extension": "mk2/common-archives",
+      "contributionId": "org.modkitx/7z",
+      "corpus": "synthetic",
+      "sample": "minimal.7z",
+      "minimumConfidence": 0.9,
+      "dataSource": "namespace",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "file-0" },
+        "outputKind": "bytes",
+        "minimumBytes": 6
+      },
+      "note": "Official 7z raw Header grammar with one Copy-coded regular file; acceptance validates signature/start/next/substream CRCs and UTF-16LE FilesInfo"
+    },
+    {
+      "extension": "mk2/common-archives",
+      "contributionId": "org.modkitx/ps1-xa",
+      "corpus": "synthetic",
+      "sample": "minimal.xa",
+      "minimumConfidence": 0.9,
+      "dataSource": "namespace",
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "sector-0" },
+        "outputKind": "bytes",
+        "minimumBytes": 2336
+      },
+      "note": "One CD-ROM XA Mode 2 Form 2 audio sector with duplicated subheader and computed EDC; without a sibling Westwood FAT, acceptance exposes the validated sector anonymously"
+    },
+    {
       "extension": "mk2/common-audio",
       "contributionId": "org.modkitx/mp3",
       "corpus": "real",

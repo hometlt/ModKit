@@ -21,9 +21,9 @@
     }
   ],
   "limitations": [
-    "Detection is extension-only because Brotli streams do not expose a fixed framing signature in this codec.",
-    "Packing accepts exactly one payload.",
-    "The implementation uses Node's built-in zlib bindings and has no browser runtime entrypoint."
+    "Portable extraction is intentionally bounded to the RFC 7932 trivial-compressor form with uncompressed meta-blocks and the default window encoding.",
+    "Compressed and metadata meta-blocks, concatenated streams, and writing are not implemented.",
+    "Brotli has no fixed magic; detection structurally recognizes only the supported canonical uncompressed prefix."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "brotli", "label": "Brotli compressed payload" }],
@@ -65,6 +65,13 @@
       {
         "id": "export.raw",
         "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "container.extract",
+        "handlerId": "extract-entry",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]

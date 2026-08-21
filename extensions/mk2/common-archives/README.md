@@ -13,8 +13,8 @@ renames, converter defaults and v1 operations left without a handler — is data
 
 | contribution         | v1 manifest                                                    | module                | port         |
 | -------------------- | -------------------------------------------------------------- | --------------------- | ------------ |
-| `org.modkitx/7z`     | `extensions/common/archives/codecs/7z/codec.manifest.json`     | `src/7z/codec.js`     | port-pending |
-| `org.modkitx/brotli` | `extensions/common/archives/codecs/brotli/codec.manifest.json` | `src/brotli/codec.js` | port-pending |
+| `org.modkitx/7z`     | `extensions/common/archives/codecs/7z/codec.manifest.json`     | `src/7z/codec.js`     | ported       |
+| `org.modkitx/brotli` | `extensions/common/archives/codecs/brotli/codec.manifest.json` | `src/brotli/codec.js` | ported       |
 | `org.modkitx/bzip2`  | `extensions/common/archives/codecs/bzip2/codec.manifest.json`  | `src/bzip2/codec.js`  | port-pending |
 | `org.modkitx/cab`    | `extensions/common/archives/codecs/cab/codec.manifest.json`    | `src/cab/codec.js`    | ported       |
 | `org.modkitx/dmg`    | `extensions/common/archives/codecs/dmg/codec.manifest.json`    | `src/dmg/codec.js`    | port-pending |
@@ -22,7 +22,7 @@ renames, converter defaults and v1 operations left without a handler — is data
 | `org.modkitx/iso`    | `extensions/common/archives/codecs/iso/codec.manifest.json`    | `src/iso/codec.js`    | ported       |
 | `org.modkitx/lzma`   | `extensions/common/archives/codecs/lzma/codec.manifest.json`   | `src/lzma/codec.js`   | port-pending |
 | `org.modkitx/pe`     | `extensions/common/archives/codecs/pe/codec.manifest.json`     | `src/pe/codec.js`     | ported       |
-| `org.modkitx/ps1-xa` | `extensions/common/archives/codecs/ps1-xa/codec.manifest.json` | `src/ps1-xa/codec.js` | port-pending |
+| `org.modkitx/ps1-xa` | `extensions/common/archives/codecs/ps1-xa/codec.manifest.json` | `src/ps1-xa/codec.js` | ported       |
 | `org.modkitx/rar`    | `extensions/common/archives/codecs/rar/codec.manifest.json`    | `src/rar/codec.js`    | ported       |
 | `org.modkitx/tar`    | `extensions/common/archives/codecs/tar/codec.manifest.json`    | `src/tar/codec.js`    | ported       |
 | `org.modkitx/xz`     | `extensions/common/archives/codecs/xz/codec.manifest.json`     | `src/xz/codec.js`     | ported       |

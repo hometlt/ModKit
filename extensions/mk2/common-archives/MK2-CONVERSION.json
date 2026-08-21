@@ -38,7 +38,7 @@
       ],
       "droppedOperations": ["archive.extract", "archive.inspect", "archive.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/brotli": {
       "verdict": "needs-new-contract",
@@ -55,7 +55,7 @@
       ],
       "droppedOperations": ["archive.extract", "archive.inspect", "archive.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/bzip2": {
       "verdict": "needs-new-contract",
@@ -182,7 +182,7 @@
       ],
       "droppedOperations": ["archive.extract", "archive.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/rar": {
       "verdict": "convertible-with-rework",

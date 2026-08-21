@@ -21,10 +21,8 @@
     }
   ],
   "limitations": [
-    "Runtime operations require a host-injected 7zz.wasm binary and the optional 7z-wasm peer package; the codec does not fetch, install, or launch a native 7-Zip executable.",
-    "Browser hosts can use the leaf signature detector, but read/write runtime reachability is currently declared only for Node because the compatibility entrypoint reaches Node-oriented package code.",
-    "The byte API stages complete archives in WASM MEMFS rather than providing ranged or incremental local-file access.",
-    "Multi-volume .7z.001 discovery and native incremental Save are host-owned behaviors outside this codec entry point."
+    "Portable extraction is intentionally bounded to one regular file in one raw-header folder using the official Copy coder.",
+    "Compressed or encrypted coders, encoded headers, solid and multi-volume archives, multiple files or folders, and writing are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "7z", "label": "7-Zip archive" }],
@@ -69,6 +67,13 @@
       {
         "id": "export.raw",
         "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "container.extract",
+        "handlerId": "extract-entry",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]
