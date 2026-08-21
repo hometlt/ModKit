@@ -21,9 +21,8 @@
     }
   ],
   "limitations": [
-    "The folder-owned entrypoint re-exports the eager native codec, whose random-access ZIP path imports node:zlib; browser environments are not declared until that implementation is split behind a portable entrypoint.",
-    "Encrypted entries require a password and the optional 7-Zip bridge; unencrypted ZIP archives use the native reader.",
-    "The writer emits classic ZIP archives rather than ZIP64 and does not advertise symbolic-link preservation."
+    "The compatibility port validates the classic ZIP central directory, exposes a bounded namespace, and extracts unencrypted stored or deflated entries with size and CRC verification.",
+    "ZIP64, multi-disk archives, encryption, other compression methods, ZIP writing, and archive mutation remain unsupported."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "zip", "label": "ZIP archive" }],
@@ -71,6 +70,13 @@
       {
         "id": "export.raw",
         "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "container.extract",
+        "handlerId": "extract-entry",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]

@@ -119,7 +119,7 @@
       ],
       "droppedOperations": ["archive.extract", "archive.inspect", "archive.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/iso": {
       "verdict": "mechanical",
@@ -214,7 +214,7 @@
       ],
       "droppedOperations": ["archive.extract", "archive.inspect", "archive.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/xz": {
       "verdict": "needs-new-contract",
@@ -248,7 +248,7 @@
       ],
       "droppedOperations": ["archive.extract", "archive.inspect", "archive.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/zstd": {
       "verdict": "mechanical",

@@ -546,6 +546,62 @@ function gz() {
 }
 
 /**
+ * Classic single-disk ZIP with one stored UTF-8-compatible file. The local header and central
+ * directory carry the same sizes and CRC-32, and the EOCD points at the exact directory range.
+ */
+function zip() {
+  const name = ascii('hello.txt')
+  const payload = ascii('hello\n')
+  const checksum = crc32(payload)
+  const local = concat(
+    u32le(0x04034b50),
+    u16le(20),
+    u16le(0),
+    u16le(0),
+    u16le(0),
+    u16le(0),
+    u32le(checksum),
+    u32le(payload.byteLength),
+    u32le(payload.byteLength),
+    u16le(name.byteLength),
+    u16le(0),
+    name,
+    payload,
+  )
+  const central = concat(
+    u32le(0x02014b50),
+    u16le(20),
+    u16le(20),
+    u16le(0),
+    u16le(0),
+    u16le(0),
+    u16le(0),
+    u32le(checksum),
+    u32le(payload.byteLength),
+    u32le(payload.byteLength),
+    u16le(name.byteLength),
+    u16le(0),
+    u16le(0),
+    u16le(0),
+    u16le(0),
+    u32le(0),
+    u32le(0),
+    name,
+  )
+  const eocd = concat(
+    u32le(0x06054b50),
+    u16le(0),
+    u16le(0),
+    u16le(1),
+    u16le(1),
+    u32le(central.byteLength),
+    u32le(local.byteLength),
+    u16le(0),
+  )
+  return concat(local, central, eocd)
+}
+
+/**
  * PNG: ISO/IEC 15948 §5 (signature, chunk layout, CRC) and §11.2 (IHDR, IDAT, IEND). 1×1 truecolour,
  * one scanline with filter type 0, stored in an uncompressed zlib stream so no encoder is involved.
  */
@@ -1061,6 +1117,7 @@ const FIXTURES = {
   'minimal.mpq': mpq,
   'minimal.tar': tar,
   'minimal.gz': gz,
+  'minimal.zip': zip,
   'minimal.png': png,
   'minimal.flv': flv,
   'minimal.mp3': mp3,

@@ -240,6 +240,57 @@
       "note": "TIFF 6.0 little-endian one-page RGBA8 image with bounded IFD and exact uncompressed strip pixel"
     },
     {
+      "extension": "mk2/common-archives",
+      "contributionId": "org.modkitx/gzip",
+      "corpus": "synthetic",
+      "sample": "minimal.gz",
+      "minimumConfidence": 0.9,
+      "dataSource": "namespace",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "payload" },
+        "outputKind": "bytes",
+        "minimumBytes": 5
+      },
+      "note": "RFC 1952 single-member stream; acceptance enumerates the virtual payload and validates decompression, ISIZE, and CRC-32 during extraction"
+    },
+    {
+      "extension": "mk2/common-archives",
+      "contributionId": "org.modkitx/tar",
+      "corpus": "synthetic",
+      "sample": "minimal.tar",
+      "minimumConfidence": 0.9,
+      "dataSource": "namespace",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "0" },
+        "outputKind": "bytes",
+        "minimumBytes": 6
+      },
+      "note": "POSIX ustar entry with exact header checksum and two-block terminator; acceptance enumerates and extracts the stored file"
+    },
+    {
+      "extension": "mk2/common-archives",
+      "contributionId": "org.modkitx/zip",
+      "corpus": "synthetic",
+      "sample": "minimal.zip",
+      "minimumConfidence": 0.9,
+      "dataSource": "namespace",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "entry-0" },
+        "outputKind": "bytes",
+        "minimumBytes": 6
+      },
+      "note": "Classic single-disk ZIP with one stored file; acceptance validates central-directory enumeration and CRC-checked extraction"
+    },
+    {
       "extension": "mk2/common-audio",
       "contributionId": "org.modkitx/mp3",
       "corpus": "real",

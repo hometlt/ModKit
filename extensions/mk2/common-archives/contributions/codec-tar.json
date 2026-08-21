@@ -21,9 +21,8 @@
     }
   ],
   "limitations": [
-    "The reader exposes regular-file entries only; directory, symbolic-link, device, and other TAR entry kinds are not extracted.",
-    "Writing emits deterministic regular-file ustar entries and does not preserve ownership, timestamps, symbolic links, or extended attributes.",
-    "Entry paths must fit the ustar name and prefix fields; PAX and GNU long-name extensions are not written."
+    "The compatibility port validates POSIX ustar checksums, bounded regular-file and directory entries, two-block termination, namespace listing, and stored payload extraction.",
+    "PAX/GNU extensions, links, devices, special entries, TAR writing, and archive mutation remain unsupported."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "tar", "label": "POSIX ustar archive" }],
@@ -68,6 +67,13 @@
       {
         "id": "export.raw",
         "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "container.extract",
+        "handlerId": "extract-entry",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]
