@@ -843,7 +843,10 @@ function packageJsonSource(group) {
     },
     // The kit is a workspace link (`extensions/mk2/*` is a workspace member), so the generated
     // modules import it by package name — the same specifier a published extension would use.
-    dependencies: { [CODEC_KIT]: 'workspace:*' },
+    dependencies: {
+      [CODEC_KIT]: 'workspace:*',
+      ...(group.directory === 'blizzard-casc' ? { fflate: '^0.8.3' } : {}),
+    },
   }
 }
 
@@ -944,6 +947,20 @@ const skipped = []
 const converted = []
 const collisions = []
 
+function splitOwner(publisher, id, contributionId) {
+  if (publisher === 'org.modkitx.blizzard' && id === 'archives') {
+    return contributionId === 'org.modkitx/casc'
+      ? { directory: 'blizzard-casc', publisher, id: 'casc' }
+      : { directory: 'blizzard-mpq', publisher, id: 'mpq' }
+  }
+  if (publisher === 'org.modkitx.blizzard' && id === 'starcraft-2') {
+    return contributionId === 'org.modkitx/m3'
+      ? { directory: 'blizzard-models', publisher, id: 'models' }
+      : { directory: 'blizzard-starcraft2', publisher, id: 'starcraft2' }
+  }
+  return { directory: `${lastDottedSegment(publisher)}-${id}`, publisher, id }
+}
+
 for (const codec of codecEntries) {
   const analysis = analyzeCodec(codec)
   const result = convertCodec(analysis, codec)
@@ -966,9 +983,13 @@ for (const codec of codecEntries) {
     })
     continue
   }
-  const publisher = String(owner.manifest.publisher)
-  const id = String(owner.manifest.id)
-  const directory = `${lastDottedSegment(publisher)}-${id}`
+  const sourcePublisher = String(owner.manifest.publisher)
+  const sourceId = String(owner.manifest.id)
+  const { directory, publisher, id } = splitOwner(
+    sourcePublisher,
+    sourceId,
+    analysis.contributionId,
+  )
   let group = groups.get(directory)
   if (group === undefined) {
     group = {
@@ -1019,6 +1040,13 @@ const handPorted = [...existing.keys()]
   .filter(path => isCodecModule(path) && !existing.get(path).includes(GENERATED_MARKER))
   .sort()
 const handPortedSet = new Set(handPorted)
+const handPortedRoots = handPorted.map(path => path.slice(0, -'codec.js'.length))
+const isHandPortOwned = path => {
+  if (handPortedSet.has(path)) return true
+  if (handPortedRoots.some(root => path.startsWith(root))) return true
+  const manifest = /^(.*)\/contributions\/codec-([^/]+)\.json$/u.exec(path)
+  return manifest !== null && handPortedSet.has(`${manifest[1]}/src/${manifest[2]}/codec.js`)
+}
 const portStateOf = module => (handPortedSet.has(module) ? 'ported' : 'port-pending')
 for (const group of sortedGroups) {
   for (const codec of group.codecs) {
@@ -1088,13 +1116,15 @@ function listExisting(root) {
 
 const drift = { added: [], changed: [], removed: [] }
 for (const [path, contents] of files) {
-  if (handPortedSet.has(path)) continue // a human owns this module now
+  if (isHandPortOwned(path)) continue
   const current = existing.get(path)
   if (current === undefined) drift.added.push(path)
   else if (current !== contents) drift.changed.push(path)
 }
 for (const path of existing.keys()) {
-  if (!files.has(path)) drift.removed.push(path)
+  if (!files.has(path) && !isHandPortOwned(path) && !path.includes('/test/')) {
+    drift.removed.push(path)
+  }
 }
 for (const key of Object.keys(drift)) drift[key].sort()
 

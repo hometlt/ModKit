@@ -1,8 +1,8 @@
 /**
  * The static lane: `import` as the extension connection mechanism.
  *
- * `import { images } from '@modkitx-x3/extensions'` is the whole setup — the generated package
- * carries the contributions as data and the entrypoints as real ESM imports, and
+ * Importing an extension's own `linked` entry is the whole setup: the extension carries its
+ * contributions as JSON imports and its entrypoints as real ESM imports, and
  * `createModkit({ modules })` composes a host from them with no extension directory anywhere.
  * The trust rule under test: linked code runs in-process because the import *was* the trust
  * decision, and the gate still says so out loud on every activation.
@@ -10,12 +10,15 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
-import { images, sets } from '@modkitx-x3/extensions'
-import { defineLinkedExtension } from '@modkitx-x3/host'
+import { defineLinkedExtension, type LinkedExtension } from '@modkitx-x3/host'
 import { createModkit, type Modkit } from '@modkitx-x3/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
+const { images } = (await import(
+  pathToFileURL(join(repoRoot, 'extensions', 'common', 'images', 'src', 'linked.js')).href
+)) as { readonly images: LinkedExtension }
 const pngFixture = join(repoRoot, 'apps', 'web', 'public', 'favicon-32.png')
 const audioDir = join(repoRoot, 'extensions', 'common', 'audio')
 
@@ -80,12 +83,6 @@ describe('statically linked extensions (import lane)', () => {
     expect(m.extensionCoordinates).toEqual(
       expect.arrayContaining(['org.modkitx/images', 'org.modkitx/audio']),
     )
-  })
-
-  it('curated sets are real extension lists, not name lists', () => {
-    expect(sets.imagesOnly.length).toBeGreaterThan(0)
-    expect(sets.imagesOnly.map(item => item.coordinate)).toContain('org.modkitx/images')
-    expect(sets.everything.length).toBeGreaterThanOrEqual(sets.media.length)
   })
 
   it('a linked variant whose module was not imported refuses at definition time', () => {

@@ -62,7 +62,7 @@ export interface ModkitOptions {
   readonly extensions: readonly (string | ExtensionRootRequest)[]
   /**
    * Extensions the application imported at build time (`import { images } from
-   * '@modkitx-x3/extensions'`). Static `import` is the connection mechanism and the trust
+   * an extension's own `linked` entry). Static `import` is the connection mechanism and the trust
    * decision in one: linked code runs in-process, exactly like the rest of the caller's bundle.
    * `extensions`/`userExtensions` stay the dynamic lane — directories, verified, worker-executed.
    */

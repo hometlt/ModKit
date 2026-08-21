@@ -4,6 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { ModkitError, throwIfAborted } from '@modkitx-x3/core'
 
+import { assertReadRangeLimit, assertStreamLimit, VfsReadBudget } from '../../read-budget.js'
 import { rangeError, type RandomAccessSource } from '../../source.js'
 import {
   assertVfsPathBudget,
@@ -64,6 +65,14 @@ function fileRevision(snapshot: FileSnapshot): string {
   return `provider-token:${snapshot.dev}-${snapshot.ino}-${snapshot.size}-${snapshot.mtimeNs}`
 }
 
+function fileSizeLimitError(path: string, size: bigint, maximum: bigint): ModkitError {
+  return new ModkitError({
+    code: 'x3.vfs/file-size-limit-exceeded',
+    message: 'file provider encountered a file above its logical size limit',
+    context: { path, fileBytes: String(size), maxFileBytes: String(maximum) },
+  })
+}
+
 class FileRandomAccessSource implements RandomAccessSource {
   private disposed = false
 
@@ -71,6 +80,8 @@ class FileRandomAccessSource implements RandomAccessSource {
     readonly id: string,
     private readonly path: string,
     private readonly snapshot: FileSnapshot,
+    private readonly limits: VfsLimits,
+    private readonly readBudget: VfsReadBudget,
   ) {}
 
   async size(signal?: AbortSignal): Promise<number> {
@@ -89,34 +100,42 @@ class FileRandomAccessSource implements RandomAccessSource {
     if (offset < 0 || length < 0 || offset + length > size) {
       throw rangeError(this.id, offset, length, size)
     }
-    const current = snapshotOf(await stat(this.path))
-    if (!sameSnapshot(this.snapshot, current)) {
-      throw new ModkitError({
-        code: 'x3.vfs/file-revision-changed',
-        message: `file provider source «${this.id}» changed after it was opened`,
-        context: { sourceId: this.id, revision: fileRevision(this.snapshot) },
-      })
-    }
-    const handle = await open(this.path, 'r')
+    assertReadRangeLimit(this.id, length, this.limits)
+    const reservation = this.readBudget.reserve(length, this.id)
     try {
-      const bytes = new Uint8Array(length)
-      let filled = 0
-      while (filled < length) {
-        throwIfAborted(signal)
-        const result = await handle.read(bytes, filled, length - filled, offset + filled)
-        if (result.bytesRead === 0) break
-        filled += result.bytesRead
-      }
-      if (filled !== length) {
+      const current = snapshotOf(await stat(this.path))
+      if (!sameSnapshot(this.snapshot, current)) {
         throw new ModkitError({
-          code: 'x3.vfs/file-short-read',
-          message: `file provider returned ${filled} bytes for an exact ${length}-byte read`,
-          context: { sourceId: this.id, expected: length, actual: filled },
+          code: 'x3.vfs/file-revision-changed',
+          message: `file provider source «${this.id}» changed after it was opened`,
+          context: { sourceId: this.id, revision: fileRevision(this.snapshot) },
         })
       }
-      return bytes
+      const handle = await open(this.path, 'r')
+      try {
+        const bytes = new Uint8Array(length)
+        let filled = 0
+        while (filled < length) {
+          throwIfAborted(signal)
+          const result = await handle.read(bytes, filled, length - filled, offset + filled)
+          reservation.commit(result.bytesRead)
+          if (result.bytesRead === 0) break
+          filled += result.bytesRead
+        }
+        throwIfAborted(signal)
+        if (filled !== length) {
+          throw new ModkitError({
+            code: 'x3.vfs/file-short-read',
+            message: `file provider returned ${filled} bytes for an exact ${length}-byte read`,
+            context: { sourceId: this.id, expected: length, actual: filled },
+          })
+        }
+        return bytes
+      } finally {
+        await handle.close()
+      }
     } finally {
-      await handle.close()
+      reservation.release()
     }
   }
 
@@ -126,6 +145,17 @@ class FileRandomAccessSource implements RandomAccessSource {
     signal?: AbortSignal,
   ): ReadableStream<Uint8Array> {
     this.assertLive()
+    const size = Number(this.snapshot.size)
+    if (
+      !Number.isSafeInteger(start) ||
+      !Number.isSafeInteger(end) ||
+      start < 0 ||
+      end < start ||
+      end > size
+    ) {
+      throw rangeError(this.id, start, end - start, size)
+    }
+    assertStreamLimit(this.id, start, end, this.limits)
     let position = start
     return new ReadableStream<Uint8Array>({
       pull: async controller => {
@@ -160,6 +190,7 @@ class FileMount implements VfsMount {
   readonly revision: string
   private disposed = false
   private readonly sources = new Set<RandomAccessSource>()
+  private readonly readBudget: VfsReadBudget
 
   constructor(
     readonly rootUri: string,
@@ -170,6 +201,7 @@ class FileMount implements VfsMount {
   ) {
     this.id = rootUri
     this.revision = fileRevision(rootSnapshot)
+    this.readBudget = new VfsReadBudget(limits.maxReadBytes)
   }
 
   async stat(path: string, signal?: AbortSignal): Promise<VfsNode | undefined> {
@@ -179,13 +211,8 @@ class FileMount implements VfsMount {
     if (resolved === undefined) return undefined
     const info = await stat(resolved)
     const snapshot = snapshotOf(info)
-    if (info.isFile() && snapshot.size > this.limits.maxBytes) {
-      throw new ModkitError({
-        code: 'x3.vfs/file-byte-budget-exceeded',
-        message: 'file provider exceeded its configured byte boundary',
-        context: { path, bytes: String(snapshot.size), maxBytes: String(this.limits.maxBytes) },
-      })
-    }
+    if (info.isFile() && snapshot.size > this.limits.maxFileBytes)
+      throw fileSizeLimitError(path, snapshot.size, this.limits.maxFileBytes)
     const normalized = normalizeVfsPath(path)
     return Object.freeze({
       path: normalized,
@@ -218,14 +245,14 @@ class FileMount implements VfsMount {
     }
     const normalizedParent = normalizeVfsPath(path)
     const nodes: VfsNode[] = []
-    let totalBytes = 0n
     for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
       throwIfAborted(signal)
       const child = normalizedParent === '' ? entry.name : `${normalizedParent}/${entry.name}`
       const resolved = await this.resolvePath(child, true)
       const childInfo = await stat(resolved)
       const snapshot = snapshotOf(childInfo)
-      if (childInfo.isFile()) totalBytes += snapshot.size
+      if (childInfo.isFile() && snapshot.size > this.limits.maxFileBytes)
+        throw fileSizeLimitError(child, snapshot.size, this.limits.maxFileBytes)
       nodes.push(
         Object.freeze({
           path: normalizeVfsPath(child),
@@ -235,13 +262,6 @@ class FileMount implements VfsMount {
           revision: fileRevision(snapshot),
         }),
       )
-    }
-    if (totalBytes > this.limits.maxBytes) {
-      throw new ModkitError({
-        code: 'x3.vfs/file-byte-budget-exceeded',
-        message: 'file provider exceeded its configured byte boundary',
-        context: { bytes: String(totalBytes), maxBytes: String(this.limits.maxBytes) },
-      })
     }
     for (const node of nodes) yield node
   }
@@ -259,14 +279,19 @@ class FileMount implements VfsMount {
       })
     }
     const snapshot = snapshotOf(info)
-    if (snapshot.size > this.limits.maxBytes || snapshot.size > BigInt(Number.MAX_SAFE_INTEGER)) {
-      throw new ModkitError({
-        code: 'x3.vfs/file-byte-budget-exceeded',
-        message: 'file provider exceeded its configured byte boundary',
-        context: { path, bytes: String(snapshot.size), maxBytes: String(this.limits.maxBytes) },
-      })
+    if (snapshot.size > this.limits.maxFileBytes) {
+      throw fileSizeLimitError(path, snapshot.size, this.limits.maxFileBytes)
     }
-    const source = new FileRandomAccessSource(pathToFileURL(resolved).href, resolved, snapshot)
+    if (snapshot.size > BigInt(Number.MAX_SAFE_INTEGER)) {
+      throw fileSizeLimitError(path, snapshot.size, BigInt(Number.MAX_SAFE_INTEGER))
+    }
+    const source = new FileRandomAccessSource(
+      pathToFileURL(resolved).href,
+      resolved,
+      snapshot,
+      this.limits,
+      this.readBudget,
+    )
     this.sources.add(source)
     return source
   }
@@ -355,13 +380,8 @@ export class FileVfsProvider implements VfsProvider {
     }
     const limits = clampVfsLimits(context.limits, this.limits)
     const snapshot = snapshotOf(info)
-    if (info.isFile() && snapshot.size > limits.maxBytes) {
-      throw new ModkitError({
-        code: 'x3.vfs/file-byte-budget-exceeded',
-        message: 'file provider exceeded its configured byte boundary',
-        context: { bytes: String(snapshot.size), maxBytes: String(limits.maxBytes) },
-      })
-    }
+    if (info.isFile() && snapshot.size > limits.maxFileBytes)
+      throw fileSizeLimitError('', snapshot.size, limits.maxFileBytes)
     return new FileMount(uri, rootPath, info.isDirectory() ? 'directory' : 'file', snapshot, limits)
   }
 }

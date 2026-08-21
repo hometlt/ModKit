@@ -36,18 +36,15 @@
     "bench:universal:gate": "node --expose-gc scripts/bench/universal-data.mjs --gate",
     "bundle": "node scripts/bundle.mjs",
     "bundle:check": "node scripts/bundle.mjs --check",
-    "build": "pnpm catalogs:check && pnpm typecheck && pnpm catalogs:check:web && pnpm linked:check && pnpm bundle",
+    "build": "pnpm catalogs:check && pnpm typecheck && pnpm catalogs:check:web && pnpm bundle",
     "tokens:check": "pnpm --filter @modkitx-x3/ui tokens:check",
     "themes:check": "node scripts/check-themes.mjs",
     "icons:emit": "node scripts/generate-icons.mjs",
     "icons:check": "node scripts/generate-icons.mjs --check",
-    "catalogs:check:web": "node scripts/emit-web-catalog.mjs --check",
-    "linked:emit": "node scripts/emit-linked-extensions.mjs",
-    "linked:check": "node scripts/emit-linked-extensions.mjs --check"
+    "catalogs:check:web": "node scripts/emit-web-catalog.mjs --check"
   },
   "devDependencies": {
     "@modkitx-x3/core": "workspace:*",
-    "@modkitx-x3/extensions": "workspace:*",
     "@modkitx-x3/host": "workspace:*",
     "@modkitx-x3/sdk": "workspace:*",
     "@modkitx-x3/testkit": "workspace:*",

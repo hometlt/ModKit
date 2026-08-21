@@ -85,7 +85,7 @@
       "note": "Legacy DDS header and one deterministic BC1/DXT1 block; acceptance reads decoded RGBA pixels"
     },
     {
-      "extension": "mk2/blizzard-starcraft-2",
+      "extension": "mk2/blizzard-models",
       "contributionId": "org.modkitx/m3",
       "corpus": "synthetic",
       "sample": "minimal.m3",
@@ -96,7 +96,7 @@
       "note": "MD34 header plus one deterministic section-index entry; acceptance reads the metadata-only scene"
     },
     {
-      "extension": "mk2/blizzard-archives",
+      "extension": "mk2/blizzard-mpq",
       "contributionId": "org.modkitx/mpq",
       "corpus": "synthetic",
       "sample": "minimal.mpq",

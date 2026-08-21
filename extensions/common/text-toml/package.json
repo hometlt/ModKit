@@ -6,6 +6,7 @@
   "description": "Independent MK3 TOML codec and syntax provider.",
   "exports": {
     ".": "./src/index.js",
+    "./linked": "./src/linked.js",
     "./formats": "./src/formats/index.js",
     "./formats/toml/codec": "./src/formats/toml/codec.js",
     "./formats/toml/provider": "./src/formats/toml/provider.js",

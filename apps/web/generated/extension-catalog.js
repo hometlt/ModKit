@@ -23,18 +23,20 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
   extensions: [
     {
       artifact: {
-        artifactDigest: 'sha256:4d6f6189e46a0ac709481c65a08f3de2d166c1c1d5832f50e9579839292ce6dc',
+        artifactDigest: 'sha256:b4ce8c4ea87c0395eea93854ba1910749e7d6cf0c0c577a97ac633b8edad9f87',
         fileDigests: {
           'README.md': 'sha256:2c8abea7cb674e2a423eb034a51b47053744d502a154578889c541bfb110ea72',
           'contributions/codec-zip.json':
             'sha256:6496c4891be1f42fefca18349b10c8cab1ea719340f9c7ab9e7365e06825b84a',
-          'package.json': 'sha256:70196adc05d186774fcce8ebbf05a3b1166b70201583199fb2fc292e55abcbd4',
+          'package.json': 'sha256:601bfe6293eb5d2bf094a85fad5a2fa29e9ad19975a1ae23a21d498d5face0fd',
           'src/formats/zip/codec.js':
             'sha256:17db3590d5ec0d65fd241f1661600126dfe2d1d137ebdeadf7cb905dd5f4fbc2',
           'src/index.js': 'sha256:121004c40bd5560b35a26034c291429f1d103e68698c7e1aaf5cf8456890dc95',
+          'src/linked.js':
+            'sha256:09f16f5cdec670b84fc9dff7292f4d76a86eebc46f0de6b89f19adcf08efa7c6',
         },
         inventoryRecordId:
-          'artifact:sha256:4d6f6189e46a0ac709481c65a08f3de2d166c1c1d5832f50e9579839292ce6dc',
+          'artifact:sha256:b4ce8c4ea87c0395eea93854ba1910749e7d6cf0c0c577a97ac633b8edad9f87',
       },
       artifactRoot: 'extensions/archives/',
       containers: {
@@ -47,6 +49,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             '.': './src/index.js',
             './formats/*/codec': './src/formats/*/codec.js',
             './formats/zip/codec': './src/formats/zip/codec.js',
+            './linked': './src/linked.js',
             './package.json': './package.json',
           },
           files: ['contributions', 'src', 'README.md'],
@@ -290,28 +293,31 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'package.json',
         'src/formats/zip/codec.js',
         'src/index.js',
+        'src/linked.js',
       ],
       name: 'archives',
       source: 'extensions/common/archives',
     },
     {
       artifact: {
-        artifactDigest: 'sha256:6c4d257c61be48fc9274bc5b687551a784f7f7bf823b845c95aeddacb48ef544',
+        artifactDigest: 'sha256:6570ebb2e56e8df8b74b7221e871aa0f6d33a0ee6f4660cf78180309709a143f',
         fileDigests: {
           'README.md': 'sha256:268ab2b7997a0a0be23cf0dbdc5c80a90ac58eaafafca75a4c9fad30093d26fd',
           'contributions/codec-mp3.json':
             'sha256:2db4ff5451181d302a7494df9bdfd1d30bf8700e262b1f8e3b2ea3292436c1fc',
           'contributions/codec-ogg.json':
             'sha256:96ffb84cdb503acaef94824bcbfb00790ace696d43a39e1cbe626b41a8293867',
-          'package.json': 'sha256:fa31b41ba725e7c620902f7ed360c6a07c54feb9ce3af42aef623e14f1975c63',
+          'package.json': 'sha256:da3fd52ca642295c953c8e1abb0ed4dbd8167d76bf4a7738851602d8a0a837ac',
           'src/formats/mp3/codec.js':
             'sha256:5ff766d783b99acdbf14868dd0e66323821ee6334dcdcf0742fba642f1be7e9d',
           'src/formats/ogg/codec.js':
             'sha256:1906cd3670a45186374a40db75725187d7eb3ee3682b9b7805e85b798e403aaf',
           'src/index.js': 'sha256:e86ec9194630bc30037a46f042fb7839fa96dfa70ae81ef77142ae436c9bf2fb',
+          'src/linked.js':
+            'sha256:ca83a706bc33a766e262a2942e04d898f56eef7a835d1bed5305eda5e8ab4745',
         },
         inventoryRecordId:
-          'artifact:sha256:6c4d257c61be48fc9274bc5b687551a784f7f7bf823b845c95aeddacb48ef544',
+          'artifact:sha256:6570ebb2e56e8df8b74b7221e871aa0f6d33a0ee6f4660cf78180309709a143f',
       },
       artifactRoot: 'extensions/audio/',
       containers: {
@@ -325,6 +331,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             './formats/*/codec': './src/formats/*/codec.js',
             './formats/mp3/codec': './src/formats/mp3/codec.js',
             './formats/ogg/codec': './src/formats/ogg/codec.js',
+            './linked': './src/linked.js',
             './package.json': './package.json',
           },
           files: ['contributions', 'src', 'README.md'],
@@ -710,28 +717,31 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'src/formats/mp3/codec.js',
         'src/formats/ogg/codec.js',
         'src/index.js',
+        'src/linked.js',
       ],
       name: 'audio',
       source: 'extensions/common/audio',
     },
     {
       artifact: {
-        artifactDigest: 'sha256:f3cf8ffa0736fa782602e73d1233a4bb1bde6877708f1d8021aea8667914f524',
+        artifactDigest: 'sha256:24c31481c42c4b383fc22e5f8a51dc6c573b5e26473038c14a19836550485ff4',
         fileDigests: {
           'README.md': 'sha256:5bf3e44baa235b6f02253b1c0eea36170c3121c0e4471b4ef30def8895bc0521',
           'contributions/codec-markdown.json':
             'sha256:f15f9089d1a320b3e17112e4df61237794ef7bd695857ed15bd246ab67f4261b',
           'contributions/codec-rtf.json':
             'sha256:30425ddb998db33fc99212bf17aed6fe01da0bbd0ffa53e5a967ce0ee4402d9a',
-          'package.json': 'sha256:a061c7a8bb043b2a658f8eb70298468ecbc5d2fa92717d6ebd5fae97d1b6be8c',
+          'package.json': 'sha256:60c3afc97e4f73e0ac42e96e0a156bb73a347c49ae2dcce0d2793f3dbe176256',
           'src/formats/markdown/codec.js':
             'sha256:e6569a987ccb2e225bb83b1bf829f88e33a5f5d8a83158038ccd76ecdbad5306',
           'src/formats/rtf/codec.js':
             'sha256:0f4c12d070eec9f9c7b7940da9eff0a326ec302334624570327bc16a35b2c97b',
           'src/index.js': 'sha256:f1a6b90c5ee40f19b02f9e9893ac6cb78d5ac4013f16ab91c58026d10bc9d638',
+          'src/linked.js':
+            'sha256:7e7ce0339ab416910ce6d23f27b6cd0836cf3269518efa94f792ce708f01a6ea',
         },
         inventoryRecordId:
-          'artifact:sha256:f3cf8ffa0736fa782602e73d1233a4bb1bde6877708f1d8021aea8667914f524',
+          'artifact:sha256:24c31481c42c4b383fc22e5f8a51dc6c573b5e26473038c14a19836550485ff4',
       },
       artifactRoot: 'extensions/documents/',
       containers: {
@@ -745,6 +755,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             './formats/*/codec': './src/formats/*/codec.js',
             './formats/markdown/codec': './src/formats/markdown/codec.js',
             './formats/rtf/codec': './src/formats/rtf/codec.js',
+            './linked': './src/linked.js',
             './package.json': './package.json',
           },
           files: ['contributions', 'src', 'README.md'],
@@ -1067,13 +1078,14 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'src/formats/markdown/codec.js',
         'src/formats/rtf/codec.js',
         'src/index.js',
+        'src/linked.js',
       ],
       name: 'documents',
       source: 'extensions/common/documents',
     },
     {
       artifact: {
-        artifactDigest: 'sha256:7981b4b9269741f85d9315054a1c52595e17dca09f536599af7115a69a2c1bfe',
+        artifactDigest: 'sha256:e6e926e43e3172665400c487bf45134b03ae1ecc82d94932495e3ea97412aac9',
         fileDigests: {
           'README.md': 'sha256:fee600d3a5d3eb369487d20b47158e3d2c8afee1f448164f64b2e44f554ba83f',
           'contributions/codec-jpeg.json':
@@ -1082,17 +1094,19 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:e069e36d8e4e56a01da28ce8790f64b0f1bd6a3d31b2506615d49d40828e4839',
           'contributions/writer-png.json':
             'sha256:fa03ddbb7e468a6d9948ba9f89dee07ffc682e8404adb23f379da4cf231aed49',
-          'package.json': 'sha256:9d1f1918e481fc1cabb9c717fd2d6dbf99eaecc0b00b9010ed96de9fa3866d2d',
+          'package.json': 'sha256:d6a9b60520c002c6015821e1de2705bcb12490481a5057cc50f81cf2560eefe3',
           'src/formats/jpeg/codec.js':
             'sha256:43739ed9200be7c7e11b326ac83206892cb3eb9633b3b76477099e6fed24bd06',
           'src/formats/png/codec.js':
             'sha256:013031d12676c907b1f0cebc4570185fe00dd7d47a7f2e65471e7772c915a78a',
           'src/index.js': 'sha256:bcbc40812fa5dcdb2937b0ff5b617c1483725570302b99f569249ac3c441ce41',
+          'src/linked.js':
+            'sha256:f99685dbe94213bf6ff6ddc719046463f537ba2bc71f5dd88635ab057acecf82',
           'src/writers/png-encoder.js':
             'sha256:411efbd8aadd7a2edfb335752f8e8bfad1a11452534bd039e227d52f49d6a65a',
         },
         inventoryRecordId:
-          'artifact:sha256:7981b4b9269741f85d9315054a1c52595e17dca09f536599af7115a69a2c1bfe',
+          'artifact:sha256:e6e926e43e3172665400c487bf45134b03ae1ecc82d94932495e3ea97412aac9',
       },
       artifactRoot: 'extensions/images/',
       containers: {
@@ -1106,6 +1120,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             './formats/*/codec': './src/formats/*/codec.js',
             './formats/jpeg/codec': './src/formats/jpeg/codec.js',
             './formats/png/codec': './src/formats/png/codec.js',
+            './linked': './src/linked.js',
             './package.json': './package.json',
             './writers/png-encoder': './src/writers/png-encoder.js',
           },
@@ -1503,6 +1518,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'src/formats/jpeg/codec.js',
         'src/formats/png/codec.js',
         'src/index.js',
+        'src/linked.js',
         'src/writers/png-encoder.js',
       ],
       name: 'images',
@@ -1510,7 +1526,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:60297d9192f978d953c9794516318fd7f133ef9c48b4b91e2313ea49ce82961c',
+        artifactDigest: 'sha256:b55753397479fe4e159d02bec6dfc52d96456ac82c0766c757f6b893f0f87d1a',
         fileDigests: {
           'README.md': 'sha256:36b0d92f91f21283a22436b6cb1abdc148cbea6eecfb569ff6cdbc47aad6000d',
           'contributions/codec-gltf.json':
@@ -1519,7 +1535,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:c5f19c5669efb1fc596a754046e330d0be7f81ff0c514b3620c8460e53b80655',
           'contributions/codec-uvm.json':
             'sha256:c4bf0ed44a61a3e079d00cb6f2620ebf18239dc5b7e5e86830b02fbc4b495e0e',
-          'package.json': 'sha256:92fe62ed790f801f3e1368db388ee77fcb8a4414087f23ccfe2835a9dbc12f41',
+          'package.json': 'sha256:3cb0c7419339216558f58910b05411cd6d22a802a5d64ad127bd3396dcd68aa4',
           'src/formats/gltf/codec.js':
             'sha256:385923bc81b4a60fc3eee6ab8c8079423884346e52e58ce6934a5f27d70a6cb4',
           'src/formats/obj/codec.js':
@@ -1527,9 +1543,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/formats/uvm/codec.js':
             'sha256:96e80dab4fbbf9a2730590883c5ad2bd371a486cedfca742c5b03d87892dfb39',
           'src/index.js': 'sha256:80f55312f768fe6d50596fe51a929c3334fd08828785b47774af6e6445e87dc8',
+          'src/linked.js':
+            'sha256:063921842fa3948317ca0c8e97985da3f13a605b4d27f6c09f8c0f52757f9489',
         },
         inventoryRecordId:
-          'artifact:sha256:60297d9192f978d953c9794516318fd7f133ef9c48b4b91e2313ea49ce82961c',
+          'artifact:sha256:b55753397479fe4e159d02bec6dfc52d96456ac82c0766c757f6b893f0f87d1a',
       },
       artifactRoot: 'extensions/models/',
       containers: {
@@ -1543,6 +1561,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             './formats/*/codec': './src/formats/*/codec.js',
             './formats/gltf/codec': './src/formats/gltf/codec.js',
             './formats/obj/codec': './src/formats/obj/codec.js',
+            './linked': './src/linked.js',
             './package.json': './package.json',
           },
           files: ['contributions', 'src', 'README.md'],
@@ -2058,13 +2077,14 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'src/formats/obj/codec.js',
         'src/formats/uvm/codec.js',
         'src/index.js',
+        'src/linked.js',
       ],
       name: 'models',
       source: 'extensions/common/models',
     },
     {
       artifact: {
-        artifactDigest: 'sha256:41b18bb6583165fc5ad5a3ceae9a168e769d30cfd377f621e03568957b8aa7ff',
+        artifactDigest: 'sha256:332df765f5076f0e59fc9df5dd7f703039e7ae80ace8616841b7aa93baac9f78',
         fileDigests: {
           'README.md': 'sha256:32b16af9cd40d5a69ccc3a44c7d74e40703c44ff0ac7f61a8f1289f093506a0d',
           'contributions/codec-csv.json':
@@ -2081,7 +2101,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:5520bc14a0ff8d688706a5821cef953670e5936827138dc75d21829d28e81c8c',
           'contributions/writer-delimited.json':
             'sha256:21e1441bcc2c6e5b81ad048edfafb8bc3ec77551fe183a0d03de96c28f6833ad',
-          'package.json': 'sha256:c21cbacc8f779a8c1a37eda8266e00ba456ba3a4c74c47f65e8abb7ba20ce359',
+          'package.json': 'sha256:68ec3aa1b3b013e056a4ed693051ead781fb8c4dc1d39da9e3f2b730587d146b',
           'src/editing/text-writer.js':
             'sha256:dce962c640c433456183054d03940ab874d4970da6cf41a1fae289269873d561',
           'src/families/delimited/codec.js':
@@ -2113,11 +2133,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/formats/tsv/provider.js':
             'sha256:ef9f2ba7cbc1220ffa936cdf773fea9a089f6ca19bd002f044885b48cc41549a',
           'src/index.js': 'sha256:4d3c1f65a922238a9b5cd20832700b890e95abd3e1485f07bd472d9a074227d2',
+          'src/linked.js':
+            'sha256:3f43f38801e699efcbd279df1502774e27f84dc360ed58ce3797409ae6411718',
           'test/fixtures/csv-rfc4180-parity.json':
             'sha256:518c4096fdf96326de1c0a83acab3674a66a2ccfa7f9b7279760e97fbb712ef5',
         },
         inventoryRecordId:
-          'artifact:sha256:41b18bb6583165fc5ad5a3ceae9a168e769d30cfd377f621e03568957b8aa7ff',
+          'artifact:sha256:332df765f5076f0e59fc9df5dd7f703039e7ae80ace8616841b7aa93baac9f78',
       },
       artifactRoot: 'extensions/text-delimited/',
       containers: {
@@ -2133,6 +2155,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             './formats/csv/provider': './src/families/delimited/entrypoints/csv-provider.js',
             './formats/tsv/codec': './src/families/delimited/entrypoints/tsv-codec.js',
             './formats/tsv/provider': './src/families/delimited/entrypoints/tsv-provider.js',
+            './linked': './src/linked.js',
             './package.json': './package.json',
           },
           files: ['contributions', 'src', 'README.md'],
@@ -2832,6 +2855,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'src/formats/tsv/codec.js',
         'src/formats/tsv/provider.js',
         'src/index.js',
+        'src/linked.js',
         'test/fixtures/csv-rfc4180-parity.json',
       ],
       name: 'text-delimited',
@@ -2839,7 +2863,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:6c203a9e1d424f58eafd7341e8ed83b8600e5f67ca47dc07ccd2a334545d4649',
+        artifactDigest: 'sha256:26361aa2a389951e818001e9afd9c13a02f2e5f740cb5dc0cd9038bd01ab8ab9',
         fileDigests: {
           'README.md': 'sha256:9519219eb63529bab5e470614ac5a8c5506507cb35e567d4686f73c13023e546',
           'contributions/codec-ini.json':
@@ -2850,7 +2874,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:92fad791e38fa9cc4d22907ef846b88bbba25e237c156285954688ff417f8893',
           'contributions/writer-ini.json':
             'sha256:d278dfffae415d855276a46335e7668f6ecdf465cc4c3e73b672dc39850abfaf',
-          'package.json': 'sha256:8d6c9a84dfd4c7d41d6f68a2d4e3bcf0f33395151aceec6596c5464129e3b244',
+          'package.json': 'sha256:210d7fb01b46f161c2b5bb8ceb6b1b5a5db17727e5b776ad42e9d4d1891dfadb',
           'src/editing/text-writer.js':
             'sha256:2c0fe6dd7b60302cc6ba2e91d995a257e875b81a6af1bda8d23869ead9d7a56c',
           'src/formats/index.js':
@@ -2862,11 +2886,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/formats/ini/provider.js':
             'sha256:90b04036cffdcb990e1f90e09882377d206081ba02e45cea85e93545422599da',
           'src/index.js': 'sha256:4490f78940b58ce6125c3f02a429c6e502a4f8cbb6ebbb01d0693fb06eed5b04',
+          'src/linked.js':
+            'sha256:c5354e35509972b4d540502ad903927febdf2b426663cbf118b9637e7490cd81',
           'test/fixtures/ini-sc2-parity.json':
             'sha256:205a176ec39d8c1adeebd8f9419ff9c9b8e2e2d45f4387541adc7e96c2090df9',
         },
         inventoryRecordId:
-          'artifact:sha256:6c203a9e1d424f58eafd7341e8ed83b8600e5f67ca47dc07ccd2a334545d4649',
+          'artifact:sha256:26361aa2a389951e818001e9afd9c13a02f2e5f740cb5dc0cd9038bd01ab8ab9',
       },
       artifactRoot: 'extensions/text-ini/',
       containers: {
@@ -2880,6 +2906,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             './formats': './src/formats/index.js',
             './formats/ini/codec': './src/formats/ini/codec.js',
             './formats/ini/provider': './src/formats/ini/provider.js',
+            './linked': './src/linked.js',
             './package.json': './package.json',
           },
           files: ['contributions', 'src', 'README.md'],
@@ -3256,6 +3283,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'src/formats/ini/definition.js',
         'src/formats/ini/provider.js',
         'src/index.js',
+        'src/linked.js',
         'test/fixtures/ini-sc2-parity.json',
       ],
       name: 'text-ini',
@@ -3263,18 +3291,20 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:7c460e2fd27b7cf054496c3e398c1e70f44110ccaf386e878529a167b7e6f259',
+        artifactDigest: 'sha256:a05e51792355a5ff9c352af1180d21a99fae36af3444c13e2b8eb5d773a5b66e',
         fileDigests: {
           'README.md': 'sha256:1b4d8bee3934523fb87f8e64e04da96ece910efd26067195538df1aad6db18e1',
           'contributions/codec-svg.json':
             'sha256:a7bb54462acb1ea895921c70ba06740e737b191bf43b3443da5bc29b3e3a9e3a',
-          'package.json': 'sha256:7621b53b6042f0dd8104beac0342bf431bd16587d8ff56b1b6e11caa35dd6cc3',
+          'package.json': 'sha256:d3eadfab9fbabc6169aa24f1d5a8de11a051e0fdf916287b8430e6c24a0a6f31',
           'src/formats/svg/codec.js':
             'sha256:f105319cdc73c079ef7cb8c5f8a6fe572307bffe6be6134a8b5b884c2d4020df',
           'src/index.js': 'sha256:904e9a577bfa759ce7ab355a01d2431961c7f7d3551a8b627a2eb56406948360',
+          'src/linked.js':
+            'sha256:eb26d9d19582e69f55fe8af85ee59875d77d4553745c95b139bc72a1b5186dba',
         },
         inventoryRecordId:
-          'artifact:sha256:7c460e2fd27b7cf054496c3e398c1e70f44110ccaf386e878529a167b7e6f259',
+          'artifact:sha256:a05e51792355a5ff9c352af1180d21a99fae36af3444c13e2b8eb5d773a5b66e',
       },
       artifactRoot: 'extensions/vector/',
       containers: {
@@ -3287,6 +3317,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             '.': './src/index.js',
             './formats/*/codec': './src/formats/*/codec.js',
             './formats/svg/codec': './src/formats/svg/codec.js',
+            './linked': './src/linked.js',
             './package.json': './package.json',
           },
           files: ['contributions', 'src', 'README.md'],
@@ -3484,28 +3515,31 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'package.json',
         'src/formats/svg/codec.js',
         'src/index.js',
+        'src/linked.js',
       ],
       name: 'vector',
       source: 'extensions/common/vector',
     },
     {
       artifact: {
-        artifactDigest: 'sha256:ee8d518741d3d72ecaf30333be75c72dc271916eff9d809f25eb448ac6b6fd2b',
+        artifactDigest: 'sha256:7d790261e7a0eda1e122229821004dc005624321961884d33d2f3b5bad818540',
         fileDigests: {
           'README.md': 'sha256:5afa854f15f6009e21e2898e7e030e5a246de537162a1e49422e519de299aa91',
           'contributions/codec-mp4.json':
             'sha256:2fe649041c4113e80d73ad3ab553446b80a68938156c53857b8f849984858de8',
           'contributions/codec-webm.json':
             'sha256:f92bba4f0c36eb3d03771d86b5aa663421530d3eba1198bc9fd180aebd742a3b',
-          'package.json': 'sha256:2b2b64e3a13378458c25a0081496dfb09c50307596ff467cd445976d6b6183da',
+          'package.json': 'sha256:4d546f14e2e5e61392c5558e7111f0e5c07ae5d50c35005b673a66078b5a40dd',
           'src/formats/mp4/codec.js':
             'sha256:e3793dc0c3e91d2580f23fe51fb1ecaa44e9622c806b4c68ce65e96aceeba3e1',
           'src/formats/webm/codec.js':
             'sha256:b8f80e46ea45dc927cadece35212e2336e591b66a03be4d55c2672ad4b86db70',
           'src/index.js': 'sha256:fc2cf3b104e31455bd7cf3a68c572cbffcedf72166be2e5362a5dfb4f0bb65b8',
+          'src/linked.js':
+            'sha256:6dc3134d01e6fe22b456cf13acfe25c4a830d17a30aa5cc445dbf767268fcfe4',
         },
         inventoryRecordId:
-          'artifact:sha256:ee8d518741d3d72ecaf30333be75c72dc271916eff9d809f25eb448ac6b6fd2b',
+          'artifact:sha256:7d790261e7a0eda1e122229821004dc005624321961884d33d2f3b5bad818540',
       },
       artifactRoot: 'extensions/video/',
       containers: {
@@ -3519,6 +3553,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             './formats/*/codec': './src/formats/*/codec.js',
             './formats/mp4/codec': './src/formats/mp4/codec.js',
             './formats/webm/codec': './src/formats/webm/codec.js',
+            './linked': './src/linked.js',
             './package.json': './package.json',
           },
           files: ['contributions', 'src', 'README.md'],
@@ -3914,6 +3949,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'src/formats/mp4/codec.js',
         'src/formats/webm/codec.js',
         'src/index.js',
+        'src/linked.js',
       ],
       name: 'video',
       source: 'extensions/common/video',

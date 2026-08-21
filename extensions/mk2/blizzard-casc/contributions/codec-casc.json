@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.modkitx/casc",
+  "displayName": "Blizzard CASC installed storage",
+  "status": "supported",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/casc/codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/casc/codec.js",
+      "target": { "environments": ["browser-worker", "node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "limitations": [
+    "CASC is selected as an installation-root codec rather than by a file extension or byte signature.",
+    "Only locally installed StarCraft II storage with an MNDX root is supported; CDN fallback and other root formats are rejected with stable diagnostics.",
+    "Reads are bounded to 64 MiB per container range, 128 MiB per decoded or extracted entry, and 256 MiB cumulatively per codec session.",
+    "The codec is read-only and does not advertise CASC patch-bundle writing."
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "casc", "label": "Blizzard CASC installed storage" }],
+    "roles": ["container"],
+    "sourceTopology": "namespace",
+    "artifactStages": ["authored", "compiled"],
+    "openIntents": ["probe", "inspect", "full", "export"],
+    "match": {},
+    "probe": {
+      "kind": "namespace",
+      "markers": [".build.info", "SC2Data/config", "SC2Data/data", "SC2Data/indices"],
+      "maxEntries": 4,
+      "maxBytes": 65536,
+      "maxDepth": 2,
+      "maxPathBytes": 4096
+    },
+    "representations": [
+      {
+        "id": "archive-namespace",
+        "contract": "common.archive/entry-namespace",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      { "contract": "common.view/namespace-entry-source", "major": 1 },
+      { "contract": "common.view/tree-data-source", "major": 1 }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "container.extract",
+        "handlerId": "extract-entry",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "268435456",
+      "maxDepth": 64,
+      "maxNodes": 750000,
+      "maxScalarBytes": 134217728,
+      "maxDiagnostics": 1000
+    }
+  }
+}

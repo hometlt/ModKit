@@ -6,6 +6,7 @@
   "description": "Independent MK3 XML codec and syntax provider.",
   "exports": {
     ".": "./src/index.js",
+    "./linked": "./src/linked.js",
     "./formats": "./src/formats/index.js",
     "./formats/xml/codec": "./src/formats/xml/codec.js",
     "./formats/xml/provider": "./src/formats/xml/provider.js",

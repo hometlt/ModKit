@@ -14,13 +14,26 @@ export interface VfsNode {
 
 export interface VfsLimits {
   readonly maxEntries: number
-  readonly maxBytes: bigint
+  /** Bytes an eager provider may retain while constructing a mount. */
+  readonly maxMaterializedBytes: bigint
+  /** Logical size of one addressable random-access file. */
+  readonly maxFileBytes: bigint
+  /** Cumulative bytes actually returned by all sources opened from one mount. */
+  readonly maxReadBytes: bigint
+  /** Bytes requested by one random-access read. */
+  readonly maxReadRangeBytes: number
+  /** Bytes exposed by one sequential stream window. */
+  readonly maxStreamBytes: bigint
   readonly maxPathBytes: number
 }
 
 export const DEFAULT_VFS_LIMITS: VfsLimits = Object.freeze({
   maxEntries: 10_000,
-  maxBytes: 512n * 1024n * 1024n,
+  maxMaterializedBytes: 512n * 1024n * 1024n,
+  maxFileBytes: 8n * 1024n * 1024n * 1024n * 1024n,
+  maxReadBytes: 512n * 1024n * 1024n,
+  maxReadRangeBytes: 16 * 1024 * 1024,
+  maxStreamBytes: 512n * 1024n * 1024n,
   maxPathBytes: 4096,
 })
 
@@ -109,6 +122,21 @@ function positiveSafeInteger(value: number, name: string): number {
   return value
 }
 
+function positiveBigInt(value: bigint, name: string): bigint {
+  if (value <= 0n) {
+    throw new ModkitError({
+      code: 'x3.vfs/limit-invalid',
+      message: `${name} must be positive`,
+      context: { name, value: String(value) },
+    })
+  }
+  return value
+}
+
+function minimumBigInt(requested: bigint, maximum: bigint): bigint {
+  return requested < maximum ? requested : maximum
+}
+
 export function clampVfsLimits(
   requested: Partial<VfsLimits> = {},
   maximum: VfsLimits = DEFAULT_VFS_LIMITS,
@@ -121,17 +149,33 @@ export function clampVfsLimits(
     requested.maxPathBytes ?? maximum.maxPathBytes,
     'maxPathBytes',
   )
-  const requestedBytes = requested.maxBytes ?? maximum.maxBytes
-  if (requestedBytes <= 0n) {
-    throw new ModkitError({
-      code: 'x3.vfs/limit-invalid',
-      message: 'maxBytes must be positive',
-      context: { name: 'maxBytes', value: String(requestedBytes) },
-    })
-  }
+  const requestedMaterializedBytes = positiveBigInt(
+    requested.maxMaterializedBytes ?? maximum.maxMaterializedBytes,
+    'maxMaterializedBytes',
+  )
+  const requestedFileBytes = positiveBigInt(
+    requested.maxFileBytes ?? maximum.maxFileBytes,
+    'maxFileBytes',
+  )
+  const requestedReadBytes = positiveBigInt(
+    requested.maxReadBytes ?? maximum.maxReadBytes,
+    'maxReadBytes',
+  )
+  const requestedReadRangeBytes = positiveSafeInteger(
+    requested.maxReadRangeBytes ?? maximum.maxReadRangeBytes,
+    'maxReadRangeBytes',
+  )
+  const requestedStreamBytes = positiveBigInt(
+    requested.maxStreamBytes ?? maximum.maxStreamBytes,
+    'maxStreamBytes',
+  )
   return Object.freeze({
     maxEntries: Math.min(requestedEntries, maximum.maxEntries),
-    maxBytes: requestedBytes < maximum.maxBytes ? requestedBytes : maximum.maxBytes,
+    maxMaterializedBytes: minimumBigInt(requestedMaterializedBytes, maximum.maxMaterializedBytes),
+    maxFileBytes: minimumBigInt(requestedFileBytes, maximum.maxFileBytes),
+    maxReadBytes: minimumBigInt(requestedReadBytes, maximum.maxReadBytes),
+    maxReadRangeBytes: Math.min(requestedReadRangeBytes, maximum.maxReadRangeBytes),
+    maxStreamBytes: minimumBigInt(requestedStreamBytes, maximum.maxStreamBytes),
     maxPathBytes: Math.min(requestedPathBytes, maximum.maxPathBytes),
   })
 }
@@ -258,7 +302,12 @@ export class VirtualFileSystem {
         context: { path: normalized },
       })
     }
-    const innerPath = normalized === best.path ? '' : normalized.slice(best.path.length + 1)
+    const innerPath =
+      best.path === ''
+        ? normalized
+        : normalized === best.path
+          ? ''
+          : normalized.slice(best.path.length + 1)
     return { mountPath: best.path, mount: best.mount, path: innerPath }
   }
 

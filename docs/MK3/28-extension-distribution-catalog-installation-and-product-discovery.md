@@ -159,7 +159,7 @@ Artifacts immutable и content-addressed. User settings, grants и project locks
 | --------------------- | -------------------------------------------- | -------------------------------------- |
 | Catalog               | `org.modkitx.catalog/official` + revision    | источник release metadata              |
 | Publisher             | `org.modkitx.blizzard`                       | authority публикации extension         |
-| Extension             | `org.modkitx.blizzard/starcraft-2@2.4.0`     | distribution unit/version              |
+| Extension             | `org.modkitx.blizzard/starcraft2@2.4.0`      | distribution unit/version              |
 | Artifact              | algorithm + immutable digest                 | точные bytes release bundle            |
 | Source                | repository URL + commit/tag evidence         | аудит исходников, не runtime identity  |
 | Contribution/provider | текущий `org.modkitx/<id>` + version         | discoverable implementation/definition |
@@ -399,7 +399,7 @@ broker enforcement и isolation остаются отдельными gates до
 generic Electron installed with common
   -> user permits installed-product inventory
   -> generic OS/store collector returns SC2 product evidence
-  -> cached/remote catalog rule recommends org.modkitx.blizzard/starcraft-2
+  -> cached/remote catalog rule recommends org.modkitx.blizzard/starcraft2
   -> UI shows source, version, permissions, license, size and reason
   -> user confirms dry-run plan
   -> installer verifies exact artifact digest and writes install lock

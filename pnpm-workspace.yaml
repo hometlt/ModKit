@@ -2,7 +2,12 @@
 # is intentionally broader so optional UI/reference extensions can run conformance and pack tests;
 # none of the entries below becomes a bootstrap dependency merely by being workspace-linked.
 packages:
-  - 'packages/*'
+  - 'packages/core'
+  - 'packages/sdk'
+  - 'packages/vfs'
+  - 'packages/host'
+  - 'packages/ui'
+  - 'packages/testkit'
   - 'apps/*'
   # Optional reference extensions are workspace-linked for conformance tests only. They are not
   # dependencies of core/sdk/vfs/host and therefore do not enter the bootstrap import closure.

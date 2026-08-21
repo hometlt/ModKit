@@ -3,8 +3,9 @@
   "schemaVersion": 1,
   "families": {
     "adobe-flash": 2,
-    "blizzard-archives": 1,
-    "blizzard-starcraft-2": 1,
+    "blizzard-casc": 1,
+    "blizzard-models": 1,
+    "blizzard-mpq": 1,
     "common-audio": 4,
     "common-images": 3,
     "common-models": 1,

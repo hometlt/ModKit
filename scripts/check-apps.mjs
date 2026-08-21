@@ -250,6 +250,12 @@ await checkApplicationSet(
 )
 await checkApplicationSet(
   'headless',
+  'mk2-models',
+  async extensions => ({ main: (await createAutomationHost(extensions)).composition }),
+  { main: { offers: 1, active: 1 } },
+)
+await checkApplicationSet(
+  'headless',
   'mk2-extended',
   async extensions => ({ main: (await createAutomationHost(extensions)).composition }),
   { main: { offers: 41, active: 41 } },

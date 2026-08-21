@@ -6,6 +6,7 @@
   "description": "Monaco code-editor backend for the MK3 code stage. Trusted in-process only.",
   "exports": {
     ".": "./src/index.js",
+    "./linked": "./src/linked.js",
     "./package.json": "./package.json"
   },
   "files": [

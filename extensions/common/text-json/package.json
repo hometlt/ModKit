@@ -6,6 +6,7 @@
   "description": "Independent MK3 JSON and JSONC codecs and syntax providers.",
   "exports": {
     ".": "./src/index.js",
+    "./linked": "./src/linked.js",
     "./formats": "./src/formats/index.js",
     "./formats/json/codec": "./src/families/json/entrypoints/json-codec.js",
     "./formats/json/provider": "./src/families/json/entrypoints/json-provider.js",

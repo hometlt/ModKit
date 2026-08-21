@@ -22,24 +22,24 @@
 
 ## 1. Карта модулей — что для чего
 
-| Импорт                                                                                 | Назначение                                                                                                                      |
-| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `@modkitx-x3/host/node` → `createModkit`                                               | Node-хост одним вызовом: open/editing/расширения                                                                                |
-| `@modkitx-x3/host` → `defineLinkedExtension`, `linkedExtensionInputs`                  | статическая полоса расширений                                                                                                   |
-| `@modkitx-x3/host` → `exposeSubjectRpc`, `connectSubjectRpc`                           | субъекты через границу (renderer/webview)                                                                                       |
-| `@modkitx-x3/host/execution` → `framePortFromJsonPort`                                 | текстовый транспорт (VS Code webview, сокет)                                                                                    |
-| `@modkitx-x3/host/browser` (через `apps/web/src/subjects.ts` как образец)              | браузерный хост в worker                                                                                                        |
-| `@modkitx-x3/extensions/<id>`; `…/sets`                                                | первопартийные кодеки статически; наборы `imagesOnly`, `media`, `structuredText`, `archivesOnly`, `documentsOnly`, `everything` |
-| `@modkitx-x3/ui/<surface>`                                                             | ровно один вьювер/компонент (см. список в GUIDE_DEVELOPER §5)                                                                   |
-| `@modkitx-x3/ui/explorer` → `createCodecPreview`, `createExplorer`, `createEditorArea` | сцены, дерево, вкладки                                                                                                          |
-| `@modkitx-x3/ui/styles/modkit-ui.css`                                                  | единственный файл стилей; работает и в Shadow DOM (`:root, :host`)                                                              |
-| `@modkitx-x3/codec-kit`                                                                | утилиты для КОДА расширений (defineWriter и т.п.) — приложениям запрещён                                                        |
+| Импорт                                                                                 | Назначение                                                                    |
+| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `@modkitx-x3/host/node` → `createModkit`                                               | Node-хост одним вызовом: open/editing/расширения                              |
+| `@modkitx-x3/host` → `defineLinkedExtension`, `linkedExtensionInputs`                  | статическая полоса расширений                                                 |
+| `@modkitx-x3/host` → `exposeSubjectRpc`, `connectSubjectRpc`                           | субъекты через границу (renderer/webview)                                     |
+| `@modkitx-x3/host/execution` → `framePortFromJsonPort`                                 | текстовый транспорт (VS Code webview, сокет)                                  |
+| `@modkitx-x3/host/browser` (через `apps/web/src/subjects.ts` как образец)              | браузерный хост в worker                                                      |
+| `<extension-package>/linked`                                                           | собственный статический entry расширения; импортируй только нужные расширения |
+| `@modkitx-x3/ui/<surface>`                                                             | ровно один вьювер/компонент (см. список в GUIDE_DEVELOPER §5)                 |
+| `@modkitx-x3/ui/explorer` → `createCodecPreview`, `createExplorer`, `createEditorArea` | сцены, дерево, вкладки                                                        |
+| `@modkitx-x3/ui/styles/modkit-ui.css`                                                  | единственный файл стилей; работает и в Shadow DOM (`:root, :host`)            |
+| `@modkitx-x3/codec-kit`                                                                | утилиты для КОДА расширений (defineWriter и т.п.) — приложениям запрещён      |
 
 ## 2. Алгоритм выбора (выполняй по порядку, записывай ответы)
 
 1. Платформа? → web / electron / vscode / headless.
-2. Форматы? → список кодеков: статически (`@modkitx-x3/extensions/...` или `modules:` с
-   собственным `defineLinkedExtension`) либо динамически (`extensions:` каталоги).
+2. Форматы? → список кодеков: статически (`<extension-package>/linked` в `modules:`) либо
+   динамически (`extensions:` каталоги).
 3. Операции? просмотр → §3-вьюверы; правка → `writableRoots` (+ формы Edit при мутирующих
    операциях); конвертация → только host.
 4. Вьюверы = только контракты, которые публикуют выбранные кодеки. Ничего сверх.
@@ -63,7 +63,7 @@
 
 ```ts
 import { createModkit } from '@modkitx-x3/host/node'
-import { images } from '@modkitx-x3/extensions/images'
+import { images } from 'modkit-extension-x3-images/linked'
 
 const modkit = await createModkit({ modules: [images], roots: [inDir], writableRoots: [outDir] })
 const opened = await modkit.open(file)

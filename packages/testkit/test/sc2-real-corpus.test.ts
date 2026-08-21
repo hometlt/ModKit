@@ -4,7 +4,8 @@ import { describe, expect, it } from 'vitest'
 import { runMk2Acceptance, type Mk2CorpusEntry } from '../src/index.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const sc2Root = process.env.MODKITX_SC2_ROOT ?? 'C:\\Apps\\StarCraft II'
+const sc2Override = process.env.MODKITX_SC2_ROOT?.trim()
+const sc2Root = sc2Override ? sc2Override : 'C:\\Apps\\StarCraft II'
 const ddsSample = 'Maps/all-races-coop-maps/32-CoreOfCybros.SC2Map/btn-living-conduit.dds'
 const dds: Mk2CorpusEntry = {
   extension: 'mk2/common-images',
@@ -18,7 +19,7 @@ const dds: Mk2CorpusEntry = {
 const m3Sample =
   'Maps/RustBucketYZc.SC2Map/Assets/Doodads/SpacePlatform_LandingLights_NoLensFlare/avex_SpacePlatform_LandingLights_NoLensFlare.m3'
 const m3: Mk2CorpusEntry = {
-  extension: 'mk2/blizzard-starcraft-2',
+  extension: 'mk2/blizzard-models',
   contributionId: 'org.modkitx/m3',
   corpus: 'real',
   sample: m3Sample,
@@ -28,7 +29,7 @@ const m3: Mk2CorpusEntry = {
 }
 const mpqSample = 'Maps/cnc-test.SC2Map'
 const mpq: Mk2CorpusEntry = {
-  extension: 'mk2/blizzard-archives',
+  extension: 'mk2/blizzard-mpq',
   contributionId: 'org.modkitx/mpq',
   corpus: 'real',
   sample: mpqSample,

@@ -1,5 +1,6 @@
 import { ModkitError, throwIfAborted } from '@modkitx-x3/core'
 
+import { budgetRandomAccessSource, VfsReadBudget } from '../../read-budget.js'
 import { createMemorySource, type RandomAccessSource } from '../../source.js'
 import {
   assertVfsPathBudget,
@@ -49,6 +50,7 @@ class MemoryMount implements VfsMount {
   readonly id: string
   readonly revision: string
   private disposed = false
+  private readonly readBudget: VfsReadBudget
 
   constructor(
     readonly rootUri: string,
@@ -59,6 +61,7 @@ class MemoryMount implements VfsMount {
   ) {
     this.id = rootUri
     this.revision = revision
+    this.readBudget = new VfsReadBudget(limits.maxReadBytes)
   }
 
   async stat(path: string, signal?: AbortSignal): Promise<VfsNode | undefined> {
@@ -130,7 +133,11 @@ class MemoryMount implements VfsMount {
         context: { path: relative, rootUri: this.rootUri },
       })
     }
-    return createMemorySource(`${this.rootUri}#${encodeURIComponent(relative)}`, entry.bytes)
+    const source = createMemorySource(
+      `${this.rootUri}#${encodeURIComponent(relative)}`,
+      entry.bytes,
+    )
+    return budgetRandomAccessSource(source, entry.bytes.byteLength, this.limits, this.readBudget)
   }
 
   dispose(): void {
@@ -176,6 +183,17 @@ export class MemoryVfsProvider implements VfsProvider {
         })
       }
       const copy = bytes.slice()
+      if (BigInt(copy.byteLength) > this.limits.maxFileBytes) {
+        throw new ModkitError({
+          code: 'x3.vfs/file-size-limit-exceeded',
+          message: 'memory provider encountered a file above its logical size limit',
+          context: {
+            path: normalized,
+            fileBytes: String(copy.byteLength),
+            maxFileBytes: String(this.limits.maxFileBytes),
+          },
+        })
+      }
       totalBytes += BigInt(copy.byteLength)
       entries.set(normalized, { path: normalized, bytes: copy })
     }
@@ -186,11 +204,14 @@ export class MemoryVfsProvider implements VfsProvider {
         context: { entries: entries.size, maxEntries: this.limits.maxEntries },
       })
     }
-    if (totalBytes > this.limits.maxBytes) {
+    if (totalBytes > this.limits.maxMaterializedBytes) {
       throw new ModkitError({
         code: 'x3.vfs/memory-byte-budget-exceeded',
-        message: 'memory provider exceeded its configured byte boundary',
-        context: { bytes: String(totalBytes), maxBytes: String(this.limits.maxBytes) },
+        message: 'memory provider exceeded its materialized-byte boundary',
+        context: {
+          bytes: String(totalBytes),
+          maxMaterializedBytes: String(this.limits.maxMaterializedBytes),
+        },
       })
     }
     this.entries = entries
@@ -249,11 +270,14 @@ export class MemoryVfsProvider implements VfsProvider {
         context: { entries, maxEntries: limits.maxEntries },
       })
     }
-    if (bytes > limits.maxBytes) {
+    if (bytes > limits.maxMaterializedBytes) {
       throw new ModkitError({
         code: 'x3.vfs/memory-byte-budget-exceeded',
-        message: 'memory provider exceeded its configured byte boundary',
-        context: { bytes: String(bytes), maxBytes: String(limits.maxBytes) },
+        message: 'memory provider exceeded its materialized-byte boundary',
+        context: {
+          bytes: String(bytes),
+          maxMaterializedBytes: String(limits.maxMaterializedBytes),
+        },
       })
     }
     return new MemoryMount(uri, root, this.entries, limits, this.revision)

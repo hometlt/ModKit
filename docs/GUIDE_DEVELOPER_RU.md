@@ -28,9 +28,8 @@ ModKit
 │   ├── /browser                           — браузерный адаптер (worker-исполнение)
 │   └── /execution                         — RPC-протокол и транспорты
 ├── ui              @modkitx-x3/ui         — вьюверы и компоненты интерфейса (все — субпутями)
-├── extensions      @modkitx-x3/extensions — первопартийные расширения как статические модули
 │
-├── extensions/…    каталоги расширений    — динамическая полоса: кодеки, вьюверы, писатели
+├── extensions/…    расширения             — динамический каталог + собственный /linked export
 │
 └── Приложения (примеры-эталоны)
     ├── apps/web            PWA + <modkit-viewer> (веб-компонент)
@@ -81,7 +80,7 @@ viewer ──── приложение объявляет сцены (stage po
 Компонент известен на этапе сборки. Подходит небольшим и специализированным приложениям.
 
 ```ts
-import { images } from '@modkitx-x3/extensions/images' // кодеки PNG/JPEG как модуль
+import { images } from 'modkit-extension-x3-images/linked' // кодеки PNG/JPEG как модуль
 import { imageViewer } from '@modkitx-x3/ui/image' // один вьювер, ничего лишнего
 ```
 
@@ -183,7 +182,7 @@ closed: произвольные URL не загружаются.
 ```ts
 import { join } from 'node:path'
 import { createModkit } from '@modkitx-x3/host/node'
-import { images } from '@modkitx-x3/extensions/images' // статически…
+import { images } from 'modkit-extension-x3-images/linked' // статически…
 
 const modkit = await createModkit({
   modules: [images], // …или динамически: extensions: ['./codecs']
@@ -331,7 +330,14 @@ import { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'
 
 const vfs = new VirtualFileSystem().registerProvider(createFileVfsProvider())
 const mount = await vfs.openMount(new URL('file:///C:/project/').href, {
-  limits: { maxEntries: 10_000, maxBytes: 512n * 1024n * 1024n, maxPathBytes: 4096 },
+  limits: {
+    maxEntries: 10_000,
+    maxFileBytes: 8n * 1024n * 1024n * 1024n * 1024n,
+    maxReadBytes: 512n * 1024n * 1024n,
+    maxReadRangeBytes: 16 * 1024 * 1024,
+    maxStreamBytes: 512n * 1024n * 1024n,
+    maxPathBytes: 4096,
+  },
 })
 vfs.mount('', mount)
 
@@ -431,12 +437,12 @@ const preview = createCodecPreview({
 
 ## 6. Как подключать кодеки
 
-**Статически** — субпутями расширения или целиком:
+**Статически** — собственным `linked` export каждого нужного расширения:
 
 ```ts
-import { images } from '@modkitx-x3/extensions/images'
-import { sets } from '@modkitx-x3/extensions' // imagesOnly, media, structuredText, everything…
-createModkit({ modules: sets.imagesOnly /* … */ })
+import { images } from 'modkit-extension-x3-images/linked'
+import { vector } from 'modkit-extension-x3-vector/linked'
+createModkit({ modules: [images, vector] })
 ```
 
 **Динамически** — каталогами:

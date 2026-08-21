@@ -7,7 +7,7 @@
  * process as a module namespace, with no files to verify and no worker to load them in.
  *
  * The trust decision is the import itself. A caller who wrote
- * `import { images } from '@modkitx-x3/extensions'` has linked that code into their bundle exactly
+ * importing an extension's own `linked` entry has linked that code into their bundle exactly
  * as they linked their own; refusing to run it in-process while running the rest of the bundle
  * in-process would be theatre. So linked contributions run under `trusted-in-process`, the input
  * carries `allowTrustedInProcess: true` **because linking is the artifact-level trust decision**,
@@ -35,12 +35,12 @@ export interface LinkedContributionInit {
   /** Manifest path inside the (virtual) artifact, e.g. `contributions/codec-png.json`. */
   readonly path: string
   /**
-   * The manifest document, with `runtimeVariants` already filtered to its `trusted-in-process`
-   * variants (the generator does this; a hand author must too). Data-only manifests pass verbatim.
+   * The authored manifest document. The linked definition retains only variants that explicitly
+   * declare `trusted-in-process`; worker-only contributions become named exclusions.
    */
   readonly manifest: unknown
-  /** `sha256:…` of the canonical JSON of `manifest`, computed when it was generated. */
-  readonly digest: string
+  /** Optional artifact-lane digest. Static imports are already the linked lane's trust decision. */
+  readonly digest?: string
 }
 
 export interface LinkedContributionExclusion {
@@ -54,13 +54,13 @@ export interface LinkedExtensionInit {
   readonly source: string
   /** The extension's `package.json`, verbatim (its `modkit` block is the identity). */
   readonly packageJson: unknown
-  /** Relative file listing of the virtual artifact (manifests + linked entrypoints). */
-  readonly files: readonly string[]
+  /** Relative file listing; derived from contributions and modules when omitted. */
+  readonly files?: readonly string[]
   readonly contributions: readonly LinkedContributionInit[]
   /** Contributions of the authored extension that the linked build cannot carry, with reasons. */
   readonly excluded?: readonly LinkedContributionExclusion[]
-  /** `sha256:…` over the contribution digests and file list, computed at generation. */
-  readonly artifactDigest: string
+  /** Optional artifact-lane digest. It does not add evidence to already imported code. */
+  readonly artifactDigest?: string
   /** Entrypoint path (as authored, e.g. `./src/index.js`) → imported module namespace. */
   readonly modules: Readonly<Record<string, LinkedModule>>
 }
@@ -104,6 +104,30 @@ export function defineLinkedExtension(init: LinkedExtensionInit): LinkedExtensio
     })
   }
   const coordinate = `${publisher}/${id}`
+  const automaticExcluded: LinkedContributionExclusion[] = []
+  const contributions = init.contributions.flatMap(contribution => {
+    const variants = variantsOf(contribution.manifest)
+    if (variants.length === 0) return [contribution]
+    const trusted = variants.filter(variant => variant.executionProfile === 'trusted-in-process')
+    if (trusted.length === 0) {
+      const manifestId = (contribution.manifest as { id?: unknown }).id
+      automaticExcluded.push({
+        path: contribution.path,
+        reason: `${typeof manifestId === 'string' ? manifestId : contribution.path} declares no trusted-in-process variant, and linked code runs in-process by definition`,
+      })
+      return []
+    }
+    const manifest = contribution.manifest as Readonly<Record<string, unknown>>
+    return [{ ...contribution, manifest: { ...manifest, runtimeVariants: trusted } }]
+  })
+  const files =
+    init.files ??
+    Object.freeze([
+      'package.json',
+      ...contributions.map(item => item.path),
+      ...Object.keys(init.modules).map(path => path.replace(/^\.\//u, '')),
+    ])
+  const artifactDigest = init.artifactDigest ?? `linked:${coordinate}`
   /*
    * The authority host is the coordinate with `/` flattened: URL authorities cannot carry one,
    * and the coordinate grammar (`publisher/id`, both dot-separated words) maps injectively.
@@ -111,7 +135,7 @@ export function defineLinkedExtension(init: LinkedExtensionInit): LinkedExtensio
   const artifactRoot = new URL(`modkit-linked://${publisher}.${id}/`.toLowerCase())
 
   const moduleEntries: (readonly [string, LinkedModule])[] = []
-  for (const contribution of init.contributions) {
+  for (const contribution of contributions) {
     for (const variant of variantsOf(contribution.manifest)) {
       if (variant.executionProfile !== 'trusted-in-process') {
         refuse('a linked contribution may declare only trusted-in-process variants', {
@@ -136,15 +160,17 @@ export function defineLinkedExtension(init: LinkedExtensionInit): LinkedExtensio
   const input: ExtensionInput = Object.freeze({
     source: init.source,
     containers: Object.freeze({ packageJson: init.packageJson }),
-    files: Object.freeze([...init.files]),
-    documents: new Map(init.contributions.map(item => [item.path, item.manifest])),
-    documentDigests: new Map(init.contributions.map(item => [item.path, item.digest])),
+    files: Object.freeze([...files]),
+    documents: new Map(contributions.map(item => [item.path, item.manifest])),
+    documentDigests: new Map(
+      contributions.map(item => [item.path, item.digest ?? `linked:${coordinate}:${item.path}`]),
+    ),
     artifact: Object.freeze({
       inventoryRecordId: `linked:${coordinate}`,
-      artifactDigest: init.artifactDigest,
+      artifactDigest,
       artifactRoot,
       // the bytes cannot change under a linked artifact: they are the caller's own bundle
-      verifyArtifactDigest: (expected: string) => expected === init.artifactDigest,
+      verifyArtifactDigest: (expected: string) => expected === artifactDigest,
     }),
     /*
      * `allowTrustedInProcess: true` is the point, not an oversight: linking is the artifact-level
@@ -158,7 +184,7 @@ export function defineLinkedExtension(init: LinkedExtensionInit): LinkedExtensio
     coordinate,
     input,
     moduleEntries: Object.freeze(moduleEntries),
-    excluded: Object.freeze([...(init.excluded ?? [])]),
+    excluded: Object.freeze([...automaticExcluded, ...(init.excluded ?? [])]),
   })
 }
 
