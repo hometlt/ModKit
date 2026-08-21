@@ -21,9 +21,8 @@
     }
   ],
   "limitations": [
-    "Windows RIFF/ACON frames are decoded through the embedded ICO/CUR codec, including playback-step selection, but ANI write support is not implemented.",
-    "Warzone 2100 ANIM3DFRAMES files share the extension and are inspected as model-animation sidecars; they do not produce raster pixels.",
-    "Manifest v1 cannot express the two structural alternatives or the legacy extension-or-signature fallback without turning them into conjunctions; generated routing intentionally uses the extension while the handwritten compatibility registry retains global structural sniffing."
+    "The MK3 port performs a bounded RIFF/ACON chunk walk, validates anih declarations and embedded ICO/CUR frame headers, and reports rate/sequence metadata.",
+    "Warzone 2100 ANIM3DFRAMES text sidecars are parsed as bounded frame lines; embedded cursor pixel decoding, playback, model application, and writing remain unsupported."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "ani", "label": "Windows Animated Cursor / Warzone Animation" }],
@@ -31,7 +30,13 @@
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
-    "match": { "extensions": ["ani"] },
+    "match": {
+      "extensions": ["ani"],
+      "signatures": [
+        { "from": "start", "offset": 8, "bytesHex": "41434f4e" },
+        { "from": "start", "offset": 0, "bytesHex": "414e494d33444652414d4553" }
+      ]
+    },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {
@@ -43,7 +48,6 @@
       }
     ],
     "publishesDataSources": [
-      { "contract": "common.view/raster-image-source", "major": 1 },
       { "contract": "common.view/tree-data-source", "major": 1 },
       { "contract": "common.view/byte-range-source", "major": 1 }
     ],

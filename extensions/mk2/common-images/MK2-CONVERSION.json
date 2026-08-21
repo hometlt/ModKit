@@ -39,11 +39,12 @@
         "operations:inspection-triple",
         "probe:bytes-4096",
         "representation:common.image/raster-metadata",
+        "signatures:from-specification (Microsoft RIFF animated cursor form type ACON at byte 8; Warzone 2100 text animation header ANIM3DFRAMES at byte 0)",
         "variants:pair"
       ],
       "droppedOperations": ["image.inspect", "image.read"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/astc": {
       "verdict": "convertible-with-rework",
@@ -267,11 +268,12 @@
         "operations:inspection-triple",
         "probe:bytes-4096",
         "representation:common.image/raster-metadata",
+        "signatures:from-specification (JASC-PAL text identifier at byte 0; Microsoft RIFF palette form type PAL followed by space at byte 8)",
         "variants:pair"
       ],
       "droppedOperations": ["image.inspect", "image.read"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/pcx": {
       "verdict": "needs-new-contract",
@@ -285,11 +287,12 @@
         "operations:inspection-triple",
         "probe:bytes-4096",
         "representation:common.image/raster-metadata",
+        "signatures:from-specification (ZSoft PCX file header manufacturer byte 0A at byte 0; the codec probe validates version, encoding, dimensions, planes, and stride)",
         "variants:pair"
       ],
       "droppedOperations": ["image.inspect", "image.read", "image.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/pkm": {
       "verdict": "convertible-with-rework",

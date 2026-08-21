@@ -21,9 +21,8 @@
     }
   ],
   "limitations": [
-    "The codec renders recognized 256-color Westwood 6-bit and 8-bit binary palettes, JASC-PAL text, and Microsoft RIFF PAL as a 16 by 16 swatch.",
-    "Palette writing is not implemented.",
-    "Manifest v1 cannot express the legacy extension-or-structural-probe fallback without turning it into a conjunction; generated routing uses the extension while the handwritten registry retains global probing."
+    "The MK3 port validates and renders raw 256-color Westwood 6-bit/RGB8 palettes, JASC-PAL text, and Microsoft RIFF PAL as a 16 by 16 RGBA8 swatch.",
+    "Palette remapping, writing, metadata mutation, and pixel editing remain unsupported."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "pal", "label": "Palette image" }],
@@ -31,7 +30,13 @@
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
-    "match": { "extensions": ["pal"] },
+    "match": {
+      "extensions": ["pal"],
+      "signatures": [
+        { "from": "start", "offset": 0, "bytesHex": "4a4153432d50414c" },
+        { "from": "start", "offset": 8, "bytesHex": "50414c20" }
+      ]
+    },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {

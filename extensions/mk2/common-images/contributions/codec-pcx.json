@@ -21,9 +21,8 @@
     }
   ],
   "limitations": [
-    "Indexed files without a usable palette fall back to bit-depth-scaled grayscale.",
-    "Export emits 24-bit RGB PCX and drops alpha because interoperable PCX alpha is not broadly standardized.",
-    "Manifest v1 cannot express the legacy extension-or-signature fallback without turning it into a conjunction; generated routing intentionally uses the extension while the handwritten compatibility registry retains global signature sniffing."
+    "The MK3 port validates PCX headers and bounded raw/RLE rows and decodes 1/2/4/8-bit indexed planes plus 24-bit RGB and 32-bit RGBA planes; indexed files without a usable palette fall back to bit-depth-scaled grayscale.",
+    "Writing, palette mutation, color-management transforms, and pixel editing remain unsupported."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "pcx", "label": "ZSoft Paintbrush PCX" }],
@@ -31,7 +30,10 @@
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
-    "match": { "extensions": ["pcx"] },
+    "match": {
+      "extensions": ["pcx"],
+      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "0a" }]
+    },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {

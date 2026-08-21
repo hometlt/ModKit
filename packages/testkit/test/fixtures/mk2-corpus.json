@@ -170,6 +170,41 @@
       "note": "PVR v3 custom RGBA8888 texture with one surface, face, mip and exact pixel"
     },
     {
+      "extension": "mk2/common-images",
+      "contributionId": "org.modkitx/ani",
+      "corpus": "synthetic",
+      "sample": "minimal.ani",
+      "minimumConfidence": 0.9,
+      "dataSource": "tree",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "RIFF/ACON animated cursor with a complete anih header and one embedded CUR frame inside LIST/fram"
+    },
+    {
+      "extension": "mk2/common-images",
+      "contributionId": "org.modkitx/pal",
+      "corpus": "synthetic",
+      "sample": "minimal.pal",
+      "minimumConfidence": 0.9,
+      "dataSource": "raster",
+      "expectedFirstPixelRgba": [128, 64, 32, 255],
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "JASC-PAL 0100 text with two exact colors; acceptance reads the first RGBA8 swatch cell"
+    },
+    {
+      "extension": "mk2/common-images",
+      "contributionId": "org.modkitx/pcx",
+      "corpus": "synthetic",
+      "sample": "minimal.pcx",
+      "minimumConfidence": 0.9,
+      "dataSource": "raster",
+      "expectedFirstPixelRgba": [128, 64, 32, 255],
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "PCX v5 with one uncompressed 24-bit planar pixel and declared per-plane row padding"
+    },
+    {
       "extension": "mk2/common-audio",
       "contributionId": "org.modkitx/mp3",
       "corpus": "real",

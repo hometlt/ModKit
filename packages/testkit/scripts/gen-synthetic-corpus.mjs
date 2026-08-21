@@ -387,6 +387,29 @@ const ico = () => iconContainer(1)
 const cur = () => iconContainer(2)
 
 /**
+ * Windows animated cursor: RIFF/ACON with one 36-byte anih header and one LIST/fram containing a
+ * complete one-pixel CUR frame. The RIFF length includes its form type and both padded chunks.
+ */
+function ani() {
+  const chunk = (id, payload) =>
+    concat(ascii(id), u32le(payload.byteLength), payload, new Uint8Array(payload.byteLength & 1))
+  const header = concat(
+    u32le(36),
+    u32le(1),
+    u32le(1),
+    u32le(1),
+    u32le(1),
+    u32le(32),
+    u32le(1),
+    u32le(6),
+    u32le(1),
+  )
+  const frames = chunk('LIST', concat(ascii('fram'), chunk('icon', iconContainer(2))))
+  const body = concat(ascii('ACON'), chunk('anih', header), frames)
+  return concat(ascii('RIFF'), u32le(body.byteLength), body)
+}
+
+/**
  * KTX 1.1: little-endian header, one KTXorientation key/value record, one uncompressed RGBA8 mip
  * and one pixel. The level imageSize is four and therefore needs no additional alignment bytes.
  */
@@ -449,6 +472,35 @@ function pvr() {
     u32le(0),
     bytes(0x80, 0x40, 0x20, 0xff),
   )
+}
+
+/** JASC-PAL 0100 with two declared colors; the remaining 254 swatch cells default to black. */
+function pal() {
+  return ascii('JASC-PAL\n0100\n2\n128 64 32\n0 0 0\n')
+}
+
+/**
+ * ZSoft PCX v5: one uncompressed 24-bit pixel stored in three 8-bit planes. Each one-byte plane
+ * row is padded to the declared two-byte bytesPerLine stride.
+ */
+function pcx() {
+  const output = new Uint8Array(134)
+  const view = new DataView(output.buffer)
+  output[0] = 0x0a
+  output[1] = 5
+  output[2] = 0
+  output[3] = 8
+  view.setUint16(4, 0, true)
+  view.setUint16(6, 0, true)
+  view.setUint16(8, 0, true)
+  view.setUint16(10, 0, true)
+  view.setUint16(12, 72, true)
+  view.setUint16(14, 72, true)
+  output[65] = 3
+  view.setUint16(66, 2, true)
+  view.setUint16(68, 1, true)
+  output.set(bytes(0x80, 0x00, 0x40, 0x00, 0x20, 0x00), 128)
+  return output
 }
 
 /**
@@ -925,6 +977,7 @@ function mp3() {
 
 /** Every fixture: file name → builder. The name is what the acceptance corpus refers to. */
 const FIXTURES = {
+  'minimal.ani': ani,
   'minimal.astc': astc,
   'minimal.avif': avif,
   'minimal.big': big,
@@ -937,6 +990,8 @@ const FIXTURES = {
   'minimal.ico': ico,
   'minimal.ktx': ktx,
   'minimal.pkm': pkm,
+  'minimal.pal': pal,
+  'minimal.pcx': pcx,
   'minimal.pvr': pvr,
   'minimal.wav': wav,
   'minimal.m3': m3,

@@ -13,7 +13,7 @@ renames, converter defaults and v1 operations left without a handler — is data
 
 | contribution        | v1 manifest                                                 | module               | port         |
 | ------------------- | ----------------------------------------------------------- | -------------------- | ------------ |
-| `org.modkitx/ani`   | `extensions/common/images/codecs/ani/codec.manifest.json`   | `src/ani/codec.js`   | port-pending |
+| `org.modkitx/ani`   | `extensions/common/images/codecs/ani/codec.manifest.json`   | `src/ani/codec.js`   | ported       |
 | `org.modkitx/astc`  | `extensions/common/images/codecs/astc/codec.manifest.json`  | `src/astc/codec.js`  | ported       |
 | `org.modkitx/avif`  | `extensions/common/images/codecs/avif/codec.manifest.json`  | `src/avif/codec.js`  | ported       |
 | `org.modkitx/basis` | `extensions/common/images/codecs/basis/codec.manifest.json` | `src/basis/codec.js` | ported       |
@@ -27,8 +27,8 @@ renames, converter defaults and v1 operations left without a handler — is data
 | `org.modkitx/jpg`   | `extensions/common/images/codecs/jpg/codec.manifest.json`   | `src/jpg/codec.js`   | ported       |
 | `org.modkitx/ktx`   | `extensions/common/images/codecs/ktx/codec.manifest.json`   | `src/ktx/codec.js`   | ported       |
 | `org.modkitx/ktx2`  | `extensions/common/images/codecs/ktx2/codec.manifest.json`  | `src/ktx2/codec.js`  | ported       |
-| `org.modkitx/pal`   | `extensions/common/images/codecs/pal/codec.manifest.json`   | `src/pal/codec.js`   | port-pending |
-| `org.modkitx/pcx`   | `extensions/common/images/codecs/pcx/codec.manifest.json`   | `src/pcx/codec.js`   | port-pending |
+| `org.modkitx/pal`   | `extensions/common/images/codecs/pal/codec.manifest.json`   | `src/pal/codec.js`   | ported       |
+| `org.modkitx/pcx`   | `extensions/common/images/codecs/pcx/codec.manifest.json`   | `src/pcx/codec.js`   | ported       |
 | `org.modkitx/pkm`   | `extensions/common/images/codecs/pkm/codec.manifest.json`   | `src/pkm/codec.js`   | ported       |
 | `org.modkitx/png`   | `extensions/common/images/codecs/png/codec.manifest.json`   | `src/png/codec.js`   | port-pending |
 | `org.modkitx/pvr`   | `extensions/common/images/codecs/pvr/codec.manifest.json`   | `src/pvr/codec.js`   | ported       |
@@ -42,5 +42,8 @@ The v1 manifests of these codecs carried no magic — they routed on a path glob
 matching every file, which MK3 does not accept as a wildcard. Their
 `match.signatures` come from the container specifications, not from MK2:
 
+- `org.modkitx/ani` — `41434f4e` @8, `414e494d33444652414d4553` @0. Source: Microsoft RIFF animated cursor form type ACON at byte 8; Warzone 2100 text animation header ANIM3DFRAMES at byte 0.
 - `org.modkitx/avif` — `66747970` @4. Source: ISO/IEC 14496-12 §4.3 (FileTypeBox: the "ftyp" box type at byte 4); the codec probe then requires an AVIF brand.
 - `org.modkitx/basis` — `7342` @0. Source: Basis Universal container specification (file signature "sB" at byte zero).
+- `org.modkitx/pal` — `4a4153432d50414c` @0, `50414c20` @8. Source: JASC-PAL text identifier at byte 0; Microsoft RIFF palette form type PAL followed by space at byte 8.
+- `org.modkitx/pcx` — `0a` @0. Source: ZSoft PCX file header manufacturer byte 0A at byte 0; the codec probe validates version, encoding, dimensions, planes, and stride.

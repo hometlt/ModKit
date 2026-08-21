@@ -283,6 +283,14 @@ const WILDCARD_GLOB = '**/*'
  * a rule that cannot be pointed at a paragraph does not belong here.
  */
 const PORT_SIGNATURES = {
+  'org.modkitx/ani': {
+    source:
+      'Microsoft RIFF animated cursor form type ACON at byte 8; Warzone 2100 text animation header ANIM3DFRAMES at byte 0',
+    signatures: [
+      { from: 'start', offset: 8, bytesHex: '41434f4e' },
+      { from: 'start', offset: 0, bytesHex: '414e494d33444652414d4553' },
+    ],
+  },
   'org.modkitx/avif': {
     source:
       'ISO/IEC 14496-12 §4.3 (FileTypeBox: the "ftyp" box type at byte 4); the codec probe then requires an AVIF brand',
@@ -291,6 +299,19 @@ const PORT_SIGNATURES = {
   'org.modkitx/basis': {
     source: 'Basis Universal container specification (file signature "sB" at byte zero)',
     signatures: [{ from: 'start', offset: 0, bytesHex: '7342' }],
+  },
+  'org.modkitx/pal': {
+    source:
+      'JASC-PAL text identifier at byte 0; Microsoft RIFF palette form type PAL followed by space at byte 8',
+    signatures: [
+      { from: 'start', offset: 0, bytesHex: '4a4153432d50414c' },
+      { from: 'start', offset: 8, bytesHex: '50414c20' },
+    ],
+  },
+  'org.modkitx/pcx': {
+    source:
+      'ZSoft PCX file header manufacturer byte 0A at byte 0; the codec probe validates version, encoding, dimensions, planes, and stride',
+    signatures: [{ from: 'start', offset: 0, bytesHex: '0a' }],
   },
   'org.modkitx/m3': {
     source:
