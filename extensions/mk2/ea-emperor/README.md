@@ -11,7 +11,7 @@ The conversion debt of every codec below — planes v2 has no home for, applied
 renames, converter defaults and v1 operations left without a handler — is data in
 `MK2-CONVERSION.json` beside this file.
 
-| contribution                  | v1 manifest                                                        | module                         | port         |
-| ----------------------------- | ------------------------------------------------------------------ | ------------------------------ | ------------ |
-| `org.modkitx/emperor-rfh-rfd` | `extensions/ea/emperor/codecs/emperor-rfh-rfd/codec.manifest.json` | `src/emperor-rfh-rfd/codec.js` | port-pending |
-| `org.modkitx/emperor-xbf`     | `extensions/ea/emperor/codecs/emperor-xbf/codec.manifest.json`     | `src/emperor-xbf/codec.js`     | port-pending |
+| contribution                  | v1 manifest                                                        | module                         | port   |
+| ----------------------------- | ------------------------------------------------------------------ | ------------------------------ | ------ |
+| `org.modkitx/emperor-rfh-rfd` | `extensions/ea/emperor/codecs/emperor-rfh-rfd/codec.manifest.json` | `src/emperor-rfh-rfd/codec.js` | ported |
+| `org.modkitx/emperor-xbf`     | `extensions/ea/emperor/codecs/emperor-xbf/codec.manifest.json`     | `src/emperor-xbf/codec.js`     | ported |

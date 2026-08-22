@@ -65,6 +65,10 @@ const completedPortableStarcraft2 = [
 const completedPortableWarcraft3 = [find('org.modkitx/war3-mdx')]
 const completedPortableGasPowered = [find('org.modkitx/supcom-scm')]
 const completedPortableCavedog = [find('org.modkitx/gaf'), find('org.modkitx/ta-hpi')]
+const completedPortableEaEmperor = [
+  find('org.modkitx/emperor-rfh-rfd'),
+  find('org.modkitx/emperor-xbf'),
+]
 const completedPortableVector = [find('org.modkitx/emf'), find('org.modkitx/wmf')]
 const completedPortableDocuments = [
   find('org.modkitx/csv'),
@@ -193,6 +197,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       ...completedPortableWarcraft3,
       ...completedPortableGasPowered,
       ...completedPortableCavedog,
+      ...completedPortableEaEmperor,
       ...completedPortableVector,
       ...completedPortableModels,
       ...completedPortableVideos,
@@ -547,6 +552,51 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
         .inflateSync(hpi.subarray(zlibChunk + 19, zlibChunk + 19 + zlibCompressed))
         .toString('ascii'),
     ).toBe('zlib payload')
+
+    const emperorRfh = readFileSync(join(root, 'minimal.emperor.rfh'))
+    expect(emperorRfh.subarray(0, 4).toString('latin1')).toBe('RFH\0')
+    expect([
+      emperorRfh.readUInt32LE(4),
+      emperorRfh.readUInt32LE(8),
+      emperorRfh.readUInt32LE(12),
+    ]).toEqual([1, 0x80000000, 2])
+    const emperorEntries = Array.from({ length: 2 }, (_, index) => {
+      const record = 16 + index * 24
+      const nameOffset = emperorRfh.readUInt32LE(record)
+      const nameLength = emperorRfh.readUInt16LE(record + 4)
+      return {
+        name: emperorRfh
+          .subarray(nameOffset, nameOffset + nameLength)
+          .toString('ascii')
+          .replace(/\0+$/u, ''),
+        offset: emperorRfh.readUInt32LE(record + 8),
+        stored: emperorRfh.readUInt32LE(record + 12),
+        decoded: emperorRfh.readUInt32LE(record + 16),
+        method: emperorRfh.readUInt32LE(record + 20),
+      }
+    })
+    expect(emperorEntries.map(entry => [entry.name, entry.method, entry.decoded])).toEqual([
+      ['stored.txt', 0, 6],
+      ['deflate.txt', 1, 15],
+    ])
+    const emperorDeflate = emperorEntries[1]
+    if (emperorDeflate === undefined) throw new TypeError('Emperor RFH deflate entry is missing')
+    expect(
+      zlib
+        .inflateSync(
+          emperorRfh.subarray(emperorDeflate.offset, emperorDeflate.offset + emperorDeflate.stored),
+        )
+        .toString('ascii'),
+    ).toBe('deflate payload')
+
+    const emperorXbf = readFileSync(join(root, 'minimal.emperor.xbf'))
+    expect([
+      emperorXbf.readInt32LE(0),
+      emperorXbf.readInt32LE(4),
+      emperorXbf.readUInt32LE(8),
+    ]).toEqual([1, 0, 12])
+    expect(emperorXbf.subarray(12, 24).toString('ascii')).toBe('fixture.tga\0')
+    expect(emperorXbf.readInt32LE(24)).toBe(-1)
 
     // These checks intentionally do not import the codecs. They independently walk each model
     // fixture's standard wire representation so a generator/reader bug cannot agree with itself.

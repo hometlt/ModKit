@@ -10,21 +10,21 @@
       "entrypoint": "./src/emperor-rfh-rfd/codec.js",
       "target": { "environments": ["node"] },
       "executionProfile": "trusted-in-process",
-      "requestedPermissionClasses": ["filesystem-read", "read-source"]
+      "requestedPermissionClasses": ["read-source"]
     },
     {
       "variantId": "portable",
       "entrypoint": "./src/emperor-rfh-rfd/codec.js",
       "target": { "environments": ["browser-worker", "node-worker"] },
       "executionProfile": "worker-brokered",
-      "requestedPermissionClasses": ["filesystem-read", "read-source"]
+      "requestedPermissionClasses": ["read-source"]
     }
   ],
   "limitations": [
-    "Retail archives split the table and payload between sibling RFH and RFD files resolved from a host filesystem path.",
+    "Retail archives split the table and payload between sibling RFH and RFD files; this single-source port inventories RFH but reports archive-companion-missing for extraction.",
     "Declarative routing uses the .rfh/.rfd extensions because retail RFH tables begin with a variable name length rather than a fixed magic value.",
-    "The byte-only embedded-RFD fixture layout is supported, but nested archive entries cannot resolve external sibling files.",
-    "Only stored and the implemented deflate variants are decoded; writing is not implemented."
+    "The byte-only embedded-RFD layout extracts stored and RFC 1950 deflate entries in portable workers.",
+    "Archive writing, mutation, and retail sibling-RFD resolution are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "emperor-rfh-rfd", "label": "Emperor RFH/RFD archive pair" }],
@@ -66,6 +66,13 @@
       {
         "id": "export.raw",
         "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "container.extract",
+        "handlerId": "extract-entry",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]

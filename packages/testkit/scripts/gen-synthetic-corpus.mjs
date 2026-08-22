@@ -1868,6 +1868,51 @@ function taHpi() {
   )
 }
 
+/** Emperor RFH fixture layout with embedded stored and RFC 1950 deflate payloads. */
+function emperorRfh() {
+  const names = [ascii('stored.txt\0'), ascii('deflate.txt\0')]
+  const stored = ascii('stored')
+  const plain = ascii('deflate payload')
+  const compressed = concat(bytes(0x78, 0x01), deflateStored(plain), u32be(adler32(plain)))
+  const namesOffset = 16 + 2 * 24
+  const storedOffset = namesOffset + names[0].byteLength + names[1].byteLength
+  const compressedOffset = storedOffset + stored.byteLength
+  const record = (nameOffset, nameLength, offset, storedSize, decodedSize, method) =>
+    concat(
+      u32le(nameOffset),
+      u16le(nameLength),
+      u16le(0),
+      u32le(offset),
+      u32le(storedSize),
+      u32le(decodedSize),
+      u32le(method),
+    )
+  return concat(
+    ascii('RFH\0'),
+    u32le(1),
+    u32le(0x80000000),
+    u32le(2),
+    record(namesOffset, names[0].byteLength, storedOffset, stored.byteLength, stored.byteLength, 0),
+    record(
+      namesOffset + names[0].byteLength,
+      names[1].byteLength,
+      compressedOffset,
+      compressed.byteLength,
+      plain.byteLength,
+      1,
+    ),
+    names,
+    stored,
+    compressed,
+  )
+}
+
+/** XBF v1 structural shell: empty FX plane, one texture request, and the signed end marker. */
+function emperorXbf() {
+  const textures = ascii('fixture.tga\0')
+  return concat(u32le(1), u32le(0), u32le(textures.byteLength), textures, u32le(0xffffffff))
+}
+
 /** EA SAGE BIG4: one stored entry, with the mixed-endian header and null-terminated index path. */
 function big() {
   const name = ascii('hello.txt\0')
@@ -3981,6 +4026,8 @@ const FIXTURES = {
   'minimal.diablo3.tex': diablo3Tex,
   'minimal.gaf': gaf,
   'minimal.ta-hpi': taHpi,
+  'minimal.emperor.rfh': emperorRfh,
+  'minimal.emperor.xbf': emperorXbf,
   'minimal.galaxy': galaxyScript,
   'minimal.sc2strings.txt': sc2Strings,
   'minimal.SC2Layout': sc2Layout,

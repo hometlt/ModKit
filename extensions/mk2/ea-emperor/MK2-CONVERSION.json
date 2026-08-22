@@ -24,7 +24,7 @@
       ],
       "droppedOperations": ["archive.extract", "archive.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/emperor-xbf": {
       "verdict": "needs-new-contract",
@@ -41,7 +41,7 @@
       ],
       "droppedOperations": ["model.export", "model.read", "model.render", "model.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     }
   }
 }

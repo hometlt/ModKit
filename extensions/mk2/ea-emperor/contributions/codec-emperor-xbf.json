@@ -21,9 +21,10 @@
     }
   ],
   "limitations": [
-    "Referenced TGA textures are exposed as path-based requests and require host access to paired RFH/RFD archives; the v1 companions field names codec IDs rather than path patterns.",
+    "Referenced texture names are exposed as metadata; resolving them through paired RFH/RFD archives is not implemented.",
     "Only XBF version 1 is accepted; other versions fail detection or parsing instead of being guessed.",
-    "FX scripts are decoded for preview, but exact Xanadu runtime execution of sound, trigger, and light events is outside the codec."
+    "This portable structural port bounds the FX and texture-name planes but does not decode XBF nodes, geometry, skeletal animation, or FX runtime events.",
+    "Model writing is not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "emperor-xbf", "label": "Emperor: Battle for Dune XBF model" }],
@@ -42,7 +43,7 @@
         "contract": "common.model/geometry-metadata",
         "major": 1,
         "stage": "authored",
-        "lossy": false
+        "lossy": true
       }
     ],
     "publishesDataSources": [

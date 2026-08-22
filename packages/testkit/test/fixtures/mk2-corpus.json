@@ -988,6 +988,33 @@
       "note": "Classic HAPI 1.0 directory with stored, LZ77, and zlib chunk payloads"
     },
     {
+      "extension": "mk2/ea-emperor",
+      "contributionId": "org.modkitx/emperor-rfh-rfd",
+      "corpus": "synthetic",
+      "sample": "minimal.emperor.rfh",
+      "minimumConfidence": 0.99,
+      "dataSource": "namespace",
+      "route": "basename",
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "1" },
+        "outputKind": "bytes",
+        "minimumBytes": 15
+      },
+      "note": "Embedded RFH v1 table with one stored and one RFC 1950 deflate entry"
+    },
+    {
+      "extension": "mk2/ea-emperor",
+      "contributionId": "org.modkitx/emperor-xbf",
+      "corpus": "synthetic",
+      "sample": "minimal.emperor.xbf",
+      "minimumConfidence": 0.995,
+      "dataSource": "model",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "XBF v1 structural shell with a bounded texture table and signed end marker"
+    },
+    {
       "extension": "mk2/common-audio",
       "contributionId": "org.modkitx/ogg",
       "corpus": "synthetic",
