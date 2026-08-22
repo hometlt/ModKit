@@ -21,8 +21,9 @@
     }
   ],
   "limitations": [
-    "Native playback depends on host M4A/AAC support; PCM decoding otherwise requires an injected transcoder.",
-    "Declarative routing is extension-first because manifest v1 cannot express the legacy extension-or-ISO-BMFF-sniffer behavior without making the evidence conjunctive."
+    "Walks bounded 32-bit and 64-bit ISO BMFF boxes and reads one version-0 mdhd/soun/mp4a track with channel, sample-size, sample-rate, duration, brands, and media-byte metadata.",
+    "PCM decoding, multiple audio tracks, edit lists, sample indexing, tags, fragmented MP4, encrypted samples, and writing are not implemented.",
+    "Native playback of the published encoded stream depends on host M4A/AAC support."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "m4a", "label": "AAC (M4A/MP4)" }],
@@ -30,7 +31,10 @@
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled"],
     "openIntents": ["probe", "inspect", "full", "stream", "export"],
-    "match": { "extensions": ["m4a"] },
+    "match": {
+      "extensions": ["m4a"],
+      "signatures": [{ "from": "start", "offset": 4, "bytesHex": "66747970" }]
+    },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {

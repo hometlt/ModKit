@@ -11,15 +11,15 @@ The conversion debt of every codec below — planes v2 has no home for, applied
 renames, converter defaults and v1 operations left without a handler — is data in
 `MK2-CONVERSION.json` beside this file.
 
-| contribution       | v1 manifest                                               | module              | port         |
-| ------------------ | --------------------------------------------------------- | ------------------- | ------------ |
-| `org.modkitx/aac`  | `extensions/common/audio/codecs/aac/codec.manifest.json`  | `src/aac/codec.js`  | port-pending |
-| `org.modkitx/flac` | `extensions/common/audio/codecs/flac/codec.manifest.json` | `src/flac/codec.js` | port-pending |
-| `org.modkitx/m4a`  | `extensions/common/audio/codecs/m4a/codec.manifest.json`  | `src/m4a/codec.js`  | port-pending |
-| `org.modkitx/mp3`  | `extensions/common/audio/codecs/mp3/codec.manifest.json`  | `src/mp3/codec.js`  | ported       |
-| `org.modkitx/ogg`  | `extensions/common/audio/codecs/ogg/codec.manifest.json`  | `src/ogg/codec.js`  | ported       |
-| `org.modkitx/opus` | `extensions/common/audio/codecs/opus/codec.manifest.json` | `src/opus/codec.js` | ported       |
-| `org.modkitx/wav`  | `extensions/common/audio/codecs/wav/codec.manifest.json`  | `src/wav/codec.js`  | ported       |
+| contribution       | v1 manifest                                               | module              | port   |
+| ------------------ | --------------------------------------------------------- | ------------------- | ------ |
+| `org.modkitx/aac`  | `extensions/common/audio/codecs/aac/codec.manifest.json`  | `src/aac/codec.js`  | ported |
+| `org.modkitx/flac` | `extensions/common/audio/codecs/flac/codec.manifest.json` | `src/flac/codec.js` | ported |
+| `org.modkitx/m4a`  | `extensions/common/audio/codecs/m4a/codec.manifest.json`  | `src/m4a/codec.js`  | ported |
+| `org.modkitx/mp3`  | `extensions/common/audio/codecs/mp3/codec.manifest.json`  | `src/mp3/codec.js`  | ported |
+| `org.modkitx/ogg`  | `extensions/common/audio/codecs/ogg/codec.manifest.json`  | `src/ogg/codec.js`  | ported |
+| `org.modkitx/opus` | `extensions/common/audio/codecs/opus/codec.manifest.json` | `src/opus/codec.js` | ported |
+| `org.modkitx/wav`  | `extensions/common/audio/codecs/wav/codec.manifest.json`  | `src/wav/codec.js`  | ported |
 
 ## Signatures added at port time
 

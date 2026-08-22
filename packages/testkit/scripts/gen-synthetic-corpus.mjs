@@ -194,6 +194,100 @@ function wav() {
   return concat(ascii('RIFF'), u32le(body.byteLength), body)
 }
 
+/** ISO/IEC 13818-7 ADTS: two MPEG-4 AAC-LC 8 kHz mono frames with an ID_END raw block. */
+function aac() {
+  const frame = bytes(0xff, 0xf1, 0x6c, 0x40, 0x01, 0x1f, 0xfc, 0xe0)
+  return concat(frame, frame)
+}
+
+/** CRC-8 (polynomial x^8+x^2+x+1) used by a FLAC frame header. */
+function flacCrc8(data) {
+  let value = 0
+  for (const byte of data) {
+    value ^= byte
+    for (let bit = 0; bit < 8; bit += 1)
+      value = (value & 0x80) !== 0 ? ((value << 1) ^ 0x07) & 0xff : (value << 1) & 0xff
+  }
+  return value
+}
+
+/** CRC-16 (polynomial x^16+x^15+x^2+1) used by a complete FLAC frame. */
+function flacCrc16(data) {
+  let value = 0
+  for (const byte of data) {
+    value ^= byte << 8
+    for (let bit = 0; bit < 8; bit += 1)
+      value = (value & 0x8000) !== 0 ? ((value << 1) ^ 0x8005) & 0xffff : (value << 1) & 0xffff
+  }
+  return value
+}
+
+/** RFC 9639 FLAC: STREAMINFO and one constant 16-sample, 8-bit mono frame at 8 kHz. */
+function flac() {
+  const frameHeaderWithoutCrc = bytes(0xff, 0xf8, 0x64, 0x02, 0x00, 0x0f)
+  const frameHeader = concat(frameHeaderWithoutCrc, bytes(flacCrc8(frameHeaderWithoutCrc)))
+  const subframe = bytes(0x00, 0x00)
+  const frameWithoutFooter = concat(frameHeader, subframe)
+  const frame = concat(frameWithoutFooter, u16be(flacCrc16(frameWithoutFooter)))
+  const packed =
+    (8_000n << 44n) | // 20-bit sample rate
+    (0n << 41n) | // one channel minus one
+    (7n << 36n) | // eight bits per sample minus one
+    16n // total inter-channel samples
+  const md5 = new Uint8Array(createHash('md5').update(new Uint8Array(16)).digest())
+  const streamInfo = concat(
+    u16be(16),
+    u16be(16),
+    u24be(frame.byteLength),
+    u24be(frame.byteLength),
+    u64be(packed),
+    md5,
+  )
+  return concat(ascii('fLaC'), bytes(0x80), u24be(34), streamInfo, frame)
+}
+
+/** ISO BMFF/M4A with one mp4a sample description and one one-byte AAC raw_data_block. */
+function m4a() {
+  const box = (type, ...payload) => {
+    const body = concat(...payload)
+    return concat(u32be(body.byteLength + 8), ascii(type), body)
+  }
+  const full = (type, ...payload) => box(type, u32be(0), ...payload)
+  const sampleEntry = new Uint8Array(36)
+  const sampleView = new DataView(sampleEntry.buffer)
+  sampleView.setUint32(0, sampleEntry.byteLength, false)
+  sampleEntry.set(ascii('mp4a'), 4)
+  sampleView.setUint16(14, 1, false)
+  sampleView.setUint16(24, 1, false)
+  sampleView.setUint16(26, 16, false)
+  sampleView.setUint32(32, 8_000 * 65_536, false)
+  const stbl = box(
+    'stbl',
+    full('stsd', u32be(1), sampleEntry),
+    full('stts', u32be(1), u32be(1), u32be(1024)),
+    full('stsc', u32be(1), u32be(1), u32be(1), u32be(1)),
+    full('stsz', u32be(1), u32be(1)),
+    full('stco', u32be(1), u32be(0)),
+  )
+  const url = concat(u32be(12), ascii('url '), u32be(1))
+  const minf = box('minf', full('smhd', u16be(0), u16be(0)), box('dinf', full('dref', u32be(1), url)), stbl)
+  const mdhd = full('mdhd', u32be(0), u32be(0), u32be(8_000), u32be(1024), u16be(0), u16be(0))
+  const hdlr = full('hdlr', u32be(0), ascii('soun'), new Uint8Array(12), ascii('SoundHandler\0'))
+  const moov = box('moov', box('trak', box('mdia', mdhd, hdlr, minf)))
+  const ftyp = box('ftyp', ascii('M4A '), u32be(0), ascii('M4A '), ascii('isom'))
+  const result = concat(ftyp, moov, box('mdat', bytes(0xe0)))
+  const findType = value => {
+    const expected = ascii(value)
+    for (let offset = 0; offset + expected.byteLength <= result.byteLength; offset += 1)
+      if (expected.every((byte, index) => result[offset + index] === byte)) return offset - 4
+    throw new Error(`M4A fixture lacks ${value}`)
+  }
+  const stco = findType('stco')
+  const mdat = findType('mdat')
+  new DataView(result.buffer).setUint32(stco + 16, mdat + 8, false)
+  return result
+}
+
 /**
  * ISO/IEC 14496-12 boxes plus AVIF ImageSpatialExtents/PixelInformation properties. This is a
  * structural inspection fixture: the port explicitly does not claim an AV1 pixel payload.
@@ -3116,6 +3210,9 @@ const ioStoreFixture = unrealIoStore()
 
 /** Every fixture: file name → builder. The name is what the acceptance corpus refers to. */
 const FIXTURES = {
+  'minimal.aac': aac,
+  'minimal.flac': flac,
+  'minimal.m4a': m4a,
   'minimal.actorx.psk': actorX,
   'minimal.soundwave.uasset': unrealSoundWave,
   'minimal.staticmesh.uasset': unrealStaticMesh,

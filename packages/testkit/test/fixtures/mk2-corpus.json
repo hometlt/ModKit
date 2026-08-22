@@ -509,6 +509,37 @@
       "note": "MPEG-1 layer III frame header; v1 manifest routes on extension only"
     },
     {
+      "extension": "mk2/common-audio",
+      "contributionId": "org.modkitx/aac",
+      "corpus": "synthetic",
+      "sample": "minimal.aac",
+      "minimumConfidence": 0.99,
+      "dataSource": "audio",
+      "note": "Two structurally complete MPEG-4 AAC-LC ADTS frames with bounded lengths and ID_END raw data blocks"
+    },
+    {
+      "extension": "mk2/common-audio",
+      "contributionId": "org.modkitx/flac",
+      "corpus": "synthetic",
+      "sample": "minimal.flac",
+      "minimumConfidence": 0.995,
+      "dataSource": "audio",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "RFC 9639 FLAC with STREAMINFO, MD5, one constant 16-sample mono subframe and computed frame CRC-8/CRC-16"
+    },
+    {
+      "extension": "mk2/common-audio",
+      "contributionId": "org.modkitx/m4a",
+      "corpus": "synthetic",
+      "sample": "minimal.m4a",
+      "minimumConfidence": 0.995,
+      "dataSource": "audio",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "ISO BMFF M4A with nested audio media/sample tables, one mp4a description and one addressed AAC raw sample"
+    },
+    {
       "extension": "mk2/common-models",
       "contributionId": "org.modkitx/obj",
       "corpus": "synthetic",

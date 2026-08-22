@@ -28,7 +28,7 @@
       ],
       "droppedOperations": ["audio.export", "audio.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/flac": {
       "verdict": "mechanical",
@@ -43,7 +43,7 @@
       ],
       "droppedOperations": ["audio.export", "audio.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/m4a": {
       "verdict": "mechanical",
@@ -58,7 +58,7 @@
       ],
       "droppedOperations": ["audio.export", "audio.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/mp3": {
       "verdict": "mechanical",

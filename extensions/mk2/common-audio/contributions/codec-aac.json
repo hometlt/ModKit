@@ -21,8 +21,9 @@
     }
   ],
   "limitations": [
-    "Native playback depends on host AAC support; PCM decoding otherwise requires an injected transcoder.",
-    "Declarative routing is extension-first because manifest v1 cannot express the legacy extension-or-ADTS-sniffer behavior without making the evidence conjunctive."
+    "Parses complete ADTS frame boundaries, MPEG version, profile, sample rate, channels, raw-data-block counts, duration, and structural consistency; raw AAC spectral data and PCM are not decoded.",
+    "Seeking, ID3 metadata, CRC verification for protected ADTS frames, writing, and profile changes within one stream are not implemented.",
+    "Declarative routing remains extension-first because manifest v1 cannot express the masked 12-bit ADTS syncword; runtime probing validates the bytes before opening."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "aac", "label": "AAC (ADTS)" }],

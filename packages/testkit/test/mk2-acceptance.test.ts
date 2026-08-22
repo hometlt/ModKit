@@ -35,6 +35,11 @@ const completedPortableModels = [
   find('org.modkitx/uvm'),
 ]
 const completedPortableVideos = [find('org.modkitx/avi'), find('org.modkitx/wmv')]
+const completedPortableAudio = [
+  find('org.modkitx/aac'),
+  find('org.modkitx/flac'),
+  find('org.modkitx/m4a'),
+]
 const completedPortableDocuments = [
   find('org.modkitx/csv'),
   find('org.modkitx/markdown'),
@@ -145,6 +150,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       firstSynthetic,
       cueBinBundle,
       portableModel,
+      ...completedPortableAudio,
       ...completedPortableModels,
       ...completedPortableVideos,
       ...completedPortableDocuments,
@@ -320,6 +326,76 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     ])
     expect(wmv.subarray(asfHeaderSize, asfHeaderSize + 16).toString('hex')).toBe(asfDataGuid)
     expect(Number(wmv.readBigUInt64LE(asfHeaderSize + 16))).toBe(50)
+
+    const aac = readFileSync(join(root, 'minimal.aac'))
+    let adtsOffset = 0
+    let adtsFrames = 0
+    while (adtsOffset < aac.byteLength) {
+      expect(aac[adtsOffset]).toBe(0xff)
+      expect((aac[adtsOffset + 1] ?? 0) & 0xf6).toBe(0xf0)
+      const frameLength =
+        (((aac[adtsOffset + 3] ?? 0) & 3) << 11) |
+        ((aac[adtsOffset + 4] ?? 0) << 3) |
+        ((aac[adtsOffset + 5] ?? 0) >>> 5)
+      expect(frameLength).toBe(8)
+      expect(aac[adtsOffset + 7]).toBe(0xe0)
+      adtsOffset += frameLength
+      adtsFrames += 1
+    }
+    expect([adtsOffset, adtsFrames]).toEqual([aac.byteLength, 2])
+
+    const flac = readFileSync(join(root, 'minimal.flac'))
+    expect(flac.subarray(0, 4).toString('ascii')).toBe('fLaC')
+    expect(flac[4]).toBe(0x80)
+    expect(flac.readUIntBE(5, 3)).toBe(34)
+    const streamPacked = flac.readBigUInt64BE(18)
+    expect(Number(streamPacked >> 44n)).toBe(8000)
+    expect(Number((streamPacked >> 36n) & 0x1fn) + 1).toBe(8)
+    expect(Number(streamPacked & 0xfffffffffn)).toBe(16)
+    expect(flac.subarray(26, 42).toString('hex')).toBe(
+      createHash('md5').update(Buffer.alloc(16)).digest('hex'),
+    )
+    const crc8 = (data: Buffer) => {
+      let value = 0
+      for (const byte of data) {
+        value ^= byte
+        for (let bit = 0; bit < 8; bit += 1)
+          value =
+            (value & 0x80) !== 0 ? ((value << 1) ^ 0x07) & 0xff : (value << 1) & 0xff
+      }
+      return value
+    }
+    const crc16 = (data: Buffer) => {
+      let value = 0
+      for (const byte of data) {
+        value ^= byte << 8
+        for (let bit = 0; bit < 8; bit += 1)
+          value =
+            (value & 0x8000) !== 0
+              ? ((value << 1) ^ 0x8005) & 0xffff
+              : (value << 1) & 0xffff
+      }
+      return value
+    }
+    expect(flac.subarray(42, 44).toString('hex')).toBe('fff8')
+    expect(flac[48]).toBe(crc8(flac.subarray(42, 48)))
+    expect(flac.readUInt16BE(flac.byteLength - 2)).toBe(crc16(flac.subarray(42, -2)))
+
+    const m4a = readFileSync(join(root, 'minimal.m4a'))
+    expect(m4a.subarray(4, 8).toString('ascii')).toBe('ftyp')
+    expect(m4a.subarray(8, 12).toString('ascii')).toBe('M4A ')
+    for (const type of ['moov', 'trak', 'mdia', 'mdhd', 'hdlr', 'minf', 'stbl', 'stsd', 'mp4a', 'mdat'])
+      expect(m4a.indexOf(type)).toBeGreaterThan(0)
+    const stsd = m4a.indexOf('stsd') - 4
+    const mp4a = m4a.indexOf('mp4a') - 4
+    expect(m4a.readUInt32BE(stsd + 12)).toBe(1)
+    expect(m4a.readUInt16BE(mp4a + 24)).toBe(1)
+    expect(m4a.readUInt16BE(mp4a + 26)).toBe(16)
+    expect(m4a.readUInt32BE(mp4a + 32)).toBe(8000 * 65536)
+    const stco = m4a.indexOf('stco') - 4
+    const mdat = m4a.indexOf('mdat') - 4
+    expect(m4a.readUInt32BE(stco + 16)).toBe(mdat + 8)
+    expect(m4a[mdat + 8]).toBe(0xe0)
 
     const unrealPackages = [
       ['minimal.soundwave.uasset', 'SoundWave', 'VO_Line'],

@@ -21,8 +21,9 @@
     }
   ],
   "limitations": [
-    "Native playback depends on host FLAC support; PCM decoding otherwise requires an injected transcoder.",
-    "Declarative routing is extension-first because manifest v1 cannot express the legacy extension-or-signature-sniffer behavior without making the evidence conjunctive."
+    "Parses bounded FLAC metadata-block framing and complete STREAMINFO fields, then requires a frame sync after the last metadata block; PCM and subframe residuals are not decoded.",
+    "Frame-level CRC validation, seeking without a SEEKTABLE, Vorbis comments, pictures, cuesheets, applications, and writing are not implemented.",
+    "Native playback of the published encoded stream depends on host FLAC support."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "flac", "label": "FLAC" }],
@@ -30,7 +31,10 @@
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled"],
     "openIntents": ["probe", "inspect", "full", "stream", "export"],
-    "match": { "extensions": ["flac"] },
+    "match": {
+      "extensions": ["flac"],
+      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "664c6143" }]
+    },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {
