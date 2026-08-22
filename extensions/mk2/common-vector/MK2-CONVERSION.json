@@ -24,7 +24,7 @@
       ],
       "droppedOperations": ["vector.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/svg": {
       "verdict": "mechanical",
@@ -54,7 +54,7 @@
       ],
       "droppedOperations": ["vector.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     }
   }
 }

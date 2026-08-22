@@ -52,6 +52,7 @@ import {
   type RuntimeTarget,
   type TreeDataSource,
   type VideoMediaSource,
+  type VectorSceneSource,
 } from '@modkitx-x3/sdk'
 
 /** Which corpus a sample comes from; the report counts ported codecs separately per corpus. */
@@ -79,6 +80,7 @@ export interface Mk2CorpusEntry {
     | 'raster'
     | 'audio'
     | 'video'
+    | 'vector'
   /** Optional exact RGBA8 oracle for a raster case's first decoded pixel. */
   readonly expectedFirstPixelRgba?: readonly [number, number, number, number]
   /**
@@ -177,6 +179,7 @@ const DATA_SOURCE_CONTRACTS = {
   raster: 'common.view/raster-image-source',
   audio: 'common.view/audio-media-source',
   video: 'common.view/video-media-source',
+  vector: 'common.view/vector-scene-source',
 } as const
 
 function directoryExists(path: string): boolean {
@@ -634,6 +637,12 @@ export async function runMk2AcceptanceCase(
       const encoded = await video.encoded()
       if ((await encoded.read(0n, 12)).byteLength === 0)
         return fail(`${contract} exposes no encoded video bytes`)
+    } else if (entry.dataSource === 'vector') {
+      const vector = lease.value as VectorSceneSource
+      const info = await vector.info()
+      const document = await vector.document()
+      if (info.nodes < 1 || !document.text.startsWith('<svg'))
+        return fail(`${contract} exposes no vector scene document`)
     } else {
       const table = lease.value as unknown as { columns(): Promise<readonly unknown[]> }
       const columns = await table.columns()

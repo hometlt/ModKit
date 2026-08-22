@@ -21,9 +21,8 @@
     }
   ],
   "limitations": [
-    "The codec entrypoint parses placeable and standard WMF header, bounds, units, version, and object metadata; full GDI-record-to-SVG preview remains a separate host bridge and is not declared as a manifest runtime operation.",
-    "Pixel decoding, GDI record editing, and metafile writing are not implemented by this codec entrypoint.",
-    "Generated routing is narrowed to the .wmf extension. The handwritten compatibility codec retains structural header detection because manifest v1 cannot express extension-or-signature matching without turning the alternatives into a conjunction."
+    "Parses Aldus placeable and standard WMF headers plus bounded META_RECTANGLE/META_EOF streams, verifies the placeable checksum, and replays rectangles to a static script-free SVG vector scene.",
+    "Non-placeable WMF, other GDI records, fonts, paths, transforms, clipping, embedded bitmaps, rasterization, editing, and metafile writing are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "wmf", "label": "Windows Classic Metafile" }],

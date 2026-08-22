@@ -540,6 +540,28 @@
       "note": "ISO BMFF M4A with nested audio media/sample tables, one mp4a description and one addressed AAC raw sample"
     },
     {
+      "extension": "mk2/common-vector",
+      "contributionId": "org.modkitx/emf",
+      "corpus": "synthetic",
+      "sample": "minimal.emf",
+      "minimumConfidence": 0.995,
+      "dataSource": "vector",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "MS-EMF header, one bounded EMR_RECTANGLE and terminal EMR_EOF replayed to a secure SVG scene"
+    },
+    {
+      "extension": "mk2/common-vector",
+      "contributionId": "org.modkitx/wmf",
+      "corpus": "synthetic",
+      "sample": "minimal.wmf",
+      "minimumConfidence": 0.995,
+      "dataSource": "vector",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "Aldus placeable WMF with checksum, standard header, META_RECTANGLE and META_EOF replayed to secure SVG"
+    },
+    {
       "extension": "mk2/common-models",
       "contributionId": "org.modkitx/obj",
       "corpus": "synthetic",

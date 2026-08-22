@@ -11,8 +11,8 @@ The conversion debt of every codec below — planes v2 has no home for, applied
 renames, converter defaults and v1 operations left without a handler — is data in
 `MK2-CONVERSION.json` beside this file.
 
-| contribution      | v1 manifest                                               | module             | port         |
-| ----------------- | --------------------------------------------------------- | ------------------ | ------------ |
-| `org.modkitx/emf` | `extensions/common/vector/codecs/emf/codec.manifest.json` | `src/emf/codec.js` | port-pending |
-| `org.modkitx/svg` | `extensions/common/vector/codecs/svg/codec.manifest.json` | `src/svg/codec.js` | ported       |
-| `org.modkitx/wmf` | `extensions/common/vector/codecs/wmf/codec.manifest.json` | `src/wmf/codec.js` | port-pending |
+| contribution      | v1 manifest                                               | module             | port   |
+| ----------------- | --------------------------------------------------------- | ------------------ | ------ |
+| `org.modkitx/emf` | `extensions/common/vector/codecs/emf/codec.manifest.json` | `src/emf/codec.js` | ported |
+| `org.modkitx/svg` | `extensions/common/vector/codecs/svg/codec.manifest.json` | `src/svg/codec.js` | ported |
+| `org.modkitx/wmf` | `extensions/common/vector/codecs/wmf/codec.manifest.json` | `src/wmf/codec.js` | ported |

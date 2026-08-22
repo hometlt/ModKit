@@ -270,7 +270,12 @@ function m4a() {
     full('stco', u32be(1), u32be(0)),
   )
   const url = concat(u32be(12), ascii('url '), u32be(1))
-  const minf = box('minf', full('smhd', u16be(0), u16be(0)), box('dinf', full('dref', u32be(1), url)), stbl)
+  const minf = box(
+    'minf',
+    full('smhd', u16be(0), u16be(0)),
+    box('dinf', full('dref', u32be(1), url)),
+    stbl,
+  )
   const mdhd = full('mdhd', u32be(0), u32be(0), u32be(8_000), u32be(1024), u16be(0), u16be(0))
   const hdlr = full('hdlr', u32be(0), ascii('soun'), new Uint8Array(12), ascii('SoundHandler\0'))
   const moov = box('moov', box('trak', box('mdia', mdhd, hdlr, minf)))
@@ -286,6 +291,68 @@ function m4a() {
   const mdat = findType('mdat')
   new DataView(result.buffer).setUint32(stco + 16, mdat + 8, false)
   return result
+}
+
+/** MS-EMF: EMR_HEADER, one EMR_RECTANGLE, and the mandatory EMR_EOF record. */
+function emf() {
+  const out = new Uint8Array(132)
+  const view = new DataView(out.buffer)
+  view.setUint32(0, 1, true)
+  view.setUint32(4, 88, true)
+  view.setInt32(8, 0, true)
+  view.setInt32(12, 0, true)
+  view.setInt32(16, 100, true)
+  view.setInt32(20, 50, true)
+  view.setUint32(40, 0x464d4520, true)
+  view.setUint32(44, 0x00010000, true)
+  view.setUint32(48, out.byteLength, true)
+  view.setUint32(52, 3, true)
+  view.setUint16(56, 1, true)
+  view.setInt32(72, 100, true)
+  view.setInt32(76, 50, true)
+  view.setInt32(80, 26, true)
+  view.setInt32(84, 13, true)
+  view.setUint32(88, 43, true)
+  view.setUint32(92, 24, true)
+  view.setInt32(96, 10, true)
+  view.setInt32(100, 5, true)
+  view.setInt32(104, 90, true)
+  view.setInt32(108, 45, true)
+  view.setUint32(112, 14, true)
+  view.setUint32(116, 20, true)
+  view.setUint32(128, 20, true)
+  return out
+}
+
+/** Aldus placeable WMF: METAHEADER, one META_RECTANGLE, and META_EOF. */
+function wmf() {
+  const out = new Uint8Array(60)
+  const view = new DataView(out.buffer)
+  view.setUint32(0, 0x9ac6cdd7, true)
+  view.setInt16(6, 0, true)
+  view.setInt16(8, 0, true)
+  view.setInt16(10, 1440, true)
+  view.setInt16(12, 720, true)
+  view.setUint16(14, 1440, true)
+  let checksum = 0
+  for (let offset = 0; offset < 20; offset += 2) checksum ^= view.getUint16(offset, true)
+  view.setUint16(20, checksum, true)
+  view.setUint16(22, 1, true)
+  view.setUint16(24, 9, true)
+  view.setUint16(26, 0x0300, true)
+  view.setUint32(28, 19, true)
+  view.setUint16(32, 0, true)
+  view.setUint32(34, 7, true)
+  view.setUint16(38, 0, true)
+  view.setUint32(40, 7, true)
+  view.setUint16(44, 0x041b, true)
+  view.setInt16(46, 600, true)
+  view.setInt16(48, 1200, true)
+  view.setInt16(50, 120, true)
+  view.setInt16(52, 240, true)
+  view.setUint32(54, 3, true)
+  view.setUint16(58, 0, true)
+  return out
 }
 
 /**
@@ -2894,9 +2961,13 @@ function actorX() {
 function unrealPackage(exportClass, exportName, payload) {
   const names = ['/Script/Engine', 'Class', exportClass, exportName]
   const nameOffset = 256
-  const nameBytes = names.map(value => concat(u32le(value.length + 1), ascii(value), bytes(0), u32le(0)))
+  const nameBytes = names.map(value =>
+    concat(u32le(value.length + 1), ascii(value), bytes(0), u32le(0)),
+  )
   const align16 = value => (value + 15) & ~15
-  const importOffset = align16(nameOffset + nameBytes.reduce((sum, value) => sum + value.byteLength, 0))
+  const importOffset = align16(
+    nameOffset + nameBytes.reduce((sum, value) => sum + value.byteLength, 0),
+  )
   const exportOffset = importOffset + 28
   const exportStride = 104
   const dependsOffset = exportOffset + exportStride
@@ -3068,9 +3139,9 @@ function unrealTexturePayload() {
   )
 }
 
-const unrealSoundWave = () => unrealPackage('SoundWave', 'VO_Line', concat(new Uint8Array(8), wav()))
-const unrealStaticMesh = () =>
-  unrealPackage('StaticMesh', 'SM_Triangle', unrealStaticMeshPayload())
+const unrealSoundWave = () =>
+  unrealPackage('SoundWave', 'VO_Line', concat(new Uint8Array(8), wav()))
+const unrealStaticMesh = () => unrealPackage('StaticMesh', 'SM_Triangle', unrealStaticMeshPayload())
 const unrealTexture = () => unrealPackage('Texture2D', 'T_Checker', unrealTexturePayload())
 const unrealVideo = () =>
   unrealPackage('BinkMediaPlayer', 'IntroMovie', concat(new Uint8Array(8), avi()))
@@ -3213,6 +3284,8 @@ const FIXTURES = {
   'minimal.aac': aac,
   'minimal.flac': flac,
   'minimal.m4a': m4a,
+  'minimal.emf': emf,
+  'minimal.wmf': wmf,
   'minimal.actorx.psk': actorX,
   'minimal.soundwave.uasset': unrealSoundWave,
   'minimal.staticmesh.uasset': unrealStaticMesh,

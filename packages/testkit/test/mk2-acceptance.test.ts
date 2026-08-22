@@ -40,6 +40,7 @@ const completedPortableAudio = [
   find('org.modkitx/flac'),
   find('org.modkitx/m4a'),
 ]
+const completedPortableVector = [find('org.modkitx/emf'), find('org.modkitx/wmf')]
 const completedPortableDocuments = [
   find('org.modkitx/csv'),
   find('org.modkitx/markdown'),
@@ -151,6 +152,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       cueBinBundle,
       portableModel,
       ...completedPortableAudio,
+      ...completedPortableVector,
       ...completedPortableModels,
       ...completedPortableVideos,
       ...completedPortableDocuments,
@@ -360,8 +362,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       for (const byte of data) {
         value ^= byte
         for (let bit = 0; bit < 8; bit += 1)
-          value =
-            (value & 0x80) !== 0 ? ((value << 1) ^ 0x07) & 0xff : (value << 1) & 0xff
+          value = (value & 0x80) !== 0 ? ((value << 1) ^ 0x07) & 0xff : (value << 1) & 0xff
       }
       return value
     }
@@ -370,10 +371,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       for (const byte of data) {
         value ^= byte << 8
         for (let bit = 0; bit < 8; bit += 1)
-          value =
-            (value & 0x8000) !== 0
-              ? ((value << 1) ^ 0x8005) & 0xffff
-              : (value << 1) & 0xffff
+          value = (value & 0x8000) !== 0 ? ((value << 1) ^ 0x8005) & 0xffff : (value << 1) & 0xffff
       }
       return value
     }
@@ -384,7 +382,18 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     const m4a = readFileSync(join(root, 'minimal.m4a'))
     expect(m4a.subarray(4, 8).toString('ascii')).toBe('ftyp')
     expect(m4a.subarray(8, 12).toString('ascii')).toBe('M4A ')
-    for (const type of ['moov', 'trak', 'mdia', 'mdhd', 'hdlr', 'minf', 'stbl', 'stsd', 'mp4a', 'mdat'])
+    for (const type of [
+      'moov',
+      'trak',
+      'mdia',
+      'mdhd',
+      'hdlr',
+      'minf',
+      'stbl',
+      'stsd',
+      'mp4a',
+      'mdat',
+    ])
       expect(m4a.indexOf(type)).toBeGreaterThan(0)
     const stsd = m4a.indexOf('stsd') - 4
     const mp4a = m4a.indexOf('mp4a') - 4
@@ -396,6 +405,41 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     const mdat = m4a.indexOf('mdat') - 4
     expect(m4a.readUInt32BE(stco + 16)).toBe(mdat + 8)
     expect(m4a[mdat + 8]).toBe(0xe0)
+
+    const emf = readFileSync(join(root, 'minimal.emf'))
+    expect(emf.readUInt32LE(0)).toBe(1)
+    expect(emf.readUInt32LE(40)).toBe(0x464d4520)
+    expect([emf.readUInt32LE(48), emf.readUInt32LE(52)]).toEqual([emf.byteLength, 3])
+    let emfOffset = 0
+    const emfRecords = []
+    while (emfOffset < emf.byteLength) {
+      const type = emf.readUInt32LE(emfOffset)
+      const size = emf.readUInt32LE(emfOffset + 4)
+      emfRecords.push([type, size])
+      emfOffset += size
+    }
+    expect(emfRecords).toEqual([
+      [1, 88],
+      [43, 24],
+      [14, 20],
+    ])
+    expect([
+      emf.readInt32LE(96),
+      emf.readInt32LE(100),
+      emf.readInt32LE(104),
+      emf.readInt32LE(108),
+    ]).toEqual([10, 5, 90, 45])
+
+    const wmf = readFileSync(join(root, 'minimal.wmf'))
+    expect(wmf.readUInt32LE(0)).toBe(0x9ac6cdd7)
+    let wmfChecksum = 0
+    for (let offset = 0; offset < 20; offset += 2) wmfChecksum ^= wmf.readUInt16LE(offset)
+    expect(wmf.readUInt16LE(20)).toBe(wmfChecksum)
+    expect([wmf.readUInt16LE(24), wmf.readUInt16LE(26), wmf.readUInt32LE(28)]).toEqual([
+      9, 0x300, 19,
+    ])
+    expect([wmf.readUInt32LE(40), wmf.readUInt16LE(44)]).toEqual([7, 0x041b])
+    expect([wmf.readUInt32LE(54), wmf.readUInt16LE(58)]).toEqual([3, 0])
 
     const unrealPackages = [
       ['minimal.soundwave.uasset', 'SoundWave', 'VO_Line'],

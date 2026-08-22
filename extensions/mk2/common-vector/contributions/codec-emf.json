@@ -21,9 +21,8 @@
     }
   ],
   "limitations": [
-    "The codec entrypoint parses EMF header, bounds, device, and record metadata; full GDI-record-to-SVG preview remains a separate host bridge and is not declared as a manifest runtime operation.",
-    "Pixel decoding, GDI record editing, and metafile writing are not implemented by this codec entrypoint.",
-    "Generated routing is narrowed to the .emf extension. The handwritten compatibility codec retains structural signature detection because manifest v1 cannot express extension-or-signature matching without turning the alternatives into a conjunction."
+    "Parses bounded EMR_HEADER/EMR_RECTANGLE/EMR_EOF streams, validates declared sizes and record counts, and replays rectangles to a static script-free SVG vector scene.",
+    "Other GDI records, fonts, paths, transforms, clipping, embedded bitmaps, rasterization, editing, and metafile writing are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "emf", "label": "Windows Enhanced Metafile" }],
@@ -31,7 +30,10 @@
     "sourceTopology": "single",
     "artifactStages": ["authored", "runtime"],
     "openIntents": ["probe", "inspect", "full", "export"],
-    "match": { "extensions": ["emf"] },
+    "match": {
+      "extensions": ["emf"],
+      "signatures": [{ "from": "start", "offset": 40, "bytesHex": "20454d46" }]
+    },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {
