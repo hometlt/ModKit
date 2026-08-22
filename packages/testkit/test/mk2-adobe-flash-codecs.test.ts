@@ -72,7 +72,12 @@ function input(value: ArtifactByteSource): AssetInput {
     },
     bindingsFor: () => [],
     async openBinding() {
-      return { value, async release() { return undefined } }
+      return {
+        value,
+        async release() {
+          return undefined
+        },
+      }
     },
   }
 }
@@ -117,7 +122,9 @@ describe('ported Adobe Flash FLA codec', () => {
       { id: 'DOMDocument.xml', path: 'DOMDocument.xml', kind: 'file' },
       { id: 'LIBRARY/Symbol.xml', path: 'LIBRARY/Symbol.xml', kind: 'file' },
     ])
-    expect(new TextDecoder().decode(await extract(session, 'DOMDocument.xml'))).toContain('<DOMDocument')
+    expect(new TextDecoder().decode(await extract(session, 'DOMDocument.xml'))).toContain(
+      '<DOMDocument',
+    )
     expect(new TextDecoder().decode(await extract(session, 'LIBRARY/Symbol.xml'))).toBe(
       '<DOMSymbolItem name="Symbol 1"/>',
     )

@@ -259,9 +259,7 @@ describe('ported Epic Games / Unreal Engine codecs', () => {
         maxBytes: 16,
       }),
     ).resolves.toMatchObject({
-      pixels: new Uint8Array([
-        255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 128,
-      ]),
+      pixels: new Uint8Array([255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 128]),
     })
     await lease.release()
     await session.dispose()
@@ -291,9 +289,9 @@ describe('ported Epic Games / Unreal Engine codecs', () => {
     const encoded = await video.encoded()
     const header = await encoded.read(0n, 12)
     expect(new TextDecoder('ascii').decode(header.subarray(0, 4))).toBe('RIFF')
-    expect(new DataView(header.buffer, header.byteOffset, header.byteLength).getUint32(4, true)).toBe(
-      228,
-    )
+    expect(
+      new DataView(header.buffer, header.byteOffset, header.byteLength).getUint32(4, true),
+    ).toBe(228)
     expect(new TextDecoder('ascii').decode(header.subarray(8))).toBe('AVI ')
     await lease.release()
     await session.dispose()

@@ -181,7 +181,9 @@ describe('ported EA SAGE semantic codecs', () => {
     const csf = await fixture('minimal.cnc3-localization.csf')
     const wrongCount = csf.slice()
     new DataView(wrongCount.buffer).setUint32(12, 2, true)
-    await expect(open('cnc3-localization', wrongCount, 'bad.csf')).rejects.toThrow(/count mismatch/u)
+    await expect(open('cnc3-localization', wrongCount, 'bad.csf')).rejects.toThrow(
+      /count mismatch/u,
+    )
 
     const map = await fixture('minimal.cnc3.map')
     await expect(

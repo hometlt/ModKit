@@ -11,7 +11,9 @@ import {
 const ID = 'org.modkitx/fsb'
 const ascii = new TextDecoder('latin1')
 const utf8 = new TextDecoder('utf-8', { fatal: false })
-const SAMPLE_RATES = Object.freeze([4000, 8000, 11000, 11025, 16000, 22050, 24000, 32000, 44100, 48000, 96000])
+const SAMPLE_RATES = Object.freeze([
+  4000, 8000, 11000, 11025, 16000, 22050, 24000, 32000, 44100, 48000, 96000,
+])
 const CHANNEL_COUNTS = Object.freeze([1, 2, 6, 8])
 const CODECS = Object.freeze({
   0x01: 'pcm8',
@@ -66,7 +68,8 @@ function parseFsb5(bytes, context) {
   if (version !== 0 && version !== 1) throw new TypeError(`unsupported FSB5 version ${version}`)
   const streamCount = data.getUint32(0x08, true)
   if (streamCount === 0) throw new TypeError('FSB5 sound bank contains no streams')
-  if (streamCount > context.budget.maxNodes) throw new RangeError('FSB5 stream count exceeds maxNodes budget')
+  if (streamCount > context.budget.maxNodes)
+    throw new RangeError('FSB5 stream count exceeds maxNodes budget')
   const sampleHeaderSize = data.getUint32(0x0c, true)
   const nameTableSize = data.getUint32(0x10, true)
   const sampleDataSize = data.getUint32(0x14, true)
@@ -85,7 +88,8 @@ function parseFsb5(bytes, context) {
   const parsed = []
   let cursor = baseHeaderSize
   for (let index = 0; index < streamCount; index += 1) {
-    if (cursor + 8 > sampleHeaderEnd) throw new TypeError(`FSB5 stream ${index} header is truncated`)
+    if (cursor + 8 > sampleHeaderEnd)
+      throw new TypeError(`FSB5 stream ${index} header is truncated`)
     const mode = data.getBigUint64(cursor, true)
     const numSamples = Number((mode >> 34n) & 0x3fffffffn)
     const dataRelative = Number((mode >> 7n) & 0x07ffffffn) << 5
@@ -95,12 +99,14 @@ function parseFsb5(bytes, context) {
     if ((mode & 1n) !== 0n) {
       let another = true
       while (another) {
-        if (cursor + 4 > sampleHeaderEnd) throw new TypeError(`FSB5 stream ${index} extra header is truncated`)
+        if (cursor + 4 > sampleHeaderEnd)
+          throw new TypeError(`FSB5 stream ${index} extra header is truncated`)
         const extra = data.getUint32(cursor, true)
         const type = (extra >>> 25) & 0x7f
         const size = (extra >>> 1) & 0xffffff
         another = (extra & 1) !== 0
-        if (cursor + 4 + size > sampleHeaderEnd) throw new TypeError(`FSB5 stream ${index} extra payload is truncated`)
+        if (cursor + 4 + size > sampleHeaderEnd)
+          throw new TypeError(`FSB5 stream ${index} extra payload is truncated`)
         if (type === 0x01 && size >= 1) channels = bytes[cursor + 4] ?? channels
         if (type === 0x02 && size >= 4) sampleRate = data.getInt32(cursor + 4, true)
         cursor += 4 + size
@@ -117,7 +123,11 @@ function parseFsb5(bytes, context) {
   const dataBase = nameTableOffset + nameTableSize
   const streams = parsed.map((stream, index) => {
     const nextRelative = parsed[index + 1]?.dataRelative ?? sampleDataSize
-    if (stream.dataRelative > sampleDataSize || nextRelative < stream.dataRelative || nextRelative > sampleDataSize) {
+    if (
+      stream.dataRelative > sampleDataSize ||
+      nextRelative < stream.dataRelative ||
+      nextRelative > sampleDataSize
+    ) {
       throw new TypeError(`FSB5 stream ${index} has an invalid data range`)
     }
     const name = streamName(bytes, nameTableOffset, nameTableSize, index, streamCount)
@@ -151,7 +161,10 @@ const definition = Object.freeze({
   },
   async inspect(bytes, context) {
     const fsb = parseFsb5(bytes, context)
-    const longest = fsb.streams.reduce((duration, stream) => Math.max(duration, stream.durationMs), 0)
+    const longest = fsb.streams.reduce(
+      (duration, stream) => Math.max(duration, stream.durationMs),
+      0,
+    )
     const audio = createAudioMediaSource(bytes, 'audio/x-fsb', {
       durationMs: longest,
       seekable: false,
@@ -175,20 +188,22 @@ const definition = Object.freeze({
         nameTableBytes: fsb.nameTableSize,
         audioBytes: fsb.sampleDataSize,
       },
-      metadata: [{
-        id: 'fsb5-bank',
-        label: 'FMOD FSB5 sound bank',
-        entries: [
-          { key: 'version', value: fsb.version },
-          { key: 'codec', value: fsb.codecName },
-          { key: 'codecId', value: fsb.codec },
-          { key: 'flags', value: fsb.flags },
-          { key: 'streams', value: fsb.streams.length },
-          { key: 'sampleHeaderBytes', value: fsb.sampleHeaderSize },
-          { key: 'nameTableBytes', value: fsb.nameTableSize },
-          { key: 'audioBytes', value: fsb.sampleDataSize },
-        ],
-      }],
+      metadata: [
+        {
+          id: 'fsb5-bank',
+          label: 'FMOD FSB5 sound bank',
+          entries: [
+            { key: 'version', value: fsb.version },
+            { key: 'codec', value: fsb.codecName },
+            { key: 'codecId', value: fsb.codec },
+            { key: 'flags', value: fsb.flags },
+            { key: 'streams', value: fsb.streams.length },
+            { key: 'sampleHeaderBytes', value: fsb.sampleHeaderSize },
+            { key: 'nameTableBytes', value: fsb.nameTableSize },
+            { key: 'audioBytes', value: fsb.sampleDataSize },
+          ],
+        },
+      ],
       traits: [
         { id: 'audio.streams', parameters: { count: fsb.streams.length, codec: fsb.codecName } },
         { id: 'media.duration', parameters: { milliseconds: longest } },
@@ -207,7 +222,12 @@ const definition = Object.freeze({
         }),
         'common.view/audio-media-source': audio,
       },
-      unsupportedFeatures: ['fadpcm-decoding', 'payload-transcoding', 'per-stream-extraction', 'bank-writing'],
+      unsupportedFeatures: [
+        'fadpcm-decoding',
+        'payload-transcoding',
+        'per-stream-extraction',
+        'bank-writing',
+      ],
     }
   },
 })

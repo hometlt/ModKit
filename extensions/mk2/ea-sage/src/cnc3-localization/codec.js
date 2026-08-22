@@ -112,7 +112,9 @@ function parseCsf(bytes, budget) {
   if (cursor !== bytes.byteLength)
     throw new TypeError(`CSF trailing data: consumed ${cursor} of ${bytes.byteLength}`)
   if (strings !== declaredStrings)
-    throw new TypeError(`CSF string count mismatch: declared ${declaredStrings}, decoded ${strings}`)
+    throw new TypeError(
+      `CSF string count mismatch: declared ${declaredStrings}, decoded ${strings}`,
+    )
   return Object.freeze({
     kind: 'csf',
     version,
@@ -177,7 +179,11 @@ function tableSource(entries) {
   )
   return Object.freeze({
     async shape() {
-      return Object.freeze({ rows: rows.length, columns: 3, header: Object.freeze(['Label', 'Value', 'Note']) })
+      return Object.freeze({
+        rows: rows.length,
+        columns: 3,
+        header: Object.freeze(['Label', 'Value', 'Note']),
+      })
     },
     async rows(request, signal) {
       if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
@@ -218,7 +224,11 @@ const definition = Object.freeze({
     const text = new TextDecoder().decode(prefix)
     const matches = isStr(text)
     return matches
-      ? { confidence: /\.str(?:$|[?#])/iu.test(uri) ? 0.9 : 0.7, kind: 'structure', note: 'STR label block' }
+      ? {
+          confidence: /\.str(?:$|[?#])/iu.test(uri) ? 0.9 : 0.7,
+          kind: 'structure',
+          note: 'STR label block',
+        }
       : { confidence: 0, kind: 'structure', note: 'signature-mismatch' }
   },
   async inspect(bytes, context) {
@@ -226,7 +236,10 @@ const definition = Object.freeze({
       ? parseCsf(bytes, context.budget)
       : parseStr(decodeText(bytes, context.budget), context.budget)
     const notes = document.entries.filter(entry => entry.note !== undefined).length
-    const extraValues = document.entries.reduce((sum, entry) => sum + (entry.extraValues?.length ?? 0), 0)
+    const extraValues = document.entries.reduce(
+      (sum, entry) => sum + (entry.extraValues?.length ?? 0),
+      0,
+    )
     return {
       summary: {
         format: 'cnc3-localization',
@@ -241,7 +254,8 @@ const definition = Object.freeze({
       metadata: [
         {
           id: 'cnc3-localization',
-          label: document.kind === 'csf' ? 'Compiled CSF string table' : 'Authored STR string table',
+          label:
+            document.kind === 'csf' ? 'Compiled CSF string table' : 'Authored STR string table',
           entries: [
             { key: 'encoding', value: document.kind },
             { key: 'labels', value: document.entries.length },
@@ -251,7 +265,10 @@ const definition = Object.freeze({
         },
       ],
       traits: [
-        { id: 'content.text', parameters: { encoding: document.kind === 'csf' ? 'inverted-utf16le' : 'utf-8' } },
+        {
+          id: 'content.text',
+          parameters: { encoding: document.kind === 'csf' ? 'inverted-utf16le' : 'utf-8' },
+        },
         { id: 'game.localization', parameters: { entries: document.entries.length } },
       ],
       text: document.kind === 'str',

@@ -26,8 +26,12 @@ const context: ContributionContext = {
   budgets: budget,
   diagnostics: { report: () => undefined },
   contracts: {
-    async resolve() { throw new Error('Warcraft III codec has no service dependency') },
-    async resolveUnknown() { throw new Error('Warcraft III codec has no foreign service dependency') },
+    async resolve() {
+      throw new Error('Warcraft III codec has no service dependency')
+    },
+    async resolveUnknown() {
+      throw new Error('Warcraft III codec has no foreign service dependency')
+    },
   },
 }
 
@@ -38,8 +42,12 @@ function source(bytes: Uint8Array): ArtifactByteSource {
     ref: { id: uri, uri },
     revision: revisionId('content-hash.sha256:blizzard-warcraft3-model'),
     size: BigInt(bytes.byteLength),
-    async read(offset, length) { return bytes.slice(Number(offset), Number(offset) + length) },
-    async *stream() { yield bytes },
+    async read(offset, length) {
+      return bytes.slice(Number(offset), Number(offset) + length)
+    },
+    async *stream() {
+      yield bytes
+    },
   }
 }
 
@@ -63,12 +71,21 @@ function input(value: ArtifactByteSource): AssetInput {
       compositionFingerprint: value.ref.id,
     },
     bindingsFor: () => [],
-    async openBinding() { return { value, async release() { return undefined } } },
+    async openBinding() {
+      return {
+        value,
+        async release() {
+          return undefined
+        },
+      }
+    },
   }
 }
 
 async function war3Codec(): Promise<Codec> {
-  const module = (await import(pathToFileURL(join(extension, 'src', 'war3-mdx', 'codec.js')).href)) as {
+  const module = (await import(
+    pathToFileURL(join(extension, 'src', 'war3-mdx', 'codec.js')).href
+  )) as {
     createCodec(context: ContributionContext): Codec
   }
   return module.createCodec(context)

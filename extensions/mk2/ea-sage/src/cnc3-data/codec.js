@@ -70,7 +70,9 @@ function parse(text, budget) {
       namespace = attrs.xmlns
     } else if (stack.length === 1) {
       if (!NON_ASSETS.has(name)) {
-        assets.push(Object.freeze({ type: name, ...(attrs.id === undefined ? {} : { id: attrs.id }) }))
+        assets.push(
+          Object.freeze({ type: name, ...(attrs.id === undefined ? {} : { id: attrs.id }) }),
+        )
         counts[name] = (counts[name] ?? 0) + 1
       }
     } else if (stack.at(-1) === 'Includes' && name === 'Include') {
@@ -85,7 +87,8 @@ function parse(text, budget) {
         throw new RangeError('AssetDeclaration nesting exceeds maxDepth')
     }
   }
-  if (!rootSeen || stack.length !== 0) throw new TypeError('AssetDeclaration document is not closed')
+  if (!rootSeen || stack.length !== 0)
+    throw new TypeError('AssetDeclaration document is not closed')
   return Object.freeze({
     namespace,
     includes: Object.freeze(includes),

@@ -54,10 +54,7 @@ function streamInfo(bytes, offset) {
 // RFC 9639 metadata-block framing: one last-block bit, seven-bit type, 24-bit payload length.
 function parseFlac(bytes, budget) {
   if (budget.maxDepth < 2) throw new RangeError('FLAC structure exceeds maxDepth budget')
-  if (
-    bytes.byteLength < 42 ||
-    String.fromCharCode(...bytes.subarray(0, 4)) !== 'fLaC'
-  )
+  if (bytes.byteLength < 42 || String.fromCharCode(...bytes.subarray(0, 4)) !== 'fLaC')
     throw new TypeError('FLAC stream marker is missing')
   const blocks = []
   let offset = 4
@@ -69,8 +66,7 @@ function parseFlac(bytes, budget) {
     const header = bytes[offset]
     last = (header & 0x80) !== 0
     const type = header & 0x7f
-    const length =
-      (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3]
+    const length = (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3]
     const dataOffset = offset + 4
     if (type === 127) throw new TypeError('FLAC metadata block type 127 is invalid')
     if (dataOffset + length > bytes.byteLength)
@@ -90,7 +86,11 @@ function parseFlac(bytes, budget) {
   const first = blocks[0]
   if (first?.type !== 0 || first.length !== 34)
     throw new TypeError('FLAC first metadata block must be 34-byte STREAMINFO')
-  if (offset + 2 > bytes.byteLength || bytes[offset] !== 0xff || (bytes[offset + 1] & 0xfc) !== 0xf8)
+  if (
+    offset + 2 > bytes.byteLength ||
+    bytes[offset] !== 0xff ||
+    (bytes[offset + 1] & 0xfc) !== 0xf8
+  )
     throw new TypeError('FLAC audio frame sync is missing after metadata')
   if (blocks.length * 48 + 34 > budget.maxScalarBytes)
     throw new RangeError('FLAC metadata exceeds maxScalarBytes budget')

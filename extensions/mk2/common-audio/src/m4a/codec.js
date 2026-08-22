@@ -67,7 +67,13 @@ function parseM4a(bytes, budget) {
   const mdhd = all.find(box => box.type === 'mdhd')
   const hdlr = all.find(box => box.type === 'hdlr')
   const stsd = all.find(box => box.type === 'stsd')
-  if (moov === undefined || mdat === undefined || mdhd === undefined || hdlr === undefined || stsd === undefined)
+  if (
+    moov === undefined ||
+    mdat === undefined ||
+    mdhd === undefined ||
+    hdlr === undefined ||
+    stsd === undefined
+  )
     throw new TypeError('M4A lacks moov/mdat or required audio sample tables')
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
   if (mdhd.size < 32 || bytes[mdhd.dataOffset] !== 0)

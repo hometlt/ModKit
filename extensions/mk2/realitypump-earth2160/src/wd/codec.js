@@ -52,19 +52,17 @@ const namespaceSource = (entries, source) =>
     async list(prefix, page) {
       const start = page.cursor === undefined ? 0 : Number(page.cursor)
       const matching = entries.filter(entry => entry.name.startsWith(prefix))
-      const items = matching
-        .slice(start, start + page.limit)
-        .map(entry =>
-          Object.freeze({
-            id: entry.id,
-            path: entry.name,
-            name: entry.name.split('/').at(-1) ?? entry.name,
-            kind: 'file',
-            size: BigInt(entry.size),
-            compression: entry.packedSize === entry.size ? 'stored' : 'zlib',
-            revision: source.revision,
-          }),
-        )
+      const items = matching.slice(start, start + page.limit).map(entry =>
+        Object.freeze({
+          id: entry.id,
+          path: entry.name,
+          name: entry.name.split('/').at(-1) ?? entry.name,
+          kind: 'file',
+          size: BigInt(entry.size),
+          compression: entry.packedSize === entry.size ? 'stored' : 'zlib',
+          revision: source.revision,
+        }),
+      )
       return Object.freeze({ items: Object.freeze(items) })
     },
     async openEntry(entryId) {

@@ -26,8 +26,12 @@ const context: ContributionContext = {
   budgets: budget,
   diagnostics: { report: () => undefined },
   contracts: {
-    async resolve() { throw new Error('BLP codec has no service dependency') },
-    async resolveUnknown() { throw new Error('BLP codec has no foreign service dependency') },
+    async resolve() {
+      throw new Error('BLP codec has no service dependency')
+    },
+    async resolveUnknown() {
+      throw new Error('BLP codec has no foreign service dependency')
+    },
   },
 }
 
@@ -38,8 +42,12 @@ function source(bytes: Uint8Array): ArtifactByteSource {
     ref: { id: uri, uri },
     revision: revisionId('content-hash.sha256:blizzard-common-formats-blp'),
     size: BigInt(bytes.byteLength),
-    async read(offset, length) { return bytes.slice(Number(offset), Number(offset) + length) },
-    async *stream() { yield bytes },
+    async read(offset, length) {
+      return bytes.slice(Number(offset), Number(offset) + length)
+    },
+    async *stream() {
+      yield bytes
+    },
   }
 }
 
@@ -63,7 +71,14 @@ function input(value: ArtifactByteSource): AssetInput {
       compositionFingerprint: value.ref.id,
     },
     bindingsFor: () => [],
-    async openBinding() { return { value, async release() { return undefined } } },
+    async openBinding() {
+      return {
+        value,
+        async release() {
+          return undefined
+        },
+      }
+    },
   }
 }
 
@@ -102,14 +117,16 @@ describe('ported Blizzard common-formats BLP codec', () => {
     const raster = lease.value as RasterImageSource
     expect(await raster.info()).toMatchObject({ width: 2, height: 1, decodedAccess: true })
     if (raster.readRegion === undefined) throw new Error('BLP raster has no decoded access')
-    await expect(raster.readRegion({
-      x: 0,
-      y: 0,
-      width: 2,
-      height: 1,
-      pixelFormat: 'rgba8',
-      maxBytes: 8,
-    })).resolves.toMatchObject({
+    await expect(
+      raster.readRegion({
+        x: 0,
+        y: 0,
+        width: 2,
+        height: 1,
+        pixelFormat: 'rgba8',
+        maxBytes: 8,
+      }),
+    ).resolves.toMatchObject({
       pixels: new Uint8Array([255, 0, 0, 255, 0, 255, 0, 128]),
     })
     expect(new TextDecoder('ascii').decode(await (await raster.encoded()).read(0n, 4))).toBe('BLP2')

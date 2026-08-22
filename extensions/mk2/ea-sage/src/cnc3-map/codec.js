@@ -30,8 +30,7 @@ function isRefPack(bytes) {
 function readUnsignedBe(bytes, offset, length) {
   if (offset + length > bytes.byteLength) throw new TypeError('RefPack header is truncated')
   let value = 0
-  for (let index = 0; index < length; index += 1)
-    value = value * 256 + (bytes[offset + index] ?? 0)
+  for (let index = 0; index < length; index += 1) value = value * 256 + (bytes[offset + index] ?? 0)
   return value
 }
 
@@ -146,7 +145,8 @@ function parse(bytes, budget) {
     cursor += 1
     const name = ascii(container, cursor, length, `name ${index}`)
     cursor += length
-    if (cursor + 4 > container.byteLength) throw new TypeError(`CkMp name ${index} index is truncated`)
+    if (cursor + 4 > container.byteLength)
+      throw new TypeError(`CkMp name ${index} index is truncated`)
     const nameIndex = view.getUint32(cursor, true)
     cursor += 4
     if (byIndex.has(nameIndex)) throw new TypeError(`CkMp name index ${nameIndex} is duplicated`)
@@ -162,7 +162,8 @@ function parse(bytes, budget) {
     const version = view.getUint16(cursor + 4, true)
     const byteLength = view.getUint32(cursor + 6, true)
     const name = byIndex.get(nameIndex)
-    if (name === undefined) throw new TypeError(`CkMp chunk references unknown name index ${nameIndex}`)
+    if (name === undefined)
+      throw new TypeError(`CkMp chunk references unknown name index ${nameIndex}`)
     const offset = cursor + 10
     if (offset > container.byteLength || byteLength > container.byteLength - offset)
       throw new RangeError(`CkMp chunk ${name} is outside the container`)
@@ -211,7 +212,9 @@ function namespaceSource(chunks, source) {
       )
       return Object.freeze({
         items: Object.freeze(items),
-        ...(start + items.length < matching.length ? { nextCursor: String(start + items.length) } : {}),
+        ...(start + items.length < matching.length
+          ? { nextCursor: String(start + items.length) }
+          : {}),
       })
     },
     async openEntry(entryId, signal) {
@@ -235,7 +238,11 @@ const definition = Object.freeze({
   async detect(prefix) {
     const value = magic(prefix)
     return value === EAR || value === CKMP
-      ? { confidence: 0.99, kind: 'magic', note: value === EAR ? 'EAR RefPack envelope' : 'CkMp header' }
+      ? {
+          confidence: 0.99,
+          kind: 'magic',
+          note: value === EAR ? 'EAR RefPack envelope' : 'CkMp header',
+        }
       : { confidence: 0, kind: 'magic', note: 'signature-mismatch' }
   },
   async inspect(bytes, context) {
@@ -279,7 +286,10 @@ const definition = Object.freeze({
         ...(map.compressed
           ? [{ id: 'container.compression', parameters: { methods: ['refpack'] } }]
           : []),
-        { id: 'game.map', parameters: { dimensions: map.dimensions ?? null, terrainDecoded: false } },
+        {
+          id: 'game.map',
+          parameters: { dimensions: map.dimensions ?? null, terrainDecoded: false },
+        },
         { id: 'content.binary', parameters: { bytes: String(bytes.byteLength) } },
       ],
       dataSources: {

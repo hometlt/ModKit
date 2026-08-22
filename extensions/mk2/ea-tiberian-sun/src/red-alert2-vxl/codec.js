@@ -58,7 +58,8 @@ function parse(bytes, budget) {
   const expected = tailersOffset + header.sections * SECTION_TAILER_BYTES
   if (!Number.isSafeInteger(expected) || expected > bytes.byteLength)
     throw new TypeError('VXL section directory, body, or tailers are truncated')
-  if (expected !== bytes.byteLength) throw new TypeError('VXL trailing data is not described by the header')
+  if (expected !== bytes.byteLength)
+    throw new TypeError('VXL trailing data is not described by the header')
   const sections = []
   for (let index = 0; index < header.sections; index += 1) {
     const sectionOffset = sectionHeaders + index * SECTION_HEADER_BYTES
@@ -78,7 +79,8 @@ function parse(bytes, budget) {
       view.getFloat32(tailerOffset + 80, true),
       view.getFloat32(tailerOffset + 84, true),
     ])
-    if (![...min, ...max].every(Number.isFinite)) throw new TypeError('VXL bounds contain non-finite values')
+    if (![...min, ...max].every(Number.isFinite))
+      throw new TypeError('VXL bounds contain non-finite values')
     const spanStart = view.getInt32(tailerOffset, true)
     const spanEnd = view.getInt32(tailerOffset + 4, true)
     const spanData = view.getInt32(tailerOffset + 8, true)

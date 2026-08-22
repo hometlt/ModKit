@@ -22,17 +22,15 @@ const namespaceSource = source =>
     async list(prefix, page) {
       const start = page.cursor === undefined ? 0 : Number(page.cursor)
       const matching = VIRTUAL.filter(path => path.startsWith(prefix))
-      const items = matching
-        .slice(start, start + page.limit)
-        .map((path, index) =>
-          Object.freeze({
-            id: String(start + index),
-            path,
-            name: path,
-            kind: 'file',
-            revision: source.revision,
-          }),
-        )
+      const items = matching.slice(start, start + page.limit).map((path, index) =>
+        Object.freeze({
+          id: String(start + index),
+          path,
+          name: path,
+          kind: 'file',
+          revision: source.revision,
+        }),
+      )
       return Object.freeze({ items: Object.freeze(items) })
     },
     async openEntry(entryId) {

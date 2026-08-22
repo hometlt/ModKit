@@ -33,7 +33,8 @@ function parseMdx(bytes, context) {
   let offset = 4
   while (offset < bytes.byteLength) {
     if (offset + 8 > bytes.byteLength) throw new RangeError('MDX chunk header is truncated')
-    if (chunks.length >= context.budget.maxNodes) throw new RangeError('MDX chunk count exceeds maxNodes budget')
+    if (chunks.length >= context.budget.maxNodes)
+      throw new RangeError('MDX chunk count exceeds maxNodes budget')
     const id = tag(bytes, offset)
     if (!/^[A-Z0-9]{4}$/u.test(id)) throw new TypeError(`MDX chunk id at ${offset} is invalid`)
     const size = data.getUint32(offset + 4, true)
@@ -43,7 +44,8 @@ function parseMdx(bytes, context) {
     offset = payload + size
   }
   const versionChunk = chunks.find(chunk => chunk.id === 'VERS')
-  if (versionChunk === undefined || versionChunk.size < 4) throw new TypeError('MDX VERS chunk is missing')
+  if (versionChunk === undefined || versionChunk.size < 4)
+    throw new TypeError('MDX VERS chunk is missing')
   const version = data.getUint32(versionChunk.payload, true)
   if (version < 800 || version > 1200) throw new TypeError(`unsupported MDX version ${version}`)
   const model = chunks.find(chunk => chunk.id === 'MODL')
@@ -56,13 +58,17 @@ function parseMdx(bytes, context) {
 
 function parseMdl(bytes, context) {
   if (!mdlSignature(bytes)) throw new TypeError('Warcraft III MDL declaration header is invalid')
-  if (bytes.byteLength > context.budget.maxScalarBytes) throw new RangeError('MDL text exceeds maxScalarBytes budget')
+  if (bytes.byteLength > context.budget.maxScalarBytes)
+    throw new RangeError('MDL text exceeds maxScalarBytes budget')
   const text = utf8.decode(bytes)
   let declarations = 0
-  for (const match of text.matchAll(/^\s*(?:Version|Model|Sequences|GlobalSequences|Textures|Materials|Geoset|Bone|Helper|PivotPoints)\b/gmu)) {
+  for (const match of text.matchAll(
+    /^\s*(?:Version|Model|Sequences|GlobalSequences|Textures|Materials|Geoset|Bone|Helper|PivotPoints)\b/gmu,
+  )) {
     void match
     declarations += 1
-    if (declarations > context.budget.maxNodes) throw new RangeError('MDL declarations exceed maxNodes budget')
+    if (declarations > context.budget.maxNodes)
+      throw new RangeError('MDL declarations exceed maxNodes budget')
   }
   const version = /\bFormatVersion\s+(\d+)/u.exec(text)?.[1]
   const name = /^\s*Model\s+"([^"]*)"/mu.exec(text)?.[1] ?? ''
@@ -82,7 +88,8 @@ const definition = Object.freeze({
   format: Object.freeze({ id: 'war3-mdx', label: 'Warcraft III MDX/MDL' }),
   async detect(prefix) {
     if (mdxSignature(prefix)) return { confidence: 0.99, kind: 'magic', note: 'mdlx-signature' }
-    if (mdlSignature(prefix)) return { confidence: 0.92, kind: 'structure', note: 'mdl-version-declaration' }
+    if (mdlSignature(prefix))
+      return { confidence: 0.92, kind: 'structure', note: 'mdl-version-declaration' }
     return { confidence: 0, kind: 'structure', note: 'war3-model-mismatch' }
   },
   async inspect(bytes, context) {
@@ -95,35 +102,46 @@ const definition = Object.freeze({
         version: model.version,
         name: model.name,
         sequences: model.sequences,
-        ...(model.format === 'mdx' ? { chunks: model.chunks.length } : { declarations: model.declarations }),
+        ...(model.format === 'mdx'
+          ? { chunks: model.chunks.length }
+          : { declarations: model.declarations }),
       },
-      metadata: [{
-        id: 'war3-model',
-        label: `Warcraft III ${model.format.toUpperCase()} model`,
-        entries: [
-          { key: 'encoding', value: model.format },
-          { key: 'version', value: model.version ?? 'unknown' },
-          { key: 'name', value: model.name || '(unnamed)' },
-          { key: 'sequences', value: model.sequences },
-          ...(model.format === 'mdx'
-            ? [{ key: 'chunks', value: model.chunks.length }]
-            : [{ key: 'declarations', value: model.declarations }]),
-        ],
-      }],
-      traits: [
-        { id: 'content.binary', parameters: { bytes: String(bytes.byteLength) } },
+      metadata: [
+        {
+          id: 'war3-model',
+          label: `Warcraft III ${model.format.toUpperCase()} model`,
+          entries: [
+            { key: 'encoding', value: model.format },
+            { key: 'version', value: model.version ?? 'unknown' },
+            { key: 'name', value: model.name || '(unnamed)' },
+            { key: 'sequences', value: model.sequences },
+            ...(model.format === 'mdx'
+              ? [{ key: 'chunks', value: model.chunks.length }]
+              : [{ key: 'declarations', value: model.declarations }]),
+          ],
+        },
       ],
+      traits: [{ id: 'content.binary', parameters: { bytes: String(bytes.byteLength) } }],
       dataSources: {
         'common.view/tree-data-source': createTreeDataSource({
           kind: 'model',
           label: model.name || `Warcraft III ${model.format.toUpperCase()}`,
           preview: `${model.format.toUpperCase()} version ${model.version ?? 'unknown'}`,
-          children: model.format === 'mdx'
-            ? chunks.map(chunk => ({ kind: 'chunk', label: chunk.id, preview: `${chunk.size} bytes at ${chunk.payload}` }))
-            : [
-                { kind: 'declarations', label: 'Declarations', preview: String(model.declarations) },
-                { kind: 'sequences', label: 'Sequences', preview: String(model.sequences) },
-              ],
+          children:
+            model.format === 'mdx'
+              ? chunks.map(chunk => ({
+                  kind: 'chunk',
+                  label: chunk.id,
+                  preview: `${chunk.size} bytes at ${chunk.payload}`,
+                }))
+              : [
+                  {
+                    kind: 'declarations',
+                    label: 'Declarations',
+                    preview: String(model.declarations),
+                  },
+                  { kind: 'sequences', label: 'Sequences', preview: String(model.sequences) },
+                ],
         }),
       },
       unsupportedFeatures: [

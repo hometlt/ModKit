@@ -33,8 +33,11 @@ function xflHeader(bytes) {
     .replace(/^\ufeff/u, '')
     .trimStart()
     .toLowerCase()
-  return text.startsWith('<xfl') || text.startsWith('<domdocument') ||
+  return (
+    text.startsWith('<xfl') ||
+    text.startsWith('<domdocument') ||
     (text.startsWith('<?xml') && text.includes('<domdocument'))
+  )
 }
 
 function safePath(value) {
@@ -71,7 +74,8 @@ function parseZip(bytes, budget) {
   const centralSize = u32(bytes, eocd + 12)
   const centralOffset = u32(bytes, eocd + 16)
   if (count > budget.maxNodes) throw new RangeError('FLA entry count exceeds maxNodes budget')
-  if (centralOffset + centralSize > eocd) throw new TypeError('FLA ZIP central directory is truncated')
+  if (centralOffset + centralSize > eocd)
+    throw new TypeError('FLA ZIP central directory is truncated')
   const entries = []
   const names = new Set()
   let offset = centralOffset
@@ -91,20 +95,24 @@ function parseZip(bytes, budget) {
     const next = offset + 46 + nameLength + extraLength + commentLength
     if (next > bytes.byteLength) throw new TypeError('FLA ZIP entry name is truncated')
     const nameBytes = bytes.subarray(offset + 46, offset + 46 + nameLength)
-    const path = safePath((flags & FLAG_UTF8) !== 0 ? utf8.decode(nameBytes) : latin1.decode(nameBytes))
+    const path = safePath(
+      (flags & FLAG_UTF8) !== 0 ? utf8.decode(nameBytes) : latin1.decode(nameBytes),
+    )
     if (names.has(path)) throw new TypeError(`duplicate FLA project path: ${path}`)
     names.add(path)
-    entries.push(Object.freeze({
-      id: path,
-      path,
-      kind: path.endsWith('/') ? 'directory' : 'file',
-      flags,
-      method,
-      crc,
-      compressedSize,
-      size,
-      localOffset,
-    }))
+    entries.push(
+      Object.freeze({
+        id: path,
+        path,
+        kind: path.endsWith('/') ? 'directory' : 'file',
+        flags,
+        method,
+        crc,
+        compressedSize,
+        size,
+        localOffset,
+      }),
+    )
     offset = next
   }
   if (offset !== centralOffset + centralSize) {
@@ -142,8 +150,10 @@ async function inflateRaw(bytes) {
 
 async function extractZipEntry(bytes, entry, budget) {
   if (entry.kind !== 'file') throw new TypeError('FLA directories have no byte payload')
-  if ((entry.flags & FLAG_ENCRYPTED) !== 0) throw new TypeError('encrypted FLA entries are unsupported')
-  if (entry.size > budget.maxScalarBytes) throw new RangeError('FLA entry exceeds maxScalarBytes budget')
+  if ((entry.flags & FLAG_ENCRYPTED) !== 0)
+    throw new TypeError('encrypted FLA entries are unsupported')
+  if (entry.size > budget.maxScalarBytes)
+    throw new RangeError('FLA entry exceeds maxScalarBytes budget')
   const offset = entry.localOffset
   if (offset + 30 > bytes.byteLength || u32(bytes, offset) !== ZIP_LOCAL) {
     throw new TypeError('FLA ZIP local entry header is invalid')
@@ -152,12 +162,16 @@ async function extractZipEntry(bytes, entry, budget) {
   const end = dataOffset + entry.compressedSize
   if (end > bytes.byteLength) throw new TypeError('FLA ZIP entry data is truncated')
   const compressed = bytes.slice(dataOffset, end)
-  const result = entry.method === 0
-    ? compressed
-    : entry.method === 8
-      ? await inflateRaw(compressed)
-      : (() => { throw new TypeError(`unsupported FLA ZIP compression method ${entry.method}`) })()
-  if (result.byteLength !== entry.size) throw new TypeError('FLA ZIP entry size does not match metadata')
+  const result =
+    entry.method === 0
+      ? compressed
+      : entry.method === 8
+        ? await inflateRaw(compressed)
+        : (() => {
+            throw new TypeError(`unsupported FLA ZIP compression method ${entry.method}`)
+          })()
+  if (result.byteLength !== entry.size)
+    throw new TypeError('FLA ZIP entry size does not match metadata')
   if (crc32(result) !== entry.crc) throw new TypeError('FLA ZIP entry CRC-32 mismatch')
   return result
 }
@@ -168,33 +182,45 @@ function namespaceSource(entries, source) {
     async list(prefix, page, signal) {
       if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
       const start = page.cursor === undefined ? 0 : Number(page.cursor)
-      if (!Number.isSafeInteger(start) || start < 0 || !Number.isSafeInteger(page.limit) || page.limit <= 0) {
+      if (
+        !Number.isSafeInteger(start) ||
+        start < 0 ||
+        !Number.isSafeInteger(page.limit) ||
+        page.limit <= 0
+      ) {
         throw new TypeError('invalid FLA namespace page')
       }
       const matching = entries.filter(entry => entry.path.startsWith(prefix))
-      const items = matching.slice(start, start + page.limit).map(entry => Object.freeze({
-        id: entry.id,
-        path: entry.path,
-        name: entry.path.replace(/\/$/u, '').split('/').at(-1) ?? entry.path,
-        kind: entry.kind,
-        ...(entry.kind === 'file' ? { size: BigInt(entry.size) } : {}),
-        revision: source.revision,
-      }))
+      const items = matching.slice(start, start + page.limit).map(entry =>
+        Object.freeze({
+          id: entry.id,
+          path: entry.path,
+          name: entry.path.replace(/\/$/u, '').split('/').at(-1) ?? entry.path,
+          kind: entry.kind,
+          ...(entry.kind === 'file' ? { size: BigInt(entry.size) } : {}),
+          revision: source.revision,
+        }),
+      )
       return Object.freeze({
         items: Object.freeze(items),
-        ...(start + items.length < matching.length ? { nextCursor: String(start + items.length) } : {}),
+        ...(start + items.length < matching.length
+          ? { nextCursor: String(start + items.length) }
+          : {}),
       })
     },
     async openEntry(entryId, signal) {
       if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
       const entry = byId.get(entryId)
-      if (entry === undefined || entry.kind !== 'file') throw new TypeError('FLA file entry was not found')
+      if (entry === undefined || entry.kind !== 'file')
+        throw new TypeError('FLA file entry was not found')
       const path = entry.path.split('/').map(encodeURIComponent).join('/')
-      return simpleLease(Object.freeze({
-        id: `${source.ref.id}!/${entry.path}`,
-        uri: `fla-entry:${encodeURIComponent(source.ref.uri)}!/${path}`,
-        parentIds: Object.freeze([source.ref.id]),
-      }))
+      return simpleLease(
+        Object.freeze({
+          id: `${source.ref.id}!/${entry.path}`,
+          uri: `fla-entry:${encodeURIComponent(source.ref.uri)}!/${path}`,
+          parentIds: Object.freeze([source.ref.id]),
+        }),
+      )
     },
   })
 }
@@ -223,16 +249,28 @@ const definition = Object.freeze({
   },
   async inspect(bytes, context) {
     const kind = isZip(bytes) ? 'zip' : xflHeader(bytes) ? 'xfl' : 'opaque'
-    const entries = kind === 'zip'
-      ? parseZip(bytes, context.budget)
-      : kind === 'xfl'
-        ? Object.freeze([Object.freeze({ id: 'DOMDocument.xml', path: 'DOMDocument.xml', kind: 'file', size: bytes.byteLength, inline: bytes })])
-        : Object.freeze([])
+    const entries =
+      kind === 'zip'
+        ? parseZip(bytes, context.budget)
+        : kind === 'xfl'
+          ? Object.freeze([
+              Object.freeze({
+                id: 'DOMDocument.xml',
+                path: 'DOMDocument.xml',
+                kind: 'file',
+                size: bytes.byteLength,
+                inline: bytes,
+              }),
+            ])
+          : Object.freeze([])
     const files = entries.filter(entry => entry.kind === 'file')
     const tree = createTreeDataSource({
       kind: 'archive',
       label: 'FLA project',
-      preview: kind === 'opaque' ? 'opaque legacy authoring project' : `${kind.toUpperCase()}, ${files.length} file(s)`,
+      preview:
+        kind === 'opaque'
+          ? 'opaque legacy authoring project'
+          : `${kind.toUpperCase()}, ${files.length} file(s)`,
       children: entries.map(entry => ({
         kind: entry.kind,
         label: entry.path,
@@ -248,23 +286,27 @@ const definition = Object.freeze({
         files: files.length,
         extractable: kind !== 'opaque',
       },
-      metadata: [{
-        id: 'fla-project',
-        label: 'Flash / Animate project',
-        entries: [
-          { key: 'container', value: kind === 'zip' ? 'zip/fla' : kind },
-          { key: 'entries', value: entries.length },
-          { key: 'files', value: files.length },
-          { key: 'extractable', value: kind !== 'opaque' },
-        ],
-      }],
+      metadata: [
+        {
+          id: 'fla-project',
+          label: 'Flash / Animate project',
+          entries: [
+            { key: 'container', value: kind === 'zip' ? 'zip/fla' : kind },
+            { key: 'entries', value: entries.length },
+            { key: 'files', value: files.length },
+            { key: 'extractable', value: kind !== 'opaque' },
+          ],
+        },
+      ],
       traits: [
         { id: 'container.entries', parameters: { count: entries.length } },
         { id: 'content.binary', parameters: { bytes: String(bytes.byteLength) } },
       ],
       dataSources: {
         'common.view/tree-data-source': tree,
-        ...(kind === 'opaque' ? {} : { 'common.view/namespace-entry-source': namespaceSource(entries, context.source) }),
+        ...(kind === 'opaque'
+          ? {}
+          : { 'common.view/namespace-entry-source': namespaceSource(entries, context.source) }),
       },
       handlers: {
         'extract-entry': async input => {
@@ -272,8 +314,12 @@ const definition = Object.freeze({
             throw new TypeError('container.extract requires {entryId}')
           }
           const entry = byId.get(String(input.entryId ?? ''))
-          if (entry === undefined || entry.kind !== 'file') throw new TypeError('FLA file entry was not found')
-          const value = 'inline' in entry ? entry.inline.slice() : await extractZipEntry(bytes, entry, context.budget)
+          if (entry === undefined || entry.kind !== 'file')
+            throw new TypeError('FLA file entry was not found')
+          const value =
+            'inline' in entry
+              ? entry.inline.slice()
+              : await extractZipEntry(bytes, entry, context.budget)
           return { kind: 'bytes', value }
         },
       },

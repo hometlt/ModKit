@@ -77,7 +77,8 @@ function ensureBudgets(budget, nodes, scalarBytes) {
 export function hasPackageTag(bytes) {
   return (
     bytes.byteLength >= 4 &&
-    new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(0, true) === PACKAGE_TAG
+    new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(0, true) ===
+      PACKAGE_TAG
   )
 }
 
@@ -184,7 +185,11 @@ export function parseUnrealPackage(bytes, budget) {
       throw new TypeError(`Unreal package export ${index} class index is invalid`)
     const serialSize = safeI64(view, offset + 28, `export ${index} serial size`)
     const serialOffset = safeI64(view, offset + 36, `export ${index} serial offset`)
-    if (serialSize === 0 || serialOffset < totalHeaderSize || serialOffset + serialSize > bytes.byteLength)
+    if (
+      serialSize === 0 ||
+      serialOffset < totalHeaderSize ||
+      serialOffset + serialSize > bytes.byteLength
+    )
       throw new RangeError(`Unreal package export ${index} payload is outside the file`)
     exports.push(
       Object.freeze({
