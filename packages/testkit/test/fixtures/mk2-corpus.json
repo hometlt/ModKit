@@ -1035,6 +1035,17 @@
       "note": "Westwood W3D hierarchy root with one bounded hierarchy-header child chunk"
     },
     {
+      "extension": "mk2/ea-tiberian-sun",
+      "contributionId": "org.modkitx/red-alert2-vxl",
+      "corpus": "synthetic",
+      "sample": "minimal.ra2.vxl",
+      "minimumConfidence": 0.99,
+      "dataSource": "model",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "VXL shell with one section header and bounded 1x1x1 section tailer"
+    },
+    {
       "extension": "mk2/ea-sage",
       "contributionId": "org.modkitx/sage-skudef",
       "corpus": "synthetic",

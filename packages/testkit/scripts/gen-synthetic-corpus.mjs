@@ -1936,6 +1936,38 @@ function westwoodW3d() {
   return concat(u32le(0x100), u32le(0x80000010), u32le(0x101), u32le(8), u32le(1), u32le(1))
 }
 
+/** Red Alert 2 VXL shell with one bounded section and a metadata-only 1×1×1 voxel body. */
+function redAlert2Vxl() {
+  const transform = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0]
+  return concat(
+    ascii('Voxel Animation'),
+    bytes(0),
+    u32le(1),
+    u32le(1),
+    u32le(1),
+    u32le(0),
+    bytes(0, 255),
+    new Uint8Array(768),
+    ascii('FixtureBody'),
+    new Uint8Array(5),
+    u32le(0),
+    u32le(0),
+    u32le(0),
+    u32le(0),
+    u32le(0),
+    u32le(0),
+    f32le(1),
+    ...transform.map(f32le),
+    f32le(0),
+    f32le(0),
+    f32le(0),
+    f32le(1),
+    f32le(1),
+    f32le(1),
+    bytes(1, 1, 1, 2),
+  )
+}
+
 /** EA SAGE BIG4: one stored entry, with the mixed-endian header and null-terminated index path. */
 function big() {
   const name = ascii('hello.txt\0')
@@ -4149,6 +4181,7 @@ const FIXTURES = {
   'minimal.emperor.xbf': emperorXbf,
   'minimal.sage.w3x': sageW3x,
   'minimal.westwood.w3d': westwoodW3d,
+  'minimal.ra2.vxl': redAlert2Vxl,
   'minimal.sage.skudef': sageSkuDef,
   'minimal.cnc3-data.xml': cnc3Data,
   'minimal.cnc3-localization.csf': cnc3Localization,

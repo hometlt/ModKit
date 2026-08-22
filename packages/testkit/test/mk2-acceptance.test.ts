@@ -77,6 +77,7 @@ const completedPortableEaSage = [
   find('org.modkitx/cnc3-map'),
   find('org.modkitx/sage-skudef'),
 ]
+const completedPortableEaTiberianSun = [find('org.modkitx/red-alert2-vxl')]
 const completedPortableVector = [find('org.modkitx/emf'), find('org.modkitx/wmf')]
 const completedPortableDocuments = [
   find('org.modkitx/csv'),
@@ -208,6 +209,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       ...completedPortableEaEmperor,
       ...completedPortableEaModels,
       ...completedPortableEaSage,
+      ...completedPortableEaTiberianSun,
       ...completedPortableVector,
       ...completedPortableModels,
       ...completedPortableVideos,
@@ -624,6 +626,23 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       westwoodW3d.readUInt32LE(12),
     ]).toEqual([0x100, 0x80000010, 0x101, 8])
     expect([westwoodW3d.readUInt32LE(16), westwoodW3d.readUInt32LE(20)]).toEqual([1, 1])
+
+    const redAlert2Vxl = readFileSync(join(root, 'minimal.ra2.vxl'))
+    expect(redAlert2Vxl.subarray(0, 15).toString('ascii')).toBe('Voxel Animation')
+    expect([
+      redAlert2Vxl.readInt32LE(16),
+      redAlert2Vxl.readInt32LE(20),
+      redAlert2Vxl.readInt32LE(24),
+      redAlert2Vxl.readInt32LE(28),
+    ]).toEqual([1, 1, 1, 0])
+    expect(redAlert2Vxl.subarray(802, 813).toString('ascii')).toBe('FixtureBody')
+    const vxlTailer = 802 + 28
+    expect([
+      redAlert2Vxl[vxlTailer + 88],
+      redAlert2Vxl[vxlTailer + 89],
+      redAlert2Vxl[vxlTailer + 90],
+      redAlert2Vxl[vxlTailer + 91],
+    ]).toEqual([1, 1, 1, 2])
 
     const sageSkuDef = readFileSync(join(root, 'minimal.sage.skudef'), 'utf8')
     const sageDirectives = sageSkuDef

@@ -3,7 +3,7 @@
   "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
   "id": "org.modkitx/red-alert2-vxl",
   "displayName": "Red Alert 2 VXL voxel model",
-  "status": "supported",
+  "status": "partial",
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
@@ -21,8 +21,9 @@
     }
   ],
   "limitations": [
-    "HVA animation and PAL/VPL palette files are resolved as same-codec sidecars; the v1 companions field names codec IDs rather than path patterns.",
-    "VPL lighting-ramp interpretation and validation against a local retail MIX corpus remain follow-up work."
+    "Validates the VXL header, section directory, body extent, tailers, dimensions and bounds, but does not decode voxel spans into geometry.",
+    "HVA animation and PAL/VPL palette and lighting sidecars are not resolved by this portable single-source contribution.",
+    "Writing and VPL lighting-ramp interpretation remain follow-up work."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "red-alert2-vxl", "label": "Red Alert 2 VXL voxel model" }],
