@@ -2030,6 +2030,49 @@ function westwoodOpaque(kind) {
   return concat(ascii(kind), new Uint8Array(16 - kind.length))
 }
 
+/** Halo Wars ECF/ERA: plain 0x1e00-byte header, names chunk, and one stored resource. */
+function haloEra() {
+  const headerSize = 0x1e00
+  const entrySize = 0x38
+  const names = ascii('data/fixture.txt\0')
+  const payload = ascii('halo era payload\n')
+  const count = 2
+  const table = new Uint8Array(count * entrySize)
+  const payloadOffset = headerSize + table.byteLength
+  const totalSize = payloadOffset + names.byteLength + payload.byteLength
+  const header = new Uint8Array(headerSize)
+  const headerView = new DataView(header.buffer)
+  headerView.setUint32(0, 0xdaba7737, false)
+  headerView.setUint32(4, headerSize, false)
+  headerView.setUint32(12, totalSize, false)
+  headerView.setUint16(16, count, false)
+  headerView.setUint16(18, 0, false)
+  headerView.setUint32(20, 0x17fdba9c, false)
+  headerView.setUint16(24, entrySize - 0x18, false)
+  headerView.setUint32(0x20, 0x05abdbd8, false)
+  headerView.setUint32(0x24, 9, false)
+  headerView.setUint32(0x30, 0xaac94350, false)
+  header[0x34] = 0x13
+  headerView.setUint32(0x35, 0xaac94350, false)
+
+  const tableView = new DataView(table.buffer)
+  const writeEntry = (index, id, offset, size, nameOffset) => {
+    const cursor = index * entrySize
+    tableView.setBigUint64(cursor, BigInt(id), false)
+    tableView.setUint32(cursor + 8, offset, false)
+    tableView.setUint32(cursor + 12, size, false)
+    table[cursor + 20] = 0
+    table[cursor + 21] = 2
+    tableView.setUint32(cursor + 32, size, false)
+    table[cursor + 52] = (nameOffset >>> 16) & 0xff
+    table[cursor + 53] = (nameOffset >>> 8) & 0xff
+    table[cursor + 54] = nameOffset & 0xff
+  }
+  writeEntry(0, 1, payloadOffset, names.byteLength, 0)
+  writeEntry(1, 2, payloadOffset + names.byteLength, payload.byteLength, 0)
+  return concat(header, table, names, payload)
+}
+
 /** EA SAGE BIG4: one stored entry, with the mixed-endian header and null-terminated index path. */
 function big() {
   const name = ascii('hello.txt\0')
@@ -4257,6 +4300,7 @@ const FIXTURES = {
   'minimal.westwood.tmp': westwoodTmp,
   'minimal.westwood.vpl': westwoodVpl,
   'minimal.westwood.wsa': () => westwoodOpaque('WSA'),
+  'minimal.halo.era': haloEra,
   'minimal.sage.skudef': sageSkuDef,
   'minimal.cnc3-data.xml': cnc3Data,
   'minimal.cnc3-localization.csf': cnc3Localization,

@@ -87,6 +87,7 @@ const completedPortableEaWestwood = [
   find('org.modkitx/vpl'),
   find('org.modkitx/wsa'),
 ]
+const completedPortableMicrosoftHaloWars = [find('org.modkitx/halo-era')]
 const completedPortableVector = [find('org.modkitx/emf'), find('org.modkitx/wmf')]
 const completedPortableDocuments = [
   find('org.modkitx/csv'),
@@ -220,6 +221,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       ...completedPortableEaSage,
       ...completedPortableEaTiberianSun,
       ...completedPortableEaWestwood,
+      ...completedPortableMicrosoftHaloWars,
       ...completedPortableVector,
       ...completedPortableModels,
       ...completedPortableVideos,
@@ -785,6 +787,28 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       expect(opaque.byteLength).toBe(16)
       expect(opaque.readUInt16LE(0)).toBe(name.endsWith('.cps') ? 0x5043 : 0x5357)
     }
+
+    const haloEra = readFileSync(join(root, 'minimal.halo.era'))
+    expect([
+      haloEra.readUInt32BE(0),
+      haloEra.readUInt32BE(4),
+      haloEra.readUInt32BE(12),
+      haloEra.readUInt16BE(16),
+      haloEra.readUInt32BE(20),
+      haloEra.readUInt32BE(0x20),
+    ]).toEqual([0xdaba7737, 0x1e00, haloEra.byteLength, 2, 0x17fdba9c, 0x05abdbd8])
+    const haloTable = 0x1e00
+    const namesOffset = haloEra.readUInt32BE(haloTable + 8)
+    const namesSize = haloEra.readUInt32BE(haloTable + 12)
+    const resource = haloTable + 0x38
+    const resourceOffset = haloEra.readUInt32BE(resource + 8)
+    const resourceSize = haloEra.readUInt32BE(resource + 12)
+    expect(haloEra.subarray(namesOffset, namesOffset + namesSize).toString('ascii')).toBe(
+      'data/fixture.txt\0',
+    )
+    expect(haloEra.subarray(resourceOffset, resourceOffset + resourceSize).toString('ascii')).toBe(
+      'halo era payload\n',
+    )
 
     // These checks intentionally do not import the codecs. They independently walk each model
     // fixture's standard wire representation so a generator/reader bug cannot agree with itself.

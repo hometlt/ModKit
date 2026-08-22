@@ -11,6 +11,6 @@ The conversion debt of every codec below — planes v2 has no home for, applied
 renames, converter defaults and v1 operations left without a handler — is data in
 `MK2-CONVERSION.json` beside this file.
 
-| contribution           | v1 manifest                                                          | module                  | port         |
-| ---------------------- | -------------------------------------------------------------------- | ----------------------- | ------------ |
-| `org.modkitx/halo-era` | `extensions/microsoft/halo-wars/codecs/halo-era/codec.manifest.json` | `src/halo-era/codec.js` | port-pending |
+| contribution           | v1 manifest                                                          | module                  | port   |
+| ---------------------- | -------------------------------------------------------------------- | ----------------------- | ------ |
+| `org.modkitx/halo-era` | `extensions/microsoft/halo-wars/codecs/halo-era/codec.manifest.json` | `src/halo-era/codec.js` | ported |

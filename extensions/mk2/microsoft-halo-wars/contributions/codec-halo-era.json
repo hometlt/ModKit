@@ -22,7 +22,7 @@
   ],
   "limitations": [
     "Encrypted archives have no stable ciphertext magic and validating them requires full source size, so generic matching routes .era files declaratively and the runtime performs structural decryption checks.",
-    "The current runtime imports node:zlib for raw-deflate and Phoenix compressed streams, so browser environments are not declared.",
+    "Raw-deflate and Phoenix compressed streams require the standard DecompressionStream API; runtimes without it can still inspect and extract stored entries.",
     "Unsupported header revisions, index flags, compression methods, and out-of-bounds entries fail explicitly; the codec is read-only."
   ],
   "spec": {

@@ -1645,6 +1645,21 @@
       "note": "Bounded WSA header fixture for honest metadata-only inspection"
     },
     {
+      "extension": "mk2/microsoft-halo-wars",
+      "contributionId": "org.modkitx/halo-era",
+      "corpus": "synthetic",
+      "sample": "minimal.halo.era",
+      "minimumConfidence": 0.99,
+      "dataSource": "namespace",
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "0" },
+        "outputKind": "bytes",
+        "minimumBytes": 16
+      },
+      "note": "Halo Wars ECF/ERA with a plain fixed header, names chunk, and one extractable stored resource"
+    },
+    {
       "extension": "common/images",
       "contributionId": "org.modkitx/image-png",
       "corpus": "synthetic",
