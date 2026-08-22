@@ -22,7 +22,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.read", "image.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     }
   }
 }

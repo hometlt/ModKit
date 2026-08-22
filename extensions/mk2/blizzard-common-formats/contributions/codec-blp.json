@@ -21,11 +21,9 @@
     }
   ],
   "limitations": [
-    "Decode covers BLP1 direct, JPEG, and paletted payloads plus common BLP2 paletted, raw BGRA, DXT1, DXT3, and DXT5 top mips.",
-    "BLP2 JPEG payload decode is not implemented and remains metadata-only; unsupported alpha and encoding combinations fail with diagnostics.",
-    "Export writes BLP2 BGRA8 by default or a single BLP1 paletted image; it does not preserve arbitrary source mip chains.",
-    "Manifest v1 cannot express the handwritten registry's extension-or-signature fallback without conjunctive evidence, so generated routing is extension-only.",
-    "The runtime is conservatively exposed to Node hosts because BLP1 and BCn decode reach external and WASM-backed dependencies whose browser import graph is not yet isolated."
+    "The dependency-free MK3 profile validates BLP1 and BLP2 headers and mip ranges and decodes BLP2 uncompressed BGRA top mips.",
+    "BLP1 JPEG/paletted and BLP2 JPEG/paletted/BCn payloads remain metadata-only.",
+    "The codec is read-only; texture writing and mip generation require the pending writer/service contract."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "blp", "label": "Blizzard BLP texture" }],

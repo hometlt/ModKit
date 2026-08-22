@@ -3501,6 +3501,23 @@ function fsb5() {
   return concat(header, u64le(mode), nameTable, samples)
 }
 
+/** BLP2 with one 2x1 uncompressed BGRA8 mip (red, translucent green). */
+function blp() {
+  const header = new Uint8Array(148)
+  const view = new DataView(header.buffer)
+  header.set(ascii('BLP2'), 0)
+  view.setUint32(4, 1, true)
+  header[8] = 3
+  header[9] = 8
+  header[10] = 0
+  header[11] = 1
+  view.setUint32(12, 2, true)
+  view.setUint32(16, 1, true)
+  view.setUint32(20, header.byteLength, true)
+  view.setUint32(84, 8, true)
+  return concat(header, bytes(0, 0, 255, 255, 0, 255, 0, 128))
+}
+
 // ---------------------------------------------------------------- the corpus
 
 /** Every fixture: file name → builder. The name is what the acceptance corpus refers to. */
@@ -3528,6 +3545,7 @@ const FIXTURES = {
   'minimal.wwise.pck': wwisePck,
   'minimal.fla': flaProject,
   'minimal.fsb': fsb5,
+  'minimal.blp': blp,
   'minimal.bti': bti,
   'minimal.cub': cub,
   'minimal.mtrl': mtrl,

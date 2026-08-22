@@ -790,6 +790,17 @@
       "note": "FSB5 v1 bank with one named mono PCM8 stream; acceptance validates signature routing and encoded-bank publication"
     },
     {
+      "extension": "mk2/blizzard-common-formats",
+      "contributionId": "org.modkitx/blp",
+      "corpus": "synthetic",
+      "sample": "minimal.blp",
+      "minimumConfidence": 0.99,
+      "dataSource": "raster",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "BLP2 uncompressed BGRA8 top mip; acceptance validates signature routing and decoded raster publication"
+    },
+    {
       "extension": "mk2/common-audio",
       "contributionId": "org.modkitx/ogg",
       "corpus": "synthetic",
