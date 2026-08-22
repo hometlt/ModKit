@@ -797,6 +797,60 @@
       "note": "Strict UTF-8-compatible plain text with CRLF lines and two paragraphs"
     },
     {
+      "extension": "mk2/uncommon-documents",
+      "contributionId": "org.modkitx/docx",
+      "corpus": "synthetic",
+      "sample": "minimal.docx",
+      "minimumConfidence": 0.75,
+      "dataSource": "tree",
+      "note": "Stored OOXML package with content types, root relationship, and Word document part"
+    },
+    {
+      "extension": "mk2/uncommon-documents",
+      "contributionId": "org.modkitx/pptx",
+      "corpus": "synthetic",
+      "sample": "minimal.pptx",
+      "minimumConfidence": 0.75,
+      "dataSource": "tree",
+      "note": "Stored OOXML presentation package with one slide and one text shape"
+    },
+    {
+      "extension": "mk2/uncommon-documents",
+      "contributionId": "org.modkitx/xlsx",
+      "corpus": "synthetic",
+      "sample": "minimal.xlsx",
+      "minimumConfidence": 0.75,
+      "dataSource": "tree",
+      "note": "Stored OOXML workbook package with one worksheet, row, formula, and two cells"
+    },
+    {
+      "extension": "mk2/uncommon-documents",
+      "contributionId": "org.modkitx/odt",
+      "corpus": "synthetic",
+      "sample": "minimal.odt",
+      "minimumConfidence": 0.75,
+      "dataSource": "tree",
+      "note": "OpenDocument text package with first stored mimetype, manifest, and content XML"
+    },
+    {
+      "extension": "mk2/uncommon-documents",
+      "contributionId": "org.modkitx/odp",
+      "corpus": "synthetic",
+      "sample": "minimal.odp",
+      "minimumConfidence": 0.75,
+      "dataSource": "tree",
+      "note": "OpenDocument presentation package with one page, frame, and paragraph"
+    },
+    {
+      "extension": "mk2/uncommon-documents",
+      "contributionId": "org.modkitx/ods",
+      "corpus": "synthetic",
+      "sample": "minimal.ods",
+      "minimumConfidence": 0.75,
+      "dataSource": "tree",
+      "note": "OpenDocument spreadsheet package with one sheet, row, formula, and two cells"
+    },
+    {
       "extension": "common/images",
       "contributionId": "org.modkitx/image-png",
       "corpus": "synthetic",

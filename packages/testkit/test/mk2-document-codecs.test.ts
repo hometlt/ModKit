@@ -15,14 +15,32 @@ import {
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const documentRoot = join(repoRoot, 'extensions', 'mk2', 'uncommon-documents')
 const fixtureRoot = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
-const formats = ['csv', 'markdown', 'rtf', 'txt'] as const
+const formats = [
+  'csv',
+  'markdown',
+  'rtf',
+  'txt',
+  'docx',
+  'pptx',
+  'xlsx',
+  'odt',
+  'odp',
+  'ods',
+] as const
 type Format = (typeof formats)[number]
+const officeFormats = ['docx', 'pptx', 'xlsx', 'odt', 'odp', 'ods'] as const
 
 const fileNames: Record<Format, string> = {
   csv: 'minimal.csv',
   markdown: 'minimal.md',
   rtf: 'minimal.rtf',
   txt: 'minimal.txt',
+  docx: 'minimal.docx',
+  pptx: 'minimal.pptx',
+  xlsx: 'minimal.xlsx',
+  odt: 'minimal.odt',
+  odp: 'minimal.odp',
+  ods: 'minimal.ods',
 }
 
 const budget: ResourceBudget = {
@@ -117,7 +135,11 @@ describe('ported MK2 text document codecs', () => {
     const descriptor = await session.descriptor()
     expect(descriptor.constraints.maxDecodedBytes).not.toBe('0')
     expect(descriptor.traits).toEqual(
-      expect.arrayContaining([expect.objectContaining({ id: 'content.text' })]),
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: format === 'xlsx' || format === 'ods' ? 'table.cells' : 'content.text',
+        }),
+      ]),
     )
     const lease = await session.dataSource('common.view/tree-data-source', 1)
     const tree = lease.value as TreeDataSource
@@ -175,16 +197,39 @@ describe('ported MK2 text document codecs', () => {
     await session.dispose()
   })
 
+  it.each([
+    ['docx', { package: 'ooxml', entries: 3, paragraphs: 1, tables: 1, textRuns: 1 }],
+    ['pptx', { package: 'ooxml', entries: 4, slides: 1, shapes: 1, textRuns: 1 }],
+    [
+      'xlsx',
+      { package: 'ooxml', entries: 4, sheets: 1, worksheets: 1, rows: 1, cells: 2, formulas: 1 },
+    ],
+    ['odt', { package: 'odf', entries: 3, paragraphs: 1, headings: 1 }],
+    ['odp', { package: 'odf', entries: 3, slides: 1, frames: 1, paragraphs: 1 }],
+    ['ods', { package: 'odf', entries: 3, sheets: 1, rows: 1, cells: 2, formulas: 1 }],
+  ] as const)(
+    '%s validates its package and derives document structure',
+    async (format, summary) => {
+      const session = await open(format, await fixture(format))
+      await expect(session.operations().invoke('inspect', null)).resolves.toMatchObject({
+        state: 'ok',
+        output: { kind: 'json', value: { format, ...summary } },
+      })
+      await session.dispose()
+    },
+  )
+
   it.each(formats)('%s rejects structural corruption', async format => {
-    const corrupted =
-      format === 'csv'
+    const corrupted = officeFormats.includes(format as (typeof officeFormats)[number])
+      ? (await fixture(format)).slice(0, -1)
+      : format === 'csv'
         ? new TextEncoder().encode('one,"unterminated')
         : format === 'markdown'
           ? new Uint8Array([0x23, 0x20, 0xff])
           : format === 'rtf'
             ? (await fixture(format)).slice(0, -1)
             : new Uint8Array([0xff, 0xfe])
-    await expect(open(format, corrupted)).rejects.toThrow(/CSV|UTF-8|RTF/u)
+    await expect(open(format, corrupted)).rejects.toThrow(/CSV|UTF-8|RTF|office ZIP/u)
   })
 
   it.each(formats)('%s enforces node, depth, and scalar budgets', async format => {

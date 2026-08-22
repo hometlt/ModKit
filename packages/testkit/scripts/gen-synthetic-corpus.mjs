@@ -604,6 +604,164 @@ function zip() {
   return concat(local, central, eocd)
 }
 
+/** Classic single-disk ZIP with multiple stored parts, used for office document packages. */
+function storedZip(parts) {
+  const locals = []
+  const centralRecords = []
+  let localOffset = 0
+  for (const [path, value, method = 0] of parts) {
+    const name = ascii(path)
+    const payload = typeof value === 'string' ? ascii(value) : value
+    const compressed = method === 8 ? deflateStored(payload) : payload
+    const checksum = crc32(payload)
+    const local = concat(
+      u32le(0x04034b50),
+      u16le(20),
+      u16le(0x0800),
+      u16le(method),
+      u16le(0),
+      u16le(0),
+      u32le(checksum),
+      u32le(compressed.byteLength),
+      u32le(payload.byteLength),
+      u16le(name.byteLength),
+      u16le(0),
+      name,
+      compressed,
+    )
+    centralRecords.push(
+      concat(
+        u32le(0x02014b50),
+        u16le(20),
+        u16le(20),
+        u16le(0x0800),
+        u16le(method),
+        u16le(0),
+        u16le(0),
+        u32le(checksum),
+        u32le(compressed.byteLength),
+        u32le(payload.byteLength),
+        u16le(name.byteLength),
+        u16le(0),
+        u16le(0),
+        u16le(0),
+        u16le(0),
+        u32le(0),
+        u32le(localOffset),
+        name,
+      ),
+    )
+    locals.push(local)
+    localOffset += local.byteLength
+  }
+  const central = concat(...centralRecords)
+  return concat(
+    ...locals,
+    central,
+    u32le(0x06054b50),
+    u16le(0),
+    u16le(0),
+    u16le(parts.length),
+    u16le(parts.length),
+    u32le(central.byteLength),
+    u32le(localOffset),
+    u16le(0),
+  )
+}
+
+const packageTypes = root =>
+  `<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Override PartName="/${root}" ContentType="application/xml"/></Types>`
+const packageRelationships = root =>
+  `<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="urn:fixture:officeDocument" Target="${root}"/></Relationships>`
+
+function docx() {
+  return storedZip([
+    ['[Content_Types].xml', packageTypes('word/document.xml'), 8],
+    ['_rels/.rels', packageRelationships('word/document.xml'), 8],
+    [
+      'word/document.xml',
+      '<?xml version="1.0"?><w:document xmlns:w="urn:word"><w:body><w:p><w:r><w:t>Hello DOCX</w:t></w:r></w:p><w:tbl/></w:body></w:document>',
+      8,
+    ],
+  ])
+}
+
+function pptx() {
+  return storedZip([
+    ['[Content_Types].xml', packageTypes('ppt/presentation.xml'), 8],
+    ['_rels/.rels', packageRelationships('ppt/presentation.xml'), 8],
+    [
+      'ppt/presentation.xml',
+      '<?xml version="1.0"?><p:presentation xmlns:p="urn:presentation"><p:sldIdLst><p:sldId id="1"/></p:sldIdLst></p:presentation>',
+      8,
+    ],
+    [
+      'ppt/slides/slide1.xml',
+      '<?xml version="1.0"?><p:sld xmlns:p="urn:presentation" xmlns:a="urn:drawing"><p:cSld><p:spTree><p:sp><a:t>Hello PPTX</a:t></p:sp></p:spTree></p:cSld></p:sld>',
+      8,
+    ],
+  ])
+}
+
+function xlsx() {
+  return storedZip([
+    ['[Content_Types].xml', packageTypes('xl/workbook.xml'), 8],
+    ['_rels/.rels', packageRelationships('xl/workbook.xml'), 8],
+    [
+      'xl/workbook.xml',
+      '<?xml version="1.0"?><workbook xmlns="urn:spreadsheet"><sheets><sheet name="Sheet1" sheetId="1"/></sheets></workbook>',
+      8,
+    ],
+    [
+      'xl/worksheets/sheet1.xml',
+      '<?xml version="1.0"?><worksheet xmlns="urn:spreadsheet"><sheetData><row r="1"><c r="A1"><v>42</v></c><c r="B1"><f>A1*2</f><v>84</v></c></row></sheetData></worksheet>',
+      8,
+    ],
+  ])
+}
+
+const odfManifest = mediaType =>
+  `<?xml version="1.0"?><manifest:manifest xmlns:manifest="urn:manifest"><manifest:file-entry manifest:full-path="/" manifest:media-type="${mediaType}"/><manifest:file-entry manifest:full-path="content.xml" manifest:media-type="text/xml"/></manifest:manifest>`
+
+function odt() {
+  const mediaType = 'application/vnd.oasis.opendocument.text'
+  return storedZip([
+    ['mimetype', mediaType],
+    ['META-INF/manifest.xml', odfManifest(mediaType), 8],
+    [
+      'content.xml',
+      '<?xml version="1.0"?><office:document-content xmlns:office="urn:office" xmlns:text="urn:text"><office:body><office:text><text:h>Heading</text:h><text:p>Hello ODT</text:p></office:text></office:body></office:document-content>',
+      8,
+    ],
+  ])
+}
+
+function odp() {
+  const mediaType = 'application/vnd.oasis.opendocument.presentation'
+  return storedZip([
+    ['mimetype', mediaType],
+    ['META-INF/manifest.xml', odfManifest(mediaType), 8],
+    [
+      'content.xml',
+      '<?xml version="1.0"?><office:document-content xmlns:office="urn:office" xmlns:draw="urn:draw" xmlns:text="urn:text"><office:body><office:presentation><draw:page><draw:frame><text:p>Hello ODP</text:p></draw:frame></draw:page></office:presentation></office:body></office:document-content>',
+      8,
+    ],
+  ])
+}
+
+function ods() {
+  const mediaType = 'application/vnd.oasis.opendocument.spreadsheet'
+  return storedZip([
+    ['mimetype', mediaType],
+    ['META-INF/manifest.xml', odfManifest(mediaType), 8],
+    [
+      'content.xml',
+      '<?xml version="1.0"?><office:document-content xmlns:office="urn:office" xmlns:table="urn:table" xmlns:text="urn:text"><office:body><office:spreadsheet><table:table><table:table-row><table:table-cell><text:p>42</text:p></table:table-cell><table:table-cell table:formula="of:=1+1"><text:p>2</text:p></table:table-cell></table:table-row></table:table></office:spreadsheet></office:body></office:document-content>',
+      8,
+    ],
+  ])
+}
+
 /**
  * Microsoft Cabinet SDK layout: one CAB 1.3 folder, one CFFILE and one uncompressed CFDATA block.
  * A zero CFDATA checksum explicitly means that no checksum was supplied; sizes and offsets remain
@@ -1907,6 +2065,7 @@ const FIXTURES = {
   'minimal.dds': dds,
   'minimal.dae': dae,
   'minimal.dmg': dmg,
+  'minimal.docx': docx,
   'minimal.exr': exr,
   'minimal.gif': gif,
   'minimal.gltf': gltf,
@@ -1935,6 +2094,7 @@ const FIXTURES = {
   'minimal.m3': m3,
   'minimal.obj': obj,
   'minimal.ply': ply,
+  'minimal.pptx': pptx,
   'minimal.stl': stl,
   'minimal.mpq': mpq,
   'minimal.tar': tar,
@@ -1944,6 +2104,9 @@ const FIXTURES = {
   'minimal.flv': flv,
   'minimal.mp3': mp3,
   'minimal.ogg': ogg,
+  'minimal.odp': odp,
+  'minimal.ods': ods,
+  'minimal.odt': odt,
   'minimal.opus': opus,
   'minimal.ogv': ogv,
   'minimal.xa': ps1Xa,
@@ -1952,6 +2115,7 @@ const FIXTURES = {
   'minimal.webm': webm,
   'minimal.wmv': wmv,
   'minimal.xz': xz,
+  'minimal.xlsx': xlsx,
   'minimal.zst': zstd,
 }
 

@@ -39,6 +39,12 @@ const completedPortableDocuments = [
   find('org.modkitx/markdown'),
   find('org.modkitx/rtf'),
   find('org.modkitx/txt'),
+  find('org.modkitx/docx'),
+  find('org.modkitx/pptx'),
+  find('org.modkitx/xlsx'),
+  find('org.modkitx/odt'),
+  find('org.modkitx/odp'),
+  find('org.modkitx/ods'),
 ]
 
 describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tasks E/F/G)', () => {
@@ -304,5 +310,48 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     const txt = readFileSync(join(root, 'minimal.txt'))
     expect(() => new TextDecoder('utf-8', { fatal: true }).decode(txt)).not.toThrow()
     expect(txt.toString('ascii').match(/\r\n/gu)).toHaveLength(4)
+
+    const officeFixtures = {
+      docx: ['[Content_Types].xml', '_rels/.rels', 'word/document.xml'],
+      pptx: ['[Content_Types].xml', '_rels/.rels', 'ppt/presentation.xml', 'ppt/slides/slide1.xml'],
+      xlsx: ['[Content_Types].xml', '_rels/.rels', 'xl/workbook.xml', 'xl/worksheets/sheet1.xml'],
+      odt: ['mimetype', 'META-INF/manifest.xml', 'content.xml'],
+      odp: ['mimetype', 'META-INF/manifest.xml', 'content.xml'],
+      ods: ['mimetype', 'META-INF/manifest.xml', 'content.xml'],
+    } as const
+    const odfMediaTypes = {
+      odt: 'application/vnd.oasis.opendocument.text',
+      odp: 'application/vnd.oasis.opendocument.presentation',
+      ods: 'application/vnd.oasis.opendocument.spreadsheet',
+    } as const
+    for (const [format, expectedNames] of Object.entries(officeFixtures)) {
+      const data = readFileSync(join(root, `minimal.${format}`))
+      const eocd = data.byteLength - 22
+      expect(data.readUInt32LE(eocd)).toBe(0x06054b50)
+      const entries = data.readUInt16LE(eocd + 10)
+      expect(entries).toBe(expectedNames.length)
+      let central = data.readUInt32LE(eocd + 16)
+      const names = []
+      for (let index = 0; index < entries; index += 1) {
+        expect(data.readUInt32LE(central)).toBe(0x02014b50)
+        const nameLength = data.readUInt16LE(central + 28)
+        const extraLength = data.readUInt16LE(central + 30)
+        const commentLength = data.readUInt16LE(central + 32)
+        names.push(data.subarray(central + 46, central + 46 + nameLength).toString('utf8'))
+        central += 46 + nameLength + extraLength + commentLength
+      }
+      expect(names).toEqual([...expectedNames])
+      expect(central).toBe(eocd)
+      if (format === 'odt' || format === 'odp' || format === 'ods') {
+        expect(data.readUInt32LE(0)).toBe(0x04034b50)
+        expect(data.readUInt16LE(8)).toBe(0)
+        const nameLength = data.readUInt16LE(26)
+        const extraLength = data.readUInt16LE(28)
+        expect(data.subarray(30, 30 + nameLength).toString('utf8')).toBe('mimetype')
+        const payload = 30 + nameLength + extraLength
+        const size = data.readUInt32LE(22)
+        expect(data.subarray(payload, payload + size).toString('utf8')).toBe(odfMediaTypes[format])
+      }
+    }
   })
 })

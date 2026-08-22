@@ -107,7 +107,7 @@
       ],
       "droppedOperations": ["asset.validate", "export.raw", "view.inspect", "view.render"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/drawio": {
       "verdict": "convertible-with-rework",
@@ -175,7 +175,7 @@
       ],
       "droppedOperations": ["asset.validate", "export.raw", "view.inspect", "view.render"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/ods": {
       "verdict": "convertible-with-rework",
@@ -190,7 +190,7 @@
       ],
       "droppedOperations": ["asset.validate", "export.raw", "view.inspect", "view.render"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/odt": {
       "verdict": "convertible-with-rework",
@@ -205,7 +205,7 @@
       ],
       "droppedOperations": ["asset.validate", "export.raw", "view.inspect", "view.render"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/pdf": {
       "verdict": "convertible-with-rework",
@@ -235,7 +235,7 @@
       ],
       "droppedOperations": ["asset.validate", "export.raw", "view.inspect", "view.render"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/psd": {
       "verdict": "mechanical",
@@ -318,7 +318,7 @@
       ],
       "droppedOperations": ["asset.validate", "export.raw", "view.inspect", "view.render"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     }
   }
 }
