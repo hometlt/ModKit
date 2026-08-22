@@ -21,10 +21,10 @@
     }
   ],
   "limitations": [
-    "The reader covers Resource Manager ESPN BAR versions 2, 4, 5, and 6 plus the compact stored/zlib fixture layout.",
+    "The reader covers Resource Manager ESPN BAR versions 2, 4, 5, and 6 plus the compact stored/zlib compatibility layout.",
     "ESPN stored, l33t/l66t deflate, and alz4 LZ4-wrapped payloads are supported; encrypted entries and unknown compression methods fail explicitly.",
     "Declarative BAR\\u0000 and ESPN signatures cover both supported header families without requiring a filename extension.",
-    "Browser reachability is not declared because the current codec statically imports node:zlib, and writing BAR archives is not implemented."
+    "Portable extraction uses the host DecompressionStream for deflate wrappers; writing or rebuilding BAR archives is not implemented."
   ],
   "spec": {
     "formatRefs": [
@@ -73,6 +73,13 @@
       {
         "id": "export.raw",
         "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "container.extract",
+        "handlerId": "extract-entry",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]

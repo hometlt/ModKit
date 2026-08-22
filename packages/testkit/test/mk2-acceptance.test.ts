@@ -54,6 +54,11 @@ const completedPortableDocuments = [
   find('org.modkitx/psd'),
   find('org.modkitx/blend'),
 ]
+const completedPortableAgeSeries = [
+  find('org.modkitx/age-bar'),
+  find('org.modkitx/age-drs'),
+  find('org.modkitx/ddt'),
+]
 
 describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tasks E/F/G)', () => {
   it('opens every corpus sample through the product path and prints the state table', async () => {
@@ -125,6 +130,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       ...completedPortableModels,
       ...completedPortableVideos,
       ...completedPortableDocuments,
+      ...completedPortableAgeSeries,
       ...(mk2Root === undefined ? [] : [firstReal]),
     ]
     const outcomes = await runMk2Acceptance(cases, { repoRoot, mk2Root, workerBrokered: true })
@@ -519,5 +525,89 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     expect(blend.indexOf('TYPE', dnaPayload)).toBeGreaterThan(dnaPayload)
     expect(blend.indexOf('TLEN', dnaPayload)).toBeGreaterThan(dnaPayload)
     expect(blend.indexOf('STRC', dnaPayload)).toBeGreaterThan(dnaPayload)
+
+    const bar = readFileSync(join(root, 'minimal.age-bar'))
+    expect(bar.subarray(0, 4).toString('ascii')).toBe('ESPN')
+    expect(bar.readUInt32LE(4)).toBe(5)
+    expect(bar.readUInt32LE(280)).toBe(3)
+    const barTable = Number(bar.readBigUInt64LE(288))
+    expect(barTable).toBeGreaterThan(304)
+    const rootCharacters = bar.readUInt32LE(barTable)
+    expect(bar.subarray(barTable + 4, barTable + 4 + rootCharacters * 2).toString('utf16le')).toBe(
+      'art',
+    )
+    let barCursor = barTable + 8 + rootCharacters * 2
+    const barEntries: { name: string; compressed: number; payload: Buffer }[] = []
+    for (let index = 0; index < 3; index += 1) {
+      const payloadOffset = Number(bar.readBigUInt64LE(barCursor))
+      const decodedSize = bar.readUInt32LE(barCursor + 8)
+      const storedSize = bar.readUInt32LE(barCursor + 12)
+      expect(bar.readUInt32LE(barCursor + 16)).toBe(decodedSize)
+      barCursor += 36
+      const nameCharacters = bar.readUInt32LE(barCursor)
+      barCursor += 4
+      const name = bar.subarray(barCursor, barCursor + nameCharacters * 2).toString('utf16le')
+      barCursor += nameCharacters * 2
+      const compressed = bar.readUInt32LE(barCursor)
+      barCursor += 4
+      barEntries.push({
+        name,
+        compressed,
+        payload: bar.subarray(payloadOffset, payloadOffset + storedSize),
+      })
+    }
+    expect(barEntries.map(entry => [entry.name, entry.compressed])).toEqual([
+      ['data/proto.xmb', 0],
+      ['strings/help.txt', 1],
+      ['textures/icon.ddt', 1],
+    ])
+    expect(barEntries[0]?.payload.toString('utf8')).toBe('<xmb/>')
+    expect(barEntries[1]?.payload.subarray(0, 4).toString('ascii')).toBe('l33t')
+    expect(
+      zlib.inflateRawSync(barEntries[1]?.payload.subarray(10) ?? Buffer.alloc(0)).toString(),
+    ).toBe('hello l33t\n')
+    const alz4 = barEntries[2]?.payload
+    expect(alz4?.subarray(0, 4).toString('ascii')).toBe('alz4')
+    const alz4Size = alz4?.readUInt32LE(4) ?? 0
+    expect((alz4?.[16] ?? 0) >>> 4).toBe(alz4Size)
+    expect(alz4?.subarray(17, 17 + alz4Size).toString()).toBe('hello alz4\n')
+
+    const drs = readFileSync(join(root, 'minimal.age-drs'))
+    expect(drs.subarray(40, 44).toString('ascii')).toBe('1.00')
+    expect(drs.subarray(44, 49).toString('ascii')).toBe('tribe')
+    expect(drs.readUInt32LE(56)).toBe(2)
+    const drsTypes = []
+    const drsResources = []
+    for (let tableIndex = 0; tableIndex < 2; tableIndex += 1) {
+      const table = 64 + tableIndex * 12
+      const rawType = drs.subarray(table, table + 4).toString('ascii')
+      const type = [...rawType].reverse().join('').trim()
+      drsTypes.push(type)
+      const resources = drs.readUInt32LE(table + 4)
+      expect(drs.readUInt32LE(table + 8)).toBe(1)
+      const id = drs.readUInt32LE(resources)
+      const payload = drs.readUInt32LE(resources + 4)
+      const size = drs.readUInt32LE(resources + 8)
+      drsResources.push([type, id, drs.subarray(payload, payload + size).toString('utf8')])
+    }
+    expect(drsTypes).toEqual(['slp', 'wav'])
+    expect(drsResources).toEqual([
+      ['slp', 42, 'sprite'],
+      ['wav', 7, 'sound'],
+    ])
+
+    const ddt = readFileSync(join(root, 'minimal.ddt'))
+    expect(ddt.subarray(0, 4).toString('ascii')).toBe('RTS3')
+    expect([...ddt.subarray(4, 8)]).toEqual([0, 0, 4, 1])
+    expect([ddt.readUInt32LE(8), ddt.readUInt32LE(12)]).toEqual([4, 4])
+    const ddtPayload = ddt.readUInt32LE(16)
+    expect(ddt.readUInt32LE(20)).toBe(8)
+    const red565 = ddt.readUInt16LE(ddtPayload)
+    expect([
+      Math.round((((red565 >>> 11) & 0x1f) * 255) / 31),
+      Math.round((((red565 >>> 5) & 0x3f) * 255) / 63),
+      Math.round(((red565 & 0x1f) * 255) / 31),
+    ]).toEqual([255, 0, 0])
+    expect(ddt.readUInt32LE(ddtPayload + 4)).toBe(0)
   })
 })

@@ -244,6 +244,24 @@ const OPERATION_RENAMES = { 'image.compressed.read': 'image.compressed-read' }
 
 /** Hand ports can expose a shared operation that the v1 manifest did not declare explicitly. */
 const PORT_OPERATIONS = {
+  'org.modkitx/age-bar': [
+    {
+      id: 'container.extract',
+      handlerId: 'extract-entry',
+      mutatesSource: false,
+      requiredPermissions: ['read-source'],
+      outputKinds: ['bytes'],
+    },
+  ],
+  'org.modkitx/age-drs': [
+    {
+      id: 'container.extract',
+      handlerId: 'extract-entry',
+      mutatesSource: false,
+      requiredPermissions: ['read-source'],
+      outputKinds: ['bytes'],
+    },
+  ],
   'org.modkitx/big': [
     {
       id: 'container.extract',

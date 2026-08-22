@@ -21,10 +21,10 @@
     }
   ],
   "limitations": [
-    "The decoder covers the top mip of recognized RTS3 DXT1/DXT3/DXT5 payloads; non-DXT and unknown format flags remain diagnostic-only.",
-    "Mip selection, texture writing, and lossless wrapper rewriting are not implemented.",
-    "Generated routing is narrowed to the .ddt extension. The handwritten compatibility codec retains RTS3 structural detection because manifest v1 cannot express extension-or-signature matching without turning the alternatives into a conjunction.",
-    "The manifest conservatively exposes runtime operations to Node hosts because the shared legacy RTS entrypoint reaches the DDS external CommonJS WASM loader whose browser import graph is not yet verifiable."
+    "The decoder exposes every declared mip of recognized RTS3 DXT1/DXT3/DXT5 payloads; non-DXT and unknown format flags fail explicitly.",
+    "Texture writing and lossless wrapper rewriting are not implemented.",
+    "RTS3 structural detection works without a filename extension.",
+    "The MK3 decoder is self-contained and portable; it does not load the legacy DDS CommonJS/WASM decoder."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "ddt", "label": "AoE3/AoM DDT texture" }],

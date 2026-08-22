@@ -26,13 +26,14 @@
       "renames": [],
       "converterDefaults": [
         "operations:inspection-triple",
+        "operations:narrowed-at-port",
         "probe:bytes-4096",
         "representation:common.archive/entry-namespace",
         "variants:pair"
       ],
       "droppedOperations": ["archive.extract", "archive.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/age-drs": {
       "verdict": "mechanical",
@@ -41,13 +42,14 @@
       "renames": [],
       "converterDefaults": [
         "operations:inspection-triple",
+        "operations:narrowed-at-port",
         "probe:bytes-4096",
         "representation:common.archive/entry-namespace",
         "variants:pair"
       ],
       "droppedOperations": ["archive.extract", "archive.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/bti": {
       "verdict": "mechanical",
@@ -92,7 +94,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.read"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/mtrl": {
       "verdict": "mechanical",

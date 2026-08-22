@@ -923,6 +923,33 @@
       "note": "Blender 4.00 BHeads, legacy triangle geometry, complete embedded SDNA and final ENDB"
     },
     {
+      "extension": "mk2/microsoft-age-series",
+      "contributionId": "org.modkitx/age-bar",
+      "corpus": "synthetic",
+      "sample": "minimal.age-bar",
+      "minimumConfidence": 0.99,
+      "dataSource": "namespace",
+      "note": "Resource Manager ESPN BAR v5 with a UTF-16 table and stored, l33t and alz4 entries"
+    },
+    {
+      "extension": "mk2/microsoft-age-series",
+      "contributionId": "org.modkitx/age-drs",
+      "corpus": "synthetic",
+      "sample": "minimal.age-drs",
+      "minimumConfidence": 0.99,
+      "dataSource": "namespace",
+      "note": "Genie DRS with reverse-byte-order SLP/WAV table tags and stored resources"
+    },
+    {
+      "extension": "mk2/microsoft-age-series",
+      "contributionId": "org.modkitx/ddt",
+      "corpus": "synthetic",
+      "sample": "minimal.ddt",
+      "minimumConfidence": 0.99,
+      "dataSource": "raster",
+      "note": "RTS3 DDT with one genuine 4x4 DXT1 block decoded to opaque red RGBA pixels"
+    },
+    {
       "extension": "common/images",
       "contributionId": "org.modkitx/image-png",
       "corpus": "synthetic",

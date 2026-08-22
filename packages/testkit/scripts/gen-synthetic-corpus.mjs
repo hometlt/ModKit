@@ -2386,10 +2386,143 @@ function txt() {
   return ascii('First paragraph.\r\nStill first.\r\n\r\nSecond paragraph.\r\n')
 }
 
+/**
+ * Resource Manager ESPN BAR v5: a real UTF-16 file table with stored, l33t and alz4 payloads.
+ * The wrapped streams use RFC 1951 stored blocks and an LZ4 literal-only sequence respectively.
+ */
+function ageBar() {
+  const sourceFiles = [
+    { name: 'data/proto.xmb', decoded: ascii('<xmb/>'), method: 'stored' },
+    { name: 'strings/help.txt', decoded: ascii('hello l33t\n'), method: 'l33t' },
+    { name: 'textures/icon.ddt', decoded: ascii('hello alz4\n'), method: 'alz4' },
+  ]
+  const files = sourceFiles.map(file => {
+    if (file.method === 'l33t') {
+      return {
+        ...file,
+        stored: concat(
+          ascii('l33t'),
+          u32le(file.decoded.byteLength),
+          bytes(0x78, 0x01),
+          deflateStored(file.decoded),
+        ),
+      }
+    }
+    if (file.method === 'alz4') {
+      const block = concat(bytes(file.decoded.byteLength << 4), file.decoded)
+      return {
+        ...file,
+        stored: concat(
+          ascii('alz4'),
+          u32le(file.decoded.byteLength),
+          u32le(block.byteLength),
+          u32le(1),
+          block,
+        ),
+      }
+    }
+    return { ...file, stored: file.decoded }
+  })
+  const utf16 = value => {
+    const out = new Uint8Array(value.length * 2)
+    for (let index = 0; index < value.length; index += 1) out[index * 2] = value.charCodeAt(index)
+    return out
+  }
+  const header = new Uint8Array(304)
+  header.set(ascii('ESPN'), 0)
+  const headerView = new DataView(header.buffer)
+  headerView.setUint32(4, 5, true)
+  headerView.setUint32(280, files.length, true)
+  const payloadBytes = files.reduce((sum, file) => sum + file.stored.byteLength, 0)
+  const tableOffset = header.byteLength + payloadBytes
+  headerView.setBigUint64(288, BigInt(tableOffset), true)
+  const root = 'art'
+  const table = [u32le(root.length), utf16(root), u32le(files.length)]
+  let payloadOffset = header.byteLength
+  for (const file of files) {
+    table.push(
+      u64le(BigInt(payloadOffset)),
+      u32le(file.decoded.byteLength),
+      u32le(file.stored.byteLength),
+      u32le(file.decoded.byteLength),
+      new Uint8Array(16),
+      u32le(file.name.length),
+      utf16(file.name),
+      u32le(file.method === 'stored' ? 0 : 1),
+    )
+    payloadOffset += file.stored.byteLength
+  }
+  return concat(
+    header,
+    files.map(file => file.stored),
+    table,
+  )
+}
+
+/** Genie DRS with two genuine reverse-byte-order table tags and stored resource payloads. */
+function ageDrs() {
+  const groups = [
+    { type: 'slp', files: [{ id: 42, data: ascii('sprite') }] },
+    { type: 'wav', files: [{ id: 7, data: ascii('sound') }] },
+  ]
+  const headerBytes = 64
+  const resourceTableStart = headerBytes + groups.length * 12
+  let resourceCursor = resourceTableStart
+  const tables = groups.map(group => {
+    const offset = resourceCursor
+    resourceCursor += group.files.length * 12
+    return { ...group, offset }
+  })
+  const payloadBytes = groups
+    .flatMap(group => group.files)
+    .reduce((sum, file) => sum + file.data.byteLength, 0)
+  const out = new Uint8Array(resourceCursor + payloadBytes)
+  const view = new DataView(out.buffer)
+  out.set(ascii('Copyright (c) 1997 Ensemble Studios.'), 0)
+  out.set(ascii('1.00'), 40)
+  out.set(ascii('tribe'), 44)
+  view.setUint32(56, groups.length, true)
+  view.setUint32(60, resourceCursor, true)
+  let payloadCursor = resourceCursor
+  for (let tableIndex = 0; tableIndex < tables.length; tableIndex += 1) {
+    const table = tables[tableIndex]
+    const tableOffset = headerBytes + tableIndex * 12
+    const storedTag = [...table.type.padEnd(4, ' ')].reverse().join('')
+    out.set(ascii(storedTag), tableOffset)
+    view.setUint32(tableOffset + 4, table.offset, true)
+    view.setUint32(tableOffset + 8, table.files.length, true)
+    for (let index = 0; index < table.files.length; index += 1) {
+      const file = table.files[index]
+      const entry = table.offset + index * 12
+      view.setUint32(entry, file.id, true)
+      view.setUint32(entry + 4, payloadCursor, true)
+      view.setUint32(entry + 8, file.data.byteLength, true)
+      out.set(file.data, payloadCursor)
+      payloadCursor += file.data.byteLength
+    }
+  }
+  return out
+}
+
+/** RTS3 DDT with one 4×4 DXT1 mip: a single opaque red color block. */
+function ddt() {
+  return concat(
+    ascii('RTS3'),
+    bytes(0, 0, 4, 1),
+    u32le(4),
+    u32le(4),
+    u32le(24),
+    u32le(8),
+    bytes(0x00, 0xf8, 0x00, 0x00, 0, 0, 0, 0),
+  )
+}
+
 // ---------------------------------------------------------------- the corpus
 
 /** Every fixture: file name → builder. The name is what the acceptance corpus refers to. */
 const FIXTURES = {
+  'minimal.age-bar': ageBar,
+  'minimal.age-drs': ageDrs,
   'minimal.ai': ai,
   'minimal.ani': ani,
   'minimal.astc': astc,
@@ -2404,6 +2537,7 @@ const FIXTURES = {
   'minimal.cdr': cdr,
   'minimal.cur': cur,
   'minimal.dds': dds,
+  'minimal.ddt': ddt,
   'minimal.dae': dae,
   'minimal.dmg': dmg,
   'minimal.docx': docx,

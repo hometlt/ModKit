@@ -22,7 +22,7 @@
   ],
   "limitations": [
     "The reader covers the AoE1/AoE2 64-byte header and Star Wars: Galactic Battlegrounds 84-byte header variants with stored resource payloads.",
-    "Resource paths are synthesized from table type and resource ID because DRS tables do not store ordinary path names.",
+    "Resource paths are synthesized from the reverse-byte-order table type and resource ID because DRS tables do not store ordinary path names.",
     "Writing or rebuilding DRS archives is not implemented."
   ],
   "spec": {
@@ -71,6 +71,13 @@
       {
         "id": "export.raw",
         "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "container.extract",
+        "handlerId": "extract-entry",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]

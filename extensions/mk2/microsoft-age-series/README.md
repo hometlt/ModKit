@@ -13,11 +13,11 @@ renames, converter defaults and v1 operations left without a handler — is data
 
 | contribution          | v1 manifest                                                          | module                 | port         |
 | --------------------- | -------------------------------------------------------------------- | ---------------------- | ------------ |
-| `org.modkitx/age-bar` | `extensions/microsoft/age-series/codecs/age-bar/codec.manifest.json` | `src/age-bar/codec.js` | port-pending |
-| `org.modkitx/age-drs` | `extensions/microsoft/age-series/codecs/age-drs/codec.manifest.json` | `src/age-drs/codec.js` | port-pending |
+| `org.modkitx/age-bar` | `extensions/microsoft/age-series/codecs/age-bar/codec.manifest.json` | `src/age-bar/codec.js` | ported       |
+| `org.modkitx/age-drs` | `extensions/microsoft/age-series/codecs/age-drs/codec.manifest.json` | `src/age-drs/codec.js` | ported       |
 | `org.modkitx/bti`     | `extensions/microsoft/age-series/codecs/bti/codec.manifest.json`     | `src/bti/codec.js`     | port-pending |
 | `org.modkitx/cub`     | `extensions/microsoft/age-series/codecs/cub/codec.manifest.json`     | `src/cub/codec.js`     | port-pending |
-| `org.modkitx/ddt`     | `extensions/microsoft/age-series/codecs/ddt/codec.manifest.json`     | `src/ddt/codec.js`     | port-pending |
+| `org.modkitx/ddt`     | `extensions/microsoft/age-series/codecs/ddt/codec.manifest.json`     | `src/ddt/codec.js`     | ported       |
 | `org.modkitx/mtrl`    | `extensions/microsoft/age-series/codecs/mtrl/codec.manifest.json`    | `src/mtrl/codec.js`    | port-pending |
 | `org.modkitx/prt`     | `extensions/microsoft/age-series/codecs/prt/codec.manifest.json`     | `src/prt/codec.js`     | port-pending |
 | `org.modkitx/sld`     | `extensions/microsoft/age-series/codecs/sld/codec.manifest.json`     | `src/sld/codec.js`     | port-pending |
