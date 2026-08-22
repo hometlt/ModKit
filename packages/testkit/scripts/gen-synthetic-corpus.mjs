@@ -3620,6 +3620,52 @@ function sc2GameData() {
   )
 }
 
+/** StarCraft II bank with typed values and a present (deliberately opaque) signature. */
+function sc2Bank() {
+  return ascii(
+    '<Bank version="1">\n' +
+      '  <Section name="Progress">\n' +
+      '    <Key name="Score"><Value int="42"/></Key>\n' +
+      '    <Key name="Player"><Value string="Raynor"/></Key>\n' +
+      '  </Section>\n' +
+      '  <Section name="Flags"><Key name="Won"><Value flag="1"/></Key></Section>\n' +
+      '  <Signature value="0123456789ABCDEF"/>\n' +
+      '</Bank>\n',
+  )
+}
+
+/** SC2 DocumentInfo metadata with dependency and preload sections. */
+function sc2DocumentInfo() {
+  return ascii(
+    '<DocInfo>\n' +
+      '  <Dependencies><Value>file:Mods/Liberty.SC2Mod</Value></Dependencies>\n' +
+      '  <Preload><Value>Assets/Loading.dds</Value></Preload>\n' +
+      '</DocInfo>\n',
+  )
+}
+
+/** Authored TriggerData XML with one library, root item, trigger, and custom script block. */
+function sc2Triggers() {
+  return ascii(
+    '<TriggerData>\n' +
+      '  <Library Id="DEMO">\n' +
+      '    <Root><Item Type="Trigger" Id="00000001"/></Root>\n' +
+      '    <Element Type="Trigger" Id="00000001"><Identifier>Fixture Trigger</Identifier></Element>\n' +
+      '    <Element Type="FunctionDef" Id="00000002"><Identifier>Spawn</Identifier><FlagCustomScript/><ScriptCode>UnitCreate(1, "Marine", 0, 1, PointFrom(0, 0), 270.0);</ScriptCode></Element>\n' +
+      '  </Library>\n' +
+      '</TriggerData>\n',
+  )
+}
+
+/** Galaxy program selected by the runtime surface because it declares void main(). */
+function sc2RuntimeProgram() {
+  return ascii(
+    'include "TriggerLibs/NativeLib"\n' +
+      'void Spawn() { UnitCreate(1, "Marine", 0, 1, PointFrom(0.0, 0.0), 270.0); }\n' +
+      'void main() { Spawn(); TriggerDebugOutput(1, StringToText("runtime fixture"), true); }\n',
+  )
+}
+
 /** Warcraft III MDX container with VERS 800 and a minimal MODL record. */
 function war3Mdx() {
   const model = new Uint8Array(372)
@@ -3735,6 +3781,10 @@ const FIXTURES = {
   'minimal.sc2strings.txt': sc2Strings,
   'minimal.SC2Layout': sc2Layout,
   'minimal.gamedata.xml': sc2GameData,
+  'minimal.SC2Bank': sc2Bank,
+  DocumentInfo: sc2DocumentInfo,
+  Triggers: sc2Triggers,
+  'minimal-runtime.galaxy': sc2RuntimeProgram,
   'minimal.mdx': war3Mdx,
   'minimal.scm': supcomScm,
   'minimal.bti': bti,

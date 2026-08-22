@@ -1,0 +1,7 @@
+<TriggerData>
+  <Library Id="DEMO">
+    <Root><Item Type="Trigger" Id="00000001"/></Root>
+    <Element Type="Trigger" Id="00000001"><Identifier>Fixture Trigger</Identifier></Element>
+    <Element Type="FunctionDef" Id="00000002"><Identifier>Spawn</Identifier><FlagCustomScript/><ScriptCode>UnitCreate(1, "Marine", 0, 1, PointFrom(0, 0), 270.0);</ScriptCode></Element>
+  </Library>
+</TriggerData>

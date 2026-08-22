@@ -1,0 +1,8 @@
+<Bank version="1">
+  <Section name="Progress">
+    <Key name="Score"><Value int="42"/></Key>
+    <Key name="Player"><Value string="Raynor"/></Key>
+  </Section>
+  <Section name="Flags"><Key name="Won"><Value flag="1"/></Key></Section>
+  <Signature value="0123456789ABCDEF"/>
+</Bank>

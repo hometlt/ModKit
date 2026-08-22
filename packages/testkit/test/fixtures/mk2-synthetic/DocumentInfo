@@ -1,0 +1,4 @@
+<DocInfo>
+  <Dependencies><Value>file:Mods/Liberty.SC2Mod</Value></Dependencies>
+  <Preload><Value>Assets/Loading.dds</Value></Preload>
+</DocInfo>

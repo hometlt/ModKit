@@ -21,12 +21,8 @@
     }
   ],
   "limitations": [
-    "The TriggerData XML root is the declarative prefilter because valid SC2 trigger documents may be extensionless or use several weak extensions; the bounded detector verifies Library, Root, and Element structure.",
-    "Browser hosts can use the bounded detector, but the current Trigger/Galaxy conversion runtime reaches Node-only dependencies.",
-    "Trigger-to-Galaxy conversion works without NativeLib using documented fallbacks; round-trip comparison requires an injected NativeLib and is not an unconditional manifest operation.",
-    "The edit capability covers catalog gamelink/abilcmd rename only, as a text splice that preserves surrounding formatting; ids spelled as raw string literals inside custom ScriptCode blocks are not patched. It requires an injected coordinating catalog because a trigger document cannot confirm the renamed entities exist or that the catalog half of the rename was applied, so edit.content is not an unconditional manifest operation.",
-    "Completion, formatting, identifier-level refactoring, and compilation are unavailable; compilation and execution belong to the separately permissioned sc2-runtime codec.",
-    "StarCraft II game contribution metadata remains on the semantic codec until game manifests land in Slice C3."
+    "Portable inspection validates TriggerData XML nesting and publishes libraries, authored element types, custom ScriptCode presence, and the exact source text.",
+    "Semantic trigger-library lowering, Trigger-to-Galaxy conversion, gamelink edits, language services, compilation, execution, and source writes remain unavailable."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "sc2-triggers", "label": "StarCraft II Trigger XML" }],
@@ -34,7 +30,10 @@
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "full", "export"],
-    "match": {},
+    "match": {
+      "pathGlobs": ["**/Triggers", "**/*.Triggers"],
+      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "3c5472696767657244617461" }]
+    },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {

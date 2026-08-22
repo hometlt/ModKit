@@ -54,6 +54,10 @@ const completedPortableStarcraft2 = [
   find('org.modkitx/sc2-strings'),
   find('org.modkitx/sc2-layout'),
   find('org.modkitx/sc2-data'),
+  find('org.modkitx/sc2-bank'),
+  find('org.modkitx/sc2-document-metadata'),
+  find('org.modkitx/sc2-triggers'),
+  find('org.modkitx/sc2-runtime'),
 ]
 const completedPortableWarcraft3 = [find('org.modkitx/war3-mdx')]
 const completedPortableGasPowered = [find('org.modkitx/supcom-scm')]

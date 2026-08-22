@@ -127,14 +127,14 @@ export function parseXmlElements(text, budget, expectedRoot, label) {
   return Object.freeze(elements)
 }
 
-function plausibleGalaxy(text) {
+export function plausibleGalaxy(text) {
   const source = text.replace(/\/\*[\s\S]*?\*\//gu, '').replace(/\/\/.*$/gmu, '')
   return /\b(?:include\s+"[^"]+"|(?:void|bool|byte|char|fixed|int|string|text|unit|[A-Za-z_]\w*)\s+[A-Za-z_]\w*\s*\([^;{}]*\)\s*\{)/u.test(
     source,
   )
 }
 
-function scanGalaxy(text, budget) {
+export function scanGalaxy(text, budget) {
   const source = text.replace(/\/\*[\s\S]*?\*\//gu, '').replace(/\/\/.*$/gmu, '')
   const functions = []
   for (const match of source.matchAll(

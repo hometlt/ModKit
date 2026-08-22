@@ -21,12 +21,8 @@
     }
   ],
   "limitations": [
-    "The codec spans three mutually exclusive structures, so the v1 path prefilter remains deliberately broad and the portable detect entrypoint is the structural routing authority.",
-    "DocumentInfo serialization preserves parsed values but normalizes XML formatting and entity spelling.",
-    "DocumentHeader serialization preserves opaque checksum fields but cannot recompute them after semantic edits.",
-    "edit.content replaces the ordered dependency list for document-header/document-info only; .version sidecars have no dependency list to edit.",
-    "source.save remains unavailable until a writable archive or VFS transaction is supplied; edit.content produces an AssetOutput a host can persist through its own write path.",
-    "StarCraft II game contribution metadata remains on the semantic codec until game manifests land in Slice C3."
+    "Portable structural inspection distinguishes H2CS DocumentHeader, cdes .version sidecars, and DocInfo XML without relying on the filename.",
+    "DocumentHeader entry-record decoding and checksum recomputation, DocumentInfo formatting-preserving serialization, dependency edits, and source writes remain unavailable."
   ],
   "spec": {
     "formatRefs": [
@@ -36,7 +32,14 @@
     "sourceTopology": "single",
     "artifactStages": ["authored"],
     "openIntents": ["probe", "inspect", "full", "export"],
-    "match": {},
+    "match": {
+      "pathGlobs": ["**/DocumentHeader", "**/DocumentInfo", "**/*.version"],
+      "signatures": [
+        { "from": "start", "offset": 0, "bytesHex": "48324353" },
+        { "from": "start", "offset": 0, "bytesHex": "63646573" },
+        { "from": "start", "offset": 0, "bytesHex": "3c446f63496e666f" }
+      ]
+    },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {

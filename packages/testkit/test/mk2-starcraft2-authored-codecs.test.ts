@@ -13,7 +13,15 @@ import {
   type TextDataSource,
 } from '@modkitx-x3/sdk'
 
-type CodecId = 'galaxy' | 'sc2-strings' | 'sc2-layout' | 'sc2-data'
+type CodecId =
+  | 'galaxy'
+  | 'sc2-strings'
+  | 'sc2-layout'
+  | 'sc2-data'
+  | 'sc2-bank'
+  | 'sc2-document-metadata'
+  | 'sc2-triggers'
+  | 'sc2-runtime'
 
 const root = join(import.meta.dirname, '..', '..', '..')
 const extension = join(root, 'extensions', 'mk2', 'blizzard-starcraft2')
@@ -106,7 +114,7 @@ async function fixture(name: string): Promise<Uint8Array> {
   return new Uint8Array(await readFile(join(fixtureRoot, name)))
 }
 
-describe('ported StarCraft II authored-text codecs', () => {
+describe('ported StarCraft II authored and structural codecs', () => {
   it('inspects Galaxy declarations and publishes the exact UTF-8 source', async () => {
     const bytes = await fixture('minimal.galaxy')
     const session = await open('galaxy', bytes)
@@ -181,5 +189,124 @@ describe('ported StarCraft II authored-text codecs', () => {
     await expect(
       open('galaxy', await fixture('minimal.galaxy'), { ...budget, maxScalarBytes: 8 }),
     ).rejects.toThrow(/maxScalarBytes/u)
+  })
+
+  it('inspects SC2 banks as bounded section/key tables', async () => {
+    const session = await open('sc2-bank', await fixture('minimal.SC2Bank'))
+    expect(await inspect(session)).toMatchObject({
+      format: 'sc2-bank',
+      version: '1',
+      sections: 2,
+      keys: 3,
+      valueTypes: ['flag', 'int', 'string'],
+      signaturePresent: true,
+    })
+    const lease = await session.dataSource('common.view/table-data-source', 1)
+    const table = lease.value as TableDataSource
+    expect(await table.shape()).toMatchObject({ header: ['Section', 'Key', 'Type', 'Value'] })
+    expect((await table.rows({ kind: 'range', from: 0, count: 10 })).items[0]?.cells).toEqual([
+      'Progress',
+      'Score',
+      'int',
+      '42',
+    ])
+    await lease.release()
+    await session.dispose()
+  })
+
+  it('distinguishes DocInfo, H2CS DocumentHeader, and cdes version metadata', async () => {
+    const info = await open('sc2-document-metadata', await fixture('DocumentInfo'))
+    expect(await inspect(info)).toMatchObject({
+      format: 'document-info',
+      sections: ['Dependencies', 'Preload'],
+      dependencies: ['file:Mods/Liberty.SC2Mod'],
+      preloads: ['Assets/Loading.dds'],
+    })
+    await info.dispose()
+
+    const header = new Uint8Array(96)
+    header.set(new TextEncoder().encode('H2CS'))
+    const headerView = new DataView(header.buffer)
+    headerView.setUint32(0x04, 8, true)
+    headerView.setUint32(0x08, 0x5332, true)
+    headerView.setUint16(0x0c, 0x0501, true)
+    headerView.setUint16(0x0e, 96, true)
+    headerView.setUint32(0x10, 95_841, true)
+    headerView.setUint32(0x18, 2, true)
+    headerView.setUint32(0x2c, 1, true)
+    header.set(new TextEncoder().encode('file:Mods/Liberty.SC2Mod\0'), 0x30)
+    const headerSession = await open('sc2-document-metadata', header)
+    expect(await inspect(headerSession)).toMatchObject({
+      format: 'document-header',
+      markerVersion: 8,
+      gameSignature: 0x5332,
+      buildNumber: 95_841,
+      dependencies: ['file:Mods/Liberty.SC2Mod'],
+    })
+    await headerSession.dispose()
+
+    const version = new Uint8Array(44)
+    version.set(new TextEncoder().encode('cdess2mv'))
+    const versionView = new DataView(version.buffer)
+    versionView.setUint32(0x08, 2, true)
+    versionView.setUint32(0x0c, 95_841, true)
+    versionView.setUint32(0x10, 5, true)
+    versionView.setUint32(0x14, 0, true)
+    versionView.setUint32(0x18, 12, true)
+    versionView.setUint32(0x1c, 95_841, true)
+    versionView.setUint32(0x20, 7, true)
+    versionView.setUint32(0x24, 1_700_000_000, true)
+    versionView.setUint32(0x28, 1, true)
+    const versionSession = await open('sc2-document-metadata', version)
+    expect(await inspect(versionSession)).toMatchObject({
+      format: 'version-file',
+      typeTag: 's2mv',
+      formatVersion: 2,
+      buildNumber: 95_841,
+      majorVersion: 5,
+      minorVersion: 0,
+      patchVersion: 12,
+      entryCount: 7,
+    })
+    await versionSession.dispose()
+  })
+
+  it('inspects TriggerData structure and the non-executing runtime program boundary', async () => {
+    const triggers = await open('sc2-triggers', await fixture('Triggers'))
+    expect(await inspect(triggers)).toMatchObject({
+      format: 'sc2-triggers',
+      libraries: ['DEMO'],
+      elements: 2,
+      typeCounts: { Trigger: 1, FunctionDef: 1 },
+      customScriptBlocks: 1,
+    })
+    await triggers.dispose()
+
+    const runtime = await open('sc2-runtime', await fixture('minimal-runtime.galaxy'))
+    expect(await inspect(runtime)).toMatchObject({
+      format: 'sc2-runtime',
+      functions: 2,
+      entrypoints: ['Spawn', 'main'],
+      nativeCalls: 4,
+      nativeInvocations: 4,
+    })
+    const lease = await runtime.dataSource('common.view/table-data-source', 1)
+    const table = lease.value as TableDataSource
+    expect(await table.shape()).toMatchObject({ header: ['Native', 'Invocations'], rows: 4 })
+    await lease.release()
+    await runtime.dispose()
+  })
+
+  it('rejects malformed local structural and runtime surfaces', async () => {
+    const encode = (value: string) => new TextEncoder().encode(value)
+    await expect(open('sc2-bank', encode('<Bank><Section></Bank>'))).rejects.toThrow(/nesting/u)
+    await expect(
+      open('sc2-triggers', encode('<TriggerData><Element></TriggerData>')),
+    ).rejects.toThrow(/nesting/u)
+    await expect(open('sc2-runtime', await fixture('minimal.galaxy'))).rejects.toThrow(/main/u)
+    const malformedVersion = new Uint8Array(44)
+    malformedVersion.set(encode('cdess2mv'))
+    new DataView(malformedVersion.buffer).setUint32(0x08, 1, true)
+    await expect(open('sc2-document-metadata', malformedVersion)).rejects.toThrow(/not supported/u)
   })
 })

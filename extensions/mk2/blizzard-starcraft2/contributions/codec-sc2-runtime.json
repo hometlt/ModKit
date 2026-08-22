@@ -21,10 +21,8 @@
     }
   ],
   "limitations": [
-    "The initial provider executes explicit Galaxy/Trigger sources and paths or opt-in bounded automatic discovery through a supplied SC2 GameContentResolver; it does not open or infer an installation itself.",
-    "Catalog-backed fixed-step simulation is available when a resolved catalog is injected. Optional replay assistance consumes normalized semantic commands, reports divergence, corrects from complete tracker frames, and reconstructs backward seeks from a deterministic baseline; concrete selected-content ability resolution, semantic Trigger dependency-closure selection, and asynchronous host-native bridging remain incomplete. Trigger XML is lowered directly to the engine subset, with failures returned as diagnostics.",
-    "Simulation snapshot/restore currently preserves engine state and the deterministic tick but not queued commands, pending semantic events, or the fractional fixed-step accumulator; hosts must snapshot only at a drained tick boundary.",
-    "Runtime diagnostics are structured, but the existing engine's trace covers isolated execution errors only until the engine/sim implementation migration is complete."
+    "The codec recognizes Galaxy runtime programs with a void main() entrypoint and publishes declarations, includes, and statically observed native-call counts.",
+    "Execution, snapshot/restore, catalog-backed simulation, replay assistance, Trigger XML lowering, and host-native bridging require an X3 runtime contribution contract and are explicitly unavailable here."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "sc2-runtime", "label": "StarCraft II Runtime" }],

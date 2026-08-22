@@ -21,11 +21,8 @@
     }
   ],
   "limitations": [
-    "The XML-root prefilter routes structurally valid Bank documents; the bounded detector additionally provides weak extension-only diagnostics for direct Open With callers.",
-    "Detection is portable, but the current semantic runtime is conservatively Node-only because its transitive @modkitx/bank compatibility import is not browser-classified by the repository validator.",
-    "Raw-preserving edit.content patches only the targeted value or type tag, while source.save-as intentionally serializes and normalizes the parsed XML.",
-    "save.sign is document-conditional and requires signature metadata inferred from the player Banks path or supplied explicitly by the caller.",
-    "The codec returns patched or serialized XML to the host and does not perform in-place filesystem writes."
+    "Portable inspection validates the Bank XML hierarchy and publishes sections, keys, typed values, source text, and signature presence.",
+    "Signature verification/signing, raw-preserving value edits, normalized serialization, and source writes remain unavailable in the X3 codec contract."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "sc2-bank", "label": "StarCraft II bank" }],
@@ -33,7 +30,10 @@
     "sourceTopology": "single",
     "artifactStages": ["runtime"],
     "openIntents": ["probe", "inspect", "full", "export"],
-    "match": {},
+    "match": {
+      "extensions": ["sc2bank"],
+      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "3c42616e6b" }]
+    },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {
@@ -45,6 +45,7 @@
       }
     ],
     "publishesDataSources": [
+      { "contract": "common.view/text-data-source", "major": 1 },
       { "contract": "common.view/table-data-source", "major": 1 },
       { "contract": "common.view/tree-data-source", "major": 1 },
       { "contract": "common.view/byte-range-source", "major": 1 }
