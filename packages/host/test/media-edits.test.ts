@@ -570,6 +570,35 @@ describe('A5 Path A — MP3 ID3v2 text frames on the 13D seam', () => {
 // PNG encoder writer
 
 describe('A5 Path B — the PNG encoder writer resolves by facet and its plan commits', () => {
+  it('refuses JPEG pixel editing before save, even when the caller accepts lossy output', async () => {
+    const svc = await services()
+    if (svc.serviceDefinitions === undefined) throw new Error('no definitions registry')
+    const resolver = createHostServiceResolver({
+      inventory: svc.inventory,
+      target: svc.target,
+      executionBackends: svc.executionBackends,
+      definitions: svc.serviceDefinitions,
+      grant: WRITE,
+      budgets: budget,
+    })
+    try {
+      await expect(
+        resolver.port.resolve({
+          contract: 'common.edit/writer',
+          major: 1,
+          facet: {
+            formatId: 'jpeg',
+            representationId: 'rgba8',
+            mutationMode: 'mutate',
+            minimumRoundTrip: 'lossy',
+          },
+        }),
+      ).rejects.toMatchObject({ code: 'x3.host/service-contract-unresolved' })
+    } finally {
+      await resolver.release()
+    }
+  })
+
   it('encodes a 2×2 RGBA payload; the committed file reopens as a 2×2 PNG whose decoded pixels are the payload', async () => {
     const { path, result } = await openCopy('encoded.png', new Uint8Array(readFileSync(pngFixture)))
     const svc = await services()

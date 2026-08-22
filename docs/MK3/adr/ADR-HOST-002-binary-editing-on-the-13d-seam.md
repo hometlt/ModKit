@@ -91,6 +91,15 @@ requiredPermissions` plus `write-source` for `mutatesSource` — are **degradabl
 6. **Fidelity evidence is host policy.** `evidenceFor` resolves against a host-registered list
    (first-party evidence ships with the proof that produced it); a plan without evidence is
    `fidelity-unproven`, never silently committed.
+7. **JPEG pixels are not a semantic round trip.** The shipped image extension deliberately does
+   not offer a `jpeg/rgba8` writer. Re-encoding pixels necessarily loses information, while the
+   repository currently has neither a bounded deterministic JPEG encoder nor corpus-backed
+   fidelity evidence for one. Labelling that path `semantic` would therefore be false, and
+   delegating to a browser canvas would make the result environment-dependent. JPEG metadata
+   operations remain available through Path A because they preserve every unnamed byte. A future
+   JPEG encoder must be a separate Path B provider, offer `minimumRoundTrip: 'lossy'`, carry its
+   quality/subsampling options in the selection fingerprint, and present that fidelity before a
+   save can be prepared.
 
 ## Consequences
 
@@ -103,6 +112,9 @@ requiredPermissions` plus `write-source` for `mutatesSource` — are **degradabl
 - Electron's `filesystem.write-file` shortcut is legacy: its renderer ports move onto the
   coordinator with a broker-backed `EditingBackend` in a separate slice; the PWA and VS Code
   hosts get editing only through this seam.
+- Pixel editing is intentionally limited to PNG until a JPEG writer can meet the lossy-provider
+  requirements above. Resolving `jpeg/rgba8`, including with a caller willing to accept `lossy`,
+  fails before an edit session or save plan exists.
 - The MK2 converter maps `write` → writer provider, `edit` → operations (OPUS-MK2-04); the
   `needs new contract` basket shrinks by what the contracts now cover, ports remain ports.
 

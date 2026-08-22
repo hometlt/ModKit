@@ -11,3 +11,10 @@ refused). Each returns an edit plan with a single byte-range replace: the codec 
 host commits, and every byte the edit does not name stays identical. `writer-png.json` adds the
 Path B side: a `common.edit/writer@1` provider (`png/rgba8`) that encodes an RGBA8 raster as a
 PNG — `semantic` fidelity, because the pixels survive and ancillary chunks do not.
+
+There is deliberately no `jpeg/rgba8` writer. JPEG pixel re-encoding is `lossy`, never
+`semantic`; this repository currently has no bounded deterministic JPEG encoder or corpus-backed
+fidelity evidence that could state its quality and chroma-subsampling trade-offs before save.
+Consumers therefore get an unresolved writer request instead of a misleading pixel editor. The
+existing JPEG comment/segment operations remain byte-identical because they never re-encode image
+data. See ADR-HOST-002 decision 7.
