@@ -14,7 +14,7 @@ renames, converter defaults and v1 operations left without a handler — is data
 | contribution                        | v1 manifest                                                                            | module                               | port         |
 | ----------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------ | ------------ |
 | `org.modkitx/uasset`                | `extensions/epic-games/unreal-engine/codecs/uasset/codec.manifest.json`                | `src/uasset/codec.js`                | port-pending |
-| `org.modkitx/unreal-actorx`         | `extensions/epic-games/unreal-engine/codecs/unreal-actorx/codec.manifest.json`         | `src/unreal-actorx/codec.js`         | port-pending |
+| `org.modkitx/unreal-actorx`         | `extensions/epic-games/unreal-engine/codecs/unreal-actorx/codec.manifest.json`         | `src/unreal-actorx/codec.js`         | ported       |
 | `org.modkitx/unreal-iostore`        | `extensions/epic-games/unreal-engine/codecs/unreal-iostore/codec.manifest.json`        | `src/unreal-iostore/codec.js`        | port-pending |
 | `org.modkitx/unreal-pak`            | `extensions/epic-games/unreal-engine/codecs/unreal-pak/codec.manifest.json`            | `src/unreal-pak/codec.js`            | port-pending |
 | `org.modkitx/unreal-uasset`         | `extensions/epic-games/unreal-engine/codecs/unreal-uasset/codec.manifest.json`         | `src/unreal-uasset/codec.js`         | port-pending |

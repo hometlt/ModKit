@@ -1037,6 +1037,17 @@
       "note": "SMPX v2 sprite with one length-bounded 4plus1 main layer and split command/pixel streams"
     },
     {
+      "extension": "mk2/epic-games-unreal-engine",
+      "contributionId": "org.modkitx/unreal-actorx",
+      "corpus": "synthetic",
+      "sample": "minimal.actorx.psk",
+      "minimumConfidence": 0.99,
+      "dataSource": "model",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "ActorX PSK with genuine point, wedge, face, material, skeleton and skin-weight chunks decoded to triangle geometry"
+    },
+    {
       "extension": "common/images",
       "contributionId": "org.modkitx/image-png",
       "corpus": "synthetic",

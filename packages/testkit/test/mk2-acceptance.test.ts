@@ -67,6 +67,7 @@ const completedPortableAgeSeries = [
   find('org.modkitx/smp'),
   find('org.modkitx/smx'),
 ]
+const completedPortableUnreal = [find('org.modkitx/unreal-actorx')]
 
 describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tasks E/F/G)', () => {
   it('opens every corpus sample through the product path and prints the state table', async () => {
@@ -139,6 +140,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       ...completedPortableVideos,
       ...completedPortableDocuments,
       ...completedPortableAgeSeries,
+      ...completedPortableUnreal,
       ...(mk2Root === undefined ? [] : [firstReal]),
     ]
     const outcomes = await runMk2Acceptance(cases, { repoRoot, mk2Root, workerBrokered: true })
@@ -533,6 +535,29 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     expect(blend.indexOf('TYPE', dnaPayload)).toBeGreaterThan(dnaPayload)
     expect(blend.indexOf('TLEN', dnaPayload)).toBeGreaterThan(dnaPayload)
     expect(blend.indexOf('STRC', dnaPayload)).toBeGreaterThan(dnaPayload)
+
+    const actorX = readFileSync(join(root, 'minimal.actorx.psk'))
+    const actorXChunks: [string, number, number][] = []
+    let actorXOffset = 0
+    while (actorXOffset < actorX.byteLength) {
+      const rawName = actorX.subarray(actorXOffset, actorXOffset + 20)
+      const zero = rawName.indexOf(0)
+      const name = rawName.subarray(0, zero < 0 ? rawName.length : zero).toString('ascii')
+      const recordSize = actorX.readInt32LE(actorXOffset + 24)
+      const count = actorX.readInt32LE(actorXOffset + 28)
+      actorXChunks.push([name, recordSize, count])
+      actorXOffset += 32 + recordSize * count
+    }
+    expect(actorXOffset).toBe(actorX.byteLength)
+    expect(actorXChunks).toEqual([
+      ['ACTRHEAD', 0, 0],
+      ['PNTS0000', 12, 3],
+      ['VTXW0000', 16, 3],
+      ['FACE0000', 12, 1],
+      ['MATT0000', 88, 1],
+      ['REFSKELT', 120, 1],
+      ['RAWWEIGHTS', 12, 3],
+    ])
 
     const bar = readFileSync(join(root, 'minimal.age-bar'))
     expect(bar.subarray(0, 4).toString('ascii')).toBe('ESPN')

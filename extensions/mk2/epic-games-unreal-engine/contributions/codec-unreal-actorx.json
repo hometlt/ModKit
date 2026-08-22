@@ -3,7 +3,7 @@
   "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
   "id": "org.modkitx/unreal-actorx",
   "displayName": "Unreal ActorX",
-  "status": "supported",
+  "status": "partial",
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
@@ -21,10 +21,10 @@
     }
   ],
   "limitations": [
-    "PSA, CONFIG, PROPS.TXT, MAT, and JSON files are resolved by same-codec path and role patterns; the v1 companions field names codec IDs rather than sidecar patterns.",
-    "PSA attachment requires an injected resolver with listing support and a compatible reference skeleton; standalone PSA files contain animation and skeleton data but no mesh geometry.",
-    "Material texture requests require host-provided asset resolution and image codecs, and discovery is bounded to supported exported-material conventions.",
-    "Nonstandard ActorX chunk sizes or layouts are reported as diagnostics; this codec provides no ActorX writer or RenderModel exporter."
+    "PSK and PSKX ACTRHEAD, PNTS0000, VTXW0000, FACE0000/FACE3200, MATT0000, REFSKELT and RAWWEIGHTS records are strictly framed and cross-references are validated.",
+    "PSK geometry is expanded into a decoded triangle primitive with UVs and derived normals; material, skeleton and weight tables are inventoried without resolving texture sidecars.",
+    "Standalone PSA BONENAMES, ANIMINFO and ANIMKEYS tables are structurally inspected, but animation tracks are not attached to a compatible mesh scene.",
+    "Extended normals, vertex colors, morph targets, extra UV sets, CONFIG/PROPS/MAT/JSON sidecars and ActorX writing are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "unreal-actorx", "label": "Unreal ActorX" }],

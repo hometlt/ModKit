@@ -2746,10 +2746,56 @@ function prt() {
   )
 }
 
+/** ActorX PSK triangle with material, root skeleton and one full-weight influence per point. */
+function actorX() {
+  const fixed = (value, length) => {
+    const out = new Uint8Array(length)
+    out.set(ascii(value).subarray(0, length))
+    return out
+  }
+  const i32le = value => u32le(value >>> 0)
+  const chunk = (name, recordSize, records, typeFlags = 0) =>
+    concat(fixed(name, 20), i32le(typeFlags), i32le(recordSize), i32le(records.length), records)
+  const point = (x, y, z) => concat(f32le(x), f32le(y), f32le(z))
+  const wedge = (pointIndex, u, v) =>
+    concat(u32le(pointIndex), f32le(u), f32le(v), bytes(0, 0, 0, 0))
+  const face = concat(u16le(0), u16le(1), u16le(2), bytes(0, 0), u32le(1))
+  const material = concat(
+    fixed('M_Hero', 64),
+    i32le(0),
+    i32le(0),
+    i32le(-1),
+    i32le(0),
+    i32le(0),
+    i32le(0),
+  )
+  const bone = new Uint8Array(120)
+  bone.set(fixed('root', 64), 0)
+  const boneView = new DataView(bone.buffer)
+  boneView.setInt32(68, 0, true)
+  boneView.setInt32(72, 0, true)
+  boneView.setFloat32(88, 1, true)
+  boneView.setFloat32(104, 1, true)
+  boneView.setFloat32(108, 1, true)
+  boneView.setFloat32(112, 1, true)
+  boneView.setFloat32(116, 1, true)
+  const weight = pointIndex => concat(f32le(1), i32le(pointIndex), i32le(0))
+  return concat(
+    chunk('ACTRHEAD', 0, []),
+    chunk('PNTS0000', 12, [point(0, 0, 0), point(1, 0, 0), point(0, 1, 0)]),
+    chunk('VTXW0000', 16, [wedge(0, 0, 0), wedge(1, 1, 0), wedge(2, 0, 1)]),
+    chunk('FACE0000', 12, [face]),
+    chunk('MATT0000', 88, [material]),
+    chunk('REFSKELT', 120, [bone]),
+    chunk('RAWWEIGHTS', 12, [weight(0), weight(1), weight(2)]),
+  )
+}
+
 // ---------------------------------------------------------------- the corpus
 
 /** Every fixture: file name → builder. The name is what the acceptance corpus refers to. */
 const FIXTURES = {
+  'minimal.actorx.psk': actorX,
   'minimal.bti': bti,
   'minimal.cub': cub,
   'minimal.mtrl': mtrl,
