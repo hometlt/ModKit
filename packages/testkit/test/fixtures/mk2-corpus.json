@@ -510,6 +510,35 @@
     },
     {
       "extension": "mk2/common-models",
+      "contributionId": "org.modkitx/obj",
+      "corpus": "synthetic",
+      "sample": "minimal.obj",
+      "minimumConfidence": 0.9,
+      "dataSource": "model",
+      "note": "Wavefront Advanced Visualizer polygonal OBJ with position, texture, normal, object, and face statements"
+    },
+    {
+      "extension": "mk2/common-models",
+      "contributionId": "org.modkitx/ply",
+      "corpus": "synthetic",
+      "sample": "minimal.ply",
+      "minimumConfidence": 0.9,
+      "dataSource": "model",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "PLY 1.0 binary little-endian element/property stream with one indexed triangle"
+    },
+    {
+      "extension": "mk2/common-models",
+      "contributionId": "org.modkitx/stl",
+      "corpus": "synthetic",
+      "sample": "minimal.stl",
+      "minimumConfidence": 0.9,
+      "dataSource": "model",
+      "note": "3D Systems binary STL header, triangle count, and one little-endian triangle record"
+    },
+    {
+      "extension": "mk2/common-models",
       "contributionId": "org.modkitx/glb",
       "corpus": "real",
       "sample": "-references/website/old-wiki/src/app/js-3d-model-viewer-master/original/duck.glb",

@@ -3,7 +3,7 @@
   "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
   "id": "org.modkitx/stl",
   "displayName": "STL triangle mesh",
-  "status": "supported",
+  "status": "partial",
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
@@ -19,6 +19,10 @@
       "executionProfile": "worker-brokered",
       "requestedPermissionClasses": ["read-source"]
     }
+  ],
+  "limitations": [
+    "ASCII and little-endian binary STL triangle geometry is fully validated and decoded with declared or derived face normals.",
+    "STL does not define units, hierarchy, or standard materials; non-standard binary colour conventions and writing are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "stl", "label": "STL triangle mesh" }],

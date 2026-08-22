@@ -3,7 +3,7 @@
   "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
   "id": "org.modkitx/obj",
   "displayName": "Wavefront OBJ",
-  "status": "supported",
+  "status": "partial",
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
@@ -21,7 +21,9 @@
     }
   ],
   "limitations": [
-    "MTL files are resolved and emitted as same-codec sidecars; the v1 companions field names codec IDs rather than same-codec path patterns."
+    "Polygonal v/vt/vn/f geometry, positive and relative indices, line continuation, groups, and material references are validated; polygons are triangulated as deterministic fans.",
+    "MTL and texture companions are inventoried but not resolved, and multiple material assignments are not segmented into separate primitives.",
+    "Point, line, free-form curve/surface geometry and the v1 write/export plane are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "obj", "label": "Wavefront OBJ" }],

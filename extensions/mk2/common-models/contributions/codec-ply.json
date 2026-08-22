@@ -3,7 +3,7 @@
   "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
   "id": "org.modkitx/ply",
   "displayName": "PLY polygon mesh",
-  "status": "supported",
+  "status": "partial",
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
@@ -19,6 +19,10 @@
       "executionProfile": "worker-brokered",
       "requestedPermissionClasses": ["read-source"]
     }
+  ],
+  "limitations": [
+    "PLY 1.0 ASCII, binary little-endian, and binary big-endian element/property records are validated; vertex positions, optional complete normals/UVs, polygon faces, and point clouds are decoded.",
+    "Polygon faces are triangulated as deterministic fans; vertex colours and non-polygon element values are parsed for structural validation but not published in the model primitive."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "ply", "label": "PLY polygon mesh" }],

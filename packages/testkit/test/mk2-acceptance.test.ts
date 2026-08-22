@@ -27,6 +27,7 @@ const find = (contributionId: string): Mk2CorpusEntry => {
 const firstReal = find('org.modkitx/webp')
 const firstSynthetic = find('org.modkitx/wav')
 const cueBinBundle = find('org.modkitx/ps1-cue-bin')
+const portableModel = find('org.modkitx/ply')
 
 describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tasks E/F/G)', () => {
   it('opens every corpus sample through the product path and prints the state table', async () => {
@@ -91,7 +92,12 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     // evaluates anything, so this only passes while the converted extension is self-contained
     // (imports resolve inside its own artifact, not by a path escaping it). REPORT §7.6 asks each
     // port to confirm the `portable` variant instead of inheriting it, and this is that check.
-    const cases = [firstSynthetic, cueBinBundle, ...(mk2Root === undefined ? [] : [firstReal])]
+    const cases = [
+      firstSynthetic,
+      cueBinBundle,
+      portableModel,
+      ...(mk2Root === undefined ? [] : [firstReal]),
+    ]
     const outcomes = await runMk2Acceptance(cases, { repoRoot, mk2Root, workerBrokered: true })
     for (const outcome of outcomes) {
       expect({
@@ -147,5 +153,34 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     const idatBytes = png.readUInt32BE(idatStart - 8)
     const inflated = zlib.inflateSync(png.subarray(idatStart, idatStart + idatBytes))
     expect([...inflated]).toEqual([0x00, 0x80, 0x40, 0x20])
+
+    // These checks intentionally do not import the codecs. They independently walk each model
+    // fixture's standard wire representation so a generator/reader bug cannot agree with itself.
+    const stl = readFileSync(join(root, 'minimal.stl'))
+    const stlTriangles = stl.readUInt32LE(80)
+    expect(stlTriangles).toBe(1)
+    expect(stl.byteLength).toBe(84 + stlTriangles * 50)
+    expect([stl.readFloatLE(96), stl.readFloatLE(100), stl.readFloatLE(104)]).toEqual([0, 0, 0])
+
+    const ply = readFileSync(join(root, 'minimal.ply'))
+    const plyBody = ply.indexOf('end_header\n') + 'end_header\n'.length
+    expect(ply.subarray(0, plyBody).toString('ascii')).toContain('format binary_little_endian 1.0')
+    expect([
+      ply.readFloatLE(plyBody),
+      ply.readFloatLE(plyBody + 4),
+      ply.readFloatLE(plyBody + 8),
+    ]).toEqual([0, 0, 0])
+    expect(ply[plyBody + 96]).toBe(3)
+    expect([
+      ply.readInt32LE(plyBody + 97),
+      ply.readInt32LE(plyBody + 101),
+      ply.readInt32LE(plyBody + 105),
+    ]).toEqual([0, 1, 2])
+
+    const obj = readFileSync(join(root, 'minimal.obj'), 'utf8')
+    expect(obj.match(/^v\s/gmu)).toHaveLength(3)
+    expect(obj.match(/^vt\s/gmu)).toHaveLength(3)
+    expect(obj.match(/^vn\s/gmu)).toHaveLength(1)
+    expect(obj.match(/^f\s+1\/1\/1\s+2\/2\/1\s+3\/3\/1$/gmu)).toHaveLength(1)
   })
 })
