@@ -49,6 +49,12 @@ const completedPortableFlash = [find('org.modkitx/fla')]
 const completedPortableFmod = [find('org.modkitx/fsb')]
 const completedPortableBlizzardCommon = [find('org.modkitx/blp')]
 const completedPortableDiablo = [find('org.modkitx/diablo3-app'), find('org.modkitx/diablo3-tex')]
+const completedPortableStarcraft2 = [
+  find('org.modkitx/galaxy'),
+  find('org.modkitx/sc2-strings'),
+  find('org.modkitx/sc2-layout'),
+  find('org.modkitx/sc2-data'),
+]
 const completedPortableWarcraft3 = [find('org.modkitx/war3-mdx')]
 const completedPortableGasPowered = [find('org.modkitx/supcom-scm')]
 const completedPortableVector = [find('org.modkitx/emf'), find('org.modkitx/wmf')]
@@ -175,6 +181,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       ...completedPortableFmod,
       ...completedPortableBlizzardCommon,
       ...completedPortableDiablo,
+      ...completedPortableStarcraft2,
       ...completedPortableWarcraft3,
       ...completedPortableGasPowered,
       ...completedPortableVector,
@@ -315,6 +322,29 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       diabloApp.readUInt16LE(diabloIndices + 2),
       diabloApp.readUInt16LE(diabloIndices + 4),
     ]).toEqual([0, 1, 2])
+
+    const galaxy = readFileSync(join(root, 'minimal.galaxy'), 'utf8')
+    expect(galaxy).toContain('include "TriggerLibs/NativeLib"')
+    expect(galaxy.match(/\b(?:void|int)\s+[A-Za-z_]\w*\s*\([^)]*\)\s*\{/gu)).toHaveLength(2)
+    expect([...galaxy].filter(character => character === '{')).toHaveLength(
+      [...galaxy].filter(character => character === '}').length,
+    )
+
+    const sc2Strings = readFileSync(join(root, 'minimal.sc2strings.txt'), 'utf8')
+    const sc2StringLines = sc2Strings.trim().split(/\r?\n/u)
+    expect(sc2StringLines).toHaveLength(3)
+    expect(sc2StringLines.every(line => line.indexOf('=') > 0)).toBe(true)
+    expect(sc2Strings).toContain('<d ref="Unit,Marine,Name"/>')
+
+    const sc2Layout = readFileSync(join(root, 'minimal.SC2Layout'), 'utf8')
+    expect(sc2Layout).toMatch(/^<\?xml[^>]*>\s*<Desc>/u)
+    expect(sc2Layout).toContain('<Frame type="Frame" name="FixturePanel">')
+    expect(sc2Layout).toContain('<Include path="UI/Layout/Shared.SC2Layout"/>')
+
+    const sc2Data = readFileSync(join(root, 'minimal.gamedata.xml'), 'utf8')
+    expect(sc2Data).toMatch(/^<\?xml[^>]*>\s*<Catalog>/u)
+    expect(sc2Data.match(/<C[A-Za-z0-9_]+\s+[^>]*id="[^"]+"/gu)).toHaveLength(2)
+    expect(sc2Data).toContain('<CUnit id="Marine" parent="BaseUnit">')
 
     const mdx = readFileSync(join(root, 'minimal.mdx'))
     expect(mdx.subarray(0, 4).toString('ascii')).toBe('MDLX')

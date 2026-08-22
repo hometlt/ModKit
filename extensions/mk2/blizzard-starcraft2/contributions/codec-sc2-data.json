@@ -10,36 +10,19 @@
       "entrypoint": "./src/sc2-data/codec.js",
       "target": { "environments": ["node"] },
       "executionProfile": "trusted-in-process",
-      "requestedPermissionClasses": [
-        "filesystem-read",
-        "filesystem-write",
-        "network",
-        "persistent-storage",
-        "read-source"
-      ]
+      "requestedPermissionClasses": ["read-source"]
     },
     {
       "variantId": "portable",
       "entrypoint": "./src/sc2-data/codec.js",
       "target": { "environments": ["browser-worker", "node-worker"] },
       "executionProfile": "worker-brokered",
-      "requestedPermissionClasses": [
-        "filesystem-read",
-        "filesystem-write",
-        "network",
-        "persistent-storage",
-        "read-source"
-      ]
+      "requestedPermissionClasses": ["read-source"]
     }
   ],
   "limitations": [
-    "Declarative routing intentionally requires the GameData path, Catalog XML root, and an enclosing SC2 mod, map, or campaign artifact; the bounded detector remains the structural authority after prefiltering.",
-    "Catalog loading and inheritance resolution are only as complete as the ordered GameContentResolver chain supplied by the host.",
-    "edit.content covers schema-driven catalog entity rename only. Each edited GameData file is rebuilt from its parsed entries, so XML comments and original formatting are normalized rather than preserved; the operation refuses when one entity id is declared in more than one loaded file, and degrades to dependency-required when the inheritance chain is incomplete.",
-    "export.convert emits catalog JSON or per-namespace GameData XML; mod-level packaging (ComponentList.SC2Components, locale strings files, opaque-file round-trip) stays with the mod domain.",
-    "Override-layer comparison and entity-card assembly remain disabled in the current facade.",
-    "Browser runtime reachability is not declared because the current catalog and language-analysis import graph reaches unresolved vscode-languageserver-protocol submodules.",
-    "StarCraft II game contribution metadata remains on the semantic codec until game manifests land in Slice C3."
+    "The dependency-free MK3 codec validates bounded Catalog XML and publishes original text plus entity class/id/parent/default tables and hierarchy.",
+    "Schema field validation, dependency overlays, inheritance resolution, cross-catalog references, semantic editing, and catalog export require the X3 data/mod services and remain unsupported."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "sc2-data", "label": "StarCraft II GameData" }],
@@ -47,7 +30,7 @@
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "full", "export"],
-    "match": { "extensions": ["xml"], "pathGlobs": ["**/GameData/*.xml"] },
+    "match": { "extensions": ["xml"] },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {
@@ -59,6 +42,7 @@
       }
     ],
     "publishesDataSources": [
+      { "contract": "common.view/text-data-source", "major": 1 },
       { "contract": "common.view/table-data-source", "major": 1 },
       { "contract": "common.view/tree-data-source", "major": 1 },
       { "contract": "common.view/byte-range-source", "major": 1 }

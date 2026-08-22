@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<Desc>
+  <Include path="UI/Layout/Shared.SC2Layout"/>
+  <Constant name="PanelWidth" val="320"/>
+  <Frame type="Frame" name="FixturePanel"><Anchor side="Top"/></Frame>
+</Desc>

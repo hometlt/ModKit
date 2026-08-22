@@ -21,12 +21,8 @@
     }
   ],
   "limitations": [
-    "The manifest prefilter uses the canonical .galaxy extension; the bounded detector remains responsible for rejecting binary and markup payloads and recognizing Galaxy declarations.",
-    "Printing the parsed AST does not preserve comments or original formatting and is declared lossy by the operation descriptor.",
-    "Formatting and refactoring return proposed text or ranges; applying them to a writable source is host-owned.",
-    "Compilation and execution belong to the separately permissioned sc2-runtime codec and are not advertised here.",
-    "Browser hosts can use the bounded detector, but runtime reachability is not declared because the current Galaxy analysis import graph reaches unresolved vscode-languageserver-protocol submodules.",
-    "StarCraft II game contribution metadata remains on the semantic codec until game manifests land in Slice C3."
+    "The dependency-free MK3 codec validates UTF-8 Galaxy source, balanced block structure, includes, and bounded function declarations while publishing the original text.",
+    "Tokens, diagnostics, symbols, navigation, formatting, and refactoring belong to the separate language-provider contract; compilation and execution belong to the runtime contract."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "galaxy", "label": "StarCraft II Galaxy Script" }],

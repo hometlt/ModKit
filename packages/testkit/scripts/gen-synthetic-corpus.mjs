@@ -3578,6 +3578,48 @@ function diablo3App() {
   return result
 }
 
+/** Authored Galaxy source with an include and two bounded function declarations. */
+function galaxyScript() {
+  return ascii(
+    'include "TriggerLibs/NativeLib"\n' +
+      'int gv_score = 0;\n' +
+      'void InitMap() { gv_score = 1; }\n' +
+      'int Add(int a, int b) { return a + b; }\n',
+  )
+}
+
+/** StarCraft II locale catalog with plain, marked-up, and data-reference values. */
+function sc2Strings() {
+  return ascii(
+    'UI/Title=Fixture Map\n' +
+      'Unit/Marine=Marine\n' +
+      'Data/MarineName=<d ref="Unit,Marine,Name"/>\n',
+  )
+}
+
+/** StarCraft II Desc layout with an include, constant, and named frame. */
+function sc2Layout() {
+  return ascii(
+    '<?xml version="1.0"?>\n' +
+      '<Desc>\n' +
+      '  <Include path="UI/Layout/Shared.SC2Layout"/>\n' +
+      '  <Constant name="PanelWidth" val="320"/>\n' +
+      '  <Frame type="Frame" name="FixturePanel"><Anchor side="Top"/></Frame>\n' +
+      '</Desc>\n',
+  )
+}
+
+/** StarCraft II GameData Catalog with one inherited unit and one weapon. */
+function sc2GameData() {
+  return ascii(
+    '<?xml version="1.0"?>\n' +
+      '<Catalog>\n' +
+      '  <CUnit id="Marine" parent="BaseUnit"><LifeMax value="45"/></CUnit>\n' +
+      '  <CWeapon id="GaussRifle"><Period value="0.86"/></CWeapon>\n' +
+      '</Catalog>\n',
+  )
+}
+
 /** Warcraft III MDX container with VERS 800 and a minimal MODL record. */
 function war3Mdx() {
   const model = new Uint8Array(372)
@@ -3689,6 +3731,10 @@ const FIXTURES = {
   'minimal.blp': blp,
   'minimal.diablo3.app': diablo3App,
   'minimal.diablo3.tex': diablo3Tex,
+  'minimal.galaxy': galaxyScript,
+  'minimal.sc2strings.txt': sc2Strings,
+  'minimal.SC2Layout': sc2Layout,
+  'minimal.gamedata.xml': sc2GameData,
   'minimal.mdx': war3Mdx,
   'minimal.scm': supcomScm,
   'minimal.bti': bti,

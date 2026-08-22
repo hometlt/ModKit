@@ -21,13 +21,8 @@
     }
   ],
   "limitations": [
-    "Declarative routing requires the canonical locale-folder path and an enclosing SC2 mod, map, or campaign artifact; key/value shape remains the bounded detector's responsibility.",
-    "Fallback and comparison require multiple locale layers from a host-supplied GameContentResolver and therefore are not unconditional manifest operations.",
-    "Markup resolution and reference-existence diagnostics require an injected catalog resolver; reference extraction itself remains available without one.",
-    "Edits affect the in-memory raw-preserving line model and export returns serialized text; persisting that text into the originating source remains host-owned.",
-    "Machine translation requires the operation-level network permission and a usable fetch implementation.",
-    "Browser hosts can use the bounded detector, but the current codec runtime reaches Node-only dependencies through the localization package import graph.",
-    "StarCraft II game contribution metadata remains on the semantic codec until game manifests land in Slice C3."
+    "The dependency-free MK3 codec validates UTF-8 key/value catalogs and publishes their original text, table rows, duplicate-key count, and local markup-reference count.",
+    "Cross-locale fallback, catalog reference resolution, machine translation, semantic edits, and source saving require host services and remain unsupported."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "sc2-strings", "label": "StarCraft II Localization Strings" }],
@@ -35,7 +30,7 @@
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "full", "export"],
-    "match": { "extensions": ["txt"], "pathGlobs": ["**/*.SC2Data/LocalizedData/*.txt"] },
+    "match": { "extensions": ["txt"] },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {

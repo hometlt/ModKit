@@ -46,7 +46,7 @@
         "view.inspect"
       ],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/sc2-bank": {
       "verdict": "needs-new-contract",
@@ -106,7 +106,7 @@
         "view.inspect"
       ],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/sc2-document-metadata": {
       "verdict": "needs-new-contract",
@@ -156,7 +156,7 @@
         "view.render"
       ],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/sc2-map": {
       "verdict": "needs-new-contract",
@@ -292,7 +292,7 @@
         "view.inspect"
       ],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/sc2-triggers": {
       "verdict": "needs-new-contract",

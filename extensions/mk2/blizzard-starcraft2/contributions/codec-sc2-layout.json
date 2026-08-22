@@ -21,12 +21,8 @@
     }
   ],
   "limitations": [
-    "The manifest prefilter requires the canonical extension and Desc XML root; the bounded detector remains responsible for recognizing SC2Layout declarations.",
-    "The available renderer emits structural diagnostic HTML rather than the resolved in-game visual result.",
-    "Reference rename has a codec-owned edit transaction but requires sc2-mod to supply the coordinating catalog rename; dependency-workspace resolution, schema validation, language features, visual rendering, and source saving remain dependency-required or disabled.",
-    "Raw export preserves the original XML bytes; structural HTML export is intentionally not round-trip safe.",
-    "Browser runtime reachability is not declared because the current layout parser import graph reaches Node-only code.",
-    "StarCraft II game contribution metadata remains on the semantic codec until game manifests land in Slice C3."
+    "The dependency-free MK3 codec validates a bounded Desc XML document and publishes original text plus tables and a tree for Frame, Include, and Constant declarations.",
+    "Dependency workspace resolution, schema validation, language-provider navigation, resolved visual rendering, semantic edits, and source saving remain unsupported."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "sc2-layout", "label": "StarCraft II Layout" }],

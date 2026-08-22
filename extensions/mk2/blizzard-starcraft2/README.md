@@ -13,14 +13,14 @@ renames, converter defaults and v1 operations left without a handler — is data
 
 | contribution                        | v1 manifest                                                                        | module                               | port         |
 | ----------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------ | ------------ |
-| `org.modkitx/galaxy`                | `extensions/blizzard/starcraft-2/codecs/galaxy/codec.manifest.json`                | `src/galaxy/codec.js`                | port-pending |
+| `org.modkitx/galaxy`                | `extensions/blizzard/starcraft-2/codecs/galaxy/codec.manifest.json`                | `src/galaxy/codec.js`                | ported       |
 | `org.modkitx/sc2-bank`              | `extensions/blizzard/starcraft-2/codecs/sc2-bank/codec.manifest.json`              | `src/sc2-bank/codec.js`              | port-pending |
-| `org.modkitx/sc2-data`              | `extensions/blizzard/starcraft-2/codecs/sc2-data/codec.manifest.json`              | `src/sc2-data/codec.js`              | port-pending |
+| `org.modkitx/sc2-data`              | `extensions/blizzard/starcraft-2/codecs/sc2-data/codec.manifest.json`              | `src/sc2-data/codec.js`              | ported       |
 | `org.modkitx/sc2-document-metadata` | `extensions/blizzard/starcraft-2/codecs/sc2-document-metadata/codec.manifest.json` | `src/sc2-document-metadata/codec.js` | port-pending |
-| `org.modkitx/sc2-layout`            | `extensions/blizzard/starcraft-2/codecs/sc2-layout/codec.manifest.json`            | `src/sc2-layout/codec.js`            | port-pending |
+| `org.modkitx/sc2-layout`            | `extensions/blizzard/starcraft-2/codecs/sc2-layout/codec.manifest.json`            | `src/sc2-layout/codec.js`            | ported       |
 | `org.modkitx/sc2-map`               | `extensions/blizzard/starcraft-2/codecs/sc2-map/codec.manifest.json`               | `src/sc2-map/codec.js`               | port-pending |
 | `org.modkitx/sc2-mod`               | `extensions/blizzard/starcraft-2/codecs/sc2-mod/codec.manifest.json`               | `src/sc2-mod/codec.js`               | port-pending |
 | `org.modkitx/sc2-replay`            | `extensions/blizzard/starcraft-2/codecs/sc2-replay/codec.manifest.json`            | `src/sc2-replay/codec.js`            | port-pending |
 | `org.modkitx/sc2-runtime`           | `extensions/blizzard/starcraft-2/codecs/sc2-runtime/codec.manifest.json`           | `src/sc2-runtime/codec.js`           | port-pending |
-| `org.modkitx/sc2-strings`           | `extensions/blizzard/starcraft-2/codecs/sc2-strings/codec.manifest.json`           | `src/sc2-strings/codec.js`           | port-pending |
+| `org.modkitx/sc2-strings`           | `extensions/blizzard/starcraft-2/codecs/sc2-strings/codec.manifest.json`           | `src/sc2-strings/codec.js`           | ported       |
 | `org.modkitx/sc2-triggers`          | `extensions/blizzard/starcraft-2/codecs/sc2-triggers/codec.manifest.json`          | `src/sc2-triggers/codec.js`          | port-pending |

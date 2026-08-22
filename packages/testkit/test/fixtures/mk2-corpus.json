@@ -824,6 +824,46 @@
       "note": "Diablo III TEX v47 with one 2x1 A8R8G8B8 mip; acceptance validates decoded RGBA publication"
     },
     {
+      "extension": "mk2/blizzard-starcraft2",
+      "contributionId": "org.modkitx/galaxy",
+      "corpus": "synthetic",
+      "sample": "minimal.galaxy",
+      "minimumConfidence": 0.98,
+      "dataSource": "tree",
+      "route": "basename",
+      "note": "Authored Galaxy source with one include, a global, and two balanced function declarations"
+    },
+    {
+      "extension": "mk2/blizzard-starcraft2",
+      "contributionId": "org.modkitx/sc2-strings",
+      "corpus": "synthetic",
+      "sample": "minimal.sc2strings.txt",
+      "minimumConfidence": 0.96,
+      "dataSource": "tree",
+      "route": "basename",
+      "note": "SC2 localization key/value catalog with a local data-reference markup token"
+    },
+    {
+      "extension": "mk2/blizzard-starcraft2",
+      "contributionId": "org.modkitx/sc2-layout",
+      "corpus": "synthetic",
+      "sample": "minimal.SC2Layout",
+      "minimumConfidence": 0.98,
+      "dataSource": "tree",
+      "route": "basename",
+      "note": "Bounded Desc layout with Include, Constant, Frame, and Anchor declarations"
+    },
+    {
+      "extension": "mk2/blizzard-starcraft2",
+      "contributionId": "org.modkitx/sc2-data",
+      "corpus": "synthetic",
+      "sample": "minimal.gamedata.xml",
+      "minimumConfidence": 0.98,
+      "dataSource": "tree",
+      "route": "basename",
+      "note": "Bounded GameData Catalog with inherited CUnit and standalone CWeapon entities"
+    },
+    {
       "extension": "mk2/blizzard-warcraft-3",
       "contributionId": "org.modkitx/war3-mdx",
       "corpus": "synthetic",
