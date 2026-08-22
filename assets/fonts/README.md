@@ -23,10 +23,11 @@ Licences: `saira/OFL.txt` (Copyright 2020 The Saira Project Authors, Omnibus-Typ
 `jetbrains-mono/OFL.txt` (Copyright 2020 The JetBrains Mono Project Authors). Total 144 KB.
 
 **Coverage note.** Saira has no Cyrillic subset (Google Fonts serves latin, latin-ext,
-vietnamese only). In a theme whose `font.sans` starts with Saira, Cyrillic UI text falls through
-to the next family in the stack (Segoe UI / system-ui). JetBrains Mono covers Cyrillic fully. If a
-uniform Cyrillic look for the sans face is wanted, add a Cyrillic-capable companion (an owner
-decision; not vendored here).
+vietnamese only). JetBrains Mono covers Cyrillic fully. The PWA's Russian locale exposes those two
+vendored subsets under the UI-only family `Modkit Cyrillic UI` and places it immediately after
+Saira, so Cyrillic interface text has an explicit self-hosted face rather than an accidental
+system fallback. Latin labels stay in Saira; code and numeric surfaces keep the ordinary
+`JetBrains Mono` family.
 
 ## `@font-face` for theme authors
 

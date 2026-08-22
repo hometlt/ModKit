@@ -190,6 +190,24 @@ MODKIT_EMBED_EXTENSION_ORIGINS=https://extensions.example \
 SHA-256, а код удалённого каталога получает только worker-realm. Пустой список означает fail
 closed: произвольные URL не загружаются.
 
+Локализация chrome не хранится в DOM и не является process-global. Подпуть
+`@modkitx-x3/ui/localization` экспортирует типизированный набор ключей, полные каталоги `en`/`ru`,
+BCP-47 negotiation и immutable localizer на один host:
+
+```ts
+import { createUiLocalizer, resolveUiLocale } from '@modkitx-x3/ui/localization'
+
+const locale = resolveUiLocale(navigator.languages)
+const t = createUiLocalizer(locale).text
+button.textContent = t('action.openFile')
+```
+
+PWA выбирает язык параметром `?lang=ru` (или `navigator.languages` без параметра), отражает его в
+`html.lang` и даёт переключатель в панели Host. Сейчас русский каталог покрывает app-owned chrome;
+строки универсальных viewer/editor-модулей остаются английскими до их перевода на тот же механизм.
+Для русского chrome подключены self-hosted Cyrillic subsets как `Modkit Cyrillic UI`: Saira не
+содержит кириллицу, поэтому случайного системного fallback нет.
+
 ### 3.2 Headless-конвертер / Node-библиотека
 
 Блоки: `core + sdk + host` + нужные кодеки. Ни вьюверов, ни UI (гейт проверяет: в бандле нет

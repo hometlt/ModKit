@@ -16,6 +16,10 @@
       "types": "./dist/viewer/index.d.ts",
       "default": "./dist/viewer/index.js"
     },
+    "./localization": {
+      "types": "./dist/localization/index.d.ts",
+      "default": "./dist/localization/index.js"
+    },
     "./code": {
       "types": "./dist/code/index.d.ts",
       "default": "./dist/code/index.js"

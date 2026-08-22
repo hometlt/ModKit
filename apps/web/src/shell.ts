@@ -47,6 +47,7 @@ import {
   type PreviewResolver,
 } from '@modkitx-x3/ui/explorer'
 import { createSettingsUi, type SettingsDocument } from '@modkitx-x3/ui/settings'
+import { createUiLocalizer, resolveUiLocale } from '@modkitx-x3/ui/localization'
 import { element, setPart, setState, setViewerText } from '@modkitx-x3/ui/viewer'
 
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
@@ -205,6 +206,14 @@ async function fetchServed(baseUrl: URL, path: string): Promise<WebFileLike | un
 async function boot(): Promise<void> {
   const probe = probeWebFacilities()
   const baseUrl = new URL('./', document.baseURI)
+  const pageUrl = new URL(window.location.href)
+  const locale = resolveUiLocale(pageUrl.searchParams.get('lang') ?? navigator.languages)
+  const localizer = createUiLocalizer(locale)
+  const t = localizer.text
+  document.documentElement.lang = locale
+  document.title = t('app.title')
+  const booting = document.querySelector('.booting')
+  if (booting !== null) setViewerText(booting, t('app.starting'))
   const capability = describeFileCapability(window)
   const bootDiagnostics: string[] = []
 
@@ -289,7 +298,7 @@ async function boot(): Promise<void> {
       main: services.main,
       worker: services.worker,
     },
-    'Modkit MK3',
+    t('app.title'),
   )
 
   const statusLine = document.createElement('output')
@@ -406,7 +415,7 @@ async function boot(): Promise<void> {
    */
   const editingStatus = document.createElement('p')
   setPart(editingStatus, 'settings.status')
-  setViewerText(editingStatus, 'No file is open yet, so nothing is editable.')
+  setViewerText(editingStatus, t('status.noFileEditable'))
   const noteEditing = (message: string): void => setViewerText(editingStatus, message, 400)
   /** Bound once the editor area exists; the arm is built before it and needs to mark its tabs. */
   let markDirty: (entryId: string, dirty: boolean) => void = () => undefined
@@ -699,33 +708,29 @@ async function boot(): Promise<void> {
     await editors.open(picked.entry)
   }
 
-  toolbarAction('Open file…', 'Open a single file in a new tab', () => {
+  toolbarAction(t('action.openFile'), t('action.openFileTitle'), () => {
     void (async () => {
       try {
         const picked = await pickFile()
         if (picked !== undefined) await openFile(picked.file, picked.handle)
       } catch (error) {
-        say(`Could not open the file: ${describe(error)}`)
+        say(t('error.openFile', { reason: describe(error) }))
       }
     })()
   })
-  toolbarAction('Split editor', 'Open the next file beside this one', () => editors.split())
+  toolbarAction(t('action.splitEditor'), t('action.splitEditorTitle'), () => editors.split())
   /*
    * The gesture the browser insists on. `requestPermission` is only honoured while the page holds
    * transient user activation, so it is a click and never boot; the same request also happens on a
    * Save click, which is why this control is a convenience rather than a precondition.
    */
-  toolbarAction(
-    'Enable editing',
-    'Ask this browser for permission to write the file or folder you picked',
-    () => {
-      void (async () => {
-        const asked = await requestWriteAccess(access)
-        say(asked.sentence)
-        noteEditing(asked.sentence)
-      })()
-    },
-  )
+  toolbarAction(t('action.enableEditing'), t('action.enableEditingTitle'), () => {
+    void (async () => {
+      const asked = await requestWriteAccess(access)
+      say(asked.sentence)
+      noteEditing(asked.sentence)
+    })()
+  })
 
   const stopEvent = (event: DragEvent): void => {
     event.preventDefault()
@@ -745,7 +750,7 @@ async function boot(): Promise<void> {
     setState(editors.root, [])
     const file = event.dataTransfer?.files[0]
     if (file === undefined) return
-    void openFile(file).catch((error: unknown) => say(`Drop failed: ${describe(error)}`))
+    void openFile(file).catch((error: unknown) => say(t('error.drop', { reason: describe(error) })))
   })
 
   // ---------------------------------------------------------------- settings
@@ -764,13 +769,13 @@ async function boot(): Promise<void> {
   function bundledExtensionsSection(): HTMLElement {
     const section = document.createElement('section')
     section.className = 'web-extensions'
-    element(section, 'h2', { text: 'Bundled extensions' })
+    element(section, 'h2', { text: t('settings.bundled') })
     element(section, 'p', {
       part: 'settings.description',
-      text:
-        `${WEB_EXTENSION_CATALOG.extensions.length} extensions were attested at build time and are ` +
-        `served from this origin under extensions/. They are listed read-only because ` +
-        `${EXTENSIONS_READ_ONLY_REASON}.`,
+      text: t('settings.bundledDescription', {
+        count: WEB_EXTENSION_CATALOG.extensions.length,
+        reason: EXTENSIONS_READ_ONLY_REASON,
+      }),
     })
     const list = element(section, 'div', { part: 'settings.list' })
     for (const entry of WEB_EXTENSION_CATALOG.extensions) {
@@ -780,7 +785,7 @@ async function boot(): Promise<void> {
       element(text, 'div', { part: 'settings.description', text: entry.artifactRoot })
     }
     if (WEB_EXTENSION_CATALOG.excluded.length > 0) {
-      element(section, 'h2', { text: 'Bundled but not served here' })
+      element(section, 'h2', { text: t('settings.bundledExcluded') })
       const excluded = element(section, 'div', { part: 'settings.list' })
       for (const entry of WEB_EXTENSION_CATALOG.excluded) {
         const item = element(excluded, 'div', { part: 'settings.extension' })
@@ -800,14 +805,16 @@ async function boot(): Promise<void> {
   // ---------------------------------------------------------------- sidebar: the host itself
   const sidebar = document.createElement('div')
   sidebar.className = 'web-host-panel'
-  element(sidebar, 'h2', { text: 'Host' })
+  element(sidebar, 'h2', { text: t('sidebar.host') })
   element(sidebar, 'p', {
     part: 'settings.description',
-    text:
-      `${services.main.inventory.extensions.length} extensions · ` +
-      `${services.supportedExtensions.length} detectable types · codecs run ` +
-      `${services.executionProfiles.join('/')} in ${services.worker.profile.realmId} · ` +
-      `shared memory ${probe.sharedMemory ? 'yes' : 'no'}`,
+    text: t('sidebar.hostSummary', {
+      extensions: services.main.inventory.extensions.length,
+      types: services.supportedExtensions.length,
+      profiles: services.executionProfiles.join('/'),
+      realm: services.worker.profile.realmId,
+      sharedMemory: t(probe.sharedMemory ? 'common.yes' : 'common.no'),
+    }),
   })
   element(sidebar, 'p', { part: 'settings.description', text: capability.notice })
   element(sidebar, 'p', { part: 'settings.description', text: WEB_EDITING_NOTICE })
@@ -817,12 +824,12 @@ async function boot(): Promise<void> {
    * not a general statement about browsers.
    */
   sidebar.append(editingStatus)
-  element(sidebar, 'h2', { text: 'Facilities' })
+  element(sidebar, 'h2', { text: t('sidebar.facilities') })
   const facilities = element(sidebar, 'ul', { part: 'settings.list' })
   for (const facility of services.main.profile.facilities) {
     element(facilities, 'li', { text: facility })
   }
-  element(sidebar, 'h2', { text: 'Served samples' })
+  element(sidebar, 'h2', { text: t('sidebar.samples') })
   const sampleList = element(sidebar, 'div', { part: 'settings.list' })
   for (const sample of SAMPLES) {
     const button = element(sampleList, 'button', {
@@ -834,6 +841,23 @@ async function boot(): Promise<void> {
       void openServed(sample.path).catch((error: unknown) => say(describe(error)))
     })
   }
+  element(sidebar, 'h2', { text: t('sidebar.language') })
+  const localePicker = element(sidebar, 'select', {
+    part: 'settings.select',
+  }) as HTMLSelectElement
+  for (const candidate of ['en', 'ru'] as const) {
+    const option = document.createElement('option')
+    option.value = candidate
+    setViewerText(option, t(`locale.${candidate}`))
+    localePicker.append(option)
+  }
+  localePicker.value = locale
+  localePicker.setAttribute('aria-label', t('sidebar.language'))
+  localePicker.addEventListener('change', () => {
+    const target = new URL(window.location.href)
+    target.searchParams.set('lang', localePicker.value)
+    window.location.assign(target.href)
+  })
   workbench.setSidebar(sidebar)
 
   // ---------------------------------------------------------------- activity bar
@@ -860,14 +884,14 @@ async function boot(): Promise<void> {
     workbench.activitybar.append(button)
   }
 
-  activity('Files', 'Explorer', () => showView('explorer'), 'explorer')
-  activity('Host', 'Show or hide the host panel', () => {
+  activity(t('activity.files'), t('activity.explorer'), () => showView('explorer'), 'explorer')
+  activity(t('activity.host'), t('activity.hostTitle'), () => {
     workbench.sidebar.hidden = !workbench.sidebar.hidden
   })
-  activity('Info', 'Show or hide diagnostics and operations', () => {
+  activity(t('activity.info'), t('activity.infoTitle'), () => {
     workbench.panel.hidden = !workbench.panel.hidden
   })
-  activity('Settings', 'Settings', () => showView('settings'), 'settings')
+  activity(t('activity.settings'), t('activity.settings'), () => showView('settings'), 'settings')
 
   workbench.panel.hidden = true
   workbench.sidebar.hidden = false
@@ -875,15 +899,17 @@ async function boot(): Promise<void> {
   // The empty state is drawn once here; `inspect` only redraws when the focused file changes.
   await inspector.show(undefined)
   say(
-    `Ready · ${services.main.inventory.extensions.length} extensions · ` +
-      `${bootDiagnostics.length} boot notice(s)`,
+    t('status.ready', {
+      extensions: services.main.inventory.extensions.length,
+      notices: bootDiagnostics.length,
+    }),
   )
 
   // ---------------------------------------------------------------- served resources
   async function openServed(path: string): Promise<void> {
     const file = await fetchServed(baseUrl, path)
     if (file === undefined) {
-      say(`${path} could not be fetched from this origin.`)
+      say(t('error.fetch', { path }))
       return
     }
     if (activeView !== 'explorer') showView('explorer')
@@ -891,8 +917,7 @@ async function boot(): Promise<void> {
   }
 
   // `?open=<same-origin path>` — launch the app on a served resource (also the manual smoke path).
-  const query = new URL(window.location.href).searchParams
-  const requested = query.get('open')
+  const requested = pageUrl.searchParams.get('open')
   if (requested !== null) await openServed(requested)
 
   // ---------------------------------------------------------------- the save path, in the page
@@ -1093,7 +1118,7 @@ async function boot(): Promise<void> {
     }
   }
 
-  if (query.get('selftest') !== null) {
+  if (pageUrl.searchParams.get('selftest') !== null) {
     await selfTest({ openServed, editors, settingsView, inspector, probeEditing })
   }
 }

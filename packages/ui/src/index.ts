@@ -131,6 +131,16 @@ export {
   type WorkbenchHostState,
   type WorkbenchOptions,
 } from './workbench/index.js'
+export {
+  createUiLocalizer,
+  resolveUiLocale,
+  UI_MESSAGES,
+  type UiLocale,
+  type UiLocalizer,
+  type UiMessageCatalog,
+  type UiMessageKey,
+  type UiMessageValues,
+} from './localization/index.js'
 
 export const contributionManifests = Object.freeze(['./contributions/*.json'])
 export {

@@ -95,7 +95,7 @@ describe('PWA boot', () => {
       })
     })
 
-    await page.goto(origin, { waitUntil: 'load' })
+    await page.goto(`${origin}/?lang=en`, { waitUntil: 'load' })
     await page.waitForSelector('[data-mk-part="workbench"]', { timeout: 60_000 })
 
     const booted = await page.evaluate(() => ({
@@ -132,6 +132,38 @@ describe('PWA boot', () => {
     expect(
       failures.filter(line => !/ServiceWorker|service-worker|Failed to register/u.test(line)),
     ).toEqual([])
+    await page.close()
+  }, 120_000)
+
+  it('boots the Russian catalog and its explicit self-hosted Cyrillic face', async () => {
+    const page = await browser.newPage({ colorScheme: 'dark' })
+    const failures: string[] = []
+    page.on('pageerror', error => failures.push(error.message))
+    await page.goto(`${origin}/?lang=ru`, { waitUntil: 'load' })
+    await page.waitForSelector('[data-mk-part="workbench"]', { timeout: 60_000 })
+    await page.getByRole('button', { name: 'Настройки' }).click()
+    await page.waitForSelector('.web-settings-view', { timeout: 30_000 })
+    const state = await page.evaluate(async () => {
+      await document.fonts.ready
+      const root = document.documentElement
+      return {
+        lang: root.lang,
+        title: document.title,
+        settings: document.querySelector('.web-settings-view')?.textContent ?? '',
+        host: document.querySelector('.web-host-panel')?.textContent ?? '',
+        fontStack: getComputedStyle(document.body).fontFamily,
+        cyrillicFace: document.fonts.check('16px "Modkit Cyrillic UI"', 'Русский'),
+      }
+    })
+    expect(state).toMatchObject({
+      lang: 'ru',
+      title: 'Modkit MK3',
+      cyrillicFace: true,
+    })
+    expect(state.settings).toContain('Встроенные расширения')
+    expect(state.host).toContain('Возможности')
+    expect(state.fontStack).toContain('Modkit Cyrillic UI')
+    expect(failures).toEqual([])
     await page.close()
   }, 120_000)
 })
