@@ -11,8 +11,8 @@ The conversion debt of every codec below — planes v2 has no home for, applied
 renames, converter defaults and v1 operations left without a handler — is data in
 `MK2-CONVERSION.json` beside this file.
 
-| contribution                   | v1 manifest                                                                                   | module                          | port         |
-| ------------------------------ | --------------------------------------------------------------------------------------------- | ------------------------------- | ------------ |
-| `org.modkitx/empire-earth-ssa` | `extensions/stainless-steel-studios/empire-earth/codecs/empire-earth-ssa/codec.manifest.json` | `src/empire-earth-ssa/codec.js` | port-pending |
-| `org.modkitx/sst`              | `extensions/stainless-steel-studios/empire-earth/codecs/sst/codec.manifest.json`              | `src/sst/codec.js`              | port-pending |
-| `org.modkitx/texcache`         | `extensions/stainless-steel-studios/empire-earth/codecs/texcache/codec.manifest.json`         | `src/texcache/codec.js`         | port-pending |
+| contribution                   | v1 manifest                                                                                   | module                          | port   |
+| ------------------------------ | --------------------------------------------------------------------------------------------- | ------------------------------- | ------ |
+| `org.modkitx/empire-earth-ssa` | `extensions/stainless-steel-studios/empire-earth/codecs/empire-earth-ssa/codec.manifest.json` | `src/empire-earth-ssa/codec.js` | ported |
+| `org.modkitx/sst`              | `extensions/stainless-steel-studios/empire-earth/codecs/sst/codec.manifest.json`              | `src/sst/codec.js`              | ported |
+| `org.modkitx/texcache`         | `extensions/stainless-steel-studios/empire-earth/codecs/texcache/codec.manifest.json`         | `src/texcache/codec.js`         | ported |

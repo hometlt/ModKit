@@ -2273,6 +2273,39 @@ function relicSga() {
   return out
 }
 
+function empireEarthSsa() {
+  const name = ascii('data/fixture.txt')
+  const payload = ascii('ssa payload\n')
+  const nameOffset = 12 + 24
+  const payloadOffset = nameOffset + name.byteLength
+  return concat(
+    ascii('SSA\0'),
+    u32le(1),
+    u32le(1),
+    u32le(nameOffset),
+    u16le(name.byteLength),
+    u16le(0),
+    u32le(payloadOffset),
+    u32le(payload.byteLength),
+    u32le(payload.byteLength),
+    u32le(0),
+    name,
+    payload,
+  )
+}
+
+function empireEarthSst() {
+  return dds()
+}
+
+function empireEarthTexcache() {
+  return dds()
+}
+
+function heroes6Orc() {
+  return zip()
+}
+
 /** EA SAGE BIG4: one stored entry, with the mixed-endian header and null-terminated index path. */
 function big() {
   const name = ascii('hello.txt\0')
@@ -4529,6 +4562,10 @@ const FIXTURES = {
   'minimal.relic.wtp': () => relicChunk('FOLDTPAT'),
   'minimal.relic.sgm': () => relicChunk('FOLDRSGM', false),
   'minimal.relic.model.whm': () => relicChunk('FOLDRSGM'),
+  'minimal.empire-earth.ssa': empireEarthSsa,
+  'minimal.empire-earth.sst': empireEarthSst,
+  'minimal.empire-earth.texcache': empireEarthTexcache,
+  'minimal.heroes6.orc': heroes6Orc,
   'minimal.sage.skudef': sageSkuDef,
   'minimal.cnc3-data.xml': cnc3Data,
   'minimal.cnc3-localization.csf': cnc3Localization,

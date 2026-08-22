@@ -1924,6 +1924,42 @@
       "note": "Relic Chunky WHM model envelope"
     },
     {
+      "extension": "mk2/stainless-steel-studios-empire-earth",
+      "contributionId": "org.modkitx/empire-earth-ssa",
+      "corpus": "synthetic",
+      "sample": "minimal.empire-earth.ssa",
+      "minimumConfidence": 0.99,
+      "dataSource": "namespace",
+      "note": "Empire Earth SSA archive with one bounded stored entry"
+    },
+    {
+      "extension": "mk2/stainless-steel-studios-empire-earth",
+      "contributionId": "org.modkitx/sst",
+      "corpus": "synthetic",
+      "sample": "minimal.empire-earth.sst",
+      "minimumConfidence": 0.92,
+      "dataSource": "tree",
+      "note": "Empire Earth SST with a self-described DDS texture payload"
+    },
+    {
+      "extension": "mk2/stainless-steel-studios-empire-earth",
+      "contributionId": "org.modkitx/texcache",
+      "corpus": "synthetic",
+      "sample": "minimal.empire-earth.texcache",
+      "minimumConfidence": 0.92,
+      "dataSource": "tree",
+      "note": "Empire Earth texture cache with a self-described DDS payload"
+    },
+    {
+      "extension": "mk2/ubisoft-heroes-6",
+      "contributionId": "org.modkitx/heroes6-orc",
+      "corpus": "synthetic",
+      "sample": "minimal.heroes6.orc",
+      "minimumConfidence": 0.99,
+      "dataSource": "namespace",
+      "note": "Heroes VI ORC archive represented by its ZIP-compatible container"
+    },
+    {
       "extension": "common/images",
       "contributionId": "org.modkitx/image-png",
       "corpus": "synthetic",

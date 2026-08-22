@@ -24,7 +24,7 @@
       ],
       "droppedOperations": ["archive.extract", "archive.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/sst": {
       "verdict": "mechanical",
@@ -39,7 +39,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.read"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/texcache": {
       "verdict": "mechanical",
@@ -54,7 +54,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.read"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     }
   }
 }

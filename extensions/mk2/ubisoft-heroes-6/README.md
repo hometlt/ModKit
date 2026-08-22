@@ -11,6 +11,6 @@ The conversion debt of every codec below — planes v2 has no home for, applied
 renames, converter defaults and v1 operations left without a handler — is data in
 `MK2-CONVERSION.json` beside this file.
 
-| contribution              | v1 manifest                                                          | module                     | port         |
-| ------------------------- | -------------------------------------------------------------------- | -------------------------- | ------------ |
-| `org.modkitx/heroes6-orc` | `extensions/ubisoft/heroes-6/codecs/heroes6-orc/codec.manifest.json` | `src/heroes6-orc/codec.js` | port-pending |
+| contribution              | v1 manifest                                                          | module                     | port   |
+| ------------------------- | -------------------------------------------------------------------- | -------------------------- | ------ |
+| `org.modkitx/heroes6-orc` | `extensions/ubisoft/heroes-6/codecs/heroes6-orc/codec.manifest.json` | `src/heroes6-orc/codec.js` | ported |

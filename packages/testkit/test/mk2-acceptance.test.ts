@@ -124,6 +124,12 @@ const completedPortableRelic = [
   find('org.modkitx/relic-sgm'),
   find('org.modkitx/relic-whm'),
 ]
+const completedPortableFinalFamilies = [
+  find('org.modkitx/empire-earth-ssa'),
+  find('org.modkitx/sst'),
+  find('org.modkitx/texcache'),
+  find('org.modkitx/heroes6-orc'),
+]
 const completedPortableVector = [find('org.modkitx/emf'), find('org.modkitx/wmf')]
 const completedPortableDocuments = [
   find('org.modkitx/csv'),
@@ -265,6 +271,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       ...completedPortableRadVideo,
       ...completedPortableRealityPump,
       ...completedPortableRelic,
+      ...completedPortableFinalFamilies,
       ...completedPortableVector,
       ...completedPortableModels,
       ...completedPortableVideos,
@@ -967,6 +974,15 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       '_ARCHIVE',
     )
     expect(readFileSync(join(root, 'minimal.relic.rrtex'), 'ascii')).toContain('RRTEX')
+    expect(
+      readFileSync(join(root, 'minimal.empire-earth.ssa')).subarray(0, 4).toString('latin1'),
+    ).toBe('SSA\0')
+    for (const sample of ['minimal.empire-earth.sst', 'minimal.empire-earth.texcache']) {
+      expect(readFileSync(join(root, sample)).subarray(0, 4).toString('ascii')).toBe('DDS ')
+    }
+    expect(readFileSync(join(root, 'minimal.heroes6.orc')).subarray(0, 4).toString('latin1')).toBe(
+      'PK\x03\x04',
+    )
 
     // These checks intentionally do not import the codecs. They independently walk each model
     // fixture's standard wire representation so a generator/reader bug cannot agree with itself.
