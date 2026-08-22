@@ -11,7 +11,7 @@ The conversion debt of every codec below — planes v2 has no home for, applied
 renames, converter defaults and v1 operations left without a handler — is data in
 `MK2-CONVERSION.json` beside this file.
 
-| contribution               | v1 manifest                                                    | module                      | port         |
-| -------------------------- | -------------------------------------------------------------- | --------------------------- | ------------ |
-| `org.modkitx/sage-w3x`     | `extensions/ea/models/codecs/sage-w3x/codec.manifest.json`     | `src/sage-w3x/codec.js`     | port-pending |
-| `org.modkitx/westwood-w3d` | `extensions/ea/models/codecs/westwood-w3d/codec.manifest.json` | `src/westwood-w3d/codec.js` | port-pending |
+| contribution               | v1 manifest                                                    | module                      | port   |
+| -------------------------- | -------------------------------------------------------------- | --------------------------- | ------ |
+| `org.modkitx/sage-w3x`     | `extensions/ea/models/codecs/sage-w3x/codec.manifest.json`     | `src/sage-w3x/codec.js`     | ported |
+| `org.modkitx/westwood-w3d` | `extensions/ea/models/codecs/westwood-w3d/codec.manifest.json` | `src/westwood-w3d/codec.js` | ported |

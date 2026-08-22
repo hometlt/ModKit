@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AssetDeclaration>
+  <Includes><Include type="all" source="shared.w3x"/></Includes>
+  <W3DContainer id="FixtureContainer"/>
+  <W3DMesh id="FixtureMesh"/>
+  <W3DHierarchy id="FixtureHierarchy"/>
+  <W3DAnimation id="FixtureAnimation"/>
+  <Texture id="FixtureTexture" File="fixture.dds"/>
+</AssetDeclaration>

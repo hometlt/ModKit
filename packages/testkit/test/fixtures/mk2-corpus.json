@@ -1015,6 +1015,26 @@
       "note": "XBF v1 structural shell with a bounded texture table and signed end marker"
     },
     {
+      "extension": "mk2/ea-models",
+      "contributionId": "org.modkitx/sage-w3x",
+      "corpus": "synthetic",
+      "sample": "minimal.sage.w3x",
+      "minimumConfidence": 0.98,
+      "dataSource": "model",
+      "route": "basename",
+      "note": "Authored W3X AssetDeclaration with container, mesh, hierarchy, animation, texture, and include references"
+    },
+    {
+      "extension": "mk2/ea-models",
+      "contributionId": "org.modkitx/westwood-w3d",
+      "corpus": "synthetic",
+      "sample": "minimal.westwood.w3d",
+      "minimumConfidence": 0.99,
+      "dataSource": "model",
+      "route": "basename",
+      "note": "Westwood W3D hierarchy root with one bounded hierarchy-header child chunk"
+    },
+    {
       "extension": "mk2/common-audio",
       "contributionId": "org.modkitx/ogg",
       "corpus": "synthetic",

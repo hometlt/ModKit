@@ -21,9 +21,9 @@
     }
   ],
   "limitations": [
-    "Related hierarchy, animation, aggregate, skin, and protected-family W3D files plus DDS/TGA textures are resolved by path patterns; the v1 companions field names codec IDs rather than these same-codec and texture relationships.",
-    "The codec is read and preview only; W3D writing and export are not implemented.",
-    "Protected or damaged assets are repaired only when compatible sibling evidence exists, and exact game shader, dazzle, and particle behavior remains renderer-dependent."
+    "This portable structural port walks bounded recursive W3D chunks but does not decode geometry, hierarchy pivots, animation tracks, materials, textures, particles, or dazzles.",
+    "Related W3D family files and DDS/TGA textures are not resolved; protected or damaged assets are not repaired.",
+    "W3D writing is not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "westwood-w3d", "label": "Westwood W3D binary model" }],
@@ -39,7 +39,7 @@
         "contract": "common.model/geometry-metadata",
         "major": 1,
         "stage": "authored",
-        "lossy": false
+        "lossy": true
       }
     ],
     "publishesDataSources": [

@@ -1913,6 +1913,29 @@ function emperorXbf() {
   return concat(u32le(1), u32le(0), u32le(textures.byteLength), textures, u32le(0xffffffff))
 }
 
+/** SAGE W3X authored XML shell with each structural reference plane represented once. */
+function sageW3x() {
+  return ascii(
+    [
+      '<?xml version="1.0" encoding="utf-8"?>',
+      '<AssetDeclaration>',
+      '  <Includes><Include type="all" source="shared.w3x"/></Includes>',
+      '  <W3DContainer id="FixtureContainer"/>',
+      '  <W3DMesh id="FixtureMesh"/>',
+      '  <W3DHierarchy id="FixtureHierarchy"/>',
+      '  <W3DAnimation id="FixtureAnimation"/>',
+      '  <Texture id="FixtureTexture" File="fixture.dds"/>',
+      '</AssetDeclaration>',
+      '',
+    ].join('\n'),
+  )
+}
+
+/** Westwood W3D hierarchy root containing one bounded hierarchy-header child. */
+function westwoodW3d() {
+  return concat(u32le(0x100), u32le(0x80000010), u32le(0x101), u32le(8), u32le(1), u32le(1))
+}
+
 /** EA SAGE BIG4: one stored entry, with the mixed-endian header and null-terminated index path. */
 function big() {
   const name = ascii('hello.txt\0')
@@ -4028,6 +4051,8 @@ const FIXTURES = {
   'minimal.ta-hpi': taHpi,
   'minimal.emperor.rfh': emperorRfh,
   'minimal.emperor.xbf': emperorXbf,
+  'minimal.sage.w3x': sageW3x,
+  'minimal.westwood.w3d': westwoodW3d,
   'minimal.galaxy': galaxyScript,
   'minimal.sc2strings.txt': sc2Strings,
   'minimal.SC2Layout': sc2Layout,

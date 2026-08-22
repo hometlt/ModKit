@@ -21,8 +21,9 @@
     }
   ],
   "limitations": [
-    "W3X includes, model parts, textures, and animation siblings are resolved by same-codec path patterns; the v1 companions field names codec IDs rather than same-codec path patterns.",
-    "The codec is read and preview only; W3X export and exact game-specific FX shader execution are not implemented."
+    "This portable structural port inventories W3X containers, meshes, hierarchies, animations, textures, and includes without decoding geometry or animation tracks.",
+    "Includes, model parts, textures, and animation siblings are not resolved.",
+    "W3X writing and game-specific FX shader execution are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "sage-w3x", "label": "SAGE W3X XML model" }],
@@ -38,7 +39,7 @@
         "contract": "common.model/geometry-metadata",
         "major": 1,
         "stage": "authored",
-        "lossy": false
+        "lossy": true
       }
     ],
     "publishesDataSources": [
@@ -70,11 +71,11 @@
       }
     ],
     "traitDeclarations": [
-      { "id": "model.animations", "representation": "source", "presence": "will-expose" },
-      { "id": "model.geometry", "representation": "source", "presence": "will-expose" },
-      { "id": "model.materials", "representation": "source", "presence": "will-expose" },
-      { "id": "model.skeleton", "representation": "source", "presence": "will-expose" },
-      { "id": "model.textures", "representation": "source", "presence": "will-expose" },
+      { "id": "model.animations", "representation": "source", "presence": "may-expose" },
+      { "id": "model.geometry", "representation": "source", "presence": "may-expose" },
+      { "id": "model.materials", "representation": "source", "presence": "may-expose" },
+      { "id": "model.skeleton", "representation": "source", "presence": "may-expose" },
+      { "id": "model.textures", "representation": "source", "presence": "may-expose" },
       { "id": "structure.hierarchy", "representation": "source", "presence": "will-expose" }
     ],
     "implementationTier": { "claimed": 1 },
