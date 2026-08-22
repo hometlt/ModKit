@@ -21,9 +21,9 @@
     }
   ],
   "limitations": [
-    "The preview recognizes headings, paragraphs, lists, and fenced code blocks; inline Markdown formatting is not interpreted.",
-    "Raw HTML is displayed as escaped source text and is never executed in the webview.",
-    "edit.content returns UTF-8 replacement bytes; source persistence remains a host-owned operation."
+    "Inspection recognizes headings, links, lists, quotes, and fenced code blocks; inline Markdown formatting is not interpreted.",
+    "Raw HTML remains inert source text and is never executed.",
+    "Portable export guarantees raw passthrough only; content editing and source persistence are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "markdown", "label": "Markdown Document" }],

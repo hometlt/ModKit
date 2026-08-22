@@ -21,9 +21,9 @@
     }
   ],
   "limitations": [
-    "The current parser uses comma delimiters only and does not infer locale-specific separators.",
-    "Rows and columns are truncated at the shared safe table limits.",
-    "edit.content replaces the complete CSV source as UTF-8 text; structured cell patching and source persistence remain host-owned."
+    "The validating parser implements comma-separated records, quoted fields, doubled quotes, and embedded line breaks; it does not infer locale-specific separators.",
+    "Rows and cells are bounded by the contribution resource budgets and are exposed as a lazy tree.",
+    "Portable export guarantees raw passthrough only; structured cell editing and source persistence are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "csv", "label": "Delimited Text Table" }],

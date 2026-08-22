@@ -92,7 +92,7 @@
         "view.render"
       ],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/docx": {
       "verdict": "convertible-with-rework",
@@ -160,7 +160,7 @@
         "view.render"
       ],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/odp": {
       "verdict": "convertible-with-rework",
@@ -265,7 +265,7 @@
       ],
       "droppedOperations": ["asset.validate", "export.raw", "view.inspect", "view.render"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/txt": {
       "verdict": "needs-new-contract",
@@ -288,7 +288,7 @@
         "view.render"
       ],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/visio": {
       "verdict": "convertible-with-rework",

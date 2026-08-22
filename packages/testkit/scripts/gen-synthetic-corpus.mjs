@@ -1864,6 +1864,32 @@ function uvm() {
   )
 }
 
+/** RFC 4180 CSV: CRLF records, doubled quotes, and a CRLF embedded in a quoted field. */
+function csv() {
+  return ascii(
+    'name,quote,note\r\nAlice,"Hello, ""world""",first\r\nBob,"line one\r\nline two",second\r\n',
+  )
+}
+
+/** CommonMark source exercising headings, a link, a list, and a fenced code block. */
+function markdown() {
+  return ascii(
+    '# Port Plan\n\nSee [spec](https://example.invalid/spec).\n\n- Parse\n- Validate\n\n## Proof\n\n```js\nconst ready = true\n```\n',
+  )
+}
+
+/** RTF 1.x root with a font-table group, outline control, section, and paragraphs. */
+function rtf() {
+  return ascii(
+    '{\\rtf1\\ansi\\deff0{\\fonttbl{\\f0 Arial;}}\\sectd\\outlinelevel0 Port report\\par Ready\\par}',
+  )
+}
+
+/** UTF-8-compatible plain text with two paragraphs and CRLF line endings. */
+function txt() {
+  return ascii('First paragraph.\r\nStill first.\r\n\r\nSecond paragraph.\r\n')
+}
+
 // ---------------------------------------------------------------- the corpus
 
 /** Every fixture: file name → builder. The name is what the acceptance corpus refers to. */
@@ -1889,17 +1915,21 @@ const FIXTURES = {
   'minimal.iso': iso,
   'minimal.ktx': ktx,
   'minimal.lzma': lzma,
+  'minimal.md': markdown,
   'minimal.pkm': pkm,
   'minimal.pal': pal,
   'minimal.pcx': pcx,
   'minimal.exe': pe,
   'minimal.pvr': pvr,
   'minimal.cue': ps1Cue,
+  'minimal.csv': csv,
   'minimal.bin': ps1Bin,
   'minimal.7z': sevenZip,
   'minimal.rar': rar,
+  'minimal.rtf': rtf,
   'minimal.tga': tga,
   'minimal.tiff': tiff,
+  'minimal.txt': txt,
   'minimal.uvm.glb': uvm,
   'minimal.wav': wav,
   'minimal.m3': m3,

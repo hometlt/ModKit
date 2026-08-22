@@ -34,6 +34,12 @@ const completedPortableModels = [
   find('org.modkitx/uvm'),
 ]
 const completedPortableVideos = [find('org.modkitx/avi'), find('org.modkitx/wmv')]
+const completedPortableDocuments = [
+  find('org.modkitx/csv'),
+  find('org.modkitx/markdown'),
+  find('org.modkitx/rtf'),
+  find('org.modkitx/txt'),
+]
 
 describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tasks E/F/G)', () => {
   it('opens every corpus sample through the product path and prints the state table', async () => {
@@ -104,6 +110,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       portableModel,
       ...completedPortableModels,
       ...completedPortableVideos,
+      ...completedPortableDocuments,
       ...(mk2Root === undefined ? [] : [firstReal]),
     ]
     const outcomes = await runMk2Acceptance(cases, { repoRoot, mk2Root, workerBrokered: true })
@@ -274,5 +281,28 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     ])
     expect(wmv.subarray(asfHeaderSize, asfHeaderSize + 16).toString('hex')).toBe(asfDataGuid)
     expect(Number(wmv.readBigUInt64LE(asfHeaderSize + 16))).toBe(50)
+
+    const csv = readFileSync(join(root, 'minimal.csv'), 'ascii')
+    expect(csv).toMatch(/^name,quote,note\r\n/u)
+    expect(csv).toContain('"Hello, ""world"""')
+    expect(csv).toContain('"line one\r\nline two"')
+    expect(csv.endsWith('\r\n')).toBe(true)
+
+    const markdown = readFileSync(join(root, 'minimal.md'), 'utf8')
+    expect(markdown.match(/^#{1,6}\s+/gmu)).toHaveLength(2)
+    expect(markdown.match(/^```/gmu)).toHaveLength(2)
+    expect(markdown).toContain('[spec](https://example.invalid/spec)')
+
+    const rtf = readFileSync(join(root, 'minimal.rtf'), 'ascii')
+    expect(rtf).toMatch(/^\{\\rtf1\\ansi/u)
+    expect(rtf.endsWith('}')).toBe(true)
+    expect([...rtf].filter(character => character === '{')).toHaveLength(
+      [...rtf].filter(character => character === '}').length,
+    )
+    expect(rtf.match(/\\par\b/gu)).toHaveLength(2)
+
+    const txt = readFileSync(join(root, 'minimal.txt'))
+    expect(() => new TextDecoder('utf-8', { fatal: true }).decode(txt)).not.toThrow()
+    expect(txt.toString('ascii').match(/\r\n/gu)).toHaveLength(4)
   })
 })

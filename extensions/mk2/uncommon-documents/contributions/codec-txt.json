@@ -21,9 +21,9 @@
     }
   ],
   "limitations": [
-    "Text is decoded as UTF-8 with replacement characters for malformed byte sequences.",
-    "Preview and editing are bounded by the shared document source, decoded-text, and block limits.",
-    "edit.content returns replacement bytes; source persistence remains a host-owned operation."
+    "Text is decoded as strict UTF-8; malformed input and NUL characters are rejected.",
+    "Paragraph preview and decoded text are bounded by the contribution node and scalar budgets.",
+    "Portable export guarantees raw passthrough only; content editing and source persistence are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "txt", "label": "Plain Text Document" }],

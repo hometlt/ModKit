@@ -761,6 +761,42 @@
       "note": "ASF Header/File/Stream/Header-Extension objects followed by an empty Data Object"
     },
     {
+      "extension": "mk2/uncommon-documents",
+      "contributionId": "org.modkitx/csv",
+      "corpus": "synthetic",
+      "sample": "minimal.csv",
+      "minimumConfidence": 0.9,
+      "dataSource": "tree",
+      "note": "RFC-style comma-separated records with doubled quotes and an embedded CRLF"
+    },
+    {
+      "extension": "mk2/uncommon-documents",
+      "contributionId": "org.modkitx/markdown",
+      "corpus": "synthetic",
+      "sample": "minimal.md",
+      "minimumConfidence": 0.9,
+      "dataSource": "tree",
+      "note": "CommonMark-compatible headings, link, list, and fenced code block"
+    },
+    {
+      "extension": "mk2/uncommon-documents",
+      "contributionId": "org.modkitx/rtf",
+      "corpus": "synthetic",
+      "sample": "minimal.rtf",
+      "minimumConfidence": 0.99,
+      "dataSource": "tree",
+      "note": "RTF 1 root with nested font table, section, outline, and paragraph controls"
+    },
+    {
+      "extension": "mk2/uncommon-documents",
+      "contributionId": "org.modkitx/txt",
+      "corpus": "synthetic",
+      "sample": "minimal.txt",
+      "minimumConfidence": 0.7,
+      "dataSource": "tree",
+      "note": "Strict UTF-8-compatible plain text with CRLF lines and two paragraphs"
+    },
+    {
       "extension": "common/images",
       "contributionId": "org.modkitx/image-png",
       "corpus": "synthetic",
