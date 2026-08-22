@@ -1035,6 +1035,16 @@
       "note": "Westwood W3D hierarchy root with one bounded hierarchy-header child chunk"
     },
     {
+      "extension": "mk2/ea-sage",
+      "contributionId": "org.modkitx/sage-skudef",
+      "corpus": "synthetic",
+      "sample": "minimal.sage.skudef",
+      "minimumConfidence": 0.96,
+      "dataSource": "namespace",
+      "route": "basename",
+      "note": "SkuDef directive list with config, BIG archive, search path, executable, and mod metadata records"
+    },
+    {
       "extension": "mk2/common-audio",
       "contributionId": "org.modkitx/ogg",
       "corpus": "synthetic",

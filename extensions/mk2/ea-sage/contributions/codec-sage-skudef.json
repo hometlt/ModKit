@@ -21,9 +21,8 @@
     }
   ],
   "limitations": [
-    "Resolves the directive chain into an ordered archive list and mounts it first-declared-wins; the priority rule is inferred from the retail patch chain, not from engine documentation.",
-    "`add-search-path` is recorded but not honoured — loose files beside the archives are not searched.",
-    "`add-bigs-from` requires a host-supplied directory listing and sorts by name.",
+    "This portable single-source port tokenizes and inventories the ordered directive list but does not resolve chained config files or mount archives.",
+    "`add-search-path` and `add-bigs-from` are recorded but not resolved because directory listing and loose-file services are not supplied.",
     "Editing and writing a SkuDef are not implemented."
   ],
   "spec": {

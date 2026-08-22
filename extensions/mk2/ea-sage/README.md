@@ -17,4 +17,4 @@ renames, converter defaults and v1 operations left without a handler — is data
 | `org.modkitx/cnc3-data`         | `extensions/ea/sage/codecs/cnc3-data/codec.manifest.json`         | `src/cnc3-data/codec.js`         | port-pending |
 | `org.modkitx/cnc3-localization` | `extensions/ea/sage/codecs/cnc3-localization/codec.manifest.json` | `src/cnc3-localization/codec.js` | port-pending |
 | `org.modkitx/cnc3-map`          | `extensions/ea/sage/codecs/cnc3-map/codec.manifest.json`          | `src/cnc3-map/codec.js`          | port-pending |
-| `org.modkitx/sage-skudef`       | `extensions/ea/sage/codecs/sage-skudef/codec.manifest.json`       | `src/sage-skudef/codec.js`       | port-pending |
+| `org.modkitx/sage-skudef`       | `extensions/ea/sage/codecs/sage-skudef/codec.manifest.json`       | `src/sage-skudef/codec.js`       | ported       |

@@ -1954,6 +1954,21 @@ function big() {
   )
 }
 
+/** SAGE SkuDef line grammar with archive, config, search-path, and mod metadata directives. */
+function sageSkuDef() {
+  return ascii(
+    [
+      '; deterministic load order',
+      'set-exe CNC3.exe',
+      'add-config Core\\1.0\\config.txt',
+      'add-big Core\\1.0\\core.big',
+      'add-search-path Mods\\Fixture',
+      'mod-name Fixture',
+      '',
+    ].join('\n'),
+  )
+}
+
 /**
  * One Ogg page: RFC 3533 §6. A single-segment first page puts its payload at byte 28, which is
  * where the Vorbis/Opus/Theora identification headers live and where the codec signatures point.
@@ -4053,6 +4068,7 @@ const FIXTURES = {
   'minimal.emperor.xbf': emperorXbf,
   'minimal.sage.w3x': sageW3x,
   'minimal.westwood.w3d': westwoodW3d,
+  'minimal.sage.skudef': sageSkuDef,
   'minimal.galaxy': galaxyScript,
   'minimal.sc2strings.txt': sc2Strings,
   'minimal.SC2Layout': sc2Layout,

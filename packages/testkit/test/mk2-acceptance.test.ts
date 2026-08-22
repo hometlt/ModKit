@@ -70,6 +70,7 @@ const completedPortableEaEmperor = [
   find('org.modkitx/emperor-xbf'),
 ]
 const completedPortableEaModels = [find('org.modkitx/sage-w3x'), find('org.modkitx/westwood-w3d')]
+const completedPortableEaSage = [find('org.modkitx/sage-skudef')]
 const completedPortableVector = [find('org.modkitx/emf'), find('org.modkitx/wmf')]
 const completedPortableDocuments = [
   find('org.modkitx/csv'),
@@ -200,6 +201,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       ...completedPortableCavedog,
       ...completedPortableEaEmperor,
       ...completedPortableEaModels,
+      ...completedPortableEaSage,
       ...completedPortableVector,
       ...completedPortableModels,
       ...completedPortableVideos,
@@ -616,6 +618,21 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       westwoodW3d.readUInt32LE(12),
     ]).toEqual([0x100, 0x80000010, 0x101, 8])
     expect([westwoodW3d.readUInt32LE(16), westwoodW3d.readUInt32LE(20)]).toEqual([1, 1])
+
+    const sageSkuDef = readFileSync(join(root, 'minimal.sage.skudef'), 'utf8')
+    const sageDirectives = sageSkuDef
+      .split(/\r?\n/u)
+      .map(line => line.replace(/(^|\s)(;|\/\/).*$/u, '').trim())
+      .filter(Boolean)
+      .map(line => line.split(/\s+/u, 1)[0]?.toLowerCase())
+    expect(sageDirectives).toEqual([
+      'set-exe',
+      'add-config',
+      'add-big',
+      'add-search-path',
+      'mod-name',
+    ])
+    expect(sageSkuDef).toContain('add-big Core\\1.0\\core.big')
 
     // These checks intentionally do not import the codecs. They independently walk each model
     // fixture's standard wire representation so a generator/reader bug cannot agree with itself.

@@ -91,7 +91,7 @@
       ],
       "droppedOperations": ["view.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     }
   }
 }

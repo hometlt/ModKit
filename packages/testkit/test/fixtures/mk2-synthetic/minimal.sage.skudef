@@ -1,0 +1,6 @@
+; deterministic load order
+set-exe CNC3.exe
+add-config Core\1.0\config.txt
+add-big Core\1.0\core.big
+add-search-path Mods\Fixture
+mod-name Fixture
