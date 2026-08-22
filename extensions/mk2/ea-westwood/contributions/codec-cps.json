@@ -21,8 +21,8 @@
     }
   ],
   "limitations": [
-    "The current codec inventories metadata only; CPS compression and palette decoding are not implemented.",
-    "The manifest conservatively exposes runtime operations to Node hosts because the shared legacy RTS entrypoint reaches an external CommonJS WASM loader whose browser import graph is not yet verifiable."
+    "The current portable codec inventories a bounded CPS header only; CPS compression and palette decoding are not implemented.",
+    "Writing CPS images is not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "cps", "label": "Westwood CPS image" }],

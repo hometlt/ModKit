@@ -78,6 +78,15 @@ const completedPortableEaSage = [
   find('org.modkitx/sage-skudef'),
 ]
 const completedPortableEaTiberianSun = [find('org.modkitx/red-alert2-vxl')]
+const completedPortableEaWestwood = [
+  find('org.modkitx/cps'),
+  find('org.modkitx/r16'),
+  find('org.modkitx/r8'),
+  find('org.modkitx/shp'),
+  find('org.modkitx/tmp'),
+  find('org.modkitx/vpl'),
+  find('org.modkitx/wsa'),
+]
 const completedPortableVector = [find('org.modkitx/emf'), find('org.modkitx/wmf')]
 const completedPortableDocuments = [
   find('org.modkitx/csv'),
@@ -210,6 +219,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       ...completedPortableEaModels,
       ...completedPortableEaSage,
       ...completedPortableEaTiberianSun,
+      ...completedPortableEaWestwood,
       ...completedPortableVector,
       ...completedPortableModels,
       ...completedPortableVideos,
@@ -661,18 +671,24 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
 
     const cnc3Data = readFileSync(join(root, 'minimal.cnc3-data.xml'), 'utf8')
     expect(cnc3Data).toMatch(/<AssetDeclaration\s+xmlns="uri:ea\.com:eala:asset">/u)
-    expect([...cnc3Data.matchAll(/<Include\s+[^>]*source="([^"]+)"[^>]*\/>/gu)].map(match => match[1])).toEqual([
-      'DATA:global.xml',
-      'ART:EVDefault.xml',
-    ])
-    expect([...cnc3Data.matchAll(/<(GameMap|GameScriptList)\s+id="([^"]+)"\s*\/>/gu)].map(match => [match[1], match[2]])).toEqual([
+    expect(
+      [...cnc3Data.matchAll(/<Include\s+[^>]*source="([^"]+)"[^>]*\/>/gu)].map(match => match[1]),
+    ).toEqual(['DATA:global.xml', 'ART:EVDefault.xml'])
+    expect(
+      [...cnc3Data.matchAll(/<(GameMap|GameScriptList)\s+id="([^"]+)"\s*\/>/gu)].map(match => [
+        match[1],
+        match[2],
+      ]),
+    ).toEqual([
       ['GameMap', 'FixtureMap'],
       ['GameScriptList', 'FixtureScripts'],
     ])
 
     const cnc3Csf = readFileSync(join(root, 'minimal.cnc3-localization.csf'))
     expect(cnc3Csf.subarray(0, 4).toString('latin1')).toBe(' FSC')
-    expect([cnc3Csf.readUInt32LE(4), cnc3Csf.readUInt32LE(8), cnc3Csf.readUInt32LE(12)]).toEqual([3, 1, 1])
+    expect([cnc3Csf.readUInt32LE(4), cnc3Csf.readUInt32LE(8), cnc3Csf.readUInt32LE(12)]).toEqual([
+      3, 1, 1,
+    ])
     let csfCursor = 24
     expect(cnc3Csf.subarray(csfCursor, csfCursor + 4).toString('latin1')).toBe(' LBL')
     csfCursor += 4
@@ -680,7 +696,9 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     csfCursor += 4
     const csfLabelLength = cnc3Csf.readUInt32LE(csfCursor)
     csfCursor += 4
-    expect(cnc3Csf.subarray(csfCursor, csfCursor + csfLabelLength).toString('latin1')).toBe('GUI:Fixture')
+    expect(cnc3Csf.subarray(csfCursor, csfCursor + csfLabelLength).toString('latin1')).toBe(
+      'GUI:Fixture',
+    )
     csfCursor += csfLabelLength
     expect(cnc3Csf.subarray(csfCursor, csfCursor + 4).toString('latin1')).toBe('WRTS')
     csfCursor += 4
@@ -699,15 +717,74 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     const literalControl = cnc3Map[8 + refPackHeaderBytes]
     if (literalControl === undefined) throw new TypeError('CNC3 map RefPack command is missing')
     const literalBytes = ((literalControl & 0x1f) + 1) * 4
-    const expandedMap = cnc3Map.subarray(8 + refPackHeaderBytes + 1, 8 + refPackHeaderBytes + 1 + literalBytes)
+    const expandedMap = cnc3Map.subarray(
+      8 + refPackHeaderBytes + 1,
+      8 + refPackHeaderBytes + 1 + literalBytes,
+    )
     expect(expandedMap.byteLength).toBe(declaredMapBytes)
     expect(expandedMap.subarray(0, 4).toString('latin1')).toBe('CkMp')
     expect(expandedMap.readUInt32LE(4)).toBe(1)
     const mapNameLength = expandedMap[8] ?? 0
     expect(expandedMap.subarray(9, 9 + mapNameLength).toString('latin1')).toBe('HeightMapData')
     const chunkHeader = 9 + mapNameLength + 4
-    expect([expandedMap.readUInt32LE(chunkHeader), expandedMap.readUInt16LE(chunkHeader + 4), expandedMap.readUInt32LE(chunkHeader + 6)]).toEqual([7, 2, 12])
-    expect([expandedMap.readUInt32LE(chunkHeader + 10), expandedMap.readUInt32LE(chunkHeader + 14), expandedMap.readUInt32LE(chunkHeader + 18)]).toEqual([256, 128, 16])
+    expect([
+      expandedMap.readUInt32LE(chunkHeader),
+      expandedMap.readUInt16LE(chunkHeader + 4),
+      expandedMap.readUInt32LE(chunkHeader + 6),
+    ]).toEqual([7, 2, 12])
+    expect([
+      expandedMap.readUInt32LE(chunkHeader + 10),
+      expandedMap.readUInt32LE(chunkHeader + 14),
+      expandedMap.readUInt32LE(chunkHeader + 18),
+    ]).toEqual([256, 128, 16])
+
+    const duneR8 = readFileSync(join(root, 'minimal.westwood.r8'))
+    expect([duneR8[0], duneR8.readInt32LE(1), duneR8.readInt32LE(5), duneR8[25]]).toEqual([
+      2, 2, 2, 8,
+    ])
+    expect([...duneR8.subarray(29)]).toEqual([1, 2, 3, 4])
+
+    const duneR16 = readFileSync(join(root, 'minimal.westwood.r16'))
+    expect([duneR16[0], duneR16.readInt32LE(1), duneR16.readInt32LE(5), duneR16[25]]).toEqual([
+      2, 2, 2, 16,
+    ])
+    expect([...duneR16.subarray(29)]).toEqual([0x00, 0x7c, 0xe0, 0x03, 0x1f, 0x00, 0xff, 0x7f])
+
+    const westwoodShp = readFileSync(join(root, 'minimal.westwood.shp'))
+    expect([
+      westwoodShp.readUInt16LE(2),
+      westwoodShp.readUInt16LE(4),
+      westwoodShp.readUInt16LE(6),
+      westwoodShp[16],
+      westwoodShp.readUInt32LE(28),
+    ]).toEqual([2, 2, 1, 0, 32])
+    expect([...westwoodShp.subarray(32)]).toEqual([1, 2, 3, 4])
+
+    const westwoodTmp = readFileSync(join(root, 'minimal.westwood.tmp'))
+    expect([
+      westwoodTmp.readUInt32LE(0),
+      westwoodTmp.readUInt32LE(4),
+      westwoodTmp.readInt32LE(8),
+      westwoodTmp.readInt32LE(12),
+      westwoodTmp.readUInt32LE(16),
+    ]).toEqual([1, 1, 4, 2, 20])
+    expect(westwoodTmp.readUInt32LE(32)).toBe(56)
+    expect([...westwoodTmp.subarray(72, 76)]).toEqual([1, 2, 3, 4])
+
+    const westwoodVpl = readFileSync(join(root, 'minimal.westwood.vpl'))
+    expect([
+      westwoodVpl.readUInt32LE(0),
+      westwoodVpl.readUInt32LE(4),
+      westwoodVpl.readUInt32LE(8),
+      westwoodVpl.readUInt32LE(12),
+    ]).toEqual([16, 31, 1, 0])
+    expect([...westwoodVpl.subarray(784)]).toEqual(Array.from({ length: 256 }, (_, index) => index))
+
+    for (const name of ['minimal.westwood.cps', 'minimal.westwood.wsa']) {
+      const opaque = readFileSync(join(root, name))
+      expect(opaque.byteLength).toBe(16)
+      expect(opaque.readUInt16LE(0)).toBe(name.endsWith('.cps') ? 0x5043 : 0x5357)
+    }
 
     // These checks intentionally do not import the codecs. They independently walk each model
     // fixture's standard wire representation so a generator/reader bug cannot agree with itself.

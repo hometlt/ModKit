@@ -21,11 +21,11 @@
     }
   ],
   "limitations": [
-    "Decode covers frame formats 0/1, length-prefixed format 2, and length-prefixed RLE-zero format 3; other corpus variants are not claimed.",
-    "Export writes one indexed frame and can quantize against an explicitly resolved PAL companion; multi-frame export and viewer-side palette selection remain follow-up work.",
+    "Pixel decode covers raw frame formats 0/1; compressed formats 2/3 are validated structurally but not decoded.",
+    "Writing, multi-frame export, and palette-sidecar resolution are not implemented by the portable MK3 port.",
     "The theater aliases are shared with the TMP codec, so hosts must run each codec's structural detector rather than choose solely from the extension.",
     "Generated manifest routing is extension-only because manifest v1 cannot express the handwritten registry's extension-or-structural-sniff fallback without conjunctive evidence.",
-    "True-color indexed output requires an optional PAL companion; unresolved palettes use the documented grayscale fallback."
+    "Indexed pixels use the documented grayscale fallback."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "shp", "label": "Westwood TS/RA2 SHP sprite" }],

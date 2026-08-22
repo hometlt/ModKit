@@ -1968,6 +1968,68 @@ function redAlert2Vxl() {
   )
 }
 
+function duneFrame(bits) {
+  const pixels =
+    bits === 8
+      ? bytes(1, 2, 3, 4)
+      : concat(u16le(0x7c00), u16le(0x03e0), u16le(0x001f), u16le(0x7fff))
+  return concat(
+    bytes(2),
+    u32le(2),
+    u32le(2),
+    u32le(0),
+    u32le(0),
+    u32le(1),
+    u32le(0),
+    bytes(bits, 2, 2, 0),
+    pixels,
+  )
+}
+
+function westwoodShp() {
+  const header = new Uint8Array(32)
+  const view = new DataView(header.buffer)
+  view.setUint16(2, 2, true)
+  view.setUint16(4, 2, true)
+  view.setUint16(6, 1, true)
+  view.setUint16(12, 2, true)
+  view.setUint16(14, 2, true)
+  header[16] = 0
+  view.setUint32(28, 32, true)
+  return concat(header, bytes(1, 2, 3, 4))
+}
+
+function westwoodTmp() {
+  const file = new Uint8Array(80)
+  const view = new DataView(file.buffer)
+  view.setUint32(0, 1, true)
+  view.setUint32(4, 1, true)
+  view.setInt32(8, 4, true)
+  view.setInt32(12, 2, true)
+  view.setUint32(16, 20, true)
+  view.setUint32(32, 56, true)
+  file.set(bytes(1, 2, 3, 4), 72)
+  return file
+}
+
+function westwoodVpl() {
+  const palette = new Uint8Array(768)
+  for (let index = 0; index < 256; index += 1)
+    palette.set([index >>> 2, index >>> 2, index >>> 2], index * 3)
+  return concat(
+    u32le(16),
+    u32le(31),
+    u32le(1),
+    u32le(0),
+    palette,
+    Uint8Array.from({ length: 256 }, (_, index) => index),
+  )
+}
+
+function westwoodOpaque(kind) {
+  return concat(ascii(kind), new Uint8Array(16 - kind.length))
+}
+
 /** EA SAGE BIG4: one stored entry, with the mixed-endian header and null-terminated index path. */
 function big() {
   const name = ascii('hello.txt\0')
@@ -2058,7 +2120,13 @@ function refPackLiteral(payload) {
   const remainder = payload.byteLength - cursor
   commands.push(bytes(0xfc + remainder), payload.subarray(cursor))
   return concat(
-    bytes(0x10, 0xfb, (payload.byteLength >>> 16) & 0xff, (payload.byteLength >>> 8) & 0xff, payload.byteLength & 0xff),
+    bytes(
+      0x10,
+      0xfb,
+      (payload.byteLength >>> 16) & 0xff,
+      (payload.byteLength >>> 8) & 0xff,
+      payload.byteLength & 0xff,
+    ),
     ...commands,
   )
 }
@@ -4182,6 +4250,13 @@ const FIXTURES = {
   'minimal.sage.w3x': sageW3x,
   'minimal.westwood.w3d': westwoodW3d,
   'minimal.ra2.vxl': redAlert2Vxl,
+  'minimal.westwood.cps': () => westwoodOpaque('CPS'),
+  'minimal.westwood.r8': () => duneFrame(8),
+  'minimal.westwood.r16': () => duneFrame(16),
+  'minimal.westwood.shp': westwoodShp,
+  'minimal.westwood.tmp': westwoodTmp,
+  'minimal.westwood.vpl': westwoodVpl,
+  'minimal.westwood.wsa': () => westwoodOpaque('WSA'),
   'minimal.sage.skudef': sageSkuDef,
   'minimal.cnc3-data.xml': cnc3Data,
   'minimal.cnc3-localization.csf': cnc3Localization,

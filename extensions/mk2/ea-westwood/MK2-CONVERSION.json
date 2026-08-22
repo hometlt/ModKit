@@ -28,7 +28,7 @@
       ],
       "droppedOperations": ["image.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/r16": {
       "verdict": "mechanical",
@@ -43,7 +43,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.read"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/r8": {
       "verdict": "mechanical",
@@ -58,7 +58,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.read"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/shp": {
       "verdict": "needs-new-contract",
@@ -75,7 +75,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.read", "image.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/tmp": {
       "verdict": "mechanical",
@@ -90,7 +90,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.read"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/vpl": {
       "verdict": "mechanical",
@@ -105,7 +105,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.read"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/wsa": {
       "verdict": "mechanical",
@@ -120,7 +120,7 @@
       ],
       "droppedOperations": ["image.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     }
   }
 }

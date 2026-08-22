@@ -21,9 +21,9 @@
     }
   ],
   "limitations": [
-    "Preview currently decodes the first 8-bit frame only.",
-    "A companion PAL palette may be required when the selected frame does not embed one; the v1 companions field cannot express same-source path patterns.",
-    "The manifest conservatively exposes runtime operations to Node hosts because the shared legacy RTS entrypoint reaches an external CommonJS WASM loader whose browser import graph is not yet verifiable."
+    "Preview decodes indexed frames when every frame has the first frame's dimensions, using a grayscale fallback.",
+    "Embedded and companion palette application is not implemented by the portable MK3 port.",
+    "Editing or writing R8 frame streams is not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "r8", "label": "Dune 2000 R8 sprite/image" }],

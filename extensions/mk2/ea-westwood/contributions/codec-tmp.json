@@ -21,10 +21,10 @@
     }
   ],
   "limitations": [
-    "Decode renders one populated tile or frame, including the indexed diamond and optional extra image; depth data and full-template composition are not implemented.",
+    "Decode renders each populated tile's primary indexed diamond; depth data, extra images, and full-template composition are not implemented.",
     "The theater aliases are shared with the SHP codec, so hosts must run each codec's structural detector rather than choose solely from the extension.",
     "Generated manifest routing is extension-only because manifest v1 cannot express the handwritten registry's extension-or-structural-sniff fallback without conjunctive evidence.",
-    "True-color indexed output requires an optional PAL companion; unresolved palettes use the documented grayscale fallback.",
+    "Palette-sidecar resolution is not implemented; indexed pixels use the documented grayscale fallback.",
     "Writing TMP templates is not implemented."
   ],
   "spec": {

@@ -21,8 +21,8 @@
     }
   ],
   "limitations": [
-    "The current codec inventories metadata only; WSA frame and palette decoding are not implemented.",
-    "The manifest conservatively exposes runtime operations to Node hosts because the shared legacy RTS entrypoint reaches an external CommonJS WASM loader whose browser import graph is not yet verifiable."
+    "The current portable codec inventories a bounded WSA header only; WSA frame and palette decoding are not implemented.",
+    "Writing WSA animations is not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "wsa", "label": "Westwood WSA animation" }],

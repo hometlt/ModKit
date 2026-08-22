@@ -11,12 +11,12 @@ The conversion debt of every codec below — planes v2 has no home for, applied
 renames, converter defaults and v1 operations left without a handler — is data in
 `MK2-CONVERSION.json` beside this file.
 
-| contribution      | v1 manifest                                             | module             | port         |
-| ----------------- | ------------------------------------------------------- | ------------------ | ------------ |
-| `org.modkitx/cps` | `extensions/ea/westwood/codecs/cps/codec.manifest.json` | `src/cps/codec.js` | port-pending |
-| `org.modkitx/r16` | `extensions/ea/westwood/codecs/r16/codec.manifest.json` | `src/r16/codec.js` | port-pending |
-| `org.modkitx/r8`  | `extensions/ea/westwood/codecs/r8/codec.manifest.json`  | `src/r8/codec.js`  | port-pending |
-| `org.modkitx/shp` | `extensions/ea/westwood/codecs/shp/codec.manifest.json` | `src/shp/codec.js` | port-pending |
-| `org.modkitx/tmp` | `extensions/ea/westwood/codecs/tmp/codec.manifest.json` | `src/tmp/codec.js` | port-pending |
-| `org.modkitx/vpl` | `extensions/ea/westwood/codecs/vpl/codec.manifest.json` | `src/vpl/codec.js` | port-pending |
-| `org.modkitx/wsa` | `extensions/ea/westwood/codecs/wsa/codec.manifest.json` | `src/wsa/codec.js` | port-pending |
+| contribution      | v1 manifest                                             | module             | port   |
+| ----------------- | ------------------------------------------------------- | ------------------ | ------ |
+| `org.modkitx/cps` | `extensions/ea/westwood/codecs/cps/codec.manifest.json` | `src/cps/codec.js` | ported |
+| `org.modkitx/r16` | `extensions/ea/westwood/codecs/r16/codec.manifest.json` | `src/r16/codec.js` | ported |
+| `org.modkitx/r8`  | `extensions/ea/westwood/codecs/r8/codec.manifest.json`  | `src/r8/codec.js`  | ported |
+| `org.modkitx/shp` | `extensions/ea/westwood/codecs/shp/codec.manifest.json` | `src/shp/codec.js` | ported |
+| `org.modkitx/tmp` | `extensions/ea/westwood/codecs/tmp/codec.manifest.json` | `src/tmp/codec.js` | ported |
+| `org.modkitx/vpl` | `extensions/ea/westwood/codecs/vpl/codec.manifest.json` | `src/vpl/codec.js` | ported |
+| `org.modkitx/wsa` | `extensions/ea/westwood/codecs/wsa/codec.manifest.json` | `src/wsa/codec.js` | ported |

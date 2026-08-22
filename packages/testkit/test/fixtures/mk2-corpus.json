@@ -1577,6 +1577,74 @@
       "note": "UnityFS v6 bundle with stored block-info, one stored data block and one serialized asset entry"
     },
     {
+      "extension": "mk2/ea-westwood",
+      "contributionId": "org.modkitx/cps",
+      "corpus": "synthetic",
+      "sample": "minimal.westwood.cps",
+      "minimumConfidence": 0.86,
+      "dataSource": "tree",
+      "note": "Bounded CPS header fixture for honest metadata-only inspection"
+    },
+    {
+      "extension": "mk2/ea-westwood",
+      "contributionId": "org.modkitx/r16",
+      "corpus": "synthetic",
+      "sample": "minimal.westwood.r16",
+      "minimumConfidence": 0.94,
+      "dataSource": "raster",
+      "expectedFirstPixelRgba": [255, 0, 0, 255],
+      "note": "Dune 2000 type-2 RGB555 frame with a 2x2 primary-color raster"
+    },
+    {
+      "extension": "mk2/ea-westwood",
+      "contributionId": "org.modkitx/r8",
+      "corpus": "synthetic",
+      "sample": "minimal.westwood.r8",
+      "minimumConfidence": 0.94,
+      "dataSource": "raster",
+      "expectedFirstPixelRgba": [1, 1, 1, 255],
+      "note": "Dune 2000 type-2 indexed frame rendered with the documented grayscale fallback"
+    },
+    {
+      "extension": "mk2/ea-westwood",
+      "contributionId": "org.modkitx/shp",
+      "corpus": "synthetic",
+      "sample": "minimal.westwood.shp",
+      "minimumConfidence": 0.93,
+      "dataSource": "raster",
+      "expectedFirstPixelRgba": [1, 1, 1, 255],
+      "note": "TS/RA2 SHP with one uncompressed indexed 2x2 frame"
+    },
+    {
+      "extension": "mk2/ea-westwood",
+      "contributionId": "org.modkitx/tmp",
+      "corpus": "synthetic",
+      "sample": "minimal.westwood.tmp",
+      "minimumConfidence": 0.93,
+      "dataSource": "raster",
+      "expectedFirstPixelRgba": [1, 1, 1, 255],
+      "note": "TS/RA2 TMP with one populated 4x2 indexed terrain diamond"
+    },
+    {
+      "extension": "mk2/ea-westwood",
+      "contributionId": "org.modkitx/vpl",
+      "corpus": "synthetic",
+      "sample": "minimal.westwood.vpl",
+      "minimumConfidence": 0.95,
+      "dataSource": "raster",
+      "expectedFirstPixelRgba": [0, 0, 0, 255],
+      "note": "TS/RA2 VPL with a 256-color palette and one identity lighting table"
+    },
+    {
+      "extension": "mk2/ea-westwood",
+      "contributionId": "org.modkitx/wsa",
+      "corpus": "synthetic",
+      "sample": "minimal.westwood.wsa",
+      "minimumConfidence": 0.86,
+      "dataSource": "tree",
+      "note": "Bounded WSA header fixture for honest metadata-only inspection"
+    },
+    {
       "extension": "common/images",
       "contributionId": "org.modkitx/image-png",
       "corpus": "synthetic",
