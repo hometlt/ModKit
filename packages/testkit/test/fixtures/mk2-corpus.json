@@ -1038,6 +1038,36 @@
     },
     {
       "extension": "mk2/epic-games-unreal-engine",
+      "contributionId": "org.modkitx/unreal-pak",
+      "corpus": "synthetic",
+      "sample": "minimal.unreal.pak",
+      "minimumConfidence": 0.995,
+      "dataSource": "namespace",
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "0" },
+        "outputKind": "bytes",
+        "minimumBytes": 9
+      },
+      "note": "UE4 Pak v8b legacy index with SHA-1 digests, duplicate local entry records and two extractable stored payloads"
+    },
+    {
+      "extension": "mk2/epic-games-unreal-engine",
+      "contributionId": "org.modkitx/unreal-iostore",
+      "corpus": "synthetic",
+      "sample": "minimal.unreal.utoc",
+      "minimumConfidence": 0.995,
+      "dataSource": "namespace",
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "1" },
+        "outputKind": "bytes",
+        "minimumBytes": 22
+      },
+      "note": "UE5 IoStore v6 UTOC plus exact UCAS companion with directory index, logical ranges and two extractable stored blocks"
+    },
+    {
+      "extension": "mk2/epic-games-unreal-engine",
       "contributionId": "org.modkitx/unreal-actorx",
       "corpus": "synthetic",
       "sample": "minimal.actorx.psk",

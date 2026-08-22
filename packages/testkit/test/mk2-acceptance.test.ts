@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -67,7 +68,11 @@ const completedPortableAgeSeries = [
   find('org.modkitx/smp'),
   find('org.modkitx/smx'),
 ]
-const completedPortableUnreal = [find('org.modkitx/unreal-actorx')]
+const completedPortableUnreal = [
+  find('org.modkitx/unreal-actorx'),
+  find('org.modkitx/unreal-pak'),
+  find('org.modkitx/unreal-iostore'),
+]
 
 describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tasks E/F/G)', () => {
   it('opens every corpus sample through the product path and prints the state table', async () => {
@@ -558,6 +563,36 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       ['REFSKELT', 120, 1],
       ['RAWWEIGHTS', 12, 3],
     ])
+
+    const pak = readFileSync(join(root, 'minimal.unreal.pak'))
+    const pakFooter = pak.byteLength - 221
+    const pakMagic = pakFooter + 17
+    expect(pak.readUInt32LE(pakMagic)).toBe(0x5a6f12e1)
+    expect(pak.readUInt32LE(pakMagic + 4)).toBe(8)
+    const pakIndexOffset = Number(pak.readBigInt64LE(pakMagic + 8))
+    const pakIndexSize = Number(pak.readBigInt64LE(pakMagic + 16))
+    expect(pakIndexOffset + pakIndexSize).toBe(pakFooter)
+    expect(
+      createHash('sha1')
+        .update(pak.subarray(pakIndexOffset, pakIndexOffset + pakIndexSize))
+        .digest(),
+    ).toEqual(pak.subarray(pakMagic + 24, pakMagic + 44))
+
+    const utoc = readFileSync(join(root, 'minimal.unreal.utoc'))
+    const ucas = readFileSync(join(root, 'minimal.unreal.ucas'))
+    expect(utoc.subarray(0, 16).toString('ascii')).toBe('-==--==--==--==-')
+    expect([utoc[0x10], utoc.readUInt32LE(0x14), utoc.readUInt32LE(0x18)]).toEqual([6, 0x90, 2])
+    const ioBlocks = 0x90 + 2 * 12 + 2 * 10
+    const firstPhysical = utoc.readUInt32LE(ioBlocks)
+    const firstStored = utoc.readUIntLE(ioBlocks + 5, 3)
+    const secondPhysical = utoc.readUInt32LE(ioBlocks + 12)
+    const secondStored = utoc.readUIntLE(ioBlocks + 17, 3)
+    expect(ucas.subarray(firstPhysical, firstPhysical + firstStored).toString()).toBe(
+      'iostore unit asset',
+    )
+    expect(ucas.subarray(secondPhysical, secondPhysical + secondStored).toString()).toBe(
+      '[IoStore]\nMounted=true\n',
+    )
 
     const bar = readFileSync(join(root, 'minimal.age-bar'))
     expect(bar.subarray(0, 4).toString('ascii')).toBe('ESPN')

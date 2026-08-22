@@ -23,6 +23,7 @@
 // Usage: node packages/testkit/scripts/gen-synthetic-corpus.mjs [--out <dir>] [--check] [--quiet]
 
 import { mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import process from 'node:process'
@@ -2791,11 +2792,145 @@ function actorX() {
   )
 }
 
+/** UE4 Pak v8b legacy index with two stored entries and real SHA-1 digests. */
+function unrealPak() {
+  const fixed = (value, length) => {
+    const out = new Uint8Array(length)
+    out.set(ascii(value).subarray(0, length))
+    return out
+  }
+  const i64le = value => concat(u32le(value >>> 0), u32le(Math.floor(value / 0x1_0000_0000)))
+  const sha1 = value => new Uint8Array(createHash('sha1').update(value).digest())
+  const fString = value => {
+    const encoded = ascii(value)
+    return concat(u32le(encoded.byteLength + 1), encoded, bytes(0))
+  }
+  const record = entry =>
+    concat(
+      i64le(entry.offset),
+      i64le(entry.data.byteLength),
+      i64le(entry.data.byteLength),
+      u32le(0),
+      sha1(entry.data),
+      bytes(0),
+      u32le(65_536),
+    )
+  const definitions = [
+    { name: 'Meshes/Unit.uasset', data: ascii('unit asset') },
+    { name: 'Config/DefaultGame.ini', data: ascii('[Game]\nName=Demo\n') },
+  ]
+  const entries = []
+  const payloads = []
+  let offset = 0
+  for (const definition of definitions) {
+    const entry = { ...definition, offset }
+    const local = record(entry)
+    entries.push(entry)
+    payloads.push(local, entry.data)
+    offset += local.byteLength + entry.data.byteLength
+  }
+  const index = concat(
+    fString('../../../Demo/Content/'),
+    u32le(entries.length),
+    entries.map(entry => concat(fString(entry.name), record(entry))),
+  )
+  const methods = new Uint8Array(5 * 32)
+  methods.set(fixed('Zlib', 32), 0)
+  methods.set(fixed('Gzip', 32), 32)
+  methods.set(fixed('Oodle', 32), 64)
+  const footer = concat(
+    new Uint8Array(16),
+    bytes(0),
+    u32le(0x5a6f12e1),
+    u32le(8),
+    i64le(offset),
+    i64le(index.byteLength),
+    sha1(index),
+    methods,
+  )
+  return concat(payloads, index, footer)
+}
+
+/** UE5 IoStore v6 UTOC with a real directory index and a separate stored-block UCAS. */
+function unrealIoStore() {
+  const fString = value => {
+    const encoded = ascii(value)
+    return concat(u32le(encoded.byteLength + 1), encoded, bytes(0))
+  }
+  const directory = concat(
+    fString('../../../Demo/Content/'),
+    u32le(3),
+    concat(u32le(0xffffffff), u32le(1), u32le(0xffffffff), u32le(0xffffffff)),
+    concat(u32le(0), u32le(0xffffffff), u32le(2), u32le(0)),
+    concat(u32le(1), u32le(0xffffffff), u32le(0xffffffff), u32le(1)),
+    u32le(2),
+    concat(u32le(2), u32le(0xffffffff), u32le(0)),
+    concat(u32le(3), u32le(0xffffffff), u32le(1)),
+    u32le(4),
+    fString('Meshes'),
+    fString('Config'),
+    fString('Unit.uasset'),
+    fString('DefaultGame.ini'),
+  )
+  const payloads = [ascii('iostore unit asset'), ascii('[IoStore]\nMounted=true\n')]
+  const ucas = concat(payloads)
+  const header = new Uint8Array(0x90)
+  header.set(ascii('-==--==--==--==-'), 0)
+  header[0x10] = 6
+  const headerView = new DataView(header.buffer)
+  headerView.setUint32(0x14, 0x90, true)
+  headerView.setUint32(0x18, 2, true)
+  headerView.setUint32(0x1c, 2, true)
+  headerView.setUint32(0x20, 12, true)
+  headerView.setUint32(0x24, 0, true)
+  headerView.setUint32(0x28, 32, true)
+  headerView.setUint32(0x2c, 64, true)
+  headerView.setUint32(0x30, directory.byteLength, true)
+  headerView.setUint32(0x34, 1, true)
+  headerView.setBigUint64(0x38, 0x1122334455667788n, true)
+  header[0x50] = 0x08
+  headerView.setBigUint64(0x58, 0xffffffffffffffffn, true)
+  const chunkIds = new Uint8Array(24)
+  chunkIds[11] = 0x81
+  chunkIds[23] = 0x82
+  const writeU40Be = (target, offset, value) => {
+    target[offset] = Math.floor(value / 0x1_0000_0000) & 0xff
+    target[offset + 1] = (value >>> 24) & 0xff
+    target[offset + 2] = (value >>> 16) & 0xff
+    target[offset + 3] = (value >>> 8) & 0xff
+    target[offset + 4] = value & 0xff
+  }
+  const writeU40Le = (target, offset, value) => {
+    target.set(u32le(value), offset)
+    target[offset + 4] = Math.floor(value / 0x1_0000_0000) & 0xff
+  }
+  const writeU24Le = (target, offset, value) => target.set(u24le(value), offset)
+  const offsets = new Uint8Array(20)
+  writeU40Be(offsets, 0, 0)
+  writeU40Be(offsets, 5, payloads[0].byteLength)
+  writeU40Be(offsets, 10, 64)
+  writeU40Be(offsets, 15, payloads[1].byteLength)
+  const blocks = new Uint8Array(24)
+  writeU40Le(blocks, 0, 0)
+  writeU24Le(blocks, 5, payloads[0].byteLength)
+  writeU24Le(blocks, 8, payloads[0].byteLength)
+  writeU40Le(blocks, 12, payloads[0].byteLength)
+  writeU24Le(blocks, 17, payloads[1].byteLength)
+  writeU24Le(blocks, 20, payloads[1].byteLength)
+  const metadata = new Uint8Array(2 * 33)
+  return { utoc: concat(header, chunkIds, offsets, blocks, directory, metadata), ucas }
+}
+
+const ioStoreFixture = unrealIoStore()
+
 // ---------------------------------------------------------------- the corpus
 
 /** Every fixture: file name → builder. The name is what the acceptance corpus refers to. */
 const FIXTURES = {
   'minimal.actorx.psk': actorX,
+  'minimal.unreal.pak': unrealPak,
+  'minimal.unreal.utoc': () => ioStoreFixture.utoc,
+  'minimal.unreal.ucas': () => ioStoreFixture.ucas,
   'minimal.bti': bti,
   'minimal.cub': cub,
   'minimal.mtrl': mtrl,

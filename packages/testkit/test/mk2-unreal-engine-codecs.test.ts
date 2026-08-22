@@ -9,6 +9,7 @@ import {
   type Codec,
   type ContributionContext,
   type ModelSceneSource,
+  type NamespaceEntrySource,
   type ResourceBudget,
   type TreeDataSource,
 } from '@modkitx-x3/sdk'
@@ -86,6 +87,57 @@ function inputFor(source: ArtifactByteSource): AssetInput {
   }
 }
 
+function bundleInput(primary: ArtifactByteSource, companion: ArtifactByteSource): AssetInput {
+  const candidate = {
+    sourceKind: 'candidate' as const,
+    bindingId: 'utoc',
+    role: 'table-of-contents',
+    ownership: 'owned' as const,
+    source: primary.ref,
+    revision: primary.revision,
+  }
+  const required = {
+    sourceKind: 'requirement' as const,
+    bindingId: 'ucas',
+    requirementId: 'ucas',
+    role: 'container-payload',
+    ownership: 'companion' as const,
+    source: companion.ref,
+    revision: companion.revision,
+  }
+  const sources = new Map([
+    [candidate.bindingId, primary],
+    [required.bindingId, companion],
+  ])
+  return {
+    originKind: 'bundle',
+    bindings: [candidate, required],
+    primaryBindingId: candidate.bindingId,
+    revisions: {
+      topology: 'bundle',
+      revision: primary.revision,
+      bindings: [
+        { bindingId: candidate.bindingId, revision: candidate.revision },
+        { bindingId: required.bindingId, revision: required.revision },
+      ],
+      compositionFingerprint: `mk2-unreal-iostore-${primary.ref.id}-${companion.ref.id}`,
+    },
+    bindingsFor(requirementId) {
+      return requirementId === 'ucas' ? [required] : []
+    },
+    async openBinding(bindingId) {
+      const source = sources.get(bindingId)
+      if (source === undefined) throw new TypeError(`unknown bundle binding ${bindingId}`)
+      return {
+        value: source,
+        async release() {
+          return undefined
+        },
+      }
+    },
+  }
+}
+
 async function codecFor(format: string): Promise<Codec> {
   const module = (await import(
     pathToFileURL(join(extensionRoot, 'src', format, 'codec.js')).href
@@ -102,6 +154,15 @@ async function open(format: string, bytes: Uint8Array, resourceBudget = budget) 
   return codec.open(inputFor(byteSource(format, bytes)), 'inspect', resourceBudget)
 }
 
+async function openIoStore(utoc: Uint8Array, ucas: Uint8Array, resourceBudget = budget) {
+  const codec = await codecFor('unreal-iostore')
+  return codec.open(
+    bundleInput(byteSource('unreal.utoc', utoc), byteSource('unreal.ucas', ucas)),
+    'inspect',
+    resourceBudget,
+  )
+}
+
 async function summary(session: Awaited<ReturnType<typeof open>>) {
   const result = await session.operations().invoke('inspect', null)
   if (result.state !== 'ok' || result.output.kind !== 'json')
@@ -109,7 +170,97 @@ async function summary(session: Awaited<ReturnType<typeof open>>) {
   return result.output.value
 }
 
+async function extract(session: Awaited<ReturnType<typeof open>>, entryId: string) {
+  const result = await session.operations().invoke('extract-entry', { entryId })
+  if (result.state !== 'ok' || result.output.kind !== 'bytes')
+    throw new Error(`entry ${entryId} did not extract to bytes`)
+  return result.output.value
+}
+
 describe('ported Epic Games / Unreal Engine codecs', () => {
+  it('resolves a real UE5 UTOC/UCAS bundle and extracts stored blocks', async () => {
+    const [utoc, ucas] = await Promise.all([
+      fixture('minimal.unreal.utoc'),
+      fixture('minimal.unreal.ucas'),
+    ])
+    const session = await openIoStore(utoc, ucas)
+    expect(await summary(session)).toMatchObject({
+      format: 'unreal-iostore',
+      version: 6,
+      mountPoint: 'Demo/Content',
+      entries: 2,
+      blocks: 2,
+      blockSize: 64,
+      companionBytes: ucas.byteLength,
+    })
+    const lease = await session.dataSource('common.view/namespace-entry-source', 1)
+    const namespace = lease.value as NamespaceEntrySource
+    expect((await namespace.list('', { limit: 10 })).items.map(item => item.path)).toEqual([
+      'Demo/Content/Meshes/Unit.uasset',
+      'Demo/Content/Config/DefaultGame.ini',
+    ])
+    await expect(extract(session, '0')).resolves.toEqual(
+      new TextEncoder().encode('iostore unit asset'),
+    )
+    await expect(extract(session, '1')).resolves.toEqual(
+      new TextEncoder().encode('[IoStore]\nMounted=true\n'),
+    )
+    await lease.release()
+    await session.dispose()
+  })
+
+  it('rejects IoStore blocks outside UCAS and enforces bundle budgets', async () => {
+    const [utoc, ucas] = await Promise.all([
+      fixture('minimal.unreal.utoc'),
+      fixture('minimal.unreal.ucas'),
+    ])
+    const corrupted = utoc.slice()
+    // Header + chunk ids + offset/length table is the compressed-block table.
+    new DataView(corrupted.buffer).setUint32(0x90 + 24 + 20 + 12, ucas.byteLength + 1, true)
+    await expect(openIoStore(corrupted, ucas)).rejects.toThrow(/IoStore/u)
+    await expect(openIoStore(utoc, ucas, { ...budget, maxNodes: 0 })).rejects.toThrow(/maxNodes/u)
+    await expect(openIoStore(utoc, ucas, { ...budget, maxScalarBytes: 1 })).rejects.toThrow(
+      /maxInputBytes|maxScalarBytes/u,
+    )
+  })
+
+  it('walks a UE4 Pak v8 footer/index and extracts cross-checked stored entries', async () => {
+    const bytes = await fixture('minimal.unreal.pak')
+    const session = await open('unreal-pak', bytes)
+    expect(await summary(session)).toMatchObject({
+      format: 'unreal-pak',
+      version: 8,
+      mountPoint: 'Demo/Content',
+      entries: 2,
+      stored: 2,
+      compressionMethods: ['Zlib', 'Gzip', 'Oodle'],
+    })
+    const lease = await session.dataSource('common.view/namespace-entry-source', 1)
+    const namespace = lease.value as NamespaceEntrySource
+    expect((await namespace.list('', { limit: 10 })).items.map(item => item.path)).toEqual([
+      'Demo/Content/Meshes/Unit.uasset',
+      'Demo/Content/Config/DefaultGame.ini',
+    ])
+    await expect(extract(session, '0')).resolves.toEqual(new TextEncoder().encode('unit asset'))
+    await expect(extract(session, '1')).resolves.toEqual(
+      new TextEncoder().encode('[Game]\nName=Demo\n'),
+    )
+    await lease.release()
+    await session.dispose()
+  })
+
+  it('rejects a Pak local/index disagreement and bounds extraction', async () => {
+    const bytes = await fixture('minimal.unreal.pak')
+    const corrupted = bytes.slice()
+    // First local FPakEntry starts at zero; changing its declared size disagrees with the index.
+    new DataView(corrupted.buffer).setBigInt64(8, 99n, true)
+    await expect(open('unreal-pak', corrupted)).rejects.toThrow(/Unreal Pak/u)
+    await expect(open('unreal-pak', bytes, { ...budget, maxNodes: 0 })).rejects.toThrow(/maxNodes/u)
+    const session = await open('unreal-pak', bytes, { ...budget, maxScalarBytes: 1 })
+    await expect(extract(session, '0')).rejects.toThrow(/maxScalarBytes/u)
+    await session.dispose()
+  })
+
   it('decodes genuine ActorX chunk records into bounded triangle geometry', async () => {
     const bytes = await fixture('minimal.actorx.psk')
     const session = await open('unreal-actorx', bytes)

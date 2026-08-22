@@ -21,10 +21,10 @@
     }
   ],
   "limitations": [
-    "The Node runtime routes .pak files declaratively because the generic matching sample is normally the file head, while the structural signature lives in the footer; no browser runtime is declared.",
-    "AES-256-ECB indexes and entries require a caller-supplied 32-byte key. Stored, zlib, and gzip payloads decode internally; Oodle-class methods require an optional host decompressor.",
-    "Versions 1-11 and legacy/path-hash/full-directory indexes are supported, while true frozen indexes remain metadata-only because their layout is platform-specific.",
-    "Writing or repacking Unreal Pak containers is not implemented."
+    "The portable reader validates UE4 Pak v8 FPakInfo footer fields, the legacy FString index and duplicate FPakEntry records before exposing paths.",
+    "Stored, unencrypted entries are extractable with node and scalar budgets; encrypted indexes/entries and compressed payload extraction are reported as unsupported.",
+    "Large Pak files route by the .pak extension because their 0x5A6F12E1 structural magic is in the footer, outside the start-only probe window.",
+    "Other Pak versions, path-hash/frozen indexes, SHA-1 verification, mutation and repacking are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "unreal-pak", "label": "Unreal Pak" }],
@@ -66,6 +66,13 @@
       {
         "id": "export.raw",
         "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "container.extract",
+        "handlerId": "extract-entry",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]

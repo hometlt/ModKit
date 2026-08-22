@@ -59,7 +59,7 @@
       ],
       "droppedOperations": ["archive.extract", "archive.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/unreal-pak": {
       "verdict": "mechanical",
@@ -74,7 +74,7 @@
       ],
       "droppedOperations": ["archive.extract", "archive.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/unreal-uasset": {
       "verdict": "mechanical",

@@ -3,37 +3,45 @@
   "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
   "id": "org.modkitx/unreal-iostore",
   "displayName": "Unreal IoStore",
-  "status": "supported",
+  "status": "partial",
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
       "entrypoint": "./src/unreal-iostore/codec.js",
       "target": { "environments": ["node"] },
       "executionProfile": "trusted-in-process",
-      "requestedPermissionClasses": ["filesystem-read", "read-source"]
+      "requestedPermissionClasses": ["read-source"]
     },
     {
       "variantId": "portable",
       "entrypoint": "./src/unreal-iostore/codec.js",
       "target": { "environments": ["browser-worker", "node-worker"] },
       "executionProfile": "worker-brokered",
-      "requestedPermissionClasses": ["filesystem-read", "read-source"]
+      "requestedPermissionClasses": ["read-source"]
     }
   ],
   "limitations": [
-    "The current inspection/extraction implementation imports Node filesystem, crypto, and zlib modules; no browser runtime is declared.",
-    "Header inspection can run from bytes in Node, while real-container extraction requires native filesystem access to discover .utoc/.ucas partitions; the sidecar roles are not separate codec IDs.",
-    "Declarative routing uses the .utoc/.ucas extensions so real .ucas payload partitions are not rejected for lacking a header signature; extensionless UTOC data can still be inspected through the direct codec API.",
-    "AES-256-ECB indexes and payloads require a caller-supplied 32-byte key. Stored, zlib, and gzip payloads decode internally; Oodle-class methods require an optional host decompressor.",
-    "Writing or repacking IoStore containers is not implemented."
+    "The UTOC candidate is refined into one exact host-resolved UCAS sibling; the portable codec performs no filesystem discovery and requests no filesystem permission.",
+    "UE5 IoStore v2-v8 headers, chunk offset/length records, compressed-block records and the serialized directory/string tables are strictly framed.",
+    "One-partition, indexed, unencrypted stored blocks are extractable; encrypted, signed, compressed and multipart containers are rejected instead of being guessed.",
+    "Perfect-hash validation, proprietary decompression, mutation and repacking are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "unreal-iostore", "label": "Unreal IoStore" }],
     "roles": ["container"],
-    "sourceTopology": "single",
+    "sourceTopology": "bundle",
+    "companions": [
+      {
+        "id": "ucas",
+        "role": "container-payload",
+        "required": true,
+        "patterns": ["*.ucas"],
+        "searchScopes": ["sibling-directory", "enclosing-container"]
+      }
+    ],
     "artifactStages": ["authored", "compiled"],
     "openIntents": ["probe", "inspect", "full", "export"],
-    "match": { "extensions": ["utoc", "ucas"] },
+    "match": { "extensions": ["utoc"] },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {
@@ -67,6 +75,13 @@
       {
         "id": "export.raw",
         "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "container.extract",
+        "handlerId": "extract-entry",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]
