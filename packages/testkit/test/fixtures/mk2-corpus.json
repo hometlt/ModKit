@@ -539,6 +539,33 @@
     },
     {
       "extension": "mk2/common-models",
+      "contributionId": "org.modkitx/dae",
+      "corpus": "synthetic",
+      "sample": "minimal.dae",
+      "minimumConfidence": 0.9,
+      "dataSource": "model",
+      "note": "COLLADA 1.4.1 geometry sources, indexed triangle, and visual-scene instance"
+    },
+    {
+      "extension": "mk2/common-models",
+      "contributionId": "org.modkitx/gltf",
+      "corpus": "synthetic",
+      "sample": "minimal.gltf",
+      "minimumConfidence": 0.9,
+      "dataSource": "model",
+      "note": "glTF 2.0 JSON with an embedded data-URI buffer and decoded indexed triangle"
+    },
+    {
+      "extension": "mk2/common-models",
+      "contributionId": "org.modkitx/uvm",
+      "corpus": "synthetic",
+      "sample": "minimal.uvm.glb",
+      "minimumConfidence": 0.99,
+      "dataSource": "model",
+      "note": "UVM/core 1.0 GLB with required identity/provenance metadata and decoded indexed triangle"
+    },
+    {
+      "extension": "mk2/common-models",
       "contributionId": "org.modkitx/glb",
       "corpus": "real",
       "sample": "-references/website/old-wiki/src/app/js-3d-model-viewer-master/original/duck.glb",

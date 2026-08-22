@@ -28,7 +28,7 @@
       ],
       "droppedOperations": ["model.read", "model.render"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/glb": {
       "verdict": "mechanical",
@@ -58,7 +58,7 @@
       ],
       "droppedOperations": ["model.read", "model.render"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/obj": {
       "verdict": "needs-new-contract",
@@ -122,7 +122,7 @@
       ],
       "droppedOperations": ["model.export", "model.read", "model.render", "model.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     }
   }
 }

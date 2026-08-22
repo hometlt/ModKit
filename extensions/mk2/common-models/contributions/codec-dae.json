@@ -3,7 +3,7 @@
   "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
   "id": "org.modkitx/dae",
   "displayName": "COLLADA DAE model",
-  "status": "supported",
+  "status": "partial",
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
@@ -21,8 +21,8 @@
     }
   ],
   "limitations": [
-    "Referenced texture files are resolved as same-codec sidecars; the v1 companions field names codec IDs rather than path patterns.",
-    "Programmable FX profiles, line topology, physics libraries, and kinematics libraries are inventoried but remain outside the RenderModel preview contract."
+    "Decoded geometry covers triangles, polylist, and polygons without holes; line topology, controllers, skins, look-at, and skew transforms remain unsupported.",
+    "Materials, images, and animations are inventoried, but external texture resolution, programmable effects, and animation playback are not decoded."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "dae", "label": "COLLADA DAE model" }],

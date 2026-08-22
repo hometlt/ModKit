@@ -16,8 +16,24 @@ import {
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const modelRoot = join(repoRoot, 'extensions', 'mk2', 'common-models')
 const fixtureRoot = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
-const formats = ['obj', 'ply', 'stl'] as const
+const formats = ['obj', 'ply', 'stl', 'dae', 'gltf', 'uvm'] as const
 type Format = (typeof formats)[number]
+const fixtureNames: Record<Format, string> = {
+  obj: 'minimal.obj',
+  ply: 'minimal.ply',
+  stl: 'minimal.stl',
+  dae: 'minimal.dae',
+  gltf: 'minimal.gltf',
+  uvm: 'minimal.uvm.glb',
+}
+const primitiveIds: Record<Format, string> = {
+  obj: 'primitive-0',
+  ply: 'primitive-0',
+  stl: 'primitive-0',
+  dae: 'geometry-0-primitive-0',
+  gltf: 'mesh-0-primitive-0',
+  uvm: 'mesh-0-primitive-0',
+}
 
 const budget: ResourceBudget = {
   maxInputBytes: 10_000_000n,
@@ -41,7 +57,7 @@ const context: ContributionContext = {
 }
 
 function byteSource(format: Format, bytes: Uint8Array): ArtifactByteSource {
-  const uri = `memory://mk2-model-codecs/sample.${format}`
+  const uri = `memory://mk2-model-codecs/${fixtureNames[format]}`
   return {
     kind: 'bytes',
     ref: { id: uri, uri },
@@ -96,7 +112,7 @@ async function codecFor(format: Format): Promise<Codec> {
 }
 
 async function fixture(format: Format): Promise<Uint8Array> {
-  return new Uint8Array(await readFile(join(fixtureRoot, `minimal.${format}`)))
+  return new Uint8Array(await readFile(join(fixtureRoot, fixtureNames[format])))
 }
 
 async function open(format: Format, bytes: Uint8Array, resourceBudget = budget) {
@@ -127,7 +143,7 @@ function bigEndianPly(): Uint8Array {
   return result
 }
 
-describe('ported MK2 polygon model codecs', () => {
+describe('ported MK2 geometry model codecs', () => {
   it.each(formats)('%s publishes bounded decoded triangle geometry', async format => {
     const session = await open(format, await fixture(format))
     const descriptor = await session.descriptor()
@@ -146,11 +162,12 @@ describe('ported MK2 polygon model codecs', () => {
       geometryAccess: 'decoded',
       bounds: { min: [0, 0, 0], max: [1, 1, 0] },
     })
-    const primitive = await model.primitive?.('primitive-0', { maxBytes: 1024 })
+    const primitiveId = primitiveIds[format]
+    const primitive = await model.primitive?.(primitiveId, { maxBytes: 1024 })
     expect(primitive?.topology).toBe('triangles')
     expect(primitive?.positions).toHaveLength(9)
     expect(primitive?.indices).toEqual(new Uint32Array([0, 1, 2]))
-    await expect(model.primitive?.('primitive-0', { maxBytes: 1 })).rejects.toThrow(/maxBytes/u)
+    await expect(model.primitive?.(primitiveId, { maxBytes: 1 })).rejects.toThrow(/maxBytes/u)
 
     const treeLease = await session.dataSource('common.view/tree-data-source', 1)
     const tree = treeLease.value as TreeDataSource
@@ -222,18 +239,42 @@ describe('ported MK2 polygon model codecs', () => {
     await session.dispose()
   })
 
+  it('triangulates a COLLADA polylist and expands independent normal indices', async () => {
+    const dae = text(
+      '<COLLADA version="1.4.1"><library_geometries><geometry id="quad"><mesh>' +
+        '<source id="p"><float_array id="pa" count="12">0 0 0 1 0 0 1 1 0 0 1 0</float_array><technique_common><accessor source="#pa" count="4" stride="3"/></technique_common></source>' +
+        '<source id="n"><float_array id="na" count="3">0 0 1</float_array><technique_common><accessor source="#na" count="1" stride="3"/></technique_common></source>' +
+        '<vertices id="v"><input semantic="POSITION" source="#p"/></vertices>' +
+        '<polylist count="1"><input semantic="VERTEX" source="#v" offset="0"/><input semantic="NORMAL" source="#n" offset="1"/><vcount>4</vcount><p>0 0 1 0 2 0 3 0</p></polylist>' +
+        '</mesh></geometry></library_geometries></COLLADA>',
+    )
+    const session = await open('dae', dae)
+    const lease = await session.dataSource('common.view/model-scene-source', 1)
+    const model = lease.value as ModelSceneSource
+    const primitive = await model.primitive?.('geometry-0-primitive-0', { maxBytes: 2048 })
+    expect(primitive?.indices).toEqual(new Uint32Array([0, 1, 2, 0, 2, 3]))
+    expect(primitive?.normals).toHaveLength(12)
+    await lease.release()
+    await session.dispose()
+  })
+
   it.each(formats)('%s rejects structural corruption', async format => {
     const bytes = await fixture(format)
     let corrupted: Uint8Array
     if (format === 'obj')
       corrupted = text(new TextDecoder().decode(bytes).replace('3/3/1', '9/3/1'))
+    else if (format === 'dae')
+      corrupted = text(new TextDecoder().decode(bytes).replace('<p>0 1 2</p>', '<p>0 1 9</p>'))
+    else if (format === 'gltf')
+      corrupted = text(new TextDecoder().decode(bytes).replace('"count": 3', '"count": 9'))
     else {
       corrupted = bytes.slice()
       if (format === 'ply')
         new DataView(corrupted.buffer).setUint32(corrupted.byteLength - 4, 9, true)
-      else new DataView(corrupted.buffer).setUint32(80, 2, true)
+      else if (format === 'stl') new DataView(corrupted.buffer).setUint32(80, 2, true)
+      else new DataView(corrupted.buffer).setUint32(8, corrupted.byteLength + 4, true)
     }
-    await expect(open(format, corrupted)).rejects.toThrow(/OBJ|PLY|STL/u)
+    await expect(open(format, corrupted)).rejects.toThrow(/OBJ|PLY|STL|COLLADA|glTF|UVM/u)
   })
 
   it.each(formats)('%s enforces node and scalar budgets', async format => {

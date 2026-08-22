@@ -11,12 +11,12 @@ The conversion debt of every codec below — planes v2 has no home for, applied
 renames, converter defaults and v1 operations left without a handler — is data in
 `MK2-CONVERSION.json` beside this file.
 
-| contribution       | v1 manifest                                                | module              | port         |
-| ------------------ | ---------------------------------------------------------- | ------------------- | ------------ |
-| `org.modkitx/dae`  | `extensions/common/models/codecs/dae/codec.manifest.json`  | `src/dae/codec.js`  | port-pending |
-| `org.modkitx/glb`  | `extensions/common/models/codecs/glb/codec.manifest.json`  | `src/glb/codec.js`  | ported       |
-| `org.modkitx/gltf` | `extensions/common/models/codecs/gltf/codec.manifest.json` | `src/gltf/codec.js` | port-pending |
-| `org.modkitx/obj`  | `extensions/common/models/codecs/obj/codec.manifest.json`  | `src/obj/codec.js`  | ported       |
-| `org.modkitx/ply`  | `extensions/common/models/codecs/ply/codec.manifest.json`  | `src/ply/codec.js`  | ported       |
-| `org.modkitx/stl`  | `extensions/common/models/codecs/stl/codec.manifest.json`  | `src/stl/codec.js`  | ported       |
-| `org.modkitx/uvm`  | `extensions/common/models/codecs/uvm/codec.manifest.json`  | `src/uvm/codec.js`  | port-pending |
+| contribution       | v1 manifest                                                | module              | port   |
+| ------------------ | ---------------------------------------------------------- | ------------------- | ------ |
+| `org.modkitx/dae`  | `extensions/common/models/codecs/dae/codec.manifest.json`  | `src/dae/codec.js`  | ported |
+| `org.modkitx/glb`  | `extensions/common/models/codecs/glb/codec.manifest.json`  | `src/glb/codec.js`  | ported |
+| `org.modkitx/gltf` | `extensions/common/models/codecs/gltf/codec.manifest.json` | `src/gltf/codec.js` | ported |
+| `org.modkitx/obj`  | `extensions/common/models/codecs/obj/codec.manifest.json`  | `src/obj/codec.js`  | ported |
+| `org.modkitx/ply`  | `extensions/common/models/codecs/ply/codec.manifest.json`  | `src/ply/codec.js`  | ported |
+| `org.modkitx/stl`  | `extensions/common/models/codecs/stl/codec.manifest.json`  | `src/stl/codec.js`  | ported |
+| `org.modkitx/uvm`  | `extensions/common/models/codecs/uvm/codec.manifest.json`  | `src/uvm/codec.js`  | ported |

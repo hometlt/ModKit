@@ -21,8 +21,8 @@
     }
   ],
   "limitations": [
-    "Animation records are inventoried, but animation playback is not yet decoded.",
-    "Draco and meshopt compressed geometry requires a separately injected decoder."
+    "The single-source X3 contribution decodes geometry from embedded data-URI buffers; external buffers and images are inventoried but not resolved.",
+    "Sparse accessors, Draco/meshopt compression, morph targets, skins, materials, and animation playback are not decoded."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "gltf", "label": "glTF 2.0 JSON" }],

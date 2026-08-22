@@ -21,8 +21,8 @@
     }
   ],
   "limitations": [
-    "The writer covers deterministic core geometry, morph targets, skins, STEP/LINEAR/Hermite/Bezier TRS animation, five static effect kinds, sequence/global STEP/LINEAR/Hermite/Bezier effect pointers including M3 concurrent/wrap metadata, six neutral collision primitives, embedded source blobs, base PBR colors, team-color remaps, provenance, and loss receipts.",
-    "Plane collision primitives and semantic texture transcoding beyond PNG/JPEG remain explicit structured losses."
+    "The reader accepts the UVM/core 1.0 GLB carrier and decodes triangle geometry while validating identity, provenance, collision, team-color, advanced-material, game-effect, and animation-pointer metadata.",
+    "Morph targets, skins, material rendering, animation playback, semantic texture transcoding, and the legacy writer/export plane remain outside the read-only X3 contract."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "uvm", "label": "Universal Verse Model 1.0" }],
@@ -30,7 +30,7 @@
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "full", "export"],
-    "match": { "extensions": ["uvm.glb", "uvm.gltf"] },
+    "match": { "extensions": ["uvm.glb"] },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {

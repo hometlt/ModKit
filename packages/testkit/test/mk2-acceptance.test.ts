@@ -28,6 +28,11 @@ const firstReal = find('org.modkitx/webp')
 const firstSynthetic = find('org.modkitx/wav')
 const cueBinBundle = find('org.modkitx/ps1-cue-bin')
 const portableModel = find('org.modkitx/ply')
+const completedPortableModels = [
+  find('org.modkitx/dae'),
+  find('org.modkitx/gltf'),
+  find('org.modkitx/uvm'),
+]
 
 describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tasks E/F/G)', () => {
   it('opens every corpus sample through the product path and prints the state table', async () => {
@@ -96,6 +101,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       firstSynthetic,
       cueBinBundle,
       portableModel,
+      ...completedPortableModels,
       ...(mk2Root === undefined ? [] : [firstReal]),
     ]
     const outcomes = await runMk2Acceptance(cases, { repoRoot, mk2Root, workerBrokered: true })
@@ -182,5 +188,52 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     expect(obj.match(/^vt\s/gmu)).toHaveLength(3)
     expect(obj.match(/^vn\s/gmu)).toHaveLength(1)
     expect(obj.match(/^f\s+1\/1\/1\s+2\/2\/1\s+3\/3\/1$/gmu)).toHaveLength(1)
+
+    const dae = readFileSync(join(root, 'minimal.dae'), 'utf8')
+    expect(dae).toMatch(/<COLLADA[^>]+version="1\.4\.1"/u)
+    expect(dae).toMatch(/<float_array[^>]+count="9">0 0 0 1 0 0 0 1 0<\/float_array>/u)
+    expect(dae).toMatch(/<triangles count="1">[\s\S]*<p>0 1 2<\/p><\/triangles>/u)
+
+    const gltf = JSON.parse(readFileSync(join(root, 'minimal.gltf'), 'utf8')) as {
+      asset: { version: string }
+      buffers: { byteLength: number; uri: string }[]
+    }
+    expect(gltf.asset.version).toBe('2.0')
+    const dataUri = gltf.buffers[0]?.uri ?? ''
+    expect(dataUri).toMatch(/^data:application\/octet-stream;base64,/u)
+    const gltfBinary = Buffer.from(dataUri.slice(dataUri.indexOf(',') + 1), 'base64')
+    expect(gltfBinary.byteLength).toBe(gltf.buffers[0]?.byteLength)
+    expect([
+      gltfBinary.readFloatLE(0),
+      gltfBinary.readFloatLE(12),
+      gltfBinary.readFloatLE(28),
+    ]).toEqual([0, 1, 1])
+    expect([
+      gltfBinary.readUInt16LE(36),
+      gltfBinary.readUInt16LE(38),
+      gltfBinary.readUInt16LE(40),
+    ]).toEqual([0, 1, 2])
+
+    const uvm = readFileSync(join(root, 'minimal.uvm.glb'))
+    expect(uvm.subarray(0, 4).toString('ascii')).toBe('glTF')
+    expect(uvm.readUInt32LE(4)).toBe(2)
+    expect(uvm.readUInt32LE(8)).toBe(uvm.byteLength)
+    const uvmJsonLength = uvm.readUInt32LE(12)
+    expect(uvm.readUInt32LE(16)).toBe(0x4e4f534a)
+    const uvmDocument = JSON.parse(uvm.subarray(20, 20 + uvmJsonLength).toString('utf8')) as {
+      asset: { extras: { uv: { format: string; version: string; profile: string } } }
+      extensionsUsed: string[]
+    }
+    expect(uvmDocument.asset.extras.uv).toEqual({ format: 'UVM', version: '1.0', profile: 'core' })
+    expect(uvmDocument.extensionsUsed).toEqual(
+      expect.arrayContaining(['UV_asset', 'UV_provenance']),
+    )
+    const uvmBinHeader = 20 + uvmJsonLength
+    expect(uvm.readUInt32LE(uvmBinHeader + 4)).toBe(0x004e4942)
+    expect([
+      uvm.readUInt16LE(uvmBinHeader + 8 + 36),
+      uvm.readUInt16LE(uvmBinHeader + 8 + 38),
+      uvm.readUInt16LE(uvmBinHeader + 8 + 40),
+    ]).toEqual([0, 1, 2])
   })
 })

@@ -1619,6 +1619,134 @@ function obj() {
   )
 }
 
+/** COLLADA 1.4.1: one indexed triangle and one visual-scene instance. */
+function dae() {
+  return ascii(
+    '<?xml version="1.0" encoding="utf-8"?>\n' +
+      '<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1">\n' +
+      '  <asset><up_axis>Y_UP</up_axis></asset>\n' +
+      '  <library_geometries><geometry id="triangle" name="Triangle"><mesh>\n' +
+      '    <source id="positions"><float_array id="position-values" count="9">0 0 0 1 0 0 0 1 0</float_array><technique_common><accessor source="#position-values" count="3" stride="3"><param name="X" type="float"/><param name="Y" type="float"/><param name="Z" type="float"/></accessor></technique_common></source>\n' +
+      '    <vertices id="vertices"><input semantic="POSITION" source="#positions"/></vertices>\n' +
+      '    <triangles count="1"><input semantic="VERTEX" source="#vertices" offset="0"/><p>0 1 2</p></triangles>\n' +
+      '  </mesh></geometry></library_geometries>\n' +
+      '  <library_visual_scenes><visual_scene id="scene"><node id="triangle-node"><instance_geometry url="#triangle"/></node></visual_scene></library_visual_scenes>\n' +
+      '  <scene><instance_visual_scene url="#scene"/></scene>\n' +
+      '</COLLADA>\n',
+  )
+}
+
+/** Shared little-endian glTF geometry payload: float32 VEC3 positions and uint16 indices. */
+function gltfTriangleBuffer() {
+  return concat(
+    f32le(0),
+    f32le(0),
+    f32le(0),
+    f32le(1),
+    f32le(0),
+    f32le(0),
+    f32le(0),
+    f32le(1),
+    f32le(0),
+    u16le(0),
+    u16le(1),
+    u16le(2),
+    u16le(0), // BIN padding
+  )
+}
+
+function gltfTriangleDocument(buffer) {
+  return {
+    asset: { version: '2.0', generator: 'Modkit X3 specification corpus' },
+    buffers: [{ byteLength: buffer.byteLength }],
+    bufferViews: [
+      { buffer: 0, byteOffset: 0, byteLength: 36, target: 34962 },
+      { buffer: 0, byteOffset: 36, byteLength: 6, target: 34963 },
+    ],
+    accessors: [
+      {
+        bufferView: 0,
+        componentType: 5126,
+        count: 3,
+        type: 'VEC3',
+        min: [0, 0, 0],
+        max: [1, 1, 0],
+      },
+      { bufferView: 1, componentType: 5123, count: 3, type: 'SCALAR' },
+    ],
+    meshes: [{ name: 'Triangle', primitives: [{ attributes: { POSITION: 0 }, indices: 1 }] }],
+    nodes: [{ name: 'Triangle', mesh: 0 }],
+    scenes: [{ nodes: [0] }],
+    scene: 0,
+  }
+}
+
+/** glTF 2.0 JSON with a specification-valid embedded base64 buffer. */
+function gltf() {
+  const buffer = gltfTriangleBuffer()
+  const encoded = Buffer.from(buffer).toString('base64')
+  return ascii(`{
+  "asset": { "version": "2.0", "generator": "Modkit X3 specification corpus" },
+  "buffers": [
+    {
+      "byteLength": ${buffer.byteLength},
+      "uri": "data:application/octet-stream;base64,${encoded}"
+    }
+  ],
+  "bufferViews": [
+    { "buffer": 0, "byteOffset": 0, "byteLength": 36, "target": 34962 },
+    { "buffer": 0, "byteOffset": 36, "byteLength": 6, "target": 34963 }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5126,
+      "count": 3,
+      "type": "VEC3",
+      "min": [0, 0, 0],
+      "max": [1, 1, 0]
+    },
+    { "bufferView": 1, "componentType": 5123, "count": 3, "type": "SCALAR" }
+  ],
+  "meshes": [
+    { "name": "Triangle", "primitives": [{ "attributes": { "POSITION": 0 }, "indices": 1 }] }
+  ],
+  "nodes": [{ "name": "Triangle", "mesh": 0 }],
+  "scenes": [{ "nodes": [0] }],
+  "scene": 0
+}
+`)
+}
+
+/** UVM/core 1.0 stored in its normative GLB carrier with a decoded triangle. */
+function uvm() {
+  const binary = gltfTriangleBuffer()
+  const document = gltfTriangleDocument(binary)
+  document.asset.extras = { uv: { format: 'UVM', version: '1.0', profile: 'core' } }
+  document.extensionsUsed = ['UV_asset', 'UV_provenance']
+  document.extensions = {
+    UV_asset: { id: 'urn:modkitx:fixture:triangle', class: 'model' },
+    UV_provenance: {
+      source: { format: 'synthetic-triangle' },
+      importer: { id: 'org.modkitx.testkit', version: '1.0.0' },
+    },
+  }
+  const unpaddedJson = JSON.stringify(document)
+  const json = ascii(unpaddedJson + ' '.repeat((4 - (unpaddedJson.length % 4)) % 4))
+  const totalLength = 12 + 8 + json.byteLength + 8 + binary.byteLength
+  return concat(
+    ascii('glTF'),
+    u32le(2),
+    u32le(totalLength),
+    u32le(json.byteLength),
+    u32le(0x4e4f534a),
+    json,
+    u32le(binary.byteLength),
+    u32le(0x004e4942),
+    binary,
+  )
+}
+
 // ---------------------------------------------------------------- the corpus
 
 /** Every fixture: file name → builder. The name is what the acceptance corpus refers to. */
@@ -1633,9 +1761,11 @@ const FIXTURES = {
   'minimal.cab': cab,
   'minimal.cur': cur,
   'minimal.dds': dds,
+  'minimal.dae': dae,
   'minimal.dmg': dmg,
   'minimal.exr': exr,
   'minimal.gif': gif,
+  'minimal.gltf': gltf,
   'minimal.hdr': hdr,
   'minimal.ico': ico,
   'minimal.iso': iso,
@@ -1652,6 +1782,7 @@ const FIXTURES = {
   'minimal.rar': rar,
   'minimal.tga': tga,
   'minimal.tiff': tiff,
+  'minimal.uvm.glb': uvm,
   'minimal.wav': wav,
   'minimal.m3': m3,
   'minimal.obj': obj,
