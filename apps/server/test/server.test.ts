@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { loadExtensionDirectory, openFileArtifactSource } from '@modkitx-x3/host/node'
+import { openFileArtifactSource } from '@modkitx-x3/host/node'
 
 import {
   createServerApp,
@@ -57,17 +57,20 @@ describe('server composition root', () => {
     const app = await createServerApp()
     expect(Object.isFrozen(app.health())).toBe(true)
   })
+
+  it('keeps running and reports a configured extension root that cannot be loaded', async () => {
+    const app = await createServerApp([], { extensionRoots: ['Z:\\missing-modkit-extension'] })
+    expect(app.health()).toMatchObject({ status: 'degraded', extensionRootFailureCount: 1 })
+    expect(app.extensionRootFailures[0]?.root).toBe('Z:\\missing-modkit-extension')
+  })
 })
 
 describe('server open path (S7)', () => {
   it('opens a subject for a client through the worker realm: portable variant, worker-brokered', async () => {
     const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
-    const images = await loadExtensionDirectory(
-      join(repositoryRoot, 'extensions', 'common', 'images'),
-    )
-    const app = await createServerApp([
-      { ...images, execution: { origin: 'installed', allowTrustedInProcess: false } },
-    ])
+    const app = await createServerApp([], {
+      extensionRoots: [join(repositoryRoot, 'extensions', 'common', 'images')],
+    })
     expect(app.subjects.inventory).toBe(app.composition.inventory)
     expect(app.subjects.target).toBe(app.workers.target)
     expect(app.subjects.supportedExtensions).toContain('png')
@@ -95,4 +98,37 @@ describe('server open path (S7)', () => {
     expect(result.diagnostics.map(item => item.code)).toContain('x3.host/worker-shared-process')
     await result.session.dispose()
   }, 30_000)
+
+  it('keeps a disabled configured contribution inventoried but removes it from resolution', async () => {
+    const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
+    const app = await createServerApp([], {
+      extensionRoots: [join(repositoryRoot, 'extensions', 'common', 'images')],
+      disabledContributions: ['org.modkitx/image-png'],
+    })
+    expect(app.composition.inventory.extensions).toHaveLength(1)
+    expect(app.subjects.supportedExtensions).toContain('png')
+    expect(
+      app.composition.inventory.extensions[0]?.contributions.some(
+        contribution =>
+          contribution.manifest?.id === 'org.modkitx/image-png' &&
+          contribution.activationEligible === false,
+      ),
+    ).toBe(true)
+    const result = await app.subjects.open({
+      source: await openFileArtifactSource(
+        join(repositoryRoot, 'apps', 'web', 'public', 'favicon-32.png'),
+      ),
+      path: 'favicon-32.png',
+      intent: 'inspect',
+      grant: { id: 'server-disabled-check', classes: ['read-source'] },
+      budget: {
+        maxInputBytes: 10_000_000n,
+        maxDepth: 128,
+        maxNodes: 100_000,
+        maxScalarBytes: 1_000_000,
+        maxDiagnostics: 100,
+      },
+    })
+    expect(result.state).not.toBe('opened')
+  })
 })

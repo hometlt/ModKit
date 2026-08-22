@@ -14,10 +14,13 @@ import type { MessagePortFrameOptions, MessagePortLike } from '@modkitx-x3/host/
 import {
   createNodeSubjectServices,
   createPathSubjectOpener,
+  loadExtensionRoots,
   nodeRuntimeTargetBase,
   nodeWorkerLinks,
   nodeWorkerRealmProfile,
   workerBackendPolicy,
+  type ExtensionRootFailure,
+  type ExtensionRootRequest,
   type WorkerBackendPolicy,
 } from '@modkitx-x3/host/node'
 
@@ -91,6 +94,7 @@ export interface ServerHealthSnapshot {
   readonly profileRevision: string
   readonly extensionCount: number
   readonly diagnosticCount: number
+  readonly extensionRootFailureCount: number
 }
 
 export interface ServerSubjectRpcOptions {
@@ -118,6 +122,8 @@ export interface ServerApp {
    * realm's target — what a request handler calls to open a subject for a client.
    */
   readonly subjects: SubjectServices
+  /** Configured directories that could not be loaded; other roots remain available. */
+  readonly extensionRootFailures: readonly ExtensionRootFailure[]
   /**
    * The product RPC path (S9): serve `x3.app/subject-services@1` (`open` → snapshot,
    * `attach` → the live session under `x3.abi/asset-session@1`) over a port, with file access
@@ -128,6 +134,10 @@ export interface ServerApp {
 }
 
 export interface ServerAppOptions {
+  /** User-configured extension directories. They always execute through the worker boundary. */
+  readonly extensionRoots?: readonly (string | ExtensionRootRequest)[]
+  /** Contribution ids switched off by deployment configuration. */
+  readonly disabledContributions?: readonly string[]
   /** Backend diagnostics of the worker realm (shared-process notice, restarts, crashes, stdio). */
   readonly onDiagnostic?: (diagnostic: Diagnostic) => void
 }
@@ -136,11 +146,17 @@ export async function createServerApp(
   extensions: readonly ExtensionInput[] = [],
   options: ServerAppOptions = {},
 ): Promise<ServerApp> {
+  const loadedRoots = await loadExtensionRoots(options.extensionRoots ?? [], {
+    origin: 'installed',
+  })
   const subjects = await createNodeSubjectServices({
     topology: createServerTopology(),
     realms: { host: SERVER_REALM, workers: SERVER_WORKER_REALM },
-    extensions,
+    extensions: [...extensions, ...loadedRoots.inputs],
     policy: SERVER_WORKER_POLICY,
+    ...(options.disabledContributions === undefined
+      ? {}
+      : { disabledContributions: options.disabledContributions }),
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
   })
   const { host: composition, workers, executionBackends } = subjects
@@ -149,6 +165,7 @@ export async function createServerApp(
     workers,
     executionBackends,
     subjects,
+    extensionRootFailures: loadedRoots.failures,
     exposeSubjectRpc: (rpc: ServerSubjectRpcOptions) =>
       exposeSubjectRpc({
         port: rpc.port,
@@ -165,14 +182,17 @@ export async function createServerApp(
       }),
     health: () =>
       Object.freeze({
-        status: composition.inventory.diagnostics.some(item => item.severity === 'error')
-          ? 'degraded'
-          : 'ok',
+        status:
+          loadedRoots.failures.length > 0 ||
+          composition.inventory.diagnostics.some(item => item.severity === 'error')
+            ? 'degraded'
+            : 'ok',
         topologyId: composition.topology.topologyId,
         realmId: composition.profile.realmId,
         profileRevision: composition.profile.revision,
         extensionCount: composition.inventory.extensions.length,
         diagnosticCount: composition.inventory.diagnostics.length,
+        extensionRootFailureCount: loadedRoots.failures.length,
       }),
   })
 }

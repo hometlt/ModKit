@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { loadExtensionDirectory, openFileArtifactSource } from '@modkitx-x3/host/node'
+import { openFileArtifactSource } from '@modkitx-x3/host/node'
 
 import {
   AUTOMATION_REALM,
@@ -39,17 +39,22 @@ describe('automation host composition root', () => {
     const host = await createAutomationHost()
     expect(Object.isFrozen(host.describeHost())).toBe(true)
   })
+
+  it('keeps running and describes a configured extension root that cannot be loaded', async () => {
+    const host = await createAutomationHost([], {
+      extensionRoots: ['Z:\\missing-modkit-extension'],
+    })
+    expect(host.describeHost().extensionRootFailures).toBe(1)
+    expect(host.extensionRootFailures[0]?.root).toBe('Z:\\missing-modkit-extension')
+  })
 })
 
 describe('automation open path (S7)', () => {
   it('an automation step opens a subject through the worker realm: portable variant, worker-brokered', async () => {
     const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
-    const images = await loadExtensionDirectory(
-      join(repositoryRoot, 'extensions', 'common', 'images'),
-    )
-    const host = await createAutomationHost([
-      { ...images, execution: { origin: 'installed', allowTrustedInProcess: false } },
-    ])
+    const host = await createAutomationHost([], {
+      extensionRoots: [join(repositoryRoot, 'extensions', 'common', 'images')],
+    })
     expect(host.subjects.inventory).toBe(host.composition.inventory)
     expect(host.subjects.target).toBe(host.workers.target)
     const result = await host.subjects.open({
@@ -76,4 +81,37 @@ describe('automation open path (S7)', () => {
     expect(result.diagnostics.map(item => item.code)).toContain('x3.host/worker-shared-process')
     await result.session.dispose()
   }, 30_000)
+
+  it('keeps a disabled configured contribution inventoried but removes it from resolution', async () => {
+    const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
+    const host = await createAutomationHost([], {
+      extensionRoots: [join(repositoryRoot, 'extensions', 'common', 'images')],
+      disabledContributions: ['org.modkitx/image-png'],
+    })
+    expect(host.describeHost().contributions).toContain('org.modkitx/image-png')
+    expect(host.subjects.supportedExtensions).toContain('png')
+    expect(
+      host.composition.inventory.extensions[0]?.contributions.some(
+        contribution =>
+          contribution.manifest?.id === 'org.modkitx/image-png' &&
+          contribution.activationEligible === false,
+      ),
+    ).toBe(true)
+    const result = await host.subjects.open({
+      source: await openFileArtifactSource(
+        join(repositoryRoot, 'apps', 'web', 'public', 'favicon-32.png'),
+      ),
+      path: 'favicon-32.png',
+      intent: 'inspect',
+      grant: { id: 'automation-disabled-check', classes: ['read-source'] },
+      budget: {
+        maxInputBytes: 10_000_000n,
+        maxDepth: 128,
+        maxNodes: 100_000,
+        maxScalarBytes: 1_000_000,
+        maxDiagnostics: 100,
+      },
+    })
+    expect(result.state).not.toBe('opened')
+  })
 })

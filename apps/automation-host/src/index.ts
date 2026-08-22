@@ -9,10 +9,13 @@ import type {
 } from '@modkitx-x3/host'
 import {
   createNodeSubjectServices,
+  loadExtensionRoots,
   nodeRuntimeTargetBase,
   nodeWorkerLinks,
   nodeWorkerRealmProfile,
   workerBackendPolicy,
+  type ExtensionRootFailure,
+  type ExtensionRootRequest,
   type WorkerBackendPolicy,
 } from '@modkitx-x3/host/node'
 
@@ -82,6 +85,7 @@ export interface AutomationHostDescription {
   readonly facilities: readonly string[]
   readonly contributions: readonly string[]
   readonly diagnostics: number
+  readonly extensionRootFailures: number
 }
 
 export interface AutomationHost {
@@ -94,10 +98,16 @@ export interface AutomationHost {
    * realm's target — what an automation step calls to open a subject.
    */
   readonly subjects: SubjectServices
+  /** Configured directories that could not be loaded; other roots remain available. */
+  readonly extensionRootFailures: readonly ExtensionRootFailure[]
   describeHost(): AutomationHostDescription
 }
 
 export interface AutomationHostOptions {
+  /** User-configured extension directories. They always execute through the worker boundary. */
+  readonly extensionRoots?: readonly (string | ExtensionRootRequest)[]
+  /** Contribution ids switched off by automation configuration. */
+  readonly disabledContributions?: readonly string[]
   /** Backend diagnostics of the worker realm (shared-process notice, restarts, crashes, stdio). */
   readonly onDiagnostic?: (diagnostic: Diagnostic) => void
 }
@@ -106,11 +116,17 @@ export async function createAutomationHost(
   extensions: readonly ExtensionInput[] = [],
   options: AutomationHostOptions = {},
 ): Promise<AutomationHost> {
+  const loadedRoots = await loadExtensionRoots(options.extensionRoots ?? [], {
+    origin: 'installed',
+  })
   const subjects = await createNodeSubjectServices({
     topology: createAutomationTopology(),
     realms: { host: AUTOMATION_REALM, workers: AUTOMATION_WORKER_REALM },
-    extensions,
+    extensions: [...extensions, ...loadedRoots.inputs],
     policy: AUTOMATION_WORKER_POLICY,
+    ...(options.disabledContributions === undefined
+      ? {}
+      : { disabledContributions: options.disabledContributions }),
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
   })
   const { host: composition, workers, executionBackends } = subjects
@@ -119,6 +135,7 @@ export async function createAutomationHost(
     workers,
     executionBackends,
     subjects,
+    extensionRootFailures: loadedRoots.failures,
     describeHost: () =>
       Object.freeze({
         topologyId: composition.topology.topologyId,
@@ -132,6 +149,7 @@ export async function createAutomationHost(
           ),
         ),
         diagnostics: composition.inventory.diagnostics.length,
+        extensionRootFailures: loadedRoots.failures.length,
       }),
   })
 }
