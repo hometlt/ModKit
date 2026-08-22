@@ -11,7 +11,7 @@ The conversion debt of every codec below — planes v2 has no home for, applied
 renames, converter defaults and v1 operations left without a handler — is data in
 `MK2-CONVERSION.json` beside this file.
 
-| contribution         | v1 manifest                                                               | module                | port         |
-| -------------------- | ------------------------------------------------------------------------- | --------------------- | ------------ |
-| `org.modkitx/gaf`    | `extensions/cavedog/total-annihilation/codecs/gaf/codec.manifest.json`    | `src/gaf/codec.js`    | port-pending |
-| `org.modkitx/ta-hpi` | `extensions/cavedog/total-annihilation/codecs/ta-hpi/codec.manifest.json` | `src/ta-hpi/codec.js` | port-pending |
+| contribution         | v1 manifest                                                               | module                | port   |
+| -------------------- | ------------------------------------------------------------------------- | --------------------- | ------ |
+| `org.modkitx/gaf`    | `extensions/cavedog/total-annihilation/codecs/gaf/codec.manifest.json`    | `src/gaf/codec.js`    | ported |
+| `org.modkitx/ta-hpi` | `extensions/cavedog/total-annihilation/codecs/ta-hpi/codec.manifest.json` | `src/ta-hpi/codec.js` | ported |

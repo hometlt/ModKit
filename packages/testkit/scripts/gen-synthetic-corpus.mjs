@@ -1776,6 +1776,98 @@ function sc2Replay() {
   )
 }
 
+/** Total Annihilation GAF v1 header with one bounded entry pointer. */
+function gaf() {
+  return concat(
+    u32le(0x00010100),
+    u32le(1),
+    u32le(0),
+    u32le(16),
+    ascii('FixtureEntry\0'),
+    new Uint8Array(32),
+  )
+}
+
+/**
+ * Classic HAPI 1.0 with three root files. The payloads exercise the format cipher's key-zero
+ * identity case plus genuine stored, literal-only LZ77, and zlib-wrapped DEFLATE chunks.
+ */
+function taHpi() {
+  const stored = ascii('stored')
+  const lz77Plain = ascii('LZ77!')
+  const lz77 = concat(bytes(0), lz77Plain)
+  const zlibPlain = ascii('zlib payload')
+  const zlib = concat(
+    bytes(0x78, 0x01, 0x01),
+    u16le(zlibPlain.byteLength),
+    u16le(~zlibPlain.byteLength & 0xffff),
+    zlibPlain,
+    u32be(adler32(zlibPlain)),
+  )
+  const checksum = input => input.reduce((sum, value) => (sum + value) >>> 0, 0)
+  const chunk = (method, compressed, plain) =>
+    concat(
+      u32le(19 + compressed.byteLength),
+      u32le(0x48535153),
+      bytes(0, method, 0),
+      u32le(compressed.byteLength),
+      u32le(plain.byteLength),
+      u32le(checksum(compressed)),
+      compressed,
+    )
+
+  const directoryOffset = 20
+  const entryListOffset = 28
+  const names = [ascii('stored.txt\0'), ascii('lz77.txt\0'), ascii('zlib.txt\0')]
+  const namesOffset = entryListOffset + 3 * 9
+  const fileRecordsOffset = namesOffset + names.reduce((sum, name) => sum + name.byteLength, 0)
+  const directorySize = fileRecordsOffset + 3 * 9
+  const storedOffset = directorySize
+  const lz77Offset = storedOffset + stored.byteLength
+  const lz77Chunk = chunk(1, lz77, lz77Plain)
+  const zlibOffset = lz77Offset + lz77Chunk.byteLength
+  const zlibChunk = chunk(2, zlib, zlibPlain)
+
+  const directory = new Uint8Array(directorySize - directoryOffset)
+  const directoryView = new DataView(directory.buffer)
+  const relative = absolute => absolute - directoryOffset
+  directoryView.setUint32(relative(directoryOffset), 3, true)
+  directoryView.setUint32(relative(directoryOffset) + 4, entryListOffset, true)
+  let nameOffset = namesOffset
+  for (let index = 0; index < names.length; index += 1) {
+    const record = relative(entryListOffset + index * 9)
+    directoryView.setUint32(record, nameOffset, true)
+    directoryView.setUint32(record + 4, fileRecordsOffset + index * 9, true)
+    directory[record + 8] = 0
+    directory.set(names[index], relative(nameOffset))
+    nameOffset += names[index].byteLength
+  }
+  const payloads = [
+    { offset: storedOffset, size: stored.byteLength, method: 0 },
+    { offset: lz77Offset, size: lz77Plain.byteLength, method: 1 },
+    { offset: zlibOffset, size: zlibPlain.byteLength, method: 2 },
+  ]
+  for (let index = 0; index < payloads.length; index += 1) {
+    const payload = payloads[index]
+    const record = relative(fileRecordsOffset + index * 9)
+    directoryView.setUint32(record, payload.offset, true)
+    directoryView.setUint32(record + 4, payload.size, true)
+    directory[record + 8] = payload.method
+  }
+
+  return concat(
+    ascii('HAPI'),
+    u32le(0x00010000),
+    u32le(directorySize),
+    u32le(0),
+    u32le(directoryOffset),
+    directory,
+    stored,
+    lz77Chunk,
+    zlibChunk,
+  )
+}
+
 /** EA SAGE BIG4: one stored entry, with the mixed-endian header and null-terminated index path. */
 function big() {
   const name = ascii('hello.txt\0')
@@ -3887,6 +3979,8 @@ const FIXTURES = {
   'minimal.blp': blp,
   'minimal.diablo3.app': diablo3App,
   'minimal.diablo3.tex': diablo3Tex,
+  'minimal.gaf': gaf,
+  'minimal.ta-hpi': taHpi,
   'minimal.galaxy': galaxyScript,
   'minimal.sc2strings.txt': sc2Strings,
   'minimal.SC2Layout': sc2Layout,

@@ -64,6 +64,7 @@ const completedPortableStarcraft2 = [
 ]
 const completedPortableWarcraft3 = [find('org.modkitx/war3-mdx')]
 const completedPortableGasPowered = [find('org.modkitx/supcom-scm')]
+const completedPortableCavedog = [find('org.modkitx/gaf'), find('org.modkitx/ta-hpi')]
 const completedPortableVector = [find('org.modkitx/emf'), find('org.modkitx/wmf')]
 const completedPortableDocuments = [
   find('org.modkitx/csv'),
@@ -191,6 +192,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       ...completedPortableStarcraft2,
       ...completedPortableWarcraft3,
       ...completedPortableGasPowered,
+      ...completedPortableCavedog,
       ...completedPortableVector,
       ...completedPortableModels,
       ...completedPortableVideos,
@@ -496,6 +498,55 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       scm.readUInt16LE(scmIndices + 4),
     ]).toEqual([0, 1, 2])
     expect(scm.subarray(scmInfo).toString('ascii')).toContain('Machine:Fixture\0')
+
+    const gaf = readFileSync(join(root, 'minimal.gaf'))
+    expect([gaf.readUInt32LE(0), gaf.readUInt32LE(4), gaf.readUInt32LE(12)]).toEqual([
+      0x00010100, 1, 16,
+    ])
+    expect(gaf.subarray(16, 48).toString('ascii').replace(/\0.*$/u, '')).toBe('FixtureEntry')
+
+    const hpi = readFileSync(join(root, 'minimal.ta-hpi'))
+    expect(hpi.subarray(0, 4).toString('ascii')).toBe('HAPI')
+    expect([hpi.readUInt32LE(4), hpi.readUInt32LE(8), hpi.readUInt32LE(16)]).toEqual([
+      0x00010000, 111, 20,
+    ])
+    expect([hpi.readUInt32LE(20), hpi.readUInt32LE(24)]).toEqual([3, 28])
+    const hpiEntries = Array.from({ length: 3 }, (_, index) => {
+      const entry = 28 + index * 9
+      const nameOffset = hpi.readUInt32LE(entry)
+      const recordOffset = hpi.readUInt32LE(entry + 4)
+      const nameEnd = hpi.indexOf(0, nameOffset)
+      return {
+        name: hpi.subarray(nameOffset, nameEnd).toString('ascii'),
+        recordOffset,
+        method: hpi[recordOffset + 8],
+      }
+    })
+    expect(hpiEntries).toEqual([
+      { name: 'stored.txt', recordOffset: 84, method: 0 },
+      { name: 'lz77.txt', recordOffset: 93, method: 1 },
+      { name: 'zlib.txt', recordOffset: 102, method: 2 },
+    ])
+    const lzRecord = hpiEntries[1]?.recordOffset ?? 0
+    const lzPayload = hpi.readUInt32LE(lzRecord)
+    const lzChunk = lzPayload + 4
+    const lzCompressed = hpi.readUInt32LE(lzChunk + 7)
+    expect(hpi.subarray(lzChunk, lzChunk + 4).toString('ascii')).toBe('SQSH')
+    expect(hpi[lzChunk + 5]).toBe(1)
+    const lzBytes = hpi.subarray(lzChunk + 19, lzChunk + 19 + lzCompressed)
+    expect(lzBytes[0]).toBe(0)
+    expect(lzBytes.subarray(1).toString('ascii')).toBe('LZ77!')
+    const zlibRecord = hpiEntries[2]?.recordOffset ?? 0
+    const zlibPayload = hpi.readUInt32LE(zlibRecord)
+    const zlibChunk = zlibPayload + 4
+    const zlibCompressed = hpi.readUInt32LE(zlibChunk + 7)
+    expect(hpi.subarray(zlibChunk, zlibChunk + 4).toString('ascii')).toBe('SQSH')
+    expect(hpi[zlibChunk + 5]).toBe(2)
+    expect(
+      zlib
+        .inflateSync(hpi.subarray(zlibChunk + 19, zlibChunk + 19 + zlibCompressed))
+        .toString('ascii'),
+    ).toBe('zlib payload')
 
     // These checks intentionally do not import the codecs. They independently walk each model
     // fixture's standard wire representation so a generator/reader bug cannot agree with itself.

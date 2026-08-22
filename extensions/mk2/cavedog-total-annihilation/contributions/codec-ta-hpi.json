@@ -23,7 +23,7 @@
   "limitations": [
     "The reader covers classic HPI directory trees, the format byte-wise cipher, and chunked stored, LZ77, or zlib payloads.",
     "Multi-archive Total Annihilation load-order overlays remain outside this single-container codec.",
-    "Browser reachability is not declared because the current codec statically imports node:zlib, and writing HPI-family archives is not implemented."
+    "The hand port uses the portable DecompressionStream contract for zlib chunks; writing HPI-family archives is not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "ta-hpi", "label": "HPI Family (Total Annihilation)" }],
@@ -68,6 +68,13 @@
       {
         "id": "export.raw",
         "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "container.extract",
+        "handlerId": "extract-entry",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]

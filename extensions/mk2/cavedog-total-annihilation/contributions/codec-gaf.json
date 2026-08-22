@@ -21,9 +21,9 @@
     }
   ],
   "limitations": [
-    "The current codec inventories raw version and entry-count fields only; GAF frame decoding is not implemented.",
-    "Generated routing is extension-only because the current codec has no corpus-backed standalone GAF signature detector.",
-    "The manifest conservatively exposes runtime operations to Node hosts because the shared legacy RTS entrypoint reaches the DDS external CommonJS WASM loader whose browser import graph is not yet verifiable."
+    "The codec validates and inventories the GAF v1 header and bounded entry-offset table; entry names, frames, pixels, and palettes are not decoded.",
+    "GAF has no fixed ASCII magic, so structural detection requires the exact v1 version plus a bounded non-empty entry table.",
+    "The hand port is dependency-free and exercised through both trusted Node and portable worker variants."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "gaf", "label": "Total Annihilation GAF animation" }],

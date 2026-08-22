@@ -961,6 +961,33 @@
       "note": "Supreme Commander SCM v5 with NAME/SKEL/VTXL/TRIS/INFO sections, one root bone, and one decoded triangle"
     },
     {
+      "extension": "mk2/cavedog-total-annihilation",
+      "contributionId": "org.modkitx/gaf",
+      "corpus": "synthetic",
+      "sample": "minimal.gaf",
+      "minimumConfidence": 0.98,
+      "dataSource": "tree",
+      "route": "basename",
+      "note": "GAF v1 header with one bounded entry pointer; frame/pixel decoding remains explicitly unsupported"
+    },
+    {
+      "extension": "mk2/cavedog-total-annihilation",
+      "contributionId": "org.modkitx/ta-hpi",
+      "corpus": "synthetic",
+      "sample": "minimal.ta-hpi",
+      "minimumConfidence": 0.99,
+      "dataSource": "namespace",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "2" },
+        "outputKind": "bytes",
+        "minimumBytes": 12
+      },
+      "note": "Classic HAPI 1.0 directory with stored, LZ77, and zlib chunk payloads"
+    },
+    {
       "extension": "mk2/common-audio",
       "contributionId": "org.modkitx/ogg",
       "corpus": "synthetic",
