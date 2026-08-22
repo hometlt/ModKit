@@ -22,7 +22,7 @@
   ],
   "limitations": [
     "Reads the `EAR\\u0000` wrapper, the chunk-name table, the chunk directory and `HeightMapData` dimensions. Chunk payloads other than `HeightMapData` are located but not decoded.",
-    "The RefPack expander is injected by the caller so this codec stays free of the archive layer; `@modkitx/ext-ea-sage/big` supplies it.",
+    "The portable codec expands the RefPack stream embedded by the `EAR\\u0000` wrapper and enforces declared-size and resource-budget bounds.",
     "The `map.bin`/`map.manifest`/`map.relo`/`map.imp` compiled sidecars shipped beside every retail map are not read at all.",
     "Writing a map is not implemented."
   ],

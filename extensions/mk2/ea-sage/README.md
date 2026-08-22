@@ -11,10 +11,10 @@ The conversion debt of every codec below — planes v2 has no home for, applied
 renames, converter defaults and v1 operations left without a handler — is data in
 `MK2-CONVERSION.json` beside this file.
 
-| contribution                    | v1 manifest                                                       | module                           | port         |
-| ------------------------------- | ----------------------------------------------------------------- | -------------------------------- | ------------ |
-| `org.modkitx/big`               | `extensions/ea/sage/codecs/big/codec.manifest.json`               | `src/big/codec.js`               | ported       |
-| `org.modkitx/cnc3-data`         | `extensions/ea/sage/codecs/cnc3-data/codec.manifest.json`         | `src/cnc3-data/codec.js`         | port-pending |
-| `org.modkitx/cnc3-localization` | `extensions/ea/sage/codecs/cnc3-localization/codec.manifest.json` | `src/cnc3-localization/codec.js` | port-pending |
-| `org.modkitx/cnc3-map`          | `extensions/ea/sage/codecs/cnc3-map/codec.manifest.json`          | `src/cnc3-map/codec.js`          | port-pending |
-| `org.modkitx/sage-skudef`       | `extensions/ea/sage/codecs/sage-skudef/codec.manifest.json`       | `src/sage-skudef/codec.js`       | ported       |
+| contribution                    | v1 manifest                                                       | module                           | port   |
+| ------------------------------- | ----------------------------------------------------------------- | -------------------------------- | ------ |
+| `org.modkitx/big`               | `extensions/ea/sage/codecs/big/codec.manifest.json`               | `src/big/codec.js`               | ported |
+| `org.modkitx/cnc3-data`         | `extensions/ea/sage/codecs/cnc3-data/codec.manifest.json`         | `src/cnc3-data/codec.js`         | ported |
+| `org.modkitx/cnc3-localization` | `extensions/ea/sage/codecs/cnc3-localization/codec.manifest.json` | `src/cnc3-localization/codec.js` | ported |
+| `org.modkitx/cnc3-map`          | `extensions/ea/sage/codecs/cnc3-map/codec.manifest.json`          | `src/cnc3-map/codec.js`          | ported |
+| `org.modkitx/sage-skudef`       | `extensions/ea/sage/codecs/sage-skudef/codec.manifest.json`       | `src/sage-skudef/codec.js`       | ported |

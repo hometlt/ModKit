@@ -50,6 +50,7 @@ import {
   type ResolvedRequirementInputBinding,
   type ResourceBudget,
   type RuntimeTarget,
+  type TableDataSource,
   type TreeDataSource,
   type VideoMediaSource,
   type VectorSceneSource,
@@ -643,10 +644,10 @@ export async function runMk2AcceptanceCase(
       const document = await vector.document()
       if (info.nodes < 1 || !document.text.startsWith('<svg'))
         return fail(`${contract} exposes no vector scene document`)
-    } else {
-      const table = lease.value as unknown as { columns(): Promise<readonly unknown[]> }
-      const columns = await table.columns()
-      if (columns.length === 0) return fail(`${contract} exposed no columns`)
+    } else if (entry.dataSource === 'table') {
+      const table = lease.value as TableDataSource
+      const shape = await table.shape()
+      if (shape.columns === 0) return fail(`${contract} exposed no columns`)
     }
     await lease.release()
   } catch (error) {

@@ -1045,6 +1045,38 @@
       "note": "SkuDef directive list with config, BIG archive, search path, executable, and mod metadata records"
     },
     {
+      "extension": "mk2/ea-sage",
+      "contributionId": "org.modkitx/cnc3-data",
+      "corpus": "synthetic",
+      "sample": "minimal.cnc3-data.xml",
+      "minimumConfidence": 0.98,
+      "dataSource": "tree",
+      "route": "basename",
+      "note": "Authored AssetDeclaration with DATA/ART includes and two top-level asset kinds"
+    },
+    {
+      "extension": "mk2/ea-sage",
+      "contributionId": "org.modkitx/cnc3-localization",
+      "corpus": "synthetic",
+      "sample": "minimal.cnc3-localization.csf",
+      "minimumConfidence": 1,
+      "dataSource": "table",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "Compiled CSF table with one inverted-UTF-16 WRTS value and designer note"
+    },
+    {
+      "extension": "mk2/ea-sage",
+      "contributionId": "org.modkitx/cnc3-map",
+      "corpus": "synthetic",
+      "sample": "minimal.cnc3.map",
+      "minimumConfidence": 0.99,
+      "dataSource": "namespace",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "EAR plus literal RefPack envelope around one CkMp HeightMapData chunk"
+    },
+    {
       "extension": "mk2/common-audio",
       "contributionId": "org.modkitx/ogg",
       "corpus": "synthetic",

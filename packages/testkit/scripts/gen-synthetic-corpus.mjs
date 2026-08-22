@@ -1969,6 +1969,87 @@ function sageSkuDef() {
   )
 }
 
+/** SAGE authored AssetDeclaration with archive-root includes and two top-level asset kinds. */
+function cnc3Data() {
+  return ascii(
+    [
+      '<?xml version="1.0" encoding="utf-8"?>',
+      '<AssetDeclaration xmlns="uri:ea.com:eala:asset">',
+      '  <Includes>',
+      '    <Include source="DATA:global.xml" type="reference"/>',
+      '    <Include source="ART:EVDefault.xml" type="all"/>',
+      '  </Includes>',
+      '  <GameMap id="FixtureMap"/>',
+      '  <GameScriptList id="FixtureScripts"/>',
+      '</AssetDeclaration>',
+      '',
+    ].join('\n'),
+  )
+}
+
+function invertedUtf16le(value) {
+  return concat(...[...value].map(character => u16le(~character.charCodeAt(0) & 0xffff)))
+}
+
+/** One compiled CSF label using the WRTS value form with a designer note. */
+function cnc3Localization() {
+  const label = ascii('GUI:Fixture')
+  const value = 'Fixture value'
+  const note = ascii('fixture note')
+  return concat(
+    ascii(' FSC'),
+    u32le(3),
+    u32le(1),
+    u32le(1),
+    u32le(0),
+    u32le(0),
+    ascii(' LBL'),
+    u32le(1),
+    u32le(label.byteLength),
+    label,
+    ascii('WRTS'),
+    u32le(value.length),
+    invertedUtf16le(value),
+    u32le(note.byteLength),
+    note,
+  )
+}
+
+function refPackLiteral(payload) {
+  const commands = []
+  let cursor = 0
+  while (payload.byteLength - cursor >= 4) {
+    const length = Math.min(Math.floor((payload.byteLength - cursor) / 4) * 4, 112)
+    commands.push(bytes(0xe0 + length / 4 - 1), payload.subarray(cursor, cursor + length))
+    cursor += length
+  }
+  const remainder = payload.byteLength - cursor
+  commands.push(bytes(0xfc + remainder), payload.subarray(cursor))
+  return concat(
+    bytes(0x10, 0xfb, (payload.byteLength >>> 16) & 0xff, (payload.byteLength >>> 8) & 0xff, payload.byteLength & 0xff),
+    ...commands,
+  )
+}
+
+/** Retail-style EAR + RefPack map wrapping one CkMp HeightMapData chunk. */
+function cnc3Map() {
+  const name = ascii('HeightMapData')
+  const inner = concat(
+    ascii('CkMp'),
+    u32le(1),
+    bytes(name.byteLength),
+    name,
+    u32le(7),
+    u32le(7),
+    u16le(2),
+    u32le(12),
+    u32le(256),
+    u32le(128),
+    u32le(16),
+  )
+  return concat(ascii('EAR\0'), u32le(inner.byteLength), refPackLiteral(inner))
+}
+
 /**
  * One Ogg page: RFC 3533 §6. A single-segment first page puts its payload at byte 28, which is
  * where the Vorbis/Opus/Theora identification headers live and where the codec signatures point.
@@ -4069,6 +4150,9 @@ const FIXTURES = {
   'minimal.sage.w3x': sageW3x,
   'minimal.westwood.w3d': westwoodW3d,
   'minimal.sage.skudef': sageSkuDef,
+  'minimal.cnc3-data.xml': cnc3Data,
+  'minimal.cnc3-localization.csf': cnc3Localization,
+  'minimal.cnc3.map': cnc3Map,
   'minimal.galaxy': galaxyScript,
   'minimal.sc2strings.txt': sc2Strings,
   'minimal.SC2Layout': sc2Layout,

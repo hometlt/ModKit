@@ -21,9 +21,9 @@
     }
   ],
   "limitations": [
-    "Reads compiled `.csf` tables and authored `.str` files; writing either is not implemented.",
+    "Reads compiled `.csf` tables and authored `.str` files, including duplicate values and `WRTS` notes; writing either is not implemented.",
     "`.csf` payloads are usually RefPack-compressed inside their `.big`; the archive layer expands them, this codec expects expanded bytes.",
-    "`WRTS` designer notes are surfaced but not editable, and `\\n` escapes inside `.str` values are preserved verbatim rather than expanded."
+    "`WRTS` designer notes are surfaced but not editable, and `\\n` escapes inside `.str` values are preserved verbatim rather than expanded; locale fallback and merging remain host concerns."
   ],
   "spec": {
     "formatRefs": [

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AssetDeclaration xmlns="uri:ea.com:eala:asset">
+  <Includes>
+    <Include source="DATA:global.xml" type="reference"/>
+    <Include source="ART:EVDefault.xml" type="all"/>
+  </Includes>
+  <GameMap id="FixtureMap"/>
+  <GameScriptList id="FixtureScripts"/>
+</AssetDeclaration>

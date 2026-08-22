@@ -70,7 +70,13 @@ const completedPortableEaEmperor = [
   find('org.modkitx/emperor-xbf'),
 ]
 const completedPortableEaModels = [find('org.modkitx/sage-w3x'), find('org.modkitx/westwood-w3d')]
-const completedPortableEaSage = [find('org.modkitx/sage-skudef')]
+const completedPortableEaSage = [
+  find('org.modkitx/big'),
+  find('org.modkitx/cnc3-data'),
+  find('org.modkitx/cnc3-localization'),
+  find('org.modkitx/cnc3-map'),
+  find('org.modkitx/sage-skudef'),
+]
 const completedPortableVector = [find('org.modkitx/emf'), find('org.modkitx/wmf')]
 const completedPortableDocuments = [
   find('org.modkitx/csv'),
@@ -633,6 +639,56 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       'mod-name',
     ])
     expect(sageSkuDef).toContain('add-big Core\\1.0\\core.big')
+
+    const cnc3Data = readFileSync(join(root, 'minimal.cnc3-data.xml'), 'utf8')
+    expect(cnc3Data).toMatch(/<AssetDeclaration\s+xmlns="uri:ea\.com:eala:asset">/u)
+    expect([...cnc3Data.matchAll(/<Include\s+[^>]*source="([^"]+)"[^>]*\/>/gu)].map(match => match[1])).toEqual([
+      'DATA:global.xml',
+      'ART:EVDefault.xml',
+    ])
+    expect([...cnc3Data.matchAll(/<(GameMap|GameScriptList)\s+id="([^"]+)"\s*\/>/gu)].map(match => [match[1], match[2]])).toEqual([
+      ['GameMap', 'FixtureMap'],
+      ['GameScriptList', 'FixtureScripts'],
+    ])
+
+    const cnc3Csf = readFileSync(join(root, 'minimal.cnc3-localization.csf'))
+    expect(cnc3Csf.subarray(0, 4).toString('latin1')).toBe(' FSC')
+    expect([cnc3Csf.readUInt32LE(4), cnc3Csf.readUInt32LE(8), cnc3Csf.readUInt32LE(12)]).toEqual([3, 1, 1])
+    let csfCursor = 24
+    expect(cnc3Csf.subarray(csfCursor, csfCursor + 4).toString('latin1')).toBe(' LBL')
+    csfCursor += 4
+    expect(cnc3Csf.readUInt32LE(csfCursor)).toBe(1)
+    csfCursor += 4
+    const csfLabelLength = cnc3Csf.readUInt32LE(csfCursor)
+    csfCursor += 4
+    expect(cnc3Csf.subarray(csfCursor, csfCursor + csfLabelLength).toString('latin1')).toBe('GUI:Fixture')
+    csfCursor += csfLabelLength
+    expect(cnc3Csf.subarray(csfCursor, csfCursor + 4).toString('latin1')).toBe('WRTS')
+    csfCursor += 4
+    const csfUnits = cnc3Csf.readUInt32LE(csfCursor)
+    csfCursor += 4
+    let csfValue = ''
+    for (let index = 0; index < csfUnits; index += 1)
+      csfValue += String.fromCharCode(~cnc3Csf.readUInt16LE(csfCursor + index * 2) & 0xffff)
+    expect(csfValue).toBe('Fixture value')
+
+    const cnc3Map = readFileSync(join(root, 'minimal.cnc3.map'))
+    expect(cnc3Map.subarray(0, 4).toString('latin1')).toBe('EAR\0')
+    const declaredMapBytes = cnc3Map.readUInt32LE(4)
+    expect(cnc3Map.subarray(8, 10)).toEqual(Buffer.from([0x10, 0xfb]))
+    const refPackHeaderBytes = 5
+    const literalControl = cnc3Map[8 + refPackHeaderBytes]
+    if (literalControl === undefined) throw new TypeError('CNC3 map RefPack command is missing')
+    const literalBytes = ((literalControl & 0x1f) + 1) * 4
+    const expandedMap = cnc3Map.subarray(8 + refPackHeaderBytes + 1, 8 + refPackHeaderBytes + 1 + literalBytes)
+    expect(expandedMap.byteLength).toBe(declaredMapBytes)
+    expect(expandedMap.subarray(0, 4).toString('latin1')).toBe('CkMp')
+    expect(expandedMap.readUInt32LE(4)).toBe(1)
+    const mapNameLength = expandedMap[8] ?? 0
+    expect(expandedMap.subarray(9, 9 + mapNameLength).toString('latin1')).toBe('HeightMapData')
+    const chunkHeader = 9 + mapNameLength + 4
+    expect([expandedMap.readUInt32LE(chunkHeader), expandedMap.readUInt16LE(chunkHeader + 4), expandedMap.readUInt32LE(chunkHeader + 6)]).toEqual([7, 2, 12])
+    expect([expandedMap.readUInt32LE(chunkHeader + 10), expandedMap.readUInt32LE(chunkHeader + 14), expandedMap.readUInt32LE(chunkHeader + 18)]).toEqual([256, 128, 16])
 
     // These checks intentionally do not import the codecs. They independently walk each model
     // fixture's standard wire representation so a generator/reader bug cannot agree with itself.

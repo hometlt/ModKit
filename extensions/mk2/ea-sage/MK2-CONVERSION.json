@@ -45,7 +45,7 @@
       ],
       "droppedOperations": ["view.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/cnc3-localization": {
       "verdict": "needs-new-contract",
@@ -60,7 +60,7 @@
       ],
       "droppedOperations": ["view.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/cnc3-map": {
       "verdict": "needs-new-contract",
@@ -75,7 +75,7 @@
       ],
       "droppedOperations": ["view.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/sage-skudef": {
       "verdict": "needs-new-contract",
