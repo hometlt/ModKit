@@ -24,7 +24,7 @@
       ],
       "droppedOperations": ["archive.extract", "archive.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/spring-vfs": {
       "verdict": "needs-new-contract",
@@ -43,7 +43,7 @@
       ],
       "droppedOperations": ["content.mount", "content.resolve-dependencies", "view.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     }
   }
 }

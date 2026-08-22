@@ -21,12 +21,12 @@
     }
   ],
   "limitations": [
-    "Read-only. Editing a `modinfo.lua` and writing it back is not implemented.",
+    "The portable MK3 port conservatively inventories core `modinfo.lua`/`mapinfo.lua` scalar and string-list fields; general Lua evaluation is not claimed.",
     "`.sd7` maps need the 7-Zip codec, whose WASM binary the host supplies; the node scanner reaches them through an `openers` hook and reports them as skipped when none is wired.",
     "`.sdd` directory packages are not scanned.",
     "A VFS read mode is an ordered list of sections. Spring's Lua mode-string letters are not mapped, because no source establishing which letter selects which section was available.",
     "The implicit base dependency is applied at resolution. The engine's own ArchiveCache22.lua records it for a menu package but not for a game or a map, so the point at which the engine injects it is not confirmed — only its effect is.",
-    "`replace` is honoured as a name alias, with a real name always winning over an alias. No corpus with a populated `replace` was available to check against."
+    "VFS mounting, dependency resolution, archive scanning, and metadata writing remain outside this inspection codec."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "spring-vfs", "label": "Spring archive VFS and load order" }],
@@ -34,7 +34,9 @@
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "full", "export"],
-    "match": { "pathGlobs": ["**/modinfo.lua", "**/mapinfo.lua"] },
+    "match": {
+      "pathGlobs": ["modinfo.lua", "mapinfo.lua", "**/modinfo.lua", "**/mapinfo.lua"]
+    },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {

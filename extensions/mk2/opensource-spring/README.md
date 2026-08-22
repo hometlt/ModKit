@@ -11,7 +11,7 @@ The conversion debt of every codec below — planes v2 has no home for, applied
 renames, converter defaults and v1 operations left without a handler — is data in
 `MK2-CONVERSION.json` beside this file.
 
-| contribution               | v1 manifest                                                            | module                      | port         |
-| -------------------------- | ---------------------------------------------------------------------- | --------------------------- | ------------ |
-| `org.modkitx/spring-rapid` | `extensions/opensource/spring/codecs/spring-rapid/codec.manifest.json` | `src/spring-rapid/codec.js` | port-pending |
-| `org.modkitx/spring-vfs`   | `extensions/opensource/spring/codecs/spring-vfs/codec.manifest.json`   | `src/spring-vfs/codec.js`   | port-pending |
+| contribution               | v1 manifest                                                            | module                      | port   |
+| -------------------------- | ---------------------------------------------------------------------- | --------------------------- | ------ |
+| `org.modkitx/spring-rapid` | `extensions/opensource/spring/codecs/spring-rapid/codec.manifest.json` | `src/spring-rapid/codec.js` | ported |
+| `org.modkitx/spring-vfs`   | `extensions/opensource/spring/codecs/spring-vfs/codec.manifest.json`   | `src/spring-vfs/codec.js`   | ported |

@@ -1699,6 +1699,24 @@
       "note": "Heroes IV H4R named-record subset with one extractable stored resource"
     },
     {
+      "extension": "mk2/opensource-spring",
+      "contributionId": "org.modkitx/spring-rapid",
+      "corpus": "synthetic",
+      "sample": "minimal.spring.sdp",
+      "minimumConfidence": 0.99,
+      "dataSource": "namespace",
+      "note": "Gzip-wrapped Spring rapid manifest with one content-addressed pool record"
+    },
+    {
+      "extension": "mk2/opensource-spring",
+      "contributionId": "org.modkitx/spring-vfs",
+      "corpus": "synthetic",
+      "sample": "modinfo.lua",
+      "minimumConfidence": 0.96,
+      "dataSource": "tree",
+      "note": "Spring modinfo.lua table with identity, section, dependencies, and replacement aliases"
+    },
+    {
       "extension": "common/images",
       "contributionId": "org.modkitx/image-png",
       "corpus": "synthetic",

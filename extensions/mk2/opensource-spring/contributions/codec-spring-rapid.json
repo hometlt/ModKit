@@ -24,7 +24,7 @@
     "Read-only. Writing a package would mean writing pool blobs, and rapid pools are produced by the distribution server, not by editors.",
     "A `.sdp` record stream has no header, count or terminator, so a truncated manifest is detected only when a record runs past the end of the buffer.",
     "The `versions.gz` dependency column is exposed verbatim. Observed values are always a single reference, so the delimiter for multiple dependencies is unconfirmed and the field is not split.",
-    "Downloading a missing package or blob from a rapid repository is not implemented; only an already-downloaded data root is read."
+    "The portable MK3 port inventories pool addresses but does not resolve, download, or extract sibling pool blobs."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "spring-rapid", "label": "Spring rapid package" }],

@@ -93,6 +93,7 @@ const completedPortableHeroes = [
   find('org.modkitx/heroes3-lod'),
   find('org.modkitx/heroes4-resource'),
 ]
+const completedPortableSpring = [find('org.modkitx/spring-rapid'), find('org.modkitx/spring-vfs')]
 const completedPortableVector = [find('org.modkitx/emf'), find('org.modkitx/wmf')]
 const completedPortableDocuments = [
   find('org.modkitx/csv'),
@@ -228,6 +229,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       ...completedPortableEaWestwood,
       ...completedPortableMicrosoftHaloWars,
       ...completedPortableHeroes,
+      ...completedPortableSpring,
       ...completedPortableVector,
       ...completedPortableModels,
       ...completedPortableVideos,
@@ -847,6 +849,21 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     expect(heroes4.subarray(heroes4Offset, heroes4Offset + heroes4Size).toString('ascii')).toBe(
       'heroes four payload\n',
     )
+
+    const springRapid = zlib.gunzipSync(readFileSync(join(root, 'minimal.spring.sdp')))
+    const springNameLength = springRapid[0] ?? 0
+    expect(springRapid.subarray(1, 1 + springNameLength).toString('ascii')).toBe(
+      'units/fixture.txt',
+    )
+    expect([...springRapid.subarray(1 + springNameLength, 17 + springNameLength)]).toEqual(
+      Array.from({ length: 16 }, (_, index) => index),
+    )
+    expect(springRapid.readUInt32BE(21 + springNameLength)).toBe('spring rapid payload\n'.length)
+
+    const springVfs = readFileSync(join(root, 'modinfo.lua'), 'utf8')
+    expect(springVfs).toMatch(/^return\s*\{/u)
+    expect(springVfs).toContain('name = "Fixture Game"')
+    expect(springVfs).toContain('depend = { "Spring content v1", "Engine 105" }')
 
     // These checks intentionally do not import the codecs. They independently walk each model
     // fixture's standard wire representation so a generator/reader bug cannot agree with itself.

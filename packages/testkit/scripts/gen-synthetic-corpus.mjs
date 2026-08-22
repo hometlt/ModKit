@@ -698,8 +698,7 @@ function tar() {
 }
 
 /** gzip: RFC 1952 §2.3 header (deflate, no extra fields) wrapping one RFC 1951 stored block. */
-function gz() {
-  const payload = ascii('hello')
+function gzipStored(payload) {
   return concat(
     bytes(0x1f, 0x8b, 0x08, 0x00), // ID1 ID2 CM=deflate FLG=0
     u32le(0), // MTIME: zero means "no time available", and keeps this byte-stable
@@ -708,6 +707,10 @@ function gz() {
     u32le(crc32(payload)),
     u32le(payload.byteLength),
   )
+}
+
+function gz() {
+  return gzipStored(ascii('hello'))
 }
 
 /**
@@ -2105,6 +2108,32 @@ function heroes4Resource() {
   recordView.setUint32(8, header.byteLength + record.byteLength + name.byteLength, true)
   recordView.setUint32(12, payload.byteLength, true)
   return concat(header, record, name, payload)
+}
+
+function springRapid() {
+  const name = ascii('units/fixture.txt')
+  const digest = Uint8Array.from({ length: 16 }, (_, index) => index)
+  const payload = ascii('spring rapid payload\n')
+  const record = concat(
+    bytes(name.byteLength),
+    name,
+    digest,
+    u32be(crc32(payload)),
+    u32be(payload.byteLength),
+  )
+  return gzipStored(record)
+}
+
+function springVfs() {
+  return ascii(`return {
+  name = "Fixture Game",
+  version = "1.0",
+  modtype = 1,
+  shortname = "Fixture",
+  description = "Synthetic Spring metadata",
+  depend = { "Spring content v1", "Engine 105" },
+  replace = { "Fixture Game 0.9" },
+}\n`)
 }
 
 /** EA SAGE BIG4: one stored entry, with the mixed-endian header and null-terminated index path. */
@@ -4338,6 +4367,8 @@ const FIXTURES = {
   'minimal.heroes3.def': heroes3Def,
   'minimal.heroes3.lod': heroes3Lod,
   'minimal.heroes4.h4r': heroes4Resource,
+  'minimal.spring.sdp': springRapid,
+  'modinfo.lua': springVfs,
   'minimal.sage.skudef': sageSkuDef,
   'minimal.cnc3-data.xml': cnc3Data,
   'minimal.cnc3-localization.csf': cnc3Localization,
