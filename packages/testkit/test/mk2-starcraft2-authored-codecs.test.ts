@@ -8,6 +8,7 @@ import {
   type AssetInput,
   type Codec,
   type ContributionContext,
+  type NamespaceEntrySource,
   type ResourceBudget,
   type TableDataSource,
   type TextDataSource,
@@ -22,6 +23,9 @@ type CodecId =
   | 'sc2-document-metadata'
   | 'sc2-triggers'
   | 'sc2-runtime'
+  | 'sc2-map'
+  | 'sc2-mod'
+  | 'sc2-replay'
 
 const root = join(import.meta.dirname, '..', '..', '..')
 const extension = join(root, 'extensions', 'mk2', 'blizzard-starcraft2')
@@ -308,5 +312,79 @@ describe('ported StarCraft II authored and structural codecs', () => {
     malformedVersion.set(encode('cdess2mv'))
     new DataView(malformedVersion.buffer).setUint32(0x08, 1, true)
     await expect(open('sc2-document-metadata', malformedVersion)).rejects.toThrow(/not supported/u)
+  })
+
+  it('decrypts packed SC2Map and SC2Mod namespaces and classifies their semantic markers', async () => {
+    const cases = [
+      {
+        id: 'sc2-map' as const,
+        sample: 'minimal.SC2Map',
+        summary: { format: 'sc2-map', entries: 5, localizedData: 0, scripts: 1 },
+        names: ['(listfile)', 'MapInfo', 'MapScript.galaxy', 'Objects', 'Terrain'],
+      },
+      {
+        id: 'sc2-mod' as const,
+        sample: 'minimal.SC2Mod',
+        summary: {
+          format: 'sc2-mod',
+          entries: 6,
+          componentLists: 1,
+          documentInfo: 1,
+          gameDataEntries: 1,
+          layouts: 1,
+          localizedData: 1,
+        },
+        names: [
+          '(listfile)',
+          'ComponentList.SC2Components',
+          'DocumentInfo',
+          'enUS.SC2Data/LocalizedData/GameStrings.txt',
+          'GameData/UnitData.xml',
+          'UI/Layout/Fixture.SC2Layout',
+        ],
+      },
+    ]
+    for (const value of cases) {
+      const session = await open(value.id, await fixture(value.sample))
+      expect(await inspect(session)).toMatchObject(value.summary)
+      const lease = await session.dataSource('common.view/namespace-entry-source', 1)
+      const namespace = lease.value as NamespaceEntrySource
+      const page = await namespace.list('', { limit: 20 })
+      expect(page.items.map(item => item.path)).toEqual(value.names)
+      await lease.release()
+      await session.dispose()
+    }
+  })
+
+  it('validates replay user data and classifies the contained MPQ streams without decoding events', async () => {
+    const session = await open('sc2-replay', await fixture('minimal.SC2Replay'))
+    expect(await inspect(session)).toMatchObject({
+      format: 'sc2-replay',
+      signature: 'StarCraft II replay',
+      signatureOffset: 16,
+      knownStreams: 5,
+      streamNames: [
+        'replay.attributes.events',
+        'replay.details',
+        'replay.game.events',
+        'replay.initData',
+        'replay.tracker.events',
+      ],
+    })
+    const lease = await session.dataSource('common.view/table-data-source', 1)
+    const table = lease.value as TableDataSource
+    expect(await table.shape()).toMatchObject({
+      header: ['Path', 'Bytes', 'Replay role'],
+      rows: 6,
+    })
+    await lease.release()
+    await session.dispose()
+  })
+
+  it('does not reinterpret a generic MPQ as a map, mod, or replay', async () => {
+    const bytes = await fixture('minimal.mpq')
+    await expect(open('sc2-map', bytes)).rejects.toThrow(/map documents/u)
+    await expect(open('sc2-mod', bytes)).rejects.toThrow(/ComponentList|GameData/u)
+    await expect(open('sc2-replay', bytes)).rejects.toThrow(/replay signature/u)
   })
 })

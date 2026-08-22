@@ -10,22 +10,19 @@
       "entrypoint": "./src/sc2-map/codec.js",
       "target": { "environments": ["node"] },
       "executionProfile": "trusted-in-process",
-      "requestedPermissionClasses": ["filesystem-read", "process-launch", "read-source"]
+      "requestedPermissionClasses": ["read-source"]
     },
     {
       "variantId": "portable",
       "entrypoint": "./src/sc2-map/codec.js",
       "target": { "environments": ["browser-worker", "node-worker"] },
       "executionProfile": "worker-brokered",
-      "requestedPermissionClasses": ["filesystem-read", "process-launch", "read-source"]
+      "requestedPermissionClasses": ["read-source"]
     }
   ],
   "limitations": [
-    "The manifest admits map-like roots broadly because extension evidence cannot represent both renamed mounted roots and packed .SC2Map files; the bounded structural detector is authoritative.",
-    "Packed file and archive-entry sources require a host content resolver that exposes mounted map entries; the semantic codec does not decode raw MPQ bytes itself.",
-    "Detection is portable, but the current semantic runtime is conservatively Node-only because its transitive @modkitx/maps-processing/sc2-map-core and @modkitx/maps-processing/sc2-map-image compatibility imports are not browser-classified by the repository validator.",
-    "The runtime renders implemented 2D map layers and extracts mounted entries. Objects/Preload reference rename has a codec-owned edit transaction but requires sc2-mod to supply the coordinating catalog rename; 3D scene construction, map packing, and source save-as remain unavailable.",
-    "Map launch is available only through the Node adapter for a local .SC2Map source and requires a StarCraft II installation plus process-launch permission."
+    "Portable packed-map inspection decrypts the real MPQ hash/block tables, reads a stored listfile, validates map document markers, and publishes the archive namespace.",
+    "Mounted-directory inputs, semantic map document decoding, terrain/minimap rendering, catalog-coordinated edits, extraction, MPQ packing, and map launch remain unavailable."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "sc2-map", "label": "StarCraft II map" }],
@@ -33,7 +30,13 @@
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "full", "export"],
-    "match": {},
+    "match": {
+      "extensions": ["sc2map"],
+      "signatures": [
+        { "from": "start", "offset": 0, "bytesHex": "4d50511a" },
+        { "from": "start", "offset": 0, "bytesHex": "4d50511b" }
+      ]
+    },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {

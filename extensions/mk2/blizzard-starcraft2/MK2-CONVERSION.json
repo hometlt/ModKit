@@ -185,7 +185,7 @@
         "view.thumbnail"
       ],
       "needsSignatures": true,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/sc2-mod": {
       "verdict": "needs-new-contract",
@@ -213,7 +213,7 @@
         "view.inspect"
       ],
       "needsSignatures": true,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/sc2-replay": {
       "verdict": "needs-new-contract",
@@ -237,7 +237,7 @@
         "view.render"
       ],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/sc2-runtime": {
       "verdict": "convertible-with-rework",

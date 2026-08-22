@@ -907,6 +907,39 @@
       "note": "Galaxy runtime program with void main(), one helper function, and statically observed native calls"
     },
     {
+      "extension": "mk2/blizzard-starcraft2",
+      "contributionId": "org.modkitx/sc2-map",
+      "corpus": "synthetic",
+      "sample": "minimal.SC2Map",
+      "minimumConfidence": 0.99,
+      "dataSource": "namespace",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "Packed MPQ SC2Map with a real encrypted listfile/hash/block table and canonical MapInfo, Objects, Terrain, and Galaxy entries"
+    },
+    {
+      "extension": "mk2/blizzard-starcraft2",
+      "contributionId": "org.modkitx/sc2-mod",
+      "corpus": "synthetic",
+      "sample": "minimal.SC2Mod",
+      "minimumConfidence": 0.99,
+      "dataSource": "namespace",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "Packed MPQ SC2Mod with ComponentList, DocumentInfo, GameData, layout, and localized data entries"
+    },
+    {
+      "extension": "mk2/blizzard-starcraft2",
+      "contributionId": "org.modkitx/sc2-replay",
+      "corpus": "synthetic",
+      "sample": "minimal.SC2Replay",
+      "minimumConfidence": 0.99,
+      "dataSource": "tree",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "MPQ user-data replay with the exact StarCraft II replay signature and five known stored stream entries"
+    },
+    {
       "extension": "mk2/blizzard-warcraft-3",
       "contributionId": "org.modkitx/war3-mdx",
       "corpus": "synthetic",

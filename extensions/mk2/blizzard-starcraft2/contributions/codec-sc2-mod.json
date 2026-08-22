@@ -21,11 +21,8 @@
     }
   ],
   "limitations": [
-    "The manifest admits supported roots broadly because valid mounted SC2 mod roots may be extensionless; the bounded structural detector verifies ComponentList, document metadata, or GameData markers.",
-    "The current runtime is Node-only because it adapts the Node-oriented @modkitx/mods-processing/sc2-workspace loader and requires an injected workspace host.",
-    "The codec resolves and mounts the dependency chain, compares own versus inherited catalog entities, validates diagnostics, and extracts resolved original bytes.",
-    "edit.structure currently covers adding a localized-text locale; cross-codec entity rename is exposed as a direct transaction factory but is not yet a manifest operation. export.convert emits JSON-mod or unpacked SC2Components files, while MPQ packing remains unavailable.",
-    "sc2-campaign remains an unregistered stub and has no manifest until campaign dependency provenance and implicit layering are implemented."
+    "Portable packed-mod inspection decrypts the real MPQ hash/block tables, reads a stored listfile, classifies ComponentList, GameData, layouts, and localized data, and publishes the archive namespace.",
+    "Mounted-directory inputs, dependency overlay resolution, resolved catalog comparison, locale creation, entity renames, extraction/export, and MPQ packing remain unavailable."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "sc2-mod", "label": "StarCraft II mod" }],
@@ -33,7 +30,13 @@
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "full", "export"],
-    "match": {},
+    "match": {
+      "extensions": ["sc2mod"],
+      "signatures": [
+        { "from": "start", "offset": 0, "bytesHex": "4d50511a" },
+        { "from": "start", "offset": 0, "bytesHex": "4d50511b" }
+      ]
+    },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {

@@ -1666,6 +1666,116 @@ function mpq() {
   )
 }
 
+/** Stored-entry MPQ v0 builder used by the semantic StarCraft II archive fixtures. */
+function sc2Mpq(entries, userData) {
+  const listfile = ascii(`${entries.map(([name]) => name).join('\n')}\n`)
+  const payloads = [listfile, ...entries.map(([, content]) => content)]
+  const names = ['(listfile)', ...entries.map(([name]) => name)]
+  const blockEntries = payloads.length
+  let hashEntries = 8
+  while (hashEntries < blockEntries * 2) hashEntries *= 2
+  const offsets = []
+  let payloadOffset = 32
+  for (const payload of payloads) {
+    offsets.push(payloadOffset)
+    payloadOffset += payload.byteLength
+  }
+  const hashOffset = payloadOffset
+  const blockOffset = hashOffset + hashEntries * 16
+  const archiveBytes = blockOffset + blockEntries * 16
+
+  const hashTable = new Uint8Array(hashEntries * 16)
+  hashTable.fill(0xff)
+  const hashView = new DataView(hashTable.buffer)
+  names.forEach((name, blockIndex) => {
+    const normalized = name.replaceAll('/', '\\')
+    const start = mpqHash(normalized, 0) % hashEntries
+    for (let probe = 0; probe < hashEntries; probe += 1) {
+      const slot = (start + probe) % hashEntries
+      const offset = slot * 16
+      if (hashView.getUint32(offset + 12, true) !== 0xffffffff) continue
+      hashView.setUint32(offset, mpqHash(normalized, 1), true)
+      hashView.setUint32(offset + 4, mpqHash(normalized, 2), true)
+      hashView.setUint16(offset + 8, 0, true)
+      hashView.setUint16(offset + 10, 0, true)
+      hashView.setUint32(offset + 12, blockIndex, true)
+      return
+    }
+    throw new RangeError('synthetic SC2 MPQ hash table is full')
+  })
+
+  const blockTable = new Uint8Array(blockEntries * 16)
+  const blockView = new DataView(blockTable.buffer)
+  payloads.forEach((payload, index) => {
+    const offset = index * 16
+    blockView.setUint32(offset, offsets[index], true)
+    blockView.setUint32(offset + 4, payload.byteLength, true)
+    blockView.setUint32(offset + 8, payload.byteLength, true)
+    blockView.setUint32(offset + 12, 0x81000000, true)
+  })
+
+  const header = new Uint8Array(32)
+  header.set(bytes(0x4d, 0x50, 0x51, 0x1a))
+  const headerView = new DataView(header.buffer)
+  headerView.setUint32(4, 32, true)
+  headerView.setUint32(8, archiveBytes, true)
+  headerView.setUint16(12, 0, true)
+  headerView.setUint16(14, 3, true)
+  headerView.setUint32(16, hashOffset, true)
+  headerView.setUint32(20, blockOffset, true)
+  headerView.setUint32(24, hashEntries, true)
+  headerView.setUint32(28, blockEntries, true)
+  const archive = concat(
+    header,
+    ...payloads,
+    mpqEncrypt(hashTable, mpqHash('(hash table)', 3)),
+    mpqEncrypt(blockTable, mpqHash('(block table)', 3)),
+  )
+  if (userData === undefined) return archive
+  const userHeader = new Uint8Array(16)
+  userHeader.set(bytes(0x4d, 0x50, 0x51, 0x1b))
+  const userView = new DataView(userHeader.buffer)
+  userView.setUint32(4, userData.byteLength, true)
+  userView.setUint32(8, userHeader.byteLength + userData.byteLength, true)
+  userView.setUint32(12, userHeader.byteLength, true)
+  return concat(userHeader, userData, archive)
+}
+
+/** Packed SC2Map with canonical map documents and an authored Galaxy script. */
+function sc2Map() {
+  return sc2Mpq([
+    ['MapInfo', ascii('MapInfo fixture\0')],
+    ['Objects', ascii('<PlacedObjects/>')],
+    ['Terrain', bytes(1, 2, 3, 4)],
+    ['MapScript.galaxy', ascii('void InitMap() {}\n')],
+  ])
+}
+
+/** Packed SC2Mod with component, catalog, localization, layout, and document metadata entries. */
+function sc2Mod() {
+  return sc2Mpq([
+    ['ComponentList.SC2Components', ascii('<Components/>')],
+    ['DocumentInfo', ascii('<DocInfo/>')],
+    ['GameData/UnitData.xml', ascii('<Catalog><CUnit id="Marine"/></Catalog>')],
+    ['UI/Layout/Fixture.SC2Layout', ascii('<Desc/>')],
+    ['enUS.SC2Data/LocalizedData/GameStrings.txt', ascii('UI/Title=Fixture Mod\n')],
+  ])
+}
+
+/** SC2Replay user-data header plus known stored replay streams in the contained MPQ. */
+function sc2Replay() {
+  return sc2Mpq(
+    [
+      ['replay.details', bytes(1, 2, 3)],
+      ['replay.initData', bytes(4, 5)],
+      ['replay.attributes.events', bytes(6)],
+      ['replay.game.events', bytes(7, 8, 9)],
+      ['replay.tracker.events', bytes(10, 11, 12, 13)],
+    ],
+    ascii('StarCraft II replay\x1b11\0fixture'),
+  )
+}
+
 /** EA SAGE BIG4: one stored entry, with the mixed-endian header and null-terminated index path. */
 function big() {
   const name = ascii('hello.txt\0')
@@ -3785,6 +3895,9 @@ const FIXTURES = {
   DocumentInfo: sc2DocumentInfo,
   Triggers: sc2Triggers,
   'minimal-runtime.galaxy': sc2RuntimeProgram,
+  'minimal.SC2Map': sc2Map,
+  'minimal.SC2Mod': sc2Mod,
+  'minimal.SC2Replay': sc2Replay,
   'minimal.mdx': war3Mdx,
   'minimal.scm': supcomScm,
   'minimal.bti': bti,

@@ -58,6 +58,9 @@ const completedPortableStarcraft2 = [
   find('org.modkitx/sc2-document-metadata'),
   find('org.modkitx/sc2-triggers'),
   find('org.modkitx/sc2-runtime'),
+  find('org.modkitx/sc2-map'),
+  find('org.modkitx/sc2-mod'),
+  find('org.modkitx/sc2-replay'),
 ]
 const completedPortableWarcraft3 = [find('org.modkitx/war3-mdx')]
 const completedPortableGasPowered = [find('org.modkitx/supcom-scm')]
@@ -349,6 +352,113 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     expect(sc2Data).toMatch(/^<\?xml[^>]*>\s*<Catalog>/u)
     expect(sc2Data.match(/<C[A-Za-z0-9_]+\s+[^>]*id="[^"]+"/gu)).toHaveLength(2)
     expect(sc2Data).toContain('<CUnit id="Marine" parent="BaseUnit">')
+
+    // Independently decrypt the Storm hash/block tables and read each SC2 fixture's stored
+    // (listfile). This does not import the codecs or generator and catches fake MPQ-shaped bytes.
+    const mpqCrypt = (() => {
+      let seed = 0x00100001
+      const table = new Uint32Array(0x500)
+      for (let slot = 0; slot < 0x100; slot += 1) {
+        let index = slot
+        for (let round = 0; round < 5; round += 1) {
+          seed = (seed * 125 + 3) % 0x2aaaab
+          const high = (seed & 0xffff) << 16
+          seed = (seed * 125 + 3) % 0x2aaaab
+          table[index] = (high | (seed & 0xffff)) >>> 0
+          index += 0x100
+        }
+      }
+      return table
+    })()
+    const stormHash = (input: string, type: number) => {
+      let seed1 = 0x7fed7fed
+      let seed2 = 0xeeeeeeee
+      for (const original of Buffer.from(input, 'ascii')) {
+        const value = original >= 0x61 && original <= 0x7a ? original - 0x20 : original
+        seed1 = ((mpqCrypt[(type << 8) + value] ?? 0) ^ (seed1 + seed2)) >>> 0
+        seed2 = (value + seed1 + seed2 + (seed2 << 5) + 3) >>> 0
+      }
+      return seed1 >>> 0
+    }
+    const decryptStormTable = (encrypted: Buffer, key: number) => {
+      const result = Buffer.from(encrypted)
+      let seed1 = key >>> 0
+      let seed2 = 0xeeeeeeee
+      for (let offset = 0; offset < encrypted.byteLength; offset += 4) {
+        seed2 = (seed2 + (mpqCrypt[0x400 + (seed1 & 0xff)] ?? 0)) >>> 0
+        const plain = (encrypted.readUInt32LE(offset) ^ (seed1 + seed2)) >>> 0
+        seed1 = (((~seed1 << 21) + 0x11111111) | (seed1 >>> 11)) >>> 0
+        seed2 = (plain + seed2 + (seed2 << 5) + 3) >>> 0
+        result.writeUInt32LE(plain, offset)
+      }
+      return result
+    }
+    const sc2Listfile = (name: string) => {
+      const data = readFileSync(join(root, name))
+      const userData = data.subarray(0, 4).toString('latin1') === 'MPQ\u001b'
+      const archive = userData ? data.readUInt32LE(8) : 0
+      expect(data.subarray(archive, archive + 4).toString('latin1')).toBe('MPQ\u001a')
+      expect(data.readUInt32LE(archive + 8)).toBe(data.byteLength - archive)
+      const hashOffset = data.readUInt32LE(archive + 16)
+      const blockOffset = data.readUInt32LE(archive + 20)
+      const hashEntries = data.readUInt32LE(archive + 24)
+      const blockEntries = data.readUInt32LE(archive + 28)
+      expect(hashEntries).toBeGreaterThanOrEqual(blockEntries * 2)
+      const hashes = decryptStormTable(
+        data.subarray(archive + hashOffset, archive + hashOffset + hashEntries * 16),
+        stormHash('(hash table)', 3),
+      )
+      const blocks = decryptStormTable(
+        data.subarray(archive + blockOffset, archive + blockOffset + blockEntries * 16),
+        stormHash('(block table)', 3),
+      )
+      const hashA = stormHash('(listfile)', 1)
+      const hashB = stormHash('(listfile)', 2)
+      const first = stormHash('(listfile)', 0) % hashEntries
+      let blockIndex = -1
+      for (let probe = 0; probe < hashEntries; probe += 1) {
+        const offset = ((first + probe) % hashEntries) * 16
+        if (hashes.readUInt32LE(offset + 12) === 0xffffffff) break
+        if (hashes.readUInt32LE(offset) === hashA && hashes.readUInt32LE(offset + 4) === hashB) {
+          blockIndex = hashes.readUInt32LE(offset + 12)
+          break
+        }
+      }
+      expect(blockIndex).toBeGreaterThanOrEqual(0)
+      const block = blockIndex * 16
+      const payload = archive + blocks.readUInt32LE(block)
+      const stored = blocks.readUInt32LE(block + 4)
+      expect(blocks.readUInt32LE(block + 8)).toBe(stored)
+      expect(blocks.readUInt32LE(block + 12)).toBe(0x81000000)
+      return data
+        .subarray(payload, payload + stored)
+        .toString('utf8')
+        .trim()
+        .split('\n')
+    }
+    expect(sc2Listfile('minimal.SC2Map')).toEqual([
+      'MapInfo',
+      'Objects',
+      'Terrain',
+      'MapScript.galaxy',
+    ])
+    expect(sc2Listfile('minimal.SC2Mod')).toEqual([
+      'ComponentList.SC2Components',
+      'DocumentInfo',
+      'GameData/UnitData.xml',
+      'UI/Layout/Fixture.SC2Layout',
+      'enUS.SC2Data/LocalizedData/GameStrings.txt',
+    ])
+    const replayBytes = readFileSync(join(root, 'minimal.SC2Replay'))
+    expect(replayBytes.subarray(0, 4).toString('latin1')).toBe('MPQ\u001b')
+    expect(replayBytes.subarray(16, 35).toString('ascii')).toBe('StarCraft II replay')
+    expect(sc2Listfile('minimal.SC2Replay')).toEqual([
+      'replay.details',
+      'replay.initData',
+      'replay.attributes.events',
+      'replay.game.events',
+      'replay.tracker.events',
+    ])
 
     const mdx = readFileSync(join(root, 'minimal.mdx'))
     expect(mdx.subarray(0, 4).toString('ascii')).toBe('MDLX')

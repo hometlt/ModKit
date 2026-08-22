@@ -21,12 +21,8 @@
     }
   ],
   "limitations": [
-    "The declarative prefilter verifies MPQ user-data magic; the bounded detector additionally requires the exact StarCraft II replay signature inside the declared user-data payload.",
-    "The browser-safe facade retains an injected decoder contract, but the manifest is conservatively Node-only because the repository import-graph validator currently classifies both detector and runtime entrypoints as Node-reaching.",
-    "The Node adapter supplies the current @modkitx/replay parser and analyzer and always requests tracker events.",
-    "Optional protocol streams and build-specific decoding remain dependent on the injected decoder and available protocol data.",
-    "Tracker-authoritative playback and rendering never require sc2-runtime; when the optional integrates edge is active, the replay facade can serialize complete tracker frames for runtime prediction and authoritative divergence correction without importing the runtime codec.",
-    "Replay editing, in-place saving, and save-as writing are not implemented, so support remains partial."
+    "Portable inspection requires MPQ user-data magic plus the exact StarCraft II replay signature, decrypts the contained MPQ tables, and classifies known replay stream names.",
+    "Build-specific protocol/header/details/event decoding, analysis, rendering, playback/seeking, runtime divergence correction, editing, and writing remain unavailable."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "sc2-replay", "label": "StarCraft II replay" }],
@@ -34,7 +30,10 @@
     "sourceTopology": "single",
     "artifactStages": ["runtime"],
     "openIntents": ["probe", "inspect", "full", "export"],
-    "match": { "signatures": [{ "from": "start", "offset": 0, "bytesHex": "4d50511b" }] },
+    "match": {
+      "extensions": ["sc2replay"],
+      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "4d50511b" }]
+    },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {
