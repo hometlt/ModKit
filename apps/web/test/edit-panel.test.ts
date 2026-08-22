@@ -188,10 +188,14 @@ beforeAll(async () => {
     }
   })
 
-  await page.goto(origin, { waitUntil: 'load' })
+  await page.goto(`${origin}/?lang=en`, { waitUntil: 'load' })
   await page.waitForSelector('[data-mk-part="workbench"]', { timeout: 60_000 })
   // the inspector region is hidden on boot; the user opens it with the activity bar
-  await page.getByRole('button', { name: 'Show or hide diagnostics and operations' }).click()
+  const inspectorButton = page.getByRole('button', {
+    name: 'Show or hide diagnostics and operations',
+  })
+  await inspectorButton.waitFor({ state: 'visible', timeout: 120_000 })
+  await inspectorButton.click()
   await page.waitForSelector('[data-mk-part="workbench.panel"]:not([hidden])', { timeout: 30_000 })
 }, 300_000)
 

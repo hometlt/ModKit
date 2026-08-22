@@ -7,14 +7,18 @@
  * test passed and whose first line in a browser was
  * `Boot failed: Cannot access 'services' before initialization`. Nothing in the gate could see it.
  *
- * So this test serves the committed `dist-app` exactly as the build script does and loads it in a
- * real Chromium: the workbench mounts, the boot placeholder is gone, and nothing was refused by the
- * page's own CSP. It asserts that the app *starts*, not what it can do — the rest of the suite
- * covers that, and a smoke test that grows features stops being a smoke test.
+ * So this test builds the app into a scratch directory exactly as the product build does and loads
+ * it in a real Chromium: the workbench mounts, the boot placeholder is gone, and nothing was
+ * refused by the page's own CSP. `dist-app` is deliberately not a source artifact and the test must
+ * not silently validate an older committed copy. It asserts that the app *starts*, not what it can
+ * do — the rest of the suite covers that, and a smoke test that grows features stops being a smoke
+ * test.
  */
+import { execFileSync } from 'node:child_process'
 import { createServer, type Server } from 'node:http'
-import { existsSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { extname, join, normalize, resolve, sep } from 'node:path'
 import { chromium, type Browser } from 'playwright-core'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -38,12 +42,17 @@ const MIME: Readonly<Record<string, string>> = {
   '.woff2': 'font/woff2',
 }
 
-const dist = resolve('apps/web/dist-app')
+let dist = ''
 let server: Server
 let browser: Browser
 let origin = ''
 
 beforeAll(async () => {
+  dist = mkdtempSync(join(tmpdir(), 'modkit-web-boot-'))
+  execFileSync(process.execPath, [resolve('apps/web/scripts/build.mjs'), '--out', dist], {
+    cwd: resolve('.'),
+    stdio: 'pipe',
+  })
   server = createServer((request, response) => {
     const name = (request.url ?? '/').split('?')[0] ?? '/'
     const target = normalize(join(dist, name === '/' ? 'index.html' : name))
@@ -77,10 +86,11 @@ beforeAll(async () => {
 afterAll(async () => {
   await browser?.close()
   await new Promise<void>(done => server?.close(() => done()))
+  if (dist !== '') rmSync(dist, { recursive: true, force: true })
 })
 
 describe('PWA boot', () => {
-  it('mounts the workbench from the committed build, with no boot failure and no CSP refusal', async () => {
+  it('mounts the workbench from the current product build, with no boot failure and no CSP refusal', async () => {
     const page = await browser.newPage({ colorScheme: 'dark' })
     const failures: string[] = []
     page.on('pageerror', error => failures.push(`pageerror: ${error.message}`))
@@ -110,7 +120,9 @@ describe('PWA boot', () => {
      * assertion is that the user-extensions panel is part of the shell rather than an export
      * nobody mounted.
      */
-    await page.getByRole('button', { name: 'Settings' }).click()
+    const settings = page.getByRole('button', { name: 'Settings' })
+    await settings.waitFor({ state: 'visible', timeout: 120_000 })
+    await settings.click()
     await page.waitForSelector('.web-extensions-view', { timeout: 30_000 })
 
     const state = await page.evaluate(() => ({
@@ -141,7 +153,9 @@ describe('PWA boot', () => {
     page.on('pageerror', error => failures.push(error.message))
     await page.goto(`${origin}/?lang=ru`, { waitUntil: 'load' })
     await page.waitForSelector('[data-mk-part="workbench"]', { timeout: 60_000 })
-    await page.getByRole('button', { name: 'Настройки' }).click()
+    const settings = page.getByRole('button', { name: 'Настройки' })
+    await settings.waitFor({ state: 'visible', timeout: 120_000 })
+    await settings.click()
     await page.waitForSelector('.web-settings-view', { timeout: 30_000 })
     const state = await page.evaluate(async () => {
       await document.fonts.ready
