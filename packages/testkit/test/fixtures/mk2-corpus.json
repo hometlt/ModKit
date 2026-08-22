@@ -1807,6 +1807,42 @@
       "note": "Smacker 4 header with dimensions and frame count"
     },
     {
+      "extension": "mk2/realitypump-earth-2150",
+      "contributionId": "org.modkitx/earth-par",
+      "corpus": "synthetic",
+      "sample": "minimal.earth.par",
+      "minimumConfidence": 0.99,
+      "dataSource": "namespace",
+      "note": "Empty Earth 2150 PAR database envelope"
+    },
+    {
+      "extension": "mk2/realitypump-earth-2150",
+      "contributionId": "org.modkitx/earth-tex",
+      "corpus": "synthetic",
+      "sample": "minimal.earth.tex",
+      "minimumConfidence": 0.92,
+      "dataSource": "tree",
+      "note": "Earth TEX compatibility case with a self-described DDS payload"
+    },
+    {
+      "extension": "mk2/realitypump-earth2160",
+      "contributionId": "org.modkitx/earth2160-model",
+      "corpus": "synthetic",
+      "sample": "minimal.earth2160.kfr",
+      "minimumConfidence": 0.98,
+      "dataSource": "tree",
+      "note": "Earth 2160 model-family diagnostic envelope"
+    },
+    {
+      "extension": "mk2/realitypump-earth2160",
+      "contributionId": "org.modkitx/wd",
+      "corpus": "synthetic",
+      "sample": "minimal.reality-pump.wd",
+      "minimumConfidence": 0.8,
+      "dataSource": "namespace",
+      "note": "Reality Pump WD archive with a zlib-compressed EOF directory"
+    },
+    {
       "extension": "common/images",
       "contributionId": "org.modkitx/image-png",
       "corpus": "synthetic",

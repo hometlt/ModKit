@@ -107,6 +107,12 @@ const completedPortablePetroglyph = [
   find('org.modkitx/petroglyph-meg'),
 ]
 const completedPortableRadVideo = [find('org.modkitx/bink'), find('org.modkitx/smacker')]
+const completedPortableRealityPump = [
+  find('org.modkitx/earth-par'),
+  find('org.modkitx/earth-tex'),
+  find('org.modkitx/earth2160-model'),
+  find('org.modkitx/wd'),
+]
 const completedPortableVector = [find('org.modkitx/emf'), find('org.modkitx/wmf')]
 const completedPortableDocuments = [
   find('org.modkitx/csv'),
@@ -246,6 +252,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       ...completedPortableWarzone,
       ...completedPortablePetroglyph,
       ...completedPortableRadVideo,
+      ...completedPortableRealityPump,
       ...completedPortableVector,
       ...completedPortableModels,
       ...completedPortableVideos,
@@ -918,6 +925,17 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       smacker.readUInt32LE(16),
       smacker.readUInt32LE(20),
     ]).toEqual(['SMK4', 320, 200, 30])
+    expect(readFileSync(join(root, 'minimal.earth.par')).subarray(0, 4).toString('latin1')).toBe(
+      'PAR\0',
+    )
+    expect(readFileSync(join(root, 'minimal.earth.tex')).subarray(0, 4).toString('ascii')).toBe(
+      'DDS ',
+    )
+    expect([...readFileSync(join(root, 'minimal.earth2160.kfr')).subarray(0, 5)]).toEqual([
+      0x9f, 0x99, 0x66, 0xf6, 0x02,
+    ])
+    const wd = readFileSync(join(root, 'minimal.reality-pump.wd'))
+    expect(wd.readUInt32LE(wd.byteLength - 4)).toBeLessThanOrEqual(wd.byteLength)
 
     // These checks intentionally do not import the codecs. They independently walk each model
     // fixture's standard wire representation so a generator/reader bug cannot agree with itself.

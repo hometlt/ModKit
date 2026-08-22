@@ -2224,6 +2224,38 @@ function smacker() {
   return out
 }
 
+function earthPar() {
+  return concat(ascii('PAR\0'), u32le(1), u32le(0), u32le(0), u32le(0))
+}
+
+function earthTex() {
+  return dds()
+}
+
+function earth2160Model() {
+  return concat(bytes(0x9f, 0x99, 0x66, 0xf6, 0x02, 0, 0, 0), u32le(1), u32le(0))
+}
+
+function realityPumpWd() {
+  const payload = ascii('wd payload\n')
+  const name = ascii('data/fixture.txt')
+  const directory = concat(
+    new Uint8Array(10),
+    bytes(name.byteLength),
+    name,
+    bytes(0),
+    u32le(0),
+    u32le(payload.byteLength),
+    u32le(payload.byteLength),
+  )
+  const compressedDirectory = concat(
+    bytes(0x78, 0x01),
+    deflateStored(directory),
+    u32be(adler32(directory)),
+  )
+  return concat(payload, compressedDirectory, u32le(compressedDirectory.byteLength + 4))
+}
+
 /** EA SAGE BIG4: one stored entry, with the mixed-endian header and null-terminated index path. */
 function big() {
   const name = ascii('hello.txt\0')
@@ -4467,6 +4499,10 @@ const FIXTURES = {
   'minimal.petroglyph.meg': petroglyphMeg,
   'minimal.bik': bink,
   'minimal.smk': smacker,
+  'minimal.earth.par': earthPar,
+  'minimal.earth.tex': earthTex,
+  'minimal.earth2160.kfr': earth2160Model,
+  'minimal.reality-pump.wd': realityPumpWd,
   'minimal.sage.skudef': sageSkuDef,
   'minimal.cnc3-data.xml': cnc3Data,
   'minimal.cnc3-localization.csf': cnc3Localization,

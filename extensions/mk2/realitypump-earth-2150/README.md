@@ -11,7 +11,7 @@ The conversion debt of every codec below — planes v2 has no home for, applied
 renames, converter defaults and v1 operations left without a handler — is data in
 `MK2-CONVERSION.json` beside this file.
 
-| contribution            | v1 manifest                                                              | module                   | port         |
-| ----------------------- | ------------------------------------------------------------------------ | ------------------------ | ------------ |
-| `org.modkitx/earth-par` | `extensions/realitypump/earth-2150/codecs/earth-par/codec.manifest.json` | `src/earth-par/codec.js` | port-pending |
-| `org.modkitx/earth-tex` | `extensions/realitypump/earth-2150/codecs/earth-tex/codec.manifest.json` | `src/earth-tex/codec.js` | port-pending |
+| contribution            | v1 manifest                                                              | module                   | port   |
+| ----------------------- | ------------------------------------------------------------------------ | ------------------------ | ------ |
+| `org.modkitx/earth-par` | `extensions/realitypump/earth-2150/codecs/earth-par/codec.manifest.json` | `src/earth-par/codec.js` | ported |
+| `org.modkitx/earth-tex` | `extensions/realitypump/earth-2150/codecs/earth-tex/codec.manifest.json` | `src/earth-tex/codec.js` | ported |

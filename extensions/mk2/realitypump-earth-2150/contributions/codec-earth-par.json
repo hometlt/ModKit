@@ -3,7 +3,7 @@
   "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
   "id": "org.modkitx/earth-par",
   "displayName": "Earth 2150 PAR database",
-  "status": "supported",
+  "status": "partial",
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
@@ -21,7 +21,7 @@
     }
   ],
   "limitations": [
-    "The reader projects the parameter database as JSON entries; it does not preserve a writable binary object model.",
+    "The portable MK3 port validates the PAR header and empty database envelope; non-empty entity and research records remain pending corpus-backed coverage.",
     "Writing or repacking PAR databases is not implemented."
   ],
   "spec": {

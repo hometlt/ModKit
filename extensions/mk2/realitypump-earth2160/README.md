@@ -11,7 +11,7 @@ The conversion debt of every codec below — planes v2 has no home for, applied
 renames, converter defaults and v1 operations left without a handler — is data in
 `MK2-CONVERSION.json` beside this file.
 
-| contribution                  | v1 manifest                                                                   | module                         | port         |
-| ----------------------------- | ----------------------------------------------------------------------------- | ------------------------------ | ------------ |
-| `org.modkitx/earth2160-model` | `extensions/realitypump/earth2160/codecs/earth2160-model/codec.manifest.json` | `src/earth2160-model/codec.js` | port-pending |
-| `org.modkitx/wd`              | `extensions/realitypump/earth2160/codecs/wd/codec.manifest.json`              | `src/wd/codec.js`              | port-pending |
+| contribution                  | v1 manifest                                                                   | module                         | port   |
+| ----------------------------- | ----------------------------------------------------------------------------- | ------------------------------ | ------ |
+| `org.modkitx/earth2160-model` | `extensions/realitypump/earth2160/codecs/earth2160-model/codec.manifest.json` | `src/earth2160-model/codec.js` | ported |
+| `org.modkitx/wd`              | `extensions/realitypump/earth2160/codecs/wd/codec.manifest.json`              | `src/wd/codec.js`              | ported |

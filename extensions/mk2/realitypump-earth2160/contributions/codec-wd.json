@@ -22,8 +22,8 @@
   ],
   "limitations": [
     "WD identification validates the zlib-compressed directory stored at end of file. Generic matching routes .wd files declaratively because its header evidence cannot represent a tail directory.",
-    "The reader supports the classic directory and zlib-compressed payload layout and is read-only.",
-    "Browser reachability is not declared because the current codec uses the Node zlib runtime."
+    "The portable MK3 reader inventories the classic zlib-compressed EOF directory and is read-only; entry extraction and supplementary record types remain outside this subset.",
+    "Directory inflation uses the platform DecompressionStream boundary in both trusted-node and worker-brokered variants."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "wd", "label": "Reality Pump WD archive" }],
