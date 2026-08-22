@@ -2073,6 +2073,40 @@ function haloEra() {
   return concat(header, table, names, payload)
 }
 
+function heroes3Def() {
+  return concat(u32le(1), u32le(2), u32le(2), u32le(1))
+}
+
+function heroes3Lod() {
+  const header = new Uint8Array(92)
+  header.set(ascii('LOD\0'), 0)
+  const headerView = new DataView(header.buffer)
+  headerView.setUint32(4, 1, true)
+  headerView.setUint32(8, 1, true)
+  const record = new Uint8Array(32)
+  record.set(ascii('fixture.txt\0'), 0)
+  const payload = ascii('heroes three payload\n')
+  const recordView = new DataView(record.buffer)
+  recordView.setUint32(16, header.byteLength + record.byteLength, true)
+  recordView.setUint32(20, payload.byteLength, true)
+  recordView.setUint32(28, 0, true)
+  return concat(header, record, payload)
+}
+
+function heroes4Resource() {
+  const header = concat(ascii('H4R\0'), u32le(1), u32le(1))
+  const record = new Uint8Array(20)
+  const name = ascii('maps/fixture.h4m\0')
+  const payload = ascii('heroes four payload\n')
+  const recordView = new DataView(record.buffer)
+  recordView.setUint32(0, header.byteLength + record.byteLength, true)
+  recordView.setUint16(4, name.byteLength, true)
+  recordView.setUint16(6, 0x42, true)
+  recordView.setUint32(8, header.byteLength + record.byteLength + name.byteLength, true)
+  recordView.setUint32(12, payload.byteLength, true)
+  return concat(header, record, name, payload)
+}
+
 /** EA SAGE BIG4: one stored entry, with the mixed-endian header and null-terminated index path. */
 function big() {
   const name = ascii('hello.txt\0')
@@ -4301,6 +4335,9 @@ const FIXTURES = {
   'minimal.westwood.vpl': westwoodVpl,
   'minimal.westwood.wsa': () => westwoodOpaque('WSA'),
   'minimal.halo.era': haloEra,
+  'minimal.heroes3.def': heroes3Def,
+  'minimal.heroes3.lod': heroes3Lod,
+  'minimal.heroes4.h4r': heroes4Resource,
   'minimal.sage.skudef': sageSkuDef,
   'minimal.cnc3-data.xml': cnc3Data,
   'minimal.cnc3-localization.csf': cnc3Localization,

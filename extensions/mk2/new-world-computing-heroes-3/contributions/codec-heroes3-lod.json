@@ -21,10 +21,10 @@
     }
   ],
   "limitations": [
-    "Heroes III LOD, SND, and VID tables are supported with zlib entry decompression; Might & Magic LOD support is limited to validated inventory/raw-extraction layouts.",
+    "Heroes III LOD, SND, and VID tables are supported with standard DecompressionStream zlib extraction; Might & Magic LOD layouts are not claimed by the MK3 port.",
     "Declarative routing uses the .lod/.snd/.vid extensions because SND and VID files do not share the LOD\\u0000 header signature; the direct codec API still validates the selected layout.",
     "Unsupported compression methods fail explicitly instead of being guessed.",
-    "Browser reachability is not declared because the current codec statically imports node:zlib, and writing these archives is not implemented."
+    "Writing these archives is not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "heroes3-lod", "label": "LOD/SND/VID (Heroes III)" }],

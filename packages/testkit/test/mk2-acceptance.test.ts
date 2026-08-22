@@ -88,6 +88,11 @@ const completedPortableEaWestwood = [
   find('org.modkitx/wsa'),
 ]
 const completedPortableMicrosoftHaloWars = [find('org.modkitx/halo-era')]
+const completedPortableHeroes = [
+  find('org.modkitx/def'),
+  find('org.modkitx/heroes3-lod'),
+  find('org.modkitx/heroes4-resource'),
+]
 const completedPortableVector = [find('org.modkitx/emf'), find('org.modkitx/wmf')]
 const completedPortableDocuments = [
   find('org.modkitx/csv'),
@@ -222,6 +227,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       ...completedPortableEaTiberianSun,
       ...completedPortableEaWestwood,
       ...completedPortableMicrosoftHaloWars,
+      ...completedPortableHeroes,
       ...completedPortableVector,
       ...completedPortableModels,
       ...completedPortableVideos,
@@ -808,6 +814,38 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     )
     expect(haloEra.subarray(resourceOffset, resourceOffset + resourceSize).toString('ascii')).toBe(
       'halo era payload\n',
+    )
+
+    const heroes3Def = readFileSync(join(root, 'minimal.heroes3.def'))
+    expect([
+      heroes3Def.readUInt32LE(0),
+      heroes3Def.readUInt32LE(4),
+      heroes3Def.readUInt32LE(8),
+      heroes3Def.readUInt32LE(12),
+    ]).toEqual([1, 2, 2, 1])
+
+    const heroes3Lod = readFileSync(join(root, 'minimal.heroes3.lod'))
+    expect(heroes3Lod.subarray(0, 4).toString('latin1')).toBe('LOD\0')
+    expect([heroes3Lod.readUInt32LE(4), heroes3Lod.readUInt32LE(8)]).toEqual([1, 1])
+    const heroes3Offset = heroes3Lod.readUInt32LE(92 + 16)
+    const heroes3Size = heroes3Lod.readUInt32LE(92 + 20)
+    expect(heroes3Lod.subarray(92, 108).toString('ascii').replace(/\0+$/u, '')).toBe('fixture.txt')
+    expect(heroes3Lod.subarray(heroes3Offset, heroes3Offset + heroes3Size).toString('ascii')).toBe(
+      'heroes three payload\n',
+    )
+
+    const heroes4 = readFileSync(join(root, 'minimal.heroes4.h4r'))
+    expect(heroes4.subarray(0, 4).toString('latin1')).toBe('H4R\0')
+    expect([heroes4.readUInt32LE(4), heroes4.readUInt32LE(8)]).toEqual([1, 1])
+    const heroes4Name = heroes4.readUInt32LE(12)
+    const heroes4NameLength = heroes4.readUInt16LE(16)
+    const heroes4Offset = heroes4.readUInt32LE(20)
+    const heroes4Size = heroes4.readUInt32LE(24)
+    expect(heroes4.subarray(heroes4Name, heroes4Name + heroes4NameLength).toString('ascii')).toBe(
+      'maps/fixture.h4m\0',
+    )
+    expect(heroes4.subarray(heroes4Offset, heroes4Offset + heroes4Size).toString('ascii')).toBe(
+      'heroes four payload\n',
     )
 
     // These checks intentionally do not import the codecs. They independently walk each model

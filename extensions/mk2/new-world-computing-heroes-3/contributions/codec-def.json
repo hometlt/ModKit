@@ -23,7 +23,7 @@
   "limitations": [
     "The current codec inventories raw type, dimensions, block count, and diagnostics only; DEF group and frame pixel decoding is not implemented.",
     "Generated routing is extension-only because the current codec has no corpus-backed standalone DEF signature detector.",
-    "The manifest conservatively exposes runtime operations to Node hosts because the shared legacy RTS entrypoint reaches the DDS external CommonJS WASM loader whose browser import graph is not yet verifiable."
+    "The MK3 port is worker-portable and read-only."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "def", "label": "Heroes III DEF sprite/animation" }],

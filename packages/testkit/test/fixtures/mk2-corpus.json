@@ -1660,6 +1660,45 @@
       "note": "Halo Wars ECF/ERA with a plain fixed header, names chunk, and one extractable stored resource"
     },
     {
+      "extension": "mk2/new-world-computing-heroes-3",
+      "contributionId": "org.modkitx/def",
+      "corpus": "synthetic",
+      "sample": "minimal.heroes3.def",
+      "minimumConfidence": 0.88,
+      "dataSource": "tree",
+      "note": "Heroes III DEF header with bounded type, dimensions, and group count"
+    },
+    {
+      "extension": "mk2/new-world-computing-heroes-3",
+      "contributionId": "org.modkitx/heroes3-lod",
+      "corpus": "synthetic",
+      "sample": "minimal.heroes3.lod",
+      "minimumConfidence": 0.99,
+      "dataSource": "namespace",
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "0" },
+        "outputKind": "bytes",
+        "minimumBytes": 20
+      },
+      "note": "Heroes III LOD with one extractable stored resource"
+    },
+    {
+      "extension": "mk2/new-world-computing-heroes-4",
+      "contributionId": "org.modkitx/heroes4-resource",
+      "corpus": "synthetic",
+      "sample": "minimal.heroes4.h4r",
+      "minimumConfidence": 0.99,
+      "dataSource": "namespace",
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "0" },
+        "outputKind": "bytes",
+        "minimumBytes": 19
+      },
+      "note": "Heroes IV H4R named-record subset with one extractable stored resource"
+    },
+    {
       "extension": "common/images",
       "contributionId": "org.modkitx/image-png",
       "corpus": "synthetic",

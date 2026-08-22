@@ -11,6 +11,6 @@ The conversion debt of every codec below — planes v2 has no home for, applied
 renames, converter defaults and v1 operations left without a handler — is data in
 `MK2-CONVERSION.json` beside this file.
 
-| contribution                   | v1 manifest                                                                           | module                          | port         |
-| ------------------------------ | ------------------------------------------------------------------------------------- | ------------------------------- | ------------ |
-| `org.modkitx/heroes4-resource` | `extensions/new-world-computing/heroes-4/codecs/heroes4-resource/codec.manifest.json` | `src/heroes4-resource/codec.js` | port-pending |
+| contribution                   | v1 manifest                                                                           | module                          | port   |
+| ------------------------------ | ------------------------------------------------------------------------------------- | ------------------------------- | ------ |
+| `org.modkitx/heroes4-resource` | `extensions/new-world-computing/heroes-4/codecs/heroes4-resource/codec.manifest.json` | `src/heroes4-resource/codec.js` | ported |
