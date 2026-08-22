@@ -21,16 +21,17 @@
     }
   ],
   "limitations": [
-    "The current codec inventories SLP headers and frame metadata only; command-stream pixel decoding is not implemented.",
+    "The codec validates SLP 2.x/3.x frame, outline, row-command table, dimension, hotspot, property, and palette-offset framing and exposes it as a bounded tree.",
+    "SLP command streams require an external game palette and are not exposed as decoded raster pixels; SLP 4.x LZ4 framing fails explicitly.",
     "Declarative routing uses the .slp extension because manifest v1 cannot express the legacy extension-or-version-prefix fallback without narrowing supported inputs.",
-    "The manifest conservatively exposes runtime operations to Node hosts because the shared legacy RTS entrypoint reaches an external CommonJS WASM loader whose browser import graph is not yet verifiable."
+    "The MK3 inspector is self-contained and portable; sprite editing and writing are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "slp", "label": "Genie SLP sprite" }],
     "roles": ["media"],
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
-    "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
+    "openIntents": ["probe", "inspect", "export"],
     "match": { "extensions": ["slp"] },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
@@ -43,7 +44,6 @@
       }
     ],
     "publishesDataSources": [
-      { "contract": "common.view/raster-image-source", "major": 1 },
       { "contract": "common.view/tree-data-source", "major": 1 },
       { "contract": "common.view/byte-range-source", "major": 1 }
     ],

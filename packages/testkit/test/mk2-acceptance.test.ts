@@ -58,6 +58,10 @@ const completedPortableAgeSeries = [
   find('org.modkitx/age-bar'),
   find('org.modkitx/age-drs'),
   find('org.modkitx/ddt'),
+  find('org.modkitx/sld'),
+  find('org.modkitx/slp'),
+  find('org.modkitx/smp'),
+  find('org.modkitx/smx'),
 ]
 
 describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tasks E/F/G)', () => {
@@ -609,5 +613,49 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       Math.round(((red565 & 0x1f) * 255) / 31),
     ]).toEqual([255, 0, 0])
     expect(ddt.readUInt32LE(ddtPayload + 4)).toBe(0)
+
+    const slp = readFileSync(join(root, 'minimal.slp'))
+    expect(slp.subarray(0, 4).toString('ascii')).toBe('2.0N')
+    expect(slp.readUInt32LE(4)).toBe(1)
+    expect([slp.readUInt32LE(32), slp.readUInt32LE(36)]).toEqual([68, 64])
+    expect([slp.readInt32LE(48), slp.readInt32LE(52)]).toEqual([1, 1])
+    expect([slp.readUInt16LE(64), slp.readUInt16LE(66)]).toEqual([0, 0])
+    expect(slp.readUInt32LE(68)).toBe(72)
+    expect([...slp.subarray(72)]).toEqual([0x04, 0x07, 0x0f])
+
+    const smp = readFileSync(join(root, 'minimal.smp'))
+    expect(smp.subarray(0, 4).toString('ascii')).toBe('SMP$')
+    expect([smp.readUInt32LE(8), smp.readUInt32LE(12), smp.readUInt32LE(16)]).toEqual([1, 1, 1])
+    expect(smp.readUInt32LE(24)).toBe(smp.byteLength)
+    const smpFrame = smp.readUInt32LE(64)
+    expect(smpFrame).toBe(68)
+    expect(smp.readUInt32LE(smpFrame + 28)).toBe(1)
+    const smpLayer = smpFrame + 32
+    expect([smp.readUInt32LE(smpLayer), smp.readUInt32LE(smpLayer + 4)]).toEqual([1, 1])
+    expect(smp.readUInt32LE(smpLayer + 16)).toBe(0x02)
+    expect([smp.readUInt32LE(smpLayer + 20), smp.readUInt32LE(smpLayer + 24)]).toEqual([64, 68])
+    expect(smp.readUInt32LE(smpFrame + 68)).toBe(72)
+
+    const smx = readFileSync(join(root, 'minimal.smx'))
+    expect(smx.subarray(0, 4).toString('ascii')).toBe('SMPX')
+    expect([smx.readUInt16LE(4), smx.readUInt16LE(6)]).toEqual([2, 1])
+    expect(smx.readUInt32LE(8)).toBe(smx.byteLength - 32)
+    expect([...smx.subarray(32, 34)]).toEqual([0x01, 0])
+    const smxLayer = 38
+    expect([smx.readUInt16LE(smxLayer), smx.readUInt16LE(smxLayer + 2)]).toEqual([1, 1])
+    expect(smx.readUInt32LE(smxLayer + 8)).toBe(35)
+    expect([smx.readUInt32LE(smxLayer + 20), smx.readUInt32LE(smxLayer + 24)]).toEqual([2, 5])
+    expect([...smx.subarray(smxLayer + 28)]).toEqual([0x01, 0x03, 0x07, 0, 0, 0, 0])
+
+    const sld = readFileSync(join(root, 'minimal.sld'))
+    expect(sld.subarray(0, 4).toString('ascii')).toBe('SLDX')
+    expect([sld.readUInt16LE(4), sld.readUInt16LE(6)]).toEqual([4, 1])
+    expect([sld.readUInt16LE(16), sld.readUInt16LE(18)]).toEqual([4, 4])
+    expect(sld[24]).toBe(0x01)
+    expect(sld.readUInt32LE(28)).toBe(26)
+    expect([sld.readUInt16LE(36), sld.readUInt16LE(38)]).toEqual([4, 4])
+    expect(sld.readUInt16LE(42)).toBe(1)
+    expect([...sld.subarray(44, 46)]).toEqual([0, 1])
+    expect(sld.readUInt16LE(46)).toBe(0xf800)
   })
 })

@@ -21,8 +21,9 @@
     }
   ],
   "limitations": [
-    "The current codec inventories layer metadata only; sprite layer decoding is not implemented.",
-    "The manifest conservatively exposes runtime operations to Node hosts because the shared legacy RTS entrypoint reaches an external CommonJS WASM loader whose browser import graph is not yet verifiable."
+    "The codec validates SLDX frame and length-prefixed layer framing, decodes every main-layer DXT1 block, and applies previous-frame block reuse to bounded RGBA frame regions.",
+    "Shadow, damage, unknown, and player-color layers are structurally bounded but are not composited into the decoded main layer.",
+    "SLDX structural detection works without a filename extension; sprite editing and writing are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "sld", "label": "AoE2 DE SLD sprite layer data" }],
@@ -30,7 +31,10 @@
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
-    "match": { "extensions": ["sld"] },
+    "match": {
+      "extensions": ["sld"],
+      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "534c4458" }]
+    },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {

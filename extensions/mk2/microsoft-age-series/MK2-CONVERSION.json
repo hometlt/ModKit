@@ -139,7 +139,7 @@
       ],
       "droppedOperations": ["image.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/slp": {
       "verdict": "mechanical",
@@ -154,7 +154,7 @@
       ],
       "droppedOperations": ["image.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/smp": {
       "verdict": "mechanical",
@@ -169,7 +169,7 @@
       ],
       "droppedOperations": ["image.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/smx": {
       "verdict": "mechanical",
@@ -184,7 +184,7 @@
       ],
       "droppedOperations": ["image.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     }
   }
 }

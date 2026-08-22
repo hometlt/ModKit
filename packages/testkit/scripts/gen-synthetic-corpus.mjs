@@ -2517,6 +2517,115 @@ function ddt() {
   )
 }
 
+/** Genie SLP 2.0N with one 1×1 frame, one outline row and one draw command. */
+function slp() {
+  return concat(
+    ascii('2.0N'),
+    u32le(1),
+    new Uint8Array(24),
+    u32le(68),
+    u32le(64),
+    u32le(0),
+    u32le(0),
+    u32le(1),
+    u32le(1),
+    u32le(0),
+    u32le(0),
+    u16le(0),
+    u16le(0),
+    u32le(72),
+    bytes(0x04, 0x07, 0x0f),
+  )
+}
+
+/** AoE II DE SMP$ with one main layer and one indexed command row. */
+function smp() {
+  const fileSize = 146
+  return concat(
+    ascii('SMP$'),
+    u32le(1),
+    u32le(1),
+    u32le(1),
+    u32le(1),
+    u32le(0x12345678),
+    u32le(fileSize),
+    u32le(1),
+    new Uint8Array(32),
+    u32le(68),
+    new Uint8Array(28),
+    u32le(1),
+    u32le(1),
+    u32le(1),
+    u32le(0),
+    u32le(0),
+    u32le(0x02),
+    u32le(64),
+    u32le(68),
+    u32le(0),
+    u16le(0),
+    u16le(0),
+    u32le(72),
+    bytes(0x01, 0x11, 0x22, 0x33, 0x44, 0x03),
+  )
+}
+
+/** AoE II DE SMPX with one 4plus1 main layer and one 1×1 indexed pixel row. */
+function smx() {
+  const layer = concat(
+    u16le(1),
+    u16le(1),
+    u16le(0),
+    u16le(0),
+    u32le(35),
+    u32le(0),
+    u16le(0),
+    u16le(0),
+    u32le(2),
+    u32le(5),
+    bytes(0x01, 0x03),
+    bytes(0x07, 0, 0, 0, 0),
+  )
+  return concat(
+    ascii('SMPX'),
+    u16le(2),
+    u16le(1),
+    u32le(6 + layer.byteLength),
+    u32le(4),
+    new Uint8Array(16),
+    bytes(0x01, 0),
+    u32le(4),
+    layer,
+  )
+}
+
+/** AoE II DE SLDX with one 4×4 main layer containing one opaque-red DXT1 block. */
+function sld() {
+  return concat(
+    ascii('SLDX'),
+    u16le(4),
+    u16le(1),
+    u16le(0),
+    u16le(0x10),
+    u32le(0xff000000),
+    u16le(4),
+    u16le(4),
+    u16le(0),
+    u16le(0),
+    bytes(0x01, 0),
+    u16le(0),
+    u32le(26),
+    u16le(0),
+    u16le(0),
+    u16le(4),
+    u16le(4),
+    bytes(0, 1),
+    u16le(1),
+    bytes(0, 1),
+    bytes(0x00, 0xf8, 0, 0, 0, 0, 0, 0),
+    bytes(0, 0),
+  )
+}
+
 // ---------------------------------------------------------------- the corpus
 
 /** Every fixture: file name → builder. The name is what the acceptance corpus refers to. */
@@ -2538,6 +2647,10 @@ const FIXTURES = {
   'minimal.cur': cur,
   'minimal.dds': dds,
   'minimal.ddt': ddt,
+  'minimal.sld': sld,
+  'minimal.slp': slp,
+  'minimal.smp': smp,
+  'minimal.smx': smx,
   'minimal.dae': dae,
   'minimal.dmg': dmg,
   'minimal.docx': docx,

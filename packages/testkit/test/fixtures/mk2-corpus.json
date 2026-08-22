@@ -950,6 +950,51 @@
       "note": "RTS3 DDT with one genuine 4x4 DXT1 block decoded to opaque red RGBA pixels"
     },
     {
+      "extension": "mk2/microsoft-age-series",
+      "contributionId": "org.modkitx/sld",
+      "corpus": "synthetic",
+      "sample": "minimal.sld",
+      "minimumConfidence": 0.99,
+      "dataSource": "raster",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "SLDX v4 frame with one length-prefixed main layer and one opaque-red DXT1 block"
+    },
+    {
+      "extension": "mk2/microsoft-age-series",
+      "contributionId": "org.modkitx/slp",
+      "corpus": "synthetic",
+      "sample": "minimal.slp",
+      "minimumConfidence": 0.97,
+      "dataSource": "tree",
+      "intent": "inspect",
+      "note": "Genie SLP 2.0N frame with genuine outline and row-command offset tables"
+    },
+    {
+      "extension": "mk2/microsoft-age-series",
+      "contributionId": "org.modkitx/smp",
+      "corpus": "synthetic",
+      "sample": "minimal.smp",
+      "minimumConfidence": 0.99,
+      "dataSource": "tree",
+      "route": "opaque",
+      "intent": "inspect",
+      "expectSignatureMatch": true,
+      "note": "SMP$ frame offset table and main layer with relative outline and command offsets"
+    },
+    {
+      "extension": "mk2/microsoft-age-series",
+      "contributionId": "org.modkitx/smx",
+      "corpus": "synthetic",
+      "sample": "minimal.smx",
+      "minimumConfidence": 0.99,
+      "dataSource": "tree",
+      "route": "opaque",
+      "intent": "inspect",
+      "expectSignatureMatch": true,
+      "note": "SMPX v2 sprite with one length-bounded 4plus1 main layer and split command/pixel streams"
+    },
+    {
       "extension": "common/images",
       "contributionId": "org.modkitx/image-png",
       "corpus": "synthetic",

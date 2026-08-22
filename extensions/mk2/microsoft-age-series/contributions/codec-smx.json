@@ -21,16 +21,20 @@
     }
   ],
   "limitations": [
-    "The current codec inventories header and layer metadata only; sprite layer decoding is not implemented.",
-    "The manifest conservatively exposes runtime operations to Node hosts because the shared legacy RTS entrypoint reaches an external CommonJS WASM loader whose browser import graph is not yet verifiable."
+    "The codec validates SMPX header sizes plus sequential frame, layer, outline, command, and pixel-stream framing for 4plus1 and 8to5 sprites.",
+    "Indexed SMX command and pixel streams require an external game palette and are not exposed as decoded raster pixels.",
+    "SMPX structural detection works without a filename extension; sprite editing and writing are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "smx", "label": "AoE2 DE SMX sprite" }],
     "roles": ["media"],
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
-    "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
-    "match": { "extensions": ["smx"] },
+    "openIntents": ["probe", "inspect", "export"],
+    "match": {
+      "extensions": ["smx"],
+      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "534d5058" }]
+    },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {
@@ -42,7 +46,6 @@
       }
     ],
     "publishesDataSources": [
-      { "contract": "common.view/raster-image-source", "major": 1 },
       { "contract": "common.view/tree-data-source", "major": 1 },
       { "contract": "common.view/byte-range-source", "major": 1 }
     ],

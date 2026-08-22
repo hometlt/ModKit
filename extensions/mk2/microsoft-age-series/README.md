@@ -20,7 +20,7 @@ renames, converter defaults and v1 operations left without a handler — is data
 | `org.modkitx/ddt`     | `extensions/microsoft/age-series/codecs/ddt/codec.manifest.json`     | `src/ddt/codec.js`     | ported       |
 | `org.modkitx/mtrl`    | `extensions/microsoft/age-series/codecs/mtrl/codec.manifest.json`    | `src/mtrl/codec.js`    | port-pending |
 | `org.modkitx/prt`     | `extensions/microsoft/age-series/codecs/prt/codec.manifest.json`     | `src/prt/codec.js`     | port-pending |
-| `org.modkitx/sld`     | `extensions/microsoft/age-series/codecs/sld/codec.manifest.json`     | `src/sld/codec.js`     | port-pending |
-| `org.modkitx/slp`     | `extensions/microsoft/age-series/codecs/slp/codec.manifest.json`     | `src/slp/codec.js`     | port-pending |
-| `org.modkitx/smp`     | `extensions/microsoft/age-series/codecs/smp/codec.manifest.json`     | `src/smp/codec.js`     | port-pending |
-| `org.modkitx/smx`     | `extensions/microsoft/age-series/codecs/smx/codec.manifest.json`     | `src/smx/codec.js`     | port-pending |
+| `org.modkitx/sld`     | `extensions/microsoft/age-series/codecs/sld/codec.manifest.json`     | `src/sld/codec.js`     | ported       |
+| `org.modkitx/slp`     | `extensions/microsoft/age-series/codecs/slp/codec.manifest.json`     | `src/slp/codec.js`     | ported       |
+| `org.modkitx/smp`     | `extensions/microsoft/age-series/codecs/smp/codec.manifest.json`     | `src/smp/codec.js`     | ported       |
+| `org.modkitx/smx`     | `extensions/microsoft/age-series/codecs/smx/codec.manifest.json`     | `src/smx/codec.js`     | ported       |

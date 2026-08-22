@@ -17,7 +17,7 @@ import {
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const extensionRoot = join(repoRoot, 'extensions', 'mk2', 'microsoft-age-series')
 const fixtureRoot = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
-const formats = ['age-bar', 'age-drs', 'ddt'] as const
+const formats = ['age-bar', 'age-drs', 'ddt', 'sld', 'slp', 'smp', 'smx'] as const
 type Format = (typeof formats)[number]
 
 const budget: ResourceBudget = {
@@ -225,29 +225,127 @@ describe('ported Microsoft Age Series codecs', () => {
     await session.dispose()
   })
 
+  it('decodes an SLD main-layer DXT1 block and exposes bounded frame access', async () => {
+    const session = await open('sld', await fixture('sld'))
+    expect(await summary(session)).toMatchObject({
+      format: 'sld',
+      version: 4,
+      frames: 1,
+      layers: 1,
+      width: 4,
+      height: 4,
+      encoding: 'DXT1',
+    })
+    const lease = await session.dataSource('common.view/raster-image-source', 1)
+    const raster = lease.value as RasterImageSource
+    expect(await raster.info()).toMatchObject({
+      width: 4,
+      height: 4,
+      frames: 1,
+      decodedAccess: true,
+    })
+    if (raster.readRegion === undefined) throw new Error('SLD raster source has no decoded access')
+    const region = await raster.readRegion({
+      x: 0,
+      y: 0,
+      width: 4,
+      height: 4,
+      frame: 0,
+      pixelFormat: 'rgba8',
+      maxBytes: 64,
+    })
+    expect(region.pixels).toHaveLength(64)
+    expect(Array.from(region.pixels.slice(0, 4))).toEqual([255, 0, 0, 255])
+    expect(Array.from(region.pixels.slice(-4))).toEqual([255, 0, 0, 255])
+    await expect(
+      raster.readRegion({
+        x: 0,
+        y: 0,
+        width: 4,
+        height: 4,
+        frame: 1,
+        pixelFormat: 'rgba8',
+        maxBytes: 64,
+      }),
+    ).rejects.toThrow(/frame/u)
+    await lease.release()
+    await session.dispose()
+  })
+
+  it('copies skipped SLD blocks from the previous frame when the reuse flag is set', async () => {
+    const session = await open('sld', sldReuseBytes(await fixture('sld')))
+    const lease = await session.dataSource('common.view/raster-image-source', 1)
+    const raster = lease.value as RasterImageSource
+    if (raster.readRegion === undefined) throw new Error('SLD raster source has no decoded access')
+    const region = await raster.readRegion({
+      x: 0,
+      y: 0,
+      width: 4,
+      height: 4,
+      frame: 1,
+      pixelFormat: 'rgba8',
+      maxBytes: 64,
+    })
+    expect(Array.from(region.pixels.slice(0, 4))).toEqual([255, 0, 0, 255])
+    expect(Array.from(region.pixels.slice(-4))).toEqual([255, 0, 0, 255])
+    await lease.release()
+    await session.dispose()
+  })
+
+  it.each([
+    { format: 'slp' as const, expected: { version: '2.0N', frames: 1, maxWidth: 1, maxHeight: 1 } },
+    { format: 'smp' as const, expected: { version: 1, frames: 1, facets: 1, layers: 1 } },
+    { format: 'smx' as const, expected: { version: 2, frames: 1, layers: 1, encodings: '4plus1' } },
+  ])('validates $format frame and layer tables without claiming decoded pixels', async testCase => {
+    const session = await open(testCase.format, await fixture(testCase.format))
+    expect(await summary(session)).toMatchObject({ format: testCase.format, ...testCase.expected })
+    const descriptor = await session.descriptor()
+    expect(descriptor.dataSources.map(source => source.contract)).toContain(
+      'common.view/tree-data-source',
+    )
+    expect(descriptor.dataSources.map(source => source.contract)).not.toContain(
+      'common.view/raster-image-source',
+    )
+    const lease = await session.dataSource('common.view/tree-data-source', 1)
+    const tree = lease.value as TreeDataSource
+    expect((await tree.children(await tree.root(), { limit: 10 })).items).toHaveLength(1)
+    await lease.release()
+    await session.dispose()
+  })
+
   it.each(formats)('%s rejects a structurally corrupted source', async format => {
     const bytes = await fixture(format)
     const corrupted = bytes.slice()
     const view = new DataView(corrupted.buffer, corrupted.byteOffset, corrupted.byteLength)
     if (format === 'age-bar') view.setBigUint64(288, 0xffffffffffffffffn, true)
     else if (format === 'age-drs') view.setUint32(64 + 4, corrupted.byteLength + 1, true)
-    else view.setUint32(20, 7, true)
-    await expect(open(format, corrupted)).rejects.toThrow(/BAR|DRS|DDT/u)
+    else if (format === 'ddt') view.setUint32(20, 7, true)
+    else if (format === 'sld') view.setUint32(28, corrupted.byteLength + 1, true)
+    else if (format === 'slp') view.setUint32(68, corrupted.byteLength + 1, true)
+    else if (format === 'smp') view.setUint32(120, corrupted.byteLength + 1, true)
+    else view.setUint32(46, corrupted.byteLength + 1, true)
+    await expect(open(format, corrupted)).rejects.toThrow(/BAR|DRS|DDT|SLD|SLP|SMP|SMX/u)
   })
 
   it.each(formats)('%s enforces node and scalar budgets', async format => {
     const bytes = await fixture(format)
     await expect(open(format, bytes, { ...budget, maxNodes: 0 })).rejects.toThrow(/maxNodes/u)
-    if (format === 'ddt') {
+    if (format === 'ddt' || format === 'sld') {
       await expect(open(format, bytes, { ...budget, maxScalarBytes: 63 })).rejects.toThrow(
         /maxScalarBytes/u,
       )
       return
     }
-    const session = await open(format, bytes, { ...budget, maxScalarBytes: 1 })
-    const operation = session.operations().invoke('extract-entry', { entryId: '0' })
-    await expect(operation).rejects.toThrow(/maxScalarBytes/u)
-    await session.dispose()
+    if (format === 'age-bar' || format === 'age-drs') {
+      const session = await open(format, bytes, { ...budget, maxScalarBytes: 1 })
+      const operation = session.operations().invoke('extract-entry', { entryId: '0' })
+      await expect(operation).rejects.toThrow(/maxScalarBytes/u)
+      await session.dispose()
+      return
+    }
+    await expect(open(format, bytes, { ...budget, maxScalarBytes: 1 })).rejects.toThrow(
+      /maxScalarBytes/u,
+    )
   })
 })
 
@@ -262,5 +360,27 @@ function ddtBytes(flags: readonly number[], block: Uint8Array): Uint8Array {
   view.setUint32(16, 24, true)
   view.setUint32(20, block.byteLength, true)
   out.set(block, 24)
+  return out
+}
+
+function sldReuseBytes(firstFrame: Uint8Array): Uint8Array {
+  const out = new Uint8Array(firstFrame.byteLength + 32)
+  out.set(firstFrame)
+  const view = new DataView(out.buffer)
+  view.setUint16(6, 2, true)
+  const frame = firstFrame.byteLength
+  view.setUint16(frame, 4, true)
+  view.setUint16(frame + 2, 4, true)
+  out[frame + 8] = 0x01
+  view.setUint16(frame + 10, 1, true)
+  const layer = frame + 12
+  view.setUint32(layer, 18, true)
+  view.setUint16(layer + 8, 4, true)
+  view.setUint16(layer + 10, 4, true)
+  out[layer + 12] = 0x80
+  out[layer + 13] = 1
+  view.setUint16(layer + 14, 1, true)
+  out[layer + 16] = 1
+  out[layer + 17] = 0
   return out
 }
