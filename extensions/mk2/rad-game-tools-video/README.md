@@ -11,7 +11,7 @@ The conversion debt of every codec below — planes v2 has no home for, applied
 renames, converter defaults and v1 operations left without a handler — is data in
 `MK2-CONVERSION.json` beside this file.
 
-| contribution          | v1 manifest                                                          | module                 | port         |
-| --------------------- | -------------------------------------------------------------------- | ---------------------- | ------------ |
-| `org.modkitx/bink`    | `extensions/rad-game-tools/video/codecs/bink/codec.manifest.json`    | `src/bink/codec.js`    | port-pending |
-| `org.modkitx/smacker` | `extensions/rad-game-tools/video/codecs/smacker/codec.manifest.json` | `src/smacker/codec.js` | port-pending |
+| contribution          | v1 manifest                                                          | module                 | port   |
+| --------------------- | -------------------------------------------------------------------- | ---------------------- | ------ |
+| `org.modkitx/bink`    | `extensions/rad-game-tools/video/codecs/bink/codec.manifest.json`    | `src/bink/codec.js`    | ported |
+| `org.modkitx/smacker` | `extensions/rad-game-tools/video/codecs/smacker/codec.manifest.json` | `src/smacker/codec.js` | ported |

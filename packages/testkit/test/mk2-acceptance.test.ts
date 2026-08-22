@@ -106,6 +106,7 @@ const completedPortablePetroglyph = [
   find('org.modkitx/grey-goo-alo'),
   find('org.modkitx/petroglyph-meg'),
 ]
+const completedPortableRadVideo = [find('org.modkitx/bink'), find('org.modkitx/smacker')]
 const completedPortableVector = [find('org.modkitx/emf'), find('org.modkitx/wmf')]
 const completedPortableDocuments = [
   find('org.modkitx/csv'),
@@ -244,6 +245,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       ...completedPortableSpring,
       ...completedPortableWarzone,
       ...completedPortablePetroglyph,
+      ...completedPortableRadVideo,
       ...completedPortableVector,
       ...completedPortableModels,
       ...completedPortableVideos,
@@ -903,6 +905,19 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     expect([petroglyphMeg.readUInt32LE(0), petroglyphMeg.readUInt32LE(4)]).toEqual([
       0xffffffff, 0x3f7d70a4,
     ])
+    const bink = readFileSync(join(root, 'minimal.bik'))
+    expect([
+      bink.subarray(0, 4).toString('ascii'),
+      bink.readUInt32LE(20),
+      bink.readUInt32LE(24),
+    ]).toEqual(['BIKi', 640, 360])
+    const smacker = readFileSync(join(root, 'minimal.smk'))
+    expect([
+      smacker.subarray(0, 4).toString('ascii'),
+      smacker.readUInt32LE(12),
+      smacker.readUInt32LE(16),
+      smacker.readUInt32LE(20),
+    ]).toEqual(['SMK4', 320, 200, 30])
 
     // These checks intentionally do not import the codecs. They independently walk each model
     // fixture's standard wire representation so a generator/reader bug cannot agree with itself.

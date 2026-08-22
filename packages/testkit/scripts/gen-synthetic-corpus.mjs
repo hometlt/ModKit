@@ -2206,6 +2206,24 @@ function petroglyphMeg() {
   )
 }
 
+function bink() {
+  const out = new Uint8Array(28)
+  out.set(ascii('BIKi'))
+  new DataView(out.buffer).setUint32(20, 640, true)
+  new DataView(out.buffer).setUint32(24, 360, true)
+  return out
+}
+
+function smacker() {
+  const out = new Uint8Array(24)
+  out.set(ascii('SMK4'))
+  const view = new DataView(out.buffer)
+  view.setUint32(12, 320, true)
+  view.setUint32(16, 200, true)
+  view.setUint32(20, 30, true)
+  return out
+}
+
 /** EA SAGE BIG4: one stored entry, with the mixed-endian header and null-terminated index path. */
 function big() {
   const name = ascii('hello.txt\0')
@@ -4447,6 +4465,8 @@ const FIXTURES = {
   'minimal.warzone.map': warzoneMap,
   'minimal.grey-goo.alo': greyGooAlo,
   'minimal.petroglyph.meg': petroglyphMeg,
+  'minimal.bik': bink,
+  'minimal.smk': smacker,
   'minimal.sage.skudef': sageSkuDef,
   'minimal.cnc3-data.xml': cnc3Data,
   'minimal.cnc3-localization.csf': cnc3Localization,

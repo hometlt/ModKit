@@ -1789,6 +1789,24 @@
       "note": "Petroglyph MEG format 3 archive with one stored entry"
     },
     {
+      "extension": "mk2/rad-game-tools-video",
+      "contributionId": "org.modkitx/bink",
+      "corpus": "synthetic",
+      "sample": "minimal.bik",
+      "minimumConfidence": 0.99,
+      "dataSource": "video",
+      "note": "Bink 1 header with 640x360 dimensions"
+    },
+    {
+      "extension": "mk2/rad-game-tools-video",
+      "contributionId": "org.modkitx/smacker",
+      "corpus": "synthetic",
+      "sample": "minimal.smk",
+      "minimumConfidence": 0.99,
+      "dataSource": "video",
+      "note": "Smacker 4 header with dimensions and frame count"
+    },
+    {
       "extension": "common/images",
       "contributionId": "org.modkitx/image-png",
       "corpus": "synthetic",
