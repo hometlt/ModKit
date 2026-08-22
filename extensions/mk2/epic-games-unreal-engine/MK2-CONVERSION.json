@@ -28,7 +28,7 @@
       ],
       "droppedOperations": ["audio.decode", "audio.export", "audio.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/unreal-actorx": {
       "verdict": "mechanical",
@@ -89,7 +89,7 @@
       ],
       "droppedOperations": ["model.read", "model.render"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/unreal-uasset-texture": {
       "verdict": "mechanical",
@@ -104,7 +104,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.read"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/unreal-uasset-video": {
       "verdict": "mechanical",
@@ -119,7 +119,7 @@
       ],
       "droppedOperations": ["video.export", "video.extract", "video.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     }
   }
 }

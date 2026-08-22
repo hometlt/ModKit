@@ -1038,6 +1038,42 @@
     },
     {
       "extension": "mk2/epic-games-unreal-engine",
+      "contributionId": "org.modkitx/uasset",
+      "corpus": "synthetic",
+      "sample": "minimal.soundwave.uasset",
+      "minimumConfidence": 0.995,
+      "dataSource": "audio",
+      "note": "UE4.27 versioned package tables with an inline SoundWave export containing a standards-valid PCM RIFF/WAVE stream"
+    },
+    {
+      "extension": "mk2/epic-games-unreal-engine",
+      "contributionId": "org.modkitx/unreal-uasset",
+      "corpus": "synthetic",
+      "sample": "minimal.staticmesh.uasset",
+      "minimumConfidence": 0.995,
+      "dataSource": "model",
+      "note": "UE4.27 StaticMesh export with legacy FStaticMeshLODResources decoded to one indexed triangle and UV set"
+    },
+    {
+      "extension": "mk2/epic-games-unreal-engine",
+      "contributionId": "org.modkitx/unreal-uasset-texture",
+      "corpus": "synthetic",
+      "sample": "minimal.texture2d.uasset",
+      "minimumConfidence": 0.995,
+      "dataSource": "raster",
+      "note": "UE4.27 Texture2D export with one inline PF_B8G8R8A8 cooked mip decoded to a 2x2 RGBA checker"
+    },
+    {
+      "extension": "mk2/epic-games-unreal-engine",
+      "contributionId": "org.modkitx/unreal-uasset-video",
+      "corpus": "synthetic",
+      "sample": "minimal.media.uasset",
+      "minimumConfidence": 0.995,
+      "dataSource": "video",
+      "note": "UE4.27 BinkMediaPlayer export containing a structurally valid one-frame RIFF/AVI stream"
+    },
+    {
+      "extension": "mk2/epic-games-unreal-engine",
       "contributionId": "org.modkitx/unreal-pak",
       "corpus": "synthetic",
       "sample": "minimal.unreal.pak",

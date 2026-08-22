@@ -69,6 +69,10 @@ const completedPortableAgeSeries = [
   find('org.modkitx/smx'),
 ]
 const completedPortableUnreal = [
+  find('org.modkitx/uasset'),
+  find('org.modkitx/unreal-uasset'),
+  find('org.modkitx/unreal-uasset-texture'),
+  find('org.modkitx/unreal-uasset-video'),
   find('org.modkitx/unreal-actorx'),
   find('org.modkitx/unreal-pak'),
   find('org.modkitx/unreal-iostore'),
@@ -316,6 +320,86 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     ])
     expect(wmv.subarray(asfHeaderSize, asfHeaderSize + 16).toString('hex')).toBe(asfDataGuid)
     expect(Number(wmv.readBigUInt64LE(asfHeaderSize + 16))).toBe(50)
+
+    const unrealPackages = [
+      ['minimal.soundwave.uasset', 'SoundWave', 'VO_Line'],
+      ['minimal.staticmesh.uasset', 'StaticMesh', 'SM_Triangle'],
+      ['minimal.texture2d.uasset', 'Texture2D', 'T_Checker'],
+      ['minimal.media.uasset', 'BinkMediaPlayer', 'IntroMovie'],
+    ] as const
+    for (const [file, expectedClass, expectedExport] of unrealPackages) {
+      const data = readFileSync(join(root, file))
+      expect(data.readUInt32LE(0)).toBe(0x9e2a83c1)
+      expect(data.readInt32LE(4)).toBe(-7)
+      expect(data.readInt32LE(12)).toBe(522)
+      const totalHeaderSize = data.readInt32LE(24)
+      const folderBytes = data.readInt32LE(28)
+      const summaryTables = 32 + folderBytes
+      const nameCount = data.readInt32LE(summaryTables + 4)
+      const nameOffset = data.readInt32LE(summaryTables + 8)
+      const exportCount = data.readInt32LE(summaryTables + 20)
+      const exportOffset = data.readInt32LE(summaryTables + 24)
+      const importCount = data.readInt32LE(summaryTables + 28)
+      const importOffset = data.readInt32LE(summaryTables + 32)
+      const dependsOffset = data.readInt32LE(summaryTables + 36)
+      expect([nameCount, importCount, exportCount]).toEqual([4, 1, 1])
+      expect(nameOffset).toBeLessThan(importOffset)
+      expect(importOffset).toBeLessThan(exportOffset)
+      expect(exportOffset).toBeLessThan(dependsOffset)
+      expect(dependsOffset).toBeLessThan(totalHeaderSize)
+      const names = []
+      let nameCursor = nameOffset
+      for (let index = 0; index < nameCount; index += 1) {
+        const length = data.readInt32LE(nameCursor)
+        names.push(data.subarray(nameCursor + 4, nameCursor + 3 + length).toString('utf8'))
+        nameCursor += 4 + length + 4
+      }
+      const classIndex = data.readInt32LE(importOffset + 20)
+      const exportNameIndex = data.readInt32LE(exportOffset + 16)
+      expect(names[classIndex]).toBe(expectedClass)
+      expect(names[exportNameIndex]).toBe(expectedExport)
+      expect(data.readInt32LE(exportOffset)).toBe(-1)
+      const serialSize = Number(data.readBigInt64LE(exportOffset + 28))
+      const serialOffset = Number(data.readBigInt64LE(exportOffset + 36))
+      expect(serialOffset).toBe(totalHeaderSize)
+      expect(serialOffset + serialSize).toBe(data.byteLength)
+      expect(data.readInt32LE(dependsOffset)).toBe(0)
+    }
+
+    const soundWave = readFileSync(join(root, 'minimal.soundwave.uasset'))
+    const soundRiff = soundWave.indexOf('RIFF')
+    expect(soundWave.subarray(soundRiff + 8, soundRiff + 12).toString('ascii')).toBe('WAVE')
+    expect(soundWave.readUInt16LE(soundWave.indexOf('fmt ') + 8)).toBe(1)
+    expect(soundWave.indexOf('data')).toBeGreaterThan(soundWave.indexOf('fmt '))
+
+    const staticMesh = readFileSync(join(root, 'minimal.staticmesh.uasset'))
+    const staticHeaderSize = staticMesh.readInt32LE(24)
+    expect(staticMesh.readUInt32LE(staticHeaderSize + 10)).toBe(1)
+    expect([
+      staticMesh.readFloatLE(staticHeaderSize + 62),
+      staticMesh.readFloatLE(staticHeaderSize + 74),
+      staticMesh.readFloatLE(staticHeaderSize + 90),
+    ]).toEqual([0, 1, 1])
+    expect([...staticMesh.subarray(staticHeaderSize + 186, staticHeaderSize + 192)]).toEqual([
+      0, 0, 1, 0, 2, 0,
+    ])
+
+    const texture = readFileSync(join(root, 'minimal.texture2d.uasset'))
+    const pixelFormat = texture.indexOf('PF_B8G8R8A8')
+    expect(texture.readInt32LE(pixelFormat - 4)).toBe(12)
+    const mipHeader = pixelFormat + 12
+    expect([texture.readUInt32LE(mipHeader), texture.readUInt32LE(mipHeader + 4)]).toEqual([0, 1])
+    expect(texture.readUInt32LE(mipHeader + 16)).toBe(16)
+    expect([...texture.subarray(mipHeader + 32, mipHeader + 36)]).toEqual([0, 0, 255, 255])
+    expect([texture.readUInt32LE(mipHeader + 48), texture.readUInt32LE(mipHeader + 52)]).toEqual([
+      2, 2,
+    ])
+
+    const media = readFileSync(join(root, 'minimal.media.uasset'))
+    const mediaRiff = media.indexOf('RIFF')
+    expect(media.subarray(mediaRiff + 8, mediaRiff + 12).toString('ascii')).toBe('AVI ')
+    expect(media.indexOf('avih')).toBeGreaterThan(mediaRiff)
+    expect(media.indexOf('strh')).toBeGreaterThan(media.indexOf('avih'))
 
     const csv = readFileSync(join(root, 'minimal.csv'), 'ascii')
     expect(csv).toMatch(/^name,quote,note\r\n/u)

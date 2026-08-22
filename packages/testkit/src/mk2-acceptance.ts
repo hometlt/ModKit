@@ -37,6 +37,7 @@ import {
 } from '@modkitx-x3/host/node'
 import {
   revisionId,
+  type AudioMediaSource,
   type ArtifactSource,
   type AssetInput,
   type ArtifactByteSource,
@@ -50,6 +51,7 @@ import {
   type ResourceBudget,
   type RuntimeTarget,
   type TreeDataSource,
+  type VideoMediaSource,
 } from '@modkitx-x3/sdk'
 
 /** Which corpus a sample comes from; the report counts ported codecs separately per corpus. */
@@ -68,7 +70,15 @@ export interface Mk2CorpusEntry {
   /** Lower bound on the selected candidate's probe confidence. */
   readonly minimumConfidence: number
   /** Data source contract that must answer its first request. */
-  readonly dataSource: 'tree' | 'table' | 'byte-range' | 'model' | 'namespace' | 'raster'
+  readonly dataSource:
+    | 'tree'
+    | 'table'
+    | 'byte-range'
+    | 'model'
+    | 'namespace'
+    | 'raster'
+    | 'audio'
+    | 'video'
   /** Optional exact RGBA8 oracle for a raster case's first decoded pixel. */
   readonly expectedFirstPixelRgba?: readonly [number, number, number, number]
   /**
@@ -165,6 +175,8 @@ const DATA_SOURCE_CONTRACTS = {
   model: 'common.view/model-scene-source',
   namespace: 'common.view/namespace-entry-source',
   raster: 'common.view/raster-image-source',
+  audio: 'common.view/audio-media-source',
+  video: 'common.view/video-media-source',
 } as const
 
 function directoryExists(path: string): boolean {
@@ -608,6 +620,20 @@ export async function runMk2AcceptanceCase(
           `${contract} first pixel was ${[...region.pixels].join(',')}, expected ${entry.expectedFirstPixelRgba.join(',')}`,
         )
       }
+    } else if (entry.dataSource === 'audio') {
+      const audio = lease.value as AudioMediaSource
+      const info = await audio.info()
+      if (info.tracks.length === 0) return fail(`${contract} exposes no audio tracks`)
+      const encoded = await audio.encoded(info.tracks[0]?.id)
+      if ((await encoded.read(0n, 12)).byteLength === 0)
+        return fail(`${contract} exposes no encoded audio bytes`)
+    } else if (entry.dataSource === 'video') {
+      const video = lease.value as VideoMediaSource
+      const info = await video.info()
+      if (info.tracks.length === 0) return fail(`${contract} exposes no video tracks`)
+      const encoded = await video.encoded()
+      if ((await encoded.read(0n, 12)).byteLength === 0)
+        return fail(`${contract} exposes no encoded video bytes`)
     } else {
       const table = lease.value as unknown as { columns(): Promise<readonly unknown[]> }
       const columns = await table.columns()

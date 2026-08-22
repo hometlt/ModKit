@@ -4,14 +4,17 @@ import { pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   revisionId,
+  type AudioMediaSource,
   type ArtifactByteSource,
   type AssetInput,
   type Codec,
   type ContributionContext,
   type ModelSceneSource,
   type NamespaceEntrySource,
+  type RasterImageSource,
   type ResourceBudget,
   type TreeDataSource,
+  type VideoMediaSource,
 } from '@modkitx-x3/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
@@ -178,6 +181,142 @@ async function extract(session: Awaited<ReturnType<typeof open>>, entryId: strin
 }
 
 describe('ported Epic Games / Unreal Engine codecs', () => {
+  it('extracts an embedded PCM stream from a real UE4 SoundWave export', async () => {
+    const bytes = await fixture('minimal.soundwave.uasset')
+    const session = await open('uasset', bytes)
+    expect(await summary(session)).toMatchObject({
+      format: 'uasset',
+      engine: 'UE4/522',
+      exportClass: 'SoundWave',
+      exportName: 'VO_Line',
+      embeddedFormat: 'wav',
+      channels: 1,
+      sampleRate: 8000,
+      bitsPerSample: 8,
+      durationMs: 1,
+    })
+    const lease = await session.dataSource('common.view/audio-media-source', 1)
+    const audio = lease.value as AudioMediaSource
+    expect(await audio.info()).toMatchObject({
+      durationMs: 1,
+      seekable: true,
+      tracks: [{ id: 'stream-0', codec: 'pcm', channels: 1, sampleRate: 8000 }],
+    })
+    const encoded = await audio.encoded('stream-0')
+    expect(new TextDecoder('ascii').decode(await encoded.read(0n, 12))).toBe('RIFF(\0\0\0WAVE')
+    await lease.release()
+    await session.dispose()
+  })
+
+  it('decodes a UE4 StaticMesh export to real triangle geometry', async () => {
+    const bytes = await fixture('minimal.staticmesh.uasset')
+    const session = await open('unreal-uasset', bytes)
+    expect(await summary(session)).toMatchObject({
+      format: 'unreal-uasset',
+      engine: 'UE4/522',
+      exportClass: 'StaticMesh',
+      exportName: 'SM_Triangle',
+      vertices: 3,
+      triangles: 1,
+      sections: 1,
+      bounds: { min: [0, 0, 0], max: [1, 1, 0] },
+    })
+    const lease = await session.dataSource('common.view/model-scene-source', 1)
+    const model = lease.value as ModelSceneSource
+    expect(await model.primitive?.('primitive-0', { maxBytes: 1024 })).toMatchObject({
+      topology: 'triangles',
+      positions: new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+      indices: new Uint32Array([0, 1, 2]),
+      textureCoordinates: new Float32Array([0, 0, 1, 0, 0, 1]),
+    })
+    await lease.release()
+    await session.dispose()
+  })
+
+  it('decodes a cooked UE4 Texture2D inline BGRA mip to RGBA regions', async () => {
+    const bytes = await fixture('minimal.texture2d.uasset')
+    const session = await open('unreal-uasset-texture', bytes)
+    expect(await summary(session)).toMatchObject({
+      format: 'unreal-uasset-texture',
+      engine: 'UE4/522',
+      exportClass: 'Texture2D',
+      exportName: 'T_Checker',
+      pixelFormat: 'PF_B8G8R8A8',
+      width: 2,
+      height: 2,
+      mipLevels: 1,
+    })
+    const lease = await session.dataSource('common.view/raster-image-source', 1)
+    const raster = lease.value as RasterImageSource
+    expect(await raster.info()).toMatchObject({ width: 2, height: 2, decodedAccess: true })
+    await expect(
+      raster.readRegion?.({
+        x: 0,
+        y: 0,
+        width: 2,
+        height: 2,
+        pixelFormat: 'rgba8',
+        maxBytes: 16,
+      }),
+    ).resolves.toMatchObject({
+      pixels: new Uint8Array([
+        255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 128,
+      ]),
+    })
+    await lease.release()
+    await session.dispose()
+  })
+
+  it('extracts a standard AVI stream from an Unreal media export', async () => {
+    const bytes = await fixture('minimal.media.uasset')
+    const session = await open('unreal-uasset-video', bytes)
+    expect(await summary(session)).toMatchObject({
+      format: 'unreal-uasset-video',
+      engine: 'UE4/522',
+      exportClass: 'BinkMediaPlayer',
+      exportName: 'IntroMovie',
+      embeddedFormat: 'avi',
+      codec: 'DIB',
+      width: 1,
+      height: 1,
+      frames: 1,
+      durationMs: 33,
+    })
+    const lease = await session.dataSource('common.view/video-media-source', 1)
+    const video = lease.value as VideoMediaSource
+    expect(await video.info()).toMatchObject({
+      durationMs: 33,
+      tracks: [{ id: 'track-0', kind: 'video', codec: 'DIB', width: 1, height: 1 }],
+    })
+    const encoded = await video.encoded()
+    const header = await encoded.read(0n, 12)
+    expect(new TextDecoder('ascii').decode(header.subarray(0, 4))).toBe('RIFF')
+    expect(new DataView(header.buffer, header.byteOffset, header.byteLength).getUint32(4, true)).toBe(
+      228,
+    )
+    expect(new TextDecoder('ascii').decode(header.subarray(8))).toBe('AVI ')
+    await lease.release()
+    await session.dispose()
+  })
+
+  it('rejects corrupt Unreal packages and enforces package/decoded budgets', async () => {
+    const model = await fixture('minimal.staticmesh.uasset')
+    const corrupted = model.slice()
+    new DataView(corrupted.buffer).setUint32(0, 0, true)
+    await expect(open('unreal-uasset', corrupted)).rejects.toThrow(/Unreal package/u)
+    await expect(open('unreal-uasset', model, { ...budget, maxNodes: 0 })).rejects.toThrow(
+      /maxNodes/u,
+    )
+    await expect(open('unreal-uasset', model, { ...budget, maxScalarBytes: 1 })).rejects.toThrow(
+      /maxScalarBytes/u,
+    )
+
+    const texture = await fixture('minimal.texture2d.uasset')
+    const badTexture = texture.slice()
+    badTexture[badTexture.byteLength - 1] = 2
+    await expect(open('unreal-uasset-texture', badTexture)).rejects.toThrow(/Texture2D/u)
+  })
+
   it('resolves a real UE5 UTOC/UCAS bundle and extracts stored blocks', async () => {
     const [utoc, ucas] = await Promise.all([
       fixture('minimal.unreal.utoc'),

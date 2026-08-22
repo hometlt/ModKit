@@ -2792,6 +2792,195 @@ function actorX() {
   )
 }
 
+/**
+ * UE4.27 versioned package with real FPackageFileSummary, name/import/export/dependency maps,
+ * followed by one inline export. This is the legacy .uasset layout documented by Epic's
+ * FLinkerSave/FObjectExport serialization and exercised by UEViewer's UnPackage reader.
+ */
+function unrealPackage(exportClass, exportName, payload) {
+  const names = ['/Script/Engine', 'Class', exportClass, exportName]
+  const nameOffset = 256
+  const nameBytes = names.map(value => concat(u32le(value.length + 1), ascii(value), bytes(0), u32le(0)))
+  const align16 = value => (value + 15) & ~15
+  const importOffset = align16(nameOffset + nameBytes.reduce((sum, value) => sum + value.byteLength, 0))
+  const exportOffset = importOffset + 28
+  const exportStride = 104
+  const dependsOffset = exportOffset + exportStride
+  const totalHeaderSize = align16(dependsOffset + 4)
+  const out = new Uint8Array(totalHeaderSize + payload.byteLength)
+  const view = new DataView(out.buffer)
+  view.setUint32(0, 0x9e2a83c1, true)
+  view.setInt32(4, -7, true)
+  view.setInt32(8, 0, true)
+  view.setInt32(12, 522, true)
+  view.setInt32(16, 0, true)
+  view.setInt32(20, 0, true)
+  view.setInt32(24, totalHeaderSize, true)
+  const folder = '/Game/Demo'
+  view.setInt32(28, folder.length + 1, true)
+  out.set(ascii(folder), 32)
+  let cursor = 32 + folder.length
+  out[cursor++] = 0
+  view.setUint32(cursor, 0, true)
+  cursor += 4
+  view.setInt32(cursor, names.length, true)
+  cursor += 4
+  view.setInt32(cursor, nameOffset, true)
+  cursor += 4
+  view.setInt32(cursor, 0, true)
+  cursor += 4
+  view.setInt32(cursor, 0, true)
+  cursor += 4
+  view.setInt32(cursor, 1, true)
+  cursor += 4
+  view.setInt32(cursor, exportOffset, true)
+  cursor += 4
+  view.setInt32(cursor, 1, true)
+  cursor += 4
+  view.setInt32(cursor, importOffset, true)
+  cursor += 4
+  view.setInt32(cursor, dependsOffset, true)
+
+  cursor = nameOffset
+  for (const entry of nameBytes) {
+    out.set(entry, cursor)
+    cursor += entry.byteLength
+  }
+  const writeFName = (offset, index) => {
+    view.setInt32(offset, index, true)
+    view.setInt32(offset + 4, 0, true)
+  }
+  writeFName(importOffset, 0)
+  writeFName(importOffset + 8, 1)
+  view.setInt32(importOffset + 16, 0, true)
+  writeFName(importOffset + 20, 2)
+  view.setInt32(exportOffset, -1, true)
+  writeFName(exportOffset + 16, 3)
+  view.setBigInt64(exportOffset + 28, BigInt(payload.byteLength), true)
+  view.setBigInt64(exportOffset + 36, BigInt(totalHeaderSize), true)
+  view.setInt32(dependsOffset, 0, true)
+  out.set(payload, totalHeaderSize)
+  return out
+}
+
+/** UE4.27 legacy FStaticMeshLODResources containing one triangle and one UV set. */
+function unrealStaticMeshPayload() {
+  const out = new Uint8Array(264)
+  const view = new DataView(out.buffer)
+  let cursor = 8
+  out[cursor++] = 1
+  out[cursor++] = 0
+  view.setUint32(cursor, 1, true)
+  cursor += 4
+  for (const value of [0, 0, 1, 0, 2, 1, 1]) {
+    view.setUint32(cursor, value, true)
+    cursor += 4
+  }
+  cursor += 4
+  for (const value of [12, 3, 12, 3]) {
+    view.setUint32(cursor, value, true)
+    cursor += 4
+  }
+  for (const position of [
+    [0, 0, 0],
+    [1, 0, 0],
+    [0, 1, 0],
+  ])
+    for (const value of position) {
+      view.setFloat32(cursor, value, true)
+      cursor += 4
+    }
+  view.setUint16(cursor, 1, true)
+  cursor += 2
+  for (const value of [1, 12, 3, 0, 0, 12, 3]) {
+    view.setUint32(cursor, value, true)
+    cursor += 4
+  }
+  const uvs = [
+    [0x0000, 0x0000],
+    [0x3c00, 0x0000],
+    [0x0000, 0x3c00],
+  ]
+  for (const uv of uvs) {
+    out.set(bytes(255, 128, 128, 255, 128, 128, 255, 255), cursor)
+    cursor += 8
+    view.setUint16(cursor, uv[0], true)
+    view.setUint16(cursor + 2, uv[1], true)
+    cursor += 4
+  }
+  view.setUint16(cursor, 1, true)
+  cursor += 2
+  view.setUint32(cursor, 0, true)
+  cursor += 4
+  view.setUint32(cursor, 0, true)
+  cursor += 4
+  view.setUint32(cursor, 0, true)
+  cursor += 4
+  view.setUint32(cursor, 1, true)
+  cursor += 4
+  view.setUint32(cursor, 6, true)
+  cursor += 4
+  out.set(bytes(0, 0, 1, 0, 2, 0), cursor)
+  cursor += 6
+  for (let index = 0; index < 4; index += 1) {
+    view.setUint32(cursor, 0, true)
+    view.setUint32(cursor + 4, 0, true)
+    view.setUint32(cursor + 8, 0, true)
+    cursor += 12
+  }
+  cursor += 24
+  if (cursor !== out.byteLength) throw new Error('Unreal StaticMesh fixture size drifted')
+  return out
+}
+
+/** UE4.27 inline FTexture2DMipMap with a 2x2 uncompressed BGRA8 checker. */
+function unrealTexturePayload() {
+  const format = 'PF_B8G8R8A8'
+  const pixels = bytes(
+    0x00,
+    0x00,
+    0xff,
+    0xff,
+    0x00,
+    0xff,
+    0x00,
+    0xff,
+    0xff,
+    0x00,
+    0x00,
+    0xff,
+    0xff,
+    0xff,
+    0xff,
+    0x80,
+  )
+  return concat(
+    new Uint8Array(8),
+    u32le(format.length + 1),
+    ascii(format),
+    bytes(0),
+    u32le(0),
+    u32le(1),
+    u32le(1),
+    u16le(0),
+    u16le(0),
+    u32le(pixels.byteLength),
+    u32le(pixels.byteLength),
+    u64le(0n),
+    pixels,
+    u32le(2),
+    u32le(2),
+    u32le(1),
+  )
+}
+
+const unrealSoundWave = () => unrealPackage('SoundWave', 'VO_Line', concat(new Uint8Array(8), wav()))
+const unrealStaticMesh = () =>
+  unrealPackage('StaticMesh', 'SM_Triangle', unrealStaticMeshPayload())
+const unrealTexture = () => unrealPackage('Texture2D', 'T_Checker', unrealTexturePayload())
+const unrealVideo = () =>
+  unrealPackage('BinkMediaPlayer', 'IntroMovie', concat(new Uint8Array(8), avi()))
+
 /** UE4 Pak v8b legacy index with two stored entries and real SHA-1 digests. */
 function unrealPak() {
   const fixed = (value, length) => {
@@ -2928,6 +3117,10 @@ const ioStoreFixture = unrealIoStore()
 /** Every fixture: file name → builder. The name is what the acceptance corpus refers to. */
 const FIXTURES = {
   'minimal.actorx.psk': actorX,
+  'minimal.soundwave.uasset': unrealSoundWave,
+  'minimal.staticmesh.uasset': unrealStaticMesh,
+  'minimal.texture2d.uasset': unrealTexture,
+  'minimal.media.uasset': unrealVideo,
   'minimal.unreal.pak': unrealPak,
   'minimal.unreal.utoc': () => ioStoreFixture.utoc,
   'minimal.unreal.ucas': () => ioStoreFixture.ucas,
