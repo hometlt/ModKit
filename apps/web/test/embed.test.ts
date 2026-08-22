@@ -105,6 +105,7 @@ interface ViewerElement extends HTMLElement {
   readonly activeView: string
   readonly views: readonly { readonly id: string; readonly label: string }[]
   file: unknown
+  fileHandle: unknown
 }
 
 /** State of one `<modkit-viewer>`, read from the page. */
@@ -425,6 +426,86 @@ describe('modkit-viewer on a third-party page', () => {
     })
     expect(inline).toEqual({ state: 'ready', activeView: 'table', title: 'inline.csv' })
   })
+
+  it('saves through an explicitly delegated File System Access handle', async () => {
+    const saved = await page.evaluate(async () => {
+      let contents = 'id,name\n1,Nova\n'
+      let modified = 1
+      const handle = {
+        kind: 'file' as const,
+        name: 'delegated.csv',
+        async getFile() {
+          return new File([contents], this.name, { type: 'text/csv', lastModified: modified })
+        },
+        async queryPermission() {
+          return 'granted' as const
+        },
+        async requestPermission() {
+          return 'granted' as const
+        },
+        async createWritable() {
+          let replacement = new Uint8Array()
+          return {
+            async write(bytes: Uint8Array) {
+              replacement = bytes.slice()
+            },
+            async close() {
+              contents = new TextDecoder().decode(replacement)
+              modified += 1
+            },
+            async abort() {
+              replacement = new Uint8Array()
+            },
+          }
+        },
+      }
+      const node = document.createElement('modkit-viewer') as unknown as ViewerElement
+      node.fileHandle = handle
+      node.setAttribute('view', 'text-editor')
+      document.body.append(node)
+      for (let attempt = 0; attempt < 300; attempt += 1) {
+        if (node.getAttribute('data-mk-state') === 'ready' && node.activeView === 'text-editor')
+          break
+        await new Promise(done => setTimeout(done, 100))
+      }
+      const input = node.shadowRoot?.querySelector('textarea')
+      const button = node.shadowRoot?.querySelector('[data-modkit-action="save"]')
+      if (!(input instanceof HTMLTextAreaElement) || !(button instanceof HTMLButtonElement)) {
+        return {
+          state: node.getAttribute('data-mk-state') ?? '',
+          view: node.activeView,
+          views: node.views.map(view => view.id),
+          contents,
+          editor: false,
+        }
+      }
+      input.value = 'id,name\n1,Raynor\n'
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+      button.click()
+      for (let attempt = 0; attempt < 200; attempt += 1) {
+        const status = node.shadowRoot?.querySelector('[data-mk-part="viewer.status"]')?.textContent
+        if (status === 'Saved') break
+        await new Promise(done => setTimeout(done, 50))
+      }
+      const answer = {
+        state: node.getAttribute('data-mk-state') ?? '',
+        view: node.activeView,
+        views: node.views.map(view => view.id),
+        contents,
+        editor: true,
+      }
+      node.remove()
+      return answer
+    })
+    expect(saved).toMatchObject({
+      state: 'ready',
+      view: 'text-editor',
+      editor: true,
+      contents: 'id,name\n1,Raynor\n',
+    })
+    expect(saved.views).toContain('text-editor')
+    expect(saved.views).toContain('hex-editor')
+  }, 90_000)
 
   it('works verbatim under the VIEWER_CSP the ui package publishes', async () => {
     const strict = await browser.newPage()

@@ -153,6 +153,22 @@ Monaco, Extension Manager — это проверяется гейтом мин�
 Контракт встраивания (CSP, origin, Shadow DOM) описан в шапке `apps/web/src/embed.ts` — он
 **измерен** тестами, а не предположен.
 
+`src` и свойство `file` намеренно доступны только для просмотра: URL/Blob не дают компоненту
+права что-либо перезаписывать. Минимальное редактирование включается только явной передачей
+страницей writable File System Access handle:
+
+```js
+const [handle] = await window.showOpenFilePicker()
+const viewer = document.querySelector('modkit-viewer')
+viewer.fileHandle = handle
+viewer.view = 'text-editor'
+```
+
+После этого `text-editor` и `hex-editor` сохраняют в тот же файл через проверку revision и запрос
+`readwrite`-разрешения из жеста Save. Компонент отражает несохранённое состояние атрибутом
+`data-mk-dirty` и сообщает результат событием `modkit-viewer-edit-status`. Без переданного handle
+редакторы не предлагаются.
+
 Если embed должен принимать каталог расширений по URL, origin разрешает **сборка**, а не страница:
 
 ```sh

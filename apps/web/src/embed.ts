@@ -63,8 +63,10 @@
  * reach modkit's DOM, and modkit's rules touch nothing outside the element. Theme and density are
  * read from `data-mk-theme` / `data-mk-density` on the element itself.
  *
- * **Read-only.** v1 passes no `editorPorts`, so every editable stage drops exactly as it did in the
- * PWA before the File System Access arm landed: an embedded viewer shows a file, it never saves one.
+ * **Editing.** `src` and the `file` property stay read-only: neither gives this element authority
+ * to write anywhere. A page may explicitly assign a File System Access handle to `fileHandle`;
+ * only then are editor ports composed, write permission is requested from a Save click, and the
+ * changed bytes are committed back through the same revision-checked browser backend as the PWA.
  *
  * **Extension catalogs.** The bundled catalog is always present. A deployment may additionally
  * compile an origin allowlist into `embed.js`; an element may point `extension-catalog` at a JSON
@@ -83,7 +85,9 @@ import {
   type AnyDescriptor,
   type ArtifactByteSource,
   type OperationSession,
+  type PermissionGrant,
 } from '@modkitx-x3/sdk'
+import type { OpenedSubject, SubjectEditorPorts } from '@modkitx-x3/host'
 import type {
   BrowserBlobConstructorLike,
   BrowserMessageChannelConstructorLike,
@@ -100,7 +104,22 @@ import {
 import { element, setPart, setState, setViewerText } from '@modkitx-x3/ui/viewer'
 
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
-import { createSingleFileAccess, type WebBlobSlice, type WebFileLike } from './files.js'
+import {
+  createSingleFileAccess,
+  isWritableHandle,
+  type WebBlobSlice,
+  type WebFileHandleLike,
+  type WebFileLike,
+  type WebWritableFileHandleLike,
+} from './files.js'
+import {
+  createWebEditingArm,
+  describeEditability,
+  requestWriteAccess,
+  sourceRevisionToken,
+  sourceUriFor,
+  type WebEditingArm,
+} from './editing.js'
 import {
   createWebSubjectServices,
   type WebExtensionCatalog,
@@ -586,8 +605,13 @@ export function fileLikeFrom(blob: EmbedBlobLike, fallbackName: string): WebFile
 }
 
 /** Bytes in memory as the random-access source `openSubject` asks for. */
-function bytesSource(name: string, bytes: Uint8Array, token: string): ArtifactByteSource {
-  const uri = `memory://modkit-embed/${encodeURIComponent(name)}`
+function bytesSource(
+  name: string,
+  bytes: Uint8Array,
+  token: string,
+  sourceUri?: string,
+): ArtifactByteSource {
+  const uri = sourceUri ?? `memory://modkit-embed/${encodeURIComponent(name)}`
   return {
     kind: 'bytes',
     ref: { id: uri, uri },
@@ -610,22 +634,36 @@ let openCount = 0
 /**
  * Open one subject through the shared host, as a `PreviewSession`.
  *
- * The grant carries `read-source` and nothing else: this element has no writer, so asking for
- * `write-source` would be asking for something it could not use. `undefined` means no codec claimed
- * the file, and `createCodecPreview` then shows its text/hex fallback rather than an empty box.
+ * The grant carries `write-source` only when the page supplied a writable handle. `undefined`
+ * means no codec claimed the file, and `createCodecPreview` then shows its text/hex fallback rather
+ * than an empty box.
  */
+interface EmbedPreviewSession extends PreviewSession {
+  readonly opened: OpenedSubject
+  readonly grant: PermissionGrant
+}
+
 async function openEmbedSession(
   host: EmbedHost,
   entry: ExplorerEntry,
   bytes: Uint8Array,
+  options: {
+    readonly token: string
+    readonly sourceUri?: string
+    readonly writable: boolean
+  },
   signal?: AbortSignal,
-): Promise<PreviewSession | undefined> {
+): Promise<EmbedPreviewSession | undefined> {
   openCount += 1
+  const grant: PermissionGrant = {
+    id: `modkit-embed-${openCount}`,
+    classes: options.writable ? ['read-source', 'write-source'] : ['read-source'],
+  }
   const result = await host.services.open({
-    source: bytesSource(entry.name, bytes, `provider-token:embed-${openCount}-${bytes.byteLength}`),
+    source: bytesSource(entry.name, bytes, options.token, options.sourceUri),
     path: entry.name,
     intent: 'full',
-    grant: { id: `modkit-embed-${openCount}`, classes: ['read-source'] },
+    grant,
     budget: {
       maxInputBytes: BigInt(EMBED_MAXIMUM_BYTES),
       maxDepth: 256,
@@ -652,6 +690,8 @@ async function openEmbedSession(
   const operations = session.operations()
   host.operations.set(key, operations)
   return {
+    opened: result,
+    grant,
     descriptor: () => session.descriptor(),
     dataSource: (contract: string, major: number) => session.dataSource(contract, major),
     async operations() {
@@ -716,6 +756,8 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
     #handle: PreviewHandle | undefined
     #abort: AbortController | undefined
     #blob: EmbedBlobLike | undefined
+    #fileHandle: WebFileHandleLike | undefined
+    #editing: WebEditingArm | undefined
     #styled = false
     /** Bumped by every load; a load whose token is stale mounts nothing. */
     #generation = 0
@@ -766,6 +808,21 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
 
     set file(value: EmbedBlobLike | undefined) {
       this.#blob = value
+      if (value !== undefined) this.#fileHandle = undefined
+      if (this.isConnected) void this.#load()
+    }
+
+    /**
+     * A File System Access handle explicitly delegated by the embedding page. Unlike `file`, this
+     * may carry write authority; editable stages are offered only when `createWritable` exists.
+     */
+    get fileHandle(): WebFileHandleLike | undefined {
+      return this.#fileHandle
+    }
+
+    set fileHandle(value: WebFileHandleLike | undefined) {
+      this.#fileHandle = value
+      if (value !== undefined) this.#blob = undefined
       if (this.isConnected) void this.#load()
     }
 
@@ -855,7 +912,10 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
 
     async #unmount(): Promise<void> {
       const handle = this.#handle
+      const editing = this.#editing
       this.#handle = undefined
+      this.#editing = undefined
+      this.removeAttribute('data-mk-dirty')
       this.#picker.hidden = true
       this.#picker.replaceChildren()
       if (handle !== undefined) {
@@ -865,6 +925,7 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
           console.warn('[modkit-viewer] unmount failed', error)
         }
       }
+      await editing?.dispose()
       this.#stage.replaceChildren()
     }
 
@@ -881,6 +942,8 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
 
     /** The bytes to open: the `file` property when the page set one, else `src`. */
     async #read(name: string, signal: AbortSignal): Promise<WebFileLike> {
+      const fileHandle = this.#fileHandle
+      if (fileHandle !== undefined) return fileHandle.getFile()
       const blob = this.#blob
       if (blob !== undefined) return fileLikeFrom(blob, name)
       const src = this.getAttribute('src') ?? ''
@@ -924,7 +987,11 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
         this.ownerDocument.baseURI,
       )
       setViewerText(this.#title, name, 300)
-      if (this.#blob === undefined && (this.getAttribute('src') ?? '') === '') {
+      if (
+        this.#fileHandle === undefined &&
+        this.#blob === undefined &&
+        (this.getAttribute('src') ?? '') === ''
+      ) {
         /*
          * Not a failure. A page that appends the element and assigns `.file` a tick later passes
          * through this state, and so does one that will set `src` when its own data arrives.
@@ -978,23 +1045,91 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
           )
           return
         }
-        const { access, entry } = createSingleFileAccess(file)
+        const fileHandle = this.#fileHandle
+        const { access, entry } = createSingleFileAccess(file, fileHandle)
+        const snapshot = await access.snapshotOf(entry.id, controller.signal)
         const bytes = await access.read(entry.id, EMBED_MAXIMUM_BYTES, controller.signal)
         if (!current()) return
+        const editability = await describeEditability(access, entry.id, entry.name)
+        const writable =
+          editability.editable && snapshot !== undefined && isWritableHandle(fileHandle)
+        const token =
+          snapshot === undefined
+            ? `provider-token:embed-${generation}-${bytes.byteLength}`
+            : sourceRevisionToken(snapshot)
+        const writableHandles = new Map<string, WebWritableFileHandleLike>()
+        const sourceUri = writable ? sourceUriFor(entry.id) : undefined
+        if (writable && sourceUri !== undefined) writableHandles.set(sourceUri, fileHandle)
+        let editorPorts: SubjectEditorPorts | undefined
+        if (writable) {
+          const editing = createWebEditingArm({
+            inventory: host.services.main.inventory,
+            handleFor: sourceId => writableHandles.get(sourceId),
+            onNotice: message => {
+              if (!current()) return
+              this.#say(message, 'ready')
+              this.dispatchEvent(
+                new CustomEvent('modkit-viewer-edit-status', {
+                  detail: { message },
+                  bubbles: false,
+                }),
+              )
+            },
+            onDirty: (_entryId, dirty) => {
+              if (!current()) return
+              if (dirty) this.setAttribute('data-mk-dirty', '')
+              else this.removeAttribute('data-mk-dirty')
+            },
+            async ensureWriteAccess() {
+              const currentAccess = await describeEditability(access, entry.id, entry.name)
+              if (
+                currentAccess.state === 'granted' ||
+                currentAccess.state === 'no-permission-surface'
+              )
+                return 'granted'
+              if (currentAccess.state !== 'prompt') return 'denied'
+              const asked = await requestWriteAccess(access)
+              return asked.state === 'granted'
+                ? 'granted'
+                : asked.state === 'denied'
+                  ? 'denied'
+                  : 'prompt'
+            },
+          })
+          this.#editing = editing
+        }
         /*
          * One previewer per load, because the preferred stage is per element. It is a closure over
          * the shared host's stage list — the stages themselves, the inventory and the workers are
          * composed once per asset base.
          *
-         * No `editorPorts`: every editable stage drops, which is the honest shape of a viewer that
-         * has no way to write a file back.
+         * `editorPorts` appears only after the subject opened under the writable handle's pinned
+         * revision. A `src`, Blob or plain File therefore cannot accidentally gain an editor.
          */
         const previewer = createCodecPreview({
           supported: host.services.supportedExtensions,
           stages: preferStage(host.stages, this.getAttribute('view') ?? undefined),
           fallback: WEB_PREVIEW_FALLBACK,
-          openSession: (openedEntry, openedBytes, signal) =>
-            openEmbedSession(host, openedEntry, openedBytes, signal),
+          editorPorts: () => editorPorts,
+          openSession: async (openedEntry, openedBytes, signal) => {
+            const session = await openEmbedSession(
+              host,
+              openedEntry,
+              openedBytes,
+              { token, writable, ...(sourceUri === undefined ? {} : { sourceUri }) },
+              signal,
+            )
+            if (session !== undefined && writable) {
+              editorPorts = this.#editing?.editorFor({
+                entryId: entry.id,
+                name: entry.name,
+                opened: session.opened,
+                grant: session.grant,
+                bytes,
+              })?.ports
+            }
+            return session
+          },
         })
         const handle = await previewer.open(this.#stage, entry, bytes, controller.signal)
         if (!current()) {
