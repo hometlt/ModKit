@@ -21,9 +21,8 @@
     }
   ],
   "limitations": [
-    "The codec lists and extracts embedded DIDX/DATA WEM streams and reports HIRC references; it does not synthesize sound events or author SoundBanks.",
-    "External stream IDs are inventory-only in this codec; a host must resolve referenced WEM siblings and open them separately, while compressed WEM conversion requires an injected transcoder.",
-    "Declarative routing is extension-first because manifest v1 cannot express the legacy extension-or-BKHD-sniffer behavior without making the evidence conjunctive."
+    "Parses bounded BKHD/DIDX/DATA chunk streams, validates every embedded range as RIFF/RIFX WEM, inventories all stream IDs, and publishes the first stream as encoded audio.",
+    "HIRC event synthesis, external stream resolution, per-track selection, compressed-audio transcoding, extraction operations, authoring, and SoundBank writing are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "bnk", "label": "Wwise SoundBank" }],
@@ -31,7 +30,10 @@
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled"],
     "openIntents": ["probe", "inspect", "full", "stream", "export"],
-    "match": { "extensions": ["bnk"] },
+    "match": {
+      "extensions": ["bnk"],
+      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "424b4844" }]
+    },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {

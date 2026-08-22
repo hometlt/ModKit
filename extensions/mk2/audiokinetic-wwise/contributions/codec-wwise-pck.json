@@ -3,7 +3,7 @@
   "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
   "id": "org.modkitx/wwise-pck",
   "displayName": "Audiokinetic Wwise PCK package",
-  "status": "supported",
+  "status": "partial",
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
@@ -21,9 +21,8 @@
     }
   ],
   "limitations": [
-    "The codec can read complete byte payloads and also exposes an optional random-access source path that reuses the parsed index.",
-    "PCK banks, sounds, and external payloads are exposed by numeric IDs; semantic names require game-specific soundbank or list metadata outside this container.",
-    "The codec is read-only and does not author or repack Wwise packages."
+    "Parses bounded little- or big-endian AKPK packages with an empty language table and 20-byte bank/sound records, validates payload ranges, and exposes numeric IDs as namespace entries.",
+    "Language mappings, 24-byte and external records, semantic name metadata, entry extraction operations, authoring, and repacking are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "wwise-pck", "label": "Audiokinetic Wwise PCK package" }],

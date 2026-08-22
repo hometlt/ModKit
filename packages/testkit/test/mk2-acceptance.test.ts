@@ -40,6 +40,11 @@ const completedPortableAudio = [
   find('org.modkitx/flac'),
   find('org.modkitx/m4a'),
 ]
+const completedPortableWwise = [
+  find('org.modkitx/wem'),
+  find('org.modkitx/bnk'),
+  find('org.modkitx/wwise-pck'),
+]
 const completedPortableVector = [find('org.modkitx/emf'), find('org.modkitx/wmf')]
 const completedPortableDocuments = [
   find('org.modkitx/csv'),
@@ -159,6 +164,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       cueBinBundle,
       portableModel,
       ...completedPortableAudio,
+      ...completedPortableWwise,
       ...completedPortableVector,
       ...completedPortableModels,
       ...completedPortableVideos,
@@ -1050,5 +1056,41 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       unityMesh.readFloatLE(unityMeshPayload + 28),
       unityMesh.readUInt16LE(unityMeshPayload + 40),
     ]).toEqual([1, 1, 2])
+
+    const wem = readFileSync(join(root, 'minimal.wem'))
+    expect(wem.subarray(0, 4).toString('ascii')).toBe('RIFF')
+    expect(wem.subarray(8, 12).toString('ascii')).toBe('WAVE')
+    expect([wem.readUInt16LE(20), wem.readUInt16LE(22), wem.readUInt32LE(24)]).toEqual([1, 1, 8000])
+
+    const bnk = readFileSync(join(root, 'minimal.bnk'))
+    expect([
+      bnk.subarray(0, 4).toString('ascii'),
+      bnk.readUInt32LE(8),
+      bnk.readUInt32LE(12),
+    ]).toEqual(['BKHD', 135, 42])
+    expect(bnk.subarray(16, 20).toString('ascii')).toBe('DIDX')
+    expect([bnk.readUInt32LE(24), bnk.readUInt32LE(28), bnk.readUInt32LE(32)]).toEqual([
+      1001,
+      0,
+      wem.byteLength,
+    ])
+    expect(bnk.subarray(36, 40).toString('ascii')).toBe('DATA')
+    expect(bnk.subarray(44, 48).toString('ascii')).toBe('RIFF')
+
+    const pck = readFileSync(join(root, 'minimal.wwise.pck'))
+    expect(pck.subarray(0, 4).toString('ascii')).toBe('AKPK')
+    expect([
+      pck.readUInt32LE(4),
+      pck.readUInt32LE(12),
+      pck.readUInt32LE(16),
+      pck.readUInt32LE(20),
+    ]).toEqual([40, 0, 0, 24])
+    expect([
+      pck.readUInt32LE(24),
+      pck.readUInt32LE(28),
+      pck.readUInt32LE(36),
+      pck.readUInt32LE(40),
+    ]).toEqual([1, 5678, wem.byteLength, 48])
+    expect(pck.subarray(48, 52).toString('ascii')).toBe('RIFF')
   })
 })

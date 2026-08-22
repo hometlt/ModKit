@@ -21,8 +21,8 @@
     }
   ],
   "limitations": [
-    "The portable codec inspects RIFF/RIFX Wwise metadata and exports raw bytes; compressed Wwise Vorbis or Opus playback and conversion require an injected transcoder.",
-    "Declarative routing is extension-first because manifest v1 cannot express the legacy extension-or-RIFF/WAVE-sniffer behavior without making the evidence conjunctive."
+    "Parses bounded RIFF/RIFX WAVE chunk streams, validates declared sizes and fmt/data metadata, and publishes the original WEM as encoded audio.",
+    "PCM decoding, compressed Wwise Vorbis/Opus playback and transcoding, editing, and WEM writing are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "wem", "label": "Wwise WEM" }],
@@ -30,7 +30,10 @@
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled"],
     "openIntents": ["probe", "inspect", "full", "stream", "export"],
-    "match": { "extensions": ["wem"] },
+    "match": {
+      "extensions": ["wem"],
+      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "52494646" }]
+    },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {

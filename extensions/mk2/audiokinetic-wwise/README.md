@@ -11,8 +11,8 @@ The conversion debt of every codec below — planes v2 has no home for, applied
 renames, converter defaults and v1 operations left without a handler — is data in
 `MK2-CONVERSION.json` beside this file.
 
-| contribution            | v1 manifest                                                          | module                   | port         |
-| ----------------------- | -------------------------------------------------------------------- | ------------------------ | ------------ |
-| `org.modkitx/bnk`       | `extensions/audiokinetic/wwise/codecs/bnk/codec.manifest.json`       | `src/bnk/codec.js`       | port-pending |
-| `org.modkitx/wem`       | `extensions/audiokinetic/wwise/codecs/wem/codec.manifest.json`       | `src/wem/codec.js`       | port-pending |
-| `org.modkitx/wwise-pck` | `extensions/audiokinetic/wwise/codecs/wwise-pck/codec.manifest.json` | `src/wwise-pck/codec.js` | port-pending |
+| contribution            | v1 manifest                                                          | module                   | port   |
+| ----------------------- | -------------------------------------------------------------------- | ------------------------ | ------ |
+| `org.modkitx/bnk`       | `extensions/audiokinetic/wwise/codecs/bnk/codec.manifest.json`       | `src/bnk/codec.js`       | ported |
+| `org.modkitx/wem`       | `extensions/audiokinetic/wwise/codecs/wem/codec.manifest.json`       | `src/wem/codec.js`       | ported |
+| `org.modkitx/wwise-pck` | `extensions/audiokinetic/wwise/codecs/wwise-pck/codec.manifest.json` | `src/wwise-pck/codec.js` | ported |

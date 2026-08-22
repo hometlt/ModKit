@@ -540,6 +540,39 @@
       "note": "ISO BMFF M4A with nested audio media/sample tables, one mp4a description and one addressed AAC raw sample"
     },
     {
+      "extension": "mk2/audiokinetic-wwise",
+      "contributionId": "org.modkitx/wem",
+      "corpus": "synthetic",
+      "sample": "minimal.wem",
+      "minimumConfidence": 0.98,
+      "dataSource": "audio",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "RIFF Wwise WEM with PCM fmt metadata and one bounded data chunk"
+    },
+    {
+      "extension": "mk2/audiokinetic-wwise",
+      "contributionId": "org.modkitx/bnk",
+      "corpus": "synthetic",
+      "sample": "minimal.bnk",
+      "minimumConfidence": 0.99,
+      "dataSource": "audio",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "Wwise SoundBank with BKHD, DIDX and DATA chunks containing one embedded WEM stream"
+    },
+    {
+      "extension": "mk2/audiokinetic-wwise",
+      "contributionId": "org.modkitx/wwise-pck",
+      "corpus": "synthetic",
+      "sample": "minimal.wwise.pck",
+      "minimumConfidence": 0.99,
+      "dataSource": "namespace",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "Little-endian AKPK package with one 20-byte sound-table record and a bounded WEM payload"
+    },
+    {
       "extension": "mk2/common-vector",
       "contributionId": "org.modkitx/emf",
       "corpus": "synthetic",

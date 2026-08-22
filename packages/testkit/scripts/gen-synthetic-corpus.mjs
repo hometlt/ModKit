@@ -3438,6 +3438,40 @@ function unityMesh() {
   return concat(ascii('MKXUNITYMESH\0'), u32le(header.byteLength), header, positions, indices)
 }
 
+function wem() {
+  return wav()
+}
+
+function wwiseBnk() {
+  const stream = wem()
+  const chunk = (id, payload) => concat(ascii(id), u32le(payload.byteLength), payload)
+  return concat(
+    chunk('BKHD', concat(u32le(135), u32le(42))),
+    chunk('DIDX', concat(u32le(1001), u32le(0), u32le(stream.byteLength))),
+    chunk('DATA', stream),
+  )
+}
+
+function wwisePck() {
+  const stream = wem()
+  const payloadOffset = 48
+  return concat(
+    ascii('AKPK'),
+    u32le(40),
+    u32le(0),
+    u32le(0), // empty language table
+    u32le(0), // empty bank table
+    u32le(24), // one 20-byte sound record plus count
+    u32le(1),
+    u32le(5678),
+    u32le(1),
+    u32le(stream.byteLength),
+    u32le(payloadOffset),
+    u32le(0),
+    stream,
+  )
+}
+
 // ---------------------------------------------------------------- the corpus
 
 /** Every fixture: file name → builder. The name is what the acceptance corpus refers to. */
@@ -3460,6 +3494,9 @@ const FIXTURES = {
   'minimal.unityfs': unityFs,
   'minimal.unitytex': unityTexture,
   'minimal.unitymesh': unityMesh,
+  'minimal.wem': wem,
+  'minimal.bnk': wwiseBnk,
+  'minimal.wwise.pck': wwisePck,
   'minimal.bti': bti,
   'minimal.cub': cub,
   'minimal.mtrl': mtrl,
