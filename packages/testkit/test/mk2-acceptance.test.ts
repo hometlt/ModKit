@@ -45,6 +45,7 @@ const completedPortableWwise = [
   find('org.modkitx/bnk'),
   find('org.modkitx/wwise-pck'),
 ]
+const completedPortableFlash = [find('org.modkitx/fla')]
 const completedPortableVector = [find('org.modkitx/emf'), find('org.modkitx/wmf')]
 const completedPortableDocuments = [
   find('org.modkitx/csv'),
@@ -165,6 +166,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       portableModel,
       ...completedPortableAudio,
       ...completedPortableWwise,
+      ...completedPortableFlash,
       ...completedPortableVector,
       ...completedPortableModels,
       ...completedPortableVideos,
@@ -229,6 +231,26 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     const idatBytes = png.readUInt32BE(idatStart - 8)
     const inflated = zlib.inflateSync(png.subarray(idatStart, idatStart + idatBytes))
     expect([...inflated]).toEqual([0x00, 0x80, 0x40, 0x20])
+
+    const fla = readFileSync(join(root, 'minimal.fla'))
+    expect(fla.readUInt32LE(0)).toBe(0x04034b50)
+    const flaNames = []
+    let flaCentral = fla.indexOf(Buffer.from([0x50, 0x4b, 0x01, 0x02]))
+    while (flaCentral >= 0 && fla.readUInt32LE(flaCentral) === 0x02014b50) {
+      const nameLength = fla.readUInt16LE(flaCentral + 28)
+      const extraLength = fla.readUInt16LE(flaCentral + 30)
+      const commentLength = fla.readUInt16LE(flaCentral + 32)
+      flaNames.push(fla.subarray(flaCentral + 46, flaCentral + 46 + nameLength).toString('utf8'))
+      flaCentral += 46 + nameLength + extraLength + commentLength
+    }
+    expect(flaNames).toEqual(['DOMDocument.xml', 'LIBRARY/Symbol.xml'])
+    const secondLocal = fla.indexOf(Buffer.from([0x50, 0x4b, 0x03, 0x04]), 4)
+    expect(fla.readUInt16LE(secondLocal + 8)).toBe(8)
+    const secondData = secondLocal + 30 + fla.readUInt16LE(secondLocal + 26) + fla.readUInt16LE(secondLocal + 28)
+    const secondCompressed = fla.readUInt32LE(secondLocal + 18)
+    expect(zlib.inflateRawSync(fla.subarray(secondData, secondData + secondCompressed)).toString('utf8')).toBe(
+      '<DOMSymbolItem name="Symbol 1"/>',
+    )
 
     // These checks intentionally do not import the codecs. They independently walk each model
     // fixture's standard wire representation so a generator/reader bug cannot agree with itself.
@@ -1007,8 +1029,8 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     const unityFs = readFileSync(join(root, 'minimal.unityfs'))
     expect(unityFs.subarray(0, 8).toString('ascii')).toBe('UnityFS\0')
     expect(unityFs.readUInt32BE(8)).toBe(6)
-    expect(Number(unityFs.readBigUInt64BE(30))).toBe(unityFs.byteLength)
-    const unityInfo = 50
+    expect(Number(unityFs.readBigUInt64BE(29))).toBe(unityFs.byteLength)
+    const unityInfo = 49
     expect(unityFs.readUInt32BE(unityInfo + 16)).toBe(1)
     expect(unityFs.readUInt32BE(unityInfo + 20)).toBe(unityAssets.byteLength)
     expect(unityFs.readUInt32BE(unityInfo + 30)).toBe(1)

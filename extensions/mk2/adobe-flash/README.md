@@ -11,11 +11,11 @@ The conversion debt of every codec below — planes v2 has no home for, applied
 renames, converter defaults and v1 operations left without a handler — is data in
 `MK2-CONVERSION.json` beside this file.
 
-| contribution      | v1 manifest                                             | module             | port         |
-| ----------------- | ------------------------------------------------------- | ------------------ | ------------ |
-| `org.modkitx/fla` | `extensions/adobe/flash/codecs/fla/codec.manifest.json` | `src/fla/codec.js` | port-pending |
-| `org.modkitx/flv` | `extensions/adobe/flash/codecs/flv/codec.manifest.json` | `src/flv/codec.js` | ported       |
-| `org.modkitx/swf` | `extensions/adobe/flash/codecs/swf/codec.manifest.json` | `src/swf/codec.js` | ported       |
+| contribution      | v1 manifest                                             | module             | port   |
+| ----------------- | ------------------------------------------------------- | ------------------ | ------ |
+| `org.modkitx/fla` | `extensions/adobe/flash/codecs/fla/codec.manifest.json` | `src/fla/codec.js` | ported |
+| `org.modkitx/flv` | `extensions/adobe/flash/codecs/flv/codec.manifest.json` | `src/flv/codec.js` | ported |
+| `org.modkitx/swf` | `extensions/adobe/flash/codecs/swf/codec.manifest.json` | `src/swf/codec.js` | ported |
 
 ## Signatures added at port time
 

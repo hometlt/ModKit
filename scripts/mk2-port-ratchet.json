@@ -2,7 +2,7 @@
   "$comment": "Minimum hand-ported MK2 codec counts. Increment in the same change that ports a codec; ports:check rejects both regressions and stale counts.",
   "schemaVersion": 1,
   "families": {
-    "adobe-flash": 2,
+    "adobe-flash": 3,
     "audiokinetic-wwise": 3,
     "blizzard-casc": 1,
     "blizzard-models": 1,

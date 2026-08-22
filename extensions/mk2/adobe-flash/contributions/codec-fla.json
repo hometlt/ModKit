@@ -27,23 +27,23 @@
   ],
   "spec": {
     "formatRefs": [{ "formatId": "fla", "label": "Flash / Animate Project" }],
-    "roles": ["media"],
+    "roles": ["container"],
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
-    "openIntents": ["probe", "inspect", "thumbnail", "full", "stream", "export"],
+    "openIntents": ["probe", "inspect", "full", "export"],
     "match": { "extensions": ["fla", "xfl"] },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {
-        "id": "video-container",
-        "contract": "common.video/container-metadata",
+        "id": "project-namespace",
+        "contract": "common.archive/fla-namespace",
         "major": 1,
         "stage": "authored",
         "lossy": false
       }
     ],
     "publishesDataSources": [
-      { "contract": "common.view/video-media-source", "major": 1 },
+      { "contract": "common.view/namespace-entry-source", "major": 1 },
       { "contract": "common.view/tree-data-source", "major": 1 },
       { "contract": "common.view/byte-range-source", "major": 1 }
     ],
@@ -65,6 +65,13 @@
       {
         "id": "export.raw",
         "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "container.extract",
+        "handlerId": "extract-entry",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]

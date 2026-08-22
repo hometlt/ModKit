@@ -763,6 +763,22 @@
       "note": "FLV header and one video tag; routed by signature, the v1 glob is gone"
     },
     {
+      "extension": "mk2/adobe-flash",
+      "contributionId": "org.modkitx/fla",
+      "corpus": "synthetic",
+      "sample": "minimal.fla",
+      "minimumConfidence": 0.95,
+      "dataSource": "namespace",
+      "route": "basename",
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "DOMDocument.xml" },
+        "outputKind": "bytes",
+        "minimumBytes": 32
+      },
+      "note": "Classic ZIP FLA with DOMDocument.xml and a deflated library symbol; acceptance inventories and extracts the project root"
+    },
+    {
       "extension": "mk2/common-audio",
       "contributionId": "org.modkitx/ogg",
       "corpus": "synthetic",

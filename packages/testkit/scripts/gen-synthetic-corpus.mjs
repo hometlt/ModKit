@@ -3472,6 +3472,17 @@ function wwisePck() {
   )
 }
 
+/** Flash/Animate authoring project: a classic ZIP with the required DOMDocument.xml root. */
+function flaProject() {
+  return storedZip([
+    [
+      'DOMDocument.xml',
+      '<?xml version="1.0"?><DOMDocument width="640" height="480"><timelines/></DOMDocument>',
+    ],
+    ['LIBRARY/Symbol.xml', '<DOMSymbolItem name="Symbol 1"/>', 8],
+  ])
+}
+
 // ---------------------------------------------------------------- the corpus
 
 /** Every fixture: file name → builder. The name is what the acceptance corpus refers to. */
@@ -3497,6 +3508,7 @@ const FIXTURES = {
   'minimal.wem': wem,
   'minimal.bnk': wwiseBnk,
   'minimal.wwise.pck': wwisePck,
+  'minimal.fla': flaProject,
   'minimal.bti': bti,
   'minimal.cub': cub,
   'minimal.mtrl': mtrl,
