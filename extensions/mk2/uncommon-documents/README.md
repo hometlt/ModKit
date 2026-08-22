@@ -15,11 +15,11 @@ renames, converter defaults and v1 operations left without a handler — is data
 | ---------------------- | ------------------------------------------------------------------- | ----------------------- | ------------ |
 | `org.modkitx/ai`       | `extensions/uncommon/documents/codecs/ai/codec.manifest.json`       | `src/ai/codec.js`       | ported       |
 | `org.modkitx/blend`    | `extensions/uncommon/documents/codecs/blend/codec.manifest.json`    | `src/blend/codec.js`    | port-pending |
-| `org.modkitx/cdr`      | `extensions/uncommon/documents/codecs/cdr/codec.manifest.json`      | `src/cdr/codec.js`      | port-pending |
+| `org.modkitx/cdr`      | `extensions/uncommon/documents/codecs/cdr/codec.manifest.json`      | `src/cdr/codec.js`      | ported       |
 | `org.modkitx/csv`      | `extensions/uncommon/documents/codecs/csv/codec.manifest.json`      | `src/csv/codec.js`      | ported       |
 | `org.modkitx/docx`     | `extensions/uncommon/documents/codecs/docx/codec.manifest.json`     | `src/docx/codec.js`     | ported       |
 | `org.modkitx/drawio`   | `extensions/uncommon/documents/codecs/drawio/codec.manifest.json`   | `src/drawio/codec.js`   | ported       |
-| `org.modkitx/figma`    | `extensions/uncommon/documents/codecs/figma/codec.manifest.json`    | `src/figma/codec.js`    | port-pending |
+| `org.modkitx/figma`    | `extensions/uncommon/documents/codecs/figma/codec.manifest.json`    | `src/figma/codec.js`    | ported       |
 | `org.modkitx/markdown` | `extensions/uncommon/documents/codecs/markdown/codec.manifest.json` | `src/markdown/codec.js` | ported       |
 | `org.modkitx/odp`      | `extensions/uncommon/documents/codecs/odp/codec.manifest.json`      | `src/odp/codec.js`      | ported       |
 | `org.modkitx/ods`      | `extensions/uncommon/documents/codecs/ods/codec.manifest.json`      | `src/ods/codec.js`      | ported       |
@@ -29,5 +29,5 @@ renames, converter defaults and v1 operations left without a handler — is data
 | `org.modkitx/psd`      | `extensions/uncommon/documents/codecs/psd/codec.manifest.json`      | `src/psd/codec.js`      | port-pending |
 | `org.modkitx/rtf`      | `extensions/uncommon/documents/codecs/rtf/codec.manifest.json`      | `src/rtf/codec.js`      | ported       |
 | `org.modkitx/txt`      | `extensions/uncommon/documents/codecs/txt/codec.manifest.json`      | `src/txt/codec.js`      | ported       |
-| `org.modkitx/visio`    | `extensions/uncommon/documents/codecs/visio/codec.manifest.json`    | `src/visio/codec.js`    | port-pending |
+| `org.modkitx/visio`    | `extensions/uncommon/documents/codecs/visio/codec.manifest.json`    | `src/visio/codec.js`    | ported       |
 | `org.modkitx/xlsx`     | `extensions/uncommon/documents/codecs/xlsx/codec.manifest.json`     | `src/xlsx/codec.js`     | ported       |

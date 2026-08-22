@@ -22,7 +22,7 @@
   ],
   "limitations": [
     "Runtime detection distinguishes legacy OLE .vsd files from OOXML .vsdx packages; manifest prefiltering is extension-only because manifest v1 cannot express those alternatives.",
-    "Legacy VSD streams are not decoded beyond container recognition; VSDX preview is limited to bounded page, shape-count, and text structure.",
+    "Legacy VSD inspection validates the version-3 CFB header, DIFAT/FAT allocation, directory chain, and VisioDocument stream but does not decode that stream; VSDX inspection validates bounded OPC parts, pages, shape counts, text elements, and connections.",
     "Geometry, styles, masters, connectors, embedded objects, macros, external links, editing, and source write-back are not implemented or executed."
   ],
   "spec": {
@@ -72,7 +72,7 @@
     "traitDeclarations": [
       { "id": "content.binary", "representation": "source", "presence": "will-expose" },
       { "id": "content.metadata", "representation": "source", "presence": "will-expose" },
-      { "id": "structure.nodes", "representation": "source", "presence": "may-expose" }
+      { "id": "structure.nodes", "representation": "source", "presence": "will-expose" }
     ],
     "implementationTier": { "claimed": 1 },
     "budgets": {

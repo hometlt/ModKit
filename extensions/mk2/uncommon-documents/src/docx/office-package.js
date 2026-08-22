@@ -67,7 +67,7 @@ function safePath(path) {
   return !path.split('/').some(part => part === '.' || part === '..')
 }
 
-function parseZip(bytes, budget) {
+export function parseZip(bytes, budget) {
   if (budget.maxDepth < 1) throw new RangeError('office package exceeds maxDepth budget')
   const eocd = findEocd(bytes)
   if (eocd < 0) throw new TypeError('office ZIP end-of-central-directory record is missing')
@@ -189,7 +189,7 @@ function crc32(bytes) {
   return (crc ^ 0xffffffff) >>> 0
 }
 
-async function extract(bytes, entry) {
+export async function extractZipEntry(bytes, entry) {
   const offset = entry.localOffset
   if (offset + 30 > bytes.byteLength || u32(bytes, offset) !== 0x04034b50) {
     throw new TypeError(`office ZIP local header is invalid: ${entry.name}`)
@@ -217,7 +217,7 @@ async function extract(bytes, entry) {
   return output
 }
 
-function analyzeXml(bytes, label, budget, state) {
+export function analyzeXml(bytes, label, budget, state) {
   let xml
   try {
     xml = utf8.decode(bytes)
@@ -272,14 +272,17 @@ async function inspectPackage(format, bytes, budget) {
     if (mimetypeEntry.localOffset !== 0 || mimetypeEntry.method !== 0) {
       throw new TypeError(`${format} mimetype must be the first uncompressed ZIP entry`)
     }
-    const mimetype = utf8.decode(await extract(bytes, mimetypeEntry))
+    const mimetype = utf8.decode(await extractZipEntry(bytes, mimetypeEntry))
     if (mimetype !== details.mediaType) throw new TypeError(`${format} mimetype is invalid`)
   }
 
   const state = { nodes: zip.entries.length, scalarBytes: zip.scalarBytes }
   const xmlParts = new Map()
   for (const name of required.filter(name => name !== 'mimetype')) {
-    xmlParts.set(name, analyzeXml(await extract(bytes, byName.get(name)), name, budget, state))
+    xmlParts.set(
+      name,
+      analyzeXml(await extractZipEntry(bytes, byName.get(name)), name, budget, state),
+    )
   }
   const main = xmlParts.get(details.root)
   if (details.family === 'ooxml') {
@@ -323,7 +326,7 @@ async function inspectPackage(format, bytes, budget) {
     let shapes = 0
     let textRuns = 0
     for (const entry of slides) {
-      const slide = analyzeXml(await extract(bytes, entry), entry.name, budget, state)
+      const slide = analyzeXml(await extractZipEntry(bytes, entry), entry.name, budget, state)
       if (count(slide, 'p:sld') !== 1) throw new TypeError(`${entry.name} has no p:sld root`)
       shapes += count(slide, 'p:sp')
       textRuns += count(slide, 'a:t')
@@ -344,7 +347,7 @@ async function inspectPackage(format, bytes, budget) {
     let cells = 0
     let formulas = 0
     for (const entry of worksheets) {
-      const sheet = analyzeXml(await extract(bytes, entry), entry.name, budget, state)
+      const sheet = analyzeXml(await extractZipEntry(bytes, entry), entry.name, budget, state)
       if (count(sheet, 'worksheet') !== 1) {
         throw new TypeError(`${entry.name} has no worksheet root`)
       }

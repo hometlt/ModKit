@@ -878,6 +878,33 @@
       "note": "Uncompressed mxfile page with layer, two vertices, an edge, and geometry records"
     },
     {
+      "extension": "mk2/uncommon-documents",
+      "contributionId": "org.modkitx/visio",
+      "corpus": "synthetic",
+      "sample": "minimal.vsdx",
+      "minimumConfidence": 0.75,
+      "dataSource": "tree",
+      "note": "Visio OPC package with content types, document relationship, page inventory, and one page part"
+    },
+    {
+      "extension": "mk2/uncommon-documents",
+      "contributionId": "org.modkitx/cdr",
+      "corpus": "synthetic",
+      "sample": "minimal.cdr",
+      "minimumConfidence": 0.99,
+      "dataSource": "tree",
+      "note": "CorelDRAW RIFF CDR6 hierarchy with nested page and object lists"
+    },
+    {
+      "extension": "mk2/uncommon-documents",
+      "contributionId": "org.modkitx/figma",
+      "corpus": "synthetic",
+      "sample": "minimal.fig",
+      "minimumConfidence": 0.75,
+      "dataSource": "tree",
+      "note": "Figma ZIP export with deflated canvas.fig, embedded Kiwi schema, and Zstandard data frame"
+    },
+    {
       "extension": "common/images",
       "contributionId": "org.modkitx/image-png",
       "corpus": "synthetic",

@@ -21,8 +21,8 @@
     }
   ],
   "limitations": [
-    "Runtime detection recognizes the fig-kiwi signature and a conservative ZIP-container fallback; manifest prefiltering is extension-only because manifest v1 cannot express those alternatives.",
-    "Kiwi records, pages, frames, components, constraints, text, paints, images, and prototypes are not decoded; rendering is a structural notice only.",
+    "Runtime detection recognizes direct fig-kiwi payloads and current ZIP exports; inspection validates ZIP parts, canvas chunk lengths, raw-deflate schema expansion, the embedded Kiwi BinarySchema, and Zstandard frame blocks.",
+    "The document message inside the Zstandard data chunk is not decoded into Kiwi records, pages, frames, components, constraints, text, paints, images, or prototypes; rendering is structural only.",
     "The codec does not call the Figma API, fetch remote resources, edit content, or write source files."
   ],
   "spec": {
@@ -71,7 +71,8 @@
     ],
     "traitDeclarations": [
       { "id": "content.binary", "representation": "source", "presence": "will-expose" },
-      { "id": "content.metadata", "representation": "source", "presence": "will-expose" }
+      { "id": "content.metadata", "representation": "source", "presence": "will-expose" },
+      { "id": "structure.hierarchy", "representation": "source", "presence": "will-expose" }
     ],
     "implementationTier": { "claimed": 1 },
     "budgets": {

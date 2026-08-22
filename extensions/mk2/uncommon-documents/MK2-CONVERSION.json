@@ -69,7 +69,7 @@
       ],
       "droppedOperations": ["asset.validate", "export.raw", "view.inspect", "view.render"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/csv": {
       "verdict": "needs-new-contract",
@@ -137,7 +137,7 @@
       ],
       "droppedOperations": ["asset.validate", "export.raw", "view.inspect", "view.render"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/markdown": {
       "verdict": "needs-new-contract",
@@ -303,7 +303,7 @@
       ],
       "droppedOperations": ["asset.validate", "export.raw", "view.inspect", "view.render"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/xlsx": {
       "verdict": "convertible-with-rework",

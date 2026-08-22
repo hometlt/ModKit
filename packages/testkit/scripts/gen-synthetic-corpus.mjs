@@ -823,6 +823,143 @@ function drawio() {
   )
 }
 
+/** Visio 2013 OPC package with its document part, page inventory, and one shape-bearing page. */
+function visioVsdx() {
+  const contentTypes =
+    '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Override PartName="/visio/document.xml" ContentType="application/vnd.ms-visio.drawing.main+xml"/></Types>'
+  const relationships =
+    '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="https://schemas.microsoft.com/visio/2010/relationships/document" Target="visio/document.xml"/></Relationships>'
+  return storedZip([
+    ['[Content_Types].xml', contentTypes, 8],
+    ['_rels/.rels', relationships, 8],
+    [
+      'visio/document.xml',
+      '<?xml version="1.0"?><VisioDocument><DocumentSettings/></VisioDocument>',
+      8,
+    ],
+    [
+      'visio/pages/pages.xml',
+      '<?xml version="1.0"?><Pages><Page ID="0" Name="Page-1"/></Pages>',
+      8,
+    ],
+    [
+      'visio/pages/page1.xml',
+      '<?xml version="1.0"?><PageContents><Shapes><Shape ID="1" NameU="Rectangle"><Text>Hello Visio</Text></Shape><Shape ID="2" NameU="Circle"/></Shapes><Connects><Connect FromSheet="1" ToSheet="2"/></Connects></PageContents>',
+      8,
+    ],
+  ])
+}
+
+/**
+ * MS-CFB version 3 with one directory sector, one FAT sector, Root Entry, and the identifying
+ * zero-length VisioDocument stream. Sector chains and DIFAT/FAT markers are internally valid.
+ */
+function visioVsd() {
+  const header = new Uint8Array(512)
+  const headerView = new DataView(header.buffer)
+  header.set(bytes(0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1), 0)
+  headerView.setUint16(24, 0x003e, true)
+  headerView.setUint16(26, 3, true)
+  headerView.setUint16(28, 0xfffe, true)
+  headerView.setUint16(30, 9, true)
+  headerView.setUint16(32, 6, true)
+  headerView.setUint32(40, 0, true)
+  headerView.setUint32(44, 1, true)
+  headerView.setUint32(48, 0, true)
+  headerView.setUint32(56, 4096, true)
+  headerView.setUint32(60, 0xfffffffe, true)
+  headerView.setUint32(64, 0, true)
+  headerView.setUint32(68, 0xfffffffe, true)
+  headerView.setUint32(72, 0, true)
+  for (let offset = 76; offset < 512; offset += 4) headerView.setUint32(offset, 0xffffffff, true)
+  headerView.setUint32(76, 1, true)
+
+  const directory = new Uint8Array(512)
+  const directoryView = new DataView(directory.buffer)
+  const entry = (offset, name, type, child = 0xffffffff) => {
+    const terminated = `${name}\0`
+    for (let index = 0; index < terminated.length; index += 1) {
+      directoryView.setUint16(offset + index * 2, terminated.charCodeAt(index), true)
+    }
+    directoryView.setUint16(offset + 64, terminated.length * 2, true)
+    directory[offset + 66] = type
+    directory[offset + 67] = 1
+    directoryView.setUint32(offset + 68, 0xffffffff, true)
+    directoryView.setUint32(offset + 72, 0xffffffff, true)
+    directoryView.setUint32(offset + 76, child, true)
+    directoryView.setUint32(offset + 116, 0xfffffffe, true)
+    directoryView.setUint32(offset + 120, 0, true)
+    directoryView.setUint32(offset + 124, 0, true)
+  }
+  entry(0, 'Root Entry', 5, 1)
+  entry(128, 'VisioDocument', 2)
+
+  const fat = new Uint8Array(512)
+  const fatView = new DataView(fat.buffer)
+  for (let offset = 0; offset < 512; offset += 4) fatView.setUint32(offset, 0xffffffff, true)
+  fatView.setUint32(0, 0xfffffffe, true)
+  fatView.setUint32(4, 0xfffffffd, true)
+  return concat(header, directory, fat)
+}
+
+/** CorelDRAW RIFF CDR6 hierarchy with a page list, object list, and a bounded loda record. */
+function cdr() {
+  const record = (id, payload) =>
+    concat(
+      ascii(id),
+      u32le(payload.byteLength),
+      payload,
+      payload.byteLength & 1 ? bytes(0) : bytes(),
+    )
+  const object = record('LIST', concat(ascii('obj '), record('loda', u32le(1))))
+  const page = record('LIST', concat(ascii('page'), object))
+  const body = concat(ascii('CDR6'), page)
+  return concat(ascii('RIFF'), u32le(body.byteLength), body)
+}
+
+const kiwiVarUint = value => {
+  const out = []
+  let remaining = value >>> 0
+  do {
+    const byte = remaining & 0x7f
+    remaining >>>= 7
+    out.push(byte | (remaining === 0 ? 0 : 0x80))
+  } while (remaining !== 0)
+  return bytes(...out)
+}
+
+/** Embedded Kiwi BinarySchema containing the required NodeChanges message and one string field. */
+function figmaCanvas() {
+  const schema = concat(
+    kiwiVarUint(1),
+    ascii('NodeChanges\0'),
+    bytes(2),
+    kiwiVarUint(1),
+    ascii('title\0'),
+    kiwiVarUint(11), // ZigZag(-6), Kiwi TYPE_STRING
+    bytes(0),
+    kiwiVarUint(1),
+  )
+  const compressedSchema = deflateStored(schema)
+  const data = zstd()
+  return concat(
+    ascii('fig-kiwi'),
+    u32le(101),
+    u32le(compressedSchema.byteLength),
+    compressedSchema,
+    u32le(data.byteLength),
+    data,
+  )
+}
+
+/** Current Figma export shape: ZIP package containing canvas.fig and bounded metadata JSON. */
+function figma() {
+  return storedZip([
+    ['canvas.fig', figmaCanvas(), 8],
+    ['meta.json', '{"name":"Modkit X3 Figma fixture","version":1}', 8],
+  ])
+}
+
 /**
  * Microsoft Cabinet SDK layout: one CAB 1.3 folder, one CFFILE and one uncompressed CFDATA block.
  * A zero CFDATA checksum explicitly means that no checksum was supplied; sizes and offsets remain
@@ -2123,6 +2260,7 @@ const FIXTURES = {
   'minimal.br': brotli,
   'minimal.bz2': bzip2,
   'minimal.cab': cab,
+  'minimal.cdr': cdr,
   'minimal.cur': cur,
   'minimal.dds': dds,
   'minimal.dae': dae,
@@ -2130,6 +2268,8 @@ const FIXTURES = {
   'minimal.docx': docx,
   'minimal.drawio': drawio,
   'minimal.exr': exr,
+  'minimal.fig': figma,
+  'minimal-kiwi.fig': figmaCanvas,
   'minimal.gif': gif,
   'minimal.gltf': gltf,
   'minimal.hdr': hdr,
@@ -2153,6 +2293,8 @@ const FIXTURES = {
   'minimal.tiff': tiff,
   'minimal.txt': txt,
   'minimal.uvm.glb': uvm,
+  'minimal.vsd': visioVsd,
+  'minimal.vsdx': visioVsdx,
   'minimal.wav': wav,
   'minimal.m3': m3,
   'minimal.obj': obj,

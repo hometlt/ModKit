@@ -48,6 +48,9 @@ const completedPortableDocuments = [
   find('org.modkitx/pdf'),
   find('org.modkitx/ai'),
   find('org.modkitx/drawio'),
+  find('org.modkitx/visio'),
+  find('org.modkitx/cdr'),
+  find('org.modkitx/figma'),
 ]
 
 describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tasks E/F/G)', () => {
@@ -385,5 +388,68 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     expect(cellIds).toEqual(['0', '1', 'node-a', 'node-b', 'edge-a-b'])
     expect(drawio).toContain('source="node-a" target="node-b"')
     expect(drawio.match(/<mxGeometry\b/gu)).toHaveLength(3)
+
+    const vsd = readFileSync(join(root, 'minimal.vsd'))
+    expect(vsd.subarray(0, 8).toString('hex')).toBe('d0cf11e0a1b11ae1')
+    expect(vsd.readUInt16LE(26)).toBe(3)
+    expect(vsd.readUInt16LE(28)).toBe(0xfffe)
+    expect(vsd.readUInt16LE(30)).toBe(9)
+    expect(vsd.readUInt32LE(44)).toBe(1)
+    expect(vsd.readUInt32LE(76)).toBe(1)
+    expect(vsd.readUInt32LE(1024)).toBe(0xfffffffe)
+    expect(vsd.readUInt32LE(1028)).toBe(0xfffffffd)
+    const cfbName = (offset: number) => {
+      const bytes = vsd.readUInt16LE(offset + 64)
+      return vsd.subarray(offset, offset + bytes - 2).toString('utf16le')
+    }
+    expect(cfbName(512)).toBe('Root Entry')
+    expect(cfbName(640)).toBe('VisioDocument')
+
+    const vsdx = readFileSync(join(root, 'minimal.vsdx'))
+    const vsdxEocd = vsdx.byteLength - 22
+    expect(vsdx.readUInt32LE(vsdxEocd)).toBe(0x06054b50)
+    expect(vsdx.readUInt16LE(vsdxEocd + 10)).toBe(5)
+
+    const cdr = readFileSync(join(root, 'minimal.cdr'))
+    expect(cdr.subarray(0, 4).toString('ascii')).toBe('RIFF')
+    expect(cdr.readUInt32LE(4) + 8).toBe(cdr.byteLength)
+    expect(cdr.subarray(8, 12).toString('ascii')).toBe('CDR6')
+    expect(cdr.subarray(12, 16).toString('ascii')).toBe('LIST')
+    expect(cdr.subarray(20, 24).toString('ascii')).toBe('page')
+    expect(cdr.subarray(24, 28).toString('ascii')).toBe('LIST')
+    expect(cdr.subarray(32, 36).toString('ascii')).toBe('obj ')
+    expect(cdr.subarray(36, 40).toString('ascii')).toBe('loda')
+
+    const fig = readFileSync(join(root, 'minimal.fig'))
+    const figEocd = fig.byteLength - 22
+    let figCentral = fig.readUInt32LE(figEocd + 16)
+    const figParts = new Map<string, Buffer>()
+    for (let index = 0; index < fig.readUInt16LE(figEocd + 10); index += 1) {
+      const method = fig.readUInt16LE(figCentral + 10)
+      const compressedBytes = fig.readUInt32LE(figCentral + 20)
+      const nameBytes = fig.readUInt16LE(figCentral + 28)
+      const extraBytes = fig.readUInt16LE(figCentral + 30)
+      const commentBytes = fig.readUInt16LE(figCentral + 32)
+      const local = fig.readUInt32LE(figCentral + 42)
+      const name = fig.subarray(figCentral + 46, figCentral + 46 + nameBytes).toString('utf8')
+      const localNameBytes = fig.readUInt16LE(local + 26)
+      const localExtraBytes = fig.readUInt16LE(local + 28)
+      const payload = local + 30 + localNameBytes + localExtraBytes
+      const compressed = fig.subarray(payload, payload + compressedBytes)
+      figParts.set(name, method === 8 ? zlib.inflateRawSync(compressed) : Buffer.from(compressed))
+      figCentral += 46 + nameBytes + extraBytes + commentBytes
+    }
+    expect([...figParts.keys()]).toEqual(['canvas.fig', 'meta.json'])
+    const canvas = figParts.get('canvas.fig')
+    expect(canvas?.subarray(0, 8).toString('ascii')).toBe('fig-kiwi')
+    expect(canvas?.readUInt32LE(8)).toBe(101)
+    const schemaBytes = canvas?.readUInt32LE(12) ?? 0
+    const schema = zlib.inflateRawSync(canvas?.subarray(16, 16 + schemaBytes) ?? Buffer.alloc(0))
+    expect(schema.subarray(0, 13).toString('latin1')).toBe('\u0001NodeChanges\u0000')
+    const dataStart = 16 + schemaBytes + 4
+    expect(canvas?.subarray(dataStart, dataStart + 4).toString('hex')).toBe('28b52ffd')
+    expect(JSON.parse(figParts.get('meta.json')?.toString('utf8') ?? '')).toMatchObject({
+      name: 'Modkit X3 Figma fixture',
+    })
   })
 })

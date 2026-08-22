@@ -1,3 +1,10 @@
 # These deterministic fixtures exercise structurally significant CRLF bytes.
 packages/testkit/test/fixtures/mk2-synthetic/minimal.csv binary
 packages/testkit/test/fixtures/mk2-synthetic/minimal.txt binary
+packages/testkit/test/fixtures/mk2-synthetic/minimal.ai binary
+packages/testkit/test/fixtures/mk2-synthetic/minimal.pdf binary
+packages/testkit/test/fixtures/mk2-synthetic/minimal.cdr binary
+packages/testkit/test/fixtures/mk2-synthetic/minimal.fig binary
+packages/testkit/test/fixtures/mk2-synthetic/minimal-kiwi.fig binary
+packages/testkit/test/fixtures/mk2-synthetic/minimal.vsd binary
+packages/testkit/test/fixtures/mk2-synthetic/minimal.vsdx binary

@@ -21,8 +21,8 @@
     }
   ],
   "limitations": [
-    "Detection accepts structurally recognized RIFF CDR containers and a conservative ZIP-container fallback; manifest prefiltering is extension-only because manifest v1 cannot express those alternatives.",
-    "Object records, pages, text, color profiles, effects, previews, and embedded assets are not decoded; rendering is a structural notice only.",
+    "Detection and inspection require a size-consistent RIFF CDR form and recursively validate bounded RIFF/LIST records, including page, object, group, and compressed-list inventories; manifest prefiltering remains extension-only.",
+    "Compressed list payloads, individual shape records, text, color profiles, effects, previews, and embedded assets are not decoded; rendering is structural only.",
     "External conversion, editing, and source write-back are not implemented."
   ],
   "spec": {
@@ -71,7 +71,8 @@
     ],
     "traitDeclarations": [
       { "id": "content.binary", "representation": "source", "presence": "will-expose" },
-      { "id": "content.metadata", "representation": "source", "presence": "will-expose" }
+      { "id": "content.metadata", "representation": "source", "presence": "will-expose" },
+      { "id": "structure.nodes", "representation": "source", "presence": "will-expose" }
     ],
     "implementationTier": { "claimed": 1 },
     "budgets": {

@@ -29,6 +29,9 @@ const formats = [
   'pdf',
   'ai',
   'drawio',
+  'visio',
+  'cdr',
+  'figma',
 ] as const
 type Format = (typeof formats)[number]
 const officeFormats = ['docx', 'pptx', 'xlsx', 'odt', 'odp', 'ods'] as const
@@ -47,6 +50,9 @@ const fileNames: Record<Format, string> = {
   pdf: 'minimal.pdf',
   ai: 'minimal.ai',
   drawio: 'minimal.drawio',
+  visio: 'minimal.vsdx',
+  cdr: 'minimal.cdr',
+  figma: 'minimal.fig',
 }
 
 const budget: ResourceBudget = {
@@ -150,7 +156,11 @@ describe('ported MK2 document codecs', () => {
                 ? 'document.pages'
                 : format === 'drawio'
                   ? 'structure.nodes'
-                  : 'content.text',
+                  : format === 'visio' || format === 'cdr'
+                    ? 'structure.nodes'
+                    : format === 'figma'
+                      ? 'structure.hierarchy'
+                      : 'content.text',
         }),
       ]),
     )
@@ -294,6 +304,95 @@ describe('ported MK2 document codecs', () => {
     await packedSession.dispose()
   })
 
+  it('validates VSDX OPC pages and legacy VSD compound-file allocation', async () => {
+    const vsdx = await open('visio', await fixture('visio'))
+    await expect(vsdx.operations().invoke('inspect', null)).resolves.toMatchObject({
+      state: 'ok',
+      output: {
+        kind: 'json',
+        value: {
+          format: 'visio',
+          variant: 'vsdx-opc',
+          entries: 5,
+          pages: 1,
+          shapes: 2,
+          textElements: 1,
+          connects: 1,
+        },
+      },
+    })
+    await vsdx.dispose()
+
+    const vsdBytes = new Uint8Array(await readFile(join(fixtureRoot, 'minimal.vsd')))
+    const vsd = await open('visio', vsdBytes)
+    await expect(vsd.operations().invoke('inspect', null)).resolves.toMatchObject({
+      state: 'ok',
+      output: {
+        kind: 'json',
+        value: {
+          format: 'visio',
+          variant: 'vsd-cfb',
+          sectorSize: 512,
+          sectors: 2,
+          directoryEntries: 2,
+          streams: 1,
+        },
+      },
+    })
+    await vsd.dispose()
+  })
+
+  it('walks bounded CorelDRAW RIFF page and object lists', async () => {
+    const session = await open('cdr', await fixture('cdr'))
+    await expect(session.operations().invoke('inspect', null)).resolves.toMatchObject({
+      state: 'ok',
+      output: {
+        kind: 'json',
+        value: {
+          format: 'cdr',
+          container: 'riff',
+          form: 'CDR6',
+          version: 6,
+          records: 4,
+          pages: 1,
+          objects: 1,
+          groups: 0,
+          compressedLists: 0,
+        },
+      },
+    })
+    await session.dispose()
+  })
+
+  it('validates ZIP and direct fig-kiwi chunk framing plus the embedded BinarySchema', async () => {
+    const packaged = await open('figma', await fixture('figma'))
+    await expect(packaged.operations().invoke('inspect', null)).resolves.toMatchObject({
+      state: 'ok',
+      output: {
+        kind: 'json',
+        value: {
+          format: 'figma',
+          container: 'zip',
+          entries: 2,
+          version: 101,
+          definitions: 1,
+          fields: 1,
+          zstdBlocks: 1,
+          compressedBlocks: 0,
+        },
+      },
+    })
+    await packaged.dispose()
+
+    const directBytes = new Uint8Array(await readFile(join(fixtureRoot, 'minimal-kiwi.fig')))
+    const direct = await open('figma', directBytes)
+    await expect(direct.operations().invoke('inspect', null)).resolves.toMatchObject({
+      state: 'ok',
+      output: { kind: 'json', value: { container: 'fig-kiwi', entries: 0 } },
+    })
+    await direct.dispose()
+  })
+
   it.each(formats)('%s rejects structural corruption', async format => {
     const corrupted = officeFormats.includes(format as (typeof officeFormats)[number])
       ? (await fixture(format)).slice(0, -1)
@@ -304,7 +403,9 @@ describe('ported MK2 document codecs', () => {
           : format === 'rtf'
             ? (await fixture(format)).slice(0, -1)
             : new Uint8Array([0xff, 0xfe])
-    await expect(open(format, corrupted)).rejects.toThrow(/CSV|UTF-8|RTF|office ZIP|PDF|draw\.io/u)
+    await expect(open(format, corrupted)).rejects.toThrow(
+      /CSV|UTF-8|RTF|office ZIP|PDF|draw\.io|Visio|CorelDRAW|Figma|bounds/u,
+    )
   })
 
   it.each(formats)('%s enforces node, depth, and scalar budgets', async format => {
