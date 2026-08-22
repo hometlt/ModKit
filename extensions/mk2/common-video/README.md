@@ -11,14 +11,14 @@ The conversion debt of every codec below — planes v2 has no home for, applied
 renames, converter defaults and v1 operations left without a handler — is data in
 `MK2-CONVERSION.json` beside this file.
 
-| contribution       | v1 manifest                                               | module              | port         |
-| ------------------ | --------------------------------------------------------- | ------------------- | ------------ |
-| `org.modkitx/avi`  | `extensions/common/video/codecs/avi/codec.manifest.json`  | `src/avi/codec.js`  | port-pending |
-| `org.modkitx/mp4`  | `extensions/common/video/codecs/mp4/codec.manifest.json`  | `src/mp4/codec.js`  | ported       |
-| `org.modkitx/mpeg` | `extensions/common/video/codecs/mpeg/codec.manifest.json` | `src/mpeg/codec.js` | ported       |
-| `org.modkitx/ogv`  | `extensions/common/video/codecs/ogv/codec.manifest.json`  | `src/ogv/codec.js`  | ported       |
-| `org.modkitx/webm` | `extensions/common/video/codecs/webm/codec.manifest.json` | `src/webm/codec.js` | ported       |
-| `org.modkitx/wmv`  | `extensions/common/video/codecs/wmv/codec.manifest.json`  | `src/wmv/codec.js`  | port-pending |
+| contribution       | v1 manifest                                               | module              | port   |
+| ------------------ | --------------------------------------------------------- | ------------------- | ------ |
+| `org.modkitx/avi`  | `extensions/common/video/codecs/avi/codec.manifest.json`  | `src/avi/codec.js`  | ported |
+| `org.modkitx/mp4`  | `extensions/common/video/codecs/mp4/codec.manifest.json`  | `src/mp4/codec.js`  | ported |
+| `org.modkitx/mpeg` | `extensions/common/video/codecs/mpeg/codec.manifest.json` | `src/mpeg/codec.js` | ported |
+| `org.modkitx/ogv`  | `extensions/common/video/codecs/ogv/codec.manifest.json`  | `src/ogv/codec.js`  | ported |
+| `org.modkitx/webm` | `extensions/common/video/codecs/webm/codec.manifest.json` | `src/webm/codec.js` | ported |
+| `org.modkitx/wmv`  | `extensions/common/video/codecs/wmv/codec.manifest.json`  | `src/wmv/codec.js`  | ported |
 
 ## Signatures added at port time
 

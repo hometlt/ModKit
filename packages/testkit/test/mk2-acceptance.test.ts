@@ -33,6 +33,7 @@ const completedPortableModels = [
   find('org.modkitx/gltf'),
   find('org.modkitx/uvm'),
 ]
+const completedPortableVideos = [find('org.modkitx/avi'), find('org.modkitx/wmv')]
 
 describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tasks E/F/G)', () => {
   it('opens every corpus sample through the product path and prints the state table', async () => {
@@ -102,6 +103,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       cueBinBundle,
       portableModel,
       ...completedPortableModels,
+      ...completedPortableVideos,
       ...(mk2Root === undefined ? [] : [firstReal]),
     ]
     const outcomes = await runMk2Acceptance(cases, { repoRoot, mk2Root, workerBrokered: true })
@@ -235,5 +237,42 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       uvm.readUInt16LE(uvmBinHeader + 8 + 38),
       uvm.readUInt16LE(uvmBinHeader + 8 + 40),
     ]).toEqual([0, 1, 2])
+
+    const avi = readFileSync(join(root, 'minimal.avi'))
+    expect(avi.subarray(0, 4).toString('ascii')).toBe('RIFF')
+    expect(avi.readUInt32LE(4) + 8).toBe(avi.byteLength)
+    expect(avi.subarray(8, 12).toString('ascii')).toBe('AVI ')
+    const avih = avi.indexOf('avih')
+    const streamHeader = avi.indexOf('strh')
+    expect(avih).toBeGreaterThan(0)
+    expect(streamHeader).toBeGreaterThan(avih)
+    expect(avi.readUInt32LE(avih + 8 + 32)).toBe(1)
+    expect(avi.readUInt32LE(avih + 8 + 36)).toBe(1)
+    expect(avi.subarray(streamHeader + 8, streamHeader + 12).toString('ascii')).toBe('vids')
+    expect(avi.subarray(streamHeader + 12, streamHeader + 16).toString('ascii')).toBe('DIB ')
+    expect(avi.indexOf('movi')).toBeGreaterThan(streamHeader)
+    expect(avi.indexOf('00db')).toBeGreaterThan(avi.indexOf('movi'))
+
+    const wmv = readFileSync(join(root, 'minimal.wmv'))
+    const asfHeaderGuid = '3026b2758e66cf11a6d900aa0062ce6c'
+    const asfDataGuid = '3626b2758e66cf11a6d900aa0062ce6c'
+    expect(wmv.subarray(0, 16).toString('hex')).toBe(asfHeaderGuid)
+    const asfHeaderSize = Number(wmv.readBigUInt64LE(16))
+    expect(wmv.readUInt32LE(24)).toBe(3)
+    expect([...wmv.subarray(28, 30)]).toEqual([1, 2])
+    let asfOffset = 30
+    const headerObjectGuids = []
+    for (let index = 0; index < 3; index += 1) {
+      headerObjectGuids.push(wmv.subarray(asfOffset, asfOffset + 16).toString('hex'))
+      asfOffset += Number(wmv.readBigUInt64LE(asfOffset + 16))
+    }
+    expect(asfOffset).toBe(asfHeaderSize)
+    expect(headerObjectGuids).toEqual([
+      'a1dcab8c47a9cf118ee400c00c205365',
+      '9107dcb7b7a9cf118ee600c00c205365',
+      'b503bf5f2ea9cf118ee300c00c205365',
+    ])
+    expect(wmv.subarray(asfHeaderSize, asfHeaderSize + 16).toString('hex')).toBe(asfDataGuid)
+    expect(Number(wmv.readBigUInt64LE(asfHeaderSize + 16))).toBe(50)
   })
 })

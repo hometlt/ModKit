@@ -743,6 +743,24 @@
       "note": "EBML header with DocType webm plus a Segment/Info pair"
     },
     {
+      "extension": "mk2/common-video",
+      "contributionId": "org.modkitx/avi",
+      "corpus": "synthetic",
+      "sample": "minimal.avi",
+      "minimumConfidence": 0.99,
+      "dataSource": "tree",
+      "note": "Classic AVI RIFF with one uncompressed video stream and one frame chunk"
+    },
+    {
+      "extension": "mk2/common-video",
+      "contributionId": "org.modkitx/wmv",
+      "corpus": "synthetic",
+      "sample": "minimal.wmv",
+      "minimumConfidence": 0.99,
+      "dataSource": "tree",
+      "note": "ASF Header/File/Stream/Header-Extension objects followed by an empty Data Object"
+    },
+    {
       "extension": "common/images",
       "contributionId": "org.modkitx/image-png",
       "corpus": "synthetic",

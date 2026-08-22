@@ -21,7 +21,8 @@
     }
   ],
   "limitations": [
-    "Portable inspection scans RIFF chunks for basic stream metadata and selected FourCC values; it is not a validating AVI demuxer and does not decode the inner audio or video codec.",
+    "Portable inspection validates one classic AVI 1.0 RIFF form, its hdrl/strl/movi hierarchy, core stream headers, and optional idx1 framing; OpenDML multi-RIFF segments and extended indexes are not supported.",
+    "The container reader does not decode inner audio/video frames or palette-change chunks.",
     "Portable export guarantees raw passthrough only. WebM transcoding and frame extraction require a VideoWasmDecoder injected by the host and are not guaranteed manifest operations.",
     "Manifest v1 cannot express the compatibility registry's extension-or-signature fallback without requiring both, so generated routing is intentionally narrowed to the AVI extension while the folder-owned detector retains RIFF/AVI signature checks."
   ],

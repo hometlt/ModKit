@@ -21,7 +21,8 @@
     }
   ],
   "limitations": [
-    "Portable inspection scans a bounded ASF object list only; it does not validate the complete container, identify every inner stream codec, or decode media.",
+    "Portable inspection validates ASF Header, File Properties, Stream Properties, Header Extension, and following Data Object framing; packet payloads, indexes, and optional header objects are not interpreted.",
+    "The container reader identifies standard video/audio format structures but does not decode elementary streams or decrypt DRM content.",
     "Portable export guarantees raw passthrough only. WebM transcoding and frame extraction require a VideoWasmDecoder injected by the host and are not guaranteed manifest operations.",
     "Manifest v1 cannot express the compatibility registry's extension-or-signature fallback without requiring both, so generated routing is intentionally narrowed to the WMV/ASF extensions while the folder-owned detector retains the ASF header GUID check."
   ],

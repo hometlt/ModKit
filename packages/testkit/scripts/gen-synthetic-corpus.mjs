@@ -1148,6 +1148,123 @@ function mp4() {
   )
 }
 
+/** Microsoft AVI RIFF form: one uncompressed 1×1 video stream and one `00db` frame chunk. */
+function avi() {
+  const chunk = (id, payload) =>
+    concat(
+      ascii(id),
+      u32le(payload.byteLength),
+      payload,
+      payload.byteLength % 2 === 0 ? new Uint8Array(0) : bytes(0),
+    )
+  const list = (type, ...children) => chunk('LIST', concat(ascii(type), ...children))
+
+  const mainHeader = new Uint8Array(56)
+  const main = new DataView(mainHeader.buffer)
+  main.setUint32(0, 33_333, true) // dwMicroSecPerFrame: approximately 30 fps
+  main.setUint32(4, 120, true) // dwMaxBytesPerSec
+  main.setUint32(16, 1, true) // dwTotalFrames
+  main.setUint32(24, 1, true) // dwStreams
+  main.setUint32(28, 4, true) // dwSuggestedBufferSize
+  main.setUint32(32, 1, true) // dwWidth
+  main.setUint32(36, 1, true) // dwHeight
+
+  const streamHeader = new Uint8Array(56)
+  const stream = new DataView(streamHeader.buffer)
+  streamHeader.set(ascii('vids'), 0)
+  streamHeader.set(ascii('DIB '), 4)
+  stream.setUint32(20, 1, true) // dwScale
+  stream.setUint32(24, 30, true) // dwRate
+  stream.setUint32(32, 1, true) // dwLength
+  stream.setUint32(36, 4, true) // dwSuggestedBufferSize
+  stream.setUint32(40, 0xffffffff, true) // dwQuality: default
+  stream.setInt16(52, 1, true) // rcFrame.right
+  stream.setInt16(54, 1, true) // rcFrame.bottom
+
+  const bitmap = new Uint8Array(40)
+  const bitmapView = new DataView(bitmap.buffer)
+  bitmapView.setUint32(0, 40, true) // BITMAPINFOHEADER size
+  bitmapView.setInt32(4, 1, true)
+  bitmapView.setInt32(8, 1, true)
+  bitmapView.setUint16(12, 1, true) // planes
+  bitmapView.setUint16(14, 24, true) // RGB24
+  bitmapView.setUint32(20, 4, true) // one DWORD-aligned scanline
+
+  const headerList = list(
+    'hdrl',
+    chunk('avih', mainHeader),
+    list('strl', chunk('strh', streamHeader), chunk('strf', bitmap)),
+  )
+  const movieList = list('movi', chunk('00db', bytes(0x20, 0x40, 0x80, 0x00)))
+  const body = concat(ascii('AVI '), headerList, movieList)
+  return concat(ascii('RIFF'), u32le(body.byteLength), body)
+}
+
+/** Microsoft ASF: mandatory Header/File/Stream/Header-Extension objects and an empty Data Object. */
+function wmv() {
+  const raw = value => new Uint8Array(Buffer.from(value, 'hex'))
+  const object = (guid, payload) =>
+    concat(raw(guid), u64le(BigInt(24 + payload.byteLength)), payload)
+  const fileId = raw('00112233445566778899aabbccddeeff')
+  const videoFormat = new Uint8Array(40)
+  const formatView = new DataView(videoFormat.buffer)
+  formatView.setUint32(0, 40, true)
+  formatView.setInt32(4, 1, true)
+  formatView.setInt32(8, 1, true)
+  formatView.setUint16(12, 1, true)
+  formatView.setUint16(14, 24, true)
+  videoFormat.set(ascii('WMV3'), 16)
+  formatView.setUint32(20, 4, true)
+  const videoTypeData = concat(u32le(1), u32le(1), bytes(0), u16le(40), videoFormat)
+  const streamProperties = object(
+    '9107dcb7b7a9cf118ee600c00c205365',
+    concat(
+      raw('c0ef19bc4d5bcf11a8fd00805f5c442b'), // ASF_Video_Media
+      raw('0057fb20555bcf11a8fd00805f5c442b'), // ASF_No_Error_Correction
+      u64le(0n),
+      u32le(videoTypeData.byteLength),
+      u32le(0),
+      u16le(1), // stream number 1, not encrypted
+      u32le(0),
+      videoTypeData,
+    ),
+  )
+  const headerExtension = object(
+    'b503bf5f2ea9cf118ee300c00c205365',
+    concat(raw('11d2d3abbaa9cf118ee600c00c205365'), u16le(6), u32le(0)),
+  )
+  const headerSize = 30 + 104 + streamProperties.byteLength + headerExtension.byteLength
+  const dataSize = 50
+  const fileSize = headerSize + dataSize
+  const fileProperties = object(
+    'a1dcab8c47a9cf118ee400c00c205365',
+    concat(
+      fileId,
+      u64le(BigInt(fileSize)),
+      u64le(0n), // creation date
+      u64le(0n), // data packet count
+      u64le(0n), // play duration
+      u64le(0n), // send duration
+      u64le(0n), // preroll
+      u32le(0), // flags
+      u32le(0),
+      u32le(0),
+      u32le(0),
+    ),
+  )
+  const header = concat(
+    raw('3026b2758e66cf11a6d900aa0062ce6c'),
+    u64le(BigInt(headerSize)),
+    u32le(3),
+    bytes(1, 2),
+    fileProperties,
+    streamProperties,
+    headerExtension,
+  )
+  const data = object('3626b2758e66cf11a6d900aa0062ce6c', concat(fileId, u64le(0n), bytes(1, 1)))
+  return concat(header, data)
+}
+
 /**
  * MPEG-1 video elementary stream: ISO/IEC 11172-2 §2.4.2.3 sequence_header, §2.4.2.2
  * sequence_end_code. Start codes are what the v1 codec inventories, and start codes are what
@@ -1753,6 +1870,7 @@ function uvm() {
 const FIXTURES = {
   'minimal.ani': ani,
   'minimal.astc': astc,
+  'minimal.avi': avi,
   'minimal.avif': avif,
   'minimal.big': big,
   'minimal.bmp': bmp,
@@ -1802,6 +1920,7 @@ const FIXTURES = {
   'minimal.mp4': mp4,
   'minimal.mpg': mpeg,
   'minimal.webm': webm,
+  'minimal.wmv': wmv,
   'minimal.xz': xz,
   'minimal.zst': zstd,
 }

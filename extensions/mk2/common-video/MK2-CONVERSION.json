@@ -27,7 +27,7 @@
       ],
       "droppedOperations": ["video.export", "video.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/mp4": {
       "verdict": "mechanical",
@@ -110,7 +110,7 @@
       ],
       "droppedOperations": ["video.export", "video.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     }
   }
 }
