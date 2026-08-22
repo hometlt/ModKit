@@ -3370,6 +3370,74 @@ function unityRess() {
   return concat(ascii('ModkitX Unity resource stream\0'), bytes(0xde, 0xad, 0xbe, 0xef))
 }
 
+function unityTexture() {
+  const header = ascii(
+    JSON.stringify({
+      version: 1,
+      unityVersion: '2021.3.0f1',
+      name: 'T_Fixture',
+      width: 2,
+      height: 1,
+      format: 4,
+      formatName: 'RGBA32',
+      mipCount: 1,
+      imageCount: 1,
+      textureDimension: 2,
+    }),
+  )
+  return concat(
+    ascii('MKXUNITYTEX\0'),
+    u32le(header.byteLength),
+    header,
+    bytes(255, 0, 0, 255, 0, 255, 0, 128),
+  )
+}
+
+function unityMesh() {
+  const positions = concat(
+    f32le(0),
+    f32le(0),
+    f32le(0),
+    f32le(1),
+    f32le(0),
+    f32le(0),
+    f32le(0),
+    f32le(1),
+    f32le(0),
+  )
+  const indices = concat(u16le(0), u16le(1), u16le(2))
+  const header = ascii(
+    JSON.stringify({
+      version: 2,
+      name: 'Mesh_Fixture',
+      unityVersion: '2021.3.0f1',
+      vertexCount: 3,
+      indexComponentType: 'uint16',
+      submeshes: [
+        {
+          name: 'Triangle',
+          firstIndex: 0,
+          indexCount: 3,
+          topology: 0,
+          baseVertex: 0,
+          firstVertex: 0,
+          vertexCount: 3,
+          materialIndex: 0,
+        },
+      ],
+      segments: {
+        positions: { offset: 0, byteLength: positions.byteLength, componentType: 'float32' },
+        indices: {
+          offset: positions.byteLength,
+          byteLength: indices.byteLength,
+          componentType: 'uint16',
+        },
+      },
+    }),
+  )
+  return concat(ascii('MKXUNITYMESH\0'), u32le(header.byteLength), header, positions, indices)
+}
+
 // ---------------------------------------------------------------- the corpus
 
 /** Every fixture: file name → builder. The name is what the acceptance corpus refers to. */
@@ -3390,6 +3458,8 @@ const FIXTURES = {
   'minimal.unity.assets': unityAssets,
   'minimal.unity.ress': unityRess,
   'minimal.unityfs': unityFs,
+  'minimal.unitytex': unityTexture,
+  'minimal.unitymesh': unityMesh,
   'minimal.bti': bti,
   'minimal.cub': cub,
   'minimal.mtrl': mtrl,

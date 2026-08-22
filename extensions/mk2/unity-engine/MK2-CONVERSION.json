@@ -26,7 +26,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.read"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/unity-assets": {
       "verdict": "convertible-with-rework",
@@ -56,7 +56,7 @@
       ],
       "droppedOperations": ["model.read", "model.render"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/unity-ress": {
       "verdict": "mechanical",

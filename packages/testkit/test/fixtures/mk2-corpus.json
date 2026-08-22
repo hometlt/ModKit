@@ -1186,6 +1186,29 @@
     },
     {
       "extension": "mk2/unity-engine",
+      "contributionId": "org.modkitx/unity",
+      "corpus": "synthetic",
+      "sample": "minimal.unitytex",
+      "minimumConfidence": 0.99,
+      "dataSource": "raster",
+      "expectedFirstPixelRgba": [255, 0, 0, 255],
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "MKXUNITYTEX v1 virtual payload with one two-pixel RGBA32 Texture2D mip"
+    },
+    {
+      "extension": "mk2/unity-engine",
+      "contributionId": "org.modkitx/unity-mesh",
+      "corpus": "synthetic",
+      "sample": "minimal.unitymesh",
+      "minimumConfidence": 0.99,
+      "dataSource": "model",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "MKXUNITYMESH v2 virtual payload with three float32 positions and one indexed triangle submesh"
+    },
+    {
+      "extension": "mk2/unity-engine",
       "contributionId": "org.modkitx/unityfs",
       "corpus": "synthetic",
       "sample": "minimal.unityfs",

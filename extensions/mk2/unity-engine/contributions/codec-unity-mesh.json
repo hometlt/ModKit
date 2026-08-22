@@ -21,9 +21,8 @@
     }
   ],
   "limitations": [
-    "The codec reads Modkit MKXUNITYMESH virtual payloads, not raw Unity .assets, .asset, .bundle, or .unity3d containers; unity-assets and unityfs are producer/container companions rather than decode-time requirements once a payload exists.",
-    "The module-level encodeUnityMeshPayload helper constructs virtual payloads from UnityMeshPayloadInput, but the registered ModelCodec has no RenderModel encoder; model.write and model.export are therefore not declared.",
-    "Material texture paths are exposed as requests and require host-provided asset resolution and image codecs."
+    "Decodes bounded MKXUNITYMESH v2 virtual payloads with float32 positions, uint16/uint32 triangle indices and validated submesh ranges, converting Unity Y-up coordinates to the preview Z-up basis.",
+    "Raw serialized assets, non-triangle topology, other vertex attributes, materials, skeletons, morph targets, animations, writing, and repacking are not implemented by this media codec."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "unity-mesh", "label": "Unity serialized Mesh" }],

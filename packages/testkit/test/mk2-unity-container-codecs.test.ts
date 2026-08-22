@@ -8,7 +8,9 @@ import {
   type AssetInput,
   type Codec,
   type ContributionContext,
+  type ModelSceneSource,
   type NamespaceEntrySource,
+  type RasterImageSource,
   type ResourceBudget,
   type TreeDataSource,
 } from '@modkitx-x3/sdk'
@@ -109,7 +111,7 @@ async function namespace(session: Awaited<ReturnType<typeof open>>) {
   return { lease, source: lease.value as NamespaceEntrySource }
 }
 
-describe('ported Unity container codecs', () => {
+describe('ported Unity codecs', () => {
   it('opens a UnityFS block table and publishes its serialized asset entry', async () => {
     const session = await open('unityfs', await fixture('minimal.unityfs'))
     expect(await inspect(session)).toMatchObject({
@@ -165,6 +167,64 @@ describe('ported Unity container codecs', () => {
     await session.dispose()
   })
 
+  it('decodes an MKXUNITYTEX RGBA32 payload to raster regions', async () => {
+    const session = await open('unity', await fixture('minimal.unitytex'))
+    expect(await inspect(session)).toMatchObject({
+      format: 'unity',
+      profile: 'MKXUNITYTEX/RGBA32',
+      name: 'T_Fixture',
+      width: 2,
+      height: 1,
+      pixelFormat: 'RGBA32',
+    })
+    const lease = await session.dataSource('common.view/raster-image-source', 1)
+    const raster = lease.value as RasterImageSource
+    expect(await raster.info()).toMatchObject({ width: 2, height: 1, decodedAccess: true })
+    await expect(
+      raster.readRegion?.({
+        x: 0,
+        y: 0,
+        width: 2,
+        height: 1,
+        pixelFormat: 'rgba8',
+        maxBytes: 8,
+      }),
+    ).resolves.toMatchObject({
+      pixels: new Uint8Array([255, 0, 0, 255, 0, 255, 0, 128]),
+    })
+    await lease.release()
+    await session.dispose()
+  })
+
+  it('decodes an MKXUNITYMESH triangle to model geometry', async () => {
+    const session = await open('unity-mesh', await fixture('minimal.unitymesh'))
+    expect(await inspect(session)).toMatchObject({
+      format: 'unity-mesh',
+      profile: 'MKXUNITYMESH/triangles',
+      name: 'Mesh_Fixture',
+      vertices: 3,
+      indices: 3,
+      triangles: 1,
+      submeshes: 1,
+      indexType: 'uint16',
+    })
+    const lease = await session.dataSource('common.view/model-scene-source', 1)
+    const model = lease.value as ModelSceneSource
+    expect(await model.info()).toMatchObject({
+      scenes: 1,
+      meshes: 1,
+      primitives: 1,
+      geometryAccess: 'decoded',
+    })
+    expect(await model.primitive?.('primitive-0', { maxBytes: 1024 })).toMatchObject({
+      topology: 'triangles',
+      positions: new Float32Array([0, 0, 0, 1, 0, 0, 0, 0, 1]),
+      indices: new Uint32Array([0, 1, 2]),
+    })
+    await lease.release()
+    await session.dispose()
+  })
+
   it('rejects inconsistent headers and enforces resource budgets', async () => {
     const bundle = await fixture('minimal.unityfs')
     const badBundle = bundle.slice()
@@ -179,5 +239,17 @@ describe('ported Unity container codecs', () => {
       /maxNodes/u,
     )
     await expect(open('unity-ress', new Uint8Array())).rejects.toThrow(/empty/u)
+
+    const texture = await fixture('minimal.unitytex')
+    await expect(open('unity', texture.subarray(0, texture.byteLength - 1))).rejects.toThrow(
+      /pixel bytes/u,
+    )
+    const mesh = await fixture('minimal.unitymesh')
+    const badMesh = mesh.slice()
+    new DataView(badMesh.buffer).setUint16(badMesh.byteLength - 2, 9, true)
+    await expect(open('unity-mesh', badMesh)).rejects.toThrow(/out of range/u)
+    await expect(open('unity-mesh', mesh, { ...budget, maxNodes: 2 })).rejects.toThrow(
+      /header|maxNodes/u,
+    )
   })
 })

@@ -84,7 +84,9 @@ const completedPortableUnreal = [
   find('org.modkitx/unreal-iostore'),
 ]
 const completedPortableUnity = [
+  find('org.modkitx/unity'),
   find('org.modkitx/unity-assets'),
+  find('org.modkitx/unity-mesh'),
   find('org.modkitx/unity-ress'),
   find('org.modkitx/unityfs'),
 ]
@@ -1008,5 +1010,45 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     expect(unityFs.subarray(unityInfo + 54, unityInfo + 72).toString('ascii')).toBe(
       'cab-fixture.assets',
     )
+
+    const unityTexture = readFileSync(join(root, 'minimal.unitytex'))
+    expect(unityTexture.subarray(0, 12).toString('ascii')).toBe('MKXUNITYTEX\0')
+    const unityTextureJsonBytes = unityTexture.readUInt32LE(12)
+    const unityTextureHeader = JSON.parse(
+      unityTexture.subarray(16, 16 + unityTextureJsonBytes).toString('utf8'),
+    )
+    expect(unityTextureHeader).toMatchObject({
+      version: 1,
+      name: 'T_Fixture',
+      width: 2,
+      height: 1,
+      format: 4,
+      mipCount: 1,
+    })
+    expect([...unityTexture.subarray(16 + unityTextureJsonBytes)]).toEqual([
+      255, 0, 0, 255, 0, 255, 0, 128,
+    ])
+
+    const unityMesh = readFileSync(join(root, 'minimal.unitymesh'))
+    expect(unityMesh.subarray(0, 13).toString('ascii')).toBe('MKXUNITYMESH\0')
+    const unityMeshJsonBytes = unityMesh.readUInt32LE(13)
+    const unityMeshPayload = 17 + unityMeshJsonBytes
+    const unityMeshHeader = JSON.parse(unityMesh.subarray(17, unityMeshPayload).toString('utf8'))
+    expect(unityMeshHeader).toMatchObject({
+      version: 2,
+      name: 'Mesh_Fixture',
+      vertexCount: 3,
+      indexComponentType: 'uint16',
+      submeshes: [{ firstIndex: 0, indexCount: 3, topology: 0 }],
+      segments: {
+        positions: { offset: 0, byteLength: 36, componentType: 'float32' },
+        indices: { offset: 36, byteLength: 6, componentType: 'uint16' },
+      },
+    })
+    expect([
+      unityMesh.readFloatLE(unityMeshPayload + 12),
+      unityMesh.readFloatLE(unityMeshPayload + 28),
+      unityMesh.readUInt16LE(unityMeshPayload + 40),
+    ]).toEqual([1, 1, 2])
   })
 })

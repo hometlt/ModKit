@@ -21,12 +21,8 @@
     }
   ],
   "limitations": [
-    "Decode covers the implemented Texture2D, cubemap, array, volume, Crunch, and mapped GPU formats; platform swizzles, XR/depth-stencil formats, and shader-native collections are not supported.",
-    "Headerless .resS, .ress, and .resource streams require a matching Unity serialized .assets or .asset companion to identify texture ranges and formats.",
-    "Unity serialized files and resource streams are same-codec path roles; manifest v1 companions name codec IDs rather than same-codec sidecars.",
-    "Manifest v1 cannot express the handwritten registry's extension-or-signature fallback without conjunctive evidence, so generated routing is extension-only.",
-    "The runtime is conservatively exposed to Node hosts because its transitive GPU decode graph reaches external WASM loaders whose browser import evidence is not yet isolated into a verifiable leaf entrypoint.",
-    "Writing Unity serialized assets or resource streams is not implemented."
+    "Decodes bounded MKXUNITYTEX v1 virtual payloads containing one 2D, one-mip TextureFormat 4 RGBA32 image and publishes random-access RGBA8 regions.",
+    "Raw Unity serialized assets, resource-stream companions, compressed formats, mip chains, arrays, cubemaps, volumes, platform swizzles, writing, and repacking are not implemented by this media codec."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "unity", "label": "Unity serialized texture" }],
@@ -34,7 +30,10 @@
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
-    "match": { "extensions": ["assets", "asset", "ress", "resource", "unitytex"] },
+    "match": {
+      "extensions": ["unitytex"],
+      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "4d4b58554e49545954455800" }]
+    },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {
