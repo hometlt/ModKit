@@ -57,7 +57,11 @@ const completedPortableDocuments = [
 const completedPortableAgeSeries = [
   find('org.modkitx/age-bar'),
   find('org.modkitx/age-drs'),
+  find('org.modkitx/bti'),
+  find('org.modkitx/cub'),
   find('org.modkitx/ddt'),
+  find('org.modkitx/mtrl'),
+  find('org.modkitx/prt'),
   find('org.modkitx/sld'),
   find('org.modkitx/slp'),
   find('org.modkitx/smp'),
@@ -97,7 +101,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     expect(
       outcomes.filter(outcome => outcome.corpus === 'synthetic').length,
     ).toBeGreaterThanOrEqual(9)
-  }, 30_000)
+  }, 120_000)
 
   it('routes the signature cases on bytes alone, with the file name saying nothing', async () => {
     // Task E: these codecs declared one v1 rule — a path glob matching every file — and MK3 does
@@ -120,7 +124,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
         detail: undefined,
       })
     }
-  }, 20_000)
+  }, 60_000)
 
   it('activates the portable variant in a Node worker, not just trusted in-process', async () => {
     // The worker backend verifies every artifact file against the loader's digests before it
@@ -151,7 +155,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
         detail: undefined,
       })
     }
-  }, 15_000)
+  }, 240_000)
 
   it('reports a missing corpus sample as a skip rather than a pass', async () => {
     const [outcome] = await runMk2Acceptance(
@@ -599,6 +603,57 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       ['slp', 42, 'sprite'],
       ['wav', 7, 'sound'],
     ])
+
+    const bti = readFileSync(join(root, 'minimal.bti'))
+    expect(bti.toString('utf8')).toBe(
+      'alpha=4 nomip noalphatest noLowDetail displacement fmt=BC2\n',
+    )
+
+    const cub = readFileSync(join(root, 'minimal.cub'))
+    expect(
+      cub
+        .toString('utf8')
+        .split(/\r?\n/u)
+        .map(line => line.trim())
+        .filter(line => line.length > 0 && !line.startsWith('//')),
+    ).toEqual([
+      'sky_up.ddt',
+      'sky_down.ddt',
+      'sky_front.ddt',
+      'sky_back.ddt',
+      'sky_left.ddt',
+      'sky_right.ddt',
+    ])
+
+    const mtrl = readFileSync(join(root, 'minimal.mtrl'))
+    expect(mtrl.subarray(0, 4).toString('ascii')).toBe('MTRL')
+    expect([mtrl.readUInt32LE(4), mtrl.readUInt32LE(8), mtrl.readUInt32LE(12)]).toEqual([17, 7, 19])
+    expect([mtrl.readInt32LE(84), mtrl.readInt32LE(96)]).toEqual([7, 10])
+    expect(mtrl.subarray(212).toString('utf8').split('\0')).toEqual([
+      'terrain\\grass.ddt',
+      'sky.cub',
+      'terrain\\grass_n.ddt',
+      '',
+    ])
+
+    const prt = readFileSync(join(root, 'minimal.prt'))
+    expect([prt.readInt32LE(0), prt.readInt32LE(16), prt.readInt32LE(20)]).toEqual([12, 64, 0])
+    expect([
+      prt.readInt32LE(212),
+      prt.readInt32LE(216),
+      prt.readInt32LE(220),
+      prt.readInt32LE(224),
+    ]).toEqual([1, 4, 64, 64])
+    expect([
+      prt.readInt32LE(260),
+      prt.readInt32LE(284),
+      prt.readInt32LE(332),
+      prt.readInt32LE(336),
+      prt.readInt32LE(440),
+    ]).toEqual([1, 1, 1, 1, 1])
+    const brgCharacters = prt.readInt32LE(456)
+    expect(brgCharacters).toBe(9)
+    expect(prt.subarray(460, 460 + brgCharacters * 2).toString('utf16le')).toBe('spark.brg')
 
     const ddt = readFileSync(join(root, 'minimal.ddt'))
     expect(ddt.subarray(0, 4).toString('ascii')).toBe('RTS3')

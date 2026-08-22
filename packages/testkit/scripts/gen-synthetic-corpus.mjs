@@ -2626,10 +2626,134 @@ function sld() {
   )
 }
 
+/** AoM Bang Texture Info is a UTF-8 texture-compilation descriptor, not a pixel container. */
+function bti() {
+  return ascii('alpha=4 nomip noalphatest noLowDetail displacement fmt=BC2\n')
+}
+
+/** AoM CUB stores six ordered texture references: up, down, front, back, left, right. */
+function cub() {
+  return ascii(
+    '// Up\nsky_up.ddt\n// Down\nsky_down.ddt\n// Front\nsky_front.ddt\n// Back\nsky_back.ddt\n// Left\nsky_left.ddt\n// Right\nsky_right.ddt\n',
+  )
+}
+
+/** AoM MTRL: fixed 212-byte material record followed by length-declared NUL-terminated UTF-8 paths. */
+function mtrl() {
+  const references = ['terrain\\grass.ddt', 'sky.cub', 'terrain\\grass_n.ddt', '', '', '']
+  const pathBytes = references.map(reference => ascii(reference))
+  const vector = (red, green, blue) => concat(f32le(red), f32le(green), f32le(blue))
+  return concat(
+    ascii('MTRL'),
+    references.map(reference => u32le(reference.length)),
+    vector(1, 1, 1),
+    vector(0.5, 0.5, 0.5),
+    vector(0.25, 0.25, 0.25),
+    vector(0, 0, 0),
+    f32le(16),
+    f32le(1),
+    u32le(7),
+    bytes(0, 0, 0, 1, 1, 1, 1, 0),
+    u32le(10),
+    f32le(0.5),
+    f32le(1),
+    f32le(0.25),
+    f32le(0),
+    Array.from({ length: 6 }, () => u32le(0)),
+    Array.from({ length: 8 }, (_, index) => u32le(index)),
+    Array.from({ length: 6 }, () => u32le(0xffffffff)),
+    Array.from({ length: 4 }, () => u32le(0)),
+    pathBytes.filter(path => path.byteLength > 0).map(path => concat(path, bytes(0))),
+  )
+}
+
+/** AoM PRT v12 with one entry in every variable table and real UTF-16LE references. */
+function prt() {
+  const utf16le = value => {
+    const out = new Uint8Array(value.length * 2)
+    const view = new DataView(out.buffer)
+    for (let index = 0; index < value.length; index += 1)
+      view.setUint16(index * 2, value.charCodeAt(index), true)
+    return out
+  }
+  const string = value => concat(u32le(value.length), utf16le(value))
+  const floats = (count, value = 0) => Array.from({ length: count }, () => f32le(value))
+  return concat(
+    u32le(12),
+    bytes(0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0),
+    u32le(64),
+    u32le(0),
+    floats(32, 0.5),
+    bytes(0, 0, 0, 0),
+    u32le(1),
+    floats(12, 1),
+    bytes(0, 0, 0, 0),
+    u32le(1),
+    u32le(4),
+    u32le(64),
+    u32le(64),
+    u32le(1),
+    bytes(0, 0, 0, 255),
+    bytes(255, 255, 255, 255),
+    f32le(8),
+    f32le(12),
+    f32le(1),
+    f32le(0),
+    bytes(1, 0, 0, 0),
+    u32le(1),
+    f32le(1),
+    f32le(0),
+    f32le(2),
+    f32le(0),
+    bytes(1, 0, 0, 0),
+    u32le(1),
+    floats(10, 1),
+    bytes(1, 1, 0, 0),
+    u32le(1),
+    u32le(1),
+    f32le(2),
+    f32le(0),
+    f32le(0.5),
+    bytes(255, 128, 64, 255),
+    bytes(0, 0, 0, 0),
+    floats(20, 0),
+    u32le(1),
+    u32le(0),
+    f32le(0),
+    f32le(0),
+    string('spark.brg'),
+    bytes(255, 128, 64, 255),
+    f32le(1),
+    string('spark.ddt'),
+    f32le(1),
+    f32le(0),
+    f32le(1),
+    f32le(1),
+    f32le(1),
+    f32le(0),
+    f32le(1),
+    f32le(1),
+    bytes(1, 0, 0, 0),
+    bytes(255, 255, 255, 255),
+    f32le(1),
+    f32le(1),
+    bytes(1, 1, 0, 0),
+    u32le(0),
+    u32le(1),
+    floats(6, 0),
+    string('ground'),
+    string('dust.prt'),
+  )
+}
+
 // ---------------------------------------------------------------- the corpus
 
 /** Every fixture: file name → builder. The name is what the acceptance corpus refers to. */
 const FIXTURES = {
+  'minimal.bti': bti,
+  'minimal.cub': cub,
+  'minimal.mtrl': mtrl,
+  'minimal.prt': prt,
   'minimal.age-bar': ageBar,
   'minimal.age-drs': ageDrs,
   'minimal.ai': ai,

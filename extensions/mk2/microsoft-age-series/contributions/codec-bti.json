@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
   "id": "org.modkitx/bti",
-  "displayName": "AoM BTI texture",
+  "displayName": "AoM BTI texture info",
   "status": "partial",
   "runtimeVariants": [
     {
@@ -21,29 +21,29 @@
     }
   ],
   "limitations": [
-    "Pixel reads require a self-described embedded DDS, PNG, or TGA payload; native BTI header and payload decoding remains pending corpus-backed layout confirmation.",
-    "Generated routing is extension-only because the current codec has no corpus-backed standalone BTI signature detector.",
-    "The manifest conservatively exposes runtime operations to Node hosts because the shared legacy RTS entrypoint reaches the DDS external CommonJS WASM loader whose browser import graph is not yet verifiable."
+    "The codec validates the documented alpha/fmt grammar, supported formats, flags, strict UTF-8, and scalar/node budgets; BTI is texture metadata and contains no pixel payload.",
+    "Generated routing remains extension-based because BTI is plain text without a magic signature; runtime detection additionally requires both alpha and fmt clauses.",
+    "The inspector is self-contained and portable; texture compilation, editing, and writing are not implemented."
   ],
   "spec": {
-    "formatRefs": [{ "formatId": "bti", "label": "AoM BTI texture" }],
-    "roles": ["media"],
+    "formatRefs": [{ "formatId": "bti", "label": "AoM BTI texture info" }],
+    "roles": ["semantic"],
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
-    "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
+    "openIntents": ["probe", "inspect", "full", "export"],
     "match": { "extensions": ["bti"] },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {
-        "id": "raster-metadata",
-        "contract": "common.image/raster-metadata",
+        "id": "flow-metadata",
+        "contract": "common.document/flow-metadata",
         "major": 1,
         "stage": "authored",
         "lossy": false
       }
     ],
     "publishesDataSources": [
-      { "contract": "common.view/raster-image-source", "major": 1 },
+      { "contract": "common.view/text-data-source", "major": 1 },
       { "contract": "common.view/tree-data-source", "major": 1 },
       { "contract": "common.view/byte-range-source", "major": 1 }
     ],

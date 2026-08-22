@@ -17,7 +17,19 @@ import {
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const extensionRoot = join(repoRoot, 'extensions', 'mk2', 'microsoft-age-series')
 const fixtureRoot = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
-const formats = ['age-bar', 'age-drs', 'ddt', 'sld', 'slp', 'smp', 'smx'] as const
+const formats = [
+  'age-bar',
+  'age-drs',
+  'bti',
+  'cub',
+  'ddt',
+  'mtrl',
+  'prt',
+  'sld',
+  'slp',
+  'smp',
+  'smx',
+] as const
 type Format = (typeof formats)[number]
 
 const budget: ResourceBudget = {
@@ -225,6 +237,104 @@ describe('ported Microsoft Age Series codecs', () => {
     await session.dispose()
   })
 
+  it('parses BTI texture-compilation settings without claiming an embedded raster', async () => {
+    const session = await open('bti', await fixture('bti'))
+    expect(await summary(session)).toEqual({
+      format: 'bti',
+      textureFormat: 'BC2',
+      alphaBits: 4,
+      useMips: false,
+      alphaTest: false,
+      canBeLowDetail: false,
+      displacement: true,
+    })
+    const descriptor = await session.descriptor()
+    expect(descriptor.dataSources.map(source => source.contract)).toEqual(
+      expect.arrayContaining([
+        'common.view/byte-range-source',
+        'common.view/text-data-source',
+        'common.view/tree-data-source',
+      ]),
+    )
+    expect(descriptor.dataSources.map(source => source.contract)).not.toContain(
+      'common.view/raster-image-source',
+    )
+    await session.dispose()
+  })
+
+  it('preserves the documented CUB face order as six texture references', async () => {
+    const session = await open('cub', await fixture('cub'))
+    expect(await summary(session)).toEqual({
+      format: 'cub',
+      faceCount: 6,
+      faces: {
+        up: 'sky_up.ddt',
+        down: 'sky_down.ddt',
+        front: 'sky_front.ddt',
+        back: 'sky_back.ddt',
+        left: 'sky_left.ddt',
+        right: 'sky_right.ddt',
+      },
+    })
+    const lease = await session.dataSource('common.view/tree-data-source', 1)
+    const tree = lease.value as TreeDataSource
+    expect((await tree.children(await tree.root(), { limit: 10 })).items).toHaveLength(6)
+    await lease.release()
+    await session.dispose()
+  })
+
+  it('parses MTRL material fields and its length-delimited texture references', async () => {
+    const session = await open('mtrl', await fixture('mtrl'))
+    expect(await summary(session)).toMatchObject({
+      format: 'mtrl',
+      id: 7,
+      alpha: 1,
+      alphaMode: 'texture',
+      specularPower: 16,
+      referenceCount: 3,
+      references: {
+        texture: 'terrain\\grass.ddt',
+        secondaryTexture: 'sky.cub',
+        bumpMap: 'terrain\\grass_n.ddt',
+        specularMap: '',
+        glossMap: '',
+        emissiveMap: '',
+      },
+    })
+    const lease = await session.dataSource('common.view/tree-data-source', 1)
+    const tree = lease.value as TreeDataSource
+    expect((await tree.children(await tree.root(), { limit: 10 })).items).toHaveLength(3)
+    await lease.release()
+    await session.dispose()
+  })
+
+  it('walks complete PRT v12 tables and UTF-16LE asset references', async () => {
+    const session = await open('prt', await fixture('prt'))
+    expect(await summary(session)).toEqual({
+      format: 'prt',
+      version: 12,
+      maxParticles: 64,
+      appearanceType: 'billboard',
+      shapeType: 'box-solid',
+      materialType: 'additive',
+      frames: 4,
+      frameWidth: 64,
+      frameHeight: 64,
+      appearanceFiles: 1,
+      opacityStages: 1,
+      scaleStages: 1,
+      colorStages: 1,
+      collisionTypes: 1,
+      referenceCount: 3,
+      brgFileName: 'spark.brg',
+    })
+    const lease = await session.dataSource('common.view/tree-data-source', 1)
+    const tree = lease.value as TreeDataSource
+    expect((await tree.children(await tree.root(), { limit: 10 })).items).toHaveLength(8)
+    await lease.release()
+    await session.dispose()
+  })
+
   it('decodes an SLD main-layer DXT1 block and exposes bounded frame access', async () => {
     const session = await open('sld', await fixture('sld'))
     expect(await summary(session)).toMatchObject({
@@ -319,12 +429,18 @@ describe('ported Microsoft Age Series codecs', () => {
     const view = new DataView(corrupted.buffer, corrupted.byteOffset, corrupted.byteLength)
     if (format === 'age-bar') view.setBigUint64(288, 0xffffffffffffffffn, true)
     else if (format === 'age-drs') view.setUint32(64 + 4, corrupted.byteLength + 1, true)
+    else if (format === 'bti') corrupted[6] = 0x32
+    else if (format === 'cub') corrupted.fill(0x20)
     else if (format === 'ddt') view.setUint32(20, 7, true)
+    else if (format === 'mtrl') view.setUint32(4, 261, true)
+    else if (format === 'prt') view.setInt32(212, 0x7fffffff, true)
     else if (format === 'sld') view.setUint32(28, corrupted.byteLength + 1, true)
     else if (format === 'slp') view.setUint32(68, corrupted.byteLength + 1, true)
     else if (format === 'smp') view.setUint32(120, corrupted.byteLength + 1, true)
     else view.setUint32(46, corrupted.byteLength + 1, true)
-    await expect(open(format, corrupted)).rejects.toThrow(/BAR|DRS|DDT|SLD|SLP|SMP|SMX/u)
+    await expect(open(format, corrupted)).rejects.toThrow(
+      /BAR|DRS|BTI|CUB|DDT|MTRL|PRT|SLD|SLP|SMP|SMX/u,
+    )
   })
 
   it.each(formats)('%s enforces node and scalar budgets', async format => {

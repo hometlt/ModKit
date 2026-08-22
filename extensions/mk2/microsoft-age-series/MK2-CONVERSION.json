@@ -64,7 +64,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.read"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/cub": {
       "verdict": "mechanical",
@@ -79,7 +79,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.read"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/ddt": {
       "verdict": "mechanical",
@@ -109,7 +109,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.read"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/prt": {
       "verdict": "mechanical",
@@ -124,7 +124,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.read"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/sld": {
       "verdict": "mechanical",
