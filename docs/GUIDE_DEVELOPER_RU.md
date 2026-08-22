@@ -394,6 +394,14 @@ Namespace-кодек объявляет в `probe.markers` точные отно
 `maxBytes`, `maxDepth`, `maxPathBytes` дают именованные отказы. Полный обход namespace возможен
 только после выбора кодека и всё равно остаётся внутри границ провайдера.
 
+Remote single-file source подключается через `@modkitx-x3/vfs/providers/http`: выберите `http` или
+`https`, передайте допустимые origins и `fetch`/network broker. Provider требует честные HEAD
+`content-length` + `accept-ranges: bytes`, принимает только точные `206` и применяет те же
+mount-wide read budgets. Выбранный пользователем браузерный файл подключается через
+`@modkitx-x3/vfs/providers/browser-file`: сначала `provider.register('browser-file:…', handle)`,
+затем обычный `openMount`. Этот provider не открывает picker и не получает ambient-доступ к
+файловой системе — authority целиком содержится в переданном handle.
+
 ### 4.2 Собственный VFS-протокол
 
 Внешнее приложение может реализовать публичный `VfsProvider` для API сайта или собственного
