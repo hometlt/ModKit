@@ -30,7 +30,7 @@
       ],
       "droppedOperations": ["view.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/warzone-lev": {
       "verdict": "needs-new-contract",
@@ -48,7 +48,7 @@
       ],
       "droppedOperations": ["view.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/warzone-pie": {
       "verdict": "mechanical",
@@ -63,7 +63,7 @@
       ],
       "droppedOperations": ["model.read", "model.render"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/warzone-wrf": {
       "verdict": "needs-new-contract",
@@ -81,7 +81,7 @@
       ],
       "droppedOperations": ["view.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/warzone-wz": {
       "verdict": "needs-new-contract",
@@ -99,7 +99,7 @@
       ],
       "droppedOperations": ["view.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/warzone2100-map": {
       "verdict": "needs-new-contract",
@@ -118,7 +118,7 @@
       ],
       "droppedOperations": ["view.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     }
   }
 }

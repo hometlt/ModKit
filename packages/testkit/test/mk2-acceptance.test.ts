@@ -94,6 +94,14 @@ const completedPortableHeroes = [
   find('org.modkitx/heroes4-resource'),
 ]
 const completedPortableSpring = [find('org.modkitx/spring-rapid'), find('org.modkitx/spring-vfs')]
+const completedPortableWarzone = [
+  find('org.modkitx/warzone-img'),
+  find('org.modkitx/warzone-lev'),
+  find('org.modkitx/warzone-pie'),
+  find('org.modkitx/warzone-wrf'),
+  find('org.modkitx/warzone-wz'),
+  find('org.modkitx/warzone2100-map'),
+]
 const completedPortableVector = [find('org.modkitx/emf'), find('org.modkitx/wmf')]
 const completedPortableDocuments = [
   find('org.modkitx/csv'),
@@ -230,6 +238,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       ...completedPortableMicrosoftHaloWars,
       ...completedPortableHeroes,
       ...completedPortableSpring,
+      ...completedPortableWarzone,
       ...completedPortableVector,
       ...completedPortableModels,
       ...completedPortableVideos,
@@ -864,6 +873,25 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     expect(springVfs).toMatch(/^return\s*\{/u)
     expect(springVfs).toContain('name = "Fixture Game"')
     expect(springVfs).toContain('depend = { "Spring content v1", "Engine 105" }')
+
+    expect(readFileSync(join(root, 'minimal.warzone.img'), 'utf8')).toMatch(/^0,0,button\.png/mu)
+    expect(readFileSync(join(root, 'minimal.warzone.lev'), 'utf8')).toContain(
+      'dataset FIXTURE_DATA',
+    )
+    expect(readFileSync(join(root, 'minimal.warzone.pie'), 'ascii')).toMatch(/^PIE 3\n/u)
+    expect(readFileSync(join(root, 'minimal.warzone.wrf'), 'utf8')).toContain(
+      'file IMD "fixture.pie"',
+    )
+    expect(readFileSync(join(root, 'minimal.warzone.wz')).subarray(0, 4).toString('latin1')).toBe(
+      'PK\x03\x04',
+    )
+    const warzoneMap = readFileSync(join(root, 'minimal.warzone.map'))
+    expect(warzoneMap.subarray(0, 4).toString('ascii')).toBe('map ')
+    expect([
+      warzoneMap.readUInt32LE(4),
+      warzoneMap.readUInt32LE(8),
+      warzoneMap.readUInt32LE(12),
+    ]).toEqual([40, 2, 2])
 
     // These checks intentionally do not import the codecs. They independently walk each model
     // fixture's standard wire representation so a generator/reader bug cannot agree with itself.

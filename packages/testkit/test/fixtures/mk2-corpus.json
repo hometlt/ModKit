@@ -1717,6 +1717,60 @@
       "note": "Spring modinfo.lua table with identity, section, dependencies, and replacement aliases"
     },
     {
+      "extension": "mk2/opensource-warzone-2100",
+      "contributionId": "org.modkitx/warzone-img",
+      "corpus": "synthetic",
+      "sample": "minimal.warzone.img",
+      "minimumConfidence": 0.94,
+      "dataSource": "table",
+      "note": "Warzone image list with resolved sprite paths"
+    },
+    {
+      "extension": "mk2/opensource-warzone-2100",
+      "contributionId": "org.modkitx/warzone-lev",
+      "corpus": "synthetic",
+      "sample": "minimal.warzone.lev",
+      "minimumConfidence": 0.96,
+      "dataSource": "table",
+      "note": "Warzone campaign dataset and multiplayer level declarations"
+    },
+    {
+      "extension": "mk2/opensource-warzone-2100",
+      "contributionId": "org.modkitx/warzone-pie",
+      "corpus": "synthetic",
+      "sample": "minimal.warzone.pie",
+      "minimumConfidence": 0.99,
+      "dataSource": "tree",
+      "note": "Warzone PIE 3 structural model metadata"
+    },
+    {
+      "extension": "mk2/opensource-warzone-2100",
+      "contributionId": "org.modkitx/warzone-wrf",
+      "corpus": "synthetic",
+      "sample": "minimal.warzone.wrf",
+      "minimumConfidence": 0.96,
+      "dataSource": "table",
+      "note": "Warzone resource list with directory-relative model and texture references"
+    },
+    {
+      "extension": "mk2/opensource-warzone-2100",
+      "contributionId": "org.modkitx/warzone-wz",
+      "corpus": "synthetic",
+      "sample": "minimal.warzone.wz",
+      "minimumConfidence": 0.99,
+      "dataSource": "namespace",
+      "note": "ZIP-backed Warzone package with one stored entry"
+    },
+    {
+      "extension": "mk2/opensource-warzone-2100",
+      "contributionId": "org.modkitx/warzone2100-map",
+      "corpus": "synthetic",
+      "sample": "minimal.warzone.map",
+      "minimumConfidence": 0.99,
+      "dataSource": "tree",
+      "note": "Warzone game.map v40 terrain with four tiles and an empty gateway table"
+    },
+    {
       "extension": "common/images",
       "contributionId": "org.modkitx/image-png",
       "corpus": "synthetic",

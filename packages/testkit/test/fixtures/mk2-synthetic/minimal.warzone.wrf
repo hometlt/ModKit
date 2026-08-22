@@ -1,0 +1,3 @@
+directory "components"
+file IMD "fixture.pie"
+file TEXPAGE "fixture.png"

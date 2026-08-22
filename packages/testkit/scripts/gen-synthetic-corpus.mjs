@@ -2136,6 +2136,49 @@ function springVfs() {
 }\n`)
 }
 
+function warzoneImg() {
+  return ascii('0,0,button.png\n-4,7,cursor.png\n')
+}
+
+function warzoneLev() {
+  return ascii(
+    'campaign FIXTURE_DATA\ndata "wrf/basic.wrf"\nlevel FIXTURE_MAP\nplayers 4\ntype 14\ndataset FIXTURE_DATA\ngame "multiplay/maps/Fixture.gam"\ndata "multiplay/maps/Fixture.wrf"\n',
+  )
+}
+
+function warzonePie() {
+  return ascii(
+    'PIE 3\nTYPE 200\nTEXTURE 0 fixture.png 0 0\nLEVELS 1\nLEVEL 1\nPOINTS 0\nPOLYGONS 0\n',
+  )
+}
+
+function warzoneWrf() {
+  return ascii('directory "components"\nfile IMD "fixture.pie"\nfile TEXPAGE "fixture.png"\n')
+}
+
+function warzoneWz() {
+  return zip()
+}
+
+function warzoneMap() {
+  return concat(
+    ascii('map '),
+    u32le(40),
+    u32le(2),
+    u32le(2),
+    u16le(1),
+    u16le(10),
+    u16le(2),
+    u16le(20),
+    u16le(3),
+    u16le(30),
+    u16le(4),
+    u16le(40),
+    u32le(1),
+    u32le(0),
+  )
+}
+
 /** EA SAGE BIG4: one stored entry, with the mixed-endian header and null-terminated index path. */
 function big() {
   const name = ascii('hello.txt\0')
@@ -4369,6 +4412,12 @@ const FIXTURES = {
   'minimal.heroes4.h4r': heroes4Resource,
   'minimal.spring.sdp': springRapid,
   'modinfo.lua': springVfs,
+  'minimal.warzone.img': warzoneImg,
+  'minimal.warzone.lev': warzoneLev,
+  'minimal.warzone.pie': warzonePie,
+  'minimal.warzone.wrf': warzoneWrf,
+  'minimal.warzone.wz': warzoneWz,
+  'minimal.warzone.map': warzoneMap,
   'minimal.sage.skudef': sageSkuDef,
   'minimal.cnc3-data.xml': cnc3Data,
   'minimal.cnc3-localization.csf': cnc3Localization,

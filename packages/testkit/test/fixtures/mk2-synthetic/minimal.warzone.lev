@@ -1,0 +1,8 @@
+campaign FIXTURE_DATA
+data "wrf/basic.wrf"
+level FIXTURE_MAP
+players 4
+type 14
+dataset FIXTURE_DATA
+game "multiplay/maps/Fixture.gam"
+data "multiplay/maps/Fixture.wrf"
