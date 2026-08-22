@@ -45,6 +45,9 @@ const completedPortableDocuments = [
   find('org.modkitx/odt'),
   find('org.modkitx/odp'),
   find('org.modkitx/ods'),
+  find('org.modkitx/pdf'),
+  find('org.modkitx/ai'),
+  find('org.modkitx/drawio'),
 ]
 
 describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tasks E/F/G)', () => {
@@ -353,5 +356,34 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
         expect(data.subarray(payload, payload + size).toString('utf8')).toBe(odfMediaTypes[format])
       }
     }
+
+    for (const format of ['pdf', 'ai'] as const) {
+      const data = readFileSync(join(root, `minimal.${format}`))
+      const source = data.toString('latin1')
+      expect(source).toMatch(/^%PDF-1\.7\n/u)
+      const ending = /startxref\n(\d+)\n%%EOF\n$/u.exec(source)
+      expect(ending).not.toBeNull()
+      const xrefOffset = Number(ending?.[1])
+      expect(source.slice(xrefOffset, xrefOffset + 9)).toBe('xref\n0 6\n')
+      const rows = source
+        .slice(xrefOffset + 9, source.indexOf('trailer\n', xrefOffset))
+        .trimEnd()
+        .split('\n')
+      expect(rows).toHaveLength(6)
+      for (let object = 1; object < rows.length; object += 1) {
+        const offset = Number(rows[object]?.slice(0, 10))
+        expect(source.slice(offset)).toMatch(new RegExp(`^${object} 0 obj\\n`, 'u'))
+      }
+      expect(source.slice(xrefOffset)).toContain('<< /Size 6 /Root 1 0 R /Info 5 0 R >>')
+      expect(source.includes('Adobe Illustrator')).toBe(format === 'ai')
+    }
+
+    const drawio = readFileSync(join(root, 'minimal.drawio'), 'utf8')
+    expect(drawio).toMatch(/^<\?xml[^>]*><mxfile\b/u)
+    expect(drawio.match(/<diagram\b/gu)).toHaveLength(1)
+    const cellIds = [...drawio.matchAll(/<mxCell\b[^>]*\bid="([^"]+)"/gu)].map(match => match[1])
+    expect(cellIds).toEqual(['0', '1', 'node-a', 'node-b', 'edge-a-b'])
+    expect(drawio).toContain('source="node-a" target="node-b"')
+    expect(drawio.match(/<mxGeometry\b/gu)).toHaveLength(3)
   })
 })

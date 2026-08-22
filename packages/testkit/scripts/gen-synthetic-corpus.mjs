@@ -763,6 +763,67 @@ function ods() {
 }
 
 /**
+ * PDF 1.7 classic file structure: catalog, page tree, page, text stream, info dictionary,
+ * byte-accurate cross-reference table, trailer, startxref, and final EOF marker.
+ */
+function pdfDocument(illustrator = false) {
+  const content = 'BT (Hello PDF) Tj ET\n'
+  const bodies = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 4 0 R >>',
+    `<< /Length ${content.length} >>\nstream\n${content}endstream`,
+    illustrator
+      ? '<< /Creator (Adobe Illustrator 30.0) /Producer (Modkit X3) >>'
+      : '<< /Creator (Modkit X3) /Producer (Modkit X3) >>',
+  ]
+  const header = concat(ascii('%PDF-1.7\n%'), bytes(0xe2, 0xe3, 0xcf, 0xd3), ascii('\n'))
+  const objects = []
+  const offsets = [0]
+  let offset = header.byteLength
+  for (let index = 0; index < bodies.length; index += 1) {
+    offsets.push(offset)
+    const object = ascii(`${index + 1} 0 obj\n${bodies[index]}\nendobj\n`)
+    objects.push(object)
+    offset += object.byteLength
+  }
+  const xrefOffset = offset
+  const rows = offsets
+    .map((value, index) =>
+      index === 0 ? '0000000000 65535 f \n' : `${String(value).padStart(10, '0')} 00000 n \n`,
+    )
+    .join('')
+  const tail = ascii(
+    `xref\n0 ${offsets.length}\n${rows}` +
+      `trailer\n<< /Size ${offsets.length} /Root 1 0 R /Info 5 0 R >>\n` +
+      `startxref\n${xrefOffset}\n%%EOF\n`,
+  )
+  return concat(header, ...objects, tail)
+}
+
+function pdf() {
+  return pdfDocument(false)
+}
+
+/** PDF-compatible Illustrator file carrying the standard PDF structure and Illustrator creator. */
+function ai() {
+  return pdfDocument(true)
+}
+
+/** draw.io uncompressed mxfile with one layer, two vertices, an edge, and real geometry records. */
+function drawio() {
+  return ascii(
+    '<?xml version="1.0" encoding="UTF-8"?>' +
+      '<mxfile host="app.diagrams.net"><diagram id="page-1" name="Page 1">' +
+      '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>' +
+      '<mxCell id="node-a" value="Start" vertex="1" parent="1"><mxGeometry x="0" y="0" width="80" height="40" as="geometry"/></mxCell>' +
+      '<mxCell id="node-b" value="Finish" vertex="1" parent="1"><mxGeometry x="160" y="0" width="80" height="40" as="geometry"/></mxCell>' +
+      '<mxCell id="edge-a-b" edge="1" parent="1" source="node-a" target="node-b"><mxGeometry relative="1" as="geometry"/></mxCell>' +
+      '</root></mxGraphModel></diagram></mxfile>\n',
+  )
+}
+
+/**
  * Microsoft Cabinet SDK layout: one CAB 1.3 folder, one CFFILE and one uncompressed CFDATA block.
  * A zero CFDATA checksum explicitly means that no checksum was supplied; sizes and offsets remain
  * normative and point at the six stored bytes.
@@ -2052,6 +2113,7 @@ function txt() {
 
 /** Every fixture: file name → builder. The name is what the acceptance corpus refers to. */
 const FIXTURES = {
+  'minimal.ai': ai,
   'minimal.ani': ani,
   'minimal.astc': astc,
   'minimal.avi': avi,
@@ -2066,6 +2128,7 @@ const FIXTURES = {
   'minimal.dae': dae,
   'minimal.dmg': dmg,
   'minimal.docx': docx,
+  'minimal.drawio': drawio,
   'minimal.exr': exr,
   'minimal.gif': gif,
   'minimal.gltf': gltf,
@@ -2094,6 +2157,7 @@ const FIXTURES = {
   'minimal.m3': m3,
   'minimal.obj': obj,
   'minimal.ply': ply,
+  'minimal.pdf': pdf,
   'minimal.pptx': pptx,
   'minimal.stl': stl,
   'minimal.mpq': mpq,

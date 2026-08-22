@@ -21,7 +21,7 @@
     }
   ],
   "limitations": [
-    "The parser reads bounded mxfile or diagram XML and reports diagram names and simple node/edge counts; compressed diagram payloads and complete mxGraph semantics are not decoded.",
+    "The parser reads bounded mxfile or mxGraphModel XML, expands standard URI-encoded raw-deflate diagram payloads, and validates cell references; complete mxGraph semantics are not decoded.",
     "Shape geometry, styles, images, links, layers, page transforms, and layout-faithful SVG rendering are not implemented.",
     "External resources are never fetched; editing and source write-back are not implemented."
   ],
@@ -72,7 +72,8 @@
     "traitDeclarations": [
       { "id": "content.binary", "representation": "source", "presence": "will-expose" },
       { "id": "content.metadata", "representation": "source", "presence": "will-expose" },
-      { "id": "structure.nodes", "representation": "source", "presence": "may-expose" }
+      { "id": "structure.nodes", "representation": "source", "presence": "will-expose" },
+      { "id": "structure.hierarchy", "representation": "source", "presence": "will-expose" }
     ],
     "implementationTier": { "claimed": 1 },
     "budgets": {

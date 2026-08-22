@@ -26,6 +26,9 @@ const formats = [
   'odt',
   'odp',
   'ods',
+  'pdf',
+  'ai',
+  'drawio',
 ] as const
 type Format = (typeof formats)[number]
 const officeFormats = ['docx', 'pptx', 'xlsx', 'odt', 'odp', 'ods'] as const
@@ -41,6 +44,9 @@ const fileNames: Record<Format, string> = {
   odt: 'minimal.odt',
   odp: 'minimal.odp',
   ods: 'minimal.ods',
+  pdf: 'minimal.pdf',
+  ai: 'minimal.ai',
+  drawio: 'minimal.drawio',
 }
 
 const budget: ResourceBudget = {
@@ -129,7 +135,7 @@ async function open(format: Format, bytes: Uint8Array, resourceBudget = budget) 
   return codec.open(inputFor(source), 'inspect', resourceBudget)
 }
 
-describe('ported MK2 text document codecs', () => {
+describe('ported MK2 document codecs', () => {
   it.each(formats)('%s publishes bounded document metadata and a tree', async format => {
     const session = await open(format, await fixture(format))
     const descriptor = await session.descriptor()
@@ -137,7 +143,14 @@ describe('ported MK2 text document codecs', () => {
     expect(descriptor.traits).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: format === 'xlsx' || format === 'ods' ? 'table.cells' : 'content.text',
+          id:
+            format === 'xlsx' || format === 'ods'
+              ? 'table.cells'
+              : format === 'pdf' || format === 'ai'
+                ? 'document.pages'
+                : format === 'drawio'
+                  ? 'structure.nodes'
+                  : 'content.text',
         }),
       ]),
     )
@@ -219,6 +232,68 @@ describe('ported MK2 text document codecs', () => {
     },
   )
 
+  it.each(['pdf', 'ai'] as const)(
+    '%s validates classic xref, catalog, and page tree',
+    async format => {
+      const session = await open(format, await fixture(format))
+      await expect(session.operations().invoke('inspect', null)).resolves.toMatchObject({
+        state: 'ok',
+        output: {
+          kind: 'json',
+          value: {
+            format,
+            pdfVersion: '1.7',
+            objects: 5,
+            pages: 1,
+            textRuns: 1,
+            illustratorCompatible: format === 'ai',
+          },
+        },
+      })
+      await session.dispose()
+    },
+  )
+
+  it('validates draw.io cells, references, geometry, and compressed diagrams', async () => {
+    const fixtureSession = await open('drawio', await fixture('drawio'))
+    await expect(fixtureSession.operations().invoke('inspect', null)).resolves.toMatchObject({
+      state: 'ok',
+      output: {
+        kind: 'json',
+        value: {
+          format: 'drawio',
+          diagrams: 1,
+          cells: 5,
+          nodes: 2,
+          edges: 1,
+          layers: 1,
+          geometries: 3,
+          compressedDiagrams: 0,
+        },
+      },
+    })
+    await fixtureSession.dispose()
+
+    const { deflateRawSync } = await import('node:zlib')
+    const model =
+      '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/></root></mxGraphModel>'
+    const compressed = deflateRawSync(new TextEncoder().encode(encodeURIComponent(model))).toString(
+      'base64',
+    )
+    const packed = new TextEncoder().encode(
+      `<mxfile><diagram name="Packed">${compressed}</diagram></mxfile>`,
+    )
+    const packedSession = await open('drawio', packed)
+    await expect(packedSession.operations().invoke('inspect', null)).resolves.toMatchObject({
+      state: 'ok',
+      output: {
+        kind: 'json',
+        value: { diagrams: 1, cells: 2, compressedDiagrams: 1 },
+      },
+    })
+    await packedSession.dispose()
+  })
+
   it.each(formats)('%s rejects structural corruption', async format => {
     const corrupted = officeFormats.includes(format as (typeof officeFormats)[number])
       ? (await fixture(format)).slice(0, -1)
@@ -229,7 +304,7 @@ describe('ported MK2 text document codecs', () => {
           : format === 'rtf'
             ? (await fixture(format)).slice(0, -1)
             : new Uint8Array([0xff, 0xfe])
-    await expect(open(format, corrupted)).rejects.toThrow(/CSV|UTF-8|RTF|office ZIP/u)
+    await expect(open(format, corrupted)).rejects.toThrow(/CSV|UTF-8|RTF|office ZIP|PDF|draw\.io/u)
   })
 
   it.each(formats)('%s enforces node, depth, and scalar budgets', async format => {

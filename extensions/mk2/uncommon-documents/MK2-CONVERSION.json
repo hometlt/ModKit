@@ -39,7 +39,7 @@
       ],
       "droppedOperations": ["asset.validate", "export.raw", "view.inspect", "view.render"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/blend": {
       "verdict": "mechanical",
@@ -122,7 +122,7 @@
       ],
       "droppedOperations": ["asset.validate", "export.raw", "view.inspect", "view.render"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/figma": {
       "verdict": "convertible-with-rework",
@@ -220,7 +220,7 @@
       ],
       "droppedOperations": ["asset.validate", "export.raw", "view.inspect", "view.render"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/pptx": {
       "verdict": "convertible-with-rework",

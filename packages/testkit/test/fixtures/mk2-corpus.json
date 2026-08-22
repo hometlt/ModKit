@@ -851,6 +851,33 @@
       "note": "OpenDocument spreadsheet package with one sheet, row, formula, and two cells"
     },
     {
+      "extension": "mk2/uncommon-documents",
+      "contributionId": "org.modkitx/pdf",
+      "corpus": "synthetic",
+      "sample": "minimal.pdf",
+      "minimumConfidence": 0.99,
+      "dataSource": "tree",
+      "note": "PDF 1.7 catalog, page tree, text stream, classic cross-reference table, and trailer"
+    },
+    {
+      "extension": "mk2/uncommon-documents",
+      "contributionId": "org.modkitx/ai",
+      "corpus": "synthetic",
+      "sample": "minimal.ai",
+      "minimumConfidence": 0.99,
+      "dataSource": "tree",
+      "note": "PDF-compatible Illustrator document with byte-accurate xref and Illustrator creator marker"
+    },
+    {
+      "extension": "mk2/uncommon-documents",
+      "contributionId": "org.modkitx/drawio",
+      "corpus": "synthetic",
+      "sample": "minimal.drawio",
+      "minimumConfidence": 0.98,
+      "dataSource": "tree",
+      "note": "Uncompressed mxfile page with layer, two vertices, an edge, and geometry records"
+    },
+    {
       "extension": "common/images",
       "contributionId": "org.modkitx/image-png",
       "corpus": "synthetic",

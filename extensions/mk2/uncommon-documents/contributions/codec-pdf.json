@@ -75,6 +75,7 @@
     "traitDeclarations": [
       { "id": "content.binary", "representation": "source", "presence": "will-expose" },
       { "id": "content.metadata", "representation": "source", "presence": "will-expose" },
+      { "id": "content.text", "representation": "source", "presence": "may-expose" },
       { "id": "document.pages", "representation": "source", "presence": "will-expose" }
     ],
     "implementationTier": { "claimed": 1 },
