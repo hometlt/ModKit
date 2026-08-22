@@ -48,6 +48,7 @@ const completedPortableWwise = [
 const completedPortableFlash = [find('org.modkitx/fla')]
 const completedPortableFmod = [find('org.modkitx/fsb')]
 const completedPortableBlizzardCommon = [find('org.modkitx/blp')]
+const completedPortableWarcraft3 = [find('org.modkitx/war3-mdx')]
 const completedPortableVector = [find('org.modkitx/emf'), find('org.modkitx/wmf')]
 const completedPortableDocuments = [
   find('org.modkitx/csv'),
@@ -171,6 +172,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       ...completedPortableFlash,
       ...completedPortableFmod,
       ...completedPortableBlizzardCommon,
+      ...completedPortableWarcraft3,
       ...completedPortableVector,
       ...completedPortableModels,
       ...completedPortableVideos,
@@ -272,6 +274,15 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     expect([blp.readUInt32LE(12), blp.readUInt32LE(16)]).toEqual([2, 1])
     expect([blp.readUInt32LE(20), blp.readUInt32LE(84)]).toEqual([148, 8])
     expect([...blp.subarray(148)]).toEqual([0, 0, 255, 255, 0, 255, 0, 128])
+
+    const mdx = readFileSync(join(root, 'minimal.mdx'))
+    expect(mdx.subarray(0, 4).toString('ascii')).toBe('MDLX')
+    expect(mdx.subarray(4, 8).toString('ascii')).toBe('VERS')
+    expect([mdx.readUInt32LE(8), mdx.readUInt32LE(12)]).toEqual([4, 800])
+    expect(mdx.subarray(16, 20).toString('ascii')).toBe('MODL')
+    expect(mdx.readUInt32LE(20)).toBe(372)
+    expect(mdx.subarray(24, 36).toString('ascii')).toBe('FixtureModel')
+    expect(mdx.byteLength).toBe(396)
 
     // These checks intentionally do not import the codecs. They independently walk each model
     // fixture's standard wire representation so a generator/reader bug cannot agree with itself.

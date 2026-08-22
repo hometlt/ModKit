@@ -3518,6 +3518,14 @@ function blp() {
   return concat(header, bytes(0, 0, 255, 255, 0, 255, 0, 128))
 }
 
+/** Warcraft III MDX container with VERS 800 and a minimal MODL record. */
+function war3Mdx() {
+  const model = new Uint8Array(372)
+  model.set(ascii('FixtureModel'), 0)
+  const chunk = (id, payload) => concat(ascii(id), u32le(payload.byteLength), payload)
+  return concat(ascii('MDLX'), chunk('VERS', u32le(800)), chunk('MODL', model))
+}
+
 // ---------------------------------------------------------------- the corpus
 
 /** Every fixture: file name → builder. The name is what the acceptance corpus refers to. */
@@ -3546,6 +3554,7 @@ const FIXTURES = {
   'minimal.fla': flaProject,
   'minimal.fsb': fsb5,
   'minimal.blp': blp,
+  'minimal.mdx': war3Mdx,
   'minimal.bti': bti,
   'minimal.cub': cub,
   'minimal.mtrl': mtrl,
