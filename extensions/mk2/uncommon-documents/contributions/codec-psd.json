@@ -21,9 +21,9 @@
     }
   ],
   "limitations": [
-    "Only the PSD or PSB header, dimensions, channels, depth, and color mode are inspected.",
-    "Flattened composite pixels, layers, resources, color conversion, and write support are not implemented.",
-    "Manifest v1 cannot express the legacy extension-or-signature fallback without turning it into a conjunction; generated routing intentionally uses the extensions while the handwritten compatibility registry retains global structural sniffing."
+    "PSD and PSB headers plus all five top-level sections are bounded; image resources, layer records, layer channel blocks, tagged blocks, and raw/RLE composite framing are validated.",
+    "ZIP composite payloads are structurally bounded but not inflated, and the raster source exposes encoded data without decoded-region access.",
+    "Layer pixel compositing, color-profile conversion, thumbnails, and write support are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "psd", "label": "Adobe Photoshop Document" }],

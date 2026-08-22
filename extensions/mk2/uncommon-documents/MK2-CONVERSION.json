@@ -54,7 +54,7 @@
       ],
       "droppedOperations": ["model.read"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/cdr": {
       "verdict": "convertible-with-rework",
@@ -250,7 +250,7 @@
       ],
       "droppedOperations": ["image.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/rtf": {
       "verdict": "convertible-with-rework",

@@ -51,6 +51,8 @@ const completedPortableDocuments = [
   find('org.modkitx/visio'),
   find('org.modkitx/cdr'),
   find('org.modkitx/figma'),
+  find('org.modkitx/psd'),
+  find('org.modkitx/blend'),
 ]
 
 describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tasks E/F/G)', () => {
@@ -451,5 +453,71 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     expect(JSON.parse(figParts.get('meta.json')?.toString('utf8') ?? '')).toMatchObject({
       name: 'Modkit X3 Figma fixture',
     })
+
+    const psd = readFileSync(join(root, 'minimal.psd'))
+    expect(psd.subarray(0, 4).toString('ascii')).toBe('8BPS')
+    expect(psd.readUInt16BE(4)).toBe(1)
+    expect([...psd.subarray(6, 12)]).toEqual([0, 0, 0, 0, 0, 0])
+    expect(psd.readUInt16BE(12)).toBe(3)
+    expect([psd.readUInt32BE(18), psd.readUInt32BE(14)]).toEqual([1, 1])
+    expect([psd.readUInt16BE(22), psd.readUInt16BE(24)]).toEqual([8, 3])
+    let psdOffset = 26
+    expect(psd.readUInt32BE(psdOffset)).toBe(0)
+    psdOffset += 4
+    const resourceBytes = psd.readUInt32BE(psdOffset)
+    psdOffset += 4
+    expect(psd.subarray(psdOffset, psdOffset + 4).toString('ascii')).toBe('8BIM')
+    expect(psd.readUInt16BE(psdOffset + 4)).toBe(1005)
+    expect(resourceBytes).toBe(28)
+    psdOffset += resourceBytes
+    const layerMaskBytes = psd.readUInt32BE(psdOffset)
+    psdOffset += 4
+    expect(layerMaskBytes).toBe(88)
+    expect(psd.readUInt32BE(psdOffset)).toBe(80)
+    expect(psd.readInt16BE(psdOffset + 4)).toBe(1)
+    psdOffset += layerMaskBytes
+    expect(psd.readUInt16BE(psdOffset)).toBe(0)
+    expect([...psd.subarray(psdOffset + 2)]).toEqual([255, 128, 64])
+
+    const blend = readFileSync(join(root, 'minimal.blend'))
+    expect(blend.subarray(0, 12).toString('ascii')).toBe('BLENDER-v400')
+    let blendOffset = 12
+    const blendBlocks: { code: string; size: number; payload: number }[] = []
+    while (blendOffset < blend.byteLength) {
+      const code = blend.subarray(blendOffset, blendOffset + 4).toString('ascii')
+      const size = blend.readUInt32LE(blendOffset + 4)
+      if (code === 'ENDB') {
+        expect(size).toBe(0)
+        blendOffset += 8
+        blendBlocks.push({ code, size, payload: blendOffset })
+        break
+      }
+      const payload = blendOffset + 24
+      blendBlocks.push({ code, size, payload })
+      blendOffset = payload + size
+    }
+    expect(blendOffset).toBe(blend.byteLength)
+    expect(blendBlocks.map(block => block.code)).toEqual(['MV  ', 'MF  ', 'DNA1', 'ENDB'])
+    const vertexBlock = blendBlocks[0]
+    const faceBlock = blendBlocks[1]
+    const dnaBlock = blendBlocks[2]
+    expect(vertexBlock?.size).toBe(36)
+    expect([
+      blend.readFloatLE(vertexBlock?.payload ?? 0),
+      blend.readFloatLE((vertexBlock?.payload ?? 0) + 12),
+      blend.readFloatLE((vertexBlock?.payload ?? 0) + 28),
+    ]).toEqual([0, 1, 1])
+    expect([
+      blend.readUInt32LE(faceBlock?.payload ?? 0),
+      blend.readUInt32LE((faceBlock?.payload ?? 0) + 4),
+      blend.readUInt32LE((faceBlock?.payload ?? 0) + 8),
+      blend.readUInt32LE((faceBlock?.payload ?? 0) + 12),
+    ]).toEqual([0, 1, 2, 0])
+    const dnaPayload = dnaBlock?.payload ?? 0
+    expect(blend.subarray(dnaPayload, dnaPayload + 8).toString('ascii')).toBe('SDNANAME')
+    expect(blend.readUInt32LE(dnaPayload + 8)).toBe(5)
+    expect(blend.indexOf('TYPE', dnaPayload)).toBeGreaterThan(dnaPayload)
+    expect(blend.indexOf('TLEN', dnaPayload)).toBeGreaterThan(dnaPayload)
+    expect(blend.indexOf('STRC', dnaPayload)).toBeGreaterThan(dnaPayload)
   })
 })

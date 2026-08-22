@@ -8,3 +8,5 @@ packages/testkit/test/fixtures/mk2-synthetic/minimal.fig binary
 packages/testkit/test/fixtures/mk2-synthetic/minimal-kiwi.fig binary
 packages/testkit/test/fixtures/mk2-synthetic/minimal.vsd binary
 packages/testkit/test/fixtures/mk2-synthetic/minimal.vsdx binary
+packages/testkit/test/fixtures/mk2-synthetic/minimal.psd binary
+packages/testkit/test/fixtures/mk2-synthetic/minimal.blend binary

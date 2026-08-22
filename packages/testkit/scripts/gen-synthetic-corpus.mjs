@@ -961,6 +961,146 @@ function figma() {
 }
 
 /**
+ * Adobe Photoshop PSD v1 with every top-level section, a ResolutionInfo resource, one layer with
+ * three raw channel payloads, and a raw flattened one-pixel RGB composite.
+ */
+function psd() {
+  const resolution = concat(
+    u32be(72 << 16),
+    u16be(1),
+    u16be(1),
+    u32be(72 << 16),
+    u16be(1),
+    u16be(1),
+  )
+  const resource = concat(
+    ascii('8BIM'),
+    u16be(1005),
+    bytes(0, 0), // empty Pascal name and its even-byte padding
+    u32be(resolution.byteLength),
+    resolution,
+  )
+  const channelRecord = id => concat(u16be(id), u32be(3))
+  const layerName = concat(bytes(5), ascii('Layer'), bytes(0, 0))
+  const extra = concat(u32be(0), u32be(0), layerName)
+  const layerRecord = concat(
+    u32be(0),
+    u32be(0),
+    u32be(1),
+    u32be(1),
+    u16be(3),
+    channelRecord(0),
+    channelRecord(1),
+    channelRecord(2),
+    ascii('8BIM'),
+    ascii('norm'),
+    bytes(255, 0, 0, 0),
+    u32be(extra.byteLength),
+    extra,
+  )
+  const layerInfoUnpadded = concat(
+    u16be(1),
+    layerRecord,
+    u16be(0),
+    bytes(255),
+    u16be(0),
+    bytes(128),
+    u16be(0),
+    bytes(64),
+  )
+  const layerInfo = concat(layerInfoUnpadded, bytes(0))
+  const layerAndMask = concat(u32be(layerInfo.byteLength), layerInfo, u32be(0))
+  return concat(
+    ascii('8BPS'),
+    u16be(1),
+    bytes(0, 0, 0, 0, 0, 0),
+    u16be(3),
+    u32be(1),
+    u32be(1),
+    u16be(8),
+    u16be(3),
+    u32be(0),
+    u32be(resource.byteLength),
+    resource,
+    u32be(layerAndMask.byteLength),
+    layerAndMask,
+    u16be(0),
+    bytes(255, 128, 64),
+  )
+}
+
+/**
+ * Native Blender 4.00 framing with 64-bit little-endian BHeads, legacy triangle geometry, a
+ * complete embedded SDNA NAME/TYPE/TLEN/STRC schema, and the special eight-byte ENDB block.
+ */
+function blend() {
+  const pad4 = value => concat(value, new Uint8Array((4 - (value.byteLength % 4)) % 4))
+  const names = ['co[3]', 'v1', 'v2', 'v3', 'v4']
+  const types = ['float', 'uint', 'MVert', 'MFace']
+  const nameData = pad4(concat(...names.map(name => concat(ascii(name), bytes(0)))))
+  const typeData = pad4(concat(...types.map(type => concat(ascii(type), bytes(0)))))
+  const sdna = concat(
+    ascii('SDNA'),
+    ascii('NAME'),
+    u32le(names.length),
+    nameData,
+    ascii('TYPE'),
+    u32le(types.length),
+    typeData,
+    ascii('TLEN'),
+    u16le(4),
+    u16le(4),
+    u16le(12),
+    u16le(16),
+    ascii('STRC'),
+    u32le(2),
+    u16le(2),
+    u16le(1),
+    u16le(0),
+    u16le(0),
+    u16le(3),
+    u16le(4),
+    u16le(1),
+    u16le(1),
+    u16le(1),
+    u16le(2),
+    u16le(1),
+    u16le(3),
+    u16le(1),
+    u16le(4),
+  )
+  const bhead = (code, payload, oldAddress, sdnaIndex, count) =>
+    concat(
+      ascii(code),
+      u32le(payload.byteLength),
+      u64le(BigInt(oldAddress)),
+      u32le(sdnaIndex),
+      u32le(count),
+      payload,
+    )
+  const vertices = concat(
+    f32le(0),
+    f32le(0),
+    f32le(0),
+    f32le(1),
+    f32le(0),
+    f32le(0),
+    f32le(0),
+    f32le(1),
+    f32le(0),
+  )
+  const face = concat(u32le(0), u32le(1), u32le(2), u32le(0))
+  return concat(
+    ascii('BLENDER-v400'),
+    bhead('MV  ', vertices, 1, 0, 3),
+    bhead('MF  ', face, 2, 1, 1),
+    bhead('DNA1', sdna, 0, 0, 1),
+    ascii('ENDB'),
+    u32le(0),
+  )
+}
+
+/**
  * Microsoft Cabinet SDK layout: one CAB 1.3 folder, one CFFILE and one uncompressed CFDATA block.
  * A zero CFDATA checksum explicitly means that no checksum was supplied; sizes and offsets remain
  * normative and point at the six stored bytes.
@@ -2256,6 +2396,7 @@ const FIXTURES = {
   'minimal.avi': avi,
   'minimal.avif': avif,
   'minimal.big': big,
+  'minimal.blend': blend,
   'minimal.bmp': bmp,
   'minimal.br': brotli,
   'minimal.bz2': bzip2,
@@ -2299,6 +2440,7 @@ const FIXTURES = {
   'minimal.m3': m3,
   'minimal.obj': obj,
   'minimal.ply': ply,
+  'minimal.psd': psd,
   'minimal.pdf': pdf,
   'minimal.pptx': pptx,
   'minimal.stl': stl,

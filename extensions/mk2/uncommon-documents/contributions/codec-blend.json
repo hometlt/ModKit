@@ -21,7 +21,9 @@
     }
   ],
   "limitations": [
-    "The current reader exposes the native file header and conversion diagnostics only; mesh geometry requires Blender or another trusted external converter."
+    "Native headers, every BHead, the final ENDB marker, and the embedded SDNA NAME/TYPE/TLEN/STRC schema are bounded and cross-validated.",
+    "Legacy MVert/MFace blocks are decoded into indexed triangle geometry; modern CustomData mesh layers and association of multiple legacy mesh blocks are not decoded.",
+    "Object transforms, materials, animation, gzip-compressed files, and write support are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "blend", "label": "Blender scene" }],

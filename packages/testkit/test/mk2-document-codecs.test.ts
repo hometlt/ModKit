@@ -8,6 +8,8 @@ import {
   type AssetInput,
   type Codec,
   type ContributionContext,
+  type ModelSceneSource,
+  type RasterImageSource,
   type ResourceBudget,
   type TreeDataSource,
 } from '@modkitx-x3/sdk'
@@ -32,6 +34,8 @@ const formats = [
   'visio',
   'cdr',
   'figma',
+  'psd',
+  'blend',
 ] as const
 type Format = (typeof formats)[number]
 const officeFormats = ['docx', 'pptx', 'xlsx', 'odt', 'odp', 'ods'] as const
@@ -53,6 +57,8 @@ const fileNames: Record<Format, string> = {
   visio: 'minimal.vsdx',
   cdr: 'minimal.cdr',
   figma: 'minimal.fig',
+  psd: 'minimal.psd',
+  blend: 'minimal.blend',
 }
 
 const budget: ResourceBudget = {
@@ -160,7 +166,11 @@ describe('ported MK2 document codecs', () => {
                     ? 'structure.nodes'
                     : format === 'figma'
                       ? 'structure.hierarchy'
-                      : 'content.text',
+                      : format === 'psd'
+                        ? 'image.raster'
+                        : format === 'blend'
+                          ? 'model.geometry'
+                          : 'content.text',
         }),
       ]),
     )
@@ -393,6 +403,79 @@ describe('ported MK2 document codecs', () => {
     await direct.dispose()
   })
 
+  it('validates all PSD sections, resources, layers, channel blocks, and composite pixels', async () => {
+    const session = await open('psd', await fixture('psd'))
+    await expect(session.operations().invoke('inspect', null)).resolves.toMatchObject({
+      state: 'ok',
+      output: {
+        kind: 'json',
+        value: {
+          format: 'psd',
+          variant: 'PSD',
+          version: 1,
+          width: 1,
+          height: 1,
+          channels: 3,
+          bitDepth: 8,
+          colorMode: 'rgb',
+          resources: 1,
+          layers: 1,
+          channelBlocks: 3,
+          compression: 'raw',
+        },
+      },
+    })
+    const lease = await session.dataSource('common.view/raster-image-source', 1)
+    const raster = lease.value as RasterImageSource
+    await expect(raster.info()).resolves.toMatchObject({
+      width: 1,
+      height: 1,
+      channels: 3,
+      bitDepth: 8,
+      colorSpace: 'rgb',
+    })
+    await lease.release()
+    await session.dispose()
+  })
+
+  it('validates Blender BHeads and SDNA, then decodes legacy indexed geometry', async () => {
+    const session = await open('blend', await fixture('blend'))
+    await expect(session.operations().invoke('inspect', null)).resolves.toMatchObject({
+      state: 'ok',
+      output: {
+        kind: 'json',
+        value: {
+          format: 'blend',
+          version: 400,
+          pointerSize: 8,
+          endianness: 'little',
+          blocks: 4,
+          dataBlocks: 2,
+          names: 5,
+          types: 4,
+          structs: 2,
+          vertices: 3,
+          faces: 1,
+          triangles: 1,
+          geometryAccess: 'decoded',
+          bounds: { min: [0, 0, 0], max: [1, 1, 0] },
+        },
+      },
+    })
+    const lease = await session.dataSource('common.view/model-scene-source', 1)
+    const model = lease.value as ModelSceneSource
+    await expect(model.info()).resolves.toMatchObject({
+      meshes: 1,
+      primitives: 1,
+      geometryAccess: 'decoded',
+    })
+    const primitive = await model.primitive?.('primitive-0', { maxBytes: 1024 })
+    expect(primitive?.positions).toHaveLength(9)
+    expect(primitive?.indices).toEqual(new Uint32Array([0, 1, 2]))
+    await lease.release()
+    await session.dispose()
+  })
+
   it.each(formats)('%s rejects structural corruption', async format => {
     const corrupted = officeFormats.includes(format as (typeof officeFormats)[number])
       ? (await fixture(format)).slice(0, -1)
@@ -404,7 +487,7 @@ describe('ported MK2 document codecs', () => {
             ? (await fixture(format)).slice(0, -1)
             : new Uint8Array([0xff, 0xfe])
     await expect(open(format, corrupted)).rejects.toThrow(
-      /CSV|UTF-8|RTF|office ZIP|PDF|draw\.io|Visio|CorelDRAW|Figma|bounds/u,
+      /CSV|UTF-8|RTF|office ZIP|PDF|draw\.io|Visio|CorelDRAW|Figma|PSD|Blender|bounds/u,
     )
   })
 
