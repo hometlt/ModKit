@@ -21,12 +21,9 @@
     }
   ],
   "limitations": [
-    "The parser is scoped to Diablo III TEX version 47 with the implemented fixed header, mip table, frame table, and known pixel formats.",
-    "Decode covers A8R8G8B8, A4R4G4B4, L8, A8, and the implemented unshuffled BC1, BC2, BC3, and BC5 payloads; other pixel formats are not claimed.",
-    "The .tex extension is shared with unrelated formats such as Earth 2150 TEX, so hosts must run the structural Diablo III header detector.",
-    "Generated manifest routing is extension-only because manifest v1 cannot express the handwritten registry's extension-or-structural-sniff fallback without conjunctive evidence.",
-    "The runtime is conservatively exposed to Node hosts because compressed payload decode reaches the shared external WASM-backed GPU path.",
-    "Writing Diablo III TEX containers is not implemented."
+    "The dependency-free MK3 profile validates Diablo III TEX v47 mip and face ranges and decodes A8R8G8B8, A4R4G4B4, L8, A8, and component-planar BC1, BC2, BC3, and BC5 payloads.",
+    "The .tex extension is shared with unrelated formats, so hosts must retain the Diablo III magic/version evidence when routing candidates.",
+    "Atlas frame cropping, texture writing, and mip generation remain unsupported."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "diablo3-tex", "label": "Diablo III TEX texture" }],

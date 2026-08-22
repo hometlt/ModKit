@@ -801,6 +801,29 @@
       "note": "BLP2 uncompressed BGRA8 top mip; acceptance validates signature routing and decoded raster publication"
     },
     {
+      "extension": "mk2/blizzard-diablo",
+      "contributionId": "org.modkitx/diablo3-app",
+      "corpus": "synthetic",
+      "sample": "minimal.diablo3.app",
+      "minimumConfidence": 0.99,
+      "dataSource": "model",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "Diablo III APP v260 with one fixed-record submesh and one decoded triangle"
+    },
+    {
+      "extension": "mk2/blizzard-diablo",
+      "contributionId": "org.modkitx/diablo3-tex",
+      "corpus": "synthetic",
+      "sample": "minimal.diablo3.tex",
+      "minimumConfidence": 0.99,
+      "dataSource": "raster",
+      "expectedFirstPixelRgba": [255, 0, 0, 255],
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "Diablo III TEX v47 with one 2x1 A8R8G8B8 mip; acceptance validates decoded RGBA publication"
+    },
+    {
       "extension": "mk2/blizzard-warcraft-3",
       "contributionId": "org.modkitx/war3-mdx",
       "corpus": "synthetic",

@@ -48,6 +48,7 @@ const completedPortableWwise = [
 const completedPortableFlash = [find('org.modkitx/fla')]
 const completedPortableFmod = [find('org.modkitx/fsb')]
 const completedPortableBlizzardCommon = [find('org.modkitx/blp')]
+const completedPortableDiablo = [find('org.modkitx/diablo3-app'), find('org.modkitx/diablo3-tex')]
 const completedPortableWarcraft3 = [find('org.modkitx/war3-mdx')]
 const completedPortableGasPowered = [find('org.modkitx/supcom-scm')]
 const completedPortableVector = [find('org.modkitx/emf'), find('org.modkitx/wmf')]
@@ -173,6 +174,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       ...completedPortableFlash,
       ...completedPortableFmod,
       ...completedPortableBlizzardCommon,
+      ...completedPortableDiablo,
       ...completedPortableWarcraft3,
       ...completedPortableGasPowered,
       ...completedPortableVector,
@@ -277,6 +279,42 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     expect([blp.readUInt32LE(12), blp.readUInt32LE(16)]).toEqual([2, 1])
     expect([blp.readUInt32LE(20), blp.readUInt32LE(84)]).toEqual([148, 8])
     expect([...blp.subarray(148)]).toEqual([0, 0, 255, 255, 0, 255, 0, 128])
+
+    const diabloTex = readFileSync(join(root, 'minimal.diablo3.tex'))
+    expect([diabloTex.readUInt32LE(0), diabloTex.readUInt32LE(4)]).toEqual([0xdeadbeef, 47])
+    expect([
+      diabloTex.readUInt32LE(0x20),
+      diabloTex.readUInt32LE(0x24),
+      diabloTex.readUInt32LE(0x28),
+      diabloTex.readUInt32LE(0x2c),
+    ]).toEqual([0, 2, 1, 1])
+    const diabloTexPixels = diabloTex.readUInt32LE(0x38)
+    expect(diabloTex.readUInt32LE(0x3c)).toBe(8)
+    expect([...diabloTex.subarray(diabloTexPixels)]).toEqual([0, 0, 255, 255, 0, 255, 0, 128])
+
+    const diabloApp = readFileSync(join(root, 'minimal.diablo3.app'))
+    expect([diabloApp.readUInt32LE(0), diabloApp.readUInt32LE(4)]).toEqual([0xdeadbeef, 260])
+    expect(diabloApp.readUInt32LE(0x0a8)).toBe(1)
+    const diabloSubmesh = diabloApp.readUInt32LE(0x0ac) + 16
+    const diabloVertices = diabloApp.readUInt32LE(diabloSubmesh + 8) + 16
+    const diabloIndices = diabloApp.readUInt32LE(diabloSubmesh + 0x2c) + 16
+    expect([
+      diabloApp.readUInt32LE(diabloSubmesh + 4),
+      diabloApp.readUInt32LE(diabloSubmesh + 0x28),
+    ]).toEqual([3, 3])
+    expect(diabloApp.subarray(diabloSubmesh + 0x5c, diabloSubmesh + 0x6c).toString('ascii')).toBe(
+      'Triangle_Default',
+    )
+    expect([
+      diabloApp.readFloatLE(diabloVertices),
+      diabloApp.readFloatLE(diabloVertices + 44),
+      diabloApp.readFloatLE(diabloVertices + 44 * 2 + 4),
+    ]).toEqual([0, 1, 1])
+    expect([
+      diabloApp.readUInt16LE(diabloIndices),
+      diabloApp.readUInt16LE(diabloIndices + 2),
+      diabloApp.readUInt16LE(diabloIndices + 4),
+    ]).toEqual([0, 1, 2])
 
     const mdx = readFileSync(join(root, 'minimal.mdx'))
     expect(mdx.subarray(0, 4).toString('ascii')).toBe('MDLX')

@@ -3518,6 +3518,66 @@ function blp() {
   return concat(header, bytes(0, 0, 255, 255, 0, 255, 0, 128))
 }
 
+/** Diablo III TEX v47 with one 2x1 A8R8G8B8 mip (red, translucent green). */
+function diablo3Tex() {
+  const pixelOffset = 0x2c8
+  const result = new Uint8Array(pixelOffset + 8)
+  const view = new DataView(result.buffer)
+  view.setUint32(0, 0xdeadbeef, true)
+  view.setUint32(4, 47, true)
+  view.setInt32(0x10, 1234, true)
+  view.setUint32(0x20, 0, true)
+  view.setUint32(0x24, 2, true)
+  view.setUint32(0x28, 1, true)
+  view.setUint32(0x2c, 1, true)
+  view.setUint32(0x38, pixelOffset, true)
+  view.setUint32(0x3c, 8, true)
+  view.setUint32(0x218, 1, true)
+  view.setUint32(0x21c, 0x278, true)
+  view.setUint32(0x220, 80, true)
+  result.set(bytes(0, 0, 255, 255, 0, 255, 0, 128), pixelOffset)
+  return result
+}
+
+/** Diablo III APP v260 with one fixed-record submesh and one triangle. */
+function diablo3App() {
+  const submesh = 0x228
+  const vertices = submesh + 400
+  const indices = vertices + 3 * 44
+  const result = new Uint8Array(indices + 6)
+  const view = new DataView(result.buffer)
+  view.setUint32(0, 0xdeadbeef, true)
+  view.setUint32(4, 260, true)
+  view.setInt32(0x10, 42, true)
+  view.setUint32(0x20, 1, true)
+  view.setUint32(0x0a8, 1, true)
+  view.setUint32(0x0ac, submesh - 16, true)
+  view.setUint32(0x0b0, 400, true)
+  view.setUint32(submesh, 0x08, true)
+  view.setUint32(submesh + 4, 3, true)
+  view.setUint32(submesh + 8, vertices - 16, true)
+  view.setUint32(submesh + 0x0c, 3 * 44, true)
+  view.setUint32(submesh + 0x28, 3, true)
+  view.setUint32(submesh + 0x2c, indices - 16, true)
+  view.setUint32(submesh + 0x30, 6, true)
+  result.set(ascii('Triangle_Default'), submesh + 0x5c)
+  const positions = [
+    [0, 0, 0],
+    [1, 0, 0],
+    [0, 1, 0],
+  ]
+  positions.forEach((position, index) => {
+    const offset = vertices + index * 44
+    position.forEach((value, axis) => view.setFloat32(offset + axis * 4, value, true))
+    result.set([127, 127, 254], offset + 0x0c)
+    view.setUint16(offset + 0x18, 32767, true)
+    view.setUint16(offset + 0x1a, index === 0 ? 32255 : 32767, true)
+    result.set([254, 127, 127], offset + 0x20)
+  })
+  ;[0, 1, 2].forEach((value, index) => view.setUint16(indices + index * 2, value, true))
+  return result
+}
+
 /** Warcraft III MDX container with VERS 800 and a minimal MODL record. */
 function war3Mdx() {
   const model = new Uint8Array(372)
@@ -3627,6 +3687,8 @@ const FIXTURES = {
   'minimal.fla': flaProject,
   'minimal.fsb': fsb5,
   'minimal.blp': blp,
+  'minimal.diablo3.app': diablo3App,
+  'minimal.diablo3.tex': diablo3Tex,
   'minimal.mdx': war3Mdx,
   'minimal.scm': supcomScm,
   'minimal.bti': bti,
