@@ -36,6 +36,8 @@ const PUBLISHED_ENTRIES = [
   'packages/vfs/dist/index.js',
   'packages/vfs/dist/providers/file/index.js',
   'packages/vfs/dist/providers/memory/index.js',
+  'packages/vfs/dist/providers/http/index.js',
+  'packages/vfs/dist/providers/browser-file/index.js',
   'packages/host/dist/index.js',
   'packages/host/dist/node/index.js',
   'packages/host/dist/browser/index.js',

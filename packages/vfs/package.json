@@ -20,6 +20,14 @@
     "./providers/memory": {
       "types": "./dist/providers/memory/index.d.ts",
       "default": "./dist/providers/memory/index.js"
+    },
+    "./providers/http": {
+      "types": "./dist/providers/http/index.d.ts",
+      "default": "./dist/providers/http/index.js"
+    },
+    "./providers/browser-file": {
+      "types": "./dist/providers/browser-file/index.d.ts",
+      "default": "./dist/providers/browser-file/index.js"
     }
   },
   "files": [

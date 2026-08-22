@@ -15,6 +15,8 @@ import {
   type VfsProvider,
 } from '@modkitx-x3/vfs'
 import { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'
+import { createBrowserFileVfsProvider } from '@modkitx-x3/vfs/providers/browser-file'
+import { createHttpVfsProvider, type HttpFetch } from '@modkitx-x3/vfs/providers/http'
 import { createMemoryVfsProvider } from '@modkitx-x3/vfs/providers/memory'
 
 const temporaryRoots: string[] = []
@@ -225,5 +227,101 @@ describe('file VFS provider', () => {
       isCancellation,
     )
     await vfs.dispose()
+  })
+})
+
+describe('HTTP VFS provider', () => {
+  it('mounts one allow-listed exact-range resource and enforces the mount read budget', async () => {
+    const bytes = new TextEncoder().encode('0123456789')
+    const fetcher: HttpFetch = async (_url, init) => {
+      if (init?.method === 'HEAD') {
+        return {
+          ok: true,
+          status: 200,
+          headers: {
+            get: name =>
+              name.toLowerCase() === 'content-length'
+                ? String(bytes.length)
+                : name.toLowerCase() === 'accept-ranges'
+                  ? 'bytes'
+                  : null,
+          },
+          async arrayBuffer() {
+            return new ArrayBuffer(0)
+          },
+        }
+      }
+      const match = /^bytes=(\d+)-(\d+)$/u.exec(init?.headers?.['Range'] ?? '')
+      if (match === null) throw new TypeError('missing HTTP range')
+      const start = Number(match[1])
+      const body = bytes.slice(start, Number(match[2]) + 1)
+      return {
+        ok: true,
+        status: 206,
+        headers: { get: () => null },
+        async arrayBuffer() {
+          return body.buffer
+        },
+      }
+    }
+    const vfs = new VirtualFileSystem().registerProvider(
+      createHttpVfsProvider({
+        fetch: fetcher,
+        allowedOrigins: ['https://assets.example'],
+        limits: { maxReadBytes: 6n },
+      }),
+    )
+    await expect(vfs.openMount('https://other.example/asset.bin')).rejects.toSatisfy(
+      error => isModkitError(error) && error.code === 'x3.vfs/http-origin-refused',
+    )
+    vfs.mount('remote', await vfs.openMount('https://assets.example/asset.bin'))
+    expect(await vfs.stat('remote')).toMatchObject({ name: 'asset.bin', size: 10n })
+    const source = await vfs.open('remote')
+    expect(new TextDecoder().decode(await source.readAt(2, 4))).toBe('2345')
+    await expect(source.readAt(0, 3)).rejects.toSatisfy(
+      error => isModkitError(error) && error.code === 'x3.vfs/read-byte-budget-exceeded',
+    )
+    await vfs.dispose()
+  })
+})
+
+describe('browser-file VFS provider', () => {
+  it('mounts only an explicitly registered capability and detects a changed snapshot', async () => {
+    const bytes = new TextEncoder().encode('modkit')
+    let lastModified = 7
+    const handle = {
+      name: 'picked.bin',
+      async getFile() {
+        return {
+          name: 'picked.bin',
+          size: bytes.length,
+          lastModified,
+          slice(start: number, end: number) {
+            return {
+              async arrayBuffer() {
+                return bytes.slice(start, end).buffer
+              },
+            }
+          },
+        }
+      },
+    }
+    const provider = createBrowserFileVfsProvider()
+    const unregister = provider.register('browser-file:fixture', handle)
+    const vfs = new VirtualFileSystem().registerProvider(provider)
+    vfs.mount('picked', await vfs.openMount('browser-file:fixture'))
+    const source = await vfs.open('picked')
+    expect(new TextDecoder().decode(await source.readAt(1, 3))).toBe('odk')
+    lastModified = 8
+    await expect(vfs.open('picked')).rejects.toSatisfy(
+      error => isModkitError(error) && error.code === 'x3.vfs/browser-file-revision-changed',
+    )
+    await vfs.dispose()
+    unregister()
+    await expect(
+      provider.open('browser-file:fixture', { limits: DEFAULT_VFS_LIMITS }),
+    ).rejects.toSatisfy(
+      error => isModkitError(error) && error.code === 'x3.vfs/browser-file-unregistered',
+    )
   })
 })
