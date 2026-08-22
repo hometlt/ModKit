@@ -11,6 +11,6 @@ The conversion debt of every codec below — planes v2 has no home for, applied
 renames, converter defaults and v1 operations left without a handler — is data in
 `MK2-CONVERSION.json` beside this file.
 
-| contribution              | v1 manifest                                                           | module                     | port         |
-| ------------------------- | --------------------------------------------------------------------- | -------------------------- | ------------ |
-| `org.modkitx/ps1-cue-bin` | `extensions/common/containers/codecs/ps1-cue-bin/codec.manifest.json` | `src/ps1-cue-bin/codec.js` | port-pending |
+| contribution              | v1 manifest                                                           | module                     | port   |
+| ------------------------- | --------------------------------------------------------------------- | -------------------------- | ------ |
+| `org.modkitx/ps1-cue-bin` | `extensions/common/containers/codecs/ps1-cue-bin/codec.manifest.json` | `src/ps1-cue-bin/codec.js` | ported |

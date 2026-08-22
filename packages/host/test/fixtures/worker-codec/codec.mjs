@@ -19,6 +19,13 @@ export function createCodec(context) {
         planKind: request.plan?.kind ?? null,
       }
     },
+    async planInput() {
+      return {
+        originKind: 'single',
+        candidate: { bindingId: 'worker-plan', role: 'content', ownership: 'owned' },
+        requirements: [],
+      }
+    },
     async open(input, intent, budget) {
       const primary = input.bindingsFor('x')
       const lease = await input.openBinding(input.primaryBindingId)

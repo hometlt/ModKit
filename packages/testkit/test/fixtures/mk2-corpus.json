@@ -340,6 +340,21 @@
       "note": "PE32 x86 console image with a complete optional header and one raw .text section exposed as an inert extractable entry"
     },
     {
+      "extension": "mk2/common-containers",
+      "contributionId": "org.modkitx/ps1-cue-bin",
+      "corpus": "synthetic",
+      "sample": "minimal.cue",
+      "minimumConfidence": 0.9,
+      "dataSource": "namespace",
+      "operation": {
+        "handlerId": "extract-entry",
+        "input": { "entryId": "track-01-iso-0" },
+        "outputKind": "bytes",
+        "minimumBytes": 6
+      },
+      "note": "Host-resolved one-file CUE/BIN bundle with a MODE1/2048 ISO 9660 data track and one extractable filesystem file"
+    },
+    {
       "extension": "mk2/common-archives",
       "contributionId": "org.modkitx/zstd",
       "corpus": "synthetic",

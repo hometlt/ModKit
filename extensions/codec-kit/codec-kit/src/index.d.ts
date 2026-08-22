@@ -1,6 +1,7 @@
 import type { Diagnostic } from '@modkitx-x3/core'
 import type {
   ArtifactByteSource,
+  AssetInputPlan,
   AssetNamespace,
   AssetEditPlan,
   AssetInput,
@@ -20,7 +21,10 @@ import type {
   AssetDiagnostic,
   ByteRangeSource,
   Codec,
+  CodecCandidateSource,
+  CompanionDescriptorWire,
   ContributionContext,
+  DetectionResult,
   JsonValue,
   Lease,
   MetadataGroup,
@@ -82,6 +86,7 @@ export interface InspectionResult {
   readonly diagnostics?: readonly AssetDiagnostic[]
   readonly unsupportedFeatures?: readonly string[]
   readonly maxDecodedBytes?: bigint | number | string
+  readonly companions?: readonly CompanionDescriptorWire[]
 }
 
 export interface NamespaceMarker {
@@ -127,6 +132,12 @@ export interface InspectionCodecDefinition {
   }
   readonly operations?: readonly OperationDecl[]
   readonly namespace?: never
+  planInput?(
+    source: CodecCandidateSource,
+    evidence: DetectionResult,
+    signal: AbortSignal | undefined,
+    context: ContributionContext | undefined,
+  ): Promise<AssetInputPlan>
   detect(
     prefix: Uint8Array,
     uri: string,

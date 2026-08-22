@@ -13,6 +13,8 @@ import { afterEach, describe, expect, it } from 'vitest'
 import type { Diagnostic } from '@modkitx-x3/core'
 import type {
   AssetInput,
+  Codec,
+  CodecCandidateSource,
   ContributionContext,
   DataSourceSurfaceV1Wire,
   ResourceBudget,
@@ -176,6 +178,7 @@ describe('node worker backend — activation, probe and open through the backend
   it('opens a session: the asset input crosses with its fields and host-executed openers, the session comes back as an ABI-shaped adapter', async () => {
     const lease = await activate()
     const createCodec = lease.module['createCodec'] as (c: ContributionContext) => {
+      planInput: NonNullable<Codec['planInput']>
       open(
         input: AssetInput,
         intent: string,
@@ -183,6 +186,17 @@ describe('node worker backend — activation, probe and open through the backend
       ): Promise<Record<string, unknown>>
     }
     const codec = createCodec(context([]))
+    expect(typeof codec.planInput).toBe('function')
+    expect(
+      await codec.planInput?.(byteSource([1]) as unknown as CodecCandidateSource, {
+        codecId: 'demo',
+        confidence: 1,
+        evidence: [],
+        requiredRanges: [],
+      }),
+    ).toEqual(
+      expect.objectContaining({ candidate: expect.objectContaining({ bindingId: 'worker-plan' }) }),
+    )
     const opened: string[] = []
     const input = {
       originKind: 'single',

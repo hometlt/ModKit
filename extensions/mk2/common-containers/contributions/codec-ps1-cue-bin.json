@@ -3,34 +3,42 @@
   "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
   "id": "org.modkitx/ps1-cue-bin",
   "displayName": "PlayStation CUE/BIN disc image",
-  "status": "supported",
+  "status": "partial",
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
       "entrypoint": "./src/ps1-cue-bin/codec.js",
       "target": { "environments": ["node"] },
       "executionProfile": "trusted-in-process",
-      "requestedPermissionClasses": ["filesystem-read", "read-source"]
+      "requestedPermissionClasses": ["read-source"]
     },
     {
       "variantId": "portable",
       "entrypoint": "./src/ps1-cue-bin/codec.js",
       "target": { "environments": ["browser-worker", "node-worker"] },
       "executionProfile": "worker-brokered",
-      "requestedPermissionClasses": ["filesystem-read", "read-source"]
+      "requestedPermissionClasses": ["read-source"]
     }
   ],
   "limitations": [
-    "Opening a CUE requires every referenced disc payload as a sibling file; opening a BIN requires a sibling CUE.",
-    "`.bin` is deliberately absent from match.extensions even though this codec opens BIN payloads. It is a generic extension — 7z, PE and xz payloads all ship as `.bin` — and as an extension match it shadows every other codec's content sniff. A BIN is claimed instead by the sibling-CUE check, which is a source-level detector rather than a header one.",
-    "The v1 companions field names codec IDs rather than same-codec CUE/BIN sidecar path patterns, so these filesystem companions remain documented as runtime limitations.",
-    "The current entrypoint resolves companions through a host filesystem path and delegates cooked data-track browsing to the ISO codec, so archive entries and browser hosts are not supported.",
-    "Supported track modes are AUDIO, MODE1/2048, MODE1/2352, MODE2/2048, and MODE2/2352; the codec is read-only."
+    "The CUE is the candidate and its exact FILE name is refined into one required host-resolved BIN companion; the portable codec never resolves filesystem paths.",
+    "The bounded subset supports one BINARY FILE, a zero first INDEX 01, increasing tracks with one physical sector size, and AUDIO, MODE1/2048, MODE1/2352, MODE2/2048, or MODE2/2352 tracks.",
+    "Raw and cooked tracks plus the first ISO 9660 data-track namespace are extractable; raw-sector EDC/ECC validation, Joliet, Rock Ridge, UDF, multi-extent files, pregap materialization, and writing are not implemented.",
+    "The companion is materialized under maxScalarBytes as well as maxInputBytes; larger full-disc images require a future leased random-access companion lifecycle."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "ps1-cue-bin", "label": "PlayStation CUE/BIN disc image" }],
     "roles": ["container"],
-    "sourceTopology": "single",
+    "sourceTopology": "bundle",
+    "companions": [
+      {
+        "id": "disc-payload",
+        "role": "disc-payload",
+        "required": true,
+        "patterns": ["*.bin", "*.BIN"],
+        "searchScopes": ["sibling-directory", "enclosing-container"]
+      }
+    ],
     "artifactStages": ["authored", "compiled"],
     "openIntents": ["probe", "inspect", "full", "export"],
     "match": { "extensions": ["cue"] },
@@ -67,6 +75,13 @@
       {
         "id": "export.raw",
         "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "container.extract",
+        "handlerId": "extract-entry",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]

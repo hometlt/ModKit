@@ -20,7 +20,7 @@
 import { createHash } from 'node:crypto'
 import { readFile, stat } from 'node:fs/promises'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import {
   TRUSTED_IN_PROCESS_EXECUTION_BACKEND,
   artifactByteSourceFromRandomAccess,
@@ -28,6 +28,7 @@ import {
   createExecutionBackendRegistry,
   createHostContributionContractRegistry,
   openSubject,
+  type SubjectInputResolver,
 } from '@modkitx-x3/host'
 import {
   createNodeExecutionBackends,
@@ -36,6 +37,8 @@ import {
 } from '@modkitx-x3/host/node'
 import {
   revisionId,
+  type ArtifactSource,
+  type AssetInput,
   type ArtifactByteSource,
   type ByteRangeSource,
   type JsonValue,
@@ -43,6 +46,7 @@ import {
   type OpenIntent,
   type ModelSceneSource,
   type RasterImageSource,
+  type ResolvedRequirementInputBinding,
   type ResourceBudget,
   type RuntimeTarget,
   type TreeDataSource,
@@ -271,6 +275,158 @@ async function corpusByteSource(path: string): Promise<ArtifactByteSource> {
   })
 }
 
+function exactCompanionPath(samplePath: string, pattern: string): string {
+  if (pattern.length === 0 || /[*?\[\]]/u.test(pattern) || isAbsolute(pattern)) {
+    throw new TypeError(
+      `MK2 corpus resolver requires one exact relative companion path, got ${pattern}`,
+    )
+  }
+  const root = dirname(samplePath)
+  const target = resolve(root, pattern.replaceAll('/', sep).replaceAll('\\', sep))
+  const fromRoot = relative(root, target)
+  if (
+    fromRoot === '' ||
+    fromRoot === '..' ||
+    fromRoot.startsWith(`..${sep}`) ||
+    isAbsolute(fromRoot)
+  ) {
+    throw new TypeError(`MK2 corpus companion escapes the sample directory: ${pattern}`)
+  }
+  return target
+}
+
+/**
+ * Product-path fixture resolver. The codec returns exact requirements; this host-owned adapter
+ * pins those files and constructs the bundle. It intentionally implements no globbing or search,
+ * so a codec cannot smuggle path discovery through an acceptance-only convenience.
+ */
+function corpusInputResolver(samplePath: string): SubjectInputResolver {
+  return async context => {
+    if (context.signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
+    const { plan, source } = context
+    if (
+      source.kind !== 'bytes' ||
+      plan.originKind === 'namespace' ||
+      plan.originKind === 'derived'
+    ) {
+      throw new TypeError(`MK2 corpus resolver cannot satisfy ${plan.originKind} topology`)
+    }
+    const candidate = plan.candidate
+    const candidateBinding = Object.freeze({
+      sourceKind: 'candidate' as const,
+      bindingId: candidate.bindingId,
+      role: candidate.role,
+      ownership: candidate.ownership,
+      source: source.ref,
+      revision: source.revision,
+    })
+    if (plan.originKind === 'single') {
+      if (plan.requirements.length !== 0)
+        throw new TypeError('single input unexpectedly has requirements')
+      return Object.freeze({
+        originKind: 'single' as const,
+        bindings: Object.freeze([candidateBinding] as const),
+        primaryBindingId: candidateBinding.bindingId,
+        revisions: Object.freeze({
+          topology: 'single' as const,
+          revision: source.revision,
+          bindings: Object.freeze([
+            Object.freeze({ bindingId: candidateBinding.bindingId, revision: source.revision }),
+          ] as const),
+          compositionFingerprint: JSON.stringify({
+            topology: 'single',
+            bindingId: candidateBinding.bindingId,
+            source: candidateBinding.source,
+            revision: source.revision,
+          }),
+        }),
+        bindingsFor: () => Object.freeze([]),
+        async openBinding(
+          bindingId: string,
+        ): Promise<{ value: ArtifactSource; release(): Promise<void> }> {
+          if (bindingId !== candidateBinding.bindingId)
+            throw new TypeError(`unknown input binding ${bindingId}`)
+          return Object.freeze({ value: source, release: async () => undefined })
+        },
+      })
+    }
+
+    const requirementBindings: ResolvedRequirementInputBinding[] = []
+    const sources = new Map<string, ArtifactSource>([[candidateBinding.bindingId, source]])
+    for (const requirement of plan.requirements) {
+      const [pattern] = requirement.patterns ?? []
+      if (
+        requirement.required !== true ||
+        requirement.cardinality !== 'one' ||
+        requirement.patterns?.length !== 1 ||
+        pattern === undefined
+      ) {
+        throw new TypeError(
+          `MK2 corpus resolver supports one exact required binding for ${requirement.id}`,
+        )
+      }
+      const companionPath = exactCompanionPath(samplePath, pattern)
+      if ((await stat(companionPath).catch(() => undefined))?.isFile() !== true) {
+        throw new TypeError(`required MK2 corpus companion is missing: ${requirement.patterns[0]}`)
+      }
+      const companion = await corpusByteSource(companionPath)
+      const bindingId = requirement.id
+      if (sources.has(bindingId)) throw new TypeError(`duplicate input binding ${bindingId}`)
+      sources.set(bindingId, companion)
+      requirementBindings.push(
+        Object.freeze({
+          sourceKind: 'requirement' as const,
+          bindingId,
+          requirementId: requirement.id,
+          role: requirement.role,
+          ownership: requirement.ownership,
+          source: companion.ref,
+          revision: companion.revision,
+        }),
+      )
+    }
+    const bindings = Object.freeze([candidateBinding, ...requirementBindings])
+    const revisions = Object.freeze(
+      bindings.map(binding =>
+        Object.freeze({
+          bindingId: binding.bindingId,
+          revision: binding.revision,
+        }),
+      ),
+    )
+    return Object.freeze({
+      originKind: 'bundle' as const,
+      bindings,
+      primaryBindingId: candidateBinding.bindingId,
+      revisions: Object.freeze({
+        topology: 'bundle' as const,
+        revision: source.revision,
+        bindings: revisions,
+        compositionFingerprint: JSON.stringify({
+          topology: 'bundle',
+          bindings: bindings.map(binding => ({
+            bindingId: binding.bindingId,
+            source: binding.source,
+            revision: binding.revision,
+          })),
+        }),
+      }),
+      bindingsFor(requirementId: string) {
+        return Object.freeze(
+          requirementBindings.filter(binding => binding.requirementId === requirementId),
+        )
+      },
+      async openBinding(
+        bindingId: string,
+      ): Promise<{ value: ArtifactSource; release(): Promise<void> }> {
+        const resolved = sources.get(bindingId)
+        if (resolved === undefined) throw new TypeError(`unknown input binding ${bindingId}`)
+        return Object.freeze({ value: resolved, release: async () => undefined })
+      },
+    }) as AssetInput
+  }
+}
+
 export interface Mk2AcceptanceOptions {
   /** Lab repository root (the directory holding `extensions/`). */
   readonly repoRoot: string
@@ -346,6 +502,7 @@ export async function runMk2AcceptanceCase(
         ? createNodeExecutionBackends()
         : createExecutionBackendRegistry([TRUSTED_IN_PROCESS_EXECUTION_BACKEND]),
     budget: options.budget ?? DEFAULT_BUDGET,
+    resolveInput: corpusInputResolver(samplePath),
   })
 
   if (result.state !== 'opened') {
@@ -359,11 +516,16 @@ export async function runMk2AcceptanceCase(
         }`
       })
       .join('; ')
+    const global = result.diagnostics
+      .map(diagnostic => `${diagnostic.code}: ${diagnostic.message}`)
+      .join(', ')
     return {
       entry,
       corpus,
       state: 'failed',
-      detail: `openSubject returned ${result.reason}${explanation === '' ? '' : ` (${explanation})`}`,
+      detail: `openSubject returned ${result.reason}${explanation === '' ? '' : ` (${explanation})`}${
+        global === '' ? '' : ` [${global}]`
+      }`,
     }
   }
 

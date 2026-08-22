@@ -10,8 +10,10 @@
 import { ModkitError, type Diagnostic } from '@modkitx-x3/core'
 import type {
   AssetInput,
+  AssetInputPlan,
   AssetSession,
   Codec,
+  CodecCandidateSource,
   CodecProbeRequest,
   ContributionContext,
   DetectionResult,
@@ -131,6 +133,41 @@ function codecAdapter(bound: Promise<BoundCodec>, watch: ConsumerWatch): Codec {
         return outcome.value as unknown as DetectionResult
       } finally {
         await source.release()
+      }
+    },
+    async planInput(
+      source: CodecCandidateSource,
+      evidence: DetectionResult,
+      signal?: AbortSignal,
+    ): Promise<AssetInputPlan> {
+      const { realm, remote } = await bound
+      if (remote.has !== undefined && !remote.has.includes('planInput')) {
+        return source.kind === 'namespace'
+          ? { originKind: 'namespace', requirements: [] }
+          : {
+              originKind: 'single',
+              candidate: { bindingId: 'content', role: 'content', ownership: 'owned' },
+              requirements: [],
+            }
+      }
+      const exposedSource = realm.endpoint.expose(source as unknown as object, ABI_ARTIFACT_SOURCE)
+      try {
+        const outcome = await watch(realm, () =>
+          remote.call(
+            'planInput',
+            [exposedSource, evidence],
+            signal === undefined ? {} : { signal },
+          ),
+        )
+        if (outcome.kind !== 'value') {
+          throw new ModkitError({
+            code: 'x3.host/rpc-bad-return',
+            message: 'planInput returned a handle',
+          })
+        }
+        return outcome.value as unknown as AssetInputPlan
+      } finally {
+        await exposedSource.release()
       }
     },
     async open(

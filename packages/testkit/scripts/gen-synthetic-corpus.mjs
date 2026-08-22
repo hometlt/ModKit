@@ -707,6 +707,20 @@ function iso() {
   return output
 }
 
+/**
+ * CDRWIN-compatible CUE sheet using the common FILE/TRACK/INDEX grammar documented by libcue and
+ * cdrdao, paired with a MODE1/2048 BIN. The BIN is the ISO 9660 image above, so the sector count,
+ * data-track payload, and filesystem are independently meaningful rather than sentinel bytes.
+ * FILE is deliberately relative: the host, not the codec, resolves the sibling.
+ */
+function ps1Cue() {
+  return ascii('FILE "minimal.bin" BINARY\n  TRACK 01 MODE1/2048\n    INDEX 01 00:00:00\n')
+}
+
+function ps1Bin() {
+  return iso()
+}
+
 /** PE/COFF 8.3: a PE32 x86 console image with one 512-byte `.text` section. */
 function pe() {
   const output = new Uint8Array(1024)
@@ -1569,6 +1583,8 @@ const FIXTURES = {
   'minimal.pcx': pcx,
   'minimal.exe': pe,
   'minimal.pvr': pvr,
+  'minimal.cue': ps1Cue,
+  'minimal.bin': ps1Bin,
   'minimal.7z': sevenZip,
   'minimal.rar': rar,
   'minimal.tga': tga,

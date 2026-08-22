@@ -430,12 +430,18 @@ async function readAll(source, budget, signal) {
   return result
 }
 
-function originFrom(input, primary) {
+function originFrom(input, primary, companions = []) {
+  const requiredCompanionBindings = new Set(
+    companions.flatMap(companion =>
+      companion.required === true && companion.state === 'resolved' ? companion.bindingIds : [],
+    ),
+  )
   const toBinding = binding => ({
     id: binding.bindingId,
     role: binding.role,
     source: binding.source,
-    required: binding.sourceKind === 'candidate',
+    required:
+      binding.sourceKind === 'candidate' || requiredCompanionBindings.has(binding.bindingId),
     ownership: binding.ownership,
     revision: binding.revision,
   })
@@ -473,7 +479,7 @@ function probeLength(plan, size) {
  * reads, descriptor assembly, standard data-source leases, and the three shared read-only
  * operations. Optional custom operations remain format-owned.
  */
-export function createInspectionCodec(definition) {
+export function createInspectionCodec(definition, contributionContext) {
   const namespaceDefinition = definition.namespace
   const customOperations = Object.freeze([...(definition.operations ?? [])])
   const sharedOperations =
@@ -557,7 +563,10 @@ export function createInspectionCodec(definition) {
         ]),
       })
     },
-    async planInput(source) {
+    async planInput(source, evidence, signal) {
+      if (definition.planInput !== undefined) {
+        return definition.planInput(source, evidence, signal, contributionContext)
+      }
       if (namespaceDefinition !== undefined) {
         if (source.kind !== 'namespace') {
           throw new TypeError(`${definition.id} requires a namespace input`)
@@ -705,7 +714,7 @@ export function createInspectionCodec(definition) {
         const descriptor = await assembleSubjectDescriptor({
           schemaVersion: 2,
           subjectUri: primary.source.uri,
-          origin: originFrom(input, primary),
+          origin: originFrom(input, primary, inspection.companions),
           interpretation: 'codec',
           identity: {
             codecId: definition.id,
@@ -750,6 +759,7 @@ export function createInspectionCodec(definition) {
           dataSources: [...dataSources.keys()].map(contract => ({ contract, major: 1 })),
           diagnostics: inspection.diagnostics ?? [],
           metadata: inspection.metadata,
+          ...(inspection.companions === undefined ? {} : { companions: inspection.companions }),
           revision: input.revisions.revision,
         })
         const handlers = new Map([

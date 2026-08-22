@@ -26,6 +26,7 @@ const find = (contributionId: string): Mk2CorpusEntry => {
 }
 const firstReal = find('org.modkitx/webp')
 const firstSynthetic = find('org.modkitx/wav')
+const cueBinBundle = find('org.modkitx/ps1-cue-bin')
 
 describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tasks E/F/G)', () => {
   it('opens every corpus sample through the product path and prints the state table', async () => {
@@ -90,7 +91,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     // evaluates anything, so this only passes while the converted extension is self-contained
     // (imports resolve inside its own artifact, not by a path escaping it). REPORT §7.6 asks each
     // port to confirm the `portable` variant instead of inheriting it, and this is that check.
-    const cases = [firstSynthetic, ...(mk2Root === undefined ? [] : [firstReal])]
+    const cases = [firstSynthetic, cueBinBundle, ...(mk2Root === undefined ? [] : [firstReal])]
     const outcomes = await runMk2Acceptance(cases, { repoRoot, mk2Root, workerBrokered: true })
     for (const outcome of outcomes) {
       expect({
