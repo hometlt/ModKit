@@ -23,7 +23,7 @@
       ],
       "droppedOperations": ["model.read", "model.render"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/relic-whm": {
       "verdict": "mechanical",
@@ -38,7 +38,7 @@
       ],
       "droppedOperations": ["model.read", "model.render"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     }
   }
 }

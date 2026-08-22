@@ -1843,6 +1843,87 @@
       "note": "Reality Pump WD archive with a zlib-compressed EOF directory"
     },
     {
+      "extension": "mk2/relic-essence",
+      "contributionId": "org.modkitx/relic",
+      "corpus": "synthetic",
+      "sample": "minimal.relic.chunky.whm",
+      "minimumConfidence": 0.98,
+      "dataSource": "tree",
+      "note": "Relic Chunky preamble and empty FOLDDATA root"
+    },
+    {
+      "extension": "mk2/relic-essence",
+      "contributionId": "org.modkitx/relic-sga",
+      "corpus": "synthetic",
+      "sample": "minimal.relic.sga",
+      "minimumConfidence": 0.99,
+      "dataSource": "tree",
+      "note": "Relic SGA 2.0 metadata envelope"
+    },
+    {
+      "extension": "mk2/relic-essence",
+      "contributionId": "org.modkitx/rgt",
+      "corpus": "synthetic",
+      "sample": "minimal.relic.rgt",
+      "minimumConfidence": 0.98,
+      "dataSource": "tree",
+      "note": "Relic DXTC texture chunk envelope"
+    },
+    {
+      "extension": "mk2/relic-essence",
+      "contributionId": "org.modkitx/rrtex",
+      "corpus": "synthetic",
+      "sample": "minimal.relic.rrtex",
+      "minimumConfidence": 0.96,
+      "dataSource": "tree",
+      "note": "Relic RRTEX marker envelope"
+    },
+    {
+      "extension": "mk2/relic-essence",
+      "contributionId": "org.modkitx/rsh",
+      "corpus": "synthetic",
+      "sample": "minimal.relic.rsh",
+      "minimumConfidence": 0.98,
+      "dataSource": "tree",
+      "note": "Relic shader texture chunk envelope"
+    },
+    {
+      "extension": "mk2/relic-essence",
+      "contributionId": "org.modkitx/rtx",
+      "corpus": "synthetic",
+      "sample": "minimal.relic.rtx",
+      "minimumConfidence": 0.98,
+      "dataSource": "tree",
+      "note": "Relic texture chunk envelope"
+    },
+    {
+      "extension": "mk2/relic-essence",
+      "contributionId": "org.modkitx/wtp",
+      "corpus": "synthetic",
+      "sample": "minimal.relic.wtp",
+      "minimumConfidence": 0.98,
+      "dataSource": "tree",
+      "note": "Relic team-pattern chunk envelope"
+    },
+    {
+      "extension": "mk2/relic-models",
+      "contributionId": "org.modkitx/relic-sgm",
+      "corpus": "synthetic",
+      "sample": "minimal.relic.sgm",
+      "minimumConfidence": 0.99,
+      "dataSource": "tree",
+      "note": "Bare Relic FOLDRSGM model root"
+    },
+    {
+      "extension": "mk2/relic-models",
+      "contributionId": "org.modkitx/relic-whm",
+      "corpus": "synthetic",
+      "sample": "minimal.relic.model.whm",
+      "minimumConfidence": 0.99,
+      "dataSource": "tree",
+      "note": "Relic Chunky WHM model envelope"
+    },
+    {
       "extension": "common/images",
       "contributionId": "org.modkitx/image-png",
       "corpus": "synthetic",

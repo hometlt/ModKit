@@ -113,6 +113,17 @@ const completedPortableRealityPump = [
   find('org.modkitx/earth2160-model'),
   find('org.modkitx/wd'),
 ]
+const completedPortableRelic = [
+  find('org.modkitx/relic'),
+  find('org.modkitx/relic-sga'),
+  find('org.modkitx/rgt'),
+  find('org.modkitx/rrtex'),
+  find('org.modkitx/rsh'),
+  find('org.modkitx/rtx'),
+  find('org.modkitx/wtp'),
+  find('org.modkitx/relic-sgm'),
+  find('org.modkitx/relic-whm'),
+]
 const completedPortableVector = [find('org.modkitx/emf'), find('org.modkitx/wmf')]
 const completedPortableDocuments = [
   find('org.modkitx/csv'),
@@ -253,6 +264,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       ...completedPortablePetroglyph,
       ...completedPortableRadVideo,
       ...completedPortableRealityPump,
+      ...completedPortableRelic,
       ...completedPortableVector,
       ...completedPortableModels,
       ...completedPortableVideos,
@@ -936,6 +948,25 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     ])
     const wd = readFileSync(join(root, 'minimal.reality-pump.wd'))
     expect(wd.readUInt32LE(wd.byteLength - 4)).toBeLessThanOrEqual(wd.byteLength)
+    for (const sample of [
+      'minimal.relic.chunky.whm',
+      'minimal.relic.rgt',
+      'minimal.relic.rsh',
+      'minimal.relic.rtx',
+      'minimal.relic.wtp',
+      'minimal.relic.model.whm',
+    ]) {
+      expect(readFileSync(join(root, sample)).subarray(0, 12).toString('ascii')).toBe(
+        'Relic Chunky',
+      )
+    }
+    expect(readFileSync(join(root, 'minimal.relic.sgm')).subarray(0, 8).toString('ascii')).toBe(
+      'FOLDRSGM',
+    )
+    expect(readFileSync(join(root, 'minimal.relic.sga')).subarray(0, 8).toString('ascii')).toBe(
+      '_ARCHIVE',
+    )
+    expect(readFileSync(join(root, 'minimal.relic.rrtex'), 'ascii')).toContain('RRTEX')
 
     // These checks intentionally do not import the codecs. They independently walk each model
     // fixture's standard wire representation so a generator/reader bug cannot agree with itself.

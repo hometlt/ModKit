@@ -11,12 +11,12 @@ The conversion debt of every codec below — planes v2 has no home for, applied
 renames, converter defaults and v1 operations left without a handler — is data in
 `MK2-CONVERSION.json` beside this file.
 
-| contribution            | v1 manifest                                                     | module                   | port         |
-| ----------------------- | --------------------------------------------------------------- | ------------------------ | ------------ |
-| `org.modkitx/relic`     | `extensions/relic/essence/codecs/relic/codec.manifest.json`     | `src/relic/codec.js`     | port-pending |
-| `org.modkitx/relic-sga` | `extensions/relic/essence/codecs/relic-sga/codec.manifest.json` | `src/relic-sga/codec.js` | port-pending |
-| `org.modkitx/rgt`       | `extensions/relic/essence/codecs/rgt/codec.manifest.json`       | `src/rgt/codec.js`       | port-pending |
-| `org.modkitx/rrtex`     | `extensions/relic/essence/codecs/rrtex/codec.manifest.json`     | `src/rrtex/codec.js`     | port-pending |
-| `org.modkitx/rsh`       | `extensions/relic/essence/codecs/rsh/codec.manifest.json`       | `src/rsh/codec.js`       | port-pending |
-| `org.modkitx/rtx`       | `extensions/relic/essence/codecs/rtx/codec.manifest.json`       | `src/rtx/codec.js`       | port-pending |
-| `org.modkitx/wtp`       | `extensions/relic/essence/codecs/wtp/codec.manifest.json`       | `src/wtp/codec.js`       | port-pending |
+| contribution            | v1 manifest                                                     | module                   | port   |
+| ----------------------- | --------------------------------------------------------------- | ------------------------ | ------ |
+| `org.modkitx/relic`     | `extensions/relic/essence/codecs/relic/codec.manifest.json`     | `src/relic/codec.js`     | ported |
+| `org.modkitx/relic-sga` | `extensions/relic/essence/codecs/relic-sga/codec.manifest.json` | `src/relic-sga/codec.js` | ported |
+| `org.modkitx/rgt`       | `extensions/relic/essence/codecs/rgt/codec.manifest.json`       | `src/rgt/codec.js`       | ported |
+| `org.modkitx/rrtex`     | `extensions/relic/essence/codecs/rrtex/codec.manifest.json`     | `src/rrtex/codec.js`     | ported |
+| `org.modkitx/rsh`       | `extensions/relic/essence/codecs/rsh/codec.manifest.json`       | `src/rsh/codec.js`       | ported |
+| `org.modkitx/rtx`       | `extensions/relic/essence/codecs/rtx/codec.manifest.json`       | `src/rtx/codec.js`       | ported |
+| `org.modkitx/wtp`       | `extensions/relic/essence/codecs/wtp/codec.manifest.json`       | `src/wtp/codec.js`       | ported |

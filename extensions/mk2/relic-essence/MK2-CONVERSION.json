@@ -28,7 +28,7 @@
       ],
       "droppedOperations": ["archive.extract", "archive.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/relic-sga": {
       "verdict": "mechanical",
@@ -43,7 +43,7 @@
       ],
       "droppedOperations": ["archive.extract", "archive.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/rgt": {
       "verdict": "needs-new-contract",
@@ -60,7 +60,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.read", "image.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/rrtex": {
       "verdict": "mechanical",
@@ -75,7 +75,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.read"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/rsh": {
       "verdict": "needs-new-contract",
@@ -92,7 +92,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.read", "image.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/rtx": {
       "verdict": "needs-new-contract",
@@ -109,7 +109,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.read", "image.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/wtp": {
       "verdict": "needs-new-contract",
@@ -126,7 +126,7 @@
       ],
       "droppedOperations": ["image.inspect", "image.read", "image.write"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     }
   }
 }

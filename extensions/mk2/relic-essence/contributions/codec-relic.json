@@ -3,7 +3,7 @@
   "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
   "id": "org.modkitx/relic",
   "displayName": "Relic Chunky container",
-  "status": "supported",
+  "status": "partial",
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
@@ -30,10 +30,7 @@
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled"],
     "openIntents": ["probe", "inspect", "full", "export"],
-    "match": {
-      "extensions": ["whm"],
-      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "52656c6963204368756e6b79" }]
-    },
+    "match": { "extensions": ["whm"] },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {
@@ -45,7 +42,6 @@
       }
     ],
     "publishesDataSources": [
-      { "contract": "common.view/namespace-entry-source", "major": 1 },
       { "contract": "common.view/tree-data-source", "major": 1 },
       { "contract": "common.view/byte-range-source", "major": 1 }
     ],

@@ -2256,6 +2256,23 @@ function realityPumpWd() {
   return concat(payload, compressedDirectory, u32le(compressedDirectory.byteLength + 4))
 }
 
+function relicChunk(root, preamble = true) {
+  return concat(
+    ...(preamble ? [ascii('Relic Chunky'), new Uint8Array(12)] : []),
+    ascii(root),
+    u32le(1),
+    u32le(0),
+    u32le(0),
+  )
+}
+
+function relicSga() {
+  const out = new Uint8Array(180)
+  out.set(ascii('_ARCHIVE'))
+  new DataView(out.buffer).setUint16(8, 2, true)
+  return out
+}
+
 /** EA SAGE BIG4: one stored entry, with the mixed-endian header and null-terminated index path. */
 function big() {
   const name = ascii('hello.txt\0')
@@ -4503,6 +4520,15 @@ const FIXTURES = {
   'minimal.earth.tex': earthTex,
   'minimal.earth2160.kfr': earth2160Model,
   'minimal.reality-pump.wd': realityPumpWd,
+  'minimal.relic.chunky.whm': () => relicChunk('FOLDDATA'),
+  'minimal.relic.sga': relicSga,
+  'minimal.relic.rgt': () => relicChunk('FOLDDXTC'),
+  'minimal.relic.rrtex': () => ascii('RRTEX\0\0\0structural-fixture'),
+  'minimal.relic.rsh': () => relicChunk('FOLDSHRF'),
+  'minimal.relic.rtx': () => relicChunk('FOLDTXTR'),
+  'minimal.relic.wtp': () => relicChunk('FOLDTPAT'),
+  'minimal.relic.sgm': () => relicChunk('FOLDRSGM', false),
+  'minimal.relic.model.whm': () => relicChunk('FOLDRSGM'),
   'minimal.sage.skudef': sageSkuDef,
   'minimal.cnc3-data.xml': cnc3Data,
   'minimal.cnc3-localization.csf': cnc3Localization,

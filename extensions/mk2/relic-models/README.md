@@ -11,7 +11,7 @@ The conversion debt of every codec below — planes v2 has no home for, applied
 renames, converter defaults and v1 operations left without a handler — is data in
 `MK2-CONVERSION.json` beside this file.
 
-| contribution            | v1 manifest                                                    | module                   | port         |
-| ----------------------- | -------------------------------------------------------------- | ------------------------ | ------------ |
-| `org.modkitx/relic-sgm` | `extensions/relic/models/codecs/relic-sgm/codec.manifest.json` | `src/relic-sgm/codec.js` | port-pending |
-| `org.modkitx/relic-whm` | `extensions/relic/models/codecs/relic-whm/codec.manifest.json` | `src/relic-whm/codec.js` | port-pending |
+| contribution            | v1 manifest                                                    | module                   | port   |
+| ----------------------- | -------------------------------------------------------------- | ------------------------ | ------ |
+| `org.modkitx/relic-sgm` | `extensions/relic/models/codecs/relic-sgm/codec.manifest.json` | `src/relic-sgm/codec.js` | ported |
+| `org.modkitx/relic-whm` | `extensions/relic/models/codecs/relic-whm/codec.manifest.json` | `src/relic-whm/codec.js` | ported |
