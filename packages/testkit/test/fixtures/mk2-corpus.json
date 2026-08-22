@@ -779,6 +779,17 @@
       "note": "Classic ZIP FLA with DOMDocument.xml and a deflated library symbol; acceptance inventories and extracts the project root"
     },
     {
+      "extension": "mk2/firelight-fmod",
+      "contributionId": "org.modkitx/fsb",
+      "corpus": "synthetic",
+      "sample": "minimal.fsb",
+      "minimumConfidence": 0.99,
+      "dataSource": "audio",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "FSB5 v1 bank with one named mono PCM8 stream; acceptance validates signature routing and encoded-bank publication"
+    },
+    {
       "extension": "mk2/common-audio",
       "contributionId": "org.modkitx/ogg",
       "corpus": "synthetic",

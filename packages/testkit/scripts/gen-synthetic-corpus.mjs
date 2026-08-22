@@ -3483,6 +3483,24 @@ function flaProject() {
   ])
 }
 
+/** FSB5 v1 with one named mono PCM8 stream at 8 kHz. */
+function fsb5() {
+  const samples = Uint8Array.from({ length: 32 }, (_, index) => 128 + (index % 8))
+  const nameTable = concat(u32le(4), ascii('tone\0'))
+  const mode = (32n << 34n) | (1n << 1n)
+  const header = concat(
+    ascii('FSB5'),
+    u32le(1),
+    u32le(1),
+    u32le(8),
+    u32le(nameTable.byteLength),
+    u32le(samples.byteLength),
+    u32le(1),
+    new Uint8Array(32),
+  )
+  return concat(header, u64le(mode), nameTable, samples)
+}
+
 // ---------------------------------------------------------------- the corpus
 
 /** Every fixture: file name → builder. The name is what the acceptance corpus refers to. */
@@ -3509,6 +3527,7 @@ const FIXTURES = {
   'minimal.bnk': wwiseBnk,
   'minimal.wwise.pck': wwisePck,
   'minimal.fla': flaProject,
+  'minimal.fsb': fsb5,
   'minimal.bti': bti,
   'minimal.cub': cub,
   'minimal.mtrl': mtrl,

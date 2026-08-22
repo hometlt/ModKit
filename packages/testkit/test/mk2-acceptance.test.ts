@@ -46,6 +46,7 @@ const completedPortableWwise = [
   find('org.modkitx/wwise-pck'),
 ]
 const completedPortableFlash = [find('org.modkitx/fla')]
+const completedPortableFmod = [find('org.modkitx/fsb')]
 const completedPortableVector = [find('org.modkitx/emf'), find('org.modkitx/wmf')]
 const completedPortableDocuments = [
   find('org.modkitx/csv'),
@@ -167,6 +168,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       ...completedPortableAudio,
       ...completedPortableWwise,
       ...completedPortableFlash,
+      ...completedPortableFmod,
       ...completedPortableVector,
       ...completedPortableModels,
       ...completedPortableVideos,
@@ -251,6 +253,16 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     expect(zlib.inflateRawSync(fla.subarray(secondData, secondData + secondCompressed)).toString('utf8')).toBe(
       '<DOMSymbolItem name="Symbol 1"/>',
     )
+
+    const fsb = readFileSync(join(root, 'minimal.fsb'))
+    expect(fsb.subarray(0, 4).toString('ascii')).toBe('FSB5')
+    expect([fsb.readUInt32LE(4), fsb.readUInt32LE(8), fsb.readUInt32LE(12)]).toEqual([1, 1, 8])
+    expect([fsb.readUInt32LE(16), fsb.readUInt32LE(20), fsb.readUInt32LE(24)]).toEqual([9, 32, 1])
+    const fsbMode = fsb.readBigUInt64LE(60)
+    expect(Number((fsbMode >> 34n) & 0x3fffffffn)).toBe(32)
+    expect(Number((fsbMode >> 1n) & 0xfn)).toBe(1)
+    expect(fsb.readUInt32LE(68)).toBe(4)
+    expect(fsb.subarray(72, 76).toString('ascii')).toBe('tone')
 
     // These checks intentionally do not import the codecs. They independently walk each model
     // fixture's standard wire representation so a generator/reader bug cannot agree with itself.

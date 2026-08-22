@@ -11,6 +11,6 @@ The conversion debt of every codec below — planes v2 has no home for, applied
 renames, converter defaults and v1 operations left without a handler — is data in
 `MK2-CONVERSION.json` beside this file.
 
-| contribution      | v1 manifest                                                | module             | port         |
-| ----------------- | ---------------------------------------------------------- | ------------------ | ------------ |
-| `org.modkitx/fsb` | `extensions/firelight/fmod/codecs/fsb/codec.manifest.json` | `src/fsb/codec.js` | port-pending |
+| contribution      | v1 manifest                                                | module             | port   |
+| ----------------- | ---------------------------------------------------------- | ------------------ | ------ |
+| `org.modkitx/fsb` | `extensions/firelight/fmod/codecs/fsb/codec.manifest.json` | `src/fsb/codec.js` | ported |

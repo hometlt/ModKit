@@ -21,9 +21,8 @@
     }
   ],
   "limitations": [
-    "The portable decoder handles FMOD FADPCM streams; other FSB5 payload codecs require native playback or an injected transcoder.",
-    "The codec is read-only and does not author or repack FSB5 banks.",
-    "Declarative routing is extension-first because manifest v1 cannot express the legacy extension-or-FSB5-sniffer behavior without making the evidence conjunctive."
+    "The MK3 port inventories FSB5 streams and exposes the original encoded bank; payload decoding, transcoding, and per-stream extraction remain unsupported.",
+    "The codec is read-only and does not author or repack FSB5 banks."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "fsb", "label": "FMOD Sound Bank (FSB5)" }],
@@ -31,7 +30,10 @@
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled"],
     "openIntents": ["probe", "inspect", "full", "stream", "export"],
-    "match": { "extensions": ["fsb"] },
+    "match": {
+      "extensions": ["fsb"],
+      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "46534235" }]
+    },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {

@@ -20,7 +20,7 @@
       ],
       "droppedOperations": ["audio.decode", "audio.export", "audio.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     }
   }
 }
