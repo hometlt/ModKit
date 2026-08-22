@@ -3277,6 +3277,99 @@ function unrealIoStore() {
 
 const ioStoreFixture = unrealIoStore()
 
+/** Unity serialized format 17 with a stripped type tree and one TextAsset object. */
+function unityAssets() {
+  const name = ascii('FixtureText')
+  const object = concat(
+    u32le(name.byteLength),
+    name,
+    bytes(0), // aligned string padding
+    u32le(5),
+    ascii('hello'),
+  )
+  const type = concat(
+    u32le(49), // TextAsset class ID
+    bytes(0), // not stripped
+    u16le(0xffff), // no script type
+    new Uint8Array(16), // old type hash
+  )
+  const metadata = concat(
+    ascii('2021.3.0f1\0'),
+    u32le(0), // target platform
+    bytes(0), // stripped type tree
+    u32le(1),
+    type,
+    u32le(1),
+    bytes(0), // object table aligns path IDs to an absolute four-byte boundary
+    u64le(1n), // path ID
+    u32le(0), // object offset relative to data section
+    u32le(object.byteLength),
+    u32le(0), // type table index
+    u32le(0), // script references
+    u32le(0), // external files
+    bytes(0), // user information
+  )
+  const dataOffset = 112
+  const fileSize = dataOffset + object.byteLength
+  const header = concat(
+    u32be(metadata.byteLength),
+    u32be(fileSize),
+    u32be(17),
+    u32be(dataOffset),
+    bytes(0, 0, 0, 0), // little-endian payload + reserved
+  )
+  return concat(
+    header,
+    metadata,
+    new Uint8Array(dataOffset - header.byteLength - metadata.byteLength),
+    object,
+  )
+}
+
+/** UnityFS v6 with stored block-info, one stored data block, and one serialized asset entry. */
+function unityFs() {
+  const payload = unityAssets()
+  const entryName = ascii('cab-fixture.assets\0')
+  const blockInfo = concat(
+    new Uint8Array(16),
+    u32be(1),
+    u32be(payload.byteLength),
+    u32be(payload.byteLength),
+    u16be(0),
+    u32be(1),
+    u64be(0n),
+    u64be(BigInt(payload.byteLength)),
+    u32be(0),
+    entryName,
+  )
+  const headerSize =
+    ascii('UnityFS\0').byteLength +
+    4 +
+    ascii('6.x.x\0').byteLength +
+    ascii('2021.3.0f1\0').byteLength +
+    8 +
+    4 +
+    4 +
+    4
+  const bundleSize = headerSize + blockInfo.byteLength + payload.byteLength
+  const header = concat(
+    ascii('UnityFS\0'),
+    u32be(6),
+    ascii('6.x.x\0'),
+    ascii('2021.3.0f1\0'),
+    u64be(BigInt(bundleSize)),
+    u32be(blockInfo.byteLength),
+    u32be(blockInfo.byteLength),
+    u32be(0),
+  )
+  if (header.byteLength !== headerSize) throw new Error('UnityFS header size drifted')
+  return concat(header, blockInfo, payload)
+}
+
+function unityRess() {
+  return concat(ascii('ModkitX Unity resource stream\0'), bytes(0xde, 0xad, 0xbe, 0xef))
+}
+
 // ---------------------------------------------------------------- the corpus
 
 /** Every fixture: file name → builder. The name is what the acceptance corpus refers to. */
@@ -3294,6 +3387,9 @@ const FIXTURES = {
   'minimal.unreal.pak': unrealPak,
   'minimal.unreal.utoc': () => ioStoreFixture.utoc,
   'minimal.unreal.ucas': () => ioStoreFixture.ucas,
+  'minimal.unity.assets': unityAssets,
+  'minimal.unity.ress': unityRess,
+  'minimal.unityfs': unityFs,
   'minimal.bti': bti,
   'minimal.cub': cub,
   'minimal.mtrl': mtrl,

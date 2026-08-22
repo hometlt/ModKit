@@ -14,7 +14,7 @@ renames, converter defaults and v1 operations left without a handler — is data
 | contribution               | v1 manifest                                                       | module                      | port         |
 | -------------------------- | ----------------------------------------------------------------- | --------------------------- | ------------ |
 | `org.modkitx/unity`        | `extensions/unity/engine/codecs/unity/codec.manifest.json`        | `src/unity/codec.js`        | port-pending |
-| `org.modkitx/unity-assets` | `extensions/unity/engine/codecs/unity-assets/codec.manifest.json` | `src/unity-assets/codec.js` | port-pending |
+| `org.modkitx/unity-assets` | `extensions/unity/engine/codecs/unity-assets/codec.manifest.json` | `src/unity-assets/codec.js` | ported       |
 | `org.modkitx/unity-mesh`   | `extensions/unity/engine/codecs/unity-mesh/codec.manifest.json`   | `src/unity-mesh/codec.js`   | port-pending |
-| `org.modkitx/unity-ress`   | `extensions/unity/engine/codecs/unity-ress/codec.manifest.json`   | `src/unity-ress/codec.js`   | port-pending |
-| `org.modkitx/unityfs`      | `extensions/unity/engine/codecs/unityfs/codec.manifest.json`      | `src/unityfs/codec.js`      | port-pending |
+| `org.modkitx/unity-ress`   | `extensions/unity/engine/codecs/unity-ress/codec.manifest.json`   | `src/unity-ress/codec.js`   | ported       |
+| `org.modkitx/unityfs`      | `extensions/unity/engine/codecs/unityfs/codec.manifest.json`      | `src/unityfs/codec.js`      | ported       |

@@ -21,10 +21,8 @@
     }
   ],
   "limitations": [
-    "Portable hosts can run the bounded UnityFS signature detector, but runtime reachability is currently declared only for Node because the import-graph validator cannot classify the external lzma1 module as browser-safe.",
-    "The Node runtime supports validated UnityFS v6-v9 layouts with stored, LZ4/LZ4HC, and JavaScript LZMA blocks; LZHAM, pre-UnityFS bundles, and unverified future layouts are unsupported.",
-    "Serialized dependencies are resolved within the bundle set, while unresolved external streams require host-provided companion data.",
-    "Writing or repacking UnityFS bundles is not implemented."
+    "Parses bounded UnityFS v6-v9 headers, stored block-info and stored data blocks, validates bundle sizes and entry ranges, and publishes the directory as a namespace.",
+    "LZMA, LZ4/LZ4HC, LZHAM, pre-UnityFS bundles, serialized dependency resolution, external streams, writing, and repacking are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "unityfs", "label": "UnityFS AssetBundle" }],

@@ -41,7 +41,7 @@
       ],
       "droppedOperations": ["archive.extract", "archive.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/unity-mesh": {
       "verdict": "mechanical",
@@ -71,7 +71,7 @@
       ],
       "droppedOperations": ["archive.extract", "archive.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     },
     "org.modkitx/unityfs": {
       "verdict": "convertible-with-rework",
@@ -86,7 +86,7 @@
       ],
       "droppedOperations": ["archive.extract", "archive.inspect"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     }
   }
 }

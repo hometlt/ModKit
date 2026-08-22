@@ -22,7 +22,7 @@
   ],
   "limitations": [
     "Unity resource streams are headerless, so detection is extension-only and cannot distinguish arbitrary raw payloads.",
-    "The portable codec exposes the complete stream as resource-stream.bin; class-aware range mapping requires a companion Unity serialized asset and remains host-owned.",
+    "The portable codec exposes the complete bounded stream as resource-stream.bin; class-aware range mapping requires a companion Unity serialized asset and remains host-owned.",
     "Writing or repacking Unity resource streams is not implemented."
   ],
   "spec": {

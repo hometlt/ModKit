@@ -1167,6 +1167,35 @@
       "note": "ActorX PSK with genuine point, wedge, face, material, skeleton and skin-weight chunks decoded to triangle geometry"
     },
     {
+      "extension": "mk2/unity-engine",
+      "contributionId": "org.modkitx/unity-assets",
+      "corpus": "synthetic",
+      "sample": "minimal.unity.assets",
+      "minimumConfidence": 0.97,
+      "dataSource": "namespace",
+      "note": "Unity serialized format 17 with a stripped type tree and one bounded TextAsset object"
+    },
+    {
+      "extension": "mk2/unity-engine",
+      "contributionId": "org.modkitx/unity-ress",
+      "corpus": "synthetic",
+      "sample": "minimal.unity.ress",
+      "minimumConfidence": 0.6,
+      "dataSource": "namespace",
+      "note": "Headerless Unity resource stream exposed intact without invented class-aware ranges"
+    },
+    {
+      "extension": "mk2/unity-engine",
+      "contributionId": "org.modkitx/unityfs",
+      "corpus": "synthetic",
+      "sample": "minimal.unityfs",
+      "minimumConfidence": 0.99,
+      "dataSource": "namespace",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "UnityFS v6 bundle with stored block-info, one stored data block and one serialized asset entry"
+    },
+    {
       "extension": "common/images",
       "contributionId": "org.modkitx/image-png",
       "corpus": "synthetic",

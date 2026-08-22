@@ -3,7 +3,7 @@
   "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
   "id": "org.modkitx/unity-assets",
   "displayName": "Unity Serialized Assets",
-  "status": "supported",
+  "status": "partial",
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
@@ -21,10 +21,8 @@
     }
   ],
   "limitations": [
-    "Portable hosts can run the bounded serialized-header detector, but the current runtime reaches the Node-classified @modkitx/models-processing root while emitting virtual Unity mesh payloads.",
-    "The Node byte codec parses Unity 5+ serialized layouts and emits virtual object payloads; unsupported classes remain available through metadata or raw fallbacks.",
-    "External serialized dependencies and .resS/.ress/.resource ranges require host-provided companion resolution; the byte-only codec does not read the filesystem.",
-    "Writing or repacking Unity serialized assets is not implemented."
+    "Parses bounded Unity serialized format versions 17-19 with stripped type trees, validates type/object tables and object byte ranges, and exposes every object as a raw namespace entry.",
+    "Embedded type trees, other serialized versions, class-aware decoding, external resource resolution, dependency traversal, writing, and repacking are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "unity-assets", "label": "Unity Serialized Assets" }],

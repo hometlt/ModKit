@@ -83,6 +83,11 @@ const completedPortableUnreal = [
   find('org.modkitx/unreal-pak'),
   find('org.modkitx/unreal-iostore'),
 ]
+const completedPortableUnity = [
+  find('org.modkitx/unity-assets'),
+  find('org.modkitx/unity-ress'),
+  find('org.modkitx/unityfs'),
+]
 
 describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tasks E/F/G)', () => {
   it('opens every corpus sample through the product path and prints the state table', async () => {
@@ -158,6 +163,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       ...completedPortableDocuments,
       ...completedPortableAgeSeries,
       ...completedPortableUnreal,
+      ...completedPortableUnity,
       ...(mk2Root === undefined ? [] : [firstReal]),
     ]
     const outcomes = await runMk2Acceptance(cases, { repoRoot, mk2Root, workerBrokered: true })
@@ -976,5 +982,31 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     expect(sld.readUInt16LE(42)).toBe(1)
     expect([...sld.subarray(44, 46)]).toEqual([0, 1])
     expect(sld.readUInt16LE(46)).toBe(0xf800)
+
+    const unityAssets = readFileSync(join(root, 'minimal.unity.assets'))
+    expect([unityAssets.readUInt32BE(8), unityAssets.readUInt32BE(12), unityAssets[16]]).toEqual([
+      17, 112, 0,
+    ])
+    expect(unityAssets.subarray(20, 30).toString('ascii')).toBe('2021.3.0f1')
+    expect(unityAssets.readUInt32LE(36)).toBe(1)
+    expect(unityAssets.readInt32LE(40)).toBe(49)
+    expect(unityAssets.readUInt32LE(63)).toBe(1)
+    expect(unityAssets.readBigInt64LE(68)).toBe(1n)
+    expect(unityAssets.readUInt32LE(80)).toBe(25)
+    expect(unityAssets.readUInt32LE(112)).toBe(11)
+    expect(unityAssets.subarray(116, 127).toString('utf8')).toBe('FixtureText')
+
+    const unityFs = readFileSync(join(root, 'minimal.unityfs'))
+    expect(unityFs.subarray(0, 8).toString('ascii')).toBe('UnityFS\0')
+    expect(unityFs.readUInt32BE(8)).toBe(6)
+    expect(Number(unityFs.readBigUInt64BE(30))).toBe(unityFs.byteLength)
+    const unityInfo = 50
+    expect(unityFs.readUInt32BE(unityInfo + 16)).toBe(1)
+    expect(unityFs.readUInt32BE(unityInfo + 20)).toBe(unityAssets.byteLength)
+    expect(unityFs.readUInt32BE(unityInfo + 30)).toBe(1)
+    expect(Number(unityFs.readBigUInt64BE(unityInfo + 42))).toBe(unityAssets.byteLength)
+    expect(unityFs.subarray(unityInfo + 54, unityInfo + 72).toString('ascii')).toBe(
+      'cab-fixture.assets',
+    )
   })
 })
