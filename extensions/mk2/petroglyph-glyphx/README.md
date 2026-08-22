@@ -11,7 +11,7 @@ The conversion debt of every codec below — planes v2 has no home for, applied
 renames, converter defaults and v1 operations left without a handler — is data in
 `MK2-CONVERSION.json` beside this file.
 
-| contribution                 | v1 manifest                                                              | module                        | port         |
-| ---------------------------- | ------------------------------------------------------------------------ | ----------------------------- | ------------ |
-| `org.modkitx/grey-goo-alo`   | `extensions/petroglyph/glyphx/codecs/grey-goo-alo/codec.manifest.json`   | `src/grey-goo-alo/codec.js`   | port-pending |
-| `org.modkitx/petroglyph-meg` | `extensions/petroglyph/glyphx/codecs/petroglyph-meg/codec.manifest.json` | `src/petroglyph-meg/codec.js` | port-pending |
+| contribution                 | v1 manifest                                                              | module                        | port   |
+| ---------------------------- | ------------------------------------------------------------------------ | ----------------------------- | ------ |
+| `org.modkitx/grey-goo-alo`   | `extensions/petroglyph/glyphx/codecs/grey-goo-alo/codec.manifest.json`   | `src/grey-goo-alo/codec.js`   | ported |
+| `org.modkitx/petroglyph-meg` | `extensions/petroglyph/glyphx/codecs/petroglyph-meg/codec.manifest.json` | `src/petroglyph-meg/codec.js` | ported |

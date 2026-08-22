@@ -3,7 +3,7 @@
   "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
   "id": "org.modkitx/grey-goo-alo",
   "displayName": "Grey Goo Alamo ALO model",
-  "status": "supported",
+  "status": "partial",
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
@@ -23,8 +23,8 @@
   "limitations": [
     "ALA animation clips and referenced DDS, TGA, and PNG textures are resolved as same-codec sidecars; the v1 companions field names codec IDs rather than same-codec path patterns.",
     "ALA is intentionally excluded from the manifest matcher because it is an animation sidecar rather than standalone preview geometry.",
-    "Particle graphs are converted to deterministic textured preview emitters; exact game shader and particle-system execution is not implemented.",
-    "The browser-main runtime uses the explicit fflate browser build through isolated detector and runtime leaves; browser-worker remains undeclared pending dedicated coverage."
+    "The portable MK3 port inventories legacy Alamo root chunks and Grey Goo compressed envelopes; geometry, materials, particle graphs, and textures are not decoded.",
+    "The same platform-neutral structural reader runs in trusted-node and worker-brokered variants."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "grey-goo-alo", "label": "Grey Goo Alamo ALO model" }],
@@ -52,7 +52,6 @@
       }
     ],
     "publishesDataSources": [
-      { "contract": "common.view/model-scene-source", "major": 1 },
       { "contract": "common.view/tree-data-source", "major": 1 },
       { "contract": "common.view/byte-range-source", "major": 1 }
     ],

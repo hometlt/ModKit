@@ -2179,6 +2179,33 @@ function warzoneMap() {
   )
 }
 
+function greyGooAlo() {
+  return concat(u32le(0x400), u32le(0))
+}
+
+function petroglyphMeg() {
+  const name = ascii('data/fixture.txt')
+  const payload = ascii('petroglyph payload\n')
+  const filename = concat(u16le(name.byteLength), u16le(0), name)
+  const dataStart = 24 + filename.byteLength + 20
+  return concat(
+    u32le(0xffffffff),
+    u32le(0x3f7d70a4),
+    u32le(dataStart),
+    u32le(1),
+    u32le(1),
+    u32le(filename.byteLength),
+    filename,
+    u16le(0),
+    u32le(crc32(payload)),
+    u32le(0),
+    u32le(payload.byteLength),
+    u32le(dataStart),
+    u16le(0),
+    payload,
+  )
+}
+
 /** EA SAGE BIG4: one stored entry, with the mixed-endian header and null-terminated index path. */
 function big() {
   const name = ascii('hello.txt\0')
@@ -4418,6 +4445,8 @@ const FIXTURES = {
   'minimal.warzone.wrf': warzoneWrf,
   'minimal.warzone.wz': warzoneWz,
   'minimal.warzone.map': warzoneMap,
+  'minimal.grey-goo.alo': greyGooAlo,
+  'minimal.petroglyph.meg': petroglyphMeg,
   'minimal.sage.skudef': sageSkuDef,
   'minimal.cnc3-data.xml': cnc3Data,
   'minimal.cnc3-localization.csf': cnc3Localization,

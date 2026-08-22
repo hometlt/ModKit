@@ -102,6 +102,10 @@ const completedPortableWarzone = [
   find('org.modkitx/warzone-wz'),
   find('org.modkitx/warzone2100-map'),
 ]
+const completedPortablePetroglyph = [
+  find('org.modkitx/grey-goo-alo'),
+  find('org.modkitx/petroglyph-meg'),
+]
 const completedPortableVector = [find('org.modkitx/emf'), find('org.modkitx/wmf')]
 const completedPortableDocuments = [
   find('org.modkitx/csv'),
@@ -239,6 +243,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       ...completedPortableHeroes,
       ...completedPortableSpring,
       ...completedPortableWarzone,
+      ...completedPortablePetroglyph,
       ...completedPortableVector,
       ...completedPortableModels,
       ...completedPortableVideos,
@@ -892,6 +897,12 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       warzoneMap.readUInt32LE(8),
       warzoneMap.readUInt32LE(12),
     ]).toEqual([40, 2, 2])
+
+    expect(readFileSync(join(root, 'minimal.grey-goo.alo')).readUInt32LE(0)).toBe(0x400)
+    const petroglyphMeg = readFileSync(join(root, 'minimal.petroglyph.meg'))
+    expect([petroglyphMeg.readUInt32LE(0), petroglyphMeg.readUInt32LE(4)]).toEqual([
+      0xffffffff, 0x3f7d70a4,
+    ])
 
     // These checks intentionally do not import the codecs. They independently walk each model
     // fixture's standard wire representation so a generator/reader bug cannot agree with itself.

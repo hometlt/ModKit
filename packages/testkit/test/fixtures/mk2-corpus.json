@@ -1771,6 +1771,24 @@
       "note": "Warzone game.map v40 terrain with four tiles and an empty gateway table"
     },
     {
+      "extension": "mk2/petroglyph-glyphx",
+      "contributionId": "org.modkitx/grey-goo-alo",
+      "corpus": "synthetic",
+      "sample": "minimal.grey-goo.alo",
+      "minimumConfidence": 0.99,
+      "dataSource": "tree",
+      "note": "Legacy Alamo mesh root chunk envelope"
+    },
+    {
+      "extension": "mk2/petroglyph-glyphx",
+      "contributionId": "org.modkitx/petroglyph-meg",
+      "corpus": "synthetic",
+      "sample": "minimal.petroglyph.meg",
+      "minimumConfidence": 0.98,
+      "dataSource": "namespace",
+      "note": "Petroglyph MEG format 3 archive with one stored entry"
+    },
+    {
       "extension": "common/images",
       "contributionId": "org.modkitx/image-png",
       "corpus": "synthetic",
