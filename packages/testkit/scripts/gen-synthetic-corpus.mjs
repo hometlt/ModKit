@@ -3526,6 +3526,79 @@ function war3Mdx() {
   return concat(ascii('MDLX'), chunk('VERS', u32le(800)), chunk('MODL', model))
 }
 
+/** Supreme Commander SCM v5 with one root bone and one textured triangle. */
+function supcomScm() {
+  const nameMarkerOffset = 0x3c
+  const namesOffset = 0x40
+  const skeletonMarkerOffset = 0x50
+  const skeletonOffset = skeletonMarkerOffset + 4
+  const vertexMarkerOffset = skeletonOffset + 108
+  const vertexOffset = vertexMarkerOffset + 4
+  const vertexCount = 3
+  const vertexStride = 68
+  const indexMarkerOffset = vertexOffset + vertexCount * vertexStride
+  const indexOffset = indexMarkerOffset + 4
+  const indexCount = 3
+  const infoMarkerOffset = (indexOffset + indexCount * 2 + 3) & ~3
+  const infoOffset = infoMarkerOffset + 4
+  const info = ascii('Machine:Fixture\0File:Fixture.scm\0')
+  const result = new Uint8Array(infoOffset + info.byteLength)
+  const view = new DataView(result.buffer)
+  result.fill(0xc5)
+  const tag = (offset, value) => result.set(ascii(value), offset)
+  const uint32 = (offset, value) => view.setUint32(offset, value, true)
+  const float32 = (offset, value) => view.setFloat32(offset, value, true)
+
+  tag(0, 'MODL')
+  ;[
+    [0x04, 5],
+    [0x08, skeletonOffset],
+    [0x0c, 1],
+    [0x10, vertexOffset],
+    [0x14, 0],
+    [0x18, vertexCount],
+    [0x1c, indexOffset],
+    [0x20, indexCount],
+    [0x24, infoOffset],
+    [0x28, 101],
+    [0x2c, 1],
+  ].forEach(([offset, value]) => uint32(offset, value))
+  tag(nameMarkerOffset, 'NAME')
+  result.set(ascii('FixtureRoot\0'), namesOffset)
+
+  tag(skeletonMarkerOffset, 'SKEL')
+  result.fill(0, skeletonOffset, skeletonOffset + 108)
+  ;[0, 5, 10, 15].forEach(component => float32(skeletonOffset + component * 4, 1))
+  float32(skeletonOffset + 76, 1)
+  view.setInt32(skeletonOffset + 92, namesOffset, true)
+  view.setInt32(skeletonOffset + 96, -1, true)
+
+  tag(vertexMarkerOffset, 'VTXL')
+  const vertices = [
+    { position: [0, 0, 0], uv: [0, 0] },
+    { position: [1, 0, 0], uv: [1, 0] },
+    { position: [0, 1, 0], uv: [0, 1] },
+  ]
+  vertices.forEach((vertex, index) => {
+    const offset = vertexOffset + index * vertexStride
+    result.fill(0, offset, offset + vertexStride)
+    vertex.position.forEach((value, axis) => float32(offset + axis * 4, value))
+    ;[0, 0, 1].forEach((value, axis) => float32(offset + 12 + axis * 4, value))
+    ;[1, 0, 0].forEach((value, axis) => float32(offset + 24 + axis * 4, value))
+    ;[0, 1, 0].forEach((value, axis) => float32(offset + 36 + axis * 4, value))
+    vertex.uv.forEach((value, axis) => {
+      float32(offset + 48 + axis * 4, value)
+      float32(offset + 56 + axis * 4, value)
+    })
+  })
+
+  tag(indexMarkerOffset, 'TRIS')
+  ;[0, 1, 2].forEach((value, index) => view.setUint16(indexOffset + index * 2, value, true))
+  tag(infoMarkerOffset, 'INFO')
+  result.set(info, infoOffset)
+  return result
+}
+
 // ---------------------------------------------------------------- the corpus
 
 /** Every fixture: file name → builder. The name is what the acceptance corpus refers to. */
@@ -3555,6 +3628,7 @@ const FIXTURES = {
   'minimal.fsb': fsb5,
   'minimal.blp': blp,
   'minimal.mdx': war3Mdx,
+  'minimal.scm': supcomScm,
   'minimal.bti': bti,
   'minimal.cub': cub,
   'minimal.mtrl': mtrl,

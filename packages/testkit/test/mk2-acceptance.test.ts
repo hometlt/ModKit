@@ -49,6 +49,7 @@ const completedPortableFlash = [find('org.modkitx/fla')]
 const completedPortableFmod = [find('org.modkitx/fsb')]
 const completedPortableBlizzardCommon = [find('org.modkitx/blp')]
 const completedPortableWarcraft3 = [find('org.modkitx/war3-mdx')]
+const completedPortableGasPowered = [find('org.modkitx/supcom-scm')]
 const completedPortableVector = [find('org.modkitx/emf'), find('org.modkitx/wmf')]
 const completedPortableDocuments = [
   find('org.modkitx/csv'),
@@ -173,6 +174,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       ...completedPortableFmod,
       ...completedPortableBlizzardCommon,
       ...completedPortableWarcraft3,
+      ...completedPortableGasPowered,
       ...completedPortableVector,
       ...completedPortableModels,
       ...completedPortableVideos,
@@ -252,11 +254,12 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     expect(flaNames).toEqual(['DOMDocument.xml', 'LIBRARY/Symbol.xml'])
     const secondLocal = fla.indexOf(Buffer.from([0x50, 0x4b, 0x03, 0x04]), 4)
     expect(fla.readUInt16LE(secondLocal + 8)).toBe(8)
-    const secondData = secondLocal + 30 + fla.readUInt16LE(secondLocal + 26) + fla.readUInt16LE(secondLocal + 28)
+    const secondData =
+      secondLocal + 30 + fla.readUInt16LE(secondLocal + 26) + fla.readUInt16LE(secondLocal + 28)
     const secondCompressed = fla.readUInt32LE(secondLocal + 18)
-    expect(zlib.inflateRawSync(fla.subarray(secondData, secondData + secondCompressed)).toString('utf8')).toBe(
-      '<DOMSymbolItem name="Symbol 1"/>',
-    )
+    expect(
+      zlib.inflateRawSync(fla.subarray(secondData, secondData + secondCompressed)).toString('utf8'),
+    ).toBe('<DOMSymbolItem name="Symbol 1"/>')
 
     const fsb = readFileSync(join(root, 'minimal.fsb'))
     expect(fsb.subarray(0, 4).toString('ascii')).toBe('FSB5')
@@ -283,6 +286,34 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     expect(mdx.readUInt32LE(20)).toBe(372)
     expect(mdx.subarray(24, 36).toString('ascii')).toBe('FixtureModel')
     expect(mdx.byteLength).toBe(396)
+
+    const scm = readFileSync(join(root, 'minimal.scm'))
+    expect(scm.subarray(0, 4).toString('ascii')).toBe('MODL')
+    expect(scm.readUInt32LE(4)).toBe(5)
+    const scmSkeleton = scm.readUInt32LE(8)
+    const scmVertices = scm.readUInt32LE(16)
+    const scmVertexCount = scm.readUInt32LE(24)
+    const scmIndices = scm.readUInt32LE(28)
+    const scmIndexCount = scm.readUInt32LE(32)
+    const scmInfo = scm.readUInt32LE(36)
+    expect([
+      scm.subarray(scmSkeleton - 4, scmSkeleton).toString('ascii'),
+      scm.subarray(scmVertices - 4, scmVertices).toString('ascii'),
+      scm.subarray(scmIndices - 4, scmIndices).toString('ascii'),
+      scm.subarray(scmInfo - 4, scmInfo).toString('ascii'),
+    ]).toEqual(['SKEL', 'VTXL', 'TRIS', 'INFO'])
+    expect([scmVertexCount, scmIndexCount]).toEqual([3, 3])
+    expect([
+      scm.readFloatLE(scmVertices),
+      scm.readFloatLE(scmVertices + 68),
+      scm.readFloatLE(scmVertices + 68 * 2 + 4),
+    ]).toEqual([0, 1, 1])
+    expect([
+      scm.readUInt16LE(scmIndices),
+      scm.readUInt16LE(scmIndices + 2),
+      scm.readUInt16LE(scmIndices + 4),
+    ]).toEqual([0, 1, 2])
+    expect(scm.subarray(scmInfo).toString('ascii')).toContain('Machine:Fixture\0')
 
     // These checks intentionally do not import the codecs. They independently walk each model
     // fixture's standard wire representation so a generator/reader bug cannot agree with itself.

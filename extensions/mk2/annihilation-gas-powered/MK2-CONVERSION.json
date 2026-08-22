@@ -20,7 +20,7 @@
       ],
       "droppedOperations": ["model.read", "model.render"],
       "needsSignatures": false,
-      "portState": "port-pending"
+      "portState": "ported"
     }
   }
 }

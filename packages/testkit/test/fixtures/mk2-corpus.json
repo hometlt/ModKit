@@ -811,6 +811,17 @@
       "note": "MDLX container with VERS 800 and a bounded MODL record; extension routing remains compatible with text MDL"
     },
     {
+      "extension": "mk2/annihilation-gas-powered",
+      "contributionId": "org.modkitx/supcom-scm",
+      "corpus": "synthetic",
+      "sample": "minimal.scm",
+      "minimumConfidence": 0.99,
+      "dataSource": "model",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "Supreme Commander SCM v5 with NAME/SKEL/VTXL/TRIS/INFO sections, one root bone, and one decoded triangle"
+    },
+    {
       "extension": "mk2/common-audio",
       "contributionId": "org.modkitx/ogg",
       "corpus": "synthetic",

@@ -3,7 +3,7 @@
   "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
   "id": "org.modkitx/supcom-scm",
   "displayName": "Supreme Commander SCM model",
-  "status": "supported",
+  "status": "partial",
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
@@ -21,9 +21,8 @@
     }
   ],
   "limitations": [
-    "SCA animations, BP blueprint overrides, and DDS textures are resolved as same-codec companions; the v1 companions field names codec IDs rather than same-codec path patterns.",
-    "The base SCM parser returns the model without automatically loading SCA or BP sidecars; callers use the exported parse-and-merge helpers or a higher-level asset resolver.",
-    "The runtime entrypoint currently re-exports the historical supreme-commander-scm implementation path while package consumers migrate to folder-aligned ownership."
+    "The dependency-free MK3 profile decodes SCM v5 positions, normals, primary UVs, triangle indices, bounds, names, INFO strings, and the authored bone hierarchy.",
+    "Skin weights, secondary UVs, tangents, SCA animation sidecars, BP blueprint overrides, DDS texture resolution, rendering, and model writing remain unsupported."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "supcom-scm", "label": "Supreme Commander SCM model" }],
@@ -42,7 +41,7 @@
         "contract": "common.model/geometry-metadata",
         "major": 1,
         "stage": "authored",
-        "lossy": false
+        "lossy": true
       }
     ],
     "publishesDataSources": [
