@@ -464,12 +464,6 @@ importers:
         specifier: workspace:*
         version: link:../../codec-kit/codec-kit
 
-  extensions/mk2/common-video:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
-
   extensions/mk2/ea-archives:
     dependencies:
       '@modkitx-x3/codec-kit':

@@ -154,7 +154,14 @@ export const READY_APP_EXTENSIONS = Object.freeze({
   }),
   video: Object.freeze({
     coordinate: 'org.modkitx/video',
-    contributions: Object.freeze(['org.modkitx/video-mp4', 'org.modkitx/video-webm']),
+    contributions: Object.freeze([
+      'org.modkitx/video-mp4',
+      'org.modkitx/video-webm',
+      'org.modkitx/avi',
+      'org.modkitx/mpeg',
+      'org.modkitx/ogv',
+      'org.modkitx/wmv',
+    ]),
   }),
   'ui-monaco': Object.freeze({
     coordinate: 'org.modkitx/ui-monaco',

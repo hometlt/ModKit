@@ -1110,7 +1110,7 @@
       "note": "Ogg page carrying OpusHead: the Vorbis-versus-Opus split the v1 detector owned"
     },
     {
-      "extension": "mk2/common-video",
+      "extension": "common/video",
       "contributionId": "org.modkitx/ogv",
       "corpus": "synthetic",
       "sample": "minimal.ogv",
@@ -1121,8 +1121,8 @@
       "note": "Ogg page carrying the Theora identification header"
     },
     {
-      "extension": "mk2/common-video",
-      "contributionId": "org.modkitx/mp4",
+      "extension": "common/video",
+      "contributionId": "org.modkitx/video-mp4",
       "corpus": "synthetic",
       "sample": "minimal.mp4",
       "minimumConfidence": 0.9,
@@ -1132,7 +1132,7 @@
       "note": "ISO-BMFF ftyp + moov/mvhd; box walk only, no sample tables"
     },
     {
-      "extension": "mk2/common-video",
+      "extension": "common/video",
       "contributionId": "org.modkitx/mpeg",
       "corpus": "synthetic",
       "sample": "minimal.mpg",
@@ -1143,8 +1143,8 @@
       "note": "MPEG-1 video elementary stream: sequence header and sequence end code"
     },
     {
-      "extension": "mk2/common-video",
-      "contributionId": "org.modkitx/webm",
+      "extension": "common/video",
+      "contributionId": "org.modkitx/video-webm",
       "corpus": "synthetic",
       "sample": "minimal.webm",
       "minimumConfidence": 0.9,
@@ -1154,7 +1154,7 @@
       "note": "EBML header with DocType webm plus a Segment/Info pair"
     },
     {
-      "extension": "mk2/common-video",
+      "extension": "common/video",
       "contributionId": "org.modkitx/avi",
       "corpus": "synthetic",
       "sample": "minimal.avi",
@@ -1163,7 +1163,7 @@
       "note": "Classic AVI RIFF with one uncompressed video stream and one frame chunk"
     },
     {
-      "extension": "mk2/common-video",
+      "extension": "common/video",
       "contributionId": "org.modkitx/wmv",
       "corpus": "synthetic",
       "sample": "minimal.wmv",
