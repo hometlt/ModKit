@@ -1,0 +1,26 @@
+{
+  "samples": [
+    {
+      "format": "gltf",
+      "path": "scripts/parity/fixtures/triangle.gltf",
+      "x3Extension": "extensions/common/models",
+      "canonicalModule": "extensions/common/models/codecs/gltf/src/index.ts",
+      "canonicalExport": "gltfModelCodec"
+    },
+    {
+      "format": "glb",
+      "generatedFrom": "scripts/parity/fixtures/triangle.gltf",
+      "x3Extension": "extensions/mk2/common-models",
+      "canonicalModule": "extensions/common/models/codecs/gltf/src/index.ts",
+      "canonicalExport": "glbModelCodec"
+    },
+    {
+      "format": "m3",
+      "environment": "MODKIT_PARITY_M3_FILE",
+      "x3Extension": "extensions/mk2/blizzard-models",
+      "canonicalModule": "extensions/blizzard/starcraft-2/codecs/m3/src/index.ts",
+      "canonicalExport": "createM3ModelCodec",
+      "canonicalFactory": true
+    }
+  ]
+}
