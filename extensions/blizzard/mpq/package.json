@@ -1,10 +1,9 @@
 {
-  "name": "modkit-extension-mk2-blizzard-mpq",
-  "version": "0.1.0",
+  "name": "modkit-extension-x3-blizzard-mpq",
+  "version": "1.0.0",
   "license": "MIT",
-  "private": true,
   "type": "module",
-  "description": "MK2 → MK3 converted contributions of org.modkitx.blizzard/mpq (generated; see REPORT_MK2_CONVERSION).",
+  "description": "Blizzard MPQ namespace codec for MK3.",
   "modkit": {
     "schemaVersion": 1,
     "publisher": "org.modkitx.blizzard",

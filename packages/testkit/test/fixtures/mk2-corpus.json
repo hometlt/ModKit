@@ -718,7 +718,7 @@
       "note": "MD34 header plus one deterministic section-index entry; acceptance reads the metadata-only scene"
     },
     {
-      "extension": "mk2/blizzard-mpq",
+      "extension": "blizzard/mpq",
       "contributionId": "org.modkitx/mpq",
       "corpus": "synthetic",
       "sample": "minimal.mpq",

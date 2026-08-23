@@ -29,7 +29,7 @@ const m3: Mk2CorpusEntry = {
 }
 const mpqSample = 'Maps/cnc-test.SC2Map'
 const mpq: Mk2CorpusEntry = {
-  extension: 'mk2/blizzard-mpq',
+  extension: 'blizzard/mpq',
   contributionId: 'org.modkitx/mpq',
   corpus: 'real',
   sample: mpqSample,

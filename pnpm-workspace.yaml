@@ -29,6 +29,7 @@ packages:
   - 'extensions/blizzard/casc'
   - 'extensions/blizzard/galaxy-language'
   - 'extensions/blizzard/models'
+  - 'extensions/blizzard/mpq'
   - 'extensions/blizzard/starcraft2-game'
   - 'extensions/_reference/counter-runtime'
   - 'extensions/_reference/software-renderer'

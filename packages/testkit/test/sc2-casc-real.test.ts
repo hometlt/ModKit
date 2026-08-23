@@ -107,7 +107,7 @@ describe('installed StarCraft II CASC product path', () => {
       const directories = [
         ['blizzard', 'casc'],
         ['blizzard', 'models'],
-        ['mk2', 'blizzard-mpq'],
+        ['blizzard', 'mpq'],
         ['mk2', 'common-images'],
       ]
       const inputs = await Promise.all(

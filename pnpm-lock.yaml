@@ -185,6 +185,12 @@ importers:
         specifier: ^0.9.10
         version: 0.9.12
 
+  extensions/blizzard/mpq:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../codec-kit/codec-kit
+
   extensions/blizzard/starcraft2-game:
     dependencies:
       '@modkitx-x3/host':
@@ -429,12 +435,6 @@ importers:
         version: link:../../codec-kit/codec-kit
 
   extensions/mk2/blizzard-diablo:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
-
-  extensions/mk2/blizzard-mpq:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
