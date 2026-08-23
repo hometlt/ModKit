@@ -70,6 +70,7 @@ const RELOCATED_FAMILIES = new Set([
   'blizzard-mpq',
   'blizzard-starcraft2',
   'common-models',
+  'common-images',
 ])
 
 if (!isMk2Root(mk2Root)) {

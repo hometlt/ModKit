@@ -61,7 +61,7 @@ export type Mk2CorpusKind = 'real' | 'synthetic'
 
 /** One corpus case: a file and the converted codec that must claim it. */
 export interface Mk2CorpusEntry {
-  /** Extension directory relative to `extensions/`, posix — `mk2/common-images`, `common/images`. */
+  /** Extension directory relative to `extensions/`, posix — for example `common/images`. */
   readonly extension: string
   /** Contribution the host must select — a different winner is a failure, not a pass. */
   readonly contributionId: string

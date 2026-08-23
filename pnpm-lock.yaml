@@ -476,12 +476,6 @@ importers:
         specifier: workspace:*
         version: link:../../codec-kit/codec-kit
 
-  extensions/mk2/common-images:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
-
   extensions/mk2/common-vector:
     dependencies:
       '@modkitx-x3/codec-kit':

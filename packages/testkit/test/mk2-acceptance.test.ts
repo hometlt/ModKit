@@ -31,8 +31,8 @@ const cueBinBundle = find('org.modkitx/ps1-cue-bin')
 const portableModel = find('org.modkitx/ply')
 const completedPortableModels = [
   find('org.modkitx/dae'),
-  find('org.modkitx/gltf'),
-  find('org.modkitx/uvm'),
+  find('org.modkitx/model-gltf'),
+  find('org.modkitx/model-uvm'),
 ]
 const completedPortableVideos = [find('org.modkitx/avi'), find('org.modkitx/wmv')]
 const completedPortableAudio = [

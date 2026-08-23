@@ -2,7 +2,7 @@
   "$comment": "Acceptance corpus for the MK2 → MK3 converted extensions (OPUS-MK2-01 task B, OPUS-MK2-02 task G). `extension` is a directory under `extensions/`. A `real` sample is a path relative to the MK2 checkout (MODKITX_MK2_ROOT, default ../modkitx) and is READ ONLY — no sample is ever copied into this repository; those cases are skipped when that checkout is absent, so CI without MK2 stays green. A `synthetic` sample is a file in test/fixtures/mk2-synthetic, written from the format specification by scripts/gen-synthetic-corpus.mjs; those cases always run and prove structural opening, not fidelity.",
   "entries": [
     {
-      "extension": "mk2/common-images",
+      "extension": "common/images",
       "contributionId": "org.modkitx/webp",
       "corpus": "real",
       "sample": "-references/website/crossover/uploads/kane.webp",
@@ -11,8 +11,8 @@
       "note": "RIFF/WEBP container: simple, no native decoder, VP8/VP8L/VP8X chunk walk"
     },
     {
-      "extension": "mk2/common-images",
-      "contributionId": "org.modkitx/jpg",
+      "extension": "common/images",
+      "contributionId": "org.modkitx/image-jpeg",
       "corpus": "real",
       "sample": "-references/website/crossover/uploads/earth.jpg",
       "minimumConfidence": 0.9,
@@ -20,7 +20,7 @@
       "note": "JFIF segment chain; v1 fidelity is header inspection, no pixel decoding"
     },
     {
-      "extension": "mk2/common-images",
+      "extension": "common/images",
       "contributionId": "org.modkitx/avif",
       "corpus": "synthetic",
       "sample": "minimal.avif",
@@ -31,7 +31,7 @@
       "note": "ISO BMFF ftyp with AVIF brand and bounded ispe/pixi property boxes; metadata-only because no AV1 decoder is claimed"
     },
     {
-      "extension": "mk2/common-images",
+      "extension": "common/images",
       "contributionId": "org.modkitx/astc",
       "corpus": "synthetic",
       "sample": "minimal.astc",
@@ -42,7 +42,7 @@
       "note": "ARM ASTC standalone header and one 4x4 LDR void-extent block; metadata-only without a decoder"
     },
     {
-      "extension": "mk2/common-images",
+      "extension": "common/images",
       "contributionId": "org.modkitx/basis",
       "corpus": "real",
       "sample": "packages/image-processing/test/fixtures/basisu/basis_kodim20_etc1s.basis",
@@ -53,7 +53,7 @@
       "note": "Real BasisU ETC1S fixture from the read-only MK2 checkout; header and every declared slice range are validated"
     },
     {
-      "extension": "mk2/common-images",
+      "extension": "common/images",
       "contributionId": "org.modkitx/exr",
       "corpus": "synthetic",
       "sample": "minimal.exr",
@@ -65,7 +65,7 @@
       "note": "OpenEXR v2 required attributes, scanline offset table and one uncompressed RGBA float pixel; acceptance reads RGBA8"
     },
     {
-      "extension": "mk2/common-images",
+      "extension": "common/images",
       "contributionId": "org.modkitx/bmp",
       "corpus": "synthetic",
       "sample": "minimal.bmp",
@@ -77,7 +77,7 @@
       "note": "BITMAPINFOHEADER with one bottom-up 24-bit BI_RGB pixel and row padding; acceptance reads exact RGBA8"
     },
     {
-      "extension": "mk2/common-images",
+      "extension": "common/images",
       "contributionId": "org.modkitx/gif",
       "corpus": "synthetic",
       "sample": "minimal.gif",
@@ -88,7 +88,7 @@
       "note": "GIF89a logical screen, global palette, one minimal LZW image block and trailer; bounded structure walk only"
     },
     {
-      "extension": "mk2/common-images",
+      "extension": "common/images",
       "contributionId": "org.modkitx/hdr",
       "corpus": "synthetic",
       "sample": "minimal.hdr",
@@ -100,7 +100,7 @@
       "note": "Radiance 32-bit_rle_rgbe header and one flat RGBE scanline; acceptance reads the normalized clamped RGBA8 pixel"
     },
     {
-      "extension": "mk2/common-images",
+      "extension": "common/images",
       "contributionId": "org.modkitx/ico",
       "corpus": "synthetic",
       "sample": "minimal.ico",
@@ -112,7 +112,7 @@
       "note": "ICO directory with one 32-bit DIB XOR pixel and AND mask row; acceptance reads exact RGBA8"
     },
     {
-      "extension": "mk2/common-images",
+      "extension": "common/images",
       "contributionId": "org.modkitx/cur",
       "corpus": "synthetic",
       "sample": "minimal.cur",
@@ -124,7 +124,7 @@
       "note": "CUR directory with hotspot 0,0 and one 32-bit DIB XOR pixel plus AND mask; acceptance reads exact RGBA8"
     },
     {
-      "extension": "mk2/common-images",
+      "extension": "common/images",
       "contributionId": "org.modkitx/ktx",
       "corpus": "synthetic",
       "sample": "minimal.ktx",
@@ -136,7 +136,7 @@
       "note": "KTX1 little-endian RGBA8 texture with orientation metadata and one exact mip pixel"
     },
     {
-      "extension": "mk2/common-images",
+      "extension": "common/images",
       "contributionId": "org.modkitx/ktx2",
       "corpus": "real",
       "sample": "packages/image-processing/test/fixtures/basisu/ktx2_2d_uastc.ktx2",
@@ -147,7 +147,7 @@
       "note": "Real read-only BasisU UASTC KTX2 fixture; validates all six level-index ranges and DFD/KVD ranges without claiming transcoding"
     },
     {
-      "extension": "mk2/common-images",
+      "extension": "common/images",
       "contributionId": "org.modkitx/pkm",
       "corpus": "synthetic",
       "sample": "minimal.pkm",
@@ -158,7 +158,7 @@
       "note": "PKM 1.0 ETC1 header, padded 4x4 block geometry and exact eight-byte compressed payload"
     },
     {
-      "extension": "mk2/common-images",
+      "extension": "common/images",
       "contributionId": "org.modkitx/pvr",
       "corpus": "synthetic",
       "sample": "minimal.pvr",
@@ -170,7 +170,7 @@
       "note": "PVR v3 custom RGBA8888 texture with one surface, face, mip and exact pixel"
     },
     {
-      "extension": "mk2/common-images",
+      "extension": "common/images",
       "contributionId": "org.modkitx/ani",
       "corpus": "synthetic",
       "sample": "minimal.ani",
@@ -181,7 +181,7 @@
       "note": "RIFF/ACON animated cursor with a complete anih header and one embedded CUR frame inside LIST/fram"
     },
     {
-      "extension": "mk2/common-images",
+      "extension": "common/images",
       "contributionId": "org.modkitx/pal",
       "corpus": "synthetic",
       "sample": "minimal.pal",
@@ -193,7 +193,7 @@
       "note": "JASC-PAL 0100 text with two exact colors; acceptance reads the first RGBA8 swatch cell"
     },
     {
-      "extension": "mk2/common-images",
+      "extension": "common/images",
       "contributionId": "org.modkitx/pcx",
       "corpus": "synthetic",
       "sample": "minimal.pcx",
@@ -205,8 +205,8 @@
       "note": "PCX v5 with one uncompressed 24-bit planar pixel and declared per-plane row padding"
     },
     {
-      "extension": "mk2/common-images",
-      "contributionId": "org.modkitx/png",
+      "extension": "common/images",
+      "contributionId": "org.modkitx/image-png",
       "corpus": "synthetic",
       "sample": "minimal.png",
       "minimumConfidence": 0.9,
@@ -216,7 +216,7 @@
       "note": "PNG truecolor image with independently generated CRCs and zlib stream; compatibility port validates strict chunk structure without claiming pixel decode"
     },
     {
-      "extension": "mk2/common-images",
+      "extension": "common/images",
       "contributionId": "org.modkitx/tga",
       "corpus": "synthetic",
       "sample": "minimal.tga",
@@ -228,7 +228,7 @@
       "note": "TGA 2.0 raw 24-bit truecolor pixel with top-left origin and canonical footer signature"
     },
     {
-      "extension": "mk2/common-images",
+      "extension": "common/images",
       "contributionId": "org.modkitx/tiff",
       "corpus": "synthetic",
       "sample": "minimal.tiff",
@@ -596,7 +596,7 @@
     },
     {
       "extension": "common/models",
-      "contributionId": "org.modkitx/obj",
+      "contributionId": "org.modkitx/model-obj",
       "corpus": "synthetic",
       "sample": "minimal.obj",
       "minimumConfidence": 0.9,
@@ -634,7 +634,7 @@
     },
     {
       "extension": "common/models",
-      "contributionId": "org.modkitx/gltf",
+      "contributionId": "org.modkitx/model-gltf",
       "corpus": "synthetic",
       "sample": "minimal.gltf",
       "minimumConfidence": 0.9,
@@ -643,7 +643,7 @@
     },
     {
       "extension": "common/models",
-      "contributionId": "org.modkitx/uvm",
+      "contributionId": "org.modkitx/model-uvm",
       "corpus": "synthetic",
       "sample": "minimal.uvm.glb",
       "minimumConfidence": 0.99,
@@ -652,7 +652,7 @@
     },
     {
       "extension": "common/models",
-      "contributionId": "org.modkitx/glb",
+      "contributionId": "org.modkitx/model-gltf",
       "corpus": "real",
       "sample": "-references/website/old-wiki/src/app/js-3d-model-viewer-master/original/duck.glb",
       "minimumConfidence": 0.9,
@@ -698,7 +698,7 @@
       "note": "RIFF/WAVE, 8-bit PCM, four samples; the MK2 checkout has no .wav at all"
     },
     {
-      "extension": "mk2/common-images",
+      "extension": "common/images",
       "contributionId": "org.modkitx/dds",
       "corpus": "synthetic",
       "sample": "minimal.dds",

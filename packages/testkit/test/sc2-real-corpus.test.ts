@@ -8,7 +8,7 @@ const sc2Override = process.env.MODKITX_SC2_ROOT?.trim()
 const sc2Root = sc2Override ? sc2Override : 'C:\\Apps\\StarCraft II'
 const ddsSample = 'Maps/all-races-coop-maps/32-CoreOfCybros.SC2Map/btn-living-conduit.dds'
 const dds: Mk2CorpusEntry = {
-  extension: 'mk2/common-images',
+  extension: 'common/images',
   contributionId: 'org.modkitx/dds',
   corpus: 'real',
   sample: ddsSample,

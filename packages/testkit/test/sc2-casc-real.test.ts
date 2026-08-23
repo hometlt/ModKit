@@ -108,7 +108,7 @@ describe('installed StarCraft II CASC product path', () => {
         ['blizzard', 'casc'],
         ['blizzard', 'models'],
         ['blizzard', 'mpq'],
-        ['mk2', 'common-images'],
+        ['common', 'images'],
       ]
       const inputs = await Promise.all(
         directories.map(parts => loadExtensionDirectory(join(repoRoot, 'extensions', ...parts))),

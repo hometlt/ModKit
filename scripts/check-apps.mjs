@@ -246,7 +246,7 @@ await checkApplicationSet(
   'headless',
   'full-codecs',
   async extensions => ({ main: (await createAutomationHost(extensions)).composition }),
-  { main: { offers: 33, active: 33 } },
+  { main: { offers: 53, active: 53 } },
 )
 await checkApplicationSet(
   'headless',
@@ -291,7 +291,7 @@ await checkApplicationSet(
   {
     main: { offers: 'none', active: 'none' },
     // 7 codecs + the PNG encoder writer provider (A5, browser-worker variant)
-    worker: { offers: 8, active: 8 },
+    worker: { offers: 28, active: 28 },
   },
 )
 await checkApplicationSet(
@@ -307,7 +307,7 @@ await checkApplicationSet(
   },
   {
     main: { offers: 'none', active: 'none' },
-    worker: { offers: 56, active: 56 },
+    worker: { offers: 57, active: 57 },
   },
 )
 await checkApplicationSet(
@@ -347,7 +347,7 @@ await checkApplicationSet(
     return { extensionHost: app.extensionHost, webview: app.webview }
   },
   {
-    extensionHost: { offers: 7, active: 7 },
+    extensionHost: { offers: 27, active: 27 },
     webview: { offers: 'none', active: 'none' },
   },
 )
@@ -383,7 +383,7 @@ await checkApplicationSet(
     return { main: app.main, renderer: app.renderer }
   },
   {
-    main: { offers: 33, active: 33 },
+    main: { offers: 53, active: 53 },
     renderer: { offers: 'none', active: 'none' },
   },
 )
