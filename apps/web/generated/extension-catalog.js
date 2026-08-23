@@ -1526,7 +1526,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:b55753397479fe4e159d02bec6dfc52d96456ac82c0766c757f6b893f0f87d1a',
+        artifactDigest: 'sha256:ba958793498de0b12296421a6dd88d559acd6840f9d4a3fec773c90233eff6c7',
         fileDigests: {
           'README.md': 'sha256:36b0d92f91f21283a22436b6cb1abdc148cbea6eecfb569ff6cdbc47aad6000d',
           'contributions/codec-gltf.json':
@@ -1537,7 +1537,9 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:c4bf0ed44a61a3e079d00cb6f2620ebf18239dc5b7e5e86830b02fbc4b495e0e',
           'package.json': 'sha256:3cb0c7419339216558f58910b05411cd6d22a802a5d64ad127bd3396dcd68aa4',
           'src/formats/gltf/codec.js':
-            'sha256:385923bc81b4a60fc3eee6ab8c8079423884346e52e58ce6934a5f27d70a6cb4',
+            'sha256:dd3ad25c8f25709f7856c1266e513566d02f0a2b3c2d7645a5ee0ec99080ad1f',
+          'src/formats/gltf/geometry.js':
+            'sha256:84740c188cdc88ccf099f4f4c953a083f83273e8d882673797b192e060fc0a37',
           'src/formats/obj/codec.js':
             'sha256:8fd73e5082c1055982ef4a9b8a790071545feaa564b81f418377295e5cd40071',
           'src/formats/uvm/codec.js':
@@ -1547,7 +1549,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:063921842fa3948317ca0c8e97985da3f13a605b4d27f6c09f8c0f52757f9489',
         },
         inventoryRecordId:
-          'artifact:sha256:b55753397479fe4e159d02bec6dfc52d96456ac82c0766c757f6b893f0f87d1a',
+          'artifact:sha256:ba958793498de0b12296421a6dd88d559acd6840f9d4a3fec773c90233eff6c7',
       },
       artifactRoot: 'extensions/models/',
       containers: {
@@ -2074,6 +2076,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'contributions/codec-uvm.json',
         'package.json',
         'src/formats/gltf/codec.js',
+        'src/formats/gltf/geometry.js',
         'src/formats/obj/codec.js',
         'src/formats/uvm/codec.js',
         'src/index.js',
