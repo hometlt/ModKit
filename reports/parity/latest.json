@@ -194,7 +194,7 @@
     {
       "format": "m3",
       "state": "compared",
-      "sample": "packages/testkit/test/fixtures/mk2-synthetic/triangle.m3",
+      "sample": "packages/testkit/test/fixtures/models/triangle.m3",
       "classification": "X3 богаче",
       "missing": [],
       "extra": [

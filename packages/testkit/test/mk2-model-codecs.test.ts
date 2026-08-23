@@ -16,6 +16,7 @@ import {
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const modelRoot = join(repoRoot, 'extensions', 'mk2', 'common-models')
 const fixtureRoot = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
+const m3Fixture = join(import.meta.dirname, 'fixtures', 'models', 'triangle.m3')
 const formats = ['obj', 'ply', 'stl', 'dae', 'gltf', 'uvm', 'm3'] as const
 type Format = (typeof formats)[number]
 const fixtureNames: Record<Format, string> = {
@@ -119,7 +120,9 @@ async function codecFor(format: Format): Promise<Codec> {
 }
 
 async function fixture(format: Format): Promise<Uint8Array> {
-  return new Uint8Array(await readFile(join(fixtureRoot, fixtureNames[format])))
+  return new Uint8Array(
+    await readFile(format === 'm3' ? m3Fixture : join(fixtureRoot, fixtureNames[format])),
+  )
 }
 
 async function open(format: Format, bytes: Uint8Array, resourceBudget = budget) {

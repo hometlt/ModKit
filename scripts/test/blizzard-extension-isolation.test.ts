@@ -37,6 +37,10 @@ describe('Blizzard extension domain isolation', () => {
     })
     const inputs = Object.keys(result.metafile?.inputs ?? {})
     expect(inputs.some(path => /sc2-replay|sc2-triggers/u.test(path))).toBe(false)
-    expect(inputs).toEqual(['extensions/mk2/blizzard-models/src/m3/codec.js'])
+    expect(inputs).toContain('extensions/mk2/blizzard-models/src/m3/codec.js')
+    expect(inputs).toContain('extensions/mk2/blizzard-models/src/m3/geometry.node.js')
+    expect(inputs.every(path => path.startsWith('extensions/mk2/blizzard-models/src/m3/'))).toBe(
+      true,
+    )
   })
 })
