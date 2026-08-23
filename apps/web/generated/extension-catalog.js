@@ -23,7 +23,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
   extensions: [
     {
       artifact: {
-        artifactDigest: 'sha256:9993190c544b033d93432572bd0d63c19bf336cb7c1dbd7f89f61672bc6708af',
+        artifactDigest: 'sha256:01edb13b8f2b0e3335b2694c54c9f6d8f2593ea6786e75d3c3de604808d94b11',
         fileDigests: {
           'MIGRATION-NOTES-common-archives.json':
             'sha256:c824dbe6a3f04776d304b30974c1b21b478c66e5bbe2a39124997b6cedc348f8',
@@ -77,7 +77,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/iso/codec.js':
             'sha256:87a48d1edecde33b6783cffd8edf202fc0c46b5a37fa03a1fcee6f08eadb551b',
           'src/linked.js':
-            'sha256:09f16f5cdec670b84fc9dff7292f4d76a86eebc46f0de6b89f19adcf08efa7c6',
+            'sha256:fd9027c6f5e7698a7c35c78f6707ab8ce943c567cd7becdeb33a83623b360942',
           'src/lzma/codec.js':
             'sha256:349f70697fe4292670ca1ff71eec5fc486d1e9caa9f24d6e89746a953c002ac9',
           'src/pe/codec.js':
@@ -94,7 +94,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:c4077d90c36bfefb1f329f6fcf51c97825d464114dabe71a8a2e93bf19bb7f1f',
         },
         inventoryRecordId:
-          'artifact:sha256:9993190c544b033d93432572bd0d63c19bf336cb7c1dbd7f89f61672bc6708af',
+          'artifact:sha256:01edb13b8f2b0e3335b2694c54c9f6d8f2593ea6786e75d3c3de604808d94b11',
       },
       artifactRoot: 'extensions/archives/',
       containers: {
@@ -2275,7 +2275,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:bb2f20462bc27bbd96995bae51802648ecb58ac463e9731ead208649cd422c53',
+        artifactDigest: 'sha256:b10cd5dfa723bf901ccc5be74a388d7b2f43e6dbdbf3dbe517cdbae7c9527db5',
         fileDigests: {
           'MIGRATION-NOTES-common-audio.json':
             'sha256:5b923bab081d577290cffabeef5f5a43c68b85512645d889f40eb94845f37003',
@@ -2303,14 +2303,14 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:1906cd3670a45186374a40db75725187d7eb3ee3682b9b7805e85b798e403aaf',
           'src/index.js': 'sha256:e86ec9194630bc30037a46f042fb7839fa96dfa70ae81ef77142ae436c9bf2fb',
           'src/linked.js':
-            'sha256:ca83a706bc33a766e262a2942e04d898f56eef7a835d1bed5305eda5e8ab4745',
+            'sha256:664b0aecc867199de260e3822a520ca9408387f0169e9a2c4c725b8c0fd294c2',
           'src/m4a/codec.js':
             'sha256:64db4286126d844c2844838cb217ad7071acfde54fe4af33d4ac544c9c972c8d',
           'src/wav/codec.js':
             'sha256:65a88b4239eeb90b3cdc96e7c9d6cf41db5dbd1babfc2f5687011b7a9f95f719',
         },
         inventoryRecordId:
-          'artifact:sha256:bb2f20462bc27bbd96995bae51802648ecb58ac463e9731ead208649cd422c53',
+          'artifact:sha256:b10cd5dfa723bf901ccc5be74a388d7b2f43e6dbdbf3dbe517cdbae7c9527db5',
       },
       artifactRoot: 'extensions/audio/',
       containers: {
@@ -3231,19 +3231,21 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:7432c86d4ec9f6118597bfd9e5b81f6d19043ddfa09846e06521782c53dc11a4',
+        artifactDigest: 'sha256:c93e9a475c8f95b1724f5fca948da1f410b431d14636aec91ec45a903e082683',
         fileDigests: {
           'MIGRATION-NOTES-common-containers.json':
             'sha256:d38d3068fa12e31350e8636e22186b95607bcc2df8cd72c70e2876e9d90940cb',
           'README.md': 'sha256:573b5d8d8bd6e42211c77f6aaf7792aed3696c0da3bd7d4c880828ad7ecfe7e3',
           'contributions/codec-ps1-cue-bin.json':
             'sha256:556e3e8fd00069b9964e1f6374e3b02ffa249ff83dbfb7fe2079a415444592c0',
-          'package.json': 'sha256:454be7712d4e6499656a84bfa8696eddad229688aeb2001468e85543fe2e97dc',
+          'package.json': 'sha256:908aa8487e703202a321ebb90e7b3626c097c6c50329a64c5a210cede2528fd0',
+          'src/linked.js':
+            'sha256:d28527d9c71d2760e2b34f0d41e78e08d4cf321024543b06ba8d10195a1e5ab9',
           'src/ps1-cue-bin/codec.js':
             'sha256:8e7a5e98f76f882380d9ccc750d786a059819b657b09967213e69a76bd5354f0',
         },
         inventoryRecordId:
-          'artifact:sha256:7432c86d4ec9f6118597bfd9e5b81f6d19043ddfa09846e06521782c53dc11a4',
+          'artifact:sha256:c93e9a475c8f95b1724f5fca948da1f410b431d14636aec91ec45a903e082683',
       },
       artifactRoot: 'extensions/containers/',
       containers: {
@@ -3252,6 +3254,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             '@modkitx-x3/codec-kit': 'workspace:*',
           },
           description: 'Product-owned multi-file container codecs for MK3.',
+          exports: {
+            './linked': './src/linked.js',
+            './package.json': './package.json',
+          },
+          files: ['contributions', 'src', 'README.md'],
           license: 'MIT',
           modkit: {
             contributionManifests: ['./contributions/*.json'],
@@ -3260,6 +3267,14 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             schemaVersion: 1,
           },
           name: 'modkit-extension-x3-containers',
+          peerDependencies: {
+            '@modkitx-x3/host': 'workspace:*',
+          },
+          peerDependenciesMeta: {
+            '@modkitx-x3/host': {
+              optional: true,
+            },
+          },
           type: 'module',
           version: '1.0.0',
         },
@@ -3413,6 +3428,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'README.md',
         'contributions/codec-ps1-cue-bin.json',
         'package.json',
+        'src/linked.js',
         'src/ps1-cue-bin/codec.js',
       ],
       name: 'containers',
@@ -3781,7 +3797,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:d50a4786d839f349f29b0f9150b6e4c99637ea78549a365bae2978da166262e0',
+        artifactDigest: 'sha256:a924c56f15e9783ec70a14979ff95115fda10c8b74292a8a19551c145ec96f46',
         fileDigests: {
           'MIGRATION-NOTES-common-images.json':
             'sha256:76c5e4320dbbc9b2e71030063212b4351eb11d409eb69e554749364c33415205',
@@ -3867,7 +3883,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/ktx2/codec.js':
             'sha256:e871516f26b4dd22f158ddd09c8b91f3357705726aee8bfe1007d2d25e242969',
           'src/linked.js':
-            'sha256:f99685dbe94213bf6ff6ddc719046463f537ba2bc71f5dd88635ab057acecf82',
+            'sha256:53dabb67fbfbffa55a10f832f4e1ea9866bb752a074ba648190db57bcb24ff66',
           'src/pal/codec.js':
             'sha256:53b0485b8da984b28c06a5d360e9e777e47483d23871458e0b9178e977057998',
           'src/pcx/codec.js':
@@ -3886,7 +3902,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:411efbd8aadd7a2edfb335752f8e8bfad1a11452534bd039e227d52f49d6a65a',
         },
         inventoryRecordId:
-          'artifact:sha256:d50a4786d839f349f29b0f9150b6e4c99637ea78549a365bae2978da166262e0',
+          'artifact:sha256:a924c56f15e9783ec70a14979ff95115fda10c8b74292a8a19551c145ec96f46',
       },
       artifactRoot: 'extensions/images/',
       containers: {
@@ -7006,7 +7022,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:a928e54960268b379d5e05b90c0a531ae5778ff55b5dc05405c1045eb83e904a',
+        artifactDigest: 'sha256:659d60712f53cbbaf5ae3a257fb1a780aaf132ea8565d367123ff29d9c28a38c',
         fileDigests: {
           'MIGRATION-NOTES-common-models.json':
             'sha256:c502295ae0ba2854a5374e12acbd2ef40f0a6f4b0f7797c2817feeb5525c6892',
@@ -7036,14 +7052,14 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:5f342ed52bfcb5904f4ba643c3f8a2b51f6e1a68fde196fa572164227e28c180',
           'src/index.js': 'sha256:80f55312f768fe6d50596fe51a929c3334fd08828785b47774af6e6445e87dc8',
           'src/linked.js':
-            'sha256:063921842fa3948317ca0c8e97985da3f13a605b4d27f6c09f8c0f52757f9489',
+            'sha256:9e1b771fa1fd737a4848bfa43db100874d4ac70c93681281ff00772fd8d9fe34',
           'src/ply/codec.js':
             'sha256:634139c2e75f2bcad975fab07b010f0832dc4a5a0e5bb5ea66bdd7978ccd9e73',
           'src/stl/codec.js':
             'sha256:817a71e7cfa1cae95730622521039a5c9ccc0a69a37ad3a428e45247abfa8f2c',
         },
         inventoryRecordId:
-          'artifact:sha256:a928e54960268b379d5e05b90c0a531ae5778ff55b5dc05405c1045eb83e904a',
+          'artifact:sha256:659d60712f53cbbaf5ae3a257fb1a780aaf132ea8565d367123ff29d9c28a38c',
       },
       artifactRoot: 'extensions/models/',
       containers: {
@@ -9180,7 +9196,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:580072f42a3ea09cc8d8d9199248f499b653fd64941255a317bfe8cdde98cca5',
+        artifactDigest: 'sha256:ee6f528df432fdce40f4e0eb0dc781cc26f1ccf7d0110aaf7244e1d799bba865',
         fileDigests: {
           'MIGRATION-NOTES-common-vector.json':
             'sha256:6142c11733f88630fc151541987d9ed21c0f0b2f85cb1ae3e6df930fdc87866c',
@@ -9198,12 +9214,12 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:f105319cdc73c079ef7cb8c5f8a6fe572307bffe6be6134a8b5b884c2d4020df',
           'src/index.js': 'sha256:904e9a577bfa759ce7ab355a01d2431961c7f7d3551a8b627a2eb56406948360',
           'src/linked.js':
-            'sha256:eb26d9d19582e69f55fe8af85ee59875d77d4553745c95b139bc72a1b5186dba',
+            'sha256:172cbd623c4eeae7367cc51724f9a0f62ba8572e5e27fbc544a053dddbfa405d',
           'src/wmf/codec.js':
             'sha256:c4ae02f016370193a5db9fc58895f45773e5c2f44e690bc55699440f6b23134a',
         },
         inventoryRecordId:
-          'artifact:sha256:580072f42a3ea09cc8d8d9199248f499b653fd64941255a317bfe8cdde98cca5',
+          'artifact:sha256:ee6f528df432fdce40f4e0eb0dc781cc26f1ccf7d0110aaf7244e1d799bba865',
       },
       artifactRoot: 'extensions/vector/',
       containers: {
@@ -9684,7 +9700,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:6ba056c22661b25ba02cc9a70ad71db354bb4aeb9c7b12895bdaed96c43f790f',
+        artifactDigest: 'sha256:de7c8b4a93ff80eaa9c73e6932863461120037efc8954dcb652782092d7fce31',
         fileDigests: {
           'MIGRATION-NOTES-common-video.json':
             'sha256:c0763011bd1bced50f7a30595fdcd3f803571f38245b06b2094f552811517326',
@@ -9710,7 +9726,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:b8f80e46ea45dc927cadece35212e2336e591b66a03be4d55c2672ad4b86db70',
           'src/index.js': 'sha256:fc2cf3b104e31455bd7cf3a68c572cbffcedf72166be2e5362a5dfb4f0bb65b8',
           'src/linked.js':
-            'sha256:6dc3134d01e6fe22b456cf13acfe25c4a830d17a30aa5cc445dbf767268fcfe4',
+            'sha256:48aef2dc908d7904b66e951bded6fc11e24fe25d28f415f83114f6032c5ecd46',
           'src/mpeg/codec.js':
             'sha256:4fa9d115085aa9b58422a49ecf4aaec520648c20342fb20ea0e50b6bf1f540b9',
           'src/ogv/codec.js':
@@ -9719,7 +9735,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:8111550b59480f6335f1f6bfb54dcc382d22aa32398e83133ef5c440d3327323',
         },
         inventoryRecordId:
-          'artifact:sha256:6ba056c22661b25ba02cc9a70ad71db354bb4aeb9c7b12895bdaed96c43f790f',
+          'artifact:sha256:de7c8b4a93ff80eaa9c73e6932863461120037efc8954dcb652782092d7fce31',
       },
       artifactRoot: 'extensions/video/',
       containers: {
