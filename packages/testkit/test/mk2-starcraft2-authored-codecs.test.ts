@@ -28,7 +28,7 @@ type CodecId =
   | 'sc2-replay'
 
 const root = join(import.meta.dirname, '..', '..', '..')
-const extension = join(root, 'extensions', 'mk2', 'blizzard-starcraft2')
+const extension = join(root, 'extensions', 'blizzard', 'starcraft2')
 const fixtureRoot = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
 const budget: ResourceBudget = {
   maxInputBytes: 1_000_000n,

@@ -1,10 +1,9 @@
 {
-  "name": "modkit-extension-mk2-blizzard-starcraft2",
-  "version": "0.1.0",
+  "name": "modkit-extension-x3-blizzard-starcraft2",
+  "version": "1.0.0",
   "license": "MIT",
-  "private": true,
   "type": "module",
-  "description": "MK2 → MK3 converted contributions of org.modkitx.blizzard/starcraft2 (generated; see REPORT_MK2_CONVERSION).",
+  "description": "StarCraft II authored-data, layout, localization, map, replay and runtime codecs for MK3.",
   "modkit": {
     "schemaVersion": 1,
     "publisher": "org.modkitx.blizzard",

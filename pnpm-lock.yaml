@@ -191,6 +191,12 @@ importers:
         specifier: workspace:*
         version: link:../../codec-kit/codec-kit
 
+  extensions/blizzard/starcraft2:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../codec-kit/codec-kit
+
   extensions/blizzard/starcraft2-game:
     dependencies:
       '@modkitx-x3/host':
@@ -435,12 +441,6 @@ importers:
         version: link:../../codec-kit/codec-kit
 
   extensions/mk2/blizzard-diablo:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
-
-  extensions/mk2/blizzard-starcraft2:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*

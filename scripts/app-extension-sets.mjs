@@ -128,8 +128,8 @@ export const READY_APP_EXTENSIONS = Object.freeze({
     coordinate: 'org.modkitx.blizzard/mpq',
     contributions: Object.freeze(['org.modkitx/mpq']),
   }),
-  'mk2-blizzard-starcraft2': Object.freeze({
-    path: Object.freeze(['mk2', 'blizzard-starcraft2']),
+  'blizzard-starcraft2': Object.freeze({
+    path: Object.freeze(['blizzard', 'starcraft2']),
     coordinate: 'org.modkitx.blizzard/starcraft2',
     contributions: Object.freeze([
       'org.modkitx/galaxy',
@@ -222,7 +222,7 @@ const mk2Extended = Object.freeze([
   'blizzard-casc',
   'blizzard-models',
   'blizzard-mpq',
-  'mk2-blizzard-starcraft2',
+  'blizzard-starcraft2',
   'mk2-common-archives',
   'mk2-common-images',
   'mk2-ea-sage',
@@ -238,7 +238,7 @@ export const APP_EXTENSION_SETS = Object.freeze({
   'blizzard-casc': Object.freeze(['blizzard-casc']),
   'blizzard-models': Object.freeze(['blizzard-models']),
   'blizzard-mpq': Object.freeze(['blizzard-mpq']),
-  'mk2-starcraft2': Object.freeze(['mk2-blizzard-starcraft2']),
+  'blizzard-starcraft2': Object.freeze(['blizzard-starcraft2']),
   'mk2-extended': mk2Extended,
 })
 
