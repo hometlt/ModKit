@@ -23,20 +23,78 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
   extensions: [
     {
       artifact: {
-        artifactDigest: 'sha256:b4ce8c4ea87c0395eea93854ba1910749e7d6cf0c0c577a97ac633b8edad9f87',
+        artifactDigest: 'sha256:9993190c544b033d93432572bd0d63c19bf336cb7c1dbd7f89f61672bc6708af',
         fileDigests: {
-          'README.md': 'sha256:2c8abea7cb674e2a423eb034a51b47053744d502a154578889c541bfb110ea72',
+          'MIGRATION-NOTES-common-archives.json':
+            'sha256:c824dbe6a3f04776d304b30974c1b21b478c66e5bbe2a39124997b6cedc348f8',
+          'README.md': 'sha256:ff897d63e523ed8d0256dcfd6bbd601e95bedd48bfaa0b7372e4fd41c8b76140',
+          'contributions/codec-7z.json':
+            'sha256:ec55e454a3da40d5bf63ac1a5b797015f3ed48cb3f0e9e9f2e66803fa55780bc',
+          'contributions/codec-brotli.json':
+            'sha256:bd1136e2ec2fdcfab8dd07c81dd30238d332c57d1b642604cef07cd2c1288397',
+          'contributions/codec-bzip2.json':
+            'sha256:d09a30e749d57712b0e0834d2595164266d11e123af3d5aaa43a31d114a58940',
+          'contributions/codec-cab.json':
+            'sha256:13eedaaf274a5a97e7ddf3c69927ca1661fa5fa2dd247a3eb655bd41bd83bfc7',
+          'contributions/codec-dmg.json':
+            'sha256:7beb87e642aec12ca5500a876f311a9b3a1277a3109043e0979cf38329f1be97',
+          'contributions/codec-gzip.json':
+            'sha256:78dc085432cce4fad050e49a7870c0c13bd2f69454870ecbda1ff729fdeeae38',
+          'contributions/codec-iso.json':
+            'sha256:dcbc2b02fc5cfd0ebed510918866821cc23ba297ec9e9245fb8454044bebe3ba',
+          'contributions/codec-lzma.json':
+            'sha256:ae4f9eb09391c9b55b89ef844328abd70e92ba23bafab3a4aaeec1336cc87aec',
+          'contributions/codec-pe.json':
+            'sha256:22046a650a7a95ac2e25207402b673405694c18635cf787985546c3554da6d21',
+          'contributions/codec-ps1-xa.json':
+            'sha256:3599c99c7413e2088ec83e06b042bec0eb38d9e8da134e8c80cc222d9f8d7396',
+          'contributions/codec-rar.json':
+            'sha256:e4b33a25acab1a2263ecc7dbdb774fcc5be491b9e6164dab66091fc75e1e7348',
+          'contributions/codec-tar.json':
+            'sha256:30863a966975697123abb454889d49360916d5c4137e9cb68e9ebc9328a2db50',
+          'contributions/codec-xz.json':
+            'sha256:a161ed890f3a5077da61dac2b444332fc4dd850f4f46fa64e74e96a2b4f514d7',
           'contributions/codec-zip.json':
             'sha256:6496c4891be1f42fefca18349b10c8cab1ea719340f9c7ab9e7365e06825b84a',
+          'contributions/codec-zstd.json':
+            'sha256:6d09837d4cc72e7647442542d7cf991ef631ff7a5e84cb1ae05a0a01fbd52d12',
           'package.json': 'sha256:601bfe6293eb5d2bf094a85fad5a2fa29e9ad19975a1ae23a21d498d5face0fd',
+          'src/7z/codec.js':
+            'sha256:6c26804182d9545a3bc10d7117f297de5aaaea390a59201d96aed7416e7438db',
+          'src/brotli/codec.js':
+            'sha256:a43a86819ed21839826cf8fabd46eda96bbe30b1c95442e0867ce8ce042510e3',
+          'src/bzip2/codec.js':
+            'sha256:ae929898e833d3c52431328a855e9f550a27e6255b238146b0a803a26c4be81d',
+          'src/cab/codec.js':
+            'sha256:4ae0f0054a3564dc59c937421897773f523105433ac381287a1a7796d09faca8',
+          'src/dmg/codec.js':
+            'sha256:1e77c71bc072e5281516d53a8075906fea9c05ec4d8ba45eff336145a1a9ea4c',
           'src/formats/zip/codec.js':
             'sha256:17db3590d5ec0d65fd241f1661600126dfe2d1d137ebdeadf7cb905dd5f4fbc2',
+          'src/gzip/codec.js':
+            'sha256:36b988f1268857e77b4eedcaa8c5301928df7c66623553a09092e9dbd69feb3a',
           'src/index.js': 'sha256:121004c40bd5560b35a26034c291429f1d103e68698c7e1aaf5cf8456890dc95',
+          'src/iso/codec.js':
+            'sha256:87a48d1edecde33b6783cffd8edf202fc0c46b5a37fa03a1fcee6f08eadb551b',
           'src/linked.js':
             'sha256:09f16f5cdec670b84fc9dff7292f4d76a86eebc46f0de6b89f19adcf08efa7c6',
+          'src/lzma/codec.js':
+            'sha256:349f70697fe4292670ca1ff71eec5fc486d1e9caa9f24d6e89746a953c002ac9',
+          'src/pe/codec.js':
+            'sha256:fdd0a8dc9b9966cb1a36cb56f68fc62e6393ee5ced844f240062e2d51eaf2a95',
+          'src/ps1-xa/codec.js':
+            'sha256:8448cf49288b23c781bbc6ce0b3abcddf063084a8dff1de5447ffb8044ee19af',
+          'src/rar/codec.js':
+            'sha256:3e9331eea1f26300e450bab388c7cea4f9eff7f37050c6afcc6b40769445bf8c',
+          'src/tar/codec.js':
+            'sha256:3b14f7c18af2b60969221e1c442315f85330b90cc38cd9eb0bd0d533385bd9b9',
+          'src/xz/codec.js':
+            'sha256:78d718d59b25c1b1beb2953f0e6c5b6650b7ddab9bacdbce76cce1c3799255a4',
+          'src/zstd/codec.js':
+            'sha256:c4077d90c36bfefb1f329f6fcf51c97825d464114dabe71a8a2e93bf19bb7f1f',
         },
         inventoryRecordId:
-          'artifact:sha256:b4ce8c4ea87c0395eea93854ba1910749e7d6cf0c0c577a97ac633b8edad9f87',
+          'artifact:sha256:9993190c544b033d93432572bd0d63c19bf336cb7c1dbd7f89f61672bc6708af',
       },
       artifactRoot: 'extensions/archives/',
       containers: {
@@ -79,11 +137,1767 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       },
       documentDigests: [
         [
+          'contributions/codec-7z.json',
+          'sha256:ec55e454a3da40d5bf63ac1a5b797015f3ed48cb3f0e9e9f2e66803fa55780bc',
+        ],
+        [
+          'contributions/codec-brotli.json',
+          'sha256:bd1136e2ec2fdcfab8dd07c81dd30238d332c57d1b642604cef07cd2c1288397',
+        ],
+        [
+          'contributions/codec-bzip2.json',
+          'sha256:d09a30e749d57712b0e0834d2595164266d11e123af3d5aaa43a31d114a58940',
+        ],
+        [
+          'contributions/codec-cab.json',
+          'sha256:13eedaaf274a5a97e7ddf3c69927ca1661fa5fa2dd247a3eb655bd41bd83bfc7',
+        ],
+        [
+          'contributions/codec-dmg.json',
+          'sha256:7beb87e642aec12ca5500a876f311a9b3a1277a3109043e0979cf38329f1be97',
+        ],
+        [
+          'contributions/codec-gzip.json',
+          'sha256:78dc085432cce4fad050e49a7870c0c13bd2f69454870ecbda1ff729fdeeae38',
+        ],
+        [
+          'contributions/codec-iso.json',
+          'sha256:dcbc2b02fc5cfd0ebed510918866821cc23ba297ec9e9245fb8454044bebe3ba',
+        ],
+        [
+          'contributions/codec-lzma.json',
+          'sha256:ae4f9eb09391c9b55b89ef844328abd70e92ba23bafab3a4aaeec1336cc87aec',
+        ],
+        [
+          'contributions/codec-pe.json',
+          'sha256:22046a650a7a95ac2e25207402b673405694c18635cf787985546c3554da6d21',
+        ],
+        [
+          'contributions/codec-ps1-xa.json',
+          'sha256:3599c99c7413e2088ec83e06b042bec0eb38d9e8da134e8c80cc222d9f8d7396',
+        ],
+        [
+          'contributions/codec-rar.json',
+          'sha256:e4b33a25acab1a2263ecc7dbdb774fcc5be491b9e6164dab66091fc75e1e7348',
+        ],
+        [
+          'contributions/codec-tar.json',
+          'sha256:30863a966975697123abb454889d49360916d5c4137e9cb68e9ebc9328a2db50',
+        ],
+        [
+          'contributions/codec-xz.json',
+          'sha256:a161ed890f3a5077da61dac2b444332fc4dd850f4f46fa64e74e96a2b4f514d7',
+        ],
+        [
           'contributions/codec-zip.json',
           'sha256:6496c4891be1f42fefca18349b10c8cab1ea719340f9c7ab9e7365e06825b84a',
         ],
+        [
+          'contributions/codec-zstd.json',
+          'sha256:6d09837d4cc72e7647442542d7cf991ef631ff7a5e84cb1ae05a0a01fbd52d12',
+        ],
       ],
       documents: [
+        [
+          'contributions/codec-7z.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: '7-Zip archive',
+            id: 'org.modkitx/7z',
+            limitations: [
+              'Portable extraction is intentionally bounded to one regular file in one raw-header folder using the official Copy coder.',
+              'Compressed or encrypted coders, encoded headers, solid and multi-volume archives, multiple files or folders, and writing are not implemented.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/7z/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/7z/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: '7z',
+                  label: '7-Zip archive',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['7z'],
+                signatures: [
+                  {
+                    bytesHex: '377abcaf271c',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'extract-entry',
+                  id: 'container.extract',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/namespace-entry-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.archive/entry-namespace',
+                  id: 'archive-namespace',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['container'],
+              sourceTopology: 'single',
+            },
+            status: 'supported',
+          },
+        ],
+        [
+          'contributions/codec-brotli.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'Brotli compressed payload',
+            id: 'org.modkitx/brotli',
+            limitations: [
+              'Portable extraction is intentionally bounded to the RFC 7932 trivial-compressor form with uncompressed meta-blocks and the default window encoding.',
+              'Compressed and metadata meta-blocks, concatenated streams, and writing are not implemented.',
+              'Brotli has no fixed magic; detection structurally recognizes only the supported canonical uncompressed prefix.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/brotli/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/brotli/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'brotli',
+                  label: 'Brotli compressed payload',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['br'],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'extract-entry',
+                  id: 'container.extract',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/namespace-entry-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.archive/entry-namespace',
+                  id: 'archive-namespace',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['container'],
+              sourceTopology: 'single',
+            },
+            status: 'supported',
+          },
+        ],
+        [
+          'contributions/codec-bzip2.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'BZip2 compressed payload',
+            id: 'org.modkitx/bzip2',
+            limitations: [
+              'Portable extraction implements standard non-randomized BZip2 blocks and verifies every block CRC plus the combined stream CRC.',
+              'Obsolete randomized blocks, concatenated streams, and writing are not implemented.',
+              'The decoder is self-contained and enforces both decoded-byte and block-count budgets.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/bzip2/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/bzip2/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'bzip2',
+                  label: 'BZip2 compressed payload',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['bz2'],
+                signatures: [
+                  {
+                    bytesHex: '425a68',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'extract-entry',
+                  id: 'container.extract',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/namespace-entry-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.archive/entry-namespace',
+                  id: 'archive-namespace',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['container'],
+              sourceTopology: 'single',
+            },
+            status: 'supported',
+          },
+        ],
+        [
+          'contributions/codec-cab.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'Microsoft Cabinet archive',
+            id: 'org.modkitx/cab',
+            limitations: [
+              'The compatibility port validates CAB 1.3 headers, folders, CFDATA checksums, safe paths, namespace listing, and extraction for uncompressed non-spanned cabinets.',
+              'MSZIP, Quantum, and LZX compression, split/spanned cabinets, MSI compound documents, writing, and mutation remain unsupported.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/cab/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/cab/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'cab',
+                  label: 'Microsoft Cabinet archive',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['cab'],
+                signatures: [
+                  {
+                    bytesHex: '4d534346',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'extract-entry',
+                  id: 'container.extract',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/namespace-entry-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.archive/entry-namespace',
+                  id: 'archive-namespace',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['container'],
+              sourceTopology: 'single',
+            },
+            status: 'supported',
+          },
+        ],
+        [
+          'contributions/codec-dmg.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'Apple DMG disk image',
+            id: 'org.modkitx/dmg',
+            limitations: [
+              'Inspection validates the 512-byte UDIF v4 koly trailer and exposes its declared data, resource, and XML forks with bounded extraction.',
+              'The current byte-probe helper reads from the start, so content confidence is available only when the end-relative trailer falls inside the probe window; extension routing still reaches full validation.',
+              'blkx disk reconstruction/decompression, partition and filesystem walking, segmented or encrypted images, and writing are not implemented.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/dmg/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/dmg/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'dmg',
+                  label: 'Apple DMG disk image',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['dmg'],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'extract-entry',
+                  id: 'container.extract',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/namespace-entry-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.archive/entry-namespace',
+                  id: 'archive-namespace',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['container'],
+              sourceTopology: 'single',
+            },
+            status: 'partial',
+          },
+        ],
+        [
+          'contributions/codec-gzip.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'GZip single-payload stream',
+            id: 'org.modkitx/gzip',
+            limitations: [
+              'The compatibility port validates one RFC 1952 member, exposes its optional filename and trailer metadata, and extracts one virtual payload through the runtime DecompressionStream.',
+              'Concatenated members, GZip writing, and archive mutation remain unsupported.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/gzip/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/gzip/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'gzip',
+                  label: 'GZip single-payload stream',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['gz'],
+                signatures: [
+                  {
+                    bytesHex: '1f8b',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'extract-entry',
+                  id: 'container.extract',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/namespace-entry-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.archive/entry-namespace',
+                  id: 'archive-namespace',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['container'],
+              sourceTopology: 'single',
+            },
+            status: 'supported',
+          },
+        ],
+        [
+          'contributions/codec-iso.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'ISO 9660 disk image',
+            id: 'org.modkitx/iso',
+            limitations: [
+              'The compatibility port validates the ISO 9660 primary descriptor, endian-paired fields, directory records, safe paths, bounded traversal, namespace listing, and stored-file extraction.',
+              'UDF, High Sierra, Joliet/Rock Ridge names, multi-extent files, writing, and mutation remain unsupported.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/iso/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/iso/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'iso',
+                  label: 'ISO 9660 disk image',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['iso'],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'extract-entry',
+                  id: 'container.extract',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 36864,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 36864,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/namespace-entry-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.archive/entry-namespace',
+                  id: 'archive-namespace',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['container'],
+              sourceTopology: 'single',
+            },
+            status: 'supported',
+          },
+        ],
+        [
+          'contributions/codec-lzma.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'LZMA compressed payload',
+            id: 'org.modkitx/lzma',
+            limitations: [
+              'Portable extraction supports LZMA-alone streams whose 13-byte header declares a finite output size.',
+              'Unknown-size LZMA-alone streams, LZMA2/container wrappers, and writing are not implemented.',
+              'The manifest stays extension-only because LZMA-alone has no fixed magic; probing structurally validates properties and the declared size.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/lzma/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/lzma/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'lzma',
+                  label: 'LZMA compressed payload',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['lzma'],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'extract-entry',
+                  id: 'container.extract',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/namespace-entry-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.archive/entry-namespace',
+                  id: 'archive-namespace',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['container'],
+              sourceTopology: 'single',
+            },
+            status: 'supported',
+          },
+        ],
+        [
+          'contributions/codec-pe.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'Windows PE executable',
+            id: 'org.modkitx/pe',
+            limitations: [
+              'The compatibility port validates DOS, PE/COFF, optional, data-directory, and section headers and projects headers, raw sections, and overlay bytes as extractable namespace entries.',
+              'It never loads or executes the image; resource decoding, icon reconstruction, installer/self-extracting expansion, writing, and mutation remain unsupported.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/pe/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/pe/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'pe',
+                  label: 'Windows PE executable',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: [
+                  'exe',
+                  'dll',
+                  'scr',
+                  'sys',
+                  'ocx',
+                  'cpl',
+                  'drv',
+                  'efi',
+                  'mui',
+                  'mun',
+                  'ax',
+                  'acm',
+                  'ime',
+                  'tsp',
+                ],
+                signatures: [
+                  {
+                    bytesHex: '4d5a',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'extract-entry',
+                  id: 'container.extract',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 65536,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 65536,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/namespace-entry-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.archive/entry-namespace',
+                  id: 'archive-namespace',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['container'],
+              sourceTopology: 'single',
+            },
+            status: 'supported',
+          },
+        ],
+        [
+          'contributions/codec-ps1-xa.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'PlayStation XA indexed stream',
+            id: 'org.modkitx/ps1-xa',
+            limitations: [
+              'The XA payload has no self-contained Westwood file index; without a sibling FAT, the portable codec exposes validated 2336-byte CD-XA sectors with anonymous names.',
+              'Audio, video, and data payload decoding, full 2352-byte raw sectors, writing, and FAT-derived file boundaries are not implemented.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/ps1-xa/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/ps1-xa/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'ps1-xa',
+                  label: 'PlayStation XA indexed stream',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['xa'],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'extract-entry',
+                  id: 'container.extract',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/namespace-entry-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.archive/entry-namespace',
+                  id: 'archive-namespace',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['container'],
+              sourceTopology: 'single',
+            },
+            status: 'supported',
+          },
+        ],
+        [
+          'contributions/codec-rar.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'RAR archive',
+            id: 'org.modkitx/rar',
+            limitations: [
+              'Portable extraction is intentionally bounded to plain RAR4 archives containing stored regular files.',
+              'RAR5, compression, encryption, solid and split archives, volumes, directories, extended headers, and writing are not implemented.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/rar/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/rar/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'rar',
+                  label: 'RAR archive',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['rar'],
+                signatures: [
+                  {
+                    bytesHex: '526172211a0700',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'extract-entry',
+                  id: 'container.extract',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/namespace-entry-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.archive/entry-namespace',
+                  id: 'archive-namespace',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['container'],
+              sourceTopology: 'single',
+            },
+            status: 'supported',
+          },
+        ],
+        [
+          'contributions/codec-tar.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'POSIX ustar archive',
+            id: 'org.modkitx/tar',
+            limitations: [
+              'The compatibility port validates POSIX ustar checksums, bounded regular-file and directory entries, two-block termination, namespace listing, and stored payload extraction.',
+              'PAX/GNU extensions, links, devices, special entries, TAR writing, and archive mutation remain unsupported.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/tar/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/tar/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'tar',
+                  label: 'POSIX ustar archive',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['tar'],
+                signatures: [
+                  {
+                    bytesHex: '7573746172',
+                    from: 'start',
+                    offset: 257,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'extract-entry',
+                  id: 'container.extract',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/namespace-entry-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.archive/entry-namespace',
+                  id: 'archive-namespace',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['container'],
+              sourceTopology: 'single',
+            },
+            status: 'supported',
+          },
+        ],
+        [
+          'contributions/codec-xz.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'XZ compressed payload',
+            id: 'org.modkitx/xz',
+            limitations: [
+              'Portable extraction is intentionally bounded to one Check=None stream with one LZMA2 filter and uncompressed LZMA2 chunks.',
+              'Compressed LZMA2 chunks, other checks and filters, concatenated streams, stream padding, and writing are not implemented.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/xz/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/xz/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'xz',
+                  label: 'XZ compressed payload',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['xz'],
+                signatures: [
+                  {
+                    bytesHex: 'fd377a585a00',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'extract-entry',
+                  id: 'container.extract',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/namespace-entry-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.archive/entry-namespace',
+                  id: 'archive-namespace',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['container'],
+              sourceTopology: 'single',
+            },
+            status: 'supported',
+          },
+        ],
         [
           'contributions/codec-zip.json',
           {
@@ -286,28 +2100,203 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             },
           },
         ],
+        [
+          'contributions/codec-zstd.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'Zstandard compressed payload',
+            id: 'org.modkitx/zstd',
+            limitations: [
+              'Portable extraction is intentionally bounded to single-segment frames containing raw or RLE blocks.',
+              'Compressed blocks, dictionaries, content checksums, concatenated frames, and writing are not implemented.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/zstd/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/zstd/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'zstd',
+                  label: 'Zstandard compressed payload',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['zst'],
+                signatures: [
+                  {
+                    bytesHex: '28b52ffd',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'extract-entry',
+                  id: 'container.extract',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/namespace-entry-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.archive/entry-namespace',
+                  id: 'archive-namespace',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['container'],
+              sourceTopology: 'single',
+            },
+            status: 'supported',
+          },
+        ],
       ],
       files: [
+        'MIGRATION-NOTES-common-archives.json',
         'README.md',
+        'contributions/codec-7z.json',
+        'contributions/codec-brotli.json',
+        'contributions/codec-bzip2.json',
+        'contributions/codec-cab.json',
+        'contributions/codec-dmg.json',
+        'contributions/codec-gzip.json',
+        'contributions/codec-iso.json',
+        'contributions/codec-lzma.json',
+        'contributions/codec-pe.json',
+        'contributions/codec-ps1-xa.json',
+        'contributions/codec-rar.json',
+        'contributions/codec-tar.json',
+        'contributions/codec-xz.json',
         'contributions/codec-zip.json',
+        'contributions/codec-zstd.json',
         'package.json',
+        'src/7z/codec.js',
+        'src/brotli/codec.js',
+        'src/bzip2/codec.js',
+        'src/cab/codec.js',
+        'src/dmg/codec.js',
         'src/formats/zip/codec.js',
+        'src/gzip/codec.js',
         'src/index.js',
+        'src/iso/codec.js',
         'src/linked.js',
+        'src/lzma/codec.js',
+        'src/pe/codec.js',
+        'src/ps1-xa/codec.js',
+        'src/rar/codec.js',
+        'src/tar/codec.js',
+        'src/xz/codec.js',
+        'src/zstd/codec.js',
       ],
       name: 'archives',
       source: 'extensions/common/archives',
     },
     {
       artifact: {
-        artifactDigest: 'sha256:6570ebb2e56e8df8b74b7221e871aa0f6d33a0ee6f4660cf78180309709a143f',
+        artifactDigest: 'sha256:bb2f20462bc27bbd96995bae51802648ecb58ac463e9731ead208649cd422c53',
         fileDigests: {
-          'README.md': 'sha256:268ab2b7997a0a0be23cf0dbdc5c80a90ac58eaafafca75a4c9fad30093d26fd',
+          'MIGRATION-NOTES-common-audio.json':
+            'sha256:5b923bab081d577290cffabeef5f5a43c68b85512645d889f40eb94845f37003',
+          'README.md': 'sha256:9f5415950310cb89d1ab9de0eb7818546ee38fedcb55632e1454f3319d4f91a3',
+          'contributions/codec-aac.json':
+            'sha256:9058ab71cee348bd9ea7c9ef2d64804fa79b9d1dcfd61a7bffda4de8f202f24e',
+          'contributions/codec-flac.json':
+            'sha256:0798109c79419e682cc2d9b52c47ffa44b7da24d62ce08c1787151ce15570079',
+          'contributions/codec-m4a.json':
+            'sha256:991f6d08992ca4e82053960f6af17c038bacc93e5b0df35801c653a6dc762aed',
           'contributions/codec-mp3.json':
             'sha256:2db4ff5451181d302a7494df9bdfd1d30bf8700e262b1f8e3b2ea3292436c1fc',
           'contributions/codec-ogg.json':
             'sha256:96ffb84cdb503acaef94824bcbfb00790ace696d43a39e1cbe626b41a8293867',
+          'contributions/codec-wav.json':
+            'sha256:0d19221f02414555f4551a74b006582e92e53212fcd3d2918e776477be961d7a',
           'package.json': 'sha256:da3fd52ca642295c953c8e1abb0ed4dbd8167d76bf4a7738851602d8a0a837ac',
+          'src/aac/codec.js':
+            'sha256:17ca70f7bc74bf21610d2ca05f1e946057ec49af621afde10468d1a274f01d56',
+          'src/flac/codec.js':
+            'sha256:0d08931faa735d86990be3c16f3626cc8535c5d522fd3b42251f354007b7b7d4',
           'src/formats/mp3/codec.js':
             'sha256:5ff766d783b99acdbf14868dd0e66323821ee6334dcdcf0742fba642f1be7e9d',
           'src/formats/ogg/codec.js':
@@ -315,9 +2304,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/index.js': 'sha256:e86ec9194630bc30037a46f042fb7839fa96dfa70ae81ef77142ae436c9bf2fb',
           'src/linked.js':
             'sha256:ca83a706bc33a766e262a2942e04d898f56eef7a835d1bed5305eda5e8ab4745',
+          'src/m4a/codec.js':
+            'sha256:64db4286126d844c2844838cb217ad7071acfde54fe4af33d4ac544c9c972c8d',
+          'src/wav/codec.js':
+            'sha256:65a88b4239eeb90b3cdc96e7c9d6cf41db5dbd1babfc2f5687011b7a9f95f719',
         },
         inventoryRecordId:
-          'artifact:sha256:6570ebb2e56e8df8b74b7221e871aa0f6d33a0ee6f4660cf78180309709a143f',
+          'artifact:sha256:bb2f20462bc27bbd96995bae51802648ecb58ac463e9731ead208649cd422c53',
       },
       artifactRoot: 'extensions/audio/',
       containers: {
@@ -361,6 +2354,18 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       },
       documentDigests: [
         [
+          'contributions/codec-aac.json',
+          'sha256:9058ab71cee348bd9ea7c9ef2d64804fa79b9d1dcfd61a7bffda4de8f202f24e',
+        ],
+        [
+          'contributions/codec-flac.json',
+          'sha256:0798109c79419e682cc2d9b52c47ffa44b7da24d62ce08c1787151ce15570079',
+        ],
+        [
+          'contributions/codec-m4a.json',
+          'sha256:991f6d08992ca4e82053960f6af17c038bacc93e5b0df35801c653a6dc762aed',
+        ],
+        [
           'contributions/codec-mp3.json',
           'sha256:2db4ff5451181d302a7494df9bdfd1d30bf8700e262b1f8e3b2ea3292436c1fc',
         ],
@@ -368,8 +2373,383 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-ogg.json',
           'sha256:96ffb84cdb503acaef94824bcbfb00790ace696d43a39e1cbe626b41a8293867',
         ],
+        [
+          'contributions/codec-wav.json',
+          'sha256:0d19221f02414555f4551a74b006582e92e53212fcd3d2918e776477be961d7a',
+        ],
       ],
       documents: [
+        [
+          'contributions/codec-aac.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'AAC (ADTS)',
+            id: 'org.modkitx/aac',
+            limitations: [
+              'Parses complete ADTS frame boundaries, MPEG version, profile, sample rate, channels, raw-data-block counts, duration, and structural consistency; raw AAC spectral data and PCM are not decoded.',
+              'Seeking, ID3 metadata, CRC verification for protected ADTS frames, writing, and profile changes within one stream are not implemented.',
+              'Declarative routing remains extension-first because manifest v1 cannot express the masked 12-bit ADTS syncword; runtime probing validates the bytes before opening.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/aac/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/aac/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'aac',
+                  label: 'AAC (ADTS)',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['aac'],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'stream', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/audio-media-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.audio/stream-metadata',
+                  id: 'audio-stream-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+            },
+            status: 'supported',
+          },
+        ],
+        [
+          'contributions/codec-flac.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'FLAC',
+            id: 'org.modkitx/flac',
+            limitations: [
+              'Parses bounded FLAC metadata-block framing and complete STREAMINFO fields, then requires a frame sync after the last metadata block; PCM and subframe residuals are not decoded.',
+              'Frame-level CRC validation, seeking without a SEEKTABLE, Vorbis comments, pictures, cuesheets, applications, and writing are not implemented.',
+              'Native playback of the published encoded stream depends on host FLAC support.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/flac/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/flac/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'flac',
+                  label: 'FLAC',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['flac'],
+                signatures: [
+                  {
+                    bytesHex: '664c6143',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'stream', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/audio-media-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.audio/stream-metadata',
+                  id: 'audio-stream-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+            },
+            status: 'supported',
+          },
+        ],
+        [
+          'contributions/codec-m4a.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'AAC (M4A/MP4)',
+            id: 'org.modkitx/m4a',
+            limitations: [
+              'Walks bounded 32-bit and 64-bit ISO BMFF boxes and reads one version-0 mdhd/soun/mp4a track with channel, sample-size, sample-rate, duration, brands, and media-byte metadata.',
+              'PCM decoding, multiple audio tracks, edit lists, sample indexing, tags, fragmented MP4, encrypted samples, and writing are not implemented.',
+              'Native playback of the published encoded stream depends on host M4A/AAC support.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/m4a/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/m4a/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'm4a',
+                  label: 'AAC (M4A/MP4)',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['m4a'],
+                signatures: [
+                  {
+                    bytesHex: '66747970',
+                    from: 'start',
+                    offset: 4,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'stream', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/audio-media-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.audio/stream-metadata',
+                  id: 'audio-stream-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+            },
+            status: 'supported',
+          },
+        ],
         [
           'contributions/codec-mp3.json',
           {
@@ -708,19 +3088,335 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             },
           },
         ],
+        [
+          'contributions/codec-wav.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'WAV (RIFF)',
+            id: 'org.modkitx/wav',
+            limitations: [
+              'PCM integer and 32-bit float samples decode in-process; other RIFF/WAVE codecs require native host playback or an injected transcoder.',
+              'Declarative routing is extension-first because manifest v1 cannot express the legacy extension-or-RIFF/WAVE-sniffer behavior without making the evidence conjunctive.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/wav/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/wav/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'wav',
+                  label: 'WAV (RIFF)',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['wav'],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'stream', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/audio-media-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.audio/stream-metadata',
+                  id: 'audio-stream-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+            },
+            status: 'supported',
+          },
+        ],
       ],
       files: [
+        'MIGRATION-NOTES-common-audio.json',
         'README.md',
+        'contributions/codec-aac.json',
+        'contributions/codec-flac.json',
+        'contributions/codec-m4a.json',
         'contributions/codec-mp3.json',
         'contributions/codec-ogg.json',
+        'contributions/codec-wav.json',
         'package.json',
+        'src/aac/codec.js',
+        'src/flac/codec.js',
         'src/formats/mp3/codec.js',
         'src/formats/ogg/codec.js',
         'src/index.js',
         'src/linked.js',
+        'src/m4a/codec.js',
+        'src/wav/codec.js',
       ],
       name: 'audio',
       source: 'extensions/common/audio',
+    },
+    {
+      artifact: {
+        artifactDigest: 'sha256:7432c86d4ec9f6118597bfd9e5b81f6d19043ddfa09846e06521782c53dc11a4',
+        fileDigests: {
+          'MIGRATION-NOTES-common-containers.json':
+            'sha256:d38d3068fa12e31350e8636e22186b95607bcc2df8cd72c70e2876e9d90940cb',
+          'README.md': 'sha256:573b5d8d8bd6e42211c77f6aaf7792aed3696c0da3bd7d4c880828ad7ecfe7e3',
+          'contributions/codec-ps1-cue-bin.json':
+            'sha256:556e3e8fd00069b9964e1f6374e3b02ffa249ff83dbfb7fe2079a415444592c0',
+          'package.json': 'sha256:454be7712d4e6499656a84bfa8696eddad229688aeb2001468e85543fe2e97dc',
+          'src/ps1-cue-bin/codec.js':
+            'sha256:8e7a5e98f76f882380d9ccc750d786a059819b657b09967213e69a76bd5354f0',
+        },
+        inventoryRecordId:
+          'artifact:sha256:7432c86d4ec9f6118597bfd9e5b81f6d19043ddfa09846e06521782c53dc11a4',
+      },
+      artifactRoot: 'extensions/containers/',
+      containers: {
+        packageJson: {
+          dependencies: {
+            '@modkitx-x3/codec-kit': 'workspace:*',
+          },
+          description: 'Product-owned multi-file container codecs for MK3.',
+          license: 'MIT',
+          modkit: {
+            contributionManifests: ['./contributions/*.json'],
+            id: 'containers',
+            publisher: 'org.modkitx',
+            schemaVersion: 1,
+          },
+          name: 'modkit-extension-x3-containers',
+          type: 'module',
+          version: '1.0.0',
+        },
+      },
+      documentDigests: [
+        [
+          'contributions/codec-ps1-cue-bin.json',
+          'sha256:556e3e8fd00069b9964e1f6374e3b02ffa249ff83dbfb7fe2079a415444592c0',
+        ],
+      ],
+      documents: [
+        [
+          'contributions/codec-ps1-cue-bin.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'PlayStation CUE/BIN disc image',
+            id: 'org.modkitx/ps1-cue-bin',
+            limitations: [
+              'The CUE is the candidate and its exact FILE name is refined into one required host-resolved BIN companion; the portable codec never resolves filesystem paths.',
+              'The bounded subset supports one BINARY FILE, a zero first INDEX 01, increasing tracks with one physical sector size, and AUDIO, MODE1/2048, MODE1/2352, MODE2/2048, or MODE2/2352 tracks.',
+              'Raw and cooked tracks plus the first ISO 9660 data-track namespace are extractable; raw-sector EDC/ECC validation, Joliet, Rock Ridge, UDF, multi-extent files, pregap materialization, and writing are not implemented.',
+              'The companion is materialized under maxScalarBytes as well as maxInputBytes; larger full-disc images require a future leased random-access companion lifecycle.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/ps1-cue-bin/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/ps1-cue-bin/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              companions: [
+                {
+                  id: 'disc-payload',
+                  patterns: ['*.bin', '*.BIN'],
+                  required: true,
+                  role: 'disc-payload',
+                  searchScopes: ['sibling-directory', 'enclosing-container'],
+                },
+              ],
+              formatRefs: [
+                {
+                  formatId: 'ps1-cue-bin',
+                  label: 'PlayStation CUE/BIN disc image',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['cue'],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'extract-entry',
+                  id: 'container.extract',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/namespace-entry-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.archive/entry-namespace',
+                  id: 'archive-namespace',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['container'],
+              sourceTopology: 'bundle',
+            },
+            status: 'partial',
+          },
+        ],
+      ],
+      files: [
+        'MIGRATION-NOTES-common-containers.json',
+        'README.md',
+        'contributions/codec-ps1-cue-bin.json',
+        'package.json',
+        'src/ps1-cue-bin/codec.js',
+      ],
+      name: 'containers',
+      source: 'extensions/common/containers',
     },
     {
       artifact: {
@@ -1085,28 +3781,112 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:302330ac61c3a6d2ab8be7cb783192ad42b3e255425ebba1fbb644d242e4acf9',
+        artifactDigest: 'sha256:d50a4786d839f349f29b0f9150b6e4c99637ea78549a365bae2978da166262e0',
         fileDigests: {
-          'README.md': 'sha256:ecc7e38c4dc29950d9a6d7bcd0ade22deef1e9eb0eeb666bc74b3d065f112f80',
+          'MIGRATION-NOTES-common-images.json':
+            'sha256:76c5e4320dbbc9b2e71030063212b4351eb11d409eb69e554749364c33415205',
+          'README.md': 'sha256:4f8426d4cb4a5a43b6b37cfb8d3262b2ce94a8ec1436d6d339e7f64dc3adadeb',
+          'contributions/codec-ani.json':
+            'sha256:d899d89db0da4affc508d8e9a0b37e1f0bcb3575a712c72d6688fe7e028a9b78',
+          'contributions/codec-astc.json':
+            'sha256:981d10b68cf6d753f7959e692af2f27e25c4e347166d5382a17bd9282804b5e3',
+          'contributions/codec-avif.json':
+            'sha256:55ccb4042b903954df9c13d1e507544259e46a8f7a86030d5bbcefa4ae9dc082',
+          'contributions/codec-basis.json':
+            'sha256:c5745bb078e83a851c9078baa0217e3d290cb143ffb4af94862b9a0449ebf715',
+          'contributions/codec-bmp.json':
+            'sha256:cbf66e61b87ada3b944d0ee3e89db46709fa33d2a9139eeb00e1f234224fb023',
+          'contributions/codec-cur.json':
+            'sha256:6a6eb413cece46d5890158b1865aece847d1eabd773bc5ec892e236b04ef52c6',
+          'contributions/codec-dds.json':
+            'sha256:cbf6beef83432d4f89ff4336d3351a3ec6ee64485a26c96d80d9997b5daa622f',
+          'contributions/codec-exr.json':
+            'sha256:426fda4b1bbf56f477a1cf5223237d0b899bf0b1d7e9c3b877d35cb8ed308281',
+          'contributions/codec-gif.json':
+            'sha256:e6be1c2ee39ab76c5770e1799e609c208ad39834a581dce8fad739dd36d0666b',
+          'contributions/codec-hdr.json':
+            'sha256:dc2717352377ac4ff5dac3a0aaac8ca65d8c704d35646cd3cedd507d54449a4e',
+          'contributions/codec-ico.json':
+            'sha256:46ca9235bd7082b5a0f50c4b8697e0e2665aa620834a44b0877d0762b8726c0e',
           'contributions/codec-jpeg.json':
             'sha256:3e4712377e58fdc3e4a835f2c1ac6731ae5595881a94d61666b177c33d9cb802',
+          'contributions/codec-ktx.json':
+            'sha256:30cfd31f4df4f993d61db7b9d86003e63d671482786b4e07820584d0a71acd21',
+          'contributions/codec-ktx2.json':
+            'sha256:8b7ba55aa59b8654b9d0dc3611519ef50953ba70202ffd188b5b8d487e7bb42b',
+          'contributions/codec-pal.json':
+            'sha256:4ab7518d9715a3f20ac9748b4d01beb6d03418e52433528b68ec1f3e0e70592c',
+          'contributions/codec-pcx.json':
+            'sha256:12cb8eaebab4cc11443953ec50072b0e5b866cadb5b87d1a6b1ad977688beba2',
+          'contributions/codec-pkm.json':
+            'sha256:a09ea509b3bcb97e372b4fa648aa722dfc98073e494b2448b1eb487fbfbfa1d2',
           'contributions/codec-png.json':
             'sha256:e069e36d8e4e56a01da28ce8790f64b0f1bd6a3d31b2506615d49d40828e4839',
+          'contributions/codec-pvr.json':
+            'sha256:304050d72c82999590a517cfbf6d757de7f44523c53cbd8f0d604b18add2aa78',
+          'contributions/codec-tga.json':
+            'sha256:93181d0b7b214993bfcc4e306fe09ab68c8ae6a5044560bcdc7e9cb77368d09f',
+          'contributions/codec-tiff.json':
+            'sha256:89cc8891bff6dd3521bca282119fa3a2fecd3a62af4e0590d25da327b17cba46',
+          'contributions/codec-webp.json':
+            'sha256:568e531eb2c0519b27f7c828f6166c163766887ea49d7add870be074584ebb1e',
           'contributions/writer-png.json':
             'sha256:fa03ddbb7e468a6d9948ba9f89dee07ffc682e8404adb23f379da4cf231aed49',
           'package.json': 'sha256:d6a9b60520c002c6015821e1de2705bcb12490481a5057cc50f81cf2560eefe3',
+          'src/ani/codec.js':
+            'sha256:9a5cd3d84c67e1fd2354c2482a85dfa28ebdaa4605b5d8f137bc9d146574c8b4',
+          'src/astc/codec.js':
+            'sha256:dff8e4413a82376008818c19e5fb4b1d1450bf19bd68e289b9d8b8fcc9b41218',
+          'src/avif/codec.js':
+            'sha256:4db49b42e97cc393415cd85c07279495ce7cb2dd3a78226308307808a25308c2',
+          'src/basis/codec.js':
+            'sha256:03da733ad02015f59e267f547f8c0a4e5f68f7cc04856981ad6be263b36fbcb8',
+          'src/bmp/codec.js':
+            'sha256:b62ae6392de98e5c1ff9a10920d11bc3fdd2517245497d13acf944533bc66914',
+          'src/cur/codec.js':
+            'sha256:31a5d751e5c928c51318cf8158930900afb5b4a51b0984019622373e7597ac8a',
+          'src/dds/codec.js':
+            'sha256:433837ee765868f1a79bda2bcc1338dacf787e4699f3fec574b623b5f105e6c9',
+          'src/exr/codec.js':
+            'sha256:9fab7b7120da13e825e81d7f8d0fa2727934b9035f8a63b4f6777382b970f193',
           'src/formats/jpeg/codec.js':
             'sha256:43739ed9200be7c7e11b326ac83206892cb3eb9633b3b76477099e6fed24bd06',
           'src/formats/png/codec.js':
             'sha256:013031d12676c907b1f0cebc4570185fe00dd7d47a7f2e65471e7772c915a78a',
+          'src/gif/codec.js':
+            'sha256:3ce766b0f1c01d114928a33ba33536dc76429072de6aaefc4ba709321ae96eec',
+          'src/hdr/codec.js':
+            'sha256:4170a0d8e785ea0e13a9b0d22ef61b4c72906e8f70a0ce5be9c157883b73fe71',
+          'src/ico/codec.js':
+            'sha256:854e9798a852f7e77a03b65d1b682816436fadc79283cffe5b684ce083139321',
+          'src/ico/container.js':
+            'sha256:78b4cffbbe876e633f795770d9846e1b6eaf47738611a37d312934fb73e2d5ed',
           'src/index.js': 'sha256:bcbc40812fa5dcdb2937b0ff5b617c1483725570302b99f569249ac3c441ce41',
+          'src/ktx/codec.js':
+            'sha256:1eff44456f555e8e63f6229f1bfcfd27d5df29c124b07b0c6aefd47d20cf145f',
+          'src/ktx2/codec.js':
+            'sha256:e871516f26b4dd22f158ddd09c8b91f3357705726aee8bfe1007d2d25e242969',
           'src/linked.js':
             'sha256:f99685dbe94213bf6ff6ddc719046463f537ba2bc71f5dd88635ab057acecf82',
+          'src/pal/codec.js':
+            'sha256:53b0485b8da984b28c06a5d360e9e777e47483d23871458e0b9178e977057998',
+          'src/pcx/codec.js':
+            'sha256:b8be43c5e89e51bf2155313ba31688849398ba7be06b2fa60e086382c38ca05a',
+          'src/pkm/codec.js':
+            'sha256:fc74af7e429817bccfacf23e16abd7f64b87f536246b83bb6e39b9a06c37a9f0',
+          'src/pvr/codec.js':
+            'sha256:ba2a719ca4ac8f4d7ae8fb132b2b3cfa72e97764c2237f5299ffa33825a63583',
+          'src/tga/codec.js':
+            'sha256:5a3ed52488646ed9f18b368e04a46c741ff61065a889fffedbcf83488b176ef5',
+          'src/tiff/codec.js':
+            'sha256:47462a98d93f6f025e6e0418b15826729e1cdfb5519ff5f15bb580c650627540',
+          'src/webp/codec.js':
+            'sha256:0e659889a1ad44cf1826d4e02caf7fd311234685315543d96af366bc02bd5255',
           'src/writers/png-encoder.js':
             'sha256:411efbd8aadd7a2edfb335752f8e8bfad1a11452534bd039e227d52f49d6a65a',
         },
         inventoryRecordId:
-          'artifact:sha256:302330ac61c3a6d2ab8be7cb783192ad42b3e255425ebba1fbb644d242e4acf9',
+          'artifact:sha256:d50a4786d839f349f29b0f9150b6e4c99637ea78549a365bae2978da166262e0',
       },
       artifactRoot: 'extensions/images/',
       containers: {
@@ -1151,12 +3931,92 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       },
       documentDigests: [
         [
+          'contributions/codec-ani.json',
+          'sha256:d899d89db0da4affc508d8e9a0b37e1f0bcb3575a712c72d6688fe7e028a9b78',
+        ],
+        [
+          'contributions/codec-astc.json',
+          'sha256:981d10b68cf6d753f7959e692af2f27e25c4e347166d5382a17bd9282804b5e3',
+        ],
+        [
+          'contributions/codec-avif.json',
+          'sha256:55ccb4042b903954df9c13d1e507544259e46a8f7a86030d5bbcefa4ae9dc082',
+        ],
+        [
+          'contributions/codec-basis.json',
+          'sha256:c5745bb078e83a851c9078baa0217e3d290cb143ffb4af94862b9a0449ebf715',
+        ],
+        [
+          'contributions/codec-bmp.json',
+          'sha256:cbf66e61b87ada3b944d0ee3e89db46709fa33d2a9139eeb00e1f234224fb023',
+        ],
+        [
+          'contributions/codec-cur.json',
+          'sha256:6a6eb413cece46d5890158b1865aece847d1eabd773bc5ec892e236b04ef52c6',
+        ],
+        [
+          'contributions/codec-dds.json',
+          'sha256:cbf6beef83432d4f89ff4336d3351a3ec6ee64485a26c96d80d9997b5daa622f',
+        ],
+        [
+          'contributions/codec-exr.json',
+          'sha256:426fda4b1bbf56f477a1cf5223237d0b899bf0b1d7e9c3b877d35cb8ed308281',
+        ],
+        [
+          'contributions/codec-gif.json',
+          'sha256:e6be1c2ee39ab76c5770e1799e609c208ad39834a581dce8fad739dd36d0666b',
+        ],
+        [
+          'contributions/codec-hdr.json',
+          'sha256:dc2717352377ac4ff5dac3a0aaac8ca65d8c704d35646cd3cedd507d54449a4e',
+        ],
+        [
+          'contributions/codec-ico.json',
+          'sha256:46ca9235bd7082b5a0f50c4b8697e0e2665aa620834a44b0877d0762b8726c0e',
+        ],
+        [
           'contributions/codec-jpeg.json',
           'sha256:3e4712377e58fdc3e4a835f2c1ac6731ae5595881a94d61666b177c33d9cb802',
         ],
         [
+          'contributions/codec-ktx.json',
+          'sha256:30cfd31f4df4f993d61db7b9d86003e63d671482786b4e07820584d0a71acd21',
+        ],
+        [
+          'contributions/codec-ktx2.json',
+          'sha256:8b7ba55aa59b8654b9d0dc3611519ef50953ba70202ffd188b5b8d487e7bb42b',
+        ],
+        [
+          'contributions/codec-pal.json',
+          'sha256:4ab7518d9715a3f20ac9748b4d01beb6d03418e52433528b68ec1f3e0e70592c',
+        ],
+        [
+          'contributions/codec-pcx.json',
+          'sha256:12cb8eaebab4cc11443953ec50072b0e5b866cadb5b87d1a6b1ad977688beba2',
+        ],
+        [
+          'contributions/codec-pkm.json',
+          'sha256:a09ea509b3bcb97e372b4fa648aa722dfc98073e494b2448b1eb487fbfbfa1d2',
+        ],
+        [
           'contributions/codec-png.json',
           'sha256:e069e36d8e4e56a01da28ce8790f64b0f1bd6a3d31b2506615d49d40828e4839',
+        ],
+        [
+          'contributions/codec-pvr.json',
+          'sha256:304050d72c82999590a517cfbf6d757de7f44523c53cbd8f0d604b18add2aa78',
+        ],
+        [
+          'contributions/codec-tga.json',
+          'sha256:93181d0b7b214993bfcc4e306fe09ab68c8ae6a5044560bcdc7e9cb77368d09f',
+        ],
+        [
+          'contributions/codec-tiff.json',
+          'sha256:89cc8891bff6dd3521bca282119fa3a2fecd3a62af4e0590d25da327b17cba46',
+        ],
+        [
+          'contributions/codec-webp.json',
+          'sha256:568e531eb2c0519b27f7c828f6166c163766887ea49d7add870be074584ebb1e',
         ],
         [
           'contributions/writer-png.json',
@@ -1164,6 +4024,1403 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
       ],
       documents: [
+        [
+          'contributions/codec-ani.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'Windows Animated Cursor / Warzone Animation',
+            id: 'org.modkitx/ani',
+            limitations: [
+              'The MK3 port performs a bounded RIFF/ACON chunk walk, validates anih declarations and embedded ICO/CUR frame headers, and reports rate/sequence metadata.',
+              'Warzone 2100 ANIM3DFRAMES text sidecars are parsed as bounded frame lines; embedded cursor pixel decoding, playback, model application, and writing remain unsupported.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/ani/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/ani/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'ani',
+                  label: 'Windows Animated Cursor / Warzone Animation',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['ani'],
+                signatures: [
+                  {
+                    bytesHex: '41434f4e',
+                    from: 'start',
+                    offset: 8,
+                  },
+                  {
+                    bytesHex: '414e494d33444652414d4553',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'thumbnail', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.image/raster-metadata',
+                  id: 'raster-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+            },
+            status: 'partial',
+          },
+        ],
+        [
+          'contributions/codec-astc.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'ASTC Texture',
+            id: 'org.modkitx/astc',
+            limitations: [
+              'The dependency-free MK3 port validates the standalone header, dimensions and compressed block payload but deliberately publishes no raster source without an ASTC decoder.',
+              'The standalone container does not identify linear versus sRGB or LDR versus HDR profiles, so consumers must obtain that semantic from surrounding asset metadata.',
+              'Three-dimensional ASTC decode, HDR output, GPU upload and encoding remain follow-up work.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/astc/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/astc/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'astc',
+                  label: 'ASTC Texture',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['astc'],
+                signatures: [
+                  {
+                    bytesHex: '13aba15c',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'thumbnail', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.image/raster-metadata',
+                  id: 'raster-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+              traitDeclarations: [
+                {
+                  id: 'image.compressed-blocks',
+                  presence: 'may-expose',
+                  representation: 'runtime',
+                },
+              ],
+            },
+            status: 'partial',
+          },
+        ],
+        [
+          'contributions/codec-avif.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'AV1 Image File Format',
+            id: 'org.modkitx/avif',
+            limitations: [
+              'The codec validates ISO BMFF boxes, AVIF brands and selected image properties but deliberately publishes no raster source because AV1 pixels are not decoded.',
+              'Animated AVIF sequence timing, frame selection, item-property association, and write support are not implemented.',
+              'Manifest v1 cannot express the legacy extension-or-signature fallback without turning it into a conjunction; generated routing intentionally uses the extensions while the handwritten compatibility registry retains global structural sniffing.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/avif/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/avif/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'avif',
+                  label: 'AV1 Image File Format',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['avif', 'avifs'],
+                signatures: [
+                  {
+                    bytesHex: '66747970',
+                    from: 'start',
+                    offset: 4,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'thumbnail', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.image/raster-metadata',
+                  id: 'raster-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+            },
+            status: 'partial',
+          },
+        ],
+        [
+          'contributions/codec-basis.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'Basis Universal Texture',
+            id: 'org.modkitx/basis',
+            limitations: [
+              'The dependency-free MK3 port validates the Basis Universal header and slice table but deliberately publishes no raster source without a BasisU transcoder.',
+              'ETC1S/UASTC transcode, GPU block selection, HDR output, write support, video, arrays, cubemaps and volumes remain follow-up work.',
+              'Manifest v1 cannot express the legacy extension-or-signature fallback without turning it into a conjunction; generated routing intentionally uses the extension while the handwritten compatibility registry retains global structural sniffing.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/basis/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/basis/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'basis',
+                  label: 'Basis Universal Texture',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['basis'],
+                signatures: [
+                  {
+                    bytesHex: '7342',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'thumbnail', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.image/raster-metadata',
+                  id: 'raster-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+              traitDeclarations: [
+                {
+                  id: 'image.compressed-blocks',
+                  presence: 'may-expose',
+                  representation: 'runtime',
+                },
+              ],
+            },
+            status: 'partial',
+          },
+        ],
+        [
+          'contributions/codec-bmp.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'Windows Bitmap',
+            id: 'org.modkitx/bmp',
+            limitations: [
+              'The MK3 port decodes bounded uncompressed BI_RGB 24-bit and 32-bit rows to RGBA8 and publishes metadata for other structurally valid bitmap headers.',
+              'Indexed pixels, bitfields, RLE/JPEG/PNG compression, color-profile interpretation, writing, and pixel editing remain unsupported.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/bmp/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/bmp/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'bmp',
+                  label: 'Windows Bitmap',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['bmp'],
+                signatures: [
+                  {
+                    bytesHex: '424d',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'thumbnail', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/raster-image-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.image/raster-metadata',
+                  id: 'raster-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+            },
+            status: 'partial',
+          },
+        ],
+        [
+          'contributions/codec-cur.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'Windows Cursor',
+            id: 'org.modkitx/cur',
+            limitations: [
+              'The MK3 port validates every directory range, reports cursor hotspots, inspects PNG-backed and DIB entries, and decodes the selected uncompressed 24-bit or 32-bit DIB plus its AND mask to RGBA8.',
+              'PNG-backed pixel-region decoding, indexed/bitfield/compressed DIB decoding, animation, writing, and pixel editing remain unsupported.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/cur/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/cur/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'cur',
+                  label: 'Windows Cursor',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['cur'],
+                signatures: [
+                  {
+                    bytesHex: '00000200',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'thumbnail', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/raster-image-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.image/raster-metadata',
+                  id: 'raster-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+            },
+            status: 'partial',
+          },
+        ],
+        [
+          'contributions/codec-dds.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'DirectDraw Surface',
+            id: 'org.modkitx/dds',
+            limitations: [
+              "BC6H and BC7 decoding uses the package's asynchronous WASM-backed path; uncommon DXGI formats remain diagnostic-only.",
+              'Browser main-thread and module-worker software decode use an explicit URL-based ESM/WASM boundary; the host controls where those optional assets are deployed.',
+              'Mip, array-layer, cubemap-face, and volume-slice selection is available through the shared descriptor and generic viewer controls.',
+              'Manifest v1 cannot express the legacy extension-or-signature fallback without turning it into a conjunction; generated routing intentionally uses the extension while the handwritten compatibility registry retains global signature sniffing.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/dds/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/dds/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'dds',
+                  label: 'DirectDraw Surface',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['dds'],
+                signatures: [
+                  {
+                    bytesHex: '44445320',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'thumbnail', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/raster-image-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.image/raster-metadata',
+                  id: 'raster-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+              traitDeclarations: [
+                {
+                  id: 'image.compressed-blocks',
+                  presence: 'may-expose',
+                  representation: 'runtime',
+                },
+              ],
+            },
+            status: 'partial',
+          },
+        ],
+        [
+          'contributions/codec-exr.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'OpenEXR',
+            id: 'org.modkitx/exr',
+            limitations: [
+              'Pixel decode is limited to uncompressed, scanline, single-part, non-deep images with non-subsampled uint32, half, or float channels.',
+              'Decoded RGB or RGBA samples are normalized into an RGBA8 preview; compressed, tiled, multipart, deep, layered, and arbitrary channel views remain inspection-only.',
+              'OpenEXR write support is not implemented.',
+              'Manifest v1 cannot express the legacy extension-or-signature fallback without turning it into a conjunction; generated routing intentionally uses the extension while the handwritten compatibility registry retains global structural sniffing.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/exr/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/exr/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'exr',
+                  label: 'OpenEXR',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['exr'],
+                signatures: [
+                  {
+                    bytesHex: '762f3101',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'thumbnail', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/raster-image-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.image/raster-metadata',
+                  id: 'raster-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+            },
+            status: 'partial',
+          },
+        ],
+        [
+          'contributions/codec-gif.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'Graphics Interchange Format',
+            id: 'org.modkitx/gif',
+            limitations: [
+              'The MK3 port performs a bounded GIF87a/GIF89a block walk and publishes frame, extension, palette, and timing metadata with the original encoded image bytes.',
+              'Native LZW pixel-region decoding, animation playback, timeline transport, writing, and pixel editing remain unsupported.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/gif/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/gif/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'gif',
+                  label: 'Graphics Interchange Format',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['gif'],
+                signatures: [
+                  {
+                    bytesHex: '474946',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'thumbnail', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/raster-image-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.image/raster-metadata',
+                  id: 'raster-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+            },
+            status: 'partial',
+          },
+        ],
+        [
+          'contributions/codec-hdr.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'Radiance RGBE HDR',
+            id: 'org.modkitx/hdr',
+            limitations: [
+              'The MK3 port decodes flat and modern RLE 32-bit_rle_rgbe scanlines, normalizes the declared X/Y orientation, and produces a clamped RGBA8 preview rather than preserving high-dynamic-range samples.',
+              'Writing, exposure/gamma transforms, tone mapping, color-profile interpretation, and pixel editing remain unsupported.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/hdr/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/hdr/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'hdr',
+                  label: 'Radiance RGBE HDR',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['hdr'],
+                signatures: [
+                  {
+                    bytesHex: '233f52414449414e4345',
+                    from: 'start',
+                    offset: 0,
+                  },
+                  {
+                    bytesHex: '233f52474245',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'thumbnail', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/raster-image-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.image/raster-metadata',
+                  id: 'raster-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+            },
+            status: 'supported',
+          },
+        ],
+        [
+          'contributions/codec-ico.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'Windows Icon',
+            id: 'org.modkitx/ico',
+            limitations: [
+              'The MK3 port validates every directory range, inspects PNG-backed and DIB entries, and decodes the selected uncompressed 24-bit or 32-bit DIB plus its AND mask to RGBA8.',
+              'PNG-backed pixel-region decoding, indexed/bitfield/compressed DIB decoding, writing, and pixel editing remain unsupported.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/ico/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/ico/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'ico',
+                  label: 'Windows Icon',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['ico'],
+                signatures: [
+                  {
+                    bytesHex: '00000100',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'thumbnail', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/raster-image-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.image/raster-metadata',
+                  id: 'raster-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+            },
+            status: 'partial',
+          },
+        ],
         [
           'contributions/codec-jpeg.json',
           {
@@ -1308,6 +5565,674 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 },
               ],
             },
+          },
+        ],
+        [
+          'contributions/codec-ktx.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'Khronos Texture v1',
+            id: 'org.modkitx/ktx',
+            limitations: [
+              'The MK3 port validates KTX1 endianness, key/value records, mip/image ranges, arrays, cubemaps, and depth slices; bounded first-image RGBA8 access is limited to uncompressed unsigned-byte RGB/RGBA.',
+              'Compressed block decoding, later mip/layer/face/slice decoding, writing, metadata mutation, and pixel editing remain unsupported.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/ktx/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/ktx/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'ktx',
+                  label: 'Khronos Texture v1',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['ktx'],
+                signatures: [
+                  {
+                    bytesHex: 'ab4b54582031',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'thumbnail', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/raster-image-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.image/raster-metadata',
+                  id: 'raster-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+              traitDeclarations: [
+                {
+                  id: 'image.compressed-blocks',
+                  presence: 'may-expose',
+                  representation: 'runtime',
+                },
+              ],
+            },
+            status: 'partial',
+          },
+        ],
+        [
+          'contributions/codec-ktx2.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'Khronos Texture v2',
+            id: 'org.modkitx/ktx2',
+            limitations: [
+              'The MK3 port validates the KTX2 header, complete level index, DFD/KVD/SGD ranges, dimensions, layers, faces, and supercompression declaration and publishes metadata plus encoded payload access.',
+              'Vulkan-format pixel decoding, Basis transcoding, zlib/zstd supercompression decoding, writing, metadata mutation, and pixel editing remain unsupported.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/ktx2/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/ktx2/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'ktx2',
+                  label: 'Khronos Texture v2',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['ktx2'],
+                signatures: [
+                  {
+                    bytesHex: 'ab4b54582032',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'thumbnail', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/raster-image-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.image/raster-metadata',
+                  id: 'raster-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+              traitDeclarations: [
+                {
+                  id: 'image.compressed-blocks',
+                  presence: 'may-expose',
+                  representation: 'runtime',
+                },
+              ],
+            },
+            status: 'partial',
+          },
+        ],
+        [
+          'contributions/codec-pal.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'Palette image',
+            id: 'org.modkitx/pal',
+            limitations: [
+              'The MK3 port validates and renders raw 256-color Westwood 6-bit/RGB8 palettes, JASC-PAL text, and Microsoft RIFF PAL as a 16 by 16 RGBA8 swatch.',
+              'Palette remapping, writing, metadata mutation, and pixel editing remain unsupported.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/pal/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/pal/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'pal',
+                  label: 'Palette image',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['pal'],
+                signatures: [
+                  {
+                    bytesHex: '4a4153432d50414c',
+                    from: 'start',
+                    offset: 0,
+                  },
+                  {
+                    bytesHex: '50414c20',
+                    from: 'start',
+                    offset: 8,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'thumbnail', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/raster-image-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.image/raster-metadata',
+                  id: 'raster-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+            },
+            status: 'supported',
+          },
+        ],
+        [
+          'contributions/codec-pcx.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'ZSoft Paintbrush PCX',
+            id: 'org.modkitx/pcx',
+            limitations: [
+              'The MK3 port validates PCX headers and bounded raw/RLE rows and decodes 1/2/4/8-bit indexed planes plus 24-bit RGB and 32-bit RGBA planes; indexed files without a usable palette fall back to bit-depth-scaled grayscale.',
+              'Writing, palette mutation, color-management transforms, and pixel editing remain unsupported.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/pcx/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/pcx/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'pcx',
+                  label: 'ZSoft Paintbrush PCX',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['pcx'],
+                signatures: [
+                  {
+                    bytesHex: '0a',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'thumbnail', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/raster-image-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.image/raster-metadata',
+                  id: 'raster-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+              traitDeclarations: [
+                {
+                  id: 'image.palette',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'image.raster',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+              ],
+            },
+            status: 'partial',
+          },
+        ],
+        [
+          'contributions/codec-pkm.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'PKM ETC Texture',
+            id: 'org.modkitx/pkm',
+            limitations: [
+              'The MK3 port validates PKM 1.0 ETC1 and PKM 2.0/ETCPACK identifiers 0, 1, and 3-11, padded dimensions, block geometry, and the exact compressed payload size; retired identifier 2 is rejected.',
+              'ETC/EAC software decoding, GPU upload, mip chains, encoding, and pixel editing remain unsupported; identifiers 9-11 are reported as ETCPACK sRGB extensions.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/pkm/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/pkm/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'pkm',
+                  label: 'PKM ETC Texture',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['pkm'],
+                signatures: [
+                  {
+                    bytesHex: '504b4d203130',
+                    from: 'start',
+                    offset: 0,
+                  },
+                  {
+                    bytesHex: '504b4d203230',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'thumbnail', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/raster-image-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.image/raster-metadata',
+                  id: 'raster-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+              traitDeclarations: [
+                {
+                  id: 'image.compressed-blocks',
+                  presence: 'will-expose',
+                  representation: 'runtime',
+                },
+              ],
+            },
+            status: 'partial',
           },
         ],
         [
@@ -1467,6 +6392,519 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           },
         ],
         [
+          'contributions/codec-pvr.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'PowerVR Texture Container',
+            id: 'org.modkitx/pvr',
+            limitations: [
+              'The MK3 port validates PVR v3 headers and metadata records, walks exact uncompressed custom-format mip ranges, and decodes the first single-surface RGBA8/BGRA8 image when channel type is unsigned normalized.',
+              'Compressed-format software decoding, later mip/surface/face/slice decoding, PVR v2, writing, metadata mutation, and pixel editing remain unsupported.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/pvr/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/pvr/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'pvr',
+                  label: 'PowerVR Texture Container',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['pvr'],
+                signatures: [
+                  {
+                    bytesHex: '50565203',
+                    from: 'start',
+                    offset: 0,
+                  },
+                  {
+                    bytesHex: '03525650',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'thumbnail', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/raster-image-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.image/raster-metadata',
+                  id: 'raster-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+              traitDeclarations: [
+                {
+                  id: 'image.compressed-blocks',
+                  presence: 'may-expose',
+                  representation: 'runtime',
+                },
+              ],
+            },
+            status: 'partial',
+          },
+        ],
+        [
+          'contributions/codec-tga.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'Truevision TGA',
+            id: 'org.modkitx/tga',
+            limitations: [
+              'The compatibility port performs a bounded TGA header walk and decodes raw or RLE non-colormapped truecolor and grayscale payloads while normalizing the declared image origin.',
+              'Color-mapped pixel decoding, TGA writing, metadata editing, and pixel editing remain unsupported.',
+              'Manifest routing uses the TGA 2.0 TRUEVISION-XFILE footer when present; older footerless files remain available through the .tga extension and header plausibility probe.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/tga/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/tga/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'tga',
+                  label: 'Truevision TGA',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['tga'],
+                signatures: [
+                  {
+                    bytesHex: '54525545564953494f4e2d5846494c452e00',
+                    from: 'end',
+                    offset: 18,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'thumbnail', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/raster-image-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.image/raster-metadata',
+                  id: 'raster-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+            },
+            status: 'supported',
+          },
+        ],
+        [
+          'contributions/codec-tiff.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'Tagged Image File Format',
+            id: 'org.modkitx/tiff',
+            limitations: [
+              'The compatibility port performs a bounded endian-aware IFD and strip walk and decodes only the first page of uncompressed chunky RGB8 or RGBA8 files with top-left orientation.',
+              'Compressed, tiled, planar, palette, grayscale, uncommon sample layouts, additional-page pixel decoding, TIFF writing, metadata editing, and pixel editing remain unsupported.',
+              'Manifest v1 cannot express the legacy extension-or-either-endian-signature fallback without turning it into a conjunction; generated routing intentionally uses the extensions while the handwritten compatibility registry retains global structural sniffing.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/tiff/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/tiff/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'tiff',
+                  label: 'Tagged Image File Format',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['tif', 'tiff'],
+                signatures: [
+                  {
+                    bytesHex: '49492a00',
+                    from: 'start',
+                    offset: 0,
+                  },
+                  {
+                    bytesHex: '4d4d002a',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'thumbnail', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/raster-image-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.image/raster-metadata',
+                  id: 'raster-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+            },
+            status: 'partial',
+          },
+        ],
+        [
+          'contributions/codec-webp.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'WebP',
+            id: 'org.modkitx/webp',
+            limitations: [
+              'The DOM-free codec detects and inspects WebP chunks and animation timing but does not decode pixels or encode WebP output.',
+              'Browser-backed preview is a host integration and is not claimed as a portable codec read capability.',
+              'Manifest v1 cannot express the legacy extension-or-signature fallback without turning it into a conjunction; generated routing intentionally uses the extension while the handwritten compatibility registry retains global signature sniffing.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/webp/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/webp/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'webp',
+                  label: 'WebP',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['webp'],
+              },
+              openIntents: ['probe', 'inspect', 'thumbnail', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/raster-image-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.image/raster-metadata',
+                  id: 'raster-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+            },
+            status: 'partial',
+          },
+        ],
+        [
           'contributions/writer-png.json',
           {
             contract: {
@@ -1510,15 +6948,57 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
       ],
       files: [
+        'MIGRATION-NOTES-common-images.json',
         'README.md',
+        'contributions/codec-ani.json',
+        'contributions/codec-astc.json',
+        'contributions/codec-avif.json',
+        'contributions/codec-basis.json',
+        'contributions/codec-bmp.json',
+        'contributions/codec-cur.json',
+        'contributions/codec-dds.json',
+        'contributions/codec-exr.json',
+        'contributions/codec-gif.json',
+        'contributions/codec-hdr.json',
+        'contributions/codec-ico.json',
         'contributions/codec-jpeg.json',
+        'contributions/codec-ktx.json',
+        'contributions/codec-ktx2.json',
+        'contributions/codec-pal.json',
+        'contributions/codec-pcx.json',
+        'contributions/codec-pkm.json',
         'contributions/codec-png.json',
+        'contributions/codec-pvr.json',
+        'contributions/codec-tga.json',
+        'contributions/codec-tiff.json',
+        'contributions/codec-webp.json',
         'contributions/writer-png.json',
         'package.json',
+        'src/ani/codec.js',
+        'src/astc/codec.js',
+        'src/avif/codec.js',
+        'src/basis/codec.js',
+        'src/bmp/codec.js',
+        'src/cur/codec.js',
+        'src/dds/codec.js',
+        'src/exr/codec.js',
         'src/formats/jpeg/codec.js',
         'src/formats/png/codec.js',
+        'src/gif/codec.js',
+        'src/hdr/codec.js',
+        'src/ico/codec.js',
+        'src/ico/container.js',
         'src/index.js',
+        'src/ktx/codec.js',
+        'src/ktx2/codec.js',
         'src/linked.js',
+        'src/pal/codec.js',
+        'src/pcx/codec.js',
+        'src/pkm/codec.js',
+        'src/pvr/codec.js',
+        'src/tga/codec.js',
+        'src/tiff/codec.js',
+        'src/webp/codec.js',
         'src/writers/png-encoder.js',
       ],
       name: 'images',
@@ -1526,30 +7006,44 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:ba958793498de0b12296421a6dd88d559acd6840f9d4a3fec773c90233eff6c7',
+        artifactDigest: 'sha256:a928e54960268b379d5e05b90c0a531ae5778ff55b5dc05405c1045eb83e904a',
         fileDigests: {
-          'README.md': 'sha256:36b0d92f91f21283a22436b6cb1abdc148cbea6eecfb569ff6cdbc47aad6000d',
+          'MIGRATION-NOTES-common-models.json':
+            'sha256:c502295ae0ba2854a5374e12acbd2ef40f0a6f4b0f7797c2817feeb5525c6892',
+          'README.md': 'sha256:9e3a390815c343e83f49d64af633bfc95008937639d9b6d2d6579d87a37a7d5b',
+          'contributions/codec-dae.json':
+            'sha256:aa113ff7fe501aa64dfe9705ef50effce9cab6bfa4e1ccd3d64cbb564ed63e60',
           'contributions/codec-gltf.json':
-            'sha256:ae610dece520da98063020a8fc16752922e382c10502f50cdccdbfeef6a831e6',
+            'sha256:e0175b7acdd05f83940259fc8265d1432747c70628ba8d94afd9cba5e1da4a14',
           'contributions/codec-obj.json':
             'sha256:c5f19c5669efb1fc596a754046e330d0be7f81ff0c514b3620c8460e53b80655',
+          'contributions/codec-ply.json':
+            'sha256:ecba12a9628ed206786e6d7223f7776571502820d4632246fbb53a2d0e608806',
+          'contributions/codec-stl.json':
+            'sha256:b704c4981ff7317294205d407dcbc0e4a1bea3c5b2f350142d511fa8e2de4a91',
           'contributions/codec-uvm.json':
             'sha256:c4bf0ed44a61a3e079d00cb6f2620ebf18239dc5b7e5e86830b02fbc4b495e0e',
           'package.json': 'sha256:3cb0c7419339216558f58910b05411cd6d22a802a5d64ad127bd3396dcd68aa4',
+          'src/dae/codec.js':
+            'sha256:c4803946e94575a6dabbcf450462deb1f09fb8aec105c4a8fa4164009eb49e74',
           'src/formats/gltf/codec.js':
-            'sha256:dd3ad25c8f25709f7856c1266e513566d02f0a2b3c2d7645a5ee0ec99080ad1f',
+            'sha256:a1afb35e953fa4cc50b621fa2625c32e6c94f81073b32869efd75557c469972d',
           'src/formats/gltf/geometry.js':
             'sha256:84740c188cdc88ccf099f4f4c953a083f83273e8d882673797b192e060fc0a37',
           'src/formats/obj/codec.js':
-            'sha256:8fd73e5082c1055982ef4a9b8a790071545feaa564b81f418377295e5cd40071',
+            'sha256:d8da6b21f0acbb7741fa0dd0b8addd913037c235a528d4dade7d4b295e1ca0a9',
           'src/formats/uvm/codec.js':
-            'sha256:96e80dab4fbbf9a2730590883c5ad2bd371a486cedfca742c5b03d87892dfb39',
+            'sha256:5f342ed52bfcb5904f4ba643c3f8a2b51f6e1a68fde196fa572164227e28c180',
           'src/index.js': 'sha256:80f55312f768fe6d50596fe51a929c3334fd08828785b47774af6e6445e87dc8',
           'src/linked.js':
             'sha256:063921842fa3948317ca0c8e97985da3f13a605b4d27f6c09f8c0f52757f9489',
+          'src/ply/codec.js':
+            'sha256:634139c2e75f2bcad975fab07b010f0832dc4a5a0e5bb5ea66bdd7978ccd9e73',
+          'src/stl/codec.js':
+            'sha256:817a71e7cfa1cae95730622521039a5c9ccc0a69a37ad3a428e45247abfa8f2c',
         },
         inventoryRecordId:
-          'artifact:sha256:ba958793498de0b12296421a6dd88d559acd6840f9d4a3fec773c90233eff6c7',
+          'artifact:sha256:a928e54960268b379d5e05b90c0a531ae5778ff55b5dc05405c1045eb83e904a',
       },
       artifactRoot: 'extensions/models/',
       containers: {
@@ -1593,12 +7087,24 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       },
       documentDigests: [
         [
+          'contributions/codec-dae.json',
+          'sha256:aa113ff7fe501aa64dfe9705ef50effce9cab6bfa4e1ccd3d64cbb564ed63e60',
+        ],
+        [
           'contributions/codec-gltf.json',
-          'sha256:ae610dece520da98063020a8fc16752922e382c10502f50cdccdbfeef6a831e6',
+          'sha256:e0175b7acdd05f83940259fc8265d1432747c70628ba8d94afd9cba5e1da4a14',
         ],
         [
           'contributions/codec-obj.json',
           'sha256:c5f19c5669efb1fc596a754046e330d0be7f81ff0c514b3620c8460e53b80655',
+        ],
+        [
+          'contributions/codec-ply.json',
+          'sha256:ecba12a9628ed206786e6d7223f7776571502820d4632246fbb53a2d0e608806',
+        ],
+        [
+          'contributions/codec-stl.json',
+          'sha256:b704c4981ff7317294205d407dcbc0e4a1bea3c5b2f350142d511fa8e2de4a91',
         ],
         [
           'contributions/codec-uvm.json',
@@ -1606,6 +7112,124 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
       ],
       documents: [
+        [
+          'contributions/codec-dae.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'COLLADA DAE model',
+            id: 'org.modkitx/dae',
+            limitations: [
+              'Decoded geometry covers triangles, polylist, and polygons without holes; line topology, controllers, skins, look-at, and skew transforms remain unsupported.',
+              'Materials, images, and animations are inventoried, but external texture resolution, programmable effects, and animation playback are not decoded.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/dae/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/dae/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'dae',
+                  label: 'COLLADA DAE model',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['dae'],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/model-scene-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.model/geometry-metadata',
+                  id: 'geometry-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+            },
+            status: 'partial',
+          },
+        ],
         [
           'contributions/codec-gltf.json',
           {
@@ -1648,16 +7272,28 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               formatRefs: [
                 {
                   formatId: 'gltf',
-                  label: 'glTF 2.x',
+                  label: 'glTF 2.x JSON',
                   mediaType: 'model/gltf+json',
+                },
+                {
+                  formatId: 'glb',
+                  label: 'glTF 2.x binary',
+                  mediaType: 'model/gltf-binary',
                 },
               ],
               implementationTier: {
                 claimed: 1,
               },
               match: {
-                extensions: ['gltf'],
-                mediaTypes: ['model/gltf+json'],
+                extensions: ['gltf', 'glb'],
+                mediaTypes: ['model/gltf+json', 'model/gltf-binary'],
+                signatures: [
+                  {
+                    bytesHex: '676c5446',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
               },
               openIntents: ['probe', 'inspect', 'full', 'export'],
               operations: [
@@ -1917,6 +7553,249 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           },
         ],
         [
+          'contributions/codec-ply.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'PLY polygon mesh',
+            id: 'org.modkitx/ply',
+            limitations: [
+              'PLY 1.0 ASCII, binary little-endian, and binary big-endian element/property records are validated; vertex positions, optional complete normals/UVs, polygon faces, and point clouds are decoded.',
+              'Polygon faces are triangulated as deterministic fans; vertex colours and non-polygon element values are parsed for structural validation but not published in the model primitive.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/ply/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/ply/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'ply',
+                  label: 'PLY polygon mesh',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['ply'],
+                signatures: [
+                  {
+                    bytesHex: '706c79',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/model-scene-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.model/geometry-metadata',
+                  id: 'geometry-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+            },
+            status: 'partial',
+          },
+        ],
+        [
+          'contributions/codec-stl.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'STL triangle mesh',
+            id: 'org.modkitx/stl',
+            limitations: [
+              'ASCII and little-endian binary STL triangle geometry is fully validated and decoded with declared or derived face normals.',
+              'STL does not define units, hierarchy, or standard materials; non-standard binary colour conventions and writing are not implemented.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/stl/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/stl/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'stl',
+                  label: 'STL triangle mesh',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['stl'],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/model-scene-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.model/geometry-metadata',
+                  id: 'geometry-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+            },
+            status: 'partial',
+          },
+        ],
+        [
           'contributions/codec-uvm.json',
           {
             contract: {
@@ -2070,17 +7949,24 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
       ],
       files: [
+        'MIGRATION-NOTES-common-models.json',
         'README.md',
+        'contributions/codec-dae.json',
         'contributions/codec-gltf.json',
         'contributions/codec-obj.json',
+        'contributions/codec-ply.json',
+        'contributions/codec-stl.json',
         'contributions/codec-uvm.json',
         'package.json',
+        'src/dae/codec.js',
         'src/formats/gltf/codec.js',
         'src/formats/gltf/geometry.js',
         'src/formats/obj/codec.js',
         'src/formats/uvm/codec.js',
         'src/index.js',
         'src/linked.js',
+        'src/ply/codec.js',
+        'src/stl/codec.js',
       ],
       name: 'models',
       source: 'extensions/common/models',
@@ -3294,20 +9180,30 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:a05e51792355a5ff9c352af1180d21a99fae36af3444c13e2b8eb5d773a5b66e',
+        artifactDigest: 'sha256:580072f42a3ea09cc8d8d9199248f499b653fd64941255a317bfe8cdde98cca5',
         fileDigests: {
-          'README.md': 'sha256:1b4d8bee3934523fb87f8e64e04da96ece910efd26067195538df1aad6db18e1',
+          'MIGRATION-NOTES-common-vector.json':
+            'sha256:6142c11733f88630fc151541987d9ed21c0f0b2f85cb1ae3e6df930fdc87866c',
+          'README.md': 'sha256:d77c6d61152adf760e489baade6b3421012ed8520e215797295eafbfe9db6979',
+          'contributions/codec-emf.json':
+            'sha256:68f116fab52b53bd26cc484c130964161b3aef4b7f0bd9f67a77d6beb8b996b0',
           'contributions/codec-svg.json':
             'sha256:a7bb54462acb1ea895921c70ba06740e737b191bf43b3443da5bc29b3e3a9e3a',
+          'contributions/codec-wmf.json':
+            'sha256:d7ec5d39e037a57e62046f711c513b162ebc1fb29db83112e9f8476e2323124c',
           'package.json': 'sha256:d3eadfab9fbabc6169aa24f1d5a8de11a051e0fdf916287b8430e6c24a0a6f31',
+          'src/emf/codec.js':
+            'sha256:d0cd245c168715703b16058006e00a6fc7c9e7d5c6370f3e69451ae8cef39040',
           'src/formats/svg/codec.js':
             'sha256:f105319cdc73c079ef7cb8c5f8a6fe572307bffe6be6134a8b5b884c2d4020df',
           'src/index.js': 'sha256:904e9a577bfa759ce7ab355a01d2431961c7f7d3551a8b627a2eb56406948360',
           'src/linked.js':
             'sha256:eb26d9d19582e69f55fe8af85ee59875d77d4553745c95b139bc72a1b5186dba',
+          'src/wmf/codec.js':
+            'sha256:c4ae02f016370193a5db9fc58895f45773e5c2f44e690bc55699440f6b23134a',
         },
         inventoryRecordId:
-          'artifact:sha256:a05e51792355a5ff9c352af1180d21a99fae36af3444c13e2b8eb5d773a5b66e',
+          'artifact:sha256:580072f42a3ea09cc8d8d9199248f499b653fd64941255a317bfe8cdde98cca5',
       },
       artifactRoot: 'extensions/vector/',
       containers: {
@@ -3350,11 +9246,144 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       },
       documentDigests: [
         [
+          'contributions/codec-emf.json',
+          'sha256:68f116fab52b53bd26cc484c130964161b3aef4b7f0bd9f67a77d6beb8b996b0',
+        ],
+        [
           'contributions/codec-svg.json',
           'sha256:a7bb54462acb1ea895921c70ba06740e737b191bf43b3443da5bc29b3e3a9e3a',
         ],
+        [
+          'contributions/codec-wmf.json',
+          'sha256:d7ec5d39e037a57e62046f711c513b162ebc1fb29db83112e9f8476e2323124c',
+        ],
       ],
       documents: [
+        [
+          'contributions/codec-emf.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'Windows Enhanced Metafile',
+            id: 'org.modkitx/emf',
+            limitations: [
+              'Parses bounded EMR_HEADER/EMR_RECTANGLE/EMR_EOF streams, validates declared sizes and record counts, and replays rectangles to a static script-free SVG vector scene.',
+              'Other GDI records, fonts, paths, transforms, clipping, embedded bitmaps, rasterization, editing, and metafile writing are not implemented.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/emf/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/emf/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'emf',
+                  label: 'Windows Enhanced Metafile',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['emf'],
+                signatures: [
+                  {
+                    bytesHex: '20454d46',
+                    from: 'start',
+                    offset: 40,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/vector-scene-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.vector/scene-metadata',
+                  id: 'vector-scene',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+            },
+            status: 'partial',
+          },
+        ],
         [
           'contributions/codec-svg.json',
           {
@@ -3511,28 +9540,170 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             },
           },
         ],
+        [
+          'contributions/codec-wmf.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'Windows Classic Metafile',
+            id: 'org.modkitx/wmf',
+            limitations: [
+              'Parses Aldus placeable and standard WMF headers plus bounded META_RECTANGLE/META_EOF streams, verifies the placeable checksum, and replays rectangles to a static script-free SVG vector scene.',
+              'Non-placeable WMF, other GDI records, fonts, paths, transforms, clipping, embedded bitmaps, rasterization, editing, and metafile writing are not implemented.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/wmf/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/wmf/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'wmf',
+                  label: 'Windows Classic Metafile',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['wmf'],
+                signatures: [
+                  {
+                    bytesHex: 'd7cdc69a',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/vector-scene-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.vector/scene-metadata',
+                  id: 'vector-scene',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+            },
+            status: 'partial',
+          },
+        ],
       ],
       files: [
+        'MIGRATION-NOTES-common-vector.json',
         'README.md',
+        'contributions/codec-emf.json',
         'contributions/codec-svg.json',
+        'contributions/codec-wmf.json',
         'package.json',
+        'src/emf/codec.js',
         'src/formats/svg/codec.js',
         'src/index.js',
         'src/linked.js',
+        'src/wmf/codec.js',
       ],
       name: 'vector',
       source: 'extensions/common/vector',
     },
     {
       artifact: {
-        artifactDigest: 'sha256:7d790261e7a0eda1e122229821004dc005624321961884d33d2f3b5bad818540',
+        artifactDigest: 'sha256:6ba056c22661b25ba02cc9a70ad71db354bb4aeb9c7b12895bdaed96c43f790f',
         fileDigests: {
-          'README.md': 'sha256:5afa854f15f6009e21e2898e7e030e5a246de537162a1e49422e519de299aa91',
+          'MIGRATION-NOTES-common-video.json':
+            'sha256:c0763011bd1bced50f7a30595fdcd3f803571f38245b06b2094f552811517326',
+          'README.md': 'sha256:0f64b53ec49f19297006cfdd6ef5d4489d58e2704d829c98a3cf3b9c245142b8',
+          'contributions/codec-avi.json':
+            'sha256:be48bfa25e6a822da744085ba43c10b7b85b6fa160a1c9c5c8c5fd6588fa9bda',
           'contributions/codec-mp4.json':
             'sha256:2fe649041c4113e80d73ad3ab553446b80a68938156c53857b8f849984858de8',
+          'contributions/codec-mpeg.json':
+            'sha256:b1c74747537236b1cd9d3cae7391746203f86aa92c41af53114dd134c67ab31b',
+          'contributions/codec-ogv.json':
+            'sha256:cd795947d854411b50d462a86b69bd9afd8da5320b6e3efd10c91b0df9417daa',
           'contributions/codec-webm.json':
             'sha256:f92bba4f0c36eb3d03771d86b5aa663421530d3eba1198bc9fd180aebd742a3b',
+          'contributions/codec-wmv.json':
+            'sha256:d1602f73df331c8d3809f5806574d29e523a063d41b2bad5697e10762615b918',
           'package.json': 'sha256:4d546f14e2e5e61392c5558e7111f0e5c07ae5d50c35005b673a66078b5a40dd',
+          'src/avi/codec.js':
+            'sha256:6ff744aa6e4b73ca122c7f8c22c5649bc5f3fd2bcb80b747be09ae289b6fe945',
           'src/formats/mp4/codec.js':
             'sha256:e3793dc0c3e91d2580f23fe51fb1ecaa44e9622c806b4c68ce65e96aceeba3e1',
           'src/formats/webm/codec.js':
@@ -3540,9 +9711,15 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/index.js': 'sha256:fc2cf3b104e31455bd7cf3a68c572cbffcedf72166be2e5362a5dfb4f0bb65b8',
           'src/linked.js':
             'sha256:6dc3134d01e6fe22b456cf13acfe25c4a830d17a30aa5cc445dbf767268fcfe4',
+          'src/mpeg/codec.js':
+            'sha256:4fa9d115085aa9b58422a49ecf4aaec520648c20342fb20ea0e50b6bf1f540b9',
+          'src/ogv/codec.js':
+            'sha256:12a6db85f20403f93f6959d9dbf1cbf734fffbc8cd71ccdc023a25535201c055',
+          'src/wmv/codec.js':
+            'sha256:8111550b59480f6335f1f6bfb54dcc382d22aa32398e83133ef5c440d3327323',
         },
         inventoryRecordId:
-          'artifact:sha256:7d790261e7a0eda1e122229821004dc005624321961884d33d2f3b5bad818540',
+          'artifact:sha256:6ba056c22661b25ba02cc9a70ad71db354bb4aeb9c7b12895bdaed96c43f790f',
       },
       artifactRoot: 'extensions/video/',
       containers: {
@@ -3586,15 +9763,151 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       },
       documentDigests: [
         [
+          'contributions/codec-avi.json',
+          'sha256:be48bfa25e6a822da744085ba43c10b7b85b6fa160a1c9c5c8c5fd6588fa9bda',
+        ],
+        [
           'contributions/codec-mp4.json',
           'sha256:2fe649041c4113e80d73ad3ab553446b80a68938156c53857b8f849984858de8',
+        ],
+        [
+          'contributions/codec-mpeg.json',
+          'sha256:b1c74747537236b1cd9d3cae7391746203f86aa92c41af53114dd134c67ab31b',
+        ],
+        [
+          'contributions/codec-ogv.json',
+          'sha256:cd795947d854411b50d462a86b69bd9afd8da5320b6e3efd10c91b0df9417daa',
         ],
         [
           'contributions/codec-webm.json',
           'sha256:f92bba4f0c36eb3d03771d86b5aa663421530d3eba1198bc9fd180aebd742a3b',
         ],
+        [
+          'contributions/codec-wmv.json',
+          'sha256:d1602f73df331c8d3809f5806574d29e523a063d41b2bad5697e10762615b918',
+        ],
       ],
       documents: [
+        [
+          'contributions/codec-avi.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'Audio Video Interleave',
+            id: 'org.modkitx/avi',
+            limitations: [
+              'Portable inspection validates one classic AVI 1.0 RIFF form, its hdrl/strl/movi hierarchy, core stream headers, and optional idx1 framing; OpenDML multi-RIFF segments and extended indexes are not supported.',
+              'The container reader does not decode inner audio/video frames or palette-change chunks.',
+              'Portable export guarantees raw passthrough only. WebM transcoding and frame extraction require a VideoWasmDecoder injected by the host and are not guaranteed manifest operations.',
+              "Manifest v1 cannot express the compatibility registry's extension-or-signature fallback without requiring both, so generated routing is intentionally narrowed to the AVI extension while the folder-owned detector retains RIFF/AVI signature checks.",
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/avi/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/avi/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'avi',
+                  label: 'Audio Video Interleave',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['avi'],
+              },
+              openIntents: ['probe', 'inspect', 'thumbnail', 'full', 'stream', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/video-media-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.video/container-metadata',
+                  id: 'video-container',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+            },
+            status: 'partial',
+          },
+        ],
         [
           'contributions/codec-mp4.json',
           {
@@ -3767,6 +10080,264 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 },
               ],
             },
+          },
+        ],
+        [
+          'contributions/codec-mpeg.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'MPEG-1/2 Video',
+            id: 'org.modkitx/mpeg',
+            limitations: [
+              'The portable implementation recognizes MPEG start codes or repeated transport-stream sync bytes and reports a bounded packet inventory; it does not parse complete program tables or decode elementary streams.',
+              'Raw or MPEG export preserves source bytes; thumbnail extraction and WebM conversion require a separately injected video decoder.',
+              'Playable conversion is host integration and is not declared as a codec operation.',
+              'Declarative routing is detector-first because manifest v1 cannot express the legacy extension-or-MPEG-signature behavior without making the evidence conjunctive.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/mpeg/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/mpeg/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'mpeg',
+                  label: 'MPEG-1/2 Video',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                signatures: [
+                  {
+                    bytesHex: '000001ba',
+                    from: 'start',
+                    offset: 0,
+                  },
+                  {
+                    bytesHex: '000001b3',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'thumbnail', 'full', 'stream', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/video-media-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.video/container-metadata',
+                  id: 'video-container',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+            },
+            status: 'partial',
+          },
+        ],
+        [
+          'contributions/codec-ogv.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'Ogg Theora Video',
+            id: 'org.modkitx/ogv',
+            limitations: [
+              'Detection requires an Ogg stream with a Theora or Skeleton marker so generic Ogg audio is not claimed as video.',
+              'Container inspection recognizes Theora and Vorbis markers and limited dimensions rather than parsing the complete Ogg page and stream structure.',
+              'Export preserves the original bytes for Ogg Theora or raw targets; remuxing and transcoding are not implemented by this codec.',
+              'Playable conversion only packages source bytes and a MIME type for a host player. Actual Theora playback is host-dependent and is not declared as a codec operation.',
+              'Declarative routing is detector-first because manifest v1 cannot express the legacy extension-or-stream-sniffer behavior without making the evidence conjunctive.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/ogv/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/ogv/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'ogv',
+                  label: 'Ogg Theora Video',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                signatures: [
+                  {
+                    bytesHex: '807468656f7261',
+                    from: 'start',
+                    offset: 28,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'thumbnail', 'full', 'stream', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/video-media-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.video/container-metadata',
+                  id: 'video-container',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+            },
+            status: 'partial',
           },
         ],
         [
@@ -3943,16 +10514,145 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             },
           },
         ],
+        [
+          'contributions/codec-wmv.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'Windows Media Video / ASF',
+            id: 'org.modkitx/wmv',
+            limitations: [
+              'Portable inspection validates ASF Header, File Properties, Stream Properties, Header Extension, and following Data Object framing; packet payloads, indexes, and optional header objects are not interpreted.',
+              'The container reader identifies standard video/audio format structures but does not decode elementary streams or decrypt DRM content.',
+              'Portable export guarantees raw passthrough only. WebM transcoding and frame extraction require a VideoWasmDecoder injected by the host and are not guaranteed manifest operations.',
+              "Manifest v1 cannot express the compatibility registry's extension-or-signature fallback without requiring both, so generated routing is intentionally narrowed to the WMV/ASF extensions while the folder-owned detector retains the ASF header GUID check.",
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/wmv/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/wmv/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'wmv',
+                  label: 'Windows Media Video / ASF',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['wmv', 'asf'],
+              },
+              openIntents: ['probe', 'inspect', 'thumbnail', 'full', 'stream', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/video-media-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.video/container-metadata',
+                  id: 'video-container',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+            },
+            status: 'partial',
+          },
+        ],
       ],
       files: [
+        'MIGRATION-NOTES-common-video.json',
         'README.md',
+        'contributions/codec-avi.json',
         'contributions/codec-mp4.json',
+        'contributions/codec-mpeg.json',
+        'contributions/codec-ogv.json',
         'contributions/codec-webm.json',
+        'contributions/codec-wmv.json',
         'package.json',
+        'src/avi/codec.js',
         'src/formats/mp4/codec.js',
         'src/formats/webm/codec.js',
         'src/index.js',
         'src/linked.js',
+        'src/mpeg/codec.js',
+        'src/ogv/codec.js',
+        'src/wmv/codec.js',
       ],
       name: 'video',
       source: 'extensions/common/video',
