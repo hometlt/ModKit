@@ -33,6 +33,13 @@ export const READY_APP_EXTENSIONS = Object.freeze({
       'org.modkitx/model-uvm',
     ]),
   }),
+  'rendering-3d': Object.freeze({
+    coordinate: 'org.modkitx/rendering-3d',
+    contributions: Object.freeze([
+      'org.modkitx/browser-webgl-renderer',
+      'org.modkitx/headless-renderer',
+    ]),
+  }),
   'text-delimited': Object.freeze({
     coordinate: 'org.modkitx/text-delimited',
     contributions: Object.freeze([
@@ -209,7 +216,7 @@ const structuredText = Object.freeze([
   'text-toml',
 ])
 const media = Object.freeze(['images', 'vector', 'audio', 'video'])
-const modelsAndArchives = Object.freeze(['models', 'archives'])
+const modelsAndArchives = Object.freeze(['models', 'rendering-3d', 'archives'])
 const fullCodecs = Object.freeze([...structuredText, 'documents', ...media, ...modelsAndArchives])
 const mk2Extended = Object.freeze([
   'mk2-blizzard-casc',

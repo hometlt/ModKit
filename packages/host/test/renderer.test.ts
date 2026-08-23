@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { createHash } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { uint64 } from '@modkitx-x3/core'
 import { createHostTopology } from '@modkitx-x3/sdk'
@@ -14,12 +15,52 @@ import {
   type LinkedExtension,
 } from '@modkitx-x3/host'
 import { resolveSceneRenderer } from '@modkitx-x3/host/renderer'
+import type { SceneRenderer } from '@modkitx-x3/sdk/renderer'
+import { sceneRendererContractSuite } from './scene-renderer-contract.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const { softwareRenderer } = (await import(
   pathToFileURL(join(repoRoot, 'extensions', '_reference', 'software-renderer', 'src', 'linked.js'))
     .href
 )) as { readonly softwareRenderer: LinkedExtension }
+const renderingRoot = join(repoRoot, 'extensions', 'common', 'rendering-3d')
+const { rendering3d } = (await import(
+  pathToFileURL(join(renderingRoot, 'src', 'linked.js')).href
+)) as { readonly rendering3d: LinkedExtension }
+const referenceModule = (await import(
+  pathToFileURL(
+    join(repoRoot, 'extensions', '_reference', 'software-renderer', 'src', 'provider.js'),
+  ).href
+)) as RendererModule
+const headlessModule = (await import(
+  pathToFileURL(join(renderingRoot, 'src', 'headless.js')).href
+)) as RendererModule
+const { encodeRgbaPng } = (await import(
+  pathToFileURL(join(renderingRoot, 'src', 'png.js')).href
+)) as {
+  encodeRgbaPng(frame: { width: number; height: number; rgba: Uint8Array }): Promise<Uint8Array>
+}
+
+interface RendererModule {
+  createProvider(selection: {
+    contract: 'common.render/scene-3d'
+    major: 1
+    offerId: string
+    facet: { outputKind: 'rgba8' }
+  }): { value: SceneRenderer }
+}
+
+function providerRenderer(module: RendererModule): SceneRenderer {
+  return module.createProvider({
+    contract: 'common.render/scene-3d',
+    major: 1,
+    offerId: 'contract-suite',
+    facet: { outputKind: 'rgba8' },
+  }).value
+}
+
+sceneRendererContractSuite('reference software', () => providerRenderer(referenceModule))
+sceneRendererContractSuite('product headless', () => providerRenderer(headlessModule))
 
 const REALM = 'org.modkitx.test/renderer-host'
 const topology = createHostTopology({
@@ -59,7 +100,7 @@ let composition: HostComposition
 let definitions: ReturnType<typeof createBundledServiceDefinitionRegistry>
 
 beforeAll(async () => {
-  const linked = linkedExtensionInputs([softwareRenderer])
+  const linked = linkedExtensionInputs([softwareRenderer, rendering3d])
   const executionBackends = createExecutionBackendRegistry([linkedInProcessBackend(linked.modules)])
   composition = await createHostComposition({
     topology,
@@ -122,6 +163,47 @@ describe('standard scene renderer contract and software provider', () => {
         }
       }
       expect(redPixels).toBe(frame.statistics.fragments)
+    } finally {
+      await resolution.release()
+    }
+  })
+
+  it('routes the product headless provider and produces a deterministic PNG fixture', async () => {
+    const resolution = await resolveSceneRenderer({
+      services: { ...composition, serviceDefinitions: definitions },
+      rendererId: 'modkitx.headless',
+      outputKind: 'rgba8',
+      grant: { id: 'renderer-test-headless', classes: [] },
+      budgets: activationBudget,
+    })
+    expect(resolution.state).toBe('resolved')
+    if (resolution.state !== 'resolved') throw new Error('headless renderer did not resolve')
+    try {
+      const frame = await resolution.renderer.render({
+        scene: {
+          materials: [{ id: 'blue', baseColor: [0.1, 0.3, 1, 1] }],
+          primitives: [
+            {
+              id: 'triangle',
+              topology: 'triangles',
+              positions: new Float32Array([-0.75, -0.75, 0, 0.75, -0.75, 0, 0, 0.75, 0]),
+              indices: new Uint32Array([0, 1, 2]),
+              materialId: 'blue',
+            },
+          ],
+        },
+        camera: { viewProjection: identity() },
+        viewport: { width: 32, height: 32 },
+        clearColor: [0.02, 0.03, 0.04, 1],
+        outputKind: 'rgba8',
+      })
+      const first = await encodeRgbaPng(frame)
+      const second = await encodeRgbaPng(frame)
+      expect(second).toEqual(first)
+      expect(Array.from(first.subarray(0, 8))).toEqual([137, 80, 78, 71, 13, 10, 26, 10])
+      expect(createHash('sha256').update(first).digest('hex')).toBe(
+        '794eddf238b7062203d8be5e2d9fd9391e13ea1889cc6ad7e8486295822d840b',
+      )
     } finally {
       await resolution.release()
     }

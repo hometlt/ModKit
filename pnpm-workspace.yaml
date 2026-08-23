@@ -17,6 +17,7 @@ packages:
   - 'extensions/common/images'
   - 'extensions/common/vector'
   - 'extensions/common/models'
+  - 'extensions/common/rendering-3d'
   - 'extensions/common/video'
   - 'extensions/common/text-json'
   - 'extensions/common/text-delimited'

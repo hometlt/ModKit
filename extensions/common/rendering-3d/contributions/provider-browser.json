@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/service-provider-contribution",
+    "major": 1
+  },
+  "id": "org.modkitx/browser-webgl-renderer",
+  "displayName": "Browser WebGL 3D renderer",
+  "runtimeVariants": [
+    {
+      "variantId": "browser-worker",
+      "entrypoint": "./src/browser.js",
+      "target": {
+        "environments": ["browser-worker"]
+      },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "provides": [
+      {
+        "offerId": "browser-webgl-renderer-v1",
+        "contract": "common.render/scene-3d",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": {
+          "rendererIds": ["modkitx.browser-webgl"],
+          "outputKinds": ["rgba8"]
+        }
+      }
+    ],
+    "lifecycleScope": "session"
+  }
+}
