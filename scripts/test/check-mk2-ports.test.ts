@@ -16,11 +16,15 @@ const portedModule = 'export const abiVersion = 1\n'
 
 afterAll(() => rmSync(scratch, { recursive: true, force: true }))
 
-function modulePath(codec: string): string {
-  const path = join(root, 'sample-family', 'src', codec, 'codec.js')
+function modulePath(codec: string, family = 'sample-family'): string {
+  const path = join(root, family, 'src', codec, 'codec.js')
   mkdirSync(dirname(path), { recursive: true })
   return path
 }
+
+// The scanned group is named after the root directory, so a relocated family is a renamed
+// key rather than a retired one.
+const key = (family: string) => `extensions/${family}`
 
 function run() {
   return spawnSync(process.execPath, [checker, '--root', root, '--ratchet', ratchet], {
@@ -32,11 +36,18 @@ describe('MK2 port ratchet', () => {
   it('prints progress and rejects regressions, disguised stubs, and stale advances', () => {
     writeFileSync(modulePath('pending'), pendingModule)
     writeFileSync(modulePath('ported'), portedModule)
-    writeFileSync(ratchet, JSON.stringify({ schemaVersion: 1, families: { 'sample-family': 1 } }))
+    writeFileSync(
+      ratchet,
+      JSON.stringify({
+        schemaVersion: 2,
+        minimumTotal: 1,
+        families: { [key('sample-family')]: 1 },
+      }),
+    )
 
     const clean = run()
     expect(clean.status).toBe(0)
-    expect(clean.stdout).toContain('sample-family')
+    expect(clean.stdout).toContain(key('sample-family'))
     expect(clean.stdout).toMatch(/TOTAL\s+2\s+1\s+1/)
 
     writeFileSync(modulePath('ported'), pendingModule)
@@ -57,5 +68,33 @@ describe('MK2 port ratchet', () => {
     const advanced = run()
     expect(advanced.status).toBe(1)
     expect(advanced.stderr).toContain('ratchet is behind (1; current 2)')
+  })
+
+  it('rejects a family that disappears together with its ratchet entry', () => {
+    rmSync(join(root, 'sample-family'), { recursive: true, force: true })
+    writeFileSync(modulePath('kept', 'staying-family'), portedModule)
+    writeFileSync(modulePath('moved', 'leaving-family'), portedModule)
+    const entries = { [key('staying-family')]: 1, [key('leaving-family')]: 1 }
+    writeFileSync(ratchet, JSON.stringify({ schemaVersion: 2, minimumTotal: 2, families: entries }))
+    expect(run().status).toBe(0)
+
+    // Removing the directory alone is already visible as a degraded family.
+    rmSync(join(root, 'leaving-family'), { recursive: true, force: true })
+    const orphaned = run()
+    expect(orphaned.status).toBe(1)
+    expect(orphaned.stderr).toContain('port count degraded from 1 to 0')
+
+    // Removing its entry in the same breath is the case that used to pass silently.
+    writeFileSync(
+      ratchet,
+      JSON.stringify({
+        schemaVersion: 2,
+        minimumTotal: 2,
+        families: { [key('staying-family')]: 1 },
+      }),
+    )
+    const retired = run()
+    expect(retired.status).toBe(1)
+    expect(retired.stderr).toContain('total port count degraded from 2 to 1')
   })
 })
