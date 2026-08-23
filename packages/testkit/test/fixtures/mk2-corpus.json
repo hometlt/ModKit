@@ -573,7 +573,7 @@
       "note": "Little-endian AKPK package with one 20-byte sound-table record and a bounded WEM payload"
     },
     {
-      "extension": "mk2/common-vector",
+      "extension": "common/vector",
       "contributionId": "org.modkitx/emf",
       "corpus": "synthetic",
       "sample": "minimal.emf",
@@ -584,7 +584,7 @@
       "note": "MS-EMF header, one bounded EMR_RECTANGLE and terminal EMR_EOF replayed to a secure SVG scene"
     },
     {
-      "extension": "mk2/common-vector",
+      "extension": "common/vector",
       "contributionId": "org.modkitx/wmf",
       "corpus": "synthetic",
       "sample": "minimal.wmf",
@@ -669,8 +669,8 @@
       "note": "Tiberian Sun MIX with an unencrypted (checksummed) header"
     },
     {
-      "extension": "mk2/common-vector",
-      "contributionId": "org.modkitx/svg",
+      "extension": "common/vector",
+      "contributionId": "org.modkitx/vector-svg",
       "corpus": "real",
       "sample": "-references/m3/packages/three-m3-loader/docs/favicon.svg",
       "minimumConfidence": 0.6,

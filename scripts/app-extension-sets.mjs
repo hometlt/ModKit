@@ -150,7 +150,7 @@ export const READY_APP_EXTENSIONS = Object.freeze({
   }),
   vector: Object.freeze({
     coordinate: 'org.modkitx/vector',
-    contributions: Object.freeze(['org.modkitx/vector-svg']),
+    contributions: Object.freeze(['org.modkitx/vector-svg', 'org.modkitx/emf', 'org.modkitx/wmf']),
   }),
   video: Object.freeze({
     coordinate: 'org.modkitx/video',

@@ -73,6 +73,7 @@ const RELOCATED_FAMILIES = new Set([
   'common-images',
   'common-archives',
   'common-audio',
+  'common-vector',
 ])
 
 if (!isMk2Root(mk2Root)) {
