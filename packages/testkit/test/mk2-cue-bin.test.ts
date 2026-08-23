@@ -18,8 +18,8 @@ const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const codecPath = join(
   repoRoot,
   'extensions',
-  'mk2',
-  'common-containers',
+  'common',
+  'containers',
   'src',
   'ps1-cue-bin',
   'codec.js',

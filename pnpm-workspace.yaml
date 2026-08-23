@@ -14,6 +14,7 @@ packages:
   - 'extensions/codec-kit/*'
   - 'extensions/common/archives'
   - 'extensions/common/audio'
+  - 'extensions/common/containers'
   - 'extensions/common/images'
   - 'extensions/common/vector'
   - 'extensions/common/models'

@@ -340,7 +340,7 @@
       "note": "PE32 x86 console image with a complete optional header and one raw .text section exposed as an inert extractable entry"
     },
     {
-      "extension": "mk2/common-containers",
+      "extension": "common/containers",
       "contributionId": "org.modkitx/ps1-cue-bin",
       "corpus": "synthetic",
       "sample": "minimal.cue",

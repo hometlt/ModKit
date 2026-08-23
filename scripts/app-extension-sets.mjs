@@ -36,6 +36,10 @@ export const READY_APP_EXTENSIONS = Object.freeze({
       'org.modkitx/wav',
     ]),
   }),
+  containers: Object.freeze({
+    coordinate: 'org.modkitx/containers',
+    contributions: Object.freeze(['org.modkitx/ps1-cue-bin']),
+  }),
   documents: Object.freeze({
     coordinate: 'org.modkitx/documents',
     contributions: Object.freeze(['org.modkitx/document-markdown', 'org.modkitx/document-rtf']),
@@ -222,7 +226,13 @@ const structuredText = Object.freeze([
 ])
 const media = Object.freeze(['images', 'vector', 'audio', 'video'])
 const modelsAndArchives = Object.freeze(['models', 'rendering-3d', 'archives'])
-const fullCodecs = Object.freeze([...structuredText, 'documents', ...media, ...modelsAndArchives])
+const fullCodecs = Object.freeze([
+  ...structuredText,
+  'documents',
+  ...media,
+  ...modelsAndArchives,
+  'containers',
+])
 const mk2Extended = Object.freeze([
   'blizzard-casc',
   'blizzard-models',
