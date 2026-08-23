@@ -16,7 +16,7 @@
     },
     {
       "format": "m3",
-      "environment": "MODKIT_PARITY_M3_FILE",
+      "path": "packages/testkit/test/fixtures/mk2-synthetic/triangle.m3",
       "x3Extension": "extensions/mk2/blizzard-models",
       "canonicalModule": "extensions/blizzard/starcraft-2/codecs/m3/src/index.ts",
       "canonicalExport": "createM3ModelCodec",

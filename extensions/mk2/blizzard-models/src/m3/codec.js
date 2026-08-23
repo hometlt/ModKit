@@ -29,7 +29,7 @@ function parseM3(bytes, maxNodes) {
   const view = viewOf(bytes)
   const indexOffset = view.getUint32(4, true)
   const indexCount = view.getUint32(8, true)
-  if (indexCount > maxNodes) throw new RangeError('M3 section index exceeds the node budget')
+  if (indexCount > maxNodes) throw new RangeError('M3 section index exceeds maxNodes budget')
   const indexBytes = indexCount * 16
   if (
     !Number.isSafeInteger(indexBytes) ||
@@ -63,7 +63,7 @@ function parseM3(bytes, maxNodes) {
   return Object.freeze({ tag, indexOffset, sections: Object.freeze(sections) })
 }
 
-function sceneOf(model) {
+function metadataSceneOf(model) {
   const sectionNodes = model.sections.map(section => ({
     id: `section/${section.index}`,
     name: `${section.tag} v${section.version}`,
@@ -96,6 +96,31 @@ function sceneOf(model) {
   })
 }
 
+function decodedSceneOf(model, geometry) {
+  return createModelSceneSource({
+    info: {
+      scenes: 1,
+      nodes: geometry.nodes.length,
+      meshes: geometry.meshes.length,
+      primitives: geometry.primitives.length,
+      materials: model.sections.filter(section => section.tag.startsWith('MAT')).length,
+      textures: model.sections.filter(section => section.tag === 'LAYR').length,
+      animations: model.sections.filter(section => section.tag === 'SEQS').length,
+      ...(geometry.bounds === undefined ? {} : { bounds: geometry.bounds }),
+      geometryAccess: 'decoded',
+    },
+    nodes: geometry.nodes,
+    meshes: geometry.meshes,
+    primitives: geometry.primitives,
+  })
+}
+
+async function geometryOf(bytes, budget) {
+  if (globalThis.process?.versions?.node === undefined) return undefined
+  const { decodeM3Geometry } = await import('./geometry.node.js')
+  return decodeM3Geometry(bytes, budget)
+}
+
 const definition = Object.freeze({
   id: ID,
   version: '1.0.0',
@@ -108,6 +133,7 @@ const definition = Object.freeze({
   },
   async inspect(bytes, context) {
     const model = parseM3(bytes, context.budget.maxNodes)
+    const geometry = await geometryOf(bytes, context.budget)
     const tree = createTreeDataSource({
       kind: 'model',
       label: model.tag,
@@ -118,14 +144,26 @@ const definition = Object.freeze({
         preview: `v${section.version}, ${section.repetitions} record(s), ${section.byteLength} bytes`,
       })),
     })
-    const scene = sceneOf(model)
+    const scene =
+      geometry === undefined || geometry.primitives.length === 0
+        ? metadataSceneOf(model)
+        : decodedSceneOf(model, geometry)
+    const info = await scene.info()
+    const geometryAccess = info.geometryAccess
     return {
       summary: {
         format: 'm3',
         container: model.tag,
         sections: model.sections.length,
         sectionTags: [...new Set(model.sections.map(section => section.tag))],
-        geometryAccess: 'metadata-only',
+        geometryAccess,
+        nodes: info.nodes,
+        meshes: info.meshes,
+        primitives: info.primitives,
+        scenes: info.scenes,
+        materials: info.materials,
+        textures: info.textures,
+        animations: info.animations,
       },
       metadata: [
         {
@@ -135,11 +173,26 @@ const definition = Object.freeze({
             { key: 'container', value: model.tag },
             { key: 'indexOffset', value: model.indexOffset },
             { key: 'sections', value: model.sections.length },
-            { key: 'geometryAccess', value: 'metadata-only' },
+            { key: 'geometryAccess', value: geometryAccess },
+            { key: 'nodes', value: info.nodes },
+            { key: 'meshes', value: info.meshes },
+            { key: 'primitives', value: info.primitives },
+            { key: 'scenes', value: info.scenes },
+            { key: 'materials', value: info.materials },
+            { key: 'textures', value: info.textures },
+            { key: 'animations', value: info.animations },
           ],
         },
       ],
       traits: [
+        ...(geometryAccess === 'decoded'
+          ? [
+              {
+                id: 'model.geometry',
+                parameters: { meshes: info.meshes, primitives: info.primitives },
+              },
+            ]
+          : []),
         { id: 'structure.hierarchy', parameters: { sections: model.sections.length } },
         { id: 'content.binary', parameters: { bytes: String(bytes.byteLength) } },
       ],
@@ -147,9 +200,9 @@ const definition = Object.freeze({
         'common.view/tree-data-source': tree,
         'common.view/model-scene-source': scene,
       },
-      maxDecodedBytes: BigInt(bytes.byteLength),
+      maxDecodedBytes: BigInt(Math.max(bytes.byteLength, geometry?.decodedBytes ?? 0)),
       unsupportedFeatures: [
-        'decoded-geometry-buffers',
+        ...(geometryAccess === 'decoded' ? [] : ['decoded-geometry-buffers']),
         'materials',
         'textures',
         'skeleton',

@@ -24,7 +24,7 @@
     "The browser-main runtime embeds structures.xml; browser-worker remains unavailable until its XML parser path has dedicated worker coverage.",
     "M3A external-animation sidecars are resolved by the runtime; the v1 companions field names codec IDs rather than same-codec path patterns.",
     "Game support associations remain documented in the codec README until game manifests land in Slice C3.",
-    "The MK3 port indexes MD33/MD34 sections and publishes a metadata-only scene; decoded geometry, materials, skeletons, animations, external M3A sidecars, and writing remain pending."
+    "Node runtimes decode M3 region positions, indices, normals, and the first UV channel; materials, skeletons, animations, external M3A sidecars, browser-worker geometry, and writing remain pending."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "m3", "label": "StarCraft II M3/M3A" }],

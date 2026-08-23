@@ -7,8 +7,8 @@
       "format": "gltf",
       "state": "compared",
       "sample": "scripts/parity/fixtures/triangle.gltf",
-      "classification": "X3 беднее",
-      "missing": ["geometry:decoded", "metadata:primitives"],
+      "classification": "X3 богаче",
+      "missing": [],
       "extra": [
         "operation:asset.validate",
         "operation:export.raw",
@@ -67,13 +67,14 @@
         ],
         "sourceFailures": [],
         "operations": ["asset.validate", "export.raw", "view.inspect"],
-        "geometryAccess": "metadata-only",
+        "geometryAccess": "decoded",
         "metadata": {
           "version": "2.0",
           "generator": "modkitX3 parity fixture",
           "scenes": 1,
           "nodes": 1,
           "meshes": 1,
+          "primitives": 1,
           "materials": 0,
           "textures": 0,
           "animations": 0,
@@ -81,10 +82,12 @@
           "externalResources": 0
         },
         "features": [
+          "geometry:decoded",
           "metadata:animations",
           "metadata:materials",
           "metadata:meshes",
           "metadata:nodes",
+          "metadata:primitives",
           "metadata:scenes",
           "metadata:textures",
           "operation:asset.validate",
@@ -103,17 +106,8 @@
       "format": "glb",
       "state": "compared",
       "sample": "scripts/parity/fixtures/triangle.gltf",
-      "classification": "X3 беднее",
-      "missing": [
-        "geometry:decoded",
-        "metadata:animations",
-        "metadata:materials",
-        "metadata:meshes",
-        "metadata:nodes",
-        "metadata:primitives",
-        "metadata:scenes",
-        "metadata:textures"
-      ],
+      "classification": "X3 богаче",
+      "missing": [],
       "extra": [
         "operation:asset.validate",
         "operation:export.raw",
@@ -163,16 +157,31 @@
         ],
         "sourceFailures": [],
         "operations": ["asset.validate", "export.raw", "view.inspect"],
-        "geometryAccess": "metadata-only",
+        "geometryAccess": "decoded",
         "metadata": {
           "version": 2,
           "declaredBytes": 876,
           "chunks": 2,
           "binaryBytes": 104,
           "generator": "modkitX3 parity fixture",
-          "extensionsUsed": ""
+          "extensionsUsed": "",
+          "scenes": 1,
+          "nodes": 1,
+          "meshes": 1,
+          "primitives": 1,
+          "materials": 0,
+          "textures": 0,
+          "animations": 0
         },
         "features": [
+          "geometry:decoded",
+          "metadata:animations",
+          "metadata:materials",
+          "metadata:meshes",
+          "metadata:nodes",
+          "metadata:primitives",
+          "metadata:scenes",
+          "metadata:textures",
           "operation:asset.validate",
           "operation:export.raw",
           "operation:view.inspect",
@@ -184,8 +193,90 @@
     },
     {
       "format": "m3",
-      "state": "skipped",
-      "detail": "MODKIT_PARITY_M3_FILE is not set"
+      "state": "compared",
+      "sample": "packages/testkit/test/fixtures/mk2-synthetic/triangle.m3",
+      "classification": "X3 богаче",
+      "missing": [],
+      "extra": [
+        "operation:asset.validate",
+        "operation:export.raw",
+        "operation:view.inspect",
+        "source:common.view/byte-range-source",
+        "source:common.view/tree-data-source"
+      ],
+      "canonical": {
+        "formatId": "m3",
+        "summary": {
+          "scenes": 1,
+          "nodes": 0,
+          "meshes": 1,
+          "primitives": 1,
+          "materials": 1,
+          "textures": 0,
+          "animations": 1
+        },
+        "declaredSources": ["common.view/model-scene-source"],
+        "actualSources": ["common.view/model-scene-source"],
+        "operations": [],
+        "geometryAccess": "decoded",
+        "features": [
+          "geometry:decoded",
+          "metadata:animations",
+          "metadata:materials",
+          "metadata:meshes",
+          "metadata:nodes",
+          "metadata:primitives",
+          "metadata:scenes",
+          "metadata:textures",
+          "source:common.view/model-scene-source"
+        ]
+      },
+      "x3": {
+        "available": true,
+        "formatId": "m3",
+        "declaredSources": [
+          "common.view/byte-range-source",
+          "common.view/model-scene-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/byte-range-source",
+          "common.view/model-scene-source",
+          "common.view/tree-data-source"
+        ],
+        "sourceFailures": [],
+        "operations": ["asset.validate", "export.raw", "view.inspect"],
+        "geometryAccess": "decoded",
+        "metadata": {
+          "container": "MD34",
+          "indexOffset": 10944,
+          "sections": 63,
+          "geometryAccess": "decoded",
+          "nodes": 1,
+          "meshes": 1,
+          "primitives": 1,
+          "scenes": 1,
+          "materials": 2,
+          "textures": 18,
+          "animations": 1
+        },
+        "features": [
+          "geometry:decoded",
+          "metadata:animations",
+          "metadata:materials",
+          "metadata:meshes",
+          "metadata:nodes",
+          "metadata:primitives",
+          "metadata:scenes",
+          "metadata:textures",
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/model-scene-source",
+          "source:common.view/tree-data-source"
+        ]
+      }
     }
   ]
 }

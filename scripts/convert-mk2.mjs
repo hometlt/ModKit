@@ -907,6 +907,7 @@ function packageJsonSource(group) {
     dependencies: {
       [CODEC_KIT]: 'workspace:*',
       ...(group.directory === 'blizzard-casc' ? { fflate: '^0.8.3' } : {}),
+      ...(group.directory === 'blizzard-models' ? { '@xmldom/xmldom': '^0.9.10' } : {}),
     },
   }
 }

@@ -59,7 +59,7 @@ describe('installed StarCraft II corpus', () => {
   )
 
   it.skipIf(!existsSync(join(sc2Root, ...m3Sample.split('/'))))(
-    'indexes a real installed M3 model and publishes its metadata-only scene',
+    'decodes a real installed M3 model and publishes its scene',
     async () => {
       const [outcome] = await runMk2Acceptance([m3], { repoRoot, mk2Root: sc2Root })
       expect(outcome).toMatchObject({

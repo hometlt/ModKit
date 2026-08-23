@@ -16,7 +16,7 @@ import {
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const modelRoot = join(repoRoot, 'extensions', 'mk2', 'common-models')
 const fixtureRoot = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
-const formats = ['obj', 'ply', 'stl', 'dae', 'gltf', 'uvm'] as const
+const formats = ['obj', 'ply', 'stl', 'dae', 'gltf', 'uvm', 'm3'] as const
 type Format = (typeof formats)[number]
 const fixtureNames: Record<Format, string> = {
   obj: 'minimal.obj',
@@ -25,6 +25,8 @@ const fixtureNames: Record<Format, string> = {
   dae: 'minimal.dae',
   gltf: 'minimal.gltf',
   uvm: 'minimal.uvm.glb',
+  // Generated from the canonical encodeM3RenderModel triangle; no game-owned file is vendored.
+  m3: 'triangle.m3',
 }
 const primitiveIds: Record<Format, string> = {
   obj: 'primitive-0',
@@ -33,6 +35,7 @@ const primitiveIds: Record<Format, string> = {
   dae: 'geometry-0-primitive-0',
   gltf: 'mesh-0-primitive-0',
   uvm: 'mesh-0-primitive-0',
+  m3: 'division-0-region-0',
 }
 
 const budget: ResourceBudget = {
@@ -105,7 +108,11 @@ function inputFor(source: ArtifactByteSource): AssetInput {
 }
 
 async function codecFor(format: Format): Promise<Codec> {
-  const module = (await import(pathToFileURL(join(modelRoot, 'src', format, 'codec.js')).href)) as {
+  const extensionRoot =
+    format === 'm3' ? join(repoRoot, 'extensions', 'mk2', 'blizzard-models') : modelRoot
+  const module = (await import(
+    pathToFileURL(join(extensionRoot, 'src', format, 'codec.js')).href
+  )) as {
     createCodec(context: ContributionContext): Codec
   }
   return module.createCodec(context)
@@ -154,13 +161,15 @@ describe('ported MK2 geometry model codecs', () => {
 
     const lease = await session.dataSource('common.view/model-scene-source', 1)
     const model = lease.value as ModelSceneSource
+    const expectedBounds =
+      format === 'm3' ? { min: [0, -0, 0], max: [1, -0, 1] } : { min: [0, 0, 0], max: [1, 1, 0] }
     expect(await model.info()).toMatchObject({
       scenes: 1,
       nodes: 1,
       meshes: 1,
       primitives: 1,
       geometryAccess: 'decoded',
-      bounds: { min: [0, 0, 0], max: [1, 1, 0] },
+      bounds: expectedBounds,
     })
     const primitiveId = primitiveIds[format]
     const primitive = await model.primitive?.(primitiveId, { maxBytes: 1024 })
@@ -274,7 +283,7 @@ describe('ported MK2 geometry model codecs', () => {
       else if (format === 'stl') new DataView(corrupted.buffer).setUint32(80, 2, true)
       else new DataView(corrupted.buffer).setUint32(8, corrupted.byteLength + 4, true)
     }
-    await expect(open(format, corrupted)).rejects.toThrow(/OBJ|PLY|STL|COLLADA|glTF|UVM/u)
+    await expect(open(format, corrupted)).rejects.toThrow(/OBJ|PLY|STL|COLLADA|glTF|UVM|M3/u)
   })
 
   it.each(formats)('%s enforces node and scalar budgets', async format => {
