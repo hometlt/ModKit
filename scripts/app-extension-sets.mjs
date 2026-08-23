@@ -32,7 +32,6 @@ export const READY_APP_EXTENSIONS = Object.freeze({
       'org.modkitx/aac',
       'org.modkitx/flac',
       'org.modkitx/m4a',
-      'org.modkitx/opus',
       'org.modkitx/wav',
     ]),
   }),

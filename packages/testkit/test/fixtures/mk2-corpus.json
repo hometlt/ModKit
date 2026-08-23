@@ -1095,18 +1095,16 @@
       "minimumConfidence": 0.9,
       "dataSource": "tree",
       "route": "basename",
-      "expectSignatureMatch": true,
       "note": "Ogg page carrying the Vorbis identification header"
     },
     {
       "extension": "common/audio",
-      "contributionId": "org.modkitx/opus",
+      "contributionId": "org.modkitx/audio-ogg",
       "corpus": "synthetic",
       "sample": "minimal.opus",
       "minimumConfidence": 0.9,
       "dataSource": "tree",
       "route": "basename",
-      "expectSignatureMatch": true,
       "note": "Ogg page carrying OpusHead: the Vorbis-versus-Opus split the v1 detector owned"
     },
     {
@@ -1128,8 +1126,7 @@
       "minimumConfidence": 0.9,
       "dataSource": "tree",
       "route": "basename",
-      "expectSignatureMatch": true,
-      "note": "ISO-BMFF ftyp + moov/mvhd; box walk only, no sample tables"
+      "note": "ISO-BMFF ftyp + moov/mvhd with one AVC video track and sample description"
     },
     {
       "extension": "common/video",
@@ -1150,8 +1147,7 @@
       "minimumConfidence": 0.9,
       "dataSource": "tree",
       "route": "basename",
-      "expectSignatureMatch": true,
-      "note": "EBML header with DocType webm plus a Segment/Info pair"
+      "note": "EBML header with DocType webm plus Segment/Info and one VP9 video track"
     },
     {
       "extension": "common/video",

@@ -1,5 +1,5 @@
 {
-  "$comment": "Historical migration notes for common audio formats. Five codecs moved into the product audio package; MP3 and Ogg are superseded by richer native MK3 contributions. This file is inert and outside the loader manifest glob.",
+  "$comment": "Historical migration notes for common audio formats. AAC, FLAC, M4A and WAV moved into the product audio package; MP3, Ogg and separate Opus routes are superseded by richer native MK3 contributions. This file is inert and outside the loader manifest glob.",
   "schemaVersion": 1,
   "source": {
     "repository": "modkitx",

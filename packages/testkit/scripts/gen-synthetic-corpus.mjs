@@ -2508,43 +2508,30 @@ function ogv() {
   return oggPage(concat(bytes(0x80), ascii('theora'), header.finish()), 0x6d6b3203)
 }
 
-/**
- * ISO/IEC 14496-12: §4.3 FileTypeBox and §8.2.2 MovieHeaderBox. Two boxes are enough for a
- * container walk; there is no media data, and the fixture does not pretend there is.
- */
+/** ISO/IEC 14496-12: bounded FileTypeBox, MovieHeaderBox and one AVC video track. */
 function mp4() {
   const box = (type, payload) => concat(u32be(8 + payload.byteLength), ascii(type), payload)
-  const identityMatrix = concat(
-    u32be(0x00010000),
-    u32be(0),
-    u32be(0),
-    u32be(0),
-    u32be(0x00010000),
-    u32be(0),
-    u32be(0),
-    u32be(0),
-    u32be(0x40000000),
-  )
-  const mvhd = box(
-    'mvhd',
-    concat(
-      u32be(0), // version 0, flags 0
-      u32be(0), // creation time: zero keeps the fixture byte-stable
-      u32be(0), // modification time
-      u32be(1000), // timescale: units per second
-      u32be(1000), // duration: one second
-      u32be(0x00010000), // rate 1.0
-      u16be(0x0100), // volume 1.0
-      u16be(0), // reserved
-      new Uint8Array(8), // reserved
-      identityMatrix,
-      new Uint8Array(24), // pre_defined
-      u32be(2), // next_track_ID
-    ),
-  )
+  const mvhdPayload = new Uint8Array(20)
+  const movie = new DataView(mvhdPayload.buffer)
+  movie.setUint32(12, 1000, false)
+  movie.setUint32(16, 1000, false)
+  const trackHeaderPayload = new Uint8Array(84)
+  const trackHeader = new DataView(trackHeaderPayload.buffer)
+  trackHeader.setUint32(76, 320 * 65536, false)
+  trackHeader.setUint32(80, 180 * 65536, false)
+  const handlerPayload = new Uint8Array(12)
+  handlerPayload.set(ascii('vide'), 8)
+  const sampleDescriptionPayload = new Uint8Array(16)
+  const sampleDescription = new DataView(sampleDescriptionPayload.buffer)
+  sampleDescription.setUint32(4, 1, false)
+  sampleDescription.setUint32(8, 8, false)
+  sampleDescriptionPayload.set(ascii('avc1'), 12)
+  const sampleTable = box('stbl', box('stsd', sampleDescriptionPayload))
+  const media = box('mdia', concat(box('hdlr', handlerPayload), box('minf', sampleTable)))
+  const track = box('trak', concat(box('tkhd', trackHeaderPayload), media))
   return concat(
     box('ftyp', concat(ascii('isom'), u32be(512), ascii('isom'), ascii('mp41'))),
-    box('moov', mvhd),
+    box('moov', concat(box('mvhd', mvhdPayload), track)),
   )
 }
 
@@ -2716,7 +2703,7 @@ function flv() {
 
 /**
  * WebM: RFC 8794 (EBML) §4 element framing, plus the Matroska/WebM element ids. An EBML header
- * declaring DocType "webm" and a Segment holding Info — the shallow structure the v1 codec claims.
+ * declaring DocType "webm" and a Segment holding Info plus one VP9 video track.
  */
 function webm() {
   /** RFC 8794 §4.4: VINT_WIDTH zeros, a one bit, then the value. One-byte form is enough here. */
@@ -2747,7 +2734,19 @@ function webm() {
       string(bytes(0x57, 0x41), 'modkitx-synthetic'), // WritingApp
     ),
   )
-  return concat(ebml, element(bytes(0x18, 0x53, 0x80, 0x67), info))
+  const video = element(bytes(0xe0), concat(uint(bytes(0xb0), 320), uint(bytes(0xba), 180)))
+  const trackEntry = element(
+    bytes(0xae),
+    concat(
+      uint(bytes(0xd7), 1),
+      uint(bytes(0x73, 0xc5), 1),
+      uint(bytes(0x83), 1),
+      string(bytes(0x86), 'V_VP9'),
+      video,
+    ),
+  )
+  const tracks = element(bytes(0x16, 0x54, 0xae, 0x6b), trackEntry)
+  return concat(ebml, element(bytes(0x18, 0x53, 0x80, 0x67), concat(info, tracks)))
 }
 
 /**
