@@ -26,7 +26,15 @@ export const READY_APP_EXTENSIONS = Object.freeze({
   }),
   audio: Object.freeze({
     coordinate: 'org.modkitx/audio',
-    contributions: Object.freeze(['org.modkitx/audio-mp3', 'org.modkitx/audio-ogg']),
+    contributions: Object.freeze([
+      'org.modkitx/audio-mp3',
+      'org.modkitx/audio-ogg',
+      'org.modkitx/aac',
+      'org.modkitx/flac',
+      'org.modkitx/m4a',
+      'org.modkitx/opus',
+      'org.modkitx/wav',
+    ]),
   }),
   documents: Object.freeze({
     coordinate: 'org.modkitx/documents',

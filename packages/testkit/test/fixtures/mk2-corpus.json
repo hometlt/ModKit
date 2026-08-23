@@ -500,8 +500,8 @@
       "note": "Apple UDIF v4 flat image with a 512-byte raw data fork and a structurally valid end-relative koly trailer"
     },
     {
-      "extension": "mk2/common-audio",
-      "contributionId": "org.modkitx/mp3",
+      "extension": "common/audio",
+      "contributionId": "org.modkitx/audio-mp3",
       "corpus": "real",
       "sample": "-references/website/crossover/uploads/welcome-back-commander.mp3",
       "minimumConfidence": 0.8,
@@ -509,7 +509,7 @@
       "note": "MPEG-1 layer III frame header; v1 manifest routes on extension only"
     },
     {
-      "extension": "mk2/common-audio",
+      "extension": "common/audio",
       "contributionId": "org.modkitx/aac",
       "corpus": "synthetic",
       "sample": "minimal.aac",
@@ -518,7 +518,7 @@
       "note": "Two structurally complete MPEG-4 AAC-LC ADTS frames with bounded lengths and ID_END raw data blocks"
     },
     {
-      "extension": "mk2/common-audio",
+      "extension": "common/audio",
       "contributionId": "org.modkitx/flac",
       "corpus": "synthetic",
       "sample": "minimal.flac",
@@ -529,7 +529,7 @@
       "note": "RFC 9639 FLAC with STREAMINFO, MD5, one constant 16-sample mono subframe and computed frame CRC-8/CRC-16"
     },
     {
-      "extension": "mk2/common-audio",
+      "extension": "common/audio",
       "contributionId": "org.modkitx/m4a",
       "corpus": "synthetic",
       "sample": "minimal.m4a",
@@ -689,7 +689,7 @@
       "note": "Task E: opened under an opaque .bin name, so only the declared SWF signature can shortlist it"
     },
     {
-      "extension": "mk2/common-audio",
+      "extension": "common/audio",
       "contributionId": "org.modkitx/wav",
       "corpus": "synthetic",
       "sample": "minimal.wav",
@@ -1088,8 +1088,8 @@
       "note": "EAR plus literal RefPack envelope around one CkMp HeightMapData chunk"
     },
     {
-      "extension": "mk2/common-audio",
-      "contributionId": "org.modkitx/ogg",
+      "extension": "common/audio",
+      "contributionId": "org.modkitx/audio-ogg",
       "corpus": "synthetic",
       "sample": "minimal.ogg",
       "minimumConfidence": 0.9,
@@ -1099,7 +1099,7 @@
       "note": "Ogg page carrying the Vorbis identification header"
     },
     {
-      "extension": "mk2/common-audio",
+      "extension": "common/audio",
       "contributionId": "org.modkitx/opus",
       "corpus": "synthetic",
       "sample": "minimal.opus",

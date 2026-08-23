@@ -11,3 +11,7 @@ region, every other frame and the padding copied verbatim, no audio byte moved. 
 unsynchronised or carry an extended header or a footer are refused with the reason instead of
 rewritten. Ogg has no editing operation: a Vorbis comment lives inside a packet whose pages carry
 their own CRC and segment table, so resizing it is a stream rewrite, not a byte range.
+
+AAC, FLAC, M4A, Opus and WAV now ship in this product package as well. The older MP3 and Ogg
+staging routes were retired in favour of the richer native contributions already here. Historical
+decisions remain in inert `MIGRATION-NOTES-common-audio.json`.
