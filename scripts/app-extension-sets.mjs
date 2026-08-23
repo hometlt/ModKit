@@ -113,8 +113,8 @@ export const READY_APP_EXTENSIONS = Object.freeze({
     coordinate: 'org.modkitx/ui-monaco',
     contributions: Object.freeze(['org.modkitx.ui-monaco/code-stage']),
   }),
-  'mk2-blizzard-casc': Object.freeze({
-    path: Object.freeze(['mk2', 'blizzard-casc']),
+  'blizzard-casc': Object.freeze({
+    path: Object.freeze(['blizzard', 'casc']),
     coordinate: 'org.modkitx.blizzard/casc',
     contributions: Object.freeze(['org.modkitx/casc']),
   }),
@@ -219,7 +219,7 @@ const media = Object.freeze(['images', 'vector', 'audio', 'video'])
 const modelsAndArchives = Object.freeze(['models', 'rendering-3d', 'archives'])
 const fullCodecs = Object.freeze([...structuredText, 'documents', ...media, ...modelsAndArchives])
 const mk2Extended = Object.freeze([
-  'mk2-blizzard-casc',
+  'blizzard-casc',
   'blizzard-models',
   'mk2-blizzard-mpq',
   'mk2-blizzard-starcraft2',
@@ -235,7 +235,7 @@ export const APP_EXTENSION_SETS = Object.freeze({
   'models-and-archives': modelsAndArchives,
   'full-codecs': fullCodecs,
   'editor-and-documents': Object.freeze(['text-json', 'documents', 'ui-monaco']),
-  'mk2-casc': Object.freeze(['mk2-blizzard-casc']),
+  'blizzard-casc': Object.freeze(['blizzard-casc']),
   'blizzard-models': Object.freeze(['blizzard-models']),
   'mk2-mpq': Object.freeze(['mk2-blizzard-mpq']),
   'mk2-starcraft2': Object.freeze(['mk2-blizzard-starcraft2']),

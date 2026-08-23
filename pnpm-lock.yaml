@@ -158,6 +158,15 @@ importers:
         specifier: workspace:*
         version: link:../../../packages/sdk
 
+  extensions/blizzard/casc:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../codec-kit/codec-kit
+      fflate:
+        specifier: ^0.8.3
+        version: 0.8.3
+
   extensions/blizzard/galaxy-language:
     dependencies:
       '@modkitx-x3/host':
@@ -412,15 +421,6 @@ importers:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
         version: link:../../codec-kit/codec-kit
-
-  extensions/mk2/blizzard-casc:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
-      fflate:
-        specifier: ^0.8.3
-        version: 0.8.3
 
   extensions/mk2/blizzard-common-formats:
     dependencies:

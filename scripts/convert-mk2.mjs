@@ -64,7 +64,7 @@ const quiet = args.includes('--quiet')
 // Families that completed the staging migration are product-owned outside extensions/mk2.
 // The converter keeps reading the canonical source for allocation reports but no longer emits
 // duplicate staging packages for these coordinates.
-const RELOCATED_FAMILIES = new Set(['blizzard-models'])
+const RELOCATED_FAMILIES = new Set(['blizzard-casc', 'blizzard-models'])
 
 if (!isMk2Root(mk2Root)) {
   // `--check` runs inside `pnpm check`, and CI does not necessarily have the MK2 checkout beside
