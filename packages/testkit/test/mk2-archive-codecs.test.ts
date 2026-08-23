@@ -13,7 +13,7 @@ import {
 } from '@modkitx-x3/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const archiveRoot = join(repoRoot, 'extensions', 'mk2', 'common-archives')
+const archiveRoot = join(repoRoot, 'extensions', 'common', 'archives')
 const fixtureRoot = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
 
 const cases = Object.freeze([

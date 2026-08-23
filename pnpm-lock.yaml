@@ -250,6 +250,9 @@ importers:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
         version: link:../../codec-kit/codec-kit
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../../packages/host
 
   extensions/common/documents:
     dependencies:

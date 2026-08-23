@@ -14,7 +14,7 @@ import {
 } from '@modkitx-x3/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const extensionRoot = join(repoRoot, 'extensions', 'mk2', 'common-audio')
+const extensionRoot = join(repoRoot, 'extensions', 'common', 'audio')
 const fixtureRoot = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
 const budget: ResourceBudget = {
   maxInputBytes: 1_000_000n,

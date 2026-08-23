@@ -31,11 +31,11 @@ describe('hand-authored linked extension entries', () => {
     expect(packageJson.exports?.['./linked']).toBe('./src/linked.js')
   })
 
-  it('keeps the measured pilot close to the fifteen-line estimate', () => {
+  it('keeps the complete image entry at the measured hand-authored size', () => {
     const lines = readFileSync(join(commonRoot, 'images', 'src', 'linked.js'), 'utf8')
       .split(/\r?\n/u)
       .filter(line => line.trim().length > 0)
-    expect(lines).toHaveLength(17)
+    expect(lines).toHaveLength(102)
   })
 
   it('has no generated linked-extension package or emitter', () => {
