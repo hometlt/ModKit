@@ -31,6 +31,9 @@ export const READY_APP_EXTENSIONS = Object.freeze({
       'org.modkitx/model-gltf',
       'org.modkitx/model-obj',
       'org.modkitx/model-uvm',
+      'org.modkitx/dae',
+      'org.modkitx/ply',
+      'org.modkitx/stl',
     ]),
   }),
   'rendering-3d': Object.freeze({

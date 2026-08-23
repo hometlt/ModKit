@@ -14,7 +14,7 @@ import {
 } from '@modkitx-x3/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const modelRoot = join(repoRoot, 'extensions', 'mk2', 'common-models')
+const modelRoot = join(repoRoot, 'extensions', 'common', 'models')
 const fixtureRoot = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
 const m3Fixture = join(import.meta.dirname, 'fixtures', 'models', 'triangle.m3')
 const formats = ['obj', 'ply', 'stl', 'dae', 'gltf', 'uvm', 'm3'] as const
@@ -111,8 +111,9 @@ function inputFor(source: ArtifactByteSource): AssetInput {
 async function codecFor(format: Format): Promise<Codec> {
   const extensionRoot =
     format === 'm3' ? join(repoRoot, 'extensions', 'blizzard', 'models') : modelRoot
+  const sourceRoot = ['obj', 'gltf', 'uvm'].includes(format) ? join('src', 'formats') : 'src'
   const module = (await import(
-    pathToFileURL(join(extensionRoot, 'src', format, 'codec.js')).href
+    pathToFileURL(join(extensionRoot, sourceRoot, format, 'codec.js')).href
   )) as {
     createCodec(context: ContributionContext): Codec
   }

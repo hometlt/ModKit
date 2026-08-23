@@ -595,7 +595,7 @@
       "note": "Aldus placeable WMF with checksum, standard header, META_RECTANGLE and META_EOF replayed to secure SVG"
     },
     {
-      "extension": "mk2/common-models",
+      "extension": "common/models",
       "contributionId": "org.modkitx/obj",
       "corpus": "synthetic",
       "sample": "minimal.obj",
@@ -604,7 +604,7 @@
       "note": "Wavefront Advanced Visualizer polygonal OBJ with position, texture, normal, object, and face statements"
     },
     {
-      "extension": "mk2/common-models",
+      "extension": "common/models",
       "contributionId": "org.modkitx/ply",
       "corpus": "synthetic",
       "sample": "minimal.ply",
@@ -615,7 +615,7 @@
       "note": "PLY 1.0 binary little-endian element/property stream with one indexed triangle"
     },
     {
-      "extension": "mk2/common-models",
+      "extension": "common/models",
       "contributionId": "org.modkitx/stl",
       "corpus": "synthetic",
       "sample": "minimal.stl",
@@ -624,7 +624,7 @@
       "note": "3D Systems binary STL header, triangle count, and one little-endian triangle record"
     },
     {
-      "extension": "mk2/common-models",
+      "extension": "common/models",
       "contributionId": "org.modkitx/dae",
       "corpus": "synthetic",
       "sample": "minimal.dae",
@@ -633,7 +633,7 @@
       "note": "COLLADA 1.4.1 geometry sources, indexed triangle, and visual-scene instance"
     },
     {
-      "extension": "mk2/common-models",
+      "extension": "common/models",
       "contributionId": "org.modkitx/gltf",
       "corpus": "synthetic",
       "sample": "minimal.gltf",
@@ -642,7 +642,7 @@
       "note": "glTF 2.0 JSON with an embedded data-URI buffer and decoded indexed triangle"
     },
     {
-      "extension": "mk2/common-models",
+      "extension": "common/models",
       "contributionId": "org.modkitx/uvm",
       "corpus": "synthetic",
       "sample": "minimal.uvm.glb",
@@ -651,7 +651,7 @@
       "note": "UVM/core 1.0 GLB with required identity/provenance metadata and decoded indexed triangle"
     },
     {
-      "extension": "mk2/common-models",
+      "extension": "common/models",
       "contributionId": "org.modkitx/glb",
       "corpus": "real",
       "sample": "-references/website/old-wiki/src/app/js-3d-model-viewer-master/original/duck.glb",

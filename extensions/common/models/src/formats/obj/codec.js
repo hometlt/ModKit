@@ -25,13 +25,16 @@ function parseIndex(value, count) {
   return parsed > 0 ? parsed - 1 : count + parsed
 }
 
-function parseObj(text, maxNodes) {
+function parseObj(bytes, budget) {
+  if (bytes.byteLength > budget.maxScalarBytes) {
+    throw new RangeError('OBJ text exceeds maxScalarBytes budget')
+  }
+  const text = decoder.decode(bytes)
   const positions = []
-  const triangleIndices = []
-  let normals = 0
-  let texcoords = 0
+  const normals = []
+  const texcoords = []
+  const triangles = []
   let faces = 0
-  let triangles = 0
   let currentGroup = 'default'
   const groups = new Map([[currentGroup, 0]])
   const materials = new Set()
@@ -41,7 +44,7 @@ function parseObj(text, maxNodes) {
     const line = rawLine.replace(/\s+#.*$/u, '').trim()
     if (line === '' || line.startsWith('#')) continue
     statements += 1
-    if (statements > maxNodes) throw new RangeError('OBJ statements exceed maxNodes budget')
+    if (statements > budget.maxNodes) throw new RangeError('OBJ statements exceed maxNodes budget')
     const splitAt = line.search(/\s/u)
     const keyword = (splitAt < 0 ? line : line.slice(0, splitAt)).toLowerCase()
     const value = splitAt < 0 ? '' : line.slice(splitAt).trim()
@@ -50,12 +53,13 @@ function parseObj(text, maxNodes) {
       if (fields === undefined) throw new TypeError('OBJ vertex contains non-finite coordinates')
       positions.push(fields)
     } else if (keyword === 'vn') {
-      if (finiteFields(value, 3) === undefined) throw new TypeError('OBJ normal is malformed')
-      normals += 1
+      const fields = finiteFields(value, 3)
+      if (fields === undefined) throw new TypeError('OBJ normal is malformed')
+      normals.push(fields)
     } else if (keyword === 'vt') {
-      if (finiteFields(value, 2) === undefined)
-        throw new TypeError('OBJ texture coordinate is malformed')
-      texcoords += 1
+      const fields = finiteFields(value, 2)
+      if (fields === undefined) throw new TypeError('OBJ texture coordinate is malformed')
+      texcoords.push(fields)
     } else if (keyword === 'o' || keyword === 'g') {
       currentGroup = value || `group-${groups.size}`
       if (!groups.has(currentGroup)) groups.set(currentGroup, 0)
@@ -66,19 +70,30 @@ function parseObj(text, maxNodes) {
     } else if (keyword === 'f') {
       const vertices = value.split(/\s+/u)
       if (vertices.length < 3) throw new TypeError('OBJ face needs at least three vertices')
-      const faceIndices = []
+      const faceVertices = []
       for (const vertex of vertices) {
-        const [position] = vertex.split('/')
+        const [position, texture, normal] = vertex.split('/')
         const index = parseIndex(position ?? '', positions.length)
         if (index < 0 || index >= positions.length)
           throw new TypeError('OBJ face references an invalid vertex')
-        faceIndices.push(index)
+        const textureIndex =
+          texture === undefined || texture === ''
+            ? undefined
+            : parseIndex(texture, texcoords.length)
+        const normalIndex =
+          normal === undefined || normal === '' ? undefined : parseIndex(normal, normals.length)
+        if (textureIndex !== undefined && (textureIndex < 0 || textureIndex >= texcoords.length)) {
+          throw new TypeError('OBJ face references an invalid texture coordinate')
+        }
+        if (normalIndex !== undefined && (normalIndex < 0 || normalIndex >= normals.length)) {
+          throw new TypeError('OBJ face references an invalid normal')
+        }
+        faceVertices.push({ position: index, texture: textureIndex, normal: normalIndex })
       }
-      for (let index = 1; index + 1 < faceIndices.length; index += 1) {
-        triangleIndices.push(faceIndices[0], faceIndices[index], faceIndices[index + 1])
+      for (let index = 1; index + 1 < faceVertices.length; index += 1) {
+        triangles.push([faceVertices[0], faceVertices[index], faceVertices[index + 1]])
       }
       faces += 1
-      triangles += vertices.length - 2
       groups.set(currentGroup, (groups.get(currentGroup) ?? 0) + 1)
     }
   }
@@ -92,12 +107,47 @@ function parseObj(text, maxNodes) {
       max[axis] = Math.max(max[axis], position[axis])
     }
   }
+  const decodedPositions = []
+  const decodedNormals = []
+  const decodedTexcoords = []
+  const triangleIndices = []
+  const decoded = new Map()
+  const allNormals = triangles.every(triangle =>
+    triangle.every(vertex => vertex.normal !== undefined),
+  )
+  const allTexcoords = triangles.every(triangle =>
+    triangle.every(vertex => vertex.texture !== undefined),
+  )
+  for (const triangle of triangles) {
+    for (const vertex of triangle) {
+      const key = `${vertex.position}/${vertex.texture ?? ''}/${vertex.normal ?? ''}`
+      let decodedIndex = decoded.get(key)
+      if (decodedIndex === undefined) {
+        decodedIndex = decoded.size
+        decoded.set(key, decodedIndex)
+        decodedPositions.push(...positions[vertex.position])
+        if (allNormals) decodedNormals.push(...normals[vertex.normal])
+        if (allTexcoords) decodedTexcoords.push(...texcoords[vertex.texture])
+      }
+      triangleIndices.push(decodedIndex)
+    }
+  }
+  const decodedBytes =
+    decodedPositions.length * 4 +
+    decodedNormals.length * 4 +
+    decodedTexcoords.length * 4 +
+    triangleIndices.length * 4
+  if (decoded.size > budget.maxNodes)
+    throw new RangeError('OBJ decoded vertices exceed maxNodes budget')
+  if (decodedBytes > budget.maxScalarBytes) {
+    throw new RangeError('OBJ decoded geometry exceeds maxScalarBytes budget')
+  }
   return Object.freeze({
     positions: positions.length,
-    normals,
-    texcoords,
+    normals: normals.length,
+    texcoords: texcoords.length,
     faces,
-    triangles,
+    triangles: triangles.length,
     statements,
     groups: Object.freeze(
       [...groups].map(([name, groupFaces]) => Object.freeze({ name, faces: groupFaces })),
@@ -105,8 +155,10 @@ function parseObj(text, maxNodes) {
     materials: Object.freeze([...materials]),
     materialLibraries: Object.freeze([...materialLibraries]),
     bounds: Object.freeze({ min: Object.freeze(min), max: Object.freeze(max) }),
-    positionData: new Float32Array(positions.flat()),
+    positionData: new Float32Array(decodedPositions),
     indexData: new Uint32Array(triangleIndices),
+    ...(allNormals ? { normalData: new Float32Array(decodedNormals) } : {}),
+    ...(allTexcoords ? { textureData: new Float32Array(decodedTexcoords) } : {}),
   })
 }
 
@@ -122,8 +174,7 @@ const definition = Object.freeze({
     }
   },
   async inspect(bytes, context) {
-    const text = decoder.decode(bytes)
-    const obj = parseObj(text, context.budget.maxNodes)
+    const obj = parseObj(bytes, context.budget)
     const model = createModelSceneSource({
       info: {
         scenes: 1,
@@ -152,6 +203,8 @@ const definition = Object.freeze({
           topology: 'triangles',
           positions: obj.positionData,
           indices: obj.indexData,
+          ...(obj.normalData === undefined ? {} : { normals: obj.normalData }),
+          ...(obj.textureData === undefined ? {} : { textureCoordinates: obj.textureData }),
           bounds: obj.bounds,
         },
       ],

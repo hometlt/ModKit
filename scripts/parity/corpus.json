@@ -10,7 +10,7 @@
     {
       "format": "glb",
       "generatedFrom": "scripts/parity/fixtures/triangle.gltf",
-      "x3Extension": "extensions/mk2/common-models",
+      "x3Extension": "extensions/common/models",
       "canonicalModule": "extensions/common/models/codecs/gltf/src/index.ts",
       "canonicalExport": "glbModelCodec"
     },

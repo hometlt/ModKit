@@ -972,6 +972,21 @@ function inspectUvm(bytes, context) {
   const identity = document.extensions.UV_asset
   const provenance = document.extensions.UV_provenance
   const preservedSourceBlobs = array(document.extensions.UV_source_blob, 'blobs').length
+  const bounds = (() => {
+    if (scene.primitives.length === 0) return undefined
+    const min = [Infinity, Infinity, Infinity]
+    const max = [-Infinity, -Infinity, -Infinity]
+    for (const primitive of scene.primitives) {
+      for (let offset = 0; offset < primitive.positions.length; offset += 3) {
+        for (let axis = 0; axis < 3; axis += 1) {
+          const value = primitive.positions[offset + axis]
+          min[axis] = Math.min(min[axis], value)
+          max[axis] = Math.max(max[axis], value)
+        }
+      }
+    }
+    return { min, max }
+  })()
   const model = createModelSceneSource({
     info: {
       scenes: array(document, 'scenes').length,
@@ -981,6 +996,7 @@ function inspectUvm(bytes, context) {
       materials: scene.materials,
       textures: scene.textures,
       animations: scene.animations,
+      ...(bounds === undefined ? {} : { bounds }),
       geometryAccess: 'decoded',
     },
     nodes: scene.nodes,

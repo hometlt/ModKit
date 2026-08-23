@@ -246,7 +246,7 @@ await checkApplicationSet(
   'headless',
   'full-codecs',
   async extensions => ({ main: (await createAutomationHost(extensions)).composition }),
-  { main: { offers: 30, active: 30 } },
+  { main: { offers: 33, active: 33 } },
 )
 await checkApplicationSet(
   'headless',
@@ -371,7 +371,7 @@ await checkApplicationSet(
     return { main: app.main, renderer: app.renderer }
   },
   {
-    main: { offers: 5, active: 5 },
+    main: { offers: 8, active: 8 },
     renderer: { offers: 'none', active: 'none' },
   },
 )
@@ -383,7 +383,7 @@ await checkApplicationSet(
     return { main: app.main, renderer: app.renderer }
   },
   {
-    main: { offers: 30, active: 30 },
+    main: { offers: 33, active: 33 },
     renderer: { offers: 'none', active: 'none' },
   },
 )

@@ -12,3 +12,8 @@ only current MK3 contracts, including `model-scene-source@1`, hierarchy and boun
 The convergence smoke opens the exact pinned UVM artifact produced from the synthetic StarCraft II
 M3 corpus fixture. Its partial provenance is visible through the A-3 inspection operation, so the
 A-2/A-3 route proves both renderable geometry and honest skeleton/animation/texture loss reporting.
+
+The former `common-models` staging family is now merged here. DAE, PLY and STL keep their bounded
+decoded-geometry implementations; its older GLB/glTF, OBJ and UVM routes were removed because the
+native MK3 contributions in this package are richer and cover those formats without ambiguous
+duplicate candidates. The inert `MIGRATION-NOTES-common-models.json` records that convergence.
