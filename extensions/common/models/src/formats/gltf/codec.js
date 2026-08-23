@@ -3,6 +3,7 @@ import {
   createModelSceneSource,
   createTreeDataSource,
 } from '@modkitx-x3/codec-kit'
+import { decodeEmbeddedGltfBuffers, decodeGltfGeometry } from './geometry.js'
 
 const decoder = new TextDecoder('utf-8', { fatal: true })
 
@@ -503,31 +504,44 @@ const definition = Object.freeze({
       (total, mesh) => total + (Array.isArray(mesh?.primitives) ? mesh.primitives.length : 0),
       0,
     )
-    const model = createModelSceneSource({
-      info: {
-        scenes: scenes.length,
-        nodes: nodes.length,
-        meshes: meshes.length,
-        primitives: primitiveCount,
-        materials: materials.length,
-        textures: textures.length,
-        animations: animations.length,
-        geometryAccess: 'metadata-only',
-      },
-      nodes: nodes.map((node, index) => ({
+    const decoded = decodeEmbeddedGltfBuffers(document, context.budget)
+    const geometry =
+      decoded.externalUris.length === 0
+        ? decodeGltfGeometry(document, decoded.buffers, context.budget, decoded.bytes)
+        : undefined
+    const sceneNodes =
+      geometry?.scene.nodes ??
+      nodes.map((node, index) => ({
         id: `node-${index}`,
         ...(typeof node.name === 'string' ? { name: node.name } : {}),
         childIds: (Array.isArray(node.children) ? node.children : []).map(child => `node-${child}`),
         meshIds: Number.isSafeInteger(node.mesh) ? [`mesh-${node.mesh}`] : [],
         transform: nodeTransform(node),
-      })),
-      meshes: meshes.map((mesh, index) => ({
+      }))
+    const sceneMeshes =
+      geometry?.scene.meshes ??
+      meshes.map((mesh, index) => ({
         id: `mesh-${index}`,
         ...(typeof mesh?.name === 'string' ? { name: mesh.name } : {}),
         primitiveIds: (Array.isArray(mesh?.primitives) ? mesh.primitives : []).map(
           (_primitive, primitiveIndex) => `mesh-${index}-primitive-${primitiveIndex}`,
         ),
-      })),
+      }))
+    const model = createModelSceneSource({
+      info: {
+        scenes: scenes.length,
+        nodes: sceneNodes.length,
+        meshes: sceneMeshes.length,
+        primitives: geometry?.scene.primitives.length ?? primitiveCount,
+        materials: materials.length,
+        textures: textures.length,
+        animations: animations.length,
+        ...(geometry?.scene.bounds === undefined ? {} : { bounds: geometry.scene.bounds }),
+        geometryAccess: geometry === undefined ? 'metadata-only' : 'decoded',
+      },
+      nodes: sceneNodes,
+      meshes: sceneMeshes,
+      primitives: geometry?.scene.primitives ?? [],
     })
     const relations = createRelationGraphSource(document, String(context.primary.revision))
     const subjectFacts = createSubjectFactsSource(document, context)
@@ -551,6 +565,7 @@ const definition = Object.freeze({
         scenes: scenes.length,
         nodes: nodes.length,
         meshes: meshes.length,
+        primitives: geometry?.scene.primitives.length ?? primitiveCount,
         materials: materials.length,
         textures: textures.length,
         animations: animations.length,
@@ -569,6 +584,7 @@ const definition = Object.freeze({
             { key: 'scenes', value: scenes.length },
             { key: 'nodes', value: nodes.length },
             { key: 'meshes', value: meshes.length },
+            { key: 'primitives', value: geometry?.scene.primitives.length ?? primitiveCount },
             { key: 'materials', value: materials.length },
             { key: 'textures', value: textures.length },
             { key: 'animations', value: animations.length },
@@ -579,7 +595,15 @@ const definition = Object.freeze({
       ],
       traits: [
         ...(meshes.length > 0
-          ? [{ id: 'model.geometry', parameters: { meshes: meshes.length } }]
+          ? [
+              {
+                id: 'model.geometry',
+                parameters: {
+                  meshes: meshes.length,
+                  primitives: geometry?.scene.primitives.length ?? primitiveCount,
+                },
+              },
+            ]
           : []),
         ...(materials.length > 0
           ? [{ id: 'model.materials', parameters: { count: materials.length } }]
@@ -603,16 +627,21 @@ const definition = Object.freeze({
         { id: 'content.text', parameters: { encoding: 'utf-8' } },
       ],
       text: true,
+      maxDecodedBytes: geometry?.scene.decodedBytes ?? decoded.bytes,
       dataSources: {
         'common.view/tree-data-source': tree,
         'common.view/model-scene-source': model,
         'common.view/relation-graph-source': relations,
         'common.view/subject-facts-source': subjectFacts,
       },
-      unsupportedFeatures:
-        gltf.externalUris.length > 0
-          ? ['external-resource-resolution', 'render-model']
-          : ['render-model'],
+      unsupportedFeatures: [
+        ...(gltf.externalUris.length > 0 ? ['external-resource-resolution'] : []),
+        ...(geometry === undefined ? ['decoded-geometry'] : []),
+        'sparse-accessors',
+        'draco-compression',
+        'meshopt-compression',
+        'animation-playback',
+      ],
     }
   },
 })

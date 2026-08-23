@@ -526,6 +526,32 @@ function decodeScene(gltf, budget) {
   })
 }
 
+export function decodeGltfGeometry(document, buffers, budget, decodedBytes = 0) {
+  object(document, 'glTF root')
+  const asset = object(document.asset, 'glTF asset')
+  if (typeof asset.version !== 'string' || !/^2(?:\.\d+)?$/u.test(asset.version)) {
+    throw new TypeError('only glTF 2.x documents are supported')
+  }
+  const jsonNodes = boundedJson(document, budget)
+  validateNodeGraph(document, budget)
+  return Object.freeze({
+    jsonNodes,
+    scene: decodeScene({ document, buffers, bytes: decodedBytes }, budget),
+  })
+}
+
+export function decodeEmbeddedGltfGeometry(document, budget) {
+  const decoded = decodeBuffers(document, budget)
+  return Object.freeze({
+    ...decoded,
+    ...decodeGltfGeometry(document, decoded.buffers, budget, decoded.bytes),
+  })
+}
+
+export function decodeEmbeddedGltfBuffers(document, budget) {
+  return decodeBuffers(document, budget)
+}
+
 const definition = Object.freeze({
   id: ID,
   format: Object.freeze({ id: 'gltf', label: 'glTF 2.0 JSON', mediaType: 'model/gltf+json' }),

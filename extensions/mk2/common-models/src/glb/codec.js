@@ -1,21 +1,19 @@
 // Hand-ported from the MK2 codec org.modkitx/glb (OPUS-MK2-01 task C pilot).
 //
 // GLB 2.0 is a header plus length-prefixed chunks; the structured JSON chunk carries the whole
-// scene graph. This port inventories that graph (nodes, meshes, materials, textures, animations)
-// and publishes it as a metadata-only model scene — decoding the BIN chunk into primitives is a
-// separate job the v1 codec did not claim either.
+// scene graph. The BIN chunk is decoded through the same bounded accessor path as JSON glTF.
 
 import {
   createInspectionCodec,
   createModelSceneSource,
   createTreeDataSource,
 } from '@modkitx-x3/codec-kit'
+import { decodeGltfGeometry } from '../gltf/codec.js'
 
 const ID = 'org.modkitx/glb'
 const MAGIC = 0x46546c67 // 'glTF' little-endian
 const JSON_CHUNK = 0x4e4f534a
 const BIN_CHUNK = 0x004e4942
-const IDENTITY = Object.freeze([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
 
 function u32le(bytes, offset) {
   if (offset + 4 > bytes.byteLength) throw new RangeError('truncated GLB u32')
@@ -60,11 +58,17 @@ function parseGlb(bytes, budget) {
   if (document === null || typeof document !== 'object') {
     throw new TypeError('GLB JSON chunk is not an object')
   }
+  const binaryChunk = chunks.find(chunk => chunk.type === BIN_CHUNK)
+  const binary =
+    binaryChunk === undefined
+      ? new Uint8Array()
+      : bytes.subarray(binaryChunk.dataOffset, binaryChunk.dataOffset + binaryChunk.length)
   return Object.freeze({
     header,
     chunks: Object.freeze(chunks),
     document,
-    binaryBytes: chunks.find(chunk => chunk.type === BIN_CHUNK)?.length ?? 0,
+    binary,
+    binaryBytes: binary.byteLength,
   })
 }
 
@@ -72,34 +76,22 @@ const list = (document, key) => (Array.isArray(document[key]) ? document[key] : 
 
 function sceneSource(glb, budget) {
   const document = glb.document
-  const nodes = list(document, 'nodes').slice(0, budget.maxNodes)
-  const meshes = list(document, 'meshes').slice(0, budget.maxNodes)
-  let primitives = 0
-  for (const mesh of meshes) primitives += list(mesh, 'primitives').length
+  const geometry = decodeGltfGeometry(document, [glb.binary], budget, glb.binaryBytes).scene
   return createModelSceneSource({
     info: {
       scenes: list(document, 'scenes').length,
-      nodes: nodes.length,
-      meshes: meshes.length,
-      primitives,
+      nodes: geometry.nodes.length,
+      meshes: geometry.meshes.length,
+      primitives: geometry.primitives.length,
       materials: list(document, 'materials').length,
       textures: list(document, 'textures').length,
       animations: list(document, 'animations').length,
-      geometryAccess: 'metadata-only',
+      ...(geometry.bounds === undefined ? {} : { bounds: geometry.bounds }),
+      geometryAccess: 'decoded',
     },
-    nodes: nodes.map((node, index) => ({
-      id: `node/${index}`,
-      ...(typeof node.name === 'string' ? { name: node.name } : {}),
-      childIds: (Array.isArray(node.children) ? node.children : []).map(child => `node/${child}`),
-      meshIds: typeof node.mesh === 'number' ? [`mesh/${node.mesh}`] : [],
-      transform:
-        Array.isArray(node.matrix) && node.matrix.length === 16 ? [...node.matrix] : [...IDENTITY],
-    })),
-    meshes: meshes.map((mesh, index) => ({
-      id: `mesh/${index}`,
-      ...(typeof mesh.name === 'string' ? { name: mesh.name } : {}),
-      primitiveIds: list(mesh, 'primitives').map((_, slot) => `mesh/${index}/${slot}`),
-    })),
+    nodes: geometry.nodes,
+    meshes: geometry.meshes,
+    primitives: geometry.primitives,
   })
 }
 
@@ -174,6 +166,13 @@ const definition = Object.freeze({
             { key: 'binaryBytes', value: glb.binaryBytes },
             { key: 'generator', value: typeof asset.generator === 'string' ? asset.generator : '' },
             { key: 'extensionsUsed', value: extensionsUsed.join(', ') },
+            { key: 'scenes', value: info.scenes },
+            { key: 'nodes', value: info.nodes },
+            { key: 'meshes', value: info.meshes },
+            { key: 'primitives', value: info.primitives },
+            { key: 'materials', value: info.materials },
+            { key: 'textures', value: info.textures },
+            { key: 'animations', value: info.animations },
           ],
         },
       ],
@@ -195,7 +194,13 @@ const definition = Object.freeze({
         'common.view/tree-data-source': tree,
         'common.view/model-scene-source': scene,
       },
-      unsupportedFeatures: ['decoded-geometry', 'draco-compression', 'animation-playback'],
+      maxDecodedBytes: glb.binaryBytes,
+      unsupportedFeatures: [
+        'sparse-accessors',
+        'draco-compression',
+        'meshopt-compression',
+        'animation-playback',
+      ],
     }
   },
 })
