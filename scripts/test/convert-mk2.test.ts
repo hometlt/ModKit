@@ -485,18 +485,12 @@ describe('MK2 → MK3 converter (OPUS-MK2-01 task A, OPUS-MK2-02 tasks D/D2/E)',
     expect(ported).toBeGreaterThanOrEqual(12)
   })
 
-  it('the eight v1 containers route by signature, with the source cited in the README', () => {
-    // Task E: their v1 match was the everything-glob and nothing else, so without a declared
-    // signature they would be unreachable. Every pattern comes from the container specification.
+  it('the remaining staging v1 containers route by signature, with the source cited', () => {
+    // Relocated common media codecs are product-owned and covered by their product acceptance
+    // suites. This converter regression follows only families that still live in the staging tree.
     const expected: Readonly<Record<string, readonly string[]>> = {
       'adobe-flash/contributions/codec-flv.json': ['464c5601'],
       'adobe-flash/contributions/codec-swf.json': ['465753', '435753', '5a5753'],
-      'common-audio/contributions/codec-ogg.json': ['01766f72626973'],
-      'common-audio/contributions/codec-opus.json': ['4f70757348656164'],
-      'common-video/contributions/codec-mp4.json': ['66747970'],
-      'common-video/contributions/codec-mpeg.json': ['000001ba', '000001b3'],
-      'common-video/contributions/codec-ogv.json': ['807468656f7261'],
-      'common-video/contributions/codec-webm.json': ['1a45dfa3'],
     }
     for (const [path, patterns] of Object.entries(expected)) {
       const manifest = JSON.parse(
