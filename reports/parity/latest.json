@@ -113,6 +113,8 @@
         "operation:export.raw",
         "operation:view.inspect",
         "source:common.view/byte-range-source",
+        "source:common.view/relation-graph-source",
+        "source:common.view/subject-facts-source",
         "source:common.view/tree-data-source"
       ],
       "canonical": {
@@ -144,34 +146,36 @@
       },
       "x3": {
         "available": true,
-        "formatId": "glb",
+        "formatId": "gltf",
         "declaredSources": [
           "common.view/byte-range-source",
           "common.view/model-scene-source",
+          "common.view/relation-graph-source",
+          "common.view/subject-facts-source",
           "common.view/tree-data-source"
         ],
         "actualSources": [
           "common.view/byte-range-source",
           "common.view/model-scene-source",
+          "common.view/relation-graph-source",
+          "common.view/subject-facts-source",
           "common.view/tree-data-source"
         ],
         "sourceFailures": [],
         "operations": ["asset.validate", "export.raw", "view.inspect"],
         "geometryAccess": "decoded",
         "metadata": {
-          "version": 2,
-          "declaredBytes": 876,
-          "chunks": 2,
-          "binaryBytes": 104,
+          "version": "2.0",
           "generator": "modkitX3 parity fixture",
-          "extensionsUsed": "",
           "scenes": 1,
           "nodes": 1,
           "meshes": 1,
           "primitives": 1,
           "materials": 0,
           "textures": 0,
-          "animations": 0
+          "animations": 0,
+          "skins": 0,
+          "externalResources": 0
         },
         "features": [
           "geometry:decoded",
@@ -187,6 +191,8 @@
           "operation:view.inspect",
           "source:common.view/byte-range-source",
           "source:common.view/model-scene-source",
+          "source:common.view/relation-graph-source",
+          "source:common.view/subject-facts-source",
           "source:common.view/tree-data-source"
         ]
       }
