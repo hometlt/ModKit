@@ -17,7 +17,7 @@ import { resolveSceneRenderer } from '@modkitx-x3/host/renderer'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const { softwareRenderer } = (await import(
-  pathToFileURL(join(repoRoot, 'extensions', 'reference', 'software-renderer', 'src', 'linked.js'))
+  pathToFileURL(join(repoRoot, 'extensions', '_reference', 'software-renderer', 'src', 'linked.js'))
     .href
 )) as { readonly softwareRenderer: LinkedExtension }
 

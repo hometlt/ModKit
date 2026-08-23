@@ -27,8 +27,8 @@ packages:
   - 'extensions/common/documents'
   - 'extensions/blizzard/galaxy-language'
   - 'extensions/blizzard/starcraft2-game'
-  - 'extensions/reference/counter-runtime'
-  - 'extensions/reference/software-renderer'
+  - 'extensions/_reference/counter-runtime'
+  - 'extensions/_reference/software-renderer'
   # MK2 → MK3 converted staging area (scripts/convert-mk2.mjs). Workspace membership exists so
   # the generated modules can import `@modkitx-x3/codec-kit` by package name instead of by path;
   # none of these is a bootstrap dependency either.

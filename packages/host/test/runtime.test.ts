@@ -18,7 +18,7 @@ import { openRuntimeSession } from '@modkitx-x3/host/runtime'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const { counterRuntime } = (await import(
-  pathToFileURL(join(repoRoot, 'extensions', 'reference', 'counter-runtime', 'src', 'linked.js'))
+  pathToFileURL(join(repoRoot, 'extensions', '_reference', 'counter-runtime', 'src', 'linked.js'))
     .href
 )) as { readonly counterRuntime: LinkedExtension }
 

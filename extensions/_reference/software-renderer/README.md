@@ -1,5 +1,8 @@
 # Software renderer
 
+Reference implementation of `common.render/scene-3d@1`, consumed only by
+`packages/host/test/renderer.test.ts` and `packages/sdk/test/renderer-contract-types.ts`.
+
 Reference provider for `common.render/scene-3d@1`. It consumes decoded triangle primitives as
 typed arrays, applies model and view-projection matrices, and returns an owned RGBA8 frame.
 
