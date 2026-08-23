@@ -458,12 +458,6 @@ importers:
         specifier: workspace:*
         version: link:../../codec-kit/codec-kit
 
-  extensions/mk2/common-archives:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
-
   extensions/mk2/common-audio:
     dependencies:
       '@modkitx-x3/codec-kit':

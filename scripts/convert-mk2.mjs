@@ -71,6 +71,7 @@ const RELOCATED_FAMILIES = new Set([
   'blizzard-starcraft2',
   'common-models',
   'common-images',
+  'common-archives',
 ])
 
 if (!isMk2Root(mk2Root)) {

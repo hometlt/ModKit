@@ -262,11 +262,12 @@ describe('host-owned subject opening pipeline', () => {
         expect.objectContaining({ contract: 'common.view/raster-image-source', major: 1 }),
       ]),
     })
-    // One bounded signature-window read (sized by the PNG signature declaration, NXT-101B), then
-    // detection stays inside the declared 32-byte probe before the selected codec performs its
-    // separately budgeted full-input read.
+    // The complete image inventory needs one bounded 12-byte head window and one bounded 18-byte
+    // tail window. Detection then stays inside PNG's declared 32-byte probe before the selected
+    // codec performs its separately budgeted full-input read.
     expect(reads).toEqual([
-      { offset: 0n, length: 8 },
+      { offset: 0n, length: 12 },
+      { offset: BigInt(bytes.byteLength - 18), length: 18 },
       { offset: 0n, length: 32 },
       { offset: 0n, length: bytes.byteLength },
     ])
@@ -823,10 +824,13 @@ describe('detection-hostile: the bounded data-only signature index (NXT-101B / F
     // the shortlist admission is explained, not silent
     const selected = result.candidates.find(item => item.state === 'selected')
     expect(selected?.diagnostics.map(item => item.code)).toContain('x3.host/signature-match')
-    // window read (8 bytes: the PNG signature need), probe (32), then the codec's own full read
-    expect(reads[0]).toEqual({ offset: 0n, length: 8 })
-    expect(reads[1]).toEqual({ offset: 0n, length: 32 })
-    expect(reads.length).toBeLessThanOrEqual(3)
+    // Complete image inventory windows (12-byte head and 18-byte tail), PNG probe (32), then open.
+    expect(reads).toEqual([
+      { offset: 0n, length: 12 },
+      { offset: BigInt(bytes.byteLength - 18), length: 18 },
+      { offset: 0n, length: 32 },
+      { offset: 0n, length: bytes.byteLength },
+    ])
     await result.session.dispose()
   })
 
@@ -898,7 +902,7 @@ describe('detection-hostile: the bounded data-only signature index (NXT-101B / F
     expect(png?.state).not.toBe('selected')
   })
 
-  it('a subject with no matching name and no matching signature stays no-candidate and pays at most the two window reads', async () => {
+  it('a subject with no matching name and no matching signature stays no-candidate with bounded reads', async () => {
     const inventory = await inventoryOf(imagesDir)
     const noise = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     const { source, reads } = countingSource(noise, 'noise.qqq')
@@ -913,10 +917,13 @@ describe('detection-hostile: the bounded data-only signature index (NXT-101B / F
     })
     expect(result.state).toBe('unresolved')
     if (result.state === 'unresolved') expect(result.reason).toBe('no-candidate')
-    // one head window (clamped by the PNG signature need); the only other read is the
-    // pre-existing text/hex fallback sniff — no probe ever ran
-    expect(reads[0]).toEqual({ offset: 0n, length: 8 })
-    expect(reads.length).toBeLessThanOrEqual(2)
+    // Head and tail windows both clamp to this ten-byte subject; the last read is the
+    // pre-existing text/hex fallback sniff. No codec probe ever ran.
+    expect(reads).toEqual([
+      { offset: 0n, length: noise.byteLength },
+      { offset: 0n, length: noise.byteLength },
+      { offset: 0n, length: noise.byteLength },
+    ])
   })
 })
 

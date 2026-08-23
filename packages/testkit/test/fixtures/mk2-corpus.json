@@ -240,7 +240,7 @@
       "note": "TIFF 6.0 little-endian one-page RGBA8 image with bounded IFD and exact uncompressed strip pixel"
     },
     {
-      "extension": "mk2/common-archives",
+      "extension": "common/archives",
       "contributionId": "org.modkitx/gzip",
       "corpus": "synthetic",
       "sample": "minimal.gz",
@@ -257,7 +257,7 @@
       "note": "RFC 1952 single-member stream; acceptance enumerates the virtual payload and validates decompression, ISIZE, and CRC-32 during extraction"
     },
     {
-      "extension": "mk2/common-archives",
+      "extension": "common/archives",
       "contributionId": "org.modkitx/tar",
       "corpus": "synthetic",
       "sample": "minimal.tar",
@@ -274,8 +274,8 @@
       "note": "POSIX ustar entry with exact header checksum and two-block terminator; acceptance enumerates and extracts the stored file"
     },
     {
-      "extension": "mk2/common-archives",
-      "contributionId": "org.modkitx/zip",
+      "extension": "common/archives",
+      "contributionId": "org.modkitx/archive-zip",
       "corpus": "synthetic",
       "sample": "minimal.zip",
       "minimumConfidence": 0.9,
@@ -291,7 +291,7 @@
       "note": "Classic single-disk ZIP with one stored file; acceptance validates central-directory enumeration and CRC-checked extraction"
     },
     {
-      "extension": "mk2/common-archives",
+      "extension": "common/archives",
       "contributionId": "org.modkitx/cab",
       "corpus": "synthetic",
       "sample": "minimal.cab",
@@ -308,7 +308,7 @@
       "note": "CAB 1.3 with one uncompressed folder/file/CFDATA block; acceptance validates namespace enumeration and bounded stored extraction"
     },
     {
-      "extension": "mk2/common-archives",
+      "extension": "common/archives",
       "contributionId": "org.modkitx/iso",
       "corpus": "synthetic",
       "sample": "minimal.iso",
@@ -323,7 +323,7 @@
       "note": "ISO 9660 primary volume, descriptor terminator, paired path tables, root directory and one stored file"
     },
     {
-      "extension": "mk2/common-archives",
+      "extension": "common/archives",
       "contributionId": "org.modkitx/pe",
       "corpus": "synthetic",
       "sample": "minimal.exe",
@@ -355,7 +355,7 @@
       "note": "Host-resolved one-file CUE/BIN bundle with a MODE1/2048 ISO 9660 data track and one extractable filesystem file"
     },
     {
-      "extension": "mk2/common-archives",
+      "extension": "common/archives",
       "contributionId": "org.modkitx/zstd",
       "corpus": "synthetic",
       "sample": "minimal.zst",
@@ -372,7 +372,7 @@
       "note": "RFC 8878 single-segment frame with one final raw block; acceptance validates exact bounded extraction"
     },
     {
-      "extension": "mk2/common-archives",
+      "extension": "common/archives",
       "contributionId": "org.modkitx/xz",
       "corpus": "synthetic",
       "sample": "minimal.xz",
@@ -389,7 +389,7 @@
       "note": "XZ 1.2.1 Check=None stream with one uncompressed LZMA2 chunk; acceptance validates header, block, Index and footer CRC-32 values"
     },
     {
-      "extension": "mk2/common-archives",
+      "extension": "common/archives",
       "contributionId": "org.modkitx/rar",
       "corpus": "synthetic",
       "sample": "minimal.rar",
@@ -406,7 +406,7 @@
       "note": "RAR4 archive with one stored regular file; acceptance validates header and file CRCs before bounded extraction"
     },
     {
-      "extension": "mk2/common-archives",
+      "extension": "common/archives",
       "contributionId": "org.modkitx/brotli",
       "corpus": "synthetic",
       "sample": "minimal.br",
@@ -421,7 +421,7 @@
       "note": "RFC 7932 trivial-compressor stream with one uncompressed meta-block and final empty meta-block; acceptance validates bounded exact extraction"
     },
     {
-      "extension": "mk2/common-archives",
+      "extension": "common/archives",
       "contributionId": "org.modkitx/7z",
       "corpus": "synthetic",
       "sample": "minimal.7z",
@@ -438,7 +438,7 @@
       "note": "Official 7z raw Header grammar with one Copy-coded regular file; acceptance validates signature/start/next/substream CRCs and UTF-16LE FilesInfo"
     },
     {
-      "extension": "mk2/common-archives",
+      "extension": "common/archives",
       "contributionId": "org.modkitx/ps1-xa",
       "corpus": "synthetic",
       "sample": "minimal.xa",
@@ -453,7 +453,7 @@
       "note": "One CD-ROM XA Mode 2 Form 2 audio sector with duplicated subheader and computed EDC; without a sibling Westwood FAT, acceptance exposes the validated sector anonymously"
     },
     {
-      "extension": "mk2/common-archives",
+      "extension": "common/archives",
       "contributionId": "org.modkitx/bzip2",
       "corpus": "synthetic",
       "sample": "minimal.bz2",
@@ -470,7 +470,7 @@
       "note": "Canonical BZip2 stream for hello-newline; acceptance decodes all blocks and verifies their CRCs plus the combined stream CRC"
     },
     {
-      "extension": "mk2/common-archives",
+      "extension": "common/archives",
       "contributionId": "org.modkitx/lzma",
       "corpus": "synthetic",
       "sample": "minimal.lzma",
@@ -485,7 +485,7 @@
       "note": "LZMA-alone stream with standard lc/lp/pb properties, a 2 MiB dictionary and a finite six-byte output size"
     },
     {
-      "extension": "mk2/common-archives",
+      "extension": "common/archives",
       "contributionId": "org.modkitx/dmg",
       "corpus": "synthetic",
       "sample": "minimal.dmg",
