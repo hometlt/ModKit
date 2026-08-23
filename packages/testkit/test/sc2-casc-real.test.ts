@@ -18,8 +18,10 @@ import {
   type DataCatalogAnalysis,
   type GameInstallationDiscovery,
   type MapSemanticAnalysis,
+  type ModelSceneSource,
   type ModWorkspaceComposition,
   type NamespaceEntrySource,
+  type RasterImageSource,
   type ResourceBudget,
 } from '@modkitx-x3/sdk'
 import { VirtualFileSystem } from '@modkitx-x3/vfs'
@@ -363,12 +365,116 @@ describe('installed StarCraft II CASC product path', () => {
           }
           try {
             expect(nested.descriptor).toMatchObject({ identity: { formatId: expectedFormat } })
-            if (expectedFormat === 'mpq') {
+            if (expectedFormat === 'm3') {
+              const lease = await nested.session.dataSource('common.view/model-scene-source', 1)
+              try {
+                const model = lease.value as ModelSceneSource
+                const info = await model.info()
+                expect(info).toMatchObject({ geometryAccess: 'decoded' })
+                expect(info.primitives).toBeGreaterThan(0)
+                const meshes = await model.meshes({ limit: 1 })
+                const primitiveId = meshes.items[0]?.primitiveIds[0]
+                if (primitiveId === undefined || model.primitive === undefined) {
+                  throw new Error(`M3 ${path} published no readable primitive`)
+                }
+                const primitive = await model.primitive(primitiveId, {
+                  maxBytes: budget.maxScalarBytes,
+                })
+                expect(primitive.positions.length).toBeGreaterThan(0)
+                console.info(
+                  `[sc2-live] M3 ${path}: ${info.primitives} primitive(s), ${primitive.positions.length / 3} decoded vertices`,
+                )
+              } finally {
+                await lease.release()
+              }
+            } else if (expectedFormat === 'dds') {
+              const lease = await nested.session.dataSource('common.view/raster-image-source', 1)
+              try {
+                const image = lease.value as RasterImageSource
+                const info = await image.info()
+                expect(info).toMatchObject({ decodedAccess: true })
+                if (image.readRegion === undefined) throw new Error(`DDS ${path} cannot decode`)
+                const pixel = await image.readRegion({
+                  x: 0,
+                  y: 0,
+                  width: 1,
+                  height: 1,
+                  pixelFormat: 'rgba8',
+                  maxBytes: 4,
+                })
+                expect(pixel.pixels).toHaveLength(4)
+                console.info(`[sc2-live] DDS ${path}: ${info.width}x${info.height}, decoded RGBA8`)
+              } finally {
+                await lease.release()
+              }
+            } else if (expectedFormat === 'mpq') {
               const lease = await nested.session.dataSource('common.view/namespace-entry-source', 1)
               try {
-                expect(
-                  (await (lease.value as NamespaceEntrySource).list('', { limit: 1 })).items,
-                ).not.toHaveLength(0)
+                const namespace = lease.value as NamespaceEntrySource
+                const paths: string[] = []
+                let cursor: string | undefined
+                do {
+                  const page = await namespace.list('', {
+                    ...(cursor === undefined ? {} : { cursor }),
+                    limit: 1_000,
+                  })
+                  paths.push(...page.items.map(item => item.path))
+                  cursor = page.nextCursor
+                } while (cursor !== undefined)
+                expect(paths).not.toHaveLength(0)
+                const nestedDdsPath = paths.find(item => /\.dds$/iu.test(item))
+                if (nestedDdsPath === undefined) throw new Error(`MPQ ${path} contains no DDS`)
+                const extractedDds = await nested.session
+                  .operations()
+                  .invoke('extract-entry', { entryId: nestedDdsPath })
+                if (extractedDds.state !== 'ok' || extractedDds.output.kind !== 'bytes') {
+                  throw new Error(`MPQ extraction failed for ${nestedDdsPath}`)
+                }
+                const nestedDds = await openSubject({
+                  inventory,
+                  source: memorySource(extractedDds.output.value, `${path}/${nestedDdsPath}`),
+                  path: nestedDdsPath,
+                  intent: 'full',
+                  target: {
+                    environment: 'node',
+                    operatingSystem: 'windows',
+                    architecture: 'x64',
+                  },
+                  grant: { id: 'sc2-casc-mpq-dds', classes: ['read-source'] },
+                  executionBackends,
+                  budget,
+                })
+                if (nestedDds.state !== 'opened') {
+                  throw new Error(`nested MPQ DDS open failed: ${nestedDds.reason}`)
+                }
+                try {
+                  expect(nestedDds.descriptor).toMatchObject({ identity: { formatId: 'dds' } })
+                  const imageLease = await nestedDds.session.dataSource(
+                    'common.view/raster-image-source',
+                    1,
+                  )
+                  try {
+                    const image = imageLease.value as RasterImageSource
+                    const info = await image.info()
+                    expect(info.decodedAccess).toBe(true)
+                    console.info(
+                      `[sc2-live] CASC -> MPQ -> DDS ${path}/${nestedDdsPath}: ${info.width}x${info.height}`,
+                    )
+                  } finally {
+                    await imageLease.release()
+                  }
+                } finally {
+                  await nestedDds.session.dispose()
+                }
+                console.info(
+                  `[sc2-live] MPQ ${path}: ${paths.length} entries; models=${paths
+                    .filter(item => /\.m3$/iu.test(item))
+                    .slice(0, 5)
+                    .join(',')}; textures=${paths
+                    .filter(item => /\.dds$/iu.test(item))
+                    .slice(0, 5)
+                    .join(',')}`,
+                )
               } finally {
                 await lease.release()
               }
