@@ -2,6 +2,7 @@
 module.exports = Object.freeze([
   'archives',
   'audio',
+  'containers',
   'documents',
   'images',
   'models',
