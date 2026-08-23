@@ -125,7 +125,7 @@ describe('decoded model to headless PNG vertical', () => {
     },
     {
       format: 'm3',
-      codec: join(repoRoot, 'extensions', 'mk2', 'blizzard-models', 'src', 'm3', 'codec.js'),
+      codec: join(repoRoot, 'extensions', 'blizzard', 'models', 'src', 'm3', 'codec.js'),
       bytes: async () => new Uint8Array(await readFile(join(fixtureRoot, 'models', 'triangle.m3'))),
       primitiveId: 'division-0-region-0',
       digest: '1410c2b514695d3d31dfa97f1854ae27ea518f91ac37c12e581a62c54e464ccf',

@@ -104,7 +104,7 @@ describe('installed StarCraft II CASC product path', () => {
       ).toBe(true)
       const directories = [
         ['mk2', 'blizzard-casc'],
-        ['mk2', 'blizzard-models'],
+        ['blizzard', 'models'],
         ['mk2', 'blizzard-mpq'],
         ['mk2', 'common-images'],
       ]

@@ -707,7 +707,7 @@
       "note": "Legacy DDS header and one deterministic BC1/DXT1 block; acceptance reads decoded RGBA pixels"
     },
     {
-      "extension": "mk2/blizzard-models",
+      "extension": "blizzard/models",
       "contributionId": "org.modkitx/m3",
       "corpus": "synthetic",
       "sample": "minimal.m3",

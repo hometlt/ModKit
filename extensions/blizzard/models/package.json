@@ -1,10 +1,9 @@
 {
-  "name": "modkit-extension-mk2-blizzard-models",
-  "version": "0.1.0",
+  "name": "modkit-extension-x3-blizzard-models",
+  "version": "1.0.0",
   "license": "MIT",
-  "private": true,
   "type": "module",
-  "description": "MK2 → MK3 converted contributions of org.modkitx.blizzard/models (generated; see REPORT_MK2_CONVERSION).",
+  "description": "Blizzard model codecs for MK3, including decoded StarCraft II M3 geometry.",
   "modkit": {
     "schemaVersion": 1,
     "publisher": "org.modkitx.blizzard",

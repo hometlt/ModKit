@@ -27,6 +27,7 @@ packages:
   - 'extensions/common/text-toml'
   - 'extensions/common/documents'
   - 'extensions/blizzard/galaxy-language'
+  - 'extensions/blizzard/models'
   - 'extensions/blizzard/starcraft2-game'
   - 'extensions/_reference/counter-runtime'
   - 'extensions/_reference/software-renderer'

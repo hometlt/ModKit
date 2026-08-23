@@ -17,7 +17,7 @@
     {
       "format": "m3",
       "path": "packages/testkit/test/fixtures/models/triangle.m3",
-      "x3Extension": "extensions/mk2/blizzard-models",
+      "x3Extension": "extensions/blizzard/models",
       "canonicalModule": "extensions/blizzard/starcraft-2/codecs/m3/src/index.ts",
       "canonicalExport": "createM3ModelCodec",
       "canonicalFactory": true

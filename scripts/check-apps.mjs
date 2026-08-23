@@ -250,7 +250,7 @@ await checkApplicationSet(
 )
 await checkApplicationSet(
   'headless',
-  'mk2-models',
+  'blizzard-models',
   async extensions => ({ main: (await createAutomationHost(extensions)).composition }),
   { main: { offers: 1, active: 1 } },
 )

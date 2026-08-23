@@ -1,0 +1,30 @@
+{
+  "$comment": "Historical MK2 → MK3 migration notes. This file is not a contribution, not a schema and is outside the loader manifest glob. It records unsupported writer/export planes and the decisions applied while the product-owned Blizzard models extension was ported.",
+  "schemaVersion": 1,
+  "source": {
+    "repository": "modkitx",
+    "manifests": ["extensions/blizzard/starcraft-2/codecs/m3/codec.manifest.json"]
+  },
+  "verdict": "needs-new-contract",
+  "codecs": {
+    "org.modkitx/m3": {
+      "verdict": "needs-new-contract",
+      "lostPlanes": [],
+      "contractGaps": [
+        "capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract"
+      ],
+      "renames": [],
+      "converterDefaults": [
+        "operations:inspection-triple",
+        "probe:bytes-4096",
+        "representation:common.model/geometry-metadata",
+        "signatures:from-specification (Blizzard M3 container header: reversed little-endian MD33 / MD34 tags at byte zero (M3_FILE_FORMAT_SPECIFICATION, header and index table))",
+        "traits:narrowed-at-port",
+        "variants:pair"
+      ],
+      "droppedOperations": ["model.export", "model.read", "model.render", "model.write"],
+      "needsSignatures": false,
+      "portState": "ported"
+    }
+  }
+}

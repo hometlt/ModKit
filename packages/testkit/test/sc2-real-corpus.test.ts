@@ -19,7 +19,7 @@ const dds: Mk2CorpusEntry = {
 const m3Sample =
   'Maps/RustBucketYZc.SC2Map/Assets/Doodads/SpacePlatform_LandingLights_NoLensFlare/avex_SpacePlatform_LandingLights_NoLensFlare.m3'
 const m3: Mk2CorpusEntry = {
-  extension: 'mk2/blizzard-models',
+  extension: 'blizzard/models',
   contributionId: 'org.modkitx/m3',
   corpus: 'real',
   sample: m3Sample,

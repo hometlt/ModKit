@@ -61,6 +61,11 @@ const withRework = !args.includes('--mechanical-only')
 const checkOnly = args.includes('--check')
 const quiet = args.includes('--quiet')
 
+// Families that completed the staging migration are product-owned outside extensions/mk2.
+// The converter keeps reading the canonical source for allocation reports but no longer emits
+// duplicate staging packages for these coordinates.
+const RELOCATED_FAMILIES = new Set(['blizzard-models'])
+
 if (!isMk2Root(mk2Root)) {
   // `--check` runs inside `pnpm check`, and CI does not necessarily have the MK2 checkout beside
   // the lab. Without a source there is nothing to compare, which is not a failure — the same
@@ -1087,7 +1092,9 @@ if (collisions.length > 0) {
   process.exit(2)
 }
 
-const sortedGroups = [...groups.values()].sort((a, b) => (a.directory < b.directory ? -1 : 1))
+const sortedGroups = [...groups.values()]
+  .filter(group => !RELOCATED_FAMILIES.has(group.directory))
+  .sort((a, b) => (a.directory < b.directory ? -1 : 1))
 for (const group of sortedGroups) group.codecs.sort((a, b) => (a.localId < b.localId ? -1 : 1))
 
 // ---------------------------------------------------------------- port state
