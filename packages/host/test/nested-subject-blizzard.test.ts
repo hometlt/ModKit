@@ -31,6 +31,7 @@ import {
   type ArtifactByteSource,
   type AssetSession,
   type NamespaceEntrySource,
+  type PageRequest,
   type ResourceBudget,
 } from '@modkitx-x3/sdk'
 import { VirtualFileSystem } from '@modkitx-x3/vfs'
@@ -336,7 +337,7 @@ describe('CASC — the installed StarCraft II namespace', () => {
         const namespace = namespaceLease.value as NamespaceEntrySource
         const origin = createNamespaceCompanionOrigin({
           namespace: Object.freeze({
-            async list(prefix: string, page, signal) {
+            async list(prefix: string, page: PageRequest, signal?: AbortSignal) {
               const result = await namespace.list(prefix, page, signal)
               enumerated += result.items.length
               return result
