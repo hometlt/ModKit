@@ -1,0 +1,347 @@
+{
+  "schemaVersion": 1,
+  "note": "Block 9 step 4. Every model format that declares companions must answer every negative case, or say why the case cannot apply to it. A cell is `covered-by-existing` when a slice already proved it (the test is named so the claim is checkable), `added` when step 4 wrote it, and `not-applicable` only with a reason that is a fact about the format or the codec, never a plan.",
+  "cases": [
+    {
+      "id": "complete-companion-set",
+      "title": "every declared companion present and bound"
+    },
+    {
+      "id": "missing-required-companion",
+      "title": "a required companion is absent"
+    },
+    {
+      "id": "missing-optional-companion",
+      "title": "an optional companion is absent"
+    },
+    {
+      "id": "invalid-companion-magic",
+      "title": "a companion is present but its magic or version is wrong"
+    },
+    {
+      "id": "truncated-input",
+      "title": "a truncated primary or companion"
+    },
+    {
+      "id": "duplicate-or-ambiguous-candidates",
+      "title": "more candidates than the declared cardinality admits"
+    },
+    {
+      "id": "traversal-or-absolute-reference",
+      "title": "a traversal or absolute reference, in a pattern or derived from content"
+    },
+    {
+      "id": "case-collision",
+      "title": "two candidates differing only in case"
+    },
+    {
+      "id": "invalid-or-overbroad-pattern",
+      "title": "a pattern that is malformed or would scan everything"
+    },
+    {
+      "id": "budget-exceeded",
+      "title": "entry, probe-byte, binding and deadline budgets"
+    },
+    {
+      "id": "cancellation",
+      "title": "cancellation during enumeration, probe and open"
+    },
+    {
+      "id": "protected-or-unknown-tail",
+      "title": "bytes the reader does not decode survive and are reported"
+    },
+    {
+      "id": "teardown-after-failure",
+      "title": "no leaked lease, no double close, parent namespace still usable"
+    }
+  ],
+  "sharedResolverNote": "The host resolver is one implementation shared by every format, so the cases that are properties of resolution rather than of a file — patterns, budgets, cancellation, case folding, teardown — are proved once against a fake origin backend and hold for all four formats. Those cells point at that suite instead of repeating it four times.",
+  "formats": {
+    "red-alert2-vxl": {
+      "label": "Red Alert 2 VXL (+ HVA sidecar)",
+      "cells": {
+        "complete-companion-set": {
+          "status": "covered-by-existing",
+          "file": "packages/testkit/test/ea-vxl-hva-companion.test.ts",
+          "test": "binds a multi-frame sidecar by section name and publishes its rest pose with provenance"
+        },
+        "missing-required-companion": {
+          "status": "not-applicable",
+          "reason": "VXL declares exactly one requirement and it is optional: a voxel model without its .hva is a complete voxel model, so the format has no required companion to lose."
+        },
+        "missing-optional-companion": {
+          "status": "covered-by-existing",
+          "file": "packages/testkit/test/ea-vxl-hva-companion.test.ts",
+          "test": "opens without a sidecar and says the capability is simply absent"
+        },
+        "invalid-companion-magic": {
+          "status": "added",
+          "file": "packages/testkit/test/negative-corpus.test.ts",
+          "test": "VXL refuses an HVA whose header is not an HVA header"
+        },
+        "truncated-input": {
+          "status": "covered-by-existing",
+          "file": "packages/testkit/test/ea-vxl-hva-companion.test.ts",
+          "test": "keeps the model readable when the sidecar is truncated, and names the damage",
+          "note": "Truncated primary is covered by `VXL refuses a truncated primary` in negative-corpus.test.ts."
+        },
+        "duplicate-or-ambiguous-candidates": {
+          "status": "added",
+          "file": "packages/testkit/test/negative-corpus.test.ts",
+          "test": "VXL refuses two sidecars that both answer the declared name"
+        },
+        "traversal-or-absolute-reference": {
+          "status": "covered-by-existing",
+          "file": "packages/host/test/companion-input-resolution.test.ts",
+          "test": "refuses a candidate carrying %s",
+          "note": "VXL derives its pattern from its own subject identity, not from file content, so there is no content-derived reference to poison; the host refuses hostile candidate ids for every backend."
+        },
+        "case-collision": {
+          "status": "covered-by-existing",
+          "file": "packages/host/test/companion-input-resolution.test.ts",
+          "test": "folds case on an insensitive backend, so two spellings are one companion"
+        },
+        "invalid-or-overbroad-pattern": {
+          "status": "covered-by-existing",
+          "file": "packages/host/test/companion-input-resolution.test.ts",
+          "test": "refuses a pattern with %s"
+        },
+        "budget-exceeded": {
+          "status": "covered-by-existing",
+          "file": "packages/host/test/companion-input-resolution.test.ts",
+          "test": "stops enumerating at its entry limit instead of walking a large directory"
+        },
+        "cancellation": {
+          "status": "covered-by-existing",
+          "file": "packages/host/test/companion-input-resolution.test.ts",
+          "test": "cancels in the middle of an enumeration and leaves nothing open"
+        },
+        "protected-or-unknown-tail": {
+          "status": "added",
+          "file": "packages/testkit/test/negative-corpus.test.ts",
+          "test": "VXL reports sidecar bytes its header does not describe"
+        },
+        "teardown-after-failure": {
+          "status": "covered-by-existing",
+          "file": "packages/host/test/companion-input-resolution.test.ts",
+          "test": "cancels between two opens and releases the lease it already took"
+        }
+      }
+    },
+    "westwood-w3d": {
+      "label": "Westwood W3D (+ texture companions)",
+      "cells": {
+        "complete-companion-set": {
+          "status": "covered-by-existing",
+          "file": "packages/testkit/test/ea-w3d-structure.test.ts",
+          "test": "declares the exact texture the model names and binds it from the sibling directory"
+        },
+        "missing-required-companion": {
+          "status": "not-applicable",
+          "reason": "W3D declares only optional texture companions: Command & Conquer 3 ships its models in Misc.big and its textures in Terrain.big, so a model whose textures are unreachable is a complete model and must still open."
+        },
+        "missing-optional-companion": {
+          "status": "covered-by-existing",
+          "file": "packages/testkit/test/ea-w3d-structure.test.ts",
+          "test": "opens with the texture missing and reports it as unbound"
+        },
+        "invalid-companion-magic": {
+          "status": "not-applicable",
+          "reason": "The W3D codec binds texture bytes and never decodes them, so it has no magic to check; a corrupt DDS is the image codec's problem when that subject is opened, not this one's."
+        },
+        "truncated-input": {
+          "status": "covered-by-existing",
+          "file": "packages/testkit/test/ea-w3d-structure.test.ts",
+          "test": "refuses a chunk whose declared size runs past its parent"
+        },
+        "duplicate-or-ambiguous-candidates": {
+          "status": "covered-by-existing",
+          "file": "packages/testkit/test/ea-w3d-structure.test.ts",
+          "test": "refuses two archive entries that both answer the declared name"
+        },
+        "traversal-or-absolute-reference": {
+          "status": "added",
+          "file": "packages/testkit/test/negative-corpus.test.ts",
+          "test": "W3D refuses a texture name that is a path"
+        },
+        "case-collision": {
+          "status": "covered-by-existing",
+          "file": "packages/host/test/companion-input-resolution.test.ts",
+          "test": "folds case on an insensitive backend, so two spellings are one companion"
+        },
+        "invalid-or-overbroad-pattern": {
+          "status": "covered-by-existing",
+          "file": "packages/host/test/companion-input-resolution.test.ts",
+          "test": "refuses a pattern with %s"
+        },
+        "budget-exceeded": {
+          "status": "covered-by-existing",
+          "file": "packages/host/test/companion-input-resolution.test.ts",
+          "test": "stops enumerating at its entry limit instead of walking a large directory",
+          "note": "W3D also holds its own chunk walk to the declared depth: `holds a deep chunk nest to the declared depth budget`."
+        },
+        "cancellation": {
+          "status": "covered-by-existing",
+          "file": "packages/host/test/companion-input-resolution.test.ts",
+          "test": "cancels in the middle of an enumeration and leaves nothing open"
+        },
+        "protected-or-unknown-tail": {
+          "status": "covered-by-existing",
+          "file": "packages/testkit/test/ea-w3d-structure.test.ts",
+          "test": "preserves a compressed-animation chunk it does not decode, and says so"
+        },
+        "teardown-after-failure": {
+          "status": "covered-by-existing",
+          "file": "packages/host/test/nested-subject-companion.test.ts",
+          "test": "holds the container while the child lives and gives it back on dispose"
+        }
+      }
+    },
+    "sage-w3x": {
+      "label": "SAGE W3X (+ skeleton and texture companions)",
+      "cells": {
+        "complete-companion-set": {
+          "status": "covered-by-existing",
+          "file": "packages/testkit/test/ea-w3x-structure.test.ts",
+          "test": "names bones from the bound skeleton and marks them as companion facts"
+        },
+        "missing-required-companion": {
+          "status": "not-applicable",
+          "reason": "Both W3X requirements are optional: a mesh opened on its own is a complete mesh, and the skeleton only adds bone names, so the format declares nothing it must have."
+        },
+        "missing-optional-companion": {
+          "status": "covered-by-existing",
+          "file": "packages/testkit/test/ea-w3x-structure.test.ts",
+          "test": "leaves a bone unnamed when no hierarchy is reachable, instead of borrowing the part id"
+        },
+        "invalid-companion-magic": {
+          "status": "added",
+          "file": "packages/testkit/test/negative-corpus.test.ts",
+          "test": "W3X ignores a bound skeleton that is not a W3X document"
+        },
+        "truncated-input": {
+          "status": "added",
+          "file": "packages/testkit/test/negative-corpus.test.ts",
+          "test": "W3X refuses a document truncated mid-element"
+        },
+        "duplicate-or-ambiguous-candidates": {
+          "status": "added",
+          "file": "packages/testkit/test/negative-corpus.test.ts",
+          "test": "W3X refuses two skeletons that both answer the declared id"
+        },
+        "traversal-or-absolute-reference": {
+          "status": "covered-by-existing",
+          "file": "packages/testkit/test/ea-w3x-structure.test.ts",
+          "test": "refuses a hierarchy reference that is %s"
+        },
+        "case-collision": {
+          "status": "covered-by-existing",
+          "file": "packages/host/test/companion-input-resolution.test.ts",
+          "test": "folds case on an insensitive backend, so two spellings are one companion"
+        },
+        "invalid-or-overbroad-pattern": {
+          "status": "covered-by-existing",
+          "file": "packages/host/test/companion-input-resolution.test.ts",
+          "test": "refuses a pattern with %s"
+        },
+        "budget-exceeded": {
+          "status": "covered-by-existing",
+          "file": "packages/host/test/companion-input-resolution.test.ts",
+          "test": "stops enumerating at its entry limit instead of walking a large directory"
+        },
+        "cancellation": {
+          "status": "covered-by-existing",
+          "file": "packages/host/test/companion-input-resolution.test.ts",
+          "test": "cancels in the middle of an enumeration and leaves nothing open"
+        },
+        "protected-or-unknown-tail": {
+          "status": "covered-by-existing",
+          "file": "packages/testkit/test/ea-w3x-structure.test.ts",
+          "test": "reports tags it does not decode instead of dropping them silently"
+        },
+        "teardown-after-failure": {
+          "status": "covered-by-existing",
+          "file": "packages/host/test/nested-subject-companion.test.ts",
+          "test": "gives the container back when %s"
+        }
+      }
+    },
+    "m3": {
+      "label": "StarCraft II M3 (+ texture companions)",
+      "cells": {
+        "complete-companion-set": {
+          "status": "covered-by-existing",
+          "file": "packages/testkit/test/blizzard-m3-companion.test.ts",
+          "test": "binds a texture the model names, out of the same archive, through current-mount"
+        },
+        "missing-required-companion": {
+          "status": "not-applicable",
+          "reason": "M3 declares only optional texture companions: StarCraft II files a model and its textures under different mod roots of one merged namespace, so an unbound texture is the normal shipped case."
+        },
+        "missing-optional-companion": {
+          "status": "covered-by-existing",
+          "file": "packages/testkit/test/blizzard-m3-companion.test.ts",
+          "test": "opens from a plain directory with the path-shaped reference unbound"
+        },
+        "invalid-companion-magic": {
+          "status": "not-applicable",
+          "reason": "The M3 codec binds texture bytes and never decodes them, so it has no magic to check; validating a DDS belongs to the image codec that opens it as its own subject."
+        },
+        "truncated-input": {
+          "status": "added",
+          "file": "packages/testkit/test/negative-corpus.test.ts",
+          "test": "M3 refuses a section index that runs past the file"
+        },
+        "duplicate-or-ambiguous-candidates": {
+          "status": "covered-by-existing",
+          "file": "packages/testkit/test/blizzard-m3-companion.test.ts",
+          "test": "binds a texture the model names, out of the same archive, through current-mount",
+          "note": "The same test carries the decoy: a second .dds beside the named one is never bound, because the declaration is an exact path rather than an extension."
+        },
+        "traversal-or-absolute-reference": {
+          "status": "covered-by-existing",
+          "file": "packages/testkit/test/blizzard-m3-companion.test.ts",
+          "test": "refuses a reference that is %s"
+        },
+        "case-collision": {
+          "status": "covered-by-existing",
+          "file": "packages/host/test/companion-input-resolution.test.ts",
+          "test": "folds case on an insensitive backend, so two spellings are one companion"
+        },
+        "invalid-or-overbroad-pattern": {
+          "status": "covered-by-existing",
+          "file": "packages/host/test/companion-input-resolution.test.ts",
+          "test": "refuses a pattern with %s"
+        },
+        "budget-exceeded": {
+          "status": "covered-by-existing",
+          "file": "packages/host/test/nested-subject-blizzard.test.ts",
+          "test": "refuses a name-only requirement over a namespace too large to scan",
+          "note": "Measured on the installed StarCraft II CASC: 666,588 entries, refused by budget rather than scanned."
+        },
+        "cancellation": {
+          "status": "covered-by-existing",
+          "file": "packages/host/test/companion-input-resolution.test.ts",
+          "test": "cancels in the middle of an enumeration and leaves nothing open"
+        },
+        "protected-or-unknown-tail": {
+          "status": "not-applicable",
+          "reason": "The M3 codec claims no byte-preservation contract: it publishes the section index and does not rewrite the file, so there is no protected tail it could drop. Section tags it does not decode are already listed in `sectionTags`."
+        },
+        "teardown-after-failure": {
+          "status": "covered-by-existing",
+          "file": "packages/host/test/nested-subject-companion.test.ts",
+          "test": "holds the container while the child lives and gives it back on dispose"
+        }
+      }
+    }
+  },
+  "crossCutting": [
+    {
+      "id": "no-absolute-path-in-diagnostics",
+      "status": "added",
+      "file": "packages/testkit/test/negative-corpus.test.ts",
+      "test": "no failure path leaks an absolute local path into a diagnostic"
+    }
+  ]
+}
