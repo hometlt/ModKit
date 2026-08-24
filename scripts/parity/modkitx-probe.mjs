@@ -186,10 +186,15 @@ async function bigResult() {
 function cnc3DataResult() {
   const text = new TextDecoder().decode(bytes)
   const document = imported.parseAssetDeclaration(text)
-  const leaves = document.includes.length + document.assets.length
-  const kinds = 2 + Number(document.includes.length > 0) + Number(document.assets.length > 0)
+  const nodes =
+    1 + document.includes.length + document.assets.length + Number(document.includes.length > 0)
+  const kinds = 1 + Number(document.includes.length > 0) * 2 + Number(document.assets.length > 0)
   return result('cnc3-data', [
-    treeSource({ nodes: 3 + leaves, maxDepth: leaves > 0 ? 2 : 1, kinds }),
+    treeSource({
+      nodes,
+      maxDepth: document.includes.length > 0 ? 2 : document.assets.length > 0 ? 1 : 0,
+      kinds,
+    }),
     tableSource({ rows: document.assets.length, columns: 2 }),
     textSource(text),
   ])

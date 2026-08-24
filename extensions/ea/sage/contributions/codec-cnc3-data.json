@@ -21,7 +21,7 @@
     }
   ],
   "limitations": [
-    "Reads the declaration shell: namespace, `Includes`, and every top-level asset's element type and `id`. Asset bodies are not interpreted and there is no schema, so no field is typed or validated.",
+    "Reads the namespace, ordered `Includes`, every top-level asset's element type and `id`, and preserves complete element/attribute nesting in the tree. There is no SAGE schema, so fields are not semantically typed or validated.",
     "`Include` sources are normalized to archive paths (`DATA:` -> `data/`, `ART:` -> `art/`) but relative paths remain relative and the include graph is not walked or merged.",
     "A retail install ships almost no `.xml`; its game data is compiled into `.bin`/`.manifest`/`.relo`/`.imp` plus `.cdata`, none of which this codec reads. Authored data is effectively a mod-side format.",
     "Compiled `.bin`/`.manifest`/`.relo`/`.imp` and `.cdata` are not decoded; editing and writing are not implemented."

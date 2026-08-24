@@ -11,6 +11,7 @@ import {
   type NamespaceEntrySource,
   type ResourceBudget,
   type TableDataSource,
+  type TreeDataSource,
 } from '@modkitx-x3/sdk'
 
 type CodecId = 'cnc3-data' | 'cnc3-localization' | 'cnc3-map'
@@ -123,6 +124,57 @@ describe('ported EA SAGE semantic codecs', () => {
       assetCountsByType: { GameMap: 1, GameScriptList: 1 },
       includeResolution: 'paths-only',
     })
+    const tableLease = await session.dataSource('common.view/table-data-source', 1)
+    const table = tableLease.value as TableDataSource
+    expect(await table.shape()).toEqual({
+      rows: 2,
+      columns: 2,
+      header: ['Type', 'Id'],
+    })
+    expect((await table.rows({ kind: 'range', from: 0, count: 10 })).items).toEqual([
+      { index: 0, cells: ['GameMap', 'FixtureMap'] },
+      { index: 1, cells: ['GameScriptList', 'FixtureScripts'] },
+    ])
+    await tableLease.release()
+    await session.dispose()
+  })
+
+  it('preserves nested AssetDeclaration bodies in the lazy tree', async () => {
+    const xml = new TextEncoder().encode(`
+      <AssetDeclaration xmlns="uri:ea.com:eala:asset">
+        <GameMap id="NestedMap">
+          <WorldBuilderMapInfo>
+            <MapMetaData displayName="Fixture"/>
+          </WorldBuilderMapInfo>
+        </GameMap>
+      </AssetDeclaration>
+    `)
+    const session = await open('cnc3-data', xml, 'nested.xml')
+    const lease = await session.dataSource('common.view/tree-data-source', 1)
+    const tree = lease.value as TreeDataSource
+    const root = await tree.root()
+    expect(await tree.facts(root)).toMatchObject({ kind: 'catalog', label: 'AssetDeclaration' })
+    const gameMap = (await tree.children(root, { limit: 10 })).items[0]
+    if (gameMap === undefined) throw new Error('nested fixture has no GameMap node')
+    expect(await tree.facts(gameMap)).toMatchObject({
+      kind: 'asset',
+      label: 'GameMap',
+      preview: 'id=NestedMap',
+    })
+    const mapInfo = (await tree.children(gameMap, { limit: 10 })).items[0]
+    if (mapInfo === undefined) throw new Error('nested fixture has no WorldBuilderMapInfo node')
+    expect(await tree.facts(mapInfo)).toMatchObject({
+      kind: 'element',
+      label: 'WorldBuilderMapInfo',
+    })
+    const metadata = (await tree.children(mapInfo, { limit: 10 })).items[0]
+    if (metadata === undefined) throw new Error('nested fixture has no MapMetaData node')
+    expect(await tree.facts(metadata)).toMatchObject({
+      kind: 'element',
+      label: 'MapMetaData',
+      preview: 'displayName=Fixture',
+    })
+    await lease.release()
     await session.dispose()
   })
 

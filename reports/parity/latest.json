@@ -7,16 +7,12 @@
   },
   "x3": {
     "root": "C:\\FILES\\SC2Files\\coding\\modkitX3",
-    "sha": "90679496f6c830902457c15f160b153beb366f2a"
+    "sha": "b93c22f795178b8a7e3ec5d997c0d34364d6c773"
   },
   "summary": [
     { "format": "big", "state": "compared", "classification": "паритет" },
     { "format": "big-real-cnc3", "state": "skipped", "classification": null },
-    {
-      "format": "cnc3-data",
-      "state": "compared",
-      "classification": "X3 беднее"
-    },
+    { "format": "cnc3-data", "state": "compared", "classification": "паритет" },
     {
       "format": "cnc3-localization",
       "state": "compared",
@@ -54,15 +50,6 @@
     { "format": "zip", "state": "compared", "classification": "паритет" }
   ],
   "poorer": [
-    {
-      "format": "cnc3-data",
-      "classification": "X3 беднее",
-      "missing": [
-        "common.view/table-data-source:source:common.view/table-data-source",
-        "source:common.view/table-data-source"
-      ],
-      "reason": "Block 8 M5: the staging codec has not published its asset table yet."
-    },
     {
       "format": "cnc3-localization",
       "classification": "X3 беднее",
@@ -396,11 +383,8 @@
       "format": "cnc3-data",
       "state": "compared",
       "sample": "packages/testkit/test/fixtures/mk2-synthetic/minimal.cnc3-data.xml",
-      "classification": "X3 беднее",
-      "missing": [
-        "common.view/table-data-source:source:common.view/table-data-source",
-        "source:common.view/table-data-source"
-      ],
+      "classification": "паритет",
+      "missing": [],
       "extra": [
         "operation:asset.validate",
         "operation:export.raw",
@@ -410,8 +394,8 @@
       "sourceComparisons": [
         {
           "contract": "common.view/table-data-source",
-          "classification": "X3 беднее",
-          "missing": ["source:common.view/table-data-source"],
+          "classification": "паритет",
+          "missing": [],
           "extra": []
         },
         {
@@ -473,7 +457,7 @@
             "state": "opened",
             "features": ["children", "facts", "root"],
             "measurements": {
-              "nodes": 7,
+              "nodes": 6,
               "maxDepth": 2,
               "kinds": 4,
               "complete": true
@@ -493,11 +477,13 @@
         "formatId": "cnc3-data",
         "declaredSources": [
           "common.view/byte-range-source",
+          "common.view/table-data-source",
           "common.view/text-data-source",
           "common.view/tree-data-source"
         ],
         "actualSources": [
           "common.view/byte-range-source",
+          "common.view/table-data-source",
           "common.view/text-data-source",
           "common.view/tree-data-source"
         ],
@@ -509,6 +495,19 @@
             "state": "opened",
             "features": ["read", "size"],
             "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/table-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["cell", "rows", "shape"],
+            "measurements": {
+              "columns": 2,
+              "firstPageRows": 1,
+              "rows": 2,
+              "rowsKnown": true,
+              "typedColumns": 2
+            }
           },
           {
             "contract": "common.view/text-data-source",
@@ -532,7 +531,7 @@
               "complete": true,
               "kinds": 4,
               "maxDepth": 2,
-              "nodes": 7
+              "nodes": 6
             }
           }
         ],
@@ -549,6 +548,7 @@
           "operation:export.raw",
           "operation:view.inspect",
           "source:common.view/byte-range-source",
+          "source:common.view/table-data-source",
           "source:common.view/text-data-source",
           "source:common.view/tree-data-source"
         ]
@@ -561,6 +561,7 @@
         ],
         "x3": [
           "common.view/byte-range-source",
+          "common.view/table-data-source",
           "common.view/text-data-source",
           "common.view/tree-data-source"
         ]
@@ -599,7 +600,7 @@
             "state": "opened",
             "features": ["children", "facts", "root"],
             "measurements": {
-              "nodes": 7,
+              "nodes": 6,
               "maxDepth": 2,
               "kinds": 4,
               "complete": true
@@ -613,6 +614,19 @@
             "state": "opened",
             "features": ["read", "size"],
             "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/table-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["cell", "rows", "shape"],
+            "measurements": {
+              "columns": 2,
+              "firstPageRows": 1,
+              "rows": 2,
+              "rowsKnown": true,
+              "typedColumns": 2
+            }
           },
           {
             "contract": "common.view/text-data-source",
@@ -636,17 +650,14 @@
               "complete": true,
               "kinds": 4,
               "maxDepth": 2,
-              "nodes": 7
+              "nodes": 6
             }
           }
         ]
       },
       "comparison": {
-        "classification": "X3 беднее",
-        "missing": [
-          "common.view/table-data-source:source:common.view/table-data-source",
-          "source:common.view/table-data-source"
-        ],
+        "classification": "паритет",
+        "missing": [],
         "extra": [
           "operation:asset.validate",
           "operation:export.raw",
@@ -656,8 +667,8 @@
         "sources": [
           {
             "contract": "common.view/table-data-source",
-            "classification": "X3 беднее",
-            "missing": ["source:common.view/table-data-source"],
+            "classification": "паритет",
+            "missing": [],
             "extra": []
           },
           {
