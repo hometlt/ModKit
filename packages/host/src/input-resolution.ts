@@ -1,12 +1,21 @@
 /**
- * Host-owned companion input resolution (block 9, step 1 — filesystem slice).
+ * Host-owned companion input resolution (block 9, step 1).
  *
  * A codec declares *what* it needs (`AssetInputRequirement`: role, patterns, expected traits,
  * search scopes, cardinality) and never *where* it lives. This module is the host side of that
  * seam: it takes a host-private origin — the trusted place the primary subject actually came
  * from — enumerates it under an explicit budget, and hands the codec back an `AssetInput` whose
- * only reachable sources are the bindings the host itself chose. No path, URI or directory handle
- * ever reaches the codec.
+ * only reachable sources are the bindings the host itself chose.
+ *
+ * **What the codec does and does not get.** It receives host-issued *source identity* for the
+ * bindings that were selected — `ResolvedAssetInputBinding.source` is a real `AssetSourceRef` with
+ * a real URI, and under `read-source` seeing the identity metadata of a source it was granted is
+ * exactly what that permission means. What it does not receive is an origin handle, or any right
+ * to resolve, construct or open a URI of its own choosing: `openBinding` accepts only ids the host
+ * minted for this input, the origin stays captured in a closure the codec never sees, and there is
+ * no enumeration surface on `AssetInput` at all. An earlier version of this comment claimed no URI
+ * ever reaches a codec, which was simply not true of the ABI and is worth stating accurately —
+ * the boundary is authority over resolution, not concealment of names.
  *
  * Three rules hold the design together, and each of them is a test:
  *

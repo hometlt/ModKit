@@ -3,7 +3,8 @@
  *
  * It exists to prove one thing: a codec that needs a second file declares that need and then reads
  * whatever the host handed back — `bindingsFor(requirementId)` and `openBinding(bindingId)`, and
- * nothing else. There is no path here, no directory listing, no name construction; if the host
+ * nothing else. There is no directory listing here and no name construction — the codec may read
+ * the identity of a binding it was handed, but cannot ask for one it was not; if the host
  * bound nothing, the codec reports the capability as unavailable rather than inventing it.
  */
 

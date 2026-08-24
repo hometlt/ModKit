@@ -72,8 +72,9 @@ export function createPathSubjectOpener(options: PathSubjectOpenerOptions): Subj
     /*
      * The subject came from a real place on disk, and this opener is the last point that still
      * knows where: the directory it sits in, confined to the roots the product granted. That fact
-     * is closed over by the resolver and never travels further — a codec asking for a companion
-     * receives bindings, not a path.
+     * is closed over by the resolver: a codec asking for a companion receives host-issued
+     * bindings — identity it may read, under the `read-source` it already holds — and no directory
+     * handle, no roots list and no way to name a file the host did not select for it.
      */
     const companionDiagnostics: Diagnostic[] = []
     const resolveInput = createCompanionInputResolver(

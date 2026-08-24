@@ -3,7 +3,8 @@
  *
  * Same discipline as the sibling fixture, one archive deeper: this codec declares that it needs a
  * texture, and then reads whatever the host bound. It has no filesystem access, no container
- * handle, no entry id and no idea that it is inside a BIG at all — which is the point. If the
+ * handle, no listing and no way to name an entry the host did not bind — which is the point. It
+ * can read the identity of what it was given, and nothing beyond it. If the
  * archive backend were quietly falling back to disk, nothing here would change, so the test that
  * proves it does not is a host-side counter, not a codec-side assertion.
  */
