@@ -78,6 +78,7 @@ const RELOCATED_FAMILIES = new Set([
   'common-containers',
   'ea-archives',
   'ea-emperor',
+  'ea-westwood',
 ])
 
 if (!isMk2Root(mk2Root)) {

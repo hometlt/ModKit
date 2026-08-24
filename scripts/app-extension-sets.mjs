@@ -212,6 +212,19 @@ export const READY_APP_EXTENSIONS = Object.freeze({
     coordinate: 'org.modkitx.ea/emperor',
     contributions: Object.freeze(['org.modkitx/emperor-rfh-rfd', 'org.modkitx/emperor-xbf']),
   }),
+  'ea-westwood': Object.freeze({
+    path: Object.freeze(['ea', 'westwood']),
+    coordinate: 'org.modkitx.ea/westwood',
+    contributions: Object.freeze([
+      'org.modkitx/cps',
+      'org.modkitx/r16',
+      'org.modkitx/r8',
+      'org.modkitx/shp',
+      'org.modkitx/tmp',
+      'org.modkitx/vpl',
+      'org.modkitx/wsa',
+    ]),
+  }),
   'mk2-ea-sage': Object.freeze({
     path: Object.freeze(['mk2', 'ea-sage']),
     coordinate: 'org.modkitx.ea/sage',
@@ -251,6 +264,7 @@ const mk2Extended = Object.freeze([
   'images',
   'ea-archives',
   'ea-emperor',
+  'ea-westwood',
   'mk2-ea-sage',
 ])
 

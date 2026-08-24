@@ -437,6 +437,12 @@ importers:
         specifier: workspace:*
         version: link:../../codec-kit/codec-kit
 
+  extensions/ea/westwood:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../codec-kit/codec-kit
+
   extensions/mk2/adobe-flash:
     dependencies:
       '@modkitx-x3/codec-kit':
@@ -492,12 +498,6 @@ importers:
         version: link:../../codec-kit/codec-kit
 
   extensions/mk2/ea-tiberian-sun:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
-
-  extensions/mk2/ea-westwood:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
