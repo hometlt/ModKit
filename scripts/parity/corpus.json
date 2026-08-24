@@ -163,6 +163,76 @@
       "canonicalModule": "extensions/ea/tiberian-sun/codecs/red-alert2-vxl/src/index.ts",
       "canonicalExport": "redAlert2VxlModelCodec",
       "baseline": "X3 богаче"
+    },
+    {
+      "id": "sage-w3x-real-env",
+      "kind": "real",
+      "format": "sage-w3x-real",
+      "contributionId": "org.modkitx.ea/sage-w3x",
+      "environment": "MODKITX_W3X_PATH",
+      "expectFormatId": "sage-w3x",
+      "x3Extension": "extensions/ea/models",
+      "canonicalModule": "extensions/ea/models/codecs/sage-w3x/src/index.ts",
+      "canonicalExport": "sageW3xModelCodec",
+      "baseline": "X3 богаче"
+    },
+    {
+      "id": "westwood-w3d-real-env",
+      "kind": "real",
+      "format": "westwood-w3d-real",
+      "contributionId": "org.modkitx.ea/westwood-w3d",
+      "environment": "MODKITX_W3D_PATH",
+      "expectFormatId": "westwood-w3d",
+      "x3Extension": "extensions/ea/models",
+      "canonicalModule": "extensions/ea/models/codecs/westwood-w3d/src/index.ts",
+      "canonicalExport": "westwoodW3dModelCodec",
+      "baseline": "X3 беднее",
+      "allowPoorerReason": "X3 publishes no animation channel for the real W3D model while the canonical codec reports one. W3D animation depth is queued for Block 9 step 3."
+    },
+    {
+      "id": "westwood-w3d-real-big-entry",
+      "kind": "real",
+      "format": "westwood-w3d-real-big",
+      "contributionId": "org.modkitx.ea/westwood-w3d",
+      "environment": "MODKITX_CNC3_ROOT",
+      "container": {
+        "relativePath": "Core/1.0/Misc.big",
+        "x3Extension": "extensions/ea/big",
+        "entry": "data/editor/molds/bowl.w3d"
+      },
+      "expectFormatId": "westwood-w3d",
+      "x3Extension": "extensions/ea/models",
+      "canonicalModule": "extensions/ea/models/codecs/westwood-w3d/src/index.ts",
+      "canonicalExport": "westwoodW3dModelCodec",
+      "baseline": "X3 богаче"
+    },
+    {
+      "id": "red-alert2-vxl-real-env",
+      "kind": "real",
+      "format": "red-alert2-vxl-real",
+      "contributionId": "org.modkitx.ea/red-alert2-vxl",
+      "environment": "MODKITX_VXL_PATH",
+      "expectFormatId": "red-alert2-vxl",
+      "x3Extension": "extensions/ea/tiberian-sun",
+      "canonicalModule": "extensions/ea/tiberian-sun/codecs/red-alert2-vxl/src/index.ts",
+      "canonicalExport": "redAlert2VxlModelCodec",
+      "baseline": "X3 богаче"
+    },
+    {
+      "id": "emperor-xbf-real-env",
+      "kind": "real",
+      "format": "emperor-xbf-real",
+      "contributionId": "org.modkitx.ea/emperor-xbf",
+      "environment": "MODKITX_EMPEROR_ROOT",
+      "discover": {
+        "extension": ".xbf"
+      },
+      "expectFormatId": "emperor-xbf",
+      "x3Extension": "extensions/ea/emperor",
+      "canonicalModule": "extensions/ea/emperor/codecs/emperor-xbf/src/index.ts",
+      "canonicalExport": "emperorXbfModelCodec",
+      "baseline": "X3 беднее",
+      "allowPoorerReason": "X3 emperor-xbf is metadata-only on a real retail model: no meshes, materials or animation tracks are published, while the canonical codec decodes 4 meshes, 5 materials and 25 animations. A genuine depth gap queued for Block 9 step 3."
     }
   ]
 }
