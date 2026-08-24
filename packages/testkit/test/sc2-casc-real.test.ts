@@ -348,6 +348,39 @@ describe('installed StarCraft II CASC product path', () => {
           if (extracted.state !== 'ok' || extracted.output.kind !== 'bytes') {
             throw new Error(`CASC extraction failed for ${path}`)
           }
+          /*
+           * The nested subject is resolved against the CASC it came out of, exactly as the product
+           * does. A codec that declares companions — M3 names its textures — returns a composite
+           * plan, and a plan with requirements has to be resolved by somebody; without an origin
+           * this open would fail closed on `x3.host/input-resolver-required`, which is the host
+           * refusing to guess rather than anything wrong with the model.
+           */
+          const { createCompanionInputResolver } = await import(
+            pathToFileURL(join(repoRoot, 'packages', 'host', 'src', 'input-resolution.js')).href
+          )
+          const { createNamespaceCompanionOrigin } = await import(
+            pathToFileURL(join(repoRoot, 'packages', 'host', 'src', 'namespace-origin.js')).href
+          )
+          const companionLease = await casc.session.dataSource(
+            'common.view/namespace-entry-source',
+            1,
+          )
+          const resolveInput = createCompanionInputResolver(
+            createNamespaceCompanionOrigin({
+              namespace: companionLease.value as NamespaceEntrySource,
+              primaryLogicalId: path,
+              containerRevision: (await casc.session.descriptor()).revision,
+              extract: async (entryId, signal) => {
+                const payload = await casc.session
+                  .operations()
+                  .invoke('extract-entry', { entryId }, signal === undefined ? {} : { signal })
+                if (payload.state !== 'ok' || payload.output.kind !== 'bytes') {
+                  throw new Error(`CASC extraction failed for ${entryId}`)
+                }
+                return payload.output.value
+              },
+            }),
+          )
           const nested = await openSubject({
             inventory,
             source: memorySource(extracted.output.value, path),
@@ -357,7 +390,9 @@ describe('installed StarCraft II CASC product path', () => {
             grant: { id: `sc2-casc-nested-${expectedFormat}`, classes: ['read-source'] },
             executionBackends,
             budget,
+            resolveInput,
           })
+          if (nested.state !== 'opened') await companionLease.release()
           if (nested.state !== 'opened') {
             throw new Error(
               `nested ${expectedFormat} open failed: ${nested.reason} ${JSON.stringify(nested.candidates)}`,
@@ -481,6 +516,7 @@ describe('installed StarCraft II CASC product path', () => {
             }
           } finally {
             await nested.session.dispose()
+            await companionLease.release()
           }
         }
 
