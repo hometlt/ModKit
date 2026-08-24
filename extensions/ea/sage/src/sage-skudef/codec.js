@@ -61,7 +61,11 @@ function signature(bytes) {
 }
 
 function namespaceSource(directives, source) {
-  const entries = directives.filter(directive => directive.argument.length > 0)
+  const entries = directives
+    .filter(directive => directive.argument.length > 0)
+    .map(directive =>
+      Object.freeze({ ...directive, normalizedPath: directive.argument.replaceAll('\\', '/') }),
+    )
   return Object.freeze({
     async list(prefix, page, signal) {
       if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
@@ -74,13 +78,13 @@ function namespaceSource(directives, source) {
       ) {
         throw new TypeError('invalid SkuDef namespace page')
       }
-      const matching = entries.filter(entry => entry.argument.startsWith(prefix))
+      const matching = entries.filter(entry => entry.normalizedPath.startsWith(prefix))
       const items = matching.slice(start, start + page.limit).map(entry =>
         Object.freeze({
           id: entry.id,
-          path: entry.argument.replaceAll('\\', '/'),
+          path: entry.normalizedPath,
           name: entry.argument.split(/[\\/]/u).at(-1) ?? entry.argument,
-          kind: 'reference',
+          kind: 'file',
           revision: source.revision,
         }),
       )
@@ -157,9 +161,10 @@ const definition = Object.freeze({
           label: 'SAGE SkuDef',
           preview: `${directives.length} directives`,
           children: directives.map(directive => ({
-            kind: 'directive',
-            label: directive.keyword,
-            preview: directive.argument || `line ${directive.line}`,
+            kind: directive.keyword,
+            label: directive.argument || '(no argument)',
+            preview: `line ${directive.line}${directive.known ? '' : ', unknown directive'}`,
+            semanticPath: [String(directive.line), directive.keyword],
           })),
         }),
         'common.view/namespace-entry-source': namespaceSource(directives, context.source),
@@ -170,6 +175,7 @@ const definition = Object.freeze({
         'directory-listing-for-add-bigs-from',
         'search-path-resolution',
         'archive-mounting',
+        'external-reference-byte-opening',
         'skudef-writing',
       ],
     }

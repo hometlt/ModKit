@@ -21,7 +21,7 @@
     }
   ],
   "limitations": [
-    "This portable single-source port tokenizes and inventories the ordered directive list but does not resolve chained config files or mount archives.",
+    "This portable single-source port tokenizes the ordered directive list and exposes normalized virtual references, but does not resolve their external bytes, chained config files, or mounted archives.",
     "`add-search-path` and `add-bigs-from` are recorded but not resolved because directory listing and loose-file services are not supplied.",
     "Editing and writing a SkuDef are not implemented."
   ],

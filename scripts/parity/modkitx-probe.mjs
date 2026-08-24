@@ -266,14 +266,14 @@ function skuDefResult() {
   return result('sage-skudef', [
     source('common.view/namespace-entry-source', ['list'], {
       entries: references.length,
-      files: 0,
+      files: references.length,
       directories: 0,
       complete: true,
     }),
     treeSource({
       nodes: 1 + directives.length,
       maxDepth: directives.length > 0 ? 1 : 0,
-      kinds: directives.length > 0 ? 2 : 1,
+      kinds: 1 + new Set(directives.map(directive => directive.keyword)).size,
     }),
   ])
 }

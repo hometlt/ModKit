@@ -153,11 +153,14 @@ async function probeX3(sample, file, temporaryRoot) {
     try {
       const descriptor = opened.snapshot.descriptor
       const declaredSources = descriptor.dataSources.map(source => source.contract).sort()
+      const canExtractEntries = descriptor.operations.some(
+        operation => operation.state === 'available' && operation.handlerId === 'extract-entry',
+      )
       const sources = []
       for (const source of descriptor.dataSources) {
         try {
           const options =
-            source.contract === 'common.view/namespace-entry-source'
+            source.contract === 'common.view/namespace-entry-source' && canExtractEntries
               ? {
                   readNamespaceEntry: async entry => {
                     const extracted = await opened.session.operations().invoke('extract-entry', {

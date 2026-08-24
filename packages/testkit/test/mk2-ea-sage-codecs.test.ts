@@ -15,7 +15,7 @@ import {
   type TreeDataSource,
 } from '@modkitx-x3/sdk'
 
-type CodecId = 'cnc3-data' | 'cnc3-localization' | 'cnc3-map'
+type CodecId = 'cnc3-data' | 'cnc3-localization' | 'cnc3-map' | 'sage-skudef'
 
 const root = join(import.meta.dirname, '..', '..', '..')
 const extension = join(root, 'extensions', 'ea', 'sage')
@@ -333,6 +333,56 @@ describe('ported EA SAGE semantic codecs', () => {
     expect(Array.from(rawExtracted.output.value)).toEqual([1, 2, 3])
     await rawTreeLease.release()
     await rawSession.dispose()
+  })
+
+  it('preserves SkuDef directive order and exposes typed unresolved references', async () => {
+    const session = await open(
+      'sage-skudef',
+      await fixture('minimal.sage.skudef'),
+      'fixture.skudef',
+    )
+    expect(await inspect(session)).toMatchObject({
+      format: 'sage-skudef',
+      directives: 5,
+      resolution: 'not-performed',
+    })
+    const namespaceLease = await session.dataSource('common.view/namespace-entry-source', 1)
+    const namespace = namespaceLease.value as NamespaceEntrySource
+    const page = await namespace.list('', { limit: 10 })
+    expect(page.items.map(item => [item.id, item.path, item.kind])).toEqual([
+      ['0', 'CNC3.exe', 'file'],
+      ['1', 'Core/1.0/config.txt', 'file'],
+      ['2', 'Core/1.0/core.big', 'file'],
+      ['3', 'Mods/Fixture', 'file'],
+      ['4', 'Fixture', 'file'],
+    ])
+    expect((await namespace.list('Core/', { limit: 10 })).items.map(item => item.id)).toEqual([
+      '1',
+      '2',
+    ])
+    await namespaceLease.release()
+
+    const treeLease = await session.dataSource('common.view/tree-data-source', 1)
+    const tree = treeLease.value as TreeDataSource
+    const root = await tree.root()
+    const directives = (await tree.children(root, { limit: 10 })).items
+    expect(await Promise.all(directives.map(node => tree.facts(node)))).toMatchObject([
+      {
+        kind: 'set-exe',
+        label: 'CNC3.exe',
+        preview: 'line 2',
+        semanticPath: ['2', 'set-exe'],
+      },
+      { kind: 'add-config', label: 'Core\\1.0\\config.txt' },
+      { kind: 'add-big', label: 'Core\\1.0\\core.big' },
+      { kind: 'add-search-path', label: 'Mods\\Fixture' },
+      { kind: 'mod-name', label: 'Fixture' },
+    ])
+    expect((await session.descriptor()).constraints.unsupportedFeatures).toContain(
+      'external-reference-byte-opening',
+    )
+    await treeLease.release()
+    await session.dispose()
   })
 
   it('rejects malformed structure, corrupt counts, and expansion budget overflow', async () => {
