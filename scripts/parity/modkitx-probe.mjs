@@ -278,9 +278,156 @@ function skuDefResult() {
   ])
 }
 
+function canonicalCodec() {
+  const named =
+    request.canonicalExport === undefined ? undefined : imported[request.canonicalExport]
+  const codec = named ?? imported.default
+  if (codec === undefined) {
+    throw new TypeError(
+      `canonical module exposes neither ${request.canonicalExport ?? 'a default export'} nor a default export`,
+    )
+  }
+  return codec
+}
+
+function optionalNumber(target, key, value) {
+  if (Number.isSafeInteger(value)) target[key] = value
+}
+
+/**
+ * Raster plane for the canonical `ImageCodec` registry shape. Only measurements the canonical
+ * library genuinely proves are emitted: `describe()` gives pixel extent, `decode()` proves that
+ * pixels are reachable. Channel counts and media types are deliberately absent because the
+ * canonical codec does not state them — inferring them here would fabricate parity evidence.
+ */
+async function rasterResult() {
+  const codec = canonicalCodec()
+  if (typeof codec.describe !== 'function' && typeof codec.decode !== 'function') {
+    throw new TypeError('canonical image codec exposes neither describe() nor decode()')
+  }
+  const described =
+    typeof codec.describe === 'function' ? await codec.describe(bytes, request.file) : undefined
+  let decoded
+  if (typeof codec.decode === 'function') {
+    try {
+      decoded = await codec.decode(bytes, request.file)
+    } catch {
+      decoded = undefined
+    }
+  }
+  const measurements = { decodedAccess: decoded !== undefined, encodedNonEmpty: bytes.length > 0 }
+  optionalNumber(measurements, 'width', described?.width ?? decoded?.width)
+  optionalNumber(measurements, 'height', described?.height ?? decoded?.height)
+  measurements.decodedBytes = decoded === undefined ? 0 : Math.min(decoded.pixels.byteLength, 4)
+  const features = ['info', 'encoded', ...(decoded === undefined ? [] : ['decoded-region'])]
+  return result(codec.id ?? request.format, [
+    source('common.view/raster-image-source', features, measurements),
+  ])
+}
+
+/** Vector plane: the canonical registry models EMF/WMF/SVG as image codecs that only describe. */
+async function vectorResult() {
+  const codec = canonicalCodec()
+  if (typeof codec.describe !== 'function') {
+    throw new TypeError('canonical vector codec exposes no describe()')
+  }
+  const described = await codec.describe(bytes, request.file)
+  const measurements = {}
+  optionalNumber(measurements, 'width', described.width)
+  optionalNumber(measurements, 'height', described.height)
+  return result(codec.id ?? request.format, [
+    source('common.view/vector-scene-source', ['info'], measurements),
+  ])
+}
+
+/** Namespace plane for the canonical `ArchiveCodec` shape (`open` → `list`/`get`). */
+async function archiveResult() {
+  const codec = canonicalCodec()
+  if (typeof codec.open !== 'function') {
+    throw new TypeError('canonical archive codec exposes no open()')
+  }
+  const reader = await codec.open(bytes, request.file)
+  try {
+    const entries = await reader.list('')
+    const first = entries[0]
+    const extracted = first === undefined ? new Uint8Array() : await reader.get(first)
+    return result(codec.id ?? request.format, [
+      source('common.view/namespace-entry-source', ['list', 'open-entry', 'extract-bytes'], {
+        entries: entries.length,
+        files: entries.length,
+        complete: true,
+        extractedBytes: extracted.byteLength,
+        extractedNonEmpty: extracted.byteLength > 0,
+      }),
+    ])
+  } finally {
+    await reader.close?.()
+  }
+}
+
+/** Audio plane: canonical `describe()` states container facts, never decoded PCM. */
+async function audioResult() {
+  const codec = canonicalCodec()
+  if (typeof codec.describe !== 'function') {
+    throw new TypeError('canonical audio codec exposes no describe()')
+  }
+  const described = await codec.describe(bytes, request.file)
+  const measurements = {
+    durationKnown: typeof described.durationSec === 'number',
+    encodedNonEmpty: bytes.length > 0,
+  }
+  optionalNumber(measurements, 'sampleRate', described.sampleRate)
+  optionalNumber(measurements, 'channels', described.channels)
+  return result(codec.id ?? request.format, [
+    source('common.view/audio-media-source', ['info', 'encoded'], measurements),
+  ])
+}
+
+/** Video plane: canonical `describe()` states container facts, never decoded frames. */
+async function videoResult() {
+  const codec = canonicalCodec()
+  if (typeof codec.describe !== 'function') {
+    throw new TypeError('canonical video codec exposes no describe()')
+  }
+  const described = await codec.describe(bytes, request.file)
+  const measurements = {
+    durationKnown: typeof described.durationSec === 'number',
+    encodedNonEmpty: bytes.length > 0,
+  }
+  optionalNumber(measurements, 'width', described.width)
+  optionalNumber(measurements, 'height', described.height)
+  return result(codec.id ?? request.format, [
+    source('common.view/video-media-source', ['info', 'encoded'], measurements),
+  ])
+}
+
+/**
+ * Document plane. The canonical document stack renders a display view model whose block
+ * decomposition has no equally defined counterpart in X3, so only the recovered source text is
+ * compared; formats that yield no source text are recorded as not comparable in the coverage
+ * table instead of being forced into a number-to-number verdict.
+ */
+async function documentResult() {
+  const definition = imported.DOCUMENT_FORMATS?.[request.canonicalDocumentFormat]
+  if (definition === undefined) {
+    throw new TypeError(`canonical document format is missing: ${request.canonicalDocumentFormat}`)
+  }
+  const view = await imported.parseDocument(definition, bytes, definition.label)
+  if (typeof view.sourceText !== 'string' || view.sourceText === '') {
+    throw new TypeError('canonical document view exposes no source text')
+  }
+  return result(definition.id, [textSource(view.sourceText)])
+}
+
 const adapters = {
   model: modelResult,
   image: imageResult,
+  raster: rasterResult,
+  vector: vectorResult,
+  archive: archiveResult,
+  audio: audioResult,
+  video: videoResult,
+  document: documentResult,
   zip: zipResult,
   big: bigResult,
   'cnc3-data': cnc3DataResult,

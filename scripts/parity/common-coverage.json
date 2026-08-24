@@ -1,0 +1,420 @@
+{
+  "schemaVersion": 1,
+  "$comment": "Block 9 step 2.3. Every codec contribution under extensions/common/** must appear here exactly once with exactly one status: compared-real, compared-synthetic, not-comparable-no-canonical-probe, not-comparable-contract-difference or blocked-missing-legal-corpus. scripts/test/parity-coverage.test.ts fails when a contribution is added, removed or renamed without updating this table, and a declared reason never counts as a pass.",
+  "coverage": [
+    {
+      "contributionId": "org.modkitx/7z",
+      "family": "archives",
+      "status": "not-comparable-no-canonical-probe",
+      "reason": "The canonical codec delegates every read to the 7-Zip WASM bridge and throws \"7z support is not initialised\" until a host supplies the blob; the canonical checkout vendors no such blob, so no canonical read plane can be observed without shipping one."
+    },
+    {
+      "contributionId": "org.modkitx/archive-zip",
+      "family": "archives",
+      "status": "compared-synthetic",
+      "parityRows": ["zip-synthetic-minimal"]
+    },
+    {
+      "contributionId": "org.modkitx/brotli",
+      "family": "archives",
+      "status": "compared-synthetic",
+      "parityRows": ["brotli-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/bzip2",
+      "family": "archives",
+      "status": "not-comparable-no-canonical-probe",
+      "reason": "The canonical codec delegates every read to the 7-Zip WASM bridge and throws \"7z support is not initialised\" until a host supplies the blob; the canonical checkout vendors no such blob, so no canonical read plane can be observed without shipping one."
+    },
+    {
+      "contributionId": "org.modkitx/cab",
+      "family": "archives",
+      "status": "not-comparable-no-canonical-probe",
+      "reason": "The canonical codec delegates every read to the 7-Zip WASM bridge and throws \"7z support is not initialised\" until a host supplies the blob; the canonical checkout vendors no such blob, so no canonical read plane can be observed without shipping one."
+    },
+    {
+      "contributionId": "org.modkitx/dmg",
+      "family": "archives",
+      "status": "not-comparable-no-canonical-probe",
+      "reason": "The canonical codec delegates every read to the 7-Zip WASM bridge and throws \"7z support is not initialised\" until a host supplies the blob; the canonical checkout vendors no such blob, so no canonical read plane can be observed without shipping one."
+    },
+    {
+      "contributionId": "org.modkitx/gzip",
+      "family": "archives",
+      "status": "compared-synthetic",
+      "parityRows": ["gzip-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/iso",
+      "family": "archives",
+      "status": "compared-synthetic",
+      "parityRows": ["iso-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/lzma",
+      "family": "archives",
+      "status": "not-comparable-no-canonical-probe",
+      "reason": "The canonical codec delegates every read to the 7-Zip WASM bridge and throws \"7z support is not initialised\" until a host supplies the blob; the canonical checkout vendors no such blob, so no canonical read plane can be observed without shipping one."
+    },
+    {
+      "contributionId": "org.modkitx/pe",
+      "family": "archives",
+      "status": "compared-synthetic",
+      "parityRows": ["pe-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/ps1-xa",
+      "family": "archives",
+      "status": "blocked-missing-legal-corpus",
+      "reason": "The canonical PS1-XA reader refuses the repository fixture with \"archive-companion-missing: fat\" because it requires the paired FAT image, and no legal PS1 disc corpus is available to supply one."
+    },
+    {
+      "contributionId": "org.modkitx/rar",
+      "family": "archives",
+      "status": "not-comparable-no-canonical-probe",
+      "reason": "The canonical codec delegates every read to the 7-Zip WASM bridge and throws \"7z support is not initialised\" until a host supplies the blob; the canonical checkout vendors no such blob, so no canonical read plane can be observed without shipping one."
+    },
+    {
+      "contributionId": "org.modkitx/tar",
+      "family": "archives",
+      "status": "compared-synthetic",
+      "parityRows": ["tar-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/xz",
+      "family": "archives",
+      "status": "not-comparable-no-canonical-probe",
+      "reason": "The canonical codec delegates every read to the 7-Zip WASM bridge and throws \"7z support is not initialised\" until a host supplies the blob; the canonical checkout vendors no such blob, so no canonical read plane can be observed without shipping one."
+    },
+    {
+      "contributionId": "org.modkitx/zstd",
+      "family": "archives",
+      "status": "not-comparable-no-canonical-probe",
+      "reason": "The canonical codec delegates every read to the 7-Zip WASM bridge and throws \"7z support is not initialised\" until a host supplies the blob; the canonical checkout vendors no such blob, so no canonical read plane can be observed without shipping one."
+    },
+    {
+      "contributionId": "org.modkitx/aac",
+      "family": "audio",
+      "status": "compared-synthetic",
+      "parityRows": ["aac-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/audio-mp3",
+      "family": "audio",
+      "status": "compared-real",
+      "parityRows": ["mp3-real-real"]
+    },
+    {
+      "contributionId": "org.modkitx/audio-ogg",
+      "family": "audio",
+      "status": "compared-synthetic",
+      "parityRows": ["ogg-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/flac",
+      "family": "audio",
+      "status": "compared-synthetic",
+      "parityRows": ["flac-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/m4a",
+      "family": "audio",
+      "status": "compared-synthetic",
+      "parityRows": ["m4a-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/wav",
+      "family": "audio",
+      "status": "compared-synthetic",
+      "parityRows": ["wav-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/ps1-cue-bin",
+      "family": "containers",
+      "status": "compared-synthetic",
+      "parityRows": ["ps1-cue-bin-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/document-markdown",
+      "family": "documents",
+      "status": "compared-synthetic",
+      "parityRows": ["markdown-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/document-rtf",
+      "family": "documents",
+      "status": "not-comparable-contract-difference",
+      "reason": "The canonical RTF support renders a display view model of document blocks and recovers no source text, while X3 publishes a structural tree and byte range. No plane is defined the same way on both sides, so any count-to-count verdict would be manufactured."
+    },
+    {
+      "contributionId": "org.modkitx/ani",
+      "family": "images",
+      "status": "compared-synthetic",
+      "parityRows": ["ani-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/astc",
+      "family": "images",
+      "status": "compared-synthetic",
+      "parityRows": ["astc-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/avif",
+      "family": "images",
+      "status": "compared-synthetic",
+      "parityRows": ["avif-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/basis",
+      "family": "images",
+      "status": "compared-real",
+      "parityRows": ["basis-real-real"]
+    },
+    {
+      "contributionId": "org.modkitx/bmp",
+      "family": "images",
+      "status": "compared-synthetic",
+      "parityRows": ["bmp-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/cur",
+      "family": "images",
+      "status": "compared-synthetic",
+      "parityRows": ["cur-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/dds",
+      "family": "images",
+      "status": "compared-synthetic",
+      "parityRows": ["dds-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/exr",
+      "family": "images",
+      "status": "compared-synthetic",
+      "parityRows": ["exr-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/gif",
+      "family": "images",
+      "status": "compared-synthetic",
+      "parityRows": ["gif-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/hdr",
+      "family": "images",
+      "status": "compared-synthetic",
+      "parityRows": ["hdr-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/ico",
+      "family": "images",
+      "status": "compared-synthetic",
+      "parityRows": ["ico-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/image-jpeg",
+      "family": "images",
+      "status": "compared-real",
+      "parityRows": ["jpeg-real-real"]
+    },
+    {
+      "contributionId": "org.modkitx/image-png",
+      "family": "images",
+      "status": "compared-synthetic",
+      "parityRows": ["png-synthetic-minimal"]
+    },
+    {
+      "contributionId": "org.modkitx/ktx",
+      "family": "images",
+      "status": "compared-synthetic",
+      "parityRows": ["ktx-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/ktx2",
+      "family": "images",
+      "status": "compared-real",
+      "parityRows": ["ktx2-real-real"]
+    },
+    {
+      "contributionId": "org.modkitx/pal",
+      "family": "images",
+      "status": "compared-synthetic",
+      "parityRows": ["pal-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/pcx",
+      "family": "images",
+      "status": "compared-synthetic",
+      "parityRows": ["pcx-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/pkm",
+      "family": "images",
+      "status": "compared-synthetic",
+      "parityRows": ["pkm-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/pvr",
+      "family": "images",
+      "status": "compared-synthetic",
+      "parityRows": ["pvr-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/tga",
+      "family": "images",
+      "status": "compared-synthetic",
+      "parityRows": ["tga-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/tiff",
+      "family": "images",
+      "status": "compared-synthetic",
+      "parityRows": ["tiff-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/webp",
+      "family": "images",
+      "status": "compared-real",
+      "parityRows": ["webp-real-real"]
+    },
+    {
+      "contributionId": "org.modkitx/dae",
+      "family": "models",
+      "status": "compared-synthetic",
+      "parityRows": ["dae-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/model-gltf",
+      "family": "models",
+      "status": "compared-real",
+      "parityRows": ["glb-real-real", "glb-synthetic-triangle", "gltf-synthetic-triangle"]
+    },
+    {
+      "contributionId": "org.modkitx/model-obj",
+      "family": "models",
+      "status": "compared-synthetic",
+      "parityRows": ["obj-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/model-uvm",
+      "family": "models",
+      "status": "compared-synthetic",
+      "parityRows": ["uvm-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/ply",
+      "family": "models",
+      "status": "compared-synthetic",
+      "parityRows": ["ply-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/stl",
+      "family": "models",
+      "status": "compared-synthetic",
+      "parityRows": ["stl-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/text-csv",
+      "family": "text-delimited",
+      "status": "compared-synthetic",
+      "parityRows": ["csv-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/text-tsv",
+      "family": "text-delimited",
+      "status": "blocked-missing-legal-corpus",
+      "reason": "The repository corpus carries no TSV sample and Block 9 step 2 forbids hand-crafting one; the canonical document family exposes no TSV format either, so neither side has an input to compare."
+    },
+    {
+      "contributionId": "org.modkitx/text-ini",
+      "family": "text-ini",
+      "status": "not-comparable-no-canonical-probe",
+      "reason": "The canonical checkout publishes no codec for this format: its document family covers csv, docx, markdown, pdf, rtf, txt and office containers only, and XML/JSON exist there as internal parser libraries rather than as an openable subject. Comparing against the generic txt document codec would invent a plane the canonical never claims."
+    },
+    {
+      "contributionId": "org.modkitx/text-json",
+      "family": "text-json",
+      "status": "not-comparable-no-canonical-probe",
+      "reason": "The canonical checkout publishes no codec for this format: its document family covers csv, docx, markdown, pdf, rtf, txt and office containers only, and XML/JSON exist there as internal parser libraries rather than as an openable subject. Comparing against the generic txt document codec would invent a plane the canonical never claims."
+    },
+    {
+      "contributionId": "org.modkitx/text-jsonc",
+      "family": "text-json",
+      "status": "not-comparable-no-canonical-probe",
+      "reason": "The canonical checkout publishes no codec for this format: its document family covers csv, docx, markdown, pdf, rtf, txt and office containers only, and XML/JSON exist there as internal parser libraries rather than as an openable subject. Comparing against the generic txt document codec would invent a plane the canonical never claims."
+    },
+    {
+      "contributionId": "org.modkitx/text-toml",
+      "family": "text-toml",
+      "status": "not-comparable-no-canonical-probe",
+      "reason": "The canonical checkout publishes no codec for this format: its document family covers csv, docx, markdown, pdf, rtf, txt and office containers only, and XML/JSON exist there as internal parser libraries rather than as an openable subject. Comparing against the generic txt document codec would invent a plane the canonical never claims."
+    },
+    {
+      "contributionId": "org.modkitx/text-xml",
+      "family": "text-xml",
+      "status": "not-comparable-no-canonical-probe",
+      "reason": "The canonical checkout publishes no codec for this format: its document family covers csv, docx, markdown, pdf, rtf, txt and office containers only, and XML/JSON exist there as internal parser libraries rather than as an openable subject. Comparing against the generic txt document codec would invent a plane the canonical never claims."
+    },
+    {
+      "contributionId": "org.modkitx/text-yaml",
+      "family": "text-yaml",
+      "status": "not-comparable-no-canonical-probe",
+      "reason": "The canonical checkout publishes no codec for this format: its document family covers csv, docx, markdown, pdf, rtf, txt and office containers only, and XML/JSON exist there as internal parser libraries rather than as an openable subject. Comparing against the generic txt document codec would invent a plane the canonical never claims."
+    },
+    {
+      "contributionId": "org.modkitx/emf",
+      "family": "vector",
+      "status": "compared-synthetic",
+      "parityRows": ["emf-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/vector-svg",
+      "family": "vector",
+      "status": "compared-real",
+      "parityRows": ["svg-real-real"]
+    },
+    {
+      "contributionId": "org.modkitx/wmf",
+      "family": "vector",
+      "status": "compared-synthetic",
+      "parityRows": ["wmf-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/avi",
+      "family": "video",
+      "status": "compared-synthetic",
+      "parityRows": ["avi-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/mpeg",
+      "family": "video",
+      "status": "compared-synthetic",
+      "parityRows": ["mpeg-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/ogv",
+      "family": "video",
+      "status": "compared-synthetic",
+      "parityRows": ["ogv-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/video-mp4",
+      "family": "video",
+      "status": "compared-synthetic",
+      "parityRows": ["mp4-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/video-webm",
+      "family": "video",
+      "status": "compared-synthetic",
+      "parityRows": ["webm-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/wmv",
+      "family": "video",
+      "status": "compared-synthetic",
+      "parityRows": ["wmv-synthetic"]
+    }
+  ]
+}

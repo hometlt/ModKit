@@ -155,6 +155,55 @@ async function observeRaster(contract, major, source) {
   })
 }
 
+async function encodedNonEmpty(source, ...arguments_) {
+  if (typeof source.encoded !== 'function') return false
+  const encoded = await source.encoded(...arguments_)
+  return (await encoded.read(0n, 16)).byteLength > 0
+}
+
+async function observeAudio(contract, major, source) {
+  const info = await source.info()
+  const track = info.tracks[0]
+  return observation(contract, major, ['info', 'encoded'], {
+    tracks: info.tracks.length,
+    ...(Number.isSafeInteger(track?.sampleRate) ? { sampleRate: track.sampleRate } : {}),
+    ...(Number.isSafeInteger(track?.channels) ? { channels: track.channels } : {}),
+    durationKnown: info.durationMs !== 'unknown',
+    seekable: info.seekable,
+    pcmAccess: info.pcmAccess,
+    encodedNonEmpty: await encodedNonEmpty(source, track?.id),
+  })
+}
+
+async function observeVideo(contract, major, source) {
+  const info = await source.info()
+  const track = info.tracks.find(item => item.kind === 'video') ?? info.tracks[0]
+  return observation(contract, major, ['info', 'encoded'], {
+    tracks: info.tracks.length,
+    ...(Number.isSafeInteger(track?.width) ? { width: track.width } : {}),
+    ...(Number.isSafeInteger(track?.height) ? { height: track.height } : {}),
+    durationKnown: info.durationMs !== 'unknown',
+    seekable: info.seekable,
+    frameAccess: info.frameAccess,
+    encodedNonEmpty: await encodedNonEmpty(source),
+  })
+}
+
+async function observeVector(contract, major, source) {
+  const info = await source.info()
+  const document = await source.document()
+  return observation(contract, major, ['info', 'document'], {
+    ...(Number.isSafeInteger(info.width) ? { width: info.width } : {}),
+    ...(Number.isSafeInteger(info.height) ? { height: info.height } : {}),
+    nodes: info.nodes,
+    paths: info.paths,
+    shapes: info.shapes,
+    textNodes: info.textNodes,
+    gradients: info.gradients,
+    documentNonEmpty: document.text.length > 0,
+  })
+}
+
 async function observeModel(contract, major, source) {
   const info = await source.info()
   await source.nodes({ limit: 1 })
@@ -211,6 +260,12 @@ export async function observeDataSource(contract, major, source, options = {}) {
       return await observeText(contract, major, source)
     if (contract === 'common.view/model-scene-source')
       return await observeModel(contract, major, source)
+    if (contract === 'common.view/audio-media-source')
+      return await observeAudio(contract, major, source)
+    if (contract === 'common.view/video-media-source')
+      return await observeVideo(contract, major, source)
+    if (contract === 'common.view/vector-scene-source')
+      return await observeVector(contract, major, source)
     if (contract === 'common.view/byte-range-source')
       return await observeBytes(contract, major, source)
     if (typeof source.summary === 'function') await source.summary()
