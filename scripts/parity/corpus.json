@@ -88,7 +88,7 @@
     {
       "format": "sage-w3x",
       "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.sage.w3x",
-      "x3Extension": "extensions/mk2/ea-models",
+      "x3Extension": "extensions/ea/models",
       "canonicalModule": "extensions/ea/models/codecs/sage-w3x/src/index.ts",
       "canonicalExport": "sageW3xModelCodec",
       "allowPoorerReason": "Block 8 M6-M7: the staging W3X fixture exposes metadata before portable geometry parity."
@@ -96,7 +96,7 @@
     {
       "format": "westwood-w3d",
       "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.westwood.w3d",
-      "x3Extension": "extensions/mk2/ea-models",
+      "x3Extension": "extensions/ea/models",
       "canonicalModule": "extensions/ea/models/codecs/westwood-w3d/src/index.ts",
       "canonicalExport": "westwoodW3dModelCodec",
       "allowPoorerReason": "Block 8 M6-M7: the staging W3D fixture exposes metadata before portable geometry parity."

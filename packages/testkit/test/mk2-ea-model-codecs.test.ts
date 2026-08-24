@@ -15,7 +15,7 @@ import {
 
 type CodecId = 'sage-w3x' | 'westwood-w3d'
 const root = join(import.meta.dirname, '..', '..', '..')
-const extension = join(root, 'extensions', 'mk2', 'ea-models')
+const extension = join(root, 'extensions', 'ea', 'models')
 const fixtures = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
 const budget: ResourceBudget = {
   maxInputBytes: 1_000_000n,

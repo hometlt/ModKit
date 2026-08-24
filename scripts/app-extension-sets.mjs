@@ -240,6 +240,11 @@ export const READY_APP_EXTENSIONS = Object.freeze({
       'org.modkitx/sage-skudef',
     ]),
   }),
+  'ea-models': Object.freeze({
+    path: Object.freeze(['ea', 'models']),
+    coordinate: 'org.modkitx.ea/models',
+    contributions: Object.freeze(['org.modkitx/sage-w3x', 'org.modkitx/westwood-w3d']),
+  }),
 })
 
 const structuredText = Object.freeze([
@@ -271,6 +276,7 @@ const mk2Extended = Object.freeze([
   'ea-westwood',
   'ea-big',
   'ea-sage',
+  'ea-models',
 ])
 
 export const APP_EXTENSION_SETS = Object.freeze({

@@ -1,10 +1,10 @@
 {
-  "name": "modkit-extension-mk2-ea-models",
+  "name": "modkit-extension-x3-ea-models",
   "version": "0.1.0",
   "license": "MIT",
   "private": true,
   "type": "module",
-  "description": "MK2 → MK3 converted contributions of org.modkitx.ea/models (generated; see REPORT_MK2_CONVERSION).",
+  "description": "EA SAGE W3X and Westwood W3D model codecs for MK3.",
   "modkit": {
     "schemaVersion": 1,
     "publisher": "org.modkitx.ea",
