@@ -496,7 +496,7 @@
       "baseline": "X3 богаче"
     },
     {
-      "id": "jpeg-real-real",
+      "id": "jpeg-real",
       "kind": "real",
       "format": "jpeg-real",
       "contributionId": "org.modkitx/image-jpeg",
@@ -508,7 +508,7 @@
       "baseline": "X3 богаче"
     },
     {
-      "id": "webp-real-real",
+      "id": "webp-real",
       "kind": "real",
       "format": "webp-real",
       "contributionId": "org.modkitx/webp",
@@ -520,7 +520,7 @@
       "baseline": "X3 богаче"
     },
     {
-      "id": "basis-real-real",
+      "id": "basis-real",
       "kind": "real",
       "format": "basis-real",
       "contributionId": "org.modkitx/basis",
@@ -533,7 +533,7 @@
       "allowPoorerReason": "X3 publishes no raster image source for this format — the codec exposes a structural tree only — while the canonical image codec reports the header extent. Raster promotion is codec depth, not a harness gap."
     },
     {
-      "id": "ktx2-real-real",
+      "id": "ktx2-real",
       "kind": "real",
       "format": "ktx2-real",
       "contributionId": "org.modkitx/ktx2",
@@ -569,7 +569,7 @@
       "baseline": "X3 богаче"
     },
     {
-      "id": "svg-real-real",
+      "id": "svg-real",
       "kind": "real",
       "format": "svg-real",
       "contributionId": "org.modkitx/vector-svg",
@@ -638,7 +638,7 @@
       "baseline": "X3 богаче"
     },
     {
-      "id": "mp3-real-real",
+      "id": "mp3-real",
       "kind": "real",
       "format": "mp3-real",
       "contributionId": "org.modkitx/audio-mp3",
@@ -782,7 +782,7 @@
       "allowPoorerReason": "The canonical model stack substitutes one synthesised default material when the file declares none (ensureDefaultMaterial / defaultMaterial() / materialNames.push(\"Default\")); the fixture declares zero, so the X3 count is the source fact and the difference is not a missing X3 capability."
     },
     {
-      "id": "glb-real-real",
+      "id": "glb-real",
       "kind": "real",
       "format": "glb-real",
       "contributionId": "org.modkitx/model-gltf",

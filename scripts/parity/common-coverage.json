@@ -102,7 +102,7 @@
       "contributionId": "org.modkitx/audio-mp3",
       "family": "audio",
       "status": "compared-real",
-      "parityRows": ["mp3-real-real"]
+      "parityRows": ["mp3-real"]
     },
     {
       "contributionId": "org.modkitx/audio-ogg",
@@ -168,7 +168,7 @@
       "contributionId": "org.modkitx/basis",
       "family": "images",
       "status": "compared-real",
-      "parityRows": ["basis-real-real"]
+      "parityRows": ["basis-real"]
     },
     {
       "contributionId": "org.modkitx/bmp",
@@ -216,7 +216,7 @@
       "contributionId": "org.modkitx/image-jpeg",
       "family": "images",
       "status": "compared-real",
-      "parityRows": ["jpeg-real-real"]
+      "parityRows": ["jpeg-real"]
     },
     {
       "contributionId": "org.modkitx/image-png",
@@ -234,7 +234,7 @@
       "contributionId": "org.modkitx/ktx2",
       "family": "images",
       "status": "compared-real",
-      "parityRows": ["ktx2-real-real"]
+      "parityRows": ["ktx2-real"]
     },
     {
       "contributionId": "org.modkitx/pal",
@@ -276,7 +276,7 @@
       "contributionId": "org.modkitx/webp",
       "family": "images",
       "status": "compared-real",
-      "parityRows": ["webp-real-real"]
+      "parityRows": ["webp-real"]
     },
     {
       "contributionId": "org.modkitx/dae",
@@ -288,7 +288,7 @@
       "contributionId": "org.modkitx/model-gltf",
       "family": "models",
       "status": "compared-real",
-      "parityRows": ["glb-real-real", "glb-synthetic-triangle", "gltf-synthetic-triangle"]
+      "parityRows": ["glb-real", "glb-synthetic-triangle", "gltf-synthetic-triangle"]
     },
     {
       "contributionId": "org.modkitx/model-obj",
@@ -372,7 +372,7 @@
       "contributionId": "org.modkitx/vector-svg",
       "family": "vector",
       "status": "compared-real",
-      "parityRows": ["svg-real-real"]
+      "parityRows": ["svg-real"]
     },
     {
       "contributionId": "org.modkitx/wmf",
