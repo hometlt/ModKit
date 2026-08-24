@@ -27,6 +27,9 @@ import { openFileArtifactSource } from './file-artifact-source.js'
 /** `sibling-directory` and nothing else: a directory is not a mount and not a container. */
 const FILESYSTEM_SCOPES: readonly InputSearchScope[] = Object.freeze(['sibling-directory'])
 
+/** The primary subject's directory lies outside every root the product granted. */
+export const COMPANION_ORIGIN_OUTSIDE_ROOTS = 'x3.host/companion-origin-outside-roots'
+
 export interface FilesystemCompanionOriginOptions {
   /** Absolute path of the primary subject. Its directory becomes the confined root. */
   readonly primaryPath: string
@@ -59,8 +62,16 @@ export function createFilesystemCompanionOrigin(
   const root = dirname(primaryPath)
   const roots = options.roots.map(value => resolve(value))
   if (roots.length === 0 || !roots.some(value => insideRoot(value, root))) {
+    /*
+     * Its own code, not the editing backend's.
+     *
+     * Both refusals mean "outside the granted roots", and reusing `x3.host/edit-path-outside-roots`
+     * here would have been shorter — but that code belongs to the editing backend, and a read-only
+     * companion search reported under it would tell an operator that a *write* was refused. Two
+     * boundaries that fail for the same reason still have to be distinguishable in a log.
+     */
     throw new ModkitError({
-      code: 'x3.host/edit-path-outside-roots',
+      code: COMPANION_ORIGIN_OUTSIDE_ROOTS,
       message: 'the companion origin directory is outside every granted root',
     })
   }

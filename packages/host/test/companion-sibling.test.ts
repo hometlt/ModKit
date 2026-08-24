@@ -13,6 +13,7 @@
 import { cp, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   buildInventory,
@@ -22,18 +23,22 @@ import {
   type SubjectServices,
 } from '@modkitx-x3/host'
 import {
+  createFileEditingBackend,
   createPathSubjectOpener,
   loadExtensionDirectory,
   openFileArtifactSource,
 } from '@modkitx-x3/host/node'
-import type { Diagnostic } from '@modkitx-x3/core'
+import { isModkitError, type Diagnostic } from '@modkitx-x3/core'
 import type { ResourceBudget } from '@modkitx-x3/sdk'
 import {
   COMPANION_REQUIRED_MISSING,
   COMPANION_UNAVAILABLE,
   createCompanionInputResolver,
 } from '../src/input-resolution.js'
-import { createFilesystemCompanionOrigin } from '../src/node/companion-origin.js'
+import {
+  COMPANION_ORIGIN_OUTSIDE_ROOTS,
+  createFilesystemCompanionOrigin,
+} from '../src/node/companion-origin.js'
 
 const fixtureRoot = join(import.meta.dirname, 'fixtures', 'companion-sibling')
 const extensionRoot = join(import.meta.dirname, 'fixtures', 'companion-extension')
@@ -218,6 +223,50 @@ describe('sibling companion resolution, end to end through the Node path opener'
       'motion#sample.hva',
     ])
     await session?.dispose()
+  })
+})
+
+describe('the two root boundaries stay distinguishable', () => {
+  /*
+   * Two backends refuse a path outside the granted roots, for the same reason and to different
+   * ends: the editing backend is about to write, the companion origin is about to look. They
+   * therefore report different codes, and these two assertions are deliberately independent — a
+   * single shared helper would let one code drift into the other's place without a failure.
+   */
+  it('the companion filesystem origin refuses with its own read-side code', async () => {
+    const directory = await workingCopy({ companion: true })
+    const elsewhere = await mkdtemp(join(tmpdir(), 'x3-other-root-'))
+    temporaries.push(elsewhere)
+
+    let code = 'no-error'
+    try {
+      createFilesystemCompanionOrigin({
+        primaryPath: join(directory, 'sample.vxl'),
+        roots: [elsewhere],
+      })
+    } catch (error) {
+      code = isModkitError(error) ? error.code : `not-a-modkit-error:${String(error)}`
+    }
+    expect(code).toBe(COMPANION_ORIGIN_OUTSIDE_ROOTS)
+    // and specifically not the editing backend's code, which means something else happened
+    expect(code).not.toBe('x3.host/edit-path-outside-roots')
+  })
+
+  it('the file editing backend keeps reporting the editing code', async () => {
+    const directory = await workingCopy({ companion: true })
+    const elsewhere = await mkdtemp(join(tmpdir(), 'x3-edit-root-'))
+    temporaries.push(elsewhere)
+    const backend = createFileEditingBackend({ roots: [elsewhere] })
+    const outside = join(directory, 'sample.vxl')
+    const uri = pathToFileURL(outside).href
+
+    await expect(
+      backend.currentRevision({
+        targetId: 'content',
+        subjectUri: uri,
+        ownerSource: { id: uri, uri },
+      }),
+    ).rejects.toMatchObject({ code: 'x3.host/edit-path-outside-roots' })
   })
 })
 
