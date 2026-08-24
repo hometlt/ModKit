@@ -10,6 +10,7 @@ import {
   createModelSceneSource,
   createTreeDataSource,
 } from '@modkitx-x3/codec-kit'
+import { bindSections, hvaMatrix, parseHva } from './hva.js'
 
 const ID = 'org.modkitx/red-alert2-vxl'
 const MAGIC = 'Voxel Animation'
@@ -380,7 +381,7 @@ function decodedGeometry(model, budget) {
   })
 }
 
-function modelSource(model, geometry) {
+function modelSource(model, geometry, facts, animations) {
   return createModelSceneSource({
     info: {
       scenes: 1,
@@ -389,16 +390,18 @@ function modelSource(model, geometry) {
       primitives: geometry.meshes.length,
       materials: geometry.materialIds.length,
       textures: 0,
-      animations: 0,
+      animations,
       ...(geometry.bounds === undefined ? {} : { bounds: geometry.bounds }),
       geometryAccess: geometry.meshes.length > 0 ? 'decoded' : 'metadata-only',
     },
-    nodes: model.sections.map(section => ({
+    nodes: model.sections.map((section, index) => ({
       id: section.id,
       name: section.name,
       childIds: [],
       meshIds: geometry.meshes.filter(mesh => mesh.sectionId === section.id).map(mesh => mesh.id),
-      transform: IDENTITY,
+      // the HVA rest pose when one was bound by name, identity otherwise — never a pose guessed
+      // from section order, and never the tailer transform standing in for one
+      transform: restTransformOf(facts.binding[index]),
     })),
     meshes: geometry.meshes.map(mesh => ({
       id: mesh.id,
@@ -407,6 +410,36 @@ function modelSource(model, geometry) {
     })),
     primitives: geometry.meshes.map(mesh => mesh.primitive),
   })
+}
+
+/**
+ * The bound rest pose as a 4x4 column-major matrix, or identity when nothing was bound.
+ *
+ * HVA stores a 3x4 row-major affine matrix; the render contract wants 4x4 column-major, so the
+ * rows become columns and the last column becomes the translation row. An unbound section keeps
+ * identity — the honest statement that this file said nothing about where the section rests.
+ */
+function restTransformOf(fact) {
+  const matrix = fact?.provenance === 'companion' ? fact.restTransform : null
+  if (matrix === null || matrix === undefined || matrix.length !== 12) return IDENTITY
+  return Object.freeze([
+    matrix[0],
+    matrix[4],
+    matrix[8],
+    0,
+    matrix[1],
+    matrix[5],
+    matrix[9],
+    0,
+    matrix[2],
+    matrix[6],
+    matrix[10],
+    0,
+    matrix[3],
+    matrix[7],
+    matrix[11],
+    1,
+  ])
 }
 
 function sectionSummary(section) {
@@ -448,6 +481,122 @@ function hvaPatterns(uri) {
   return stem === undefined || stem.length === 0 ? ['*.hva'] : [`${stem}.hva`]
 }
 
+function hvaDiagnostic(id, severity, code, message, data) {
+  return Object.freeze({
+    id,
+    severity,
+    code,
+    message,
+    category: 'dependency',
+    ...(data === undefined ? {} : { data }),
+  })
+}
+
+/**
+ * Reads the bound `.hva`, if the host bound one, and reports every outcome by name.
+ *
+ * Returns the parsed sidecar plus the diagnostics that explain what it did and did not cover. A
+ * sidecar that fails to parse degrades this one capability and is reported; it never fails the
+ * model, because a corrupt companion is not a corrupt subject.
+ */
+async function readHva(input, budget, signal) {
+  const bindings = input.bindingsFor?.(HVA_REQUIREMENT) ?? []
+  const binding = bindings[0]
+  if (binding === undefined) {
+    return { hva: null, bindingId: null, diagnostics: [], state: 'absent' }
+  }
+  const lease = await input.openBinding(binding.bindingId, signal)
+  try {
+    if (lease.value.kind !== 'bytes') throw new TypeError('HVA companion is not a byte source')
+    const size = Number(lease.value.size ?? 0n)
+    const bytes = await lease.value.read(0n, size, signal)
+    const hva = parseHva(bytes, budget)
+    const diagnostics = []
+    if (hva.trailingBytes > 0) {
+      diagnostics.push(
+        hvaDiagnostic(
+          'hva-trailing-bytes',
+          'warning',
+          'x3.vxl/hva-trailing-bytes',
+          `the HVA companion carries ${hva.trailingBytes} bytes the header does not describe`,
+          { bindingId: binding.bindingId, trailingBytes: hva.trailingBytes },
+        ),
+      )
+    }
+    return { hva, bindingId: binding.bindingId, diagnostics, state: 'resolved' }
+  } catch (error) {
+    // a sidecar that will not parse is a named, contained failure — the voxel model still opens
+    return {
+      hva: null,
+      bindingId: binding.bindingId,
+      state: 'corrupt',
+      diagnostics: [
+        hvaDiagnostic(
+          'hva-unreadable',
+          'error',
+          'x3.vxl/hva-unreadable',
+          `the bound HVA companion could not be read: ${error instanceof Error ? error.message : String(error)}`,
+          { bindingId: binding.bindingId },
+        ),
+      ],
+    }
+  } finally {
+    await lease.release()
+  }
+}
+
+/** Per-section provenance: every published value says whether it came from the file or a binding. */
+function hvaSectionFacts(model, companion) {
+  if (companion.hva === null) {
+    const reason = companion.state === 'corrupt' ? 'companion-unreadable' : 'no-companion'
+    return {
+      binding: model.sections.map(() => Object.freeze({ provenance: 'absent', reason })),
+      diagnostics: [],
+    }
+  }
+  const { matches, unclaimed } = bindSections(
+    model.sections.map(section => section.name),
+    companion.hva,
+  )
+  const diagnostics = []
+  matches.forEach((match, index) => {
+    if (match.state === 'matched') return
+    diagnostics.push(
+      hvaDiagnostic(
+        `hva-section-${index}`,
+        'warning',
+        `x3.vxl/hva-section-${match.state}`,
+        `VXL section «${model.sections[index]?.name ?? index}» has no HVA counterpart it can be bound to by name (${match.reason})`,
+        { section: model.sections[index]?.name ?? String(index), reason: match.reason },
+      ),
+    )
+  })
+  if (unclaimed.length > 0) {
+    diagnostics.push(
+      hvaDiagnostic(
+        'hva-unclaimed-sections',
+        'warning',
+        'x3.vxl/hva-unclaimed-sections',
+        `the HVA companion declares ${unclaimed.length} section(s) this model does not name`,
+        { sections: unclaimed.map(item => item.name) },
+      ),
+    )
+  }
+  const binding = matches.map(match =>
+    match.state === 'matched'
+      ? Object.freeze({
+          provenance: 'companion',
+          bindingId: companion.bindingId,
+          hvaSectionName: match.hvaSectionName,
+          hvaIndex: match.hvaIndex,
+          // frame 0 is the rest pose; a single-frame HVA carries nothing else
+          restTransform: hvaMatrix(companion.hva, match.hvaIndex, 0) ?? null,
+        })
+      : Object.freeze({ provenance: 'absent', reason: match.reason }),
+  )
+  return { binding, diagnostics }
+}
+
 const definition = Object.freeze({
   id: ID,
   version: '1.0.0',
@@ -479,12 +628,38 @@ const definition = Object.freeze({
     const model = parse(bytes, context.budget)
     const geometry = decodedGeometry(model, context.budget)
     const voxelCount = model.sections.reduce((sum, section) => sum + section.voxels.length, 0)
+    const companion = await readHva(context.input, context.budget, context.signal)
+    const facts = hvaSectionFacts(model, companion)
+    const bound = facts.binding.filter(item => item.provenance === 'companion').length
+    /*
+     * One frame is a rest pose, not an animation — so the animation count is the number of tracks
+     * actually present, which is zero for a single-frame sidecar however many sections it binds.
+     * Reporting otherwise would turn an identity pose into "an animation was read".
+     */
+    const animations = companion.hva !== null && companion.hva.frames > 1 && bound > 0 ? 1 : 0
     return {
       summary: {
         format: 'red-alert2-vxl',
         fileType: model.header.fileType,
         palettes: model.header.palettes,
-        sections: model.sections.map(sectionSummary),
+        sections: model.sections.map((section, index) => ({
+          ...sectionSummary(section),
+          // the tailer transform is in the file; the HVA one is not, and says so
+          transformProvenance: 'direct',
+          hva: facts.binding[index],
+        })),
+        hva:
+          companion.hva === null
+            ? { state: companion.state }
+            : {
+                state: companion.state,
+                bindingId: companion.bindingId,
+                frames: companion.hva.frames,
+                sections: companion.hva.sectionCount,
+                boundSections: bound,
+                // named for what it is: a pose has no track
+                kind: companion.hva.frames > 1 ? 'animation' : 'rest-pose',
+              },
         bodyBytes: model.header.bodyBytes,
         paletteRemap: [model.header.startPaletteRemap, model.header.endPaletteRemap],
         voxels: voxelCount,
@@ -522,10 +697,23 @@ const definition = Object.freeze({
           },
         },
         { id: 'structure.hierarchy', parameters: { nodes: model.sections.length } },
+        ...(animations > 0
+          ? [
+              {
+                id: 'model.animations',
+                parameters: {
+                  animations,
+                  frames: companion.hva?.frames ?? 0,
+                  boundSections: bound,
+                  provenance: 'companion',
+                },
+              },
+            ]
+          : []),
         { id: 'content.binary', parameters: { bytes: String(bytes.byteLength) } },
       ],
       dataSources: {
-        'common.view/model-scene-source': modelSource(model, geometry),
+        'common.view/model-scene-source': modelSource(model, geometry, facts, animations),
         'common.view/tree-data-source': createTreeDataSource({
           kind: 'model',
           label: 'Red Alert 2 VXL',
@@ -537,10 +725,21 @@ const definition = Object.freeze({
           })),
         }),
       },
+      diagnostics: [...companion.diagnostics, ...facts.diagnostics],
+      companions: [
+        {
+          id: HVA_REQUIREMENT,
+          role: 'hva',
+          cardinality: 'zero-or-one',
+          required: false,
+          ...(companion.bindingId === null
+            ? { state: 'missing' }
+            : { state: 'resolved', bindingIds: [companion.bindingId] }),
+        },
+      ],
       maxDecodedBytes: Math.max(bytes.byteLength, geometry.decodedBytes),
       unsupportedFeatures: [
         ...(geometry.meshes.length === 0 ? ['remaining-vxl-span-variants'] : []),
-        'hva-transform-binding',
         'pal-and-vpl-lighting-sidecar-resolution',
         'voxel-model-writing',
       ],
