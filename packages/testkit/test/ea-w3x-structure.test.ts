@@ -50,8 +50,7 @@ const budget: ResourceBudget = {
 // documents
 
 const HEAD =
-  '<?xml version="1.0" encoding="UTF-8"?>\n' +
-  '<AssetDeclaration xmlns="uri:ea.com:eala:asset">\n'
+  '<?xml version="1.0" encoding="UTF-8"?>\n' + '<AssetDeclaration xmlns="uri:ea.com:eala:asset">\n'
 const TAIL = '</AssetDeclaration>\n'
 
 interface SubObjectSpec {
@@ -76,7 +75,10 @@ function container(id: string, hierarchyRef: string | undefined, subs: readonly 
   )
 }
 
-function hierarchy(id: string, pivots: readonly { readonly name: string; readonly parent: number }[]) {
+function hierarchy(
+  id: string,
+  pivots: readonly { readonly name: string; readonly parent: number }[],
+) {
   return (
     `\t<W3DHierarchy id="${id}">\n` +
     pivots
@@ -91,7 +93,10 @@ function hierarchy(id: string, pivots: readonly { readonly name: string; readonl
 }
 
 /** A minimal decodable mesh, so a document under test is a real model and not just a stub. */
-function meshWithShader(id: string, textures: readonly { readonly slot: string; readonly value: string }[]) {
+function meshWithShader(
+  id: string,
+  textures: readonly { readonly slot: string; readonly value: string }[],
+) {
   return (
     `\t<W3DMesh id="${id}" GeometryType="Normal">\n` +
     '\t\t<Vertices><V X="0" Y="0" Z="0"/><V X="1" Y="0" Z="0"/><V X="0" Y="1" Z="0"/></Vertices>\n' +
@@ -348,10 +353,7 @@ describe('W3X texture companions', () => {
       'TankDiffuse.dds': new Uint8Array([1, 2, 3]),
       // the normal map is absent: a reference without a file is still a reference
     })
-    expect(summary.textureReferences.map(item => item.value)).toEqual([
-      'TankDiffuse',
-      'TankNormal',
-    ])
+    expect(summary.textureReferences.map(item => item.value)).toEqual(['TankDiffuse', 'TankNormal'])
     expect(summary.textureBindings).toHaveLength(1)
     await session.dispose()
   })
@@ -506,7 +508,8 @@ describe('the configured real SAGE W3X model', () => {
     // textures, and all of them are siblings in the shipped folder
     const folder = dirname(realW3x)
     for (const sibling of ['GUPREDTANK_SKN.w3x', 'GUPREDTANK_SKL.w3x']) {
-      if (existsSync(join(folder, sibling))) await cp(join(folder, sibling), join(directory, sibling))
+      if (existsSync(join(folder, sibling)))
+        await cp(join(folder, sibling), join(directory, sibling))
     }
     const subjects = createSubjectServices({
       inventory: await inventory(),
