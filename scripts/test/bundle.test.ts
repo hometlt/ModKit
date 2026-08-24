@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
@@ -181,17 +182,40 @@ describe('single-file production dist', () => {
   })
 
   it('produces byte-identical output on two consecutive builds', () => {
-    const run = () => {
-      const result = spawnSync(process.execPath, [join(root, 'scripts', 'bundle.mjs')], {
-        cwd: root,
-        encoding: 'utf8',
-      })
+    /*
+     * Two builds, compared against each other in a scratch directory — never against the tracked
+     * baseline.
+     *
+     * This suite used to run the generator's default write mode twice and diff
+     * `scripts/bundle-hashes.json`, which meant an ordinary `pnpm test` rewrote a reviewed,
+     * committed file as a side effect of asking whether the build is deterministic. The question is
+     * a good one; overwriting the answer's own baseline to ask it is not. `--out` sends the manifest
+     * somewhere disposable, so the run proves determinism and changes nothing a human tracks.
+     */
+    const baseline = join(root, 'scripts', 'bundle-hashes.json')
+    const before = existsSync(baseline) ? readFileSync(baseline, 'utf8') : undefined
+    const scratch = mkdtempSync(join(tmpdir(), 'x3-bundle-determinism-'))
+    const run = (attempt: string) => {
+      const out = join(scratch, `${attempt}.json`)
+      const result = spawnSync(
+        process.execPath,
+        [join(root, 'scripts', 'bundle.mjs'), '--out', out],
+        { cwd: root, encoding: 'utf8' },
+      )
       expect(result.status, result.stderr).toBe(0)
-      return readFileSync(join(root, 'scripts', 'bundle-hashes.json'), 'utf8')
+      return readFileSync(out, 'utf8')
     }
-    const first = run()
-    const second = run()
+    let first: string
+    let second: string
+    try {
+      first = run('first')
+      second = run('second')
+    } finally {
+      rmSync(scratch, { recursive: true, force: true })
+    }
     expect(second).toBe(first)
+    // and the baseline this suite exists to protect is exactly as it was found
+    expect(existsSync(baseline) ? readFileSync(baseline, 'utf8') : undefined).toBe(before)
     const hashes = JSON.parse(first) as Record<string, string>
     expect(Object.keys(hashes).sort()).toEqual(
       [...PUBLISHED_ENTRIES, 'apps/modkit-cli/dist/main.js'].sort(),

@@ -18,17 +18,32 @@
 //     lab packages left external so the tarball proof still exercises real resolution).
 //
 // Determinism: esbuild with fixed options, no minification, no timestamps, LF endings, and
-// `--check` re-runs the build into a temp dir and compares hashes.
+// `--check` re-runs the build and compares hashes; `--out <path>` redirects the hash manifest.
 
 import { build } from 'esbuild'
 import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
-import { join, relative, sep } from 'node:path'
+import { join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import process from 'node:process'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const check = process.argv.includes('--check')
+
+/**
+ * Where the hash manifest is read from / written to. Defaults to the tracked baseline.
+ *
+ * `--out <path>` exists so a *test* can ask this script the question "are two consecutive builds
+ * byte-identical?" without the asking changing anything a human tracks. The determinism suite used
+ * to run the default write mode twice and diff the tracked baseline it had just overwritten, which
+ * made an ordinary `pnpm test` mutate a reviewed file — the answer was right and the method was
+ * not. It changes nothing about the normal modes: no flag, same file, same semantics.
+ */
+const outIndex = process.argv.indexOf('--out')
+if (outIndex !== -1 && process.argv[outIndex + 1] === undefined) {
+  console.error('bundle: --out requires a path')
+  process.exit(2)
+}
 
 /** Packages whose published entries collapse to one file each. testkit is dev-only. */
 const BUNDLED_PACKAGES = ['core', 'sdk', 'vfs', 'host', 'ui']
@@ -151,7 +166,10 @@ if (existsSync(join(root, 'apps', 'modkit-cli', 'src', 'main.ts'))) {
   bundled += 1
 }
 
-const hashPath = join(root, 'scripts', 'bundle-hashes.json')
+const hashPath =
+  outIndex === -1
+    ? join(root, 'scripts', 'bundle-hashes.json')
+    : resolve(root, process.argv[outIndex + 1])
 const rendered = `${JSON.stringify(hashes, null, 2)}\n`
 if (check) {
   const previous = existsSync(hashPath) ? readFileSync(hashPath, 'utf8') : ''
