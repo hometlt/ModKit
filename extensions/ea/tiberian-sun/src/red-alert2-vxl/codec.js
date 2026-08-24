@@ -1,5 +1,9 @@
 // Portable VXL reader. It validates section directories and tailers, decodes bounded packed spans,
-// and emits an occlusion-aware surface mesh while keeping HVA/PAL/VPL sidecars explicit as debt.
+// and emits an occlusion-aware surface mesh.
+//
+// Section transforms over time live in a sibling `.hva`, never in the `.vxl` itself, so this codec
+// *declares* that companion and reads whatever the host bound — it does not look for it. PAL/VPL
+// remain declared debt: see `unsupportedFeatures`.
 
 import {
   createInspectionCodec,
@@ -419,10 +423,53 @@ function sectionSummary(section) {
   })
 }
 
+const HVA_REQUIREMENT = 'hva'
+
+/**
+ * The pattern this codec declares for its animation sidecar.
+ *
+ * A `.hva` is named after the `.vxl` beside it, so when the host-issued source identity ends in a
+ * readable `*.vxl` name the declaration is exact and a folder holding several models still resolves
+ * unambiguously. When it does not — an archive entry whose reference carries an opaque id rather
+ * than its path — the codec falls back to the broad `*.hva`, and a container holding more than one
+ * sidecar then ends in the resolver's ambiguity refusal instead of a guess. Deriving a *pattern*
+ * from one's own identity is not resolving a companion: the host still does all of the looking.
+ */
+function hvaPatterns(uri) {
+  let decoded = uri
+  try {
+    decoded = decodeURIComponent(uri)
+  } catch {
+    decoded = uri
+  }
+  const name = decoded.split(/[?#]/u, 1)[0]?.split(/[/\\]/u).at(-1) ?? ''
+  const match = /^(?<stem>.+)\.vxl$/iu.exec(name)
+  const stem = match?.groups?.['stem']
+  return stem === undefined || stem.length === 0 ? ['*.hva'] : [`${stem}.hva`]
+}
+
 const definition = Object.freeze({
   id: ID,
   version: '1.0.0',
   format: Object.freeze({ id: 'red-alert2-vxl', label: 'Red Alert 2 VXL voxel model' }),
+  async planInput(source) {
+    return Object.freeze({
+      originKind: 'bundle',
+      candidate: Object.freeze({ bindingId: 'content', role: 'content', ownership: 'owned' }),
+      requirements: Object.freeze([
+        Object.freeze({
+          id: HVA_REQUIREMENT,
+          role: 'hva',
+          ownership: 'companion',
+          patterns: Object.freeze(hvaPatterns(source.ref.uri)),
+          scopes: Object.freeze(['sibling-directory', 'current-mount', 'enclosing-container']),
+          // a VXL without its sidecar is a legal, complete voxel model
+          cardinality: 'zero-or-one',
+          required: false,
+        }),
+      ]),
+    })
+  },
   async detect(prefix) {
     return signature(prefix)
       ? { confidence: 0.99, kind: 'magic', note: 'Voxel Animation header' }
@@ -493,7 +540,7 @@ const definition = Object.freeze({
       maxDecodedBytes: Math.max(bytes.byteLength, geometry.decodedBytes),
       unsupportedFeatures: [
         ...(geometry.meshes.length === 0 ? ['remaining-vxl-span-variants'] : []),
-        'hva-animation-sidecar-resolution',
+        'hva-transform-binding',
         'pal-and-vpl-lighting-sidecar-resolution',
         'voxel-model-writing',
       ],
