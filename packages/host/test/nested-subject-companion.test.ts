@@ -36,6 +36,7 @@ import {
   type ArtifactByteSource,
   type AssetSession,
   type NamespaceEntrySource,
+  type PageRequest,
   type ResourceBudget,
 } from '@modkitx-x3/sdk'
 import {
@@ -272,8 +273,9 @@ async function originOver(
   const counters: Counters = { opens: 0, releases: 0, doubleRelease: false }
   const extracted: string[] = []
   const counted: NamespaceEntrySource = Object.freeze({
-    list: (prefix, page, signal) => namespace.list(prefix, page, signal),
-    async openEntry(entryId, signal) {
+    list: (prefix: string, page: PageRequest, signal?: AbortSignal) =>
+      namespace.list(prefix, page, signal),
+    async openEntry(entryId: string, signal?: AbortSignal) {
       counters.opens += 1
       const inner = await namespace.openEntry(entryId, signal)
       let released = false
@@ -567,7 +569,7 @@ describe('a container entry opens as its own subject, with companions from the s
         Object.freeze({
           invoke: async () => ({
             state: 'rejected' as const,
-            reason: 'unsupported' as const,
+            reason: 'handler-unregistered' as const,
             diagnostics: [],
           }),
           dispose: () => operations.dispose(),
