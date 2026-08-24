@@ -186,8 +186,7 @@
       "x3Extension": "extensions/ea/models",
       "canonicalModule": "extensions/ea/models/codecs/westwood-w3d/src/index.ts",
       "canonicalExport": "westwoodW3dModelCodec",
-      "baseline": "X3 беднее",
-      "allowPoorerReason": "X3 publishes no animation channel for the real W3D model while the canonical codec reports one. W3D animation depth is queued for Block 9 step 3."
+      "baseline": "X3 богаче"
     },
     {
       "id": "westwood-w3d-real-big-entry",
