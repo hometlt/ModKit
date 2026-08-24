@@ -427,6 +427,21 @@ describe('a container entry opens as its own subject, with companions from the s
       expect(new Set(extracted).size).toBe(1)
       expect(counters.opens).toBe(counters.releases)
       expect(counters.doubleRelease).toBe(false)
+
+      /*
+       * The other half of the security contract: the codec may read the identity of a binding it
+       * was given, but may not name one it was not. A forged id — even one naming a real entry of
+       * this very archive — is refused, so knowing the archive's contents buys no access to them.
+       */
+      const beforeForging = [...extracted]
+      expect(await codeOf(() => input.openBinding('skin#art/textures/other.tga'))).toBe(
+        'x3.host/unknown-asset-input-binding',
+      )
+      expect(await codeOf(() => input.openBinding('skin#../../etc/passwd'))).toBe(
+        'x3.host/unknown-asset-input-binding',
+      )
+      // refused before the container was touched: neither forged id extracted anything
+      expect(extracted).toEqual(beforeForging)
     } finally {
       await release()
     }
@@ -672,6 +687,133 @@ describe('the same route on a real shipped archive', () => {
     },
     120_000,
   )
+})
+
+describe('the container lease the route retains is released exactly once, on every path', () => {
+  /**
+   * A parent session whose namespace data source is counted in and out.
+   *
+   * "The child still worked afterwards" is the weak version of this claim — a leaked lease leaves
+   * the parent perfectly usable and only shows up much later, as a handle a long-running host never
+   * gets back. So the assertion is arithmetic: the route acquires the container's listing once per
+   * nested open, and by the time that open has finished failing, or its session has been disposed,
+   * it has given it back exactly once.
+   */
+  function countedParent(session: AssetSession): {
+    readonly parent: AssetSession
+    readonly acquired: () => number
+    readonly released: () => number
+    readonly doubleRelease: () => boolean
+  } {
+    let acquired = 0
+    let released = 0
+    let doubleRelease = false
+    const parent: AssetSession = Object.freeze({
+      revision: session.revision,
+      state: () => session.state(),
+      descriptor: () => session.descriptor(),
+      operations: () => session.operations(),
+      events: (signal?: AbortSignal) => session.events(signal),
+      dispose: () => session.dispose(),
+      dataSource: (async (contract: never, major: never) => {
+        const lease = await session.dataSource(contract, major)
+        if (contract !== 'common.view/namespace-entry-source') return lease
+        acquired += 1
+        let done = false
+        return {
+          value: lease.value,
+          async release() {
+            if (done) {
+              doubleRelease = true
+              return
+            }
+            done = true
+            released += 1
+            await lease.release()
+          },
+        }
+      }) as AssetSession['dataSource'],
+    })
+    return {
+      parent,
+      acquired: () => acquired,
+      released: () => released,
+      doubleRelease: () => doubleRelease,
+    }
+  }
+
+  async function nestedOver(
+    entries: readonly BigEntryInput[],
+    entryPath: string,
+  ): Promise<{
+    readonly counted: ReturnType<typeof countedParent>
+    readonly nested: Awaited<ReturnType<typeof openNestedSubject>>
+  }> {
+    const archive = await openArchive(entries)
+    openSessions.push(archive)
+    const subjects = await nestedServices()
+    const counted = countedParent(archive)
+    const nested = await openNestedSubject({
+      parent: counted.parent,
+      entryId: await entryIdOf(archive, entryPath),
+      inventory: subjects.inventory,
+      executionBackends: subjects.executionBackends,
+      target,
+      grant,
+      budget,
+    })
+    return { counted, nested }
+  }
+
+  it('holds the container while the child lives and gives it back on dispose', async () => {
+    const { counted, nested } = await nestedOver(
+      await standardEntries(),
+      'data/editor/molds/bowl.w3d',
+    )
+    if (nested.result.state !== 'opened') throw new Error('the nested model did not open')
+
+    // still held: the child is alive and its companion is reachable through the container
+    expect(counted.acquired()).toBe(1)
+    expect(counted.released()).toBe(0)
+
+    await nested.result.session.dispose()
+    expect(counted.released()).toBe(1)
+    // and disposing twice must not hand the same container lease back twice
+    await nested.result.session.dispose()
+    expect(counted.released()).toBe(1)
+    expect(counted.doubleRelease()).toBe(false)
+  })
+
+  it.each([
+    [
+      'a required companion is missing',
+      async (): Promise<readonly BigEntryInput[]> => {
+        const { model: modelBytes, skin: skinBytes } = await payloads()
+        return [
+          { path: 'data/editor/molds/bowl.w3d', bytes: modelBytes },
+          { path: 'art/textures/other.tga', bytes: skinBytes, compress: true },
+        ]
+      },
+    ],
+    [
+      'two candidates claim one slot',
+      async (): Promise<readonly BigEntryInput[]> => {
+        const { model: modelBytes, skin: skinBytes } = await payloads()
+        return [
+          { path: 'data/editor/molds/bowl.w3d', bytes: modelBytes },
+          { path: 'art/textures/bowl.tga', bytes: skinBytes, compress: true },
+          { path: 'art/textures/decoy/bowl.tga', bytes: skinBytes },
+        ]
+      },
+    ],
+  ])('gives the container back when %s', async (_label, entries) => {
+    const { counted, nested } = await nestedOver(await entries(), 'data/editor/molds/bowl.w3d')
+    expect(nested.result.state).toBe('unresolved')
+    // nothing is left holding the archive: the failed child released what it took, before returning
+    expect(counted.acquired()).toBe(1)
+    expect(counted.released()).toBe(1)
+    expect(counted.doubleRelease()).toBe(false)
+  })
 })
 
 describe('the archive origin serves the scopes an entry actually has', () => {
