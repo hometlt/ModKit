@@ -25,6 +25,29 @@ function matches(bytes, type) {
   return bytes[0] === 0 && bytes[1] === 0 && bytes[2] === type && bytes[3] === 0
 }
 
+function hasPlausibleDirectory(bytes, type) {
+  if (!matches(bytes, type) || bytes.byteLength < 6) return false
+  const count = u16(bytes, 4)
+  if (count < 1 || count > 256) return false
+  const directoryEnd = 6 + count * 16
+  if (directoryEnd > bytes.byteLength) return false
+  let recognizedPayload = false
+  for (let index = 0; index < count; index += 1) {
+    const position = 6 + index * 16
+    const reserved = bytes[position + 3]
+    const size = u32(bytes, position + 8)
+    const offset = u32(bytes, position + 12)
+    if (reserved !== 0 || size === 0 || offset < directoryEnd) return false
+    if (offset + 4 <= bytes.byteLength) {
+      const headerBytes = u32(bytes, offset)
+      recognizedPayload ||=
+        (offset + PNG_SIGNATURE.length <= bytes.byteLength && isPng(bytes, offset, size)) ||
+        [12, 16, 40, 52, 56, 64, 108, 124].includes(headerBytes)
+    }
+  }
+  return recognizedPayload
+}
+
 function isPng(bytes, offset, size) {
   return (
     size >= PNG_SIGNATURE.length &&
@@ -234,9 +257,9 @@ export function createIconDefinition({ id, formatId, label, type }) {
     id,
     format: Object.freeze({ id: formatId, label, mediaType: 'image/x-icon' }),
     async detect(prefix) {
-      return matches(prefix, type)
+      return hasPlausibleDirectory(prefix, type)
         ? { confidence: 0.99, kind: 'magic', note: cursor ? 'cur-signature' : 'ico-signature' }
-        : { confidence: 0, kind: 'magic', note: 'signature-mismatch' }
+        : { confidence: 0, kind: 'structure', note: 'ico-cur-directory-mismatch' }
     },
     async inspect(bytes, context) {
       const entries = parseEntries(bytes, type, context.budget.maxNodes)
