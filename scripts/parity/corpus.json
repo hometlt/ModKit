@@ -21,6 +21,93 @@
       "canonicalModule": "extensions/blizzard/starcraft-2/codecs/m3/src/index.ts",
       "canonicalExport": "createM3ModelCodec",
       "canonicalFactory": true
+    },
+    {
+      "format": "png",
+      "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.png",
+      "x3Extension": "extensions/common/images",
+      "canonicalModule": "extensions/common/images/codecs/png/src/index.ts",
+      "canonicalExport": "pngCodec",
+      "canonicalAdapter": "image",
+      "canonicalMediaType": "image/png",
+      "canonicalChannels": 3
+    },
+    {
+      "format": "zip",
+      "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.zip",
+      "x3Extension": "extensions/common/archives",
+      "canonicalModule": "extensions/common/archives/codecs/zip/src/index.ts",
+      "canonicalAdapter": "zip"
+    },
+    {
+      "format": "big",
+      "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.big",
+      "x3Extension": "extensions/mk2/ea-sage",
+      "canonicalModule": "extensions/ea/sage/codecs/big/src/index.ts",
+      "canonicalAdapter": "big"
+    },
+    {
+      "format": "big-real-cnc3",
+      "environment": "MODKITX_CNC3_ROOT",
+      "relativePath": "Core/1.0/Libraries.big",
+      "x3Extension": "extensions/mk2/ea-sage",
+      "canonicalModule": "extensions/ea/sage/codecs/big/src/index.ts",
+      "canonicalAdapter": "big"
+    },
+    {
+      "format": "cnc3-data",
+      "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.cnc3-data.xml",
+      "x3Extension": "extensions/mk2/ea-sage",
+      "canonicalModule": "extensions/ea/sage/codecs/cnc3-data/src/index.ts",
+      "canonicalAdapter": "cnc3-data",
+      "allowPoorerReason": "Block 8 M5: the staging codec has not published its asset table yet."
+    },
+    {
+      "format": "cnc3-localization",
+      "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.cnc3-localization.csf",
+      "x3Extension": "extensions/mk2/ea-sage",
+      "canonicalModule": "extensions/ea/sage/codecs/cnc3-localization/src/index.ts",
+      "canonicalAdapter": "cnc3-localization",
+      "allowPoorerReason": "Block 8 M5: decoded CSF text has not been published as a text source yet."
+    },
+    {
+      "format": "cnc3-map",
+      "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.cnc3.map",
+      "x3Extension": "extensions/mk2/ea-sage",
+      "canonicalModule": "extensions/ea/sage/codecs/cnc3-map/src/index.ts",
+      "canonicalAdapter": "cnc3-map",
+      "allowPoorerReason": "Block 8 M5: the staging map namespace cannot extract chunk bytes yet."
+    },
+    {
+      "format": "sage-skudef",
+      "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.sage.skudef",
+      "x3Extension": "extensions/mk2/ea-sage",
+      "canonicalModule": "extensions/ea/sage/codecs/sage-skudef/src/index.ts",
+      "canonicalAdapter": "sage-skudef"
+    },
+    {
+      "format": "sage-w3x",
+      "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.sage.w3x",
+      "x3Extension": "extensions/mk2/ea-models",
+      "canonicalModule": "extensions/ea/models/codecs/sage-w3x/src/index.ts",
+      "canonicalExport": "sageW3xModelCodec",
+      "allowPoorerReason": "Block 8 M6-M7: the staging W3X fixture exposes metadata before portable geometry parity."
+    },
+    {
+      "format": "westwood-w3d",
+      "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.westwood.w3d",
+      "x3Extension": "extensions/mk2/ea-models",
+      "canonicalModule": "extensions/ea/models/codecs/westwood-w3d/src/index.ts",
+      "canonicalExport": "westwoodW3dModelCodec",
+      "allowPoorerReason": "Block 8 M6-M7: the staging W3D fixture exposes metadata before portable geometry parity."
+    },
+    {
+      "format": "red-alert2-vxl",
+      "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.ra2.vxl",
+      "x3Extension": "extensions/mk2/ea-tiberian-sun",
+      "canonicalModule": "extensions/ea/tiberian-sun/codecs/red-alert2-vxl/src/index.ts",
+      "canonicalExport": "redAlert2VxlModelCodec",
+      "allowPoorerReason": "Block 8 M6-M7: the staging VXL fixture exposes metadata before portable geometry parity."
     }
   ]
 }

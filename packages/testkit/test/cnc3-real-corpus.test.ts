@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { runMk2Acceptance, type Mk2CorpusEntry } from '../src/index.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const cncRoot = process.env.MODKITX_CNC3_ROOT ?? 'C:\\Apps\\CnC3KW'
+const cncRoot = process.env.MODKITX_CNC3_ROOT
 const bigSample = 'Core/1.0/Libraries.big'
 const big: Mk2CorpusEntry = {
   extension: 'mk2/ea-sage',
@@ -23,9 +23,10 @@ const big: Mk2CorpusEntry = {
 }
 
 describe('installed C&C 3: Kane’s Wrath corpus', () => {
-  it.skipIf(!existsSync(join(cncRoot, ...bigSample.split('/'))))(
+  it.skipIf(cncRoot === undefined || !existsSync(join(cncRoot ?? '', ...bigSample.split('/'))))(
     'enumerates and extracts from a real installed SAGE BIG archive',
     async () => {
+      if (cncRoot === undefined) throw new TypeError('MODKITX_CNC3_ROOT is not set')
       const [outcome] = await runMk2Acceptance([big], { repoRoot, mk2Root: cncRoot })
       expect(outcome).toMatchObject({
         state: 'opened',

@@ -7,15 +7,1256 @@
   },
   "x3": {
     "root": "C:\\FILES\\SC2Files\\coding\\modkitX3",
-    "sha": "1b04aadfecd716c94b47506008c704ed4548ab41"
+    "sha": "b1342f08429e4abfa130a1265cdb6b252aacf0d1"
   },
   "summary": [
+    { "format": "big", "state": "compared", "classification": "паритет" },
+    { "format": "big-real-cnc3", "state": "skipped", "classification": null },
+    {
+      "format": "cnc3-data",
+      "state": "compared",
+      "classification": "X3 беднее"
+    },
+    {
+      "format": "cnc3-localization",
+      "state": "compared",
+      "classification": "X3 беднее"
+    },
+    {
+      "format": "cnc3-map",
+      "state": "compared",
+      "classification": "X3 беднее"
+    },
     { "format": "glb", "state": "compared", "classification": "паритет" },
     { "format": "gltf", "state": "compared", "classification": "паритет" },
-    { "format": "m3", "state": "compared", "classification": "X3 богаче" }
+    { "format": "m3", "state": "compared", "classification": "X3 богаче" },
+    { "format": "png", "state": "compared", "classification": "паритет" },
+    {
+      "format": "red-alert2-vxl",
+      "state": "compared",
+      "classification": "X3 беднее"
+    },
+    {
+      "format": "sage-skudef",
+      "state": "compared",
+      "classification": "паритет"
+    },
+    {
+      "format": "sage-w3x",
+      "state": "compared",
+      "classification": "X3 беднее"
+    },
+    {
+      "format": "westwood-w3d",
+      "state": "compared",
+      "classification": "X3 беднее"
+    },
+    { "format": "zip", "state": "compared", "classification": "паритет" }
   ],
-  "poorer": [],
+  "poorer": [
+    {
+      "format": "cnc3-data",
+      "classification": "X3 беднее",
+      "missing": [
+        "common.view/table-data-source:source:common.view/table-data-source",
+        "source:common.view/table-data-source"
+      ],
+      "reason": "Block 8 M5: the staging codec has not published its asset table yet."
+    },
+    {
+      "format": "cnc3-localization",
+      "classification": "X3 беднее",
+      "missing": [
+        "common.view/text-data-source:source:common.view/text-data-source",
+        "source:common.view/text-data-source"
+      ],
+      "reason": "Block 8 M5: decoded CSF text has not been published as a text source yet."
+    },
+    {
+      "format": "cnc3-map",
+      "classification": "X3 беднее",
+      "missing": [
+        "common.view/namespace-entry-source:extract-bytes",
+        "common.view/namespace-entry-source:list",
+        "common.view/namespace-entry-source:measurement:complete",
+        "common.view/namespace-entry-source:measurement:directories",
+        "common.view/namespace-entry-source:measurement:entries",
+        "common.view/namespace-entry-source:measurement:extractedBytes",
+        "common.view/namespace-entry-source:measurement:extractedNonEmpty",
+        "common.view/namespace-entry-source:measurement:files",
+        "common.view/namespace-entry-source:measurement:productReopenCompleted",
+        "common.view/namespace-entry-source:open-entry",
+        "common.view/namespace-entry-source:product-reopen",
+        "common.view/namespace-entry-source:source-state:failed",
+        "source:common.view/namespace-entry-source"
+      ],
+      "reason": "Block 8 M5: the staging map namespace cannot extract chunk bytes yet."
+    },
+    {
+      "format": "red-alert2-vxl",
+      "classification": "X3 беднее",
+      "missing": ["common.view/model-scene-source:measurement:materials:0<1"],
+      "reason": "Block 8 M6-M7: the staging VXL fixture exposes metadata before portable geometry parity."
+    },
+    {
+      "format": "sage-w3x",
+      "classification": "X3 беднее",
+      "missing": [
+        "common.view/model-scene-source:measurement:animations:0<1",
+        "common.view/model-scene-source:measurement:materials:0<1"
+      ],
+      "reason": "Block 8 M6-M7: the staging W3X fixture exposes metadata before portable geometry parity."
+    },
+    {
+      "format": "westwood-w3d",
+      "classification": "X3 беднее",
+      "missing": ["common.view/model-scene-source:measurement:materials:0<1"],
+      "reason": "Block 8 M6-M7: the staging W3D fixture exposes metadata before portable geometry parity."
+    }
+  ],
   "results": [
+    {
+      "format": "big",
+      "state": "compared",
+      "sample": "packages/testkit/test/fixtures/mk2-synthetic/minimal.big",
+      "classification": "паритет",
+      "missing": [],
+      "extra": [
+        "operation:asset.validate",
+        "operation:container.extract",
+        "operation:export.raw",
+        "operation:view.inspect",
+        "source:common.view/byte-range-source"
+      ],
+      "sourceComparisons": [
+        {
+          "contract": "common.view/namespace-entry-source",
+          "classification": "паритет",
+          "missing": [],
+          "extra": []
+        },
+        {
+          "contract": "common.view/tree-data-source",
+          "classification": "паритет",
+          "missing": [],
+          "extra": []
+        }
+      ],
+      "canonical": {
+        "formatId": "big",
+        "declaredSources": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
+        "sources": [
+          {
+            "contract": "common.view/namespace-entry-source",
+            "major": 1,
+            "state": "opened",
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
+            "measurements": {
+              "entries": 1,
+              "files": 1,
+              "directories": 0,
+              "complete": true,
+              "extractedBytes": 5,
+              "extractedNonEmpty": true,
+              "productReopenCompleted": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "nodes": 2,
+              "maxDepth": 1,
+              "kinds": 2,
+              "complete": true
+            }
+          }
+        ],
+        "operations": [],
+        "geometryAccess": "unavailable",
+        "features": [
+          "source:common.view/namespace-entry-source",
+          "source:common.view/tree-data-source"
+        ]
+      },
+      "x3": {
+        "available": true,
+        "formatId": "big",
+        "declaredSources": [
+          "common.view/byte-range-source",
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/byte-range-source",
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
+        "sourceFailures": [],
+        "sources": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/namespace-entry-source",
+            "major": 1,
+            "state": "opened",
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
+            "measurements": {
+              "complete": true,
+              "directories": 0,
+              "entries": 1,
+              "extractedBytes": 5,
+              "extractedNonEmpty": true,
+              "files": 1,
+              "productReopenCompleted": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 2
+            }
+          }
+        ],
+        "operations": [
+          "asset.validate",
+          "container.extract",
+          "export.raw",
+          "view.inspect"
+        ],
+        "geometryAccess": "unavailable",
+        "metadata": {
+          "version": "BIG4",
+          "archiveBytes": 39,
+          "dataOffset": 34,
+          "entries": 1,
+          "refPackEntries": 0
+        },
+        "features": [
+          "operation:asset.validate",
+          "operation:container.extract",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/namespace-entry-source",
+          "source:common.view/tree-data-source"
+        ]
+      },
+      "declared": {
+        "canonical": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
+        "x3": [
+          "common.view/byte-range-source",
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ]
+      },
+      "observed": {
+        "canonical": [
+          {
+            "contract": "common.view/namespace-entry-source",
+            "major": 1,
+            "state": "opened",
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
+            "measurements": {
+              "entries": 1,
+              "files": 1,
+              "directories": 0,
+              "complete": true,
+              "extractedBytes": 5,
+              "extractedNonEmpty": true,
+              "productReopenCompleted": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "nodes": 2,
+              "maxDepth": 1,
+              "kinds": 2,
+              "complete": true
+            }
+          }
+        ],
+        "x3": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/namespace-entry-source",
+            "major": 1,
+            "state": "opened",
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
+            "measurements": {
+              "complete": true,
+              "directories": 0,
+              "entries": 1,
+              "extractedBytes": 5,
+              "extractedNonEmpty": true,
+              "files": 1,
+              "productReopenCompleted": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 2
+            }
+          }
+        ]
+      },
+      "comparison": {
+        "classification": "паритет",
+        "missing": [],
+        "extra": [
+          "operation:asset.validate",
+          "operation:container.extract",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source"
+        ],
+        "sources": [
+          {
+            "contract": "common.view/namespace-entry-source",
+            "classification": "паритет",
+            "missing": [],
+            "extra": []
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "classification": "паритет",
+            "missing": [],
+            "extra": []
+          }
+        ]
+      }
+    },
+    {
+      "format": "big-real-cnc3",
+      "state": "skipped",
+      "sample": "MODKITX_CNC3_ROOT",
+      "detail": "MODKITX_CNC3_ROOT is not set"
+    },
+    {
+      "format": "cnc3-data",
+      "state": "compared",
+      "sample": "packages/testkit/test/fixtures/mk2-synthetic/minimal.cnc3-data.xml",
+      "classification": "X3 беднее",
+      "missing": [
+        "common.view/table-data-source:source:common.view/table-data-source",
+        "source:common.view/table-data-source"
+      ],
+      "extra": [
+        "operation:asset.validate",
+        "operation:export.raw",
+        "operation:view.inspect",
+        "source:common.view/byte-range-source"
+      ],
+      "sourceComparisons": [
+        {
+          "contract": "common.view/table-data-source",
+          "classification": "X3 беднее",
+          "missing": ["source:common.view/table-data-source"],
+          "extra": []
+        },
+        {
+          "contract": "common.view/text-data-source",
+          "classification": "паритет",
+          "missing": [],
+          "extra": []
+        },
+        {
+          "contract": "common.view/tree-data-source",
+          "classification": "паритет",
+          "missing": [],
+          "extra": []
+        }
+      ],
+      "allowPoorerReason": "Block 8 M5: the staging codec has not published its asset table yet.",
+      "canonical": {
+        "formatId": "cnc3-data",
+        "declaredSources": [
+          "common.view/table-data-source",
+          "common.view/text-data-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/table-data-source",
+          "common.view/text-data-source",
+          "common.view/tree-data-source"
+        ],
+        "sources": [
+          {
+            "contract": "common.view/table-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["cell", "rows", "shape"],
+            "measurements": {
+              "rows": 2,
+              "rowsKnown": true,
+              "columns": 2,
+              "typedColumns": 2,
+              "firstPageRows": 1
+            }
+          },
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 10,
+              "linesKnown": true,
+              "sliceLines": 10,
+              "sliceNonEmpty": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "nodes": 7,
+              "maxDepth": 2,
+              "kinds": 4,
+              "complete": true
+            }
+          }
+        ],
+        "operations": [],
+        "geometryAccess": "unavailable",
+        "features": [
+          "source:common.view/table-data-source",
+          "source:common.view/text-data-source",
+          "source:common.view/tree-data-source"
+        ]
+      },
+      "x3": {
+        "available": true,
+        "formatId": "cnc3-data",
+        "declaredSources": [
+          "common.view/byte-range-source",
+          "common.view/text-data-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/byte-range-source",
+          "common.view/text-data-source",
+          "common.view/tree-data-source"
+        ],
+        "sourceFailures": [],
+        "sources": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 10,
+              "linesKnown": true,
+              "sliceLines": 10,
+              "sliceNonEmpty": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 4,
+              "maxDepth": 2,
+              "nodes": 7
+            }
+          }
+        ],
+        "operations": ["asset.validate", "export.raw", "view.inspect"],
+        "geometryAccess": "unavailable",
+        "metadata": {
+          "namespace": "uri:ea.com:eala:asset",
+          "includes": 2,
+          "assets": 2,
+          "assetTypes": 2
+        },
+        "features": [
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/text-data-source",
+          "source:common.view/tree-data-source"
+        ]
+      },
+      "declared": {
+        "canonical": [
+          "common.view/table-data-source",
+          "common.view/text-data-source",
+          "common.view/tree-data-source"
+        ],
+        "x3": [
+          "common.view/byte-range-source",
+          "common.view/text-data-source",
+          "common.view/tree-data-source"
+        ]
+      },
+      "observed": {
+        "canonical": [
+          {
+            "contract": "common.view/table-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["cell", "rows", "shape"],
+            "measurements": {
+              "rows": 2,
+              "rowsKnown": true,
+              "columns": 2,
+              "typedColumns": 2,
+              "firstPageRows": 1
+            }
+          },
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 10,
+              "linesKnown": true,
+              "sliceLines": 10,
+              "sliceNonEmpty": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "nodes": 7,
+              "maxDepth": 2,
+              "kinds": 4,
+              "complete": true
+            }
+          }
+        ],
+        "x3": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 10,
+              "linesKnown": true,
+              "sliceLines": 10,
+              "sliceNonEmpty": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 4,
+              "maxDepth": 2,
+              "nodes": 7
+            }
+          }
+        ]
+      },
+      "comparison": {
+        "classification": "X3 беднее",
+        "missing": [
+          "common.view/table-data-source:source:common.view/table-data-source",
+          "source:common.view/table-data-source"
+        ],
+        "extra": [
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source"
+        ],
+        "sources": [
+          {
+            "contract": "common.view/table-data-source",
+            "classification": "X3 беднее",
+            "missing": ["source:common.view/table-data-source"],
+            "extra": []
+          },
+          {
+            "contract": "common.view/text-data-source",
+            "classification": "паритет",
+            "missing": [],
+            "extra": []
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "classification": "паритет",
+            "missing": [],
+            "extra": []
+          }
+        ]
+      }
+    },
+    {
+      "format": "cnc3-localization",
+      "state": "compared",
+      "sample": "packages/testkit/test/fixtures/mk2-synthetic/minimal.cnc3-localization.csf",
+      "classification": "X3 беднее",
+      "missing": [
+        "common.view/text-data-source:source:common.view/text-data-source",
+        "source:common.view/text-data-source"
+      ],
+      "extra": [
+        "operation:asset.validate",
+        "operation:export.raw",
+        "operation:view.inspect",
+        "source:common.view/byte-range-source"
+      ],
+      "sourceComparisons": [
+        {
+          "contract": "common.view/table-data-source",
+          "classification": "паритет",
+          "missing": [],
+          "extra": []
+        },
+        {
+          "contract": "common.view/text-data-source",
+          "classification": "X3 беднее",
+          "missing": ["source:common.view/text-data-source"],
+          "extra": []
+        },
+        {
+          "contract": "common.view/tree-data-source",
+          "classification": "паритет",
+          "missing": [],
+          "extra": []
+        }
+      ],
+      "allowPoorerReason": "Block 8 M5: decoded CSF text has not been published as a text source yet.",
+      "canonical": {
+        "formatId": "cnc3-localization",
+        "declaredSources": [
+          "common.view/table-data-source",
+          "common.view/text-data-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/table-data-source",
+          "common.view/text-data-source",
+          "common.view/tree-data-source"
+        ],
+        "sources": [
+          {
+            "contract": "common.view/table-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["cell", "rows", "shape"],
+            "measurements": {
+              "rows": 1,
+              "rowsKnown": true,
+              "columns": 3,
+              "typedColumns": 3,
+              "firstPageRows": 1
+            }
+          },
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 1,
+              "linesKnown": true,
+              "sliceLines": 1,
+              "sliceNonEmpty": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "nodes": 2,
+              "maxDepth": 1,
+              "kinds": 2,
+              "complete": true
+            }
+          }
+        ],
+        "operations": [],
+        "geometryAccess": "unavailable",
+        "features": [
+          "source:common.view/table-data-source",
+          "source:common.view/text-data-source",
+          "source:common.view/tree-data-source"
+        ]
+      },
+      "x3": {
+        "available": true,
+        "formatId": "cnc3-localization",
+        "declaredSources": [
+          "common.view/byte-range-source",
+          "common.view/table-data-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/byte-range-source",
+          "common.view/table-data-source",
+          "common.view/tree-data-source"
+        ],
+        "sourceFailures": [],
+        "sources": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/table-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["cell", "rows", "shape"],
+            "measurements": {
+              "columns": 3,
+              "firstPageRows": 1,
+              "rows": 1,
+              "rowsKnown": true,
+              "typedColumns": 3
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 2
+            }
+          }
+        ],
+        "operations": ["asset.validate", "export.raw", "view.inspect"],
+        "geometryAccess": "unavailable",
+        "metadata": {
+          "encoding": "csf",
+          "labels": 1,
+          "strings": 1,
+          "notes": 1
+        },
+        "features": [
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/table-data-source",
+          "source:common.view/tree-data-source"
+        ]
+      },
+      "declared": {
+        "canonical": [
+          "common.view/table-data-source",
+          "common.view/text-data-source",
+          "common.view/tree-data-source"
+        ],
+        "x3": [
+          "common.view/byte-range-source",
+          "common.view/table-data-source",
+          "common.view/tree-data-source"
+        ]
+      },
+      "observed": {
+        "canonical": [
+          {
+            "contract": "common.view/table-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["cell", "rows", "shape"],
+            "measurements": {
+              "rows": 1,
+              "rowsKnown": true,
+              "columns": 3,
+              "typedColumns": 3,
+              "firstPageRows": 1
+            }
+          },
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 1,
+              "linesKnown": true,
+              "sliceLines": 1,
+              "sliceNonEmpty": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "nodes": 2,
+              "maxDepth": 1,
+              "kinds": 2,
+              "complete": true
+            }
+          }
+        ],
+        "x3": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/table-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["cell", "rows", "shape"],
+            "measurements": {
+              "columns": 3,
+              "firstPageRows": 1,
+              "rows": 1,
+              "rowsKnown": true,
+              "typedColumns": 3
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 2
+            }
+          }
+        ]
+      },
+      "comparison": {
+        "classification": "X3 беднее",
+        "missing": [
+          "common.view/text-data-source:source:common.view/text-data-source",
+          "source:common.view/text-data-source"
+        ],
+        "extra": [
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source"
+        ],
+        "sources": [
+          {
+            "contract": "common.view/table-data-source",
+            "classification": "паритет",
+            "missing": [],
+            "extra": []
+          },
+          {
+            "contract": "common.view/text-data-source",
+            "classification": "X3 беднее",
+            "missing": ["source:common.view/text-data-source"],
+            "extra": []
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "classification": "паритет",
+            "missing": [],
+            "extra": []
+          }
+        ]
+      }
+    },
+    {
+      "format": "cnc3-map",
+      "state": "compared",
+      "sample": "packages/testkit/test/fixtures/mk2-synthetic/minimal.cnc3.map",
+      "classification": "X3 беднее",
+      "missing": [
+        "common.view/namespace-entry-source:extract-bytes",
+        "common.view/namespace-entry-source:list",
+        "common.view/namespace-entry-source:measurement:complete",
+        "common.view/namespace-entry-source:measurement:directories",
+        "common.view/namespace-entry-source:measurement:entries",
+        "common.view/namespace-entry-source:measurement:extractedBytes",
+        "common.view/namespace-entry-source:measurement:extractedNonEmpty",
+        "common.view/namespace-entry-source:measurement:files",
+        "common.view/namespace-entry-source:measurement:productReopenCompleted",
+        "common.view/namespace-entry-source:open-entry",
+        "common.view/namespace-entry-source:product-reopen",
+        "common.view/namespace-entry-source:source-state:failed",
+        "source:common.view/namespace-entry-source"
+      ],
+      "extra": [
+        "operation:asset.validate",
+        "operation:export.raw",
+        "operation:view.inspect",
+        "source:common.view/byte-range-source"
+      ],
+      "sourceComparisons": [
+        {
+          "contract": "common.view/namespace-entry-source",
+          "classification": "X3 беднее",
+          "missing": [
+            "extract-bytes",
+            "list",
+            "measurement:complete",
+            "measurement:directories",
+            "measurement:entries",
+            "measurement:extractedBytes",
+            "measurement:extractedNonEmpty",
+            "measurement:files",
+            "measurement:productReopenCompleted",
+            "open-entry",
+            "product-reopen",
+            "source-state:failed"
+          ],
+          "extra": []
+        },
+        {
+          "contract": "common.view/tree-data-source",
+          "classification": "паритет",
+          "missing": [],
+          "extra": []
+        }
+      ],
+      "allowPoorerReason": "Block 8 M5: the staging map namespace cannot extract chunk bytes yet.",
+      "canonical": {
+        "formatId": "cnc3-map",
+        "declaredSources": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
+        "sources": [
+          {
+            "contract": "common.view/namespace-entry-source",
+            "major": 1,
+            "state": "opened",
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
+            "measurements": {
+              "entries": 1,
+              "files": 1,
+              "directories": 0,
+              "complete": true,
+              "extractedBytes": 12,
+              "extractedNonEmpty": true,
+              "productReopenCompleted": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "nodes": 2,
+              "maxDepth": 1,
+              "kinds": 2,
+              "complete": true
+            }
+          }
+        ],
+        "operations": [],
+        "geometryAccess": "unavailable",
+        "features": [
+          "source:common.view/namespace-entry-source",
+          "source:common.view/tree-data-source"
+        ]
+      },
+      "x3": {
+        "available": true,
+        "formatId": "cnc3-map",
+        "declaredSources": [
+          "common.view/byte-range-source",
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/byte-range-source",
+          "common.view/tree-data-source"
+        ],
+        "sourceFailures": [
+          {
+            "contract": "common.view/namespace-entry-source",
+            "error": "namespace extraction failed for 0"
+          }
+        ],
+        "sources": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/namespace-entry-source",
+            "major": 1,
+            "state": "failed",
+            "features": [],
+            "measurements": {},
+            "detail": "namespace extraction failed for 0"
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 2
+            }
+          }
+        ],
+        "operations": ["asset.validate", "export.raw", "view.inspect"],
+        "geometryAccess": "unavailable",
+        "metadata": {
+          "envelope": "EAR + RefPack",
+          "expandedBytes": 48,
+          "names": 1,
+          "chunks": 1,
+          "width": 256,
+          "height": 128,
+          "borderSize": 16
+        },
+        "features": [
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/tree-data-source"
+        ]
+      },
+      "declared": {
+        "canonical": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
+        "x3": [
+          "common.view/byte-range-source",
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ]
+      },
+      "observed": {
+        "canonical": [
+          {
+            "contract": "common.view/namespace-entry-source",
+            "major": 1,
+            "state": "opened",
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
+            "measurements": {
+              "entries": 1,
+              "files": 1,
+              "directories": 0,
+              "complete": true,
+              "extractedBytes": 12,
+              "extractedNonEmpty": true,
+              "productReopenCompleted": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "nodes": 2,
+              "maxDepth": 1,
+              "kinds": 2,
+              "complete": true
+            }
+          }
+        ],
+        "x3": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/namespace-entry-source",
+            "major": 1,
+            "state": "failed",
+            "features": [],
+            "measurements": {},
+            "detail": "namespace extraction failed for 0"
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 2
+            }
+          }
+        ]
+      },
+      "comparison": {
+        "classification": "X3 беднее",
+        "missing": [
+          "common.view/namespace-entry-source:extract-bytes",
+          "common.view/namespace-entry-source:list",
+          "common.view/namespace-entry-source:measurement:complete",
+          "common.view/namespace-entry-source:measurement:directories",
+          "common.view/namespace-entry-source:measurement:entries",
+          "common.view/namespace-entry-source:measurement:extractedBytes",
+          "common.view/namespace-entry-source:measurement:extractedNonEmpty",
+          "common.view/namespace-entry-source:measurement:files",
+          "common.view/namespace-entry-source:measurement:productReopenCompleted",
+          "common.view/namespace-entry-source:open-entry",
+          "common.view/namespace-entry-source:product-reopen",
+          "common.view/namespace-entry-source:source-state:failed",
+          "source:common.view/namespace-entry-source"
+        ],
+        "extra": [
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source"
+        ],
+        "sources": [
+          {
+            "contract": "common.view/namespace-entry-source",
+            "classification": "X3 беднее",
+            "missing": [
+              "extract-bytes",
+              "list",
+              "measurement:complete",
+              "measurement:directories",
+              "measurement:entries",
+              "measurement:extractedBytes",
+              "measurement:extractedNonEmpty",
+              "measurement:files",
+              "measurement:productReopenCompleted",
+              "open-entry",
+              "product-reopen",
+              "source-state:failed"
+            ],
+            "extra": []
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "classification": "паритет",
+            "missing": [],
+            "extra": []
+          }
+        ]
+      }
+    },
     {
       "format": "glb",
       "state": "compared",
@@ -23,6 +1264,13 @@
       "classification": "паритет",
       "missing": [],
       "extra": [
+        "metadata:animations",
+        "metadata:materials",
+        "metadata:meshes",
+        "metadata:nodes",
+        "metadata:primitives",
+        "metadata:scenes",
+        "metadata:textures",
         "operation:asset.validate",
         "operation:export.raw",
         "operation:view.inspect",
@@ -41,15 +1289,6 @@
       ],
       "canonical": {
         "formatId": "glb",
-        "summary": {
-          "scenes": 1,
-          "nodes": 1,
-          "meshes": 1,
-          "primitives": 1,
-          "materials": 1,
-          "textures": 0,
-          "animations": 0
-        },
         "declaredSources": ["common.view/model-scene-source"],
         "actualSources": ["common.view/model-scene-source"],
         "sources": [
@@ -76,15 +1315,17 @@
         "geometryAccess": "decoded",
         "features": [
           "geometry:decoded",
-          "metadata:animations",
-          "metadata:materials",
-          "metadata:meshes",
-          "metadata:nodes",
-          "metadata:primitives",
-          "metadata:scenes",
-          "metadata:textures",
           "source:common.view/model-scene-source"
-        ]
+        ],
+        "summary": {
+          "scenes": 1,
+          "nodes": 1,
+          "meshes": 1,
+          "primitives": 1,
+          "materials": 1,
+          "textures": 0,
+          "animations": 0
+        }
       },
       "x3": {
         "available": true,
@@ -280,6 +1521,13 @@
         "classification": "паритет",
         "missing": [],
         "extra": [
+          "metadata:animations",
+          "metadata:materials",
+          "metadata:meshes",
+          "metadata:nodes",
+          "metadata:primitives",
+          "metadata:scenes",
+          "metadata:textures",
           "operation:asset.validate",
           "operation:export.raw",
           "operation:view.inspect",
@@ -305,6 +1553,13 @@
       "classification": "паритет",
       "missing": [],
       "extra": [
+        "metadata:animations",
+        "metadata:materials",
+        "metadata:meshes",
+        "metadata:nodes",
+        "metadata:primitives",
+        "metadata:scenes",
+        "metadata:textures",
         "operation:asset.validate",
         "operation:export.raw",
         "operation:view.inspect",
@@ -324,15 +1579,6 @@
       ],
       "canonical": {
         "formatId": "gltf",
-        "summary": {
-          "scenes": 1,
-          "nodes": 1,
-          "meshes": 1,
-          "primitives": 1,
-          "materials": 1,
-          "textures": 0,
-          "animations": 0
-        },
         "declaredSources": ["common.view/model-scene-source"],
         "actualSources": ["common.view/model-scene-source"],
         "sources": [
@@ -359,15 +1605,17 @@
         "geometryAccess": "decoded",
         "features": [
           "geometry:decoded",
-          "metadata:animations",
-          "metadata:materials",
-          "metadata:meshes",
-          "metadata:nodes",
-          "metadata:primitives",
-          "metadata:scenes",
-          "metadata:textures",
           "source:common.view/model-scene-source"
-        ]
+        ],
+        "summary": {
+          "scenes": 1,
+          "nodes": 1,
+          "meshes": 1,
+          "primitives": 1,
+          "materials": 1,
+          "textures": 0,
+          "animations": 0
+        }
       },
       "x3": {
         "available": true,
@@ -593,6 +1841,13 @@
         "classification": "паритет",
         "missing": [],
         "extra": [
+          "metadata:animations",
+          "metadata:materials",
+          "metadata:meshes",
+          "metadata:nodes",
+          "metadata:primitives",
+          "metadata:scenes",
+          "metadata:textures",
           "operation:asset.validate",
           "operation:export.raw",
           "operation:view.inspect",
@@ -622,6 +1877,13 @@
         "common.view/model-scene-source:measurement:materials:2>1",
         "common.view/model-scene-source:measurement:nodes:1>0",
         "common.view/model-scene-source:measurement:textures:18>0",
+        "metadata:animations",
+        "metadata:materials",
+        "metadata:meshes",
+        "metadata:nodes",
+        "metadata:primitives",
+        "metadata:scenes",
+        "metadata:textures",
         "operation:asset.validate",
         "operation:export.raw",
         "operation:view.inspect",
@@ -642,15 +1904,6 @@
       ],
       "canonical": {
         "formatId": "m3",
-        "summary": {
-          "scenes": 1,
-          "nodes": 0,
-          "meshes": 1,
-          "primitives": 1,
-          "materials": 1,
-          "textures": 0,
-          "animations": 1
-        },
         "declaredSources": ["common.view/model-scene-source"],
         "actualSources": ["common.view/model-scene-source"],
         "sources": [
@@ -677,15 +1930,17 @@
         "geometryAccess": "decoded",
         "features": [
           "geometry:decoded",
-          "metadata:animations",
-          "metadata:materials",
-          "metadata:meshes",
-          "metadata:nodes",
-          "metadata:primitives",
-          "metadata:scenes",
-          "metadata:textures",
           "source:common.view/model-scene-source"
-        ]
+        ],
+        "summary": {
+          "scenes": 1,
+          "nodes": 0,
+          "meshes": 1,
+          "primitives": 1,
+          "materials": 1,
+          "textures": 0,
+          "animations": 1
+        }
       },
       "x3": {
         "available": true,
@@ -848,6 +2103,13 @@
           "common.view/model-scene-source:measurement:materials:2>1",
           "common.view/model-scene-source:measurement:nodes:1>0",
           "common.view/model-scene-source:measurement:textures:18>0",
+          "metadata:animations",
+          "metadata:materials",
+          "metadata:meshes",
+          "metadata:nodes",
+          "metadata:primitives",
+          "metadata:scenes",
+          "metadata:textures",
           "operation:asset.validate",
           "operation:export.raw",
           "operation:view.inspect",
@@ -864,6 +2126,1421 @@
               "measurement:nodes:1>0",
               "measurement:textures:18>0"
             ]
+          }
+        ]
+      }
+    },
+    {
+      "format": "png",
+      "state": "compared",
+      "sample": "packages/testkit/test/fixtures/mk2-synthetic/minimal.png",
+      "classification": "паритет",
+      "missing": [],
+      "extra": [
+        "operation:asset.validate",
+        "operation:edit.field",
+        "operation:export.raw",
+        "operation:view.inspect",
+        "source:common.view/byte-range-source",
+        "source:common.view/tree-data-source"
+      ],
+      "sourceComparisons": [
+        {
+          "contract": "common.view/raster-image-source",
+          "classification": "паритет",
+          "missing": [],
+          "extra": []
+        }
+      ],
+      "canonical": {
+        "formatId": "png",
+        "declaredSources": ["common.view/raster-image-source"],
+        "actualSources": ["common.view/raster-image-source"],
+        "sources": [
+          {
+            "contract": "common.view/raster-image-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["decoded-region", "encoded", "info"],
+            "measurements": {
+              "width": 1,
+              "height": 1,
+              "channels": 3,
+              "decodedAccess": true,
+              "decodedBytes": 4,
+              "encodedNonEmpty": true,
+              "encodedMediaType": "image/png"
+            }
+          }
+        ],
+        "operations": [],
+        "geometryAccess": "unavailable",
+        "features": ["source:common.view/raster-image-source"]
+      },
+      "x3": {
+        "available": true,
+        "formatId": "png",
+        "declaredSources": [
+          "common.view/byte-range-source",
+          "common.view/raster-image-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/byte-range-source",
+          "common.view/raster-image-source",
+          "common.view/tree-data-source"
+        ],
+        "sourceFailures": [],
+        "sources": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/raster-image-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["decoded-region", "encoded", "info"],
+            "measurements": {
+              "channels": 3,
+              "decodedAccess": true,
+              "decodedBytes": 4,
+              "encodedMediaType": "image/png",
+              "encodedNonEmpty": true,
+              "height": 1,
+              "width": 1
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 4
+            }
+          }
+        ],
+        "operations": [
+          "asset.validate",
+          "edit.field",
+          "export.raw",
+          "view.inspect"
+        ],
+        "geometryAccess": "unavailable",
+        "metadata": {
+          "width": 1,
+          "height": 1,
+          "bitDepth": 8,
+          "colorType": 2,
+          "channels": 3,
+          "interlaced": false,
+          "chunks": 3,
+          "frames": 1
+        },
+        "features": [
+          "operation:asset.validate",
+          "operation:edit.field",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/raster-image-source",
+          "source:common.view/tree-data-source"
+        ]
+      },
+      "declared": {
+        "canonical": ["common.view/raster-image-source"],
+        "x3": [
+          "common.view/byte-range-source",
+          "common.view/raster-image-source",
+          "common.view/tree-data-source"
+        ]
+      },
+      "observed": {
+        "canonical": [
+          {
+            "contract": "common.view/raster-image-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["decoded-region", "encoded", "info"],
+            "measurements": {
+              "width": 1,
+              "height": 1,
+              "channels": 3,
+              "decodedAccess": true,
+              "decodedBytes": 4,
+              "encodedNonEmpty": true,
+              "encodedMediaType": "image/png"
+            }
+          }
+        ],
+        "x3": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/raster-image-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["decoded-region", "encoded", "info"],
+            "measurements": {
+              "channels": 3,
+              "decodedAccess": true,
+              "decodedBytes": 4,
+              "encodedMediaType": "image/png",
+              "encodedNonEmpty": true,
+              "height": 1,
+              "width": 1
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 4
+            }
+          }
+        ]
+      },
+      "comparison": {
+        "classification": "паритет",
+        "missing": [],
+        "extra": [
+          "operation:asset.validate",
+          "operation:edit.field",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/tree-data-source"
+        ],
+        "sources": [
+          {
+            "contract": "common.view/raster-image-source",
+            "classification": "паритет",
+            "missing": [],
+            "extra": []
+          }
+        ]
+      }
+    },
+    {
+      "format": "red-alert2-vxl",
+      "state": "compared",
+      "sample": "packages/testkit/test/fixtures/mk2-synthetic/minimal.ra2.vxl",
+      "classification": "X3 беднее",
+      "missing": ["common.view/model-scene-source:measurement:materials:0<1"],
+      "extra": [
+        "common.view/model-scene-source:measurement:nodes:1>0",
+        "operation:asset.validate",
+        "operation:export.raw",
+        "operation:view.inspect",
+        "source:common.view/byte-range-source",
+        "source:common.view/tree-data-source"
+      ],
+      "sourceComparisons": [
+        {
+          "contract": "common.view/model-scene-source",
+          "classification": "X3 беднее",
+          "missing": ["measurement:materials:0<1"],
+          "extra": ["measurement:nodes:1>0"]
+        }
+      ],
+      "allowPoorerReason": "Block 8 M6-M7: the staging VXL fixture exposes metadata before portable geometry parity.",
+      "canonical": {
+        "formatId": "vxl",
+        "declaredSources": ["common.view/model-scene-source"],
+        "actualSources": ["common.view/model-scene-source"],
+        "sources": [
+          {
+            "contract": "common.view/model-scene-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "meshes", "nodes"],
+            "measurements": {
+              "scenes": 1,
+              "nodes": 0,
+              "meshes": 0,
+              "primitives": 0,
+              "materials": 1,
+              "textures": 0,
+              "animations": 0,
+              "decodedGeometry": false,
+              "decodedVertices": 0,
+              "decodedIndices": 0
+            }
+          }
+        ],
+        "operations": [],
+        "geometryAccess": "metadata-only",
+        "features": ["source:common.view/model-scene-source"],
+        "summary": {
+          "scenes": 1,
+          "nodes": 0,
+          "meshes": 0,
+          "primitives": 0,
+          "materials": 1,
+          "textures": 0,
+          "animations": 0
+        }
+      },
+      "x3": {
+        "available": true,
+        "formatId": "red-alert2-vxl",
+        "declaredSources": [
+          "common.view/byte-range-source",
+          "common.view/model-scene-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/byte-range-source",
+          "common.view/model-scene-source",
+          "common.view/tree-data-source"
+        ],
+        "sourceFailures": [],
+        "sources": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/model-scene-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "meshes", "nodes"],
+            "measurements": {
+              "animations": 0,
+              "decodedGeometry": false,
+              "decodedIndices": 0,
+              "decodedVertices": 0,
+              "materials": 0,
+              "meshes": 0,
+              "nodes": 1,
+              "primitives": 0,
+              "scenes": 1,
+              "textures": 0
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 2
+            }
+          }
+        ],
+        "operations": ["asset.validate", "export.raw", "view.inspect"],
+        "geometryAccess": "unavailable",
+        "metadata": {
+          "sections": 1,
+          "bodyBytes": 0,
+          "palettes": 1,
+          "geometryAccess": "metadata-only"
+        },
+        "features": [
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/model-scene-source",
+          "source:common.view/tree-data-source"
+        ]
+      },
+      "declared": {
+        "canonical": ["common.view/model-scene-source"],
+        "x3": [
+          "common.view/byte-range-source",
+          "common.view/model-scene-source",
+          "common.view/tree-data-source"
+        ]
+      },
+      "observed": {
+        "canonical": [
+          {
+            "contract": "common.view/model-scene-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "meshes", "nodes"],
+            "measurements": {
+              "scenes": 1,
+              "nodes": 0,
+              "meshes": 0,
+              "primitives": 0,
+              "materials": 1,
+              "textures": 0,
+              "animations": 0,
+              "decodedGeometry": false,
+              "decodedVertices": 0,
+              "decodedIndices": 0
+            }
+          }
+        ],
+        "x3": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/model-scene-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "meshes", "nodes"],
+            "measurements": {
+              "animations": 0,
+              "decodedGeometry": false,
+              "decodedIndices": 0,
+              "decodedVertices": 0,
+              "materials": 0,
+              "meshes": 0,
+              "nodes": 1,
+              "primitives": 0,
+              "scenes": 1,
+              "textures": 0
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 2
+            }
+          }
+        ]
+      },
+      "comparison": {
+        "classification": "X3 беднее",
+        "missing": ["common.view/model-scene-source:measurement:materials:0<1"],
+        "extra": [
+          "common.view/model-scene-source:measurement:nodes:1>0",
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/tree-data-source"
+        ],
+        "sources": [
+          {
+            "contract": "common.view/model-scene-source",
+            "classification": "X3 беднее",
+            "missing": ["measurement:materials:0<1"],
+            "extra": ["measurement:nodes:1>0"]
+          }
+        ]
+      }
+    },
+    {
+      "format": "sage-skudef",
+      "state": "compared",
+      "sample": "packages/testkit/test/fixtures/mk2-synthetic/minimal.sage.skudef",
+      "classification": "паритет",
+      "missing": [],
+      "extra": [
+        "common.view/namespace-entry-source:measurement:extractedBytes",
+        "common.view/namespace-entry-source:measurement:extractedNonEmpty",
+        "common.view/namespace-entry-source:measurement:productReopenCompleted",
+        "operation:asset.validate",
+        "operation:export.raw",
+        "operation:view.inspect",
+        "source:common.view/byte-range-source"
+      ],
+      "sourceComparisons": [
+        {
+          "contract": "common.view/namespace-entry-source",
+          "classification": "X3 богаче",
+          "missing": [],
+          "extra": [
+            "measurement:extractedBytes",
+            "measurement:extractedNonEmpty",
+            "measurement:productReopenCompleted"
+          ]
+        },
+        {
+          "contract": "common.view/tree-data-source",
+          "classification": "паритет",
+          "missing": [],
+          "extra": []
+        }
+      ],
+      "canonical": {
+        "formatId": "sage-skudef",
+        "declaredSources": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
+        "sources": [
+          {
+            "contract": "common.view/namespace-entry-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["list"],
+            "measurements": {
+              "entries": 5,
+              "files": 0,
+              "directories": 0,
+              "complete": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "nodes": 6,
+              "maxDepth": 1,
+              "kinds": 2,
+              "complete": true
+            }
+          }
+        ],
+        "operations": [],
+        "geometryAccess": "unavailable",
+        "features": [
+          "source:common.view/namespace-entry-source",
+          "source:common.view/tree-data-source"
+        ]
+      },
+      "x3": {
+        "available": true,
+        "formatId": "sage-skudef",
+        "declaredSources": [
+          "common.view/byte-range-source",
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/byte-range-source",
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
+        "sourceFailures": [],
+        "sources": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/namespace-entry-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["list"],
+            "measurements": {
+              "complete": true,
+              "directories": 0,
+              "entries": 5,
+              "extractedBytes": 0,
+              "extractedNonEmpty": false,
+              "files": 0,
+              "productReopenCompleted": false
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 6
+            }
+          }
+        ],
+        "operations": ["asset.validate", "export.raw", "view.inspect"],
+        "geometryAccess": "unavailable",
+        "metadata": {
+          "directives": 5,
+          "unknownDirectives": 0,
+          "resolution": "not-performed"
+        },
+        "features": [
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/namespace-entry-source",
+          "source:common.view/tree-data-source"
+        ]
+      },
+      "declared": {
+        "canonical": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
+        "x3": [
+          "common.view/byte-range-source",
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ]
+      },
+      "observed": {
+        "canonical": [
+          {
+            "contract": "common.view/namespace-entry-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["list"],
+            "measurements": {
+              "entries": 5,
+              "files": 0,
+              "directories": 0,
+              "complete": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "nodes": 6,
+              "maxDepth": 1,
+              "kinds": 2,
+              "complete": true
+            }
+          }
+        ],
+        "x3": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/namespace-entry-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["list"],
+            "measurements": {
+              "complete": true,
+              "directories": 0,
+              "entries": 5,
+              "extractedBytes": 0,
+              "extractedNonEmpty": false,
+              "files": 0,
+              "productReopenCompleted": false
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 6
+            }
+          }
+        ]
+      },
+      "comparison": {
+        "classification": "паритет",
+        "missing": [],
+        "extra": [
+          "common.view/namespace-entry-source:measurement:extractedBytes",
+          "common.view/namespace-entry-source:measurement:extractedNonEmpty",
+          "common.view/namespace-entry-source:measurement:productReopenCompleted",
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source"
+        ],
+        "sources": [
+          {
+            "contract": "common.view/namespace-entry-source",
+            "classification": "X3 богаче",
+            "missing": [],
+            "extra": [
+              "measurement:extractedBytes",
+              "measurement:extractedNonEmpty",
+              "measurement:productReopenCompleted"
+            ]
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "classification": "паритет",
+            "missing": [],
+            "extra": []
+          }
+        ]
+      }
+    },
+    {
+      "format": "sage-w3x",
+      "state": "compared",
+      "sample": "packages/testkit/test/fixtures/mk2-synthetic/minimal.sage.w3x",
+      "classification": "X3 беднее",
+      "missing": [
+        "common.view/model-scene-source:measurement:animations:0<1",
+        "common.view/model-scene-source:measurement:materials:0<1"
+      ],
+      "extra": [
+        "common.view/model-scene-source:measurement:nodes:1>0",
+        "metadata:textures",
+        "operation:asset.validate",
+        "operation:export.raw",
+        "operation:view.inspect",
+        "source:common.view/byte-range-source",
+        "source:common.view/tree-data-source"
+      ],
+      "sourceComparisons": [
+        {
+          "contract": "common.view/model-scene-source",
+          "classification": "X3 беднее",
+          "missing": [
+            "measurement:animations:0<1",
+            "measurement:materials:0<1"
+          ],
+          "extra": ["measurement:nodes:1>0"]
+        }
+      ],
+      "allowPoorerReason": "Block 8 M6-M7: the staging W3X fixture exposes metadata before portable geometry parity.",
+      "canonical": {
+        "formatId": "w3x",
+        "declaredSources": ["common.view/model-scene-source"],
+        "actualSources": ["common.view/model-scene-source"],
+        "sources": [
+          {
+            "contract": "common.view/model-scene-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "meshes", "nodes"],
+            "measurements": {
+              "scenes": 1,
+              "nodes": 0,
+              "meshes": 0,
+              "primitives": 0,
+              "materials": 1,
+              "textures": 1,
+              "animations": 1,
+              "decodedGeometry": false,
+              "decodedVertices": 0,
+              "decodedIndices": 0
+            }
+          }
+        ],
+        "operations": [],
+        "geometryAccess": "metadata-only",
+        "features": ["source:common.view/model-scene-source"],
+        "summary": {
+          "scenes": 1,
+          "nodes": 0,
+          "meshes": 0,
+          "primitives": 0,
+          "materials": 1,
+          "textures": 1,
+          "animations": 1
+        }
+      },
+      "x3": {
+        "available": true,
+        "formatId": "sage-w3x",
+        "declaredSources": [
+          "common.view/byte-range-source",
+          "common.view/model-scene-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/byte-range-source",
+          "common.view/model-scene-source",
+          "common.view/tree-data-source"
+        ],
+        "sourceFailures": [],
+        "sources": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/model-scene-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "meshes", "nodes"],
+            "measurements": {
+              "animations": 0,
+              "decodedGeometry": false,
+              "decodedIndices": 0,
+              "decodedVertices": 0,
+              "materials": 0,
+              "meshes": 0,
+              "nodes": 1,
+              "primitives": 0,
+              "scenes": 1,
+              "textures": 1
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 7
+            }
+          }
+        ],
+        "operations": ["asset.validate", "export.raw", "view.inspect"],
+        "geometryAccess": "unavailable",
+        "metadata": {
+          "elements": 7,
+          "containers": 1,
+          "declaredMeshes": 1,
+          "declaredHierarchies": 1,
+          "declaredAnimations": 1,
+          "textures": 1,
+          "includes": 1,
+          "geometryAccess": "metadata-only"
+        },
+        "features": [
+          "metadata:textures",
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/model-scene-source",
+          "source:common.view/tree-data-source"
+        ]
+      },
+      "declared": {
+        "canonical": ["common.view/model-scene-source"],
+        "x3": [
+          "common.view/byte-range-source",
+          "common.view/model-scene-source",
+          "common.view/tree-data-source"
+        ]
+      },
+      "observed": {
+        "canonical": [
+          {
+            "contract": "common.view/model-scene-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "meshes", "nodes"],
+            "measurements": {
+              "scenes": 1,
+              "nodes": 0,
+              "meshes": 0,
+              "primitives": 0,
+              "materials": 1,
+              "textures": 1,
+              "animations": 1,
+              "decodedGeometry": false,
+              "decodedVertices": 0,
+              "decodedIndices": 0
+            }
+          }
+        ],
+        "x3": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/model-scene-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "meshes", "nodes"],
+            "measurements": {
+              "animations": 0,
+              "decodedGeometry": false,
+              "decodedIndices": 0,
+              "decodedVertices": 0,
+              "materials": 0,
+              "meshes": 0,
+              "nodes": 1,
+              "primitives": 0,
+              "scenes": 1,
+              "textures": 1
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 7
+            }
+          }
+        ]
+      },
+      "comparison": {
+        "classification": "X3 беднее",
+        "missing": [
+          "common.view/model-scene-source:measurement:animations:0<1",
+          "common.view/model-scene-source:measurement:materials:0<1"
+        ],
+        "extra": [
+          "common.view/model-scene-source:measurement:nodes:1>0",
+          "metadata:textures",
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/tree-data-source"
+        ],
+        "sources": [
+          {
+            "contract": "common.view/model-scene-source",
+            "classification": "X3 беднее",
+            "missing": [
+              "measurement:animations:0<1",
+              "measurement:materials:0<1"
+            ],
+            "extra": ["measurement:nodes:1>0"]
+          }
+        ]
+      }
+    },
+    {
+      "format": "westwood-w3d",
+      "state": "compared",
+      "sample": "packages/testkit/test/fixtures/mk2-synthetic/minimal.westwood.w3d",
+      "classification": "X3 беднее",
+      "missing": ["common.view/model-scene-source:measurement:materials:0<1"],
+      "extra": [
+        "common.view/model-scene-source:measurement:nodes:1>0",
+        "operation:asset.validate",
+        "operation:export.raw",
+        "operation:view.inspect",
+        "source:common.view/byte-range-source",
+        "source:common.view/tree-data-source"
+      ],
+      "sourceComparisons": [
+        {
+          "contract": "common.view/model-scene-source",
+          "classification": "X3 беднее",
+          "missing": ["measurement:materials:0<1"],
+          "extra": ["measurement:nodes:1>0"]
+        }
+      ],
+      "allowPoorerReason": "Block 8 M6-M7: the staging W3D fixture exposes metadata before portable geometry parity.",
+      "canonical": {
+        "formatId": "w3d",
+        "declaredSources": ["common.view/model-scene-source"],
+        "actualSources": ["common.view/model-scene-source"],
+        "sources": [
+          {
+            "contract": "common.view/model-scene-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "meshes", "nodes"],
+            "measurements": {
+              "scenes": 1,
+              "nodes": 0,
+              "meshes": 0,
+              "primitives": 0,
+              "materials": 1,
+              "textures": 0,
+              "animations": 0,
+              "decodedGeometry": false,
+              "decodedVertices": 0,
+              "decodedIndices": 0
+            }
+          }
+        ],
+        "operations": [],
+        "geometryAccess": "metadata-only",
+        "features": ["source:common.view/model-scene-source"],
+        "summary": {
+          "scenes": 1,
+          "nodes": 0,
+          "meshes": 0,
+          "primitives": 0,
+          "materials": 1,
+          "textures": 0,
+          "animations": 0
+        }
+      },
+      "x3": {
+        "available": true,
+        "formatId": "westwood-w3d",
+        "declaredSources": [
+          "common.view/byte-range-source",
+          "common.view/model-scene-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/byte-range-source",
+          "common.view/model-scene-source",
+          "common.view/tree-data-source"
+        ],
+        "sourceFailures": [],
+        "sources": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/model-scene-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "meshes", "nodes"],
+            "measurements": {
+              "animations": 0,
+              "decodedGeometry": false,
+              "decodedIndices": 0,
+              "decodedVertices": 0,
+              "materials": 0,
+              "meshes": 0,
+              "nodes": 1,
+              "primitives": 0,
+              "scenes": 1,
+              "textures": 0
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 3,
+              "maxDepth": 2,
+              "nodes": 3
+            }
+          }
+        ],
+        "operations": ["asset.validate", "export.raw", "view.inspect"],
+        "geometryAccess": "unavailable",
+        "metadata": {
+          "rootChunks": 1,
+          "chunks": 2,
+          "chunkTypes": "HIERARCHY:1, HIERARCHY_HEADER:1",
+          "geometryAccess": "metadata-only"
+        },
+        "features": [
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/model-scene-source",
+          "source:common.view/tree-data-source"
+        ]
+      },
+      "declared": {
+        "canonical": ["common.view/model-scene-source"],
+        "x3": [
+          "common.view/byte-range-source",
+          "common.view/model-scene-source",
+          "common.view/tree-data-source"
+        ]
+      },
+      "observed": {
+        "canonical": [
+          {
+            "contract": "common.view/model-scene-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "meshes", "nodes"],
+            "measurements": {
+              "scenes": 1,
+              "nodes": 0,
+              "meshes": 0,
+              "primitives": 0,
+              "materials": 1,
+              "textures": 0,
+              "animations": 0,
+              "decodedGeometry": false,
+              "decodedVertices": 0,
+              "decodedIndices": 0
+            }
+          }
+        ],
+        "x3": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/model-scene-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "meshes", "nodes"],
+            "measurements": {
+              "animations": 0,
+              "decodedGeometry": false,
+              "decodedIndices": 0,
+              "decodedVertices": 0,
+              "materials": 0,
+              "meshes": 0,
+              "nodes": 1,
+              "primitives": 0,
+              "scenes": 1,
+              "textures": 0
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 3,
+              "maxDepth": 2,
+              "nodes": 3
+            }
+          }
+        ]
+      },
+      "comparison": {
+        "classification": "X3 беднее",
+        "missing": ["common.view/model-scene-source:measurement:materials:0<1"],
+        "extra": [
+          "common.view/model-scene-source:measurement:nodes:1>0",
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/tree-data-source"
+        ],
+        "sources": [
+          {
+            "contract": "common.view/model-scene-source",
+            "classification": "X3 беднее",
+            "missing": ["measurement:materials:0<1"],
+            "extra": ["measurement:nodes:1>0"]
+          }
+        ]
+      }
+    },
+    {
+      "format": "zip",
+      "state": "compared",
+      "sample": "packages/testkit/test/fixtures/mk2-synthetic/minimal.zip",
+      "classification": "паритет",
+      "missing": [],
+      "extra": [
+        "operation:asset.validate",
+        "operation:container.extract",
+        "operation:edit.content",
+        "operation:edit.structure",
+        "operation:export.raw",
+        "operation:view.inspect",
+        "source:common.view/byte-range-source"
+      ],
+      "sourceComparisons": [
+        {
+          "contract": "common.view/namespace-entry-source",
+          "classification": "паритет",
+          "missing": [],
+          "extra": []
+        },
+        {
+          "contract": "common.view/tree-data-source",
+          "classification": "паритет",
+          "missing": [],
+          "extra": []
+        }
+      ],
+      "canonical": {
+        "formatId": "zip",
+        "declaredSources": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
+        "sources": [
+          {
+            "contract": "common.view/namespace-entry-source",
+            "major": 1,
+            "state": "opened",
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
+            "measurements": {
+              "entries": 1,
+              "files": 1,
+              "directories": 0,
+              "complete": true,
+              "extractedBytes": 6,
+              "extractedNonEmpty": true,
+              "productReopenCompleted": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "nodes": 2,
+              "maxDepth": 1,
+              "kinds": 2,
+              "complete": true
+            }
+          }
+        ],
+        "operations": [],
+        "geometryAccess": "unavailable",
+        "features": [
+          "source:common.view/namespace-entry-source",
+          "source:common.view/tree-data-source"
+        ]
+      },
+      "x3": {
+        "available": true,
+        "formatId": "zip",
+        "declaredSources": [
+          "common.view/byte-range-source",
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/byte-range-source",
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
+        "sourceFailures": [],
+        "sources": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/namespace-entry-source",
+            "major": 1,
+            "state": "opened",
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
+            "measurements": {
+              "complete": true,
+              "directories": 0,
+              "entries": 1,
+              "extractedBytes": 6,
+              "extractedNonEmpty": true,
+              "files": 1,
+              "productReopenCompleted": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 2
+            }
+          }
+        ],
+        "operations": [
+          "asset.validate",
+          "container.extract",
+          "edit.content",
+          "edit.structure",
+          "export.raw",
+          "view.inspect"
+        ],
+        "geometryAccess": "unavailable",
+        "metadata": {
+          "entries": 1,
+          "files": 1,
+          "directories": 0,
+          "uncompressedBytes": "6",
+          "editable": true
+        },
+        "features": [
+          "operation:asset.validate",
+          "operation:container.extract",
+          "operation:edit.content",
+          "operation:edit.structure",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/namespace-entry-source",
+          "source:common.view/tree-data-source"
+        ]
+      },
+      "declared": {
+        "canonical": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
+        "x3": [
+          "common.view/byte-range-source",
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ]
+      },
+      "observed": {
+        "canonical": [
+          {
+            "contract": "common.view/namespace-entry-source",
+            "major": 1,
+            "state": "opened",
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
+            "measurements": {
+              "entries": 1,
+              "files": 1,
+              "directories": 0,
+              "complete": true,
+              "extractedBytes": 6,
+              "extractedNonEmpty": true,
+              "productReopenCompleted": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "nodes": 2,
+              "maxDepth": 1,
+              "kinds": 2,
+              "complete": true
+            }
+          }
+        ],
+        "x3": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/namespace-entry-source",
+            "major": 1,
+            "state": "opened",
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
+            "measurements": {
+              "complete": true,
+              "directories": 0,
+              "entries": 1,
+              "extractedBytes": 6,
+              "extractedNonEmpty": true,
+              "files": 1,
+              "productReopenCompleted": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 2
+            }
+          }
+        ]
+      },
+      "comparison": {
+        "classification": "паритет",
+        "missing": [],
+        "extra": [
+          "operation:asset.validate",
+          "operation:container.extract",
+          "operation:edit.content",
+          "operation:edit.structure",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source"
+        ],
+        "sources": [
+          {
+            "contract": "common.view/namespace-entry-source",
+            "classification": "паритет",
+            "missing": [],
+            "extra": []
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "classification": "паритет",
+            "missing": [],
+            "extra": []
           }
         ]
       }

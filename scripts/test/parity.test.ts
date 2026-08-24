@@ -185,19 +185,34 @@ describe('parity report v2', () => {
 
 describe('source-aware observations', () => {
   it('observes namespace enumeration and entry opening', async () => {
-    const observed = await observeDataSource('common.view/namespace-entry-source', 1, {
-      list: async () => ({
-        items: [
-          { id: 'folder', kind: 'directory' },
-          { id: 'file', kind: 'file' },
-        ],
-      }),
-      openEntry: async () => ({ value: { id: 'entry' }, release: async () => undefined }),
-    })
+    const observed = await observeDataSource(
+      'common.view/namespace-entry-source',
+      1,
+      {
+        list: async () => ({
+          items: [
+            { id: 'folder', path: 'folder', kind: 'directory' },
+            { id: 'file', path: 'file.txt', kind: 'file' },
+          ],
+        }),
+        openEntry: async () => ({ value: { id: 'entry' }, release: async () => undefined }),
+      },
+      {
+        readNamespaceEntry: async () => ({ bytes: 7, productReopenCompleted: true }),
+      },
+    )
     expect(observed).toMatchObject({
       state: 'opened',
-      features: ['list', 'open-entry'],
-      measurements: { entries: 2, files: 1, directories: 1, complete: true },
+      features: ['extract-bytes', 'list', 'open-entry', 'product-reopen'],
+      measurements: {
+        entries: 2,
+        files: 1,
+        directories: 1,
+        complete: true,
+        extractedBytes: 7,
+        extractedNonEmpty: true,
+        productReopenCompleted: true,
+      },
     })
   })
 

@@ -12,7 +12,7 @@ function observation(contract, major, features, measurements) {
   })
 }
 
-async function observeNamespace(contract, major, source) {
+async function observeNamespace(contract, major, source, options) {
   const entries = []
   let cursor
   do {
@@ -24,6 +24,8 @@ async function observeNamespace(contract, major, source) {
     cursor = page.nextCursor
   } while (cursor !== undefined && entries.length < PAGE_LIMIT)
   const features = ['list']
+  let extractedBytes = 0
+  let productReopenCompleted = false
   const firstFile = entries.find(entry => entry.kind === 'file')
   if (firstFile !== undefined) {
     const lease = await source.openEntry(firstFile.id)
@@ -32,12 +34,25 @@ async function observeNamespace(contract, major, source) {
     } finally {
       await lease.release()
     }
+    if (options.readNamespaceEntry !== undefined) {
+      const evidence = await options.readNamespaceEntry(firstFile)
+      extractedBytes = evidence.bytes
+      productReopenCompleted = evidence.productReopenCompleted
+      features.push('extract-bytes', 'product-reopen')
+    }
   }
   return observation(contract, major, features, {
     entries: entries.length,
     files: entries.filter(entry => entry.kind === 'file').length,
     directories: entries.filter(entry => entry.kind === 'directory').length,
     complete: cursor === undefined,
+    ...(options.readNamespaceEntry === undefined
+      ? {}
+      : {
+          extractedBytes,
+          extractedNonEmpty: extractedBytes > 0,
+          productReopenCompleted,
+        }),
   })
 }
 
@@ -182,10 +197,10 @@ async function observeBytes(contract, major, source) {
   })
 }
 
-export async function observeDataSource(contract, major, source) {
+export async function observeDataSource(contract, major, source, options = {}) {
   try {
     if (contract === 'common.view/namespace-entry-source')
-      return await observeNamespace(contract, major, source)
+      return await observeNamespace(contract, major, source, options)
     if (contract === 'common.view/raster-image-source')
       return await observeRaster(contract, major, source)
     if (contract === 'common.view/tree-data-source')

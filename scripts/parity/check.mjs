@@ -61,7 +61,7 @@ async function resolveSample(sample, temporaryRoot) {
     if (value === undefined || value.trim() === '') {
       return { state: 'skipped', detail: `${sample.environment} is not set` }
     }
-    const path = resolve(value)
+    const path = resolve(value, sample.relativePath ?? '')
     return (await exists(path))
       ? { state: 'ready', path }
       : { state: 'skipped', detail: `${sample.environment} does not name a file: ${path}` }
@@ -129,20 +129,20 @@ function runCanonicalProbe(sample, file) {
   })
 }
 
-async function smokeDataSource(session, contract, major) {
+async function smokeDataSource(session, contract, major, options) {
   const lease = await session.dataSource(contract, major)
   try {
-    return await observeDataSource(contract, major, lease.value)
+    return await observeDataSource(contract, major, lease.value, options)
   } finally {
     await lease.release()
   }
 }
 
-async function probeX3(sample, file) {
+async function probeX3(sample, file, temporaryRoot) {
   const extension = resolve(repoRoot, sample.x3Extension)
   const modkit = await createModkit({
     extensions: [extension],
-    roots: [dirname(file)],
+    roots: [dirname(file), temporaryRoot],
     intent: 'full',
   })
   try {
@@ -156,7 +156,32 @@ async function probeX3(sample, file) {
       const sources = []
       for (const source of descriptor.dataSources) {
         try {
-          sources.push(await smokeDataSource(opened.session, source.contract, source.major))
+          const options =
+            source.contract === 'common.view/namespace-entry-source'
+              ? {
+                  readNamespaceEntry: async entry => {
+                    const extracted = await opened.session.operations().invoke('extract-entry', {
+                      entryId: entry.id,
+                    })
+                    if (extracted.state !== 'ok' || extracted.output.kind !== 'bytes') {
+                      throw new TypeError(`namespace extraction failed for ${entry.id}`)
+                    }
+                    const leaf = entry.path.split('/').at(-1) ?? 'entry.bin'
+                    const safeLeaf = leaf.replaceAll(/[^A-Za-z0-9._-]/gu, '_')
+                    const nestedPath = join(temporaryRoot, `${sample.format}-${safeLeaf}`)
+                    await writeFile(nestedPath, extracted.output.value)
+                    const nested = await modkit.open(nestedPath)
+                    await nested.close()
+                    return {
+                      bytes: extracted.output.value.byteLength,
+                      productReopenCompleted: true,
+                    }
+                  },
+                }
+              : undefined
+          sources.push(
+            await smokeDataSource(opened.session, source.contract, source.major, options),
+          )
         } catch (error) {
           sources.push({
             contract: source.contract,
@@ -237,7 +262,7 @@ try {
     try {
       const [canonical, x3] = await Promise.all([
         runCanonicalProbe(sample, resolved.path),
-        probeX3(sample, resolved.path),
+        probeX3(sample, resolved.path, temporaryRoot),
       ])
       const comparison = classifyFormatParity(canonical, x3, x3.available)
       results.push({
