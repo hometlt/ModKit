@@ -1,6 +1,6 @@
 const CLASSIFICATION_RANK = Object.freeze({
-  паритет: 0,
-  'X3 богаче': 1,
+  'X3 богаче': 0,
+  паритет: 1,
   'X3 беднее': 2,
   'нет в X3': 3,
 })
@@ -112,19 +112,22 @@ export function classifyFormatParity(canonical, x3, x3Available = true) {
     .filter(source => !canonicalContracts.has(source.contract))
     .map(source => `source:${source.contract}`)
   const missing = [
-    ...surface.missing,
-    ...sources.flatMap(source => source.missing.map(item => `${source.contract}:${item}`)),
+    ...new Set([
+      ...surface.missing,
+      ...sources.flatMap(source => source.missing.map(item => `${source.contract}:${item}`)),
+    ]),
   ].sort()
   const extra = [
-    ...surface.extra,
-    ...extraSources,
-    ...sources.flatMap(source => source.extra.map(item => `${source.contract}:${item}`)),
+    ...new Set([
+      ...surface.extra,
+      ...extraSources,
+      ...sources.flatMap(source => source.extra.map(item => `${source.contract}:${item}`)),
+    ]),
   ].sort()
   const candidates = [surface.classification, ...sources.map(source => source.classification)]
-  let worst = candidates.reduce((current, candidate) =>
+  const worst = candidates.reduce((current, candidate) =>
     CLASSIFICATION_RANK[candidate] > CLASSIFICATION_RANK[current] ? candidate : current,
   )
-  if (worst === 'паритет' && extra.length > 0) worst = 'X3 богаче'
   return Object.freeze({ classification: worst, missing, extra, sources })
 }
 

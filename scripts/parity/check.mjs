@@ -4,7 +4,9 @@ import { dirname, join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { createModkit } from '@modkitx-x3/host/node'
 import { format as formatWithPrettier } from 'prettier'
-import { classifyParity, comparableMetadataFeatures } from './classify.mjs'
+import { classifyFormatParity, comparableMetadataFeatures } from './classify.mjs'
+import { observeDataSource } from './observe.mjs'
+import { blockingParityResults, buildParityReport, gitSha } from './report.mjs'
 
 const repoRoot = resolve(import.meta.dirname, '..', '..')
 const canonicalRoot = resolve(
@@ -130,24 +132,7 @@ function runCanonicalProbe(sample, file) {
 async function smokeDataSource(session, contract, major) {
   const lease = await session.dataSource(contract, major)
   try {
-    const value = lease.value
-    if (contract === 'common.view/model-scene-source') {
-      const info = await value.info()
-      const meshes = await value.meshes({ limit: 1 })
-      if (info.geometryAccess === 'decoded' && meshes.items[0]?.primitiveIds[0] !== undefined) {
-        await value.primitive(meshes.items[0].primitiveIds[0], { maxBytes: 16 * 1024 * 1024 })
-      }
-      return { contract, detail: info }
-    }
-    if (contract === 'common.view/tree-data-source') {
-      const root = await value.root()
-      await value.facts(root)
-      return { contract }
-    }
-    if (typeof value.summary === 'function') await value.summary()
-    else if (typeof value.info === 'function') await value.info()
-    else if (typeof value.descriptor === 'function') await value.descriptor()
-    return { contract }
+    return await observeDataSource(contract, major, lease.value)
   } finally {
     await lease.release()
   }
@@ -168,19 +153,22 @@ async function probeX3(sample, file) {
     try {
       const descriptor = opened.snapshot.descriptor
       const declaredSources = descriptor.dataSources.map(source => source.contract).sort()
-      const actual = []
-      const failures = []
+      const sources = []
       for (const source of descriptor.dataSources) {
         try {
-          actual.push(await smokeDataSource(opened.session, source.contract, source.major))
+          sources.push(await smokeDataSource(opened.session, source.contract, source.major))
         } catch (error) {
-          failures.push({
+          sources.push({
             contract: source.contract,
-            error: error instanceof Error ? error.message : String(error),
+            major: source.major,
+            state: 'failed',
+            features: [],
+            measurements: {},
+            detail: error instanceof Error ? error.message : String(error),
           })
         }
       }
-      const model = actual.find(source => source.contract === 'common.view/model-scene-source')
+      const model = sources.find(source => source.contract === 'common.view/model-scene-source')
       const metadataSummary = Object.fromEntries(
         descriptor.metadata.flatMap(group => group.entries.map(entry => [entry.key, entry.value])),
       )
@@ -189,19 +177,27 @@ async function probeX3(sample, file) {
         .map(operation => operation.id)
         .sort()
       const features = [
-        ...actual.map(source => `source:${source.contract}`),
+        ...sources
+          .filter(source => source.state === 'opened')
+          .map(source => `source:${source.contract}`),
         ...comparableMetadataFeatures(metadataSummary),
-        ...(model?.detail?.geometryAccess === 'decoded' ? ['geometry:decoded'] : []),
+        ...(model?.measurements?.decodedGeometry === true ? ['geometry:decoded'] : []),
         ...operations.map(operation => `operation:${operation}`),
       ].sort()
       return {
         available: true,
         formatId: descriptor.identity.formatId,
         declaredSources,
-        actualSources: actual.map(source => source.contract).sort(),
-        sourceFailures: failures,
+        actualSources: sources
+          .filter(source => source.state === 'opened')
+          .map(source => source.contract)
+          .sort(),
+        sourceFailures: sources
+          .filter(source => source.state === 'failed')
+          .map(source => ({ contract: source.contract, error: source.detail })),
+        sources: sources.sort((left, right) => left.contract.localeCompare(right.contract)),
         operations,
-        geometryAccess: model?.detail?.geometryAccess ?? 'unavailable',
+        geometryAccess: model?.measurements?.decodedGeometry === true ? 'decoded' : 'unavailable',
         metadata: metadataSummary,
         features,
       }
@@ -224,11 +220,18 @@ function compact(result) {
 const temporaryRoot = await mkdtemp(join(tmpdir(), 'modkit-parity-'))
 try {
   const corpus = JSON.parse(await readFile(corpusPath, 'utf8'))
+  const canonicalSha = gitSha(canonicalRoot)
+  const x3Sha = gitSha(repoRoot)
   const results = []
   for (const sample of corpus.samples) {
     const resolved = await resolveSample(sample, temporaryRoot)
     if (resolved.state === 'skipped') {
-      results.push({ format: sample.format, state: 'skipped', detail: resolved.detail })
+      results.push({
+        format: sample.format,
+        state: 'skipped',
+        sample: sample.environment ?? sample.path ?? sample.generatedFrom,
+        detail: resolved.detail,
+      })
       continue
     }
     try {
@@ -236,7 +239,7 @@ try {
         runCanonicalProbe(sample, resolved.path),
         probeX3(sample, resolved.path),
       ])
-      const comparison = classifyParity(canonical.features, x3.features ?? [], x3.available)
+      const comparison = classifyFormatParity(canonical, x3, x3.available)
       results.push({
         format: sample.format,
         state: 'compared',
@@ -244,6 +247,10 @@ try {
         classification: comparison.classification,
         missing: comparison.missing,
         extra: comparison.extra,
+        sourceComparisons: comparison.sources,
+        ...(sample.allowPoorerReason === undefined
+          ? {}
+          : { allowPoorerReason: sample.allowPoorerReason }),
         canonical,
         x3,
       })
@@ -255,14 +262,16 @@ try {
       })
     }
   }
-  const report = {
-    schemaVersion: 1,
+  const report = buildParityReport({
     corpus: corpusPath,
-    canonicalRoot,
+    canonical: { root: canonicalRoot, sha: canonicalSha },
+    x3: { root: repoRoot, sha: x3Sha },
     results,
-  }
+  })
   await mkdir(dirname(outputPath), { recursive: true })
   await writeFile(outputPath, await formatWithPrettier(JSON.stringify(report), { parser: 'json' }))
+  console.log(`canonical SHA: ${canonicalSha}`)
+  console.log(`X3 SHA:        ${x3Sha}`)
   console.log('format  state     classification  detail')
   for (const result of results) {
     console.log(
@@ -270,7 +279,7 @@ try {
     )
   }
   console.log(`parity report: ${outputPath}`)
-  if (results.some(result => result.state === 'failed')) process.exitCode = 1
+  if (blockingParityResults(report.results).length > 0) process.exitCode = 1
 } finally {
   await rm(temporaryRoot, { recursive: true, force: true })
 }

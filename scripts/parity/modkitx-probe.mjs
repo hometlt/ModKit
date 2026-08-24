@@ -28,6 +28,24 @@ const summary = {
 const geometry = Array.isArray(model.meshes)
   ? model.meshes.some(mesh => mesh?.positions instanceof Float32Array && mesh.positions.length >= 3)
   : false
+const firstMesh = Array.isArray(model.meshes) ? model.meshes[0] : undefined
+const decodedVertices =
+  firstMesh?.positions instanceof Float32Array ? Math.floor(firstMesh.positions.length / 3) : 0
+const decodedIndices = firstMesh?.indices?.length ?? 0
+const sources = [
+  {
+    contract: 'common.view/model-scene-source',
+    major: 1,
+    state: 'opened',
+    features: ['info', 'nodes', 'meshes', ...(geometry ? ['primitive'] : [])].sort(),
+    measurements: {
+      ...summary,
+      decodedGeometry: geometry,
+      decodedVertices,
+      decodedIndices,
+    },
+  },
+]
 const features = [
   'source:common.view/model-scene-source',
   ...comparableMetadataFeatures(summary),
@@ -39,6 +57,7 @@ process.stdout.write(
     summary,
     declaredSources: ['common.view/model-scene-source'],
     actualSources: ['common.view/model-scene-source'],
+    sources,
     operations: [],
     geometryAccess: geometry ? 'decoded' : 'metadata-only',
     features,

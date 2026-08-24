@@ -9,11 +9,13 @@
       "primitives": [
         {
           "attributes": { "POSITION": 0, "NORMAL": 1, "TEXCOORD_0": 2 },
-          "indices": 3
+          "indices": 3,
+          "material": 0
         }
       ]
     }
   ],
+  "materials": [{ "name": "Parity material" }],
   "buffers": [
     {
       "byteLength": 102,
