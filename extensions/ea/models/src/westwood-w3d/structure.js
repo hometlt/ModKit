@@ -56,6 +56,13 @@ const COLLISION_BITS = Object.freeze([
 ])
 const HIDDEN = 0x1000
 
+/**
+ * A texture reference must be a plain name; anything naming a location is not a name.
+ *
+ * Both separators, because W3D was authored on Windows and the strings in the wild use either.
+ */
+const LOCATION_LIKE = /[\\/]|^[A-Za-z]:|^[a-z][a-z0-9+.-]*:/u
+
 function view(bytes) {
   return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
 }
@@ -353,7 +360,14 @@ export function scanTextureNames(bytes, limits) {
       if (type === CHUNK.TEXTURE_NAME) {
         const value = fixedString(bytes, payloadStart, size)
         const key = value.toLowerCase()
-        if (value !== '' && !seen.has(key)) {
+        /*
+         * A texture name comes out of the file, so a crafted model can put a location where a name
+         * belongs. Such a reference is dropped here rather than declared: a requirement carrying
+         * `..\..\evil` is refused by the resolver as an invalid pattern, and that refusal fails
+         * the whole open — which would let one hostile chunk cost a reader the geometry in all the
+         * others. The name is still reported in the summary; it simply never becomes a search.
+         */
+        if (value !== '' && !seen.has(key) && !LOCATION_LIKE.test(value)) {
           if (names.length >= maxNames) {
             truncated = true
             return
