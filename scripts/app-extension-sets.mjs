@@ -245,6 +245,11 @@ export const READY_APP_EXTENSIONS = Object.freeze({
     coordinate: 'org.modkitx.ea/models',
     contributions: Object.freeze(['org.modkitx/sage-w3x', 'org.modkitx/westwood-w3d']),
   }),
+  'ea-tiberian-sun': Object.freeze({
+    path: Object.freeze(['ea', 'tiberian-sun']),
+    coordinate: 'org.modkitx.ea/tiberian-sun',
+    contributions: Object.freeze(['org.modkitx/red-alert2-vxl']),
+  }),
 })
 
 const structuredText = Object.freeze([
@@ -277,6 +282,7 @@ const mk2Extended = Object.freeze([
   'ea-big',
   'ea-sage',
   'ea-models',
+  'ea-tiberian-sun',
 ])
 
 export const APP_EXTENSION_SETS = Object.freeze({

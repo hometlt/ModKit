@@ -82,6 +82,7 @@ const RELOCATED_FAMILIES = new Set([
   'ea-big',
   'ea-sage',
   'ea-models',
+  'ea-tiberian-sun',
 ])
 
 if (!isMk2Root(mk2Root)) {

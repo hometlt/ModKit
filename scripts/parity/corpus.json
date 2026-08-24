@@ -104,7 +104,7 @@
     {
       "format": "red-alert2-vxl",
       "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.ra2.vxl",
-      "x3Extension": "extensions/mk2/ea-tiberian-sun",
+      "x3Extension": "extensions/ea/tiberian-sun",
       "canonicalModule": "extensions/ea/tiberian-sun/codecs/red-alert2-vxl/src/index.ts",
       "canonicalExport": "redAlert2VxlModelCodec",
       "allowPoorerReason": "Block 8 M6-M7: the staging VXL fixture exposes metadata before portable geometry parity."

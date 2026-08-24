@@ -1,10 +1,10 @@
 {
-  "name": "modkit-extension-mk2-ea-tiberian-sun",
+  "name": "modkit-extension-x3-ea-tiberian-sun",
   "version": "0.1.0",
   "license": "MIT",
   "private": true,
   "type": "module",
-  "description": "MK2 → MK3 converted contributions of org.modkitx.ea/tiberian-sun (generated; see REPORT_MK2_CONVERSION).",
+  "description": "EA Tiberian Sun and Red Alert 2 voxel codecs for MK3.",
   "modkit": {
     "schemaVersion": 1,
     "publisher": "org.modkitx.ea",

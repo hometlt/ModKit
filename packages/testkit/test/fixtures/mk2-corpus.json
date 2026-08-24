@@ -1035,7 +1035,7 @@
       "note": "Westwood W3D hierarchy root with one bounded hierarchy-header child chunk"
     },
     {
-      "extension": "mk2/ea-tiberian-sun",
+      "extension": "ea/tiberian-sun",
       "contributionId": "org.modkitx/red-alert2-vxl",
       "corpus": "synthetic",
       "sample": "minimal.ra2.vxl",
