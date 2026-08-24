@@ -112,7 +112,12 @@ async function glbFixture(): Promise<Uint8Array> {
 const cameras = {
   glb: new Float32Array([1.6, 0, 0, 0, 0, 1.6, 0, 0, 0, 0, 1, 0, -0.8, -0.8, 0, 1]),
   m3: new Float32Array([1.6, 0, 0, 0, 0, 0, 1, 0, 0, 1.6, 0, 0, -0.8, -0.8, 0, 1]),
+  w3x: new Float32Array([1.6, 0, 0, 0, 0, 0, 1, 0, 0, -1.6, 0, 0, -0.8, -0.8, 0, 1]),
+  w3d: new Float32Array([1.6, 0, 0, 0, 0, 0, 1, 0, 0, -1.6, 0, 0, -0.8, -0.8, 0, 1]),
+  vxl: new Float32Array([1.6, 0, 0, 0, 0, 1.6, 0, 0, 0, 0, 0.1, 0, -0.8, -0.8, 0, 1]),
 }
+
+const clearColor = [0.015, 0.02, 0.03, 0] as const
 
 describe('decoded model to headless PNG vertical', () => {
   it.each([
@@ -121,14 +126,46 @@ describe('decoded model to headless PNG vertical', () => {
       codec: join(repoRoot, 'extensions', 'common', 'models', 'src', 'formats', 'gltf', 'codec.js'),
       bytes: glbFixture,
       primitiveId: 'mesh-0-primitive-0',
-      digest: '1410c2b514695d3d31dfa97f1854ae27ea518f91ac37c12e581a62c54e464ccf',
+      digest: 'c63d264e1bf0670f4b3f54707f3428818af9864e54c6eea60de5f9935d2bf218',
     },
     {
       format: 'm3',
       codec: join(repoRoot, 'extensions', 'blizzard', 'models', 'src', 'm3', 'codec.js'),
       bytes: async () => new Uint8Array(await readFile(join(fixtureRoot, 'models', 'triangle.m3'))),
       primitiveId: 'division-0-region-0',
-      digest: '1410c2b514695d3d31dfa97f1854ae27ea518f91ac37c12e581a62c54e464ccf',
+      digest: 'c63d264e1bf0670f4b3f54707f3428818af9864e54c6eea60de5f9935d2bf218',
+    },
+    {
+      format: 'w3x',
+      codec: join(repoRoot, 'extensions', 'ea', 'models', 'src', 'sage-w3x', 'codec.js'),
+      bytes: async () =>
+        new Uint8Array(await readFile(join(fixtureRoot, 'mk2-synthetic', 'minimal.sage.w3x'))),
+      primitiveId: 'w3x-primitive-0',
+      digest: 'c63d264e1bf0670f4b3f54707f3428818af9864e54c6eea60de5f9935d2bf218',
+    },
+    {
+      format: 'w3d',
+      codec: join(repoRoot, 'extensions', 'ea', 'models', 'src', 'westwood-w3d', 'codec.js'),
+      bytes: async () =>
+        new Uint8Array(await readFile(join(fixtureRoot, 'mk2-synthetic', 'minimal.westwood.w3d'))),
+      primitiveId: 'w3d-primitive-0',
+      digest: 'c63d264e1bf0670f4b3f54707f3428818af9864e54c6eea60de5f9935d2bf218',
+    },
+    {
+      format: 'vxl',
+      codec: join(
+        repoRoot,
+        'extensions',
+        'ea',
+        'tiberian-sun',
+        'src',
+        'red-alert2-vxl',
+        'codec.js',
+      ),
+      bytes: async () =>
+        new Uint8Array(await readFile(join(fixtureRoot, 'mk2-synthetic', 'minimal.ra2.vxl'))),
+      primitiveId: 'vxl-primitive-0-0',
+      digest: 'd2ab89406e585cce47d0f5b0557b726944534017c10ccf6a87bb6598142be424',
     },
   ] as const)('$format geometry renders to a deterministic PNG fixture', async fixture => {
     const codecModule = (await import(pathToFileURL(fixture.codec).href)) as {
@@ -160,19 +197,34 @@ describe('decoded model to headless PNG vertical', () => {
       expect(await source.info()).toMatchObject({ geometryAccess: 'decoded', primitives: 1 })
       const primitive = await source.primitive?.(fixture.primitiveId, { maxBytes: 1_000_000 })
       if (primitive === undefined) throw new Error(`${fixture.format} returned no geometry`)
-      const frame = await renderHeadless({
+      const request = {
         scene: {
           materials: [{ id: 'surface', baseColor: [0.22, 0.68, 0.94, 1] }],
           primitives: [{ ...primitive, materialId: 'surface' }],
         },
         camera: { viewProjection: cameras[fixture.format] },
         viewport: { width: 48, height: 48 },
-        clearColor: [0.015, 0.02, 0.03, 1],
+        clearColor,
         outputKind: 'rgba8',
-      })
+      }
+      const frame = await renderHeadless(request)
+      expect(frame).toMatchObject({ width: 48, height: 48 })
       expect(frame.statistics.fragments).toBeGreaterThan(0)
+      let coveredPixels = 0
+      for (let offset = 3; offset < frame.rgba.length; offset += 4) {
+        if (frame.rgba[offset] !== 0) coveredPixels += 1
+      }
+      expect(coveredPixels).toBeGreaterThan(0)
       const png = await encodeRgbaPng(frame)
+      const repeated = await encodeRgbaPng(await renderHeadless(request))
+      expect(repeated).toEqual(png)
       expect(Array.from(png.subarray(0, 8))).toEqual([137, 80, 78, 71, 13, 10, 26, 10])
+      const emptyRgba = new Uint8Array(48 * 48 * 4)
+      for (let offset = 0; offset < emptyRgba.length; offset += 4) {
+        emptyRgba.set([4, 5, 8, 0], offset)
+      }
+      const emptyPng = await encodeRgbaPng({ width: 48, height: 48, rgba: emptyRgba })
+      expect(png).not.toEqual(emptyPng)
       expect(createHash('sha256').update(png).digest('hex')).toBe(fixture.digest)
     } finally {
       await lease.release()
