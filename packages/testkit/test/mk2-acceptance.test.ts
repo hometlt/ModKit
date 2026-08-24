@@ -719,13 +719,17 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     expect(sageW3x).toContain('<Include type="all" source="shared.w3x"/>')
 
     const westwoodW3d = readFileSync(join(root, 'minimal.westwood.w3d'))
+    expect(westwoodW3d.readUInt32LE(0)).toBe(0x0)
+    expect(westwoodW3d.readUInt32LE(4) & 0x80000000).toBe(0x80000000)
+    expect(westwoodW3d.readUInt32LE(4) & 0x7fffffff).toBe(westwoodW3d.byteLength - 8)
+    expect([westwoodW3d.readUInt32LE(8), westwoodW3d.readUInt32LE(12)]).toEqual([
+      0x1f, 116,
+    ])
     expect([
-      westwoodW3d.readUInt32LE(0),
-      westwoodW3d.readUInt32LE(4),
-      westwoodW3d.readUInt32LE(8),
-      westwoodW3d.readUInt32LE(12),
-    ]).toEqual([0x100, 0x80000010, 0x101, 8])
-    expect([westwoodW3d.readUInt32LE(16), westwoodW3d.readUInt32LE(20)]).toEqual([1, 1])
+      westwoodW3d.readUInt32LE(56),
+      westwoodW3d.readUInt32LE(60),
+      westwoodW3d.readUInt32LE(64),
+    ]).toEqual([1, 3, 1])
 
     const redAlert2Vxl = readFileSync(join(root, 'minimal.ra2.vxl'))
     expect(redAlert2Vxl.subarray(0, 15).toString('ascii')).toBe('Voxel Animation')
