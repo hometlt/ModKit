@@ -29,10 +29,19 @@
   "spec": {
     "formatRefs": [{ "formatId": "westwood-w3d", "label": "Westwood W3D binary model" }],
     "roles": ["media"],
-    "sourceTopology": "single",
+    "sourceTopology": "bundle",
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "full", "export"],
     "match": { "extensions": ["w3d"] },
+    "companions": [
+      {
+        "id": "textures",
+        "role": "texture",
+        "required": false,
+        "patterns": ["*.dds", "*.tga"],
+        "searchScopes": ["sibling-directory", "current-mount", "enclosing-container"]
+      }
+    ],
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {
@@ -70,6 +79,14 @@
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]
       }
+    ],
+    "traitDeclarations": [
+      { "id": "model.geometry", "representation": "source", "presence": "will-expose" },
+      { "id": "model.textures", "representation": "source", "presence": "may-expose" },
+      { "id": "model.skeleton", "representation": "source", "presence": "may-expose" },
+      { "id": "model.animations", "representation": "source", "presence": "may-expose" },
+      { "id": "structure.hierarchy", "representation": "source", "presence": "will-expose" },
+      { "id": "content.binary", "representation": "source", "presence": "will-expose" }
     ],
     "implementationTier": { "claimed": 1 },
     "budgets": {
