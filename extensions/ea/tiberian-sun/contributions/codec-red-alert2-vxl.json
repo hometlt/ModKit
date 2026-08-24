@@ -82,6 +82,12 @@
         "outputKinds": ["bytes"]
       }
     ],
+    "traitDeclarations": [
+      { "id": "model.geometry", "representation": "source", "presence": "will-expose" },
+      { "id": "model.animations", "representation": "source", "presence": "may-expose" },
+      { "id": "structure.hierarchy", "representation": "source", "presence": "will-expose" },
+      { "id": "content.binary", "representation": "source", "presence": "will-expose" }
+    ],
     "implementationTier": { "claimed": 1 },
     "budgets": {
       "maxInputBytes": "1073741824",
