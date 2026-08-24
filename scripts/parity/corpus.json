@@ -97,8 +97,7 @@
       "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.westwood.w3d",
       "x3Extension": "extensions/ea/models",
       "canonicalModule": "extensions/ea/models/codecs/westwood-w3d/src/index.ts",
-      "canonicalExport": "westwoodW3dModelCodec",
-      "allowPoorerReason": "Block 8 M6-M7: the staging W3D fixture exposes metadata before portable geometry parity."
+      "canonicalExport": "westwoodW3dModelCodec"
     },
     {
       "format": "red-alert2-vxl",

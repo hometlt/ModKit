@@ -7,15 +7,11 @@
   },
   "x3": {
     "root": "C:\\FILES\\SC2Files\\coding\\modkitX3",
-    "sha": "67e9191ba3e80ae055d3aae16e5eac83d554f64b"
+    "sha": "8a4e671b451ce3c4f35c1e2508e84e497a384766"
   },
   "summary": [
     { "format": "big", "state": "compared", "classification": "паритет" },
-    {
-      "format": "big-real-cnc3",
-      "state": "compared",
-      "classification": "паритет"
-    },
+    { "format": "big-real-cnc3", "state": "skipped", "classification": null },
     { "format": "cnc3-data", "state": "compared", "classification": "паритет" },
     {
       "format": "cnc3-localization",
@@ -45,7 +41,7 @@
     {
       "format": "westwood-w3d",
       "state": "compared",
-      "classification": "X3 беднее"
+      "classification": "X3 богаче"
     },
     { "format": "zip", "state": "compared", "classification": "паритет" }
   ],
@@ -55,12 +51,6 @@
       "classification": "X3 беднее",
       "missing": ["common.view/model-scene-source:measurement:materials:0<1"],
       "reason": "Block 8 M6-M7: the staging VXL fixture exposes metadata before portable geometry parity."
-    },
-    {
-      "format": "westwood-w3d",
-      "classification": "X3 беднее",
-      "missing": ["common.view/model-scene-source:measurement:materials:0<1"],
-      "reason": "Block 8 M6-M7: the staging W3D fixture exposes metadata before portable geometry parity."
     }
   ],
   "results": [
@@ -337,274 +327,9 @@
     },
     {
       "format": "big-real-cnc3",
-      "state": "compared",
+      "state": "skipped",
       "sample": "MODKITX_CNC3_ROOT",
-      "classification": "паритет",
-      "missing": [],
-      "extra": [
-        "operation:asset.validate",
-        "operation:container.extract",
-        "operation:export.raw",
-        "operation:view.inspect",
-        "source:common.view/byte-range-source"
-      ],
-      "sourceComparisons": [
-        {
-          "contract": "common.view/namespace-entry-source",
-          "classification": "паритет",
-          "missing": [],
-          "extra": []
-        },
-        {
-          "contract": "common.view/tree-data-source",
-          "classification": "паритет",
-          "missing": [],
-          "extra": []
-        }
-      ],
-      "canonical": {
-        "formatId": "big",
-        "declaredSources": [
-          "common.view/namespace-entry-source",
-          "common.view/tree-data-source"
-        ],
-        "actualSources": [
-          "common.view/namespace-entry-source",
-          "common.view/tree-data-source"
-        ],
-        "sources": [
-          {
-            "contract": "common.view/namespace-entry-source",
-            "major": 1,
-            "state": "opened",
-            "features": [
-              "extract-bytes",
-              "list",
-              "open-entry",
-              "product-reopen"
-            ],
-            "measurements": {
-              "entries": 21,
-              "files": 21,
-              "directories": 0,
-              "complete": true,
-              "extractedBytes": 3345,
-              "extractedNonEmpty": true,
-              "productReopenCompleted": true
-            }
-          },
-          {
-            "contract": "common.view/tree-data-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["children", "facts", "root"],
-            "measurements": {
-              "nodes": 22,
-              "maxDepth": 1,
-              "kinds": 2,
-              "complete": true
-            }
-          }
-        ],
-        "operations": [],
-        "geometryAccess": "unavailable",
-        "features": [
-          "source:common.view/namespace-entry-source",
-          "source:common.view/tree-data-source"
-        ]
-      },
-      "x3": {
-        "available": true,
-        "formatId": "big",
-        "declaredSources": [
-          "common.view/byte-range-source",
-          "common.view/namespace-entry-source",
-          "common.view/tree-data-source"
-        ],
-        "actualSources": [
-          "common.view/byte-range-source",
-          "common.view/namespace-entry-source",
-          "common.view/tree-data-source"
-        ],
-        "sourceFailures": [],
-        "sources": [
-          {
-            "contract": "common.view/byte-range-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["read", "size"],
-            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
-          },
-          {
-            "contract": "common.view/namespace-entry-source",
-            "major": 1,
-            "state": "opened",
-            "features": [
-              "extract-bytes",
-              "list",
-              "open-entry",
-              "product-reopen"
-            ],
-            "measurements": {
-              "complete": true,
-              "directories": 0,
-              "entries": 21,
-              "extractedBytes": 3345,
-              "extractedNonEmpty": true,
-              "files": 21,
-              "productReopenCompleted": true
-            }
-          },
-          {
-            "contract": "common.view/tree-data-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["children", "facts", "root"],
-            "measurements": {
-              "complete": true,
-              "kinds": 2,
-              "maxDepth": 1,
-              "nodes": 22
-            }
-          }
-        ],
-        "operations": [
-          "asset.validate",
-          "container.extract",
-          "export.raw",
-          "view.inspect"
-        ],
-        "geometryAccess": "unavailable",
-        "metadata": {
-          "version": "BIG4",
-          "archiveBytes": 48063,
-          "dataOffset": 1324,
-          "entries": 21,
-          "refPackEntries": 13
-        },
-        "features": [
-          "operation:asset.validate",
-          "operation:container.extract",
-          "operation:export.raw",
-          "operation:view.inspect",
-          "source:common.view/byte-range-source",
-          "source:common.view/namespace-entry-source",
-          "source:common.view/tree-data-source"
-        ]
-      },
-      "declared": {
-        "canonical": [
-          "common.view/namespace-entry-source",
-          "common.view/tree-data-source"
-        ],
-        "x3": [
-          "common.view/byte-range-source",
-          "common.view/namespace-entry-source",
-          "common.view/tree-data-source"
-        ]
-      },
-      "observed": {
-        "canonical": [
-          {
-            "contract": "common.view/namespace-entry-source",
-            "major": 1,
-            "state": "opened",
-            "features": [
-              "extract-bytes",
-              "list",
-              "open-entry",
-              "product-reopen"
-            ],
-            "measurements": {
-              "entries": 21,
-              "files": 21,
-              "directories": 0,
-              "complete": true,
-              "extractedBytes": 3345,
-              "extractedNonEmpty": true,
-              "productReopenCompleted": true
-            }
-          },
-          {
-            "contract": "common.view/tree-data-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["children", "facts", "root"],
-            "measurements": {
-              "nodes": 22,
-              "maxDepth": 1,
-              "kinds": 2,
-              "complete": true
-            }
-          }
-        ],
-        "x3": [
-          {
-            "contract": "common.view/byte-range-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["read", "size"],
-            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
-          },
-          {
-            "contract": "common.view/namespace-entry-source",
-            "major": 1,
-            "state": "opened",
-            "features": [
-              "extract-bytes",
-              "list",
-              "open-entry",
-              "product-reopen"
-            ],
-            "measurements": {
-              "complete": true,
-              "directories": 0,
-              "entries": 21,
-              "extractedBytes": 3345,
-              "extractedNonEmpty": true,
-              "files": 21,
-              "productReopenCompleted": true
-            }
-          },
-          {
-            "contract": "common.view/tree-data-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["children", "facts", "root"],
-            "measurements": {
-              "complete": true,
-              "kinds": 2,
-              "maxDepth": 1,
-              "nodes": 22
-            }
-          }
-        ]
-      },
-      "comparison": {
-        "classification": "паритет",
-        "missing": [],
-        "extra": [
-          "operation:asset.validate",
-          "operation:container.extract",
-          "operation:export.raw",
-          "operation:view.inspect",
-          "source:common.view/byte-range-source"
-        ],
-        "sources": [
-          {
-            "contract": "common.view/namespace-entry-source",
-            "classification": "паритет",
-            "missing": [],
-            "extra": []
-          },
-          {
-            "contract": "common.view/tree-data-source",
-            "classification": "паритет",
-            "missing": [],
-            "extra": []
-          }
-        ]
-      }
+      "detail": "MODKITX_CNC3_ROOT is not set"
     },
     {
       "format": "cnc3-data",
@@ -3263,10 +2988,12 @@
       "format": "westwood-w3d",
       "state": "compared",
       "sample": "packages/testkit/test/fixtures/mk2-synthetic/minimal.westwood.w3d",
-      "classification": "X3 беднее",
-      "missing": ["common.view/model-scene-source:measurement:materials:0<1"],
+      "classification": "X3 богаче",
+      "missing": [],
       "extra": [
         "common.view/model-scene-source:measurement:nodes:1>0",
+        "common.view/model-scene-source:measurement:textures:1>0",
+        "metadata:textures",
         "operation:asset.validate",
         "operation:export.raw",
         "operation:view.inspect",
@@ -3276,12 +3003,11 @@
       "sourceComparisons": [
         {
           "contract": "common.view/model-scene-source",
-          "classification": "X3 беднее",
-          "missing": ["measurement:materials:0<1"],
-          "extra": ["measurement:nodes:1>0"]
+          "classification": "X3 богаче",
+          "missing": [],
+          "extra": ["measurement:nodes:1>0", "measurement:textures:1>0"]
         }
       ],
-      "allowPoorerReason": "Block 8 M6-M7: the staging W3D fixture exposes metadata before portable geometry parity.",
       "canonical": {
         "formatId": "w3d",
         "declaredSources": ["common.view/model-scene-source"],
@@ -3291,29 +3017,32 @@
             "contract": "common.view/model-scene-source",
             "major": 1,
             "state": "opened",
-            "features": ["info", "meshes", "nodes"],
+            "features": ["info", "meshes", "nodes", "primitive"],
             "measurements": {
               "scenes": 1,
               "nodes": 0,
-              "meshes": 0,
-              "primitives": 0,
+              "meshes": 1,
+              "primitives": 1,
               "materials": 1,
               "textures": 0,
               "animations": 0,
-              "decodedGeometry": false,
-              "decodedVertices": 0,
-              "decodedIndices": 0
+              "decodedGeometry": true,
+              "decodedVertices": 3,
+              "decodedIndices": 3
             }
           }
         ],
         "operations": [],
-        "geometryAccess": "metadata-only",
-        "features": ["source:common.view/model-scene-source"],
+        "geometryAccess": "decoded",
+        "features": [
+          "geometry:decoded",
+          "source:common.view/model-scene-source"
+        ],
         "summary": {
           "scenes": 1,
           "nodes": 0,
-          "meshes": 0,
-          "primitives": 0,
+          "meshes": 1,
+          "primitives": 1,
           "materials": 1,
           "textures": 0,
           "animations": 0
@@ -3345,18 +3074,18 @@
             "contract": "common.view/model-scene-source",
             "major": 1,
             "state": "opened",
-            "features": ["info", "meshes", "nodes"],
+            "features": ["info", "meshes", "nodes", "primitive"],
             "measurements": {
               "animations": 0,
-              "decodedGeometry": false,
-              "decodedIndices": 0,
-              "decodedVertices": 0,
-              "materials": 0,
-              "meshes": 0,
+              "decodedGeometry": true,
+              "decodedIndices": 3,
+              "decodedVertices": 3,
+              "materials": 1,
+              "meshes": 1,
               "nodes": 1,
-              "primitives": 0,
+              "primitives": 1,
               "scenes": 1,
-              "textures": 0
+              "textures": 1
             }
           },
           {
@@ -3367,20 +3096,25 @@
             "measurements": {
               "complete": true,
               "kinds": 3,
-              "maxDepth": 2,
-              "nodes": 3
+              "maxDepth": 4,
+              "nodes": 13
             }
           }
         ],
         "operations": ["asset.validate", "export.raw", "view.inspect"],
-        "geometryAccess": "unavailable",
+        "geometryAccess": "decoded",
         "metadata": {
           "rootChunks": 1,
-          "chunks": 2,
-          "chunkTypes": "HIERARCHY:1, HIERARCHY_HEADER:1",
-          "geometryAccess": "metadata-only"
+          "chunks": 12,
+          "opaqueTailBytes": 0,
+          "chunkTypes": "MESH:1, MESH_HEADER3:1, VERTICES:1, VERTEX_NORMALS:1, TRIANGLES:1, TEXTURES:1, TEXTURE:1, TEXTURE_NAME:1, MATERIAL_PASS:1, TEXTURE_STAGE:1, TEXTURE_IDS:1, STAGE_TEXCOORDS:1",
+          "decodedMeshes": 1,
+          "textures": 1,
+          "geometryAccess": "decoded"
         },
         "features": [
+          "geometry:decoded",
+          "metadata:textures",
           "operation:asset.validate",
           "operation:export.raw",
           "operation:view.inspect",
@@ -3403,18 +3137,18 @@
             "contract": "common.view/model-scene-source",
             "major": 1,
             "state": "opened",
-            "features": ["info", "meshes", "nodes"],
+            "features": ["info", "meshes", "nodes", "primitive"],
             "measurements": {
               "scenes": 1,
               "nodes": 0,
-              "meshes": 0,
-              "primitives": 0,
+              "meshes": 1,
+              "primitives": 1,
               "materials": 1,
               "textures": 0,
               "animations": 0,
-              "decodedGeometry": false,
-              "decodedVertices": 0,
-              "decodedIndices": 0
+              "decodedGeometry": true,
+              "decodedVertices": 3,
+              "decodedIndices": 3
             }
           }
         ],
@@ -3430,18 +3164,18 @@
             "contract": "common.view/model-scene-source",
             "major": 1,
             "state": "opened",
-            "features": ["info", "meshes", "nodes"],
+            "features": ["info", "meshes", "nodes", "primitive"],
             "measurements": {
               "animations": 0,
-              "decodedGeometry": false,
-              "decodedIndices": 0,
-              "decodedVertices": 0,
-              "materials": 0,
-              "meshes": 0,
+              "decodedGeometry": true,
+              "decodedIndices": 3,
+              "decodedVertices": 3,
+              "materials": 1,
+              "meshes": 1,
               "nodes": 1,
-              "primitives": 0,
+              "primitives": 1,
               "scenes": 1,
-              "textures": 0
+              "textures": 1
             }
           },
           {
@@ -3452,17 +3186,19 @@
             "measurements": {
               "complete": true,
               "kinds": 3,
-              "maxDepth": 2,
-              "nodes": 3
+              "maxDepth": 4,
+              "nodes": 13
             }
           }
         ]
       },
       "comparison": {
-        "classification": "X3 беднее",
-        "missing": ["common.view/model-scene-source:measurement:materials:0<1"],
+        "classification": "X3 богаче",
+        "missing": [],
         "extra": [
           "common.view/model-scene-source:measurement:nodes:1>0",
+          "common.view/model-scene-source:measurement:textures:1>0",
+          "metadata:textures",
           "operation:asset.validate",
           "operation:export.raw",
           "operation:view.inspect",
@@ -3472,9 +3208,9 @@
         "sources": [
           {
             "contract": "common.view/model-scene-source",
-            "classification": "X3 беднее",
-            "missing": ["measurement:materials:0<1"],
-            "extra": ["measurement:nodes:1>0"]
+            "classification": "X3 богаче",
+            "missing": [],
+            "extra": ["measurement:nodes:1>0", "measurement:textures:1>0"]
           }
         ]
       }
