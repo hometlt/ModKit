@@ -21,8 +21,9 @@
     }
   ],
   "limitations": [
-    "This portable structural port walks bounded recursive W3D chunks but does not decode geometry, hierarchy pivots, animation tracks, materials, textures, particles, or dazzles.",
-    "Related W3D family files and DDS/TGA textures are not resolved; protected or damaged assets are not repaired.",
+    "Decodes standard W3D mesh headers, vertices, normals, triangles, UV streams, material ids, and texture references into bounded model-scene primitives.",
+    "Hierarchy pivots, animation tracks, particles, dazzles, and remaining geometry variants are not decoded; related W3D family files and DDS/TGA textures are not resolved.",
+    "Protected or damaged payloads are not repaired; a bounded opaque tail after valid top-level chunks is reported but not interpreted.",
     "W3D writing is not implemented."
   ],
   "spec": {

@@ -21,7 +21,7 @@
     }
   ],
   "limitations": [
-    "Validates the VXL header, section directory, body extent, tailers, dimensions and bounds, but does not decode voxel spans into geometry.",
+    "Validates the VXL header, section directory, body extent, tailers, dimensions and bounds, then decodes supported packed spans into exterior voxel-surface geometry grouped by palette index.",
     "HVA animation and PAL/VPL palette and lighting sidecars are not resolved by this portable single-source contribution.",
     "Writing and VPL lighting-ramp interpretation remain follow-up work."
   ],

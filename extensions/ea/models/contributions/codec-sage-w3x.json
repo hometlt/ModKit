@@ -21,8 +21,8 @@
     }
   ],
   "limitations": [
-    "This portable structural port inventories W3X containers, meshes, hierarchies, animations, textures, and includes without decoding geometry or animation tracks.",
-    "Includes, model parts, textures, and animation siblings are not resolved.",
+    "Decodes the supported MeshGeometry vertex, index, normal, and UV streams into bounded model-scene primitives while inventorying W3X containers, hierarchies, animations, textures, and includes.",
+    "Animation tracks, hierarchy pivots, collision and FX semantics, includes, model parts, textures, and animation siblings are not resolved.",
     "W3X writing and game-specific FX shader execution are not implemented."
   ],
   "spec": {
