@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.example/nested-required",
+  "displayName": "Nested namespace companion fixture (required)",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./nested-required.mjs",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "spec": {
+    "formatRefs": [
+      { "formatId": "nested-required", "label": "Nested companion fixture (required)" }
+    ],
+    "roles": ["semantic"],
+    "sourceTopology": "bundle",
+    "artifactStages": ["authored"],
+    "openIntents": ["probe", "inspect", "full"],
+    "match": { "pathGlobs": ["**/molds/*.w3d"] },
+    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 16 }], "maxBytes": 16 },
+    "companions": [
+      {
+        "id": "skin",
+        "role": "texture",
+        "required": true,
+        "patterns": ["bowl.tga"],
+        "searchScopes": ["current-mount", "enclosing-container"]
+      }
+    ],
+    "representations": [
+      {
+        "id": "nested-required",
+        "contract": "org.example/nested-required",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [{ "contract": "common.view/byte-range-source", "major": 1 }],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      }
+    ],
+    "traitDeclarations": [
+      { "id": "model.geometry", "representation": "source", "presence": "will-expose" },
+      { "id": "model.textures", "representation": "source", "presence": "may-expose" }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "65536",
+      "maxDepth": 8,
+      "maxNodes": 64,
+      "maxScalarBytes": 65536,
+      "maxDiagnostics": 16
+    }
+  }
+}
