@@ -262,3 +262,16 @@ export function preferredStage(
 export function selfTestLine(name: string, views: readonly string[], mounted: boolean): string {
   return `selftest: ${name} -> views [${views.join(', ')}] mounted=${String(mounted)}`
 }
+
+/** The selected codec identity, emitted separately so a live run proves routing as well as UI. */
+export function selfTestCodecLine(name: string, descriptor: Record<string, unknown>): string {
+  const identity = descriptor['identity']
+  const codecId =
+    typeof identity === 'object' &&
+    identity !== null &&
+    'codecId' in identity &&
+    typeof identity.codecId === 'string'
+      ? identity.codecId
+      : 'none'
+  return `selftest: ${name} codec=${codecId}`
+}

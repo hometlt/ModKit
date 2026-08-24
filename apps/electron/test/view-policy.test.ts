@@ -17,6 +17,7 @@ import {
   orderStages,
   preferredStage,
   publishedContracts,
+  selfTestCodecLine,
   selfTestLine,
   STAGE_ORDER,
   type StageFacts,
@@ -189,6 +190,12 @@ describe('the self-test line', () => {
     expect(selfTestLine('sample.png', ['image', 'hex'], true)).toBe(
       'selftest: sample.png -> views [image, hex] mounted=true',
     )
+    expect(
+      selfTestCodecLine('sample.w3x', {
+        identity: { codecId: 'org.modkitx/sage-w3x', formatId: 'sage-w3x' },
+      }),
+    ).toBe('selftest: sample.w3x codec=org.modkitx/sage-w3x')
+    expect(selfTestCodecLine('unknown.bin', {})).toBe('selftest: unknown.bin codec=none')
   })
 })
 

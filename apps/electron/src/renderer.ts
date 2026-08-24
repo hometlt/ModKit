@@ -46,7 +46,7 @@ import {
 import { createRendererEditorPorts, type RendererEditorPorts } from './editor-ports.js'
 import { createInspectorDock, type InspectorSubject } from './inspector.js'
 import { createElectronReadOnlyStages, createElectronStages } from './stages.js'
-import { preferredStage, selfTestLine } from './view-policy.js'
+import { preferredStage, selfTestCodecLine, selfTestLine } from './view-policy.js'
 
 /**
  * Hand Monaco its language workers. Monaco reads this the first time an editor asks for one, which
@@ -1242,6 +1242,7 @@ async function selfTest(options: {
 
       const subject = options.subjectFor(entry.id)
       if (subject !== undefined) {
+        console.log(selfTestCodecLine(entry.name, subject.descriptor))
         // Every panel the policy offers has to mount too — cycle them the way the dock's own
         // control does, and report which produced a viewer surface.
         const panelResults: string[] = []
