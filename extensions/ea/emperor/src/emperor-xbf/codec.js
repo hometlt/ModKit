@@ -10,6 +10,7 @@ import {
 const ID = 'org.modkitx/emperor-xbf'
 const VERSION = 1
 const HEADER_BYTES = 8
+const MAX_PROBE_SECTION_BYTES = 100 * 1024 * 1024
 const END_MARKER = -1
 const IDENTITY = Object.freeze([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
 
@@ -82,15 +83,18 @@ function parseXbf(bytes, budget) {
 }
 
 function structurallyValid(prefix) {
-  if (prefix.byteLength < HEADER_BYTES + 4) return false
+  if (prefix.byteLength < HEADER_BYTES) return 'invalid'
   const view = dataView(prefix)
-  if (view.getInt32(0, true) !== VERSION) return false
+  if (view.getInt32(0, true) !== VERSION) return 'invalid'
   const fxDataSize = view.getInt32(4, true)
-  if (fxDataSize < 0 || fxDataSize > prefix.byteLength - HEADER_BYTES) return false
+  if (fxDataSize < 0 || fxDataSize > MAX_PROBE_SECTION_BYTES) return 'invalid'
   const textureSizeOffset = HEADER_BYTES + fxDataSize
-  if (textureSizeOffset + 4 > prefix.byteLength) return false
+  if (textureSizeOffset + 4 > prefix.byteLength) return 'bounded-header'
   const textureDataSize = view.getUint32(textureSizeOffset, true)
+  if (textureDataSize > MAX_PROBE_SECTION_BYTES) return 'invalid'
   return textureDataSize <= prefix.byteLength - textureSizeOffset - 4
+    ? 'complete-structure'
+    : 'bounded-header'
 }
 
 function modelSource(parsed) {
@@ -124,9 +128,12 @@ const definition = Object.freeze({
   version: '1.0.0',
   format: Object.freeze({ id: 'emperor-xbf', label: 'Emperor: Battle for Dune XBF model' }),
   async detect(prefix) {
-    return structurallyValid(prefix)
-      ? { confidence: 0.995, kind: 'structure', note: 'XBF v1 bounded header' }
-      : { confidence: 0, kind: 'structure', note: 'signature-mismatch' }
+    const state = structurallyValid(prefix)
+    if (state === 'complete-structure')
+      return { confidence: 0.995, kind: 'structure', note: 'XBF v1 bounded structure' }
+    if (state === 'bounded-header')
+      return { confidence: 0.8, kind: 'magic', note: 'XBF v1 bounded header' }
+    return { confidence: 0, kind: 'structure', note: 'signature-mismatch' }
   },
   async inspect(bytes, context) {
     const parsed = parseXbf(bytes, context.budget)
