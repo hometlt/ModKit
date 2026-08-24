@@ -11,13 +11,13 @@ runtime-кода:
 
 | Коммит    | Перемещение                               | Кодеков |
 | --------- | ----------------------------------------- | ------: |
-| `0b1b4d7` | `mk2/ea-archives` → `ea/archives`         |       1 |
-| `0490a5d` | `mk2/ea-emperor` → `ea/emperor`           |       2 |
-| `393547c` | `mk2/ea-westwood` → `ea/westwood`         |       7 |
-| `8bcfbe7` | BIG из `mk2/ea-sage` → `ea/big`           |       1 |
-| `3a19219` | остаток `mk2/ea-sage` → `ea/sage`         |       4 |
-| `6701e85` | `mk2/ea-models` → `ea/models`             |       2 |
-| `9067949` | `mk2/ea-tiberian-sun` → `ea/tiberian-sun` |       1 |
+| `16fa1ac` | `mk2/ea-archives` → `ea/archives`         |       1 |
+| `eedb77a` | `mk2/ea-emperor` → `ea/emperor`           |       2 |
+| `248d72e` | `mk2/ea-westwood` → `ea/westwood`         |       7 |
+| `a38e54e` | BIG из `mk2/ea-sage` → `ea/big`           |       1 |
+| `d2f8e57` | остаток `mk2/ea-sage` → `ea/sage`         |       4 |
+| `f744509` | `mk2/ea-models` → `ea/models`             |       2 |
+| `773f693` | `mk2/ea-tiberian-sun` → `ea/tiberian-sun` |       1 |
 |           | Итого                                     |      18 |
 
 После переезда в `extensions/mk2/` осталось ровно 25 семейств и ни одного каталога `ea-*`.
@@ -30,9 +30,9 @@ runtime-кода:
 
 ## Классификация паритета
 
-Коммит `b93c22f` повторил parity v2 сразу после последнего переезда. Между baseline
-`b1342f08429e4abfa130a1265cdb6b252aacf0d1` и M4 SHA
-`90679496f6c830902457c15f160b153beb366f2a` в отчёте изменился только X3 SHA: массивы `summary` и
+Коммит `de09f8d` повторил parity v2 сразу после последнего переезда. Между baseline
+`9558c37ece093615aabbb4cb556ed587cc59534e` и M4 SHA
+`773f6935709cb8c973eb14ee2a7b4bbc924f15c1` в отчёте изменился только X3 SHA: массивы `summary` и
 `poorer` byte-for-byte эквивалентны после JSON-нормализации. Канонический SHA сравнения:
 `1a14ba4eddd0ae88de273348ebd44cfb98a0581d`.
 
