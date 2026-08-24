@@ -4,6 +4,7 @@ import type { Frame } from '@modkitx-x3/host/execution'
 import {
   framePortFromJsonPort,
   framePortFromMessagePort as productionAdapter,
+  protocolLimits,
   type JsonPortLike,
 } from '@modkitx-x3/host/execution'
 import { DEFAULT_WORKER_BACKEND_POLICY, spawnWorkerRealm } from '@modkitx-x3/host/node'
@@ -287,6 +288,24 @@ describe('capability-rpc conformance kit — broken transports are caught', () =
   }, 30_000)
 })
 
+/*
+ * Per-call budget for the runs that spawn a real OS worker.
+ *
+ * The kit defaults every call to 2 s, which is right for the in-process transports where a call is
+ * a function invocation. These two runs are different: their first call is `load`, which spawns a
+ * worker thread and evaluates a module graph — and the suite already says so by allowing 20 s per
+ * *case* while leaving each call at 2 s. Under a loaded machine the spawn crosses 2 s and the run
+ * fails on a budget that was never about this transport (observed: passes at ~1.9 s solo, fails
+ * during a full `pnpm test`).
+ *
+ * 15 s is not an arbitrary bump: it is the production `loadDeadlineMs` for exactly this operation
+ * (`DEFAULT_WORKER_BACKEND_POLICY`). No product contract moves, and the one case that asserts a
+ * deadline fires passes its own explicit `deadlineMs: 30`, so it is unaffected.
+ */
+const WORKER_SPAWN_LIMITS = protocolLimits({
+  defaultCallDeadlineMs: DEFAULT_WORKER_BACKEND_POLICY.loadDeadlineMs,
+})
+
 describe('capability-rpc conformance kit — the production transport of the Node worker backend (acc-12)', () => {
   it('the kit re-exports the production MessagePort adapter, so every in-process run above proves it', () => {
     expect(framePortFromMessagePort).toBe(productionAdapter)
@@ -309,7 +328,7 @@ describe('capability-rpc conformance kit — the production transport of the Nod
           close: async () => void (await realm.terminate()),
         }
       },
-      { caseTimeoutMs: 20_000 },
+      { caseTimeoutMs: 20_000, limits: WORKER_SPAWN_LIMITS },
     )
     expect(report.failures, describeConformanceReport(report)).toEqual([])
     expect(report.transport).toBe('node:worker_threads:spawnWorkerRealm')
@@ -325,6 +344,7 @@ describe('capability-rpc conformance kit — host-only mode over a real thread',
   it('runs the host-observable subset against the demo-worker fixture in worker_threads and skips the rest', async () => {
     const report = await runFramePortConformance(identity => demoWorkerPair(identity), {
       caseTimeoutMs: 20_000,
+      limits: WORKER_SPAWN_LIMITS,
     })
     expect(report.failures, describeConformanceReport(report)).toEqual([])
     expect(report.transport).toBe('node:worker_threads:demo-worker')
