@@ -171,18 +171,36 @@ function parseStr(text, budget) {
   })
 }
 
-function tableSource(entries) {
+function localizationRows(entries) {
+  return Object.freeze(
+    entries.flatMap(entry =>
+      [entry.value, ...(entry.extraValues ?? [])].map((value, duplicate) =>
+        Object.freeze({
+          label: entry.label,
+          value,
+          duplicate,
+          note: duplicate === 0 ? (entry.note ?? '') : '',
+        }),
+      ),
+    ),
+  )
+}
+
+function tableSource(values) {
   const rows = Object.freeze(
-    entries.map((entry, index) =>
-      Object.freeze({ index, cells: Object.freeze([entry.label, entry.value, entry.note ?? '']) }),
+    values.map((value, index) =>
+      Object.freeze({
+        index,
+        cells: Object.freeze([value.label, value.value, String(value.duplicate), value.note]),
+      }),
     ),
   )
   return Object.freeze({
     async shape() {
       return Object.freeze({
         rows: rows.length,
-        columns: 3,
-        header: Object.freeze(['Label', 'Value', 'Note']),
+        columns: 4,
+        header: Object.freeze(['Key', 'Value', 'Duplicate', 'WRTS note']),
       })
     },
     async rows(request, signal) {
@@ -240,6 +258,11 @@ const definition = Object.freeze({
       (sum, entry) => sum + (entry.extraValues?.length ?? 0),
       0,
     )
+    const values = localizationRows(document.entries)
+    const rendered = values
+      .map(value => [value.label, value.value, String(value.duplicate), value.note].join('\t'))
+      .join('\n')
+    const renderedBytes = new TextEncoder().encode(rendered).byteLength
     return {
       summary: {
         format: 'cnc3-localization',
@@ -271,21 +294,21 @@ const definition = Object.freeze({
         },
         { id: 'game.localization', parameters: { entries: document.entries.length } },
       ],
-      text: document.kind === 'str',
+      text: rendered,
       dataSources: {
-        'common.view/table-data-source': tableSource(document.entries),
+        'common.view/table-data-source': tableSource(values),
         'common.view/tree-data-source': createTreeDataSource({
           kind: 'catalog',
           label: document.kind === 'csf' ? 'CSF localization' : 'STR localization',
-          preview: `${document.entries.length} labels`,
-          children: document.entries.map(entry => ({
+          preview: `${document.entries.length} labels, ${values.length} strings`,
+          children: values.map(value => ({
             kind: 'string',
-            label: entry.label,
-            preview: entry.value.slice(0, 120),
+            label: value.duplicate === 0 ? value.label : `${value.label} [${value.duplicate}]`,
+            preview: value.value.slice(0, 120),
           })),
         }),
       },
-      maxDecodedBytes: Math.max(bytes.byteLength, document.decodedBytes),
+      maxDecodedBytes: Math.max(bytes.byteLength, document.decodedBytes, renderedBytes),
       unsupportedFeatures: [
         'csf-writing',
         'str-writing',

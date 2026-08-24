@@ -11,6 +11,7 @@ import {
   type NamespaceEntrySource,
   type ResourceBudget,
   type TableDataSource,
+  type TextDataSource,
   type TreeDataSource,
 } from '@modkitx-x3/sdk'
 
@@ -107,6 +108,20 @@ async function fixture(name: string): Promise<Uint8Array> {
   return new Uint8Array(await readFile(join(fixtureRoot, name)))
 }
 
+function csfWithExtraValue(bytes: Uint8Array, value: string): Uint8Array {
+  const result = new Uint8Array(bytes.byteLength + 8 + value.length * 2)
+  result.set(bytes)
+  const cursor = bytes.byteLength
+  result.set(new TextEncoder().encode(' RTS'), cursor)
+  const view = new DataView(result.buffer)
+  view.setUint32(12, 2, true)
+  view.setUint32(28, 2, true)
+  view.setUint32(cursor + 4, value.length, true)
+  for (let index = 0; index < value.length; index += 1)
+    view.setUint16(cursor + 8 + index * 2, ~value.charCodeAt(index) & 0xffff, true)
+  return result
+}
+
 describe('ported EA SAGE semantic codecs', () => {
   it('inventories authored AssetDeclaration includes and direct assets', async () => {
     const session = await open('cnc3-data', await fixture('minimal.cnc3-data.xml'), 'fixture.xml')
@@ -179,30 +194,53 @@ describe('ported EA SAGE semantic codecs', () => {
   })
 
   it('decodes compiled CSF values and authored STR blocks into the table surface', async () => {
-    const session = await open(
-      'cnc3-localization',
+    const csf = csfWithExtraValue(
       await fixture('minimal.cnc3-localization.csf'),
-      'fixture.csf',
+      'Fixture duplicate',
     )
+    const session = await open('cnc3-localization', csf, 'fixture.csf')
     expect(await inspect(session)).toMatchObject({
       format: 'cnc3-localization',
       encoding: 'csf',
       version: 3,
       labels: 1,
-      strings: 1,
+      strings: 2,
       notes: 1,
+      extraValues: 1,
     })
     const lease = await session.dataSource('common.view/table-data-source', 1)
     const table = lease.value as TableDataSource
-    expect(await table.shape()).toMatchObject({ rows: 1, columns: 3 })
+    expect(await table.shape()).toEqual({
+      rows: 2,
+      columns: 4,
+      header: ['Key', 'Value', 'Duplicate', 'WRTS note'],
+    })
     const page = await table.rows({ kind: 'range', from: 0, count: 10 })
-    expect(page.items[0]?.cells).toEqual(['GUI:Fixture', 'Fixture value', 'fixture note'])
+    expect(page.items.map(row => row.cells)).toEqual([
+      ['GUI:Fixture', 'Fixture value', '0', 'fixture note'],
+      ['GUI:Fixture', 'Fixture duplicate', '1', ''],
+    ])
     await lease.release()
+    const textLease = await session.dataSource('common.view/text-data-source', 1)
+    const text = textLease.value as TextDataSource
+    const slice = await text.slice({ kind: 'from-line', line: 0, lineCount: 10, maxBytes: 4096 })
+    expect(slice.text).toContain('GUI:Fixture\tFixture value\t0\tfixture note')
+    expect(slice.text).toContain('GUI:Fixture\tFixture duplicate\t1\t')
+    await textLease.release()
     await session.dispose()
 
     const str = new TextEncoder().encode('// source\nGUI:Hello\n"Hello\\nCommander"\nEND\n')
     const strSession = await open('cnc3-localization', str, 'fixture.str')
     expect(await inspect(strSession)).toMatchObject({ encoding: 'str', labels: 1, strings: 1 })
+    const strTableLease = await strSession.dataSource('common.view/table-data-source', 1)
+    const strTable = strTableLease.value as TableDataSource
+    expect((await strTable.rows({ kind: 'range', from: 0, count: 10 })).items[0]?.cells).toEqual([
+      'GUI:Hello',
+      'Hello\\nCommander',
+      '0',
+      '',
+    ])
+    await strTableLease.release()
     await strSession.dispose()
   })
 

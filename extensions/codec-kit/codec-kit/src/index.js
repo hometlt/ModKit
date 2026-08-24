@@ -710,6 +710,23 @@ export function createInspectionCodec(definition, contributionContext) {
         ])
         if (inspection.text === true) {
           dataSources.set('common.view/text-data-source', createUtf8TextDataSource(byteSource))
+        } else if (typeof inspection.text === 'string') {
+          const textBytes = new TextEncoder().encode(inspection.text)
+          const textByteSource = Object.freeze({
+            async size() {
+              return BigInt(textBytes.byteLength)
+            },
+            async read(offset, length, readSignal) {
+              if (readSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
+              if (offset < 0n || offset > BigInt(textBytes.byteLength) || length < 0)
+                throw new RangeError('text byte range is outside the source')
+              return textBytes.slice(
+                Number(offset),
+                Math.min(textBytes.byteLength, Number(offset) + length),
+              )
+            },
+          })
+          dataSources.set('common.view/text-data-source', createUtf8TextDataSource(textByteSource))
         }
         const descriptor = await assembleSubjectDescriptor({
           schemaVersion: 2,

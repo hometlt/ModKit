@@ -204,14 +204,24 @@ function localizationResult() {
   const document = request.format.endsWith('-str')
     ? imported.parseStr(new TextDecoder().decode(bytes))
     : imported.parseCsf(bytes)
-  const rendered = document.entries.map(entry => `${entry.label}\t${entry.value}`).join('\n')
+  const values = document.entries.flatMap(entry =>
+    [entry.value, ...(entry.extraValues ?? [])].map((value, duplicate) => ({
+      label: entry.label,
+      value,
+      duplicate,
+      note: duplicate === 0 ? (entry.note ?? '') : '',
+    })),
+  )
+  const rendered = values
+    .map(value => [value.label, value.value, value.duplicate, value.note].join('\t'))
+    .join('\n')
   return result('cnc3-localization', [
     treeSource({
-      nodes: 1 + document.entries.length,
-      maxDepth: document.entries.length > 0 ? 1 : 0,
-      kinds: document.entries.length > 0 ? 2 : 1,
+      nodes: 1 + values.length,
+      maxDepth: values.length > 0 ? 1 : 0,
+      kinds: values.length > 0 ? 2 : 1,
     }),
-    tableSource({ rows: document.entries.length, columns: 3 }),
+    tableSource({ rows: values.length, columns: 4 }),
     textSource(rendered),
   ])
 }

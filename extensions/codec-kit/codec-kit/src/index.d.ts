@@ -79,8 +79,8 @@ export interface InspectionResult {
   readonly summary: JsonValue
   readonly metadata: readonly MetadataGroup[]
   readonly traits: readonly InspectionTrait[]
-  /** `true` publishes the raw source through the standard UTF-8 text adapter. */
-  readonly text?: boolean
+  /** `true` publishes the raw source; a string publishes decoded UTF-8 text. */
+  readonly text?: boolean | string
   readonly dataSources?: Readonly<Record<string, unknown>>
   readonly handlers?: Readonly<Record<string, (input: JsonValue) => Promise<OperationOutput>>>
   readonly diagnostics?: readonly AssetDiagnostic[]
