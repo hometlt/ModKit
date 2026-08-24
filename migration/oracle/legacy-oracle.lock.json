@@ -1,0 +1,73 @@
+{
+  "$comment": "Immutable oracle pre-lock (PLAN_MODKIT_MK3_FINAL_RU.md, блок 9 шаг 0). Фиксирует наблюдаемое состояние legacy modkitx до реализации companion resolver. Абсолютный путь legacy-репозитория живёт только в некоммитящемся migration/oracle/local/legacy-environment.local.json. После подтверждения владельца legacy-репозиторий read-only; любое расхождение с этими hashes — stop condition. Блок 10 расширяет этот lock до полного oracle descriptor, не меняя зафиксированные здесь hashes.",
+  "schemaVersion": "pre-lock-1",
+  "createdUtc": "2026-08-24T16:55:27Z",
+  "program": "docs/MK3/plans/PLAN_MODKIT_MK3_FINAL_RU.md",
+  "blockPlan": "docs/MK3/plans/PLAN_SOL_BLOCK9_FINAL_2026-08-24.md",
+  "legacy": {
+    "repositoryRef": "environment-descriptor:legacyRoot",
+    "branch": "spec/mk3-extension-reference",
+    "headCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+    "worktree": {
+      "statusPorcelainLineCount": 1070,
+      "statusPorcelainSha256": "8ecc038256e22b092819032a2eeb4c7af3c38e9a1421d3d1fc76c5382ad08001",
+      "statusSnapshotFile": "migration/oracle/legacy-oracle.pre-lock.status.txt",
+      "worktreeVsHeadBinaryDiffSha256": "f48074807155d77b22f947f2efaf7b6ffd83bed161653b8b26f1aefb16f6553f",
+      "indexVsHeadBinaryDiffSha256": "cc35cd97460885ef0b37cc1ec6760d5a557d1044289e2b1af3f821b40bebce39"
+    },
+    "untracked": {
+      "fileCount": 15,
+      "aggregateSha256": "59bf90406f0a21e7e26acc40247f0728681cbe78822cb4b76cee9165a84583f0",
+      "perFileSha256File": "migration/oracle/legacy-oracle.pre-lock.untracked.txt"
+    }
+  },
+  "toolchain": {
+    "os": "Windows 11 Pro 10.0.26200",
+    "node": "v24.16.0",
+    "pnpm": "11.8.0",
+    "git": "2.54.0.windows.1",
+    "gitCoreAutocrlf": "true",
+    "gitCoreIgnorecase": "true",
+    "$diffReproducibilityNote": "git diff --binary вычислен при core.autocrlf=true; воспроизведение hash требует той же настройки."
+  },
+  "reproduction": {
+    "workingDirectory": "environment-descriptor:legacyRoot",
+    "commands": [
+      "git rev-parse --abbrev-ref HEAD",
+      "git rev-parse HEAD",
+      "git status --porcelain | sha256sum",
+      "git diff --binary HEAD | sha256sum",
+      "git diff --binary --cached | sha256sum",
+      "git ls-files --others --exclude-standard | while IFS= read -r f; do sha256sum \"$f\"; done | sort | sha256sum"
+    ]
+  },
+  "corpusEnvironment": {
+    "$comment": "Имена переменных живых корпусов; значения (абсолютные пути) не коммитятся. Наблюдение на момент pre-lock.",
+    "variables": {
+      "MODKITX_W3X_PATH": "unset",
+      "MODKITX_W3D_PATH": "unset",
+      "MODKITX_VXL_PATH": "unset",
+      "MODKITX_EMPEROR_ROOT": "unset",
+      "MODKITX_CNC3_ROOT": "unset",
+      "MODKITX_SC2_ROOT": "unset"
+    }
+  },
+  "x3AtLock": {
+    "branch": "spec/mk3-extension-reference",
+    "headCommit": "091c3d15c78ae41947bfeec9f501ae4806d96399",
+    "userProtectedFiles": {
+      "scripts/bundle-hashes.json": {
+        "state": "modified-by-owner",
+        "gitBlobSha1": "1ceae2f45ab346c706d7b8ad19b5349c8dfcd664",
+        "sha256": "b2149b7471a51b6de224d5de11d872964f1f0e8d8b854fd8db0b553fd3c065b7"
+      }
+    },
+    "$comment": "X3-дерево содержит незакоммиченный владельческий перенос документации в ../docs (D-строки docs/MK3/**, планов и отчётов) и изменённые README.md, scripts/bundle-hashes.json; эти изменения не трогаются блоком 9."
+  },
+  "ownerConfirmation": {
+    "status": "confirmed",
+    "confirmedBy": "owner",
+    "confirmedUtc": "2026-08-24T17:00:00Z",
+    "$comment": "Подтверждено владельцем в интерактивной сессии 2026-08-24. Legacy modkitx с этого момента read-only oracle; изменение зафиксированных hashes — stop condition."
+  }
+}
