@@ -7,7 +7,7 @@
   },
   "x3": {
     "root": "C:\\FILES\\SC2Files\\coding\\modkitX3",
-    "sha": "b97b7633e0a50f8efa50b8d3c82cc5e1dcad0a2a"
+    "sha": "67e9191ba3e80ae055d3aae16e5eac83d554f64b"
   },
   "summary": [
     { "format": "big", "state": "compared", "classification": "паритет" },
@@ -40,7 +40,7 @@
     {
       "format": "sage-w3x",
       "state": "compared",
-      "classification": "X3 беднее"
+      "classification": "X3 богаче"
     },
     {
       "format": "westwood-w3d",
@@ -55,15 +55,6 @@
       "classification": "X3 беднее",
       "missing": ["common.view/model-scene-source:measurement:materials:0<1"],
       "reason": "Block 8 M6-M7: the staging VXL fixture exposes metadata before portable geometry parity."
-    },
-    {
-      "format": "sage-w3x",
-      "classification": "X3 беднее",
-      "missing": [
-        "common.view/model-scene-source:measurement:animations:0<1",
-        "common.view/model-scene-source:measurement:materials:0<1"
-      ],
-      "reason": "Block 8 M6-M7: the staging W3X fixture exposes metadata before portable geometry parity."
     },
     {
       "format": "westwood-w3d",
@@ -3039,13 +3030,11 @@
       "format": "sage-w3x",
       "state": "compared",
       "sample": "packages/testkit/test/fixtures/mk2-synthetic/minimal.sage.w3x",
-      "classification": "X3 беднее",
-      "missing": [
-        "common.view/model-scene-source:measurement:animations:0<1",
-        "common.view/model-scene-source:measurement:materials:0<1"
-      ],
+      "classification": "X3 богаче",
+      "missing": [],
       "extra": [
         "common.view/model-scene-source:measurement:nodes:1>0",
+        "common.view/model-scene-source:measurement:textures:1>0",
         "metadata:textures",
         "operation:asset.validate",
         "operation:export.raw",
@@ -3056,15 +3045,11 @@
       "sourceComparisons": [
         {
           "contract": "common.view/model-scene-source",
-          "classification": "X3 беднее",
-          "missing": [
-            "measurement:animations:0<1",
-            "measurement:materials:0<1"
-          ],
-          "extra": ["measurement:nodes:1>0"]
+          "classification": "X3 богаче",
+          "missing": [],
+          "extra": ["measurement:nodes:1>0", "measurement:textures:1>0"]
         }
       ],
-      "allowPoorerReason": "Block 8 M6-M7: the staging W3X fixture exposes metadata before portable geometry parity.",
       "canonical": {
         "formatId": "w3x",
         "declaredSources": ["common.view/model-scene-source"],
@@ -3074,31 +3059,34 @@
             "contract": "common.view/model-scene-source",
             "major": 1,
             "state": "opened",
-            "features": ["info", "meshes", "nodes"],
+            "features": ["info", "meshes", "nodes", "primitive"],
             "measurements": {
               "scenes": 1,
               "nodes": 0,
-              "meshes": 0,
-              "primitives": 0,
+              "meshes": 1,
+              "primitives": 1,
               "materials": 1,
-              "textures": 1,
+              "textures": 0,
               "animations": 1,
-              "decodedGeometry": false,
-              "decodedVertices": 0,
-              "decodedIndices": 0
+              "decodedGeometry": true,
+              "decodedVertices": 3,
+              "decodedIndices": 3
             }
           }
         ],
         "operations": [],
-        "geometryAccess": "metadata-only",
-        "features": ["source:common.view/model-scene-source"],
+        "geometryAccess": "decoded",
+        "features": [
+          "geometry:decoded",
+          "source:common.view/model-scene-source"
+        ],
         "summary": {
           "scenes": 1,
           "nodes": 0,
-          "meshes": 0,
-          "primitives": 0,
+          "meshes": 1,
+          "primitives": 1,
           "materials": 1,
-          "textures": 1,
+          "textures": 0,
           "animations": 1
         }
       },
@@ -3128,16 +3116,16 @@
             "contract": "common.view/model-scene-source",
             "major": 1,
             "state": "opened",
-            "features": ["info", "meshes", "nodes"],
+            "features": ["info", "meshes", "nodes", "primitive"],
             "measurements": {
-              "animations": 0,
-              "decodedGeometry": false,
-              "decodedIndices": 0,
-              "decodedVertices": 0,
-              "materials": 0,
-              "meshes": 0,
+              "animations": 1,
+              "decodedGeometry": true,
+              "decodedIndices": 3,
+              "decodedVertices": 3,
+              "materials": 1,
+              "meshes": 1,
               "nodes": 1,
-              "primitives": 0,
+              "primitives": 1,
               "scenes": 1,
               "textures": 1
             }
@@ -3156,18 +3144,20 @@
           }
         ],
         "operations": ["asset.validate", "export.raw", "view.inspect"],
-        "geometryAccess": "unavailable",
+        "geometryAccess": "decoded",
         "metadata": {
           "elements": 7,
           "containers": 1,
           "declaredMeshes": 1,
           "declaredHierarchies": 1,
           "declaredAnimations": 1,
+          "decodedMeshes": 1,
           "textures": 1,
           "includes": 1,
-          "geometryAccess": "metadata-only"
+          "geometryAccess": "decoded"
         },
         "features": [
+          "geometry:decoded",
           "metadata:textures",
           "operation:asset.validate",
           "operation:export.raw",
@@ -3191,18 +3181,18 @@
             "contract": "common.view/model-scene-source",
             "major": 1,
             "state": "opened",
-            "features": ["info", "meshes", "nodes"],
+            "features": ["info", "meshes", "nodes", "primitive"],
             "measurements": {
               "scenes": 1,
               "nodes": 0,
-              "meshes": 0,
-              "primitives": 0,
+              "meshes": 1,
+              "primitives": 1,
               "materials": 1,
-              "textures": 1,
+              "textures": 0,
               "animations": 1,
-              "decodedGeometry": false,
-              "decodedVertices": 0,
-              "decodedIndices": 0
+              "decodedGeometry": true,
+              "decodedVertices": 3,
+              "decodedIndices": 3
             }
           }
         ],
@@ -3218,16 +3208,16 @@
             "contract": "common.view/model-scene-source",
             "major": 1,
             "state": "opened",
-            "features": ["info", "meshes", "nodes"],
+            "features": ["info", "meshes", "nodes", "primitive"],
             "measurements": {
-              "animations": 0,
-              "decodedGeometry": false,
-              "decodedIndices": 0,
-              "decodedVertices": 0,
-              "materials": 0,
-              "meshes": 0,
+              "animations": 1,
+              "decodedGeometry": true,
+              "decodedIndices": 3,
+              "decodedVertices": 3,
+              "materials": 1,
+              "meshes": 1,
               "nodes": 1,
-              "primitives": 0,
+              "primitives": 1,
               "scenes": 1,
               "textures": 1
             }
@@ -3247,13 +3237,11 @@
         ]
       },
       "comparison": {
-        "classification": "X3 беднее",
-        "missing": [
-          "common.view/model-scene-source:measurement:animations:0<1",
-          "common.view/model-scene-source:measurement:materials:0<1"
-        ],
+        "classification": "X3 богаче",
+        "missing": [],
         "extra": [
           "common.view/model-scene-source:measurement:nodes:1>0",
+          "common.view/model-scene-source:measurement:textures:1>0",
           "metadata:textures",
           "operation:asset.validate",
           "operation:export.raw",
@@ -3264,12 +3252,9 @@
         "sources": [
           {
             "contract": "common.view/model-scene-source",
-            "classification": "X3 беднее",
-            "missing": [
-              "measurement:animations:0<1",
-              "measurement:materials:0<1"
-            ],
-            "extra": ["measurement:nodes:1>0"]
+            "classification": "X3 богаче",
+            "missing": [],
+            "extra": ["measurement:nodes:1>0", "measurement:textures:1>0"]
           }
         ]
       }
