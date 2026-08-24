@@ -52,3 +52,40 @@ export function classifyFormatParity(
 ): FormatParityComparison
 
 export function comparableMetadataFeatures(summary: Readonly<Record<string, unknown>>): string[]
+
+export type ParityPlane =
+  | 'subject-recognition'
+  | 'structural-metadata'
+  | 'geometry-counts'
+  | 'hierarchy'
+  | 'materials-textures'
+  | 'animation'
+  | 'collision'
+  | 'palette-voxel-transforms'
+  | 'payload-access'
+  | 'protected-tail-preservation'
+  | 'diagnostics-on-malformed-input'
+
+export type PlaneState = 'compared' | 'canonical-only' | 'x3-only' | 'not-observed'
+export type PlaneVerdict = 'richer' | 'equal' | 'poorer' | 'not-observed'
+export type ParityVerdict = 'richer' | 'equal' | 'poorer' | 'incomparable'
+
+export interface PlaneComparison {
+  readonly plane: ParityPlane
+  readonly state: PlaneState
+  readonly verdict: PlaneVerdict
+}
+
+export const PARITY_PLANES: readonly ParityPlane[]
+
+export function comparisonPlanes(
+  canonical: ParitySurface | undefined,
+  x3: ParitySurface | undefined,
+  comparison: Readonly<{ sources?: readonly SourceParityComparison[] }> | undefined,
+  x3Available?: boolean,
+): PlaneComparison[]
+
+export function parityVerdict(
+  classification: ParityClassification | undefined,
+  planes: readonly PlaneComparison[],
+): ParityVerdict | undefined

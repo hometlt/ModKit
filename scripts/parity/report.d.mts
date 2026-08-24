@@ -1,9 +1,28 @@
 export interface ParityResult {
+  readonly id?: string
+  readonly kind?: 'synthetic' | 'real'
+  readonly contributionId?: string
   readonly format: string
   readonly state: 'compared' | 'failed' | 'skipped'
   readonly classification?: 'паритет' | 'X3 беднее' | 'X3 богаче' | 'нет в X3'
+  readonly baseline?: 'паритет' | 'X3 беднее' | 'X3 богаче' | 'нет в X3'
   readonly allowPoorerReason?: string
   readonly [key: string]: unknown
+}
+
+export interface ParityCounts {
+  readonly total: number
+  readonly real: number
+  readonly synthetic: number
+  readonly compared: number
+  readonly skipped: number
+  readonly failed: number
+  readonly comparedReal: number
+  readonly comparedSynthetic: number
+  readonly richer: number
+  readonly equal: number
+  readonly poorer: number
+  readonly incomparable: number
 }
 
 export interface ParityReportOptions {
@@ -23,13 +42,18 @@ export function gitSha(
 ): string
 
 export function buildParityReport(options: ParityReportOptions): Readonly<{
-  schemaVersion: 2
+  schemaVersion: 3
   corpus: string
   canonical: Readonly<{ root: string; sha: string }>
   x3: Readonly<{ root: string; sha: string }>
+  counts: ParityCounts
   summary: readonly unknown[]
   poorer: readonly unknown[]
+  incomparable: readonly unknown[]
+  skipped: readonly unknown[]
   results: readonly ParityResult[]
 }>
+
+export function regressedParityResult(result: ParityResult): string | undefined
 
 export function blockingParityResults(results: readonly ParityResult[]): readonly ParityResult[]

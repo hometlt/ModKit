@@ -1,6 +1,8 @@
 import { spawn } from 'node:child_process'
+import { createHash } from 'node:crypto'
+import { readdirSync } from 'node:fs'
 import { mkdtemp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, extname, join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { createModkit } from '@modkitx-x3/host/node'
 import { format as formatWithPrettier } from 'prettier'
@@ -12,12 +14,18 @@ const repoRoot = resolve(import.meta.dirname, '..', '..')
 const canonicalRoot = resolve(
   process.env.MODKIT_PARITY_CANON_ROOT ?? join(repoRoot, '..', 'modkitx'),
 )
+const mk2Root = resolve(process.env.MODKITX_MK2_ROOT ?? join(repoRoot, '..', 'modkitx'))
 const corpusPath = resolve(
   process.env.MODKIT_PARITY_CORPUS ?? join(import.meta.dirname, 'corpus.json'),
 )
 const outputPath = resolve(
   process.env.MODKIT_PARITY_REPORT ?? join(repoRoot, 'reports', 'parity', 'latest.json'),
 )
+/** Probing the canonical oracle costs a child process per row; the corpus is now large. */
+const CONCURRENCY = Number.parseInt(process.env.MODKIT_PARITY_CONCURRENCY ?? '4', 10)
+/** Recursive discovery must stay bounded so a mistyped root cannot walk an entire drive. */
+const DISCOVERY_NODE_BUDGET = 100_000
+const NAMESPACE_PAGE_LIMIT = 256
 
 async function exists(path) {
   return (await stat(path).catch(() => undefined))?.isFile() === true
@@ -55,27 +63,209 @@ async function makeGlb(sourcePath, targetPath) {
   await writeFile(targetPath, output)
 }
 
-async function resolveSample(sample, temporaryRoot) {
-  if (typeof sample.environment === 'string') {
-    const value = process.env[sample.environment]
-    if (value === undefined || value.trim() === '') {
-      return { state: 'skipped', detail: `${sample.environment} is not set` }
+/**
+ * External corpora never contribute an absolute local path to the tracked report. A sample the
+ * environment names directly is published as the tail of its own path, which identifies the file
+ * inside the corpus without revealing where the corpus is installed.
+ */
+function publishedSuffix(path, segments = 3) {
+  const parts = path.replaceAll('\\', '/').split('/').filter(Boolean)
+  return parts.length <= segments ? parts.join('/') : `…/${parts.slice(-segments).join('/')}`
+}
+
+function skipped(detail) {
+  return { state: 'skipped', detail }
+}
+
+/**
+ * A configured environment variable that does not name the declared sample is a corpus defect, not
+ * an absent corpus: §2.2 of the Block 9 execution plan forbids masking it with a skip.
+ */
+function corpusFailure(detail) {
+  return { state: 'failed', detail }
+}
+
+function discoverRelative(root, wantedExtension) {
+  const pending = ['']
+  let visited = 0
+  while (pending.length > 0) {
+    const folder = pending.shift()
+    if (folder === undefined) break
+    let entries
+    try {
+      entries = readdirSync(join(root, folder), { withFileTypes: true })
+    } catch {
+      continue
     }
-    const path = resolve(value, sample.relativePath ?? '')
-    return (await exists(path))
-      ? { state: 'ready', path }
-      : { state: 'skipped', detail: `${sample.environment} does not name a file: ${path}` }
+    for (const entry of entries.toSorted((left, right) =>
+      left.name.localeCompare(right.name, 'en'),
+    )) {
+      visited += 1
+      if (visited > DISCOVERY_NODE_BUDGET) {
+        throw new RangeError(`corpus discovery under ${root} exceeds the node budget`)
+      }
+      const child = folder === '' ? entry.name : `${folder}/${entry.name}`
+      if (entry.isDirectory()) pending.push(child)
+      else if (entry.isFile() && extname(entry.name).toLocaleLowerCase() === wantedExtension)
+        return child
+    }
   }
+  return undefined
+}
+
+async function listNamespace(source) {
+  const entries = []
+  let cursor
+  do {
+    const page = await source.list('', {
+      limit: NAMESPACE_PAGE_LIMIT,
+      ...(cursor === undefined ? {} : { cursor }),
+    })
+    entries.push(...page.items)
+    cursor = page.nextCursor
+  } while (cursor !== undefined)
+  return entries
+}
+
+/**
+ * Resolves a model that only exists inside a shipped archive by walking the real container with
+ * the X3 BIG codec and invoking its own extraction operation. The canonical oracle then reads the
+ * very same bytes from a scratch file, so both sides compare one archived asset rather than two
+ * differently obtained copies.
+ */
+async function extractContainerEntry(sample, temporaryRoot, archivePath) {
+  const modkit = await createModkit({
+    extensions: [resolve(repoRoot, sample.container.x3Extension)],
+    roots: [dirname(archivePath), temporaryRoot],
+    intent: 'full',
+  })
+  try {
+    const opened = await modkit.open(archivePath)
+    if (opened.snapshot.state !== 'opened' || opened.session === undefined) {
+      return corpusFailure(`${sample.environment} container did not open: ${archivePath}`)
+    }
+    try {
+      const lease = await opened.session.dataSource('common.view/namespace-entry-source', 1)
+      try {
+        const wanted = sample.container.entry.toLocaleLowerCase()
+        const entry = (await listNamespace(lease.value)).find(
+          item => item.path.replaceAll('\\', '/').toLocaleLowerCase() === wanted,
+        )
+        if (entry === undefined) {
+          return corpusFailure(
+            `${sample.environment} container ${sample.container.relativePath} has no entry ${sample.container.entry}`,
+          )
+        }
+        const extracted = await opened.session
+          .operations()
+          .invoke('extract-entry', { entryId: entry.id })
+        if (extracted.state !== 'ok' || extracted.output.kind !== 'bytes') {
+          return corpusFailure(
+            `${sample.environment} container entry ${sample.container.entry} did not extract`,
+          )
+        }
+        const leaf = sample.container.entry.split('/').at(-1) ?? 'entry.bin'
+        const path = join(temporaryRoot, `${sample.format}-${leaf}`)
+        await writeFile(path, extracted.output.value)
+        return { state: 'ready', path }
+      } finally {
+        await lease.release()
+      }
+    } finally {
+      await opened.close()
+    }
+  } finally {
+    await modkit.close()
+  }
+}
+
+async function locateSample(sample, temporaryRoot) {
   if (typeof sample.generatedFrom === 'string') {
     const source = resolve(repoRoot, sample.generatedFrom)
     const path = join(temporaryRoot, `${sample.format}.glb`)
     await makeGlb(source, path)
-    return { state: 'ready', path }
+    return { state: 'ready', path, publishedPath: `generated from ${sample.generatedFrom}` }
+  }
+  if (typeof sample.mk2Relative === 'string') {
+    const path = resolve(mk2Root, sample.mk2Relative)
+    if (!(await stat(mk2Root).catch(() => undefined))?.isDirectory()) {
+      return skipped(`MODKITX_MK2_ROOT does not name a checkout`)
+    }
+    return (await exists(path))
+      ? { state: 'ready', path, publishedPath: sample.mk2Relative }
+      : corpusFailure(`MODKITX_MK2_ROOT does not contain ${sample.mk2Relative}`)
+  }
+  if (typeof sample.environment === 'string') {
+    const value = process.env[sample.environment]
+    if (value === undefined || value.trim() === '') {
+      return skipped(`${sample.environment} is not set`)
+    }
+    const root = resolve(value.trim())
+    if (sample.container !== undefined) {
+      const archivePath = resolve(root, sample.container.relativePath)
+      if (!(await exists(archivePath))) {
+        return corpusFailure(
+          `${sample.environment} does not contain ${sample.container.relativePath}`,
+        )
+      }
+      const extracted = await extractContainerEntry(sample, temporaryRoot, archivePath)
+      return extracted.state === 'ready'
+        ? {
+            ...extracted,
+            publishedPath: `${sample.container.relativePath}!${sample.container.entry}`,
+          }
+        : extracted
+    }
+    if (sample.discover !== undefined) {
+      const relative = discoverRelative(root, sample.discover.extension)
+      if (relative === undefined) {
+        return corpusFailure(
+          `${sample.environment} contains no ${sample.discover.extension} sample`,
+        )
+      }
+      return { state: 'ready', path: resolve(root, relative), publishedPath: relative }
+    }
+    const path = resolve(root, sample.relativePath ?? '')
+    if (!(await exists(path))) {
+      return corpusFailure(
+        `${sample.environment} does not name a file${sample.relativePath === undefined ? '' : `: ${sample.relativePath}`}`,
+      )
+    }
+    return {
+      state: 'ready',
+      path,
+      publishedPath: sample.relativePath ?? publishedSuffix(path),
+    }
   }
   const path = resolve(repoRoot, sample.path)
   return (await exists(path))
-    ? { state: 'ready', path }
-    : { state: 'skipped', detail: `corpus sample is missing: ${path}` }
+    ? { state: 'ready', path, publishedPath: sample.path }
+    : corpusFailure(`corpus sample is missing: ${sample.path}`)
+}
+
+async function resolveSample(sample, temporaryRoot) {
+  const located = await locateSample(sample, temporaryRoot)
+  if (located.state !== 'ready') return located
+  const bytes = await readFile(located.path)
+  return {
+    state: 'ready',
+    path: located.path,
+    provenance: {
+      kind: sample.kind,
+      origin:
+        sample.container !== undefined
+          ? 'container-entry'
+          : typeof sample.environment === 'string'
+            ? 'environment'
+            : typeof sample.mk2Relative === 'string'
+              ? 'legacy-checkout'
+              : 'repository',
+      ...(sample.environment === undefined ? {} : { environment: sample.environment }),
+      relativePath: located.publishedPath,
+      bytes: bytes.byteLength,
+      sha256: createHash('sha256').update(bytes).digest('hex'),
+    },
+  }
 }
 
 function runCanonicalProbe(sample, file) {
@@ -242,7 +432,89 @@ function compact(result) {
   if (result.state === 'failed') return result.detail
   const canonical = result.canonical
   const x3 = result.x3
+  if (x3?.available === false)
+    return `canon ${canonical.actualSources.length} source(s); X3 did not open`
   return `canon ${canonical.geometryAccess}, ${canonical.actualSources.length} source(s); X3 ${x3.geometryAccess}, ${x3.actualSources.length} source(s)`
+}
+
+function identity(sample) {
+  return {
+    id: sample.id,
+    format: sample.format,
+    kind: sample.kind,
+    contributionId: sample.contributionId,
+  }
+}
+
+async function evaluateSample(sample, temporaryRoot) {
+  const resolved = await resolveSample(sample, temporaryRoot)
+  if (resolved.state === 'skipped') {
+    return {
+      ...identity(sample),
+      state: 'skipped',
+      sample: sample.environment ?? sample.mk2Relative ?? sample.path ?? sample.generatedFrom,
+      detail: resolved.detail,
+    }
+  }
+  if (resolved.state === 'failed') {
+    return { ...identity(sample), state: 'failed', detail: resolved.detail }
+  }
+  try {
+    const [canonical, x3] = await Promise.all([
+      runCanonicalProbe(sample, resolved.path),
+      probeX3(sample, resolved.path, temporaryRoot),
+    ])
+    if (
+      sample.expectFormatId !== undefined &&
+      x3.available &&
+      x3.formatId !== sample.expectFormatId
+    ) {
+      return {
+        ...identity(sample),
+        state: 'failed',
+        provenance: resolved.provenance,
+        detail: `corpus sample is not ${sample.expectFormatId}: X3 identified ${x3.formatId}`,
+      }
+    }
+    const comparison = classifyFormatParity(canonical, x3, x3.available)
+    return {
+      ...identity(sample),
+      state: 'compared',
+      sample: sample.environment ?? sample.mk2Relative ?? sample.path ?? sample.generatedFrom,
+      provenance: resolved.provenance,
+      classification: comparison.classification,
+      missing: comparison.missing,
+      extra: comparison.extra,
+      sourceComparisons: comparison.sources,
+      ...(sample.baseline === undefined ? {} : { baseline: sample.baseline }),
+      ...(sample.allowPoorerReason === undefined
+        ? {}
+        : { allowPoorerReason: sample.allowPoorerReason }),
+      canonical,
+      x3,
+    }
+  } catch (error) {
+    return {
+      ...identity(sample),
+      state: 'failed',
+      provenance: resolved.provenance,
+      detail: error instanceof Error ? error.message : String(error),
+    }
+  }
+}
+
+async function mapWithConcurrency(items, limit, worker) {
+  const results = Array.from({ length: items.length })
+  let next = 0
+  async function pump() {
+    while (next < items.length) {
+      const index = next
+      next += 1
+      results[index] = await worker(items[index])
+    }
+  }
+  await Promise.all(Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, pump))
+  return results
 }
 
 const temporaryRoot = await mkdtemp(join(tmpdir(), 'modkit-parity-'))
@@ -250,46 +522,9 @@ try {
   const corpus = JSON.parse(await readFile(corpusPath, 'utf8'))
   const canonicalSha = gitSha(canonicalRoot)
   const x3Sha = gitSha(repoRoot)
-  const results = []
-  for (const sample of corpus.samples) {
-    const resolved = await resolveSample(sample, temporaryRoot)
-    if (resolved.state === 'skipped') {
-      results.push({
-        format: sample.format,
-        state: 'skipped',
-        sample: sample.environment ?? sample.path ?? sample.generatedFrom,
-        detail: resolved.detail,
-      })
-      continue
-    }
-    try {
-      const [canonical, x3] = await Promise.all([
-        runCanonicalProbe(sample, resolved.path),
-        probeX3(sample, resolved.path, temporaryRoot),
-      ])
-      const comparison = classifyFormatParity(canonical, x3, x3.available)
-      results.push({
-        format: sample.format,
-        state: 'compared',
-        sample: sample.environment ?? sample.path ?? sample.generatedFrom,
-        classification: comparison.classification,
-        missing: comparison.missing,
-        extra: comparison.extra,
-        sourceComparisons: comparison.sources,
-        ...(sample.allowPoorerReason === undefined
-          ? {}
-          : { allowPoorerReason: sample.allowPoorerReason }),
-        canonical,
-        x3,
-      })
-    } catch (error) {
-      results.push({
-        format: sample.format,
-        state: 'failed',
-        detail: error instanceof Error ? error.message : String(error),
-      })
-    }
-  }
+  const results = await mapWithConcurrency(corpus.samples, CONCURRENCY, sample =>
+    evaluateSample(sample, temporaryRoot),
+  )
   const report = buildParityReport({
     corpus: corpusPath,
     canonical: { root: canonicalRoot, sha: canonicalSha },
@@ -300,14 +535,29 @@ try {
   await writeFile(outputPath, await formatWithPrettier(JSON.stringify(report), { parser: 'json' }))
   console.log(`canonical SHA: ${canonicalSha}`)
   console.log(`X3 SHA:        ${x3Sha}`)
-  console.log('format  state     classification  detail')
-  for (const result of results) {
+  console.log('format                     kind       state     verdict       detail')
+  for (const result of report.results) {
     console.log(
-      `${result.format.padEnd(7)} ${result.state.padEnd(9)} ${(result.classification ?? '—').padEnd(15)} ${compact(result)}`,
+      `${result.format.padEnd(26)} ${(result.kind ?? '—').padEnd(10)} ${result.state.padEnd(9)} ${(result.verdict ?? '—').padEnd(13)} ${compact(result)}`,
     )
   }
+  const counts = report.counts
+  console.log(
+    `rows ${counts.total}: ${counts.real} real, ${counts.synthetic} synthetic; ` +
+      `${counts.compared} compared, ${counts.skipped} skipped, ${counts.failed} failed`,
+  )
+  console.log(
+    `verdicts: ${counts.richer} richer, ${counts.equal} equal, ${counts.poorer} poorer, ` +
+      `${counts.incomparable} incomparable`,
+  )
   console.log(`parity report: ${outputPath}`)
-  if (blockingParityResults(report.results).length > 0) process.exitCode = 1
+  const blocking = blockingParityResults(report.results)
+  for (const result of blocking) {
+    console.error(
+      `blocking: ${result.format} ${result.state} ${result.classification ?? ''} ${result.detail ?? ''}`,
+    )
+  }
+  if (blocking.length > 0) process.exitCode = 1
 } finally {
   await rm(temporaryRoot, { recursive: true, force: true })
 }

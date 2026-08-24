@@ -1,110 +1,168 @@
 {
+  "schemaVersion": 3,
   "samples": [
     {
+      "id": "gltf-synthetic-triangle",
+      "kind": "synthetic",
       "format": "gltf",
+      "contributionId": "org.modkitx/model-gltf",
       "path": "scripts/parity/fixtures/triangle.gltf",
       "x3Extension": "extensions/common/models",
       "canonicalModule": "extensions/common/models/codecs/gltf/src/index.ts",
-      "canonicalExport": "gltfModelCodec"
+      "canonicalExport": "gltfModelCodec",
+      "baseline": "паритет"
     },
     {
+      "id": "glb-synthetic-triangle",
+      "kind": "synthetic",
       "format": "glb",
+      "contributionId": "org.modkitx/model-gltf",
       "generatedFrom": "scripts/parity/fixtures/triangle.gltf",
       "x3Extension": "extensions/common/models",
       "canonicalModule": "extensions/common/models/codecs/gltf/src/index.ts",
-      "canonicalExport": "glbModelCodec"
+      "canonicalExport": "glbModelCodec",
+      "baseline": "паритет"
     },
     {
+      "id": "m3-synthetic-triangle",
+      "kind": "synthetic",
       "format": "m3",
+      "contributionId": "org.modkitx.blizzard/m3",
       "path": "packages/testkit/test/fixtures/models/triangle.m3",
       "x3Extension": "extensions/blizzard/models",
       "canonicalModule": "extensions/blizzard/starcraft-2/codecs/m3/src/index.ts",
       "canonicalExport": "createM3ModelCodec",
-      "canonicalFactory": true
+      "canonicalFactory": true,
+      "baseline": "X3 богаче"
     },
     {
+      "id": "png-synthetic-minimal",
+      "kind": "synthetic",
       "format": "png",
+      "contributionId": "org.modkitx/image-png",
       "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.png",
       "x3Extension": "extensions/common/images",
       "canonicalModule": "extensions/common/images/codecs/png/src/index.ts",
       "canonicalExport": "pngCodec",
       "canonicalAdapter": "image",
       "canonicalMediaType": "image/png",
-      "canonicalChannels": 3
+      "canonicalChannels": 3,
+      "baseline": "паритет"
     },
     {
+      "id": "zip-synthetic-minimal",
+      "kind": "synthetic",
       "format": "zip",
+      "contributionId": "org.modkitx/archive-zip",
       "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.zip",
       "x3Extension": "extensions/common/archives",
       "canonicalModule": "extensions/common/archives/codecs/zip/src/index.ts",
-      "canonicalAdapter": "zip"
+      "canonicalAdapter": "zip",
+      "baseline": "паритет"
     },
     {
+      "id": "big-synthetic-minimal",
+      "kind": "synthetic",
       "format": "big",
+      "contributionId": "org.modkitx.ea/big",
       "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.big",
       "x3Extension": "extensions/ea/big",
       "canonicalModule": "extensions/ea/sage/codecs/big/src/index.ts",
-      "canonicalAdapter": "big"
+      "canonicalAdapter": "big",
+      "baseline": "паритет"
     },
     {
+      "id": "big-real-cnc3-libraries",
+      "kind": "real",
       "format": "big-real-cnc3",
+      "contributionId": "org.modkitx.ea/big",
       "environment": "MODKITX_CNC3_ROOT",
       "relativePath": "Core/1.0/Libraries.big",
+      "expectFormatId": "big",
       "x3Extension": "extensions/ea/big",
       "canonicalModule": "extensions/ea/sage/codecs/big/src/index.ts",
-      "canonicalAdapter": "big"
+      "canonicalAdapter": "big",
+      "baseline": "паритет"
     },
     {
+      "id": "cnc3-data-synthetic-minimal",
+      "kind": "synthetic",
       "format": "cnc3-data",
+      "contributionId": "org.modkitx.ea/cnc3-data",
       "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.cnc3-data.xml",
       "x3Extension": "extensions/ea/sage",
       "canonicalModule": "extensions/ea/sage/codecs/cnc3-data/src/index.ts",
       "canonicalAdapter": "cnc3-data",
-      "allowPoorerReason": "Block 8 M5: the staging codec has not published its asset table yet."
+      "allowPoorerReason": "Block 8 M5: the staging codec has not published its asset table yet.",
+      "baseline": "паритет"
     },
     {
+      "id": "cnc3-localization-synthetic-minimal",
+      "kind": "synthetic",
       "format": "cnc3-localization",
+      "contributionId": "org.modkitx.ea/cnc3-localization",
       "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.cnc3-localization.csf",
       "x3Extension": "extensions/ea/sage",
       "canonicalModule": "extensions/ea/sage/codecs/cnc3-localization/src/index.ts",
       "canonicalAdapter": "cnc3-localization",
-      "allowPoorerReason": "Block 8 M5: decoded CSF text has not been published as a text source yet."
+      "allowPoorerReason": "Block 8 M5: decoded CSF text has not been published as a text source yet.",
+      "baseline": "паритет"
     },
     {
+      "id": "cnc3-map-synthetic-minimal",
+      "kind": "synthetic",
       "format": "cnc3-map",
+      "contributionId": "org.modkitx.ea/cnc3-map",
       "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.cnc3.map",
       "x3Extension": "extensions/ea/sage",
       "canonicalModule": "extensions/ea/sage/codecs/cnc3-map/src/index.ts",
       "canonicalAdapter": "cnc3-map",
-      "allowPoorerReason": "Block 8 M5: the staging map namespace cannot extract chunk bytes yet."
+      "allowPoorerReason": "Block 8 M5: the staging map namespace cannot extract chunk bytes yet.",
+      "baseline": "паритет"
     },
     {
+      "id": "sage-skudef-synthetic-minimal",
+      "kind": "synthetic",
       "format": "sage-skudef",
+      "contributionId": "org.modkitx.ea/sage-skudef",
       "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.sage.skudef",
       "x3Extension": "extensions/ea/sage",
       "canonicalModule": "extensions/ea/sage/codecs/sage-skudef/src/index.ts",
-      "canonicalAdapter": "sage-skudef"
+      "canonicalAdapter": "sage-skudef",
+      "baseline": "паритет"
     },
     {
+      "id": "sage-w3x-synthetic-minimal",
+      "kind": "synthetic",
       "format": "sage-w3x",
+      "contributionId": "org.modkitx.ea/sage-w3x",
       "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.sage.w3x",
       "x3Extension": "extensions/ea/models",
       "canonicalModule": "extensions/ea/models/codecs/sage-w3x/src/index.ts",
-      "canonicalExport": "sageW3xModelCodec"
+      "canonicalExport": "sageW3xModelCodec",
+      "baseline": "X3 богаче"
     },
     {
+      "id": "westwood-w3d-synthetic-minimal",
+      "kind": "synthetic",
       "format": "westwood-w3d",
+      "contributionId": "org.modkitx.ea/westwood-w3d",
       "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.westwood.w3d",
       "x3Extension": "extensions/ea/models",
       "canonicalModule": "extensions/ea/models/codecs/westwood-w3d/src/index.ts",
-      "canonicalExport": "westwoodW3dModelCodec"
+      "canonicalExport": "westwoodW3dModelCodec",
+      "baseline": "X3 богаче"
     },
     {
+      "id": "red-alert2-vxl-synthetic-minimal",
+      "kind": "synthetic",
       "format": "red-alert2-vxl",
+      "contributionId": "org.modkitx.ea/red-alert2-vxl",
       "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.ra2.vxl",
       "x3Extension": "extensions/ea/tiberian-sun",
       "canonicalModule": "extensions/ea/tiberian-sun/codecs/red-alert2-vxl/src/index.ts",
-      "canonicalExport": "redAlert2VxlModelCodec"
+      "canonicalExport": "redAlert2VxlModelCodec",
+      "baseline": "X3 богаче"
     }
   ]
 }

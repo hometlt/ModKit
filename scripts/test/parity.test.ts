@@ -1,14 +1,22 @@
 import { describe, expect, it } from 'vitest'
 import {
+  PARITY_PLANES,
   classifyFormatParity,
   classifyParity,
   classifySourceParity,
   comparableMetadataFeatures,
   compareMeasurements,
+  comparisonPlanes,
+  parityVerdict,
   type SourceObservation,
 } from '../parity/classify.mjs'
 import { observeDataSource } from '../parity/observe.mjs'
-import { blockingParityResults, buildParityReport, gitSha } from '../parity/report.mjs'
+import {
+  blockingParityResults,
+  buildParityReport,
+  gitSha,
+  regressedParityResult,
+} from '../parity/report.mjs'
 
 const source = (
   contract: string,
@@ -140,8 +148,17 @@ describe('parity report v2', () => {
       canonical: { root: 'canonical', sha: 'aaa' },
       x3: { root: 'x3', sha: 'bbb' },
       results: [
-        { format: 'zeta', state: 'skipped', sample: 'MODKITX_CNC3_ROOT', detail: 'not set' },
         {
+          id: 'zeta-real',
+          kind: 'real',
+          format: 'zeta',
+          state: 'skipped',
+          sample: 'MODKITX_CNC3_ROOT',
+          detail: 'not set',
+        },
+        {
+          id: 'alpha-synthetic',
+          kind: 'synthetic',
           format: 'alpha',
           state: 'compared',
           classification: 'паритет',
@@ -155,9 +172,26 @@ describe('parity report v2', () => {
       ],
     })
     expect(report.summary).toEqual([
-      { format: 'alpha', state: 'compared', classification: 'паритет' },
-      { format: 'zeta', state: 'skipped', classification: null },
+      {
+        id: 'alpha-synthetic',
+        format: 'alpha',
+        kind: 'synthetic',
+        contributionId: null,
+        state: 'compared',
+        classification: 'паритет',
+        verdict: 'incomparable',
+      },
+      {
+        id: 'zeta-real',
+        format: 'zeta',
+        kind: 'real',
+        contributionId: null,
+        state: 'skipped',
+        classification: null,
+        verdict: null,
+      },
     ])
+    expect(report.counts).toMatchObject({ total: 2, real: 1, synthetic: 1, skipped: 1 })
     expect(report.results[0]).toMatchObject({
       declared: { canonical: ['a-source', 'z-source'], x3: ['a-source', 'z-source'] },
       sourceComparisons: [{ contract: 'a-source' }, { contract: 'z-source' }],
@@ -165,7 +199,7 @@ describe('parity report v2', () => {
     expect(report.results[1]).toMatchObject({ sample: 'MODKITX_CNC3_ROOT', state: 'skipped' })
   })
 
-  it('blocks failures, missing formats and unexplained poverty only', () => {
+  it('blocks failures, unexplained poverty and regressions against an approved row', () => {
     expect(
       blockingParityResults([
         { format: 'failed', state: 'failed' },
@@ -177,9 +211,85 @@ describe('parity report v2', () => {
           classification: 'X3 беднее',
           allowPoorerReason: 'tracked limitation',
         },
+        {
+          format: 'regressed',
+          state: 'compared',
+          classification: 'X3 беднее',
+          allowPoorerReason: 'a reason cannot buy back a lost capability',
+          baseline: 'паритет',
+        },
+        {
+          format: 'improved',
+          state: 'compared',
+          classification: 'X3 богаче',
+          baseline: 'паритет',
+        },
         { format: 'skip', state: 'skipped' },
       ]).map(result => result.format),
-    ).toEqual(['failed', 'missing', 'poor'])
+    ).toEqual(['failed', 'missing', 'poor', 'regressed'])
+  })
+
+  it('names the approved classification a row fell back from', () => {
+    expect(
+      regressedParityResult({
+        format: 'row',
+        state: 'compared',
+        classification: 'нет в X3',
+        baseline: 'X3 богаче',
+      }),
+    ).toBe('X3 богаче → нет в X3')
+    expect(
+      regressedParityResult({
+        format: 'row',
+        state: 'compared',
+        classification: 'паритет',
+        baseline: 'паритет',
+      }),
+    ).toBeUndefined()
+  })
+})
+
+describe('semantic planes', () => {
+  const canonicalModel = source(
+    'common.view/model-scene-source',
+    { meshes: 1, materials: 1, animations: 0 },
+    ['info'],
+  )
+
+  it('reports a plane as compared only when both readers observe it', () => {
+    const x3Model = source(
+      'common.view/model-scene-source',
+      { meshes: 1, materials: 0, animations: 0 },
+      ['info'],
+    )
+    const comparison = classifyFormatParity({ sources: [canonicalModel] }, { sources: [x3Model] })
+    const planes = comparisonPlanes(
+      { sources: [canonicalModel] },
+      { sources: [x3Model] },
+      comparison,
+    )
+    const byPlane = Object.fromEntries(planes.map(plane => [plane.plane, plane.verdict]))
+    expect(byPlane['geometry-counts']).toBe('equal')
+    expect(byPlane['materials-textures']).toBe('poorer')
+    expect(byPlane.collision).toBe('not-observed')
+    expect(planes.map(plane => plane.plane)).toEqual([...PARITY_PLANES])
+  })
+
+  it('derives incomparable when no plane is observed by both readers', () => {
+    const planes = comparisonPlanes({ sources: [canonicalModel] }, { sources: [] }, { sources: [] })
+    expect(parityVerdict('X3 беднее', planes)).toBe('incomparable')
+    expect(
+      parityVerdict(
+        'паритет',
+        comparisonPlanes(
+          { sources: [canonicalModel] },
+          { sources: [canonicalModel] },
+          {
+            sources: [],
+          },
+        ),
+      ),
+    ).toBe('equal')
   })
 })
 
