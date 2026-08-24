@@ -16,7 +16,7 @@ import {
 type CodecId = 'emperor-rfh-rfd' | 'emperor-xbf'
 
 const root = join(import.meta.dirname, '..', '..', '..')
-const extension = join(root, 'extensions', 'mk2', 'ea-emperor')
+const extension = join(root, 'extensions', 'ea', 'emperor')
 const fixtureRoot = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
 const budget: ResourceBudget = {
   maxInputBytes: 1_000_000n,

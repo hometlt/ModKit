@@ -1,10 +1,10 @@
 {
-  "name": "modkit-extension-mk2-ea-emperor",
+  "name": "modkit-extension-x3-ea-emperor",
   "version": "0.1.0",
   "license": "MIT",
   "private": true,
   "type": "module",
-  "description": "MK2 → MK3 converted contributions of org.modkitx.ea/emperor (generated; see REPORT_MK2_CONVERSION).",
+  "description": "EA Emperor: Battle for Dune codecs for MK3.",
   "modkit": {
     "schemaVersion": 1,
     "publisher": "org.modkitx.ea",

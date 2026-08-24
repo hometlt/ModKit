@@ -77,6 +77,7 @@ const RELOCATED_FAMILIES = new Set([
   'common-video',
   'common-containers',
   'ea-archives',
+  'ea-emperor',
 ])
 
 if (!isMk2Root(mk2Root)) {
