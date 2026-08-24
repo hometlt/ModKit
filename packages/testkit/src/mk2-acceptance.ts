@@ -392,44 +392,54 @@ function corpusInputResolver(
     const requirementBindings: ResolvedRequirementInputBinding[] = []
     const sources = new Map<string, ArtifactSource>([[candidateBinding.bindingId, source]])
     for (const requirement of plan.requirements) {
-      const [pattern] = requirement.patterns ?? []
+      const patterns = requirement.patterns ?? []
       /*
-       * Two shapes, because codecs declare both: a required `one` companion the corpus must
-       * provide, and an optional `zero-or-one` sidecar that legitimately is not there. VXL is the
-       * second kind — a voxel model without its `.hva` is a complete voxel model — so refusing to
-       * resolve it would make this harness disagree with the product resolver about what a valid
-       * corpus sample is. Anything wider still needs the real host facility, not this stand-in.
+       * The three shapes codecs actually declare, and no more: a required `one` companion the
+       * corpus must provide, an optional `zero-or-one` sidecar (VXL's `.hva` — a voxel model
+       * without it is a complete voxel model), and an optional `many` list (W3D's texture
+       * references, which routinely ship in a different archive entirely). Refusing any of them
+       * would make this harness disagree with the product resolver about what a valid corpus
+       * sample is. Anything wider still needs the real host facility, not this stand-in.
        */
-      const optional = requirement.required === false && requirement.cardinality === 'zero-or-one'
+      const optional =
+        requirement.required === false &&
+        (requirement.cardinality === 'zero-or-one' || requirement.cardinality === 'many')
       const exact = requirement.required === true && requirement.cardinality === 'one'
-      if ((!optional && !exact) || requirement.patterns?.length !== 1 || pattern === undefined) {
+      const singular =
+        requirement.cardinality === 'one' || requirement.cardinality === 'zero-or-one'
+      if ((!optional && !exact) || patterns.length === 0 || (singular && patterns.length !== 1)) {
         throw new TypeError(
           `MK2 corpus resolver supports one exact required or optional binding for ${requirement.id}`,
         )
       }
-      // a wildcard pattern has no single exact path to check; an optional one simply stays unbound
-      if (optional && /[*?[\]]/u.test(pattern)) continue
-      const companionPath = exactCompanionPath(samplePath, pattern)
-      if ((await stat(companionPath).catch(() => undefined))?.isFile() !== true) {
-        if (optional) continue
-        throw new TypeError(`required MK2 corpus companion is missing: ${requirement.patterns[0]}`)
+      let slot = 0
+      for (const pattern of patterns) {
+        // a wildcard pattern has no single exact path to check; an optional one stays unbound
+        if (optional && /[*?[\]]/u.test(pattern)) continue
+        const companionPath = exactCompanionPath(samplePath, pattern)
+        if ((await stat(companionPath).catch(() => undefined))?.isFile() !== true) {
+          if (optional) continue
+          throw new TypeError(`required MK2 corpus companion is missing: ${pattern}`)
+        }
+        const companion = await corpusByteSource(companionPath)
+        ownedSources.push(companion)
+        // a `many` requirement contributes one binding per resolved pattern, so ids are suffixed
+        const bindingId = singular ? requirement.id : `${requirement.id}#${slot}`
+        slot += 1
+        if (sources.has(bindingId)) throw new TypeError(`duplicate input binding ${bindingId}`)
+        sources.set(bindingId, companion.value)
+        requirementBindings.push(
+          Object.freeze({
+            sourceKind: 'requirement' as const,
+            bindingId,
+            requirementId: requirement.id,
+            role: requirement.role,
+            ownership: requirement.ownership,
+            source: companion.value.ref,
+            revision: companion.value.revision,
+          }),
+        )
       }
-      const companion = await corpusByteSource(companionPath)
-      ownedSources.push(companion)
-      const bindingId = requirement.id
-      if (sources.has(bindingId)) throw new TypeError(`duplicate input binding ${bindingId}`)
-      sources.set(bindingId, companion.value)
-      requirementBindings.push(
-        Object.freeze({
-          sourceKind: 'requirement' as const,
-          bindingId,
-          requirementId: requirement.id,
-          role: requirement.role,
-          ownership: requirement.ownership,
-          source: companion.value.ref,
-          revision: companion.value.revision,
-        }),
-      )
     }
     const bindings = Object.freeze([candidateBinding, ...requirementBindings])
     const revisions = Object.freeze(
