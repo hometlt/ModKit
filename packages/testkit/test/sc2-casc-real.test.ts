@@ -370,7 +370,7 @@ describe('installed StarCraft II CASC product path', () => {
               namespace: companionLease.value as NamespaceEntrySource,
               primaryLogicalId: path,
               containerRevision: (await casc.session.descriptor()).revision,
-              extract: async (entryId, signal) => {
+              extract: async (entryId: string, signal?: AbortSignal) => {
                 const payload = await casc.session
                   .operations()
                   .invoke('extract-entry', { entryId }, signal === undefined ? {} : { signal })
