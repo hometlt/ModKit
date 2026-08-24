@@ -28,10 +28,26 @@
   "spec": {
     "formatRefs": [{ "formatId": "sage-w3x", "label": "SAGE W3X XML model" }],
     "roles": ["media"],
-    "sourceTopology": "single",
+    "sourceTopology": "bundle",
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "full", "export"],
     "match": { "extensions": ["w3x"] },
+    "companions": [
+      {
+        "id": "hierarchy",
+        "role": "skeleton",
+        "required": false,
+        "patterns": ["*.w3x"],
+        "searchScopes": ["sibling-directory", "current-mount", "enclosing-container"]
+      },
+      {
+        "id": "textures",
+        "role": "texture",
+        "required": false,
+        "patterns": ["*.dds", "*.tga"],
+        "searchScopes": ["sibling-directory", "current-mount", "enclosing-container"]
+      }
+    ],
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {

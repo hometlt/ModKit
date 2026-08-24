@@ -105,6 +105,20 @@ export function createNamespaceCompanionOrigin(
    */
   const index = new Map<string, Map<string, IndexedEntry>>()
 
+  /**
+   * Pages one prefix out of the container, merging the spellings a literal matcher might need.
+   *
+   * A container compares a listing prefix *literally*, but the hint the resolver derives comes from
+   * a codec's patterns, whose casing is the author's. Folding the hint was wrong in one direction
+   * (a BIG storing `art/skeletons/TANK_SKL.w3x` never matches a lower-cased prefix) and not folding
+   * it was wrong in the other (a CASC index is entirely lower-case). So both spellings are asked
+   * for and their results merged: two bounded listings instead of one, and no silent miss.
+   *
+   * The limit this leaves is worth naming: a container that stores some third casing — `ART/...` —
+   * is still missed on a case-insensitive backend, and the companion reports as absent rather than
+   * wrong. Covering that would mean giving up prefix narrowing altogether, which is what makes a
+   * 666,588-entry namespace searchable at all.
+   */
   const listing = async (
     prefix: string,
     signal?: AbortSignal,
@@ -112,35 +126,32 @@ export function createNamespaceCompanionOrigin(
     const cached = index.get(prefix)
     if (cached !== undefined) return cached
     const built = new Map<string, IndexedEntry>()
-    let cursor: string | undefined
-    do {
-      throwIfAborted(signal)
-      const page = await options.namespace.list(
-        /*
-         * Folded the same way ids are folded. A container matches a listing prefix literally, so on
-         * a case-insensitive backend an unfolded hint would silently exclude entries the
-         * case-insensitive pattern was going to match — a filter is only safe here if it agrees
-         * with the identity rule the rest of the backend uses.
-         */
-        fold(prefix),
-        cursor === undefined ? { limit: pageLimit } : { cursor, limit: pageLimit },
-        signal,
-      )
-      for (const entry of page.items) {
-        if (entry.kind !== 'file') continue
-        const key = fold(entry.path)
-        // first spelling wins, deterministically, because the resolver sorts before it selects
-        if (!built.has(key)) {
-          built.set(key, {
-            entryId: entry.id,
-            path: entry.path,
-            ...(entry.size === undefined ? {} : { size: entry.size }),
-            revision: entry.revision,
-          })
+    const spellings = [...new Set(prefix === '' ? [''] : [prefix, fold(prefix)])]
+    for (const spelling of spellings) {
+      let cursor: string | undefined
+      do {
+        throwIfAborted(signal)
+        const page = await options.namespace.list(
+          spelling,
+          cursor === undefined ? { limit: pageLimit } : { cursor, limit: pageLimit },
+          signal,
+        )
+        for (const entry of page.items) {
+          if (entry.kind !== 'file') continue
+          const key = fold(entry.path)
+          // first spelling wins, deterministically, because the resolver sorts before it selects
+          if (!built.has(key)) {
+            built.set(key, {
+              entryId: entry.id,
+              path: entry.path,
+              ...(entry.size === undefined ? {} : { size: entry.size }),
+              revision: entry.revision,
+            })
+          }
         }
-      }
-      cursor = page.nextCursor
-    } while (cursor !== undefined)
+        cursor = page.nextCursor
+      } while (cursor !== undefined)
+    }
     index.set(prefix, built)
     return built
   }

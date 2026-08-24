@@ -1,14 +1,77 @@
 // Portable SAGE W3X reader. It validates the XML envelope, decodes the authored triangle-mesh
-// subset, and keeps hierarchy, animation, include, collision, and FX planes explicit as debt.
+// subset, and reads the container's explicit relations: skeleton by id, bone by index, and each
+// part's role stated by the document as <Mesh> or <CollisionBox>.
+//
+// References are ids, never paths. A reference becomes a companion pattern the host resolves inside
+// granted scopes; a document that dresses a location up as an id is refused rather than followed.
 
 import {
   createInspectionCodec,
   createModelSceneSource,
   createTreeDataSource,
 } from '@modkitx-x3/codec-kit'
+import {
+  parseAnimations,
+  parseContainers,
+  parseHierarchies,
+  parseTextureReferences,
+  unknownElements,
+} from './structure.js'
+
+/** Bytes `planInput` reads from the front of the document to discover its references. */
+const PLAN_SCAN_BYTES = 128 * 1024
+const HIERARCHY_REQUIREMENT = 'hierarchy'
+const TEXTURE_REQUIREMENT = 'textures'
+/** Extensions the engine appends to a texture asset id; the document states neither. */
+const TEXTURE_EXTENSIONS = Object.freeze(['dds', 'tga'])
 
 const ID = 'org.modkitx/sage-w3x'
 const IDENTITY = Object.freeze([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
+/** Element names this reader understands; anything else is reported rather than dropped. */
+const KNOWN_ELEMENTS = new Set([
+  'AssetDeclaration',
+  'W3DContainer',
+  'W3DMesh',
+  'W3DHierarchy',
+  'W3DAnimation',
+  'W3DCollisionBox',
+  'SubObject',
+  'RenderObject',
+  'Mesh',
+  'CollisionBox',
+  'Pivot',
+  'Translation',
+  'Rotation',
+  'FixupMatrix',
+  'BoundingBox',
+  'BoundingSphere',
+  'Min',
+  'Max',
+  'Center',
+  'Vertices',
+  'Normals',
+  'Triangles',
+  'TexCoords',
+  'Tangents',
+  'Binormals',
+  'VertexColors',
+  'V',
+  'T',
+  'N',
+  'C',
+  'B',
+  'Nrm',
+  'Dist',
+  'FXShader',
+  'Constants',
+  'Texture',
+  'Value',
+  'Float',
+  'Bool',
+  'Int',
+  'Include',
+  'Channel',
+])
 const ELEMENTS = Object.freeze([
   'W3DContainer',
   'W3DMesh',
@@ -284,10 +347,128 @@ function modelSource(parsed) {
   })
 }
 
+function w3xDiagnostic(id, code, message) {
+  return Object.freeze({
+    id,
+    severity: 'warning',
+    code: `x3.w3x/${code}`,
+    message,
+    category: 'dependency',
+  })
+}
+
+/**
+ * Where a bone's name came from, or why it has none.
+ *
+ * `direct` when this very document declares the hierarchy, `companion` when the bound skeleton
+ * does, `absent` when neither — the container names a bone index and the reader will not invent a
+ * name for it from the sub-object's own id, however tempting the resemblance.
+ */
+function boneFact(local, companion, hierarchyRef, boneIndex) {
+  if (boneIndex < 0) return { boneName: null, boneProvenance: 'absent' }
+  const direct = local.find(item => item.id === hierarchyRef)?.pivots[boneIndex]
+  if (direct !== undefined) return { boneName: direct.name, boneProvenance: 'direct' }
+  const bound = companion.find(item => item.id === hierarchyRef)?.pivots[boneIndex]
+  if (bound !== undefined) return { boneName: bound.name, boneProvenance: 'companion' }
+  return { boneName: null, boneProvenance: 'absent' }
+}
+
+/** Reads the bindings the host resolved for one requirement, keyed by binding id. */
+async function readBindings(input, requirementId, signal, options) {
+  const bindings = input.bindingsFor?.(requirementId) ?? []
+  const resolved = []
+  for (const binding of bindings) {
+    const lease = await input.openBinding(binding.bindingId, signal)
+    try {
+      if (lease.value.kind !== 'bytes') continue
+      const size = Number(lease.value.size ?? 0n)
+      resolved.push(
+        Object.freeze({
+          bindingId: binding.bindingId,
+          uri: binding.source.uri,
+          bytes: size,
+          // only the skeleton companion is read; a texture is bound, not decoded, by this codec
+          text:
+            options?.decode === true && size <= (options.maxBytes ?? 0)
+              ? decode(await lease.value.read(0n, size, signal))
+              : undefined,
+        }),
+      )
+    } finally {
+      await lease.release()
+    }
+  }
+  return Object.freeze(resolved)
+}
+
 const definition = Object.freeze({
   id: ID,
   version: '1.0.0',
   format: Object.freeze({ id: 'sage-w3x', label: 'SAGE W3X XML model' }),
+  async planInput(source, _detection, signal) {
+    /*
+     * One bounded read of the document's front, from which two kinds of reference are turned into
+     * exact companion patterns: the skeleton a container names by id, and the textures a shader
+     * names by id. Both become file names here — `<id>.w3x` and `<id>.dds`/`.tga` — because the
+     * extension is the engine's convention and the document states only the asset id. A file that
+     * references neither declares no requirement at all.
+     */
+    const size = Number(source.size ?? 0n)
+    const window = Math.min(size, PLAN_SCAN_BYTES)
+    const bytes = window === 0 ? new Uint8Array(0) : await source.read(0n, window, signal)
+    const text = decode(bytes)
+    const issues = []
+    const hierarchyRefs = [
+      ...new Set(
+        parseContainers(text, issues).flatMap(container =>
+          container.hierarchyRef === undefined ? [] : [container.hierarchyRef],
+        ),
+      ),
+    ]
+    const textureRefs = parseTextureReferences(text, issues).map(item => item.value)
+    const requirements = []
+    if (hierarchyRefs.length > 0) {
+      requirements.push(
+        Object.freeze({
+          id: HIERARCHY_REQUIREMENT,
+          role: 'skeleton',
+          ownership: 'companion',
+          patterns: Object.freeze(hierarchyRefs.map(ref => `${ref}.w3x`)),
+          scopes: Object.freeze(['sibling-directory', 'current-mount', 'enclosing-container']),
+          // a mesh opened on its own is a complete, readable mesh; the skeleton adds a plane
+          cardinality: 'zero-or-one',
+          required: false,
+        }),
+      )
+    }
+    if (textureRefs.length > 0) {
+      requirements.push(
+        Object.freeze({
+          id: TEXTURE_REQUIREMENT,
+          role: 'texture',
+          ownership: 'companion',
+          patterns: Object.freeze(
+            textureRefs.flatMap(ref => TEXTURE_EXTENSIONS.map(extension => `${ref}.${extension}`)),
+          ),
+          scopes: Object.freeze(['sibling-directory', 'current-mount', 'enclosing-container']),
+          cardinality: 'many',
+          required: false,
+        }),
+      )
+    }
+    if (requirements.length === 0) {
+      return Object.freeze({
+        originKind: 'single',
+        candidate: Object.freeze({ bindingId: 'content', role: 'content', ownership: 'owned' }),
+        requirements: Object.freeze([]),
+      })
+    }
+    return Object.freeze({
+      originKind: 'bundle',
+      candidate: Object.freeze({ bindingId: 'content', role: 'content', ownership: 'owned' }),
+      requirements: Object.freeze(requirements),
+    })
+  },
   async detect(prefix) {
     return signature(prefix)
       ? { confidence: 0.98, kind: 'structure', note: 'W3X XML elements' }
@@ -295,6 +476,43 @@ const definition = Object.freeze({
   },
   async inspect(bytes, context) {
     const parsed = parseW3x(bytes, context.budget)
+    const text = decode(bytes)
+    const issues = []
+    const containers = parseContainers(text, issues)
+    const hierarchies = parseHierarchies(text)
+    const animations = parseAnimations(text)
+    const textureRefs = parseTextureReferences(text, issues)
+    const unknown = unknownElements(text, KNOWN_ELEMENTS)
+    const boundHierarchy = await readBindings(
+      context.input,
+      HIERARCHY_REQUIREMENT,
+      context.signal,
+      {
+        decode: true,
+        maxBytes: Math.min(PLAN_SCAN_BYTES, context.budget.maxScalarBytes),
+      },
+    )
+    /*
+     * Pivots from the bound skeleton, when one was bound. This is the payoff of the include
+     * companion: a mesh container states `BoneIndex="4"` and nothing else, so the bone's *name*
+     * exists only in the other file — and is therefore published with `companion` provenance,
+     * never merged into the direct facts of this document.
+     */
+    const companionPivots = boundHierarchy.flatMap(item =>
+      item.text === undefined ? [] : parseHierarchies(item.text),
+    )
+    const boundTextures = await readBindings(context.input, TEXTURE_REQUIREMENT, context.signal)
+    const parts = containers.flatMap(container =>
+      container.subObjects.map(sub => ({
+        container: container.id,
+        id: sub.id,
+        boneIndex: sub.boneIndex,
+        role: sub.role,
+        ...(sub.renderObject === undefined ? {} : { renderObject: sub.renderObject }),
+        // the pivot this part rides, named only when the referenced hierarchy is actually bound
+        ...boneFact(hierarchies, companionPivots, container.hierarchyRef, sub.boneIndex),
+      })),
+    )
     const meshCount = parsed.counts.W3DMesh ?? 0
     const hierarchyCount = parsed.counts.W3DHierarchy ?? 0
     const animationCount = parsed.counts.W3DAnimation ?? 0
@@ -317,6 +535,43 @@ const definition = Object.freeze({
         ),
         textures: parsed.textures,
         includes: parsed.includes,
+        containerRelations: containers.map(container => ({
+          id: container.id,
+          hierarchyRef: container.hierarchyRef ?? null,
+          hierarchyProvenance:
+            container.hierarchyRef === undefined
+              ? 'absent'
+              : boundHierarchy.length > 0
+                ? 'companion'
+                : 'reference-only',
+          ...(boundHierarchy[0] === undefined
+            ? {}
+            : { hierarchyBindingId: boundHierarchy[0].bindingId }),
+          subObjects: container.subObjects.length,
+        })),
+        modelParts: parts,
+        declaredPivots: hierarchies.map(item => ({
+          id: item.id,
+          pivots: item.pivots.length,
+          // provenance: read from this document, or from the bound companion, or neither
+          provenance: 'direct',
+        })),
+        animationBlocks: animations,
+        textureReferences: textureRefs.map(item => ({
+          slot: item.slot,
+          value: item.value,
+          shaderName: item.shaderName,
+          // 'companion' once the host bound a file for it, 'reference-only' while it is just a name
+          provenance: boundTextures.length > 0 ? 'companion' : 'reference-only',
+        })),
+        textureBindings: boundTextures.map(item => ({
+          bindingId: item.bindingId,
+          bytes: item.bytes,
+          provenance: 'companion',
+        })),
+        collisionParts: parts.filter(part => part.role === 'collision').map(part => part.id),
+        renderParts: parts.filter(part => part.role === 'render').map(part => part.id),
+        unknownElements: unknown,
         geometryAccess: parsed.meshes.length > 0 ? 'decoded' : 'metadata-only',
       },
       metadata: [
@@ -350,7 +605,19 @@ const definition = Object.freeze({
         ...(animationCount > 0
           ? [{ id: 'model.animations', parameters: { count: animationCount, decoded: false } }]
           : []),
-        { id: 'structure.hierarchy', parameters: { nodes: parsed.total } },
+        ...(hierarchies.length > 0
+          ? [
+              {
+                id: 'model.skeleton',
+                parameters: {
+                  hierarchies: hierarchies.length,
+                  pivots: hierarchies.reduce((sum, item) => sum + item.pivots.length, 0),
+                  provenance: 'direct',
+                },
+              },
+            ]
+          : []),
+        { id: 'structure.hierarchy', parameters: { nodes: parsed.total, parts: parts.length } },
         { id: 'content.text', parameters: { encoding: 'utf-8' } },
       ],
       dataSources: {
@@ -366,13 +633,33 @@ const definition = Object.freeze({
           })),
         }),
       },
+      diagnostics: issues.map(issue =>
+        w3xDiagnostic(issue.code, issue.code.replace('sage-w3x-', ''), issue.message),
+      ),
+      companions: [
+        {
+          id: HIERARCHY_REQUIREMENT,
+          role: 'skeleton',
+          cardinality: 'zero-or-one',
+          required: false,
+          ...(boundHierarchy[0] === undefined
+            ? { state: 'missing' }
+            : { state: 'resolved', bindingIds: [boundHierarchy[0].bindingId] }),
+        },
+        {
+          id: TEXTURE_REQUIREMENT,
+          role: 'texture',
+          cardinality: 'many',
+          required: false,
+          ...(boundTextures.length === 0
+            ? { state: 'missing' }
+            : { state: 'resolved', bindingIds: boundTextures.map(item => item.bindingId) }),
+        },
+      ],
       maxDecodedBytes: Math.max(bytes.byteLength, parsed.decodedBytes),
       unsupportedFeatures: [
         ...(parsed.meshes.length < meshCount ? ['remaining-w3x-geometry-variants'] : []),
-        'w3x-skeleton-decoding',
-        'w3x-animation-decoding',
-        'include-and-companion-resolution',
-        'texture-resolution',
+        'w3x-animation-channel-decoding',
         'fx-shader-execution',
         'model-writing',
       ],
