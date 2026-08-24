@@ -722,7 +722,15 @@ function snapshotPlan(value: AssetInputPlan): AssetInputPlan {
   return Object.freeze(JSON.parse(canonicalJsonStringify(value)) as AssetInputPlan)
 }
 
-function defaultResolveInput(context: SubjectInputResolutionContext): AssetInput {
+/**
+ * The direct construction: a lone file, or a namespace root with nothing declared beside it.
+ *
+ * Exported for the host's own companion resolver, which short-circuits into it the moment a plan
+ * turns out to carry no requirements — so the overwhelmingly common `single` open keeps taking
+ * exactly this path, with no enumeration and no extra source open. Not a public host export; a
+ * codec never calls it.
+ */
+export function defaultResolveInput(context: SubjectInputResolutionContext): AssetInput {
   const plan = context.plan
   if (plan.originKind === 'namespace' && plan.requirements.length === 0) {
     if (context.source.kind !== 'namespace') {

@@ -1,0 +1,119 @@
+/**
+ * The filesystem origin backend for host-owned companion resolution (block 9, step 1).
+ *
+ * It is deliberately the smallest possible thing that can honestly answer "what else is next to
+ * this file": one confined directory — the primary subject's own, and only when that directory is
+ * itself inside the roots the product granted — enumerated as plain names, opened through the same
+ * revision-pinned file adapter every other Node subject uses.
+ *
+ * It lives under `node/` and not beside the resolver on purpose: the algorithm must not import
+ * `node:fs`, or every browser profile that opens a subject would carry a filesystem backend it can
+ * never call.
+ */
+
+import { opendir } from 'node:fs/promises'
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { ModkitError, throwIfAborted } from '@modkitx-x3/core'
+import type { ArtifactSource, InputSearchScope, Lease } from '@modkitx-x3/sdk'
+import {
+  normalizeCompanionLogicalId,
+  COMPANION_PATH_REFUSED,
+  type CompanionCaseSensitivity,
+  type CompanionOrigin,
+  type CompanionOriginEntry,
+} from '../input-resolution.js'
+import { openFileArtifactSource } from './file-artifact-source.js'
+
+/** `sibling-directory` and nothing else: a directory is not a mount and not a container. */
+const FILESYSTEM_SCOPES: readonly InputSearchScope[] = Object.freeze(['sibling-directory'])
+
+export interface FilesystemCompanionOriginOptions {
+  /** Absolute path of the primary subject. Its directory becomes the confined root. */
+  readonly primaryPath: string
+  /** Absolute directories the product granted; a subject outside every one of them is refused. */
+  readonly roots: readonly string[]
+  /**
+   * Defaults to the platform's own rule — Windows and macOS fold case, Linux does not. Stated
+   * explicitly rather than assumed, because it decides whether `Sample.HVA` and `sample.hva` are
+   * one companion or two, and a test must be able to pin either answer.
+   */
+  readonly caseSensitivity?: CompanionCaseSensitivity
+}
+
+function insideRoot(root: string, path: string): boolean {
+  const rel = relative(root, path)
+  return rel === '' || (!rel.startsWith(`..${sep}`) && rel !== '..' && !isAbsolute(rel))
+}
+
+const platformCaseSensitivity = (): CompanionCaseSensitivity =>
+  process.platform === 'win32' || process.platform === 'darwin' ? 'insensitive' : 'sensitive'
+
+/**
+ * Binds one on-disk file to the directory it sits in. Everything the resolver may later reach is
+ * fixed here, at construction time, by the product that knows the granted roots.
+ */
+export function createFilesystemCompanionOrigin(
+  options: FilesystemCompanionOriginOptions,
+): CompanionOrigin {
+  const primaryPath = resolve(options.primaryPath)
+  const root = dirname(primaryPath)
+  const roots = options.roots.map(value => resolve(value))
+  if (roots.length === 0 || !roots.some(value => insideRoot(value, root))) {
+    throw new ModkitError({
+      code: 'x3.host/edit-path-outside-roots',
+      message: 'the companion origin directory is outside every granted root',
+    })
+  }
+  const primaryLogicalId = normalizeCompanionLogicalId(relative(root, primaryPath))
+  const caseSensitivity = options.caseSensitivity ?? platformCaseSensitivity()
+
+  const confinedPath = (logicalId: string): string => {
+    const normalized = normalizeCompanionLogicalId(logicalId)
+    const path = resolve(join(root, normalized))
+    if (!insideRoot(root, path)) {
+      throw new ModkitError({
+        code: COMPANION_PATH_REFUSED,
+        message: `companion «${normalized}» resolves outside its confined origin root`,
+        context: { logicalId: normalized },
+      })
+    }
+    return path
+  }
+
+  return Object.freeze({
+    primaryLogicalId,
+    caseSensitivity,
+    scopes: FILESYSTEM_SCOPES,
+    async *enumerate(
+      scope: InputSearchScope,
+      signal?: AbortSignal,
+    ): AsyncIterable<CompanionOriginEntry> {
+      throwIfAborted(signal)
+      if (scope !== 'sibling-directory') return
+      const directory = await opendir(root)
+      try {
+        for await (const entry of directory) {
+          throwIfAborted(signal)
+          /*
+           * Regular files only. `isFile()` on a Dirent is lstat-shaped, so a symlink reports
+           * `isSymbolicLink()` and never `isFile()` — which is exactly the confinement rule the
+           * block plan asks for ("do not follow a filesystem symlink out of the confined root")
+           * expressed as a refusal to consider one at all, rather than as a resolve-then-check.
+           */
+          if (!entry.isFile()) continue
+          yield Object.freeze({ logicalId: entry.name })
+        }
+      } finally {
+        await directory.close().catch(() => undefined)
+      }
+    },
+    async open(logicalId: string, signal?: AbortSignal): Promise<Lease<ArtifactSource>> {
+      throwIfAborted(signal)
+      const source = await openFileArtifactSource(
+        confinedPath(logicalId),
+        signal === undefined ? {} : { signal },
+      )
+      return Object.freeze({ value: source, release: async () => undefined })
+    },
+  })
+}
