@@ -29,7 +29,7 @@ import {
   openFileArtifactSource,
 } from '@modkitx-x3/host/node'
 import { isModkitError, type Diagnostic } from '@modkitx-x3/core'
-import type { ResourceBudget } from '@modkitx-x3/sdk'
+import { revisionId, type ResourceBudget } from '@modkitx-x3/sdk'
 import {
   COMPANION_REQUIRED_MISSING,
   COMPANION_UNAVAILABLE,
@@ -265,6 +265,11 @@ describe('the two root boundaries stay distinguishable', () => {
         targetId: 'content',
         subjectUri: uri,
         ownerSource: { id: uri, uri },
+        semanticPath: [],
+        expectedRevision: {
+          bindings: { content: revisionId('provider-token:companion-boundary') },
+          compositionFingerprint: 'companion-boundary',
+        },
       }),
     ).rejects.toMatchObject({ code: 'x3.host/edit-path-outside-roots' })
   })
