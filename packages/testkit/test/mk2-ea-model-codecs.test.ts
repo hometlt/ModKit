@@ -19,6 +19,7 @@ const root = join(import.meta.dirname, '..', '..', '..')
 const extension = join(root, 'extensions', 'ea', 'models')
 const fixtures = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
 const realW3xPath = process.env.MODKITX_W3X_PATH?.trim()
+const realW3dPath = process.env.MODKITX_W3D_PATH?.trim()
 const budget: ResourceBudget = {
   maxInputBytes: 1_000_000n,
   maxDepth: 32,
@@ -155,25 +156,50 @@ describe('ported EA model codecs', () => {
     await session.dispose()
   })
 
-  it('walks bounded recursive W3D chunks and exposes their hierarchy', async () => {
+  it('decodes a basis-converted W3D triangle with normals, UVs, material, and bounds', async () => {
     const session = await open('westwood-w3d', await fixture('minimal.westwood.w3d'))
     expect(await inspect(session)).toMatchObject({
       format: 'westwood-w3d',
       rootChunks: 1,
-      chunks: 2,
-      chunkTypes: [
-        { name: 'HIERARCHY', count: 1 },
-        { name: 'HIERARCHY_HEADER', count: 1 },
-      ],
-      geometryAccess: 'metadata-only',
+      chunks: 12,
+      decodedMeshes: 1,
+      decodedVertices: 3,
+      decodedTriangles: 1,
+      textures: ['fixture.tga'],
+      geometryAccess: 'decoded',
     })
+    const modelLease = await session.dataSource('common.view/model-scene-source', 1)
+    const model = modelLease.value as ModelSceneSource
+    expect(await model.info()).toMatchObject({
+      scenes: 1,
+      nodes: 1,
+      meshes: 1,
+      primitives: 1,
+      materials: 1,
+      textures: 1,
+      bounds: { min: [0, 0, -1], max: [1, 0, 0] },
+      geometryAccess: 'decoded',
+    })
+    if (model.primitive === undefined) throw new TypeError('W3D primitive access is missing')
+    const primitive = await model.primitive('w3d-primitive-0', { maxBytes: 1_000 })
+    expect(primitive).toMatchObject({
+      topology: 'triangles',
+      materialId: 'w3d-material-0',
+      bounds: { min: [0, 0, -1], max: [1, 0, 0] },
+    })
+    expect([...primitive.positions]).toEqual([0, 0, 0, 1, 0, 0, 0, 0, -1])
+    expect([...(primitive.indices ?? [])]).toEqual([0, 1, 2])
+    expect([...(primitive.normals ?? [])]).toEqual([0, 1, 0, 0, 1, 0, 0, 1, 0])
+    expect([...(primitive.textureCoordinates ?? [])]).toEqual([0, 1, 1, 1, 0, 0])
+    await expect(model.primitive('w3d-primitive-0', { maxBytes: 1 })).rejects.toThrow(/maxBytes/u)
+    await modelLease.release()
     const lease = await session.dataSource('common.view/tree-data-source', 1)
     const tree = lease.value as TreeDataSource
     const roots = await tree.children(await tree.root(), { limit: 10 })
     const hierarchy = roots.items[0]
     if (hierarchy === undefined) throw new TypeError('W3D hierarchy root was not exposed')
     const children = await tree.children(hierarchy, { limit: 10 })
-    expect(children.items).toHaveLength(1)
+    expect(children.items).toHaveLength(6)
     await lease.release()
     await session.dispose()
   })
@@ -211,6 +237,47 @@ describe('ported EA model codecs', () => {
         expect(maxIndex).toBeLessThan(primitive.positions.length / 3)
         console.info(
           `[w3x-live] meshes ${info.meshes}, vertices ${primitive.positions.length / 3}, indices ${primitive.indices?.length ?? 0}`,
+        )
+      } finally {
+        await lease.release()
+        await session.dispose()
+      }
+    },
+    30_000,
+  )
+
+  it.skipIf(realW3dPath === undefined || !existsSync(realW3dPath))(
+    realW3dPath === undefined
+      ? 'MODKITX_W3D_PATH is not set'
+      : 'decodes geometry from the configured real W3D model',
+    async () => {
+      if (realW3dPath === undefined) throw new TypeError('MODKITX_W3D_PATH is not set')
+      console.info(`[w3d-live] source ${realW3dPath}`)
+      const session = await open('westwood-w3d', new Uint8Array(await readFile(realW3dPath)), {
+        ...budget,
+        maxInputBytes: 64_000_000n,
+        maxNodes: 2_000_000,
+        maxScalarBytes: 64_000_000,
+      })
+      const lease = await session.dataSource('common.view/model-scene-source', 1)
+      try {
+        const model = lease.value as ModelSceneSource
+        const info = await model.info()
+        expect(info.geometryAccess).toBe('decoded')
+        expect(info.meshes).toBeGreaterThan(0)
+        const [mesh] = (await model.meshes({ limit: 1 })).items
+        const primitiveId = mesh?.primitiveIds[0]
+        if (primitiveId === undefined || model.primitive === undefined)
+          throw new TypeError('real W3D exposed no primitive')
+        const primitive = await model.primitive(primitiveId, { maxBytes: 64_000_000 })
+        expect(primitive.positions.length).toBeGreaterThan(0)
+        expect(primitive.indices?.length).toBeGreaterThan(0)
+        if (primitive.indices === undefined) throw new TypeError('real W3D has no indices')
+        let maxIndex = 0
+        for (const value of primitive.indices) maxIndex = Math.max(maxIndex, value)
+        expect(maxIndex).toBeLessThan(primitive.positions.length / 3)
+        console.info(
+          `[w3d-live] meshes ${info.meshes}, vertices ${primitive.positions.length / 3}, indices ${primitive.indices.length}`,
         )
       } finally {
         await lease.release()

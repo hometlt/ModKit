@@ -1953,9 +1953,71 @@ function sageW3x() {
   )
 }
 
-/** Westwood W3D hierarchy root containing one bounded hierarchy-header child. */
+/** Westwood W3D mesh with the documented header, geometry, material, texture, and UV chunks. */
 function westwoodW3d() {
-  return concat(u32le(0x100), u32le(0x80000010), u32le(0x101), u32le(8), u32le(1), u32le(1))
+  const chunk = (type, payload, hasChildren = false) =>
+    concat(u32le(type), u32le(payload.byteLength | (hasChildren ? 0x80000000 : 0)), payload)
+  const fixed = (value, length) => {
+    const result = new Uint8Array(length)
+    result.set(ascii(value).subarray(0, length))
+    return result
+  }
+  const header = new Uint8Array(116)
+  const headerView = new DataView(header.buffer)
+  headerView.setUint32(0, 0x40001, true)
+  fixed('TRI', 16).forEach((value, index) => (header[8 + index] = value))
+  fixed('FIXTURE', 16).forEach((value, index) => (header[24 + index] = value))
+  headerView.setUint32(40, 1, true)
+  headerView.setUint32(44, 3, true)
+  headerView.setUint32(48, 1, true)
+  headerView.setUint32(68, 7, true)
+  headerView.setUint32(72, 1, true)
+  ;[0, 0, 0, 1, 1, 0, 0.5, 0.5, 0].forEach((value, index) =>
+    headerView.setFloat32(76 + index * 4, value, true),
+  )
+  headerView.setFloat32(112, Math.SQRT1_2, true)
+  const vertices = concat(
+    ...[
+      [0, 0, 0],
+      [1, 0, 0],
+      [0, 1, 0],
+    ].flatMap(value => value.map(f32le)),
+  )
+  const normals = concat(...Array.from({ length: 3 }, () => [f32le(0), f32le(0), f32le(1)]))
+  const triangle = concat(
+    u32le(0),
+    u32le(1),
+    u32le(2),
+    u32le(0),
+    f32le(0),
+    f32le(0),
+    f32le(1),
+    f32le(0),
+  )
+  const texture = chunk(0x31, chunk(0x32, concat(ascii('fixture.tga'), bytes(0))), true)
+  const textureStage = chunk(
+    0x48,
+    concat(
+      chunk(0x49, u32le(0)),
+      chunk(
+        0x4a,
+        concat(f32le(0), f32le(0), f32le(1), f32le(0), f32le(0), f32le(1)),
+      ),
+    ),
+    true,
+  )
+  return chunk(
+    0x0,
+    concat(
+      chunk(0x1f, header),
+      chunk(0x2, vertices),
+      chunk(0x3, normals),
+      chunk(0x20, triangle),
+      chunk(0x30, texture, true),
+      chunk(0x38, textureStage, true),
+    ),
+    true,
+  )
 }
 
 /** Red Alert 2 VXL shell with one bounded section and a metadata-only 1×1×1 voxel body. */
