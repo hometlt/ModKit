@@ -79,6 +79,7 @@ const RELOCATED_FAMILIES = new Set([
   'ea-archives',
   'ea-emperor',
   'ea-westwood',
+  'ea-big',
 ])
 
 if (!isMk2Root(mk2Root)) {
@@ -1030,6 +1031,9 @@ const converted = []
 const collisions = []
 
 function splitOwner(publisher, id, contributionId) {
+  if (publisher === 'org.modkitx.ea' && id === 'sage' && contributionId === 'org.modkitx/big') {
+    return { directory: 'ea-big', publisher, id: 'big' }
+  }
   if (publisher === 'org.modkitx.blizzard' && id === 'archives') {
     return contributionId === 'org.modkitx/casc'
       ? { directory: 'blizzard-casc', publisher, id: 'casc' }

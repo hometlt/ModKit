@@ -42,7 +42,7 @@
     {
       "format": "big",
       "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.big",
-      "x3Extension": "extensions/mk2/ea-sage",
+      "x3Extension": "extensions/ea/big",
       "canonicalModule": "extensions/ea/sage/codecs/big/src/index.ts",
       "canonicalAdapter": "big"
     },
@@ -50,7 +50,7 @@
       "format": "big-real-cnc3",
       "environment": "MODKITX_CNC3_ROOT",
       "relativePath": "Core/1.0/Libraries.big",
-      "x3Extension": "extensions/mk2/ea-sage",
+      "x3Extension": "extensions/ea/big",
       "canonicalModule": "extensions/ea/sage/codecs/big/src/index.ts",
       "canonicalAdapter": "big"
     },

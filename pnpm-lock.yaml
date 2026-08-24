@@ -431,6 +431,12 @@ importers:
         specifier: workspace:*
         version: link:../../codec-kit/codec-kit
 
+  extensions/ea/big:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../codec-kit/codec-kit
+
   extensions/ea/emperor:
     dependencies:
       '@modkitx-x3/codec-kit':

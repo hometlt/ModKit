@@ -7,7 +7,7 @@ const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const cncRoot = process.env.MODKITX_CNC3_ROOT
 const bigSample = 'Core/1.0/Libraries.big'
 const big: Mk2CorpusEntry = {
-  extension: 'mk2/ea-sage',
+  extension: 'ea/big',
   contributionId: 'org.modkitx/big',
   corpus: 'real',
   sample: bigSample,

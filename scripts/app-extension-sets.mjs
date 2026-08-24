@@ -225,11 +225,15 @@ export const READY_APP_EXTENSIONS = Object.freeze({
       'org.modkitx/wsa',
     ]),
   }),
+  'ea-big': Object.freeze({
+    path: Object.freeze(['ea', 'big']),
+    coordinate: 'org.modkitx.ea/big',
+    contributions: Object.freeze(['org.modkitx/big']),
+  }),
   'mk2-ea-sage': Object.freeze({
     path: Object.freeze(['mk2', 'ea-sage']),
     coordinate: 'org.modkitx.ea/sage',
     contributions: Object.freeze([
-      'org.modkitx/big',
       'org.modkitx/cnc3-data',
       'org.modkitx/cnc3-localization',
       'org.modkitx/cnc3-map',
@@ -265,6 +269,7 @@ const mk2Extended = Object.freeze([
   'ea-archives',
   'ea-emperor',
   'ea-westwood',
+  'ea-big',
   'mk2-ea-sage',
 ])
 

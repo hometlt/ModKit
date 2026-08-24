@@ -735,7 +735,7 @@
       "note": "MPQ v0 with a real encrypted hash table, encrypted block table, listfile, and stored extraction"
     },
     {
-      "extension": "mk2/ea-sage",
+      "extension": "ea/big",
       "contributionId": "org.modkitx/big",
       "corpus": "synthetic",
       "sample": "minimal.big",

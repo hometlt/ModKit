@@ -13,7 +13,6 @@ renames, converter defaults and v1 operations left without a handler — is data
 
 | contribution                    | v1 manifest                                                       | module                           | port   |
 | ------------------------------- | ----------------------------------------------------------------- | -------------------------------- | ------ |
-| `org.modkitx/big`               | `extensions/ea/sage/codecs/big/codec.manifest.json`               | `src/big/codec.js`               | ported |
 | `org.modkitx/cnc3-data`         | `extensions/ea/sage/codecs/cnc3-data/codec.manifest.json`         | `src/cnc3-data/codec.js`         | ported |
 | `org.modkitx/cnc3-localization` | `extensions/ea/sage/codecs/cnc3-localization/codec.manifest.json` | `src/cnc3-localization/codec.js` | ported |
 | `org.modkitx/cnc3-map`          | `extensions/ea/sage/codecs/cnc3-map/codec.manifest.json`          | `src/cnc3-map/codec.js`          | ported |
