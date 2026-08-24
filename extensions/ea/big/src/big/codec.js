@@ -185,15 +185,17 @@ function parseArchive(bytes, maximumNodes) {
     if (end < 0) throw new TypeError(`BIG entry ${index} name is not terminated`)
     const path = normalizedPath(ascii(bytes, cursor, end - cursor), index)
     cursor = end + 1
-    checkedSlice(bytes, offset, storedSize, `entry ${index} payload`)
+    const stored = checkedSlice(bytes, offset, storedSize, `entry ${index} payload`)
     if (offset < dataOffset) throw new RangeError(`BIG entry ${index} overlaps the index`)
-    const compressed = isRefPack(bytes.subarray(offset, Math.min(offset + storedSize, offset + 16)))
+    const compressed = isRefPack(stored.subarray(0, Math.min(storedSize, 16)))
+    const size = compressed ? refPackHeader(stored).size : storedSize
     entries.push(
       Object.freeze({
         id: String(index),
         path,
         name: path.split('/').at(-1) ?? path,
         offset,
+        size,
         storedSize,
         compressed,
       }),
@@ -225,6 +227,7 @@ function namespaceSource(entries, source) {
           path: entry.path,
           name: entry.name,
           kind: 'file',
+          size: BigInt(entry.size),
           storedSize: BigInt(entry.storedSize),
           compression: entry.compressed ? 'refpack' : 'stored',
           revision: source.revision,
@@ -308,7 +311,9 @@ const definition = Object.freeze({
           children: archive.entries.map(entry => ({
             kind: 'file',
             label: entry.path,
-            preview: `${entry.storedSize} stored bytes${entry.compressed ? ', RefPack' : ''}`,
+            preview: `${entry.size} bytes, ${entry.storedSize} stored${
+              entry.compressed ? ', RefPack' : ''
+            }`,
           })),
         }),
         'common.view/namespace-entry-source': namespaceSource(archive.entries, context.source),
@@ -326,7 +331,9 @@ const definition = Object.freeze({
           }
         },
       },
-      maxDecodedBytes: BigInt(bytes.byteLength),
+      maxDecodedBytes: BigInt(
+        Math.max(bytes.byteLength, ...archive.entries.map(entry => entry.size)),
+      ),
       unsupportedFeatures: ['big-writing', 'archive-mutation'],
     }
   },

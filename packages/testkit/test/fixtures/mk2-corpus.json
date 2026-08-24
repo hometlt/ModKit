@@ -749,7 +749,7 @@
         "outputKind": "bytes",
         "minimumBytes": 5
       },
-      "note": "BIG4 mixed-endian table with one stored file; acceptance enumerates and extracts it"
+      "note": "BIG4 mixed-endian table with RefPack and stored files; acceptance enumerates and extracts the compressed entry"
     },
     {
       "extension": "mk2/adobe-flash",

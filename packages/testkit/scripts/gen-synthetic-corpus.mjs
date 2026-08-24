@@ -2306,21 +2306,28 @@ function heroes6Orc() {
   return zip()
 }
 
-/** EA SAGE BIG4: one stored entry, with the mixed-endian header and null-terminated index path. */
+/** EA SAGE BIG4: RefPack and stored entries with the mixed-endian header. */
 function big() {
-  const name = ascii('hello.txt\0')
-  const content = ascii('hello')
-  const dataOffset = 16 + 8 + name.byteLength
-  const archiveBytes = dataOffset + content.byteLength
+  const compressedName = ascii('hello.txt\0')
+  const compressedContent = refPackLiteral(ascii('hello'))
+  const storedName = ascii('raw.bin\0')
+  const storedContent = bytes(1, 2, 3)
+  const dataOffset = 16 + 8 + compressedName.byteLength + 8 + storedName.byteLength
+  const storedOffset = dataOffset + compressedContent.byteLength
+  const archiveBytes = storedOffset + storedContent.byteLength
   return concat(
     ascii('BIG4'),
     u32le(archiveBytes),
-    u32be(1),
+    u32be(2),
     u32be(dataOffset),
     u32be(dataOffset),
-    u32be(content.byteLength),
-    name,
-    content,
+    u32be(compressedContent.byteLength),
+    compressedName,
+    u32be(storedOffset),
+    u32be(storedContent.byteLength),
+    storedName,
+    compressedContent,
+    storedContent,
   )
 }
 

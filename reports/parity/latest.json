@@ -7,7 +7,7 @@
   },
   "x3": {
     "root": "C:\\FILES\\SC2Files\\coding\\modkitX3",
-    "sha": "fb20617cdaeb2a0d3dae96387379938b03b34a81"
+    "sha": "46498c31b9e3bc166ae113b00237e56eefb395a0"
   },
   "summary": [
     { "format": "big", "state": "compared", "classification": "паритет" },
@@ -118,8 +118,8 @@
               "product-reopen"
             ],
             "measurements": {
-              "entries": 1,
-              "files": 1,
+              "entries": 2,
+              "files": 2,
               "directories": 0,
               "complete": true,
               "extractedBytes": 5,
@@ -133,7 +133,7 @@
             "state": "opened",
             "features": ["children", "facts", "root"],
             "measurements": {
-              "nodes": 2,
+              "nodes": 3,
               "maxDepth": 1,
               "kinds": 2,
               "complete": true
@@ -182,10 +182,10 @@
             "measurements": {
               "complete": true,
               "directories": 0,
-              "entries": 1,
+              "entries": 2,
               "extractedBytes": 5,
               "extractedNonEmpty": true,
-              "files": 1,
+              "files": 2,
               "productReopenCompleted": true
             }
           },
@@ -198,7 +198,7 @@
               "complete": true,
               "kinds": 2,
               "maxDepth": 1,
-              "nodes": 2
+              "nodes": 3
             }
           }
         ],
@@ -211,10 +211,10 @@
         "geometryAccess": "unavailable",
         "metadata": {
           "version": "BIG4",
-          "archiveBytes": 39,
-          "dataOffset": 34,
-          "entries": 1,
-          "refPackEntries": 0
+          "archiveBytes": 65,
+          "dataOffset": 50,
+          "entries": 2,
+          "refPackEntries": 1
         },
         "features": [
           "operation:asset.validate",
@@ -250,8 +250,8 @@
               "product-reopen"
             ],
             "measurements": {
-              "entries": 1,
-              "files": 1,
+              "entries": 2,
+              "files": 2,
               "directories": 0,
               "complete": true,
               "extractedBytes": 5,
@@ -265,7 +265,7 @@
             "state": "opened",
             "features": ["children", "facts", "root"],
             "measurements": {
-              "nodes": 2,
+              "nodes": 3,
               "maxDepth": 1,
               "kinds": 2,
               "complete": true
@@ -293,10 +293,10 @@
             "measurements": {
               "complete": true,
               "directories": 0,
-              "entries": 1,
+              "entries": 2,
               "extractedBytes": 5,
               "extractedNonEmpty": true,
-              "files": 1,
+              "files": 2,
               "productReopenCompleted": true
             }
           },
@@ -309,7 +309,7 @@
               "complete": true,
               "kinds": 2,
               "maxDepth": 1,
-              "nodes": 2
+              "nodes": 3
             }
           }
         ]
