@@ -320,7 +320,8 @@ function compilePatterns(
       context: { requirementId },
     })
   }
-  const expressions: RegExp[] = []
+  /** `{ expression, whole }` — see the comment at the bottom of this function. */
+  const expressions: { readonly expression: RegExp; readonly whole: boolean }[] = []
   for (const pattern of patterns) {
     const invalid = (why: string): never => {
       throw new ModkitError({
@@ -348,9 +349,26 @@ function compilePatterns(
     }
     // a pattern is matched under the *backend's* case rule: on a folding backend `*.hva` and
     // `SAMPLE.HVA` name the same file, and a case-sensitive regex would quietly claim otherwise
-    expressions.push(new RegExp(`${expression}$`, caseSensitivity === 'insensitive' ? 'iu' : 'u'))
+    expressions.push({
+      expression: new RegExp(`${expression}$`, caseSensitivity === 'insensitive' ? 'iu' : 'u'),
+      whole: pattern.replaceAll('\\', '/').includes('/'),
+    })
   }
-  return { test: (logicalId: string) => expressions.some(expression => expression.test(logicalId)) }
+  /*
+   * What a pattern is matched against depends on whether the codec wrote a path in it.
+   *
+   * A directory backend hands out bare names, so the two readings coincide there and this rule is
+   * invisible. An archive backend hands out `data/editor/molds/bowl.w3d`, and a codec that declared
+   * `*.tga` meant "an entry named like that" — it does not know, and must not need to know, which
+   * folder the container filed it under. A pattern that *does* carry a `/` is a deliberate
+   * statement about location, and is matched against the whole logical id.
+   */
+  return {
+    test: (logicalId: string) => {
+      const name = logicalId.split('/').at(-1) ?? logicalId
+      return expressions.some(item => item.expression.test(item.whole ? logicalId : name))
+    },
+  }
 }
 
 // ---------------------------------------------------------------------------------------------
