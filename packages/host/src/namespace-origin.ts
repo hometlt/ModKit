@@ -27,6 +27,7 @@ import {
 } from '@modkitx-x3/sdk'
 import type {
   CompanionCaseSensitivity,
+  CompanionEnumerationOptions,
   CompanionOrigin,
   CompanionOriginEntry,
 } from './input-resolution.js'
@@ -102,16 +103,26 @@ export function createNamespaceCompanionOrigin(
    * listing — so without this cache an open would re-page the whole archive to translate one name.
    * It is built lazily: a plan with no requirements never pages the container at all.
    */
-  let index: Map<string, IndexedEntry> | undefined
+  const index = new Map<string, Map<string, IndexedEntry>>()
 
-  const listing = async (signal?: AbortSignal): Promise<Map<string, IndexedEntry>> => {
-    if (index !== undefined) return index
+  const listing = async (
+    prefix: string,
+    signal?: AbortSignal,
+  ): Promise<Map<string, IndexedEntry>> => {
+    const cached = index.get(prefix)
+    if (cached !== undefined) return cached
     const built = new Map<string, IndexedEntry>()
     let cursor: string | undefined
     do {
       throwIfAborted(signal)
       const page = await options.namespace.list(
-        '',
+        /*
+         * Folded the same way ids are folded. A container matches a listing prefix literally, so on
+         * a case-insensitive backend an unfolded hint would silently exclude entries the
+         * case-insensitive pattern was going to match — a filter is only safe here if it agrees
+         * with the identity rule the rest of the backend uses.
+         */
+        fold(prefix),
         cursor === undefined ? { limit: pageLimit } : { cursor, limit: pageLimit },
         signal,
       )
@@ -130,7 +141,7 @@ export function createNamespaceCompanionOrigin(
       }
       cursor = page.nextCursor
     } while (cursor !== undefined)
-    index = built
+    index.set(prefix, built)
     return built
   }
 
@@ -140,6 +151,7 @@ export function createNamespaceCompanionOrigin(
     scopes: NAMESPACE_SCOPES,
     async *enumerate(
       scope: InputSearchScope,
+      enumeration: CompanionEnumerationOptions,
       signal?: AbortSignal,
     ): AsyncIterable<CompanionOriginEntry> {
       throwIfAborted(signal)
@@ -151,7 +163,12 @@ export function createNamespaceCompanionOrigin(
        * answer so that change is visible when it comes.
        */
       if (scope !== 'current-mount' && scope !== 'enclosing-container') return
-      for (const entry of (await listing(signal)).values()) {
+      /*
+       * The prefix goes straight to the container's own `list(prefix, …)`. This is the difference
+       * between a bounded search and a scan: the installed StarCraft II CASC lists 666,588 entries,
+       * and a requirement that names a directory reads a few hundred of them instead.
+       */
+      for (const entry of (await listing(enumeration.prefix, signal)).values()) {
         throwIfAborted(signal)
         yield Object.freeze({
           logicalId: entry.path,
@@ -161,7 +178,13 @@ export function createNamespaceCompanionOrigin(
     },
     async open(logicalId: string, signal?: AbortSignal): Promise<Lease<ArtifactSource>> {
       throwIfAborted(signal)
-      const entry = (await listing(signal)).get(fold(logicalId))
+      /*
+       * The id itself is the narrowest possible prefix, and opening asks for one exact entry — so
+       * the listing behind an open is one entry, not the directory it sits in. That mattered
+       * measurably: resolving a StarCraft II texture read 4,101 entries when the open re-listed its
+       * folder, and 2 once it stopped.
+       */
+      const entry = (await listing(logicalId, signal)).get(fold(logicalId))
       if (entry === undefined) {
         throw new ModkitError({
           code: NESTED_ENTRY_NOT_FOUND,

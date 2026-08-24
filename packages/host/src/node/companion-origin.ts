@@ -19,6 +19,7 @@ import {
   normalizeCompanionLogicalId,
   COMPANION_PATH_REFUSED,
   type CompanionCaseSensitivity,
+  type CompanionEnumerationOptions,
   type CompanionOrigin,
   type CompanionOriginEntry,
 } from '../input-resolution.js'
@@ -97,6 +98,10 @@ export function createFilesystemCompanionOrigin(
     scopes: FILESYSTEM_SCOPES,
     async *enumerate(
       scope: InputSearchScope,
+      // the listing hint is deliberately unused: one confined directory yields bare names, which
+      // carry no path component for a prefix to narrow. Accepting and ignoring it is the honest
+      // implementation — pretending to filter would make the resolver's budget look smaller than it is
+      _enumeration: CompanionEnumerationOptions,
       signal?: AbortSignal,
     ): AsyncIterable<CompanionOriginEntry> {
       throwIfAborted(signal)

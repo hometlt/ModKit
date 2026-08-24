@@ -876,8 +876,8 @@ describe('the archive origin serves the scopes an entry actually has', () => {
       const controller = new AbortController()
       const guarded = Object.freeze({
         ...origin,
-        async *enumerate(scope: never, signal?: AbortSignal) {
-          for await (const entry of origin.enumerate(scope, signal)) {
+        async *enumerate(scope: never, enumeration: never, signal?: AbortSignal) {
+          for await (const entry of origin.enumerate(scope, enumeration, signal)) {
             controller.abort()
             yield entry
           }

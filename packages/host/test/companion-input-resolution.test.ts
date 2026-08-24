@@ -49,6 +49,7 @@ import {
   type CompanionInputResolverOptions,
   createSignatureTraitProbe,
   type CompanionCaseSensitivity,
+  type CompanionEnumerationOptions,
   type CompanionOrigin,
   type CompanionOriginEntry,
   type CompanionTraitProbe,
@@ -71,6 +72,8 @@ interface Counters {
   releases: number
   doubleRelease: boolean
   readonly opened: string[]
+  /** Listing prefixes the resolver asked this backend to narrow to. */
+  readonly prefixes: string[]
 }
 
 interface FakeOriginOptions {
@@ -96,6 +99,7 @@ function fakeOrigin(options: FakeOriginOptions): {
     releases: 0,
     doubleRelease: false,
     opened: [],
+    prefixes: [],
   }
   const scopes = options.scopes ?? (['sibling-directory'] as const)
   const origin: CompanionOrigin = Object.freeze({
@@ -104,9 +108,11 @@ function fakeOrigin(options: FakeOriginOptions): {
     scopes,
     async *enumerate(
       scope: InputSearchScope,
+      enumeration: CompanionEnumerationOptions,
       signal?: AbortSignal,
     ): AsyncIterable<CompanionOriginEntry> {
       counters.enumerations += 1
+      counters.prefixes.push(enumeration.prefix)
       if (!scopes.includes(scope)) return
       let index = 0
       for (const logicalId of options.entries) {
@@ -666,6 +672,53 @@ describe('companion input resolution — names and patterns', () => {
     ).toBe(COMPANION_PATTERN_INVALID)
     // a refused pattern is refused before any directory is touched, never after a hidden scan
     expect(counters.enumerations).toBe(0)
+  })
+
+  it.each([
+    ['a bare name says nothing about location', ['bowl.tga'], ''],
+    ['a directory-qualified pattern narrows to it', ['assets/textures/*.dds'], 'assets/textures/'],
+    [
+      'a wildcard-free pattern narrows to itself',
+      ['assets/textures/alpha2.dds'],
+      'assets/textures/alpha2.dds',
+    ],
+    [
+      'patterns agree only as far as they agree',
+      ['assets/textures/*.dds', 'assets/textures/*.tga'],
+      'assets/textures/',
+    ],
+    [
+      'disagreeing patterns fall back to their common directory',
+      ['assets/textures/*.dds', 'assets/models/*.dds'],
+      'assets/',
+    ],
+    ['one bare pattern widens the whole requirement', ['assets/textures/*.dds', 'bowl.tga'], ''],
+    ['a partial segment narrows only to its parent', ['assets/tex*'], 'assets/'],
+  ])('derives the listing prefix so that %s', async (_label, patterns, expected) => {
+    /*
+     * The prefix is a hint the resolver derives from the codec's own patterns, and it is the only
+     * reason a 666k-entry namespace can be searched under a four-thousand-entry budget. It must
+     * never narrow further than the patterns license, which is why it is always cut back to a `/`:
+     * `assets/tex*` may match `assets/textures/hero.dds` or `assets/texture-atlas.dds`, so the
+     * prefix is `assets/` and never `assets/tex`, which would silently exclude the first.
+     */
+    const { origin, counters } = fakeOrigin({ entries: ['primary.vxl'] })
+    const resolve = companionResolver(origin)
+    await resolve(
+      context(
+        bundlePlan([
+          requirement({
+            id: 'skin',
+            role: 'texture',
+            patterns,
+            cardinality: 'many',
+            required: false,
+          }),
+        ]),
+        byteSource('primary.vxl'),
+      ),
+    )
+    expect(counters.prefixes).toEqual([expected])
   })
 
   it('refuses a requirement that declares no patterns at all', async () => {

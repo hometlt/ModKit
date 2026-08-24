@@ -107,6 +107,24 @@ export interface CompanionOriginEntry {
  */
 export type CompanionCaseSensitivity = 'sensitive' | 'insensitive'
 
+export interface CompanionEnumerationOptions {
+  /**
+   * Logical-id prefix the resolver derived from the requirement's own patterns; `''` means none.
+   *
+   * A hint, never a filter the backend may rely on being applied — the resolver matches patterns
+   * again over whatever comes back. It exists because "enumerate everything and then filter" stops
+   * being a bounded search once a namespace is large: an installed StarCraft II CASC lists 666,588
+   * entries, which is not a scan any budget should permit. A backend that can narrow its listing
+   * cheaply should; one whose logical ids carry no path structure (a directory, whose ids are bare
+   * names) ignores this and loses nothing.
+   *
+   * Format-neutral by construction: a prefix is a property of a logical-id space, which every
+   * backend has, and the resolver derives it from the codec's declared patterns without knowing
+   * what any of them mean.
+   */
+  readonly prefix: string
+}
+
 /**
  * The trusted place a subject came from. Host-private by construction: it is created by product
  * wiring, closed over by the resolver, and never reaches a codec or a public host export.
@@ -118,7 +136,11 @@ export interface CompanionOrigin {
   /** Scopes this backend can actually serve. Anything else is a named unsupported outcome. */
   readonly scopes: readonly InputSearchScope[]
   /** Bounded enumeration. The resolver counts entries and stops at its own limit. */
-  enumerate(scope: InputSearchScope, signal?: AbortSignal): AsyncIterable<CompanionOriginEntry>
+  enumerate(
+    scope: InputSearchScope,
+    options: CompanionEnumerationOptions,
+    signal?: AbortSignal,
+  ): AsyncIterable<CompanionOriginEntry>
   open(logicalId: string, signal?: AbortSignal): Promise<Lease<ArtifactSource>>
 }
 
@@ -321,6 +343,8 @@ function compilePatterns(
   caseSensitivity: CompanionCaseSensitivity,
 ): {
   readonly test: (logicalId: string) => boolean
+  /** Listing hint for backends whose namespace is too large to enumerate whole. */
+  readonly prefix: string
 } {
   if (patterns === undefined || patterns.length === 0) {
     throw new ModkitError({
@@ -377,7 +401,51 @@ function compilePatterns(
       const name = logicalId.split('/').at(-1) ?? logicalId
       return expressions.some(item => item.expression.test(item.whole ? logicalId : name))
     },
+    prefix: enumerationPrefix(patterns),
   }
+}
+
+/**
+ * The longest logical-id prefix every pattern of a requirement agrees on.
+ *
+ * Each pattern contributes the most it can safely promise about where a match may live:
+ *
+ *  * a pattern with no wildcard promises its whole self — anything matching it *is* it, so the
+ *    complete literal is a sound prefix. On an installed StarCraft II this is the difference
+ *    between listing 1 entry and listing 4,100;
+ *  * a pattern with a wildcard promises only up to the last `/` before it. `assets/tex*` narrows
+ *    to `assets/`, never to `assets/tex`, which would silently exclude `assets/textures/hero.dds`;
+ *  * a bare name like `bowl.tga` promises nothing, because it says nothing about location and the
+ *    resolver must not invent one.
+ *
+ * When patterns disagree, their common part is cut back to a `/` for the same reason: a character
+ * boundary in the middle of a segment is not a location either.
+ */
+function enumerationPrefix(patterns: readonly string[]): string {
+  const safe = patterns.map(pattern => {
+    const normalized = pattern.replaceAll('\\', '/')
+    // a pattern with no separator is matched against the entry's *name*, so `bowl.tga` may live at
+    // `art/textures/bowl.tga` and licenses no prefix whatsoever — see `compilePatterns`
+    if (!normalized.includes('/')) return ''
+    const wildcard = normalized.search(/[*?]/u)
+    if (wildcard === -1) return normalized
+    const literal = normalized.slice(0, wildcard)
+    const cut = literal.lastIndexOf('/')
+    return cut === -1 ? '' : literal.slice(0, cut + 1)
+  })
+  const first = safe[0]
+  if (first === undefined) return ''
+  if (safe.every(value => value === first)) return first
+  let common = first
+  for (const value of safe.slice(1)) {
+    let length = 0
+    while (length < common.length && length < value.length && common[length] === value[length]) {
+      length += 1
+    }
+    common = common.slice(0, length)
+  }
+  const cut = common.lastIndexOf('/')
+  return cut === -1 ? '' : common.slice(0, cut + 1)
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -503,12 +571,18 @@ export function createCompanionInputResolver(
 
     validateRequirements(plan.requirements)
 
-    const enumerated = new Map<InputSearchScope, readonly string[]>()
+    // keyed by scope *and* prefix: two requirements that narrow to different places must not
+    // read each other's listing, and two that narrow to the same place should share one
+    const enumerated = new Map<string, readonly string[]>()
     const served = new Set<InputSearchScope>(origin.scopes)
     if (explicit !== undefined) served.add('explicit-user-selection')
 
-    const enumerateScope = async (scope: InputSearchScope): Promise<readonly string[]> => {
-      const cached = enumerated.get(scope)
+    const enumerateScope = async (
+      scope: InputSearchScope,
+      prefix: string,
+    ): Promise<readonly string[]> => {
+      const key = canonicalJsonStringify([scope, prefix])
+      const cached = enumerated.get(key)
       if (cached !== undefined) return cached
       const ids: string[] = []
       if (scope === 'explicit-user-selection') {
@@ -516,7 +590,7 @@ export function createCompanionInputResolver(
           ids.push(normalizeCompanionLogicalId(value, { scope }))
         }
       } else {
-        for await (const entry of origin.enumerate(scope, signal)) {
+        for await (const entry of origin.enumerate(scope, { prefix }, signal)) {
           checkpoint(`enumerate:${scope}`)
           budget.entries += 1
           if (budget.entries > limits.maxEntries) exceeded('entries', limits.maxEntries)
@@ -524,7 +598,7 @@ export function createCompanionInputResolver(
         }
       }
       const frozen = Object.freeze(ids)
-      enumerated.set(scope, frozen)
+      enumerated.set(key, frozen)
       return frozen
     }
 
@@ -580,7 +654,7 @@ export function createCompanionInputResolver(
       // outcome never depends on the order the backend happened to enumerate in
       const matched: string[] = []
       for (const scope of usable) {
-        for (const logicalId of await enumerateScope(scope)) {
+        for (const logicalId of await enumerateScope(scope, patterns.prefix)) {
           if (
             scope === 'explicit-user-selection' &&
             !(explicit?.[requirement.id] ?? []).some(
