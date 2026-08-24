@@ -21,7 +21,7 @@
     }
   ],
   "limitations": [
-    "Reads the `EAR\\u0000` wrapper, the chunk-name table, the chunk directory and `HeightMapData` dimensions. Chunk payloads other than `HeightMapData` are located but not decoded.",
+    "Reads the `EAR\\u0000` wrapper, the chunk-name table, the chunk directory and `HeightMapData` dimensions. Every chunk can be extracted byte-exactly; payloads other than `HeightMapData` remain raw.",
     "The portable codec expands the RefPack stream embedded by the `EAR\\u0000` wrapper and enforces declared-size and resource-budget bounds.",
     "The `map.bin`/`map.manifest`/`map.relo`/`map.imp` compiled sidecars shipped beside every retail map are not read at all.",
     "Writing a map is not implemented."
@@ -72,6 +72,13 @@
       {
         "id": "export.raw",
         "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "container.extract",
+        "handlerId": "extract-entry",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]

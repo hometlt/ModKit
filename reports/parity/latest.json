@@ -7,7 +7,7 @@
   },
   "x3": {
     "root": "C:\\FILES\\SC2Files\\coding\\modkitX3",
-    "sha": "496c421501cc0206cf279a28ff6fc9c268efd657"
+    "sha": "50ac2a1767fc7ee9f8a4492ea6b0eeaea36fc6ba"
   },
   "summary": [
     { "format": "big", "state": "compared", "classification": "паритет" },
@@ -18,11 +18,7 @@
       "state": "compared",
       "classification": "паритет"
     },
-    {
-      "format": "cnc3-map",
-      "state": "compared",
-      "classification": "X3 беднее"
-    },
+    { "format": "cnc3-map", "state": "compared", "classification": "паритет" },
     { "format": "glb", "state": "compared", "classification": "паритет" },
     { "format": "gltf", "state": "compared", "classification": "паритет" },
     { "format": "m3", "state": "compared", "classification": "X3 богаче" },
@@ -50,26 +46,6 @@
     { "format": "zip", "state": "compared", "classification": "паритет" }
   ],
   "poorer": [
-    {
-      "format": "cnc3-map",
-      "classification": "X3 беднее",
-      "missing": [
-        "common.view/namespace-entry-source:extract-bytes",
-        "common.view/namespace-entry-source:list",
-        "common.view/namespace-entry-source:measurement:complete",
-        "common.view/namespace-entry-source:measurement:directories",
-        "common.view/namespace-entry-source:measurement:entries",
-        "common.view/namespace-entry-source:measurement:extractedBytes",
-        "common.view/namespace-entry-source:measurement:extractedNonEmpty",
-        "common.view/namespace-entry-source:measurement:files",
-        "common.view/namespace-entry-source:measurement:productReopenCompleted",
-        "common.view/namespace-entry-source:open-entry",
-        "common.view/namespace-entry-source:product-reopen",
-        "common.view/namespace-entry-source:source-state:failed",
-        "source:common.view/namespace-entry-source"
-      ],
-      "reason": "Block 8 M5: the staging map namespace cannot extract chunk bytes yet."
-    },
     {
       "format": "red-alert2-vxl",
       "classification": "X3 беднее",
@@ -988,24 +964,11 @@
       "format": "cnc3-map",
       "state": "compared",
       "sample": "packages/testkit/test/fixtures/mk2-synthetic/minimal.cnc3.map",
-      "classification": "X3 беднее",
-      "missing": [
-        "common.view/namespace-entry-source:extract-bytes",
-        "common.view/namespace-entry-source:list",
-        "common.view/namespace-entry-source:measurement:complete",
-        "common.view/namespace-entry-source:measurement:directories",
-        "common.view/namespace-entry-source:measurement:entries",
-        "common.view/namespace-entry-source:measurement:extractedBytes",
-        "common.view/namespace-entry-source:measurement:extractedNonEmpty",
-        "common.view/namespace-entry-source:measurement:files",
-        "common.view/namespace-entry-source:measurement:productReopenCompleted",
-        "common.view/namespace-entry-source:open-entry",
-        "common.view/namespace-entry-source:product-reopen",
-        "common.view/namespace-entry-source:source-state:failed",
-        "source:common.view/namespace-entry-source"
-      ],
+      "classification": "паритет",
+      "missing": [],
       "extra": [
         "operation:asset.validate",
+        "operation:container.extract",
         "operation:export.raw",
         "operation:view.inspect",
         "source:common.view/byte-range-source"
@@ -1013,21 +976,8 @@
       "sourceComparisons": [
         {
           "contract": "common.view/namespace-entry-source",
-          "classification": "X3 беднее",
-          "missing": [
-            "extract-bytes",
-            "list",
-            "measurement:complete",
-            "measurement:directories",
-            "measurement:entries",
-            "measurement:extractedBytes",
-            "measurement:extractedNonEmpty",
-            "measurement:files",
-            "measurement:productReopenCompleted",
-            "open-entry",
-            "product-reopen",
-            "source-state:failed"
-          ],
+          "classification": "паритет",
+          "missing": [],
           "extra": []
         },
         {
@@ -1075,9 +1025,9 @@
             "state": "opened",
             "features": ["children", "facts", "root"],
             "measurements": {
-              "nodes": 2,
-              "maxDepth": 1,
-              "kinds": 2,
+              "nodes": 8,
+              "maxDepth": 3,
+              "kinds": 5,
               "complete": true
             }
           }
@@ -1099,14 +1049,10 @@
         ],
         "actualSources": [
           "common.view/byte-range-source",
+          "common.view/namespace-entry-source",
           "common.view/tree-data-source"
         ],
-        "sourceFailures": [
-          {
-            "contract": "common.view/namespace-entry-source",
-            "error": "namespace extraction failed for 0"
-          }
-        ],
+        "sourceFailures": [],
         "sources": [
           {
             "contract": "common.view/byte-range-source",
@@ -1118,10 +1064,22 @@
           {
             "contract": "common.view/namespace-entry-source",
             "major": 1,
-            "state": "failed",
-            "features": [],
-            "measurements": {},
-            "detail": "namespace extraction failed for 0"
+            "state": "opened",
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
+            "measurements": {
+              "complete": true,
+              "directories": 0,
+              "entries": 1,
+              "extractedBytes": 12,
+              "extractedNonEmpty": true,
+              "files": 1,
+              "productReopenCompleted": true
+            }
           },
           {
             "contract": "common.view/tree-data-source",
@@ -1130,13 +1088,18 @@
             "features": ["children", "facts", "root"],
             "measurements": {
               "complete": true,
-              "kinds": 2,
-              "maxDepth": 1,
-              "nodes": 2
+              "kinds": 5,
+              "maxDepth": 3,
+              "nodes": 8
             }
           }
         ],
-        "operations": ["asset.validate", "export.raw", "view.inspect"],
+        "operations": [
+          "asset.validate",
+          "container.extract",
+          "export.raw",
+          "view.inspect"
+        ],
         "geometryAccess": "unavailable",
         "metadata": {
           "envelope": "EAR + RefPack",
@@ -1149,9 +1112,11 @@
         },
         "features": [
           "operation:asset.validate",
+          "operation:container.extract",
           "operation:export.raw",
           "operation:view.inspect",
           "source:common.view/byte-range-source",
+          "source:common.view/namespace-entry-source",
           "source:common.view/tree-data-source"
         ]
       },
@@ -1194,9 +1159,9 @@
             "state": "opened",
             "features": ["children", "facts", "root"],
             "measurements": {
-              "nodes": 2,
-              "maxDepth": 1,
-              "kinds": 2,
+              "nodes": 8,
+              "maxDepth": 3,
+              "kinds": 5,
               "complete": true
             }
           }
@@ -1212,10 +1177,22 @@
           {
             "contract": "common.view/namespace-entry-source",
             "major": 1,
-            "state": "failed",
-            "features": [],
-            "measurements": {},
-            "detail": "namespace extraction failed for 0"
+            "state": "opened",
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
+            "measurements": {
+              "complete": true,
+              "directories": 0,
+              "entries": 1,
+              "extractedBytes": 12,
+              "extractedNonEmpty": true,
+              "files": 1,
+              "productReopenCompleted": true
+            }
           },
           {
             "contract": "common.view/tree-data-source",
@@ -1224,32 +1201,19 @@
             "features": ["children", "facts", "root"],
             "measurements": {
               "complete": true,
-              "kinds": 2,
-              "maxDepth": 1,
-              "nodes": 2
+              "kinds": 5,
+              "maxDepth": 3,
+              "nodes": 8
             }
           }
         ]
       },
       "comparison": {
-        "classification": "X3 беднее",
-        "missing": [
-          "common.view/namespace-entry-source:extract-bytes",
-          "common.view/namespace-entry-source:list",
-          "common.view/namespace-entry-source:measurement:complete",
-          "common.view/namespace-entry-source:measurement:directories",
-          "common.view/namespace-entry-source:measurement:entries",
-          "common.view/namespace-entry-source:measurement:extractedBytes",
-          "common.view/namespace-entry-source:measurement:extractedNonEmpty",
-          "common.view/namespace-entry-source:measurement:files",
-          "common.view/namespace-entry-source:measurement:productReopenCompleted",
-          "common.view/namespace-entry-source:open-entry",
-          "common.view/namespace-entry-source:product-reopen",
-          "common.view/namespace-entry-source:source-state:failed",
-          "source:common.view/namespace-entry-source"
-        ],
+        "classification": "паритет",
+        "missing": [],
         "extra": [
           "operation:asset.validate",
+          "operation:container.extract",
           "operation:export.raw",
           "operation:view.inspect",
           "source:common.view/byte-range-source"
@@ -1257,21 +1221,8 @@
         "sources": [
           {
             "contract": "common.view/namespace-entry-source",
-            "classification": "X3 беднее",
-            "missing": [
-              "extract-bytes",
-              "list",
-              "measurement:complete",
-              "measurement:directories",
-              "measurement:entries",
-              "measurement:extractedBytes",
-              "measurement:extractedNonEmpty",
-              "measurement:files",
-              "measurement:productReopenCompleted",
-              "open-entry",
-              "product-reopen",
-              "source-state:failed"
-            ],
+            "classification": "паритет",
+            "missing": [],
             "extra": []
           },
           {

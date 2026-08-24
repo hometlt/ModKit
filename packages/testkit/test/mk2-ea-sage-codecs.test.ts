@@ -122,6 +122,26 @@ function csfWithExtraValue(bytes: Uint8Array, value: string): Uint8Array {
   return result
 }
 
+function ckmpWithRawChunk(name: string, payload: Uint8Array): Uint8Array {
+  const nameBytes = new TextEncoder().encode(name)
+  const result = new Uint8Array(8 + 1 + nameBytes.byteLength + 4 + 10 + payload.byteLength)
+  result.set(new TextEncoder().encode('CkMp'))
+  const view = new DataView(result.buffer)
+  view.setUint32(4, 1, true)
+  let cursor = 8
+  result[cursor] = nameBytes.byteLength
+  cursor += 1
+  result.set(nameBytes, cursor)
+  cursor += nameBytes.byteLength
+  view.setUint32(cursor, 7, true)
+  cursor += 4
+  view.setUint32(cursor, 7, true)
+  view.setUint16(cursor + 4, 1, true)
+  view.setUint32(cursor + 6, payload.byteLength, true)
+  result.set(payload, cursor + 10)
+  return result
+}
+
 describe('ported EA SAGE semantic codecs', () => {
   it('inventories authored AssetDeclaration includes and direct assets', async () => {
     const session = await open('cnc3-data', await fixture('minimal.cnc3-data.xml'), 'fixture.xml')
@@ -257,11 +277,62 @@ describe('ported EA SAGE semantic codecs', () => {
     const lease = await session.dataSource('common.view/namespace-entry-source', 1)
     const namespace = lease.value as NamespaceEntrySource
     const page = await namespace.list('', { limit: 10 })
-    expect(page.items.map(item => [item.id, item.path, item.storedSize])).toEqual([
-      ['0', 'HeightMapData', 12n],
+    expect(page.items.map(item => [item.id, item.path, item.size, item.storedSize])).toEqual([
+      ['0', 'HeightMapData', 12n, 12n],
     ])
     await lease.release()
+    const extracted = await session.operations().invoke('extract-entry', { entryId: '0' })
+    if (extracted.state !== 'ok' || extracted.output.kind !== 'bytes')
+      throw new Error('CkMp extraction failed')
+    expect(Array.from(extracted.output.value)).toEqual([0, 1, 0, 0, 128, 0, 0, 0, 16, 0, 0, 0])
+    const treeLease = await session.dataSource('common.view/tree-data-source', 1)
+    const tree = treeLease.value as TreeDataSource
+    const root = await tree.root()
+    const sections = (await tree.children(root, { limit: 10 })).items
+    expect(await Promise.all(sections.map(node => tree.facts(node)))).toMatchObject([
+      { kind: 'section', label: 'Directory' },
+      { kind: 'section', label: 'Chunks' },
+    ])
+    const chunks = sections[1]
+    if (chunks === undefined) throw new Error('CkMp tree has no chunks section')
+    const heightMap = (await tree.children(chunks, { limit: 10 })).items[0]
+    if (heightMap === undefined) throw new Error('CkMp tree has no HeightMapData chunk')
+    expect(await tree.facts(heightMap)).toMatchObject({
+      kind: 'height-map',
+      label: 'HeightMapData',
+    })
+    const dimensions = await tree.children(heightMap, { limit: 10 })
+    expect(await Promise.all(dimensions.items.map(node => tree.facts(node)))).toMatchObject([
+      { kind: 'scalar', label: 'Width', preview: '256' },
+      { kind: 'scalar', label: 'Height', preview: '128' },
+      { kind: 'scalar', label: 'Border size', preview: '16' },
+    ])
+    await treeLease.release()
     await session.dispose()
+
+    const rawSession = await open(
+      'cnc3-map',
+      ckmpWithRawChunk('UnknownData', new Uint8Array([1, 2, 3])),
+      'raw.map',
+    )
+    const rawTreeLease = await rawSession.dataSource('common.view/tree-data-source', 1)
+    const rawTree = rawTreeLease.value as TreeDataSource
+    const rawRoot = await rawTree.root()
+    const rawSections = (await rawTree.children(rawRoot, { limit: 10 })).items
+    const rawChunks = rawSections[1]
+    if (rawChunks === undefined) throw new Error('raw CkMp tree has no chunks section')
+    const rawChunk = (await rawTree.children(rawChunks, { limit: 10 })).items[0]
+    if (rawChunk === undefined) throw new Error('raw CkMp tree has no chunk')
+    expect(await rawTree.facts(rawChunk)).toMatchObject({
+      kind: 'raw-chunk',
+      label: 'UnknownData',
+    })
+    const rawExtracted = await rawSession.operations().invoke('extract-entry', { entryId: '0' })
+    if (rawExtracted.state !== 'ok' || rawExtracted.output.kind !== 'bytes')
+      throw new Error('raw CkMp extraction failed')
+    expect(Array.from(rawExtracted.output.value)).toEqual([1, 2, 3])
+    await rawTreeLease.release()
+    await rawSession.dispose()
   })
 
   it('rejects malformed structure, corrupt counts, and expansion budget overflow', async () => {

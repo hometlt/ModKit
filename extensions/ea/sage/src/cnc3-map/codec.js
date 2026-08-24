@@ -183,6 +183,7 @@ function parse(bytes, budget) {
   return Object.freeze({
     compressed: envelope.compressed,
     expandedByteLength: container.byteLength,
+    container,
     names: Object.freeze(names),
     chunks: Object.freeze(chunks),
     dimensions,
@@ -205,6 +206,7 @@ function namespaceSource(chunks, source) {
           path: chunk.name,
           name: chunk.name,
           kind: 'file',
+          size: BigInt(chunk.byteLength),
           storedSize: BigInt(chunk.byteLength),
           compression: 'stored',
           revision: source.revision,
@@ -235,6 +237,15 @@ const definition = Object.freeze({
   id: ID,
   version: '1.0.0',
   format: Object.freeze({ id: 'cnc3-map', label: 'Command & Conquer 3 map' }),
+  operations: Object.freeze([
+    Object.freeze({
+      id: 'container.extract',
+      handlerId: 'extract-entry',
+      mutatesSource: false,
+      requiredPermissions: Object.freeze(['read-source']),
+      outputKinds: Object.freeze(['bytes']),
+    }),
+  ]),
   async detect(prefix) {
     const value = magic(prefix)
     return value === EAR || value === CKMP
@@ -247,6 +258,7 @@ const definition = Object.freeze({
   },
   async inspect(bytes, context) {
     const map = parse(bytes, context.budget)
+    const byId = new Map(map.chunks.map(chunk => [chunk.id, chunk]))
     return {
       summary: {
         format: 'cnc3-map',
@@ -298,17 +310,60 @@ const definition = Object.freeze({
           kind: 'map',
           label: 'SAGE CkMp map',
           preview: `${map.chunks.length} chunks`,
-          children: map.chunks.map(chunk => ({
-            kind: 'chunk',
-            label: chunk.name,
-            preview: `v${chunk.version}, ${chunk.byteLength} bytes`,
-          })),
+          children: [
+            {
+              kind: 'section',
+              label: 'Directory',
+              preview: `${map.names.length} names`,
+              children: map.names.map((name, index) => ({
+                kind: 'name',
+                label: name,
+                preview: `index ${index}`,
+              })),
+            },
+            {
+              kind: 'section',
+              label: 'Chunks',
+              preview: `${map.chunks.length} chunks`,
+              children: map.chunks.map(chunk => {
+                const heightMap = chunk.name === 'HeightMapData' ? map.dimensions : undefined
+                return {
+                  kind: heightMap === undefined ? 'raw-chunk' : 'height-map',
+                  label: chunk.name,
+                  preview: `v${chunk.version}, ${chunk.byteLength} bytes`,
+                  children:
+                    heightMap === undefined
+                      ? []
+                      : [
+                          { kind: 'scalar', label: 'Width', preview: String(heightMap.width) },
+                          { kind: 'scalar', label: 'Height', preview: String(heightMap.height) },
+                          {
+                            kind: 'scalar',
+                            label: 'Border size',
+                            preview: String(heightMap.borderSize),
+                          },
+                        ],
+                }
+              }),
+            },
+          ],
         }),
+      },
+      handlers: {
+        'extract-entry': async input => {
+          if (input === null || typeof input !== 'object' || Array.isArray(input))
+            throw new TypeError('container.extract requires {entryId}')
+          const chunk = byId.get(String(input.entryId ?? ''))
+          if (chunk === undefined) throw new TypeError('CkMp chunk id was not found')
+          return {
+            kind: 'bytes',
+            value: map.container.slice(chunk.offset, chunk.offset + chunk.byteLength),
+          }
+        },
       },
       maxDecodedBytes: Math.max(bytes.byteLength, map.expandedByteLength),
       unsupportedFeatures: [
-        'terrain-and-object-chunk-decoding',
-        'map-script-decoding',
+        'terrain-object-and-script-chunk-semantics',
         'compiled-map-bin-manifest-relo-imp-sidecars',
         'map-writing',
       ],

@@ -233,6 +233,10 @@ async function cnc3MapResult() {
   const refpack = await import(refpackUrl)
   const map = imported.parseSageMap(bytes, refpack.decodeRefPack)
   const extractedBytes = map.chunks[0]?.byteLength ?? 0
+  const heightMaps = map.chunks.filter(
+    chunk => chunk.name === 'HeightMapData' && chunk.byteLength >= 12,
+  ).length
+  const rawChunks = map.chunks.length - heightMaps
   return result('cnc3-map', [
     source(
       'common.view/namespace-entry-source',
@@ -248,9 +252,9 @@ async function cnc3MapResult() {
       },
     ),
     treeSource({
-      nodes: 1 + map.chunks.length,
-      maxDepth: map.chunks.length > 0 ? 1 : 0,
-      kinds: map.chunks.length > 0 ? 2 : 1,
+      nodes: 3 + map.names.length + map.chunks.length + heightMaps * 3,
+      maxDepth: heightMaps > 0 ? 3 : map.names.length + map.chunks.length > 0 ? 2 : 1,
+      kinds: 2 + Number(map.names.length > 0) + Number(heightMaps > 0) * 2 + Number(rawChunks > 0),
     }),
   ])
 }
