@@ -393,18 +393,25 @@ function corpusInputResolver(
     const sources = new Map<string, ArtifactSource>([[candidateBinding.bindingId, source]])
     for (const requirement of plan.requirements) {
       const [pattern] = requirement.patterns ?? []
-      if (
-        requirement.required !== true ||
-        requirement.cardinality !== 'one' ||
-        requirement.patterns?.length !== 1 ||
-        pattern === undefined
-      ) {
+      /*
+       * Two shapes, because codecs declare both: a required `one` companion the corpus must
+       * provide, and an optional `zero-or-one` sidecar that legitimately is not there. VXL is the
+       * second kind — a voxel model without its `.hva` is a complete voxel model — so refusing to
+       * resolve it would make this harness disagree with the product resolver about what a valid
+       * corpus sample is. Anything wider still needs the real host facility, not this stand-in.
+       */
+      const optional = requirement.required === false && requirement.cardinality === 'zero-or-one'
+      const exact = requirement.required === true && requirement.cardinality === 'one'
+      if ((!optional && !exact) || requirement.patterns?.length !== 1 || pattern === undefined) {
         throw new TypeError(
-          `MK2 corpus resolver supports one exact required binding for ${requirement.id}`,
+          `MK2 corpus resolver supports one exact required or optional binding for ${requirement.id}`,
         )
       }
+      // a wildcard pattern has no single exact path to check; an optional one simply stays unbound
+      if (optional && /[*?[\]]/u.test(pattern)) continue
       const companionPath = exactCompanionPath(samplePath, pattern)
       if ((await stat(companionPath).catch(() => undefined))?.isFile() !== true) {
+        if (optional) continue
         throw new TypeError(`required MK2 corpus companion is missing: ${requirement.patterns[0]}`)
       }
       const companion = await corpusByteSource(companionPath)
