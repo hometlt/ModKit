@@ -41,7 +41,7 @@ import { GAME_INSTALLATION_MATCHER, registerStandardGameDefinitions } from './ga
 import { MOD_WORKSPACE_MATCHER, registerStandardModDefinitions } from './mods/index.js'
 import { DATA_CATALOG_MATCHER, registerStandardDataDefinitions } from './data/index.js'
 import { MAP_SEMANTIC_MATCHER, registerStandardMapDefinitions } from './maps/index.js'
-import { openSubject, type OpenSubjectResult } from './subject-open.js'
+import { openSubject, type OpenSubjectResult, type SubjectInputResolver } from './subject-open.js'
 
 // ---------------------------------------------------------------------------------------------
 // the request every host accepts
@@ -54,6 +54,13 @@ export interface SubjectOpenRequest {
   readonly intent: Exclude<OpenIntent, 'probe'>
   readonly grant: PermissionGrant
   readonly budget: ResourceBudget
+  /**
+   * Host-owned companion resolution for a composite input plan, when the caller knows the trusted
+   * origin the subject came from (a confined directory, an archive namespace). Omitted, the open
+   * behaves exactly as it did before: a plan with requirements has no resolver and fails closed
+   * with `x3.host/input-resolver-required`, and a plan without them never needed one.
+   */
+  readonly resolveInput?: SubjectInputResolver
   readonly signal?: AbortSignal
 }
 

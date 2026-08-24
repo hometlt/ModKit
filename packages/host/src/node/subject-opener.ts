@@ -9,10 +9,13 @@
 
 import { randomUUID } from 'node:crypto'
 import { isAbsolute, relative, resolve } from 'node:path'
+import type { Diagnostic } from '@modkitx-x3/core'
 import type { PermissionGrant, ResourceBudget } from '@modkitx-x3/sdk'
 import type { SubjectServices } from '../subject-services.js'
 import type { OpenedSubject } from '../subject-open.js'
 import type { SubjectOpener, SubjectOpenSnapshot } from '../subject-rpc.js'
+import { createCompanionInputResolver, createSignatureTraitProbe } from '../input-resolution.js'
+import { createFilesystemCompanionOrigin } from './companion-origin.js'
 import { openFileArtifactSource } from './file-artifact-source.js'
 
 export interface PathSubjectOpenerOptions {
@@ -54,21 +57,45 @@ export function createPathSubjectOpener(options: PathSubjectOpenerOptions): Subj
   const grant = options.grant ?? { id: 'subject-rpc', classes: ['read-source'] }
   const budget = options.budget ?? DEFAULT_SUBJECT_OPEN_BUDGET
   const nextId = options.sessionId ?? randomUUID
+  /*
+   * Built once, from the same inventory the subject is resolved against: a codec that declares
+   * `expected` traits on a companion gets a bounded, host-owned answer instead of a refusal, and
+   * no codec is activated to produce it.
+   */
+  const traitProbe = createSignatureTraitProbe(options.subjects.inventory)
   return async (requested, signal) => {
     const path = resolve(requested)
     if (roots.length === 0 || !inside(roots, path)) {
       throw new TypeError(`path is outside the granted roots`)
     }
     const source = await openFileArtifactSource(path, signal === undefined ? {} : { signal })
+    /*
+     * The subject came from a real place on disk, and this opener is the last point that still
+     * knows where: the directory it sits in, confined to the roots the product granted. That fact
+     * is closed over by the resolver and never travels further — a codec asking for a companion
+     * receives bindings, not a path.
+     */
+    const companionDiagnostics: Diagnostic[] = []
+    const resolveInput = createCompanionInputResolver(
+      createFilesystemCompanionOrigin({ primaryPath: path, roots }),
+      {
+        traitProbe,
+        onDiagnostic: item => companionDiagnostics.push(item),
+        ...(budget.deadlineMs === undefined ? {} : { deadlineMs: budget.deadlineMs }),
+      },
+    )
     const result = await options.subjects.open({
       source,
       path,
       intent: options.intent ?? 'full',
       grant: { ...grant, id: `${grant.id}:${nextId()}` },
       budget,
+      resolveInput,
       ...(signal === undefined ? {} : { signal }),
     })
-    const diagnostics = result.diagnostics.map(item => ({
+    // an absent optional companion is a fact the caller needs, and the resolver is the only place
+    // that knows it; without this the snapshot would say "opened" and nothing else
+    const diagnostics = [...result.diagnostics, ...companionDiagnostics].map(item => ({
       code: item.code,
       message: item.message,
     }))
