@@ -1,6 +1,8 @@
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
+import { copyFile, mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
@@ -238,6 +240,40 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       })
     }
   }, 60_000)
+
+  it('releases the primary and companion file sources on success and early refusal', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'modkitx3-mk2-owned-sources-'))
+    const fixtureRoot = syntheticCorpusRoot()
+    const cue = join(root, 'minimal.cue')
+    const bin = join(root, 'minimal.bin')
+    try {
+      await copyFile(join(fixtureRoot, 'minimal.cue'), cue)
+      await copyFile(join(fixtureRoot, 'minimal.bin'), bin)
+
+      const [opened] = await runMk2Acceptance([cueBinBundle], {
+        repoRoot,
+        mk2Root,
+        syntheticRoot: root,
+      })
+      expect(opened?.state).toBe('opened')
+
+      const [refused] = await runMk2Acceptance(
+        [{ ...cueBinBundle, contributionId: 'org.modkitx/not-the-selected-contribution' }],
+        { repoRoot, mk2Root, syntheticRoot: root },
+      )
+      expect(refused).toMatchObject({
+        state: 'failed',
+        detail:
+          'selected org.modkitx/ps1-cue-bin, expected org.modkitx/not-the-selected-contribution',
+      })
+
+      // Windows refuses to unlink files while these Node FileHandles are still live.
+      await rm(cue)
+      await rm(bin)
+    } finally {
+      await rm(root, { recursive: true, force: true })
+    }
+  })
 
   it('activates the portable variant in a Node worker, not just trusted in-process', async () => {
     // The worker backend verifies every artifact file against the loader's digests before it

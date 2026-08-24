@@ -281,14 +281,33 @@ export function tallyMk2Conversion(mk2ExtensionsRoot: string): Mk2ConversionTall
   }
 }
 
-async function corpusByteSource(path: string): Promise<ArtifactByteSource> {
+interface OwnedCorpusByteSource {
+  readonly value: ArtifactByteSource
+  release(): Promise<void>
+}
+
+async function corpusByteSource(path: string): Promise<OwnedCorpusByteSource> {
   const bytes = await readFile(path)
   const digest = createHash('sha256').update(bytes).digest('hex')
   const random = await openFileSource(path)
-  return artifactByteSourceFromRandomAccess(random, {
-    ref: { id: random.id, uri: random.id },
-    revision: revisionId(`content-hash.sha256:${digest}`),
-  })
+  try {
+    const value = await artifactByteSourceFromRandomAccess(random, {
+      ref: { id: random.id, uri: random.id },
+      revision: revisionId(`content-hash.sha256:${digest}`),
+    })
+    let released = false
+    return Object.freeze({
+      value,
+      async release() {
+        if (released) return
+        released = true
+        await random.dispose()
+      },
+    })
+  } catch (error) {
+    await random.dispose()
+    throw error
+  }
 }
 
 function exactCompanionPath(samplePath: string, pattern: string): string {
@@ -316,7 +335,10 @@ function exactCompanionPath(samplePath: string, pattern: string): string {
  * pins those files and constructs the bundle. It intentionally implements no globbing or search,
  * so a codec cannot smuggle path discovery through an acceptance-only convenience.
  */
-function corpusInputResolver(samplePath: string): SubjectInputResolver {
+function corpusInputResolver(
+  samplePath: string,
+  ownedSources: OwnedCorpusByteSource[],
+): SubjectInputResolver {
   return async context => {
     if (context.signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
     const { plan, source } = context
@@ -386,9 +408,10 @@ function corpusInputResolver(samplePath: string): SubjectInputResolver {
         throw new TypeError(`required MK2 corpus companion is missing: ${requirement.patterns[0]}`)
       }
       const companion = await corpusByteSource(companionPath)
+      ownedSources.push(companion)
       const bindingId = requirement.id
       if (sources.has(bindingId)) throw new TypeError(`duplicate input binding ${bindingId}`)
-      sources.set(bindingId, companion)
+      sources.set(bindingId, companion.value)
       requirementBindings.push(
         Object.freeze({
           sourceKind: 'requirement' as const,
@@ -396,8 +419,8 @@ function corpusInputResolver(samplePath: string): SubjectInputResolver {
           requirementId: requirement.id,
           role: requirement.role,
           ownership: requirement.ownership,
-          source: companion.ref,
-          revision: companion.revision,
+          source: companion.value.ref,
+          revision: companion.value.revision,
         }),
       )
     }
@@ -492,196 +515,203 @@ export async function runMk2AcceptanceCase(
     [{ ...input, execution: { origin: 'bundled', allowTrustedInProcess: true } }],
     createHostContributionContractRegistry(),
   )
-  const source = await corpusByteSource(samplePath)
-  // `path` is the corpus-relative path, the way a product opens a file inside a mount.
-  // `basename` deliberately throws the path away: nothing about the name can help, so the only
-  // way a candidate can reach probe is the declared byte signature.
-  const path =
-    entry.route === 'basename'
-      ? (entry.sample.split('/').at(-1) ?? '')
-      : entry.route === 'opaque'
-        ? 'opaque.bin'
-        : entry.sample
-  const result = await openSubject({
-    inventory,
-    source,
-    path,
-    ...(entry.mediaType === undefined ? {} : { mediaType: entry.mediaType }),
-    intent: entry.intent ?? 'full',
-    target:
-      options.workerBrokered === true
-        ? { ...nodeRuntimeTarget(), environment: 'node-worker' }
-        : nodeRuntimeTarget(),
-    grant: { id: `mk2-acceptance-${entry.contributionId}`, classes: ['read-source'] },
-    executionBackends:
-      options.workerBrokered === true
-        ? createNodeExecutionBackends()
-        : createExecutionBackendRegistry([TRUSTED_IN_PROCESS_EXECUTION_BACKEND]),
-    budget: options.budget ?? DEFAULT_BUDGET,
-    resolveInput: corpusInputResolver(samplePath),
-  })
-
-  if (result.state !== 'opened') {
-    const explanation = result.candidates
-      .map(candidate => {
-        const why = candidate.diagnostics
-          .map(diagnostic => `${diagnostic.code}: ${diagnostic.message}`)
-          .join(', ')
-        return `${candidate.contributionId}/${candidate.variantId}: ${candidate.state}${
-          why === '' ? '' : ` — ${why}`
-        }`
-      })
-      .join('; ')
-    const global = result.diagnostics
-      .map(diagnostic => `${diagnostic.code}: ${diagnostic.message}`)
-      .join(', ')
-    return {
-      entry,
-      corpus,
-      state: 'failed',
-      detail: `openSubject returned ${result.reason}${explanation === '' ? '' : ` (${explanation})`}${
-        global === '' ? '' : ` [${global}]`
-      }`,
-    }
-  }
-
-  const selected = result.selected
-  const descriptor = result.descriptor
-  const signatureMatch = result.candidates.some(
-    candidate =>
-      candidate.state === 'selected' &&
-      candidate.diagnostics.some(diagnostic => diagnostic.code === 'x3.host/signature-match'),
-  )
-  const observed = {
-    corpus,
-    confidence: selected.confidence,
-    variantId: selected.variantId,
-    ...(descriptor.interpretation === 'codec' ? { formatId: descriptor.identity.formatId } : {}),
-    signatureMatch,
-    traits: descriptor.traits.map(trait => trait.id),
-    dataSourceContracts: descriptor.dataSources.map(entryRef => entryRef.contract),
-  }
-
-  const fail = async (detail: string): Promise<Mk2AcceptanceOutcome> => {
-    await result.session.dispose()
-    return { entry, state: 'failed', detail, ...observed }
-  }
-
-  if (selected.contributionId !== entry.contributionId) {
-    return fail(`selected ${selected.contributionId}, expected ${entry.contributionId}`)
-  }
-  if (selected.confidence < entry.minimumConfidence) {
-    return fail(`confidence ${selected.confidence} is below ${entry.minimumConfidence}`)
-  }
-  if (entry.expectSignatureMatch === true && !signatureMatch) {
-    return fail('the winning candidate was admitted by name, not by its declared signature')
-  }
-
-  // One declared data source has to answer its first request; a descriptor that promises a
-  // source the session cannot lease is exactly the failure this harness exists to catch.
-  const contract = DATA_SOURCE_CONTRACTS[entry.dataSource]
+  const ownedSources: OwnedCorpusByteSource[] = []
   try {
-    const lease = await result.session.dataSource(contract, 1)
-    if (entry.dataSource === 'byte-range') {
-      const bytes = await (lease.value as ByteRangeSource).read(0n, 8)
-      if (bytes.byteLength === 0) return fail(`${contract} returned an empty first read`)
-    } else if (entry.dataSource === 'tree') {
-      const tree = lease.value as TreeDataSource
-      const root = await tree.root()
-      const facts = await tree.facts(root)
-      if (facts.label.length === 0) return fail(`${contract} root node has no label`)
-    } else if (entry.dataSource === 'model') {
-      const model = lease.value as ModelSceneSource
-      const info = await model.info()
-      const nodes = await model.nodes({ limit: 1 })
-      if (info.scenes < 1 || nodes.items.length === 0) {
-        return fail(`${contract} exposes no scene nodes`)
-      }
-    } else if (entry.dataSource === 'namespace') {
-      const namespace = lease.value as NamespaceEntrySource
-      const page = await namespace.list('', { limit: 1 })
-      if (page.items.length === 0) return fail(`${contract} exposes no entries`)
-    } else if (entry.dataSource === 'raster') {
-      const raster = lease.value as RasterImageSource
-      const info = await raster.info()
-      if (info.width < 1 || info.height < 1 || raster.readRegion === undefined) {
-        return fail(`${contract} exposes no decoded pixels`)
-      }
-      const region = await raster.readRegion({
-        x: 0,
-        y: 0,
-        width: 1,
-        height: 1,
-        pixelFormat: 'rgba8',
-        maxBytes: 4,
-      })
-      if (region.pixels.byteLength !== 4) return fail(`${contract} returned no RGBA pixel`)
-      if (
-        entry.expectedFirstPixelRgba !== undefined &&
-        !entry.expectedFirstPixelRgba.every((value, index) => region.pixels[index] === value)
-      ) {
-        return fail(
-          `${contract} first pixel was ${[...region.pixels].join(',')}, expected ${entry.expectedFirstPixelRgba.join(',')}`,
-        )
-      }
-    } else if (entry.dataSource === 'audio') {
-      const audio = lease.value as AudioMediaSource
-      const info = await audio.info()
-      if (info.tracks.length === 0) return fail(`${contract} exposes no audio tracks`)
-      const encoded = await audio.encoded(info.tracks[0]?.id)
-      if ((await encoded.read(0n, 12)).byteLength === 0)
-        return fail(`${contract} exposes no encoded audio bytes`)
-    } else if (entry.dataSource === 'video') {
-      const video = lease.value as VideoMediaSource
-      const info = await video.info()
-      if (info.tracks.length === 0) return fail(`${contract} exposes no video tracks`)
-      const encoded = await video.encoded()
-      if ((await encoded.read(0n, 12)).byteLength === 0)
-        return fail(`${contract} exposes no encoded video bytes`)
-    } else if (entry.dataSource === 'vector') {
-      const vector = lease.value as VectorSceneSource
-      const info = await vector.info()
-      const document = await vector.document()
-      if (info.nodes < 1 || !document.text.startsWith('<svg'))
-        return fail(`${contract} exposes no vector scene document`)
-    } else if (entry.dataSource === 'table') {
-      const table = lease.value as TableDataSource
-      const shape = await table.shape()
-      if (shape.columns === 0) return fail(`${contract} exposed no columns`)
-    }
-    await lease.release()
-  } catch (error) {
-    return fail(`${contract} threw: ${error instanceof Error ? error.message : String(error)}`)
-  }
+    const ownedSource = await corpusByteSource(samplePath)
+    ownedSources.push(ownedSource)
+    const source = ownedSource.value
+    // `path` is the corpus-relative path, the way a product opens a file inside a mount.
+    // `basename` deliberately throws the path away: nothing about the name can help, so the only
+    // way a candidate can reach probe is the declared byte signature.
+    const path =
+      entry.route === 'basename'
+        ? (entry.sample.split('/').at(-1) ?? '')
+        : entry.route === 'opaque'
+          ? 'opaque.bin'
+          : entry.sample
+    const result = await openSubject({
+      inventory,
+      source,
+      path,
+      ...(entry.mediaType === undefined ? {} : { mediaType: entry.mediaType }),
+      intent: entry.intent ?? 'full',
+      target:
+        options.workerBrokered === true
+          ? { ...nodeRuntimeTarget(), environment: 'node-worker' }
+          : nodeRuntimeTarget(),
+      grant: { id: `mk2-acceptance-${entry.contributionId}`, classes: ['read-source'] },
+      executionBackends:
+        options.workerBrokered === true
+          ? createNodeExecutionBackends()
+          : createExecutionBackendRegistry([TRUSTED_IN_PROCESS_EXECUTION_BACKEND]),
+      budget: options.budget ?? DEFAULT_BUDGET,
+      resolveInput: corpusInputResolver(samplePath, ownedSources),
+    })
 
-  if (entry.operation !== undefined) {
+    if (result.state !== 'opened') {
+      const explanation = result.candidates
+        .map(candidate => {
+          const why = candidate.diagnostics
+            .map(diagnostic => `${diagnostic.code}: ${diagnostic.message}`)
+            .join(', ')
+          return `${candidate.contributionId}/${candidate.variantId}: ${candidate.state}${
+            why === '' ? '' : ` — ${why}`
+          }`
+        })
+        .join('; ')
+      const global = result.diagnostics
+        .map(diagnostic => `${diagnostic.code}: ${diagnostic.message}`)
+        .join(', ')
+      return {
+        entry,
+        corpus,
+        state: 'failed',
+        detail: `openSubject returned ${result.reason}${explanation === '' ? '' : ` (${explanation})`}${
+          global === '' ? '' : ` [${global}]`
+        }`,
+      }
+    }
+
+    const selected = result.selected
+    const descriptor = result.descriptor
+    const signatureMatch = result.candidates.some(
+      candidate =>
+        candidate.state === 'selected' &&
+        candidate.diagnostics.some(diagnostic => diagnostic.code === 'x3.host/signature-match'),
+    )
+    const observed = {
+      corpus,
+      confidence: selected.confidence,
+      variantId: selected.variantId,
+      ...(descriptor.interpretation === 'codec' ? { formatId: descriptor.identity.formatId } : {}),
+      signatureMatch,
+      traits: descriptor.traits.map(trait => trait.id),
+      dataSourceContracts: descriptor.dataSources.map(entryRef => entryRef.contract),
+    }
+
+    const fail = async (detail: string): Promise<Mk2AcceptanceOutcome> => {
+      await result.session.dispose()
+      return { entry, state: 'failed', detail, ...observed }
+    }
+
+    if (selected.contributionId !== entry.contributionId) {
+      return fail(`selected ${selected.contributionId}, expected ${entry.contributionId}`)
+    }
+    if (selected.confidence < entry.minimumConfidence) {
+      return fail(`confidence ${selected.confidence} is below ${entry.minimumConfidence}`)
+    }
+    if (entry.expectSignatureMatch === true && !signatureMatch) {
+      return fail('the winning candidate was admitted by name, not by its declared signature')
+    }
+
+    // One declared data source has to answer its first request; a descriptor that promises a
+    // source the session cannot lease is exactly the failure this harness exists to catch.
+    const contract = DATA_SOURCE_CONTRACTS[entry.dataSource]
     try {
-      const operation = await result.session
-        .operations()
-        .invoke(entry.operation.handlerId, entry.operation.input)
-      if (operation.state !== 'ok') {
-        return fail(`${entry.operation.handlerId} was rejected: ${operation.reason}`)
+      const lease = await result.session.dataSource(contract, 1)
+      if (entry.dataSource === 'byte-range') {
+        const bytes = await (lease.value as ByteRangeSource).read(0n, 8)
+        if (bytes.byteLength === 0) return fail(`${contract} returned an empty first read`)
+      } else if (entry.dataSource === 'tree') {
+        const tree = lease.value as TreeDataSource
+        const root = await tree.root()
+        const facts = await tree.facts(root)
+        if (facts.label.length === 0) return fail(`${contract} root node has no label`)
+      } else if (entry.dataSource === 'model') {
+        const model = lease.value as ModelSceneSource
+        const info = await model.info()
+        const nodes = await model.nodes({ limit: 1 })
+        if (info.scenes < 1 || nodes.items.length === 0) {
+          return fail(`${contract} exposes no scene nodes`)
+        }
+      } else if (entry.dataSource === 'namespace') {
+        const namespace = lease.value as NamespaceEntrySource
+        const page = await namespace.list('', { limit: 1 })
+        if (page.items.length === 0) return fail(`${contract} exposes no entries`)
+      } else if (entry.dataSource === 'raster') {
+        const raster = lease.value as RasterImageSource
+        const info = await raster.info()
+        if (info.width < 1 || info.height < 1 || raster.readRegion === undefined) {
+          return fail(`${contract} exposes no decoded pixels`)
+        }
+        const region = await raster.readRegion({
+          x: 0,
+          y: 0,
+          width: 1,
+          height: 1,
+          pixelFormat: 'rgba8',
+          maxBytes: 4,
+        })
+        if (region.pixels.byteLength !== 4) return fail(`${contract} returned no RGBA pixel`)
+        if (
+          entry.expectedFirstPixelRgba !== undefined &&
+          !entry.expectedFirstPixelRgba.every((value, index) => region.pixels[index] === value)
+        ) {
+          return fail(
+            `${contract} first pixel was ${[...region.pixels].join(',')}, expected ${entry.expectedFirstPixelRgba.join(',')}`,
+          )
+        }
+      } else if (entry.dataSource === 'audio') {
+        const audio = lease.value as AudioMediaSource
+        const info = await audio.info()
+        if (info.tracks.length === 0) return fail(`${contract} exposes no audio tracks`)
+        const encoded = await audio.encoded(info.tracks[0]?.id)
+        if ((await encoded.read(0n, 12)).byteLength === 0)
+          return fail(`${contract} exposes no encoded audio bytes`)
+      } else if (entry.dataSource === 'video') {
+        const video = lease.value as VideoMediaSource
+        const info = await video.info()
+        if (info.tracks.length === 0) return fail(`${contract} exposes no video tracks`)
+        const encoded = await video.encoded()
+        if ((await encoded.read(0n, 12)).byteLength === 0)
+          return fail(`${contract} exposes no encoded video bytes`)
+      } else if (entry.dataSource === 'vector') {
+        const vector = lease.value as VectorSceneSource
+        const info = await vector.info()
+        const document = await vector.document()
+        if (info.nodes < 1 || !document.text.startsWith('<svg'))
+          return fail(`${contract} exposes no vector scene document`)
+      } else if (entry.dataSource === 'table') {
+        const table = lease.value as TableDataSource
+        const shape = await table.shape()
+        if (shape.columns === 0) return fail(`${contract} exposed no columns`)
       }
-      if (operation.output.kind !== entry.operation.outputKind) {
+      await lease.release()
+    } catch (error) {
+      return fail(`${contract} threw: ${error instanceof Error ? error.message : String(error)}`)
+    }
+
+    if (entry.operation !== undefined) {
+      try {
+        const operation = await result.session
+          .operations()
+          .invoke(entry.operation.handlerId, entry.operation.input)
+        if (operation.state !== 'ok') {
+          return fail(`${entry.operation.handlerId} was rejected: ${operation.reason}`)
+        }
+        if (operation.output.kind !== entry.operation.outputKind) {
+          return fail(
+            `${entry.operation.handlerId} returned ${operation.output.kind}, expected ${entry.operation.outputKind}`,
+          )
+        }
+        if (
+          operation.output.kind === 'bytes' &&
+          operation.output.value.byteLength < entry.operation.minimumBytes
+        ) {
+          return fail(`${entry.operation.handlerId} returned too few bytes`)
+        }
+      } catch (error) {
         return fail(
-          `${entry.operation.handlerId} returned ${operation.output.kind}, expected ${entry.operation.outputKind}`,
+          `${entry.operation.handlerId} threw: ${error instanceof Error ? error.message : String(error)}`,
         )
       }
-      if (
-        operation.output.kind === 'bytes' &&
-        operation.output.value.byteLength < entry.operation.minimumBytes
-      ) {
-        return fail(`${entry.operation.handlerId} returned too few bytes`)
-      }
-    } catch (error) {
-      return fail(
-        `${entry.operation.handlerId} threw: ${error instanceof Error ? error.message : String(error)}`,
-      )
     }
-  }
 
-  await result.session.dispose()
-  return { entry, state: 'opened', ...observed }
+    await result.session.dispose()
+    return { entry, state: 'opened', ...observed }
+  } finally {
+    for (const ownedSource of ownedSources.reverse()) await ownedSource.release()
+  }
 }
 
 export async function runMk2Acceptance(
