@@ -715,12 +715,14 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     expect(sageW3x.match(/<W3DMesh\b/gu)).toHaveLength(1)
     expect(sageW3x.match(/<W3DHierarchy\b/gu)).toHaveLength(1)
     expect(sageW3x.match(/<W3DAnimation\b/gu)).toHaveLength(1)
-    expect(sageW3x).toContain('<Texture id="FixtureTexture" File="fixture.dds"/>')
+    expect(sageW3x).toContain(
+      '<Texture Name="DiffuseTexture"><Value>fixture.dds</Value></Texture>',
+    )
     expect(sageW3x).toContain('<Include type="all" source="shared.w3x"/>')
 
     const westwoodW3d = readFileSync(join(root, 'minimal.westwood.w3d'))
     expect(westwoodW3d.readUInt32LE(0)).toBe(0x0)
-    expect(westwoodW3d.readUInt32LE(4) & 0x80000000).toBe(0x80000000)
+    expect((westwoodW3d.readUInt32LE(4) & 0x80000000) >>> 0).toBe(0x80000000)
     expect(westwoodW3d.readUInt32LE(4) & 0x7fffffff).toBe(westwoodW3d.byteLength - 8)
     expect([westwoodW3d.readUInt32LE(8), westwoodW3d.readUInt32LE(12)]).toEqual([
       0x1f, 116,
