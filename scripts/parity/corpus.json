@@ -57,7 +57,7 @@
     {
       "format": "cnc3-data",
       "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.cnc3-data.xml",
-      "x3Extension": "extensions/mk2/ea-sage",
+      "x3Extension": "extensions/ea/sage",
       "canonicalModule": "extensions/ea/sage/codecs/cnc3-data/src/index.ts",
       "canonicalAdapter": "cnc3-data",
       "allowPoorerReason": "Block 8 M5: the staging codec has not published its asset table yet."
@@ -65,7 +65,7 @@
     {
       "format": "cnc3-localization",
       "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.cnc3-localization.csf",
-      "x3Extension": "extensions/mk2/ea-sage",
+      "x3Extension": "extensions/ea/sage",
       "canonicalModule": "extensions/ea/sage/codecs/cnc3-localization/src/index.ts",
       "canonicalAdapter": "cnc3-localization",
       "allowPoorerReason": "Block 8 M5: decoded CSF text has not been published as a text source yet."
@@ -73,7 +73,7 @@
     {
       "format": "cnc3-map",
       "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.cnc3.map",
-      "x3Extension": "extensions/mk2/ea-sage",
+      "x3Extension": "extensions/ea/sage",
       "canonicalModule": "extensions/ea/sage/codecs/cnc3-map/src/index.ts",
       "canonicalAdapter": "cnc3-map",
       "allowPoorerReason": "Block 8 M5: the staging map namespace cannot extract chunk bytes yet."
@@ -81,7 +81,7 @@
     {
       "format": "sage-skudef",
       "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.sage.skudef",
-      "x3Extension": "extensions/mk2/ea-sage",
+      "x3Extension": "extensions/ea/sage",
       "canonicalModule": "extensions/ea/sage/codecs/sage-skudef/src/index.ts",
       "canonicalAdapter": "sage-skudef"
     },

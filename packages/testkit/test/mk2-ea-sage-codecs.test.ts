@@ -16,7 +16,7 @@ import {
 type CodecId = 'cnc3-data' | 'cnc3-localization' | 'cnc3-map'
 
 const root = join(import.meta.dirname, '..', '..', '..')
-const extension = join(root, 'extensions', 'mk2', 'ea-sage')
+const extension = join(root, 'extensions', 'ea', 'sage')
 const fixtureRoot = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
 const budget: ResourceBudget = {
   maxInputBytes: 1_000_000n,

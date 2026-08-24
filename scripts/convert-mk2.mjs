@@ -80,6 +80,7 @@ const RELOCATED_FAMILIES = new Set([
   'ea-emperor',
   'ea-westwood',
   'ea-big',
+  'ea-sage',
 ])
 
 if (!isMk2Root(mk2Root)) {

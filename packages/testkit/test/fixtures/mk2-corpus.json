@@ -1046,7 +1046,7 @@
       "note": "VXL shell with one section header and bounded 1x1x1 section tailer"
     },
     {
-      "extension": "mk2/ea-sage",
+      "extension": "ea/sage",
       "contributionId": "org.modkitx/sage-skudef",
       "corpus": "synthetic",
       "sample": "minimal.sage.skudef",
@@ -1056,7 +1056,7 @@
       "note": "SkuDef directive list with config, BIG archive, search path, executable, and mod metadata records"
     },
     {
-      "extension": "mk2/ea-sage",
+      "extension": "ea/sage",
       "contributionId": "org.modkitx/cnc3-data",
       "corpus": "synthetic",
       "sample": "minimal.cnc3-data.xml",
@@ -1066,7 +1066,7 @@
       "note": "Authored AssetDeclaration with DATA/ART includes and two top-level asset kinds"
     },
     {
-      "extension": "mk2/ea-sage",
+      "extension": "ea/sage",
       "contributionId": "org.modkitx/cnc3-localization",
       "corpus": "synthetic",
       "sample": "minimal.cnc3-localization.csf",
@@ -1077,7 +1077,7 @@
       "note": "Compiled CSF table with one inverted-UTF-16 WRTS value and designer note"
     },
     {
-      "extension": "mk2/ea-sage",
+      "extension": "ea/sage",
       "contributionId": "org.modkitx/cnc3-map",
       "corpus": "synthetic",
       "sample": "minimal.cnc3.map",
