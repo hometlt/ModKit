@@ -103,6 +103,32 @@ function importSpecifiers(source: string): string[] {
 }
 
 describe('single-file production dist', () => {
+  it('keeps the optional 3D backends in the model app set without a Three.js runtime', async () => {
+    const { APP_EXTENSION_SETS } = (await import('../app-extension-sets.mjs')) as {
+      APP_EXTENSION_SETS: Readonly<Record<string, readonly string[]>>
+    }
+    expect(APP_EXTENSION_SETS['models-and-archives']).toContain('rendering-3d')
+    expect(APP_EXTENSION_SETS['full-codecs']).toContain('rendering-3d')
+
+    const manifest = JSON.parse(
+      readFileSync(bundlePath('extensions/common/rendering-3d/package.json'), 'utf8'),
+    ) as {
+      dependencies?: Record<string, string>
+      optionalDependencies?: Record<string, string>
+      peerDependencies?: Record<string, string>
+    }
+    const declared = {
+      ...manifest.dependencies,
+      ...manifest.optionalDependencies,
+      ...manifest.peerDependencies,
+    }
+    expect(declared).not.toHaveProperty('three')
+    for (const entry of ['browser.js', 'headless.js', 'linked.js']) {
+      const source = readFileSync(bundlePath('extensions/common/rendering-3d/src', entry), 'utf8')
+      expect(importSpecifiers(source)).not.toContain('three')
+    }
+  })
+
   it.each(PUBLISHED_ENTRIES)('%s is one self-contained file', entry => {
     const source = readFileSync(bundlePath(entry), 'utf8')
     const relative = importSpecifiers(source).filter(s => s.startsWith('.'))

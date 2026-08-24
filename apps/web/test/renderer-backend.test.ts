@@ -2,11 +2,22 @@ import { createServer, type Server } from 'node:http'
 import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { chromium, type Browser } from 'playwright-core'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import {
+  revisionId,
+  type ArtifactByteSource,
+  type AssetInput,
+  type Codec,
+  type ContributionContext,
+  type ModelSceneSource,
+  type ResourceBudget,
+} from '@modkitx-x3/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const browserModule = join(repoRoot, 'extensions', 'common', 'rendering-3d', 'src', 'browser.js')
+const fixtureRoot = join(repoRoot, 'packages', 'testkit', 'test', 'fixtures', 'mk2-synthetic')
 const chromeCandidates = [
   process.env['CHROME_PATH'],
   'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
@@ -18,6 +29,116 @@ const chromeCandidates = [
 let browser: Browser
 let server: Server
 let origin = ''
+
+const codecBudget: ResourceBudget = {
+  maxInputBytes: 10_000_000n,
+  maxDepth: 64,
+  maxNodes: 100_000,
+  maxScalarBytes: 10_000_000,
+  maxDiagnostics: 100,
+}
+const codecContext: ContributionContext = {
+  budgets: codecBudget,
+  diagnostics: { report: () => undefined },
+  contracts: {
+    async resolve() {
+      throw new Error('browser renderer fixtures have no service dependency')
+    },
+    async resolveUnknown() {
+      throw new Error('browser renderer fixtures have no foreign service dependency')
+    },
+  },
+}
+
+function inputFor(name: string, bytes: Uint8Array): AssetInput {
+  const uri = `memory://browser-rendering/${name}`
+  const source: ArtifactByteSource = {
+    kind: 'bytes',
+    ref: { id: uri, uri },
+    revision: revisionId(`content-hash.sha256:browser-rendering-${name}`),
+    size: BigInt(bytes.byteLength),
+    async read(offset, length, signal) {
+      signal?.throwIfAborted()
+      return bytes.slice(Number(offset), Number(offset) + length)
+    },
+    async *stream() {
+      yield bytes
+    },
+  }
+  const binding = {
+    sourceKind: 'candidate' as const,
+    bindingId: 'content',
+    role: 'content',
+    ownership: 'owned' as const,
+    source: source.ref,
+    revision: source.revision,
+  }
+  return {
+    originKind: 'single',
+    bindings: [binding],
+    primaryBindingId: binding.bindingId,
+    revisions: {
+      topology: 'single',
+      revision: source.revision,
+      bindings: [{ bindingId: binding.bindingId, revision: source.revision }],
+      compositionFingerprint: name,
+    },
+    bindingsFor: () => [],
+    async openBinding() {
+      return { value: source, release: async () => undefined }
+    },
+  }
+}
+
+const modelFixtures = [
+  {
+    format: 'w3x',
+    codec: join(repoRoot, 'extensions', 'ea', 'models', 'src', 'sage-w3x', 'codec.js'),
+    sample: 'minimal.sage.w3x',
+    primitiveId: 'w3x-primitive-0',
+    viewProjection: [1.6, 0, 0, 0, 0, 0, 1, 0, 0, -1.6, 0, 0, -0.8, -0.8, 0, 1],
+  },
+  {
+    format: 'w3d',
+    codec: join(repoRoot, 'extensions', 'ea', 'models', 'src', 'westwood-w3d', 'codec.js'),
+    sample: 'minimal.westwood.w3d',
+    primitiveId: 'w3d-primitive-0',
+    viewProjection: [1.6, 0, 0, 0, 0, 0, 1, 0, 0, -1.6, 0, 0, -0.8, -0.8, 0, 1],
+  },
+  {
+    format: 'vxl',
+    codec: join(repoRoot, 'extensions', 'ea', 'tiberian-sun', 'src', 'red-alert2-vxl', 'codec.js'),
+    sample: 'minimal.ra2.vxl',
+    primitiveId: 'vxl-primitive-0-0',
+    viewProjection: [1.6, 0, 0, 0, 0, 1.6, 0, 0, 0, 0, 0.1, 0, -0.8, -0.8, 0, 1],
+  },
+] as const
+
+async function decodedFixture(fixture: (typeof modelFixtures)[number]) {
+  const codecModule = (await import(pathToFileURL(fixture.codec).href)) as {
+    createCodec(context: ContributionContext): Codec
+  }
+  const bytes = new Uint8Array(await readFile(join(fixtureRoot, fixture.sample)))
+  const session = await codecModule
+    .createCodec(codecContext)
+    .open(inputFor(fixture.sample, bytes), 'inspect', codecBudget)
+  const lease = await session.dataSource('common.view/model-scene-source', 1)
+  try {
+    const model = lease.value as ModelSceneSource
+    if (model.primitive === undefined) throw new TypeError(`${fixture.format} has no primitive API`)
+    const primitive = await model.primitive(fixture.primitiveId, { maxBytes: 10_000_000 })
+    if (primitive.indices === undefined) throw new TypeError(`${fixture.format} has no indices`)
+    return {
+      positions: [...primitive.positions],
+      indices: [...primitive.indices],
+      viewProjection: [...fixture.viewProjection],
+      triangles: primitive.indices.length / 3,
+    }
+  } finally {
+    await lease.release()
+    await session.dispose()
+  }
+}
 
 beforeAll(async () => {
   const source = (await readFile(browserModule, 'utf8')).replace(
@@ -37,21 +158,21 @@ beforeAll(async () => {
     if (request.url === '/worker.js') {
       response.end(`
         import { renderBrowser } from './browser.js'
-        const identity = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1])
-        self.onmessage = async () => {
+        self.onmessage = async event => {
           try {
+            const input = event.data
             const frame = await renderBrowser({
               scene: {
                 materials: [{ id: 'red', baseColor: [1, 0, 0, 1] }],
                 primitives: [{
                   id: 'browser-triangle',
                   topology: 'triangles',
-                  positions: new Float32Array([-0.8, -0.8, 0, 0.8, -0.8, 0, 0, 0.8, 0]),
-                  indices: new Uint32Array([0, 1, 2]),
+                  positions: new Float32Array(input.positions),
+                  indices: new Uint32Array(input.indices),
                   materialId: 'red',
                 }],
               },
-              camera: { viewProjection: identity },
+              camera: { viewProjection: new Float32Array(input.viewProjection) },
               viewport: { width: 32, height: 32 },
               clearColor: [0, 0, 0, 1],
               outputKind: 'rgba8',
@@ -97,36 +218,42 @@ afterAll(async () => {
 })
 
 describe('browser WebGL scene renderer', () => {
-  it('renders typed geometry inside a real browser worker', async () => {
-    const page = await browser.newPage()
-    await page.goto(origin)
-    const result = await page.evaluate(
-      () =>
-        new Promise<Record<string, unknown>>((resolveResult, reject) => {
-          const worker = new Worker('/worker.js', { type: 'module' })
-          worker.onerror = event => reject(new Error(event.message))
-          worker.onmessage = event => {
-            worker.terminate()
-            resolveResult(event.data as Record<string, unknown>)
-          }
-          worker.postMessage('render')
-        }),
-    )
-    expect(result).not.toHaveProperty('error')
-    expect(result).toMatchObject({
-      outputKind: 'rgba8',
-      width: 32,
-      height: 32,
-      diagnostics: [],
-      statistics: { primitives: 1, triangles: 1 },
-    })
-    const statistics = result['statistics']
-    if (typeof statistics !== 'object' || statistics === null || !('fragments' in statistics)) {
-      throw new Error('browser renderer returned no fragment statistics')
-    }
-    expect(result['redPixels']).toBe(statistics.fragments)
-    expect(result['redPixels']).toEqual(expect.any(Number))
-    expect(result['redPixels']).not.toBe(0)
-    await page.close()
-  }, 30_000)
+  it.each(modelFixtures)(
+    'renders decoded $format geometry inside a real browser worker',
+    async fixture => {
+      const geometry = await decodedFixture(fixture)
+      const page = await browser.newPage()
+      await page.goto(origin)
+      const result = await page.evaluate(
+        input =>
+          new Promise<Record<string, unknown>>((resolveResult, reject) => {
+            const worker = new Worker('/worker.js', { type: 'module' })
+            worker.onerror = event => reject(new Error(event.message))
+            worker.onmessage = event => {
+              worker.terminate()
+              resolveResult(event.data as Record<string, unknown>)
+            }
+            worker.postMessage(input)
+          }),
+        geometry,
+      )
+      expect(result).not.toHaveProperty('error')
+      expect(result).toMatchObject({
+        outputKind: 'rgba8',
+        width: 32,
+        height: 32,
+        diagnostics: [],
+        statistics: { primitives: 1, triangles: geometry.triangles },
+      })
+      const statistics = result['statistics']
+      if (typeof statistics !== 'object' || statistics === null || !('fragments' in statistics)) {
+        throw new Error('browser renderer returned no fragment statistics')
+      }
+      expect(result['redPixels']).toBe(statistics.fragments)
+      expect(result['redPixels']).toEqual(expect.any(Number))
+      expect(result['redPixels']).not.toBe(0)
+      await page.close()
+    },
+    30_000,
+  )
 })
