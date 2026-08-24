@@ -5,6 +5,14 @@ import {
 } from '@modkitx-x3/codec-kit'
 
 const ID = 'org.modkitx/m3'
+const TEXTURE_REQUIREMENT = 'textures'
+/** Bytes `planInput` reads from the front of the file to find its string table. */
+const PLAN_SCAN_BYTES = 512 * 1024
+const MAX_TEXTURE_REFERENCES = 64
+/** A reference must be a relative asset path; anything naming a location is refused. */
+const LOCATION_LIKE = /^[A-Za-z]:|^[\\/]|(?:^|[\\/])\.\.(?:[\\/]|$)|^[a-z][a-z0-9+.-]*:/u
+const TEXTURE_FILE = /\.(?:dds|tga)$/iu
+
 const IDENTITY = Object.freeze([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
 
 function viewOf(bytes) {
@@ -121,10 +129,124 @@ async function geometryOf(bytes, budget) {
   return decodeM3Geometry(bytes, budget)
 }
 
+/**
+ * Texture paths an M3 names, read from its own `CHAR` string table.
+ *
+ * M3 keeps every string in `CHAR` sections and points at them from `LAYR` entries. Following that
+ * indirection means decoding the layer records; reading the string table does not, and the paths
+ * are unambiguous on their own — `Assets/Textures/SM_HML_Artifact_diff512.dds` is a texture
+ * reference whichever layer points at it. So this walks the section index (fixed-size headers, no
+ * record decoding) and collects the strings that name a texture file.
+ *
+ * These are *paths*, not bare names, and that matters on the host side too: the resolver matches a
+ * pattern containing `/` against the whole logical id and derives a listing prefix from it, so a
+ * container with hundreds of thousands of entries is searched by directory instead of scanned.
+ */
+function scanTextureReferences(bytes) {
+  const empty = Object.freeze({ names: Object.freeze([]), truncated: true })
+  const tag = bytes.byteLength >= 4 ? reversedTag(bytes, 0) : ''
+  if (tag !== 'MD33' && tag !== 'MD34') return empty
+  const headerBytes = tag === 'MD33' ? 20 : 24
+  if (bytes.byteLength < headerBytes) return empty
+  const view = viewOf(bytes)
+  const indexOffset = view.getUint32(4, true)
+  const indexCount = view.getUint32(8, true)
+  const indexBytes = indexCount * 16
+  if (
+    !Number.isSafeInteger(indexBytes) ||
+    indexOffset < headerBytes ||
+    indexOffset + indexBytes > bytes.byteLength
+  ) {
+    // the scan window cut the index, or the file is malformed: declare nothing rather than guess
+    return empty
+  }
+  const sections = []
+  for (let index = 0; index < indexCount; index += 1) {
+    const offset = indexOffset + index * 16
+    sections.push({ tag: reversedTag(bytes, offset), offset: view.getUint32(offset + 4, true) })
+  }
+  const bounds = [...new Set([...sections.map(section => section.offset), indexOffset])]
+    .filter(offset => offset >= 0 && offset <= bytes.byteLength)
+    .sort((left, right) => left - right)
+  const decoder = new TextDecoder('latin1')
+  const names = []
+  const seen = new Set()
+  let truncated = false
+  for (const section of sections) {
+    if (section.tag !== 'CHAR' || section.offset > bytes.byteLength) continue
+    const end = bounds.find(offset => offset > section.offset) ?? bytes.byteLength
+    for (const part of decoder.decode(bytes.subarray(section.offset, end)).split('\u0000')) {
+      const value = part.trim()
+      if (!TEXTURE_FILE.test(value) || LOCATION_LIKE.test(value)) continue
+      const normalized = value.split(String.fromCharCode(92)).join('/')
+      const key = normalized.toLowerCase()
+      if (seen.has(key)) continue
+      if (names.length >= MAX_TEXTURE_REFERENCES) {
+        truncated = true
+        break
+      }
+      seen.add(key)
+      names.push(normalized)
+    }
+  }
+  return Object.freeze({ names: Object.freeze(names), truncated })
+}
+
+/** Reads the texture bindings the host resolved; the codec binds them, it does not decode them. */
+async function readTextureBindings(input, signal) {
+  const bindings = input.bindingsFor?.(TEXTURE_REQUIREMENT) ?? []
+  const resolved = []
+  for (const binding of bindings) {
+    const lease = await input.openBinding(binding.bindingId, signal)
+    try {
+      if (lease.value.kind !== 'bytes') continue
+      resolved.push(
+        Object.freeze({
+          bindingId: binding.bindingId,
+          uri: binding.source.uri,
+          bytes: Number(lease.value.size ?? 0n),
+        }),
+      )
+    } finally {
+      await lease.release()
+    }
+  }
+  return Object.freeze(resolved)
+}
+
 const definition = Object.freeze({
   id: ID,
   version: '1.0.0',
   format: Object.freeze({ id: 'm3', label: 'StarCraft II M3/M3A' }),
+  async planInput(source, _detection, signal) {
+    const size = Number(source.size ?? 0n)
+    const window = Math.min(size, PLAN_SCAN_BYTES)
+    const bytes = window === 0 ? new Uint8Array(0) : await source.read(0n, window, signal)
+    const scan = scanTextureReferences(bytes)
+    if (scan.names.length === 0) {
+      return Object.freeze({
+        originKind: 'single',
+        candidate: Object.freeze({ bindingId: 'content', role: 'content', ownership: 'owned' }),
+        requirements: Object.freeze([]),
+      })
+    }
+    return Object.freeze({
+      originKind: 'bundle',
+      candidate: Object.freeze({ bindingId: 'content', role: 'content', ownership: 'owned' }),
+      requirements: Object.freeze([
+        Object.freeze({
+          id: TEXTURE_REQUIREMENT,
+          role: 'texture',
+          ownership: 'companion',
+          patterns: Object.freeze([...scan.names]),
+          scopes: Object.freeze(['sibling-directory', 'current-mount', 'enclosing-container']),
+          // an M3 whose textures ship in another mod layer is a complete, readable model
+          cardinality: 'many',
+          required: false,
+        }),
+      ]),
+    })
+  },
   async detect(prefix) {
     const tag = prefix.byteLength >= 4 ? reversedTag(prefix, 0) : ''
     return tag === 'MD33' || tag === 'MD34'
@@ -134,6 +256,8 @@ const definition = Object.freeze({
   async inspect(bytes, context) {
     const model = parseM3(bytes, context.budget.maxNodes)
     const geometry = await geometryOf(bytes, context.budget)
+    const references = scanTextureReferences(bytes)
+    const boundTextures = await readTextureBindings(context.input, context.signal)
     const tree = createTreeDataSource({
       kind: 'model',
       label: model.tag,
@@ -156,6 +280,16 @@ const definition = Object.freeze({
         container: model.tag,
         sections: model.sections.length,
         sectionTags: [...new Set(model.sections.map(section => section.tag))],
+        textureReferences: references.names.map(value => ({
+          value,
+          // 'companion' once the host bound a file for it; a reference is published either way
+          provenance: boundTextures.length > 0 ? 'companion' : 'reference-only',
+        })),
+        textureBindings: boundTextures.map(item => ({
+          bindingId: item.bindingId,
+          bytes: item.bytes,
+          provenance: 'companion',
+        })),
         geometryAccess,
         nodes: info.nodes,
         meshes: info.meshes,
@@ -201,10 +335,21 @@ const definition = Object.freeze({
         'common.view/model-scene-source': scene,
       },
       maxDecodedBytes: BigInt(Math.max(bytes.byteLength, geometry?.decodedBytes ?? 0)),
+      companions: [
+        {
+          id: TEXTURE_REQUIREMENT,
+          role: 'texture',
+          cardinality: 'many',
+          required: false,
+          ...(boundTextures.length === 0
+            ? { state: 'missing' }
+            : { state: 'resolved', bindingIds: boundTextures.map(item => item.bindingId) }),
+        },
+      ],
       unsupportedFeatures: [
         ...(geometryAccess === 'decoded' ? [] : ['decoded-geometry-buffers']),
         'materials',
-        'textures',
+        'texture-decoding',
         'skeleton',
         'animations',
         'external-m3a-sidecars',

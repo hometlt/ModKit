@@ -29,7 +29,7 @@
   "spec": {
     "formatRefs": [{ "formatId": "m3", "label": "StarCraft II M3/M3A" }],
     "roles": ["media"],
-    "sourceTopology": "single",
+    "sourceTopology": "bundle",
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "full", "export"],
     "match": {
@@ -39,6 +39,15 @@
         { "from": "start", "offset": 0, "bytesHex": "3433444d" }
       ]
     },
+    "companions": [
+      {
+        "id": "textures",
+        "role": "texture",
+        "required": false,
+        "patterns": ["*.dds"],
+        "searchScopes": ["sibling-directory", "current-mount", "enclosing-container"]
+      }
+    ],
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {
