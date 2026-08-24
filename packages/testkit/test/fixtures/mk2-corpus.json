@@ -660,7 +660,7 @@
       "note": "glTF 2.0 binary container; JSON chunk only, no buffer decoding"
     },
     {
-      "extension": "mk2/ea-archives",
+      "extension": "ea/archives",
       "contributionId": "org.modkitx/mix",
       "corpus": "real",
       "sample": "-references/Mixer/ccmix/test_files/ts/tem.mix",

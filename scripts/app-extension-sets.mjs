@@ -202,6 +202,11 @@ export const READY_APP_EXTENSIONS = Object.freeze({
       'org.modkitx/sc2-triggers',
     ]),
   }),
+  'ea-archives': Object.freeze({
+    path: Object.freeze(['ea', 'archives']),
+    coordinate: 'org.modkitx.ea/archives',
+    contributions: Object.freeze(['org.modkitx/mix']),
+  }),
   'mk2-ea-sage': Object.freeze({
     path: Object.freeze(['mk2', 'ea-sage']),
     coordinate: 'org.modkitx.ea/sage',
@@ -239,6 +244,7 @@ const mk2Extended = Object.freeze([
   'blizzard-starcraft2',
   'archives',
   'images',
+  'ea-archives',
   'mk2-ea-sage',
 ])
 
