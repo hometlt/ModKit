@@ -211,7 +211,8 @@ function decodeMesh(bytes, chunk, index) {
     const offset = triangles.payloadStart + triangle * 32
     for (let corner = 0; corner < 3; corner += 1) {
       const value = data.getUint32(offset + corner * 4, true)
-      if (value >= vertexCount) throw new TypeError('W3D triangle index is outside the vertex stream')
+      if (value >= vertexCount)
+        throw new TypeError('W3D triangle index is outside the vertex stream')
       indices[triangle * 3 + corner] = value
     }
   }
