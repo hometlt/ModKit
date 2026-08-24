@@ -451,8 +451,9 @@ describe('MK2 → MK3 converter (OPUS-MK2-01 task A, OPUS-MK2-02 tasks D/D2/E)',
         }
       }
     }
-    // OPUS-MK2-01 definition of done: at least 100 mechanical v1 manifests convert validly.
-    expect(contributions).toBeGreaterThanOrEqual(100)
+    // Block 8 moved 18 valid contributions into domain-owned roots. Keep the remaining
+    // converted staging tree ratcheted while check-mk2-ports guards all 168 ports globally.
+    expect(contributions).toBeGreaterThanOrEqual(88)
   })
 
   it('the committed tree carries notes per extension whose port states match the modules', () => {
