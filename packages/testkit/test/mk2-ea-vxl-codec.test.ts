@@ -82,7 +82,12 @@ function input(value: ArtifactByteSource): AssetInput {
     },
     bindingsFor: () => [],
     async openBinding() {
-      return { value, async release() {} }
+      return {
+        value,
+        async release() {
+          return undefined
+        },
+      }
     },
   }
 }
