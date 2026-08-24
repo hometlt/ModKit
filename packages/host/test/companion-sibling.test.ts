@@ -155,8 +155,9 @@ describe('sibling companion resolution, end to end through the Node path opener'
     expect(refusal?.message).toContain('motion')
     expect(refusal?.message).toContain('animation')
     expect(refusal?.message).toContain('sibling-directory')
-    // and nothing was substituted: there is no opened session and no invented animation
-    expect(snapshot.candidates.some(item => item.state === 'selected')).toBe(false)
+    // and nothing was substituted: no candidate was selected, so no invented animation exists
+    const candidates = snapshot.candidates as readonly { readonly state: string }[]
+    expect(candidates.some(item => item.state === 'selected')).toBe(false)
   })
 
   it('opens without the optional companion and says the capability is unavailable', async () => {

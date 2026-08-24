@@ -12,12 +12,19 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { CANCELLED_CODE, isModkitError, throwIfAborted, type Diagnostic } from '@modkitx-x3/core'
+import {
+  CANCELLED_CODE,
+  isModkitError,
+  throwIfAborted,
+  traitId,
+  type Diagnostic,
+} from '@modkitx-x3/core'
 import {
   revisionId,
   type ArtifactByteSource,
   type ArtifactNamespaceSource,
   type ArtifactSource,
+  type AssetInput,
   type AssetInputRequirement,
   type AssetNamespace,
   type DetectionResult,
@@ -39,6 +46,7 @@ import {
   COMPANION_TRAIT_PROBE_UNAVAILABLE,
   COMPANION_UNAVAILABLE,
   createCompanionInputResolver,
+  type CompanionInputResolverOptions,
   createSignatureTraitProbe,
   type CompanionCaseSensitivity,
   type CompanionOrigin,
@@ -223,7 +231,24 @@ function context(
   return { source, plan, detection, ...(signal === undefined ? {} : { signal }) }
 }
 
-async function codeOf(action: () => Promise<unknown>): Promise<string> {
+/** Every plan in this suite is physical; `openBinding` lives only on that arm of the union. */
+function physical(input: AssetInput): Exclude<AssetInput, { readonly originKind: 'derived' }> {
+  if (input.originKind === 'derived') throw new Error('a physical plan resolved as derived')
+  return input
+}
+
+/** The resolver under test, already narrowed: no case here plans a derived input. */
+function companionResolver(
+  origin: CompanionOrigin,
+  options?: CompanionInputResolverOptions,
+): (
+  request: SubjectInputResolutionContext,
+) => Promise<Exclude<AssetInput, { readonly originKind: 'derived' }>> {
+  const resolve = createCompanionInputResolver(origin, options ?? {})
+  return async request => physical(await resolve(request))
+}
+
+async function codeOf(action: () => unknown): Promise<string> {
   try {
     await action()
   } catch (error) {
@@ -232,7 +257,7 @@ async function codeOf(action: () => Promise<unknown>): Promise<string> {
   return 'no-error'
 }
 
-async function contextOf(action: () => Promise<unknown>): Promise<Record<string, unknown>> {
+async function contextOf(action: () => unknown): Promise<Record<string, unknown>> {
   try {
     await action()
   } catch (error) {
@@ -246,7 +271,7 @@ describe('companion input resolution — the hot path pays nothing', () => {
   it('resolves a single-file plan without enumerating or opening anything', async () => {
     const { origin, counters } = fakeOrigin({ entries: ['primary.hva'] })
     const source = byteSource('primary.vxl')
-    const resolve = createCompanionInputResolver(origin)
+    const resolve = companionResolver(origin)
     const input = await resolve(
       context(
         {
@@ -275,7 +300,7 @@ describe('companion input resolution — the hot path pays nothing', () => {
   it('resolves a namespace plan with no requirements without enumerating the origin', async () => {
     const { origin, counters } = fakeOrigin({ entries: ['a.hva'] })
     const source = namespaceSource('mount')
-    const resolve = createCompanionInputResolver(origin)
+    const resolve = companionResolver(origin)
     const input = await resolve(context({ originKind: 'namespace', requirements: [] }, source))
 
     expect(input.originKind).toBe('namespace')
@@ -291,7 +316,7 @@ describe('companion input resolution — cardinality', () => {
     const { origin, counters } = fakeOrigin({
       entries: ['primary.vxl', 'primary.hva', 'other.txt'],
     })
-    const resolve = createCompanionInputResolver(origin)
+    const resolve = companionResolver(origin)
     const input = await resolve(
       context(
         bundlePlan([
@@ -324,7 +349,7 @@ describe('companion input resolution — cardinality', () => {
 
   it('reports a missing required companion with its id, role and the scopes it checked', async () => {
     const { origin, counters } = fakeOrigin({ entries: ['primary.vxl', 'unrelated.txt'] })
-    const resolve = createCompanionInputResolver(origin)
+    const resolve = companionResolver(origin)
     const failing = () =>
       resolve(
         context(
@@ -348,7 +373,7 @@ describe('companion input resolution — cardinality', () => {
   it('opens without a binding when an optional companion is absent, and names the reason', async () => {
     const reported: Diagnostic[] = []
     const { origin } = fakeOrigin({ entries: ['primary.vxl'] })
-    const resolve = createCompanionInputResolver(origin, {
+    const resolve = companionResolver(origin, {
       onDiagnostic: item => reported.push(item),
     })
     const input = await resolve(
@@ -373,7 +398,7 @@ describe('companion input resolution — cardinality', () => {
     const { origin, counters } = fakeOrigin({
       entries: ['primary.vxl', 'left.hva', 'right.hva'],
     })
-    const resolve = createCompanionInputResolver(origin)
+    const resolve = companionResolver(origin)
     const failing = () =>
       resolve(
         context(
@@ -398,9 +423,7 @@ describe('companion input resolution — cardinality', () => {
     ])
 
     const ids = async (origin: CompanionOrigin): Promise<readonly string[]> => {
-      const input = await createCompanionInputResolver(origin)(
-        context(plan, byteSource('primary.vxl')),
-      )
+      const input = await companionResolver(origin)(context(plan, byteSource('primary.vxl')))
       return input.bindingsFor('motion').map(item => item.bindingId)
     }
 
@@ -412,7 +435,7 @@ describe('companion input resolution — cardinality', () => {
     const { origin } = fakeOrigin({
       entries: ['primary.vxl', 'primary.hva', 'primary.pal', 'spare.pal'],
     })
-    const resolve = createCompanionInputResolver(origin)
+    const resolve = companionResolver(origin)
     const input = await resolve(
       context(
         bundlePlan([
@@ -445,7 +468,7 @@ describe('companion input resolution — cardinality', () => {
 
   it('rejects a plan whose cardinality and requiredness disagree', async () => {
     const { origin } = fakeOrigin({ entries: ['primary.vxl'] })
-    const resolve = createCompanionInputResolver(origin)
+    const resolve = companionResolver(origin)
     const failing = () =>
       resolve(
         context(
@@ -463,7 +486,7 @@ describe('companion input resolution — cardinality', () => {
 
   it('rejects two requirements that share one id', async () => {
     const { origin } = fakeOrigin({ entries: ['primary.vxl'] })
-    const resolve = createCompanionInputResolver(origin)
+    const resolve = companionResolver(origin)
     const failing = () =>
       resolve(
         context(
@@ -481,7 +504,7 @@ describe('companion input resolution — cardinality', () => {
 describe('companion input resolution — scopes', () => {
   it('refuses a required companion whose only scope this origin cannot serve', async () => {
     const { origin, counters } = fakeOrigin({ entries: ['primary.vxl', 'primary.hva'] })
-    const resolve = createCompanionInputResolver(origin)
+    const resolve = companionResolver(origin)
     const failing = () =>
       resolve(
         context(
@@ -512,7 +535,7 @@ describe('companion input resolution — scopes', () => {
   it('names workspace-dependency-layer unavailable when no provider is wired', async () => {
     const reported: Diagnostic[] = []
     const { origin } = fakeOrigin({ entries: ['primary.vxl', 'primary.hva'] })
-    const resolve = createCompanionInputResolver(origin, {
+    const resolve = companionResolver(origin, {
       onDiagnostic: item => reported.push(item),
     })
     const input = await resolve(
@@ -536,7 +559,7 @@ describe('companion input resolution — scopes', () => {
   it('names explicit-user-selection unavailable when the product passed no bindings', async () => {
     const reported: Diagnostic[] = []
     const { origin } = fakeOrigin({ entries: ['primary.vxl', 'primary.hva'] })
-    const resolve = createCompanionInputResolver(origin, {
+    const resolve = companionResolver(origin, {
       onDiagnostic: item => reported.push(item),
     })
     await resolve(
@@ -557,7 +580,7 @@ describe('companion input resolution — scopes', () => {
 
   it('serves a product selection when one was passed, and only the ids it names', async () => {
     const { origin } = fakeOrigin({ entries: ['primary.vxl', 'chosen.hva', 'other.hva'] })
-    const resolve = createCompanionInputResolver(origin, {
+    const resolve = companionResolver(origin, {
       explicitSelections: { motion: ['chosen.hva'] },
     })
     const input = await resolve(
@@ -579,7 +602,7 @@ describe('companion input resolution — scopes', () => {
 
   it('skips the unserved half of a multi-scope requirement and records what it checked', async () => {
     const { origin } = fakeOrigin({ entries: ['primary.vxl', 'primary.hva'] })
-    const resolve = createCompanionInputResolver(origin)
+    const resolve = companionResolver(origin)
     const input = await resolve(
       context(
         bundlePlan([
@@ -607,7 +630,7 @@ describe('companion input resolution — names and patterns', () => {
     ['a drive prefix', 'C:/escape.hva'],
   ])('refuses a candidate carrying %s', async (_label, name) => {
     const { origin } = fakeOrigin({ entries: ['primary.vxl', name] })
-    const resolve = createCompanionInputResolver(origin)
+    const resolve = companionResolver(origin)
     expect(
       await codeOf(() =>
         resolve(
@@ -630,7 +653,7 @@ describe('companion input resolution — names and patterns', () => {
     ['nothing at all', ''],
   ])('refuses a pattern with %s', async (_label, pattern) => {
     const { origin, counters } = fakeOrigin({ entries: ['primary.vxl', 'primary.hva'] })
-    const resolve = createCompanionInputResolver(origin)
+    const resolve = companionResolver(origin)
     expect(
       await codeOf(() =>
         resolve(
@@ -647,16 +670,15 @@ describe('companion input resolution — names and patterns', () => {
 
   it('refuses a requirement that declares no patterns at all', async () => {
     const { origin } = fakeOrigin({ entries: ['primary.vxl', 'primary.hva'] })
-    const resolve = createCompanionInputResolver(origin)
+    const resolve = companionResolver(origin)
+    // the key is absent, not undefined: `patterns` is optional in the ABI, and omitting it is the
+    // widest possible declaration — which is exactly what must be refused
+    const { patterns, ...unpatterned } = requirement({ id: 'motion', role: 'animation' })
+    expect(patterns).toBeDefined()
     expect(
       await codeOf(() =>
         resolve(
-          context(
-            bundlePlan([
-              { ...requirement({ id: 'motion', role: 'animation' }), patterns: undefined },
-            ]),
-            byteSource('primary.vxl'),
-          ),
+          context(bundlePlan([unpatterned as AssetInputRequirement]), byteSource('primary.vxl')),
         ),
       ),
     ).toBe(COMPANION_PATTERN_INVALID)
@@ -667,7 +689,7 @@ describe('companion input resolution — names and patterns', () => {
       entries: ['primary.vxl', 'Sample.hva', 'sample.hva'],
       caseSensitivity: 'insensitive',
     })
-    const resolve = createCompanionInputResolver(origin)
+    const resolve = companionResolver(origin)
     const input = await resolve(
       context(
         bundlePlan([
@@ -685,7 +707,7 @@ describe('companion input resolution — names and patterns', () => {
       entries: ['primary.vxl', 'Sample.hva', 'sample.hva'],
       caseSensitivity: 'sensitive',
     })
-    const resolve = createCompanionInputResolver(origin)
+    const resolve = companionResolver(origin)
     expect(
       await codeOf(() =>
         resolve(
@@ -705,7 +727,7 @@ describe('companion input resolution — names and patterns', () => {
       entries: ['primary.vxl', 'PRIMARY.HVA'],
       caseSensitivity: 'insensitive',
     })
-    const resolve = createCompanionInputResolver(origin)
+    const resolve = companionResolver(origin)
     const input = await resolve(
       context(
         bundlePlan([
@@ -732,14 +754,14 @@ describe('companion input resolution — expected traits', () => {
     const bytesFor = (logicalId: string): Uint8Array =>
       new Uint8Array([logicalId === 'good.hva' ? 1 : 9])
     const { origin, counters } = fakeOrigin({ entries, bytesFor })
-    const resolve = createCompanionInputResolver(origin, { traitProbe: acceptFirstByte(1) })
+    const resolve = companionResolver(origin, { traitProbe: acceptFirstByte(1) })
     const input = await resolve(
       context(
         bundlePlan([
           requirement({
             id: 'motion',
             role: 'animation',
-            expected: { all: [{ id: 'model.animation' }] },
+            expected: { all: [{ id: traitId('model.animations') }] },
             cardinality: 'one',
             required: true,
           }),
@@ -762,7 +784,7 @@ describe('companion input resolution — expected traits', () => {
       entries: ['primary.vxl', 'bad.hva'],
       bytesFor: () => new Uint8Array([9]),
     })
-    const resolve = createCompanionInputResolver(origin, {
+    const resolve = companionResolver(origin, {
       traitProbe: acceptFirstByte(1),
       onDiagnostic: item => reported.push(item),
     })
@@ -772,7 +794,7 @@ describe('companion input resolution — expected traits', () => {
           requirement({
             id: 'motion',
             role: 'animation',
-            expected: { all: [{ id: 'model.animation' }] },
+            expected: { all: [{ id: traitId('model.animations') }] },
           }),
         ]),
         byteSource('primary.vxl'),
@@ -791,7 +813,7 @@ describe('companion input resolution — expected traits', () => {
 
   it('fails closed when expected traits are declared and no host probe is wired', async () => {
     const { origin, counters } = fakeOrigin({ entries: ['primary.vxl', 'primary.hva'] })
-    const resolve = createCompanionInputResolver(origin)
+    const resolve = companionResolver(origin)
     expect(
       await codeOf(() =>
         resolve(
@@ -800,7 +822,7 @@ describe('companion input resolution — expected traits', () => {
               requirement({
                 id: 'motion',
                 role: 'animation',
-                expected: { all: [{ id: 'model.animation' }] },
+                expected: { all: [{ id: traitId('model.animations') }] },
               }),
             ]),
             byteSource('primary.vxl'),
@@ -831,7 +853,7 @@ describe('companion input resolution — expected traits', () => {
       bytesFor: logicalId => (logicalId === 'skin.bin' ? png : noise),
     })
     const probe = createSignatureTraitProbe(inventory)
-    const resolve = createCompanionInputResolver(origin, { traitProbe: probe })
+    const resolve = companionResolver(origin, { traitProbe: probe })
     const resolved = await resolve(
       context(
         bundlePlan([
@@ -839,7 +861,7 @@ describe('companion input resolution — expected traits', () => {
             id: 'skin',
             role: 'texture',
             patterns: ['*.bin'],
-            expected: { all: [{ id: 'image.raster' }] },
+            expected: { all: [{ id: traitId('image.raster') }] },
             cardinality: 'one',
             required: true,
           }),
@@ -855,14 +877,14 @@ describe('companion input resolution — expected traits', () => {
     })
     expect(
       await codeOf(() =>
-        createCompanionInputResolver(stateConstrained.origin, { traitProbe: probe })(
+        companionResolver(stateConstrained.origin, { traitProbe: probe })(
           context(
             bundlePlan([
               requirement({
                 id: 'skin',
                 role: 'texture',
                 patterns: ['*.bin'],
-                expected: { all: [{ id: 'image.raster', states: ['available'] }] },
+                expected: { all: [{ id: traitId('image.raster'), states: ['available'] }] },
                 cardinality: 'one',
                 required: true,
               }),
@@ -879,7 +901,7 @@ describe('companion input resolution — budgets, cancellation and leases', () =
   it('stops enumerating at its entry limit instead of walking a large directory', async () => {
     const entries = ['primary.vxl', ...Array.from({ length: 20 }, (_, index) => `f${index}.hva`)]
     const { origin, counters } = fakeOrigin({ entries })
-    const resolve = createCompanionInputResolver(origin, { limits: { maxEntries: 4 } })
+    const resolve = companionResolver(origin, { limits: { maxEntries: 4 } })
     const failing = () =>
       resolve(
         context(
@@ -905,7 +927,7 @@ describe('companion input resolution — budgets, cancellation and leases', () =
       for (let index = 0; index < 8; index += 1) await request.source.read(0n, 512)
       return true
     }
-    const resolve = createCompanionInputResolver(origin, {
+    const resolve = companionResolver(origin, {
       traitProbe: greedy,
       limits: { maxProbeBytes: 1024 },
     })
@@ -916,7 +938,7 @@ describe('companion input resolution — budgets, cancellation and leases', () =
             requirement({
               id: 'motion',
               role: 'animation',
-              expected: { all: [{ id: 'model.animation' }] },
+              expected: { all: [{ id: traitId('model.animations') }] },
               cardinality: 'one',
               required: true,
             }),
@@ -935,7 +957,7 @@ describe('companion input resolution — budgets, cancellation and leases', () =
   it('stops at its binding limit', async () => {
     const entries = ['primary.vxl', ...Array.from({ length: 6 }, (_, index) => `f${index}.hva`)]
     const { origin, counters } = fakeOrigin({ entries })
-    const resolve = createCompanionInputResolver(origin, { limits: { maxBindings: 2 } })
+    const resolve = companionResolver(origin, { limits: { maxBindings: 2 } })
     expect(
       await codeOf(() =>
         resolve(
@@ -959,7 +981,7 @@ describe('companion input resolution — budgets, cancellation and leases', () =
   it('gives up at its deadline', async () => {
     const { origin } = fakeOrigin({ entries: ['primary.vxl', 'primary.hva'] })
     let clock = 0
-    const resolve = createCompanionInputResolver(origin, {
+    const resolve = companionResolver(origin, {
       deadlineMs: 5,
       now: () => {
         clock += 10
@@ -987,7 +1009,7 @@ describe('companion input resolution — budgets, cancellation and leases', () =
         if (index === 1) controller.abort()
       },
     })
-    const resolve = createCompanionInputResolver(origin)
+    const resolve = companionResolver(origin)
     expect(
       await codeOf(() =>
         resolve(
@@ -1018,7 +1040,7 @@ describe('companion input resolution — budgets, cancellation and leases', () =
         if (index === 0) controller.abort()
       },
     })
-    const resolve = createCompanionInputResolver(origin)
+    const resolve = companionResolver(origin)
     expect(
       await codeOf(() =>
         resolve(
@@ -1043,7 +1065,7 @@ describe('companion input resolution — budgets, cancellation and leases', () =
 
   it('refuses an unknown binding id and cancels an open through the resolved input', async () => {
     const { origin, counters } = fakeOrigin({ entries: ['primary.vxl', 'primary.hva'] })
-    const resolve = createCompanionInputResolver(origin)
+    const resolve = companionResolver(origin)
     const input = await resolve(
       context(
         bundlePlan([
