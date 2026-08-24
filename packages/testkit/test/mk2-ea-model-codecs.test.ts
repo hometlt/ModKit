@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -17,6 +18,7 @@ type CodecId = 'sage-w3x' | 'westwood-w3d'
 const root = join(import.meta.dirname, '..', '..', '..')
 const extension = join(root, 'extensions', 'ea', 'models')
 const fixtures = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
+const realW3xPath = process.env.MODKITX_W3X_PATH?.trim()
 const budget: ResourceBudget = {
   maxInputBytes: 1_000_000n,
   maxDepth: 32,
@@ -102,7 +104,7 @@ async function inspect(session: Awaited<ReturnType<typeof open>>) {
 }
 
 describe('ported EA model codecs', () => {
-  it('inventories W3X authored reference planes without claiming decoded geometry', async () => {
+  it('decodes a basis-converted W3X triangle with normals, UVs, material, and bounds', async () => {
     const session = await open('sage-w3x', await fixture('minimal.sage.w3x'))
     expect(await inspect(session)).toMatchObject({
       format: 'sage-w3x',
@@ -111,17 +113,44 @@ describe('ported EA model codecs', () => {
       declaredMeshes: 1,
       declaredHierarchies: 1,
       declaredAnimations: 1,
+      decodedMeshes: 1,
+      decodedVertices: 3,
+      decodedTriangles: 1,
       textures: ['fixture.dds'],
       includes: ['shared.w3x'],
-      geometryAccess: 'metadata-only',
+      geometryAccess: 'decoded',
     })
     const lease = await session.dataSource('common.view/model-scene-source', 1)
     const model = lease.value as ModelSceneSource
     expect(await model.info()).toMatchObject({
-      meshes: 0,
+      scenes: 1,
+      nodes: 1,
+      meshes: 1,
+      primitives: 1,
+      materials: 1,
       textures: 1,
-      geometryAccess: 'metadata-only',
+      animations: 1,
+      bounds: { min: [0, 0, -1], max: [1, 0, 0] },
+      geometryAccess: 'decoded',
     })
+    const nodes = await model.nodes({ limit: 10 })
+    expect(nodes.items).toMatchObject([{ id: 'w3x-root', meshIds: ['w3x-mesh-0'] }])
+    const meshes = await model.meshes({ limit: 10 })
+    expect(meshes.items).toMatchObject([
+      { id: 'w3x-mesh-0', name: 'FixtureMesh', primitiveIds: ['w3x-primitive-0'] },
+    ])
+    if (model.primitive === undefined) throw new TypeError('W3X primitive access is missing')
+    const primitive = await model.primitive('w3x-primitive-0', { maxBytes: 1_000 })
+    expect(primitive).toMatchObject({
+      topology: 'triangles',
+      materialId: 'w3x-material-0',
+      bounds: { min: [0, 0, -1], max: [1, 0, 0] },
+    })
+    expect([...primitive.positions]).toEqual([0, 0, 0, 1, 0, 0, 0, 0, -1])
+    expect([...(primitive.indices ?? [])]).toEqual([0, 1, 2])
+    expect([...(primitive.normals ?? [])]).toEqual([0, 1, 0, 0, 1, 0, 0, 1, 0])
+    expect([...(primitive.textureCoordinates ?? [])]).toEqual([0, 1, 1, 1, 0, 0])
+    await expect(model.primitive('w3x-primitive-0', { maxBytes: 1 })).rejects.toThrow(/maxBytes/u)
     await lease.release()
     await session.dispose()
   })
@@ -149,11 +178,57 @@ describe('ported EA model codecs', () => {
     await session.dispose()
   })
 
+  it.skipIf(realW3xPath === undefined || !existsSync(realW3xPath))(
+    realW3xPath === undefined
+      ? 'MODKITX_W3X_PATH is not set'
+      : 'decodes geometry from the configured real W3X model',
+    async () => {
+      if (realW3xPath === undefined) throw new TypeError('MODKITX_W3X_PATH is not set')
+      console.info(`[w3x-live] source ${realW3xPath}`)
+      const session = await open('sage-w3x', new Uint8Array(await readFile(realW3xPath)), {
+        ...budget,
+        maxInputBytes: 16_000_000n,
+        maxNodes: 1_000_000,
+        maxScalarBytes: 16_000_000,
+      })
+      const lease = await session.dataSource('common.view/model-scene-source', 1)
+      try {
+        const model = lease.value as ModelSceneSource
+        const info = await model.info()
+        expect(info.geometryAccess).toBe('decoded')
+        expect(info.meshes).toBeGreaterThan(0)
+        expect(info.primitives).toBeGreaterThan(0)
+        const [mesh] = (await model.meshes({ limit: 1 })).items
+        const primitiveId = mesh?.primitiveIds[0]
+        if (primitiveId === undefined || model.primitive === undefined)
+          throw new TypeError('real W3X exposed no primitive')
+        const primitive = await model.primitive(primitiveId, { maxBytes: 16_000_000 })
+        expect(primitive.positions.length).toBeGreaterThan(0)
+        expect(primitive.indices?.length).toBeGreaterThan(0)
+        if (primitive.indices === undefined) throw new TypeError('real W3X has no indices')
+        let maxIndex = 0
+        for (const value of primitive.indices) maxIndex = Math.max(maxIndex, value)
+        expect(maxIndex).toBeLessThan(primitive.positions.length / 3)
+        console.info(
+          `[w3x-live] meshes ${info.meshes}, vertices ${primitive.positions.length / 3}, indices ${primitive.indices?.length ?? 0}`,
+        )
+      } finally {
+        await lease.release()
+        await session.dispose()
+      }
+    },
+    30_000,
+  )
+
   it('rejects malformed XML, chunk overflows, and resource-budget overflow', async () => {
     const w3x = await fixture('minimal.sage.w3x')
     await expect(open('sage-w3x', w3x, { ...budget, maxNodes: 2 })).rejects.toThrow(/maxNodes/u)
     const malformed = new TextEncoder().encode('<AssetDeclaration><W3DMesh/></broken>')
     await expect(open('sage-w3x', malformed)).rejects.toThrow(/not closed/u)
+    const badIndex = new TextEncoder().encode(
+      new TextDecoder().decode(w3x).replace('<V>2</V>', '<V>9</V>'),
+    )
+    await expect(open('sage-w3x', badIndex)).rejects.toThrow(/invalid indices/u)
 
     const w3d = await fixture('minimal.westwood.w3d')
     await expect(open('westwood-w3d', w3d, { ...budget, maxDepth: 0 })).rejects.toThrow(/maxDepth/u)

@@ -1,5 +1,5 @@
-// Hand-ported structural SAGE W3X reader. It validates the XML envelope and inventories authored
-// model references without claiming the MK2 renderer's geometry, skeleton, or FX fidelity.
+// Portable SAGE W3X reader. It validates the XML envelope, decodes the authored triangle-mesh
+// subset, and keeps hierarchy, animation, include, collision, and FX planes explicit as debt.
 
 import {
   createInspectionCodec,
@@ -37,9 +37,163 @@ function elements(source, name) {
   return [...source.matchAll(pattern)].map(match => match[0])
 }
 
+function blocks(source, name) {
+  const pattern = new RegExp(`<${name}\\b([^<>]*?)(?:/\\s*>|>([\\s\\S]*?)</${name}\\s*>)`, 'gu')
+  return [...source.matchAll(pattern)].map(match => ({
+    element: match[0],
+    body: match[2],
+  }))
+}
+
 function attribute(element, name) {
   const match = new RegExp(`\\b${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`, 'u').exec(element)
   return match?.[1] ?? match?.[2]
+}
+
+function finiteAttribute(element, name, label) {
+  const raw = attribute(element, name)
+  const value = raw === undefined ? Number.NaN : Number(raw)
+  if (!Number.isFinite(value)) throw new TypeError(`W3X ${label} has no finite ${name}`)
+  return value
+}
+
+function firstSection(source, name) {
+  return blocks(source, name)[0]?.body
+}
+
+function vectorElements(source, name, dimensions, label) {
+  if (source === undefined) return []
+  return blocks(source, name).map((block, index) => {
+    const axes = ['X', 'Y', 'Z'].slice(0, dimensions)
+    return axes.map(axis => finiteAttribute(block.element, axis, `${label} ${index}`))
+  })
+}
+
+function toUvmVector([x, y, z]) {
+  return [x, z, y === 0 ? 0 : -y]
+}
+
+function normalized(vector) {
+  const length = Math.hypot(...vector)
+  return length === 0 ? [0, 0, 0] : vector.map(value => value / length)
+}
+
+function boundsFor(positions) {
+  const min = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY]
+  const max = [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY]
+  for (let offset = 0; offset < positions.length; offset += 3) {
+    for (let axis = 0; axis < 3; axis += 1) {
+      const value = positions[offset + axis]
+      if (value === undefined) throw new TypeError('W3X position tuple is truncated')
+      min[axis] = Math.min(min[axis], value)
+      max[axis] = Math.max(max[axis], value)
+    }
+  }
+  return Object.freeze({ min: Object.freeze(min), max: Object.freeze(max) })
+}
+
+function unionBounds(meshes) {
+  if (meshes.length === 0) return undefined
+  const min = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY]
+  const max = [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY]
+  for (const mesh of meshes) {
+    for (let axis = 0; axis < 3; axis += 1) {
+      min[axis] = Math.min(min[axis], mesh.primitive.bounds.min[axis])
+      max[axis] = Math.max(max[axis], mesh.primitive.bounds.max[axis])
+    }
+  }
+  return Object.freeze({ min: Object.freeze(min), max: Object.freeze(max) })
+}
+
+function triangleIndices(source, vertexCount, meshName) {
+  if (source === undefined) return new Uint32Array()
+  const result = []
+  for (const [triangleIndex, triangle] of blocks(source, 'T').entries()) {
+    const values = [...(triangle.body ?? '').matchAll(/<V(?:\s[^<>]*?)?>([^<]+)<\/V\s*>/gu)].map(
+      match => Number.parseInt(match[1] ?? '', 10),
+    )
+    if (
+      values.length !== 3 ||
+      values.some(value => !Number.isSafeInteger(value) || value < 0 || value >= vertexCount)
+    ) {
+      throw new TypeError(`W3X mesh ${meshName} triangle ${triangleIndex} has invalid indices`)
+    }
+    result.push(...values)
+  }
+  return Uint32Array.from(result)
+}
+
+function textureReferences(source) {
+  return Object.freeze([
+    ...new Set(
+      blocks(source, 'Texture')
+        .map(block => {
+          const direct =
+            attribute(block.element, 'File') ??
+            attribute(block.element, 'file') ??
+            attribute(block.element, 'id')
+          if (direct !== undefined) return direct
+          return /<Value(?:\s[^<>]*?)?>([^<]+)<\/Value\s*>/u.exec(block.body ?? '')?.[1]?.trim()
+        })
+        .filter(Boolean),
+    ),
+  ])
+}
+
+function decodedMeshes(source) {
+  return blocks(source, 'W3DMesh').flatMap((block, index) => {
+    if (block.body === undefined) return []
+    const name = attribute(block.element, 'id') ?? `W3DMesh_${index}`
+    const rawPositions = vectorElements(
+      firstSection(block.body, 'Vertices'),
+      'V',
+      3,
+      `${name} vertex`,
+    )
+    if (rawPositions.length === 0) return []
+    const positions = Float32Array.from(rawPositions.flatMap(toUvmVector))
+    const indices = triangleIndices(
+      firstSection(block.body, 'Triangles'),
+      rawPositions.length,
+      name,
+    )
+    if (indices.length === 0) return []
+    const rawNormals = vectorElements(firstSection(block.body, 'Normals'), 'N', 3, `${name} normal`)
+    const normals =
+      rawNormals.length === rawPositions.length
+        ? Float32Array.from(rawNormals.flatMap(value => normalized(toUvmVector(value))))
+        : undefined
+    const rawUvs = vectorElements(
+      firstSection(block.body, 'TexCoords'),
+      'T',
+      2,
+      `${name} texture coordinate`,
+    )
+    const textureCoordinates =
+      rawUvs.length === rawPositions.length
+        ? Float32Array.from(rawUvs.flatMap(([u, v]) => [u, 1 - v]))
+        : undefined
+    const meshId = `w3x-mesh-${index}`
+    const primitiveId = `w3x-primitive-${index}`
+    const materialId = `w3x-material-${index}`
+    const bounds = boundsFor(positions)
+    return [
+      Object.freeze({
+        id: meshId,
+        name,
+        primitive: Object.freeze({
+          id: primitiveId,
+          topology: 'triangles',
+          positions,
+          indices,
+          ...(normals === undefined ? {} : { normals }),
+          ...(textureCoordinates === undefined ? {} : { textureCoordinates }),
+          materialId,
+          bounds,
+        }),
+      }),
+    ]
+  })
 }
 
 function parseW3x(bytes, budget) {
@@ -60,14 +214,7 @@ function parseW3x(bytes, budget) {
       (records[name] ?? []).map(element => attribute(element, 'id')).filter(Boolean),
     ),
   )
-  const textures = Object.freeze(
-    (records.Texture ?? [])
-      .map(
-        element =>
-          attribute(element, 'File') ?? attribute(element, 'file') ?? attribute(element, 'id'),
-      )
-      .filter(Boolean),
-  )
+  const textures = textureReferences(source)
   const includes = Object.freeze(
     (records.Include ?? [])
       .map(element => attribute(element, 'source') ?? attribute(element, 'Source'))
@@ -76,32 +223,64 @@ function parseW3x(bytes, budget) {
   const counts = Object.freeze(
     Object.fromEntries(ELEMENTS.map(name => [name, records[name]?.length ?? 0])),
   )
-  return Object.freeze({ ids, textures, includes, counts, total })
+  const meshes = decodedMeshes(source)
+  const geometryNodes = meshes.reduce(
+    (sum, mesh) => sum + mesh.primitive.positions.length / 3 + mesh.primitive.indices.length / 3,
+    0,
+  )
+  if (total + geometryNodes > budget.maxNodes) throw new RangeError('W3X elements exceed maxNodes')
+  const decodedBytes = meshes.reduce(
+    (sum, mesh) =>
+      sum +
+      mesh.primitive.positions.byteLength +
+      mesh.primitive.indices.byteLength +
+      (mesh.primitive.normals?.byteLength ?? 0) +
+      (mesh.primitive.textureCoordinates?.byteLength ?? 0),
+    0,
+  )
+  if (decodedBytes > budget.maxScalarBytes)
+    throw new RangeError('W3X geometry exceeds maxScalarBytes')
+  return Object.freeze({
+    ids,
+    textures,
+    includes,
+    counts,
+    total,
+    meshes,
+    bounds: unionBounds(meshes),
+    decodedBytes,
+  })
 }
 
 function modelSource(parsed) {
+  const animationCount = parsed.counts.W3DAnimation ?? 0
   return createModelSceneSource({
     info: {
       scenes: 1,
       nodes: 1,
-      meshes: 0,
-      primitives: 0,
-      materials: 0,
+      meshes: parsed.meshes.length,
+      primitives: parsed.meshes.length,
+      materials: parsed.meshes.length,
       textures: parsed.textures.length,
-      animations: 0,
-      geometryAccess: 'metadata-only',
+      animations: animationCount,
+      ...(parsed.bounds === undefined ? {} : { bounds: parsed.bounds }),
+      geometryAccess: parsed.meshes.length > 0 ? 'decoded' : 'metadata-only',
     },
     nodes: [
       {
         id: 'w3x-root',
         name: 'SAGE W3X structural root',
         childIds: [],
-        meshIds: [],
+        meshIds: parsed.meshes.map(mesh => mesh.id),
         transform: IDENTITY,
       },
     ],
-    meshes: [],
-    primitives: [],
+    meshes: parsed.meshes.map(mesh => ({
+      id: mesh.id,
+      name: mesh.name,
+      primitiveIds: [mesh.primitive.id],
+    })),
+    primitives: parsed.meshes.map(mesh => mesh.primitive),
   })
 }
 
@@ -127,9 +306,18 @@ const definition = Object.freeze({
         declaredMeshes: meshCount,
         declaredHierarchies: hierarchyCount,
         declaredAnimations: animationCount,
+        decodedMeshes: parsed.meshes.length,
+        decodedVertices: parsed.meshes.reduce(
+          (sum, mesh) => sum + mesh.primitive.positions.length / 3,
+          0,
+        ),
+        decodedTriangles: parsed.meshes.reduce(
+          (sum, mesh) => sum + mesh.primitive.indices.length / 3,
+          0,
+        ),
         textures: parsed.textures,
         includes: parsed.includes,
-        geometryAccess: 'metadata-only',
+        geometryAccess: parsed.meshes.length > 0 ? 'decoded' : 'metadata-only',
       },
       metadata: [
         {
@@ -141,14 +329,21 @@ const definition = Object.freeze({
             { key: 'declaredMeshes', value: meshCount },
             { key: 'declaredHierarchies', value: hierarchyCount },
             { key: 'declaredAnimations', value: animationCount },
+            { key: 'decodedMeshes', value: parsed.meshes.length },
             { key: 'textures', value: parsed.textures.length },
             { key: 'includes', value: parsed.includes.length },
-            { key: 'geometryAccess', value: 'metadata-only' },
+            {
+              key: 'geometryAccess',
+              value: parsed.meshes.length > 0 ? 'decoded' : 'metadata-only',
+            },
           ],
         },
       ],
       traits: [
-        { id: 'model.geometry', parameters: { meshes: meshCount, decoded: false } },
+        {
+          id: 'model.geometry',
+          parameters: { meshes: parsed.meshes.length, decoded: parsed.meshes.length > 0 },
+        },
         ...(parsed.textures.length > 0
           ? [{ id: 'model.textures', parameters: { count: parsed.textures.length } }]
           : []),
@@ -171,9 +366,9 @@ const definition = Object.freeze({
           })),
         }),
       },
-      maxDecodedBytes: bytes.byteLength,
+      maxDecodedBytes: Math.max(bytes.byteLength, parsed.decodedBytes),
       unsupportedFeatures: [
-        'w3x-geometry-decoding',
+        ...(parsed.meshes.length < meshCount ? ['remaining-w3x-geometry-variants'] : []),
         'w3x-skeleton-decoding',
         'w3x-animation-decoding',
         'include-and-companion-resolution',

@@ -1916,7 +1916,7 @@ function emperorXbf() {
   return concat(u32le(1), u32le(0), u32le(textures.byteLength), textures, u32le(0xffffffff))
 }
 
-/** SAGE W3X authored XML shell with each structural reference plane represented once. */
+/** SAGE W3X authored XML with one basis-converted textured triangle. */
 function sageW3x() {
   return ascii(
     [
@@ -1924,10 +1924,29 @@ function sageW3x() {
       '<AssetDeclaration>',
       '  <Includes><Include type="all" source="shared.w3x"/></Includes>',
       '  <W3DContainer id="FixtureContainer"/>',
-      '  <W3DMesh id="FixtureMesh"/>',
+      '  <W3DMesh id="FixtureMesh" GeometryType="Normal">',
+      '    <Vertices>',
+      '      <V X="0" Y="0" Z="0"/>',
+      '      <V X="1" Y="0" Z="0"/>',
+      '      <V X="0" Y="1" Z="0"/>',
+      '    </Vertices>',
+      '    <Normals>',
+      '      <N X="0" Y="0" Z="1"/>',
+      '      <N X="0" Y="0" Z="1"/>',
+      '      <N X="0" Y="0" Z="1"/>',
+      '    </Normals>',
+      '    <TexCoords>',
+      '      <T X="0" Y="0"/>',
+      '      <T X="1" Y="0"/>',
+      '      <T X="0" Y="1"/>',
+      '    </TexCoords>',
+      '    <Triangles><T><V>0</V><V>1</V><V>2</V></T></Triangles>',
+      '    <FXShader ShaderName="Fixture.fx">',
+      '      <Constants><Texture Name="DiffuseTexture"><Value>fixture.dds</Value></Texture></Constants>',
+      '    </FXShader>',
+      '  </W3DMesh>',
       '  <W3DHierarchy id="FixtureHierarchy"/>',
       '  <W3DAnimation id="FixtureAnimation"/>',
-      '  <Texture id="FixtureTexture" File="fixture.dds"/>',
       '</AssetDeclaration>',
       '',
     ].join('\n'),

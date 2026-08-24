@@ -90,8 +90,7 @@
       "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.sage.w3x",
       "x3Extension": "extensions/ea/models",
       "canonicalModule": "extensions/ea/models/codecs/sage-w3x/src/index.ts",
-      "canonicalExport": "sageW3xModelCodec",
-      "allowPoorerReason": "Block 8 M6-M7: the staging W3X fixture exposes metadata before portable geometry parity."
+      "canonicalExport": "sageW3xModelCodec"
     },
     {
       "format": "westwood-w3d",
