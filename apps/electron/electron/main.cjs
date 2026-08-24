@@ -1049,7 +1049,8 @@ async function createWindow() {
   // Renderer findings belong in the same log as the main process ones, otherwise verifying the
   // isolation checks would need a human looking at the window.
   const selfTest = process.argv.includes('--selftest')
-  window.webContents.on('console-message', (_event, _level, message) => {
+  window.webContents.on('console-message', details => {
+    const { message } = details
     console.log(`[renderer] ${message}`)
     /*
      * A self-test run has a last line, and a window that stays open after it forces every harness
