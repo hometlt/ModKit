@@ -3797,7 +3797,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:a924c56f15e9783ec70a14979ff95115fda10c8b74292a8a19551c145ec96f46',
+        artifactDigest: 'sha256:446e65cab88982a05043dd4ad1c300b8ea7361bdabc61dcb2a2e314455be5415',
         fileDigests: {
           'MIGRATION-NOTES-common-images.json':
             'sha256:76c5e4320dbbc9b2e71030063212b4351eb11d409eb69e554749364c33415205',
@@ -3876,7 +3876,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/ico/codec.js':
             'sha256:854e9798a852f7e77a03b65d1b682816436fadc79283cffe5b684ce083139321',
           'src/ico/container.js':
-            'sha256:78b4cffbbe876e633f795770d9846e1b6eaf47738611a37d312934fb73e2d5ed',
+            'sha256:3335064df3564dcb732887f8de7215b1fc4783e78a75921e89501efc37c92a68',
           'src/index.js': 'sha256:bcbc40812fa5dcdb2937b0ff5b617c1483725570302b99f569249ac3c441ce41',
           'src/ktx/codec.js':
             'sha256:1eff44456f555e8e63f6229f1bfcfd27d5df29c124b07b0c6aefd47d20cf145f',
@@ -3902,7 +3902,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:411efbd8aadd7a2edfb335752f8e8bfad1a11452534bd039e227d52f49d6a65a',
         },
         inventoryRecordId:
-          'artifact:sha256:a924c56f15e9783ec70a14979ff95115fda10c8b74292a8a19551c145ec96f46',
+          'artifact:sha256:446e65cab88982a05043dd4ad1c300b8ea7361bdabc61dcb2a2e314455be5415',
       },
       artifactRoot: 'extensions/images/',
       containers: {
