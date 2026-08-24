@@ -459,6 +459,20 @@ export function createCompanionInputResolver(
         context: { limit, value },
       })
     }
+    /*
+     * A refusal is reported *and* thrown. `openSubject` turns a thrown resolver error into a
+     * diagnostic carrying only its code and message, which is enough to know that an open failed
+     * and not enough to know which requirement failed it — so the structured detail (requirement,
+     * role, the scopes actually checked) goes out through the host's own sink first.
+     */
+    const refuse = (
+      code: string,
+      message: string,
+      detail: Readonly<Record<string, unknown>>,
+    ): never => {
+      report?.(diagnostic('error', code, message, [String(detail['requirementId'])], detail))
+      throw new ModkitError({ code, message, context: detail })
+    }
 
     validateRequirements(plan.requirements)
 
@@ -517,11 +531,11 @@ export function createCompanionInputResolver(
               : 'origin-cannot-serve-scope',
         }
         if (requirement.required) {
-          throw new ModkitError({
-            code: COMPANION_SCOPE_UNSUPPORTED,
-            message: `required companion «${requirement.role}» asks only for scopes this origin cannot serve`,
-            context: detail,
-          })
+          refuse(
+            COMPANION_SCOPE_UNSUPPORTED,
+            `required companion «${requirement.role}» (requirement «${requirement.id}») asks only for scopes this origin cannot serve: ${requested.join(', ')}`,
+            detail,
+          )
         }
         report?.(
           diagnostic(
@@ -620,18 +634,18 @@ export function createCompanionInputResolver(
       const singular =
         requirement.cardinality === 'one' || requirement.cardinality === 'zero-or-one'
       if (singular && accepted.length > 1) {
-        throw new ModkitError({
-          code: COMPANION_AMBIGUOUS,
-          message: `companion «${requirement.role}» admits at most one candidate but ${accepted.length} matched`,
-          context: { ...detail, candidates: accepted },
-        })
+        refuse(
+          COMPANION_AMBIGUOUS,
+          `companion «${requirement.role}» (requirement «${requirement.id}») admits at most one candidate but ${accepted.length} matched in ${usable.join(', ')}`,
+          { ...detail, candidates: accepted },
+        )
       }
       if (requirement.required && accepted.length === 0) {
-        throw new ModkitError({
-          code: COMPANION_REQUIRED_MISSING,
-          message: `required companion «${requirement.role}» was not found in any checked scope`,
-          context: detail,
-        })
+        refuse(
+          COMPANION_REQUIRED_MISSING,
+          `required companion «${requirement.role}» (requirement «${requirement.id}») was not found in any checked scope: ${usable.join(', ')}`,
+          detail,
+        )
       }
       if (accepted.length === 0) {
         report?.(

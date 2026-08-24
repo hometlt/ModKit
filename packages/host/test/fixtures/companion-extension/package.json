@@ -1,0 +1,15 @@
+{
+  "name": "companion-sibling-fixture",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "org.example",
+    "id": "companion-sibling",
+    "contributionManifests": [
+      "./contributions/required.json",
+      "./contributions/optional.json"
+    ]
+  }
+}
