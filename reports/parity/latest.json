@@ -7,7 +7,7 @@
   },
   "x3": {
     "root": "C:\\FILES\\SC2Files\\coding\\modkitX3",
-    "sha": "1a2982783d14a2ad740c5b3eda0f00f051ddd518"
+    "sha": "a3099de32bd4da2cfdba6a7bf5cbc03a2c05f389"
   },
   "counts": {
     "total": 69,
@@ -18,9 +18,9 @@
     "failed": 0,
     "comparedReal": 13,
     "comparedSynthetic": 56,
-    "richer": 40,
+    "richer": 41,
     "equal": 11,
-    "poorer": 18,
+    "poorer": 17,
     "incomparable": 0
   },
   "summary": [
@@ -606,8 +606,8 @@
       "kind": "real",
       "contributionId": "org.modkitx.ea/westwood-w3d",
       "state": "compared",
-      "classification": "X3 беднее",
-      "verdict": "poorer"
+      "classification": "X3 богаче",
+      "verdict": "richer"
     },
     {
       "id": "westwood-w3d-real-big-entry",
@@ -819,14 +819,6 @@
       "classification": "X3 беднее",
       "missing": ["common.view/model-scene-source:measurement:materials:0<1"],
       "reason": "The canonical model stack substitutes one synthesised default material when the file declares none (ensureDefaultMaterial / defaultMaterial() / materialNames.push(\"Default\")); the fixture declares zero, so the X3 count is the source fact and the difference is not a missing X3 capability."
-    },
-    {
-      "id": "westwood-w3d-real-env",
-      "format": "westwood-w3d-real",
-      "kind": "real",
-      "classification": "X3 беднее",
-      "missing": ["common.view/model-scene-source:measurement:animations:0<1"],
-      "reason": "X3 publishes no animation channel for the real W3D model while the canonical codec reports one. W3D animation depth is queued for Block 9 step 3."
     }
   ],
   "incomparable": [],
@@ -4500,7 +4492,7 @@
                   "message": "«org.modkitx/text-csv» runs worker-brokered: a crash, hang or protocol violation of this code is isolated from the host, but the worker shares the process — it is not a security sandbox (24 §6.1 SB-1).",
                   "path": ["org.modkitx/text-csv"],
                   "data": {
-                    "grant": "modkit-library:97ebd797-6531-4cd7-b6c6-cdf4576e1c45/org.modkitx/text-csv#portable#probe",
+                    "grant": "modkit-library:ed286b74-4a3e-46cc-ad46-182f80f8aa41/org.modkitx/text-csv#portable#probe",
                     "classes": ["read-source"]
                   }
                 }
@@ -18646,10 +18638,10 @@
         "bytes": 15737,
         "sha256": "2b0546ea7406ae57a38e1efe7a389072746a4ed1063f6ff132e34305cb2e2613"
       },
-      "classification": "X3 беднее",
-      "missing": ["common.view/model-scene-source:measurement:animations:0<1"],
+      "classification": "X3 богаче",
+      "missing": [],
       "extra": [
-        "common.view/model-scene-source:measurement:nodes:1>0",
+        "common.view/model-scene-source:measurement:nodes:2>0",
         "common.view/model-scene-source:measurement:textures:1>0",
         "metadata:textures",
         "operation:asset.validate",
@@ -18661,13 +18653,12 @@
       "sourceComparisons": [
         {
           "contract": "common.view/model-scene-source",
-          "classification": "X3 беднее",
-          "missing": ["measurement:animations:0<1"],
-          "extra": ["measurement:nodes:1>0", "measurement:textures:1>0"]
+          "classification": "X3 богаче",
+          "missing": [],
+          "extra": ["measurement:nodes:2>0", "measurement:textures:1>0"]
         }
       ],
-      "baseline": "X3 беднее",
-      "allowPoorerReason": "X3 publishes no animation channel for the real W3D model while the canonical codec reports one. W3D animation depth is queued for Block 9 step 3.",
+      "baseline": "X3 богаче",
       "canonical": {
         "formatId": "w3d",
         "declaredSources": ["common.view/model-scene-source"],
@@ -18733,13 +18724,13 @@
             "state": "opened",
             "features": ["info", "meshes", "nodes", "primitive"],
             "measurements": {
-              "animations": 0,
+              "animations": 1,
               "decodedGeometry": true,
               "decodedIndices": 864,
               "decodedVertices": 150,
               "materials": 1,
               "meshes": 1,
-              "nodes": 1,
+              "nodes": 2,
               "primitives": 1,
               "scenes": 1,
               "textures": 1
@@ -18780,7 +18771,7 @@
           "source:common.view/tree-data-source"
         ]
       },
-      "verdict": "poorer",
+      "verdict": "richer",
       "planes": [
         {
           "plane": "subject-recognition",
@@ -18799,7 +18790,7 @@
           "state": "compared",
           "verdict": "richer"
         },
-        { "plane": "animation", "state": "compared", "verdict": "poorer" },
+        { "plane": "animation", "state": "compared", "verdict": "equal" },
         {
           "plane": "collision",
           "state": "not-observed",
@@ -18865,13 +18856,13 @@
             "state": "opened",
             "features": ["info", "meshes", "nodes", "primitive"],
             "measurements": {
-              "animations": 0,
+              "animations": 1,
               "decodedGeometry": true,
               "decodedIndices": 864,
               "decodedVertices": 150,
               "materials": 1,
               "meshes": 1,
-              "nodes": 1,
+              "nodes": 2,
               "primitives": 1,
               "scenes": 1,
               "textures": 1
@@ -18892,10 +18883,10 @@
         ]
       },
       "comparison": {
-        "classification": "X3 беднее",
-        "missing": ["common.view/model-scene-source:measurement:animations:0<1"],
+        "classification": "X3 богаче",
+        "missing": [],
         "extra": [
-          "common.view/model-scene-source:measurement:nodes:1>0",
+          "common.view/model-scene-source:measurement:nodes:2>0",
           "common.view/model-scene-source:measurement:textures:1>0",
           "metadata:textures",
           "operation:asset.validate",
@@ -18907,9 +18898,9 @@
         "sources": [
           {
             "contract": "common.view/model-scene-source",
-            "classification": "X3 беднее",
-            "missing": ["measurement:animations:0<1"],
-            "extra": ["measurement:nodes:1>0", "measurement:textures:1>0"]
+            "classification": "X3 богаче",
+            "missing": [],
+            "extra": ["measurement:nodes:2>0", "measurement:textures:1>0"]
           }
         ]
       }
