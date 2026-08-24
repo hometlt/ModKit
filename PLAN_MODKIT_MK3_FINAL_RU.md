@@ -14,14 +14,21 @@
 > отдельно опечатано как часть эталона в блоке 10.
 
 Этот документ заменяет `PLAN_MIGRATION_COMPLETE_RU.md` как программа верхнего уровня.
-Он сохраняет принятый блок 9, исправляет ошибки прежнего плана и доводит очередь до двух
-проверяемых результатов:
+Он сохраняет принятый блок 9, исправляет ошибки прежнего плана и доводит очередь до трёх
+проверяемых результатов в строгом порядке:
 
-1. **Modkit MK3 Product GA** — самостоятельный модульный набор приложений и SDK, который заменяет
-   старый `modkitx` во всех пользовательских сценариях без функциональных регрессий.
-2. **Modkit MK3 + Multiverse GA** — полный UV-контур чтения, записи, проверки и запуска,
-   детерминированный TypeScript runtime, независимая граница для Rust-реализации и работающий
-   play-in-editor.
+1. **Modkit MK3 Focused Product GA** — самостоятельная модульная платформа и шесть приложений.
+   До этого рубежа без пробелов закрываются `common` и выбранные игровые вертикали: StarCraft II;
+   C&C 3 Tiberium Wars, Kane's Wrath и Red Alert 3; Warzone 2100; Spring/Recoil с именованной
+   композицией Beyond All Reason.
+2. **Modkit MK3 + Multiverse 1.0 Focused GA** — полный UV-контур для того же приоритетного профиля,
+   детерминированный TypeScript runtime, независимая граница Rust и работающий play-in-editor.
+3. **Legacy Migration Complete** — после выпуска MK3 и Multiverse закрывается оставшийся long tail,
+   весь функционал старого `modkitx` получает проверенную замену без регрессий, `extensions/mk2`
+   пустеет и legacy переводится из oracle в архив.
+
+Такой разрез фиксирует решение владельца от 2026-08-24: неприоритетные кодеки не блокируют
+реализацию платформы и Multiverse, но не исчезают из реестра и не выдаются за готовые.
 
 `PLAN_SOL_BLOCK9_FINAL_2026-08-24.md` и
 `PLAN_SOL_BLOCK9_EXECUTION_2026-08-24.md` остаются обязательными подробными планами
@@ -33,7 +40,8 @@
 
 ### 0.1. Конечный пользовательский результат
 
-После завершения программы владелец может:
+После Focused GA владелец может делать следующее в приоритетном контуре; после
+`Legacy Migration Complete` тот же контракт распространяется на весь legacy surface:
 
 - открыть поддерживаемую игру, архив, карту, мод, модель, изображение, звук, видео, таблицу данных
   или скрипт в подходящем приложении MK3;
@@ -49,7 +57,17 @@
 - подключать Multiverse независимо от Modkit и заменять TypeScript kernels на совместимые Rust
   kernels через один версионированный протокол.
 
-### 0.2. «Полный перенос» — не копирование каталогов
+### 0.2. Два честных уровня готовности
+
+**Focused GA** требует полного результата только внутри машинно вычисляемого priority closure.
+Там запрещены `missing`, `blocked`, необъяснённый `partial` и скрытые environment skips. Для
+неприоритетной строки допустим `deferred-post-ga`, но только если текущая X3-функция не
+регрессировала, сохранено исходное evidence и назначен post-GA slice.
+
+**Legacy Migration Complete** — глобальный рубеж. На нём `deferred-post-ga` больше недопустим и
+действует требование полного переноса ниже.
+
+### 0.3. «Полный перенос» — не копирование каталогов
 
 Полный перенос означает, что **каждая наблюдаемая возможность** старого modkit получает ровно один
 из следующих финальных исходов:
@@ -61,11 +79,11 @@
 | `relocated-multiverse` | Исполнение принадлежит Multiverse, а MK3 предоставляет интеграцию через публичный adapter.    |
 | `superseded`           | Старый внутренний механизм больше не нужен; указан и проверен заменяющий сценарий.            |
 
-В финальном состоянии запрещены строки `missing`, `partial`,
-`blocked`, `unknown` и `waived-without-replacement`.
+В глобальном финальном состоянии запрещены строки `missing`, `partial`, `blocked`, `unknown`,
+`deferred-post-ga` и `waived-without-replacement`.
 Фраза «не переносим» без проверяемой замены не закрывает строку.
 
-### 0.3. «Без регрессий» — проверяемое утверждение
+### 0.4. «Без регрессий» — проверяемое утверждение
 
 Нулевая регрессия означает одновременно:
 
@@ -82,6 +100,33 @@
    archive или native зависимости.
 
 Допуск benchmark — это только граница измерительного шума, а не разрешение ухудшать продукт.
+
+### 0.5. Зафиксированный приоритет до MK3 + Multiverse 1.0
+
+Priority closure строится генератором, а не ручным списком путей. В него входят:
+
+1. **Все contributions в `extensions/common/**`** и их обязательные зависимости.
+2. **Common documents:** существующие Markdown и CSV; перенос TXT, ODT, ODS, ODP из
+   `mk2/uncommon-documents`; новый ODG как `origin: owner-addition`.
+3. **StarCraft II:** CASC, MPQ, M3 и полный SC2 map/mod/campaign/data/language/replay/save/bank
+   workflow, обнаруженный реальным corpus inventory.
+4. **C&C:** три независимых named-game profiles — `cnc3-tiberium-wars`,
+   `cnc3-kanes-wrath`, `red-alert-3` — и общий доказанный BIG/SAGE dependency closure.
+5. **Warzone 2100:** named game `warzone-2100`, его VFS, карты, models, data, scripts и media.
+6. **Spring/Recoil + BAR:** engine/content formats Spring/Recoil и отдельный named game
+   `beyond-all-reason`; Spring/Recoil не объявляются одной игрой.
+7. Platform, app, authoring, runtime и UV capabilities, необходимые этим профилям.
+
+Все остальные форматы и игры получают `releaseTrack: post-ga`. Они остаются зарегистрированными,
+проходят текущий structural/baseline ratchet и не могут ухудшиться, но их дополнительная
+семантическая глубина не блокирует два Focused GA. Relic, RA2/TS VXL/HVA/PAL, Generals/Zero Hour
+и прочий long tail начинают углубляться только после Multiverse 1.0.
+
+Фраза «формат поддержан» не используется без списка операций. Для каждого codec публикуются
+generated badges Detect/Read/Preview/Edit/Round-trip/Browser/Headless/Fuzzed. Для каждой игры
+отдельно публикуются пять уровней: native inspect/authoring; native→UV; neutral definitions/world;
+deterministic playable subset; native round-trip. Более высокий уровень не подразумевается из
+нижнего и не переносится с другой версии игры.
 
 ---
 
@@ -179,16 +224,56 @@ PWA не обязана имитировать автоматический по
 semantic depth, writers, UI workflows или runtime. Поэтому это исходный ratchet, а не критерий
 готовности продукта.
 
+### 1.8. Авторитетность документов и найденный drift
+
+До переноса нормативных текстов действуют следующие приоритеты:
+
+1. Контракты и целевая архитектура — `../modkitx/docs/architecture/MODKIT_ARCHITECTURE.md`.
+2. Порядок, release scope и критерии этапов — этот документ.
+3. Детали текущего блока — `PLAN_SOL_BLOCK9_FINAL_2026-08-24.md` и execution plan, если они не
+   противоречат пунктам 1–2.
+4. `docs/MK3/**`, coverage ledgers и старые планы — design/evidence inputs, не release authority.
+
+Проверка обнаружила три drift, которые нельзя переносить в реализацию:
+
+- текущие шесть каталогов `packages/` — состояние X3, а не финальный package catalog;
+- поле `covered` в старом coverage ledger означает назначенного владельца/viewer, а не рабочую
+  реализацию и не evidence;
+- примеры extension API и README должны проверяться компиляцией против реального ABI, а не
+  считаться корректными по тексту.
+
+До public extension GA вводится `docs:conformance`: ссылки не битые, scaffold собирается, code
+samples компилируются, manifest examples проходят schema validation, а generated capability
+tables не расходятся с manifests.
+
 ---
 
 ## 2. Конечная архитектура
+
+### 2.0. Простая модель продукта
+
+Modkit — не «папка парсеров», а операционная среда для игровых данных. Приложение просит host
+открыть источник; VFS безопасно даёт байты и архивный namespace; resolver выбирает contribution
+по доказательствам; codec публикует Subject — факты, traits, data sources и доступные operations;
+приложение выбирает совместимый viewer/editor. Ни приложение, ни viewer не угадывают формат.
+
+Extension — независимо устанавливаемая единица возможностей. Она может содержать несколько узких
+contributions: format codec, named-game profile, VFS provider, viewer/editor, writer, language или
+runtime adapter. **Codec не равен extension:** codec понимает одну форму данных; game contribution
+собирает доказанные codecs/providers в конкретную игру; extension является упаковкой и границей
+версии, прав, лицензии и зависимостей.
+
+Multiverse — отдельный детерминированный движок. Он получает neutral UV artifacts через съёмный
+adapter и не импортирует внутренности Modkit. Поэтому новый формат расширяет authoring без
+изменения engine, новая игра собирается как extension без изменения шести apps, а другой runtime
+может заменить Multiverse, реализовав тот же публичный session contract.
 
 ### 2.1. Физическая граница
 
 ```text
 coding/
 ├─ modkitX3/                  # authoring platform, codecs, apps, Multiverse adapter
-│  ├─ packages/              # только core, sdk, vfs, host, ui, testkit
+│  ├─ packages/              # canonical 7+2 publication units
 │  ├─ extensions/            # games, formats, semantics, runtimes, viewers/renderers
 │  └─ apps/                  # шесть leaf composition roots
 ├─ multiverse/               # отдельный engine/spec repository
@@ -219,8 +304,10 @@ simulation -X-> renderer or per-tick format/provider resolution
 
 ### 2.3. Неподвижные правила MK3
 
-1. Шесть текущих product packages — `core`, `sdk`, `vfs`,
-   `host`, `ui`, `testkit` — не разрастаются из-за новых игр.
+1. Канонический каталог — девять publication units: `core`, `sdk`, `vfs`, `host`, `ui`,
+   `runtime`, `testkit`, `lsp`, `xml`. Это **7+2**, а не девять обязательных зависимостей:
+   runtime closure минимального host — только `core + sdk + vfs + host`; `testkit` dev-only;
+   `ui/runtime/lsp/xml` optional по product profile.
 2. Конкретная логика игры, формата, языка, viewer, renderer и runtime живёт в extension.
 3. Codec объявляет requirements; host разрешает filesystem/archive/remote bindings.
 4. App — leaf composition root и не является уникальным владельцем доменной функции.
@@ -230,6 +317,8 @@ simulation -X-> renderer or per-tick format/provider resolution
    назначенные границы.
 8. Proprietary corpora не коммитятся; в репозитории лежат только descriptors, hashes, recipes и
    допустимые synthetic fixtures.
+9. После одноразовой сходимости 7+2 новые игры и форматы не создают platform package и не требуют
+   правок в шести apps.
 
 ### 2.4. Неподвижные правила Multiverse
 
@@ -243,8 +332,8 @@ simulation -X-> renderer or per-tick format/provider resolution
    state hashes.
 7. TypeScript — обязательная reference implementation. Rust — совместимая реализация measured
    kernels; полный перенос в Rust допускается только после performance gate.
-8. SC2 и C&C — два обязательных независимых vocabulary proofs. Одного SC2 недостаточно для
-   объявления нейтральности.
+8. SC2, SAGE (три выбранных C&C), Warzone и Spring/BAR — четыре обязательных независимых
+   vocabulary proofs. Одной экосистемы недостаточно для объявления нейтральности.
 
 ### 2.5. Владелец UV-форматов
 
@@ -307,17 +396,25 @@ Generator собирает минимум:
 
 - стабильный `capabilityId`;
 - пользовательский сценарий;
+- `releaseTrack`: `mk3-priority`, `multiverse-priority` или `post-ga`;
+- `origin`: `legacy` или `owner-addition`;
 - legacy evidence links;
 - source inventory IDs;
 - целевого owner;
 - требуемые host facilities;
 - MK3 operation/contribution IDs;
-- состояние переноса;
+- независимые `migrationState`, `supportState` и `runtimeAvailability`;
 - уровень доказательства;
 - реальные fixtures/corpus descriptors;
 - известную потерю и loss receipt;
 - заменяющий workflow для `superseded`;
 - commit, тест и отчёт, закрывшие строку.
+
+`migrationState` отвечает, перенесён ли workflow; `supportState` — какую часть формата продукт
+честно понимает; `runtimeAvailability` — где операция исполнима. Поэтому read-only ODF codec может
+быть полностью мигрирован и одновременно не иметь Edit badge. Это не gap, если writer не был
+заявлен и обязательный пользовательский workflow закрыт. Нельзя переименовывать честный
+operation-specific `partial` в `supported` ради release score.
 
 ### 3.4. Уровни доказательства
 
@@ -330,8 +427,9 @@ Generator собирает минимум:
 | E4      | Differential result против legacy oracle не беднее.       |
 | E5      | Живой app workflow и round-trip проходят на целевом host. |
 
-Финал требует E4 для всех сравнимых функций и E5 для product-critical workflows. E2 не может
-выдаваться за полный паритет.
+Focused GA требует E4 для всех сравнимых priority-функций и E5 для product-critical workflows.
+Глобальный финал распространяет это правило на весь legacy surface. E2 и allocation `covered` не
+могут выдаваться за полный паритет.
 
 ### 3.5. Команды реестра
 
@@ -341,11 +439,45 @@ Generator собирает минимум:
 pnpm migration:emit       # сгенерировать raw inventory и capability report
 pnpm migration:check      # freshness, coverage, owners, legal statuses
 pnpm migration:report     # человекочитаемый сводный отчёт и gap list
+pnpm priority:emit        # exact IDs + transitive dependencies выбранного release scope
+pnpm priority:check       # полнота priority closure и запрет priority units в mk2
 pnpm parity:legacy        # differential checks на pinned oracle/corpus
 pnpm profiles:check       # capability/profile/minimal-closure matrix
 ```
 
 Это будущие команды; до блока 10 они не заявляются как существующие.
+
+`ports:check` остаётся глобальным структурным храповиком 168/168. Он не заменяет
+`priority:check`: первый отвечает «contribution не потерян», второй — «каждая заявленная операция
+приоритетного продукта доказана». Неприоритетный `deferred-post-ga` не попадает в официальные
+presets до своего migration slice.
+
+### 3.6. Что означает «codec работает чётко»
+
+Каждый priority codec принимается не общим словом `supported`, а одинаковым контрактом:
+
+1. **Identity:** stable qualified ID, versions/dialects и owning extension.
+2. **Detect:** bounded bytes/structure evidence; renamed и wrong-extension cases; при равных
+   доказательствах — structured ambiguity, не угадывание.
+3. **Input:** один `AssetSource`; companions объявляет codec, но namespace/URI разрешает host.
+4. **Open:** descriptor содержит только доказанные traits, operations, representations,
+   provenance, revision и diagnostics; trait никогда не подразумевает operation.
+5. **Use:** каждая объявленная operation имеет positive test и реальный corpus evidence; viewer
+   выбирается по contracts/traits, не по format ID.
+6. **Fail safely:** corrupt, truncated, missing/ambiguous companion, bomb, budget, cancellation и
+   permission denial не падают процессом и не оставляют открытые resources.
+7. **Round-trip:** заявленный writer проходит validate→write→reopen→semantic compare,
+   deterministic output и unknown-data/loss policy. Нет writer — нет Edit/Round-trip badge.
+8. **Hosts:** portable contract проверяется в browser worker и Node worker там, где runtime
+   совместим; native facility имеет structured `host-unavailable` вне способных hosts.
+9. **Composition:** loose file и вложенный archive/VFS path дают одинаковую семантику; collision
+   suite доказывает, что generic codec не перехватывает game semantics.
+10. **Closure:** single path не получает лишний I/O, minimal bundles не тянут optional dependency,
+    performance/bundle before-after опубликованы.
+
+Для новой возможности без legacy-аналога (ODG, Kane's Wrath contribution) E4 означает сравнение с
+официальной спецификацией/реальным corpus и альтернативным независимым parser/tool, где доступно;
+отсутствующий legacy row не превращает её автоматически в E4.
 
 ---
 
@@ -353,15 +485,15 @@ pnpm profiles:check       # capability/profile/minimal-closure matrix
 
 ### 4.1. Один продукт, разные host facilities
 
-| Профиль           | Обязательный результат                                                      | Допустимое ограничение                                  |
-| ----------------- | --------------------------------------------------------------------------- | ------------------------------------------------------- |
-| Minimal SDK/embed | открыть переданный source и выполнить явно подключённую operation           | нет UI, discovery, native launch и тяжёлых runtime      |
-| CLI               | batch inspect/convert/validate/edit с machine-readable output               | нет визуального editor без отдельного renderer          |
-| VS Code           | authoring, languages, custom editors, previews, diagnostics, play-in-editor | native функции зависят от workspace trust и permissions |
-| Electron          | полный desktop workbench, discovery, external tools, preview/edit           | нет browser sandbox ограничений                         |
-| PWA               | browser-safe inspect/edit/convert через выбранные handles                   | нет автоматического native discovery/process launch     |
-| Server            | headless operations, remote sessions, budgets, observability                | нет локальных dialogs и desktop UI                      |
-| Automation host   | стабильный tool/agent API, structured results, cancellation                 | только явно выданные capabilities                       |
+| Профиль           | Обязательный результат                                                      | Допустимое ограничение                                                       |
+| ----------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Minimal SDK/embed | открыть переданный source и выполнить явно подключённую operation           | нет UI, discovery, native launch и тяжёлых runtime                           |
+| CLI               | batch inspect/convert/validate/edit с machine-readable output               | нет визуального editor без отдельного renderer                               |
+| VS Code           | authoring, languages, custom editors, previews, diagnostics, play-in-editor | native функции зависят от workspace trust и permissions                      |
+| Electron          | полный desktop workbench, discovery, external tools, preview/edit           | sandboxed renderer; native facilities только через typed preload/permissions |
+| PWA               | browser-safe inspect/edit/convert через выбранные handles                   | нет автоматического native discovery/process launch                          |
+| Server            | headless operations, remote sessions, budgets, observability                | нет локальных dialogs и desktop UI                                           |
+| Automation host   | стабильный tool/agent API, structured results, cancellation                 | только явно выданные capabilities                                            |
 
 ### 4.2. Формула feature parity
 
@@ -376,6 +508,10 @@ registered + compatible runtime + granted facilities
 ```
 
 Нельзя дублировать domain handler в приложении, чтобы «догнать» другое приложение.
+
+Официальные release presets до Focused GA: `Common/Documents`, `SC2 Mod Studio`,
+`C&C SAGE Studio`, `Warzone 2100 Studio`, `BAR/Spring Studio`, `Universal Asset Explorer`,
+`Headless Mod CI`. Preset — данные composition lock, не fork приложения.
 
 ### 4.3. Защита минимальных сборок
 
@@ -399,13 +535,15 @@ Reference profiles фиксируются до каждого platform change:
 
 ## 5. Карта программы
 
-| Волна                    | Блоки | Проверяемый рубеж                                                                                             |
-| ------------------------ | ----- | ------------------------------------------------------------------------------------------------------------- |
-| A. Измеримый фундамент   | 9–12  | companion resolution, честный parity, oracle lock, полный registry, UVM writer, конечные owners               |
-| B. Продуктовые вертикали | 13–20 | VS Code, SC2, C&C, format depth, rendering, runtime и все шесть apps                                          |
-| C. MK3 Product GA        | 21    | zero gaps по authoring/tooling, пустой mk2, недельный dogfood                                                 |
-| D. Multiverse            | 22–28 | отдельный repo, UV core writers, neutral definitions, deterministic runtime, editor/network/agents, Rust gate |
-| E. Общий GA              | 29    | MK3 + Multiverse 1.0, полный retirement legacy workflow                                                       |
+| Волна                              | Блоки | Проверяемый рубеж                                                                                            |
+| ---------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------ |
+| A. Измеримый фундамент             | 9–12  | companion, parity, oracle, generated priority closure, common/documents, UVM writer, package/doc convergence |
+| B. Приоритетные вертикали          | 13–20 | общие app contracts, SC2, три C&C, Warzone, Spring/Recoil/BAR, 3D/runtime и шесть apps                       |
+| C. MK3 Focused Product GA          | 21    | zero priority gaps, zero priority units в mk2, недельный dogfood выбранных profiles                          |
+| D. Multiverse                      | 22–28 | отдельный repo, UV core, четыре vocabulary proofs, deterministic runtime, editor/network/agents, Rust gate   |
+| E. MK3 + Multiverse 1.0 Focused GA | 29    | независимые releases и полный priority path native → UV → runtime                                            |
+| F. Post-GA breadth                 | 30    | Relic и весь оставшийся long tail по generated slices без ослабления global baseline                         |
+| G. Legacy Migration Complete       | 31    | глобальный zero-gap, пустой `mk2`, весь старый функционал заменён и legacy oracle архивирован                |
 
 Блок — не календарная неделя и не обещание объёма в строках. Он заканчивается только своим exit
 gate. Если реестр показывает больше работы, число внутренних slices растёт, а критерий не
@@ -420,8 +558,9 @@ gate. Если реестр показывает больше работы, чи
 **Источник исполнения:** `PLAN_SOL_BLOCK9_FINAL_2026-08-24.md` поверх
 `PLAN_SOL_BLOCK9_EXECUTION_2026-08-24.md`.
 
-**Результат для пользователя:** W3X/W3D/VXL и M3 получают companions одинаково из filesystem,
-BIG и CASC/MPQ; реальные модели дают воспроизводимую семантику.
+**Результат для пользователя:** приоритетные W3X и M3 получают companions одинаково из filesystem,
+BIG и CASC/MPQ; уже сделанные W3D/VXL cases сохраняют regression evidence, но их дальнейшая
+глубина не блокирует Focused GA.
 
 **Обязательная работа:**
 
@@ -431,7 +570,8 @@ BIG и CASC/MPQ; реальные модели дают воспроизводи
    format branches внутри него.
 4. Не добавлять I/O на путь `single`.
 5. Расширить parity с synthetic на реальные corpora и всё сравнимое `common/`.
-6. Углубить VXL → W3D → W3X только по доказанным UVM planes.
+6. Завершить принятые и уже начатые W3D/VXL regression slices без расширения их объёма; новую
+   глубину направить в M3+CASC/MPQ и W3X+BIG, относящиеся к выбранным играм.
 7. Обновить матрицу различий, negative cases, CJS/Electron/VS Code checklist.
 
 **Exit gate:**
@@ -456,16 +596,19 @@ BIG и CASC/MPQ; реальные модели дают воспроизводи
    RTS и UV/Multiverse.
 3. Объяснить все 206 codec + 31 game manifests.
 4. Построить semantic capability registry с owners и evidence.
-5. Добавить `migration:emit/check/report` и freshness gate.
-6. Зафиксировать product profiles и bundle baselines.
-7. Сверить живые corpus descriptors, не сохраняя proprietary paths в git.
-8. Выполнить принятый Relic slice: 9 contributions; `extensions/mk2` 25 → 23 семейства.
+5. Добавить `releaseTrack`, `origin`, независимые migration/support/runtime states и сгенерировать
+   exact priority closure со всеми transitive dependencies.
+6. Добавить `migration:emit/check/report`, `priority:emit/check` и freshness gate.
+7. Зафиксировать product profiles и bundle baselines.
+8. Сверить живые corpus descriptors, не сохраняя proprietary paths в git.
+9. Зафиксировать весь неприоритетный хвост как `deferred-post-ga`; Relic здесь не переносить.
 
 **Артефакты:**
 
 - `migration/oracle/legacy-oracle.lock.json`;
 - `migration/generated/source-inventory.json`;
 - `migration/capabilities.yaml`;
+- `migration/priority-scope.json`;
 - `migration/generated/status.md`;
 - `migration/product-profiles.json`.
 
@@ -475,60 +618,111 @@ BIG и CASC/MPQ; реальные модели дают воспроизводи
 - у каждой capability есть owner и planned block;
 - generator deterministically clean на втором запуске;
 - oracle запускается воспроизводимо или показывает видимый `environment-required`;
-- `ports:check` остаётся зелёным, mk2 ratchet уменьшен ровно по факту.
+- `ports:check` остаётся зелёным; `priority:check` падает на пропущенной зависимости, priority unit
+  в `mk2`, недоказанной операции или скрытом skip;
+- allocation coverage и implementation/evidence state представлены разными полями.
 
-### Блок 11. Единый UV authority и настоящий UVM writer
+### Блок 11. Common documents и единый UVM writer
 
 **Зависит от:** oracle/registry блока 10.
 
-**Результат для пользователя:** MK3 сохраняет модель в стандартный UVM и снова открывает её без
-скрытой потери.
+**Результат для пользователя:** обычные текстовые и OpenDocument-файлы открываются через общие
+контракты, а MK3 сохраняет модель в стандартный UVM и снова открывает её без скрытой потери.
 
-**Работа:**
+**Slice 11A — plain text, Markdown и CSV:**
 
-1. Инициализировать в отдельной границе `multiverse/specs` UV Foundation и UVM
-   schema/conformance package.
-2. Перенести нормативные schemas, canonical fixtures и version negotiation из legacy oracle.
-3. Оставить UVM reader/inspect и raw export совместимыми.
-4. Добавить отдельную UVM writer/export contribution; codec inputs не импортируют writer.
-5. Определить точную границу RenderModel → UVM document → bytes.
-6. Реализовать provenance, loss receipt, deterministic ordering и stable canonical output.
-7. Проверить synthetic и реальные M3, W3X, W3D, VXL cases.
-8. Добавить validate → export → reopen → semantic compare.
-9. Проверить writer chunk и minimal reader chunk раздельно.
+1. Перенести TXT из `mk2/uncommon-documents` в `common/plain-text`: read-only codec даёт bounded
+   UTF-8/UTF-16 с BOM provenance, binary rejection, text source, inspect/raw export. Legacy
+   edit/write восстанавливает отдельная common text editor/writer contribution с write→reopen;
+   codec не пишет источник напрямую.
+2. Markdown **не переносить повторно**: он уже в `extensions/common/documents`. Закрыть aliases
+   `.md/.markdown/.mdown/.mkd`, safe preview без исполнения HTML/script, edit transaction и убрать
+   routing ambiguity со старым contribution ID.
+3. CSV **не переносить повторно**: он уже в `extensions/common/text-delimited`. Проверить CSV/TSV,
+   quotes, embedded CR/LF, BOM, empty/trailing cells, streaming/budgets и serialize→parse; formula
+   execution/injection в preview запрещены.
+
+**Slice 11B — ODF как проверка document contracts:**
+
+4. Перенести ODT, ODS, ODP в `common/documents`; добавить новый ODG с
+   `origin: owner-addition`. Один private ODF package reader переиспользуется четырьмя отдельными
+   codec contributions и не создаёт platform package. До ODP/ODG preview стабилизировать generic
+   SDK contracts для flow/table/slides/vector без ODF-specific полей; отсутствие подходящего
+   contract — ADR/stop condition, а не повод протащить private shape в app.
+5. Детекция обязана проверить ZIP, точный uncompressed `mimetype`, `META-INF/manifest.xml` и
+   required parts; extension alone недостаточно. Проверить traversal, duplicate names, XML/ZIP
+   bombs, external resources, macros, malformed/truncated input, budgets и cancellation.
+6. Публиковать только реально разобранные representations: ODT — flow/outline/text; ODS —
+   sheets/cells/formulas без вычисления; ODP — slides/text; ODG — pages/shapes/text/vector scene.
+7. Обязательны inspect/validate/safe preview/raw export и явная unknown-entry/loss policy. Layout
+   fidelity и writer недоступны, пока preserving repack и round-trip не доказаны.
+8. `Common Documents` остаётся opt-in preset, чтобы minimal/plain-text не тянул ZIP/XML/UI.
+
+**Slice 11C — единый UV authority и UVM writer:**
+
+9. Инициализировать `multiverse/specs` как единственного владельца UV Foundation и UVM
+   schema/conformance; перенести schemas, canonical fixtures и version negotiation из oracle.
+10. В X3 оставить UVM reader и добавить отдельную UVM writer/export contribution; native model
+    codecs не импортируют exporter.
+11. Определить RenderModel → UVM document → bytes; реализовать provenance, loss receipt,
+    deterministic ordering и validate→export→reopen→semantic compare.
+12. Проверить synthetic/common models и реальные приоритетные M3, W3X. W3D/VXL участвуют только
+    как сохранённые regression cases, не как новая обязательная глубина.
+13. Проверить writer chunk и minimal reader chunk раздельно.
 
 **Exit gate:**
 
+- TXT/Markdown/CSV имеют operation-level E4 и один активный route на формат;
+- Common closure после добавлений содержит 74 codec contributions, подтверждённых generator, а не
+  ручным числом;
+- ODT/ODS/ODP/ODG проходят portable + Node worker conformance и публикуют только доказанные traits;
 - один normative UVM schema source;
 - X3 exporter проходит conformance старого validator и нового spec package;
 - повторный export byte-stable для canonical case;
 - unsupported planes отражены loss receipt, а не выдуманы;
 - minimal inspection не тянет writer/render/runtime.
 
-### Блок 12. Convergence владельцев и dependency closure
+### Блок 12. Common conformance, convergence владельцев и dependency closure
 
 **Зависит от:** блока 10; может идти параллельными slices после стабильного registry.
 
-**Результат для пользователя:** дальнейший перенос не создаёт второй архитектуры и не раздувает
-каждое приложение.
+**Результат для пользователя:** каждый common-формат честно выполняет все объявленные операции,
+а дальнейший перенос не создаёт второй архитектуры и не раздувает приложения.
 
 **Работа:**
 
-1. Для всех legacy packages составить source → final owner matrix.
-2. Разделить contracts, host facilities, concrete contributions и Multiverse engine code.
-3. Переносить только проверенную cohesive unit вместе с consumers; удалять временный X3 facade в
+1. Зафиксировать generator-ом 69 исходных common contributions и 74 после блока 11: archives 15,
+   audio 6, container 1, documents 7, images 22, models 6, text-data 8, vector 3, video 6.
+2. Для каждого common contribution проверить positive/renamed/wrong-extension/ambiguous detect,
+   corrupt/truncated/bomb/budget/cancel, portable+Node worker и loose+nested-archive sources.
+3. Preview обязателен для заявленного image/audio/video/model/vector/document trait; writer —
+   write→reopen→compare только если операция заявлена. Необъявленная операция возвращает
+   structured unavailable, а не заглушку. `partial` или пустой status сам по себе не evidence.
+4. Добавить collision suite: plain TXT↔game text; XML↔SC2/C&C; `.map` C&C↔Warzone;
+   `.w3x` SAGE↔Warcraft map; `.wz`↔ZIP; JSON↔Warzone; Lua↔Spring; ODF↔ZIP.
+5. Для всех legacy packages составить source → final owner matrix и свести текущие шесть package
+   directories к каноническим 7+2 publication units без game-specific code.
+6. Разделить contracts, host facilities, concrete contributions и Multiverse engine code.
+7. Переносить только проверенную cohesive unit вместе с consumers; удалять временный X3 facade в
    том же slice.
-4. Расширить import guards: packages → apps/extensions, Multiverse → Modkit, browser → node/native.
-5. Зафиксировать public subpaths `sdk/runtime`, language, games/discovery contracts и
+8. Расширить import guards: packages → apps/extensions, Multiverse → Modkit, browser → node/native.
+9. Зафиксировать public subpaths `sdk/runtime`, language, games/discovery contracts и
    host adapters без дублирования.
-6. Ввести capability-scoped optional closures для LSP, renderer, runtime, agent и external tools.
-7. Показать before/after bundle graphs всех reference profiles.
+10. Заморозить runtime session v2: step/status/events, snapshot/restore, deterministic state hash,
+    content/schema identity, capability negotiation, budgets/cancellation и diagnostics.
+11. Ввести capability-scoped optional closures для LSP, renderer, runtime, agent и external tools.
+12. Исправить developer guide/scaffold и включить `docs:conformance` в CI.
+13. Показать before/after bundle graphs всех reference profiles.
 
 **Exit gate:**
 
 - каждая строка owner matrix имеет один конечный owner;
+- все 74 common contributions имеют generated operation-specific evidence; ноль необъяснённых
+  `partial/implicit` внутри priority scope;
 - ни один старый package name не превращён автоматически в новый X3 package;
+- target package catalog равен 7+2, bootstrap runtime closure остаётся четырёхпакетным;
 - architecture/import/minimal gates зелёные;
+- extension scaffold компилируется против реального `open(input, intent, budget)` ABI;
 - planned Multiverse units не импортированы в MK3 platform packages.
 
 ### Блок 13. VS Code — рабочая вертикаль и общая command surface
@@ -546,7 +740,8 @@ BIG и CASC/MPQ; реальные модели дают воспроизводи
 4. Свести command dispatch с CLI/Electron к одному command runtime.
 5. Закрыть первые product-critical commands: open, inspect, validate, extract, convert, preview.
 6. Подключить progress, cancellation, structured result и diagnostics.
-7. Доказать SC2 CASC/MPQ и C&C BIG flows в реальном окне.
+7. Доказать Common Documents, SC2 CASC/MPQ, C&C BIG, Warzone `.wz` и BAR Spring VFS flows в
+   реальном окне или через заранее утверждённый owner checklist.
 
 **Exit gate:**
 
@@ -555,11 +750,12 @@ BIG и CASC/MPQ; реальные модели дают воспроизводи
 - live checklist имеет screenshots/logs и commit/toolchain IDs;
 - activation time и bundle closure не регрессировали.
 
-### Блок 14. VS Code — полный функциональный паритет
+### Блок 14. VS Code — priority functional parity
 
 **Зависит от:** блока 13 и generated inventory.
 
-**Результат для пользователя:** все legacy authoring workflows доступны в новом extension.
+**Результат для пользователя:** все shared и priority authoring workflows доступны в новом
+extension; codec-specific long tail остаётся видимым `deferred-post-ga`, а не маскируется.
 
 **Работа:**
 
@@ -569,12 +765,13 @@ BIG и CASC/MPQ; реальные модели дают воспроизводи
 3. Перенести language services в game/language contributions; оставить LSP transport нейтральным.
 4. Перенести navigation, relations, refactors, validation, preview и launch operations.
 5. Сопоставить settings/keybindings/menu contributions без мёртвых command IDs.
-6. Для каждой строки registry провести legacy-vs-X3 workflow test.
+6. Для каждой `mk3-priority` строки registry провести legacy-vs-X3 workflow test; для post-GA
+   строк сохранить существующий baseline и назначенный replacement slice.
 7. Добавить live smoke для обновления extension, reload и recovery после ошибки.
 
 **Exit gate:**
 
-- generated VS Code inventory не содержит `missing/partial`;
+- generated VS Code inventory не содержит `missing/blocked/unexplained partial` в priority scope;
 - исходные контрольные количества объяснены, даже если несколько старых команд сведены в одну;
 - replacement workflow доказан для каждого `superseded`;
 - VS Code app не владеет parser/simulation/game knowledge.
@@ -589,73 +786,114 @@ BIG и CASC/MPQ; реальные модели дают воспроизводи
 **Работа:**
 
 1. Game discovery и source opening через host facilities.
-2. Dependency-merged map/mod/campaign data, schemas, relations и localized strings.
-3. M3, textures, maps, layouts, Galaxy/Trigger, replay/save/bank workflows.
-4. Writers и patch/transaction semantics для редактируемых форматов.
-5. UV projections UVM/UVD/UVW/UVS с provenance.
-6. CLI, VS Code, Electron и PWA-selected-folder evidence.
-7. Differential tests на одном pinned corpus.
+2. CASC → MPQ → resolver → semantic operations; `.SC2Map`, `.SC2Mod` и `.SC2Campaign` получают
+   явные working paths, а не постоянный stub.
+3. Dependency-merged map/mod/campaign data, schemas, relations и localized strings.
+4. M3/M3A + textures/attachments, maps, layouts, Galaxy/Trigger, replay/save/bank workflows.
+5. Writers и patch/transaction semantics для редактируемых форматов; signing/launch/playback
+   либо реализованы, либо имеют доказанный replacement workflow.
+6. UV projections UVM/UVD/UVW/UVS с provenance.
+7. CLI, VS Code, Electron и PWA-selected-folder evidence.
+8. Differential tests на pinned retail Core/Liberty corpora и workspace corpus; одна случайно
+   распакованная папка не считается доказательством.
 
 **Exit gate:**
 
 - все SC2 semantic capabilities E4, product-critical E5;
 - ни один тест не читает случайно распакованный installation folder вместо VFS/resolver;
 - writers reopen и сохраняют неизвестные данные по объявленной политике;
+- runtime plane до блока 19 либо предоставляет versioned session v2, либо остаётся явной открытой
+  priority строкой и не позволяет объявить GA;
 - environment skips видимы и воспроизводимы.
 
-### Блок 16. C&C authoring vertical
+### Блок 16. C&C Tiberium Wars, Kane's Wrath и Red Alert 3
 
 **Зависит от:** companion facility, UVM writer и product shell.
 
-**Результат для пользователя:** реальный C&C asset chain из BIG открывается, редактируется и
+**Результат для пользователя:** три названные игры независимо обнаруживаются и монтируются;
+реальный retail chain BIG → SAGE asset bundle → model/map/data/media открывается, проверяется и
 экспортируется теми же общими операциями.
 
 **Работа:**
 
-1. BIG namespace, nested assets и companion chains.
-2. W3D/W3X/VXL/HVA/PAL, textures, maps и game data по существующему registry.
-3. Generals/Zero Hour/C&C3 и другие подтверждённые variants только по реальному evidence.
-4. Common RenderModel/UV projections без объявления render mesh коллайдером.
-5. Writers там, где legacy действительно писал; loss receipts в остальных случаях.
-6. C&C vocabulary adapter seed для будущего neutral definition layer.
+1. Создать три отдельных named-game contributions: `cnc3-tiberium-wars`, новый
+   `cnc3-kanes-wrath` (`origin: owner-addition`) и `red-alert-3`. У каждого свои install signatures,
+   versions/patch/language precedence, mount, game card, corpus descriptor и launch policy.
+2. Закрыть общий dependency closure: BIG4/BIGF, RefPack, SkuDef, nested
+   `sage-asset-bundle`, W3X, DDS/TGA, Wwise WEM/BNK/PCK, Bink BIK/BK2, maps, data и localization.
+   Shared implementation разрешена только при доказанном одинаковом dialect.
+3. Реализовать retail compiled representations `.manifest/.bin/.imp/.relo/.version/.cdata` с
+   relations/definition projection. Source XML-only результат не считается полным `game.catalog`.
+4. Для каждой игры доказать отдельно: discovery → mount → browse/extract → model/map preview →
+   validate/export → launch при доступной facility. KW corpus не доказывает TW или RA3.
+5. Maps публикуют metadata, terrain, objects и честные 2D/3D representations; model pipeline —
+   static/skinned/animation/material/texture/collision planes только с provenance.
+6. Writers реализуются там, где legacy действительно писал или новый preserving writer имеет
+   round-trip; в остальных случаях операция отсутствует и выдаётся loss/availability receipt.
+7. Добавить C&C vocabulary/UV adapter seed без SAGE branches в neutral core.
+8. VXL/HVA/PAL (RA2/TS), Generals/Zero Hour и дополнительная W3D depth остаются post-GA; уже
+   существующие regression tests сохраняются.
 
 **Exit gate:**
 
-- все C&C capabilities имеют E4/E5 согласно критичности;
+- все capabilities трёх named games и их dependency closure имеют E4/E5 согласно критичности;
+- compiled retail data и nested asset bundles дают schema/relations, а не metadata-only shell;
 - archive resolver не содержит format-specific branches;
-- реальные fixtures входят в parity corpus descriptors;
+- три реальные installation/corpus descriptors входят в parity report без скрытых skips;
 - C&C даёт независимое от SC2 доказательство extension architecture.
 
-### Блок 17. Остальная глубина форматов и games
+### Блок 17. Warzone 2100 и Spring/Recoil/Beyond All Reason
 
-**Зависит от:** полного registry и двух вертикалей.
+**Зависит от:** полного priority registry, common conformance и product shell.
 
-**Результат для пользователя:** весь длинный хвост legacy formats/games закрыт, а
-`extensions/mk2` пуст.
+**Результат для пользователя:** две open-source экосистемы работают как полноценные независимые
+вертикали, а не как набор поверхностных manifests.
 
-**Метод slices:**
+**Slice 17A — Warzone 2100:**
 
-1. Сортировать gaps по dependency fan-in и user value.
-2. Брать 3–5 связанных capabilities с одним owner.
-3. Переносить processor внутрь owning extension или существующего cohesive package.
-4. Добавлять positive, corrupt, truncated, budget и cancellation cases.
-5. Добавлять real corpus differential и writer round-trip, если writer заявлен.
-6. Уменьшать mk2 ratchet только после evidence.
-7. Повторять до zero gaps; число slices определяется registry.
+1. Перенести из `mk2` `warzone-wz/wrf/lev/img/pie/warzone2100-map` в конечного owner и добавить
+   named-game `warzone-2100` с real 4.7+ discovery/mount/version evidence.
+2. Реализовать `.wz` как ZIP + last-wins VFS overlay; common ZIP остаётся контейнером, game
+   contribution добавляет Warzone semantics.
+3. Закрыть map bundle `.gam + game.map + ttypes.ttp + JSON/BJO`, WRF/LEV/IMG references,
+   PIE+textures, current JSON/data schemas, localization/media и deterministic 2D/3D map.
+4. Добавить location+structure routing для Warzone JSON и bounded JS include/reference analysis
+   без исполнения; generic JSON остаётся alternate raw view.
+5. Проверить modern save directory (`gamestate.wz` + sidecars) и legacy save paths. Writer
+   объявлять только с write→reopen→semantic compare.
+6. Сохранить GPL extension как lazy optional license boundary: никакого static linking Warzone code
+   в MIT packages/apps; SBOM и notices обязательны.
 
-**Exit gate:**
+**Slice 17B — Spring/Recoil engine formats и BAR:**
 
-- все 237 manifest units объяснены и все их заявленные операции реализованы либо заменены;
-- `extensions/mk2` пуст;
-- `ports:check`, `parity:legacy` и registry check зелёные;
-- нет необъяснённых `X3 poorer`.
+7. Перенести `spring-rapid` и `spring-vfs`; реализовать `.sdp`+pool+repos/versions,
+   `.sdd/.sdz/.sd7`, four-section VFS, dependency DFS/replace и first-wins provenance.
+8. Реализовать встреченные в corpus модели S3O/3DO, карты SMF/SMT/SMD, TDF/FBI, Lua, BOS/COB и
+   их texture/script companions; common media/archive codecs переиспользуются через contracts.
+9. Static Lua inspector никогда не исполняет файл. Effective-definition/runtime evaluation идёт
+   только в отдельном sandboxed provider с permissions, budgets и provenance.
+10. Создать named-game `beyond-all-reason` с real discovery/mount. Spring/Recoil остаётся
+    engine/content extension; generic `spring` или `recoil` game codec без install signatures
+    запрещён.
+11. BAR art с CC-BY-NC-ND доступен только read/display: никакого art writer/repack. Разрешённые
+    Lua/data authoring operations и GPL boundaries декларируются отдельно.
+
+**Общий exit gate:**
+
+- ни одна priority contribution не остаётся в `extensions/mk2`;
+- каждый реально встреченный формат выбранных corpora имеет usable declared operation либо
+  доказанное `not-applicable-to-version`; требуемый workflow нельзя закрыть `unsupported`;
+- Warzone last-wins и Spring first-wins VFS semantics проверены на real corpora;
+- S3O/maps/PIE companions разрешаются общим host resolver без format branch;
+- `ports:check`, `priority:check`, license/import guards и real-corpus parity зелёные;
+- весь неприоритетный long tail остаётся видимым `deferred-post-ga` для блока 30.
 
 ### Блок 18. Модульная 3D-вертикаль
 
 **Зависит от:** UVM writer и зрелых model contributions.
 
-**Результат для пользователя:** модели из SC2 и C&C отображаются одинаково в Electron, VS Code и
-PWA, а headless conversion не тянет renderer.
+**Результат для пользователя:** common models и модели SC2, трёх C&C, Warzone и BAR отображаются
+одинаково в Electron, VS Code и PWA, а headless conversion не тянет renderer.
 
 **Работа:**
 
@@ -665,13 +903,15 @@ PWA, а headless conversion не тянет renderer.
 4. Game-specific scene adaptation остаётся в extensions.
 5. Lazy resource loading, budgets, cancellation и missing-resource states.
 6. Golden image/scene metrics на real fixtures с допустимой platform tolerance.
-7. Viewer embed, workbench preview и headless export используют один model pipeline.
+7. Проверить UVM/glTF/OBJ и реальные M3, W3X, PIE, S3O; W3D/VXL остаются retained regression
+   fixtures до post-GA depth.
+8. Viewer embed, workbench preview и headless export используют один model pipeline.
 
 **Exit gate:**
 
 - renderer может быть удалён без поломки inspect/convert;
 - no renderer modules в minimal/headless bundles;
-- M3 и C&C real scenes визуально и семантически проверены;
+- M3, W3X, PIE и S3O real scenes визуально и семантически проверены;
 - render loading не блокирует simulation.
 
 ### Блок 19. SC2 runtime и симуляция в IDE
@@ -703,8 +943,8 @@ play/debug без оригинального клиента для поддер�
 
 **Зависит от:** блоков 13–19.
 
-**Результат для пользователя:** каждый поддерживаемый workflow доступен через подходящий product
-profile; старый modkit больше не нужен для ежедневной работы.
+**Результат для пользователя:** каждый priority workflow доступен через подходящий product
+profile; старый modkit больше не нужен для ежедневной работы в выбранном контуре.
 
 **Работа:**
 
@@ -714,7 +954,8 @@ profile; старый modkit больше не нужен для ежеднев�
 4. Проверить install/update/uninstall extension lifecycle и corrupt extension quarantine.
 5. Проверить permission denial, cancellation, restart и crash recovery.
 6. Собрать signed/reproducible RC artifacts и SBOM/license notices.
-7. Опубликовать полный migration report с zero unexplained gaps.
+7. Опубликовать migration report с zero unexplained priority gaps и отдельным неизменённым
+   post-GA backlog.
 
 **Exit gate:**
 
@@ -722,27 +963,29 @@ profile; старый modkit больше не нужен для ежеднев�
 - все reference bundles в budget;
 - live matrix на поддерживаемых OS/hosts зелёная;
 - нет semantic code, уникального только для одного app;
+- deferred extensions не входят в official presets и не активируются неявно;
 - RC можно установить на чистую машину по документированной инструкции.
 
-### Блок 21. Modkit MK3 Product GA
+### Блок 21. Modkit MK3 Focused Product GA
 
 **Зависит от:** зелёного RC.
 
 **Результат:** готовый самостоятельный Modkit MK3 для authoring, анализа, конвертации и IDE
-simulation.
+simulation в зафиксированном priority closure.
 
 **Работа и gate:**
 
 1. Владелец работает не менее семи последовательных дней в MK3, не открывая старый modkit для
-   продуктовой операции.
+   priority-продуктовой операции.
 2. Любое обращение к legacy фиксируется новой capability gap и сбрасывает dogfood clock после
    исправления.
 3. Release artifacts устанавливаются, обновляются и откатываются.
 4. Documentation, extension authoring guide и troubleshooting проверяются с чистого окружения.
-5. Product GA tag создаётся только при zero pending/blocked/partial capabilities.
+5. Product GA tag создаётся только при zero missing/blocked/unexplained partial в priority scope,
+   нуле priority units в `mk2` и зелёном baseline всех `deferred-post-ga`.
 
-Legacy repo после этого остаётся опечатанным: его runtime/Multiverse функции ещё нужны как oracle
-до общего GA.
+Legacy repo после этого остаётся опечатанным и доступным как read-only oracle: он содержит
+неперенесённый long tail и не архивируется до блока 31.
 
 ### Блок 22. Отдельный Multiverse repository и перенос существующих proofs
 
@@ -768,12 +1011,12 @@ Legacy repo после этого остаётся опечатанным: ег�
 - adapter можно удалить независимо;
 - каждый legacy proof либо исполняется, либо остаётся открытой registry строкой.
 
-### Блок 23. Neutral definition layer и две игровые системы
+### Блок 23. Neutral definition layer и четыре независимые экосистемы
 
-**Зависит от:** блоков 15, 16 и 22.
+**Зависит от:** блоков 15–17 и 22.
 
-**Результат для пользователя:** SC2 и C&C преобразуются в один нейтральный definition contract без
-потери provenance.
+**Результат для пользователя:** SC2, SAGE (TW/KW/RA3), Warzone 2100 и Spring/BAR преобразуются в
+один нейтральный definition/world contract без потери provenance.
 
 **Работа:**
 
@@ -781,14 +1024,16 @@ Legacy repo после этого остаётся опечатанным: ег�
 2. Генерировать TypeScript types и Rust structs из одних schemas.
 3. Реализовать SC2 catalog → UVD adapter.
 4. Реализовать C&C data → UVD adapter без SC2-specific branches в neutral core.
-5. Определить identity, references, inheritance/composition, units, weapons, abilities, effects,
+5. Реализовать Warzone data/map → UVD/UVW и Spring/BAR definitions/map → UVD/UVW adapters без
+   веток выбранных игр в neutral core.
+6. Определить identity, references, inheritance/composition, units, weapons, abilities, effects,
    resources и upgrades.
-6. Поддержать AOT artifact и live MK3 adapter; результаты должны быть эквивалентны.
-7. Добавить provenance/loss receipts и unknown extension preservation.
+7. Поддержать AOT artifact и live MK3 adapter; результаты должны быть эквивалентны.
+8. Добавить provenance/loss receipts и unknown extension preservation.
 
 **Exit gate:**
 
-- два vocabulary corpora проходят одну validation suite;
+- четыре ecosystem corpora и все три SAGE dialects проходят одну validation suite;
 - neutral schema не содержит vendor IDs в обязательных полях;
 - AOT и live paths дают одинаковый canonical hash;
 - schema version negotiation проверена на previous/current versions.
@@ -844,13 +1089,15 @@ UVA/UVV/UVF/UVG и кандидатные UVI/UVY входят только со
 4. Перенести SC2 runtime через adapter, а не встраивать SC2 semantics в core.
 5. Добавить save/snapshot/restore/replay и canonical state hashes.
 6. Провести shuffled-order, cross-host и long-run determinism tests.
-7. Добавить proof game с SC2 и C&C-derived content.
+7. Добавить deterministic proof scenarios для SC2, SAGE, Warzone и BAR-derived content; точный
+   supported mechanics subset публикуется по игре и не называется полной эмуляцией native engine.
 
 **Exit gate:**
 
 - Node и browser дают одинаковые state/event/replay hashes;
 - restore сохраняет scripts, timers, AI state и RNG;
 - proof game запускается из AOT package и live MK3 session;
+- по одному сценарию каждой priority ecosystem даёт одинаковый AOT/live state hash;
 - unsupported native mechanics дают compatibility report, не молчаливую подмену.
 
 ### Блок 26. Presentation и play-in-editor
@@ -927,27 +1174,78 @@ UVA/UVV/UVF/UVG и кандидатные UVI/UVY входят только со
 - если 3× gate не достигнут, это честный результат: portable boundary доказана, массовый rewrite
   отклонён, а готовность продукта не блокируется.
 
-### Блок 29. Modkit MK3 + Multiverse 1.0 GA
+### Блок 29. Modkit MK3 + Multiverse 1.0 Focused GA
 
 **Зависит от:** всех предыдущих exit gates.
 
-**Конечный результат программы:** готовый Modkit MK3, полностью заменяющий legacy authoring/tooling,
-и совместимый независимый Multiverse 1.0 runtime.
+**Результат:** готовый Modkit MK3 и независимый Multiverse 1.0 полностью закрывают выбранный
+priority closure; неприоритетный хвост остаётся совместимым и явно запланированным.
 
 **Финальная приёмка:**
 
-1. Полный migration registry не содержит недопустимых состояний.
+1. Priority registry не содержит недопустимых состояний; post-GA строки имеют owner, baseline и
+   planned slice.
 2. Все legacy source units сопоставлены semantic capabilities и evidence.
 3. Все product profiles проходят capability matrix.
-4. Все real-corpus differential suites не содержат необъяснённого poorer.
+4. Priority real-corpus differential suites не содержат необъяснённого poorer; global baseline
+   всех deferred contributions зелёный.
 5. UV core profile проходит read/write/validate/round-trip.
-6. SC2 и C&C проходят AOT и live adapter paths.
+6. SC2, три C&C, Warzone и BAR проходят native→UV AOT/live paths; по одному опубликованному
+   deterministic scenario каждой ecosystem проходит runtime path.
 7. TypeScript runtime детерминирован между Node/browser; Rust boundary проходит conformance.
 8. Play-in-editor, headless server, replay/restore и agent budget proofs зелёные.
 9. MK3 и Multiverse устанавливаются, обновляются и собираются отдельно.
-10. Владелец проходит финальный недельный сценарий без обращения к legacy продукту.
+10. Владелец проходит недельный priority-сценарий без обращения к legacy продукту.
 
-Только после этого legacy repo переводится из «oracle» в «archive». Он не удаляется автоматически.
+Legacy repo после этого **не архивируется**: он остаётся read-only oracle для блока 30.
+
+### Блок 30. Post-GA migration waves
+
+**Зависит от:** стабильных MK3 и Multiverse 1.0 releases.
+
+**Результат:** весь неприоритетный codec/game/tooling long tail переносится на уже готовую
+архитектуру без риска затормозить её создание.
+
+**Метод:**
+
+1. Генератор сортирует `releaseTrack: post-ga` по dependency fan-in, пользовательской ценности и
+   доступности real corpus; Relic — первый подтверждённый slice.
+2. Slice содержит 3–5 связанных capabilities одного owner и заканчивается implementation,
+   operation-specific evidence, real differential, app/profile proof и удалением временного пути.
+3. RA2/TS VXL/HVA/PAL, Generals/Zero Hour, Relic и остальные families получают собственные game/
+   format boundaries; нельзя расширять priority game profile чужим dialect.
+4. `ports:check` и global baseline работают непрерывно; `mk2` ratchet уменьшается только после
+   evidence. `deferred-post-ga` нельзя переименовать в done или удалить из generator.
+5. Legacy oracle не меняется; новый реально обнаруженный workflow добавляется в inventory и
+   получает slice.
+
+**Exit gate:**
+
+- ноль `deferred-post-ga`, missing, blocked, unknown и unexplained partial в полном registry;
+- все 237 legacy manifest units и owner additions сопоставлены реализованным/replaced workflows;
+- `extensions/mk2` пуст;
+- global real-corpus parity не содержит необъяснённого `X3 poorer`.
+
+### Блок 31. Legacy Migration Complete
+
+**Зависит от:** блока 30 и глобального release candidate.
+
+**Конечный результат программы:** Modkit MK3 полностью заменяет legacy authoring/tooling без
+функциональных регрессий, Multiverse остаётся независимым runtime, а старый продукт больше не
+является единственным рабочим путём ни для одной возможности.
+
+**Финальная приёмка:**
+
+1. Полный registry не содержит недопустимых состояний и проходит E4/E5 по критичности.
+2. Все writers проходят validate→write→reopen→compare и опубликованную loss policy.
+3. Все apps/profiles, minimal closures, security, licensing, install/update/recovery и corpus gates
+   зелёные.
+4. Владелец проходит финальный недельный сценарий по репрезентативному global workflow без
+   открытия legacy продукта.
+5. Oracle descriptor и migration reports архивируются с release; repository не удаляется и
+   история не переписывается.
+
+Только после этого legacy repo переводится из `oracle` в `archive`.
 
 ---
 
@@ -986,6 +1284,7 @@ pnpm check
 pnpm check:extensions
 pnpm check:mk2
 pnpm ports:check
+pnpm priority:check        # после блока 10; strict для выбранного closure
 pnpm parity
 pnpm parity:legacy          # после блока 10
 pnpm migration:check       # после блока 10
@@ -999,6 +1298,9 @@ final git status and protected-file hash comparison
 
 `pnpm check` уже включает часть этих команд, но явный повтор критических ratchets в
 отчёте нужен для читаемого evidence.
+
+До блока 31 `check:mk2` охраняет baseline и запрещает priority units в staging; только блок 31
+требует физическое `mk2 == 0`.
 
 ### 7.4. Performance policy
 
@@ -1059,24 +1361,28 @@ final git status and protected-file hash comparison
 
 ## 9. Финальный Definition of Done
 
-### 9.1. Modkit MK3
+### 9.1. Modkit MK3 Focused Product GA
 
 - [ ] Legacy oracle опечатан и воспроизводим.
 - [ ] Source inventory охватывает весь legacy surface, включая 206 codec и 31 game manifests.
-- [ ] Semantic registry не содержит missing/partial/blocked/unknown.
-- [ ] Каждая superseded capability имеет проверенный replacement workflow.
-- [ ] `extensions/mk2` пуст.
-- [ ] Нет необъяснённых poorer rows на synthetic и real corpora.
-- [ ] Writers проходят round-trip и loss policy.
+- [ ] Generated priority closure охватывает Common 74, SC2, TW/KW/RA3, Warzone и Spring/BAR со
+      всеми transitive dependencies.
+- [ ] Priority registry не содержит missing/blocked/unknown/unexplained partial; deferred строки
+      имеют owner, baseline и post-GA slice.
+- [ ] Ни одна priority contribution не остаётся в `extensions/mk2`.
+- [ ] Нет необъяснённых priority poorer rows; global deferred baseline не регрессировал.
+- [ ] Priority writers проходят round-trip и loss policy; read-only design объявлен честно.
 - [ ] Все шесть apps используют общие domain operations.
 - [ ] Host differences представлены capability gating, а не расхождением семантики.
 - [ ] Minimal profiles не выросли от optional функций.
 - [ ] VS Code, Electron, PWA, CLI, server и automation live/contract matrix зелёная.
-- [ ] SC2 и C&C вертикали E5 на реальных установках владельца.
+- [ ] Common Documents, SC2, три C&C, Warzone и BAR workflows E5 на реальных corpora/hosts.
 - [ ] 3D viewer модульный и не входит в headless closure.
 - [ ] SC2 simulation работает в IDE/headless с deterministic restore.
+- [ ] Package catalog равен 7+2, minimal runtime closure — `core+sdk+vfs+host`.
+- [ ] Developer scaffold и документационные примеры компилируются в CI.
 - [ ] Установочный/обновительный/recovery путь проверен.
-- [ ] Семидневный dogfood MK3 завершён.
+- [ ] Семидневный priority dogfood MK3 завершён.
 
 ### 9.2. Multiverse
 
@@ -1084,7 +1390,7 @@ final git status and protected-file hash comparison
 - [ ] UV Foundation и core schemas имеют единственного владельца.
 - [ ] UVM/UVT/UVD/UVW/UVS/UVR/UVP/UVE имеют operation-specific conformance.
 - [ ] Core profile имеет readers, writers, validators и round-trip.
-- [ ] SC2 и C&C definition adapters проходят одну neutral suite.
+- [ ] SC2, SAGE, Warzone и Spring/BAR adapters проходят одну neutral suite.
 - [ ] AOT и live MK3 adapter дают одинаковые canonical artifacts.
 - [ ] TypeScript runtime детерминирован между Node/browser.
 - [ ] Snapshot/restore/replay сохраняют scripts, timers, AI и RNG.
@@ -1096,7 +1402,15 @@ final git status and protected-file hash comparison
 - [ ] Performance gate определил, какие kernels действительно переносятся в Rust.
 - [ ] Proof game и второй foundation/mechanics extension проходят release suite.
 
-### 9.3. Retirement старого modkit
+### 9.3. Legacy Migration Complete
+
+- [ ] Полный semantic registry не содержит missing/partial/blocked/unknown/deferred-post-ga.
+- [ ] Каждая superseded capability имеет проверенный replacement workflow.
+- [ ] `extensions/mk2` пуст.
+- [ ] Нет необъяснённых poorer rows на полном synthetic и real corpus.
+- [ ] Все legacy writers/workflows перенесены или имеют доказанную лучшую замену.
+
+### 9.4. Retirement старого modkit
 
 - [ ] В registry нет возможности, для которой legacy остаётся единственным рабочим путём.
 - [ ] Последний dogfood не потребовал открыть legacy продукт.
@@ -1113,8 +1427,9 @@ final git status and protected-file hash comparison
 1. выполнить шаг 0 блока 9 и опубликовать честные baseline artifacts;
 2. реализовать один host-owned companion resolver для filesystem, BIG и CASC/MPQ;
 3. до углубления codecs закрыть долг real-corpus parity;
-4. завершить VXL/W3D/W3X slices и финальный gate блока 9;
-5. перейти к oracle lock и generated migration registry блока 10.
+4. завершить уже принятые W3D/VXL regression slices, а priority depth направить в M3 и W3X;
+5. перейти к oracle lock, generated migration registry и exact priority closure блока 10;
+6. первым implementation slice после registry выполнить Common Documents блока 11, не Relic.
 
 Это минимальный путь, который одновременно даёт полезный результат сейчас и не теряет управляемость
 полного перехода.
