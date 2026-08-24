@@ -1999,10 +1999,7 @@ function westwoodW3d() {
     0x48,
     concat(
       chunk(0x49, u32le(0)),
-      chunk(
-        0x4a,
-        concat(f32le(0), f32le(0), f32le(1), f32le(0), f32le(0), f32le(1)),
-      ),
+      chunk(0x4a, concat(f32le(0), f32le(0), f32le(1), f32le(0), f32le(0), f32le(1))),
     ),
     true,
   )
@@ -2020,16 +2017,18 @@ function westwoodW3d() {
   )
 }
 
-/** Red Alert 2 VXL shell with one bounded section and a metadata-only 1×1×1 voxel body. */
+/** Red Alert 2 VXL with one bounded 1×1×1 packed-span voxel. */
 function redAlert2Vxl() {
   const transform = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0]
+  const spanData = bytes(0, 1, 42, 5, 1)
+  const body = concat(u32le(0), u32le(spanData.byteLength - 1), spanData)
   return concat(
     ascii('Voxel Animation'),
     bytes(0),
     u32le(1),
     u32le(1),
     u32le(1),
-    u32le(0),
+    u32le(body.byteLength),
     bytes(0, 255),
     new Uint8Array(768),
     ascii('FixtureBody'),
@@ -2037,9 +2036,10 @@ function redAlert2Vxl() {
     u32le(0),
     u32le(0),
     u32le(0),
+    body,
     u32le(0),
-    u32le(0),
-    u32le(0),
+    u32le(4),
+    u32le(8),
     f32le(1),
     ...transform.map(f32le),
     f32le(0),
