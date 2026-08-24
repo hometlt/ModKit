@@ -67,6 +67,35 @@ layout смешала бы механический переезд с функц
 отсутствия регрессий. Решение о канонической раскладке принимается только в отдельной promotion
 slice после разрешения владельца.
 
+## D-SAGE-1. `sage-asset-bundle` не материализуется без входа и runtime
+
+Каноническая запись находится ровно в
+`extensions/ea/sage/codecs/sage-asset-bundle/codec.manifest.json`. Это единственный файл в
+каталоге codec-а: `status` равен `unsupported`, вариант `planned` имеет
+`availability: unavailable`, пустые `entrypoints` и `capabilities`, а причина записана как
+`No SAGE asset-bundle grouping, index, or extraction runtime is implemented.` Канон не содержит
+ни parser/source, ни fixture/test. Game manifest C&C 3 только `suggests` этот ID; исполняемой
+зависимости нет.
+
+Поэтому X3 не создаёт contribution, probe или фиктивную запись в `ports:check`: расширения
+`.manifest`, `.bin`, `.imp`, `.relo`, `.version` и `.cdata` сами по себе недостаточны для
+надёжного выбора primary source и группировки multi-file bundle. Текущий минимум остаётся
+`168/168`, а не искусственно увеличивается на недоказанный codec.
+
+Отдельная follow-up задача перед портом:
+
+1. получить законно доступный corpus хотя бы одного полного набора
+   `.manifest` + `.bin` + `.imp` + `.relo` + `.version` и связанных `.cdata`;
+2. зафиксировать grouping key, обязательность файлов и выбор primary source;
+3. разделить смешанные канонические `file`/`directory` source kinds на доказуемую single/bundle
+   или namespace topology MK3;
+4. реализовать bounded index/extraction runtime и negative fixtures;
+5. только после product-owned `openSubject` acceptance добавить contribution, corpus case и
+   поднять ожидаемый итог `ports:check`.
+
+До выполнения этих условий это отсутствие является подтверждённой канонической границей, а не
+долгом, который можно закрыть metadata-only заглушкой.
+
 ## Проверка
 
 - `pnpm apps:check` доказывает точные продуктовые наборы.
