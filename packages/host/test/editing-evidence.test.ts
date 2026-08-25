@@ -33,6 +33,7 @@ import {
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const textJsonDir = join(repoRoot, 'extensions', 'common', 'text-json')
+const documentsDir = join(repoRoot, 'extensions', 'common', 'documents')
 const archivesDir = join(repoRoot, 'extensions', 'common', 'archives')
 
 const HOST = 'org.example.app/host'
@@ -85,14 +86,14 @@ afterAll(() => rmSync(scratch, { recursive: true, force: true }))
 let cached: Promise<NodeSubjectServices> | undefined
 const services = () =>
   (cached ??= (async () => {
-    const input: ExtensionInput = {
-      ...(await loadExtensionDirectory(textJsonDir)),
+    const linked = async (directory: string): Promise<ExtensionInput> => ({
+      ...(await loadExtensionDirectory(directory)),
       execution: { origin: 'linked', allowTrustedInProcess: false },
-    }
+    })
     return createNodeSubjectServices({
       topology,
       realms: { host: HOST, workers: WORKERS },
-      extensions: [input],
+      extensions: [await linked(textJsonDir), await linked(documentsDir)],
       policy: workerBackendPolicy({ loadDeadlineMs: 15_000, defaultCallDeadlineMs: 15_000 }),
     })
   })())
@@ -274,6 +275,74 @@ describe('F3 raw writer — a format-blind editor saves through the coordinator'
     })
     expect(reopened.state).toBe('opened')
     if (reopened.state !== 'opened') return
+    await reopened.session.dispose()
+    await backend.dispose()
+  }, 60_000)
+
+  /*
+   * Block 11 slice 11A.2. Markdown is not ported again — it already lives in
+   * `extensions/common/documents`. What the slice owes it is an edit transaction on the existing
+   * seam: the format-blind editor authors a range edit, the coordinator commits it, and the
+   * markdown codec opens the result. The codec itself stays read-only throughout.
+   */
+  it('commits a markdown range edit through the same seam and reopens it as markdown', async () => {
+    const source = '# Port Plan\n\nSee [spec](https://example.invalid/spec).\n'
+    const { path, result } = await openJson('notes.md', source)
+    expect(result.selected.contributionId).toBe('org.modkitx/document-markdown')
+    const backend = createFileEditingBackend({ roots: [scratch] })
+    const editing = createSubjectEditing({
+      opened: result,
+      grant: WRITE,
+      backendFor: () => backend,
+      evidenceFor: plan => createEvidenceRegistry().evidenceFor(plan),
+      writer: createRawWriter(),
+    })
+    if (editing.session === undefined) throw new Error('a writer must produce a session')
+    const target = editing.targets[0]
+    if (target === undefined) throw new Error('no edit target')
+    const at = source.indexOf('Port Plan')
+    const change: ChangeSet = {
+      targets: editing.targets,
+      edits: [
+        {
+          operation: 'replace',
+          targetId: target.targetId,
+          source: target.ownerSource,
+          range: { kind: 'utf16', offset: at, length: 'Port Plan'.length },
+          payload: { kind: 'text', text: 'Slice 11A' },
+        },
+      ],
+      provenance: { actor: 'user' },
+    }
+    expect(await editing.session.propose(change)).toEqual({ valid: true, diagnostics: [] })
+    const plan = await editing.session.plan(change)
+    const prepared = await editing.coordinator.prepare(plan, { grant: editing.grantSnapshot })
+    expect(prepared.state).toBe('ready')
+    if (prepared.state !== 'ready') return
+    const committed = await editing.coordinator.commit(prepared.prepared, {
+      grant: editing.grantSnapshot,
+    })
+    expect(committed.state).toBe('committed')
+    expect(readFileSync(path, 'utf8')).toBe(source.replace('Port Plan', 'Slice 11A'))
+    await result.session.dispose()
+
+    const reopened = await (
+      await services()
+    ).open({
+      source: await openFileArtifactSource(path),
+      path,
+      intent: 'full',
+      grant: WRITE,
+      budget,
+    })
+    expect(reopened.state).toBe('opened')
+    if (reopened.state !== 'opened') return
+    expect(reopened.selected.contributionId).toBe('org.modkitx/document-markdown')
+    const inspected = await reopened.session.operations().invoke('inspect', null)
+    expect(inspected.state).toBe('ok')
+    if (inspected.state === 'ok' && inspected.output.kind === 'json') {
+      expect(inspected.output.value).toMatchObject({ format: 'markdown', headings: 1, links: 1 })
+    }
     await reopened.session.dispose()
     await backend.dispose()
   }, 60_000)

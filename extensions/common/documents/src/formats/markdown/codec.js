@@ -2,6 +2,9 @@ import { createInspectionCodec, createTreeDataSource } from '@modkitx-x3/codec-k
 
 const decoder = new TextDecoder('utf-8', { fatal: true })
 
+/** Every alias the legacy route answered for; MK3 closes all four (plan 11A.2). */
+const ALIASES = new Set(['md', 'markdown', 'mdown', 'mkd'])
+
 function looksLikeMarkdown(bytes) {
   let text
   try {
@@ -76,15 +79,18 @@ const definition = Object.freeze({
   async detect(bytes, uri) {
     const structure = looksLikeMarkdown(bytes)
     const extension = uri.split(/[?#]/u, 1)[0]?.split('.').at(-1)?.toLowerCase()
-    const confidence = structure
-      ? extension === 'md' || extension === 'markdown'
-        ? 0.93
-        : 0.72
-      : 0.05
+    const alias = ALIASES.has(extension)
+    // Two pieces of evidence beat one: the MK3 route reads the bounded structure *and* the alias,
+    // so it is decisively above a route that only reads structure (slice 11A.2 routing).
+    const confidence = structure ? (alias ? 0.96 : 0.72) : alias ? 0.4 : 0.05
     return {
       confidence,
       kind: 'structure',
-      note: structure ? 'markdown-structure' : 'markdown-structure-missing',
+      note: structure
+        ? alias
+          ? 'markdown-structure-and-alias'
+          : 'markdown-structure'
+        : 'markdown-structure-missing',
     }
   },
   async inspect(bytes, context) {

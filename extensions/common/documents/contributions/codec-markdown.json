@@ -27,7 +27,7 @@
     "sourceTopology": "single",
     "artifactStages": ["authored"],
     "openIntents": ["probe", "inspect", "full", "export"],
-    "match": { "extensions": ["md", "markdown"], "mediaTypes": ["text/markdown"] },
+    "match": { "extensions": ["md", "markdown", "mdown", "mkd"], "mediaTypes": ["text/markdown"] },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 8192 }], "maxBytes": 8192 },
     "representations": [
       {
