@@ -15924,7 +15924,7 @@ capabilities:
       nativeExport: 'planned'
     knownLoss:
       - 'model viewer открывает живую проекцию без материализации и без знания native game/format ID; байты UVM создаёт только материализатор'
-      - 'опциональные facet-контракты объявлены, но кодеки ещё публикуют ad hoc сводки: миграция публикаторов — блок 12'
+      - 'опциональные facet-контракты объявлены и публикуются: слайс 12-2 снял ad hoc сводки там, где контракт несёт факт целиком (M3 textureReferences/textureBindings, W3D textures/animations/collision, W3X textures/collisionParts). Осталось намеренно то, чего у контрактов нет: иерархия W3D с parentIndex, роли meshBindings, слот и шейдер в textureReferences W3X — расширение контрактов, а не дублирование'
     receipts:
       projection: null
       materialization: null
