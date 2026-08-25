@@ -74,6 +74,13 @@ descriptor cannot be registered by accident.
 - `registered` — a complete descriptor with conformance vectors. Only this state may be named in a
   release or compatibility statement.
 
+A registered descriptor may be **amended** without a version bump, and only when the change alters
+no hashed input: filling in a binding, correcting prose, naming a publisher that now exists. Every
+such edit is recorded in the descriptor's own `amendments` list with its rationale, because an
+in-place edit that leaves no trace is indistinguishable from a silent redefinition. Anything that
+moves a facet id, an encoding, an ordering rule, a numeric rule, a missing-value rule, the closure
+policy or the hash is a version change instead — there is no third option.
+
 Registration requires conformance vectors that pin **both** equality and inequality. A suite that
 only proves two identical inputs hash identically proves nothing about what the scope separates;
 each registered scope therefore carries near-miss vectors for ordering, absence, closure mode and
@@ -98,13 +105,15 @@ Six facets, three of them required:
 | `uv.model/mesh-index@1`      | required    | `common.view/model-scene-source@1` · `meshes(page)`    |
 | `uv.model/bounds@1`          | optional    | `common.view/model-scene-source@1` · `info().bounds`   |
 | `uv.model/geometry@1`        | optional    | `common.view/model-scene-source@1` · `primitive(id, …)`|
-| `uv.model/resource-closure@1`| optional    | none yet — the live path needs the `ResourceSessionPort` |
+| `uv.model/resource-closure@1`| optional    | `common.view/model-resource-refs-source@1`, resolved by the host `ResourceSessionPort` |
 
-Everything above the last row is computable today from the admitted base contract, unchanged, and
-from a UVM/core 1.0 artifact. The last row is honest about the gap rather than describing a
-contract that does not exist: a live publisher declares the facet absent until the resource port is
-frozen, and the artifact binding is executable now.
+Every row is computable today: the first five from the admitted base contract, unchanged, and the
+last from the optional resource-refs facet plus the host-owned post-open `ResourceSessionPort` that
+opens what the model names. A publisher with no resource facet declares the facet absent rather
+than publishing an empty closure — those are different hashes, deliberately.
 
-The scope deliberately does **not** cover materials, skeleton, sockets, effects, collision, LOD or
-variants. Those planes have no admitted live source yet; adding them to the scope would make every
-hash unreproducible in exchange for a longer table.
+The scope deliberately does **not** cover materials, skeleton, animation, sockets, effects,
+collision, LOD or variants. Some of those now have optional facet contracts and some do not, but
+none of them has an *admitted* source: their shapes may still move, and a scope built on a shape
+that can move produces hashes nobody can reproduce later. They join a scope when their contracts
+are admitted, not when they are declared.

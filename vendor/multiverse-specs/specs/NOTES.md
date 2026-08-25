@@ -125,18 +125,26 @@ every pinned digest on a different platform.
 | UVI / UVY admission       | Reserved candidates. The gate needs SC2Layout plus a second independent UI family.            |
 | Executable JSON Schema engine | The seed ships no dependencies, so `uv-conformance` runs the schema assertions only with an engine supplied via `--schemas`. `conformance/schema-assertions.json` records the assertions and the engine options, so a consumer that has an engine runs exactly the same check against its pinned snapshot. |
 
-## 9. What slice 11C0 still owes after this seed
+## 9. What slice 11C0 owed after the seed, and what closed it
 
-This is the first half of the slice. Still open in its second half, and deliberately **not** frozen
-here:
+The seed was the first half of the slice. The second half landed in `modkitX3` on 2026-08-25 and
+closed all three items:
 
-1. the executable UV Projection ABI in the MK3 SDK — request/plan, faceted lazy data sources,
-   materialization request, and the separate `ProjectionReceipt`, `MaterializationReceipt` and
-   `NativeExportReceipt`;
-2. the post-open host-owned `ResourceSessionPort` with its own lease/revision lifecycle — which is
-   also the missing live binding for `uv.model/resource-closure@1`;
-3. the optional versioned facet *sources* in the SDK (materials, skeleton, animation, sockets,
-   effects, collision, LOD, variants).
+1. the executable UV Projection ABI in the MK3 SDK — projection request/plan, the optional facet
+   sources beside the base model contract, the materialization request, and the three separate
+   `ProjectionReceipt`, `MaterializationReceipt` and `NativeExportReceipt` types;
+2. the post-open host-owned `ResourceSessionPort` with its own lease/revision lifecycle, which is
+   what gave `uv.model/resource-closure@1` the live binding it was missing — recorded here as an
+   amendment rather than a version bump, because a binding changes no hashed input (see the
+   descriptor's own `amendments` list);
+3. five optional versioned facet sources in the SDK, all at `publisher-candidate` maturity:
+   resource refs, skeleton, animation, collision and materials. Sockets, LOD, variants and
+   per-emitter effects are **reserved ids without contracts** — nothing publishes them, and §2.7
+   does not admit a facet family with no publisher.
+
+Still open, and named rather than implied: the model codecs that already compute these facts
+publish them ad hoc in their inspect summaries and have not been migrated onto the contracts, which
+is slice 11C1 / block 12 work; and the full conformance of the resource port is block 12 item 7.
 
 Slice 11C1 then adds the UVM materializer/writer and raises the minimal UVT profile from stub to a
 conversion-grade schema.

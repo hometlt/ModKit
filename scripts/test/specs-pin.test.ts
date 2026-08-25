@@ -107,18 +107,31 @@ describe('model-interchange-v1 against the X3 model contract', () => {
     expect(base.major).toBe(1)
   })
 
-  it('states honestly that the resource-closure facet has no live binding yet', () => {
+  it('binds every facet to a contract this build actually publishes', () => {
     const facets = descriptor.facets as readonly {
       facetId: string
       binding: { live: { contract: string | null } }
     }[]
+    // Slice 11C0's second half gave the closure facet the live binding it was missing: the model
+    // publishes logical requirements through the resource-refs facet and the host's post-open
+    // `ResourceSessionPort` opens them.
     const closure = facets.find(facet => facet.facetId === 'uv.model/resource-closure')
-    expect(closure?.binding.live.contract).toBeNull()
-    // Everything else must be bound, or the scope is not computable from what exists today.
+    expect(closure?.binding.live.contract).toBe('common.view/model-resource-refs-source')
     for (const facet of facets) {
-      if (facet.facetId === 'uv.model/resource-closure') continue
-      expect(facet.binding.live.contract).toBe('common.view/model-scene-source')
+      const contract = facet.binding.live.contract
+      // a paper scope is one whose facets name contracts nothing publishes; every one must resolve
+      expect(contract, facet.facetId).not.toBeNull()
+      expect(STANDARD_DATA_SOURCE_CONTRACTS, facet.facetId).toContain(contract)
     }
+  })
+
+  it('records the binding as an amendment rather than a silent in-place edit', () => {
+    const amendments = descriptor.amendments as readonly { hashImpact: string; change: string }[]
+    expect(amendments.length).toBeGreaterThan(0)
+    // an amendment may only ever be a change that moves no hash; anything else is a version bump
+    for (const amendment of amendments) expect(amendment.hashImpact).toBe('none')
+    // and the version therefore did not move: the pinned vectors keep comparing against 1.0.0
+    expect(descriptor.version).toBe('1.0.0')
   })
 
   it('reproduces the pinned hash from a real ModelSceneSource, paging included', async () => {

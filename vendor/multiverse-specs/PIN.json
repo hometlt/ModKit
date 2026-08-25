@@ -3,22 +3,22 @@
   "schemaVersion": "multiverse-specs-pin-1",
   "source": {
     "repository": "multiverse (sibling repository)",
-    "commit": "4ec94941cfdb87846785426a7b3ffb326c010fb5",
-    "subject": "specs: эмиттер векторов с опциональным differential-оракулом",
-    "committedOn": "2026-08-25T20:31:52+04:00"
+    "commit": "61dd6e2aaa8b4a9c4c11707a5790253a1acd5df9",
+    "subject": "specs: live-биндинг uv.model/resource-closure@1 без смены версии",
+    "committedOn": "2026-08-25T20:58:44+04:00"
   },
   "generator": "scripts/specs-pin.mjs",
   "generatedFrom": "git objects, not the sibling working tree",
   "prefix": "specs/",
   "counts": {
     "files": 39,
-    "bytes": 407248
+    "bytes": 410902
   },
   "files": [
     {
       "path": "specs/NOTES.md",
-      "bytes": 10934,
-      "digest": "sha256:ab849402a299427779ed3fdc35f66bdb8db2e2f64fdebd03a146500713e37b31"
+      "bytes": 11673,
+      "digest": "sha256:e3e8065532228bf6e74d421535ea80aa5835a1a861303ccd310e251fabb23be4"
     },
     {
       "path": "specs/README.md",
@@ -162,13 +162,13 @@
     },
     {
       "path": "specs/semantic-scopes/SPEC_SEMANTIC_SCOPE_DESCRIPTOR.md",
-      "bytes": 7736,
-      "digest": "sha256:6b9439076b6f6e78860fb3a5a6fa7fa038d2355d18d58871562af81e43c75d5b"
+      "bytes": 8538,
+      "digest": "sha256:0af9b4ca298b22f6aa1efe745448faa9a46fa7a1ecafb5785c8ab183853ab4c7"
     },
     {
       "path": "specs/semantic-scopes/model-interchange-v1.json",
-      "bytes": 12452,
-      "digest": "sha256:a4d4e32ad0d1489982a9a47213b3817c035d64c24c254218c20fe207c7f7a864"
+      "bytes": 13601,
+      "digest": "sha256:2525dbec3c791e604f01697b3781e6b1326d7a940a4a4f5a17e06581f527199c"
     },
     {
       "path": "specs/semantic-scopes/registry.json",
@@ -177,8 +177,8 @@
     },
     {
       "path": "specs/semantic-scopes/semantic-scope-descriptor.v1.schema.json",
-      "bytes": 6543,
-      "digest": "sha256:7fc23a4149b9a784f513711e608c96f689c4caf788e9db0d3d83f78023b9eb28"
+      "bytes": 7507,
+      "digest": "sha256:a005c1c92dc409b8b2ca737d732135d4374ce6760cb901cbd69011f6f259d263"
     },
     {
       "path": "specs/tools/model-interchange.mjs",

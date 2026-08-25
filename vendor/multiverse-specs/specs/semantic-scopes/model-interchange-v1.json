@@ -176,8 +176,11 @@
       },
       "binding": {
         "live": {
-          "contract": null,
-          "note": "no live binding exists yet. The live path publishes resource references through the post-open host-owned ResourceSessionPort, which block 11C0 freezes in its second slice half; until then only the artifact binding is executable and a live publisher declares this facet absent."
+          "contract": "common.view/model-resource-refs-source",
+          "major": 1,
+          "members": ["info()", "references(page)"],
+          "resolvedBy": "host-owned post-open ResourceSessionPort",
+          "note": "the model publishes each reference as a logical requirement and the host resolves it; a resolved reference contributes an entry whose digest the closure mode decides, and an unresolved one is still an entry, carrying its logical identity and a null digest. A publisher with no resource facet declares this facet absent rather than publishing an empty closure — the two are different hashes on purpose."
         },
         "artifact": {
           "profile": "UVM/core@1.0",
@@ -210,11 +213,19 @@
       "boundsSource": "the union of decoded position values across all primitives; absent when the document has no primitive"
     },
     "notFrozenHere": [
-      "the executable UV Projection ABI (request/plan, faceted lazy data sources, materialization request, ProjectionReceipt, MaterializationReceipt) — plan item 10, second half of slice 11C0",
-      "ResourceSessionPort lease/revision lifecycle — plan item 13, second half of slice 11C0",
-      "optional versioned facet *sources* in the SDK (materials, skeleton, animation, sockets, effects, collision, LOD, variants) — plan item 11"
+      "the publishers: the model codecs that already compute these facts still publish them ad hoc in their inspect summaries, and migrating them onto the facet contracts is slice 11C1 / block 12 work. Declaring a contract and migrating its publishers are separate reviewable steps.",
+      "four model facet ids are reserved in the consumer SDK without contracts, because nothing publishes them: sockets, LOD, variants and per-emitter effects. They are outside this scope for the same reason.",
+      "the UVM materializer/writer and the byte-stable export path — slice 11C1"
     ]
   },
+  "amendments": [
+    {
+      "date": "2026-08-25",
+      "change": "uv.model/resource-closure@1 gained its live binding: common.view/model-resource-refs-source@1, resolved by the host-owned post-open ResourceSessionPort frozen in the second half of slice 11C0.",
+      "hashImpact": "none",
+      "rationale": "a binding says where a facet value comes from, not what it contains. No facet id, encoding, ordering, numeric rule, missing-value rule, closure policy or hash input changed, so every vector in ../conformance/model-interchange-v1/vectors.json keeps its recorded hash and the version stays 1.0.0. Bumping the version would have made every existing hash non-comparable to buy nothing."
+    }
+  ],
   "compatibility": {
     "minorVersions": "additive only: a new optional facet, a new accepted digest algorithm or a new enum value. A 1.0 consumer keeps computing 1.0 hashes and must refuse to compare them with a hash produced under a different scope version.",
     "majorVersions": "may remove or redefine a facet. A consumer refuses a major it does not implement rather than guessing.",
