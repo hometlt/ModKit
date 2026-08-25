@@ -127,7 +127,12 @@ async function open(name: string, content: string | { fixture: string }): Promis
   const opener = createPathSubjectOpener({ subjects, roots: [directory], budget, grant })
   const { snapshot, session } = await opener(path)
   const detected: Record<string, number> = {}
-  for (const candidate of snapshot.candidates ?? []) {
+  const candidates = (snapshot.candidates ?? []) as readonly {
+    contributionId: string
+    state: string
+    confidence?: number
+  }[]
+  for (const candidate of candidates) {
     if (candidate.state === 'rejected' || candidate.confidence === undefined) continue
     detected[candidate.contributionId] = candidate.confidence
   }
@@ -143,6 +148,9 @@ async function open(name: string, content: string | { fixture: string }): Promis
   }
   return { state: snapshot.state, winner, confidence, detected }
 }
+
+/** The host's own eligibility floor (`DEFAULT_MINIMUM_CONFIDENCE`); below it nothing is a match. */
+const FLOOR = 0.5
 
 /**
  * The pairs plan item 4 names. `weak` is the generic claimant, `strong` the one that read more;
@@ -322,6 +330,104 @@ describe('collision suite: the generic route still wins the bytes nobody else cl
   }, 60_000)
 })
 
+describe('collision suite: INI-like and CSV-like bodies that belong to a real format', () => {
+  /*
+   * Two of the four corpus kinds plan item 4 names, and the answer for both turned out to be
+   * structural rather than numeric.
+   *
+   * SC2's `GameStrings.txt` is `Key=Value` lines — the exact shape the INI probe scores 0.55 on.
+   * Warzone's `.img` atlas index is `x,y,file` — three stable comma-separated columns, a valid CSV
+   * by every measure the delimited probe has. Neither generic intercepts, and not because it loses
+   * the comparison: it never reaches the probe at all, because `text-ini` declares `.ini` and
+   * `text-csv` declares `.csv`/`.tsv`, and the detection index shortlists on that declaration.
+   *
+   * That is a stronger defence than winning on confidence, so it is worth proving it is a real one
+   * and not an accident of these two codecs being weak. Each case is therefore run twice: once
+   * under the format's own name, where the generic is absent and the strong route wins, and once
+   * under the generic's own extension with the *same bytes*, where the generic claims them
+   * happily. The second half is what makes the first half mean something — it shows the body would
+   * have been claimed, and that only the shortlist kept the generic away from it.
+   */
+  it.each([
+    {
+      label: 'INI-like SC2 game strings',
+      fixture: 'minimal.sc2strings.txt',
+      ownName: 'GameStrings.txt',
+      strong: 'org.modkitx/sc2-strings',
+      generic: 'org.modkitx/text-ini',
+      genericName: 'strings.ini',
+    },
+    {
+      label: 'CSV-like Warzone atlas index',
+      fixture: 'minimal.warzone.img',
+      ownName: 'images.img',
+      strong: 'org.modkitx/warzone-img',
+      generic: 'org.modkitx/text-csv',
+      genericName: 'images.csv',
+    },
+  ])(
+    '$label: the generic never reaches the probe, though the same bytes are its own under its name',
+    async entry => {
+      const own = await open(entry.ownName, { fixture: entry.fixture })
+      expect(own.state, JSON.stringify(own.detected)).toBe('opened')
+      expect(own.winner).toBe(entry.strong)
+      expect(own.detected[entry.generic]).toBeUndefined()
+
+      const renamed = await open(entry.genericName, { fixture: entry.fixture })
+      // the same bytes under the generic's own extension: it claims them, and above the floor
+      expect(renamed.detected[entry.generic], JSON.stringify(renamed.detected)).toBeGreaterThan(
+        FLOOR,
+      )
+    },
+    60_000,
+  )
+})
+
+describe('collision suite: binary whose first bytes read as text', () => {
+  /*
+   * The fourth corpus kind plan item 4 names, and the one a text codec is most likely to get wrong.
+   * Both C&C3 and Warzone open their `.map` with printable ASCII — `EAR` and `map ` respectively —
+   * and a probe that reads a short prefix and asks "is this text?" answers yes. What stops the
+   * interception is that a text codec must decode the *whole* probe window, and these files carry
+   * NUL and high bytes a few dozen bytes in.
+   *
+   * Asserting the winner is not enough here: a generic that claims at 0.5 and loses today wins
+   * tomorrow the moment the strong claimant is absent from a composition. So the claim is the
+   * stronger one — no generic text route claims these bytes at all.
+   */
+  const GENERIC_TEXT = [
+    'org.modkitx/txt',
+    'org.modkitx/text-ini',
+    'org.modkitx/text-csv',
+    'org.modkitx/text-xml',
+    'org.modkitx/text-json',
+  ] as const
+
+  it.each([
+    {
+      label: 'C&C3 .map behind an "EAR" prefix',
+      name: 'skirmish.map',
+      fixture: 'minimal.cnc3.map',
+      winner: 'org.modkitx/cnc3-map',
+    },
+    {
+      label: 'Warzone .map behind a "map " prefix',
+      name: 'level.map',
+      fixture: 'minimal.warzone.map',
+      winner: 'org.modkitx/warzone2100-map',
+    },
+  ])(
+    '$label is never claimed by a text route',
+    async entry => {
+      const verdict = await open(entry.name, { fixture: entry.fixture })
+      expect(verdict.winner).toBe(entry.winner)
+      const claimed = GENERIC_TEXT.filter(id => (verdict.detected[id] ?? 0) >= FLOOR)
+      expect(claimed, JSON.stringify(verdict.detected)).toEqual([])
+    },
+    60_000,
+  )
+})
+
 describe('collision suite: the untie rules the host actually enforces', () => {
   it('refuses to break an exact tie, and says so instead of guessing', async () => {
     /*
@@ -367,6 +473,7 @@ describe('collision suite: the untie rules the host actually enforces', () => {
       'an-extension-alone-never-decides',
       'a-foreign-format-scores-zero-not-low',
       'a-signature-shortlists-but-does-not-select',
+      'a-declaration-scopes-a-generic',
     ])
     for (const id of cited) expect(isDetectionUntieRule(id), id).toBe(true)
     expect(DETECTION_UNTIE_RULES.map(rule => rule.id).sort()).toEqual([...cited].sort())

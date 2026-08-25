@@ -112,6 +112,12 @@ export const DETECTION_UNTIE_RULES: readonly DetectionUntieRule[] = Object.freez
     enforcedBy: 'extensions/common/documents/src/odf/package.js and its peers',
   }),
   Object.freeze({
+    id: 'a-declaration-scopes-a-generic',
+    rule: 'A contribution is put in front of the probe only for bytes its own declaration matches by name or signature, and that — not confidence — is what keeps a generic away from another format’s body. `text-ini` scores `Key=Value` lines happily but declares only `.ini`, so it never sees an SC2 `GameStrings.txt`; `text-csv` declares `.csv` and `.tsv`, so it never sees a Warzone `.img` atlas index. A generic that widens its declaration to every path gives this protection up and must then win every collision on confidence alone.',
+    enforcedBy:
+      'packages/host/src/detection-index.ts; proved in packages/testkit/test/detection-collisions.test.ts',
+  }),
+  Object.freeze({
     id: 'a-signature-shortlists-but-does-not-select',
     rule: 'A declared byte signature only puts a contribution in front of the probe — a renamed `.dat` PNG reaches the PNG probe. Selection is still decided by the probe result, so a signature can never open a subject on its own.',
     enforcedBy: 'packages/host/src/detection-index.ts',
