@@ -75,7 +75,7 @@ planes:
     knownLoss:
       - 'materialization в UVM реализована слайсом 11C1 (common.uv/model-materializer@1 + export-only writer); MaterializationReceipt выпускается, byte-stability и три оракула доказаны'
       - 'ProjectionReceipt выпускают M3, W3D, W3X, VXL, OBJ и UVM (слайс 12-1); остальные модельные кодеки (DAE, glTF, PLY, STL, XBF, SCM) квитанцию пока не выпускают'
-      - 'skeleton остаётся publisher-candidate: обе публикующие семьи (W3D, W3X) живут в одном extension-пакете, второй независимой семьи нет'
+      - 'skeleton остаётся publisher-candidate: обе публикующие семьи (W3D, W3X) живут в одном extension-пакете; слайс 12-2 проверил обоих кандидатов на вторую семью и обе требуют нового декодирования — кости M3 (секции BONE/STC кодек не читает, это углубление M3, блок 15) и joints UVM (в UVM/core их нет вовсе, а skinned помечен в схеме как advisory)'
       - 'native export не заявлен ни одним кодеком; NativeExportReceipt отсутствует'
       - 'глубина по формату разная: M3/W3D/W3X доказаны на реальном корпусе, VXL — на реальном файле, остальные модели — только структурно'
     resourceDependencies:

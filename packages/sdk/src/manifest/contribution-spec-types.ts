@@ -362,6 +362,14 @@ export interface ViewerContributionSpecV1<
   readonly requiresTraits?: readonly TraitRequirement<Ids>[]
   readonly requiresOperations?: readonly Ids['operation'][]
   readonly consumesDataSources: readonly DataSourceRefFor<DataSourceContract>[]
+  /**
+   * Sources read when the subject publishes them, ignored when it does not.
+   *
+   * Separate from `consumesDataSources` because eligibility is decided by that list alone: a facet
+   * named here can never cost a stage a subject that publishes none of them, which is what lets one
+   * generic viewer read optional facets without splitting into two contributions.
+   */
+  readonly optionalDataSources?: readonly DataSourceRefFor<DataSourceContract>[]
   readonly applicability?: ViewerApplicability
   readonly hosts?: readonly HostId[]
   readonly priority: number

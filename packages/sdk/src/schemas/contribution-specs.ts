@@ -504,6 +504,15 @@ export const viewerContributionSpecV1Schema = {
     requiresTraits: { type: 'array', items: traitRequirementSchema },
     requiresOperations: { type: 'array', items: operationId },
     consumesDataSources: { type: 'array', items: dataSourceRefWireSchema },
+    /*
+     * Sources a viewer reads when the subject publishes them and does without when it does not.
+     *
+     * Kept apart from `consumesDataSources` because that list decides eligibility: a facet named
+     * there would cost the stage every subject that publishes none of them, which is the opposite
+     * of optional. Naming them separately is what lets one generic viewer consume the optional
+     * model facets instead of splitting into a contribution per facet combination.
+     */
+    optionalDataSources: { type: 'array', items: dataSourceRefWireSchema },
     applicability: viewerApplicabilitySchema,
     hosts: { type: 'array', items: nonEmptyString },
     priority: { type: 'number' },

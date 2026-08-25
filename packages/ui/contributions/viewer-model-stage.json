@@ -16,6 +16,13 @@
     "kind": "stage",
     "requiresTraits": [{ "id": "model.geometry", "states": ["available"] }],
     "consumesDataSources": [{ "contract": "common.view/model-scene-source", "major": 1 }],
+    "optionalDataSources": [
+      { "contract": "common.view/model-resource-refs-source", "major": 1 },
+      { "contract": "common.view/model-skeleton-source", "major": 1 },
+      { "contract": "common.view/model-animation-source", "major": 1 },
+      { "contract": "common.view/model-collision-source", "major": 1 },
+      { "contract": "common.view/model-material-source", "major": 1 }
+    ],
     "priority": 350,
     "singletonGroup": "center-stage"
   }

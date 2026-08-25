@@ -50,8 +50,22 @@ export type DataSourceMaturity = 'admitted' | 'publisher-candidate'
  * `common.view/model-skeleton-source`: block 12 slice 12-1 migrated W3D and W3X onto it, and those
  * two are the only publishers. They are different readers of different containers, but they ship
  * in one extension package from one vendor lineage, which is a weaker claim than the two
- * independent families §2.7 asks for. The second family is the M3 bone table or a UVM skeleton
- * surface, and neither is read today — so this one stays a candidate while the other four move.
+ * independent families §2.7 asks for.
+ *
+ * Slice 12-2 checked the two candidate second families and found neither available without new
+ * decoding work, which is why this is still a candidate rather than an oversight:
+ *
+ * - **M3 bones.** The format has `BONE`/`STC` sections and the codec reads neither — it knows the
+ *   section index by tag and nothing inside those records. Publishing a skeleton from it means
+ *   implementing M3 bone decoding, which is a deepening of M3 and belongs to its own slice
+ *   (block 15), not to a maturity promotion that would be the reason for doing it.
+ * - **UVM joints.** UVM/core carries no skins: the pinned `uvm-core.mjs` reader has no `joints` or
+ *   `skins` at all, and the asset schema's `skinned` is an advisory capability boolean the spec
+ *   marks "readers MUST NOT rely on it for correctness". Turning a boolean into bone bindings would
+ *   be invention, which is the one thing the facet contracts exist to prevent.
+ *
+ * A candidate with a named, checked reason is a healthier state than an admission bought by writing
+ * a publisher for the sake of the count.
  *
  * The other four optional model facets are `admitted` as of slice 12-1. Each has at least two
  * independent publishers that exercise *different* shapes of the same contract, so the shape is

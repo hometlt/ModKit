@@ -161,6 +161,95 @@
         "fallback"
       ]
     },
+    "optionalDataSources": {
+      "items": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "contract": {
+                "enum": [
+                  "common.view/text-data-source",
+                  "common.view/byte-range-source",
+                  "common.view/tree-data-source",
+                  "common.view/table-data-source",
+                  "common.view/transport-source",
+                  "common.view/namespace-entry-source",
+                  "common.view/raster-image-source",
+                  "common.view/vector-scene-source",
+                  "common.view/audio-media-source",
+                  "common.view/video-media-source",
+                  "common.view/model-scene-source",
+                  "common.view/model-resource-refs-source",
+                  "common.view/model-skeleton-source",
+                  "common.view/model-animation-source",
+                  "common.view/model-collision-source",
+                  "common.view/model-material-source",
+                  "common.view/relation-graph-source",
+                  "common.view/subject-facts-source",
+                  "common.view/slide-deck-source"
+                ]
+              },
+              "major": {
+                "const": 1
+              }
+            },
+            "required": [
+              "contract",
+              "major"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "contract": {
+                "not": {
+                  "enum": [
+                    "common.view/text-data-source",
+                    "common.view/byte-range-source",
+                    "common.view/tree-data-source",
+                    "common.view/table-data-source",
+                    "common.view/transport-source",
+                    "common.view/namespace-entry-source",
+                    "common.view/raster-image-source",
+                    "common.view/vector-scene-source",
+                    "common.view/audio-media-source",
+                    "common.view/video-media-source",
+                    "common.view/model-scene-source",
+                    "common.view/model-resource-refs-source",
+                    "common.view/model-skeleton-source",
+                    "common.view/model-animation-source",
+                    "common.view/model-collision-source",
+                    "common.view/model-material-source",
+                    "common.view/relation-graph-source",
+                    "common.view/subject-facts-source",
+                    "common.view/slide-deck-source"
+                  ]
+                },
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                "type": "string"
+              },
+              "major": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "opaque": {
+                "const": true
+              }
+            },
+            "required": [
+              "contract",
+              "major",
+              "opaque"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "type": "array"
+    },
     "priority": {
       "type": "number"
     },

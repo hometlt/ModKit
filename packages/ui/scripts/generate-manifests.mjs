@@ -114,6 +114,15 @@ const contributions = [
       kind: 'stage',
       requiresTraits: [trait('model.geometry')],
       consumesDataSources: [dataSource('common.view/model-scene-source')],
+      // read when the subject publishes them, ignored when it does not: the stage is still
+      // selected by the base scene source alone, so a codec publishing no facet keeps its stage
+      optionalDataSources: [
+        dataSource('common.view/model-resource-refs-source'),
+        dataSource('common.view/model-skeleton-source'),
+        dataSource('common.view/model-animation-source'),
+        dataSource('common.view/model-collision-source'),
+        dataSource('common.view/model-material-source'),
+      ],
       priority: 350,
       singletonGroup: 'center-stage',
     },

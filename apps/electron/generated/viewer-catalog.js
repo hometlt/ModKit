@@ -26,7 +26,19 @@ export const PREVIEW_STAGES = Object.freeze([
   { id: 'video', label: 'Video', contract: 'common.view/video-media-source', module: videoViewer },
   { id: 'image', label: 'Image', contract: 'common.view/raster-image-source', module: imageViewer },
   { id: 'audio', label: 'Audio', contract: 'common.view/audio-media-source', module: audioViewer },
-  { id: 'model', label: 'Model', contract: 'common.view/model-scene-source', module: modelViewer },
+  {
+    id: 'model',
+    label: 'Model',
+    contract: 'common.view/model-scene-source',
+    module: modelViewer,
+    optionalContracts: [
+      'common.view/model-resource-refs-source',
+      'common.view/model-skeleton-source',
+      'common.view/model-animation-source',
+      'common.view/model-collision-source',
+      'common.view/model-material-source',
+    ],
+  },
   {
     id: 'vector',
     label: 'Vector',
@@ -62,7 +74,19 @@ export const PREVIEW_STAGES_READONLY = Object.freeze([
   { id: 'video', label: 'Video', contract: 'common.view/video-media-source', module: videoViewer },
   { id: 'image', label: 'Image', contract: 'common.view/raster-image-source', module: imageViewer },
   { id: 'audio', label: 'Audio', contract: 'common.view/audio-media-source', module: audioViewer },
-  { id: 'model', label: 'Model', contract: 'common.view/model-scene-source', module: modelViewer },
+  {
+    id: 'model',
+    label: 'Model',
+    contract: 'common.view/model-scene-source',
+    module: modelViewer,
+    optionalContracts: [
+      'common.view/model-resource-refs-source',
+      'common.view/model-skeleton-source',
+      'common.view/model-animation-source',
+      'common.view/model-collision-source',
+      'common.view/model-material-source',
+    ],
+  },
   {
     id: 'vector',
     label: 'Vector',
