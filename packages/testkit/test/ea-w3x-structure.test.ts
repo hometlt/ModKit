@@ -34,6 +34,11 @@ import {
   type NamespaceEntrySource,
   type ResourceBudget,
 } from '@modkitx-x3/sdk'
+import {
+  drainModelProjection,
+  materializeAndCompare,
+  unexplainedDifferences,
+} from '@modkitx-x3/testkit'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const target = { environment: 'node', operatingSystem: 'windows', architecture: 'x64' } as const
@@ -553,6 +558,34 @@ describe('the configured real SAGE W3X model', () => {
         `collision ${summary.collisionParts.length}, bones from companion ` +
         `${summary.modelParts.filter(part => part.boneProvenance === 'companion').length}`,
     )
+
+    /*
+     * Slice 11C1: the shipped container's live projection, materialized through the one
+     * materializer. W3X names its parts after what the format calls them, so the artifact binding
+     * renumbers them and the hashes differ honestly. What the gate requires is that every
+     * difference carry a receipt entry, and the harness derives the differences itself rather than
+     * believing the receipt.
+     */
+    const modelLease = await containerOpen.session.dataSource('common.view/model-scene-source', 1)
+    try {
+      const drained = await drainModelProjection(modelLease.value, {
+        maxBytes: budget.maxScalarBytes,
+      })
+      const verdict = await materializeAndCompare(repoRoot, drained, {
+        assetId: 'sage/GUPREDTANK_SKN',
+        sourceFormat: 'w3x',
+        subjectRevision: containerOpen.session.revision,
+        assetClass: 'unit',
+      })
+      expect(verdict.byteStable).toBe(true)
+      expect(unexplainedDifferences(verdict)).toEqual([])
+      console.info(
+        `[w3x-live] materialized ${verdict.bytes.byteLength} bytes, exact=${verdict.exact}, ` +
+          `receipt entries=${verdict.receipt.diff.length}`,
+      )
+    } finally {
+      await modelLease.release()
+    }
     await containerOpen.session.dispose()
   })
 })

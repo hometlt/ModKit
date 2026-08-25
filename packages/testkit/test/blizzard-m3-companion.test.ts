@@ -34,6 +34,11 @@ import {
   type NamespaceEntrySource,
   type ResourceBudget,
 } from '@modkitx-x3/sdk'
+import {
+  drainModelProjection,
+  materializeAndCompare,
+  unexplainedDifferences,
+} from '@modkitx-x3/testkit'
 import { VirtualFileSystem } from '@modkitx-x3/vfs'
 import { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'
 
@@ -524,6 +529,41 @@ describe('the installed StarCraft II M3', () => {
           }
         }
         expect(resources.state()).toBe('disposed')
+
+        /*
+         * Slice 11C1: the same real model, materialized into UVM through the one materializer.
+         *
+         * M3 names its nodes and meshes after what the format calls them, so the artifact binding
+         * renumbers them and the two hashes are honestly different. What the gate actually demands
+         * is that the difference be *accounted for* — every plane that differs has a receipt entry,
+         * derived independently by the harness rather than read back out of the receipt.
+         */
+        const modelLease = await nested.result.session.dataSource(
+          'common.view/model-scene-source',
+          1,
+        )
+        try {
+          const drained = await drainModelProjection(modelLease.value, {
+            maxBytes: budget.maxScalarBytes,
+          })
+          const verdict = await materializeAndCompare(repoRoot, drained, {
+            assetId: `sc2/${modelPath}`,
+            sourceFormat: 'm3',
+            subjectRevision: nested.result.session.revision,
+            assetClass: 'unit',
+          })
+          expect(verdict.byteStable).toBe(true)
+          expect(verdict.artifactDigest).toMatch(/^sha256:[0-9a-f]{64}$/u)
+          expect(unexplainedDifferences(verdict)).toEqual([])
+          expect(verdict.receipt.scope).toMatchObject({ scopeId: 'model-interchange-v1' })
+          console.info(
+            `[sc2-live] materialized artifact1.m3: ${verdict.bytes.byteLength} bytes, ` +
+              `exact=${verdict.exact}, receipt entries=${verdict.receipt.diff.length}, ` +
+              `digest=${verdict.artifactDigest.slice(0, 23)}`,
+          )
+        } finally {
+          await modelLease.release()
+        }
 
         await nested.result.session.dispose()
       } finally {
