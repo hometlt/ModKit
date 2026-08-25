@@ -744,6 +744,125 @@ describe('13B text-data providers and codecs', () => {
     expect(csv.document.rows.map(row => row.cells.map(cell => cell.value))).toEqual(csvFixture.rows)
   })
 
+  /*
+   * Block 11 slice 11A.3. The block-9 difference matrix recorded one honest CSV gap: detection read
+   * a grammar the parser does not use. `detectDelimited` split the probe window on bare newlines and
+   * bare delimiters, so a spec-legal file whose quoted field carries a comma or a CR/LF looked
+   * ragged and scored 0.05 — X3 refused a document the canonical stack parsed. Detection now runs
+   * the parser's own quote-aware scan.
+   */
+  it('detects a spec-legal CSV whose quoted fields carry the delimiter and a line break', async () => {
+    const specLegal =
+      'name,quote,note\r\nAlice,"Hello, ""world""",first\r\nBob,"line one\r\nline two",second\r\n'
+    const detected = await probe('csv', specLegal, 'memory://fixtures/table.csv')
+    expect(detected.confidence).toBeGreaterThan(0.9)
+    expect(detected.evidence[0]?.note).toBe('delimited-arity')
+
+    // The very bytes of the parity sample, which used to score 0.05.
+    const sample = await readFile(
+      join(
+        repositoryRoot,
+        'packages',
+        'testkit',
+        'test',
+        'fixtures',
+        'mk2-synthetic',
+        'minimal.csv',
+      ),
+      'utf8',
+    )
+    expect(
+      (await probe('csv', sample, 'memory://fixtures/minimal.csv')).confidence,
+    ).toBeGreaterThan(0.9)
+
+    // Ragged arity is still not a table, and a NUL is still not text.
+    expect(
+      (await probe('csv', 'a,b\r\nc,d,e\r\n', 'memory://fixtures/x.csv')).confidence,
+    ).toBeLessThan(0.1)
+    expect(
+      (await probe('csv', 'a,b \r\nc,d\r\n', 'memory://fixtures/x.csv')).confidence,
+    ).toBeLessThan(0.05)
+
+    // TSV reads the same grammar with its own delimiter, and does not answer for commas.
+    expect(
+      (await probe('tsv', 'name\tquote\r\nAlice\t"tab\tinside"\r\n', 'memory://fixtures/x.tsv'))
+        .confidence,
+    ).toBeGreaterThan(0.9)
+    expect(
+      (await probe('tsv', 'a,b\r\nc,d\r\n', 'memory://fixtures/x.tsv')).confidence,
+    ).toBeLessThan(0.1)
+  })
+
+  it('reads quotes, embedded breaks, BOM, empty and trailing cells, and serializes back', async () => {
+    const { createTextSyntaxProvider } = await providers()
+    const provider = createTextSyntaxProvider('common.text-data/csv-syntax')
+    const parseText = async (text: string) => {
+      const result = await provider.parse({ input: { text }, dialect: 'csv-rfc4180', budget })
+      if (result.state === 'failed')
+        throw new Error(result.diagnostics[0]?.message ?? 'parse failed')
+      return result.document.rows.map(row => row.cells.map(cell => cell.value))
+    }
+
+    expect(await parseText('a,"b,c",d\r\n')).toEqual([['a', 'b,c', 'd']])
+    expect(await parseText('a,"line\r\nbreak",c\r\n')).toEqual([['a', 'line\r\nbreak', 'c']])
+    expect(await parseText('a,"say ""hi""",c\r\n')).toEqual([['a', 'say "hi"', 'c']])
+    expect(await parseText('a,,c\r\n')).toEqual([['a', '', 'c']])
+    expect(await parseText('a,b,\r\n')).toEqual([['a', 'b', '']])
+
+    // A UTF-8 BOM is provenance, not a cell: it is stripped and reported on the document source.
+    const withBom = await provider.parse({
+      input: {
+        bytes: new Uint8Array([0xef, 0xbb, 0xbf, ...new TextEncoder().encode('a,b\r\nc,d\r\n')]),
+      },
+      dialect: 'csv-rfc4180',
+      budget,
+    })
+    if (withBom.state === 'failed') throw new Error('BOM sample failed')
+    expect(withBom.document.source).toMatchObject({ encoding: 'utf-8', bom: true, newline: 'crlf' })
+    expect(withBom.document.rows[0]?.cells[0]?.value).toBe('a')
+
+    // serialize → parse returns the same table, quoting only what needs quoting.
+    const round = await provider.parse({
+      input: { text: 'a,"b,c"\r\n"d""e",f\r\n' },
+      dialect: 'csv-rfc4180',
+      budget,
+    })
+    if (round.state === 'failed') throw new Error('round-trip sample failed')
+    const serialized = await provider.serialize({
+      document: round.document,
+      dialect: 'csv-rfc4180',
+      budget,
+      target: {},
+    })
+    const reparsed = await provider.parse({
+      input: { bytes: serialized.bytes },
+      dialect: 'csv-rfc4180',
+      budget,
+    })
+    if (reparsed.state === 'failed') throw new Error('re-parse failed')
+    expect(reparsed.document.rows.map(row => row.cells.map(cell => cell.value))).toEqual(
+      round.document.rows.map(row => row.cells.map(cell => cell.value)),
+    )
+  })
+
+  it('carries a spreadsheet formula as literal text and never evaluates or rewrites it', async () => {
+    const { createTextSyntaxProvider } = await providers()
+    const provider = createTextSyntaxProvider('common.text-data/csv-syntax')
+    const injections = ['=CMD("calc")', '+1+1', '-1-1', '@SUM(A1)', '=1+1', '\t=HYPERLINK("x")']
+    const text = `${injections.map(value => `${value},safe`).join('\r\n')}\r\n`
+    const parsed = await provider.parse({ input: { text }, dialect: 'csv-rfc4180', budget })
+    if (parsed.state === 'failed') throw new Error('injection sample failed')
+    const firstCells = parsed.document.rows.map(row => row.cells[0]?.value)
+    expect(firstCells).toEqual(injections)
+    // Nothing was computed: `=1+1` stays five characters, not the number two.
+    expect(firstCells).not.toContain('2')
+
+    const lease = await provider.dataSource({ input: { text }, dialect: 'csv-rfc4180', budget })
+    const table = lease.value as TableDataSource
+    expect((await table.cell({ row: 0, column: 0 })).value).toBe('=CMD("calc")')
+    await lease.release()
+  })
+
   it('fails closed before vendor parsing on budgets, aliases, DTDs, NUL and cancellation', async () => {
     const { createTextSyntaxProvider } = await providers()
     const probes: readonly [TextDataContractId, ParseRequest][] = [
