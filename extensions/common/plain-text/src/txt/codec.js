@@ -166,10 +166,14 @@ export const createCodec = () =>
       if (request.source.kind !== 'bytes' || request.plan.kind !== 'bytes') {
         throw new TypeError('plain text accepts only byte candidates and byte probe plans')
       }
-      const length = Math.min(
+      // The probe window is what the plan asks for, clamped by what the source actually has: a
+      // 53-byte note must not be read as 8192 bytes, or the host refuses the range outright.
+      const declared = Math.min(
         request.plan.maxBytes,
         request.plan.ranges[0]?.length ?? request.plan.maxBytes,
       )
+      const available = request.source.size === undefined ? declared : Number(request.source.size)
+      const length = Math.max(0, Math.min(declared, available))
       const bytes = await request.source.read(0n, length, signal)
       const uri = request.source.ref.uri
       const required = [{ byteOffset: '0', byteLength: String(bytes.byteLength) }]

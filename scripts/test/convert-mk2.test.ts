@@ -451,9 +451,10 @@ describe('MK2 → MK3 converter (OPUS-MK2-01 task A, OPUS-MK2-02 tasks D/D2/E)',
         }
       }
     }
-    // Block 8 moved 18 valid contributions into domain-owned roots. Keep the remaining
-    // converted staging tree ratcheted while check-mk2-ports guards all 168 ports globally.
-    expect(contributions).toBeGreaterThanOrEqual(88)
+    // Block 8 moved 18 valid contributions into domain-owned roots and block 11 slice 11A moved
+    // plain text into extensions/common/plain-text. Keep the remaining converted staging tree
+    // ratcheted while check-mk2-ports guards all 168 ports globally.
+    expect(contributions).toBeGreaterThanOrEqual(87)
   })
 
   it('the committed tree carries notes per extension whose port states match the modules', () => {
