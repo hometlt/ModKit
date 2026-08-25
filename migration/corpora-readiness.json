@@ -1,0 +1,120 @@
+{
+  "$comment": "Corpora readiness matrix (PLAN_MODKIT_MK3_FINAL_RU.md блок 10 работа 9). Одна строка — один приоритетный корпус вертикали. Абсолютных путей здесь нет: строка ссылается на имена переменных окружения, описанные в migration/oracle/legacy-oracle.lock.json → corpusDescriptors, а значения живут только в некоммитящемся migration/oracle/local/legacy-environment.local.json. Правило плана: вертикаль 15–17 не начинается без status available либо заранее принятого legal alternative evidence path; скрытый skip запрещён, поэтому недоступный обязательный корпус создаёт owner-action до начала своей вертикали, а не поздний environment skip. Проверяется pnpm migration:check (scripts/migration/check-registry.mjs) и используется pnpm priority:check как источник правила «скрытый skip».",
+  "schemaVersion": "corpora-readiness-1",
+  "oracleLock": "migration/oracle/legacy-oracle.lock.json",
+  "statusVocabulary": [
+    "available",
+    "owner-action-required",
+    "legal-alternative-ready",
+    "unavailable"
+  ],
+  "counts": {
+    "corpora": 6,
+    "available": 2,
+    "ownerActionRequired": 4,
+    "legalAlternativeReady": 0,
+    "unavailable": 0
+  },
+  "corpora": [
+    {
+      "id": "starcraft-2",
+      "displayName": "StarCraft II",
+      "verticalBlock": 15,
+      "status": "available",
+      "environmentVariables": ["MODKITX_SC2_ROOT"],
+      "evidence": "Retail CASC installation 5.0.16.97563 найдена локально read-only поиском; 666 588 записей CASC читаются, cnc-независимые тесты sc2-casc-real и sc2-real-corpus проходят с provenance.",
+      "ownerAction": null,
+      "legalAlternative": null,
+      "capabilityIds": [
+        "game/starcraft-2/discover-open",
+        "vertical/starcraft-2/native-inspect-authoring"
+      ]
+    },
+    {
+      "id": "cnc3-kanes-wrath",
+      "displayName": "Command & Conquer 3: Kane's Wrath",
+      "verticalBlock": 16,
+      "status": "available",
+      "environmentVariables": ["MODKITX_CNC3_ROOT", "MODKITX_W3X_PATH", "MODKITX_W3D_PATH"],
+      "evidence": "Локальная установка Kane's Wrath (CNC3EP1.exe) содержит Core/1.0/Libraries.big, Core/1.0/Misc.big и Lang-english/1.0/English.big; cnc3-real-corpus проходит, реальные W3X и W3D разбираются с provenance.",
+      "ownerAction": null,
+      "legalAlternative": null,
+      "capabilityIds": [
+        "vertical/cnc3-kanes-wrath/native-inspect-authoring",
+        "block9/w3x-container-roles",
+        "block9/w3d-hierarchy-pivots"
+      ]
+    },
+    {
+      "id": "cnc3-tiberium-wars",
+      "displayName": "Command & Conquer 3: Tiberium Wars",
+      "verticalBlock": 16,
+      "status": "owner-action-required",
+      "environmentVariables": ["MODKITX_CNC3_ROOT"],
+      "evidence": "Единственная локальная установка семейства — Kane's Wrath. Общий BIG/SAGE closure на ней доказан, но диалект ванильного Tiberium Wars корпусом Kane's Wrath не доказывается: план §0.5 требует трёх независимых named-game profiles, а не одного за три.",
+      "ownerAction": "Установить или предоставить read-only корпус ванильного C&C3 Tiberium Wars до начала вертикали блока 16; иначе TW-строки остаются видимым owner-action, а не поздним environment skip.",
+      "legalAlternative": null,
+      "capabilityIds": [
+        "game/cnc3-tiberium-wars/discover-open",
+        "vertical/cnc3-tiberium-wars/native-inspect-authoring"
+      ]
+    },
+    {
+      "id": "red-alert-3",
+      "displayName": "Command & Conquer: Red Alert 3",
+      "verticalBlock": 16,
+      "status": "owner-action-required",
+      "environmentVariables": ["MODKITX_RA3_ROOT"],
+      "evidence": "Установки Red Alert 3 на машине нет; переменная окружения ещё не заведена в oracle lock, потому что описывать нечего.",
+      "ownerAction": "Предоставить read-only установку Red Alert 3 и завести MODKITX_RA3_ROOT в corpusDescriptors oracle lock до начала вертикали блока 16.",
+      "legalAlternative": null,
+      "capabilityIds": [
+        "game/red-alert-3/discover-open",
+        "vertical/red-alert-3/native-inspect-authoring"
+      ]
+    },
+    {
+      "id": "warzone-2100",
+      "displayName": "Warzone 2100",
+      "verticalBlock": 17,
+      "status": "owner-action-required",
+      "environmentVariables": ["MODKITX_WARZONE_ROOT"],
+      "evidence": "Файлов на машине нет. Игра распространяется свободно (GPL, официальные сборки), поэтому legal path существует и не требует отдельного решения о правах — не хватает именно загрузки.",
+      "ownerAction": "Скачать официальный свободный дистрибутив Warzone 2100 и завести MODKITX_WARZONE_ROOT до начала вертикали блока 17.",
+      "legalAlternative": {
+        "reachable": true,
+        "kind": "free-official-distribution",
+        "note": "Свободный дистрибутив сам является legal alternative evidence path: получение корпуса не блокировано правами, только действием владельца. При наличии файлов статус становится available без отдельного согласования."
+      },
+      "capabilityIds": [
+        "game/warzone-2100/discover-open",
+        "vertical/warzone-2100/native-inspect-authoring"
+      ]
+    },
+    {
+      "id": "beyond-all-reason",
+      "displayName": "Beyond All Reason",
+      "verticalBlock": 17,
+      "status": "owner-action-required",
+      "environmentVariables": ["MODKITX_BAR_ROOT"],
+      "evidence": "Файлов на машине нет. BAR и движок Spring/Recoil распространяются свободно, поэтому legal path существует и не требует отдельного решения о правах — не хватает именно загрузки.",
+      "ownerAction": "Скачать официальный свободный дистрибутив Beyond All Reason (Spring/Recoil content) и завести MODKITX_BAR_ROOT до начала вертикали блока 17.",
+      "legalAlternative": {
+        "reachable": true,
+        "kind": "free-official-distribution",
+        "note": "Свободный дистрибутив сам является legal alternative evidence path. Spring/Recoil и BAR остаются разными строками: движок не объявляется игрой."
+      },
+      "capabilityIds": [
+        "game/beyond-all-reason/discover-open",
+        "vertical/beyond-all-reason/native-inspect-authoring"
+      ]
+    }
+  ],
+  "supportingSamples": {
+    "$comment": "Не вертикали, но реальные файлы, на которых стоит evidence блока 9. Описаны в corpusDescriptors oracle lock.",
+    "MODKITX_W3D_PATH": "available",
+    "MODKITX_W3X_PATH": "available",
+    "MODKITX_VXL_PATH": "available",
+    "MODKITX_EMPEROR_ROOT": "available"
+  }
+}

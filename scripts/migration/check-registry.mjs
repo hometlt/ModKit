@@ -61,6 +61,7 @@ const CAPABILITY_KEYS = [
   'obligation',
   'owner',
   'plannedBlock',
+  'dependsOn',
   'sourceUnitIds',
   'legacyEvidence',
   'hostFacilities',
@@ -399,6 +400,10 @@ for (const row of capabilities) {
   if (row.sourceUnitIds.length === 0 && row.origin !== 'owner-addition') {
     fail(`${label}: a legacy row must name at least one source inventory unit`)
   }
+  if (!Array.isArray(row.dependsOn)) fail(`${label}: dependsOn must be a list`)
+  else if (row.dependsOn.includes(row.capabilityId)) {
+    fail(`${label}: dependsOn must not name the row itself`)
+  }
 
   // Allocation coverage and implementation/evidence are independent fields: evidence has to be
   // earned by a real corpus or a test, never inherited from the fact that a port exists.
@@ -442,6 +447,32 @@ for (const row of capabilities) {
     fail(`${label}: a focused-required-addition cannot sit outside the focused release tracks`)
   }
 }
+
+// --- dependency graph: resolvable and acyclic -------------------------------------------------------
+
+const dependencyEdges = new Map(capabilities.map(row => [row.capabilityId, row.dependsOn ?? []]))
+for (const [id, targets] of dependencyEdges) {
+  for (const target of targets) {
+    if (!capabilityIds.has(target)) {
+      fail(`capability ${id}: dependsOn ${target} does not exist in the registry`)
+    }
+  }
+}
+const walkState = new Map()
+const findCycle = (id, trail) => {
+  const state = walkState.get(id)
+  if (state === 'done') return
+  if (state === 'open') {
+    fail(`capability dependency cycle: ${[...trail.slice(trail.indexOf(id)), id].join(' -> ')}`)
+    return
+  }
+  walkState.set(id, 'open')
+  for (const target of dependencyEdges.get(id) ?? []) {
+    if (capabilityIds.has(target)) findCycle(target, [...trail, id])
+  }
+  walkState.set(id, 'done')
+}
+for (const id of dependencyEdges.keys()) findCycle(id, [])
 
 // --- no source unit is lost ------------------------------------------------------------------------
 
@@ -517,6 +548,89 @@ if (
   !/^\d{4}-\d{2}-\d{2}$/.test(registry.ownerAdditionsFrozenOn)
 ) {
   fail('ownerAdditionsFrozenOn must carry the freeze date')
+}
+
+// --- corpora readiness ---------------------------------------------------------------------------
+
+const CORPUS_STATUSES = [
+  'available',
+  'owner-action-required',
+  'legal-alternative-ready',
+  'unavailable',
+]
+const corporaPath = path.resolve(
+  argValue('--corpora') ?? path.join(repoRoot, 'migration/corpora-readiness.json'),
+)
+if (isDefaultRegistry) {
+  const corpora = readJson(corporaPath)
+  if (corpora.schemaVersion !== 'corpora-readiness-1') {
+    fail(
+      `corpora readiness schemaVersion must be "corpora-readiness-1", found ${corpora.schemaVersion}`,
+    )
+  }
+  const lockVariables = new Set(
+    Object.keys(
+      readJson(path.join(repoRoot, corpora.oracleLock)).corpusDescriptors?.variables ?? {},
+    ),
+  )
+  const seen = new Set()
+  for (const entry of corpora.corpora ?? []) {
+    const label = `corpus ${entry.id}`
+    if (seen.has(entry.id)) fail(`${label}: duplicate corpus id`)
+    seen.add(entry.id)
+    checkEnum(label, 'status', entry.status, CORPUS_STATUSES)
+    if (!Number.isInteger(entry.verticalBlock)) fail(`${label}: verticalBlock is required`)
+    if (typeof entry.evidence !== 'string' || entry.evidence.length < 10) {
+      fail(`${label}: evidence must state what was actually observed`)
+    }
+    if (entry.status === 'available' && entry.ownerAction !== null) {
+      fail(`${label}: an available corpus must not also demand an owner action`)
+    }
+    if (entry.status !== 'available' && (entry.ownerAction === null || entry.ownerAction === '')) {
+      fail(
+        `${label}: a corpus that is not available must name the owner action, not defer to a later skip`,
+      )
+    }
+    for (const variable of entry.environmentVariables ?? []) {
+      if (entry.status === 'available' && !lockVariables.has(variable)) {
+        fail(
+          `${label}: ${variable} is published as available but is not described in the oracle lock`,
+        )
+      }
+    }
+    for (const id of entry.capabilityIds ?? []) {
+      if (!capabilityIds.has(id))
+        fail(`${label}: capabilityId ${id} does not exist in the registry`)
+    }
+  }
+  const expected = {
+    corpora: (corpora.corpora ?? []).length,
+    available: (corpora.corpora ?? []).filter(entry => entry.status === 'available').length,
+    ownerActionRequired: (corpora.corpora ?? []).filter(
+      entry => entry.status === 'owner-action-required',
+    ).length,
+    legalAlternativeReady: (corpora.corpora ?? []).filter(
+      entry => entry.status === 'legal-alternative-ready',
+    ).length,
+    unavailable: (corpora.corpora ?? []).filter(entry => entry.status === 'unavailable').length,
+  }
+  for (const [key, value] of Object.entries(expected)) {
+    if (corpora.counts?.[key] !== value) {
+      fail(`corpora readiness counts.${key} declares ${corpora.counts?.[key]}, actual ${value}`)
+    }
+  }
+  // Plan block 10 work 9: the six priority verticals must all be published.
+  for (const required of [
+    'starcraft-2',
+    'cnc3-tiberium-wars',
+    'cnc3-kanes-wrath',
+    'red-alert-3',
+    'warzone-2100',
+    'beyond-all-reason',
+  ]) {
+    if (!seen.has(required))
+      fail(`corpora readiness does not publish the required corpus ${required}`)
+  }
 }
 
 // --- projection matrix -----------------------------------------------------------------------------

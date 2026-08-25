@@ -128,6 +128,8 @@ capabilities:
     obligation: 'focused-required-addition'
     owner: 'extensions/common/documents'
     plannedBlock: 11
+    dependsOn:
+      - 'format/odt/open-inspect'
     sourceUnitIds: []
     legacyEvidence: []
     hostFacilities: []
@@ -176,6 +178,7 @@ capabilities:
     obligation: 'focused-required-addition'
     owner: 'extensions/common/text-ini'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds: []
     legacyEvidence: []
     hostFacilities:
@@ -233,6 +236,7 @@ capabilities:
     obligation: 'focused-required-addition'
     owner: 'extensions/common/text-json'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds: []
     legacyEvidence: []
     hostFacilities:
@@ -290,6 +294,7 @@ capabilities:
     obligation: 'focused-required-addition'
     owner: 'extensions/common/text-json'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds: []
     legacyEvidence: []
     hostFacilities:
@@ -347,6 +352,7 @@ capabilities:
     obligation: 'focused-required-addition'
     owner: 'extensions/common/text-toml'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds: []
     legacyEvidence: []
     hostFacilities:
@@ -404,6 +410,7 @@ capabilities:
     obligation: 'focused-required-addition'
     owner: 'extensions/common/text-delimited'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds: []
     legacyEvidence: []
     hostFacilities:
@@ -462,6 +469,7 @@ capabilities:
     obligation: 'focused-required-addition'
     owner: 'extensions/common/text-xml'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds: []
     legacyEvidence: []
     hostFacilities:
@@ -519,6 +527,7 @@ capabilities:
     obligation: 'focused-required-addition'
     owner: 'extensions/common/text-yaml'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds: []
     legacyEvidence: []
     hostFacilities:
@@ -576,6 +585,10 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'packages/host'
     plannedBlock: 13
+    dependsOn:
+      - 'format/big/open-inspect'
+      - 'format/casc/open-inspect'
+      - 'format/mpq/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/big'
       - 'legacy/codec-manifest/org.modkitx/casc'
@@ -636,6 +649,10 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'packages/host'
     plannedBlock: 15
+    dependsOn:
+      - 'format/casc/open-inspect'
+      - 'format/dds/open-inspect'
+      - 'format/mpq/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/casc'
       - 'legacy/codec-manifest/org.modkitx/mpq'
@@ -694,6 +711,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/text-delimited'
     plannedBlock: 11
+    dependsOn:
+      - 'format/csv/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/csv'
     legacyEvidence:
@@ -748,6 +767,12 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/images'
     plannedBlock: 12
+    dependsOn:
+      - 'format/astc/open-inspect'
+      - 'format/avif/open-inspect'
+      - 'format/basis/open-inspect'
+      - 'format/ktx2/open-inspect'
+      - 'format/pkm/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/astc'
       - 'legacy/codec-manifest/org.modkitx/avif'
@@ -810,6 +835,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/blizzard/models'
     plannedBlock: 15
+    dependsOn:
+      - 'format/m3/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/m3'
     legacyEvidence:
@@ -864,6 +891,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/blizzard/models'
     plannedBlock: 15
+    dependsOn:
+      - 'format/m3/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/m3'
     legacyEvidence:
@@ -918,6 +947,9 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'packages/host'
     plannedBlock: 15
+    dependsOn:
+      - 'format/casc/open-inspect'
+      - 'format/m3/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/m3'
       - 'legacy/codec-manifest/org.modkitx/casc'
@@ -975,6 +1007,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'packages/host'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/package-export/@modkitx/assets#.'
     legacyEvidence:
@@ -1027,6 +1060,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'packages/host'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/package-export/@modkitx/assets#.'
     legacyEvidence:
@@ -1079,6 +1113,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'packages/host'
     plannedBlock: 30
+    dependsOn:
+      - 'format/red-alert2-vxl/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/red-alert2-vxl'
     legacyEvidence:
@@ -1132,6 +1168,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'packages/host'
     plannedBlock: 30
+    dependsOn:
+      - 'format/red-alert2-vxl/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/red-alert2-vxl'
     legacyEvidence:
@@ -1186,6 +1224,10 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/ea-westwood'
     plannedBlock: 16
+    dependsOn:
+      - 'format/pal/open-inspect'
+      - 'format/red-alert2-vxl/open-inspect'
+      - 'format/vpl/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/red-alert2-vxl'
       - 'legacy/codec-manifest/org.modkitx/vpl'
@@ -1240,6 +1282,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'packages/host'
     plannedBlock: 30
+    dependsOn:
+      - 'format/red-alert2-vxl/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/red-alert2-vxl'
     legacyEvidence:
@@ -1293,6 +1337,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/ea-tiberian-sun'
     plannedBlock: 30
+    dependsOn:
+      - 'format/red-alert2-vxl/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/red-alert2-vxl'
     legacyEvidence:
@@ -1347,6 +1393,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/models'
     plannedBlock: 16
+    dependsOn:
+      - 'format/westwood-w3d/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/westwood-w3d'
     legacyEvidence:
@@ -1401,6 +1449,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/models'
     plannedBlock: 16
+    dependsOn:
+      - 'format/westwood-w3d/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/westwood-w3d'
     legacyEvidence:
@@ -1455,6 +1505,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/models'
     plannedBlock: 16
+    dependsOn:
+      - 'format/westwood-w3d/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/westwood-w3d'
     legacyEvidence:
@@ -1508,6 +1560,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'packages/host'
     plannedBlock: 16
+    dependsOn:
+      - 'format/westwood-w3d/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/westwood-w3d'
     legacyEvidence:
@@ -1561,6 +1615,9 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'packages/host'
     plannedBlock: 16
+    dependsOn:
+      - 'format/big/open-inspect'
+      - 'format/westwood-w3d/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/westwood-w3d'
       - 'legacy/codec-manifest/org.modkitx/big'
@@ -1617,6 +1674,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/models'
     plannedBlock: 16
+    dependsOn:
+      - 'format/sage-w3x/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/sage-w3x'
     legacyEvidence:
@@ -1671,6 +1730,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'packages/host'
     plannedBlock: 16
+    dependsOn:
+      - 'format/sage-w3x/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/sage-w3x'
     legacyEvidence:
@@ -1725,6 +1786,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'packages/host'
     plannedBlock: 16
+    dependsOn:
+      - 'format/sage-w3x/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/sage-w3x'
     legacyEvidence:
@@ -1778,6 +1841,7 @@ capabilities:
     obligation: 'experimental-optional'
     owner: 'extensions/common/ui-graph-3d'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds: []
     legacyEvidence: []
     hostFacilities: []
@@ -1826,6 +1890,7 @@ capabilities:
     obligation: 'experimental-optional'
     owner: 'extensions/common/ui-graph-3d'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds: []
     legacyEvidence: []
     hostFacilities: []
@@ -1874,6 +1939,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/archives'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/7z'
     legacyEvidence:
@@ -1933,6 +1999,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/audio'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/aac'
     legacyEvidence:
@@ -1993,6 +2060,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/microsoft-age-series'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/age-bar'
     legacyEvidence:
@@ -2048,6 +2116,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/microsoft-age-series'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/age-drs'
     legacyEvidence:
@@ -2103,6 +2172,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/microsoft-age-series'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/age-of-mythology-brg'
     legacyEvidence:
@@ -2153,6 +2223,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/documents'
     plannedBlock: 11
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/ai'
     legacyEvidence:
@@ -2207,6 +2278,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/images'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/ani'
     legacyEvidence:
@@ -2267,6 +2339,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/images'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/astc'
     legacyEvidence:
@@ -2328,6 +2401,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/video'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/avi'
     legacyEvidence:
@@ -2388,6 +2462,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/images'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/avif'
     legacyEvidence:
@@ -2447,6 +2522,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/images'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/basis'
     legacyEvidence:
@@ -2508,6 +2584,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
     plannedBlock: 16
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/big'
     legacyEvidence:
@@ -2571,6 +2648,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/rad-game-tools-video'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/bink'
     legacyEvidence:
@@ -2625,6 +2703,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/documents'
     plannedBlock: 11
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/blend'
     legacyEvidence:
@@ -2679,6 +2758,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/blizzard-common-formats'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/blizzard-tbl'
     legacyEvidence:
@@ -2729,6 +2809,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/blizzard-common-formats'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/blp'
     legacyEvidence:
@@ -2783,6 +2864,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/images'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/bmp'
     legacyEvidence:
@@ -2845,6 +2927,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/audiokinetic-wwise'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/bnk'
     legacyEvidence:
@@ -2899,6 +2982,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/archives'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/brotli'
     legacyEvidence:
@@ -2963,6 +3047,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/microsoft-age-series'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/bti'
     legacyEvidence:
@@ -3017,6 +3102,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/archives'
     plannedBlock: 12
+    dependsOn:
+      - 'format/7z/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/bzip2'
     legacyEvidence:
@@ -3076,6 +3163,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/archives'
     plannedBlock: 12
+    dependsOn:
+      - 'format/7z/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/cab'
     legacyEvidence:
@@ -3133,6 +3222,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/blizzard/casc+mpq'
     plannedBlock: 15
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/casc'
     legacyEvidence:
@@ -3188,6 +3278,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/documents'
     plannedBlock: 11
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/cdr'
     legacyEvidence:
@@ -3242,6 +3333,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
     plannedBlock: 16
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/cnc3-data'
     legacyEvidence:
@@ -3301,6 +3393,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
     plannedBlock: 16
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/cnc3-localization'
     legacyEvidence:
@@ -3360,6 +3453,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
     plannedBlock: 16
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/cnc3-map'
     legacyEvidence:
@@ -3420,6 +3514,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/westwood'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/cps'
     legacyEvidence:
@@ -3474,6 +3569,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/documents'
     plannedBlock: 11
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/csv'
     legacyEvidence:
@@ -3529,6 +3625,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/microsoft-age-series'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/cub'
     legacyEvidence:
@@ -3583,6 +3680,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/images'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/cur'
     legacyEvidence:
@@ -3646,6 +3744,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/models'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/dae'
     legacyEvidence:
@@ -3707,6 +3806,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/images'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/dds'
     legacyEvidence:
@@ -3771,6 +3871,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/microsoft-age-series'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/ddt'
     legacyEvidence:
@@ -3825,6 +3926,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/new-world-computing-heroes-3'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/def'
     legacyEvidence:
@@ -3879,6 +3981,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/blizzard-diablo'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/diablo2-character-model'
     legacyEvidence:
@@ -3929,6 +4032,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/blizzard-diablo'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/diablo2-dc6'
     legacyEvidence:
@@ -3979,6 +4083,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/blizzard-diablo'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/diablo2-dt1'
     legacyEvidence:
@@ -4029,6 +4134,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/blizzard-diablo'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/diablo3-app'
     legacyEvidence:
@@ -4083,6 +4189,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/blizzard-diablo'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/diablo3-sno-data'
     legacyEvidence:
@@ -4133,6 +4240,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/blizzard-diablo'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/diablo3-tex'
     legacyEvidence:
@@ -4187,6 +4295,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/archives'
     plannedBlock: 12
+    dependsOn:
+      - 'format/7z/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/dmg'
     legacyEvidence:
@@ -4244,6 +4354,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/documents'
     plannedBlock: 11
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/docx'
     legacyEvidence:
@@ -4298,6 +4409,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/documents'
     plannedBlock: 11
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/drawio'
     legacyEvidence:
@@ -4352,6 +4464,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/archives'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/dune2000-map'
     legacyEvidence:
@@ -4402,6 +4515,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/realitypump-earth-2150'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/earth-par'
     legacyEvidence:
@@ -4456,6 +4570,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/realitypump-earth-2150'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/earth-res'
     legacyEvidence:
@@ -4506,6 +4621,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/realitypump-earth-2150'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/earth-tex'
     legacyEvidence:
@@ -4560,6 +4676,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/realitypump-earth2160'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/earth2160-model'
     legacyEvidence:
@@ -4614,6 +4731,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/vector'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/emf'
     legacyEvidence:
@@ -4674,6 +4792,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/emperor'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/emperor-bag'
     legacyEvidence:
@@ -4724,6 +4843,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/emperor'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/emperor-rfh-rfd'
     legacyEvidence:
@@ -4779,6 +4899,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/emperor'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/emperor-xbf'
     legacyEvidence:
@@ -4839,6 +4960,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/stainless-steel-studios-empire-earth'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/empire-earth-ssa'
     legacyEvidence:
@@ -4893,6 +5015,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/images'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/exr'
     legacyEvidence:
@@ -4954,6 +5077,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/documents'
     plannedBlock: 11
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/figma'
     legacyEvidence:
@@ -5008,6 +5132,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/adobe-flash'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/fla'
     legacyEvidence:
@@ -5063,6 +5188,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/audio'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/flac'
     legacyEvidence:
@@ -5123,6 +5249,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/adobe-flash'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/flv'
     legacyEvidence:
@@ -5177,6 +5304,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/firelight-fmod'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/fsb'
     legacyEvidence:
@@ -5231,6 +5359,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/cavedog-total-annihilation'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/gaf'
     legacyEvidence:
@@ -5285,6 +5414,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/blizzard/starcraft2'
     plannedBlock: 15
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/galaxy'
     legacyEvidence:
@@ -5352,6 +5482,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/images'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/gif'
     legacyEvidence:
@@ -5414,6 +5545,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/models'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/glb'
     legacyEvidence:
@@ -5479,6 +5611,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/models'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/gltf'
     legacyEvidence:
@@ -5544,6 +5677,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/petroglyph-glyphx'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/grey-goo-alo'
     legacyEvidence:
@@ -5598,6 +5732,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/archives'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/gzip'
     legacyEvidence:
@@ -5662,6 +5797,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/microsoft-halo-wars'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/halo-era'
     legacyEvidence:
@@ -5716,6 +5852,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/microsoft-halo-wars'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/halo-wars-ugx'
     legacyEvidence:
@@ -5766,6 +5903,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/images'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/hdr'
     legacyEvidence:
@@ -5829,6 +5967,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/new-world-computing-heroes-3'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/heroes3-lod'
     legacyEvidence:
@@ -5883,6 +6022,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/new-world-computing-heroes-4'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/heroes4-resource'
     legacyEvidence:
@@ -5937,6 +6077,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/ubisoft-heroes-6'
     plannedBlock: 30
+    dependsOn:
+      - 'format/zip/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/heroes6-orc'
     legacyEvidence:
@@ -5991,6 +6133,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/images'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/ico'
     legacyEvidence:
@@ -6054,6 +6197,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/archives'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/iso'
     legacyEvidence:
@@ -6116,6 +6260,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/images'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/jpg'
     legacyEvidence:
@@ -6180,6 +6325,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/images'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/ktx'
     legacyEvidence:
@@ -6244,6 +6390,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/images'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/ktx2'
     legacyEvidence:
@@ -6308,6 +6455,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/archives'
     plannedBlock: 12
+    dependsOn:
+      - 'format/7z/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/lzma'
     legacyEvidence:
@@ -6365,6 +6514,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/blizzard/starcraft2'
     plannedBlock: 15
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/m3'
     legacyEvidence:
@@ -6429,6 +6579,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/audio'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/m4a'
     legacyEvidence:
@@ -6489,6 +6640,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/documents'
     plannedBlock: 11
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/markdown'
     legacyEvidence:
@@ -6544,6 +6696,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/documents'
     plannedBlock: 11
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/max'
     legacyEvidence:
@@ -6594,6 +6747,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/archives'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/mix'
     legacyEvidence:
@@ -6648,6 +6802,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/audio'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/mp3'
     legacyEvidence:
@@ -6715,6 +6870,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/video'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/mp4'
     legacyEvidence:
@@ -6779,6 +6935,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/video'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/mpeg'
     legacyEvidence:
@@ -6839,6 +6996,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/blizzard/casc+mpq'
     plannedBlock: 15
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/mpq'
     legacyEvidence:
@@ -6898,6 +7056,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/microsoft-age-series'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/mtrl'
     legacyEvidence:
@@ -6952,6 +7111,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/models'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/obj'
     legacyEvidence:
@@ -7016,6 +7176,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/documents'
     plannedBlock: 11
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/odp'
     legacyEvidence:
@@ -7070,6 +7231,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/documents'
     plannedBlock: 11
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/ods'
     legacyEvidence:
@@ -7124,6 +7286,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/documents'
     plannedBlock: 11
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/odt'
     legacyEvidence:
@@ -7178,6 +7341,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/audio'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/ogg'
     legacyEvidence:
@@ -7241,6 +7405,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/video'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/ogv'
     legacyEvidence:
@@ -7301,6 +7466,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/audio'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/opus'
     legacyEvidence:
@@ -7364,6 +7530,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/images'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/pal'
     legacyEvidence:
@@ -7425,6 +7592,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/images'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/pcx'
     legacyEvidence:
@@ -7489,6 +7657,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/documents'
     plannedBlock: 11
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/pdf'
     legacyEvidence:
@@ -7543,6 +7712,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/archives'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/pe'
     legacyEvidence:
@@ -7607,6 +7777,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/petroglyph-glyphx'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/petroglyph-meg'
     legacyEvidence:
@@ -7661,6 +7832,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/images'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/pkm'
     legacyEvidence:
@@ -7723,6 +7895,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/models'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/ply'
     legacyEvidence:
@@ -7784,6 +7957,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/images'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/png'
     legacyEvidence:
@@ -7850,6 +8024,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/documents'
     plannedBlock: 11
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/pptx'
     legacyEvidence:
@@ -7904,6 +8079,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/microsoft-age-series'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/prt'
     legacyEvidence:
@@ -7958,6 +8134,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/containers'
     plannedBlock: 12
+    dependsOn:
+      - 'format/iso/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/ps1-cue-bin'
     legacyEvidence:
@@ -8020,6 +8198,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/archives'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/ps1-xa'
     legacyEvidence:
@@ -8077,6 +8256,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/documents'
     plannedBlock: 11
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/psd'
     legacyEvidence:
@@ -8131,6 +8311,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/images'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/pvr'
     legacyEvidence:
@@ -8193,6 +8374,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/westwood'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/r16'
     legacyEvidence:
@@ -8247,6 +8429,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/westwood'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/r8'
     legacyEvidence:
@@ -8301,6 +8484,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/archives'
     plannedBlock: 12
+    dependsOn:
+      - 'format/7z/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/rar'
     legacyEvidence:
@@ -8358,6 +8543,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/tiberian-sun'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/red-alert2-vxl'
     legacyEvidence:
@@ -8420,6 +8606,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/relic-essence'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/relic-rgm'
     legacyEvidence:
@@ -8470,6 +8657,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/relic-essence'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/relic-sga'
     legacyEvidence:
@@ -8524,6 +8712,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/relic-models'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/relic-sgm'
     legacyEvidence:
@@ -8578,6 +8767,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/relic-essence'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/relic-ucs'
     legacyEvidence:
@@ -8628,6 +8818,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/relic-models'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/relic-whm'
     legacyEvidence:
@@ -8682,6 +8873,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/relic-essence'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/relic'
     legacyEvidence:
@@ -8736,6 +8928,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/relic-essence'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/rgt'
     legacyEvidence:
@@ -8790,6 +8983,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/relic-essence'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/rrtex'
     legacyEvidence:
@@ -8844,6 +9038,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/relic-essence'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/rsh'
     legacyEvidence:
@@ -8898,6 +9093,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/documents'
     plannedBlock: 11
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/rtf'
     legacyEvidence:
@@ -8953,6 +9149,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/relic-essence'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/rtx'
     legacyEvidence:
@@ -9007,6 +9204,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
     plannedBlock: 16
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/sage-asset-bundle'
     legacyEvidence:
@@ -9057,6 +9255,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
     plannedBlock: 16
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/sage-skudef'
     legacyEvidence:
@@ -9116,6 +9315,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/models'
     plannedBlock: 16
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/sage-w3x'
     legacyEvidence:
@@ -9178,6 +9378,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/blizzard/starcraft2'
     plannedBlock: 15
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/sc2-bank'
     legacyEvidence:
@@ -9241,6 +9442,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/blizzard/starcraft2'
     plannedBlock: 15
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/sc2-data'
     legacyEvidence:
@@ -9309,6 +9511,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/blizzard/starcraft2'
     plannedBlock: 15
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/sc2-document-metadata'
     legacyEvidence:
@@ -9369,6 +9572,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/blizzard/starcraft2'
     plannedBlock: 15
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/sc2-layout'
     legacyEvidence:
@@ -9433,6 +9637,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/blizzard/starcraft2'
     plannedBlock: 15
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/sc2-map'
     legacyEvidence:
@@ -9496,6 +9701,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/blizzard/starcraft2'
     plannedBlock: 15
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/sc2-mod'
     legacyEvidence:
@@ -9559,6 +9765,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/blizzard/starcraft2'
     plannedBlock: 15
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/sc2-replay'
     legacyEvidence:
@@ -9622,6 +9829,9 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/blizzard/starcraft2'
     plannedBlock: 15
+    dependsOn:
+      - 'format/galaxy/open-inspect'
+      - 'format/sc2-triggers/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/sc2-runtime'
     legacyEvidence:
@@ -9685,6 +9895,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/blizzard/starcraft2'
     plannedBlock: 15
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/sc2-strings'
     legacyEvidence:
@@ -9750,6 +9961,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/blizzard/starcraft2'
     plannedBlock: 15
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/sc2-triggers'
     legacyEvidence:
@@ -9811,6 +10023,7 @@ capabilities:
     obligation: 'post-ga-required-proof'
     owner: 'extensions/ea/westwood'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/shp'
     legacyEvidence:
@@ -9865,6 +10078,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/microsoft-age-series'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/sld'
     legacyEvidence:
@@ -9919,6 +10133,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/microsoft-age-series'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/slp'
     legacyEvidence:
@@ -9973,6 +10188,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/rad-game-tools-video'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/smacker'
     legacyEvidence:
@@ -10027,6 +10243,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/microsoft-age-series'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/smp'
     legacyEvidence:
@@ -10081,6 +10298,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/microsoft-age-series'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/smx'
     legacyEvidence:
@@ -10135,6 +10353,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-spring'
     plannedBlock: 17
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/spring-rapid'
     legacyEvidence:
@@ -10189,6 +10408,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-spring'
     plannedBlock: 17
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/spring-s3o'
     legacyEvidence:
@@ -10239,6 +10459,9 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-spring'
     plannedBlock: 17
+    dependsOn:
+      - 'format/spring-rapid/open-inspect'
+      - 'format/zip/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/spring-vfs'
     legacyEvidence:
@@ -10293,6 +10516,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/stainless-steel-studios-empire-earth'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/sst'
     legacyEvidence:
@@ -10347,6 +10571,7 @@ capabilities:
     obligation: 'post-ga-required-proof'
     owner: 'extensions/blizzard/starcraft1'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/starcraft-chk'
     legacyEvidence:
@@ -10397,6 +10622,7 @@ capabilities:
     obligation: 'post-ga-required-proof'
     owner: 'extensions/blizzard/starcraft1'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/starcraft-grp'
     legacyEvidence:
@@ -10447,6 +10673,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/blizzard/starcraft1'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/starcraft-replay'
     legacyEvidence:
@@ -10497,6 +10724,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/models'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/stl'
     legacyEvidence:
@@ -10558,6 +10786,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/annihilation-gas-powered'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/supcom-scm'
     legacyEvidence:
@@ -10612,6 +10841,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/vector'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/svg'
     legacyEvidence:
@@ -10672,6 +10902,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/adobe-flash'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/swf'
     legacyEvidence:
@@ -10726,6 +10957,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/cavedog-total-annihilation'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/ta-hpi'
     legacyEvidence:
@@ -10781,6 +11013,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/archives'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/tar'
     legacyEvidence:
@@ -10845,6 +11078,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/stainless-steel-studios-empire-earth'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/texcache'
     legacyEvidence:
@@ -10899,6 +11133,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/images'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/tga'
     legacyEvidence:
@@ -10962,6 +11197,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/images'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/tiff'
     legacyEvidence:
@@ -11025,6 +11261,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/westwood'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/tmp'
     legacyEvidence:
@@ -11079,6 +11316,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/documents'
     plannedBlock: 11
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/txt'
     legacyEvidence:
@@ -11133,6 +11371,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/epic-games-unreal-engine'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/uasset'
     legacyEvidence:
@@ -11187,6 +11426,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/unity-engine'
     plannedBlock: 30
+    dependsOn:
+      - 'format/unity-mesh/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/unity-assets'
     legacyEvidence:
@@ -11241,6 +11482,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/unity-engine'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/unity-mesh'
     legacyEvidence:
@@ -11295,6 +11537,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/unity-engine'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/unity-ress'
     legacyEvidence:
@@ -11349,6 +11592,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/unity-engine'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/unity'
     legacyEvidence:
@@ -11403,6 +11647,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/unity-engine'
     plannedBlock: 30
+    dependsOn:
+      - 'format/unity-mesh/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/unityfs'
     legacyEvidence:
@@ -11457,6 +11703,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/epic-games-unreal-engine'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/unreal-actorx'
     legacyEvidence:
@@ -11511,6 +11758,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/epic-games-unreal-engine'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/unreal-iostore'
     legacyEvidence:
@@ -11566,6 +11814,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/epic-games-unreal-engine'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/unreal-pak'
     legacyEvidence:
@@ -11621,6 +11870,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/epic-games-unreal-engine'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/unreal-uasset-texture'
     legacyEvidence:
@@ -11675,6 +11925,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/epic-games-unreal-engine'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/unreal-uasset-video'
     legacyEvidence:
@@ -11729,6 +11980,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/epic-games-unreal-engine'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/unreal-uasset'
     legacyEvidence:
@@ -11783,6 +12035,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/models'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/uvm'
     legacyEvidence:
@@ -11847,6 +12100,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/documents'
     plannedBlock: 11
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/visio'
     legacyEvidence:
@@ -11901,6 +12155,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/westwood'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/vpl'
     legacyEvidence:
@@ -11955,6 +12210,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/blizzard-warcraft-3'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/war3-mdx'
     legacyEvidence:
@@ -12009,6 +12265,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/blizzard-common-formats'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/warcraft2-pud'
     legacyEvidence:
@@ -12059,6 +12316,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/blizzard-warcraft-3'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/warcraft3-map'
     legacyEvidence:
@@ -12109,6 +12367,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/blizzard-warcraft-3'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/warcraft3-object-data'
     legacyEvidence:
@@ -12159,6 +12418,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/blizzard-warcraft-3'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/warcraft3-replay'
     legacyEvidence:
@@ -12209,6 +12469,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/blizzard-warcraft-3'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/warcraft3-script'
     legacyEvidence:
@@ -12259,6 +12520,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/blizzard-warcraft-3'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/warcraft3-wts'
     legacyEvidence:
@@ -12309,6 +12571,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-warzone-2100'
     plannedBlock: 17
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/warzone-img'
     legacyEvidence:
@@ -12363,6 +12626,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-warzone-2100'
     plannedBlock: 17
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/warzone-lev'
     legacyEvidence:
@@ -12417,6 +12681,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-warzone-2100'
     plannedBlock: 17
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/warzone-pie'
     legacyEvidence:
@@ -12471,6 +12736,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-warzone-2100'
     plannedBlock: 17
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/warzone-wrf'
     legacyEvidence:
@@ -12525,6 +12791,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-warzone-2100'
     plannedBlock: 17
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/warzone-wz'
     legacyEvidence:
@@ -12579,6 +12846,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-warzone-2100'
     plannedBlock: 17
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/warzone2100-map'
     legacyEvidence:
@@ -12633,6 +12901,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/audio'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/wav'
     legacyEvidence:
@@ -12694,6 +12963,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/realitypump-earth2160'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/wd'
     legacyEvidence:
@@ -12748,6 +13018,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/video'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/webm'
     legacyEvidence:
@@ -12812,6 +13083,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/images'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/webp'
     legacyEvidence:
@@ -12872,6 +13144,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/audiokinetic-wwise'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/wem'
     legacyEvidence:
@@ -12926,6 +13199,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/models'
     plannedBlock: 16
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/westwood-w3d'
     legacyEvidence:
@@ -12990,6 +13264,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/vector'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/wmf'
     legacyEvidence:
@@ -13050,6 +13325,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/video'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/wmv'
     legacyEvidence:
@@ -13110,6 +13386,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/blizzard-common-formats'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/wow-m2'
     legacyEvidence:
@@ -13160,6 +13437,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/westwood'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/wsa'
     legacyEvidence:
@@ -13214,6 +13492,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/relic-essence'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/wtp'
     legacyEvidence:
@@ -13268,6 +13547,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/audiokinetic-wwise'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/wwise-pck'
     legacyEvidence:
@@ -13322,6 +13602,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/documents'
     plannedBlock: 11
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/xlsx'
     legacyEvidence:
@@ -13376,6 +13657,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/archives'
     plannedBlock: 12
+    dependsOn:
+      - 'format/7z/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/xz'
     legacyEvidence:
@@ -13435,6 +13718,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/archives'
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/zip'
     legacyEvidence:
@@ -13502,6 +13786,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/archives'
     plannedBlock: 12
+    dependsOn:
+      - 'format/7z/open-inspect'
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/zstd'
     legacyEvidence:
@@ -13559,6 +13845,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/age-of-empires-4'
     legacyEvidence:
@@ -13609,6 +13896,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn:
+      - 'format/age-bar/open-inspect'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/age-of-mythology'
     legacyEvidence:
@@ -13659,6 +13948,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/battlefleet-gothic-2'
     legacyEvidence:
@@ -13709,6 +13999,10 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 17
+    dependsOn:
+      - 'format/spring-rapid/open-inspect'
+      - 'format/spring-vfs/open-inspect'
+      - 'format/zip/open-inspect'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/beyond-all-reason'
     legacyEvidence:
@@ -13759,6 +14053,9 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 16
+    dependsOn:
+      - 'format/big/open-inspect'
+      - 'format/sage-w3x/open-inspect'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/cnc3-tiberium-wars'
     legacyEvidence:
@@ -13810,6 +14107,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/cnc4-tiberian-twilight'
     legacyEvidence:
@@ -13860,6 +14158,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn:
+      - 'format/relic-sga/open-inspect'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/company-of-heroes-2'
     legacyEvidence:
@@ -13910,6 +14210,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/company-of-heroes-3'
     legacyEvidence:
@@ -13960,6 +14261,9 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn:
+      - 'format/relic-sga/open-inspect'
+      - 'format/relic-whm/open-inspect'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/dawn-of-war'
     legacyEvidence:
@@ -14010,6 +14314,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn:
+      - 'format/casc/open-inspect'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/diablo-2'
     legacyEvidence:
@@ -14060,6 +14366,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn:
+      - 'format/casc/open-inspect'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/diablo-3'
     legacyEvidence:
@@ -14110,6 +14418,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn:
+      - 'format/mix/open-inspect'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/dune-2000'
     legacyEvidence:
@@ -14160,6 +14470,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn:
+      - 'format/earth-par/open-inspect'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/earth-2150'
     legacyEvidence:
@@ -14210,6 +14522,10 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn:
+      - 'format/earth-par/open-inspect'
+      - 'format/earth-tex/open-inspect'
+      - 'format/earth2160-model/open-inspect'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/earth-2160'
     legacyEvidence:
@@ -14260,6 +14576,9 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn:
+      - 'format/emperor-rfh-rfd/open-inspect'
+      - 'format/emperor-xbf/open-inspect'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/emperor'
     legacyEvidence:
@@ -14310,6 +14629,9 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn:
+      - 'format/big/open-inspect'
+      - 'format/westwood-w3d/open-inspect'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/generals-zero-hour'
     legacyEvidence:
@@ -14360,6 +14682,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn:
+      - 'format/grey-goo-alo/open-inspect'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/grey-goo'
     legacyEvidence:
@@ -14410,6 +14734,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/halo-wars'
     legacyEvidence:
@@ -14460,6 +14785,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn:
+      - 'format/casc/open-inspect'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/heroes-of-the-storm'
     legacyEvidence:
@@ -14510,6 +14837,9 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn:
+      - 'format/mix/open-inspect'
+      - 'format/red-alert2-vxl/open-inspect'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/red-alert-2'
     legacyEvidence:
@@ -14560,6 +14890,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 16
+    dependsOn:
+      - 'format/big/open-inspect'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/red-alert-3'
     legacyEvidence:
@@ -14610,6 +14942,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn:
+      - 'format/casc/open-inspect'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/starcraft-1'
     legacyEvidence:
@@ -14660,6 +14994,13 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/blizzard/starcraft2-game'
     plannedBlock: 15
+    dependsOn:
+      - 'format/casc/open-inspect'
+      - 'format/galaxy/open-inspect'
+      - 'format/mpq/open-inspect'
+      - 'format/sc2-data/open-inspect'
+      - 'format/sc2-map/open-inspect'
+      - 'format/sc2-mod/open-inspect'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/starcraft-2'
     legacyEvidence:
@@ -14718,6 +15059,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/starship-troopers-terran-command'
     legacyEvidence:
@@ -14768,6 +15110,9 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn:
+      - 'format/unreal-iostore/open-inspect'
+      - 'format/unreal-pak/open-inspect'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/stormgate'
     legacyEvidence:
@@ -14818,6 +15163,9 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn:
+      - 'format/supcom-scm/open-inspect'
+      - 'format/zip/open-inspect'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/supreme-commander'
     legacyEvidence:
@@ -14868,6 +15216,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn:
+      - 'format/mix/open-inspect'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/tiberian-sun'
     legacyEvidence:
@@ -14918,6 +15268,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn:
+      - 'format/casc/open-inspect'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/warcraft-2'
     legacyEvidence:
@@ -14968,6 +15320,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn:
+      - 'format/casc/open-inspect'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/warcraft-3'
     legacyEvidence:
@@ -15018,6 +15372,9 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 17
+    dependsOn:
+      - 'format/warzone-pie/open-inspect'
+      - 'format/zip/open-inspect'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/warzone-2100'
     legacyEvidence:
@@ -15068,6 +15425,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'unassigned'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/world-of-warcraft'
     legacyEvidence:
@@ -15118,6 +15476,7 @@ capabilities:
     obligation: 'post-ga-required-proof'
     owner: 'extensions/ea/tiberian-sun'
     plannedBlock: 30
+    dependsOn: []
     sourceUnitIds: []
     legacyEvidence: []
     hostFacilities: []
@@ -15166,6 +15525,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'multiverse/specs seed'
     plannedBlock: 11
+    dependsOn: []
     sourceUnitIds:
       - 'docs/uv/specification/multiverse/SPEC_UV_FOUNDATION.md'
     legacyEvidence:
@@ -15216,6 +15576,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'packages/sdk'
     plannedBlock: 11
+    dependsOn:
+      - 'uv/foundation/spec-authority'
     sourceUnitIds:
       - 'docs/uv/specification/multiverse/model/SPEC_UVM_CONVERSION.md'
     legacyEvidence:
@@ -15266,6 +15628,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'packages/host'
     plannedBlock: 11
+    dependsOn:
+      - 'uv/foundation/spec-authority'
     sourceUnitIds:
       - 'docs/uv/specification/multiverse/SPEC_UV_FOUNDATION.md'
     legacyEvidence:
@@ -15316,6 +15680,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'packages/sdk'
     plannedBlock: 22
+    dependsOn:
+      - 'uv/foundation/spec-authority'
     sourceUnitIds:
       - 'docs/uv/specification/multiverse/definitions/SPEC_UVD.md'
     legacyEvidence:
@@ -15366,6 +15732,9 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/models'
     plannedBlock: 11
+    dependsOn:
+      - 'uv/projection-abi/receipts'
+      - 'uv/resource-session-port/lazy-resources'
     sourceUnitIds:
       - 'docs/uv/specification/multiverse/model/SPEC_UVM.md'
     legacyEvidence:
@@ -15416,6 +15785,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/models'
     plannedBlock: 11
+    dependsOn:
+      - 'uv/uvm/live-projection'
     sourceUnitIds:
       - 'docs/uv/specification/multiverse/model/SPEC_UVM.md'
       - 'docs/uv/schema/multiverse/model/schema/uvm.asset.schema.json'
@@ -15467,6 +15838,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/images'
     plannedBlock: 11
+    dependsOn:
+      - 'uv/projection-abi/receipts'
     sourceUnitIds:
       - 'docs/uv/specification/multiverse/texture/SPEC_UVT.md'
     legacyEvidence:
@@ -15517,6 +15890,9 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/common/models'
     plannedBlock: 22
+    dependsOn:
+      - 'uv/projection-abi/receipts'
+      - 'uv/uvd/definitions'
     sourceUnitIds:
       - 'docs/uv/specification/multiverse/world/SPEC_UVW.md'
       - 'docs/uv/schema/multiverse/world/schema/uvw.manifest.schema.json'
@@ -15568,6 +15944,9 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-spring'
     plannedBlock: 17
+    dependsOn:
+      - 'game/beyond-all-reason/discover-open'
+      - 'vertical/beyond-all-reason/neutral-definitions-world'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/beyond-all-reason'
     legacyEvidence:
@@ -15618,6 +15997,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-spring'
     plannedBlock: 17
+    dependsOn:
+      - 'game/beyond-all-reason/discover-open'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/beyond-all-reason'
     legacyEvidence:
@@ -15668,6 +16049,10 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-spring'
     plannedBlock: 17
+    dependsOn:
+      - 'game/beyond-all-reason/discover-open'
+      - 'uv/uvm/materializer-writer'
+      - 'vertical/beyond-all-reason/native-inspect-authoring'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/beyond-all-reason'
     legacyEvidence:
@@ -15718,6 +16103,10 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-spring'
     plannedBlock: 17
+    dependsOn:
+      - 'game/beyond-all-reason/discover-open'
+      - 'uv/uvm/live-projection'
+      - 'vertical/beyond-all-reason/native-inspect-authoring'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/beyond-all-reason'
     legacyEvidence:
@@ -15768,6 +16157,11 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-spring'
     plannedBlock: 17
+    dependsOn:
+      - 'game/beyond-all-reason/discover-open'
+      - 'uv/uvd/definitions'
+      - 'uv/uvw/world-materialization'
+      - 'vertical/beyond-all-reason/native-to-uv'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/beyond-all-reason'
     legacyEvidence:
@@ -15818,6 +16212,9 @@ capabilities:
     obligation: 'focused-required-addition'
     owner: 'extensions/ea/sage'
     plannedBlock: 16
+    dependsOn:
+      - 'game/cnc3-tiberium-wars/discover-open'
+      - 'vertical/cnc3-kanes-wrath/neutral-definitions-world'
     sourceUnitIds: []
     legacyEvidence: []
     hostFacilities: []
@@ -15867,6 +16264,8 @@ capabilities:
     obligation: 'focused-required-addition'
     owner: 'extensions/ea/sage'
     plannedBlock: 16
+    dependsOn:
+      - 'game/cnc3-tiberium-wars/discover-open'
     sourceUnitIds: []
     legacyEvidence: []
     hostFacilities: []
@@ -15916,6 +16315,10 @@ capabilities:
     obligation: 'focused-required-addition'
     owner: 'extensions/ea/sage'
     plannedBlock: 16
+    dependsOn:
+      - 'game/cnc3-tiberium-wars/discover-open'
+      - 'uv/uvm/materializer-writer'
+      - 'vertical/cnc3-kanes-wrath/native-inspect-authoring'
     sourceUnitIds: []
     legacyEvidence: []
     hostFacilities: []
@@ -15965,6 +16368,10 @@ capabilities:
     obligation: 'focused-required-addition'
     owner: 'extensions/ea/sage'
     plannedBlock: 16
+    dependsOn:
+      - 'game/cnc3-tiberium-wars/discover-open'
+      - 'uv/uvm/live-projection'
+      - 'vertical/cnc3-kanes-wrath/native-inspect-authoring'
     sourceUnitIds: []
     legacyEvidence: []
     hostFacilities: []
@@ -16014,6 +16421,11 @@ capabilities:
     obligation: 'focused-required-addition'
     owner: 'extensions/ea/sage'
     plannedBlock: 16
+    dependsOn:
+      - 'game/cnc3-tiberium-wars/discover-open'
+      - 'uv/uvd/definitions'
+      - 'uv/uvw/world-materialization'
+      - 'vertical/cnc3-kanes-wrath/native-to-uv'
     sourceUnitIds: []
     legacyEvidence: []
     hostFacilities: []
@@ -16063,6 +16475,9 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
     plannedBlock: 16
+    dependsOn:
+      - 'game/cnc3-tiberium-wars/discover-open'
+      - 'vertical/cnc3-tiberium-wars/neutral-definitions-world'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/cnc3-tiberium-wars'
     legacyEvidence:
@@ -16114,6 +16529,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
     plannedBlock: 16
+    dependsOn:
+      - 'game/cnc3-tiberium-wars/discover-open'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/cnc3-tiberium-wars'
     legacyEvidence:
@@ -16165,6 +16582,10 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
     plannedBlock: 16
+    dependsOn:
+      - 'game/cnc3-tiberium-wars/discover-open'
+      - 'uv/uvm/materializer-writer'
+      - 'vertical/cnc3-tiberium-wars/native-inspect-authoring'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/cnc3-tiberium-wars'
     legacyEvidence:
@@ -16216,6 +16637,10 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
     plannedBlock: 16
+    dependsOn:
+      - 'game/cnc3-tiberium-wars/discover-open'
+      - 'uv/uvm/live-projection'
+      - 'vertical/cnc3-tiberium-wars/native-inspect-authoring'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/cnc3-tiberium-wars'
     legacyEvidence:
@@ -16267,6 +16692,11 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
     plannedBlock: 16
+    dependsOn:
+      - 'game/cnc3-tiberium-wars/discover-open'
+      - 'uv/uvd/definitions'
+      - 'uv/uvw/world-materialization'
+      - 'vertical/cnc3-tiberium-wars/native-to-uv'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/cnc3-tiberium-wars'
     legacyEvidence:
@@ -16318,6 +16748,9 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
     plannedBlock: 16
+    dependsOn:
+      - 'game/red-alert-3/discover-open'
+      - 'vertical/red-alert-3/neutral-definitions-world'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/red-alert-3'
     legacyEvidence:
@@ -16368,6 +16801,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
     plannedBlock: 16
+    dependsOn:
+      - 'game/red-alert-3/discover-open'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/red-alert-3'
     legacyEvidence:
@@ -16418,6 +16853,10 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
     plannedBlock: 16
+    dependsOn:
+      - 'game/red-alert-3/discover-open'
+      - 'uv/uvm/materializer-writer'
+      - 'vertical/red-alert-3/native-inspect-authoring'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/red-alert-3'
     legacyEvidence:
@@ -16468,6 +16907,10 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
     plannedBlock: 16
+    dependsOn:
+      - 'game/red-alert-3/discover-open'
+      - 'uv/uvm/live-projection'
+      - 'vertical/red-alert-3/native-inspect-authoring'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/red-alert-3'
     legacyEvidence:
@@ -16518,6 +16961,11 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
     plannedBlock: 16
+    dependsOn:
+      - 'game/red-alert-3/discover-open'
+      - 'uv/uvd/definitions'
+      - 'uv/uvw/world-materialization'
+      - 'vertical/red-alert-3/native-to-uv'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/red-alert-3'
     legacyEvidence:
@@ -16568,6 +17016,9 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/blizzard/starcraft2-game'
     plannedBlock: 15
+    dependsOn:
+      - 'game/starcraft-2/discover-open'
+      - 'vertical/starcraft-2/neutral-definitions-world'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/starcraft-2'
     legacyEvidence:
@@ -16619,6 +17070,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/blizzard/starcraft2-game'
     plannedBlock: 15
+    dependsOn:
+      - 'game/starcraft-2/discover-open'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/starcraft-2'
     legacyEvidence:
@@ -16675,6 +17128,10 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/blizzard/starcraft2-game'
     plannedBlock: 15
+    dependsOn:
+      - 'game/starcraft-2/discover-open'
+      - 'uv/uvm/materializer-writer'
+      - 'vertical/starcraft-2/native-inspect-authoring'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/starcraft-2'
     legacyEvidence:
@@ -16726,6 +17183,10 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/blizzard/starcraft2-game'
     plannedBlock: 15
+    dependsOn:
+      - 'game/starcraft-2/discover-open'
+      - 'uv/uvm/live-projection'
+      - 'vertical/starcraft-2/native-inspect-authoring'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/starcraft-2'
     legacyEvidence:
@@ -16777,6 +17238,11 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/blizzard/starcraft2-game'
     plannedBlock: 15
+    dependsOn:
+      - 'game/starcraft-2/discover-open'
+      - 'uv/uvd/definitions'
+      - 'uv/uvw/world-materialization'
+      - 'vertical/starcraft-2/native-to-uv'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/starcraft-2'
     legacyEvidence:
@@ -16828,6 +17294,9 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-warzone-2100'
     plannedBlock: 17
+    dependsOn:
+      - 'game/warzone-2100/discover-open'
+      - 'vertical/warzone-2100/neutral-definitions-world'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/warzone-2100'
     legacyEvidence:
@@ -16878,6 +17347,8 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-warzone-2100'
     plannedBlock: 17
+    dependsOn:
+      - 'game/warzone-2100/discover-open'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/warzone-2100'
     legacyEvidence:
@@ -16928,6 +17399,10 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-warzone-2100'
     plannedBlock: 17
+    dependsOn:
+      - 'game/warzone-2100/discover-open'
+      - 'uv/uvm/materializer-writer'
+      - 'vertical/warzone-2100/native-inspect-authoring'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/warzone-2100'
     legacyEvidence:
@@ -16978,6 +17453,10 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-warzone-2100'
     plannedBlock: 17
+    dependsOn:
+      - 'game/warzone-2100/discover-open'
+      - 'uv/uvm/live-projection'
+      - 'vertical/warzone-2100/native-inspect-authoring'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/warzone-2100'
     legacyEvidence:
@@ -17028,6 +17507,11 @@ capabilities:
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-warzone-2100'
     plannedBlock: 17
+    dependsOn:
+      - 'game/warzone-2100/discover-open'
+      - 'uv/uvd/definitions'
+      - 'uv/uvw/world-materialization'
+      - 'vertical/warzone-2100/native-to-uv'
     sourceUnitIds:
       - 'legacy/game-manifest/org.modkitx/warzone-2100'
     legacyEvidence:

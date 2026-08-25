@@ -1,0 +1,323 @@
+{
+  "$comment": "Product profiles и composition lock (PLAN_MODKIT_MK3_FINAL_RU.md §4.2–4.3, блок 10 работа 8). Preset — данные composition lock, а не форк приложения: строка перечисляет семейства расширений и service-provider вклады, из которых профиль собирается. Новых чисел здесь нет: состав семейств берётся из scripts/app-extension-sets.mjs, reference bundle baseline — из scripts/bundle-hashes.json (ratchet pnpm bundle:check), а бюджеты и запреты reference-профилей §4.3 — из scripts/test/minimal-build.test.ts. Проверяется pnpm profiles:check.",
+  "schemaVersion": "product-profiles-1",
+  "compositionSource": "scripts/app-extension-sets.mjs",
+  "optionalFamilies": ["rendering-3d", "ui-monaco"],
+  "counts": { "presets": 7, "available": 5, "planned": 2, "referenceProfiles": 13 },
+  "presets": [
+    {
+      "id": "common-documents",
+      "displayName": "Common/Documents",
+      "status": "available",
+      "hosts": ["cli", "electron", "pwa", "vscode"],
+      "minimalClosure": true,
+      "extensionFamilies": [
+        "documents",
+        "text-delimited",
+        "text-ini",
+        "text-json",
+        "text-toml",
+        "text-xml",
+        "text-yaml"
+      ],
+      "plannedFamilies": [],
+      "serviceProviders": [],
+      "note": "Opt-in preset плана slice 11B: minimal и plain-text не должны тянуть ZIP, XML или UI, поэтому editor и renderer сюда не входят. ODT/ODS/ODP/ODG добавляются блоком 11, а не заявляются заранее."
+    },
+    {
+      "id": "sc2-mod-studio",
+      "displayName": "SC2 Mod Studio",
+      "status": "available",
+      "hosts": ["electron", "vscode"],
+      "minimalClosure": false,
+      "extensionFamilies": [
+        "archives",
+        "blizzard-casc",
+        "blizzard-models",
+        "blizzard-mpq",
+        "blizzard-starcraft2",
+        "images",
+        "models",
+        "rendering-3d",
+        "text-json",
+        "ui-monaco"
+      ],
+      "plannedFamilies": [],
+      "serviceProviders": [
+        "org.modkitx.blizzard/galaxy-language",
+        "org.modkitx.blizzard/starcraft2-data",
+        "org.modkitx.blizzard/starcraft2-installation",
+        "org.modkitx.blizzard/starcraft2-map-semantic",
+        "org.modkitx.blizzard/starcraft2-workspace"
+      ],
+      "note": "Единственный preset, у которого сегодня есть живые game-provider вклады и доступный корпус (MODKITX_SC2_ROOT)."
+    },
+    {
+      "id": "cnc-sage-studio",
+      "displayName": "C&C SAGE Studio",
+      "status": "available",
+      "hosts": ["electron", "vscode"],
+      "minimalClosure": false,
+      "extensionFamilies": [
+        "archives",
+        "ea-archives",
+        "ea-big",
+        "ea-models",
+        "ea-sage",
+        "images",
+        "models",
+        "rendering-3d"
+      ],
+      "plannedFamilies": [],
+      "serviceProviders": [],
+      "note": "Общий BIG/SAGE closure трёх named-game профилей (TW, KW, RA3). Game-provider вкладов ещё нет — вертикаль блока 16; корпус TW и RA3 в corpora-readiness помечен owner-action-required."
+    },
+    {
+      "id": "warzone-2100-studio",
+      "displayName": "Warzone 2100 Studio",
+      "status": "planned",
+      "hosts": ["electron", "vscode"],
+      "minimalClosure": false,
+      "extensionFamilies": ["archives", "images", "models", "rendering-3d"],
+      "plannedFamilies": [
+        {
+          "directory": "extensions/mk2/opensource-warzone-2100",
+          "contributions": [
+            "org.modkitx/warzone-img",
+            "org.modkitx/warzone-lev",
+            "org.modkitx/warzone-pie",
+            "org.modkitx/warzone-wrf",
+            "org.modkitx/warzone-wz",
+            "org.modkitx/warzone2100-map"
+          ]
+        }
+      ],
+      "serviceProviders": [],
+      "note": "Кодеки Warzone ещё стоят в mk2-стейджинге и не образуют продуктовое семейство; preset станет available вертикалью блока 17. Корпус — owner-action-required со свободным legal path."
+    },
+    {
+      "id": "bar-spring-studio",
+      "displayName": "BAR/Spring Studio",
+      "status": "planned",
+      "hosts": ["electron", "vscode"],
+      "minimalClosure": false,
+      "extensionFamilies": ["archives", "images", "models", "rendering-3d"],
+      "plannedFamilies": [
+        {
+          "directory": "extensions/mk2/opensource-spring",
+          "contributions": ["org.modkitx/spring-rapid", "org.modkitx/spring-vfs"]
+        }
+      ],
+      "serviceProviders": [],
+      "note": "Spring/Recoil и Beyond All Reason остаются разными строками: движок не объявляется игрой. Preset станет available вертикалью блока 17."
+    },
+    {
+      "id": "universal-asset-explorer",
+      "displayName": "Universal Asset Explorer",
+      "status": "available",
+      "hosts": ["electron", "pwa", "vscode"],
+      "minimalClosure": false,
+      "extensionFamilies": [
+        "archives",
+        "audio",
+        "containers",
+        "documents",
+        "images",
+        "models",
+        "rendering-3d",
+        "text-delimited",
+        "text-ini",
+        "text-json",
+        "text-toml",
+        "text-xml",
+        "text-yaml",
+        "ui-monaco",
+        "vector",
+        "video"
+      ],
+      "plannedFamilies": [],
+      "serviceProviders": [],
+      "note": "Полный common closure плюс editor и renderer: preset для просмотра произвольного файла без выбора игры."
+    },
+    {
+      "id": "headless-mod-ci",
+      "displayName": "Headless Mod CI",
+      "status": "available",
+      "hosts": ["automation-host", "cli", "server"],
+      "minimalClosure": true,
+      "extensionFamilies": [
+        "archives",
+        "containers",
+        "documents",
+        "images",
+        "models",
+        "text-delimited",
+        "text-ini",
+        "text-json",
+        "text-toml",
+        "text-xml",
+        "text-yaml"
+      ],
+      "plannedFamilies": [],
+      "serviceProviders": [],
+      "note": "Batch inspect/convert/validate с machine-readable выводом: ни editor, ни renderer, ни UI-вокабуляр в граф не попадают (см. reference profile headless-host)."
+    }
+  ],
+  "referenceProfiles": {
+    "$comment": "Reference profiles §4.3: фиксируются до каждого platform change. Числа и запреты не изобретены здесь — это ровно те утверждения, которые уже проверяет scripts/test/minimal-build.test.ts.",
+    "source": "scripts/test/minimal-build.test.ts",
+    "profiles": [
+      {
+        "id": "image-viewer-only",
+        "entry": "@modkitx-x3/ui/image",
+        "budgetBytes": 200000,
+        "forbids": "every heavy UI marker except its own"
+      },
+      {
+        "id": "hex-only",
+        "entry": "@modkitx-x3/ui/hex",
+        "budgetBytes": null,
+        "forbids": "every heavy UI marker except Byte offset"
+      },
+      {
+        "id": "headless-host",
+        "entry": "@modkitx-x3/host/node",
+        "budgetBytes": null,
+        "forbids": "data-mk-part, monaco-editor"
+      },
+      {
+        "id": "linked-extension",
+        "entry": "extensions/common/images/src/linked.js",
+        "budgetBytes": null,
+        "forbids": "user interface vocabulary"
+      },
+      {
+        "id": "vfs-provider-file",
+        "entry": "@modkitx-x3/vfs/providers/file",
+        "budgetBytes": null,
+        "forbids": "unrelated provider implementations"
+      },
+      {
+        "id": "vfs-portable-root",
+        "entry": "@modkitx-x3/vfs",
+        "budgetBytes": null,
+        "forbids": "any provider implementation"
+      },
+      {
+        "id": "sdk-language",
+        "entry": "@modkitx-x3/sdk/language",
+        "budgetBytes": null,
+        "forbids": "host, runtime ABI, presentation contracts"
+      },
+      {
+        "id": "sdk-runtime",
+        "entry": "@modkitx-x3/sdk/runtime",
+        "budgetBytes": null,
+        "forbids": "language, renderer, host implementation"
+      },
+      {
+        "id": "sdk-renderer",
+        "entry": "@modkitx-x3/sdk/renderer",
+        "budgetBytes": null,
+        "forbids": "language, runtime, host implementation"
+      },
+      {
+        "id": "sdk-games",
+        "entry": "@modkitx-x3/sdk/games",
+        "budgetBytes": null,
+        "forbids": "language, runtime, renderer, host implementation"
+      },
+      {
+        "id": "sdk-mods",
+        "entry": "@modkitx-x3/sdk/mods",
+        "budgetBytes": null,
+        "forbids": "language, runtime, renderer, host implementation"
+      },
+      {
+        "id": "sdk-data",
+        "entry": "@modkitx-x3/sdk/data",
+        "budgetBytes": null,
+        "forbids": "game parser, renderer, host implementation"
+      },
+      {
+        "id": "sdk-maps",
+        "entry": "@modkitx-x3/sdk/maps",
+        "budgetBytes": null,
+        "forbids": "game parser, renderer, host implementation"
+      }
+    ]
+  },
+  "bundleBaseline": {
+    "$comment": "Reference bundle baseline блока 10: состав уже зафиксирован владельцем в scripts/bundle-hashes.json и охраняется pnpm bundle:check байт-в-байт. Здесь фиксируется только состав (какие entry входят в baseline), чтобы профиль нельзя было расширить молча.",
+    "source": "scripts/bundle-hashes.json",
+    "ratchet": "pnpm bundle:check",
+    "entryCount": 65,
+    "entries": [
+      "apps/modkit-cli/dist/main.js",
+      "packages/core/dist/index.js",
+      "packages/host/dist/browser/index.js",
+      "packages/host/dist/browser/worker-entry.js",
+      "packages/host/dist/data/index.js",
+      "packages/host/dist/execution/index.js",
+      "packages/host/dist/games/index.js",
+      "packages/host/dist/index.js",
+      "packages/host/dist/language/index.js",
+      "packages/host/dist/maps/index.js",
+      "packages/host/dist/mods/index.js",
+      "packages/host/dist/node/index.js",
+      "packages/host/dist/node/worker-bootstrap.js",
+      "packages/host/dist/renderer/index.js",
+      "packages/host/dist/runtime/index.js",
+      "packages/sdk/dist/authoring/index.js",
+      "packages/sdk/dist/data-sources.js",
+      "packages/sdk/dist/data/index.js",
+      "packages/sdk/dist/editing.js",
+      "packages/sdk/dist/formats/index.js",
+      "packages/sdk/dist/games/index.js",
+      "packages/sdk/dist/index.js",
+      "packages/sdk/dist/language/index.js",
+      "packages/sdk/dist/maps/index.js",
+      "packages/sdk/dist/mods/index.js",
+      "packages/sdk/dist/renderer/index.js",
+      "packages/sdk/dist/runtime/index.js",
+      "packages/sdk/dist/service-contracts.js",
+      "packages/sdk/dist/subjects/index.js",
+      "packages/sdk/dist/text-data/index.js",
+      "packages/sdk/dist/ui-contracts/index.js",
+      "packages/ui/dist/audio/index.js",
+      "packages/ui/dist/card/index.js",
+      "packages/ui/dist/code/index.js",
+      "packages/ui/dist/editor/index.js",
+      "packages/ui/dist/explorer/index.js",
+      "packages/ui/dist/graph/index.js",
+      "packages/ui/dist/hex-editor/index.js",
+      "packages/ui/dist/hex/index.js",
+      "packages/ui/dist/image/index.js",
+      "packages/ui/dist/index.js",
+      "packages/ui/dist/localization/index.js",
+      "packages/ui/dist/media/encoded.js",
+      "packages/ui/dist/metadata/index.js",
+      "packages/ui/dist/model/index.js",
+      "packages/ui/dist/namespace/index.js",
+      "packages/ui/dist/panels/index.js",
+      "packages/ui/dist/primitives/search-field.js",
+      "packages/ui/dist/search/matcher.js",
+      "packages/ui/dist/settings/index.js",
+      "packages/ui/dist/shell/chrome.js",
+      "packages/ui/dist/table/index.js",
+      "packages/ui/dist/text-virtual/index.js",
+      "packages/ui/dist/tokens/index.js",
+      "packages/ui/dist/transport/index.js",
+      "packages/ui/dist/tree/index.js",
+      "packages/ui/dist/vector/index.js",
+      "packages/ui/dist/video/index.js",
+      "packages/ui/dist/viewer/index.js",
+      "packages/ui/dist/workbench/index.js",
+      "packages/vfs/dist/index.js",
+      "packages/vfs/dist/providers/browser-file/index.js",
+      "packages/vfs/dist/providers/file/index.js",
+      "packages/vfs/dist/providers/http/index.js",
+      "packages/vfs/dist/providers/memory/index.js"
+    ]
+  }
+}
