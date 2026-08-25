@@ -1,0 +1,233 @@
+#!/usr/bin/env node
+// Pinned snapshot of the authoritative `multiverse/specs` history.
+//
+// X3 is not a second UV authority (plan §2.5). It consumes one pinned version of the sibling
+// `multiverse` repository as a generated snapshot under vendor/multiverse-specs/, and nothing in
+// the build or the tests ever reads the sibling repository directly — a live read would make the
+// gate depend on whatever happens to be checked out next door, which is exactly the second-source
+// problem the pin exists to prevent.
+//
+// Usage:
+//   node scripts/specs-pin.mjs             verify the snapshot against its manifest (offline)
+//   node scripts/specs-pin.mjs --check     the same; the default, spelled out
+//   node scripts/specs-pin.mjs --verify-source
+//                                          additionally compare the snapshot with the sibling
+//                                          repository at the pinned commit (needs the sibling)
+//   node scripts/specs-pin.mjs --emit [--commit <sha>] [--repo <path>]
+//                                          re-materialise the snapshot from the sibling repository
+//                                          at that commit (default: its current HEAD)
+//   --vendor <dir>                         operate on a different snapshot directory; the committed
+//                                          regression suite uses it to prove the gate goes red
+//
+// The snapshot is read out of git objects, never out of the sibling working tree, so a snapshot
+// always corresponds to a commit that exists rather than to somebody's uncommitted edit.
+//
+// Zero dependencies; deterministic order; exit 1 on any finding.
+
+import { execFileSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import path from 'node:path'
+import process from 'node:process'
+import { fileURLToPath } from 'node:url'
+
+const repoRoot = path.resolve(fileURLToPath(new URL('..', import.meta.url)))
+const SNAPSHOT_PREFIX = 'specs/'
+
+const args = process.argv.slice(2)
+const argValue = flag => (args.includes(flag) ? args[args.indexOf(flag) + 1] : undefined)
+// `--vendor` exists so the committed regression suite can point the gate at a throwaway copy and
+// prove it actually goes red, without tampering with the real snapshot.
+const vendorRoot = path.resolve(
+  argValue('--vendor') ?? path.join(repoRoot, 'vendor/multiverse-specs'),
+)
+const manifestPath = path.join(vendorRoot, 'PIN.json')
+const emit = args.includes('--emit')
+const verifySource = args.includes('--verify-source')
+
+const problems = []
+const fail = message => problems.push(message)
+const digestOf = bytes => `sha256:${createHash('sha256').update(bytes).digest('hex')}`
+
+// stderr is captured rather than inherited: a deliberately probed failure (a pinned commit that is
+// not in the sibling repository) should be reported by this script, not leaked as a raw git message.
+const git = (repository, gitArgs) =>
+  execFileSync('git', ['-C', repository, ...gitArgs], {
+    maxBuffer: 1 << 30,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+
+function readManifest() {
+  if (!existsSync(manifestPath)) {
+    console.error(
+      'specs:check: vendor/multiverse-specs/PIN.json is missing; run `pnpm specs:pin` against the multiverse repository',
+    )
+    process.exit(1)
+  }
+  return JSON.parse(readFileSync(manifestPath, 'utf8'))
+}
+
+function listSnapshot(repository, commit) {
+  const lines = git(repository, ['ls-tree', '-r', '--name-only', commit])
+    .toString('utf8')
+    .split('\n')
+    .filter(Boolean)
+  return lines.filter(line => line.startsWith(SNAPSHOT_PREFIX)).sort()
+}
+
+// --- emit ---------------------------------------------------------------------------------------
+
+if (emit) {
+  const repository = path.resolve(argValue('--repo') ?? path.join(repoRoot, '..', 'multiverse'))
+  if (!existsSync(path.join(repository, '.git'))) {
+    console.error(`specs:pin: ${repository} is not a git repository`)
+    process.exit(1)
+  }
+  const commit = (argValue('--commit') ?? git(repository, ['rev-parse', 'HEAD']).toString('utf8'))
+    .toString()
+    .trim()
+  const resolved = git(repository, ['rev-parse', `${commit}^{commit}`])
+    .toString('utf8')
+    .trim()
+  const files = listSnapshot(repository, resolved)
+  if (files.length === 0) {
+    console.error(`specs:pin: commit ${resolved} carries no ${SNAPSHOT_PREFIX} tree`)
+    process.exit(1)
+  }
+
+  rmSync(vendorRoot, { recursive: true, force: true })
+  const entries = []
+  for (const file of files) {
+    const bytes = git(repository, ['show', `${resolved}:${file}`])
+    const target = path.join(vendorRoot, file)
+    mkdirSync(path.dirname(target), { recursive: true })
+    writeFileSync(target, bytes)
+    entries.push({ path: file, bytes: bytes.byteLength, digest: digestOf(bytes) })
+  }
+  const manifest = {
+    $comment:
+      'Generated by scripts/specs-pin.mjs. Do not edit by hand: `pnpm specs:check` recomputes every digest and fails on any drift. This snapshot is a copy, never a second authority — where it and the multiverse repository disagree, the snapshot is stale.',
+    schemaVersion: 'multiverse-specs-pin-1',
+    source: {
+      repository: 'multiverse (sibling repository)',
+      commit: resolved,
+      subject: git(repository, ['log', '-1', '--format=%s', resolved]).toString('utf8').trim(),
+      committedOn: git(repository, ['log', '-1', '--format=%cI', resolved]).toString('utf8').trim(),
+    },
+    generator: 'scripts/specs-pin.mjs',
+    generatedFrom: 'git objects, not the sibling working tree',
+    prefix: SNAPSHOT_PREFIX,
+    counts: { files: entries.length, bytes: entries.reduce((total, e) => total + e.bytes, 0) },
+    files: entries,
+  }
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
+  console.log(
+    `specs:pin: pinned ${entries.length} file(s) from multiverse@${resolved.slice(0, 12)} (${manifest.counts.bytes} bytes)`,
+  )
+  process.exit(0)
+}
+
+// --- check --------------------------------------------------------------------------------------
+
+const manifest = readManifest()
+if (manifest.schemaVersion !== 'multiverse-specs-pin-1') {
+  fail(`PIN.json schemaVersion must be "multiverse-specs-pin-1", found ${manifest.schemaVersion}`)
+}
+if (!/^[0-9a-f]{40}$/u.test(manifest.source?.commit ?? '')) {
+  fail('PIN.json must name the full 40-character commit it was generated from')
+}
+
+const declared = new Map(manifest.files.map(entry => [entry.path, entry]))
+let bytesTotal = 0
+for (const entry of manifest.files) {
+  const file = path.join(vendorRoot, entry.path)
+  if (!existsSync(file)) {
+    fail(`${entry.path}: declared by PIN.json but missing from the snapshot`)
+    continue
+  }
+  const bytes = readFileSync(file)
+  bytesTotal += bytes.byteLength
+  if (digestOf(bytes) !== entry.digest) {
+    fail(
+      `${entry.path}: the snapshot no longer matches its pinned digest. The snapshot is generated, so edit it in the multiverse repository and re-pin with \`pnpm specs:pin\`.`,
+    )
+  }
+  if (bytes.byteLength !== entry.bytes) {
+    fail(`${entry.path}: declared ${entry.bytes} bytes, found ${bytes.byteLength}`)
+  }
+}
+
+// A file that is present but undeclared is the same failure seen from the other side: the snapshot
+// would no longer be the pinned commit.
+const walk = directory => {
+  const found = []
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const full = path.join(directory, entry.name)
+    if (entry.isDirectory()) found.push(...walk(full))
+    else found.push(path.relative(vendorRoot, full).split(path.sep).join('/'))
+  }
+  return found
+}
+
+for (const found of walk(vendorRoot).sort()) {
+  if (found === 'PIN.json') continue
+  if (!declared.has(found)) {
+    fail(
+      `${found}: present in the snapshot but not declared by PIN.json; re-pin with \`pnpm specs:pin\``,
+    )
+  }
+}
+
+if (manifest.counts?.files !== manifest.files.length) {
+  fail(
+    `PIN.json counts.files declares ${manifest.counts?.files}, the file list has ${manifest.files.length}`,
+  )
+}
+if (manifest.counts?.bytes !== bytesTotal && problems.length === 0) {
+  fail(
+    `PIN.json counts.bytes declares ${manifest.counts?.bytes}, the snapshot totals ${bytesTotal}`,
+  )
+}
+
+if (verifySource) {
+  const repository = path.resolve(argValue('--repo') ?? path.join(repoRoot, '..', 'multiverse'))
+  if (!existsSync(path.join(repository, '.git'))) {
+    fail(
+      `--verify-source: ${repository} is not a git repository, so the pinned commit cannot be resolved`,
+    )
+  } else {
+    let files
+    try {
+      files = listSnapshot(repository, manifest.source.commit)
+    } catch {
+      fail(
+        `--verify-source: the multiverse repository does not contain commit ${manifest.source.commit}; the snapshot claims a commit that does not exist there`,
+      )
+      files = []
+    }
+    if (files.length > 0) {
+      if (files.join(',') !== [...declared.keys()].sort().join(',')) {
+        fail('--verify-source: the pinned commit and the snapshot do not carry the same file set')
+      }
+      for (const file of files) {
+        const entry = declared.get(file)
+        if (entry === undefined) continue
+        const bytes = git(repository, ['show', `${manifest.source.commit}:${file}`])
+        if (digestOf(bytes) !== entry.digest) {
+          fail(
+            `--verify-source: ${file} differs from the pinned commit; re-pin with \`pnpm specs:pin\``,
+          )
+        }
+      }
+    }
+  }
+}
+
+if (problems.length > 0) {
+  console.error(`specs:check: ${problems.length} problem(s)\n`)
+  for (const problem of problems) console.error(`  ${problem}`)
+  process.exit(1)
+}
+console.log(
+  `specs:check: snapshot matches multiverse@${manifest.source.commit.slice(0, 12)} — ${manifest.files.length} file(s), ${bytesTotal} bytes${verifySource ? ', verified against the sibling repository' : ''}`,
+)

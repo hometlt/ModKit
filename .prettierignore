@@ -16,3 +16,6 @@ NexusForgeUI/
 packages/testkit/test/fixtures/mk2-synthetic/minimal.mdx
 # agent worktrees: copies of this repository, checked by their own gates
 .claude/
+# generated snapshot of one pinned multiverse/specs commit — byte-exact by construction and
+# verified by `pnpm specs:check`; reformatting it would break every pinned digest
+vendor/multiverse-specs/

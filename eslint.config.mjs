@@ -20,6 +20,10 @@ export default tseslint.config(
       // external UI mockup drop (Nexus IDE `.dc.html` + support scripts): not lab source, not
       // authored against these rules; kept out of lint/format until it gets a real home
       'NexusForgeUI/**',
+      // generated snapshot of one pinned multiverse/specs commit: a byte-exact copy verified by
+      // `pnpm specs:check`. Linting or reformatting it would break the digests that make the pin
+      // meaningful — it is edited in the multiverse repository and re-pinned, never here.
+      'vendor/multiverse-specs/**',
     ],
   },
   ...tseslint.configs.strict,

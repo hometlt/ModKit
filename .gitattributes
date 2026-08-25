@@ -1,3 +1,7 @@
+# Generated snapshot of one pinned multiverse/specs commit: `pnpm specs:check` compares it byte for
+# byte against the digests in PIN.json, so git must not translate anything on checkout.
+vendor/multiverse-specs/** -text
+
 # These deterministic fixtures exercise structurally significant CRLF bytes.
 packages/testkit/test/fixtures/mk2-synthetic/minimal.csv binary
 packages/testkit/test/fixtures/mk2-synthetic/minimal.txt binary
