@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/uvm/incubating/uvm.impostor.schema.json",
+  "title": "MODKITX_impostor_relation (incubating)",
+  "description": "Provisional relation from a rendered node to an impostor texture/proxy. Selection policy remains separate; wire name is not stable.",
+  "type": "object",
+  "required": ["relations"],
+  "properties": {
+    "relations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["node", "texture", "axes"],
+        "properties": {
+          "node": { "type": "integer", "minimum": 0 },
+          "texture": { "type": "integer", "minimum": 0 },
+          "axes": { "type": "integer", "minimum": 1 },
+          "extras": {}
+        },
+        "additionalProperties": false
+      }
+    },
+    "extras": {}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,181 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/uvm/1.0/uvm.collision.schema.json",
+  "title": "UV_game_collision",
+  "description": "Collision primitives attached to a glTF node. Property names track the Khronos KHR_collision_shapes draft so migration is mechanical once it ratifies.",
+  "type": "object",
+  "required": ["shapes"],
+  "properties": {
+    "shapes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/shape"
+      }
+    },
+    "role": {
+      "type": "string",
+      "enum": ["physics", "hit", "selection", "footprint", "effect", "vision"],
+      "default": "physics",
+      "description": "What the shape is FOR. Engines that conflate these produce wrong hit detection or wrong placement."
+    },
+    "layer": {
+      "type": "string"
+    },
+    "mask": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "extras": {}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "shape": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["box", "sphere", "capsule", "cylinder", "convex-hull", "mesh", "plane"]
+        },
+        "matrix": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 16,
+          "maxItems": 16,
+          "description": "Column-major local transform. Identity when omitted."
+        },
+        "size": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": 0
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "description": "Full extents, for `box`."
+        },
+        "radius": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "height": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "axis": {
+          "type": "string",
+          "enum": ["x", "y", "z"],
+          "default": "y"
+        },
+        "positions": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Accessor index of VEC3 positions, for `convex-hull` and `mesh`. Vertex data never lives inline in JSON."
+        },
+        "indices": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Accessor index of SCALAR indices, for `mesh`."
+        },
+        "normal": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "collisionMask": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "box"
+              }
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "required": ["size"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "sphere"
+              }
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "required": ["radius"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": ["capsule", "cylinder"]
+              }
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "required": ["radius", "height"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "convex-hull"
+              }
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "required": ["positions"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "mesh"
+              }
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "required": ["positions", "indices"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "plane"
+              }
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "required": ["normal"]
+          }
+        }
+      ]
+    }
+  }
+}

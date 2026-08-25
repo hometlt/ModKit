@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/uvm/1.0/uvm.asset.schema.json",
+  "title": "UV_asset",
+  "description": "Game-object identity and capability summary. Attaches to the glTF document root's `extensions`.",
+  "type": "object",
+  "required": ["id", "class"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable identifier, conventionally `namespace/name`.",
+      "examples": ["terran/siege_tank", "armada/armcom"]
+    },
+    "class": {
+      "type": "string",
+      "description": "Open enumeration. Unrecognised values MUST be treated as `prop`.",
+      "anyOf": [
+        {
+          "enum": [
+            "unit",
+            "building",
+            "character",
+            "vehicle",
+            "creature",
+            "weapon",
+            "projectile",
+            "prop",
+            "feature",
+            "effect",
+            "terrain-object",
+            "ui"
+          ]
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "displayName": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "coreRenderable": {
+      "type": "boolean",
+      "default": true,
+      "description": "false only when the asset has no meaningful geometry without extensions."
+    },
+    "author": {
+      "type": "string"
+    },
+    "licence": {
+      "type": "string",
+      "description": "SPDX identifier or URL."
+    },
+    "capabilities": {
+      "type": "object",
+      "description": "Summary readable from the JSON chunk alone. Advisory: readers MUST NOT rely on it for correctness.",
+      "properties": {
+        "skinned": {
+          "type": "boolean"
+        },
+        "animated": {
+          "type": "boolean"
+        },
+        "effects": {
+          "type": "boolean"
+        },
+        "collision": {
+          "type": "boolean"
+        },
+        "lods": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "variants": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sockets": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "triangles": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bones": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "extras": {}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "units": {
+      "$anchor": "units",
+      "title": "UV_units",
+      "description": "Relationship between the asset's metre-space geometry and the source game's units and grid.",
+      "type": "object",
+      "required": ["metersPerSourceUnit"],
+      "properties": {
+        "sourceUnit": {
+          "type": "string",
+          "default": "meter"
+        },
+        "metersPerSourceUnit": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "sourceUnitsPerCell": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "footprintCells": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "sourceFrameRate": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "extras": {}
+      },
+      "additionalProperties": false
+    }
+  }
+}

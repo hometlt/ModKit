@@ -1,0 +1,223 @@
+{
+  "$comment": "Registered SemanticScopeDescriptor. Normative text: SPEC_SEMANTIC_SCOPE_DESCRIPTOR.md. Conformance vectors: ../conformance/model-interchange-v1/vectors.json.",
+  "schemaVersion": "semantic-scope-descriptor-1",
+  "scopeId": "model-interchange-v1",
+  "version": "1.0.0",
+  "status": "registered",
+  "plane": "model",
+  "owner": "multiverse/specs",
+  "registeredOn": "2026-08-25",
+  "summary": "The model semantic plane two independent paths must reproduce exactly: a live faceted model projection and a materialized-then-reopened UVM artifact.",
+  "hash": {
+    "algorithm": "sha256",
+    "canonicalForm": "uv.canonical/typed-form@1",
+    "envelopeSchemaVersion": 1,
+    "domain": "uv.semantic-scope/model-interchange-v1",
+    "output": "algorithm-qualified",
+    "envelope": {
+      "scope": { "id": "model-interchange-v1", "version": "1.0.0" },
+      "facets": "ordered [facetKey, value] pairs for every present facet",
+      "absentFacets": "ordered facetKey list for every optional facet the publisher did not publish"
+    },
+    "facetKey": "<facetId>@<version>"
+  },
+  "numeric": {
+    "model": "IEEE-754 binary64 only; the canonical form encodes every number as its 16 hex-digit big-endian bit pattern, so integers and reals share one representation",
+    "float32Widening": "float32 source values widen to binary64 exactly; no rounding, no requantisation",
+    "negativeZero": "-0 normalises to +0 before encoding",
+    "nonFinite": "NaN, +Infinity and -Infinity are rejected; a projection that would produce one is a diagnostic, never a hash",
+    "comparison": "equality is byte equality of the canonical encoding; no epsilon and no tolerance exists in this scope"
+  },
+  "missingSemantics": {
+    "absentFacet": "an optional facet the publisher did not publish; it is named in absentFacets and contributes its key, never a fabricated value",
+    "absentKey": "forbidden inside a facet value: every key declared by the facet is always present",
+    "null": "a source member that genuinely has no value (an unnamed node). The source contracts never publish null themselves, so undefined -> null is injective and reversible",
+    "empty": "an empty array is a positive fact (known to have no children), never a stand-in for absent or null",
+    "unknown": "this scope defines no unknown sentinel. An unknowable plane is expressed by facet absence; structure.geometryAccess = metadata-only is the declared reason uv.model/geometry@1 may be absent",
+    "geometryConsistency": "structure.geometryAccess = decoded REQUIRES uv.model/geometry@1 to be present; metadata-only REQUIRES it to be absent"
+  },
+  "ordering": {
+    "facets": "by facetKey in UTF-8 byte order",
+    "absentFacets": "by facetKey in UTF-8 byte order",
+    "objectKeys": "by UTF-8 byte order of the key, applied by the canonical form itself",
+    "nodes": "by node id in UTF-8 byte order; paging order of the live source must not reach the hash",
+    "meshes": "by mesh id in UTF-8 byte order",
+    "primitives": "by primitive id in UTF-8 byte order",
+    "resourceClosureEntries": "by role, then logicalId, both in UTF-8 byte order",
+    "sequences": "childIds, meshIds, primitiveIds and attribute arrays keep publication order: their order is semantic and reordering them is a different model"
+  },
+  "resourceClosure": {
+    "policy": "logical-identity-with-optional-algorithm-qualified-content-digest",
+    "modes": {
+      "logical": "entries carry logical identity only. Every digest is normalised to null before hashing, so a publisher cannot leak content identity into a logical hash. Two models referencing the same logical texture with different bytes hash equal.",
+      "content-qualified": "entries additionally carry an algorithm-qualified content digest. A digest the publisher does not have is null and stays null; it is never omitted and never faked."
+    },
+    "modeIsHashed": true,
+    "modeIsHashedRationale": "the mode is part of the facet value, so a logical hash and a content-qualified hash of the same model differ and can never be compared by accident",
+    "digestForm": "<algorithm>:<lowercase hex>; a bare hex string is rejected",
+    "acceptedAlgorithms": ["sha256"],
+    "roles": ["buffer", "image", "companion"]
+  },
+  "facets": [
+    {
+      "facetId": "uv.model/structure",
+      "version": 1,
+      "requirement": "required",
+      "summary": "Counts of the published scene planes plus the declared geometry access.",
+      "keys": {
+        "scenes": "integer >= 0",
+        "nodes": "integer >= 0",
+        "meshes": "integer >= 0",
+        "primitives": "integer >= 0",
+        "materials": "integer >= 0",
+        "textures": "integer >= 0",
+        "animations": "integer >= 0",
+        "geometryAccess": "decoded | metadata-only"
+      },
+      "binding": {
+        "live": {
+          "contract": "common.view/model-scene-source",
+          "major": 1,
+          "members": ["info()"],
+          "note": "one-to-one with ModelSceneInfo minus bounds, which is its own facet"
+        },
+        "artifact": {
+          "profile": "UVM/core@1.0",
+          "note": "counts derived from scenes, nodes, meshes, mesh.primitives, materials, textures and animations of the glTF document"
+        }
+      }
+    },
+    {
+      "facetId": "uv.model/hierarchy",
+      "version": 1,
+      "requirement": "required",
+      "summary": "Node identity, naming, parent-child edges and local transforms.",
+      "keys": {
+        "nodes": "ordered records { id, name: string|null, childIds: string[], meshIds: string[], transform: number[16] }",
+        "transform": "column-major 4x4 local transform, exactly the 16 numbers the source publishes"
+      },
+      "binding": {
+        "live": {
+          "contract": "common.view/model-scene-source",
+          "major": 1,
+          "members": ["nodes(page)"],
+          "note": "all pages are drained and re-sorted by id; ModelNode.name undefined maps to null"
+        },
+        "artifact": { "profile": "UVM/core@1.0", "note": "glTF nodes; ids are the publisher's stable node ids" }
+      }
+    },
+    {
+      "facetId": "uv.model/mesh-index",
+      "version": 1,
+      "requirement": "required",
+      "summary": "Mesh identity, naming and the primitive sequence each mesh owns.",
+      "keys": {
+        "meshes": "ordered records { id, name: string|null, primitiveIds: string[] }"
+      },
+      "binding": {
+        "live": {
+          "contract": "common.view/model-scene-source",
+          "major": 1,
+          "members": ["meshes(page)"],
+          "note": "all pages are drained and re-sorted by id; ModelMesh.name undefined maps to null"
+        },
+        "artifact": { "profile": "UVM/core@1.0", "note": "glTF meshes and their primitive arrays" }
+      }
+    },
+    {
+      "facetId": "uv.model/bounds",
+      "version": 1,
+      "requirement": "optional",
+      "summary": "Axis-aligned scene bounds in the UVM basis.",
+      "keys": {
+        "min": "number[3]",
+        "max": "number[3]"
+      },
+      "binding": {
+        "live": {
+          "contract": "common.view/model-scene-source",
+          "major": 1,
+          "members": ["info().bounds"],
+          "note": "ModelSceneInfo.bounds is optional; when the source omits it the facet is absent, never zeroed"
+        },
+        "artifact": { "profile": "UVM/core@1.0", "note": "accessor min/max unioned across position accessors" }
+      }
+    },
+    {
+      "facetId": "uv.model/geometry",
+      "version": 1,
+      "requirement": "optional",
+      "summary": "Per-primitive topology, counts, attribute presence, material binding and an algorithm-qualified digest of the decoded attribute values.",
+      "keys": {
+        "primitives": "ordered records { id, topology, vertexCount, indexCount: number|null, attributes: string[], materialId: string|null, bounds: {min,max}|null, attributeDigest }",
+        "topology": "points | lines | line-strip | triangles | triangle-strip | triangle-fan",
+        "attributes": "sorted names of the attribute arrays actually decoded: positions, normals, textureCoordinates",
+        "attributeDigest": "uvDigest over domain uv.model/geometry-attributes@1 of { positions, normals, textureCoordinates, indices }, each present as an array of numbers or as null"
+      },
+      "presenceRule": "present exactly when structure.geometryAccess = decoded",
+      "binding": {
+        "live": {
+          "contract": "common.view/model-scene-source",
+          "major": 1,
+          "members": ["primitive(primitiveId, request)"],
+          "note": "the member is optional on the contract; a source without it is metadata-only and this facet is absent"
+        },
+        "artifact": { "profile": "UVM/core@1.0", "note": "accessors resolved against the GLB BIN chunk" }
+      }
+    },
+    {
+      "facetId": "uv.model/resource-closure",
+      "version": 1,
+      "requirement": "optional",
+      "summary": "The logical resources the model depends on, under the declared closure mode.",
+      "keys": {
+        "mode": "logical | content-qualified",
+        "entries": "ordered records { role, logicalId, mediaHint: string|null, digest: string|null }"
+      },
+      "binding": {
+        "live": {
+          "contract": null,
+          "note": "no live binding exists yet. The live path publishes resource references through the post-open host-owned ResourceSessionPort, which block 11C0 freezes in its second slice half; until then only the artifact binding is executable and a live publisher declares this facet absent."
+        },
+        "artifact": {
+          "profile": "UVM/core@1.0",
+          "note": "buffer.uri and image.uri entries of the glTF document; GLB-embedded buffers contribute no entry because they carry no external identity"
+        }
+      }
+    }
+  ],
+  "bindings": {
+    "liveBaseContract": {
+      "contract": "common.view/model-scene-source",
+      "major": 1,
+      "maturity": "admitted",
+      "note": "the base contract this scope is computable from today, unchanged. The scope adds no member to it."
+    },
+    "artifactProfile": {
+      "profile": "UVM/core",
+      "version": "1.0",
+      "marker": "asset.extras.uv = { format: UVM, version: 1.0, profile: core }",
+      "requiredExtensions": ["UV_asset", "UV_provenance"],
+      "idConvention": {
+        "$comment": "Identity is hashed, so it is a rule, not an implementation detail. These are the ids the existing UVM/core reader publishes; a second implementation that invents its own ids produces a different hash and is non-conforming.",
+        "node": "node-<document node index>",
+        "mesh": "mesh-<document mesh index>",
+        "primitive": "mesh-<mesh index>-primitive-<primitive index within that mesh>",
+        "material": "material-<document material index>"
+      },
+      "transform": "a node contributes node.matrix when it carries 16 finite numbers, otherwise the identity matrix. Composing a transform from TRS is deliberately out of scope for 1.0: the composition rule belongs to the UV Projection ABI freeze, and inventing one here would let two conforming readers disagree.",
+      "indices": "a primitive without an indices accessor contributes the implied sequence 0..vertexCount-1, so indexCount is never null on this path",
+      "boundsSource": "the union of decoded position values across all primitives; absent when the document has no primitive"
+    },
+    "notFrozenHere": [
+      "the executable UV Projection ABI (request/plan, faceted lazy data sources, materialization request, ProjectionReceipt, MaterializationReceipt) — plan item 10, second half of slice 11C0",
+      "ResourceSessionPort lease/revision lifecycle — plan item 13, second half of slice 11C0",
+      "optional versioned facet *sources* in the SDK (materials, skeleton, animation, sockets, effects, collision, LOD, variants) — plan item 11"
+    ]
+  },
+  "compatibility": {
+    "minorVersions": "additive only: a new optional facet, a new accepted digest algorithm or a new enum value. A 1.0 consumer keeps computing 1.0 hashes and must refuse to compare them with a hash produced under a different scope version.",
+    "majorVersions": "may remove or redefine a facet. A consumer refuses a major it does not implement rather than guessing.",
+    "hashComparability": "two hashes are comparable only when scope id, scope version, the present facet set, the absent facet set and the resource-closure mode all match. Nothing in this scope produces a partial or approximate match."
+  }
+}

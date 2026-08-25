@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/uvm/incubating/uvm.batching.schema.json",
+  "title": "MODKITX_batching_hints (incubating)",
+  "description": "Portable advisory batching hints. They never change geometry, material or MSFT_lod semantics; wire name is not stable.",
+  "type": "object",
+  "required": ["nodes"],
+  "properties": {
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["node", "mode"],
+        "properties": {
+          "node": { "type": "integer", "minimum": 0 },
+          "mode": { "type": "string", "enum": ["none", "batched", "gpu"] },
+          "triangleCountHint": { "type": "integer", "minimum": 0 },
+          "extras": {}
+        },
+        "additionalProperties": false
+      }
+    },
+    "extras": {}
+  },
+  "additionalProperties": false
+}

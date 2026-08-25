@@ -1,0 +1,584 @@
+{
+  "$comment": "Conformance vectors for the registered model-interchange-v1 semantic scope. Every vector names a base projection, the mutations applied to it and the exact hash the descriptor requires. Equality and inequality are both pinned, because a scope that only proves equality proves nothing about what it separates.",
+  "schemaVersion": "uv-conformance-vectors-1",
+  "suite": "model-interchange-v1",
+  "descriptor": "../../semantic-scopes/model-interchange-v1.json",
+  "scope": {
+    "id": "model-interchange-v1",
+    "version": "1.0.0"
+  },
+  "baseProjections": {
+    "uvm-core-triangle": {
+      "source": "projectionFromUvmCore(../../model/fixtures/uvm-core-triangle.uvm.gltf)",
+      "note": "the artifact binding of the scope, drained exactly as the live binding would be"
+    },
+    "uvm-core-rig": {
+      "source": "projectionFromUvmCore(../../model/fixtures/uvm-core-rig.uvm.gltf)",
+      "note": "the artifact binding of the scope, drained exactly as the live binding would be"
+    },
+    "uvm-core-textured": {
+      "source": "projectionFromUvmCore(../../model/fixtures/uvm-core-textured.uvm.gltf)",
+      "note": "the artifact binding of the scope, drained exactly as the live binding would be"
+    }
+  },
+  "mutationOps": {
+    "set": "replace the value at a dotted path",
+    "set-non-finite": "replace the value at a dotted path with NaN, Infinity or -Infinity, which JSON cannot carry",
+    "delete": "remove the value at a dotted path",
+    "reverse": "reverse the array at a dotted path"
+  },
+  "vectors": [
+    {
+      "id": "triangle/base",
+      "expect": "accept",
+      "note": "the minimal core case: the three required facets plus bounds and geometry; the resource closure is honestly absent",
+      "base": "uvm-core-triangle",
+      "mutations": [],
+      "facets": [
+        "uv.model/bounds@1",
+        "uv.model/geometry@1",
+        "uv.model/hierarchy@1",
+        "uv.model/mesh-index@1",
+        "uv.model/structure@1"
+      ],
+      "absentFacets": [
+        "uv.model/resource-closure@1"
+      ],
+      "hash": "sha256:6ccc1ae879e7393d091e5ad4b9b68fb393eb2617287f3007cff095046e2ed05b"
+    },
+    {
+      "id": "rig/base",
+      "expect": "accept",
+      "note": "hierarchy, non-identity transforms and two meshes",
+      "base": "uvm-core-rig",
+      "mutations": [],
+      "facets": [
+        "uv.model/bounds@1",
+        "uv.model/geometry@1",
+        "uv.model/hierarchy@1",
+        "uv.model/mesh-index@1",
+        "uv.model/structure@1"
+      ],
+      "absentFacets": [
+        "uv.model/resource-closure@1"
+      ],
+      "hash": "sha256:232fd145940b3a22ceddcda79730f6522c43ba48d1e1ce2889551a18070818b3"
+    },
+    {
+      "id": "textured/base",
+      "expect": "accept",
+      "note": "a textured model whose publisher does not publish a closure",
+      "base": "uvm-core-textured",
+      "mutations": [],
+      "facets": [
+        "uv.model/bounds@1",
+        "uv.model/geometry@1",
+        "uv.model/hierarchy@1",
+        "uv.model/mesh-index@1",
+        "uv.model/structure@1"
+      ],
+      "absentFacets": [
+        "uv.model/resource-closure@1"
+      ],
+      "hash": "sha256:a48b066e6719c2fda8226ec9f81353421cd5aeb98831ce67f89d57764d2f8ba0"
+    },
+    {
+      "id": "triangle/paging-order-is-invisible",
+      "expect": "accept",
+      "note": "records are re-sorted by id, so the order a live source happened to page them in never reaches the hash",
+      "base": "uvm-core-triangle",
+      "mutations": [
+        {
+          "op": "reverse",
+          "path": "nodes"
+        },
+        {
+          "op": "reverse",
+          "path": "meshes"
+        },
+        {
+          "op": "reverse",
+          "path": "primitives"
+        }
+      ],
+      "facets": [
+        "uv.model/bounds@1",
+        "uv.model/geometry@1",
+        "uv.model/hierarchy@1",
+        "uv.model/mesh-index@1",
+        "uv.model/structure@1"
+      ],
+      "absentFacets": [
+        "uv.model/resource-closure@1"
+      ],
+      "hash": "sha256:6ccc1ae879e7393d091e5ad4b9b68fb393eb2617287f3007cff095046e2ed05b",
+      "sameHashAs": "triangle/base"
+    },
+    {
+      "id": "rig/paging-order-is-invisible",
+      "expect": "accept",
+      "note": "the same rule on a multi-node model",
+      "base": "uvm-core-rig",
+      "mutations": [
+        {
+          "op": "reverse",
+          "path": "nodes"
+        },
+        {
+          "op": "reverse",
+          "path": "meshes"
+        },
+        {
+          "op": "reverse",
+          "path": "primitives"
+        }
+      ],
+      "facets": [
+        "uv.model/bounds@1",
+        "uv.model/geometry@1",
+        "uv.model/hierarchy@1",
+        "uv.model/mesh-index@1",
+        "uv.model/structure@1"
+      ],
+      "absentFacets": [
+        "uv.model/resource-closure@1"
+      ],
+      "hash": "sha256:232fd145940b3a22ceddcda79730f6522c43ba48d1e1ce2889551a18070818b3",
+      "sameHashAs": "rig/base"
+    },
+    {
+      "id": "rig/child-order-is-semantic",
+      "expect": "accept",
+      "note": "childIds is a sequence, not a set: reversing it is a different model and must not hash equal",
+      "base": "uvm-core-rig",
+      "mutations": [
+        {
+          "op": "reverse",
+          "path": "nodes.0.childIds"
+        }
+      ],
+      "facets": [
+        "uv.model/bounds@1",
+        "uv.model/geometry@1",
+        "uv.model/hierarchy@1",
+        "uv.model/mesh-index@1",
+        "uv.model/structure@1"
+      ],
+      "absentFacets": [
+        "uv.model/resource-closure@1"
+      ],
+      "hash": "sha256:832cc5518992c010dda308fd5a62f4b6188ab604f5a48fa93390ad96d245ab8f",
+      "differentHashFrom": "rig/base"
+    },
+    {
+      "id": "triangle/absent-bounds-is-not-a-zero-box",
+      "expect": "accept",
+      "note": "a source that does not publish bounds lists the facet as absent instead of fabricating an empty box",
+      "base": "uvm-core-triangle",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "info.bounds"
+        }
+      ],
+      "facets": [
+        "uv.model/geometry@1",
+        "uv.model/hierarchy@1",
+        "uv.model/mesh-index@1",
+        "uv.model/structure@1"
+      ],
+      "absentFacets": [
+        "uv.model/bounds@1",
+        "uv.model/resource-closure@1"
+      ],
+      "hash": "sha256:2357c98e48597d0febe067afe72ef16973d33fe2e1f6ed48ff3125e1118feb3c",
+      "differentHashFrom": "triangle/base"
+    },
+    {
+      "id": "triangle/metadata-only-drops-geometry",
+      "expect": "accept",
+      "note": "a metadata-only publication is honestly a different hash, never \"equal within losses\"",
+      "base": "uvm-core-triangle",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "info.geometryAccess",
+          "value": "metadata-only"
+        },
+        {
+          "op": "delete",
+          "path": "primitives"
+        }
+      ],
+      "facets": [
+        "uv.model/bounds@1",
+        "uv.model/hierarchy@1",
+        "uv.model/mesh-index@1",
+        "uv.model/structure@1"
+      ],
+      "absentFacets": [
+        "uv.model/geometry@1",
+        "uv.model/resource-closure@1"
+      ],
+      "hash": "sha256:946957300f05bdf2d273439d389059fd12c850a344846e380abc4d60a6065f45",
+      "differentHashFrom": "triangle/base"
+    },
+    {
+      "id": "closure/logical-a",
+      "expect": "accept",
+      "note": "logical closure carrying a content digest the mode is required to discard",
+      "base": "uvm-core-textured",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "resourceClosure",
+          "value": {
+            "mode": "logical",
+            "entries": [
+              {
+                "role": "image",
+                "logicalId": "textures/crate_diffuse.png",
+                "mediaHint": "image/png",
+                "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              }
+            ]
+          }
+        }
+      ],
+      "facets": [
+        "uv.model/bounds@1",
+        "uv.model/geometry@1",
+        "uv.model/hierarchy@1",
+        "uv.model/mesh-index@1",
+        "uv.model/resource-closure@1",
+        "uv.model/structure@1"
+      ],
+      "absentFacets": [],
+      "hash": "sha256:9d6aa069f0c3772b295f9d82a0aae3d9c7a5a703c264adb9c00931ffb97f1031"
+    },
+    {
+      "id": "closure/logical-b",
+      "expect": "accept",
+      "note": "the same logical texture with different bytes: logical mode hashes equal, which is exactly what the mode promises",
+      "base": "uvm-core-textured",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "resourceClosure",
+          "value": {
+            "mode": "logical",
+            "entries": [
+              {
+                "role": "image",
+                "logicalId": "textures/crate_diffuse.png",
+                "mediaHint": "image/png",
+                "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              }
+            ]
+          }
+        }
+      ],
+      "facets": [
+        "uv.model/bounds@1",
+        "uv.model/geometry@1",
+        "uv.model/hierarchy@1",
+        "uv.model/mesh-index@1",
+        "uv.model/resource-closure@1",
+        "uv.model/structure@1"
+      ],
+      "absentFacets": [],
+      "hash": "sha256:9d6aa069f0c3772b295f9d82a0aae3d9c7a5a703c264adb9c00931ffb97f1031",
+      "sameHashAs": "closure/logical-a"
+    },
+    {
+      "id": "closure/logical-without-digest",
+      "expect": "accept",
+      "note": "a publisher that has no digest reaches the same logical hash as one that has it",
+      "base": "uvm-core-textured",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "resourceClosure",
+          "value": {
+            "mode": "logical",
+            "entries": [
+              {
+                "role": "image",
+                "logicalId": "textures/crate_diffuse.png",
+                "mediaHint": "image/png",
+                "digest": null
+              }
+            ]
+          }
+        }
+      ],
+      "facets": [
+        "uv.model/bounds@1",
+        "uv.model/geometry@1",
+        "uv.model/hierarchy@1",
+        "uv.model/mesh-index@1",
+        "uv.model/resource-closure@1",
+        "uv.model/structure@1"
+      ],
+      "absentFacets": [],
+      "hash": "sha256:9d6aa069f0c3772b295f9d82a0aae3d9c7a5a703c264adb9c00931ffb97f1031",
+      "sameHashAs": "closure/logical-a"
+    },
+    {
+      "id": "closure/content-qualified-a",
+      "expect": "accept",
+      "note": "the mode is hashed, so a content-qualified hash can never be compared with a logical hash by accident",
+      "base": "uvm-core-textured",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "resourceClosure",
+          "value": {
+            "mode": "content-qualified",
+            "entries": [
+              {
+                "role": "image",
+                "logicalId": "textures/crate_diffuse.png",
+                "mediaHint": "image/png",
+                "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              }
+            ]
+          }
+        }
+      ],
+      "facets": [
+        "uv.model/bounds@1",
+        "uv.model/geometry@1",
+        "uv.model/hierarchy@1",
+        "uv.model/mesh-index@1",
+        "uv.model/resource-closure@1",
+        "uv.model/structure@1"
+      ],
+      "absentFacets": [],
+      "hash": "sha256:142551fc7c561aac6e9beaa734a4877ae227e9997e06357f5a1bd8cfd1d6c30f",
+      "differentHashFrom": "closure/logical-a"
+    },
+    {
+      "id": "closure/content-qualified-b",
+      "expect": "accept",
+      "note": "different texture bytes are a different model under content-qualified closure",
+      "base": "uvm-core-textured",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "resourceClosure",
+          "value": {
+            "mode": "content-qualified",
+            "entries": [
+              {
+                "role": "image",
+                "logicalId": "textures/crate_diffuse.png",
+                "mediaHint": "image/png",
+                "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              }
+            ]
+          }
+        }
+      ],
+      "facets": [
+        "uv.model/bounds@1",
+        "uv.model/geometry@1",
+        "uv.model/hierarchy@1",
+        "uv.model/mesh-index@1",
+        "uv.model/resource-closure@1",
+        "uv.model/structure@1"
+      ],
+      "absentFacets": [],
+      "hash": "sha256:644936669f692c2adf1cc6ca2a4ca86e8a337bf827d86fb9c133b0ea0296c0e6",
+      "differentHashFrom": "closure/content-qualified-a"
+    },
+    {
+      "id": "closure/content-qualified-without-digest",
+      "expect": "accept",
+      "note": "an unknown digest stays null and is still encoded, so \"unknown content\" never silently equals \"known content\"",
+      "base": "uvm-core-textured",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "resourceClosure",
+          "value": {
+            "mode": "content-qualified",
+            "entries": [
+              {
+                "role": "image",
+                "logicalId": "textures/crate_diffuse.png",
+                "mediaHint": "image/png",
+                "digest": null
+              }
+            ]
+          }
+        }
+      ],
+      "facets": [
+        "uv.model/bounds@1",
+        "uv.model/geometry@1",
+        "uv.model/hierarchy@1",
+        "uv.model/mesh-index@1",
+        "uv.model/resource-closure@1",
+        "uv.model/structure@1"
+      ],
+      "absentFacets": [],
+      "hash": "sha256:9fbb86990d7708a352e670d64c5dcf5fd639bae947393d5ce6e43307e9785208",
+      "differentHashFrom": "closure/content-qualified-a"
+    },
+    {
+      "id": "closure/empty-closure-is-not-an-absent-closure",
+      "expect": "accept",
+      "note": "not publishing the facet and publishing it with no entries are different statements",
+      "base": "uvm-core-textured",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "resourceClosure",
+          "value": {
+            "mode": "logical",
+            "entries": []
+          }
+        }
+      ],
+      "facets": [
+        "uv.model/bounds@1",
+        "uv.model/geometry@1",
+        "uv.model/hierarchy@1",
+        "uv.model/mesh-index@1",
+        "uv.model/resource-closure@1",
+        "uv.model/structure@1"
+      ],
+      "absentFacets": [],
+      "hash": "sha256:c2e11edbcfc72325e96181c902cdec7b0d64162c9374345611c96bbe868663b6",
+      "differentHashFrom": "textured/base"
+    },
+    {
+      "id": "closure/reject-bare-hex-digest",
+      "expect": "reject",
+      "note": "a digest must name its algorithm; a bare hex string is refused rather than assumed to be sha-256",
+      "base": "uvm-core-textured",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "resourceClosure",
+          "value": {
+            "mode": "content-qualified",
+            "entries": [
+              {
+                "role": "image",
+                "logicalId": "textures/crate_diffuse.png",
+                "mediaHint": "image/png",
+                "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              }
+            ]
+          }
+        }
+      ],
+      "reason": "is not algorithm-qualified"
+    },
+    {
+      "id": "closure/reject-unknown-algorithm",
+      "expect": "reject",
+      "note": "only the algorithms the descriptor accepts may appear",
+      "base": "uvm-core-textured",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "resourceClosure",
+          "value": {
+            "mode": "content-qualified",
+            "entries": [
+              {
+                "role": "image",
+                "logicalId": "textures/crate_diffuse.png",
+                "mediaHint": "image/png",
+                "digest": "md5:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              }
+            ]
+          }
+        }
+      ],
+      "reason": "is not algorithm-qualified"
+    },
+    {
+      "id": "closure/reject-unknown-role",
+      "expect": "reject",
+      "note": "the role vocabulary is closed, so a new resource kind is a descriptor change rather than a local invention",
+      "base": "uvm-core-textured",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "resourceClosure",
+          "value": {
+            "mode": "logical",
+            "entries": [
+              {
+                "role": "shader",
+                "logicalId": "shaders/hull.fx",
+                "mediaHint": null,
+                "digest": null
+              }
+            ]
+          }
+        }
+      ],
+      "reason": "unknown role"
+    },
+    {
+      "id": "geometry/reject-decoded-without-geometry",
+      "expect": "reject",
+      "note": "a decoded source may not withhold geometry: the two facts must agree or the scope refuses to hash",
+      "base": "uvm-core-triangle",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "primitives"
+        }
+      ],
+      "reason": "geometryAccess=decoded requires uv.model/geometry@1"
+    },
+    {
+      "id": "geometry/reject-metadata-only-with-geometry",
+      "expect": "reject",
+      "note": "the mirror rule, so neither direction can be used to smuggle a mismatch past the comparison",
+      "base": "uvm-core-triangle",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "info.geometryAccess",
+          "value": "metadata-only"
+        }
+      ],
+      "reason": "geometryAccess=metadata-only forbids uv.model/geometry@1"
+    },
+    {
+      "id": "numeric/reject-non-finite-transform",
+      "expect": "reject",
+      "note": "a projection carrying NaN is a diagnostic, never a hash",
+      "base": "uvm-core-triangle",
+      "mutations": [
+        {
+          "op": "set-non-finite",
+          "path": "nodes.0.transform.0",
+          "value": "NaN"
+        }
+      ],
+      "reason": "must contain finite numbers only"
+    },
+    {
+      "id": "hierarchy/reject-duplicate-node-id",
+      "expect": "reject",
+      "note": "identity is hashed, so a duplicate id is a contradiction rather than a merge",
+      "base": "uvm-core-rig",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "nodes.1.id",
+          "value": "node-0"
+        }
+      ],
+      "reason": "node ids must be unique"
+    }
+  ]
+}

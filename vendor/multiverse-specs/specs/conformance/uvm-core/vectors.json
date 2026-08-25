@@ -1,0 +1,127 @@
+{
+  "$comment": "UVM/core 1.0 profile vectors. The accept cases pin the deterministic .uvm.gltf -> .uvm.glb packing rule and its digest, proving repeat materialisation is byte-stable; the reject cases pin the profile markers a conforming reader must refuse.",
+  "schemaVersion": "uv-conformance-vectors-1",
+  "suite": "uvm-core",
+  "profile": "UVM/core@1.0",
+  "spec": "../../model/SPEC_UVM.md",
+  "packing": {
+    "rule": "JSON.stringify with no whitespace, JSON chunk padded with 0x20 and BIN chunk padded with 0x00, both to a multiple of four",
+    "repeatIsByteStable": true
+  },
+  "vectors": [
+    {
+      "id": "uvm-core-triangle/pack",
+      "expect": "accept",
+      "fixture": "uvm-core-triangle.uvm.gltf",
+      "note": "packs to GLB, unpacks to the same document, and packs to the same bytes on a repeat run",
+      "mutations": [],
+      "glbByteLength": 1272,
+      "glbDigest": "sha256:39d3d4d8fe4be7934e626020309b481c0f03b985ae463f8821291d6e1d1296ac"
+    },
+    {
+      "id": "uvm-core-rig/pack",
+      "expect": "accept",
+      "fixture": "uvm-core-rig.uvm.gltf",
+      "note": "packs to GLB, unpacks to the same document, and packs to the same bytes on a repeat run",
+      "mutations": [],
+      "glbByteLength": 2108,
+      "glbDigest": "sha256:33e8f095f8f2cf912d29c56bec0ce06a4bcd08ba50aeed9d7e9c3f513cf82fda"
+    },
+    {
+      "id": "uvm-core-textured/pack",
+      "expect": "accept",
+      "fixture": "uvm-core-textured.uvm.gltf",
+      "note": "packs to GLB, unpacks to the same document, and packs to the same bytes on a repeat run",
+      "mutations": [],
+      "glbByteLength": 1604,
+      "glbDigest": "sha256:40b0c9b843c751c49aa4e8b6e44ee3e1c8b76850af65f4b90b88a2429ec16abd"
+    },
+    {
+      "id": "reject-profile-full",
+      "expect": "reject",
+      "fixture": "uvm-core-triangle.uvm.gltf",
+      "note": "the scope binds UVM/core; a full-profile marker names a different profile, not a looser one",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "asset.extras.uv.profile",
+          "value": "full"
+        }
+      ],
+      "reason": "asset.extras.uv must identify the UVM/core 1.0 profile"
+    },
+    {
+      "id": "reject-major-version",
+      "expect": "reject",
+      "fixture": "uvm-core-triangle.uvm.gltf",
+      "note": "a reader refuses a major version it does not implement rather than guessing (SPEC_UVM §18)",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "asset.extras.uv.version",
+          "value": "2.0"
+        }
+      ],
+      "reason": "asset.extras.uv must identify the UVM/core 1.0 profile"
+    },
+    {
+      "id": "reject-missing-provenance",
+      "expect": "reject",
+      "fixture": "uvm-core-triangle.uvm.gltf",
+      "note": "UV_provenance is required by the profile, so a document without it is not core-conformant",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "extensions.UV_provenance"
+        }
+      ],
+      "reason": "UV_provenance is declared but absent"
+    },
+    {
+      "id": "reject-required-uv-extension",
+      "expect": "reject",
+      "fixture": "uvm-core-triangle.uvm.gltf",
+      "note": "extensionsRequired must not list a UV_ extension (SPEC_UVM §3.1)",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "extensionsRequired",
+          "value": [
+            "UV_game_effects"
+          ]
+        }
+      ],
+      "reason": "UVM/core must not require a UV_ extension"
+    },
+    {
+      "id": "reject-undeclared-extension-use",
+      "expect": "reject",
+      "fixture": "uvm-core-triangle.uvm.gltf",
+      "note": "an extension present in extensions but missing from extensionsUsed is a malformed document",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "extensionsUsed",
+          "value": [
+            "UV_asset"
+          ]
+        }
+      ],
+      "reason": "UV_provenance is not declared in extensionsUsed"
+    },
+    {
+      "id": "reject-empty-asset-id",
+      "expect": "reject",
+      "fixture": "uvm-core-triangle.uvm.gltf",
+      "note": "UV_asset identity is hashed downstream, so a blank id is refused at the profile boundary",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "extensions.UV_asset.id",
+          "value": "   "
+        }
+      ],
+      "reason": "UV_asset requires a non-empty id"
+    }
+  ]
+}

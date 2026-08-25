@@ -1,0 +1,138 @@
+{
+  "$comment": "Canonical-form vectors for uv.canonical/typed-form@1. Every expectation is written out as text, so any implementation can be checked without trusting a particular copy of the code.",
+  "schemaVersion": "uv-conformance-vectors-1",
+  "suite": "canonical-form",
+  "form": "uv.canonical/typed-form@1",
+  "spec": "../../foundation/SPEC_UV_CANONICALIZATION.md",
+  "differentialOracle": {
+    "$comment": "Every accept vector below was produced by this repository and independently reproduced by the sealed legacy implementation, so the agreement is recorded as data rather than asserted in prose.",
+    "implementation": "@modkitx/world canonicalStringify / sha256Hex",
+    "location": "modkitx/packages/world/src/canonical.ts (sealed legacy oracle, read-only)",
+    "checkedOn": "2026-08-25",
+    "result": "identical canonical text and identical digest for every accept vector"
+  },
+  "markers": {
+    "negativeZero": "JSON cannot carry -0, so a vector that needs it sets this flag and the runner substitutes -0 for the recorded 0 before encoding",
+    "nonFinite": "JSON cannot carry NaN or infinity, so a reject vector names the value it needs instead of embedding it"
+  },
+  "vectors": [
+    {
+      "id": "scalar-integer",
+      "expect": "accept",
+      "note": "an integer is a binary64 value like any other number",
+      "value": 7,
+      "canonicalText": "[\"number\",\"401c000000000000\"]",
+      "digest": "sha256:5dcfe4bdbfe2a76988fc57b215a8f51b69e9ecf902951104d27e155ad79a5c87"
+    },
+    {
+      "id": "scalar-negative-zero",
+      "expect": "accept",
+      "note": "-0 normalises to +0 before encoding, so the two never produce different digests",
+      "value": 0,
+      "negativeZero": true,
+      "canonicalText": "[\"number\",\"0000000000000000\"]",
+      "digest": "sha256:af61886518b0ec1da50e0b7e877a7e02cc7173f0becd9a994e1e5e661a16e3ee"
+    },
+    {
+      "id": "scalar-null",
+      "expect": "accept",
+      "note": "null is a value, not an absence",
+      "value": null,
+      "canonicalText": "[\"null\"]",
+      "digest": "sha256:53b41ab0dae62befcb8708620b6d14794a24fedad6c24c03dd01e51fa698ff0b"
+    },
+    {
+      "id": "scalar-string-escapes",
+      "expect": "accept",
+      "note": "strings keep JSON escaping",
+      "value": "line\nquote\"tab\t",
+      "canonicalText": "[\"string\",\"line\\nquote\\\"tab\\t\"]",
+      "digest": "sha256:cb0f78cac6db6be60a9c764ccf2818298806beb0ad3ba99d4ee179134b53c9d3"
+    },
+    {
+      "id": "object-key-order-utf8",
+      "expect": "accept",
+      "note": "keys sort by UTF-8 bytes, so a non-ASCII key sorts after every ASCII key",
+      "value": {
+        "é": 1,
+        "e": 2,
+        "Z": 3,
+        "a": 4
+      },
+      "canonicalText": "[\"object\",[[\"Z\",[\"number\",\"4008000000000000\"]],[\"a\",[\"number\",\"4010000000000000\"]],[\"e\",[\"number\",\"4000000000000000\"]],[\"é\",[\"number\",\"3ff0000000000000\"]]]]",
+      "digest": "sha256:ced5fa983eb743fe87c6ea1c4ad6859e0da1ef3ad1d43bceaec97fd3ba2d2e66"
+    },
+    {
+      "id": "object-vs-array",
+      "expect": "accept",
+      "note": "the type tag keeps an object and an array from ever colliding",
+      "value": {
+        "items": [
+          1,
+          2,
+          [
+            3,
+            null,
+            true
+          ]
+        ]
+      },
+      "canonicalText": "[\"object\",[[\"items\",[\"array\",[[\"number\",\"3ff0000000000000\"],[\"number\",\"4000000000000000\"],[\"array\",[[\"number\",\"4008000000000000\"],[\"null\"],[\"boolean\",true]]]]]]]]",
+      "digest": "sha256:69cf6e236fbb14298e47549ceed4e0bf93716d8c120817ca339e25ee664a976d"
+    },
+    {
+      "id": "float-precision",
+      "expect": "accept",
+      "note": "binary64 bit patterns are encoded exactly; no decimal rounding happens",
+      "value": {
+        "a": 0.1,
+        "b": 0.2,
+        "c": 0.30000000000000004,
+        "d": 0.3333333333333333
+      },
+      "canonicalText": "[\"object\",[[\"a\",[\"number\",\"3fb999999999999a\"]],[\"b\",[\"number\",\"3fc999999999999a\"]],[\"c\",[\"number\",\"3fd3333333333334\"]],[\"d\",[\"number\",\"3fd5555555555555\"]]]]",
+      "digest": "sha256:1c2b378e495a313ce7390e139363fa785c69c8c5f66f52dce7ddf1c46d4a385d"
+    },
+    {
+      "id": "float32-widening",
+      "expect": "accept",
+      "note": "a float32 value widens to binary64 exactly, which is why a decoded attribute hashes stably",
+      "value": {
+        "f32": 0.10000000149011612
+      },
+      "canonicalText": "[\"object\",[[\"f32\",[\"number\",\"3fb99999a0000000\"]]]]",
+      "digest": "sha256:5f8420a3f0beb33d76abaa14ef34286a81f8598537f0b3db1e74430ca75d6a8f"
+    },
+    {
+      "id": "empty-array-is-a-value",
+      "expect": "accept",
+      "note": "an empty array is a positive fact, never a stand-in for absent",
+      "value": {
+        "childIds": []
+      },
+      "canonicalText": "[\"object\",[[\"childIds\",[\"array\",[]]]]]",
+      "digest": "sha256:a781a9a2f75996b0da8a79542f191718f7c5ee47418f129c82a66bf0049df54a"
+    },
+    {
+      "id": "reject-nan",
+      "expect": "reject",
+      "note": "a non-finite number can never enter a UV digest",
+      "nonFinite": "NaN",
+      "reason": "cannot contain NaN or infinity"
+    },
+    {
+      "id": "reject-positive-infinity",
+      "expect": "reject",
+      "note": "a non-finite number can never enter a UV digest",
+      "nonFinite": "Infinity",
+      "reason": "cannot contain NaN or infinity"
+    },
+    {
+      "id": "reject-negative-infinity",
+      "expect": "reject",
+      "note": "a non-finite number can never enter a UV digest",
+      "nonFinite": "-Infinity",
+      "reason": "cannot contain NaN or infinity"
+    }
+  ]
+}

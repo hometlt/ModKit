@@ -1,0 +1,43 @@
+{
+  "$comment": "The versioned SemanticScopeDescriptor registry owned by multiverse/specs (PLAN_MODKIT_MK3_FINAL_RU §2.6). Until a scope is registered here its name is not a release or compatibility guarantee.",
+  "schemaVersion": "semantic-scope-registry-1",
+  "owner": "multiverse/specs",
+  "updatedOn": "2026-08-25",
+  "statuses": {
+    "registered": "the descriptor is complete, has conformance vectors and may be named in a release or compatibility statement",
+    "candidate": "a pinned descriptor that exists for admission-only reports; it must not be used as a compatibility guarantee",
+    "reserved": "the scope id and its owning block are fixed, the descriptor does not exist yet"
+  },
+  "scopes": [
+    {
+      "scopeId": "model-interchange-v1",
+      "status": "registered",
+      "version": "1.0.0",
+      "plane": "model",
+      "descriptor": "model-interchange-v1.json",
+      "vectors": "../conformance/model-interchange-v1/vectors.json",
+      "registeredBy": "block 11 slice 11C0",
+      "note": "computable today from common.view/model-scene-source@1 and from a UVM/core 1.0 artifact"
+    },
+    {
+      "scopeId": "world-interchange-v1",
+      "status": "reserved",
+      "version": null,
+      "plane": "world",
+      "descriptor": null,
+      "vectors": null,
+      "registeredBy": "block 12 prepares the candidate, block 18 freezes it at admission",
+      "note": "reserved id only. No descriptor exists, so the name carries no guarantee."
+    },
+    {
+      "scopeId": "definition-interchange-v1",
+      "status": "reserved",
+      "version": null,
+      "plane": "definitions",
+      "descriptor": null,
+      "vectors": null,
+      "registeredBy": "block 23",
+      "note": "reserved id only. No descriptor exists, so the name carries no guarantee."
+    }
+  ]
+}

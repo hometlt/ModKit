@@ -1,0 +1,1241 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/uvm/1.0/uvm.effects.schema.json",
+  "title": "UV_game_effects",
+  "description": "Renderer-neutral particles, ribbons, forces, warps, and projectors attached at the glTF document root. Generated from RenderModelEffects; animation tracks use KHR_animation_pointer and ordinary glTF samplers.",
+  "type": "object",
+  "properties": {
+    "profile": { "type": "string", "enum": ["common", "m3", "mdx", "w3d"], "default": "common" },
+    "trackTimeUnit": { "type": "string", "enum": ["seconds", "milliseconds"] },
+    "particles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "node", "material"],
+        "properties": {
+          "name": { "type": "string" },
+          "texturePath": { "type": "string" },
+          "width": { "type": "number" },
+          "length": { "type": "number" },
+          "alpha": { "type": "number" },
+          "visibility": { "type": "number" },
+          "squirt": { "type": "boolean" },
+          "emitCount": { "type": "number" },
+          "emissionRate": { "type": "number" },
+          "lifeSpan": { "type": "number" },
+          "speed": { "type": "number" },
+          "speedRandom": { "type": "number" },
+          "randomizeSpeed": { "type": "boolean" },
+          "gravity": { "type": "number" },
+          "latitude": { "type": "number" },
+          "variation": { "type": "number" },
+          "lifeSpanRandom": { "type": "number" },
+          "randomizeLifeSpan": { "type": "boolean" },
+          "mass": { "type": "number" },
+          "massRandom": { "type": "number" },
+          "randomizeMass": { "type": "boolean" },
+          "tailLength": { "type": "number" },
+          "timeMiddle": { "type": "number" },
+          "rows": { "type": "number" },
+          "columns": { "type": "number" },
+          "filterMode": { "type": "number" },
+          "head": { "type": "boolean" },
+          "tail": { "type": "boolean" },
+          "lineEmitter": { "type": "boolean" },
+          "orientationMode": {
+            "type": "string",
+            "enum": [
+              "billboard",
+              "tail",
+              "face-travel-direction",
+              "face-world-direction",
+              "single-axis",
+              "terrain-oriented",
+              "terrain-direction-oriented",
+              "emitter-oriented",
+              "physics-oriented",
+              "pinned",
+              "trail"
+            ]
+          },
+          "localForceChannels": { "type": "number" },
+          "worldForceChannels": { "type": "number" },
+          "feedbackLocalForceChannels": { "type": "number" },
+          "feedbackWorldForceChannels": { "type": "number" },
+          "worldForceMassMultiplier": { "type": "number" },
+          "noiseAmplitude": { "type": "number" },
+          "noiseFrequency": { "type": "number" },
+          "noiseCohesion": { "type": "number" },
+          "noiseEdge": { "type": "number" },
+          "windMultiplier": { "type": "number" },
+          "maxParticles": { "type": "number" },
+          "emitShape": { "type": "string" },
+          "emitShapeRadius": { "type": "number" },
+          "emitShapeSize": {
+            "type": "array",
+            "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "emitShapePoints": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+              "minItems": 3,
+              "maxItems": 3
+            }
+          },
+          "emitShapePointSequenceAnimations": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["sequenceIndex", "track"],
+                "properties": {
+                  "sequenceIndex": { "type": "number" },
+                  "track": {
+                    "type": "object",
+                    "required": ["lineType", "globalSeqId", "keys"],
+                    "properties": {
+                      "lineType": { "type": "number" },
+                      "globalSeqId": { "anyOf": [{ "type": "null" }, { "type": "number" }] },
+                      "keys": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": ["frame", "vector"],
+                          "properties": {
+                            "frame": { "type": "number" },
+                            "vector": { "type": "array", "items": { "type": "number" } },
+                            "inTan": { "type": "array", "items": { "type": "number" } },
+                            "outTan": { "type": "array", "items": { "type": "number" } }
+                          },
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "concurrent": { "type": "boolean" },
+                  "wrapSeconds": { "type": "number" }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "emitShapeMeshes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["positions", "indices"],
+              "properties": {
+                "positions": { "type": "array", "items": { "type": "number" } },
+                "indices": {
+                  "anyOf": [
+                    { "type": "array", "items": { "type": "number" } },
+                    { "type": "array", "items": { "type": "number" } }
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "emitShapeCutout": { "type": "boolean" },
+          "emitShapeCutoutRadius": { "type": "number" },
+          "emitShapeCutoutSize": {
+            "type": "array",
+            "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "emitAngleX": { "type": "number" },
+          "emitAngleY": { "type": "number" },
+          "emitSpreadX": { "type": "number" },
+          "emitSpreadY": { "type": "number" },
+          "collideTerrain": { "type": "boolean" },
+          "collideObjects": { "type": "boolean" },
+          "bounce": { "type": "number" },
+          "maxCollisionEvents": { "type": "number" },
+          "collisionEmitMin": { "type": "number" },
+          "collisionEmitMax": { "type": "number" },
+          "collisionEmitChance": { "type": "number" },
+          "collisionEmitEnergy": { "type": "number" },
+          "collisionProjectorChance": { "type": "number" },
+          "bounceRibbonChance": { "type": "number" },
+          "trailEmitChance": { "type": "number" },
+          "trailEmitRate": { "type": "number" },
+          "friction": { "type": "number" },
+          "drag": { "type": "number" },
+          "boneAnchored": { "type": "boolean" },
+          "modelSpace": { "type": "boolean" },
+          "xyQuad": { "type": "boolean" },
+          "lifecycleSize": {
+            "type": "object",
+            "required": ["start", "middle", "end", "timeMiddle"],
+            "properties": {
+              "start": {
+                "type": "array",
+                "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "middle": {
+                "type": "array",
+                "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "end": {
+                "type": "array",
+                "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "timeMiddle": { "type": "number" }
+            },
+            "additionalProperties": false
+          },
+          "lifecycleSizeRandom": {
+            "type": "object",
+            "required": ["start", "middle", "end", "timeMiddle"],
+            "properties": {
+              "start": {
+                "type": "array",
+                "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "middle": {
+                "type": "array",
+                "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "end": {
+                "type": "array",
+                "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "timeMiddle": { "type": "number" }
+            },
+            "additionalProperties": false
+          },
+          "randomizeSize": { "type": "boolean" },
+          "lifecycleRotation": {
+            "type": "object",
+            "required": ["start", "middle", "end", "timeMiddle"],
+            "properties": {
+              "start": {
+                "type": "array",
+                "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "middle": {
+                "type": "array",
+                "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "end": {
+                "type": "array",
+                "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "timeMiddle": { "type": "number" }
+            },
+            "additionalProperties": false
+          },
+          "lifecycleRotationRandom": {
+            "type": "object",
+            "required": ["start", "middle", "end", "timeMiddle"],
+            "properties": {
+              "start": {
+                "type": "array",
+                "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "middle": {
+                "type": "array",
+                "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "end": {
+                "type": "array",
+                "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "timeMiddle": { "type": "number" }
+            },
+            "additionalProperties": false
+          },
+          "randomizeRotation": { "type": "boolean" },
+          "rotationRelative": { "type": "boolean" },
+          "rotationAlwaysSet": { "type": "boolean" },
+          "segmentColorsRandom": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+              "minItems": 3,
+              "maxItems": 3
+            }
+          },
+          "segmentAlphasRandom": {
+            "type": "array",
+            "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "randomizeColor": { "type": "boolean" },
+          "randomizeAlpha": { "type": "boolean" },
+          "pitchVariation": {
+            "type": "object",
+            "required": ["shape", "amplitude", "frequency"],
+            "properties": {
+              "shape": {
+                "anyOf": [
+                  { "type": "number" },
+                  { "type": "string", "const": "none" },
+                  { "type": "string", "const": "sine" },
+                  { "type": "string", "const": "triangle" },
+                  { "type": "string", "const": "square" },
+                  { "type": "string", "const": "saw" },
+                  { "type": "string", "const": "noise" }
+                ]
+              },
+              "amplitude": { "type": "number" },
+              "frequency": { "type": "number" },
+              "phase": { "type": "number" }
+            },
+            "additionalProperties": false
+          },
+          "yawVariation": {
+            "type": "object",
+            "required": ["shape", "amplitude", "frequency"],
+            "properties": {
+              "shape": {
+                "anyOf": [
+                  { "type": "number" },
+                  { "type": "string", "const": "none" },
+                  { "type": "string", "const": "sine" },
+                  { "type": "string", "const": "triangle" },
+                  { "type": "string", "const": "square" },
+                  { "type": "string", "const": "saw" },
+                  { "type": "string", "const": "noise" }
+                ]
+              },
+              "amplitude": { "type": "number" },
+              "frequency": { "type": "number" },
+              "phase": { "type": "number" }
+            },
+            "additionalProperties": false
+          },
+          "speedVariation": {
+            "type": "object",
+            "required": ["shape", "amplitude", "frequency"],
+            "properties": {
+              "shape": {
+                "anyOf": [
+                  { "type": "number" },
+                  { "type": "string", "const": "none" },
+                  { "type": "string", "const": "sine" },
+                  { "type": "string", "const": "triangle" },
+                  { "type": "string", "const": "square" },
+                  { "type": "string", "const": "saw" },
+                  { "type": "string", "const": "noise" }
+                ]
+              },
+              "amplitude": { "type": "number" },
+              "frequency": { "type": "number" },
+              "phase": { "type": "number" }
+            },
+            "additionalProperties": false
+          },
+          "sizeVariation": {
+            "type": "object",
+            "required": ["shape", "amplitude", "frequency"],
+            "properties": {
+              "shape": {
+                "anyOf": [
+                  { "type": "number" },
+                  { "type": "string", "const": "none" },
+                  { "type": "string", "const": "sine" },
+                  { "type": "string", "const": "triangle" },
+                  { "type": "string", "const": "square" },
+                  { "type": "string", "const": "saw" },
+                  { "type": "string", "const": "noise" }
+                ]
+              },
+              "amplitude": { "type": "number" },
+              "frequency": { "type": "number" },
+              "phase": { "type": "number" }
+            },
+            "additionalProperties": false
+          },
+          "alphaVariation": {
+            "type": "object",
+            "required": ["shape", "amplitude", "frequency"],
+            "properties": {
+              "shape": {
+                "anyOf": [
+                  { "type": "number" },
+                  { "type": "string", "const": "none" },
+                  { "type": "string", "const": "sine" },
+                  { "type": "string", "const": "triangle" },
+                  { "type": "string", "const": "square" },
+                  { "type": "string", "const": "saw" },
+                  { "type": "string", "const": "noise" }
+                ]
+              },
+              "amplitude": { "type": "number" },
+              "frequency": { "type": "number" },
+              "phase": { "type": "number" }
+            },
+            "additionalProperties": false
+          },
+          "colorVariation": {
+            "type": "object",
+            "required": ["shape", "amplitude", "frequency"],
+            "properties": {
+              "shape": {
+                "anyOf": [
+                  { "type": "number" },
+                  { "type": "string", "const": "none" },
+                  { "type": "string", "const": "sine" },
+                  { "type": "string", "const": "triangle" },
+                  { "type": "string", "const": "square" },
+                  { "type": "string", "const": "saw" },
+                  { "type": "string", "const": "noise" }
+                ]
+              },
+              "amplitude": { "type": "number" },
+              "frequency": { "type": "number" },
+              "phase": { "type": "number" }
+            },
+            "additionalProperties": false
+          },
+          "rotationVariation": {
+            "type": "object",
+            "required": ["shape", "amplitude", "frequency"],
+            "properties": {
+              "shape": {
+                "anyOf": [
+                  { "type": "number" },
+                  { "type": "string", "const": "none" },
+                  { "type": "string", "const": "sine" },
+                  { "type": "string", "const": "triangle" },
+                  { "type": "string", "const": "square" },
+                  { "type": "string", "const": "saw" },
+                  { "type": "string", "const": "noise" }
+                ]
+              },
+              "amplitude": { "type": "number" },
+              "frequency": { "type": "number" },
+              "phase": { "type": "number" }
+            },
+            "additionalProperties": false
+          },
+          "spreadXVariation": {
+            "type": "object",
+            "required": ["shape", "amplitude", "frequency"],
+            "properties": {
+              "shape": {
+                "anyOf": [
+                  { "type": "number" },
+                  { "type": "string", "const": "none" },
+                  { "type": "string", "const": "sine" },
+                  { "type": "string", "const": "triangle" },
+                  { "type": "string", "const": "square" },
+                  { "type": "string", "const": "saw" },
+                  { "type": "string", "const": "noise" }
+                ]
+              },
+              "amplitude": { "type": "number" },
+              "frequency": { "type": "number" },
+              "phase": { "type": "number" }
+            },
+            "additionalProperties": false
+          },
+          "spreadYVariation": {
+            "type": "object",
+            "required": ["shape", "amplitude", "frequency"],
+            "properties": {
+              "shape": {
+                "anyOf": [
+                  { "type": "number" },
+                  { "type": "string", "const": "none" },
+                  { "type": "string", "const": "sine" },
+                  { "type": "string", "const": "triangle" },
+                  { "type": "string", "const": "square" },
+                  { "type": "string", "const": "saw" },
+                  { "type": "string", "const": "noise" }
+                ]
+              },
+              "amplitude": { "type": "number" },
+              "frequency": { "type": "number" },
+              "phase": { "type": "number" }
+            },
+            "additionalProperties": false
+          },
+          "parentVelocity": { "type": "number" },
+          "swapModelParticleYZ": { "type": "boolean" },
+          "screenSpaceUv": {
+            "type": "object",
+            "required": ["threshold", "offset", "angle", "tiling"],
+            "properties": {
+              "threshold": { "type": "number" },
+              "offset": {
+                "type": "array",
+                "prefixItems": [{ "type": "number" }, { "type": "number" }],
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "angle": {
+                "type": "array",
+                "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "tiling": {
+                "type": "array",
+                "prefixItems": [{ "type": "number" }, { "type": "number" }],
+                "minItems": 2,
+                "maxItems": 2
+              }
+            },
+            "additionalProperties": false
+          },
+          "particleScaling": {
+            "type": "array",
+            "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "segmentColors": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+              "minItems": 3,
+              "maxItems": 3
+            }
+          },
+          "segmentAlphas": {
+            "type": "array",
+            "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "lifeSpanUvAnim": {
+            "type": "array",
+            "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "decayUvAnim": {
+            "type": "array",
+            "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "tailUvAnim": {
+            "type": "array",
+            "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "tailDecayUvAnim": {
+            "type": "array",
+            "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "node": { "type": "number" },
+          "material": { "type": "number" },
+          "collisionEmitter": { "type": "number" },
+          "collisionProjector": { "type": "number" },
+          "bounceRibbon": { "type": "number" },
+          "trailEmitter": { "type": "number" },
+          "modelAssets": { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": false
+      },
+      "default": []
+    },
+    "ribbons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "node", "material"],
+        "properties": {
+          "name": { "type": "string" },
+          "texturePath": { "type": "string" },
+          "heightAbove": { "type": "number" },
+          "heightBelow": { "type": "number" },
+          "alpha": { "type": "number" },
+          "visibility": { "type": "number" },
+          "emissionRate": { "type": "number" },
+          "lifeSpan": { "type": "number" },
+          "lifeSpanRandom": { "type": "number" },
+          "randomizeLifeSpan": { "type": "boolean" },
+          "speed": { "type": "number" },
+          "speedRandom": { "type": "number" },
+          "randomizeSpeed": { "type": "boolean" },
+          "pitch": { "type": "number" },
+          "yaw": { "type": "number" },
+          "spreadX": { "type": "number" },
+          "spreadY": { "type": "number" },
+          "gravity": {
+            "type": "array",
+            "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "drag": { "type": "number" },
+          "mass": { "type": "number" },
+          "massRandom": { "type": "number" },
+          "randomizeMass": { "type": "boolean" },
+          "localForceChannels": { "type": "number" },
+          "worldForceChannels": { "type": "number" },
+          "feedbackLocalForceChannels": { "type": "number" },
+          "feedbackWorldForceChannels": { "type": "number" },
+          "worldForceMassMultiplier": { "type": "number" },
+          "noiseAmplitude": { "type": "number" },
+          "noiseFrequency": { "type": "number" },
+          "noiseCohesion": { "type": "number" },
+          "noiseEdge": { "type": "number" },
+          "collideTerrain": { "type": "boolean" },
+          "collideObjects": { "type": "boolean" },
+          "friction": { "type": "number" },
+          "bounce": { "type": "number" },
+          "modelSpace": { "type": "boolean" },
+          "parentVelocity": { "type": "number" },
+          "rows": { "type": "number" },
+          "columns": { "type": "number" },
+          "textureSlot": { "type": "number" },
+          "color": {
+            "type": "array",
+            "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "widths": {
+            "type": "array",
+            "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "widthTimeMiddle": { "type": "number" },
+          "segmentColors": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+              "minItems": 3,
+              "maxItems": 3
+            }
+          },
+          "segmentAlphas": {
+            "type": "array",
+            "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "colorTimeMiddle": { "type": "number" },
+          "ribbonType": { "type": "string", "enum": ["billboard", "planar", "cylinder", "star"] },
+          "sides": { "type": "number" },
+          "starRatio": { "type": "number" },
+          "divisions": { "type": "number" },
+          "maxLength": { "type": "number" },
+          "lengthAndTime": { "type": "boolean" },
+          "emissionOffset": {
+            "type": "array",
+            "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "emissionVector": {
+            "type": "array",
+            "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "splineEndpoints": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "boneIndex",
+                "emissionOffset",
+                "emissionVector",
+                "velocity",
+                "velocityBaseFactor",
+                "velocityEndFactor",
+                "yaw",
+                "pitch"
+              ],
+              "properties": {
+                "boneIndex": { "type": "number" },
+                "emissionOffset": {
+                  "type": "array",
+                  "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+                  "minItems": 3,
+                  "maxItems": 3
+                },
+                "emissionVector": {
+                  "type": "array",
+                  "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+                  "minItems": 3,
+                  "maxItems": 3
+                },
+                "velocity": { "type": "number" },
+                "velocityBaseFactor": { "type": "number" },
+                "velocityEndFactor": { "type": "number" },
+                "yaw": { "type": "number" },
+                "pitch": { "type": "number" },
+                "yawVariation": {
+                  "type": "object",
+                  "required": ["shape", "amplitude", "frequency"],
+                  "properties": {
+                    "shape": {
+                      "anyOf": [
+                        { "type": "number" },
+                        { "type": "string", "const": "none" },
+                        { "type": "string", "const": "sine" },
+                        { "type": "string", "const": "triangle" },
+                        { "type": "string", "const": "square" },
+                        { "type": "string", "const": "saw" },
+                        { "type": "string", "const": "noise" }
+                      ]
+                    },
+                    "amplitude": { "type": "number" },
+                    "frequency": { "type": "number" },
+                    "phase": { "type": "number" }
+                  },
+                  "additionalProperties": false
+                },
+                "pitchVariation": {
+                  "type": "object",
+                  "required": ["shape", "amplitude", "frequency"],
+                  "properties": {
+                    "shape": {
+                      "anyOf": [
+                        { "type": "number" },
+                        { "type": "string", "const": "none" },
+                        { "type": "string", "const": "sine" },
+                        { "type": "string", "const": "triangle" },
+                        { "type": "string", "const": "square" },
+                        { "type": "string", "const": "saw" },
+                        { "type": "string", "const": "noise" }
+                      ]
+                    },
+                    "amplitude": { "type": "number" },
+                    "frequency": { "type": "number" },
+                    "phase": { "type": "number" }
+                  },
+                  "additionalProperties": false
+                },
+                "velocityVariation": {
+                  "type": "object",
+                  "required": ["shape", "amplitude", "frequency"],
+                  "properties": {
+                    "shape": {
+                      "anyOf": [
+                        { "type": "number" },
+                        { "type": "string", "const": "none" },
+                        { "type": "string", "const": "sine" },
+                        { "type": "string", "const": "triangle" },
+                        { "type": "string", "const": "square" },
+                        { "type": "string", "const": "saw" },
+                        { "type": "string", "const": "noise" }
+                      ]
+                    },
+                    "amplitude": { "type": "number" },
+                    "frequency": { "type": "number" },
+                    "phase": { "type": "number" }
+                  },
+                  "additionalProperties": false
+                },
+                "sequenceAnimation": {
+                  "type": "object",
+                  "properties": {
+                    "velocity": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["sequenceIndex", "track"],
+                        "properties": {
+                          "sequenceIndex": { "type": "number" },
+                          "track": {
+                            "type": "object",
+                            "required": ["lineType", "globalSeqId", "keys"],
+                            "properties": {
+                              "lineType": { "type": "number" },
+                              "globalSeqId": {
+                                "anyOf": [{ "type": "null" }, { "type": "number" }]
+                              },
+                              "keys": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "required": ["frame", "vector"],
+                                  "properties": {
+                                    "frame": { "type": "number" },
+                                    "vector": { "type": "array", "items": { "type": "number" } },
+                                    "inTan": { "type": "array", "items": { "type": "number" } },
+                                    "outTan": { "type": "array", "items": { "type": "number" } }
+                                  },
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "concurrent": { "type": "boolean" },
+                          "wrapSeconds": { "type": "number" }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "velocityBaseFactor": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["sequenceIndex", "track"],
+                        "properties": {
+                          "sequenceIndex": { "type": "number" },
+                          "track": {
+                            "type": "object",
+                            "required": ["lineType", "globalSeqId", "keys"],
+                            "properties": {
+                              "lineType": { "type": "number" },
+                              "globalSeqId": {
+                                "anyOf": [{ "type": "null" }, { "type": "number" }]
+                              },
+                              "keys": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "required": ["frame", "vector"],
+                                  "properties": {
+                                    "frame": { "type": "number" },
+                                    "vector": { "type": "array", "items": { "type": "number" } },
+                                    "inTan": { "type": "array", "items": { "type": "number" } },
+                                    "outTan": { "type": "array", "items": { "type": "number" } }
+                                  },
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "concurrent": { "type": "boolean" },
+                          "wrapSeconds": { "type": "number" }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "velocityEndFactor": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["sequenceIndex", "track"],
+                        "properties": {
+                          "sequenceIndex": { "type": "number" },
+                          "track": {
+                            "type": "object",
+                            "required": ["lineType", "globalSeqId", "keys"],
+                            "properties": {
+                              "lineType": { "type": "number" },
+                              "globalSeqId": {
+                                "anyOf": [{ "type": "null" }, { "type": "number" }]
+                              },
+                              "keys": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "required": ["frame", "vector"],
+                                  "properties": {
+                                    "frame": { "type": "number" },
+                                    "vector": { "type": "array", "items": { "type": "number" } },
+                                    "inTan": { "type": "array", "items": { "type": "number" } },
+                                    "outTan": { "type": "array", "items": { "type": "number" } }
+                                  },
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "concurrent": { "type": "boolean" },
+                          "wrapSeconds": { "type": "number" }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "yaw": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["sequenceIndex", "track"],
+                        "properties": {
+                          "sequenceIndex": { "type": "number" },
+                          "track": {
+                            "type": "object",
+                            "required": ["lineType", "globalSeqId", "keys"],
+                            "properties": {
+                              "lineType": { "type": "number" },
+                              "globalSeqId": {
+                                "anyOf": [{ "type": "null" }, { "type": "number" }]
+                              },
+                              "keys": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "required": ["frame", "vector"],
+                                  "properties": {
+                                    "frame": { "type": "number" },
+                                    "vector": { "type": "array", "items": { "type": "number" } },
+                                    "inTan": { "type": "array", "items": { "type": "number" } },
+                                    "outTan": { "type": "array", "items": { "type": "number" } }
+                                  },
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "concurrent": { "type": "boolean" },
+                          "wrapSeconds": { "type": "number" }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "pitch": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["sequenceIndex", "track"],
+                        "properties": {
+                          "sequenceIndex": { "type": "number" },
+                          "track": {
+                            "type": "object",
+                            "required": ["lineType", "globalSeqId", "keys"],
+                            "properties": {
+                              "lineType": { "type": "number" },
+                              "globalSeqId": {
+                                "anyOf": [{ "type": "null" }, { "type": "number" }]
+                              },
+                              "keys": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "required": ["frame", "vector"],
+                                  "properties": {
+                                    "frame": { "type": "number" },
+                                    "vector": { "type": "array", "items": { "type": "number" } },
+                                    "inTan": { "type": "array", "items": { "type": "number" } },
+                                    "outTan": { "type": "array", "items": { "type": "number" } }
+                                  },
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "concurrent": { "type": "boolean" },
+                          "wrapSeconds": { "type": "number" }
+                        },
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "pitchVariation": {
+            "type": "object",
+            "required": ["shape", "amplitude", "frequency"],
+            "properties": {
+              "shape": {
+                "anyOf": [
+                  { "type": "number" },
+                  { "type": "string", "const": "none" },
+                  { "type": "string", "const": "sine" },
+                  { "type": "string", "const": "triangle" },
+                  { "type": "string", "const": "square" },
+                  { "type": "string", "const": "saw" },
+                  { "type": "string", "const": "noise" }
+                ]
+              },
+              "amplitude": { "type": "number" },
+              "frequency": { "type": "number" },
+              "phase": { "type": "number" }
+            },
+            "additionalProperties": false
+          },
+          "yawVariation": {
+            "type": "object",
+            "required": ["shape", "amplitude", "frequency"],
+            "properties": {
+              "shape": {
+                "anyOf": [
+                  { "type": "number" },
+                  { "type": "string", "const": "none" },
+                  { "type": "string", "const": "sine" },
+                  { "type": "string", "const": "triangle" },
+                  { "type": "string", "const": "square" },
+                  { "type": "string", "const": "saw" },
+                  { "type": "string", "const": "noise" }
+                ]
+              },
+              "amplitude": { "type": "number" },
+              "frequency": { "type": "number" },
+              "phase": { "type": "number" }
+            },
+            "additionalProperties": false
+          },
+          "speedVariation": {
+            "type": "object",
+            "required": ["shape", "amplitude", "frequency"],
+            "properties": {
+              "shape": {
+                "anyOf": [
+                  { "type": "number" },
+                  { "type": "string", "const": "none" },
+                  { "type": "string", "const": "sine" },
+                  { "type": "string", "const": "triangle" },
+                  { "type": "string", "const": "square" },
+                  { "type": "string", "const": "saw" },
+                  { "type": "string", "const": "noise" }
+                ]
+              },
+              "amplitude": { "type": "number" },
+              "frequency": { "type": "number" },
+              "phase": { "type": "number" }
+            },
+            "additionalProperties": false
+          },
+          "lengthVariation": {
+            "type": "object",
+            "required": ["shape", "amplitude", "frequency"],
+            "properties": {
+              "shape": {
+                "anyOf": [
+                  { "type": "number" },
+                  { "type": "string", "const": "none" },
+                  { "type": "string", "const": "sine" },
+                  { "type": "string", "const": "triangle" },
+                  { "type": "string", "const": "square" },
+                  { "type": "string", "const": "saw" },
+                  { "type": "string", "const": "noise" }
+                ]
+              },
+              "amplitude": { "type": "number" },
+              "frequency": { "type": "number" },
+              "phase": { "type": "number" }
+            },
+            "additionalProperties": false
+          },
+          "scaleVariation": {
+            "type": "object",
+            "required": ["shape", "amplitude", "frequency"],
+            "properties": {
+              "shape": {
+                "anyOf": [
+                  { "type": "number" },
+                  { "type": "string", "const": "none" },
+                  { "type": "string", "const": "sine" },
+                  { "type": "string", "const": "triangle" },
+                  { "type": "string", "const": "square" },
+                  { "type": "string", "const": "saw" },
+                  { "type": "string", "const": "noise" }
+                ]
+              },
+              "amplitude": { "type": "number" },
+              "frequency": { "type": "number" },
+              "phase": { "type": "number" }
+            },
+            "additionalProperties": false
+          },
+          "alphaVariation": {
+            "type": "object",
+            "required": ["shape", "amplitude", "frequency"],
+            "properties": {
+              "shape": {
+                "anyOf": [
+                  { "type": "number" },
+                  { "type": "string", "const": "none" },
+                  { "type": "string", "const": "sine" },
+                  { "type": "string", "const": "triangle" },
+                  { "type": "string", "const": "square" },
+                  { "type": "string", "const": "saw" },
+                  { "type": "string", "const": "noise" }
+                ]
+              },
+              "amplitude": { "type": "number" },
+              "frequency": { "type": "number" },
+              "phase": { "type": "number" }
+            },
+            "additionalProperties": false
+          },
+          "node": { "type": "number" },
+          "material": { "type": "number" }
+        },
+        "additionalProperties": false
+      },
+      "default": []
+    },
+    "forces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "node",
+          "type",
+          "shape",
+          "channels",
+          "strength",
+          "width",
+          "height",
+          "length"
+        ],
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string", "enum": ["radial", "wind", "explosion"] },
+          "shape": { "type": "string", "enum": ["cylinder", "sphere", "box", "hemisphere"] },
+          "channels": { "type": "number" },
+          "strength": { "type": "number" },
+          "width": { "type": "number" },
+          "height": { "type": "number" },
+          "length": { "type": "number" },
+          "falloff": { "type": "boolean" },
+          "heightGradient": { "type": "boolean" },
+          "unbounded": { "type": "boolean" },
+          "node": { "type": "number" }
+        },
+        "additionalProperties": false
+      },
+      "default": []
+    },
+    "warps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "node",
+          "warpType",
+          "radius",
+          "height",
+          "strength",
+          "angular",
+          "axial",
+          "radial"
+        ],
+        "properties": {
+          "name": { "type": "string" },
+          "warpType": { "type": "number" },
+          "radius": { "type": "number" },
+          "height": { "type": "number" },
+          "strength": { "type": "number" },
+          "angular": { "type": "number" },
+          "axial": { "type": "number" },
+          "radial": { "type": "number" },
+          "node": { "type": "number" }
+        },
+        "additionalProperties": false
+      },
+      "default": []
+    },
+    "projectors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "node",
+          "material",
+          "projectionType",
+          "offset",
+          "pitch",
+          "yaw",
+          "roll",
+          "fieldOfView",
+          "aspectRatio",
+          "near",
+          "far",
+          "boxOffsetZBottom",
+          "boxOffsetZTop",
+          "boxOffsetXLeft",
+          "boxOffsetXRight",
+          "boxOffsetYFront",
+          "boxOffsetYBack",
+          "falloff",
+          "alphaInit",
+          "alphaMid",
+          "alphaEnd",
+          "attenuationDistance",
+          "active",
+          "layer",
+          "flags"
+        ],
+        "properties": {
+          "name": { "type": "string" },
+          "projectionType": { "type": "string", "enum": ["orthographic", "perspective"] },
+          "offset": {
+            "type": "array",
+            "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "pitch": { "type": "number" },
+          "yaw": { "type": "number" },
+          "roll": { "type": "number" },
+          "fieldOfView": { "type": "number" },
+          "aspectRatio": { "type": "number" },
+          "near": { "type": "number" },
+          "far": { "type": "number" },
+          "boxOffsetZBottom": { "type": "number" },
+          "boxOffsetZTop": { "type": "number" },
+          "boxOffsetXLeft": { "type": "number" },
+          "boxOffsetXRight": { "type": "number" },
+          "boxOffsetYFront": { "type": "number" },
+          "boxOffsetYBack": { "type": "number" },
+          "falloff": { "type": "number" },
+          "alphaInit": { "type": "number" },
+          "alphaMid": { "type": "number" },
+          "alphaEnd": { "type": "number" },
+          "lifetimeAttack": { "type": "number" },
+          "lifetimeAttackTo": { "type": "number" },
+          "lifetimeHold": { "type": "number" },
+          "lifetimeHoldTo": { "type": "number" },
+          "lifetimeDecay": { "type": "number" },
+          "lifetimeDecayTo": { "type": "number" },
+          "attenuationDistance": { "type": "number" },
+          "active": { "type": "number" },
+          "layer": { "type": "number" },
+          "flags": { "type": "number" },
+          "node": { "type": "number" },
+          "material": { "type": "number" }
+        },
+        "additionalProperties": false
+      },
+      "default": []
+    },
+    "extras": {}
+  },
+  "additionalProperties": false
+}

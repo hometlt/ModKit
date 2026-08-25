@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/uvm/1.0/uvm.socket.schema.json",
+  "title": "UV_game_socket",
+  "description": "Attachment-point semantics. Attaches to a glTF node's `extensions`. The node itself supplies the transform.",
+  "type": "object",
+  "required": ["role"],
+  "properties": {
+    "role": {
+      "type": "string",
+      "anyOf": [
+        {
+          "enum": [
+            "muzzle",
+            "attach",
+            "hardpoint",
+            "effect",
+            "passenger",
+            "wreck-pivot",
+            "ui-anchor",
+            "ground-contact",
+            "hitpoint"
+          ]
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "index": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "Ordinal among sockets sharing a role."
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "forward": {
+      "$ref": "#/$defs/axis",
+      "default": "-z"
+    },
+    "up": {
+      "$ref": "#/$defs/axis",
+      "default": "+y"
+    },
+    "accepts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "For `hardpoint`: asset classes or tags this socket accepts."
+    },
+    "capacity": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "radius": {
+      "type": "number",
+      "minimum": 0
+    },
+    "effectHint": {
+      "type": "string"
+    },
+    "sourceName": {
+      "type": "string",
+      "description": "Original attachment name in the source format. Scripts and triggers reference this string, so it MUST round-trip."
+    },
+    "extras": {}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "axis": {
+      "type": "string",
+      "enum": ["+x", "-x", "+y", "-y", "+z", "-z"]
+    }
+  }
+}

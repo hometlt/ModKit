@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/uvm/1.0/uvm.gameplay.schema.json",
+  "title": "UV_game_gameplay",
+  "description": "Advisory unit statistics. Optional by design: in every engine in scope these live in separate balance data, and embedding them in the art asset means a mesh re-export clobbers design changes. The $ref form is recommended for anything a designer edits.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/external"
+    },
+    {
+      "$ref": "#/$defs/inline"
+    }
+  ],
+  "$defs": {
+    "external": {
+      "type": "object",
+      "required": ["$ref"],
+      "properties": {
+        "$ref": {
+          "type": "string",
+          "description": "URI of an external document with the inline shape."
+        }
+      },
+      "additionalProperties": false
+    },
+    "inline": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "type": "string",
+          "description": "URI naming the vocabulary, so a validator can check the payload.",
+          "examples": ["https://modkitx.org/uvm/gameplay/rts-1"]
+        },
+        "faction": {
+          "type": "string"
+        },
+        "unitClass": {
+          "type": "string"
+        },
+        "cost": {
+          "type": "object",
+          "description": "Open map of resource name to amount, plus the reserved keys below.",
+          "properties": {
+            "buildTimeSeconds": {
+              "type": "number",
+              "minimum": 0
+            },
+            "supply": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": {
+            "type": "number"
+          }
+        },
+        "health": {
+          "type": "number",
+          "minimum": 0
+        },
+        "shields": {
+          "type": "number",
+          "minimum": 0
+        },
+        "armor": {
+          "type": "number"
+        },
+        "armorType": {
+          "type": "string"
+        },
+        "sight": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Metres."
+        },
+        "speed": {
+          "type": "number",
+          "minimum": 0,
+          "description": "m/s."
+        },
+        "turnRate": {
+          "type": "number",
+          "minimum": 0,
+          "description": "rad/s."
+        },
+        "footprintCells": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "movementClass": {
+          "type": "string",
+          "description": "Matches a UVW navigation class id."
+        },
+        "weapons": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id"],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "socket": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Node index of the muzzle socket."
+              },
+              "turretJoint": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "projectile": {
+                "type": "string"
+              },
+              "damage": {
+                "type": "number"
+              },
+              "damageType": {
+                "type": "string"
+              },
+              "range": {
+                "type": "number",
+                "minimum": 0
+              },
+              "minRange": {
+                "type": "number",
+                "minimum": 0
+              },
+              "cooldownSeconds": {
+                "type": "number",
+                "minimum": 0
+              },
+              "salvo": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "targets": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["ground", "air", "water", "submerged"]
+                }
+              },
+              "arc": {
+                "type": "number",
+                "description": "Radians."
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "abilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "builds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "requires": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extras": {}
+      },
+      "additionalProperties": true,
+      "$comment": "additionalProperties is true on purpose: unknown gameplay fields MUST be preserved verbatim on round-trip."
+    }
+  }
+}

@@ -1,0 +1,123 @@
+{
+  "$comment": "JSON Schema assertions over everything in the seed that has a schema. The runner executes them only when an engine is supplied (--schemas <module url>), because the seed ships no dependencies; a consumer that already has an engine runs the same assertions against its pinned snapshot.",
+  "schemaVersion": "uv-schema-assertions-1",
+  "engine": "JSON Schema draft 2020-12",
+  "checkedWith": "ajv 8.20.0, { allErrors: true, strict: false, validateFormats: false }",
+  "checkedOn": "2026-08-25",
+  "note": "the engine and the options are the ones the sealed legacy validator used, so a pass here means what a pass meant there",
+  "schemaDirectories": [
+    "model/schema",
+    "semantic-scopes"
+  ],
+  "assertions": [
+    {
+      "document": "model/fixtures/uvm-core-triangle.uvm.gltf",
+      "pointer": "/extensions/UV_asset",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.asset.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "model/fixtures/uvm-core-triangle.uvm.gltf",
+      "pointer": "/extensions/UV_provenance",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.provenance.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "model/fixtures/uvm-core-rig.uvm.gltf",
+      "pointer": "/extensions/UV_asset",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.asset.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "model/fixtures/uvm-core-rig.uvm.gltf",
+      "pointer": "/extensions/UV_provenance",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.provenance.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "model/fixtures/uvm-core-textured.uvm.gltf",
+      "pointer": "/extensions/UV_asset",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.asset.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "model/fixtures/uvm-core-textured.uvm.gltf",
+      "pointer": "/extensions/UV_provenance",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.provenance.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "model/examples/siege_tank.uvm.gltf",
+      "pointer": "/extensions/UV_asset",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.asset.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "model/examples/siege_tank.uvm.gltf",
+      "pointer": "/extensions/UV_provenance",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.provenance.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "model/examples/siege_tank.uvm.gltf",
+      "pointer": "/extensions/UV_game_gameplay",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.gameplay.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "model/examples/siege_tank.uvm.gltf",
+      "pointer": "/extensions/UV_game_effects",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.effects.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "model/examples/siege_tank.uvm.gltf",
+      "pointer": "/extensions/UV_game_variants",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.variants.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "model/examples/siege_tank.uvm.gltf",
+      "pointer": "/nodes/6/extensions/UV_game_socket",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.socket.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "model/examples/siege_tank.uvm.gltf",
+      "pointer": "/nodes/1/extensions/UV_game_collision",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.collision.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "model/examples/siege_tank.uvm.gltf",
+      "pointer": "/materials/0/extensions/UV_game_material_team_color",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#teamColor",
+      "expect": "valid"
+    },
+    {
+      "document": "model/examples/siege_tank.uvm.gltf",
+      "pointer": "/materials/1/extensions/UV_game_material",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial",
+      "expect": "valid"
+    },
+    {
+      "document": "model/examples/siege_tank.uvm.gltf",
+      "pointer": "/animations/1/extensions/UV_game_animation_clips",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#clips",
+      "expect": "valid"
+    },
+    {
+      "document": "model/examples/siege_tank.uvm.gltf",
+      "pointer": "/animations/1/extensions/UV_game_animation_events",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#events",
+      "expect": "valid"
+    },
+    {
+      "document": "semantic-scopes/model-interchange-v1.json",
+      "pointer": "",
+      "schemaId": "https://multiverse.engine/spec/semantic-scope-descriptor/1/schema.json",
+      "expect": "valid",
+      "note": "a registered descriptor must satisfy the descriptor schema, so an incomplete descriptor cannot be registered by accident"
+    }
+  ]
+}

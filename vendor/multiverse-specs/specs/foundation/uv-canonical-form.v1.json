@@ -1,0 +1,50 @@
+{
+  "$comment": "Machine form of SPEC_UV_CANONICALIZATION.md. A consumer that cannot read the prose can still check that the form it implements is the form the seed declares.",
+  "schemaVersion": "uv-canonical-form-1",
+  "formId": "uv.canonical/typed-form@1",
+  "appliesTo": [
+    "projectionSemanticHash(scope)",
+    "presentationSemanticHash(scope)",
+    "proof and composition roots"
+  ],
+  "doesNotApplyTo": {
+    "artifactCanonicalDigest": {
+      "form": "RFC 8785 (JCS)",
+      "reason": "canonical document bytes are a serialization question, not a value-graph question",
+      "spec": "SPEC_UV_FOUNDATION.md#3-canonical-json-and-integrity"
+    }
+  },
+  "encoding": {
+    "null": "[\"null\"]",
+    "boolean": "[\"boolean\",true] | [\"boolean\",false]",
+    "number": "[\"number\",\"<16 lowercase hex digits of the big-endian IEEE-754 binary64 bits>\"]",
+    "string": "[\"string\",<JSON string literal>]",
+    "array": "[\"array\",[<encoded element>,...]] in publication order",
+    "object": "[\"object\",[[<JSON key literal>,<encoded value>],...]] with keys sorted by UTF-8 byte order"
+  },
+  "rules": {
+    "typeTagsAreLoadBearing": "a tagged number and a tagged string can never collide, and neither can an empty object and an empty array",
+    "numericModel": "one type only: IEEE-754 binary64, encoded as its bit pattern rather than as a decimal rendering",
+    "float32Widening": "float32 widens to binary64 exactly; no requantisation step exists",
+    "negativeZero": "-0 normalises to +0 before encoding",
+    "nonFinite": "NaN and infinity are rejected; there is no fallback value",
+    "keyOrder": "UTF-8 byte order, with a UTF-16 code-unit tie-break that only applies to ill-formed input",
+    "arrayOrder": "preserved. Where order is not semantic the producing spec sorts before encoding; the form never sorts on the producer's behalf",
+    "cycles": "rejected",
+    "undefined": "rejected"
+  },
+  "digestEnvelope": {
+    "shape": { "schemaVersion": "integer", "domain": "string", "value": "the canonical value" },
+    "algorithm": "sha256",
+    "output": "sha256:<64 lowercase hex>",
+    "bareHexIsRejected": true,
+    "rationale": "an algorithm-qualified digest makes a future algorithm change visible in every artifact that carries one"
+  },
+  "referenceImplementation": "../tools/uv-canonical.mjs",
+  "vectors": "../conformance/canonical-form/vectors.json",
+  "provenance": {
+    "liftedFrom": "packages/world/src/canonical.ts in the sealed legacy oracle",
+    "unchanged": true,
+    "reason": "a digest produced against this specification and a digest produced by the sealed implementation must agree, so the differential oracle of block 11 stays meaningful"
+  }
+}

@@ -1,0 +1,337 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/uvm/1.0/uvm.material.schema.json",
+  "title": "UVM material extensions",
+  "description": "UV_game_material_team_color and UV_game_material. Both attach to a glTF material's `extensions`. A conforming material ALWAYS carries a usable pbrMetallicRoughness block regardless of these.",
+  "$defs": {
+    "textureRef": {
+      "type": "object",
+      "required": ["index"],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "glTF texture index."
+        },
+        "texCoord": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "channel": {
+          "type": "string",
+          "enum": ["r", "g", "b", "a", "rgb"],
+          "default": "a"
+        }
+      },
+      "additionalProperties": false
+    },
+    "teamColor": {
+      "$anchor": "teamColor",
+      "title": "UV_game_material_team_color",
+      "type": "object",
+      "required": ["maskSource"],
+      "properties": {
+        "maskSource": {
+          "type": "string",
+          "enum": ["texture", "vertexColor", "paletteRange", "whole"]
+        },
+        "maskTexture": {
+          "$ref": "#/$defs/textureRef"
+        },
+        "range": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "Palette index range, inclusive."
+        },
+        "vertexChannel": {
+          "type": "string",
+          "enum": ["r", "g", "b", "a"],
+          "default": "a"
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["baseColor", "emissive", "specular"]
+          },
+          "default": ["baseColor"]
+        },
+        "blend": {
+          "type": "string",
+          "enum": ["multiply", "add", "replace", "overlay", "lerp"],
+          "default": "multiply"
+        },
+        "strength": {
+          "type": "number",
+          "minimum": 0,
+          "default": 1
+        },
+        "defaultColor": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "minItems": 4,
+          "maxItems": 4,
+          "default": [1, 1, 1, 1]
+        },
+        "glow": {
+          "type": "object",
+          "description": "Secondary emissive team mask (Warcraft 3 replaceable ID 2).",
+          "properties": {
+            "maskTexture": {
+              "$ref": "#/$defs/textureRef"
+            },
+            "blend": {
+              "type": "string",
+              "enum": ["add", "multiply", "replace"],
+              "default": "add"
+            },
+            "strength": {
+              "type": "number",
+              "minimum": 0,
+              "default": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "extras": {}
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "maskSource": {
+                "const": "texture"
+              }
+            },
+            "required": ["maskSource"]
+          },
+          "then": {
+            "required": ["maskTexture"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "maskSource": {
+                "const": "paletteRange"
+              }
+            },
+            "required": ["maskSource"]
+          },
+          "then": {
+            "required": ["range"]
+          }
+        }
+      ]
+    },
+    "layer": {
+      "type": "object",
+      "required": ["slot"],
+      "properties": {
+        "slot": {
+          "type": "string",
+          "anyOf": [
+            {
+              "enum": [
+                "diffuse",
+                "normal",
+                "specular",
+                "emissive",
+                "alpha",
+                "ao",
+                "height",
+                "env",
+                "decal"
+              ]
+            },
+            {
+              "pattern": "^layer[0-9]+$"
+            }
+          ]
+        },
+        "texture": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "uv": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "op": {
+          "type": "string",
+          "enum": ["modulate", "add", "blend", "replace", "subtract", "modulate2x", "lerp"],
+          "default": "modulate"
+        },
+        "tiling": {
+          "$ref": "#/$defs/vec2",
+          "default": [1, 1]
+        },
+        "offset": {
+          "$ref": "#/$defs/vec2",
+          "default": [0, 0]
+        },
+        "scroll": {
+          "$ref": "#/$defs/vec2",
+          "default": [0, 0],
+          "description": "UV units per second."
+        },
+        "rotation": {
+          "type": "number",
+          "default": 0
+        },
+        "invert": {
+          "type": "boolean",
+          "default": false
+        },
+        "channel": {
+          "type": "string",
+          "enum": ["r", "g", "b", "a", "rgb"]
+        },
+        "exponent": {
+          "type": "number"
+        },
+        "strength": {
+          "type": "number",
+          "default": 1
+        },
+        "wrap": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["repeat", "clamp", "mirror"]
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "default": ["repeat", "repeat"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "vec2": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "gameMaterial": {
+      "$anchor": "gameMaterial",
+      "title": "UV_game_material",
+      "type": "object",
+      "required": ["shader"],
+      "properties": {
+        "shader": {
+          "type": "string",
+          "description": "Namespaced shader identity; scopes the `params` vocabulary.",
+          "examples": ["sc2.standard", "mdx.layer", "w3d.vertex-material"]
+        },
+        "blendMode": {
+          "type": "string",
+          "enum": [
+            "opaque",
+            "alpha-blend",
+            "alpha-test",
+            "additive",
+            "modulate",
+            "modulate2x",
+            "alpha-key",
+            "screen",
+            "subtract"
+          ],
+          "default": "opaque"
+        },
+        "alphaCutoff": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.5
+        },
+        "cull": {
+          "type": "string",
+          "enum": ["back", "front", "none"],
+          "default": "back"
+        },
+        "depthTest": {
+          "type": "boolean",
+          "default": true
+        },
+        "depthWrite": {
+          "type": "boolean",
+          "default": true
+        },
+        "sortPriority": {
+          "type": "integer",
+          "default": 0
+        },
+        "unshaded": {
+          "type": "boolean",
+          "default": false
+        },
+        "twoSidedNormals": {
+          "type": "boolean",
+          "default": false
+        },
+        "layers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/layer"
+          },
+          "default": []
+        },
+        "passes": {
+          "type": "array",
+          "description": "Multi-pass composite. When present, `layers` MUST still describe pass 0.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "blendMode": {
+                "type": "string"
+              },
+              "layers": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/layer"
+                }
+              },
+              "depthWrite": {
+                "type": "boolean"
+              },
+              "cull": {
+                "type": "string",
+                "enum": ["back", "front", "none"]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "params": {
+          "type": "object",
+          "default": {}
+        },
+        "extras": {}
+      },
+      "additionalProperties": false
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#teamColor"
+    },
+    {
+      "$ref": "#gameMaterial"
+    }
+  ]
+}
