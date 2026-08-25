@@ -3436,7 +3436,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:37eb57bbedc06d932df38f962722718016715dcccb3df74f9aa80e43751c1250',
+        artifactDigest: 'sha256:939bf6fac3d67146b493ad139c6188885c71233d104700e98801c85be052503a',
         fileDigests: {
           'README.md': 'sha256:0b52b220a83c866101dce41b648816401ca4c387f9341560bb69a06df252d1de',
           'contributions/codec-markdown.json':
@@ -3466,7 +3466,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/odf/inspection.js':
             'sha256:43fc1cd3c108e26e99f853692100faf30ebb92a95a8403107c9123c81f78e905',
           'src/odf/package.js':
-            'sha256:4d0b32198f89251e00cfb857251fbfdf27b86a19c205b32f6c64abf7c7a50761',
+            'sha256:bdd773be620694208384e24b38fc759874466b291eaedc042b27b5654cb5f6f8',
           'src/odp/codec.js':
             'sha256:8c53da3dec10e9c08b7f57c1458816b4eac7eb38ab28c9481c4783f6bc39e5dd',
           'src/ods/codec.js':
@@ -3475,7 +3475,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:5d84fd165b4e4252edeec9abc56e4759fea9bbfed658dc7a21ed667e6e9e1180',
         },
         inventoryRecordId:
-          'artifact:sha256:37eb57bbedc06d932df38f962722718016715dcccb3df74f9aa80e43751c1250',
+          'artifact:sha256:939bf6fac3d67146b493ad139c6188885c71233d104700e98801c85be052503a',
       },
       artifactRoot: 'extensions/documents/',
       containers: {
