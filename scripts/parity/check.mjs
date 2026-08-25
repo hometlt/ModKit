@@ -21,6 +21,37 @@ const corpusPath = resolve(
 const outputPath = resolve(
   process.env.MODKIT_PARITY_REPORT ?? join(repoRoot, 'reports', 'parity', 'latest.json'),
 )
+/**
+ * Corpus variables that were renamed, and the name they used to have.
+ *
+ * `MODKITX_CNC3_ROOT` named the *engine*, and the corpus behind it is one dialect of that engine —
+ * Kane's Wrath, not vanilla Tiberium Wars. The two need separate roots, so the precise name won and
+ * the old one stays readable rather than breaking every machine that already has it set.
+ *
+ * The alias is consulted only when the precise name is unset, and saying so out loud is the point:
+ * a silent fallback would let a machine keep running on the deprecated name forever.
+ */
+const DEPRECATED_CORPUS_ALIASES = Object.freeze({
+  MODKITX_CNC3_KW_ROOT: 'MODKITX_CNC3_ROOT',
+})
+
+const warnedAliases = new Set()
+
+/** Read a corpus variable, falling back to its deprecated alias with one warning per name. */
+function readCorpusVariable(name) {
+  const direct = process.env[name]
+  if (direct !== undefined && direct.trim() !== '') return direct
+  const alias = DEPRECATED_CORPUS_ALIASES[name]
+  if (alias === undefined) return direct
+  const value = process.env[alias]
+  if (value === undefined || value.trim() === '') return direct
+  if (!warnedAliases.has(alias)) {
+    warnedAliases.add(alias)
+    console.warn(`parity: deprecated alias ${alias} used for ${name}; set ${name} instead`)
+  }
+  return value
+}
+
 /** Probing the canonical oracle costs a child process per row; the corpus is now large. */
 const CONCURRENCY = Number.parseInt(process.env.MODKIT_PARITY_CONCURRENCY ?? '4', 10)
 /** Recursive discovery must stay bounded so a mistyped root cannot walk an entire drive. */
@@ -196,7 +227,7 @@ async function locateSample(sample, temporaryRoot) {
       : corpusFailure(`MODKITX_MK2_ROOT does not contain ${sample.mk2Relative}`)
   }
   if (typeof sample.environment === 'string') {
-    const value = process.env[sample.environment]
+    const value = readCorpusVariable(sample.environment)
     if (value === undefined || value.trim() === '') {
       return skipped(`${sample.environment} is not set`)
     }

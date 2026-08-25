@@ -7,7 +7,7 @@
   },
   "x3": {
     "root": "C:\\FILES\\SC2Files\\coding\\modkitX3",
-    "sha": "05912d092831c3fa052c6b03dbb4f1e5319f2e2a"
+    "sha": "f4d1779fec026da0e6451c37b315d1282797b8ea"
   },
   "counts": {
     "total": 70,
@@ -2554,11 +2554,11 @@
       "kind": "real",
       "contributionId": "org.modkitx.ea/big",
       "state": "compared",
-      "sample": "MODKITX_CNC3_ROOT",
+      "sample": "MODKITX_CNC3_KW_ROOT",
       "provenance": {
         "kind": "real",
         "origin": "environment",
-        "environment": "MODKITX_CNC3_ROOT",
+        "environment": "MODKITX_CNC3_KW_ROOT",
         "relativePath": "Core/1.0/Libraries.big",
         "bytes": 48063,
         "sha256": "d0357e1a1876fd8cec89131dcaba571a39d40f32109f91ca98d570d240ce908f"
@@ -14697,7 +14697,8 @@
           "palettes": 1,
           "voxels": 1,
           "decodedMeshes": 1,
-          "geometryAccess": "decoded"
+          "geometryAccess": "decoded",
+          "companionState": "absent"
         },
         "features": [
           "geometry:decoded",
@@ -14973,7 +14974,12 @@
           "palettes": 1,
           "voxels": 5466,
           "decodedMeshes": 11,
-          "geometryAccess": "decoded"
+          "geometryAccess": "decoded",
+          "companionState": "resolved",
+          "companionBindingId": "hva#gnavrail.hva",
+          "companionFrames": 1,
+          "companionBoundSections": 1,
+          "companionKind": "rest-pose"
         },
         "features": [
           "geometry:decoded",
@@ -19265,11 +19271,11 @@
       "kind": "real",
       "contributionId": "org.modkitx.ea/westwood-w3d",
       "state": "compared",
-      "sample": "MODKITX_CNC3_ROOT",
+      "sample": "MODKITX_CNC3_KW_ROOT",
       "provenance": {
         "kind": "real",
         "origin": "container-entry",
-        "environment": "MODKITX_CNC3_ROOT",
+        "environment": "MODKITX_CNC3_KW_ROOT",
         "relativePath": "Core/1.0/Misc.big!data/editor/molds/bowl.w3d",
         "bytes": 30346,
         "sha256": "ddc81235fc43d3c43c672bac2706805ad6bd86c546ca4f80bc5a81f2c0d06e34"

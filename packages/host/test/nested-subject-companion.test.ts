@@ -608,7 +608,24 @@ describe('a container entry opens as its own subject, with companions from the s
 })
 
 describe('the same route on a real shipped archive', () => {
-  const cncRoot = process.env['MODKITX_CNC3_ROOT']?.trim()
+  /**
+   * Kane's Wrath root, under its precise name.
+   *
+   * MODKITX_CNC3_ROOT named the engine, not the dialect, and the two SAGE corpora need separate
+   * roots — so the exact name wins and the old one is read only when the new one is unset, with a
+   * warning. A silent fallback would let a machine keep running on the deprecated name forever.
+   */
+  function kanesWrathRoot(): string | undefined {
+    const exact = process.env['MODKITX_CNC3_KW_ROOT']?.trim()
+    if (exact !== undefined && exact !== '') return exact
+    const alias = process.env['MODKITX_CNC3_ROOT']?.trim()
+    if (alias === undefined || alias === '') return undefined
+    console.warn(
+      'deprecated alias MODKITX_CNC3_ROOT used for MODKITX_CNC3_KW_ROOT; set MODKITX_CNC3_KW_ROOT instead',
+    )
+    return alias
+  }
+  const cncRoot = kanesWrathRoot()
   const archivePath = 'Core/1.0/Misc.big'
   const entryPath = 'data/editor/molds/bowl.w3d'
 
@@ -620,7 +637,7 @@ describe('the same route on a real shipped archive', () => {
   it.skipIf(cncRoot === undefined)(
     `opens ${entryPath} out of ${archivePath} as its own subject`,
     async () => {
-      if (cncRoot === undefined) throw new TypeError('MODKITX_CNC3_ROOT is not set')
+      if (cncRoot === undefined) throw new TypeError('MODKITX_CNC3_KW_ROOT is not set')
       const inputs = await Promise.all(
         [
           ['ea', 'big'],

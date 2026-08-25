@@ -59,17 +59,94 @@
       "access": "read-only",
       "unsetBehaviour": "visible-skip-naming-the-variable",
       "wrongValueBehaviour": "failure-not-skip",
-      "proprietaryAssetsInGit": "forbidden"
+      "proprietaryAssetsInGit": "forbidden",
+      "deprecatedAliasBehaviour": "read-with-warning: алиас читается, только когда точное имя не задано, и печатает «deprecated alias» в вывод parity и тестов"
     },
     "variables": {
-      "MODKITX_CNC3_ROOT": {
+      "MODKITX_BAR_ROOT": {
+        "corpusType": "game-installation-root",
+        "product": "Beyond All Reason",
+        "verificationState": "verified-locally",
+        "verificationNote": "установка найдена и прочитана read-only: data/engine содержит ровно одну сборку движка, её имя и есть версия.",
+        "requiredMarkers": ["data/engine"],
+        "expectedMarkers": ["data/LuaMenu", "data/LuaUI"],
+        "provesFormats": ["sdd", "sdz", "lua"],
+        "consumers": [],
+        "distribution": {
+          "version": "recoil_2026.07.04",
+          "build": "data/engine/recoil_2026.07.04",
+          "language": null,
+          "hash": null,
+          "source": "имя каталога сборки движка, прочитано read-only на этой машине",
+          "ownerAction": "владелец: указать язык дистрибутива и хеш, если он нужен для воспроизводимости"
+        }
+      },
+      "MODKITX_CNC3_KW_ROOT": {
         "corpusType": "game-installation-root",
         "product": "Command & Conquer 3 engine installation",
         "dialectNote": "локальный корпус — Kane's Wrath (CNC3EP1.exe), не ванильный Tiberium Wars; расхождение диалекта учитывается разделом плана §3.3",
         "requiredMarkers": ["Core/1.0/Libraries.big"],
         "expectedMarkers": ["Core/1.0/Misc.big", "Lang-english/1.0/English.big"],
         "provesFormats": ["big", "sage-w3x", "westwood-w3d", "dds", "tga"],
-        "consumers": ["packages/testkit/test/cnc3-real-corpus.test.ts", "scripts/parity/check.mjs"]
+        "consumers": ["packages/testkit/test/cnc3-real-corpus.test.ts", "scripts/parity/check.mjs"],
+        "deprecatedAlias": "MODKITX_CNC3_ROOT",
+        "aliasNote": "MODKITX_CNC3_ROOT читается, когда MODKITX_CNC3_KW_ROOT не задана, и печатает предупреждение «deprecated alias». Имя было неточным: оно называло движок, а корпус — конкретный диалект.",
+        "distribution": {
+          "version": null,
+          "build": null,
+          "language": null,
+          "hash": null,
+          "source": null,
+          "ownerAction": "владелец: указать версию, сборку, язык и хеш дистрибутива"
+        }
+      },
+      "MODKITX_CNC3_TW_ROOT": {
+        "corpusType": "game-installation-root",
+        "product": "Command & Conquer 3: Tiberium Wars (vanilla)",
+        "dialectNote": "ванильный Tiberium Wars, не Kane’s Wrath: тот же движок SAGE, другой диалект — именно расхождение, ради которого §3.3 плана держит две отдельные строки.",
+        "verificationState": "expected-by-specification",
+        "verificationNote": "маркеры ниже описаны по спецификации движка и НЕ проверены на этой машине: локальной установки TW нет. Их следует подтвердить, когда владелец предоставит корпус.",
+        "requiredMarkers": ["Core/1.0/Libraries.big"],
+        "expectedMarkers": ["CNC3.exe", "Core/1.0/Misc.big", "Lang-english/1.0/English.big"],
+        "provesFormats": ["big", "sage-w3x", "westwood-w3d", "dds", "tga"],
+        "consumers": [],
+        "distribution": {
+          "version": null,
+          "build": null,
+          "language": null,
+          "hash": null,
+          "source": null,
+          "ownerAction": "владелец: указать версию, сборку, язык и хеш дистрибутива"
+        }
+      },
+      "MODKITX_EMPEROR_ROOT": {
+        "corpusType": "extracted-asset-tree",
+        "product": "Emperor: Battle for Dune retail extract (живой установки нет)",
+        "requiredMarkers": ["хотя бы один *.xbf, найденный рекурсивным обходом"],
+        "expectedMarkers": ["MANIFEST.json в корне экстракта"],
+        "provesFormats": ["xbf"],
+        "consumers": [
+          "packages/testkit/test/emperor-real-corpus.test.ts",
+          "scripts/parity/check.mjs"
+        ]
+      },
+      "MODKITX_RA3_ROOT": {
+        "corpusType": "game-installation-root",
+        "product": "Command & Conquer: Red Alert 3",
+        "verificationState": "expected-by-specification",
+        "verificationNote": "маркеры описаны по спецификации SAGE/SkuDef и НЕ проверены локально: установки RA3 на этой машине нет.",
+        "requiredMarkers": ["RA3.exe"],
+        "expectedMarkers": ["RA3_english_1.12.SkuDef", "Data/"],
+        "provesFormats": ["big", "sage-w3x", "dds"],
+        "consumers": [],
+        "distribution": {
+          "version": null,
+          "build": null,
+          "language": null,
+          "hash": null,
+          "source": null,
+          "ownerAction": "владелец: указать версию, сборку, язык и хеш дистрибутива"
+        }
       },
       "MODKITX_SC2_ROOT": {
         "corpusType": "game-installation-root",
@@ -87,15 +164,15 @@
           "scripts/parity/check.mjs"
         ]
       },
-      "MODKITX_EMPEROR_ROOT": {
-        "corpusType": "extracted-asset-tree",
-        "product": "Emperor: Battle for Dune retail extract (живой установки нет)",
-        "requiredMarkers": ["хотя бы один *.xbf, найденный рекурсивным обходом"],
-        "expectedMarkers": ["MANIFEST.json в корне экстракта"],
-        "provesFormats": ["xbf"],
+      "MODKITX_VXL_PATH": {
+        "corpusType": "single-file-sample",
+        "product": "Tiberian Sun / Red Alert 2 voxel model",
+        "requiredMarkers": ["VXL header с секциями"],
+        "expectedMarkers": ["парный <stem>.hva рядом с моделью (трансформы секций)"],
+        "provesFormats": ["vxl", "hva"],
         "consumers": [
-          "packages/testkit/test/emperor-real-corpus.test.ts",
-          "scripts/parity/check.mjs"
+          "packages/testkit/test/ea-vxl-hva-companion.test.ts",
+          "packages/testkit/test/mk2-ea-vxl-codec.test.ts"
         ]
       },
       "MODKITX_W3D_PATH": {
@@ -124,16 +201,23 @@
         "provesFormats": ["sage-w3x"],
         "consumers": ["packages/testkit/test/ea-w3x-structure.test.ts"]
       },
-      "MODKITX_VXL_PATH": {
-        "corpusType": "single-file-sample",
-        "product": "Tiberian Sun / Red Alert 2 voxel model",
-        "requiredMarkers": ["VXL header с секциями"],
-        "expectedMarkers": ["парный <stem>.hva рядом с моделью (трансформы секций)"],
-        "provesFormats": ["vxl", "hva"],
-        "consumers": [
-          "packages/testkit/test/ea-vxl-hva-companion.test.ts",
-          "packages/testkit/test/mk2-ea-vxl-codec.test.ts"
-        ]
+      "MODKITX_WARZONE_ROOT": {
+        "corpusType": "game-installation-root",
+        "product": "Warzone 2100",
+        "verificationState": "verified-locally",
+        "verificationNote": "установка найдена и прочитана read-only: каталог data содержит все три архива ниже.",
+        "requiredMarkers": ["data/base.wz"],
+        "expectedMarkers": ["data/mp.wz", "data/sequences.wz"],
+        "provesFormats": ["wz"],
+        "consumers": [],
+        "distribution": {
+          "version": "4.7.0.0",
+          "build": "MSIX: 48148WZ2100Project.Warzone2100forWindows, ProcessorArchitecture x64",
+          "language": null,
+          "hash": null,
+          "source": "AppxManifest.xml <Identity Version>, прочитан read-only на этой машине",
+          "ownerAction": "владелец: указать язык дистрибутива и хеш, если он нужен для воспроизводимости"
+        }
       }
     }
   },

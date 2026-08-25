@@ -76,7 +76,7 @@
       "kind": "real",
       "format": "big-real-cnc3",
       "contributionId": "org.modkitx.ea/big",
-      "environment": "MODKITX_CNC3_ROOT",
+      "environment": "MODKITX_CNC3_KW_ROOT",
       "relativePath": "Core/1.0/Libraries.big",
       "expectFormatId": "big",
       "x3Extension": "extensions/ea/big",
@@ -193,7 +193,7 @@
       "kind": "real",
       "format": "westwood-w3d-real-big",
       "contributionId": "org.modkitx.ea/westwood-w3d",
-      "environment": "MODKITX_CNC3_ROOT",
+      "environment": "MODKITX_CNC3_KW_ROOT",
       "container": {
         "relativePath": "Core/1.0/Misc.big",
         "x3Extension": "extensions/ea/big",
