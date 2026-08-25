@@ -339,7 +339,7 @@ describe('collision suite: INI-like and CSV-like bodies that belong to a real fo
    * Warzone's `.img` atlas index is `x,y,file` — three stable comma-separated columns, a valid CSV
    * by every measure the delimited probe has. Neither generic intercepts, and not because it loses
    * the comparison: it never reaches the probe at all, because `text-ini` declares `.ini` and
-   * `text-csv` declares `.csv`/`.tsv`, and the detection index shortlists on that declaration.
+   * `text-csv` declares `.csv`/`.tsv`, and `matchesSpec` shortlists on that declaration.
    *
    * That is a stronger defence than winning on confidence, so it is worth proving it is a real one
    * and not an accident of these two codecs being weak. Each case is therefore run twice: once
