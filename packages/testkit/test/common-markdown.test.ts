@@ -144,11 +144,15 @@ describe('11A common/documents markdown', () => {
         join(repoRoot, 'extensions', 'common', 'documents', 'contributions', 'codec-markdown.json'),
         'utf8',
       ),
-    ) as { spec: { match: { extensions: readonly string[] }; operations: readonly { id: string }[] } }
+    ) as {
+      spec: { match: { extensions: readonly string[] }; operations: readonly { id: string }[] }
+    }
     expect(manifest.spec.match.extensions.toSorted()).toEqual([...ALIASES].toSorted())
 
     for (const alias of ALIASES) {
-      expect(await confidence(nativeModule, SAMPLE, `memory://doc/notes.${alias}`), alias).toBe(0.96)
+      expect(await confidence(nativeModule, SAMPLE, `memory://doc/notes.${alias}`), alias).toBe(
+        0.96,
+      )
     }
     // structure without an alias is plausible, an alias without structure is weak, and neither
     // is confident: the extension alone never decides
