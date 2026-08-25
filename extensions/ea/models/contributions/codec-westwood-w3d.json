@@ -22,7 +22,8 @@
   ],
   "limitations": [
     "Decodes standard W3D mesh headers, vertices, normals, triangles, UV streams, material ids, and texture references into bounded model-scene primitives.",
-    "Hierarchy pivots, animation tracks, particles, dazzles, and remaining geometry variants are not decoded; related W3D family files and DDS/TGA textures are not resolved.",
+    "Decodes the hierarchy pivot table into scene nodes, parenting each pivot by its own field, and reads the animation channels it understands into an animation count.",
+    "Compressed animation chunks, particles, dazzles, and remaining geometry variants are not decoded; related W3D family files and DDS/TGA textures are not resolved.",
     "Protected or damaged payloads are not repaired; a bounded opaque tail after valid top-level chunks is reported but not interpreted.",
     "W3D writing is not implemented."
   ],

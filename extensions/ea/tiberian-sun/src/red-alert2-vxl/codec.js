@@ -684,6 +684,28 @@ const definition = Object.freeze({
               key: 'geometryAccess',
               value: geometry.meshes.length > 0 ? 'decoded' : 'metadata-only',
             },
+            /*
+             * Where the section transforms came from.
+             *
+             * `summary.hva` has carried this all along, but a summary is not part of the
+             * descriptor a viewer sees — so a reader looking at a bound model had no way to tell
+             * it apart from an unbound one. The `model.animations` trait does say
+             * `provenance=companion`, and only when there is an animation to attribute: a
+             * single-frame sidecar is a rest pose, correctly not an animation, and it left the
+             * binding invisible. These rows state the binding itself, pose or track.
+             */
+            { key: 'companionState', value: companion.state },
+            ...(companion.hva === null
+              ? []
+              : [
+                  { key: 'companionBindingId', value: companion.bindingId },
+                  { key: 'companionFrames', value: companion.hva.frames },
+                  { key: 'companionBoundSections', value: bound },
+                  {
+                    key: 'companionKind',
+                    value: companion.hva.frames > 1 ? 'animation' : 'rest-pose',
+                  },
+                ]),
           ],
         },
       ],
