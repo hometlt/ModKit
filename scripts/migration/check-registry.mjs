@@ -655,6 +655,50 @@ for (const plane of planes) {
   if (typeof plane.derivedPresentation !== 'string' || plane.derivedPresentation === '') {
     fail(`${label}: derivedPresentation must state what is derived rather than a new source`)
   }
+  if (typeof plane.contractOwner !== 'string' || plane.contractOwner === '') {
+    fail(
+      `${label}: contractOwner is required — every priority projection names who owns its contract`,
+    )
+  }
+  if (!Array.isArray(plane.knownLoss)) {
+    fail(`${label}: knownLoss is the fidelity/loss policy and must be a list, even when empty`)
+  }
+  if (typeof plane.fidelity !== 'string' || plane.fidelity === '') {
+    fail(`${label}: fidelity is required`)
+  }
+  if (!(plane.portableProfile in (projections.portableProfileSemantics ?? {}))) {
+    fail(`${label}: portableProfile ${plane.portableProfile} has no declared semantics`)
+  }
+  // invariant portable-profile-none-is-honest
+  if (plane.portableProfile === 'none') {
+    if (typeof plane.contract !== 'string' || plane.contract === '') {
+      fail(
+        `${label}: invariant portable-profile-none-is-honest — a plane without a portable profile still publishes a contract`,
+      )
+    }
+    if (plane.action === 'defer') {
+      fail(
+        `${label}: invariant portable-profile-none-is-honest — "none" is an honest state, not a reason to defer the viewer`,
+      )
+    }
+  }
+  // invariants uvp-is-data-only and uve-requires-trust-profile
+  const planeActions = [plane.action, ...(plane.secondaryActions ?? [])]
+  if (plane.portableProfile === 'UVP') {
+    if (planeActions.includes('execute')) {
+      fail(
+        `${label}: invariant uvp-is-data-only — a UVP package is data, never an executable extension`,
+      )
+    }
+    if (plane.packageTrust === 'not-applicable') {
+      fail(`${label}: invariant uvp-is-data-only — a UVP package must name its trust profile`)
+    }
+  }
+  if (plane.portableProfile === 'UVE' && plane.packageTrust === 'not-applicable') {
+    fail(
+      `${label}: invariant uve-requires-trust-profile — an executable extension must name its trust profile`,
+    )
+  }
   for (const id of plane.capabilityIds ?? []) {
     if (!capabilityIds.has(id)) fail(`${label}: capabilityId ${id} does not exist in the registry`)
   }

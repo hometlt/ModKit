@@ -62,6 +62,12 @@ describe('capability registry gate (plan §3.3–3.4, block 10 works 4–6 and 1
     expect(stderr).toContain('uvd-is-not-a-document')
   })
 
+  it('refuses a UVP plane that also claims an execute action', () => {
+    const { status, stderr } = runGate('valid.capabilities.yaml', 'uvp-executes.projections.yaml')
+    expect(status).toBe(1)
+    expect(stderr).toContain('uvp-is-data-only')
+  })
+
   it('refuses a dependsOn target the registry does not contain', () => {
     const { status, stderr } = runGate('unknown-dependency.capabilities.yaml')
     expect(status).toBe(1)

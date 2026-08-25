@@ -7,6 +7,9 @@ invariants:
   - id: 'uvd-is-not-a-document'
     rule: 'Document-plane не может объявлять portableProfile UVD.'
     enforcedBy: 'scripts/migration/check-registry.mjs'
+  - id: 'uvp-is-data-only'
+    rule: 'Фикстура: UVP не исполняется.'
+    enforcedBy: 'scripts/migration/check-registry.mjs'
 counts:
   planes: 1
 planes:
@@ -14,6 +17,7 @@ planes:
     projectionKind: 'generic-domain-contracts'
     contract: 'common.view/text-source'
     contractVersion: 1
+    contractOwner: 'packages/sdk (fixture)'
     requiredFacets:
       - 'text'
     optionalFacets: []
@@ -31,3 +35,8 @@ planes:
     corpusEvidence: []
     capabilityIds:
       - 'format/demo/open-inspect'
+portableProfileSemantics:
+  UVD: 'definitions, не документы'
+  UVP: 'data-only package'
+  UVE: 'executable extension'
+  none: 'честное состояние без portable-профиля'

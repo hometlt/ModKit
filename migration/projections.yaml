@@ -22,6 +22,15 @@ invariants:
   - id: 'reader-does-not-imply-writer'
     rule: 'artifactMaturity reader-only запрещает action edit, materialize и export-native как primary action: наличие reader не доказывает writer, обратимость или cross-format export.'
     enforcedBy: 'scripts/migration/check-registry.mjs'
+  - id: 'uvp-is-data-only'
+    rule: 'Plane с portableProfile UVP не может объявлять execute ни основным, ни вторичным действием, и обязан назвать trust profile пакета: UVP — пакет данных, а не исполняемое расширение.'
+    enforcedBy: 'scripts/migration/check-registry.mjs'
+  - id: 'uve-requires-trust-profile'
+    rule: 'Plane с portableProfile UVE обязан назвать trust profile пакета: executable extension без профиля доверия не существует.'
+    enforcedBy: 'scripts/migration/check-registry.mjs'
+  - id: 'portable-profile-none-is-honest'
+    rule: 'portableProfile none — допустимое честное состояние: plane обязан всё равно объявить контракт и действие, отличное от defer, чтобы отсутствие portable-профиля не блокировало общий viewer.'
+    enforcedBy: 'scripts/migration/check-registry.mjs'
 counts:
   planes: 8
 planes:
@@ -29,6 +38,7 @@ planes:
     projectionKind: 'live-faceted-projection'
     contract: 'common.view/model-scene-source'
     contractVersion: 1
+    contractOwner: 'packages/sdk (common.view/model-scene-source)'
     requiredFacets:
       - 'scene-graph'
       - 'nodes'
@@ -76,6 +86,7 @@ planes:
     projectionKind: 'native-authority-with-planned-neutral-projection'
     contract: 'common.view/tree-data-source'
     contractVersion: 1
+    contractOwner: 'packages/sdk (common.view/tree-data-source)'
     requiredFacets:
       - 'terrain'
       - 'objects'
@@ -111,6 +122,7 @@ planes:
     projectionKind: 'native-authority-retained'
     contract: 'common.view/tree-data-source'
     contractVersion: 1
+    contractOwner: 'packages/sdk (common.view/tree-data-source)'
     requiredFacets:
       - 'entries'
       - 'identity'
@@ -144,6 +156,7 @@ planes:
     projectionKind: 'generic-domain-contracts'
     contract: 'common.view/text-source'
     contractVersion: 1
+    contractOwner: 'packages/sdk (common.view/text-source + flow/table/slides facets)'
     requiredFacets:
       - 'text'
     optionalFacets:
@@ -179,6 +192,7 @@ planes:
     projectionKind: 'live-domain-source'
     contract: 'common.view/raster-image-source'
     contractVersion: 1
+    contractOwner: 'packages/sdk (common.view/raster-image-source)'
     requiredFacets:
       - 'metadata'
     optionalFacets:
@@ -213,6 +227,7 @@ planes:
     projectionKind: 'native-authority-retained'
     contract: 'common.view/tree-data-source'
     contractVersion: 1
+    contractOwner: 'packages/sdk (common.view/tree-data-source)'
     requiredFacets:
       - 'element-tree'
     optionalFacets:
@@ -241,6 +256,7 @@ planes:
     projectionKind: 'language-and-text-contracts'
     contract: 'common.view/text-source'
     contractVersion: 1
+    contractOwner: 'packages/sdk (common.view/text-source + language contracts)'
     requiredFacets:
       - 'text'
     optionalFacets:
@@ -271,6 +287,7 @@ planes:
     projectionKind: 'namespace-browse'
     contract: 'common.view/namespace-entry-source'
     contractVersion: 1
+    contractOwner: 'packages/host (common.view/namespace-entry-source + VfsMount)'
     requiredFacets:
       - 'entries'
     optionalFacets:
@@ -298,3 +315,12 @@ planes:
       - 'block9/casc-mpq-texture-chain'
       - 'format/big/open-inspect'
       - 'format/casc/open-inspect'
+portableProfileSemantics:
+  UVD: 'definitions, не документы: UVD никогда не маршрутизируется через document-контракты'
+  UVP: 'data-only package: пакет данных не исполняется, поэтому plane с профилем UVP не может объявлять execute'
+  UVE: 'executable extension: профиль UVE допустим только при явно названном trust profile пакета'
+  UVM: 'модельный interchange: живая проекция и материализация — разные состояния'
+  UVW: 'нейтральный мир'
+  UVT: 'текстурный профиль'
+  UVI: 'интерфейсный профиль'
+  none: 'честное состояние: plane не имеет portable-профиля и это не блокирует общий viewer'
