@@ -42,17 +42,33 @@ export type DataSourceMaturity = 'admitted' | 'publisher-candidate'
 /**
  * Maturity of every standard data-source contract.
  *
- * Six candidates, and each of them is a candidate for a stated reason rather than by default.
+ * Two candidates left, and each is a candidate for a stated reason rather than by default.
  *
  * `common.view/slide-deck-source`: block 11 slice 11B publishes it from ODP alone. Its admission
  * waits for a second, independent slides family (PPTX) plus a generic consumer — block 30.
  *
- * The five optional model facets: slice 11C0 declares the contracts; the codecs that already
- * compute those facts still publish them ad hoc in their summaries, and migrating them is slice
- * 11C1 / block 12 work. Until the M3 + W3X proof runs against the contracts themselves, the shapes
- * may still move under the dual-publish rules, and no gate may count them as settled. The base
- * `common.view/model-scene-source` is untouched and stays admitted: adding a facet beside a
- * contract is not a change to it.
+ * `common.view/model-skeleton-source`: block 12 slice 12-1 migrated W3D and W3X onto it, and those
+ * two are the only publishers. They are different readers of different containers, but they ship
+ * in one extension package from one vendor lineage, which is a weaker claim than the two
+ * independent families §2.7 asks for. The second family is the M3 bone table or a UVM skeleton
+ * surface, and neither is read today — so this one stays a candidate while the other four move.
+ *
+ * The other four optional model facets are `admitted` as of slice 12-1. Each has at least two
+ * independent publishers that exercise *different* shapes of the same contract, so the shape is
+ * proved generic rather than fitted to one source:
+ *
+ * - `model-resource-refs-source`: M3 (CHAR-table paths), W3D (TEXTURE_NAME chunks), W3X (asset ids)
+ *   and OBJ (`mtllib` sidecars) — four families, both roles (`texture` and `sidecar`) and both
+ *   provenances exercised;
+ * - `model-animation-source`: W3D (in-file clips with decoded channels, `direct`) and VXL (an HVA
+ *   sidecar, `companion`) — both provenances and both kinds (`animation`, `rest-pose`);
+ * - `model-collision-source`: W3D and W3X publish `mesh-role`, UVM publishes `declared-volume` —
+ *   both values of the origin enum, from two vendors;
+ * - `model-material-source`: OBJ (names plus a library count) and UVM (ids plus per-material
+ *   contracts) — the two optional shapes of the contract, from two vendors.
+ *
+ * The base `common.view/model-scene-source` is untouched and stays admitted: adding a facet beside
+ * a contract is not a change to it.
  */
 export const DATA_SOURCE_MATURITY: Readonly<Record<StandardDataSourceId, DataSourceMaturity>> =
   Object.freeze({
@@ -67,11 +83,11 @@ export const DATA_SOURCE_MATURITY: Readonly<Record<StandardDataSourceId, DataSou
     'common.view/audio-media-source': 'admitted',
     'common.view/video-media-source': 'admitted',
     'common.view/model-scene-source': 'admitted',
-    'common.view/model-resource-refs-source': 'publisher-candidate',
+    'common.view/model-resource-refs-source': 'admitted',
     'common.view/model-skeleton-source': 'publisher-candidate',
-    'common.view/model-animation-source': 'publisher-candidate',
-    'common.view/model-collision-source': 'publisher-candidate',
-    'common.view/model-material-source': 'publisher-candidate',
+    'common.view/model-animation-source': 'admitted',
+    'common.view/model-collision-source': 'admitted',
+    'common.view/model-material-source': 'admitted',
     'common.view/relation-graph-source': 'admitted',
     'common.view/subject-facts-source': 'admitted',
     'common.view/slide-deck-source': 'publisher-candidate',

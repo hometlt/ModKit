@@ -13,11 +13,13 @@
  * poses, OBJ material libraries, UVM collision volumes and material contracts. Nothing here has a
  * field that no publisher can fill.
  *
- * All five carry `publisher-candidate` maturity. Promotion to `admitted` needs the M3 + W3X proof
- * of slice 11C1 and the block-12 discipline, not this slice — and the migration of those codecs
- * off their ad hoc summaries onto these contracts is that same later work. Declaring the contract
- * first and migrating publishers second is deliberate: it is the order that lets the two be
- * reviewed separately.
+ * All five were declared at `publisher-candidate` maturity in slice 11C0. Slice 12-1 migrated the
+ * publishers onto them and recomputed the §2.7 gate: resource-refs, animation, collision and
+ * material each reached two or more independent families exercising different shapes of the same
+ * contract, and were promoted to `admitted`; skeleton did not, because W3D and W3X are its only
+ * publishers and they ship in one extension package. `DATA_SOURCE_MATURITY` carries the verdict and
+ * the reason. Declaring the contract first and migrating publishers second was deliberate: it is
+ * the order that let the two be reviewed separately.
  *
  * An absent facet is absent. A publisher that cannot answer does not publish the source, and never
  * publishes it filled with zeroes, empty arrays or invented names.

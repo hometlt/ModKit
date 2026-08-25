@@ -95,9 +95,18 @@ describe('optional model facet sources', () => {
   it('registers the five publisher-backed facets and leaves the base contract admitted', () => {
     for (const contract of MODEL_FACETS) {
       expect(STANDARD_DATA_SOURCE_CONTRACTS).toContain(contract)
-      expect(dataSourceMaturity(contract), contract).toBe('publisher-candidate')
       expect(STANDARD_DATA_SOURCE_SURFACES[contract]).toBeDefined()
     }
+    /*
+     * Slice 12-1 recomputed the §2.7 gate after migrating the publishers: four facets reached two
+     * or more independent families and were admitted, and skeleton did not. The maturity is
+     * asserted per contract rather than in a loop, so a future promotion has to be written down.
+     */
+    expect(dataSourceMaturity('common.view/model-resource-refs-source')).toBe('admitted')
+    expect(dataSourceMaturity('common.view/model-animation-source')).toBe('admitted')
+    expect(dataSourceMaturity('common.view/model-collision-source')).toBe('admitted')
+    expect(dataSourceMaturity('common.view/model-material-source')).toBe('admitted')
+    expect(dataSourceMaturity('common.view/model-skeleton-source')).toBe('publisher-candidate')
     expect(DATA_SOURCE_MATURITY['common.view/model-scene-source']).toBe('admitted')
   })
 

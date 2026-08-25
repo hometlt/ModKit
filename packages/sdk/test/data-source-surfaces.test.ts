@@ -264,21 +264,19 @@ describe('NXT-103 — standard data-source surfaces', () => {
     )
     expect(dataSourceMaturity('common.view/slide-deck-source')).toBe('publisher-candidate')
     expect(ADMITTED_DATA_SOURCE_CONTRACTS).not.toContain('common.view/slide-deck-source')
-    // six candidates: the ODP-only slides source, and the five optional model facets slice 11C0
-    // declared ahead of migrating their publishers off ad hoc summaries
+    /*
+     * Two candidates after slice 12-1: the ODP-only slides source, and the skeleton facet whose two
+     * publishers (W3D, W3X) ship in one extension package. The other four model facets were
+     * promoted because two or more independent families exercise different shapes of them — the
+     * promotion is recorded here as a list rather than a count so that admitting a fifth one
+     * requires editing this expectation on purpose.
+     */
     expect(
       STANDARD_DATA_SOURCE_CONTRACTS.filter(
         contract => DATA_SOURCE_MATURITY[contract] === 'publisher-candidate',
       ),
-    ).toEqual([
-      'common.view/model-resource-refs-source',
-      'common.view/model-skeleton-source',
-      'common.view/model-animation-source',
-      'common.view/model-collision-source',
-      'common.view/model-material-source',
-      'common.view/slide-deck-source',
-    ])
-    expect(ADMITTED_DATA_SOURCE_CONTRACTS.length).toBe(STANDARD_DATA_SOURCE_CONTRACTS.length - 6)
+    ).toEqual(['common.view/model-skeleton-source', 'common.view/slide-deck-source'])
+    expect(ADMITTED_DATA_SOURCE_CONTRACTS.length).toBe(STANDARD_DATA_SOURCE_CONTRACTS.length - 2)
     // the base model contract is untouched: a facet beside a contract is not a change to it
     expect(dataSourceMaturity('common.view/model-scene-source')).toBe('admitted')
     for (const contract of ADMITTED_DATA_SOURCE_CONTRACTS) {

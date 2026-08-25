@@ -79,10 +79,10 @@ describe('descriptor-v2 wire facts', () => {
       'common.view/video-media-source',
       'common.view/model-scene-source',
       /*
-       * Block 11 slice 11C0: optional model facets beside the base scene source, which is itself
-       * unchanged and still admitted. Standard on the wire and `publisher-candidate` in
-       * DATA_SOURCE_MATURITY for the same reason the slides source is — declared ahead of the
-       * codecs that will publish them, so the shape may still move under the dual-publish rules.
+       * Block 11 slice 11C0 declared these optional model facets beside the base scene source,
+       * which is itself unchanged. Slice 12-1 migrated the publishers onto them and admitted four
+       * of the five; skeleton stays a candidate because W3D and W3X are its only publishers. The
+       * wire list is the same either way — maturity is a separate axis from the registry.
        */
       'common.view/model-resource-refs-source',
       'common.view/model-skeleton-source',
