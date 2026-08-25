@@ -56,6 +56,12 @@ planes:
       - 'sockets'
       - 'texture-refs'
       - 'variants'
+    facetMaturity:
+      animation: 'publisher-candidate'
+      collision: 'publisher-candidate'
+      materials: 'publisher-candidate'
+      skeleton: 'publisher-candidate'
+      texture-refs: 'publisher-candidate'
     portableProfile: 'UVM'
     artifactMaturity: 'reader-only'
     derivedPresentation: 'rasterised-preview-and-thumbnail-are-derived-not-a-new-source'
@@ -72,7 +78,8 @@ planes:
       - 'глубина по формату разная: M3/W3D/W3X доказаны на реальном корпусе, VXL — на реальном файле, остальные модели — только структурно'
     resourceDependencies:
       - 'текстуры и sidecar объявляются моделью как логические требования; открывает их host, не кодек'
-      - 'ResourceSessionPort блока 11C0 ещё не существует — межархивные и межмодовые ссылки честно reference-only'
+      - 'post-open ResourceSessionPort блока 11C0 существует: у ссылки теперь типизированный исход с кодом и provenance, а не отсутствие'
+      - 'межмодовый корень по-прежнему нерешаем без game-mount провайдера: artifact1.m3 даёт not-found, полный резолв — блоки 12/15'
     corpusEvidence:
       - 'MODKITX_SC2_ROOT'
       - 'MODKITX_W3D_PATH'

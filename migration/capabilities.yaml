@@ -15701,15 +15701,15 @@ capabilities:
     mk3Contributions: []
     mk3Operations: []
     allocation:
-      state: 'absent'
+      state: 'covered'
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'missing'
-    supportState: 'unsupported'
-    runtimeAvailability: 'none'
-    evidenceLevel: 'E1'
-    hostEvidence: 'none'
+    migrationState: 'implemented'
+    supportState: 'partial'
+    runtimeAvailability: 'browser-and-node'
+    evidenceLevel: 'E2'
+    hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
@@ -15721,12 +15721,14 @@ capabilities:
     corpusDescriptors: []
     projection:
       plane: 'model'
-      liveProjection: 'planned'
+      liveProjection: 'live'
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'planned'
     knownLoss:
-      - 'спецификация существует и валидируется, исполняемого MK3-контракта ещё нет'
+      - 'три receipt-типа раздельны и заморожены, но производителя пока нет: MaterializationReceipt даёт materializer слайса 11C1, NativeExportReceipt — exporters целевых кодеков'
+      - 'wire semantics и canonicalization остаются в запиненных specs: SDK ссылается на scope по id и правил не дублирует'
+      - 'поле receipts этой строки остаётся null: типы существуют, артефактов ещё никто не выпускает'
     receipts:
       projection: null
       materialization: null
@@ -15734,7 +15736,9 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/sdk/test/uv-projection-abi.test.ts'
+        - 'scripts/test/specs-pin.test.ts'
       reports: []
   - capabilityId: 'uv/resource-session-port/lazy-resources'
     userScenario: 'Открывать ленивые ресурсные ссылки модели через host, а не через кодек.'
@@ -15749,19 +15753,20 @@ capabilities:
       - 'docs/uv/specification/multiverse/SPEC_UV_FOUNDATION.md'
     legacyEvidence:
       - 'docs:uv/multiverse/INDEX.md'
-    hostFacilities: []
+    hostFacilities:
+      - 'read-source'
     mk3Contributions: []
     mk3Operations: []
     allocation:
-      state: 'absent'
+      state: 'covered'
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'missing'
-    supportState: 'unsupported'
-    runtimeAvailability: 'none'
-    evidenceLevel: 'E1'
-    hostEvidence: 'none'
+    migrationState: 'implemented'
+    supportState: 'partial'
+    runtimeAvailability: 'node-only'
+    evidenceLevel: 'E2'
+    hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
@@ -15770,15 +15775,19 @@ capabilities:
       verdicts: []
       liveSources: []
     fixtures: []
-    corpusDescriptors: []
+    corpusDescriptors:
+      - 'MODKITX_SC2_ROOT'
     projection:
       plane: 'model'
-      liveProjection: 'planned'
+      liveProjection: 'live'
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'planned'
     knownLoss:
-      - 'спецификация существует и валидируется, исполняемого MK3-контракта ещё нет'
+      - 'порт переиспользует host-private CompanionOrigin, confinement и provenance блока 9, но имеет собственный lease/revision lifecycle и не подменяет AssetInput/openBinding'
+      - 'публикаторы ещё не переведены: кодеки продолжают отдавать ad hoc сводки, миграция на facet-контракты — 11C1/блок 12'
+      - 'на реальном корпусе SC2 межмодовый корень по-прежнему нерешаем без game-mount провайдера: artifact1.m3 даёт типизированный not-found вместо связывания, полный резолв — блоки 12/15'
+      - 'полный conformance порта — блок 12 п.7; здесь минимальная host-реализация и unit-набор'
     receipts:
       projection: null
       materialization: null
@@ -15786,7 +15795,9 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/host/test/resource-session.test.ts'
+        - 'packages/testkit/test/blizzard-m3-companion.test.ts'
       reports: []
   - capabilityId: 'uv/uvd/definitions'
     userScenario: 'Работать с нейтральными UVD-определениями, не выдавая их за документы.'

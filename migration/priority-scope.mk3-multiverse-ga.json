@@ -20,13 +20,13 @@
     },
     "byMigrationState": {
       "equivalent-better": 15,
-      "implemented": 103,
-      "missing": 43,
+      "implemented": 105,
+      "missing": 41,
       "partial": 5,
       "relocated-multiverse": 1
     },
     "byObligation": { "focused-required-addition": 13, "legacy-required": 154 },
-    "byEvidenceLevel": { "E0": 36, "E1": 38, "E2": 64, "E3": 9, "E4": 20 }
+    "byEvidenceLevel": { "E0": 36, "E1": 36, "E2": 66, "E3": 9, "E4": 20 }
   },
   "deadlines": {
     "block-11": [
@@ -2530,10 +2530,10 @@
       "obligation": "legacy-required",
       "owner": "packages/sdk",
       "plannedBlock": 11,
-      "migrationState": "missing",
-      "supportState": "unsupported",
-      "evidenceLevel": "E1",
-      "allocationState": "absent",
+      "migrationState": "implemented",
+      "supportState": "partial",
+      "evidenceLevel": "E2",
+      "allocationState": "covered",
       "portFamily": null,
       "corpusDescriptors": [],
       "dependsOn": ["uv/foundation/spec-authority"],
@@ -2551,12 +2551,12 @@
       "obligation": "legacy-required",
       "owner": "packages/host",
       "plannedBlock": 11,
-      "migrationState": "missing",
-      "supportState": "unsupported",
-      "evidenceLevel": "E1",
-      "allocationState": "absent",
+      "migrationState": "implemented",
+      "supportState": "partial",
+      "evidenceLevel": "E2",
+      "allocationState": "covered",
       "portFamily": null,
-      "corpusDescriptors": [],
+      "corpusDescriptors": ["MODKITX_SC2_ROOT"],
       "dependsOn": ["uv/foundation/spec-authority"],
       "requiredBy": ["uv/uvm/live-projection"]
     },
