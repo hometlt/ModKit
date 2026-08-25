@@ -1,6 +1,6 @@
 {
-  "startedAt": "2026-08-25T07:54:45.155Z",
-  "finishedAt": "2026-08-25T07:55:07.126Z",
+  "startedAt": "2026-08-25T08:18:11.879Z",
+  "finishedAt": "2026-08-25T08:18:37.690Z",
   "extensionHost": {
     "node": "24.18.1",
     "electron": "42.8.1",
@@ -9,7 +9,7 @@
   },
   "webviewChannel": {
     "cdpUsable": true,
-    "port": 62284,
+    "port": 54322,
     "note": "no vscode-webview target among 2"
   },
   "scenarios": [
@@ -25,7 +25,7 @@
           "missing": []
         }
       },
-      "durationMs": 873
+      "durationMs": 3056
     },
     {
       "id": "w3d-single",
@@ -38,13 +38,13 @@
         "stagesVisited": ["as-opened", "Metadata", "Tree", "Model"],
         "diagnosticsSeen": [],
         "webviewReadable": true,
-        "pageExcerpt": "Modkit · Files · Extensions · HOST · org.modkitx.app/vscode-desktop · org.modkitx.app.vscode/desktop-extension · 0 inventory diagnostics · This page holds no extension-host facility: it consumes subjects, it does not open them. · EXTENSIONS · org.modkitx/archives · bundled · org.modkitx/audio · bundled · org.modkitx/containers · bundled · org.modkitx/documents · bundled · org.modkitx/images · bundled · org.modkitx/models · bundled · org.modkitx/plain-text · bundled · org.modkitx/rendering-3d · bundled · org.modkitx/text-delimited · bundled · org.modkitx/text-ini · bundled · org.modkitx/text-json · bundled · org.modkitx/text-toml · bundled · org.modkitx/text-xml · bundled · org.modkitx/text-yaml · bundled · org.modkitx/ui-monaco · bundled · org.modkitx/vector · bundled · org.modkitx/video · bundled · org.modkitx.ea/models · installed · org.modkitx.ea/tiberian-sun · installed · org.modkitx.ea/big · installed · FACILITIES · gpu.webgl2 · worker.module · Aa · ab · .* · › · 🗀 · always_buildings · › · 🗀 · workspace · Model · Tree · Metadata · Hex · 2 nodes · 1 meshes · 1 primitives · 1 materials · 1 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities · ${MODKITX_W3D_PATH} · Model · 15.4 KiB · Modkit · Files · Extensions · HOST · org.modkitx.app/vscode-desktop · org.modkitx.app.vscode/desktop-extension · 0 inventory diagnostics · This page holds no extension-host facility: it consumes subjects, it does not open them. · EXTENSIONS · org.modkitx/archives · bundled · org.modkitx/audio · bundled · org.modkitx/containers · bundled · org.modkitx/documents · bundled · org.modkitx/images · bundled · org.modkitx/models · bundled · org.modkitx/plain-text · bundled · org.modkitx/rendering-3d · bundled · org.modkitx/text-delimited · bundled · org.modkitx/text-ini · bundled · org.modkitx/text-json · bundled · org.modkitx/text-toml · bundled · org.modkitx/text-xml · bundled · org.modkitx/text-yaml · bundled · org.modkitx/ui-monaco · bundled · org.modkitx/vector · bundled · org.modkitx/video · bundled · org.modkitx.ea/models · installed · org.modkitx.ea/tiberian-sun · installed · org.modkitx.ea/big · installed · FACILITIES · gpu.webgl2 · worker.module · Aa · ab · .* · › · 🗀 · always_buildings · › · 🗀 · workspace · Model · Tree · Metadata · Hex · WESTWOOD W3D MODEL · rootChunks · 4 · chunks · 33 · opaqueTa…",
+        "pageExcerpt": "Modkit · Model · Tree · Metadata · Hex · 2 nodes · 1 meshes · 1 primitives · 1 materials · 1 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · WESTWOOD W3D MODEL · rootChunks · 4 · chunks · 33 · opaqueTailBytes · 0 · chunkTypes · HIERARCHY:1, HIERARCHY_HEADER:1, PIVOTS:1, CHUNK_0x00000103:1, ANIMATION:1, CHUNK_0x00000201:1, CHUNK_0x00000202:1, MESH:1, MESH_HEADER3:1, VERTICES:1, VERTEX_NORMALS:1, TRIANGLES:1, CHUNK_0x00000022:1, CHUNK_0x00000028:1, CHUNK_0x0000002a:1, CHUNK_0x0000002b:1, CHUNK_0x0000002c:1, CHUNK_0x0000002d:1, CHUNK_0x00000029:1, TEXTURES:1, TEXTURE:1, TEXTURE_NAME:1, MATERIAL_PASS:1, CHUNK_0x00000039:1, CHUNK_0x0000003a:1, TEXTURE_STAGE:1, TEXTURE_IDS:1, STAGE_TEXCOORDS:1, HLOD:1, CHUNK_0x00000701:1, CHUNK_0x00000702:1, CHUNK_0x00000703:1, CHUNK_0x00000704:1 · decodedMeshes · 1 · textures · 1 · geometryAccess · decoded · OBSERVED TRAITS · model.geometry · available · meshes=1, decoded=true · model.textures · available · count=1 · model.skeleton · available · pivots=2, name=D_TESLACOIL_CH · model.animations · available · animations=1, channels=1, frames=61 · structure.hierarchy · available · chunks=33, pivots=2 · content.binary · available · bytes=15737 · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · Westwood W3D · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · 2 nodes · 1 meshes · 1 primitives · 1 materials · 1 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities",
         "modelStages": ["Model", "Metadata", "Tree"],
         "nodes": "2",
         "pivotsLiteral": null,
         "animationsLiteral": "1"
       },
-      "durationMs": 7501
+      "durationMs": 8509
     },
     {
       "id": "vxl-companion",
@@ -55,7 +55,7 @@
         "companionOnDisk": true,
         "stageTabs": ["Model", "Tree", "Metadata", "Hex"],
         "diagnosticsSeen": [],
-        "pageExcerpt": "Modkit · Files · Extensions · HOST · org.modkitx.app/vscode-desktop · org.modkitx.app.vscode/desktop-extension · 0 inventory diagnostics · This page holds no extension-host facility: it consumes subjects, it does not open them. · EXTENSIONS · org.modkitx/archives · bundled · org.modkitx/audio · bundled · org.modkitx/containers · bundled · org.modkitx/documents · bundled · org.modkitx/images · bundled · org.modkitx/models · bundled · org.modkitx/plain-text · bundled · org.modkitx/rendering-3d · bundled · org.modkitx/text-delimited · bundled · org.modkitx/text-ini · bundled · org.modkitx/text-json · bundled · org.modkitx/text-toml · bundled · org.modkitx/text-xml · bundled · org.modkitx/text-yaml · bundled · org.modkitx/ui-monaco · bundled · org.modkitx/vector · bundled · org.modkitx/video · bundled · org.modkitx.ea/models · installed · org.modkitx.ea/tiberian-sun · installed · org.modkitx.ea/big · installed · FACILITIES · gpu.webgl2 · worker.module · Aa · ab · .* · › · 🗀 · always_buildings · › · 🗀 · ppm-gdi-naval-railgun-turret-ts · › · 🗀 · workspace · Model · Tree · Metadata · Hex · 1 nodes · 11 meshes · 11 primitives · 11 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities · ${MODKITX_VXL_PATH} · Model · 24.6 KiB · Modkit · Files · Extensions · HOST · org.modkitx.app/vscode-desktop · org.modkitx.app.vscode/desktop-extension · 0 inventory diagnostics · This page holds no extension-host facility: it consumes subjects, it does not open them. · EXTENSIONS · org.modkitx/archives · bundled · org.modkitx/audio · bundled · org.modkitx/containers · bundled · org.modkitx/documents · bundled · org.modkitx/images · bundled · org.modkitx/models · bundled · org.modkitx/plain-text · bundled · org.modkitx/rendering-3d · bundled · org.modkitx/text-delimited · bundled · org.modkitx/text-ini · bundled · org.modkitx/text-json · bundled · org.modkitx/text-toml · bundled · org.modkitx/text-xml · bundled · org.modkitx/text-yaml · bundled · org.modkitx/ui-monaco · bundled · org.modkitx/vector · bundled · org.modkitx/video · bundled · org.modkitx.ea/models · installed · org.modkitx.ea/tiberian-sun · installed · org.modkitx.ea/big · installed · FACILITIES · gpu.webgl2 · worker.module · Aa · ab · .* · › · 🗀 · always_buildings · › · 🗀 · ppm-gdi-naval-railgun-turret-ts · › · 🗀 · workspace · Model · Tree · Metadata · Hex · WESTWOOD VOXEL MODEL · sections…",
+        "pageExcerpt": "Modkit · Model · Tree · Metadata · Hex · 1 nodes · 11 meshes · 11 primitives · 11 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · WESTWOOD VOXEL MODEL · sections · 1 · bodyBytes · 24303 · palettes · 1 · voxels · 5466 · decodedMeshes · 11 · geometryAccess · decoded · companionState · resolved · companionBindingId · hva#gnavrail.hva · companionFrames · 1 · companionBoundSections · 1 · companionKind · rest-pose · OBSERVED TRAITS · model.geometry · available · sections=1, meshes=11, decoded=true · structure.hierarchy · available · nodes=1 · content.binary · available · bytes=25225 · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · 1 nodes · 11 meshes · 11 primitives · 11 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities",
         "nativeDiagnostics": [
           {
             "code": "x3.host/worker-shared-process",
@@ -68,7 +68,7 @@
         "mentionsCompanion": true,
         "animations": "0"
       },
-      "durationMs": 4946
+      "durationMs": 5494
     },
     {
       "id": "big-nested",
@@ -81,7 +81,7 @@
         "archiveTabOpened": true,
         "nestedCommands": []
       },
-      "durationMs": 74
+      "durationMs": 142
     },
     {
       "id": "diagnostics-no-companion",
@@ -93,7 +93,7 @@
         "companionAbsent": true,
         "stageTabs": ["Model", "Tree", "Metadata", "Hex"],
         "diagnosticsSeen": [],
-        "pageExcerpt": "Modkit · Files · Extensions · HOST · org.modkitx.app/vscode-desktop · org.modkitx.app.vscode/desktop-extension · 0 inventory diagnostics · This page holds no extension-host facility: it consumes subjects, it does not open them. · EXTENSIONS · org.modkitx/archives · bundled · org.modkitx/audio · bundled · org.modkitx/containers · bundled · org.modkitx/documents · bundled · org.modkitx/images · bundled · org.modkitx/models · bundled · org.modkitx/plain-text · bundled · org.modkitx/rendering-3d · bundled · org.modkitx/text-delimited · bundled · org.modkitx/text-ini · bundled · org.modkitx/text-json · bundled · org.modkitx/text-toml · bundled · org.modkitx/text-xml · bundled · org.modkitx/text-yaml · bundled · org.modkitx/ui-monaco · bundled · org.modkitx/vector · bundled · org.modkitx/video · bundled · org.modkitx.ea/models · installed · org.modkitx.ea/tiberian-sun · installed · org.modkitx.ea/big · installed · FACILITIES · gpu.webgl2 · worker.module · Aa · ab · .* · › · 🗀 · 1.0 · › · 🗀 · always_buildings · › · 🗀 · ppm-gdi-naval-railgun-turret-ts · › · 🗀 · workspace · Model · Tree · Metadata · Hex · 1 nodes · 11 meshes · 11 primitives · 11 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities · ${SMOKE_SCRATCH}\\workspace\\gnavrail.vxl · Model · 24.6 KiB · Modkit · Files · Extensions · HOST · org.modkitx.app/vscode-desktop · org.modkitx.app.vscode/desktop-extension · 0 inventory diagnostics · This page holds no extension-host facility: it consumes subjects, it does not open them. · EXTENSIONS · org.modkitx/archives · bundled · org.modkitx/audio · bundled · org.modkitx/containers · bundled · org.modkitx/documents · bundled · org.modkitx/images · bundled · org.modkitx/models · bundled · org.modkitx/plain-text · bundled · org.modkitx/rendering-3d · bundled · org.modkitx/text-delimited · bundled · org.modkitx/text-ini · bundled · org.modkitx/text-json · bundled · org.modkitx/text-toml · bundled · org.modkitx/text-xml · bundled · org.modkitx/text-yaml · bundled · org.modkitx/ui-monaco · bundled · org.modkitx/vector · bundled · org.modkitx/video · bundled · org.modkitx.ea/models · installed · org.modkitx.ea/tiberian-sun · installed · org.modkitx.ea/big · installed · FACILITIES · gpu.webgl2 · worker.module · Aa · ab · .* · › · 🗀 · 1.0 · › · 🗀 · always_buildings · › · 🗀 · ppm-gdi-naval-railgun-turret-ts · › · 🗀 · workspace · Model · Tree · Metadata · Hex · WESTWOOD VOXEL MODE…",
+        "pageExcerpt": "Modkit · Model · Tree · Metadata · Hex · 1 nodes · 11 meshes · 11 primitives · 11 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · WESTWOOD VOXEL MODEL · sections · 1 · bodyBytes · 24303 · palettes · 1 · voxels · 5466 · decodedMeshes · 11 · geometryAccess · decoded · companionState · absent · OBSERVED TRAITS · model.geometry · available · sections=1, meshes=11, decoded=true · structure.hierarchy · available · nodes=1 · content.binary · available · bytes=25225 · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · 1 nodes · 11 meshes · 11 primitives · 11 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities",
         "nativeDiagnostics": [
           {
             "code": "x3.host/worker-shared-process",
@@ -118,7 +118,7 @@
           "x3.host/companion-unavailable: optional companion «hva» is absent; the dependent capability stays unavailable"
         ]
       },
-      "durationMs": 8497
+      "durationMs": 8532
     },
     {
       "id": "clean-close",
@@ -130,7 +130,7 @@
         "tabsAfter": 0,
         "hostResponsiveAfterClose": true
       },
-      "durationMs": 21
+      "durationMs": 14
     }
   ]
 }

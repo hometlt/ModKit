@@ -785,548 +785,6 @@ function unknownSourceLease(sources, slot, contract) {
   return sources.get(binding);
 }
 
-// packages/ui/dist/primitives/file-tree.js
-function createFileTree(document2, options) {
-  const root2 = document2.createElement("div");
-  root2.className = "modkit-filetree";
-  setPart(root2, "filetree");
-  const toolbar = document2.createElement("div");
-  toolbar.className = "modkit-filetree__toolbar";
-  toolbar.setAttribute("role", "toolbar");
-  toolbar.setAttribute("aria-label", `${options.label} actions`);
-  setPart(toolbar, "filetree.toolbar");
-  root2.append(toolbar);
-  const list = document2.createElement("div");
-  list.className = "modkit-filetree__list";
-  list.setAttribute("role", "tree");
-  list.setAttribute("aria-label", options.label);
-  list.tabIndex = 0;
-  setPart(list, "filetree.list");
-  root2.append(list);
-  const rows = /* @__PURE__ */ new Map();
-  let order = [];
-  let active;
-  const controller = new AbortController();
-  const setActive = (row, focus = true) => {
-    if (active !== void 0) {
-      active.element.setAttribute("aria-selected", "false");
-      setState(active.element, []);
-      active.element.tabIndex = -1;
-    }
-    active = row;
-    if (row === void 0)
-      return;
-    row.element.setAttribute("aria-selected", "true");
-    setState(row.element, ["selected"]);
-    row.element.tabIndex = 0;
-    if (focus)
-      row.element.focus();
-    options.onSelect?.(row.node);
-  };
-  const rebuildOrder = () => {
-    order = [...rows.values()].filter((row) => row.element.isConnected && row.element.offsetParent !== null).sort((left, right) => {
-      const position = left.element.compareDocumentPosition(right.element);
-      return position & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
-    });
-  };
-  const renderRow = (node, depth, host) => {
-    const element2 = document2.createElement("div");
-    element2.className = "modkit-filetree__node";
-    element2.setAttribute("role", "treeitem");
-    element2.setAttribute("aria-level", String(depth + 1));
-    element2.setAttribute("aria-selected", "false");
-    element2.tabIndex = -1;
-    element2.dataset["nodeId"] = node.id;
-    if (node.kind !== void 0)
-      element2.dataset["kind"] = node.kind;
-    setPart(element2, "filetree.node");
-    const line = document2.createElement("div");
-    line.className = "modkit-filetree__row";
-    setPart(line, "filetree.row");
-    setToken(line, "tree.indent-level", String(depth));
-    element2.append(line);
-    const twisty = document2.createElement("span");
-    twisty.className = "modkit-filetree__twisty";
-    twisty.setAttribute("aria-hidden", "true");
-    setPart(twisty, "filetree.twisty");
-    twisty.textContent = node.hasChildren ? "\u203A" : "";
-    line.append(twisty);
-    if (node.icon !== void 0) {
-      const icon = document2.createElement("span");
-      icon.className = "modkit-filetree__icon";
-      icon.setAttribute("aria-hidden", "true");
-      icon.textContent = safeViewerText(node.icon, 4);
-      setPart(icon, "filetree.icon");
-      line.append(icon);
-    }
-    const label = document2.createElement("span");
-    label.className = "modkit-filetree__label";
-    label.textContent = safeViewerText(node.label, 512);
-    setPart(label, "filetree.label");
-    line.append(label);
-    if (node.badge !== void 0) {
-      const badge = document2.createElement("span");
-      badge.className = "modkit-filetree__badge";
-      badge.textContent = safeViewerText(node.badge, 32);
-      setPart(badge, "filetree.badge");
-      line.append(badge);
-    }
-    const childrenHost = document2.createElement("div");
-    childrenHost.className = "modkit-filetree__children";
-    childrenHost.setAttribute("role", "group");
-    childrenHost.hidden = true;
-    setPart(childrenHost, "filetree.children");
-    element2.append(childrenHost);
-    const row = { node, depth, element: element2, childrenHost, expanded: false, loaded: false };
-    if (node.hasChildren)
-      element2.setAttribute("aria-expanded", "false");
-    line.addEventListener("click", () => {
-      setActive(row);
-      if (node.hasChildren)
-        void toggle(row);
-      else
-        options.onActivate?.(node);
-    });
-    line.addEventListener("dblclick", () => options.onActivate?.(node));
-    host.append(element2);
-    rows.set(node.id, row);
-    return row;
-  };
-  const loadInto = async (row, host, depth) => {
-    const children = await options.loadChildren(row?.node, controller.signal);
-    host.replaceChildren();
-    if (children.length === 0 && row === void 0) {
-      const empty = document2.createElement("p");
-      empty.className = "modkit-filetree__empty";
-      empty.textContent = "Nothing to show.";
-      setPart(empty, "filetree.empty");
-      host.append(empty);
-      return;
-    }
-    for (const child of children)
-      renderRow(child, depth, host);
-    if (row !== void 0)
-      row.loaded = true;
-    applyFilter();
-    rebuildOrder();
-  };
-  const toggle = async (row) => {
-    if (!row.node.hasChildren)
-      return;
-    row.expanded = !row.expanded;
-    row.element.setAttribute("aria-expanded", String(row.expanded));
-    row.childrenHost.hidden = !row.expanded;
-    setState(row.element, row.expanded ? ["active"] : []);
-    if (row.expanded && !row.loaded) {
-      setState(row.element, ["loading"]);
-      await loadInto(row, row.childrenHost, row.depth + 1);
-      setState(row.element, ["active"]);
-    }
-    rebuildOrder();
-  };
-  function applyFilter() {
-    const predicate = options.matches;
-    if (predicate === void 0) {
-      for (const row of rows.values())
-        row.element.hidden = false;
-      rebuildOrder();
-      return;
-    }
-    const keep = /* @__PURE__ */ new Set();
-    const visit = (row) => {
-      const children = [...rows.values()].filter((other) => other.element.parentElement === row.childrenHost);
-      let descendant = false;
-      for (const child of children)
-        descendant = visit(child) || descendant;
-      const self = predicate(row.node);
-      if (self || descendant)
-        keep.add(row.node.id);
-      return self || descendant;
-    };
-    for (const row of rows.values()) {
-      if (row.element.parentElement === list)
-        visit(row);
-    }
-    for (const row of rows.values())
-      row.element.hidden = !keep.has(row.node.id);
-    rebuildOrder();
-  }
-  list.addEventListener("keydown", (event) => {
-    if (order.length === 0)
-      rebuildOrder();
-    const index = active === void 0 ? -1 : order.indexOf(active);
-    const move = (to) => {
-      const next = order[Math.max(0, Math.min(order.length - 1, to))];
-      if (next !== void 0)
-        setActive(next);
-    };
-    switch (event.key) {
-      case "ArrowDown":
-        event.preventDefault();
-        move(index + 1);
-        break;
-      case "ArrowUp":
-        event.preventDefault();
-        move(index - 1);
-        break;
-      case "ArrowRight":
-        event.preventDefault();
-        if (active !== void 0 && active.node.hasChildren && !active.expanded)
-          void toggle(active);
-        else
-          move(index + 1);
-        break;
-      case "ArrowLeft":
-        event.preventDefault();
-        if (active !== void 0 && active.expanded)
-          void toggle(active);
-        else
-          move(index - 1);
-        break;
-      case "Home":
-        event.preventDefault();
-        move(0);
-        break;
-      case "End":
-        event.preventDefault();
-        move(order.length - 1);
-        break;
-      case "Enter":
-      case " ":
-        event.preventDefault();
-        if (active !== void 0) {
-          if (active.node.hasChildren)
-            void toggle(active);
-          else
-            options.onActivate?.(active.node);
-        }
-        break;
-      default:
-        break;
-    }
-  });
-  const refresh = async () => {
-    rows.clear();
-    active = void 0;
-    await loadInto(void 0, list, 0);
-  };
-  return {
-    root: root2,
-    toolbar,
-    refresh,
-    collapseAll() {
-      for (const row of rows.values()) {
-        if (!row.expanded)
-          continue;
-        row.expanded = false;
-        row.childrenHost.hidden = true;
-        row.element.setAttribute("aria-expanded", "false");
-        setState(row.element, []);
-      }
-      rebuildOrder();
-    },
-    async expandAll() {
-      for (const row of [...rows.values()]) {
-        if (row.node.hasChildren && !row.expanded)
-          await toggle(row);
-      }
-    },
-    applyFilter,
-    selected: () => active?.node,
-    destroy() {
-      controller.abort("file-tree-destroyed");
-      root2.remove();
-    }
-  };
-}
-
-// packages/ui/dist/search/matcher.js
-var WORD = /[A-Za-z0-9_]/u;
-function isWordChar(character) {
-  return character.length > 0 && WORD.test(character);
-}
-function hasWordBoundary(text, start, end) {
-  return !isWordChar(text.charAt(start - 1)) && !isWordChar(text.charAt(end));
-}
-function wholeWordSource(source) {
-  return `(?<![A-Za-z0-9_])(?:${source})(?![A-Za-z0-9_])`;
-}
-function escapeRegExp(text) {
-  return text.replace(/[\\^$+?.()|[\]{}*]/gu, "\\$&");
-}
-function globSource(query) {
-  return `^${query.split("*").map(escapeRegExp).join(".*")}$`;
-}
-function compileSearch(query, options = {}) {
-  const caseSensitive = options.caseSensitive ?? false;
-  const wholeWord = options.wholeWord ?? false;
-  const mode = options.mode ?? "plain";
-  if (query.length === 0)
-    return { kind: "empty" };
-  if (mode === "glob") {
-    if (!query.includes("*")) {
-      return {
-        kind: "plain",
-        needle: caseSensitive ? query : query.toLowerCase(),
-        caseSensitive,
-        wholeWord
-      };
-    }
-    try {
-      return { kind: "regex", regex: new RegExp(globSource(query), caseSensitive ? "u" : "iu") };
-    } catch (error) {
-      return { kind: "invalid", message: describe(error) };
-    }
-  }
-  if (mode === "plain") {
-    return {
-      kind: "plain",
-      needle: caseSensitive ? query : query.toLowerCase(),
-      caseSensitive,
-      wholeWord
-    };
-  }
-  try {
-    const source = wholeWord ? wholeWordSource(query) : query;
-    return { kind: "regex", regex: new RegExp(source, caseSensitive ? "u" : "iu") };
-  } catch (error) {
-    return { kind: "invalid", message: describe(error) };
-  }
-}
-function describe(error) {
-  return error instanceof Error ? error.message : "Invalid regular expression";
-}
-function matches(text, compiled) {
-  switch (compiled.kind) {
-    case "empty":
-      return true;
-    case "invalid":
-      return false;
-    case "regex":
-      return compiled.regex.test(text);
-    case "plain":
-      return matchRanges(text, compiled, true).length > 0;
-    default:
-      return false;
-  }
-}
-function matchRanges(text, compiled, firstOnly = false) {
-  if (compiled.kind === "empty" || compiled.kind === "invalid")
-    return [];
-  if (compiled.kind === "regex") {
-    const ranges2 = [];
-    const scanner = new RegExp(compiled.regex.source, compiled.regex.flags.includes("g") ? compiled.regex.flags : `${compiled.regex.flags}g`);
-    let guard = 0;
-    for (const match of text.matchAll(scanner)) {
-      if (match.index === void 0)
-        continue;
-      const end = match.index + match[0].length;
-      ranges2.push({ start: match.index, end });
-      if (firstOnly)
-        break;
-      if (match[0].length === 0)
-        break;
-      guard += 1;
-      if (guard > 1e4)
-        break;
-    }
-    return ranges2;
-  }
-  const needle = compiled.needle;
-  if (needle.length === 0)
-    return [];
-  const haystack = compiled.caseSensitive ? text : text.toLowerCase();
-  const ranges = [];
-  let at = haystack.indexOf(needle);
-  while (at >= 0) {
-    const end = at + needle.length;
-    if (!compiled.wholeWord || hasWordBoundary(text, at, end)) {
-      ranges.push({ start: at, end });
-      if (firstOnly)
-        break;
-    }
-    at = haystack.indexOf(needle, at + Math.max(1, needle.length));
-  }
-  return ranges;
-}
-
-// packages/ui/dist/primitives/search-field.js
-var TOGGLES = [
-  { id: "case", label: "Aa", title: "Match case" },
-  { id: "word", label: "ab", title: "Match whole word" },
-  { id: "regex", label: ".*", title: "Use regular expression" }
-];
-var GLOB_TOGGLE = { id: "glob", label: "*", title: "Use glob pattern" };
-function createSearchField(document2, options) {
-  const root2 = document2.createElement("div");
-  root2.className = "modkit-search";
-  setPart(root2, "search");
-  root2.setAttribute("role", "search");
-  const input = document2.createElement("input");
-  input.type = "search";
-  input.className = "modkit-search__input";
-  input.placeholder = options.placeholder ?? "Filter\u2026";
-  input.setAttribute("aria-label", options.label ?? "Filter");
-  input.value = options.initial?.query ?? "";
-  setPart(input, "search.input");
-  root2.append(input);
-  const toggleBar = document2.createElement("div");
-  toggleBar.className = "modkit-search__toggles";
-  setPart(toggleBar, "search.toggles");
-  toggleBar.setAttribute("role", "group");
-  toggleBar.setAttribute("aria-label", "Filter options");
-  root2.append(toggleBar);
-  const specs = options.allowGlob === true ? [...TOGGLES, GLOB_TOGGLE] : TOGGLES;
-  const buttons = /* @__PURE__ */ new Map();
-  for (const spec of specs) {
-    const button = document2.createElement("button");
-    button.type = "button";
-    button.className = "modkit-search__toggle";
-    button.textContent = spec.label;
-    button.title = spec.title;
-    button.setAttribute("aria-label", spec.title);
-    button.setAttribute("aria-pressed", "false");
-    setPart(button, "search.toggle");
-    toggleBar.append(button);
-    buttons.set(spec.id, button);
-  }
-  const status = document2.createElement("output");
-  status.className = "modkit-search__status";
-  setPart(status, "search.status");
-  root2.append(status);
-  const message = document2.createElement("p");
-  message.className = "modkit-search__message";
-  setPart(message, "search.message");
-  root2.append(message);
-  let nav;
-  if (options.onNavigate !== void 0) {
-    nav = document2.createElement("div");
-    nav.className = "modkit-search__nav";
-    setPart(nav, "search.nav");
-    for (const [label, direction, title] of [
-      ["\u2039", -1, "Previous match"],
-      ["\u203A", 1, "Next match"]
-    ]) {
-      const button = document2.createElement("button");
-      button.type = "button";
-      button.textContent = label;
-      button.title = title;
-      button.setAttribute("aria-label", title);
-      button.addEventListener("click", () => options.onNavigate?.(direction));
-      nav.append(button);
-    }
-    root2.append(nav);
-  }
-  let caseSensitive = options.initial?.caseSensitive ?? false;
-  let wholeWord = options.initial?.wholeWord ?? false;
-  let mode = options.initial?.mode ?? "plain";
-  const syncToggleUi = () => {
-    buttons.get("case")?.setAttribute("aria-pressed", String(caseSensitive));
-    buttons.get("word")?.setAttribute("aria-pressed", String(wholeWord));
-    buttons.get("regex")?.setAttribute("aria-pressed", String(mode === "regex"));
-    buttons.get("glob")?.setAttribute("aria-pressed", String(mode === "glob"));
-    for (const [id, button] of buttons) {
-      const pressed = button.getAttribute("aria-pressed") === "true";
-      setState(button, pressed ? ["active"] : []);
-      if (id === "word")
-        button.disabled = mode === "glob";
-    }
-  };
-  let current = buildState();
-  function buildState() {
-    const query = input.value;
-    return {
-      query,
-      caseSensitive,
-      wholeWord,
-      mode,
-      compiled: compileSearch(query, { caseSensitive, wholeWord, mode })
-    };
-  }
-  function render() {
-    const compiled = current.compiled;
-    const invalid2 = compiled.kind === "invalid";
-    message.textContent = compiled.kind === "invalid" ? compiled.message : "";
-    const count = options.countMatches?.(current);
-    const states = [];
-    if (invalid2)
-      states.push("invalid");
-    if (!invalid2 && count === 0 && compiled.kind !== "empty")
-      states.push("no-match");
-    setState(root2, states);
-    input.setAttribute("aria-invalid", String(invalid2));
-    status.textContent = invalid2 ? "invalid" : compiled.kind === "empty" || count === void 0 ? "" : count === 1 ? "1 match" : `${count} matches`;
-    if (nav !== void 0) {
-      for (const button of nav.querySelectorAll("button")) {
-        button.disabled = invalid2 || count === void 0 || count === 0;
-      }
-    }
-  }
-  let timer;
-  const emit = () => {
-    current = buildState();
-    render();
-    options.onChange(current);
-  };
-  const schedule = () => {
-    const delay = options.debounceMs ?? 0;
-    if (delay <= 0) {
-      emit();
-      return;
-    }
-    if (timer !== void 0)
-      clearTimeout(timer);
-    timer = setTimeout(emit, delay);
-  };
-  input.addEventListener("input", schedule);
-  input.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      options.onNavigate?.(event.shiftKey ? -1 : 1);
-    }
-    if (event.key === "Escape" && input.value !== "") {
-      event.preventDefault();
-      input.value = "";
-      emit();
-    }
-  });
-  buttons.get("case")?.addEventListener("click", () => {
-    caseSensitive = !caseSensitive;
-    syncToggleUi();
-    emit();
-  });
-  buttons.get("word")?.addEventListener("click", () => {
-    wholeWord = !wholeWord;
-    syncToggleUi();
-    emit();
-  });
-  buttons.get("regex")?.addEventListener("click", () => {
-    mode = mode === "regex" ? "plain" : "regex";
-    syncToggleUi();
-    emit();
-  });
-  buttons.get("glob")?.addEventListener("click", () => {
-    mode = mode === "glob" ? "plain" : "glob";
-    syncToggleUi();
-    emit();
-  });
-  syncToggleUi();
-  render();
-  return {
-    root: root2,
-    get state() {
-      return current;
-    },
-    refresh: render,
-    focus: () => input.focus(),
-    destroy: () => {
-      if (timer !== void 0)
-        clearTimeout(timer);
-      root2.remove();
-    }
-  };
-}
-
 // packages/core/dist/ids.js
 var SEGMENT = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 var QUALIFIED = /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)*\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)*$/;
@@ -1598,7 +1056,7 @@ function versionRangeTargetsMajor(range, major) {
       return true;
     const exact = conjunction.find((comparator) => comparator.op === "=");
     if (exact !== void 0) {
-      return exact.version.major === major && conjunction.every((comparator) => matches2(exact.version, comparator));
+      return exact.version.major === major && conjunction.every((comparator) => matches(exact.version, comparator));
     }
     const nextMajor = major + 1;
     if (!Number.isSafeInteger(nextMajor))
@@ -1640,7 +1098,7 @@ function versionRangeTargetsMajor(range, major) {
     return lowerInside && upperInside && nonEmpty;
   });
 }
-function matches2(version, comparator) {
+function matches(version, comparator) {
   const cmp = compareSemver(version, comparator.version);
   switch (comparator.op) {
     case "=":
@@ -2179,7 +1637,7 @@ function fileKindOf(name) {
   const kind = name.slice(dot + 1).toLowerCase();
   return /^[a-z0-9_-]{1,16}$/u.test(kind) ? kind : "file";
 }
-var describe2 = (error) => error instanceof Error ? error.message : String(error);
+var describe = (error) => error instanceof Error ? error.message : String(error);
 var formatBytes = (bytes) => {
   if (bytes < 1024)
     return `${bytes} B`;
@@ -2283,8 +1741,8 @@ function createEditorArea(document2, options) {
     } catch (error) {
       if (run.signal.aborted)
         return;
-      placeholder({ ...group, stage: tab.content }, `Could not preview ${tab.entry.name}: ${describe2(error)}`);
-      report({ path: tab.entry.id, detail: describe2(error), severity: "error" });
+      placeholder({ ...group, stage: tab.content }, `Could not preview ${tab.entry.name}: ${describe(error)}`);
+      report({ path: tab.entry.id, detail: describe(error), severity: "error" });
     }
   }
   async function closeTab(group, tab) {
@@ -2531,302 +1989,6 @@ function createEditorArea(document2, options) {
 
 // packages/ui/dist/explorer/index.js
 var EXPLORER_MAXIMUM_BYTES = 64 * 1024 * 1024;
-var extensionOf = (name) => {
-  const dot = name.lastIndexOf(".");
-  return dot <= 0 ? "" : name.slice(dot + 1).toLowerCase();
-};
-var formatBytes2 = (bytes) => {
-  if (bytes < 1024)
-    return `${bytes} B`;
-  if (bytes < 1024 * 1024)
-    return `${(bytes / 1024).toFixed(1)} KiB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
-};
-function createExplorer(document2, options) {
-  const maximumBytes = options.maximumBytes ?? EXPLORER_MAXIMUM_BYTES;
-  const supported = new Set(options.preview.supported.map((item) => item.toLowerCase()));
-  const root2 = document2.createElement("div");
-  root2.className = "modkit-viewer modkit-explorer";
-  setPart(root2, "explorer");
-  const toolbar = element(root2, "div", { part: "explorer.toolbar", role: "toolbar" });
-  toolbar.setAttribute("aria-label", "Explorer actions");
-  if (options.showToolbar === false)
-    toolbar.hidden = true;
-  const sidebar = element(root2, "div", { part: "explorer.sidebar" });
-  const previewPane = element(root2, "div", { part: "explorer.preview" });
-  const previewHeader = element(previewPane, "div", { part: "explorer.header" });
-  const breadcrumb = element(previewHeader, "div", { part: "explorer.breadcrumb" });
-  const viewPicker = element(previewHeader, "select", {
-    part: "explorer.viewpicker"
-  });
-  viewPicker.setAttribute("aria-label", "Preview view");
-  previewHeader.hidden = true;
-  const stage = element(previewPane, "div", { part: "explorer.stage" });
-  const status = element(root2, "output", { part: "explorer.status" });
-  let access;
-  let tree;
-  let query;
-  let mounted;
-  let previewRun;
-  let destroyed = false;
-  const say = (message, state = void 0) => {
-    status.textContent = message;
-    setState(status, state === void 0 ? [] : [state]);
-  };
-  const placeholder = (message) => {
-    stage.replaceChildren();
-    element(stage, "p", { part: "explorer.placeholder", text: message });
-  };
-  const action = (label, title, run) => {
-    const node = element(toolbar, "button", {
-      part: "explorer.action",
-      text: label
-    });
-    node.type = "button";
-    node.title = title;
-    node.addEventListener("click", run);
-    return node;
-  };
-  if (options.openFolder !== void 0) {
-    action("Open folder\u2026", "Grant access to a folder and browse it", () => {
-      void (async () => {
-        try {
-          const next = await options.openFolder?.();
-          if (next !== void 0)
-            await explorer.setAccess(next);
-        } catch (error) {
-          say(`Could not open the folder: ${describe3(error)}`, "error");
-        }
-      })();
-    });
-  }
-  if (options.openFile !== void 0) {
-    action("Open file\u2026", "Open a single file for preview", () => {
-      void (async () => {
-        try {
-          const picked = await options.openFile?.();
-          if (picked === void 0)
-            return;
-          await explorer.setAccess(picked.access);
-          await activate(picked.entry);
-        } catch (error) {
-          say(`Could not open the file: ${describe3(error)}`, "error");
-        }
-      })();
-    });
-  }
-  const registerFileTypes = options.registerFileTypes;
-  if (registerFileTypes !== void 0) {
-    action("Set as default app\u2026", "Register this app for the file types it can preview", () => {
-      void (async () => {
-        try {
-          say(await registerFileTypes());
-        } catch (error) {
-          say(`Could not register file types: ${describe3(error)}`, "error");
-        }
-      })();
-    });
-  }
-  const search = createSearchField(document2, {
-    label: "Filter files",
-    placeholder: "Filter",
-    onChange(state) {
-      query = state.query === "" ? void 0 : state.compiled;
-      tree?.applyFilter();
-    }
-  });
-  sidebar.append(search.root);
-  async function unmountPrevious() {
-    previewRun?.abort();
-    previewRun = void 0;
-    if (mounted === void 0)
-      return;
-    const previous = mounted;
-    mounted = void 0;
-    await previous.unmount();
-    previewHeader.hidden = true;
-    breadcrumb.textContent = "";
-    viewPicker.replaceChildren();
-  }
-  viewPicker.addEventListener("change", () => {
-    const current = mounted;
-    if (current === void 0)
-      return;
-    const selected = viewPicker.value;
-    say(`Opening ${breadcrumb.textContent ?? "view"}\u2026`, "loading");
-    void current.show(selected).then(() => {
-      if (mounted === current)
-        say(`${breadcrumb.textContent ?? ""} \xB7 ${selected}`);
-    }).catch((error) => {
-      if (mounted === current)
-        say(`Could not change view: ${describe3(error)}`, "error");
-    });
-  });
-  async function preview(entry) {
-    if (access === void 0)
-      return;
-    await unmountPrevious();
-    stage.replaceChildren();
-    if (entry.size !== void 0 && entry.size > maximumBytes) {
-      placeholder(`${entry.name} is ${formatBytes2(entry.size)}, over the ${formatBytes2(maximumBytes)} preview limit.`);
-      say(`${entry.name} \u2014 too large`, "error");
-      return;
-    }
-    const run = new AbortController();
-    previewRun = run;
-    say(`Opening ${entry.name}\u2026`, "loading");
-    try {
-      const bytes = await access.read(entry.id, maximumBytes, run.signal);
-      if (run.signal.aborted)
-        return;
-      const handle = await options.preview.open(stage, entry, bytes, run.signal);
-      if (run.signal.aborted) {
-        await handle?.unmount();
-        return;
-      }
-      if (handle === void 0) {
-        placeholder(`Nothing could render \u201C${entry.name}\u201D. The host publishes no codec for it and no built-in text or hex viewer was configured.`);
-        say(`${entry.name} \u2014 no viewer`);
-        return;
-      }
-      mounted = handle;
-      breadcrumb.textContent = safeViewerText(entry.name, 300);
-      viewPicker.replaceChildren(...handle.views.map((view) => {
-        const option = document2.createElement("option");
-        option.value = view.id;
-        option.textContent = view.label;
-        return option;
-      }));
-      viewPicker.value = handle.activeView;
-      viewPicker.hidden = handle.views.length <= 1;
-      previewHeader.hidden = false;
-      say(`${entry.name} \xB7 ${formatBytes2(bytes.length)}`);
-    } catch (error) {
-      if (run.signal.aborted)
-        return;
-      placeholder(`Could not preview ${entry.name}: ${describe3(error)}`);
-      say(`${entry.name} \u2014 failed`, "error");
-    } finally {
-      if (previewRun === run)
-        previewRun = void 0;
-    }
-  }
-  async function buildTree() {
-    tree?.destroy();
-    if (access === void 0)
-      return;
-    const current = access;
-    tree = createFileTree(document2, {
-      label: current.label,
-      async loadChildren(node, signal) {
-        const entries = await current.list(node?.id, signal);
-        return [...entries].sort((a, b) => a.directory === b.directory ? a.name.localeCompare(b.name) : a.directory ? -1 : 1).map((entry) => ({
-          id: entry.id,
-          label: entry.name,
-          hasChildren: entry.directory,
-          // No arrow here: the tree draws its own twisty for `hasChildren`, and a second
-          // chevron in the icon slot reads as two arrows on every folder.
-          icon: entry.directory ? "\u{1F5C0}" : supported.has(extensionOf(entry.name)) ? "\u25C6" : "\xB7",
-          ...entry.size === void 0 || entry.directory ? {} : { badge: formatBytes2(entry.size), size: entry.size },
-          kind: entry.directory ? "directory" : extensionOf(entry.name)
-        }));
-      },
-      onActivate(node) {
-        if (node.kind === "directory")
-          return;
-        void activate(nodeToEntry(node));
-      },
-      matches(node) {
-        return query === void 0 ? true : matches(node.label, query);
-      }
-    });
-    sidebar.append(tree.root);
-    await tree.refresh();
-  }
-  const nodeToEntry = (node) => ({
-    id: node.id,
-    name: node.label,
-    directory: node.kind === "directory",
-    ...node.size === void 0 ? {} : { size: node.size }
-  });
-  const activate = async (entry) => {
-    if (options.onOpen !== void 0)
-      options.onOpen(entry);
-    else
-      await preview(entry);
-  };
-  if (options.acceptDrop !== void 0) {
-    const dropZone = options.dropTarget ?? (options.onOpen === void 0 ? previewPane : root2);
-    setPart(previewPane, "explorer.preview");
-    const stop = (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-    };
-    dropZone.addEventListener("dragover", (event) => {
-      stop(event);
-      if (event.dataTransfer !== null)
-        event.dataTransfer.dropEffect = "copy";
-      setState(dropZone, ["drop-target"]);
-    });
-    dropZone.addEventListener("dragleave", (event) => {
-      stop(event);
-      setState(dropZone, []);
-    });
-    dropZone.addEventListener("drop", (event) => {
-      stop(event);
-      setState(dropZone, []);
-      const transfer = event.dataTransfer;
-      if (transfer === null)
-        return;
-      void (async () => {
-        try {
-          say("Reading dropped item\u2026", "loading");
-          const result = await options.acceptDrop?.(transfer);
-          if (result === void 0) {
-            say("The dropped item could not be read.", "error");
-            return;
-          }
-          if (result.access !== void 0)
-            await explorer.setAccess(result.access);
-          if (result.entry !== void 0)
-            await activate(result.entry);
-          else
-            say("Folder opened. Pick a file in the tree.");
-        } catch (error) {
-          say(`Drop failed: ${describe3(error)}`, "error");
-        }
-      })();
-    });
-  }
-  placeholder(options.openFolder === void 0 ? "Drop a file here to preview it." : "Open a folder, or drop a file here to preview it.");
-  say("Ready");
-  const explorer = {
-    root: root2,
-    async setAccess(next) {
-      access = next;
-      await buildTree();
-      say("");
-    },
-    async open(entry) {
-      if (access === void 0)
-        throw new TypeError("no file access is configured");
-      await preview(entry);
-    },
-    destroy() {
-      if (destroyed)
-        return;
-      destroyed = true;
-      void unmountPrevious();
-      tree?.destroy();
-      search.destroy();
-      root2.remove();
-    }
-  };
-  return explorer;
-}
-function describe3(error) {
-  return error instanceof Error ? error.message : String(error);
-}
 
 // packages/ui/dist/workbench/index.js
 function createWorkbench(document2, options) {
@@ -45596,8 +44758,8 @@ var EndpointImpl = class {
           if (typeof holder !== "object" || holder === null || !Object.hasOwn(holder, ref.key))
             return void 0;
           const value2 = holder[ref.key];
-          const matches3 = expect === "signal" ? isAbortSignal(value2) : typeof value2 === "function";
-          if (!matches3 && value2 !== void 0)
+          const matches2 = expect === "signal" ? isAbortSignal(value2) : typeof value2 === "function";
+          if (!matches2 && value2 !== void 0)
             return void 0;
           args[ref.arg] = Object.fromEntries(Object.entries(holder).filter(([key]) => key !== ref.key));
           return value2;
@@ -47528,215 +46690,6 @@ function createBridge(options) {
   };
 }
 
-// apps/modkit-vscode/src/settings-view.ts
-var CONTRACT_LABELS = Object.freeze({
-  "org.modkitx/codec-contribution": "codec",
-  "org.modkitx/viewer-contribution": "viewer",
-  "org.modkitx/editor-contribution": "editor",
-  "org.modkitx/service-provider-contribution": "service provider",
-  "org.modkitx/contract-definition": "contract definition",
-  "org.modkitx/trait-definition": "trait definition"
-});
-function createVsCodeSettingsView(document2, options) {
-  const root2 = document2.createElement("div");
-  root2.className = "vscode-host-panel";
-  root2.dataset["surface"] = "settings";
-  let view;
-  let busy = false;
-  const say = (message) => {
-    options.onStatus(message);
-  };
-  const send = (request, what) => {
-    if (busy) return;
-    busy = true;
-    draw();
-    void (async () => {
-      try {
-        const answer = await options.request(request);
-        say(typeof answer.message === "string" ? answer.message : `${what}: done.`);
-        if (answer.view !== void 0) view = answer.view;
-      } catch (error) {
-        say(`${what} failed: ${error instanceof Error ? error.message : String(error)}`);
-      } finally {
-        busy = false;
-        draw();
-      }
-    })();
-  };
-  function draw() {
-    root2.replaceChildren();
-    const current = view;
-    if (current === void 0) {
-      element(root2, "p", { part: "settings.description", text: "Reading settings\u2026" });
-      return;
-    }
-    element(root2, "h2", { text: "Extensions & codecs" });
-    element(root2, "p", {
-      part: "settings.description",
-      text: `Switches here write modkit.extensions and modkit.disabledContributions into your ${current.scope} settings. VS Code\u2019s own Settings UI edits the same two keys.`
-    });
-    element(root2, "p", {
-      part: "settings.description",
-      text: "This extension host composes once when it activates, so a change takes effect when the window reloads. Rows whose setting and running host disagree are marked below."
-    });
-    if (!current.writable) {
-      const note = element(root2, "p", {
-        part: "settings.description",
-        text: "This window cannot write configuration, so no switches are drawn."
-      });
-      setState(note, ["error"]);
-    }
-    element(root2, "h2", { text: "Connected folders" });
-    if (current.writable) {
-      const actions = element(root2, "div", { part: "settings.adder" });
-      const add = element(actions, "button", {
-        part: "settings.add",
-        text: "Add extension folder\u2026"
-      });
-      add.type = "button";
-      add.dataset["action"] = "add-folder";
-      add.disabled = busy;
-      add.addEventListener("click", () => {
-        send({ op: "add-extension-folder" }, "Adding a folder");
-      });
-    }
-    const configured = element(root2, "div", { part: "settings.list" });
-    if (current.configuredExtensions.length === 0) {
-      element(configured, "p", {
-        part: "settings.description",
-        text: "modkit.extensions is empty. Everything loaded ships with this build."
-      });
-    }
-    for (const entry of current.configuredExtensions) {
-      const item = element(configured, "div", { part: "settings.extension" });
-      if (entry.state === "failed") setState(item, ["error"]);
-      if (current.writable) {
-        const toggle = element(item, "input", { part: "settings.toggle" });
-        toggle.type = "checkbox";
-        toggle.checked = entry.enabled;
-        toggle.disabled = busy;
-        toggle.dataset["extensionIndex"] = String(entry.index);
-        toggle.setAttribute("aria-label", `Enable ${entry.id ?? entry.path}`);
-        toggle.addEventListener("change", () => {
-          send(
-            { op: "set-extension", index: entry.index, enabled: toggle.checked },
-            `${toggle.checked ? "Enabling" : "Disabling"} ${entry.id ?? entry.path}`
-          );
-        });
-      }
-      const text = element(item, "div", { part: "settings.extension-text" });
-      element(text, "div", {
-        part: "settings.label",
-        text: safeViewerText(entry.id ?? entry.path, 200)
-      });
-      element(text, "div", { part: "settings.description", text: safeViewerText(entry.path, 400) });
-      element(text, "div", {
-        part: "settings.description",
-        // The loader's own words for a refusal; a paraphrase would send the user to the wrong bug.
-        text: entry.state === "loaded" ? "loaded" : entry.state === "disabled" ? "switched off \u2014 this folder is not offered to the loader" : entry.state === "failed" ? `not loaded \u2014 ${entry.code ?? ""}: ${entry.message ?? ""}` : "enabled, but the running host did not report it under this id"
-      });
-      if (current.writable) {
-        const remove = element(item, "button", {
-          part: "settings.remove",
-          text: "Remove"
-        });
-        remove.type = "button";
-        remove.disabled = busy;
-        remove.addEventListener("click", () => {
-          send({ op: "remove-extension", index: entry.index }, `Removing ${entry.path}`);
-        });
-      }
-    }
-    if (current.failures.length > 0 || current.problems.length > 0) {
-      element(root2, "h2", { text: "Not loaded" });
-      const failed = element(root2, "ul", { part: "settings.list" });
-      for (const failure of current.failures) {
-        element(failed, "li", {
-          text: `${failure.root} \u2014 ${failure.code}: ${failure.message}`
-        });
-      }
-      for (const problem of current.problems) element(failed, "li", { text: problem });
-    }
-    element(root2, "h2", { text: "Bundled with this build" });
-    const bundled = element(root2, "ul", { part: "settings.list" });
-    for (const coordinate of current.bundled) element(bundled, "li", { text: coordinate });
-    if (current.bundled.length === 0) {
-      element(bundled, "li", { text: "none \u2014 every file opens with the text/hex fallback" });
-    }
-    const switchedOff = new Set(current.disabledContributions);
-    const pending = current.contributions.filter(
-      (row) => row.id !== void 0 && switchedOff.has(row.id) !== row.disabled
-    ).length;
-    element(root2, "h2", {
-      text: `Codecs \u2014 ${current.contributions.length} contribution(s), ${switchedOff.size} off`
-    });
-    element(root2, "p", {
-      part: "settings.description",
-      text: "A contribution switched off stays listed and loses activation, so a file only it could read opens as raw bytes with the diagnostic x3.host/contribution-disabled." + (pending === 0 ? "" : ` ${pending} row(s) below are waiting for a window reload.`)
-    });
-    const owners = [...new Set(current.contributions.map((row) => row.extension))];
-    for (const owner of owners) {
-      const owned = current.contributions.filter((row) => row.extension === owner);
-      element(root2, "div", { part: "settings.label", text: owner });
-      const list = element(root2, "div", { part: "settings.list" });
-      for (const contribution of owned) {
-        const item = element(list, "div", { part: "settings.extension" });
-        const id = contribution.id;
-        const off = id !== void 0 && switchedOff.has(id);
-        if (off) setState(item, ["error"]);
-        if (id === void 0) {
-          element(item, "div", { part: "settings.description", text: "no id" });
-        } else if (current.writable) {
-          const toggle = element(item, "input", { part: "settings.toggle" });
-          toggle.type = "checkbox";
-          toggle.checked = !off;
-          toggle.disabled = busy;
-          toggle.dataset["contribution"] = id;
-          toggle.setAttribute("aria-label", `Enable ${id}`);
-          toggle.addEventListener("change", () => {
-            send(
-              { op: "set-contribution", id, enabled: toggle.checked },
-              `${toggle.checked ? "Enabling" : "Disabling"} ${id}`
-            );
-          });
-        } else {
-          element(item, "div", { part: "settings.description", text: off ? "off" : "on" });
-        }
-        const text = element(item, "div", { part: "settings.extension-text" });
-        element(text, "div", {
-          part: "settings.label",
-          text: safeViewerText(contribution.displayName, 200)
-        });
-        element(text, "div", {
-          part: "settings.description",
-          text: `${safeViewerText(id ?? contribution.path, 200)} \xB7 ` + (contribution.contract === void 0 ? "unreadable manifest" : CONTRACT_LABELS[contribution.contract] ?? contribution.contract)
-        });
-        element(text, "div", {
-          part: "settings.description",
-          text: id !== void 0 && off !== contribution.disabled ? off ? "switched off in settings \u2014 still running until the window reloads" : "switched on in settings \u2014 inactive until the window reloads" : contribution.disabled ? "switched off \u2014 the host will not activate it" : contribution.activationEligible ? `active \xB7 ${contribution.origin}` : `inventoried, not activatable \xB7 ${contribution.origin}`
-        });
-      }
-    }
-  }
-  setPart(root2, "settings.pane");
-  draw();
-  return {
-    root: root2,
-    setView(next) {
-      view = next;
-      draw();
-    },
-    async reload() {
-      try {
-        view = await options.request({ op: "settings" });
-      } catch (error) {
-        say(`Could not read settings: ${error instanceof Error ? error.message : String(error)}`);
-      }
-      draw();
-    }
-  };
-}
-
 // apps/modkit-vscode/src/editor-ports.ts
 var WEBVIEW_GRANT = Object.freeze({ snapshotId: "webview", permissions: [], sourceIds: [] });
 var REFUSAL_REASONS = Object.freeze({
@@ -48100,12 +47053,12 @@ var BoundedTextModel = class {
     return slice.text;
   }
   async search(pattern, signal) {
-    let matches3 = 0;
+    let matches2 = 0;
     for await (const range of this.source.search({ pattern }, signal)) {
       void range;
-      matches3 += 1;
+      matches2 += 1;
     }
-    return matches3;
+    return matches2;
   }
 };
 var boundedTextViewer = defineViewerModule({
@@ -48138,8 +47091,8 @@ var boundedTextViewer = defineViewerModule({
       setViewerText(status, pattern === "" ? "Enter a search term" : "Searching\u2026");
       if (pattern === "")
         return;
-      const matches3 = await model.search(pattern, scope.signal);
-      setViewerText(status, `${matches3} match${matches3 === 1 ? "" : "es"}`);
+      const matches2 = await model.search(pattern, scope.signal);
+      setViewerText(status, `${matches2} match${matches2 === 1 ? "" : "es"}`);
     };
     searchButton.addEventListener("click", runSearch);
     search.addEventListener("keydown", (event) => {
@@ -50483,7 +49436,7 @@ var VSCODE_PREVIEW_FALLBACK = Object.freeze({
 });
 
 // apps/modkit-vscode/src/webview.ts
-function describe4(error) {
+function describe2(error) {
   return error instanceof Error ? error.message : String(error);
 }
 function baseName(path) {
@@ -50501,7 +49454,7 @@ if (bootstrap === void 0 || acquire === void 0) {
 } else {
   void mount(root, bootstrap, acquire()).catch((error) => {
     const message = document.createElement("p");
-    message.textContent = `The Modkit workbench failed to start: ${describe4(error)}`;
+    message.textContent = `The Modkit workbench failed to start: ${describe2(error)}`;
     root.replaceChildren(message);
   });
 }
@@ -50522,11 +49475,7 @@ async function mount(mountPoint, snapshot, api) {
     host: { label: snapshot.webview.realmId, facilities: snapshot.webview.facilities }
   });
   mountPoint.replaceChildren(workbench.root);
-  const statusLine = document.createElement("output");
-  statusLine.className = "vscode-status";
-  workbench.root.querySelector('[data-mk-part="workbench.statusbar"]')?.append(statusLine);
   const say = (message) => {
-    setViewerText(statusLine, message, 400);
     bridge.emit({ op: "status", text: message });
   };
   const client = await connectSubjectRpc({
@@ -50652,7 +49601,7 @@ async function mount(mountPoint, snapshot, api) {
         openPorts.set(entry.id, ports);
         return ports;
       } catch (error) {
-        say(`${entry.name} is open read-only: ${describe4(error)}`);
+        say(`${entry.name} is open read-only: ${describe2(error)}`);
         return void 0;
       }
     }
@@ -50748,64 +49697,15 @@ async function mount(mountPoint, snapshot, api) {
     await editors.open(entry);
     return true;
   });
-  const explorer = createExplorer(document, {
-    preview,
-    // The desktop editor supplies its own commands; a second row of buttons would duplicate them.
-    showToolbar: false,
-    // The tree browses; the editor area owns what is open, so opening is delegated to it.
-    onOpen(entry) {
-      void editors.open(entry).catch((error) => say(describe4(error)));
-    }
-  });
-  const singlePane = explorer.root.querySelector('[data-mk-part="explorer.preview"]');
-  if (singlePane === null) throw new Error("explorer has no preview pane to replace");
-  singlePane.replaceWith(editors.root);
-  workbench.setSidebar(hostPanel(snapshot));
-  const settingsView = createVsCodeSettingsView(document, {
-    request: (request) => bridge.request(request),
-    onStatus: say
-  });
-  const activities = [
-    { id: "files", label: "Files", content: explorer.root },
-    { id: "settings", label: "Extensions", content: settingsView.root }
-  ];
-  const showActivity = (id) => {
-    const chosen = activities.find((item) => item.id === id) ?? activities[0];
-    if (chosen === void 0) return;
-    workbench.setMain(chosen.content);
-    for (const node of workbench.activitybar.querySelectorAll("[data-activity]")) {
-      const selected = node.getAttribute("data-activity") === chosen.id;
-      node.setAttribute("aria-selected", String(selected));
-      setState(node, selected ? ["selected"] : []);
-    }
-    if (chosen.id === "settings") void settingsView.reload();
-  };
-  for (const item of activities) {
-    const button = element(workbench.activitybar, "button", {
-      part: "settings.group",
-      text: item.label
-    });
-    button.type = "button";
-    button.dataset["activity"] = item.id;
-    button.setAttribute("role", "tab");
-    button.addEventListener("click", () => showActivity(item.id));
-  }
-  showActivity("files");
-  const showFiles = () => {
-    showActivity("files");
-  };
+  workbench.setMain(editors.root);
   const openPath = async (path, name) => {
-    showFiles();
     const entry = { id: path, name, directory: false };
     await editors.open(entry);
   };
   bridge.onEvent((event) => {
     switch (event.op) {
-      case "roots":
-        void explorer.setAccess(access).catch((error) => say(describe4(error)));
-        break;
       case "open":
-        void openPath(event.path, event.name).catch((error) => say(describe4(error)));
+        void openPath(event.path, event.name).catch((error) => say(describe2(error)));
         break;
       case "notice":
         say(event.text);
@@ -50814,48 +49714,7 @@ async function mount(mountPoint, snapshot, api) {
         break;
     }
   });
-  await explorer.setAccess(access);
-  say(
-    `${snapshot.extensions.bundled.length + snapshot.extensions.installed.length} extensions \xB7 ${snapshot.supportedExtensions.length} detectable types`
-  );
   if (snapshot.openPath !== void 0) {
     await openPath(snapshot.openPath, baseName(snapshot.openPath));
   }
-}
-function hostPanel(snapshot) {
-  const panel = document.createElement("div");
-  panel.className = "vscode-host-panel";
-  element(panel, "h2", { text: "Host" });
-  element(panel, "p", {
-    part: "settings.description",
-    text: `${snapshot.topologyId} \xB7 ${snapshot.extensionHost.realmId} \xB7 ${snapshot.diagnostics} inventory diagnostics`
-  });
-  const isolated = !snapshot.webview.facilities.includes("editor.host-native");
-  element(panel, "p", {
-    part: "settings.description",
-    text: isolated ? "This page holds no extension-host facility: it consumes subjects, it does not open them." : "This page was granted an extension-host facility, which it must never have."
-  });
-  element(panel, "h2", { text: "Extensions" });
-  const list = element(panel, "ul", { part: "settings.list" });
-  for (const coordinate of snapshot.extensions.bundled) {
-    element(list, "li", { text: `${coordinate} \xB7 bundled` });
-  }
-  for (const coordinate of snapshot.extensions.installed) {
-    element(list, "li", { text: `${coordinate} \xB7 installed` });
-  }
-  if (snapshot.extensions.bundled.length + snapshot.extensions.installed.length === 0) {
-    element(list, "li", { text: "none \u2014 every file will open with the text/hex fallback" });
-  }
-  if (snapshot.extensions.failures.length > 0 || snapshot.extensions.problems.length > 0) {
-    element(panel, "h2", { text: "Not loaded" });
-    const failed = element(panel, "ul", { part: "settings.list" });
-    for (const failure of snapshot.extensions.failures) {
-      element(failed, "li", { text: `${failure.root} \u2014 ${failure.code}: ${failure.message}` });
-    }
-    for (const problem of snapshot.extensions.problems) element(failed, "li", { text: problem });
-  }
-  element(panel, "h2", { text: "Facilities" });
-  const facilities = element(panel, "ul", { part: "settings.list" });
-  for (const facility of snapshot.webview.facilities) element(facilities, "li", { text: facility });
-  return panel;
 }

@@ -72,12 +72,12 @@
   "views": {
     "modkit": [
       {
-        "id": "modkit.assets",
-        "name": "Assets"
-      },
-      {
         "id": "modkit.extensions",
         "name": "Extensions"
+      },
+      {
+        "id": "modkit.host",
+        "name": "Host"
       }
     ]
   },

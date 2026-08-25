@@ -56166,6 +56166,14 @@ function serveVsCode(services, options, composed) {
         });
       }
     }
+    if (answer2.snapshot.state === "opened") {
+      options.onSubjectOpened?.({
+        path: (0, import_node_path5.resolve)(requested),
+        contributionId: answer2.snapshot.selected.contributionId,
+        variantId: answer2.snapshot.selected.variantId,
+        confidence: answer2.snapshot.selected.confidence
+      });
+    }
     if (answer2.snapshot.state !== "opened" || opened === void 0) return answer2;
     const sessionId = answer2.snapshot.sessionId;
     try {
@@ -56486,7 +56494,6 @@ function describeOpenTarget(uri) {
 }
 
 // apps/modkit-vscode/src/extension.ts
-var VIEW_TYPE = "modkit.workbench";
 var CUSTOM_EDITOR_TYPE = "modkit.genericAssetPreview";
 var ModkitCustomDocument = class {
   constructor(uri) {
@@ -56575,45 +56582,61 @@ ${node.detail}`;
     return [...loaded, ...broken];
   }
 };
-var AssetsView = class {
-  changed = new vscode.EventEmitter();
-  onDidChangeTreeData = this.changed.event;
-  refresh() {
-    this.changed.fire(void 0);
+var HostView = class {
+  constructor(host, topologyId) {
+    this.host = host;
+    this.topologyId = topologyId;
   }
-  getTreeItem(uri) {
-    const name = uri.path.split("/").filter(Boolean).at(-1) ?? uri.fsPath;
-    const directory = this.directories.has(uri.toString());
+  host;
+  topologyId;
+  getTreeItem(node) {
     const item = new vscode.TreeItem(
-      name,
-      directory ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
+      node.label,
+      node.children === void 0 || node.children.length === 0 ? vscode.TreeItemCollapsibleState.None : vscode.TreeItemCollapsibleState.Expanded
     );
-    item.resourceUri = uri;
-    if (!directory) {
-      item.command = { command: "modkit.openResource", title: "Open in Modkit", arguments: [uri] };
+    if (node.detail !== void 0) {
+      item.description = node.detail;
+      item.tooltip = `${node.label}
+${node.detail}`;
     }
+    if (node.icon !== void 0) item.iconPath = new vscode.ThemeIcon(node.icon);
     return item;
   }
-  /** Remembered from the last listing, because a `TreeItem` is built without its parent. */
-  directories = /* @__PURE__ */ new Set();
-  async getChildren(uri) {
-    if (uri === void 0) {
-      const roots = (vscode.workspace.workspaceFolders ?? []).map((folder) => folder.uri);
-      for (const root of roots) this.directories.add(root.toString());
-      return roots;
-    }
-    const entries = await vscode.workspace.fs.readDirectory(uri);
-    const children = [];
-    for (const [name, kind] of [...entries].sort(
-      (left, right) => left[1] === right[1] ? left[0].localeCompare(right[0]) : right[1] - left[1]
-    )) {
-      if (name === "node_modules" || name.startsWith(".")) continue;
-      const child = vscode.Uri.joinPath(uri, name);
-      if (kind === vscode.FileType.Directory) this.directories.add(child.toString());
-      else if (kind !== vscode.FileType.File) continue;
-      children.push(child);
-    }
-    return children;
+  getChildren(node) {
+    if (node !== void 0) return [...node.children ?? []];
+    const services = this.host.services;
+    const webviewFacilities = this.host.webview.profile.facilities;
+    const isolated = !webviewFacilities.includes("editor.host-native");
+    return [
+      {
+        label: "Host",
+        icon: "server-process",
+        children: [
+          { label: "topology", detail: this.topologyId },
+          { label: "extension host", detail: services.host.profile.realmId },
+          {
+            label: "codecs",
+            detail: `${services.workers.profile.realmId} (${services.executionProfiles.join("/")})`
+          },
+          { label: "webview", detail: this.host.webview.profile.realmId },
+          {
+            label: "inventory diagnostics",
+            detail: String(services.host.inventory.diagnostics.length)
+          },
+          {
+            label: "isolation",
+            detail: isolated ? "the page holds no extension-host facility" : "the page was granted an extension-host facility, which it must never have",
+            icon: isolated ? "shield" : "warning"
+          },
+          { label: "detectable types", detail: String(this.host.supportedExtensions.length) }
+        ]
+      },
+      {
+        label: "Facilities",
+        icon: "list-unordered",
+        children: webviewFacilities.map((facility) => ({ label: facility }))
+      }
+    ];
   }
 };
 async function activate(context) {
@@ -56743,7 +56766,8 @@ async function activate(context) {
         onDocumentSaveRequested: lifecycle.onSaveRequested
       },
       onDiagnostic: (diagnostic2) => log(`[subject-rpc] ${diagnostic2.code}: ${diagnostic2.message}`),
-      onSubjectDiagnostic: publishDiagnostic
+      onSubjectDiagnostic: publishDiagnostic,
+      onSubjectOpened: rememberSubject
     });
     live.add(served);
     webview.html = panelHtml({
@@ -56760,26 +56784,6 @@ async function activate(context) {
     // Without this the webview may only load from the extension root; the bundle lives deeper.
     localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, "dist-app")]
   });
-  let workbench;
-  const openWorkbench = (openPath) => {
-    if (workbench !== void 0) {
-      workbench.panel.reveal(vscode.ViewColumn.Active);
-      workbench.served.publishRoots();
-      if (openPath !== void 0) workbench.served.open(openPath);
-      return;
-    }
-    const panel = vscode.window.createWebviewPanel(VIEW_TYPE, "Modkit", vscode.ViewColumn.Active, {
-      ...webviewOptions(),
-      retainContextWhenHidden: true
-    });
-    const served = attach(panel.webview, openPath);
-    workbench = { panel, served };
-    panel.onDidDispose(() => {
-      workbench = void 0;
-      live.delete(served);
-      void served.close("the workbench panel was closed");
-    });
-  };
   const openResource = (uri) => {
     const target = describeOpenTarget(uri);
     if (target.state === "refused") {
@@ -56788,11 +56792,17 @@ async function activate(context) {
       return;
     }
     granted.add((0, import_node_path6.dirname)(target.path));
-    openWorkbench(target.path);
+    void vscode.commands.executeCommand("vscode.openWith", uri, CUSTOM_EDITOR_TYPE);
   };
   context.subscriptions.push(
+    /*
+     * Focuses the native view container rather than opening a panel of its own. What this command
+     * used to raise was a webview listing the realm, its extensions and its facilities inside the
+     * editor area — all three are native tree views now, and an editor tab is not where a window
+     * describes itself.
+     */
     vscode.commands.registerCommand("modkit.showHostProfile", () => {
-      openWorkbench();
+      void vscode.commands.executeCommand("workbench.view.extension.modkit");
     }),
     vscode.commands.registerCommand("modkit.openResource", (uri) => {
       if (uri instanceof vscode.Uri) openResource(uri);
@@ -56891,7 +56901,24 @@ async function activate(context) {
         }
       });
       document.state.attach(served);
+      const followActive = () => {
+        const key3 = (0, import_node_path6.resolve)(target.path);
+        if (panel.active) {
+          activeSubject = key3;
+          showSubjectStatus(target.path);
+        } else if (activeSubject === key3) {
+          activeSubject = void 0;
+          showSubjectStatus(void 0);
+        }
+      };
+      followActive();
+      panel.onDidChangeViewState(followActive);
       panel.onDidDispose(() => {
+        if (activeSubject === (0, import_node_path6.resolve)(target.path)) {
+          activeSubject = void 0;
+          showSubjectStatus(void 0);
+        }
+        subjectFacts.delete((0, import_node_path6.resolve)(target.path));
         document.state.detach(served);
         live.delete(served);
         forgetDiagnostics(target.path);
@@ -56933,12 +56960,13 @@ async function activate(context) {
       supportsMultipleEditorsPerDocument: false
     })
   );
-  const assets = new AssetsView();
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider("modkit.assets", assets),
+    vscode.window.registerTreeDataProvider(
+      "modkit.host",
+      new HostView(host, host.services.host.topology.topologyId)
+    ),
     vscode.window.registerTreeDataProvider("modkit.extensions", new ExtensionsView(host)),
     vscode.workspace.onDidChangeWorkspaceFolders(() => {
-      assets.refresh();
       for (const served of live) {
         served.publishRoots();
         served.notice("The workspace folders changed, so the file tree was reloaded.");
@@ -56946,11 +56974,50 @@ async function activate(context) {
     })
   );
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-  status.text = `$(package) Modkit ${host.extensions.bundled.length + host.extensions.installed.length}`;
-  status.tooltip = `${host.services.host.profile.realmId} \xB7 ${host.supportedExtensions.length} detectable types \xB7 reads up to ${VSCODE_MAXIMUM_SUBJECT_BYTES / (1024 * 1024)} MiB per file`;
-  status.command = "modkit.showHostProfile";
-  status.show();
+  status.command = "modkit.explainResolution";
   context.subscriptions.push(status);
+  const subjectFacts = /* @__PURE__ */ new Map();
+  const describeSubject = (path) => {
+    const relative6 = vscode.workspace.asRelativePath(vscode.Uri.file(path), false);
+    return (0, import_node_path6.isAbsolute)(relative6) ? (0, import_node_path6.basename)(relative6) : relative6;
+  };
+  const showSubjectStatus = (path) => {
+    if (path === void 0) {
+      status.hide();
+      return;
+    }
+    const facts = subjectFacts.get((0, import_node_path6.resolve)(path));
+    const size = facts?.bytes === void 0 ? void 0 : facts.bytes < 1024 ? `${facts.bytes} B` : `${(facts.bytes / 1024).toFixed(1)} KiB`;
+    status.text = `$(file-binary) ${describeSubject(path)}`;
+    status.tooltip = [
+      describeSubject(path),
+      facts === void 0 ? "not opened by a codec" : `${facts.contributionId}/${facts.variantId}`,
+      size,
+      `reads up to ${VSCODE_MAXIMUM_SUBJECT_BYTES / (1024 * 1024)} MiB per file`
+    ].filter((line) => line !== void 0).join("\n");
+    status.show();
+  };
+  let activeSubject;
+  const rememberSubject = (opened) => {
+    const key3 = (0, import_node_path6.resolve)(opened.path);
+    void vscode.workspace.fs.stat(vscode.Uri.file(key3)).then(
+      (stat4) => {
+        subjectFacts.set(key3, {
+          contributionId: opened.contributionId,
+          variantId: opened.variantId,
+          bytes: stat4.size
+        });
+        if (activeSubject === key3) showSubjectStatus(key3);
+      },
+      () => {
+        subjectFacts.set(key3, {
+          contributionId: opened.contributionId,
+          variantId: opened.variantId
+        });
+        if (activeSubject === key3) showSubjectStatus(key3);
+      }
+    );
+  };
   context.subscriptions.push({
     dispose: () => {
       for (const served of live) void served.close("the extension was deactivated");

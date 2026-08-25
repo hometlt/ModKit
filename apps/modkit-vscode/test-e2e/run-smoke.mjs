@@ -147,6 +147,17 @@ async function main() {
   const build = await run('pnpm', ['--filter', '@modkitx-x3/modkit-vscode', 'ext:build'])
   console.log(`smoke: build exited ${build.code}`)
 
+  /*
+   * And then: does the committed bundle match what was just built?
+   *
+   * The smoke runs against `extensionDevelopmentPath`, which loads `dist-app/` — so without this
+   * the receipt would attest to whatever happened to be on disk. It is a step here rather than a
+   * member of `pnpm check` because bundling the extension is slow, and it belongs to this run in
+   * particular: the thing the receipt claims to have tested is the thing the repository ships.
+   */
+  const distCheck = await run('pnpm', ['--filter', '@modkitx-x3/modkit-vscode', 'dist-app:check'])
+  console.log(`smoke: dist-app:check exited ${distCheck.code}`)
+
   // ------------------------------------------------------------------ 2. stage the fixtures
   const scratch = mkdtempSync(join(tmpdir(), 'x3-vscode-smoke-'))
   const workspace = join(scratch, 'workspace')
@@ -292,6 +303,12 @@ async function main() {
       command: 'pnpm --filter @modkitx-x3/modkit-vscode ext:build',
       exitCode: build.code,
       output: redact(tail(build.output, 8)),
+      distAppCheck: {
+        command: 'pnpm --filter @modkitx-x3/modkit-vscode dist-app:check',
+        exitCode: distCheck.code,
+        matchesCommittedBundle: distCheck.code === 0,
+        output: redact(tail(distCheck.output, 4)),
+      },
     },
     webviewChannel: redactDeep(suite?.webviewChannel ?? null, redact),
     scenarios: redactDeep(scenarios, redact).map(entry => ({

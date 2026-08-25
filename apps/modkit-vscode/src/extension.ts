@@ -13,7 +13,7 @@
  * webview is not an extension host) stays true in the running product and not only in the
  * topology.
  */
-import { dirname, join, resolve } from 'node:path'
+import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import * as vscode from 'vscode'
 
@@ -33,7 +33,6 @@ import {
 import { pageHtml, refusalHtml, type WebviewLike } from './page.js'
 import { describeOpenTarget } from './uri.js'
 
-const VIEW_TYPE = 'modkit.workbench'
 const CUSTOM_EDITOR_TYPE = 'modkit.genericAssetPreview'
 
 class ModkitCustomDocument implements vscode.CustomDocument {
@@ -152,49 +151,85 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode> {
   }
 }
 
-class AssetsView implements vscode.TreeDataProvider<vscode.Uri> {
-  private readonly changed = new vscode.EventEmitter<vscode.Uri | undefined>()
-  readonly onDidChangeTreeData = this.changed.event
+/**
+ * The realm rail, as a native tree.
+ *
+ * Exactly the facts the webview used to draw down the side of its own panel — the topology and
+ * realm this window composed, what loaded from where, and the facilities this page holds. None of
+ * it was ever editor content: it describes the window, it is true whatever file is open, and a
+ * sidebar is where VS Code puts that kind of thing. Drawing it inside the editor area meant the
+ * custom editor was showing something other than the subject, which is what the owner's screenshot
+ * caught.
+ */
+interface HostNode {
+  readonly label: string
+  readonly detail?: string
+  readonly icon?: string
+  readonly children?: readonly HostNode[]
+}
 
-  refresh(): void {
-    this.changed.fire(undefined)
-  }
+class HostView implements vscode.TreeDataProvider<HostNode> {
+  constructor(
+    private readonly host: VsCodeSubjectHost,
+    private readonly topologyId: string,
+  ) {}
 
-  getTreeItem(uri: vscode.Uri): vscode.TreeItem {
-    const name = uri.path.split('/').filter(Boolean).at(-1) ?? uri.fsPath
-    const directory = this.directories.has(uri.toString())
+  getTreeItem(node: HostNode): vscode.TreeItem {
     const item = new vscode.TreeItem(
-      name,
-      directory ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
+      node.label,
+      node.children === undefined || node.children.length === 0
+        ? vscode.TreeItemCollapsibleState.None
+        : vscode.TreeItemCollapsibleState.Expanded,
     )
-    item.resourceUri = uri
-    if (!directory) {
-      item.command = { command: 'modkit.openResource', title: 'Open in Modkit', arguments: [uri] }
+    if (node.detail !== undefined) {
+      item.description = node.detail
+      item.tooltip = `${node.label}\n${node.detail}`
     }
+    if (node.icon !== undefined) item.iconPath = new vscode.ThemeIcon(node.icon)
     return item
   }
 
-  /** Remembered from the last listing, because a `TreeItem` is built without its parent. */
-  private readonly directories = new Set<string>()
-
-  async getChildren(uri?: vscode.Uri): Promise<vscode.Uri[]> {
-    if (uri === undefined) {
-      const roots = (vscode.workspace.workspaceFolders ?? []).map(folder => folder.uri)
-      for (const root of roots) this.directories.add(root.toString())
-      return roots
-    }
-    const entries = await vscode.workspace.fs.readDirectory(uri)
-    const children: vscode.Uri[] = []
-    for (const [name, kind] of [...entries].sort((left, right) =>
-      left[1] === right[1] ? left[0].localeCompare(right[0]) : right[1] - left[1],
-    )) {
-      if (name === 'node_modules' || name.startsWith('.')) continue
-      const child = vscode.Uri.joinPath(uri, name)
-      if (kind === vscode.FileType.Directory) this.directories.add(child.toString())
-      else if (kind !== vscode.FileType.File) continue
-      children.push(child)
-    }
-    return children
+  getChildren(node?: HostNode): HostNode[] {
+    if (node !== undefined) return [...(node.children ?? [])]
+    const services = this.host.services
+    const webviewFacilities = this.host.webview.profile.facilities
+    /*
+     * The isolation claim, drawn from the very object the running product hands the page — so this
+     * row is a statement about this window, not a repetition of what the topology intends.
+     */
+    const isolated = !webviewFacilities.includes('editor.host-native')
+    return [
+      {
+        label: 'Host',
+        icon: 'server-process',
+        children: [
+          { label: 'topology', detail: this.topologyId },
+          { label: 'extension host', detail: services.host.profile.realmId },
+          {
+            label: 'codecs',
+            detail: `${services.workers.profile.realmId} (${services.executionProfiles.join('/')})`,
+          },
+          { label: 'webview', detail: this.host.webview.profile.realmId },
+          {
+            label: 'inventory diagnostics',
+            detail: String(services.host.inventory.diagnostics.length),
+          },
+          {
+            label: 'isolation',
+            detail: isolated
+              ? 'the page holds no extension-host facility'
+              : 'the page was granted an extension-host facility, which it must never have',
+            icon: isolated ? 'shield' : 'warning',
+          },
+          { label: 'detectable types', detail: String(this.host.supportedExtensions.length) },
+        ],
+      },
+      {
+        label: 'Facilities',
+        icon: 'list-unordered',
+        children: webviewFacilities.map(facility => ({ label: facility })),
+      },
+    ]
   }
 }
 
@@ -410,6 +445,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           }),
       onDiagnostic: diagnostic => log(`[subject-rpc] ${diagnostic.code}: ${diagnostic.message}`),
       onSubjectDiagnostic: publishDiagnostic,
+      onSubjectOpened: rememberSubject,
     })
     live.add(served)
     // The listener is attached first: the page opens the endpoint the moment its bundle runs.
@@ -429,32 +465,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'dist-app')],
   })
 
-  let workbench: { panel: vscode.WebviewPanel; served: VsCodeServed } | undefined
-
-  const openWorkbench = (openPath?: string): void => {
-    if (workbench !== undefined) {
-      workbench.panel.reveal(vscode.ViewColumn.Active)
-      // The page is already live here, so both travel as events; a panel that is being created
-      // carries the path in its bootstrap instead, because a message posted before the bundle
-      // runs is dropped. Roots go first: opening a file outside the workspace widened them.
-      workbench.served.publishRoots()
-      if (openPath !== undefined) workbench.served.open(openPath)
-      return
-    }
-    const panel = vscode.window.createWebviewPanel(VIEW_TYPE, 'Modkit', vscode.ViewColumn.Active, {
-      ...webviewOptions(),
-      retainContextWhenHidden: true,
-    })
-    const served = attach(panel.webview, openPath)
-    workbench = { panel, served }
-    panel.onDidDispose(() => {
-      workbench = undefined
-      live.delete(served)
-      void served.close('the workbench panel was closed')
-    })
-  }
-
-  /** Grant the file's directory and route it to the workbench, or say why it cannot be opened. */
+  /** Grant the file's directory and open it in the custom editor, or say why it cannot be opened. */
   const openResource = (uri: vscode.Uri): void => {
     const target = describeOpenTarget(uri)
     if (target.state === 'refused') {
@@ -463,13 +474,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       return
     }
     granted.add(dirname(target.path))
-    openWorkbench(target.path)
+    // The custom editor is the one place a subject is shown; there is no second panel any more.
+    void vscode.commands.executeCommand('vscode.openWith', uri, CUSTOM_EDITOR_TYPE)
   }
 
   // ---------------------------------------------------------------- commands
   context.subscriptions.push(
+    /*
+     * Focuses the native view container rather than opening a panel of its own. What this command
+     * used to raise was a webview listing the realm, its extensions and its facilities inside the
+     * editor area — all three are native tree views now, and an editor tab is not where a window
+     * describes itself.
+     */
     vscode.commands.registerCommand('modkit.showHostProfile', () => {
-      openWorkbench()
+      void vscode.commands.executeCommand('workbench.view.extension.modkit')
     }),
 
     vscode.commands.registerCommand('modkit.openResource', (uri: unknown) => {
@@ -584,7 +602,30 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         },
       })
       document.state.attach(served)
+
+      /*
+       * The status bar follows the active editor, not the open one. Several Modkit editors can be
+       * open at once, and only the one in front is what the bar is describing.
+       */
+      const followActive = (): void => {
+        const key = resolve(target.path)
+        if (panel.active) {
+          activeSubject = key
+          showSubjectStatus(target.path)
+        } else if (activeSubject === key) {
+          activeSubject = undefined
+          showSubjectStatus(undefined)
+        }
+      }
+      followActive()
+      panel.onDidChangeViewState(followActive)
+
       panel.onDidDispose(() => {
+        if (activeSubject === resolve(target.path)) {
+          activeSubject = undefined
+          showSubjectStatus(undefined)
+        }
+        subjectFacts.delete(resolve(target.path))
         document.state.detach(served)
         live.delete(served)
         forgetDiagnostics(target.path)
@@ -638,12 +679,26 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   )
 
   // ---------------------------------------------------------------- views
-  const assets = new AssetsView()
+  /*
+   * Two native views and no file tree.
+   *
+   * There used to be a third, `modkit.assets`, which listed the workspace — a second file explorer
+   * beside the one VS Code ships, offering the same folders with fewer features. Browsing workspace
+   * files is the native Explorer's job and always was.
+   *
+   * Entries *inside* a container (BIG, CASC, MPQ) are the case the native Explorer genuinely cannot
+   * serve today, and the answer for them is not a bespoke tree either: it is a `FileSystemProvider`
+   * over the host's `openNestedSubject` route, so the real Explorer shows archive members. That is
+   * blocks 13–14 — see docs/MK3/requests/REQUEST_VSCODE_NATIVE_SHELL_2026-08-25.md §3. Until then
+   * the archive stage in the editor is where container entries are listed.
+   */
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider('modkit.assets', assets),
+    vscode.window.registerTreeDataProvider(
+      'modkit.host',
+      new HostView(host, host.services.host.topology.topologyId),
+    ),
     vscode.window.registerTreeDataProvider('modkit.extensions', new ExtensionsView(host)),
     vscode.workspace.onDidChangeWorkspaceFolders(() => {
-      assets.refresh()
       // The grant widened or narrowed; every open page reloads its tree and is told why.
       for (const served of live) {
         served.publishRoots()
@@ -653,15 +708,90 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   )
 
   // ---------------------------------------------------------------- status bar
+  /*
+   * The subject's own facts, on the editor's status bar.
+   *
+   * This replaces a footer the webview drew inside itself, which — besides being chrome in a
+   * surface that should hold only the working area — printed the subject's *absolute* path. A
+   * status bar is where an editor says what the active thing is, and `asRelativePath` is how it
+   * says it without handing out the shape of this machine.
+   *
+   * Shown only while a Modkit editor is the active one: a status bar entry that outlives its
+   * subject is describing a file the user is no longer looking at.
+   */
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100)
-  status.text = `$(package) Modkit ${host.extensions.bundled.length + host.extensions.installed.length}`
-  status.tooltip =
-    `${host.services.host.profile.realmId} · ` +
-    `${host.supportedExtensions.length} detectable types · ` +
-    `reads up to ${VSCODE_MAXIMUM_SUBJECT_BYTES / (1024 * 1024)} MiB per file`
-  status.command = 'modkit.showHostProfile'
-  status.show()
+  status.command = 'modkit.explainResolution'
   context.subscriptions.push(status)
+
+  /** Facts per opened subject, kept so activating a tab again can restate them. */
+  const subjectFacts = new Map<
+    string,
+    { readonly contributionId: string; readonly variantId: string; readonly bytes?: number }
+  >()
+
+  /**
+   * How this window names a file out loud.
+   *
+   * `asRelativePath` returns the path unchanged when it is outside every workspace folder, and a
+   * single file opened by name usually is — so the absolute answer is refused and the basename
+   * used instead. A status bar has no room for a full path anyway, and no need for one.
+   */
+  const describeSubject = (path: string): string => {
+    const relative = vscode.workspace.asRelativePath(vscode.Uri.file(path), false)
+    return isAbsolute(relative) ? basename(relative) : relative
+  }
+
+  const showSubjectStatus = (path: string | undefined): void => {
+    if (path === undefined) {
+      status.hide()
+      return
+    }
+    const facts = subjectFacts.get(resolve(path))
+    const size =
+      facts?.bytes === undefined
+        ? undefined
+        : facts.bytes < 1024
+          ? `${facts.bytes} B`
+          : `${(facts.bytes / 1024).toFixed(1)} KiB`
+    status.text = `$(file-binary) ${describeSubject(path)}`
+    status.tooltip = [
+      describeSubject(path),
+      facts === undefined ? 'not opened by a codec' : `${facts.contributionId}/${facts.variantId}`,
+      size,
+      `reads up to ${VSCODE_MAXIMUM_SUBJECT_BYTES / (1024 * 1024)} MiB per file`,
+    ]
+      .filter(line => line !== undefined)
+      .join('\n')
+    status.show()
+  }
+
+  /** The Modkit editor the user is looking at, or nothing when they are looking elsewhere. */
+  let activeSubject: string | undefined
+
+  const rememberSubject = (opened: {
+    readonly path: string
+    readonly contributionId: string
+    readonly variantId: string
+  }): void => {
+    const key = resolve(opened.path)
+    void vscode.workspace.fs.stat(vscode.Uri.file(key)).then(
+      stat => {
+        subjectFacts.set(key, {
+          contributionId: opened.contributionId,
+          variantId: opened.variantId,
+          bytes: stat.size,
+        })
+        if (activeSubject === key) showSubjectStatus(key)
+      },
+      () => {
+        subjectFacts.set(key, {
+          contributionId: opened.contributionId,
+          variantId: opened.variantId,
+        })
+        if (activeSubject === key) showSubjectStatus(key)
+      },
+    )
+  }
 
   context.subscriptions.push({
     dispose: () => {

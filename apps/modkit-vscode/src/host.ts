@@ -308,6 +308,18 @@ export interface VsCodeServeOptions {
    * own Problems panel consumes — and a diagnostic that only ever reached a log was invisible to
    * the person who needed it.
    */
+  /**
+   * What was opened, and by which contribution.
+   *
+   * The facts a status bar wants live here and only here: the page is told the selection too, but
+   * a webview drawing its own footer is the thing this host is getting rid of.
+   */
+  readonly onSubjectOpened?: (opened: {
+    readonly path: string
+    readonly contributionId: string
+    readonly variantId: string
+    readonly confidence: number
+  }) => void
   readonly onSubjectDiagnostic?: (diagnostic: {
     readonly code: string
     readonly message: string
@@ -466,6 +478,15 @@ function serveVsCode(
           path: subjectPath,
         })
       }
+    }
+
+    if (answer.snapshot.state === 'opened') {
+      options.onSubjectOpened?.({
+        path: resolve(requested),
+        contributionId: answer.snapshot.selected.contributionId,
+        variantId: answer.snapshot.selected.variantId,
+        confidence: answer.snapshot.selected.confidence,
+      })
     }
 
     if (answer.snapshot.state !== 'opened' || opened === undefined) return answer

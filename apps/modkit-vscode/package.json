@@ -19,7 +19,8 @@
     "contributes:emit": "node scripts/generate-contributes.mjs",
     "contributes:check": "node scripts/generate-contributes.mjs --check",
     "ext:build": "node scripts/build-extension.mjs",
-    "smoke:vscode": "node test-e2e/run-smoke.mjs"
+    "smoke:vscode": "node test-e2e/run-smoke.mjs",
+    "dist-app:check": "node scripts/build-extension.mjs --check"
   },
   "dependencies": {
     "@modkitx-x3/core": "workspace:*",
@@ -115,12 +116,12 @@
     "views": {
       "modkit": [
         {
-          "id": "modkit.assets",
-          "name": "Assets"
-        },
-        {
           "id": "modkit.extensions",
           "name": "Extensions"
+        },
+        {
+          "id": "modkit.host",
+          "name": "Host"
         }
       ]
     },
@@ -140,8 +141,8 @@
     "onCommand:modkit.openWith",
     "onCommand:modkit.showHostProfile",
     "onCustomEditor:modkit.genericAssetPreview",
-    "onView:modkit.assets",
-    "onView:modkit.extensions"
+    "onView:modkit.extensions",
+    "onView:modkit.host"
   ],
   "icon": "media/icon-128.png"
 }

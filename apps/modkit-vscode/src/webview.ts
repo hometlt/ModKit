@@ -16,19 +16,16 @@
 import {
   createCodecPreview,
   createEditorArea,
-  createExplorer,
   EXPLORER_MAXIMUM_BYTES,
   type EditorArea,
   type ExplorerEntry,
   type FileAccess,
   type PreviewResolver,
 } from '@modkitx-x3/ui/explorer'
-import { element, setState, setViewerText } from '@modkitx-x3/ui/viewer'
 import { createWorkbench } from '@modkitx-x3/ui/workbench'
 import { connectSubjectRpc, type SubjectPreviewSession } from '@modkitx-x3/host'
 
 import { createBridge, type ShellEntry, type WebviewChannel } from './bridge.js'
-import { createVsCodeSettingsView } from './settings-view.js'
 import { createWebviewEditorPorts, type WebviewEditorPorts } from './editor-ports.js'
 import { reopenCommittedEntry } from './edit-reopen.js'
 import { createVsCodePreviewStages, VSCODE_PREVIEW_FALLBACK } from './stages.js'
@@ -130,11 +127,19 @@ async function mount(
   })
   mountPoint.replaceChildren(workbench.root)
 
-  const statusLine = document.createElement('output')
-  statusLine.className = 'vscode-status'
-  workbench.root.querySelector('[data-mk-part="workbench.statusbar"]')?.append(statusLine)
+  /*
+   * No status line of its own any more.
+   *
+   * The page used to draw a footer — realm id, facility count, the subject's absolute path, its
+   * size — which is exactly the chrome the owner's screenshot objected to, and it leaked a local
+   * path while doing it. The editor has a status bar; the extension writes the subject's facts
+   * there, workspace-relative. What is left of  is the mirror into the output channel, so a
+   * message still has somewhere to go.
+   *
+   * Diagnostics do not travel this way at all: they go to the Problems panel, with their code and
+   * severity intact.
+   */
   const say = (message: string): void => {
-    setViewerText(statusLine, message, 400)
     bridge.emit({ op: 'status', text: message })
   }
 
@@ -411,91 +416,29 @@ async function mount(
     return true
   })
 
-  // ---------------------------------------------------------------- explorer
-  const explorer = createExplorer(document, {
-    preview,
-    // The desktop editor supplies its own commands; a second row of buttons would duplicate them.
-    showToolbar: false,
-    // The tree browses; the editor area owns what is open, so opening is delegated to it.
-    onOpen(entry) {
-      void editors.open(entry).catch((error: unknown) => say(describe(error)))
-    },
-  })
-  const singlePane = explorer.root.querySelector('[data-mk-part="explorer.preview"]')
-  if (singlePane === null) throw new Error('explorer has no preview pane to replace')
-  singlePane.replaceWith(editors.root)
-
-  workbench.setSidebar(hostPanel(snapshot))
-
-  // ---------------------------------------------------------------- activities
+  // ---------------------------------------------------------------- the working area
   /*
-   * Two things can occupy the editor area, chosen from the workbench's own activity bar: the file
-   * tree with its tabs, and the settings section that manages extensions and codecs. The settings
-   * section goes in the *main* area rather than the sidebar because it lists every contribution
-   * the inventory holds, and a switch beside a codec id does not fit a 17rem rail.
+   * The editor area, mounted on its own.
    *
-   * The host rail stays in the sidebar throughout: it describes the realm this page runs in, which
-   * is true whichever activity is showing.
+   * What used to be here: an explorer with a file tree, an activity bar offering Files and
+   * Extensions, a sidebar rail describing the realm, and a settings section listing every
+   * contribution with switches beside it. Every one of those had a native equivalent one layer
+   * up — VS Code's own Explorer, its view container, its Settings UI — so the page was drawing a
+   * second, worse copy of the editor it was running inside. They are gone; see
+   * docs/MK3/requests/REQUEST_VSCODE_NATIVE_SHELL_2026-08-25.md.
    *
-   * The settings view holds no host and no configuration API — every switch on it is a shell
-   * request the extension side answers, which is the only honest path from a webview.
+   * What is left is the subject: a stage picker and the stage. That is the whole of this page.
    */
-  const settingsView = createVsCodeSettingsView(document, {
-    request: request => bridge.request(request),
-    onStatus: say,
-  })
-  const activities: readonly {
-    readonly id: string
-    readonly label: string
-    readonly content: HTMLElement
-  }[] = [
-    { id: 'files', label: 'Files', content: explorer.root },
-    { id: 'settings', label: 'Extensions', content: settingsView.root },
-  ]
-  const showActivity = (id: string): void => {
-    const chosen = activities.find(item => item.id === id) ?? activities[0]
-    if (chosen === undefined) return
-    workbench.setMain(chosen.content)
-    for (const node of workbench.activitybar.querySelectorAll('[data-activity]')) {
-      const selected = node.getAttribute('data-activity') === chosen.id
-      node.setAttribute('aria-selected', String(selected))
-      setState(node, selected ? ['selected'] : [])
-    }
-    if (chosen.id === 'settings') void settingsView.reload()
-  }
-  for (const item of activities) {
-    // `settings.group` rather than a new part: this is exactly the control that family names — a
-    // tab that chooses which pane is shown — and the part vocabulary is a contract, not a label.
-    const button = element(workbench.activitybar, 'button', {
-      part: 'settings.group',
-      text: item.label,
-    }) as HTMLButtonElement
-    button.type = 'button'
-    button.dataset['activity'] = item.id
-    button.setAttribute('role', 'tab')
-    button.addEventListener('click', () => showActivity(item.id))
-  }
-  showActivity('files')
+  workbench.setMain(editors.root)
 
-  /** Opening a file from anywhere must bring the file area back, or the tab opens out of sight. */
-  const showFiles = (): void => {
-    showActivity('files')
-  }
-
-  // ---------------------------------------------------------------- host traffic
+  /** Open a path as this page's subject. One editor area, so there is nowhere else to put it. */
   const openPath = async (path: string, name: string): Promise<void> => {
-    // The editor area lives in the file activity; opening while settings are showing would mount
-    // the tab where nobody can see it.
-    showFiles()
     const entry: ExplorerEntry = { id: path, name, directory: false }
     await editors.open(entry)
   }
 
   bridge.onEvent(event => {
     switch (event.op) {
-      case 'roots':
-        void explorer.setAccess(access).catch((error: unknown) => say(describe(error)))
-        break
       case 'open':
         void openPath(event.path, event.name).catch((error: unknown) => say(describe(error)))
         break
@@ -507,64 +450,7 @@ async function mount(
     }
   })
 
-  await explorer.setAccess(access)
-  say(
-    `${snapshot.extensions.bundled.length + snapshot.extensions.installed.length} extensions · ` +
-      `${snapshot.supportedExtensions.length} detectable types`,
-  )
   if (snapshot.openPath !== undefined) {
     await openPath(snapshot.openPath, baseName(snapshot.openPath))
   }
-}
-
-/**
- * The host rail: what this page's realm holds, what loaded, and — the part that matters — what did
- * not. An extension root that failed is shown here as well as in the output channel, because the
- * user who wrote the setting is looking at this window, not at a log.
- */
-function hostPanel(snapshot: Bootstrap): HTMLElement {
-  const panel = document.createElement('div')
-  panel.className = 'vscode-host-panel'
-
-  element(panel, 'h2', { text: 'Host' })
-  element(panel, 'p', {
-    part: 'settings.description',
-    text:
-      `${snapshot.topologyId} · ${snapshot.extensionHost.realmId} · ` +
-      `${snapshot.diagnostics} inventory diagnostics`,
-  })
-  const isolated = !snapshot.webview.facilities.includes('editor.host-native')
-  element(panel, 'p', {
-    part: 'settings.description',
-    text: isolated
-      ? 'This page holds no extension-host facility: it consumes subjects, it does not open them.'
-      : 'This page was granted an extension-host facility, which it must never have.',
-  })
-
-  element(panel, 'h2', { text: 'Extensions' })
-  const list = element(panel, 'ul', { part: 'settings.list' })
-  for (const coordinate of snapshot.extensions.bundled) {
-    element(list, 'li', { text: `${coordinate} · bundled` })
-  }
-  for (const coordinate of snapshot.extensions.installed) {
-    element(list, 'li', { text: `${coordinate} · installed` })
-  }
-  if (snapshot.extensions.bundled.length + snapshot.extensions.installed.length === 0) {
-    element(list, 'li', { text: 'none — every file will open with the text/hex fallback' })
-  }
-
-  if (snapshot.extensions.failures.length > 0 || snapshot.extensions.problems.length > 0) {
-    element(panel, 'h2', { text: 'Not loaded' })
-    const failed = element(panel, 'ul', { part: 'settings.list' })
-    for (const failure of snapshot.extensions.failures) {
-      element(failed, 'li', { text: `${failure.root} — ${failure.code}: ${failure.message}` })
-    }
-    for (const problem of snapshot.extensions.problems) element(failed, 'li', { text: problem })
-  }
-
-  element(panel, 'h2', { text: 'Facilities' })
-  const facilities = element(panel, 'ul', { part: 'settings.list' })
-  for (const facility of snapshot.webview.facilities) element(facilities, 'li', { text: facility })
-
-  return panel
 }

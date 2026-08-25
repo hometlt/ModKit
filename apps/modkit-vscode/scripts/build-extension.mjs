@@ -12,14 +12,41 @@
  * the deterministic artifact `contributes:check` guards. Nothing here authors contribution points.
  */
 import { build } from 'esbuild'
-import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
+import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const appRoot = resolve(here, '..')
 const repoRoot = resolve(appRoot, '..', '..')
-const dist = join(appRoot, 'dist-app')
+
+/*
+ * Where the bundle lands.
+ *
+ * `--check` builds into a throwaway directory and compares the result with the committed
+ * `dist-app/`, the same shape `contributes:check` uses for its generated document. It exists
+ * because that directory is tracked and had silently drifted dozens of commits behind its own
+ * sources: an extension loaded from the checkout ran pre-block-9 behaviour while every unit test
+ * passed, because nothing compared the two.
+ */
+const check = process.argv.includes('--check')
+const outFlag = process.argv.indexOf('--out')
+const tracked = join(appRoot, 'dist-app')
+const dist = check
+  ? mkdtempSync(join(tmpdir(), 'x3-dist-app-'))
+  : outFlag > 0
+    ? resolve(process.argv[outFlag + 1])
+    : tracked
 
 mkdirSync(dist, { recursive: true })
 
@@ -85,27 +112,51 @@ cpSync(stylesheet, join(dist, 'modkit-ui.css'))
 cpSync(join(appRoot, 'app.css'), join(dist, 'app.css'))
 
 // ---------------------------------------------------------------- manifest
-const manifestPath = join(appRoot, 'package.json')
-const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
-const contributes = JSON.parse(readFileSync(join(appRoot, 'contributes.generated.json'), 'utf8'))
+// Only the real output owns the manifest: a check build must not write the package it is checking.
+if (dist === tracked) {
+  const manifestPath = join(appRoot, 'package.json')
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+  const contributes = JSON.parse(readFileSync(join(appRoot, 'contributes.generated.json'), 'utf8'))
 
-const previous = JSON.stringify([manifest.contributes ?? null, manifest.activationEvents ?? null])
-manifest.contributes = contributes
-// Every command and every custom editor in the generated catalog is an activation point; VS Code
-// 1.75+ infers the commands, but a custom editor still has to be declared or the provider is never
-// registered and "Reopen Editor With… → Modkit Asset Preview" opens an editor nothing resolves.
-manifest.activationEvents = [
-  ...contributes.commands.map(command => `onCommand:${command.command}`),
-  ...contributes.customEditors.map(editor => `onCustomEditor:${editor.viewType}`),
-  // The tree views are the other way in: opening the Modkit container has to start the host.
-  ...Object.values(contributes.views)
-    .flat()
-    .map(view => `onView:${view.id}`),
-]
+  const previous = JSON.stringify([manifest.contributes ?? null, manifest.activationEvents ?? null])
+  manifest.contributes = contributes
+  // Every command and every custom editor in the generated catalog is an activation point; VS Code
+  // 1.75+ infers the commands, but a custom editor still has to be declared or the provider is never
+  // registered and "Reopen Editor With… → Modkit Asset Preview" opens an editor nothing resolves.
+  manifest.activationEvents = [
+    ...contributes.commands.map(command => `onCommand:${command.command}`),
+    ...contributes.customEditors.map(editor => `onCustomEditor:${editor.viewType}`),
+    // The tree views are the other way in: opening the Modkit container has to start the host.
+    ...Object.values(contributes.views)
+      .flat()
+      .map(view => `onView:${view.id}`),
+  ]
 
-if (JSON.stringify([manifest.contributes, manifest.activationEvents]) !== previous) {
-  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
-  console.log('manifest contributes and activation events synced from contributes.generated.json')
+  if (JSON.stringify([manifest.contributes, manifest.activationEvents]) !== previous) {
+    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
+    console.log('manifest contributes and activation events synced from contributes.generated.json')
+  }
 }
 
-console.log(`built ${dist}`)
+if (!check) {
+  console.log(`built ${dist}`)
+} else {
+  const names = [...new Set([...readdirSync(dist), ...readdirSync(tracked)])].sort()
+  const differing = names.filter(name => {
+    const fresh = existsSync(join(dist, name)) ? readFileSync(join(dist, name)) : undefined
+    const committed = existsSync(join(tracked, name))
+      ? readFileSync(join(tracked, name))
+      : undefined
+    return fresh === undefined || committed === undefined || !fresh.equals(committed)
+  })
+  rmSync(dist, { recursive: true, force: true })
+  if (differing.length > 0) {
+    console.error(
+      `dist-app --check: ${differing.length} of ${names.length} file(s) differ from a fresh ` +
+        `build: ${differing.join(', ')}`,
+    )
+    console.error('Run `pnpm --filter @modkitx-x3/modkit-vscode ext:build` and commit the result.')
+    process.exit(1)
+  }
+  console.log(`dist-app --check: ${names.length} file(s) byte-identical`)
+}
