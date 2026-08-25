@@ -619,7 +619,8 @@
                       "common.view/video-media-source",
                       "common.view/model-scene-source",
                       "common.view/relation-graph-source",
-                      "common.view/subject-facts-source"
+                      "common.view/subject-facts-source",
+                      "common.view/slide-deck-source"
                     ]
                   },
                   "major": {
@@ -650,7 +651,8 @@
                         "common.view/video-media-source",
                         "common.view/model-scene-source",
                         "common.view/relation-graph-source",
-                        "common.view/subject-facts-source"
+                        "common.view/subject-facts-source",
+                        "common.view/slide-deck-source"
                       ]
                     },
                     "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
@@ -1476,7 +1478,8 @@
                       "common.view/video-media-source",
                       "common.view/model-scene-source",
                       "common.view/relation-graph-source",
-                      "common.view/subject-facts-source"
+                      "common.view/subject-facts-source",
+                      "common.view/slide-deck-source"
                     ]
                   },
                   "major": {
@@ -1507,7 +1510,8 @@
                         "common.view/video-media-source",
                         "common.view/model-scene-source",
                         "common.view/relation-graph-source",
-                        "common.view/subject-facts-source"
+                        "common.view/subject-facts-source",
+                        "common.view/slide-deck-source"
                       ]
                     },
                     "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
@@ -2300,7 +2304,8 @@
                       "common.view/video-media-source",
                       "common.view/model-scene-source",
                       "common.view/relation-graph-source",
-                      "common.view/subject-facts-source"
+                      "common.view/subject-facts-source",
+                      "common.view/slide-deck-source"
                     ]
                   },
                   "major": {
@@ -2331,7 +2336,8 @@
                         "common.view/video-media-source",
                         "common.view/model-scene-source",
                         "common.view/relation-graph-source",
-                        "common.view/subject-facts-source"
+                        "common.view/subject-facts-source",
+                        "common.view/slide-deck-source"
                       ]
                     },
                     "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",

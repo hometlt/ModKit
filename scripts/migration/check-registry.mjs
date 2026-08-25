@@ -157,6 +157,10 @@ const ENUMS = {
     'retain',
   ],
   artifactMaturity: ['reader-only', 'reader-and-writer', 'writer-only', 'none'],
+  // ADR-DOC-001. `admitted` is the settled state; `publisher-candidate` is a shape proved by one
+  // publisher only. The vocabulary mirrors packages/sdk DATA_SOURCE_MATURITY, and
+  // scripts/test/migration-registry.test.ts pins the two together so neither can drift alone.
+  facetMaturity: ['admitted', 'publisher-candidate'],
 }
 
 const compareUtf8 = (left, right) => Buffer.compare(Buffer.from(left), Buffer.from(right))
@@ -693,6 +697,19 @@ for (const plane of planes) {
   checkEnum(label, 'artifactMaturity', plane.artifactMaturity, ENUMS.artifactMaturity)
   if (!Array.isArray(plane.requiredFacets) || plane.requiredFacets.length === 0) {
     fail(`${label}: requiredFacets must not be empty`)
+  }
+  // invariant candidate-facet-is-not-admitted
+  const declaredFacets = new Set([...(plane.requiredFacets ?? []), ...(plane.optionalFacets ?? [])])
+  for (const [facet, maturity] of Object.entries(plane.facetMaturity ?? {})) {
+    checkEnum(label, `facetMaturity.${facet}`, maturity, ENUMS.facetMaturity)
+    if (!declaredFacets.has(facet)) {
+      fail(`${label}: facetMaturity names ${facet}, which the plane does not declare as a facet`)
+    }
+    if (maturity === 'publisher-candidate' && (plane.requiredFacets ?? []).includes(facet)) {
+      fail(
+        `${label}: invariant candidate-facet-is-not-admitted — facet ${facet} is proved by one publisher and may not be required`,
+      )
+    }
   }
   if (typeof plane.portableProfile !== 'string') fail(`${label}: portableProfile is required`)
   if (plane.portableProfile !== 'none' && !/^UV[A-Z]$/.test(plane.portableProfile)) {

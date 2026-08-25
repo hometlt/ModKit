@@ -1,9 +1,12 @@
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync } from 'node:fs'
+import { mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+
+// @ts-expect-error -- the canonical YAML subset reader is untyped tooling JavaScript
+import { parseCanonicalYaml } from '../migration/lib/canonical-yaml.mjs'
 
 const scriptsDir = fileURLToPath(new URL('..', import.meta.url))
 const gate = join(scriptsDir, 'migration', 'check-registry.mjs')
@@ -66,6 +69,31 @@ describe('capability registry gate (plan §3.3–3.4, block 10 works 4–6 and 1
     const { status, stderr } = runGate('valid.capabilities.yaml', 'uvp-executes.projections.yaml')
     expect(status).toBe(1)
     expect(stderr).toContain('uvp-is-data-only')
+  })
+
+  it('refuses a plane that makes a publisher-candidate facet required', () => {
+    const { status, stderr } = runGate(
+      'valid.capabilities.yaml',
+      'candidate-facet-required.projections.yaml',
+    )
+    expect(status).toBe(1)
+    expect(stderr).toContain('candidate-facet-is-not-admitted')
+  })
+
+  it('keeps the committed slides facet a candidate in both the registry and the SDK', async () => {
+    // ADR-DOC-001 lives in two places by necessity — the SDK owns the contract, the projection
+    // matrix owns the plane — so the two are pinned to each other here. Admitting the contract
+    // means changing both, which is exactly the decision block 30 reserves.
+    const { dataSourceMaturity } = await import('@modkitx-x3/sdk')
+    const matrix = parseCanonicalYaml(
+      readFileSync(join(scriptsDir, '..', 'migration', 'projections.yaml'), 'utf8'),
+    ) as { readonly planes: readonly Record<string, unknown>[] }
+    const document = matrix.planes.find(plane => plane['plane'] === 'document')
+    expect((document?.['facetMaturity'] as Record<string, string>)['slides']).toBe(
+      'publisher-candidate',
+    )
+    expect(dataSourceMaturity('common.view/slide-deck-source')).toBe('publisher-candidate')
+    expect((document?.['requiredFacets'] as readonly string[]) ?? []).not.toContain('slides')
   })
 
   it('refuses a dependsOn target the registry does not contain', () => {

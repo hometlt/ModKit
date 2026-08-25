@@ -2,13 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { contractId } from '@modkitx-x3/core'
 import {
   A1_SPEC_SCHEMA_ENTRIES,
+  ADMITTED_DATA_SOURCE_CONTRACTS,
   AUXILIARY_DATA_SOURCE_SURFACES,
+  DATA_SOURCE_MATURITY,
   CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT,
   ENCODED_MEDIA_SURFACE_ID,
   STANDARD_DATA_SOURCE_CONTRACTS,
   STANDARD_DATA_SOURCE_SURFACES,
   createSpecSchemaRegistry,
   dataSourceContractDefinitionSpecV1Schema,
+  dataSourceMaturity,
   dataSourceMethodSurfaceV1Schema,
   dataSourceSurfaceV1Schema,
   standardDataSourceSurfaceFor,
@@ -188,7 +191,7 @@ describe('NXT-103 — data-source method surface schema', () => {
 })
 
 describe('NXT-103 — standard data-source surfaces', () => {
-  it('covers exactly the 13 standard contracts plus the auxiliary encoded-media surface', () => {
+  it('covers exactly the 14 standard contracts plus the auxiliary encoded-media surface', () => {
     expect(Object.keys(STANDARD_DATA_SOURCE_SURFACES).sort()).toEqual(
       [...STANDARD_DATA_SOURCE_CONTRACTS].sort(),
     )
@@ -249,6 +252,27 @@ describe('NXT-103 — standard data-source surfaces', () => {
     expect(STANDARD_DATA_SOURCE_SURFACES['common.view/byte-range-source'].methods['size']).toEqual({
       kind: 'value',
     })
+  })
+
+  it('never lets a publisher-candidate contract be counted as admitted', () => {
+    // ADR-DOC-001 §3: `slide-deck-source` is published by ODP alone, so the gate that asks "is this
+    // shape settled?" must answer no until a second slides family exists. The list is derived from
+    // the maturity table rather than written twice, so the only way to admit the contract is to
+    // change its maturity — which is the decision the ADR reserves for block 30.
+    expect(Object.keys(DATA_SOURCE_MATURITY).sort()).toEqual(
+      [...STANDARD_DATA_SOURCE_CONTRACTS].sort(),
+    )
+    expect(dataSourceMaturity('common.view/slide-deck-source')).toBe('publisher-candidate')
+    expect(ADMITTED_DATA_SOURCE_CONTRACTS).not.toContain('common.view/slide-deck-source')
+    expect(ADMITTED_DATA_SOURCE_CONTRACTS.length).toBe(STANDARD_DATA_SOURCE_CONTRACTS.length - 1)
+    for (const contract of ADMITTED_DATA_SOURCE_CONTRACTS) {
+      expect(DATA_SOURCE_MATURITY[contract], contract).toBe('admitted')
+    }
+    // a candidate is not a second-class citizen on the wire: it is called like every other source
+    expect(standardDataSourceSurfaceFor('common.view/slide-deck-source', 1)).toBe(
+      STANDARD_DATA_SOURCE_SURFACES['common.view/slide-deck-source'],
+    )
+    expect(dataSourceMaturity('org.example/thing-source')).toBeUndefined()
   })
 
   it('looks surfaces up by wire coordinates and stays silent for foreign contracts', () => {

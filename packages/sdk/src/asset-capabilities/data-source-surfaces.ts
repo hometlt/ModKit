@@ -25,6 +25,7 @@ import type {
   ByteRangeSource,
   NamespaceEntrySource,
   RelationGraphSource,
+  SlideDeckSource,
   SubjectFactsSource,
   TableDataSource,
   TextDataSource,
@@ -98,7 +99,7 @@ const encodedMediaSurface = {
 } as const satisfies SurfaceOf<EncodedMediaSource>
 
 // ---------------------------------------------------------------------------------------------
-// the 13 standard surfaces
+// the 14 standard surfaces
 
 const textDataSourceSurface = {
   methods: {
@@ -198,6 +199,14 @@ const relationGraphSourceSurface = {
   },
 } as const satisfies SurfaceOf<RelationGraphSource>
 
+/** ADR-DOC-001. Candidate maturity changes nothing about the wire: it is called like the rest. */
+const slideDeckSourceSurface = {
+  methods: {
+    info: cancellableValue,
+    slides: cancellableValue,
+  },
+} as const satisfies SurfaceOf<SlideDeckSource>
+
 const subjectFactsSourceSurface = {
   methods: {
     summary: cancellableValue,
@@ -207,7 +216,7 @@ const subjectFactsSourceSurface = {
   },
 } as const satisfies SurfaceOf<SubjectFactsSource>
 
-/** Method surfaces of the 13 standard data-source contracts, all `major 1`. */
+/** Method surfaces of the 14 standard data-source contracts, all `major 1`. */
 export const STANDARD_DATA_SOURCE_SURFACES: Readonly<
   Record<StandardDataSourceId, DataSourceSurfaceV1>
 > = deepFreeze({
@@ -224,6 +233,7 @@ export const STANDARD_DATA_SOURCE_SURFACES: Readonly<
   'common.view/model-scene-source': modelSceneSourceSurface,
   'common.view/relation-graph-source': relationGraphSourceSurface,
   'common.view/subject-facts-source': subjectFactsSourceSurface,
+  'common.view/slide-deck-source': slideDeckSourceSurface,
 })
 
 /** Auxiliary surfaces named by standard `lease` results but not data-source contracts themselves. */

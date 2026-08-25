@@ -16,6 +16,9 @@ invariants:
   - id: 'archive-is-not-a-package'
     rule: 'Plane container объявляет packageTrust generic-archive-is-untrusted-data-never-a-package: generic archive не превращается в UVP или UVE без явной package-operation и trust profile, а browse никогда не выводит pack/repack.'
     enforcedBy: 'scripts/migration/check-registry.mjs'
+  - id: 'candidate-facet-is-not-admitted'
+    rule: 'Facet, объявленный facetMaturity publisher-candidate, обязан быть optional и не может стоять в requiredFacets: контракт, доказанный одной publisher-семьёй, не становится обязательным для plane (ADR-DOC-001, гейт §2.7).'
+    enforcedBy: 'scripts/migration/check-registry.mjs'
   - id: 'derived-presentation-is-not-a-source'
     rule: 'Layout tree, растрированная страница, thumbnail и render являются derived presentation и не создают новый source document.'
     enforcedBy: 'scripts/migration/check-registry.mjs'
@@ -154,9 +157,9 @@ planes:
       - 'uv/uvd/definitions'
   - plane: 'document'
     projectionKind: 'generic-domain-contracts'
-    contract: 'common.view/text-source'
+    contract: 'common.view/text-data-source'
     contractVersion: 1
-    contractOwner: 'packages/sdk (common.view/text-source + flow/table/slides facets)'
+    contractOwner: 'packages/sdk (common.view/text-data-source + tree/table/vector-scene/slide-deck facets)'
     requiredFacets:
       - 'text'
     optionalFacets:
@@ -166,6 +169,8 @@ planes:
       - 'sheets'
       - 'slides'
       - 'vector-scene'
+    facetMaturity:
+      slides: 'publisher-candidate'
     portableProfile: 'none'
     artifactMaturity: 'reader-and-writer'
     derivedPresentation: 'layout-tree-and-rasterised-page-are-derived-not-a-new-source-document'
@@ -177,9 +182,9 @@ planes:
       - 'retain'
     plannedBlock: 11
     knownLoss:
-      - 'ODT/ODS/ODP ещё не перенесены в common/documents; ODG не существует'
+      - 'facet slides опубликован одной ODP-семьёй и остаётся publisher-candidate до второй независимой slides-family (ADR-DOC-001)'
       - 'writer заявлен только для text-data и plain-text маршрутов; layout fidelity и ODF round-trip не доказаны'
-      - 'CSV/Markdown/RTF имеют по два активных маршрута (mk2-порт и MK3-native) — ambiguity снимается slice 11A/11B'
+      - 'ODF masters, layouts, стили, анимация и переходы не разобраны и не публикуются; vector-scene — структурный предпросмотр первой draw:page, не layout'
     resourceDependencies:
       - 'ODF-пакет содержит вложенные ресурсы; внешние ресурсы и макросы запрещены'
     corpusEvidence: []
@@ -187,6 +192,8 @@ planes:
       - 'addition/odg/open-inspect'
       - 'addition/text-json/open-edit'
       - 'block9/csv-quoted-separators'
+      - 'format/odp/open-inspect'
+      - 'format/ods/open-inspect'
       - 'format/odt/open-inspect'
   - plane: 'media'
     projectionKind: 'live-domain-source'

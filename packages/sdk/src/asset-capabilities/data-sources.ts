@@ -18,7 +18,11 @@ import {
   type StandardDataSourceId,
 } from './data-source-ids.js'
 export {
+  ADMITTED_DATA_SOURCE_CONTRACTS,
+  DATA_SOURCE_MATURITY,
+  dataSourceMaturity,
   STANDARD_DATA_SOURCE_CONTRACTS,
+  type DataSourceMaturity,
   type DataSourceRefWire,
   type OpaqueDataSourceRefWire,
   type StandardDataSourceId,
@@ -395,6 +399,54 @@ export interface SubjectFactsSource {
   relations(page: PageRequest, signal?: AbortSignal): Promise<Page<RelatedSubjectFact>>
 }
 
+/**
+ * Where a slide's geometry is published. A deck never carries geometry of its own: the shapes of
+ * a slide are the shapes of a page in the vector plane, so the deck names that page instead of
+ * copying it. Keeping it a tagged reference leaves room for a future plane without changing the
+ * meaning of the ones that exist.
+ */
+export interface SlidePageRef {
+  readonly kind: 'vector-scene-page'
+  /** 1-based ordinal of the page inside the same subject's vector scene. */
+  readonly page: number
+}
+
+/**
+ * One slide, in deck order.
+ *
+ * `title` is present only when the source marks a run as the slide's title; a body run promoted to
+ * a title by a heuristic would be an invention, so it stays in `textRuns` instead. `notes` is
+ * absent — not empty — when the source carries no notes for the slide.
+ */
+export interface Slide {
+  readonly id: string
+  /** 1-based position in the deck; the deck's order is part of the contract. */
+  readonly index: number
+  readonly title?: string
+  readonly textRuns: readonly string[]
+  readonly notes?: readonly string[]
+  readonly page: SlidePageRef
+}
+
+export interface SlideDeckInfo {
+  readonly slides: number
+  readonly title?: string
+  /** Slides whose geometry the publisher did not parse, and therefore did not publish. */
+  readonly unparsedSlides?: number
+}
+
+/**
+ * Ordered slides of a deck — `common.view/slide-deck-source@1`, ADR-DOC-001.
+ *
+ * `publisher-candidate` maturity (see `DATA_SOURCE_MATURITY`): ODP is the only family publishing
+ * it, so masters, layouts, transitions and animation are deliberately absent rather than stubbed.
+ * A second independent slides family admits or versions the shape; it is not widened silently.
+ */
+export interface SlideDeckSource {
+  info(signal?: AbortSignal): Promise<SlideDeckInfo>
+  slides(page: PageRequest, signal?: AbortSignal): Promise<Page<Slide>>
+}
+
 /** Open compile-time registry. Extensions may augment it without changing host code. */
 export interface DataSourceContractMap {
   'common.view/text-data-source': { 1: TextDataSource }
@@ -410,6 +462,7 @@ export interface DataSourceContractMap {
   'common.view/model-scene-source': { 1: ModelSceneSource }
   'common.view/relation-graph-source': { 1: RelationGraphSource }
   'common.view/subject-facts-source': { 1: SubjectFactsSource }
+  'common.view/slide-deck-source': { 1: SlideDeckSource }
 }
 
 export type KnownDataSourceId = keyof DataSourceContractMap
