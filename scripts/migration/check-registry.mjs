@@ -1,0 +1,610 @@
+#!/usr/bin/env node
+// Semantic capability registry and projection matrix validator
+// (PLAN_MODKIT_MK3_FINAL_RU.md §3.3–3.4, блок 10 работы 4–6, 10–11).
+//
+// migration/capabilities.yaml and migration/projections.yaml are a hand+machine hybrid: the
+// skeleton was derived from the sealed-oracle inventory and the X3 ratchets, the semantic fields
+// are authored. Nothing regenerates them, so this gate re-derives every machine fact from the same
+// sources and compares — a hand-written allocation, parity status or evidence level cannot drift
+// away from the tree without failing here.
+//
+// What it proves:
+//   1. canonical form — the artifacts parse in the canonical YAML subset, keys follow the canonical
+//      order and rows are sorted, so the hybrid stays reviewable and deterministic;
+//   2. every row carries an owner, an obligation and a planned block;
+//   3. every sourceUnitId exists in migration/generated/source-inventory.json;
+//   4. no source unit is lost: each inventory unit is either mapped by at least one capability or
+//      covered by exactly one explicit unmapped rule with a reason, a plan and an exact count;
+//   5. allocation coverage and implementation/evidence state are different fields, and evidence is
+//      earned rather than inherited from allocation;
+//   6. the scope lock holds and frozen owner additions cannot silently widen the release scope;
+//   7. the projection matrix respects its own declared invariants.
+//
+// Usage: node scripts/migration/check-registry.mjs [--registry <path>] [--projections <path>]
+//                                                  [--inventory <path>] [--quiet]
+
+import { execFileSync } from 'node:child_process'
+import { existsSync, readFileSync } from 'node:fs'
+import path from 'node:path'
+import process from 'node:process'
+import { fileURLToPath } from 'node:url'
+import { parseCanonicalYaml } from './lib/canonical-yaml.mjs'
+
+const repoRoot = path.resolve(fileURLToPath(new URL('../..', import.meta.url)))
+const args = process.argv.slice(2)
+const argValue = flag => {
+  const index = args.indexOf(flag)
+  return index === -1 ? undefined : args[index + 1]
+}
+const quiet = args.includes('--quiet')
+const registryPath = path.resolve(
+  argValue('--registry') ?? path.join(repoRoot, 'migration/capabilities.yaml'),
+)
+const projectionsPath = path.resolve(
+  argValue('--projections') ?? path.join(repoRoot, 'migration/projections.yaml'),
+)
+const inventoryPath = path.resolve(
+  argValue('--inventory') ?? path.join(repoRoot, 'migration/generated/source-inventory.json'),
+)
+
+const problems = []
+const fail = message => problems.push(message)
+const readJson = file => JSON.parse(readFileSync(file, 'utf8'))
+
+// --- canonical shape -----------------------------------------------------------------------------
+
+const CAPABILITY_KEYS = [
+  'capabilityId',
+  'userScenario',
+  'releaseTrack',
+  'origin',
+  'obligation',
+  'owner',
+  'plannedBlock',
+  'sourceUnitIds',
+  'legacyEvidence',
+  'hostFacilities',
+  'mk3Contributions',
+  'mk3Operations',
+  'allocation',
+  'migrationState',
+  'supportState',
+  'runtimeAvailability',
+  'evidenceLevel',
+  'hostEvidence',
+  'writerEvidence',
+  'parityEvidence',
+  'fixtures',
+  'corpusDescriptors',
+  'projection',
+  'knownLoss',
+  'receipts',
+  'replacementWorkflow',
+  'closedBy',
+]
+const ALLOCATION_KEYS = ['state', 'x3ContributionId', 'portFamily', 'portVerdict']
+const PARITY_KEYS = ['coverageStatus', 'rows', 'corpusKinds', 'verdicts', 'liveSources']
+const PROJECTION_KEYS = [
+  'plane',
+  'liveProjection',
+  'portableMaterialization',
+  'opaquePreservation',
+  'nativeExport',
+]
+
+const ENUMS = {
+  releaseTrack: ['mk3-priority', 'multiverse-priority', 'post-ga'],
+  origin: ['legacy', 'owner-addition'],
+  obligation: [
+    'legacy-required',
+    'focused-required-addition',
+    'post-ga-required-proof',
+    'experimental-optional',
+  ],
+  allocationState: ['covered', 'superseded', 'absent', 'not-applicable'],
+  migrationState: [
+    'implemented',
+    'equivalent-better',
+    'relocated-multiverse',
+    'superseded',
+    'partial',
+    'missing',
+    'blocked',
+    'unknown',
+    'deferred-post-ga',
+  ],
+  supportState: ['supported', 'partial', 'unsupported', 'unknown'],
+  runtimeAvailability: [
+    'browser-and-node',
+    'browser-only',
+    'node-only',
+    'host-facility-dependent',
+    'none',
+  ],
+  evidenceLevel: ['E0', 'E1', 'E2', 'E3', 'E4', 'E5'],
+  hostEvidence: [
+    'none',
+    'node',
+    'node-and-browser-worker',
+    'electron-smoke',
+    'vscode-manual-pending',
+  ],
+  writerEvidence: [
+    'not-declared',
+    'declared-not-proven',
+    'write-reopen-compared',
+    'write-reopen-compared-metadata-plane',
+  ],
+  projectionState: ['none', 'planned', 'live', 'materialized', 'proven', 'not-applicable'],
+  action: [
+    'defer',
+    'edit',
+    'execute',
+    'export-native',
+    'materialize',
+    'preserve-opaque',
+    'project-live',
+    'retain',
+  ],
+  artifactMaturity: ['reader-only', 'reader-and-writer', 'writer-only', 'none'],
+}
+
+const compareUtf8 = (left, right) => Buffer.compare(Buffer.from(left), Buffer.from(right))
+
+function checkKeyOrder(label, value, expected) {
+  const actual = Object.keys(value)
+  if (actual.join(',') !== expected.join(',')) {
+    fail(
+      `${label}: keys are not in canonical order\n    expected ${expected.join(', ')}\n    found    ${actual.join(', ')}`,
+    )
+  }
+}
+
+function checkEnum(label, field, value, allowed) {
+  if (!allowed.includes(value))
+    fail(`${label}: ${field} "${value}" is not one of ${allowed.join(' | ')}`)
+}
+
+// --- inputs ---------------------------------------------------------------------------------------
+
+if (!existsSync(inventoryPath)) {
+  console.error('migration:check registry: source inventory is missing; run pnpm migration:emit')
+  process.exit(1)
+}
+const inventory = readJson(inventoryPath)
+const inventoryIds = new Set(inventory.units.map(unit => unit.sourceUnitId))
+const unitKindById = new Map(inventory.units.map(unit => [unit.sourceUnitId, unit.kind]))
+
+let registry
+let projections
+try {
+  registry = parseCanonicalYaml(readFileSync(registryPath, 'utf8'))
+} catch (error) {
+  console.error(
+    `migration:check registry: ${path.basename(registryPath)} is not canonical YAML — ${error.message}`,
+  )
+  process.exit(1)
+}
+try {
+  projections = parseCanonicalYaml(readFileSync(projectionsPath, 'utf8'))
+} catch (error) {
+  console.error(
+    `migration:check registry: ${path.basename(projectionsPath)} is not canonical YAML — ${error.message}`,
+  )
+  process.exit(1)
+}
+
+if (registry.schemaVersion !== 'capability-registry-1') {
+  fail(
+    `registry schemaVersion must be "capability-registry-1", found ${JSON.stringify(registry.schemaVersion)}`,
+  )
+}
+if (projections.schemaVersion !== 'projection-matrix-1') {
+  fail(
+    `projections schemaVersion must be "projection-matrix-1", found ${JSON.stringify(projections.schemaVersion)}`,
+  )
+}
+
+const capabilities = registry.capabilities ?? []
+const unmappedRules = registry.unmapped ?? []
+
+// --- machine facts, re-derived ----------------------------------------------------------------------
+
+const isDefaultRegistry = registryPath === path.join(repoRoot, 'migration/capabilities.yaml')
+
+function deriveX3Facts() {
+  const files = execFileSync(
+    'git',
+    ['-C', repoRoot, 'ls-files', 'extensions/*/*/contributions/*.json'],
+    {
+      maxBuffer: 1 << 30,
+    },
+  )
+    .toString('utf8')
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+  const byId = new Map()
+  for (const file of files) {
+    const json = readJson(path.join(repoRoot, file))
+    if (json.contract?.id !== 'org.modkitx/codec-contribution') continue
+    byId.set(json.id, { file, json })
+  }
+  return byId
+}
+
+function deriveParityFacts() {
+  const coverage = new Map(
+    readJson(path.join(repoRoot, 'scripts/parity/common-coverage.json')).coverage.map(row => [
+      row.contributionId,
+      row.status,
+    ]),
+  )
+  const byShortId = new Map()
+  for (const row of readJson(path.join(repoRoot, 'reports/parity/latest.json')).results) {
+    const short = `org.modkitx/${row.contributionId.slice(row.contributionId.lastIndexOf('/') + 1)}`
+    if (!byShortId.has(short)) byShortId.set(short, [])
+    byShortId.get(short).push(row)
+  }
+  return { coverage, byShortId }
+}
+
+const DOMAIN_SOURCES = new Set([
+  'common.view/model-scene-source',
+  'common.view/raster-image-source',
+  'common.view/namespace-entry-source',
+  'common.view/table-data-source',
+  'common.view/text-source',
+  'common.view/tree-data-source',
+  'common.view/vector-scene-source',
+])
+
+if (isDefaultRegistry) {
+  const x3 = deriveX3Facts()
+  const { coverage, byShortId } = deriveParityFacts()
+  const ratchetTotal = Object.values(
+    readJson(path.join(repoRoot, 'scripts/mk2-port-ratchet.json')).families,
+  ).reduce((total, count) => total + count, 0)
+
+  const formatRows = capabilities.filter(row => row.capabilityId.startsWith('format/'))
+  const codecUnits = inventory.units.filter(unit => unit.kind === 'codec-manifest')
+  if (formatRows.length !== codecUnits.length) {
+    fail(
+      `every codec manifest needs exactly one format row: ${formatRows.length} rows for ${codecUnits.length} manifests`,
+    )
+  }
+
+  let coveredRows = 0
+  for (const row of formatRows) {
+    const label = `capability ${row.capabilityId}`
+    const declared = row.allocation.x3ContributionId
+    const legacyId = row.sourceUnitIds[0]?.replace('legacy/codec-manifest/', '')
+    const identityCovered = legacyId !== undefined && x3.has(legacyId)
+    if (row.allocation.state === 'covered') {
+      coveredRows += 1
+      if (!identityCovered) {
+        fail(
+          `${label}: allocation covered, but no X3 contribution carries the legacy id ${legacyId}`,
+        )
+      }
+      if (declared !== legacyId)
+        fail(`${label}: covered allocation must name the legacy id, found ${declared}`)
+    }
+    if (row.allocation.state === 'absent' && identityCovered) {
+      fail(`${label}: allocation absent, but the X3 tree does carry ${legacyId}`)
+    }
+    if (row.allocation.state === 'superseded') {
+      if (identityCovered)
+        fail(`${label}: allocation superseded, but the legacy id still exists in X3`)
+      if (declared === null || !x3.has(declared)) {
+        fail(
+          `${label}: superseded allocation must name an existing X3 replacement, found ${declared}`,
+        )
+      }
+      if (row.replacementWorkflow === null) {
+        fail(`${label}: a superseded row must name its replacement workflow`)
+      }
+    }
+    const entry = declared === null ? undefined : x3.get(declared)
+    if (entry !== undefined) {
+      const status = entry.json.status
+      const expected =
+        status === 'supported' ? 'supported' : status === 'partial' ? 'partial' : 'unknown'
+      if (row.supportState !== expected) {
+        fail(
+          `${label}: supportState ${row.supportState} contradicts contribution status ${status ?? 'undefined'}`,
+        )
+      }
+    }
+    const declaredCoverage = row.parityEvidence.coverageStatus
+    const actualCoverage = declared === null ? undefined : coverage.get(declared)
+    if (declaredCoverage !== (actualCoverage ?? null)) {
+      fail(
+        `${label}: parityEvidence.coverageStatus ${JSON.stringify(declaredCoverage)} contradicts common-coverage.json ${JSON.stringify(actualCoverage ?? null)}`,
+      )
+    }
+    const parityRows = declared === null ? [] : (byShortId.get(declared) ?? [])
+    const actualRowIds = parityRows.map(entry => entry.id).sort(compareUtf8)
+    if (row.parityEvidence.rows.join(',') !== actualRowIds.join(',')) {
+      fail(`${label}: parityEvidence.rows contradicts reports/parity/latest.json`)
+    }
+    const actualLive = [
+      ...new Set(
+        parityRows
+          .flatMap(entry => entry.x3?.actualSources ?? [])
+          .filter(id => DOMAIN_SOURCES.has(id)),
+      ),
+    ].sort(compareUtf8)
+    if (row.parityEvidence.liveSources.join(',') !== actualLive.join(',')) {
+      fail(`${label}: parityEvidence.liveSources contradicts the observed X3 sources`)
+    }
+  }
+  if (coveredRows !== ratchetTotal) {
+    fail(
+      `covered format rows (${coveredRows}) must equal the MK2 port ratchet total (${ratchetTotal}); allocation coverage and the ratchet are the same fact`,
+    )
+  }
+}
+
+// --- per-row structural rules --------------------------------------------------------------------
+
+const capabilityIds = new Set()
+let previousId = ''
+for (const row of capabilities) {
+  const label = `capability ${row.capabilityId ?? '(missing id)'}`
+  checkKeyOrder(label, row, CAPABILITY_KEYS)
+
+  if (typeof row.capabilityId !== 'string' || row.capabilityId === '')
+    fail(`${label}: capabilityId is required`)
+  if (capabilityIds.has(row.capabilityId)) fail(`${label}: duplicate capabilityId`)
+  capabilityIds.add(row.capabilityId)
+  if (previousId !== '' && compareUtf8(previousId, row.capabilityId) >= 0) {
+    fail(`${label}: rows must be sorted by capabilityId in UTF-8 byte order (after ${previousId})`)
+  }
+  previousId = row.capabilityId
+
+  if (typeof row.userScenario !== 'string' || row.userScenario.length < 10) {
+    fail(`${label}: userScenario must describe what the user can do`)
+  }
+  if (typeof row.owner !== 'string' || row.owner === '') fail(`${label}: owner is required`)
+  if (!Number.isInteger(row.plannedBlock)) fail(`${label}: plannedBlock is required`)
+
+  checkEnum(label, 'releaseTrack', row.releaseTrack, ENUMS.releaseTrack)
+  checkEnum(label, 'origin', row.origin, ENUMS.origin)
+  checkEnum(label, 'obligation', row.obligation, ENUMS.obligation)
+  checkEnum(label, 'migrationState', row.migrationState, ENUMS.migrationState)
+  checkEnum(label, 'supportState', row.supportState, ENUMS.supportState)
+  checkEnum(label, 'runtimeAvailability', row.runtimeAvailability, ENUMS.runtimeAvailability)
+  checkEnum(label, 'evidenceLevel', row.evidenceLevel, ENUMS.evidenceLevel)
+  checkEnum(label, 'hostEvidence', row.hostEvidence, ENUMS.hostEvidence)
+  checkEnum(label, 'writerEvidence', row.writerEvidence, ENUMS.writerEvidence)
+
+  checkKeyOrder(`${label}.allocation`, row.allocation, ALLOCATION_KEYS)
+  checkEnum(label, 'allocation.state', row.allocation.state, ENUMS.allocationState)
+  checkKeyOrder(`${label}.parityEvidence`, row.parityEvidence, PARITY_KEYS)
+  checkKeyOrder(`${label}.projection`, row.projection, PROJECTION_KEYS)
+  for (const field of [
+    'liveProjection',
+    'portableMaterialization',
+    'opaquePreservation',
+    'nativeExport',
+  ]) {
+    checkEnum(label, `projection.${field}`, row.projection[field], ENUMS.projectionState)
+  }
+
+  for (const id of row.sourceUnitIds) {
+    if (!inventoryIds.has(id))
+      fail(`${label}: sourceUnitId ${id} does not exist in the source inventory`)
+  }
+  if (row.sourceUnitIds.length === 0 && row.origin !== 'owner-addition') {
+    fail(`${label}: a legacy row must name at least one source inventory unit`)
+  }
+
+  // Allocation coverage and implementation/evidence are independent fields: evidence has to be
+  // earned by a real corpus or a test, never inherited from the fact that a port exists.
+  if (['E3', 'E4', 'E5'].includes(row.evidenceLevel)) {
+    const realCorpus =
+      row.corpusDescriptors.length > 0 || row.parityEvidence.corpusKinds.includes('real')
+    if (!realCorpus) {
+      fail(
+        `${label}: evidenceLevel ${row.evidenceLevel} claims a real corpus but names no corpus descriptor`,
+      )
+    }
+  }
+  if (
+    row.evidenceLevel === 'E4' &&
+    !row.parityEvidence.verdicts.some(v => v === 'richer' || v === 'equal')
+  ) {
+    if (row.closedBy.tests.length === 0) {
+      fail(`${label}: evidenceLevel E4 needs a not-poorer differential verdict or a named test`)
+    }
+  }
+  if (row.writerEvidence.startsWith('write-reopen-compared') && row.closedBy.tests.length === 0) {
+    fail(`${label}: a proven writer must name the test that proved write → reopen → compare`)
+  }
+  if (row.allocation.state === 'absent' && row.migrationState === 'implemented') {
+    fail(`${label}: nothing is allocated, so migrationState cannot be implemented`)
+  }
+  if (
+    row.allocation.state === 'absent' &&
+    row.mk3Contributions.length > 0 &&
+    row.migrationState === 'missing'
+  ) {
+    fail(`${label}: MK3 contributions are named, so migrationState missing is dishonest`)
+  }
+
+  if (registry.ownerAdditionsFrozen === true && row.origin === 'owner-addition') {
+    if (row.obligation === 'legacy-required') {
+      fail(`${label}: an owner addition cannot carry the legacy-required obligation`)
+    }
+  }
+  if (row.releaseTrack === 'post-ga' && row.obligation === 'focused-required-addition') {
+    fail(`${label}: a focused-required-addition cannot sit outside the focused release tracks`)
+  }
+}
+
+// --- no source unit is lost ------------------------------------------------------------------------
+
+const mapped = new Set(capabilities.flatMap(row => row.sourceUnitIds))
+const coveredByRule = new Map()
+for (const rule of unmappedRules) {
+  if (typeof rule.selector !== 'string' || rule.selector === '')
+    fail('unmapped rule: selector is required')
+  if (typeof rule.reason !== 'string' || rule.reason.length < 10) {
+    fail(`unmapped rule ${rule.selector}: a reason is required`)
+  }
+  if (typeof rule.plan !== 'string' || rule.plan.length < 3) {
+    fail(`unmapped rule ${rule.selector}: a plan is required`)
+  }
+  const units = inventory.units.filter(
+    unit => unit.kind === rule.selector && !mapped.has(unit.sourceUnitId),
+  )
+  if (units.length !== rule.count) {
+    fail(
+      `unmapped rule ${rule.selector}: declares ${rule.count} units, the inventory has ${units.length} unmapped units of that kind`,
+    )
+  }
+  for (const unit of units) {
+    if (coveredByRule.has(unit.sourceUnitId)) {
+      fail(`source unit ${unit.sourceUnitId} is covered by more than one unmapped rule`)
+    }
+    coveredByRule.set(unit.sourceUnitId, rule.selector)
+  }
+}
+
+const lost = inventory.units
+  .filter(unit => !mapped.has(unit.sourceUnitId) && !coveredByRule.has(unit.sourceUnitId))
+  .map(unit => unit.sourceUnitId)
+if (lost.length > 0) {
+  const kinds = [...new Set(lost.map(id => unitKindById.get(id)))].sort(compareUtf8)
+  fail(
+    `${lost.length} source unit(s) are neither mapped to a capability nor listed as unmapped (kinds: ${kinds.join(', ')}); first: ${lost.slice(0, 3).join(', ')}`,
+  )
+}
+
+const declaredCounts = registry.counts ?? {}
+const actualCounts = {
+  capabilities: capabilities.length,
+  unmappedRules: unmappedRules.length,
+  unmappedUnits: coveredByRule.size,
+  mappedUnits: mapped.size,
+  inventoryUnits: inventory.units.length,
+}
+for (const [key, value] of Object.entries(actualCounts)) {
+  if (declaredCounts[key] !== value) {
+    fail(`registry counts.${key} declares ${declaredCounts[key]}, actual ${value}`)
+  }
+}
+if (mapped.size + coveredByRule.size !== inventory.units.length) {
+  fail(
+    `mapped (${mapped.size}) + unmapped (${coveredByRule.size}) must equal the inventory (${inventory.units.length})`,
+  )
+}
+
+// --- scope lock ---------------------------------------------------------------------------------
+
+const scopeLock = registry.scopeLock ?? {}
+for (const obligation of Object.keys(scopeLock)) {
+  checkEnum('scopeLock', 'obligation', obligation, ENUMS.obligation)
+  const rows = capabilities.filter(row => row.obligation === obligation)
+  if (rows.length === 0) fail(`scopeLock declares ${obligation} but no capability carries it`)
+}
+if (registry.ownerAdditionsFrozen !== true) {
+  fail('ownerAdditionsFrozen must be true: block 10 freezes the required owner-addition set')
+}
+if (
+  typeof registry.ownerAdditionsFrozenOn !== 'string' ||
+  !/^\d{4}-\d{2}-\d{2}$/.test(registry.ownerAdditionsFrozenOn)
+) {
+  fail('ownerAdditionsFrozenOn must carry the freeze date')
+}
+
+// --- projection matrix -----------------------------------------------------------------------------
+
+const planes = projections.planes ?? []
+const planeNames = new Set()
+for (const plane of planes) {
+  const label = `plane ${plane.plane}`
+  if (planeNames.has(plane.plane)) fail(`${label}: duplicate plane`)
+  planeNames.add(plane.plane)
+  checkEnum(label, 'action', plane.action, ENUMS.action)
+  for (const action of plane.secondaryActions ?? [])
+    checkEnum(label, 'secondaryActions', action, ENUMS.action)
+  checkEnum(label, 'artifactMaturity', plane.artifactMaturity, ENUMS.artifactMaturity)
+  if (!Array.isArray(plane.requiredFacets) || plane.requiredFacets.length === 0) {
+    fail(`${label}: requiredFacets must not be empty`)
+  }
+  if (typeof plane.portableProfile !== 'string') fail(`${label}: portableProfile is required`)
+  if (plane.portableProfile !== 'none' && !/^UV[A-Z]$/.test(plane.portableProfile)) {
+    fail(`${label}: portableProfile must be "none" or a UV profile, found ${plane.portableProfile}`)
+  }
+  if (typeof plane.derivedPresentation !== 'string' || plane.derivedPresentation === '') {
+    fail(`${label}: derivedPresentation must state what is derived rather than a new source`)
+  }
+  for (const id of plane.capabilityIds ?? []) {
+    if (!capabilityIds.has(id)) fail(`${label}: capabilityId ${id} does not exist in the registry`)
+  }
+  // invariant uvd-is-not-a-document
+  if (plane.plane === 'document' && plane.portableProfile === 'UVD') {
+    fail(
+      `${label}: invariant uvd-is-not-a-document — a document plane may not claim the UVD profile`,
+    )
+  }
+  if (plane.plane === 'definition' && plane.portableProfile !== 'UVD') {
+    fail(`${label}: invariant uvd-is-not-a-document — the definition plane owns the UVD profile`)
+  }
+  // invariant archive-is-not-a-package
+  if (plane.plane === 'container') {
+    if (plane.packageTrust !== 'generic-archive-is-untrusted-data-never-a-package') {
+      fail(
+        `${label}: invariant archive-is-not-a-package — the container plane must declare that trust`,
+      )
+    }
+    if (['materialize', 'export-native'].includes(plane.action)) {
+      fail(`${label}: invariant archive-is-not-a-package — browse never derives pack or repack`)
+    }
+  }
+  // invariant reader-does-not-imply-writer
+  if (
+    plane.artifactMaturity === 'reader-only' &&
+    ['edit', 'materialize', 'export-native'].includes(plane.action)
+  ) {
+    fail(
+      `${label}: invariant reader-does-not-imply-writer — a reader-only plane cannot make ${plane.action} its primary action`,
+    )
+  }
+}
+for (const invariant of projections.invariants ?? []) {
+  if (invariant.enforcedBy !== 'scripts/migration/check-registry.mjs') {
+    fail(`projection invariant ${invariant.id}: enforcedBy must name this gate`)
+  }
+}
+if (projections.counts?.planes !== planes.length) {
+  fail(`projections counts.planes declares ${projections.counts?.planes}, actual ${planes.length}`)
+}
+
+// --- verdict ---------------------------------------------------------------------------------------
+
+if (problems.length > 0) {
+  console.error(`migration:check registry: ${problems.length} problem(s)`)
+  for (const problem of problems) console.error(`  - ${problem}`)
+  process.exit(1)
+}
+if (!quiet) {
+  const track = {}
+  const obligation = {}
+  const evidence = {}
+  for (const row of capabilities) {
+    track[row.releaseTrack] = (track[row.releaseTrack] ?? 0) + 1
+    obligation[row.obligation] = (obligation[row.obligation] ?? 0) + 1
+    evidence[row.evidenceLevel] = (evidence[row.evidenceLevel] ?? 0) + 1
+  }
+  const render = counts =>
+    Object.entries(counts)
+      .sort(([left], [right]) => compareUtf8(left, right))
+      .map(([key, value]) => `${key} ${value}`)
+      .join(', ')
+  console.log(
+    `migration:check registry: ${capabilities.length} capabilities (${render(track)}); obligations ${render(obligation)}; evidence ${render(evidence)}; ${mapped.size} mapped + ${coveredByRule.size} unmapped = ${inventory.units.length} source units; ${planes.length} projection planes`,
+  )
+}

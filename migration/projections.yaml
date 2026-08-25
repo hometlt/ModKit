@@ -1,0 +1,300 @@
+schemaVersion: 'projection-matrix-1'
+$comment: 'Projection/composition matrix (PLAN_MODKIT_MK3_FINAL_RU.md блок 10 работа 10). Одна строка — один plane переноса: чем он является в MK3, какой контракт его публикует, какие facets обязательны, какой portable profile для него честен, насколько зрелым является артефакт, что считается производной презентацией, какое доверие имеет пакет, какая известна потеря и что с этим planeом делают. Колонка action — единственное разрешённое действие по умолчанию; secondaryActions перечисляют доказанные или запланированные дополнительные маршруты. Проверяется scripts/migration/check-registry.mjs.'
+actionVocabulary:
+  - 'defer'
+  - 'edit'
+  - 'execute'
+  - 'export-native'
+  - 'materialize'
+  - 'preserve-opaque'
+  - 'project-live'
+  - 'retain'
+invariants:
+  - id: 'uvd-is-not-a-document'
+    rule: 'Plane definition имеет portableProfile UVD и никогда не маршрутизируется через document-контракты; document-plane не может объявлять portableProfile UVD.'
+    enforcedBy: 'scripts/migration/check-registry.mjs'
+  - id: 'archive-is-not-a-package'
+    rule: 'Plane container объявляет packageTrust generic-archive-is-untrusted-data-never-a-package: generic archive не превращается в UVP или UVE без явной package-operation и trust profile, а browse никогда не выводит pack/repack.'
+    enforcedBy: 'scripts/migration/check-registry.mjs'
+  - id: 'derived-presentation-is-not-a-source'
+    rule: 'Layout tree, растрированная страница, thumbnail и render являются derived presentation и не создают новый source document.'
+    enforcedBy: 'scripts/migration/check-registry.mjs'
+  - id: 'reader-does-not-imply-writer'
+    rule: 'artifactMaturity reader-only запрещает action edit, materialize и export-native как primary action: наличие reader не доказывает writer, обратимость или cross-format export.'
+    enforcedBy: 'scripts/migration/check-registry.mjs'
+counts:
+  planes: 8
+planes:
+  - plane: 'model'
+    projectionKind: 'live-faceted-projection'
+    contract: 'common.view/model-scene-source'
+    contractVersion: 1
+    requiredFacets:
+      - 'scene-graph'
+      - 'nodes'
+      - 'geometry'
+      - 'bounds'
+    optionalFacets:
+      - 'animation'
+      - 'collision'
+      - 'lod'
+      - 'materials'
+      - 'skeleton'
+      - 'sockets'
+      - 'texture-refs'
+      - 'variants'
+    portableProfile: 'UVM'
+    artifactMaturity: 'reader-only'
+    derivedPresentation: 'rasterised-preview-and-thumbnail-are-derived-not-a-new-source'
+    packageTrust: 'not-applicable'
+    fidelity: 'partial'
+    action: 'project-live'
+    secondaryActions:
+      - 'materialize'
+      - 'export-native'
+    plannedBlock: 11
+    knownLoss:
+      - 'materialization в UVM ещё не реализована: MaterializationReceipt отсутствует'
+      - 'native export не заявлен ни одним кодеком; NativeExportReceipt отсутствует'
+      - 'глубина по формату разная: M3/W3D/W3X доказаны на реальном корпусе, VXL — на реальном файле, остальные модели — только структурно'
+    resourceDependencies:
+      - 'текстуры и sidecar объявляются моделью как логические требования; открывает их host, не кодек'
+      - 'ResourceSessionPort блока 11C0 ещё не существует — межархивные и межмодовые ссылки честно reference-only'
+    corpusEvidence:
+      - 'MODKITX_SC2_ROOT'
+      - 'MODKITX_W3D_PATH'
+      - 'MODKITX_W3X_PATH'
+      - 'MODKITX_VXL_PATH'
+    capabilityIds:
+      - 'block9/m3-geometry'
+      - 'block9/vxl-voxel-geometry'
+      - 'block9/w3d-hierarchy-pivots'
+      - 'block9/w3x-container-roles'
+      - 'uv/uvm/live-projection'
+      - 'uv/uvm/materializer-writer'
+  - plane: 'world'
+    projectionKind: 'native-authority-with-planned-neutral-projection'
+    contract: 'common.view/tree-data-source'
+    contractVersion: 1
+    requiredFacets:
+      - 'terrain'
+      - 'objects'
+      - 'manifest'
+    optionalFacets:
+      - 'gameplay'
+      - 'navigation'
+      - 'raster'
+      - 'regions'
+      - 'triggers'
+    portableProfile: 'UVW'
+    artifactMaturity: 'reader-only'
+    derivedPresentation: 'map-render-is-derived-presentation-not-a-new-source'
+    packageTrust: 'not-applicable'
+    fidelity: 'partial'
+    action: 'project-live'
+    secondaryActions:
+      - 'materialize'
+      - 'defer'
+    plannedBlock: 22
+    knownLoss:
+      - 'UVW schema живёт в docs и не имеет исполняемого MK3-контракта'
+      - 'ни одна игра не публикует нейтральный world; уровень neutral-definitions-world у всех шести вертикалей — E0'
+    resourceDependencies:
+      - 'карта ссылается на моды и ассеты игры; разрешение требует game mount вертикали'
+    corpusEvidence:
+      - 'MODKITX_SC2_ROOT'
+      - 'MODKITX_CNC3_ROOT'
+    capabilityIds:
+      - 'format/sc2-map/open-inspect'
+      - 'uv/uvw/world-materialization'
+  - plane: 'definition'
+    projectionKind: 'native-authority-retained'
+    contract: 'common.view/tree-data-source'
+    contractVersion: 1
+    requiredFacets:
+      - 'entries'
+      - 'identity'
+    optionalFacets:
+      - 'inheritance'
+      - 'localization-refs'
+      - 'schema-refs'
+    portableProfile: 'UVD'
+    artifactMaturity: 'reader-only'
+    derivedPresentation: 'entity-cards-and-tables-are-derived-presentation'
+    packageTrust: 'not-applicable'
+    fidelity: 'partial'
+    action: 'retain'
+    secondaryActions:
+      - 'project-live'
+      - 'materialize'
+    plannedBlock: 22
+    knownLoss:
+      - 'UVD остаётся определениями: маршрутизировать UVD как document запрещено инвариантом uvd-is-not-a-document'
+      - 'исполняемого UVD-контракта в MK3 нет; спецификация существует и валидируется (E1)'
+    resourceDependencies:
+      - 'данные ссылаются на локализацию и ассеты того же мода'
+    corpusEvidence:
+      - 'MODKITX_SC2_ROOT'
+      - 'MODKITX_CNC3_ROOT'
+    capabilityIds:
+      - 'format/sc2-data/open-inspect'
+      - 'format/cnc3-data/open-inspect'
+      - 'uv/uvd/definitions'
+  - plane: 'document'
+    projectionKind: 'generic-domain-contracts'
+    contract: 'common.view/text-source'
+    contractVersion: 1
+    requiredFacets:
+      - 'text'
+    optionalFacets:
+      - 'flow'
+      - 'outline'
+      - 'pages'
+      - 'sheets'
+      - 'slides'
+      - 'vector-scene'
+    portableProfile: 'none'
+    artifactMaturity: 'reader-and-writer'
+    derivedPresentation: 'layout-tree-and-rasterised-page-are-derived-not-a-new-source-document'
+    packageTrust: 'ODF-package-reader-is-private-not-a-platform-package'
+    fidelity: 'partial'
+    action: 'edit'
+    secondaryActions:
+      - 'project-live'
+      - 'retain'
+    plannedBlock: 11
+    knownLoss:
+      - 'ODT/ODS/ODP ещё не перенесены в common/documents; ODG не существует'
+      - 'writer заявлен только для text-data и plain-text маршрутов; layout fidelity и ODF round-trip не доказаны'
+      - 'CSV/Markdown/RTF имеют по два активных маршрута (mk2-порт и MK3-native) — ambiguity снимается slice 11A/11B'
+    resourceDependencies:
+      - 'ODF-пакет содержит вложенные ресурсы; внешние ресурсы и макросы запрещены'
+    corpusEvidence: []
+    capabilityIds:
+      - 'addition/odg/open-inspect'
+      - 'addition/text-json/open-edit'
+      - 'block9/csv-quoted-separators'
+      - 'format/odt/open-inspect'
+  - plane: 'media'
+    projectionKind: 'live-domain-source'
+    contract: 'common.view/raster-image-source'
+    contractVersion: 1
+    requiredFacets:
+      - 'metadata'
+    optionalFacets:
+      - 'audio-stream'
+      - 'pixels'
+      - 'video-stream'
+    portableProfile: 'UVT'
+    artifactMaturity: 'reader-and-writer'
+    derivedPresentation: 'thumbnail-and-preview-are-derived'
+    packageTrust: 'not-applicable'
+    fidelity: 'partial'
+    action: 'project-live'
+    secondaryActions:
+      - 'edit'
+      - 'export-native'
+    plannedBlock: 12
+    knownLoss:
+      - 'ASTC/AVIF/KTX2/PKM/Basis публикуют заголовки, а не декодированные пиксели — 17 честных poorer-строк паритета'
+      - 'UVT-профиль в спецификации остаётся stub: до schema + fixtures + validator материализация UVT не заявляется'
+      - 'writer доказан для PNG (пиксели) и для метаданных JPEG/MP3; остальные media-writers не заявлены'
+    resourceDependencies:
+      - 'текстура может лежать внутри архива или CASC; путь разрешает host'
+    corpusEvidence:
+      - 'MODKITX_SC2_ROOT'
+      - 'MODKITX_CNC3_ROOT'
+    capabilityIds:
+      - 'block9/decoded-gpu-texture-payloads'
+      - 'format/dds/open-inspect'
+      - 'format/png/open-inspect'
+      - 'uv/uvt/texture-profile'
+  - plane: 'ui'
+    projectionKind: 'native-authority-retained'
+    contract: 'common.view/tree-data-source'
+    contractVersion: 1
+    requiredFacets:
+      - 'element-tree'
+    optionalFacets:
+      - 'bindings'
+      - 'hookups'
+      - 'styles'
+    portableProfile: 'UVI'
+    artifactMaturity: 'reader-only'
+    derivedPresentation: 'rendered-layout-preview-is-derived'
+    packageTrust: 'not-applicable'
+    fidelity: 'partial'
+    action: 'retain'
+    secondaryActions:
+      - 'project-live'
+      - 'defer'
+    plannedBlock: 21
+    knownLoss:
+      - 'SC2Layout читается структурно; рендер и биндинги не доказаны'
+    resourceDependencies:
+      - 'layout ссылается на стили, строки и изображения того же мода'
+    corpusEvidence:
+      - 'MODKITX_SC2_ROOT'
+    capabilityIds:
+      - 'format/sc2-layout/open-inspect'
+  - plane: 'code'
+    projectionKind: 'language-and-text-contracts'
+    contract: 'common.view/text-source'
+    contractVersion: 1
+    requiredFacets:
+      - 'text'
+    optionalFacets:
+      - 'diagnostics'
+      - 'symbols'
+      - 'syntax-tree'
+    portableProfile: 'none'
+    artifactMaturity: 'reader-only'
+    derivedPresentation: 'highlighting-and-outline-are-derived'
+    packageTrust: 'not-applicable'
+    fidelity: 'partial'
+    action: 'retain'
+    secondaryActions:
+      - 'edit'
+      - 'execute'
+    plannedBlock: 14
+    knownLoss:
+      - 'language-план кодеков потерян при переносе (galaxy: ./language.js); language-контракты MK3 ещё не существуют'
+      - 'исполнение остаётся за runtime-вертикалью, а не за кодеком'
+    resourceDependencies:
+      - 'скрипт ссылается на библиотеки триггеров и natives того же мода'
+    corpusEvidence:
+      - 'MODKITX_SC2_ROOT'
+    capabilityIds:
+      - 'format/galaxy/open-inspect'
+      - 'format/sc2-triggers/open-inspect'
+  - plane: 'container'
+    projectionKind: 'namespace-browse'
+    contract: 'common.view/namespace-entry-source'
+    contractVersion: 1
+    requiredFacets:
+      - 'entries'
+    optionalFacets:
+      - 'nested-mounts'
+      - 'ranges'
+    portableProfile: 'none'
+    artifactMaturity: 'reader-only'
+    derivedPresentation: 'entry-tree-is-a-projection-of-the-container-not-a-new-artifact'
+    packageTrust: 'generic-archive-is-untrusted-data-never-a-package'
+    fidelity: 'partial'
+    action: 'project-live'
+    secondaryActions:
+      - 'preserve-opaque'
+    plannedBlock: 12
+    knownLoss:
+      - 'container.extract остаётся отдельной операцией; container.pack и repack не выводятся из browse'
+      - 'запись в архив не заявлена ни одним кодеком (X3 v1 read-only)'
+    resourceDependencies:
+      - 'вложенные контейнеры монтируются host-ом через VfsMount; кодек не строит URI'
+    corpusEvidence:
+      - 'MODKITX_SC2_ROOT'
+      - 'MODKITX_CNC3_ROOT'
+    capabilityIds:
+      - 'block9/archive-entry-as-subject'
+      - 'block9/casc-mpq-texture-chain'
+      - 'format/big/open-inspect'
+      - 'format/casc/open-inspect'
