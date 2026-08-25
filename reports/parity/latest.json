@@ -7,7 +7,7 @@
   },
   "x3": {
     "root": "C:\\FILES\\SC2Files\\coding\\modkitX3",
-    "sha": "a3099de32bd4da2cfdba6a7bf5cbc03a2c05f389"
+    "sha": "42923ba73fff79201440408963276d43a99b8448"
   },
   "counts": {
     "total": 69,
@@ -724,7 +724,7 @@
         "common.view/model-scene-source:primitive",
         "geometry:decoded"
       ],
-      "reason": "X3 emperor-xbf is metadata-only on a real retail model: no meshes, materials or animation tracks are published, while the canonical codec decodes 4 meshes, 5 materials and 25 animations. A genuine depth gap queued for Block 9 step 3."
+      "reason": "X3 emperor-xbf is metadata-only on a real retail model: no meshes, materials or animation tracks are published, while the canonical codec decodes 4 meshes, 5 materials and 25 animations. A genuine depth gap, and not one Block 9 closed: its depth slices covered the priority closure (VXL, W3D, W3X, M3) and Emperor is outside it. Emperor depth belongs to Block 30 (format definitions and ecosystems); until then this row stays poorer on purpose rather than pending."
     },
     {
       "id": "ktx2-real",
@@ -4492,7 +4492,7 @@
                   "message": "«org.modkitx/text-csv» runs worker-brokered: a crash, hang or protocol violation of this code is isolated from the host, but the worker shares the process — it is not a security sandbox (24 §6.1 SB-1).",
                   "path": ["org.modkitx/text-csv"],
                   "data": {
-                    "grant": "modkit-library:ed286b74-4a3e-46cc-ad46-182f80f8aa41/org.modkitx/text-csv#portable#probe",
+                    "grant": "modkit-library:95559ede-5207-4f3c-8dce-a188185a8f22/org.modkitx/text-csv#portable#probe",
                     "classes": ["read-source"]
                   }
                 }
@@ -5732,7 +5732,7 @@
         }
       ],
       "baseline": "X3 беднее",
-      "allowPoorerReason": "X3 emperor-xbf is metadata-only on a real retail model: no meshes, materials or animation tracks are published, while the canonical codec decodes 4 meshes, 5 materials and 25 animations. A genuine depth gap queued for Block 9 step 3.",
+      "allowPoorerReason": "X3 emperor-xbf is metadata-only on a real retail model: no meshes, materials or animation tracks are published, while the canonical codec decodes 4 meshes, 5 materials and 25 animations. A genuine depth gap, and not one Block 9 closed: its depth slices covered the priority closure (VXL, W3D, W3X, M3) and Emperor is outside it. Emperor depth belongs to Block 30 (format definitions and ecosystems); until then this row stays poorer on purpose rather than pending.",
       "canonical": {
         "formatId": "xbf",
         "declaredSources": ["common.view/model-scene-source"],
