@@ -12,6 +12,12 @@ export const STANDARD_DATA_SOURCE_CONTRACTS = Object.freeze([
   'common.view/audio-media-source',
   'common.view/video-media-source',
   'common.view/model-scene-source',
+  // optional model facets beside the base scene source (block 11, slice 11C0, plan item 11)
+  'common.view/model-resource-refs-source',
+  'common.view/model-skeleton-source',
+  'common.view/model-animation-source',
+  'common.view/model-collision-source',
+  'common.view/model-material-source',
   'common.view/relation-graph-source',
   'common.view/subject-facts-source',
   'common.view/slide-deck-source',
@@ -36,9 +42,17 @@ export type DataSourceMaturity = 'admitted' | 'publisher-candidate'
 /**
  * Maturity of every standard data-source contract.
  *
- * `common.view/slide-deck-source` is the one candidate: block 11 slice 11B publishes it from ODP
- * alone. Its admission waits for a second, independent slides family (PPTX) plus a generic
- * consumer — block 30, not this slice.
+ * Six candidates, and each of them is a candidate for a stated reason rather than by default.
+ *
+ * `common.view/slide-deck-source`: block 11 slice 11B publishes it from ODP alone. Its admission
+ * waits for a second, independent slides family (PPTX) plus a generic consumer — block 30.
+ *
+ * The five optional model facets: slice 11C0 declares the contracts; the codecs that already
+ * compute those facts still publish them ad hoc in their summaries, and migrating them is slice
+ * 11C1 / block 12 work. Until the M3 + W3X proof runs against the contracts themselves, the shapes
+ * may still move under the dual-publish rules, and no gate may count them as settled. The base
+ * `common.view/model-scene-source` is untouched and stays admitted: adding a facet beside a
+ * contract is not a change to it.
  */
 export const DATA_SOURCE_MATURITY: Readonly<Record<StandardDataSourceId, DataSourceMaturity>> =
   Object.freeze({
@@ -53,6 +67,11 @@ export const DATA_SOURCE_MATURITY: Readonly<Record<StandardDataSourceId, DataSou
     'common.view/audio-media-source': 'admitted',
     'common.view/video-media-source': 'admitted',
     'common.view/model-scene-source': 'admitted',
+    'common.view/model-resource-refs-source': 'publisher-candidate',
+    'common.view/model-skeleton-source': 'publisher-candidate',
+    'common.view/model-animation-source': 'publisher-candidate',
+    'common.view/model-collision-source': 'publisher-candidate',
+    'common.view/model-material-source': 'publisher-candidate',
     'common.view/relation-graph-source': 'admitted',
     'common.view/subject-facts-source': 'admitted',
     'common.view/slide-deck-source': 'publisher-candidate',

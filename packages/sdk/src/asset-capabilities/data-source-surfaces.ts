@@ -40,6 +40,13 @@ import type {
   VectorSceneSource,
   VideoMediaSource,
 } from './media-data-sources.js'
+import type {
+  ModelAnimationSource,
+  ModelCollisionSource,
+  ModelMaterialSource,
+  ModelResourceRefsSource,
+  ModelSkeletonSource,
+} from './model-facet-sources.js'
 
 // ---------------------------------------------------------------------------------------------
 // compile-time pin: a surface must name exactly the ABI's methods
@@ -99,7 +106,7 @@ const encodedMediaSurface = {
 } as const satisfies SurfaceOf<EncodedMediaSource>
 
 // ---------------------------------------------------------------------------------------------
-// the 14 standard surfaces
+// the 19 standard surfaces
 
 const textDataSourceSurface = {
   methods: {
@@ -191,6 +198,45 @@ const modelSceneSourceSurface = {
   },
 } as const satisfies SurfaceOf<ModelSceneSource>
 
+/**
+ * The five optional model facets of slice 11C0. Candidate maturity changes nothing about the
+ * wire: an `info` plus one paged reader, called exactly like every other source.
+ */
+const modelResourceRefsSourceSurface = {
+  methods: {
+    info: cancellableValue,
+    references: cancellableValue,
+  },
+} as const satisfies SurfaceOf<ModelResourceRefsSource>
+
+const modelSkeletonSourceSurface = {
+  methods: {
+    info: cancellableValue,
+    bindings: cancellableValue,
+  },
+} as const satisfies SurfaceOf<ModelSkeletonSource>
+
+const modelAnimationSourceSurface = {
+  methods: {
+    info: cancellableValue,
+    clips: cancellableValue,
+  },
+} as const satisfies SurfaceOf<ModelAnimationSource>
+
+const modelCollisionSourceSurface = {
+  methods: {
+    info: cancellableValue,
+    volumes: cancellableValue,
+  },
+} as const satisfies SurfaceOf<ModelCollisionSource>
+
+const modelMaterialSourceSurface = {
+  methods: {
+    info: cancellableValue,
+    materials: cancellableValue,
+  },
+} as const satisfies SurfaceOf<ModelMaterialSource>
+
 const relationGraphSourceSurface = {
   methods: {
     summary: cancellableValue,
@@ -216,7 +262,7 @@ const subjectFactsSourceSurface = {
   },
 } as const satisfies SurfaceOf<SubjectFactsSource>
 
-/** Method surfaces of the 14 standard data-source contracts, all `major 1`. */
+/** Method surfaces of the 19 standard data-source contracts, all `major 1`. */
 export const STANDARD_DATA_SOURCE_SURFACES: Readonly<
   Record<StandardDataSourceId, DataSourceSurfaceV1>
 > = deepFreeze({
@@ -231,6 +277,11 @@ export const STANDARD_DATA_SOURCE_SURFACES: Readonly<
   'common.view/audio-media-source': audioMediaSourceSurface,
   'common.view/video-media-source': videoMediaSourceSurface,
   'common.view/model-scene-source': modelSceneSourceSurface,
+  'common.view/model-resource-refs-source': modelResourceRefsSourceSurface,
+  'common.view/model-skeleton-source': modelSkeletonSourceSurface,
+  'common.view/model-animation-source': modelAnimationSourceSurface,
+  'common.view/model-collision-source': modelCollisionSourceSurface,
+  'common.view/model-material-source': modelMaterialSourceSurface,
   'common.view/relation-graph-source': relationGraphSourceSurface,
   'common.view/subject-facts-source': subjectFactsSourceSurface,
   'common.view/slide-deck-source': slideDeckSourceSurface,

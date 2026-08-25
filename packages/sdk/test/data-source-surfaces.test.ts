@@ -191,7 +191,7 @@ describe('NXT-103 — data-source method surface schema', () => {
 })
 
 describe('NXT-103 — standard data-source surfaces', () => {
-  it('covers exactly the 14 standard contracts plus the auxiliary encoded-media surface', () => {
+  it('covers exactly the 19 standard contracts plus the auxiliary encoded-media surface', () => {
     expect(Object.keys(STANDARD_DATA_SOURCE_SURFACES).sort()).toEqual(
       [...STANDARD_DATA_SOURCE_CONTRACTS].sort(),
     )
@@ -264,7 +264,23 @@ describe('NXT-103 — standard data-source surfaces', () => {
     )
     expect(dataSourceMaturity('common.view/slide-deck-source')).toBe('publisher-candidate')
     expect(ADMITTED_DATA_SOURCE_CONTRACTS).not.toContain('common.view/slide-deck-source')
-    expect(ADMITTED_DATA_SOURCE_CONTRACTS.length).toBe(STANDARD_DATA_SOURCE_CONTRACTS.length - 1)
+    // six candidates: the ODP-only slides source, and the five optional model facets slice 11C0
+    // declared ahead of migrating their publishers off ad hoc summaries
+    expect(
+      STANDARD_DATA_SOURCE_CONTRACTS.filter(
+        contract => DATA_SOURCE_MATURITY[contract] === 'publisher-candidate',
+      ),
+    ).toEqual([
+      'common.view/model-resource-refs-source',
+      'common.view/model-skeleton-source',
+      'common.view/model-animation-source',
+      'common.view/model-collision-source',
+      'common.view/model-material-source',
+      'common.view/slide-deck-source',
+    ])
+    expect(ADMITTED_DATA_SOURCE_CONTRACTS.length).toBe(STANDARD_DATA_SOURCE_CONTRACTS.length - 6)
+    // the base model contract is untouched: a facet beside a contract is not a change to it
+    expect(dataSourceMaturity('common.view/model-scene-source')).toBe('admitted')
     for (const contract of ADMITTED_DATA_SOURCE_CONTRACTS) {
       expect(DATA_SOURCE_MATURITY[contract], contract).toBe('admitted')
     }

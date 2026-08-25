@@ -78,6 +78,17 @@ describe('descriptor-v2 wire facts', () => {
       'common.view/audio-media-source',
       'common.view/video-media-source',
       'common.view/model-scene-source',
+      /*
+       * Block 11 slice 11C0: optional model facets beside the base scene source, which is itself
+       * unchanged and still admitted. Standard on the wire and `publisher-candidate` in
+       * DATA_SOURCE_MATURITY for the same reason the slides source is — declared ahead of the
+       * codecs that will publish them, so the shape may still move under the dual-publish rules.
+       */
+      'common.view/model-resource-refs-source',
+      'common.view/model-skeleton-source',
+      'common.view/model-animation-source',
+      'common.view/model-collision-source',
+      'common.view/model-material-source',
       'common.view/relation-graph-source',
       'common.view/subject-facts-source',
       // ADR-DOC-001: standard on the wire, `publisher-candidate` in DATA_SOURCE_MATURITY

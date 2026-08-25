@@ -22,6 +22,11 @@
                   "common.view/audio-media-source",
                   "common.view/video-media-source",
                   "common.view/model-scene-source",
+                  "common.view/model-resource-refs-source",
+                  "common.view/model-skeleton-source",
+                  "common.view/model-animation-source",
+                  "common.view/model-collision-source",
+                  "common.view/model-material-source",
                   "common.view/relation-graph-source",
                   "common.view/subject-facts-source",
                   "common.view/slide-deck-source"
@@ -54,6 +59,11 @@
                     "common.view/audio-media-source",
                     "common.view/video-media-source",
                     "common.view/model-scene-source",
+                    "common.view/model-resource-refs-source",
+                    "common.view/model-skeleton-source",
+                    "common.view/model-animation-source",
+                    "common.view/model-collision-source",
+                    "common.view/model-material-source",
                     "common.view/relation-graph-source",
                     "common.view/subject-facts-source",
                     "common.view/slide-deck-source"

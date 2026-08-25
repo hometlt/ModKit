@@ -42,6 +42,39 @@ import type {
   VectorSceneSource,
   VideoMediaSource,
 } from './media-data-sources.js'
+import type {
+  ModelAnimationSource,
+  ModelCollisionSource,
+  ModelMaterialSource,
+  ModelResourceRefsSource,
+  ModelSkeletonSource,
+} from './model-facet-sources.js'
+export {
+  isReservedModelFacetSource,
+  RESERVED_MODEL_FACET_SOURCES,
+  type ModelAnimationChannel,
+  type ModelAnimationClip,
+  type ModelAnimationInfo,
+  type ModelAnimationKind,
+  type ModelAnimationSource,
+  type ModelBoneBinding,
+  type ModelBoneProvenance,
+  type ModelCollisionInfo,
+  type ModelCollisionOrigin,
+  type ModelCollisionSource,
+  type ModelCollisionVolume,
+  type ModelMaterialInfo,
+  type ModelMaterialRef,
+  type ModelMaterialSource,
+  type ModelResourceProvenance,
+  type ModelResourceRef,
+  type ModelResourceRefsInfo,
+  type ModelResourceRefsSource,
+  type ModelResourceRole,
+  type ModelSkeletonInfo,
+  type ModelSkeletonSource,
+  type ReservedModelFacetSource,
+} from './model-facet-sources.js'
 export type {
   AudioMediaInfo,
   AudioMediaSource,
@@ -460,6 +493,11 @@ export interface DataSourceContractMap {
   'common.view/audio-media-source': { 1: AudioMediaSource }
   'common.view/video-media-source': { 1: VideoMediaSource }
   'common.view/model-scene-source': { 1: ModelSceneSource }
+  'common.view/model-resource-refs-source': { 1: ModelResourceRefsSource }
+  'common.view/model-skeleton-source': { 1: ModelSkeletonSource }
+  'common.view/model-animation-source': { 1: ModelAnimationSource }
+  'common.view/model-collision-source': { 1: ModelCollisionSource }
+  'common.view/model-material-source': { 1: ModelMaterialSource }
   'common.view/relation-graph-source': { 1: RelationGraphSource }
   'common.view/subject-facts-source': { 1: SubjectFactsSource }
   'common.view/slide-deck-source': { 1: SlideDeckSource }
