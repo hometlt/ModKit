@@ -59,7 +59,9 @@ const STAGES: readonly StageFacts[] = orderStages(
     .map(slot => ({
       id: slot.slotId,
       label: slot.slotId,
-      contract: slot.bindings[0]?.contract ?? '',
+      // a stage binds exactly one source; the ref is a union with an opaque arm, and only the
+      // contract name matters here
+      contract: (slot.bindings[0] as { readonly contract?: string } | undefined)?.contract ?? '',
     })),
 )
 
@@ -72,11 +74,11 @@ const budget: ResourceBudget = {
 }
 const grant = { id: 'odf-view-policy', classes: ['read-source'] } as const
 
-const services: ElectronSubjectServices[] = []
 const temporaries: string[] = []
 
+// Sessions are disposed one by one as each file is read; the composition itself owns no handle to
+// release (see `subject-open-smoke`, which tears down the same way).
 afterAll(async () => {
-  while (services.length > 0) await services.pop()?.executionBackends.dispose?.()
   while (temporaries.length > 0) {
     const directory = temporaries.pop()
     if (directory !== undefined) await rm(directory, { recursive: true, force: true })
@@ -91,10 +93,7 @@ function subjects(): Promise<ElectronSubjectServices> {
     join(extensionsRoot, 'common', 'documents'),
     join(extensionsRoot, 'common', 'text-delimited'),
     join(extensionsRoot, 'common', 'vector'),
-  ]).then(value => {
-    services.push(value)
-    return value
-  })
+  ])
   return shared
 }
 

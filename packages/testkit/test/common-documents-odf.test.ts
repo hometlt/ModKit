@@ -345,9 +345,11 @@ describe('11B common/documents — the OpenDocument quartet', () => {
         file,
       ).toEqual([])
       // a writer is not declarable until preserving repack and round-trip are proved (plan 11B.7)
-      const operations = result.manifest?.spec?.operations ?? []
+      const spec = manifest.spec as {
+        readonly operations?: readonly { readonly mutatesSource?: boolean }[]
+      }
       expect(
-        operations.some(operation => operation.mutatesSource === true),
+        (spec.operations ?? []).some(operation => operation.mutatesSource === true),
         file,
       ).toBe(false)
       expect((manifest.limitations ?? []).length, file).toBeGreaterThanOrEqual(5)
@@ -463,6 +465,7 @@ describe('11B common/documents — the OpenDocument quartet', () => {
   it('keeps a spreadsheet formula as text and provenance, and never evaluates it', async () => {
     const session = await open('ods', await fixture('ods'))
     const descriptor = await session.descriptor()
+    if (descriptor.interpretation !== 'codec') throw new Error('expected a codec descriptor')
     const formulas = descriptor.metadata?.find(group => group.id === 'odf-formulas')
     expect(formulas?.entries).toEqual([
       // `1+1` stays `1+1`; the published value is the value the document stored
