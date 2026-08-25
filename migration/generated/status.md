@@ -63,36 +63,38 @@
 
 Покрытие не доказывает реализацию, реализация не доказывает evidence — это разные поля и разные числа.
 
-| allocation   | Строк | migrationState      | Строк | evidenceLevel | Строк |
-| ------------ | ----- | ------------------- | ----- | ------------- | ----- |
-| `absent`     | 98    | `equivalent-better` | 13    | E0            | 90    |
-| `covered`    | 197   | `implemented`       | 191   | E1            | 127   |
-| `superseded` | 13    | `missing`           | 98    | E2            | 65    |
-|              |       | `partial`           | 6     | E3            | 12    |
-|              |       |                     |       | E4            | 14    |
+| allocation                   | Строк | migrationState      | Строк | evidenceLevel | Строк |
+| ---------------------------- | ----- | ------------------- | ----- | ------------- | ----- |
+| `absent`                     | 98    | `equivalent-better` | 15    | E0            | 90    |
+| `covered`                    | 195   | `implemented`       | 190   | E1            | 124   |
+| `superseded`                 | 13    | `missing`           | 98    | E2            | 64    |
+| `superseded-staging-present` | 2     | `partial`           | 5     | E3            | 12    |
+|                              |       |                     |       | E4            | 18    |
 
 ### 3.3. Доказанные writers
 
-| Возможность                    | writerEvidence                         | Тест                                      |
-| ------------------------------ | -------------------------------------- | ----------------------------------------- |
-| `addition/text-ini/open-edit`  | `write-reopen-compared`                | `packages/host/test/text-writers.test.ts` |
-| `addition/text-json/open-edit` | `write-reopen-compared`                | `packages/host/test/text-writers.test.ts` |
-| `format/jpg/open-inspect`      | `write-reopen-compared-metadata-plane` | `packages/host/test/media-edits.test.ts`  |
-| `format/mp3/open-inspect`      | `write-reopen-compared-metadata-plane` | `packages/host/test/media-edits.test.ts`  |
-| `format/png/open-inspect`      | `write-reopen-compared`                | `packages/host/test/media-edits.test.ts`  |
+| Возможность                    | writerEvidence                         | Тест                                                                                           |
+| ------------------------------ | -------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `addition/text-ini/open-edit`  | `write-reopen-compared`                | `packages/host/test/text-writers.test.ts`                                                      |
+| `addition/text-json/open-edit` | `write-reopen-compared`                | `packages/host/test/text-writers.test.ts`<br>`packages/testkit/test/text-data.test.ts`         |
+| `format/csv/open-inspect`      | `write-reopen-compared`                | `packages/testkit/test/text-data.test.ts`<br>`packages/host/test/text-writers.test.ts`         |
+| `format/jpg/open-inspect`      | `write-reopen-compared-metadata-plane` | `packages/host/test/media-edits.test.ts`                                                       |
+| `format/mp3/open-inspect`      | `write-reopen-compared-metadata-plane` | `packages/host/test/media-edits.test.ts`                                                       |
+| `format/png/open-inspect`      | `write-reopen-compared`                | `packages/host/test/media-edits.test.ts`                                                       |
+| `format/txt/open-inspect`      | `write-reopen-compared`                | `packages/testkit/test/common-plain-text.test.ts`<br>`packages/host/test/text-writers.test.ts` |
 
 ## 4. Именованные closure
 
 | Release             | Всего | Seed | Транзитивных | Нерешённых | Ближайший блок |
 | ------------------- | ----- | ---- | ------------ | ---------- | -------------- |
-| `mk3-ga`            | 165   | 158  | 7            | 50         | block-11       |
-| `mk3-multiverse-ga` | 167   | 167  | 0            | 51         | block-11       |
+| `mk3-ga`            | 165   | 158  | 7            | 49         | block-11       |
+| `mk3-multiverse-ga` | 167   | 167  | 0            | 50         | block-11       |
 
 ### 4.1. Дедлайны `mk3-ga` по planned block
 
 | Planned block | Units | Из них нерешённых |
 | ------------- | ----- | ----------------- |
-| `block-11`    | 14    | 7                 |
+| `block-11`    | 14    | 6                 |
 | `block-12`    | 70    | 1                 |
 | `block-13`    | 1     | 1                 |
 | `block-15`    | 24    | 7                 |
@@ -102,19 +104,18 @@
 
 ## 5. Gap list — что осталось в `mk3-ga`
 
-Строк с нерешённым состоянием: **50** из 165. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
+Строк с нерешённым состоянием: **49** из 165. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
 
-### Блок 11 — 7 строк
+### Блок 11 — 6 строк
 
-| Возможность                               | migrationState | evidence | Владелец                           |
-| ----------------------------------------- | -------------- | -------- | ---------------------------------- |
-| `addition/odg/open-inspect`               | `missing`      | E0       | `extensions/common/documents`      |
-| `block9/csv-quoted-separators`            | `partial`      | E2       | `extensions/common/text-delimited` |
-| `uv/foundation/spec-authority`            | `missing`      | E1       | `multiverse/specs seed`            |
-| `uv/projection-abi/receipts`              | `missing`      | E1       | `packages/sdk`                     |
-| `uv/resource-session-port/lazy-resources` | `missing`      | E1       | `packages/host`                    |
-| `uv/uvm/live-projection`                  | `missing`      | E1       | `extensions/common/models`         |
-| `uv/uvm/materializer-writer`              | `missing`      | E1       | `extensions/common/models`         |
+| Возможность                               | migrationState | evidence | Владелец                      |
+| ----------------------------------------- | -------------- | -------- | ----------------------------- |
+| `addition/odg/open-inspect`               | `missing`      | E0       | `extensions/common/documents` |
+| `uv/foundation/spec-authority`            | `missing`      | E1       | `multiverse/specs seed`       |
+| `uv/projection-abi/receipts`              | `missing`      | E1       | `packages/sdk`                |
+| `uv/resource-session-port/lazy-resources` | `missing`      | E1       | `packages/host`               |
+| `uv/uvm/live-projection`                  | `missing`      | E1       | `extensions/common/models`    |
+| `uv/uvm/materializer-writer`              | `missing`      | E1       | `extensions/common/models`    |
 
 ### Блок 12 — 1 строк
 

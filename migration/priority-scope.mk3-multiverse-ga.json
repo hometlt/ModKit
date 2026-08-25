@@ -19,13 +19,13 @@
       "block-22": 2
     },
     "byMigrationState": {
-      "equivalent-better": 13,
-      "implemented": 103,
+      "equivalent-better": 15,
+      "implemented": 102,
       "missing": 45,
-      "partial": 6
+      "partial": 5
     },
     "byObligation": { "focused-required-addition": 13, "legacy-required": 154 },
-    "byEvidenceLevel": { "E0": 37, "E1": 45, "E2": 63, "E3": 9, "E4": 13 }
+    "byEvidenceLevel": { "E0": 37, "E1": 42, "E2": 62, "E3": 9, "E4": 17 }
   },
   "deadlines": {
     "block-11": [
@@ -392,9 +392,9 @@
       "obligation": "legacy-required",
       "owner": "extensions/common/text-delimited",
       "plannedBlock": 11,
-      "migrationState": "partial",
-      "supportState": "partial",
-      "evidenceLevel": "E2",
+      "migrationState": "implemented",
+      "supportState": "supported",
+      "evidenceLevel": "E4",
       "allocationState": "covered",
       "portFamily": null,
       "corpusDescriptors": [],
@@ -941,13 +941,13 @@
       "releaseTrack": "mk3-priority",
       "origin": "legacy",
       "obligation": "legacy-required",
-      "owner": "extensions/common/documents",
+      "owner": "extensions/common/text-delimited",
       "plannedBlock": 11,
-      "migrationState": "implemented",
+      "migrationState": "equivalent-better",
       "supportState": "partial",
-      "evidenceLevel": "E1",
-      "allocationState": "covered",
-      "portFamily": "mk2/uncommon-documents",
+      "evidenceLevel": "E4",
+      "allocationState": "superseded-staging-present",
+      "portFamily": "common/text-delimited",
       "corpusDescriptors": [],
       "dependsOn": [],
       "requiredBy": ["block9/csv-quoted-separators"]
@@ -1321,11 +1321,11 @@
       "obligation": "legacy-required",
       "owner": "extensions/common/documents",
       "plannedBlock": 11,
-      "migrationState": "implemented",
+      "migrationState": "equivalent-better",
       "supportState": "partial",
-      "evidenceLevel": "E1",
-      "allocationState": "covered",
-      "portFamily": "mk2/uncommon-documents",
+      "evidenceLevel": "E4",
+      "allocationState": "superseded-staging-present",
+      "portFamily": "common/documents",
       "corpusDescriptors": [],
       "dependsOn": [],
       "requiredBy": []
@@ -2076,13 +2076,13 @@
       "releaseTrack": "mk3-priority",
       "origin": "legacy",
       "obligation": "legacy-required",
-      "owner": "extensions/common/documents",
+      "owner": "extensions/common/plain-text",
       "plannedBlock": 11,
       "migrationState": "implemented",
-      "supportState": "partial",
-      "evidenceLevel": "E1",
+      "supportState": "supported",
+      "evidenceLevel": "E4",
       "allocationState": "covered",
-      "portFamily": "mk2/uncommon-documents",
+      "portFamily": "common/plain-text",
       "corpusDescriptors": [],
       "dependsOn": [],
       "requiredBy": []

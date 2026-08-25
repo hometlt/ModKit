@@ -102,7 +102,16 @@ const ENUMS = {
     'post-ga-required-proof',
     'experimental-optional',
   ],
-  allocationState: ['covered', 'superseded', 'absent', 'not-applicable'],
+  // `superseded-staging-present` is the honest third state block 11 produced: the legacy id still
+  // physically exists under extensions/mk2/** but no longer wins routing, the named replacement is
+  // the single active route, and physical removal belongs to the block-30 mk2 emptying.
+  allocationState: [
+    'covered',
+    'superseded',
+    'superseded-staging-present',
+    'absent',
+    'not-applicable',
+  ],
   migrationState: [
     'implemented',
     'equivalent-better',
@@ -276,6 +285,7 @@ if (isDefaultRegistry) {
   }
 
   let coveredRows = 0
+  let retiredRouteRows = 0
   for (const row of formatRows) {
     const label = `capability ${row.capabilityId}`
     const declared = row.allocation.x3ContributionId
@@ -304,6 +314,26 @@ if (isDefaultRegistry) {
       }
       if (row.replacementWorkflow === null) {
         fail(`${label}: a superseded row must name its replacement workflow`)
+      }
+    }
+    if (row.allocation.state === 'superseded-staging-present') {
+      retiredRouteRows += 1
+      if (!identityCovered) {
+        fail(
+          `${label}: the staging contribution ${legacyId} is gone, so this row is plainly superseded`,
+        )
+      } else if (!x3.get(legacyId)?.file.startsWith('extensions/mk2/')) {
+        fail(
+          `${label}: ${legacyId} does not live in staging, so a retired-route state is not the truth`,
+        )
+      }
+      if (declared === null || !x3.has(declared) || declared === legacyId) {
+        fail(
+          `${label}: a retired route must name the replacement that actually wins, found ${declared}`,
+        )
+      }
+      if (row.replacementWorkflow === null) {
+        fail(`${label}: a retired route must name its replacement workflow`)
       }
     }
     const entry = declared === null ? undefined : x3.get(declared)
@@ -340,9 +370,12 @@ if (isDefaultRegistry) {
       fail(`${label}: parityEvidence.liveSources contradicts the observed X3 sources`)
     }
   }
-  if (coveredRows !== ratchetTotal) {
+  // Allocation coverage and the MK2 ratchet are the same fact seen twice. A route retired in
+  // favour of a richer MK3 contribution still leaves its hand-ported module in staging until the
+  // block-30 emptying, so the ratchet keeps counting it and the two states are summed here.
+  if (coveredRows + retiredRouteRows !== ratchetTotal) {
     fail(
-      `covered format rows (${coveredRows}) must equal the MK2 port ratchet total (${ratchetTotal}); allocation coverage and the ratchet are the same fact`,
+      `covered (${coveredRows}) + retired-route (${retiredRouteRows}) format rows must equal the MK2 port ratchet total (${ratchetTotal}); allocation coverage and the ratchet are the same fact`,
     )
   }
 }
@@ -407,21 +440,34 @@ for (const row of capabilities) {
 
   // Allocation coverage and implementation/evidence are independent fields: evidence has to be
   // earned by a real corpus or a test, never inherited from the fact that a port exists.
-  if (['E3', 'E4', 'E5'].includes(row.evidenceLevel)) {
-    const realCorpus =
-      row.corpusDescriptors.length > 0 || row.parityEvidence.corpusKinds.includes('real')
+  const realCorpus =
+    row.corpusDescriptors.length > 0 || row.parityEvidence.corpusKinds.includes('real')
+  // E3 and E5 are corpus/workflow rungs: they are false without a real corpus behind them.
+  if (row.evidenceLevel === 'E3' || row.evidenceLevel === 'E5') {
     if (!realCorpus) {
       fail(
         `${label}: evidenceLevel ${row.evidenceLevel} claims a real corpus but names no corpus descriptor`,
       )
     }
   }
-  if (
-    row.evidenceLevel === 'E4' &&
-    !row.parityEvidence.verdicts.some(v => v === 'richer' || v === 'equal')
-  ) {
-    if (row.closedBy.tests.length === 0) {
-      fail(`${label}: evidenceLevel E4 needs a not-poorer differential verdict or a named test`)
+  /*
+   * E4 is the differential rung (plan §3.4): "result against the legacy oracle is not poorer". Its
+   * axis is the comparison, not the corpus — so a synthetic differential can carry it. What it may
+   * never be is automatic: a synthetic-only differential also has to name the operation-level test
+   * that proved the operations, otherwise every passing synthetic row would inherit E4 for free.
+   */
+  if (row.evidenceLevel === 'E4') {
+    const verdicts = row.parityEvidence.verdicts
+    const differential = verdicts.length > 0 && !verdicts.includes('poorer')
+    if (!differential && !(realCorpus && row.closedBy.tests.length > 0)) {
+      fail(
+        `${label}: evidenceLevel E4 needs a not-poorer differential against the sealed oracle, or a real corpus with the test that proved it`,
+      )
+    }
+    if (differential && !realCorpus && row.closedBy.tests.length === 0) {
+      fail(
+        `${label}: evidenceLevel E4 on a synthetic-only differential must also name the operation-level test that proved it`,
+      )
     }
   }
   if (row.writerEvidence.startsWith('write-reopen-compared') && row.closedBy.tests.length === 0) {

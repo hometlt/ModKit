@@ -283,10 +283,13 @@ capabilities:
       nativeExport: null
     replacementWorkflow: null
     closedBy:
-      commits: []
+      commits:
+        - '05912d0'
       tests:
         - 'packages/host/test/text-writers.test.ts'
-      reports: []
+        - 'packages/testkit/test/text-data.test.ts'
+      reports:
+        - 'docs/MK3/plans/PLAN_MODKIT_MK3_FINAL_RU.md#блок-11-slice-11a'
   - capabilityId: 'addition/text-jsonc/open-edit'
     userScenario: 'Открыть «JSON с комментариями» через общий text-data контракт, отредактировать и сохранить его без форматной ветки в приложении.'
     releaseTrack: 'mk3-priority'
@@ -452,16 +455,20 @@ capabilities:
       nativeExport: 'none'
     knownLoss:
       - 'MK3-native формат без legacy-аналога: строка заморожена как focused-required-addition блоком 10 и не расширяет release scope дальше'
+      - 'детекция TSV читает ту же quote-aware грамматику, что и разбор: закавыченная табуляция и встроенный CR/LF больше не ломают арность'
     receipts:
       projection: null
       materialization: null
       nativeExport: null
     replacementWorkflow: null
     closedBy:
-      commits: []
+      commits:
+        - '05912d0'
       tests:
         - 'extensions/common/text-delimited/contributions/writer-delimited.json'
-      reports: []
+        - 'packages/testkit/test/text-data.test.ts'
+      reports:
+        - 'docs/MK3/plans/PLAN_MODKIT_MK3_FINAL_RU.md#блок-11-slice-11a'
   - capabilityId: 'addition/text-xml/open-edit'
     userScenario: 'Открыть «XML-документ» через общий text-data контракт, отредактировать и сохранить его без форматной ветки в приложении.'
     releaseTrack: 'mk3-priority'
@@ -705,7 +712,7 @@ capabilities:
       reports:
         - 'docs/MK3/reports/REPORT_FABLE_BLOCK9_FINAL_2026-08-25.md'
   - capabilityId: 'block9/csv-quoted-separators'
-    userScenario: 'Открыть CSV, где разделитель стоит внутри кавычек, и получить правильные ячейки.'
+    userScenario: 'Открыть CSV, где разделитель, перевод строки или удвоенная кавычка стоят внутри кавычек, и получить правильные ячейки.'
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
@@ -727,18 +734,22 @@ capabilities:
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'partial'
-    supportState: 'partial'
+    migrationState: 'implemented'
+    supportState: 'supported'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
-    hostEvidence: 'node'
+    evidenceLevel: 'E4'
+    hostEvidence: 'node-and-browser-worker'
     writerEvidence: 'not-declared'
     parityEvidence:
-      coverageStatus: null
-      rows: []
-      corpusKinds: []
-      verdicts: []
-      liveSources: []
+      coverageStatus: 'compared-synthetic'
+      rows:
+        - 'csv-synthetic'
+      corpusKinds:
+        - 'synthetic'
+      verdicts:
+        - 'equal'
+      liveSources:
+        - 'common.view/table-data-source'
     fixtures: []
     corpusDescriptors: []
     projection:
@@ -748,18 +759,19 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
     knownLoss:
-      - 'пробел заявлен явно в блоке 9; закрывается slice 11A (CSV/TSV, кавычки, embedded CR/LF, BOM, streaming)'
+      - 'детекция и разбор теперь читают одну грамматику; строка паритета csv-synthetic вышла из «нет в X3» в «паритет», и baseline поднят замком'
     receipts:
       projection: null
       materialization: null
       nativeExport: null
     replacementWorkflow: null
     closedBy:
-      commits: []
+      commits:
+        - '05912d0'
       tests:
-        - 'packages/host/test/text-writers.test.ts'
+        - 'packages/testkit/test/text-data.test.ts'
       reports:
-        - 'docs/MK3/reports/REPORT_FABLE_BLOCK9_FINAL_2026-08-25.md'
+        - 'docs/MK3/plans/PLAN_MODKIT_MK3_FINAL_RU.md#блок-11-slice-11a'
   - capabilityId: 'block9/decoded-gpu-texture-payloads'
     userScenario: 'Увидеть декодированные пиксели ASTC/AVIF/KTX2/PKM/Basis, а не только заголовки.'
     releaseTrack: 'mk3-priority'
@@ -3567,7 +3579,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/documents'
+    owner: 'extensions/common/text-delimited'
     plannedBlock: 11
     dependsOn: []
     sourceUnitIds:
@@ -3577,47 +3589,56 @@ capabilities:
     hostFacilities:
       - 'read-source'
     mk3Contributions:
-      - 'org.modkitx/csv'
+      - 'org.modkitx/text-csv'
     mk3Operations:
       - 'asset.validate'
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'org.modkitx/csv'
-      portFamily: 'mk2/uncommon-documents'
-      portVerdict: null
-    migrationState: 'implemented'
+      state: 'superseded-staging-present'
+      x3ContributionId: 'org.modkitx/text-csv'
+      portFamily: 'common/text-delimited'
+      portVerdict: 'route-retired'
+    migrationState: 'equivalent-better'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E1'
-    hostEvidence: 'node'
-    writerEvidence: 'not-declared'
+    evidenceLevel: 'E4'
+    hostEvidence: 'node-and-browser-worker'
+    writerEvidence: 'write-reopen-compared'
     parityEvidence:
-      coverageStatus: null
-      rows: []
-      corpusKinds: []
-      verdicts: []
-      liveSources: []
+      coverageStatus: 'compared-synthetic'
+      rows:
+        - 'csv-synthetic'
+      corpusKinds:
+        - 'synthetic'
+      verdicts:
+        - 'equal'
+      liveSources:
+        - 'common.view/table-data-source'
     fixtures: []
     corpusDescriptors: []
     projection:
       plane: 'document'
-      liveProjection: 'planned'
+      liveProjection: 'live'
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
     knownLoss:
-      - 'second active MK3 route org.modkitx/text-csv exists next to this port; slice 11A/11B must retire the ambiguity'
+      - 'stage-вклад org.modkitx/csv физически остаётся в extensions/mk2/uncommon-documents: MK3-маршрут выигрывает детекцию (0.94 против 0.9), а физическое опустошение mk2 принадлежит блоку 30'
+      - 'диалекты с локальными разделителями и структурное редактирование ячеек не заявляются'
     receipts:
       projection: null
       materialization: null
       nativeExport: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3-вклад org.modkitx/text-csv — единственный активный маршрут для .csv; запись идёт через org.modkitx/text-delimited-writer'
     closedBy:
-      commits: []
-      tests: []
-      reports: []
+      commits:
+        - '05912d0'
+      tests:
+        - 'packages/testkit/test/text-data.test.ts'
+        - 'packages/host/test/text-writers.test.ts'
+      reports:
+        - 'docs/MK3/plans/PLAN_MODKIT_MK3_FINAL_RU.md#блок-11-slice-11a'
   - capabilityId: 'format/cub/open-inspect'
     userScenario: 'Открыть «AoM CUB cubemap/texture package» в MK3 и выполнить image.inspect, image.read без потери семантики legacy-маршрута.'
     releaseTrack: 'post-ga'
@@ -6648,47 +6669,56 @@ capabilities:
     hostFacilities:
       - 'read-source'
     mk3Contributions:
-      - 'org.modkitx/markdown'
+      - 'org.modkitx/document-markdown'
     mk3Operations:
       - 'asset.validate'
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'org.modkitx/markdown'
-      portFamily: 'mk2/uncommon-documents'
-      portVerdict: null
-    migrationState: 'implemented'
+      state: 'superseded-staging-present'
+      x3ContributionId: 'org.modkitx/document-markdown'
+      portFamily: 'common/documents'
+      portVerdict: 'route-retired'
+    migrationState: 'equivalent-better'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E1'
-    hostEvidence: 'node'
+    evidenceLevel: 'E4'
+    hostEvidence: 'node-and-browser-worker'
     writerEvidence: 'not-declared'
     parityEvidence:
-      coverageStatus: null
-      rows: []
-      corpusKinds: []
-      verdicts: []
-      liveSources: []
+      coverageStatus: 'compared-synthetic'
+      rows:
+        - 'markdown-synthetic'
+      corpusKinds:
+        - 'synthetic'
+      verdicts:
+        - 'equal'
+      liveSources:
+        - 'common.view/tree-data-source'
     fixtures: []
     corpusDescriptors: []
     projection:
       plane: 'document'
-      liveProjection: 'planned'
+      liveProjection: 'live'
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
     knownLoss:
-      - 'second active MK3 route org.modkitx/document-markdown exists next to this port; slice 11A/11B must retire the ambiguity'
+      - 'stage-вклад org.modkitx/markdown физически остаётся в extensions/mk2/uncommon-documents: маршрут он больше не выигрывает ни на одном алиасе, а физическое опустошение mk2 принадлежит блоку 30 и перепроверяется блоком 31'
+      - 'предпросмотр безопасен по построению: кодек не объявляет ни render, ни thumbnail; санитизация разметки остаётся заботой viewer-а и здесь не заявляется'
     receipts:
       projection: null
       materialization: null
       nativeExport: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3-вклад org.modkitx/document-markdown — единственный активный маршрут для .md/.markdown/.mdown/.mkd; правка идёт существующим швом common.edit через формато-слепой writer'
     closedBy:
-      commits: []
-      tests: []
-      reports: []
+      commits:
+        - '09bed8d'
+      tests:
+        - 'packages/testkit/test/common-markdown.test.ts'
+        - 'packages/host/test/editing-evidence.test.ts'
+      reports:
+        - 'docs/MK3/plans/PLAN_MODKIT_MK3_FINAL_RU.md#блок-11-slice-11a'
   - capabilityId: 'format/max/open-inspect'
     userScenario: 'Открыть «Autodesk 3ds Max scene» в MK3 и открыть и осмотреть без потери семантики legacy-маршрута.'
     releaseTrack: 'post-ga'
@@ -11314,7 +11344,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/documents'
+    owner: 'extensions/common/plain-text'
     plannedBlock: 11
     dependsOn: []
     sourceUnitIds:
@@ -11325,45 +11355,57 @@ capabilities:
       - 'read-source'
     mk3Contributions:
       - 'org.modkitx/txt'
+      - 'org.modkitx/plain-text-writer'
     mk3Operations:
+      - 'asset.search'
       - 'asset.validate'
       - 'export.raw'
       - 'view.inspect'
     allocation:
       state: 'covered'
       x3ContributionId: 'org.modkitx/txt'
-      portFamily: 'mk2/uncommon-documents'
-      portVerdict: null
+      portFamily: 'common/plain-text'
+      portVerdict: 'relocated-and-rewritten'
     migrationState: 'implemented'
-    supportState: 'partial'
+    supportState: 'supported'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E1'
-    hostEvidence: 'node'
-    writerEvidence: 'not-declared'
+    evidenceLevel: 'E4'
+    hostEvidence: 'node-and-browser-worker'
+    writerEvidence: 'write-reopen-compared'
     parityEvidence:
-      coverageStatus: null
-      rows: []
-      corpusKinds: []
-      verdicts: []
-      liveSources: []
+      coverageStatus: 'compared-synthetic'
+      rows:
+        - 'txt-synthetic'
+      corpusKinds:
+        - 'synthetic'
+      verdicts:
+        - 'equal'
+      liveSources:
+        - 'common.view/tree-data-source'
     fixtures: []
     corpusDescriptors: []
     projection:
       plane: 'document'
-      liveProjection: 'planned'
+      liveProjection: 'live'
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
-    knownLoss: []
+    knownLoss:
+      - 'UTF-16 принимается только с byte-order mark, и такой документ не публикует ленивый text-data-source: его индекс строк строится по байтам источника и верен лишь для UTF-8'
+      - 'полный collision suite (generic текст против форматного текста игры) — блок 12 п.4; здесь закреплено одно правило: .txt внутри контейнера SC2 или под LocalizedData/ уступает кодеку игры'
     receipts:
       projection: null
       materialization: null
       nativeExport: null
     replacementWorkflow: null
     closedBy:
-      commits: []
-      tests: []
-      reports: []
+      commits:
+        - '0612d86'
+      tests:
+        - 'packages/testkit/test/common-plain-text.test.ts'
+        - 'packages/host/test/text-writers.test.ts'
+      reports:
+        - 'docs/MK3/plans/PLAN_MODKIT_MK3_FINAL_RU.md#блок-11-slice-11a'
   - capabilityId: 'format/uasset/open-inspect'
     userScenario: 'Открыть «Unreal Engine SoundWave» в MK3 и выполнить audio.decode, audio.export, audio.inspect без потери семантики legacy-маршрута.'
     releaseTrack: 'post-ga'
