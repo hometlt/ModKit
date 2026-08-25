@@ -1,0 +1,189 @@
+{
+  "kind": "x3.vscode-smoke-receipt",
+  "version": 1,
+  "rung": "E5",
+  "block": "block-9",
+  "startedAt": "2026-08-25T07:31:57.502Z",
+  "finishedAt": "2026-08-25T07:32:38.007Z",
+  "subject": {
+    "x3Commit": "4e11b697f3860293fff72812df297bce52ffffd3",
+    "extension": {
+      "id": "modkitx.@modkitx-x3/modkit-vscode",
+      "version": "0.1.0"
+    }
+  },
+  "environment": {
+    "os": "win32 10.0.26200 x64",
+    "node": "24.16.0",
+    "vscode": {
+      "version": "1.134.0",
+      "commit": null,
+      "channel": "stable",
+      "downloadedTo": "${VSCODE_CACHE}"
+    },
+    "extensionHost": {
+      "node": "24.18.1",
+      "electron": "42.8.1",
+      "chrome": "148.0.7778.280",
+      "vscode": "1.134.0"
+    },
+    "fixtures": [
+      {
+        "variable": "MODKITX_W3D_PATH",
+        "resolved": true
+      },
+      {
+        "variable": "MODKITX_VXL_PATH",
+        "resolved": true
+      },
+      {
+        "variable": "MODKITX_CNC3_ROOT",
+        "resolved": true
+      }
+    ],
+    "configuredExtensionRoots": {
+      "setting": "modkit.extensions",
+      "scope": "workspace .vscode/settings.json",
+      "bundledCatalog": "extensions/common",
+      "roots": ["extensions/ea/models", "extensions/ea/tiberian-sun", "extensions/ea/big"],
+      "missing": []
+    },
+    "hermetic": {
+      "userDataDir": "${SMOKE_SCRATCH}/user-data",
+      "extensionsDir": "${SMOKE_SCRATCH}/extensions",
+      "note": "the smoke never reads or writes the VS Code profile a person uses on this machine"
+    }
+  },
+  "build": {
+    "command": "pnpm --filter @modkitx-x3/modkit-vscode ext:build",
+    "exitCode": 0,
+    "output": "\n    packages/host/dist/node/worker-backend.js:60:17:\n      60 │     const base = import.meta.url;\n         ╵                  ~~~~~~~~~~~\n\n  You need to set the output format to \"esm\" for \"import.meta\" to work correctly.\n\nbuilt ${X3_ROOT}\\apps\\modkit-vscode\\dist-app"
+  },
+  "webviewChannel": {
+    "cdpUsable": true,
+    "port": 65138,
+    "note": "no vscode-webview target among 2"
+  },
+  "scenarios": [
+    {
+      "id": "activation",
+      "title": "The extension activates without error",
+      "verdict": "PASS",
+      "evidence": "activate() resolved and all 5 modkit commands are registered, so the host composition completed inside activation",
+      "durationMs": 3917,
+      "details": {
+        "extensionId": "modkitx.@modkitx-x3/modkit-vscode",
+        "commands": {
+          "expected": 5,
+          "missing": []
+        }
+      }
+    },
+    {
+      "id": "w3d-single",
+      "title": "A single W3D opens with its descriptor",
+      "verdict": "FAIL",
+      "evidence": "opened through \"Reopen Editor With… → Modkit Asset Preview\" with Model/Metadata/Tree stages and a scene of 2 nodes — one per hierarchy pivot, so block 9's \"pivots 2\" is confirmed. The animation count is not: no stage in this build prints it, so \"animations 1\" cannot be read from the product surface at all",
+      "durationMs": 8984,
+      "details": {
+        "tabOpened": true,
+        "stageTabs": ["Model", "Tree", "Metadata", "Hex"],
+        "stagesVisited": ["as-opened", "Metadata", "Tree", "Model"],
+        "diagnosticsSeen": [],
+        "webviewReadable": true,
+        "pageExcerpt": "Modkit · Files · Extensions · HOST · org.modkitx.app/vscode-desktop · org.modkitx.app.vscode/desktop-extension · 0 inventory diagnostics · This page holds no extension-host facility: it consumes subjects, it does not open them. · EXTENSIONS · org.modkitx/archives · bundled · org.modkitx/audio · bundled · org.modkitx/containers · bundled · org.modkitx/documents · bundled · org.modkitx/images · bundled · org.modkitx/models · bundled · org.modkitx/plain-text · bundled · org.modkitx/rendering-3d · bundled · org.modkitx/text-delimited · bundled · org.modkitx/text-ini · bundled · org.modkitx/text-json · bundled · org.modkitx/text-toml · bundled · org.modkitx/text-xml · bundled · org.modkitx/text-yaml · bundled · org.modkitx/ui-monaco · bundled · org.modkitx/vector · bundled · org.modkitx/video · bundled · org.modkitx.ea/models · installed · org.modkitx.ea/tiberian-sun · installed · org.modkitx.ea/big · installed · FACILITIES · gpu.webgl2 · worker.module · Aa · ab · .* · › · 🗀 · always_buildings · › · 🗀 · workspace · d_teslacoil_ch.w3d · × · apocalypse-rising-soviet-tesla-coil · › · files · › · always_buildings · › · d_teslacoil_ch.w3d · Model · Tree · Metadata · Hex · 2 nodes · 1 meshes · 1 primitives · 1 materials · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities · ${MODKITX_W3D_PATH} · Model · 15.4 KiB · Modkit · Files · Extensions · HOST · org.modkitx.app/vscode-desktop · org.modkitx.app.vscode/desktop-extension · 0 inventory diagnostics · This page holds no extension-host facility: it consumes subjects, it does not open them. · EXTENSIONS · org.modkitx/archives · bundled · org.modkitx/audio · bundled · org.modkitx/containers · bundled · org.modkitx/documents · bundled · org.modkitx/images · bundled · org.modkitx/models · bundled · org.modkitx/plain-text · bundled · org.modkitx/rendering-3d · bundled · org.modkitx/text-delimited · bundled · org.modkitx/text-ini · bundled · org.modkitx/text-json · bundled · org.modkitx/text-toml · bundled · org.modkitx/text-xml · bundled · org.modkitx/text-yaml · bundled · org.modkitx/ui-monaco · bundled · org.modkitx/vector · bundled · org.modkitx/video · bundled · org.modkitx.ea/models · installed · org.modkitx.ea/tiberian-sun · installed · org.modkitx.ea/big · installed · FACILITIES · gpu.webgl2 · worker.module · Aa · ab · .* · › · 🗀 · always_buildings · › · \ud83d…",
+        "modelStages": ["Model", "Metadata", "Tree"],
+        "nodes": "2",
+        "pivotsLiteral": null,
+        "animationsLiteral": null
+      }
+    },
+    {
+      "id": "vxl-companion",
+      "title": "A VXL resolves its .hva companion",
+      "verdict": "FAIL",
+      "evidence": "the VXL opened with Model/Tree/Metadata/Hex stages and the host raised no x3.host/companion-unavailable, so the sidecar was resolved — but no stage in this build names the .hva as provenance, so companion provenance cannot be read from the product surface",
+      "durationMs": 6085,
+      "details": {
+        "companionOnDisk": true,
+        "stageTabs": ["Model", "Tree", "Metadata", "Hex"],
+        "diagnosticsSeen": [],
+        "pageExcerpt": "Modkit · Files · Extensions · HOST · org.modkitx.app/vscode-desktop · org.modkitx.app.vscode/desktop-extension · 0 inventory diagnostics · This page holds no extension-host facility: it consumes subjects, it does not open them. · EXTENSIONS · org.modkitx/archives · bundled · org.modkitx/audio · bundled · org.modkitx/containers · bundled · org.modkitx/documents · bundled · org.modkitx/images · bundled · org.modkitx/models · bundled · org.modkitx/plain-text · bundled · org.modkitx/rendering-3d · bundled · org.modkitx/text-delimited · bundled · org.modkitx/text-ini · bundled · org.modkitx/text-json · bundled · org.modkitx/text-toml · bundled · org.modkitx/text-xml · bundled · org.modkitx/text-yaml · bundled · org.modkitx/ui-monaco · bundled · org.modkitx/vector · bundled · org.modkitx/video · bundled · org.modkitx.ea/models · installed · org.modkitx.ea/tiberian-sun · installed · org.modkitx.ea/big · installed · FACILITIES · gpu.webgl2 · worker.module · Aa · ab · .* · › · 🗀 · always_buildings · › · 🗀 · ppm-gdi-naval-railgun-turret-ts · › · 🗀 · workspace · gnavrail.vxl · × · Samples · › · red-alert2-vxl · › · ppm-gdi-naval-railgun-turret-ts · › · gnavrail.vxl · Model · Tree · Metadata · Hex · 1 nodes · 11 meshes · 11 primitives · 11 materials · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities · ${MODKITX_VXL_PATH} · Model · 24.6 KiB · Modkit · Files · Extensions · HOST · org.modkitx.app/vscode-desktop · org.modkitx.app.vscode/desktop-extension · 0 inventory diagnostics · This page holds no extension-host facility: it consumes subjects, it does not open them. · EXTENSIONS · org.modkitx/archives · bundled · org.modkitx/audio · bundled · org.modkitx/containers · bundled · org.modkitx/documents · bundled · org.modkitx/images · bundled · org.modkitx/models · bundled · org.modkitx/plain-text · bundled · org.modkitx/rendering-3d · bundled · org.modkitx/text-delimited · bundled · org.modkitx/text-ini · bundled · org.modkitx/text-json · bundled · org.modkitx/text-toml · bundled · org.modkitx/text-xml · bundled · org.modkitx/text-yaml · bundled · org.modkitx/ui-monaco · bundled · org.modkitx/vector · bundled · org.modkitx/video · bundled · org.modkitx.ea/models · installed · org.modkitx.ea/tiberian-sun · installed · org.modkitx.ea/big · installed · FACILITIES · gpu.webgl2 · worker.module · Aa · ab · .* · › · 🗀 · always_buildings · › · 🗀 · ppm-gdi-naval-railgun-turr…",
+        "companionDiagnosticPresent": false,
+        "mentionsCompanion": false,
+        "animations": null
+      }
+    },
+    {
+      "id": "big-nested",
+      "title": "A W3D nested in a BIG archive opens as a subject",
+      "verdict": "FAIL",
+      "evidence": "the archive itself opens, but the extension exposes no command or URI shape that names an entry inside it — «data/editor/molds/bowl.w3d» is unreachable from outside the page, and inside the page the archive stage reads an entry’s bytes into a hex pane rather than opening it as a subject. The host route exists and Electron uses it; this product does not wire it, so nested opening is absent here (wiring missing, blocks 13–14)",
+      "durationMs": 166,
+      "details": {
+        "archiveOnDisk": true,
+        "entry": "data/editor/molds/bowl.w3d",
+        "archiveTabOpened": true,
+        "nestedCommands": []
+      }
+    },
+    {
+      "id": "diagnostics-no-companion",
+      "title": "A VXL without its sidecar reports a leak-free diagnostic",
+      "verdict": "FAIL",
+      "evidence": "the model opened without its sidecar on Model/Tree/Metadata/Hex stages, but the page never showed x3.host/companion-unavailable — in fact it showed no diagnostic of any kind (0 seen), so the code cannot be confirmed and its text cannot be checked for leaked paths",
+      "durationMs": 8560,
+      "details": {
+        "copyOnDisk": true,
+        "companionAbsent": true,
+        "stageTabs": ["Model", "Tree", "Metadata", "Hex"],
+        "diagnosticsSeen": [],
+        "pageExcerpt": "Modkit · Files · Extensions · HOST · org.modkitx.app/vscode-desktop · org.modkitx.app.vscode/desktop-extension · 0 inventory diagnostics · This page holds no extension-host facility: it consumes subjects, it does not open them. · EXTENSIONS · org.modkitx/archives · bundled · org.modkitx/audio · bundled · org.modkitx/containers · bundled · org.modkitx/documents · bundled · org.modkitx/images · bundled · org.modkitx/models · bundled · org.modkitx/plain-text · bundled · org.modkitx/rendering-3d · bundled · org.modkitx/text-delimited · bundled · org.modkitx/text-ini · bundled · org.modkitx/text-json · bundled · org.modkitx/text-toml · bundled · org.modkitx/text-xml · bundled · org.modkitx/text-yaml · bundled · org.modkitx/ui-monaco · bundled · org.modkitx/vector · bundled · org.modkitx/video · bundled · org.modkitx.ea/models · installed · org.modkitx.ea/tiberian-sun · installed · org.modkitx.ea/big · installed · FACILITIES · gpu.webgl2 · worker.module · Aa · ab · .* · › · 🗀 · 1.0 · › · 🗀 · always_buildings · › · 🗀 · ppm-gdi-naval-railgun-turret-ts · › · 🗀 · workspace · gnavrail.vxl · × · Temp · › · x3-vscode-smoke-UZ7zwU · › · workspace · › · gnavrail.vxl · Model · Tree · Metadata · Hex · 1 nodes · 11 meshes · 11 primitives · 11 materials · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities · ${SMOKE_SCRATCH}\\workspace\\gnavrail.vxl · Model · 24.6 KiB · Modkit · Files · Extensions · HOST · org.modkitx.app/vscode-desktop · org.modkitx.app.vscode/desktop-extension · 0 inventory diagnostics · This page holds no extension-host facility: it consumes subjects, it does not open them. · EXTENSIONS · org.modkitx/archives · bundled · org.modkitx/audio · bundled · org.modkitx/containers · bundled · org.modkitx/documents · bundled · org.modkitx/images · bundled · org.modkitx/models · bundled · org.modkitx/plain-text · bundled · org.modkitx/rendering-3d · bundled · org.modkitx/text-delimited · bundled · org.modkitx/text-ini · bundled · org.modkitx/text-json · bundled · org.modkitx/text-toml · bundled · org.modkitx/text-xml · bundled · org.modkitx/text-yaml · bundled · org.modkitx/ui-monaco · bundled · org.modkitx/vector · bundled · org.modkitx/video · bundled · org.modkitx.ea/models · installed · org.modkitx.ea/tiberian-sun · installed · org.modkitx.ea/big · installed · FACILITIES · gpu.webgl2 · worker.module · Aa · ab · .* · › · 🗀 · 1.0 · › · 🗀 · always_buildings · › · 🗀 · ppm-gdi-naval-railgun-turret-ts…",
+        "diagnosticCode": null
+      }
+    },
+    {
+      "id": "clean-close",
+      "title": "Editors close and the host stays responsive",
+      "verdict": "PASS",
+      "evidence": "all 1 Modkit tab(s) closed and the extension host still answers commands afterwards; the editor’s own exit is recorded by the harness",
+      "durationMs": 20,
+      "details": {
+        "tabsBefore": 1,
+        "tabsAfter": 0,
+        "hostResponsiveAfterClose": true
+      }
+    }
+  ],
+  "diagnosticCodeUnderTest": "x3.host/companion-unavailable",
+  "diagnosticsChannel": {
+    "claimKind": "source inspection, not runtime observation",
+    "site": "apps/modkit-vscode/src/webview.ts — connectSubjectRpc({ onDiagnostic })",
+    "emitsToExtensionHost": true,
+    "writesVisibleStatusLine": false,
+    "note": "the handler calls bridge.emit only, so a subject diagnostic reaches the extension host’s output channel and is never drawn on the page’s status bar — invisible to the user, and unreadable to any observer, because an OutputChannel has no read API"
+  },
+  "nestedSubjectRoute": {
+    "claimKind": "source inspection, not runtime observation",
+    "exportedByHost": true,
+    "usedByElectron": true,
+    "usedByVsCodeArchiveStage": false,
+    "note": "the VS Code archive stage reads an entry’s bytes into a hex pane; it never opens the entry as a subject, so no descriptor, no stages and no nested diagnostics exist for it"
+  },
+  "absolutePathCheck": {
+    "performed": false,
+    "clean": false,
+    "note": "the diagnostics scenario never got far enough to check"
+  },
+  "runner": {
+    "exitCode": 0,
+    "editorExited": true
+  },
+  "summary": {
+    "total": 6,
+    "passed": 2,
+    "failed": 4,
+    "allPassed": false
+  },
+  "logs": ["reports/vscode-smoke/logs/suite-results.json"]
+}
