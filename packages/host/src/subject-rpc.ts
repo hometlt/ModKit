@@ -107,6 +107,24 @@ function resolveFramePort(options: {
 // ---------------------------------------------------------------------------------------------
 // wire snapshots (inert data; the session itself is a capability, never part of the snapshot)
 
+/**
+ * A diagnostic as it travels in a snapshot.
+ *
+ * `severity` is carried because a host has to be able to act on it. This shape used to be code and
+ * message only, and the narrowing had a cost that only showed up in a real editor: VS Code's
+ * Problems panel wants a severity, and a host fed from this snapshot could do nothing better than
+ * guess one from the code string — so an informational `x3.host/companion-unavailable` and a
+ * genuine error would have arrived looking identical.
+ *
+ * It stays optional so every existing producer of a snapshot remains valid; a consumer that has no
+ * severity to show simply ignores it.
+ */
+export interface SnapshotDiagnostic {
+  readonly code: string
+  readonly message: string
+  readonly severity?: 'error' | 'warning' | 'information' | 'hint'
+}
+
 export interface SubjectOpenedSnapshot {
   readonly state: 'opened'
   readonly sessionId: string
@@ -119,14 +137,14 @@ export interface SubjectOpenedSnapshot {
     readonly confidence: number
   }
   readonly candidates: readonly unknown[]
-  readonly diagnostics: readonly { readonly code: string; readonly message: string }[]
+  readonly diagnostics: readonly SnapshotDiagnostic[]
 }
 
 export interface SubjectUnresolvedSnapshot {
   readonly state: 'unresolved'
   readonly reason: string
   readonly candidates: readonly unknown[]
-  readonly diagnostics: readonly { readonly code: string; readonly message: string }[]
+  readonly diagnostics: readonly SnapshotDiagnostic[]
 }
 
 export type SubjectOpenSnapshot = SubjectOpenedSnapshot | SubjectUnresolvedSnapshot

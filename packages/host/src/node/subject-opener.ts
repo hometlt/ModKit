@@ -135,6 +135,8 @@ export function createPathSubjectOpener(options: PathSubjectOpenerOptions): Subj
     const diagnostics = [...result.diagnostics, ...companionDiagnostics].map(item => ({
       code: item.code,
       message: item.message,
+      // Carried, not dropped: a host with a severity-aware surface cannot recover this from a code.
+      severity: item.severity,
     }))
     if (result.state === 'unresolved') {
       const snapshot: SubjectOpenSnapshot = {
