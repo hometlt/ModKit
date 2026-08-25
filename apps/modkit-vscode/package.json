@@ -27,7 +27,8 @@
     "@modkitx-x3/ui": "workspace:*"
   },
   "devDependencies": {
-    "@types/vscode": "^1.125.0"
+    "@types/vscode": "^1.125.0",
+    "@vscode/test-electron": "^3.1.0"
   },
   "displayName": "Modkit MK3",
   "description": "Modkit MK3 host for StarCraft II mod assets.",
