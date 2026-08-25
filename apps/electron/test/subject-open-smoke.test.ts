@@ -88,9 +88,32 @@ function liveWorkers(): number {
   return (process.report.getReport() as { readonly workers: readonly unknown[] }).workers.length
 }
 
+/**
+ * The live count once it stops moving.
+ *
+ * A baseline taken the instant the previous test returns is not a baseline: a worker still exiting
+ * from that test keeps the number high, the count later settles *below* it, and an equality check
+ * against it can never come true. So the baseline waits for quiet, and the check after dispose
+ * waits for the same number to come back.
+ */
+async function quietWorkers(): Promise<number> {
+  let last = liveWorkers()
+  let stable = 0
+  for (let attempt = 0; attempt < 200 && stable < 5; attempt += 1) {
+    await new Promise(resolve => setTimeout(resolve, 50))
+    const now = liveWorkers()
+    if (now === last) stable += 1
+    else {
+      last = now
+      stable = 0
+    }
+  }
+  return last
+}
+
 /** Workers are torn down asynchronously; a count taken the instant `dispose` resolves races it. */
 async function settledWorkers(expected: number): Promise<number> {
-  for (let attempt = 0; attempt < 100; attempt += 1) {
+  for (let attempt = 0; attempt < 200; attempt += 1) {
     if (liveWorkers() === expected) return expected
     await new Promise(resolve => setTimeout(resolve, 50))
   }
@@ -396,7 +419,7 @@ describe('disposal closes what the open took', () => {
     const { subjects } = await electron(['ea', 'tiberian-sun'])
     const directory = await voxelFolder(true)
     const file = join(directory, 'minimal.ra2.vxl')
-    const idle = await settledWorkers(liveWorkers())
+    const idle = await quietWorkers()
     const source = counted(await openFileArtifactSource(file))
 
     const opened = await subjects.open({
