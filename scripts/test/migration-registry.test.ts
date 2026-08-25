@@ -141,6 +141,30 @@ describe('phase-aware priority gate (plan §3.5, block 10 works 6–7)', () => {
     expect(stderr).toContain('migrationState missing')
   })
 
+  it('audits every closure, not just mk3-ga: a multiverse-priority row can be overdue too', () => {
+    /*
+     * The blind spot slice 12-2 closed. Every UV row is `multiverse-priority`, so it lives only in
+     * the `mk3-multiverse-ga` closure — and the audit used to walk `mk3-ga` alone. This fixture has
+     * *no* mk3-ga units at all, so an mk3-ga-only audit reports it clean by construction; the union
+     * audit finds the overdue row and names the closure it came from.
+     */
+    const { status, stderr } = runPriority('overdue-multiverse.capabilities.yaml', [
+      '--phase',
+      'block-10',
+    ])
+    expect(status).toBe(1)
+    expect(stderr).toContain('overdue priority unit')
+    expect(stderr).toContain('[mk3-multiverse-ga]')
+    expect(stderr).toContain('migrationState missing')
+  })
+
+  it('names no closure for a row that mk3-ga already carries, so the common case stays quiet', () => {
+    // the mk3-priority fixture keeps its original message: a tag on every line would be noise
+    const { stderr } = runPriority('overdue.capabilities.yaml', ['--phase', 'block-10'])
+    expect(stderr).toContain('overdue priority unit')
+    expect(stderr).not.toContain('[mk3-')
+  })
+
   it('fails on a hidden skip: an overdue unit resting on a corpus published as unavailable', () => {
     const { status, stderr } = runPriority('hidden-skip.capabilities.yaml', [
       '--phase',

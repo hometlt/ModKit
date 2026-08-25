@@ -19,7 +19,13 @@
 //   --phase block-N     a priority unit whose planned block has already passed is an error when it
 //                       is still unresolved, still parked in mk2, still at E0, or hidden behind an
 //                       unavailable corpus. A unit whose planned block has not arrived is never an
-//                       error, so the gate does not block work that is not due yet.
+//                       error, so the gate does not block work that is not due yet. The audit walks
+//                       the union of every named closure — see `auditedUnits` for why.
+//
+//                       `pnpm check` runs `--phase block-10`, and that number moves when a block
+//                       *closes*, not when one opens: the phase names the last block whose
+//                       deadlines everyone has agreed are behind us. Raising it early would turn
+//                       work in progress into a red gate for the person doing it.
 //   --release <name>    the block 20–21 / 29 form: zero closure units left in mk2 and zero
 //                       unresolved migration states. It is expected to fail until that release is
 //                       actually ready; it is not part of `pnpm check`.
@@ -206,26 +212,53 @@ for (const entry of corpora.corpora ?? []) {
   for (const variable of entry.environmentVariables ?? []) corpusStatus.set(variable, entry.status)
 }
 
+/**
+ * Every unit under audit, once, with the closures that contain it.
+ *
+ * The audit walked `mk3-ga` alone until block 12 slice 12-2, and that was a blind spot with a
+ * name: `uv/uvt/texture-profile` was planned for block 11, sat `partial` through block 12, and no
+ * phase run ever said so — because every UV row is `multiverse-priority` and therefore lives only
+ * in the second closure. A deadline that only some release tracks can miss is not a deadline.
+ *
+ * The union rather than a `--closure` flag, deliberately: a flag can be left off, and the whole
+ * failure being fixed here is a check that quietly audited less than it appeared to.
+ */
+function auditedUnits() {
+  const merged = new Map()
+  for (const entry of documents) {
+    for (const unit of entry.document.units) {
+      const existing = merged.get(unit.capabilityId)
+      if (existing === undefined) merged.set(unit.capabilityId, { unit, closures: [entry.name] })
+      else existing.closures.push(entry.name)
+    }
+  }
+  return [...merged.values()].sort((left, right) =>
+    compareUtf8(left.unit.capabilityId, right.unit.capabilityId),
+  )
+}
+
 function phaseAudit(phaseBlock) {
-  const scope = documents.find(entry => entry.name === 'mk3-ga').document
   const overdue = []
-  for (const unit of scope.units) {
+  for (const { unit, closures } of auditedUnits()) {
     if (unit.plannedBlock >= phaseBlock) continue
+    // a row outside mk3-ga is still overdue; saying which closure it came from is what makes the
+    // finding actionable rather than surprising
+    const where = closures.includes('mk3-ga') ? '' : ` [${closures.join(', ')}]`
     if (UNRESOLVED.has(unit.migrationState)) {
       overdue.push(
-        `${unit.capabilityId}: planned block ${unit.plannedBlock} has passed, migrationState ${unit.migrationState}`,
+        `${unit.capabilityId}${where}: planned block ${unit.plannedBlock} has passed, migrationState ${unit.migrationState}`,
       )
       continue
     }
     if (unit.portFamily !== null && unit.portFamily.startsWith('mk2/')) {
       overdue.push(
-        `${unit.capabilityId}: planned block ${unit.plannedBlock} has passed, still parked in ${unit.portFamily}`,
+        `${unit.capabilityId}${where}: planned block ${unit.plannedBlock} has passed, still parked in ${unit.portFamily}`,
       )
       continue
     }
     if (unit.evidenceLevel === 'E0') {
       overdue.push(
-        `${unit.capabilityId}: planned block ${unit.plannedBlock} has passed with no evidence above E0`,
+        `${unit.capabilityId}${where}: planned block ${unit.plannedBlock} has passed with no evidence above E0`,
       )
       continue
     }
@@ -233,7 +266,7 @@ function phaseAudit(phaseBlock) {
       const status = corpusStatus.get(variable)
       if (status === 'unavailable') {
         overdue.push(
-          `${unit.capabilityId}: depends on corpus ${variable}, published as unavailable — that is a hidden skip, not a pass`,
+          `${unit.capabilityId}${where}: depends on corpus ${variable}, published as unavailable — that is a hidden skip, not a pass`,
         )
       }
     }
