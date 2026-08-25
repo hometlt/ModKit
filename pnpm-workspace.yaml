@@ -27,6 +27,7 @@ packages:
   - 'extensions/common/text-yaml'
   - 'extensions/common/text-toml'
   - 'extensions/common/documents'
+  - 'extensions/common/uv-materializer'
   - 'extensions/common/plain-text'
   - 'extensions/blizzard/casc'
   - 'extensions/blizzard/galaxy-language'

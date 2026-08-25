@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/contract-definition",
+    "major": 1
+  },
+  "id": "org.modkitx/uv-model-materializer-contract",
+  "displayName": "UV model materializer service contract",
+  "spec": {
+    "schemaVersion": 1,
+    "kind": "service",
+    "contract": "common.uv/model-materializer",
+    "major": 1,
+    "offerFacet": {
+      "presence": "forbidden"
+    },
+    "requestFacet": {
+      "presence": "forbidden"
+    },
+    "matching": {
+      "profile": "org.modkitx/facetless-matcher",
+      "major": 1
+    },
+    "conformanceProfile": "common.uv/model-materializer-v1",
+    "surface": {
+      "fields": ["coordinate"],
+      "methods": {
+        "materialize": {
+          "kind": "value",
+          "signal": {
+            "arg": 1,
+            "key": "signal"
+          }
+        }
+      }
+    }
+  }
+}
