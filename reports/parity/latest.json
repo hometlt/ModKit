@@ -7,7 +7,7 @@
   },
   "x3": {
     "root": "C:\\FILES\\SC2Files\\coding\\modkitX3",
-    "sha": "42923ba73fff79201440408963276d43a99b8448"
+    "sha": "dced1d3b9d8ac40fef826c37968150d21f24c5ee"
   },
   "counts": {
     "total": 69,
@@ -4492,7 +4492,7 @@
                   "message": "«org.modkitx/text-csv» runs worker-brokered: a crash, hang or protocol violation of this code is isolated from the host, but the worker shares the process — it is not a security sandbox (24 §6.1 SB-1).",
                   "path": ["org.modkitx/text-csv"],
                   "data": {
-                    "grant": "modkit-library:95559ede-5207-4f3c-8dce-a188185a8f22/org.modkitx/text-csv#portable#probe",
+                    "grant": "modkit-library:53200daa-eddb-4e4c-9917-6b711cc4a7e9/org.modkitx/text-csv#portable#probe",
                     "classes": ["read-source"]
                   }
                 }
