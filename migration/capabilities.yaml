@@ -10056,7 +10056,8 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/detection-collisions.test.ts'
       reports: []
   - capabilityId: 'format/sc2-triggers/open-inspect'
     userScenario: 'Открыть «StarCraft II Trigger XML» в MK3 и выполнить asset.search, asset.validate, export.convert, script.references, script.symbols, view.inspect без потери семантики legacy-маршрута.'
@@ -12953,7 +12954,8 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/detection-collisions.test.ts'
       reports: []
   - capabilityId: 'format/warzone2100-map/open-inspect'
     userScenario: 'Открыть «Warzone 2100 map and level» в MK3 и выполнить view.inspect без потери семантики legacy-маршрута.'
@@ -13893,7 +13895,8 @@ capabilities:
     replacementWorkflow: 'MK3 contribution org.modkitx/archive-zip'
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/detection-collisions.test.ts'
       reports: []
   - capabilityId: 'format/zstd/open-inspect'
     userScenario: 'Открыть «Zstandard compressed payload» в MK3 и выполнить archive.extract, archive.inspect без потери семантики legacy-маршрута.'

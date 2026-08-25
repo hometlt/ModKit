@@ -26,6 +26,14 @@ export {
   type CodecSourceTopology,
 } from './detection-selection.js'
 export {
+  compareDetectionEvidence,
+  DETECTION_EVIDENCE_LADDER,
+  DETECTION_UNTIE_RULES,
+  isDetectionUntieRule,
+  type DetectionEvidenceRung,
+  type DetectionUntieRule,
+} from './detection-rules.js'
+export {
   artifactByteSourceFromRandomAccess,
   type ArtifactByteSourceBridgeOptions,
 } from './source-bridge.js'

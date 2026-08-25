@@ -894,7 +894,21 @@ const definition = Object.freeze({
   async detect(bytes) {
     const signature = bytes.byteLength >= 4 ? u32(bytes, 0) : 0
     const match = signature === ZIP_LOCAL || signature === ZIP_EOCD
-    return { confidence: match ? 0.99 : 0.01, note: match ? 'zip-signature' : 'signature-mismatch' }
+    /*
+     * 0.95, not 0.99, and the four hundredths are the whole point.
+     *
+     * ZIP is a *carrier*: ODF, OOXML, Warzone `.wz`, JAR, EPUB and a dozen game packages are all
+     * "a ZIP plus something". Every one of those reads the same four magic bytes this does and then
+     * reads more — an uncompressed `mimetype` entry, a manifest, a declared layout. A carrier that
+     * scored as high as its passengers produced an exact tie, and the host's untie rule refuses to
+     * guess between equals: before block 12 slice 12-2 an `.odt` and a `.wz` did not open at all in
+     * any host that loaded this extension beside theirs.
+     *
+     * So the generic container sits one step below anything that matched this magic *and* its own
+     * structure. This is a floor for the whole class rather than a tweak for two formats: the next
+     * ZIP-backed format is protected without editing this line again.
+     */
+    return { confidence: match ? 0.95 : 0.01, note: match ? 'zip-signature' : 'signature-mismatch' }
   },
   async inspect(bytes, context) {
     const entries = parseZip(bytes, context.budget.maxNodes)
