@@ -122,9 +122,22 @@ function inputFor(source: ArtifactByteSource): AssetInput {
   }
 }
 
+/**
+ * Where each format's reader lives.
+ *
+ * RTF is the exception, and the exception is the point: slice 12-2 retired its staging route to a
+ * generated port-pending stub and relocated the port to `common/documents`. The behaviour this file
+ * asserts did not change owners — the same bounded metadata, the same tree, the same refusals — so
+ * the case stays here and simply reads it where it now lives. Deleting the case instead would have
+ * quietly dropped four RTF proofs on the way past.
+ */
+const RELOCATED: Partial<Record<Format, string>> = {
+  rtf: join(repoRoot, 'extensions', 'common', 'documents', 'src', 'rtf', 'codec.js'),
+}
+
 async function codecFor(format: Format): Promise<Codec> {
   const module = (await import(
-    pathToFileURL(join(documentRoot, 'src', format, 'codec.js')).href
+    pathToFileURL(RELOCATED[format] ?? join(documentRoot, 'src', format, 'codec.js')).href
   )) as { createCodec(context: ContributionContext): Codec }
   return module.createCodec(context)
 }
@@ -148,21 +161,25 @@ describe('ported MK2 document codecs', () => {
       expect.arrayContaining([
         expect.objectContaining({
           id:
-            format === 'xlsx'
-              ? 'table.cells'
-              : format === 'pdf' || format === 'ai'
-                ? 'document.pages'
-                : format === 'drawio'
-                  ? 'structure.nodes'
-                  : format === 'visio' || format === 'cdr'
+            format === 'rtf'
+              ? // the surviving RTF route inventories structure; the retired staging port
+                // recovered plain text, and that difference is recorded in the registry
+                'document.flow'
+              : format === 'xlsx'
+                ? 'table.cells'
+                : format === 'pdf' || format === 'ai'
+                  ? 'document.pages'
+                  : format === 'drawio'
                     ? 'structure.nodes'
-                    : format === 'figma'
-                      ? 'structure.hierarchy'
-                      : format === 'psd'
-                        ? 'image.raster'
-                        : format === 'blend'
-                          ? 'model.geometry'
-                          : 'content.text',
+                    : format === 'visio' || format === 'cdr'
+                      ? 'structure.nodes'
+                      : format === 'figma'
+                        ? 'structure.hierarchy'
+                        : format === 'psd'
+                          ? 'image.raster'
+                          : format === 'blend'
+                            ? 'model.geometry'
+                            : 'content.text',
         }),
       ]),
     )

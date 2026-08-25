@@ -129,7 +129,8 @@ const formats = Object.freeze([
   },
   {
     packageName: 'modkit-extension-x3-documents',
-    subpath: 'formats/rtf/codec',
+    // relocated to the counted port path in slice 12-2, when the staging route was retired
+    subpath: 'rtf/codec',
     format: 'rtf',
     text: '{\\rtf1\\ansi packed}',
   },

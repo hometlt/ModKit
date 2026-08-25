@@ -25,6 +25,18 @@ function parseRtf(text, budget) {
   if (!looksLikeRtf(new TextEncoder().encode(text.slice(0, 32)))) {
     throw new TypeError('RTF header must start with {\\rtfN')
   }
+  /*
+   * The scalar ceiling, checked before the walk instead of never.
+   *
+   * The staging port this route replaced enforced `maxScalarBytes` and this one did not, which came
+   * to light only when slice 12-2 ran the staging port's own budget case against the survivor. A
+   * reader that ignores the caller's scalar ceiling turns a hostile 300 MB document into 300 MB of
+   * resident string no matter what the caller asked for, and retiring a route must not cost a
+   * safety property. Text length is the honest measure here: the decode already happened.
+   */
+  if (text.length > budget.maxScalarBytes) {
+    throw new RangeError('RTF document exceeds maxScalarBytes budget')
+  }
   let depth = 0
   let groups = 0
   let controls = 0

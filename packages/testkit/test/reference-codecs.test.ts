@@ -271,7 +271,8 @@ const entrypoints = Object.freeze({
   mp4: 'src/formats/mp4/codec.js',
   webm: 'src/formats/webm/codec.js',
   markdown: 'src/formats/markdown/codec.js',
-  rtf: 'src/formats/rtf/codec.js',
+  // slice 12-2 relocated the RTF port to the counted path when it retired the staging route
+  rtf: 'src/rtf/codec.js',
 })
 
 type Format = keyof typeof codecRoots

@@ -26,7 +26,7 @@
       "relocated-multiverse": 1
     },
     "byObligation": { "focused-required-addition": 13, "legacy-required": 154 },
-    "byEvidenceLevel": { "E0": 36, "E1": 32, "E2": 67, "E3": 10, "E4": 22 }
+    "byEvidenceLevel": { "E0": 36, "E1": 32, "E2": 66, "E3": 11, "E4": 22 }
   },
   "deadlines": {
     "block-11": [
@@ -2552,8 +2552,8 @@
       "owner": "packages/host",
       "plannedBlock": 11,
       "migrationState": "implemented",
-      "supportState": "partial",
-      "evidenceLevel": "E2",
+      "supportState": "supported",
+      "evidenceLevel": "E3",
       "allocationState": "covered",
       "portFamily": null,
       "corpusDescriptors": ["MODKITX_SC2_ROOT"],
