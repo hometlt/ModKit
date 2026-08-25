@@ -137,9 +137,40 @@ afterEach(async () => {
   }
 })
 
-interface M3Summary {
-  readonly textureReferences: readonly { readonly value: string; readonly provenance: string }[]
-  readonly textureBindings: readonly { readonly bindingId: string }[]
+/**
+ * The resource facts an M3 publishes, read from the contracts that own them.
+ *
+ * Slice 12-1 moved these off `summary` onto `common.view/model-resource-refs-source@1` and the
+ * projection receipt; slice 12-2 removed the summary copies. The references are the document's own
+ * names, the bound companions are the host's business and live in the receipt — which is why they
+ * are two reads here rather than one.
+ */
+async function resourceFacts(session: {
+  dataSource(contract: string, major: number): Promise<{ value: unknown; release(): Promise<void> }>
+  descriptor(): Promise<unknown>
+}): Promise<{
+  readonly references: readonly { readonly id: string; readonly provenance: string }[]
+  readonly companions: readonly { readonly requirementId: string; readonly state: string }[]
+}> {
+  const descriptor = (await session.descriptor()) as {
+    dataSources: readonly { contract: string }[]
+    metadata: readonly { id: string; entries: readonly { value: unknown }[] }[]
+  }
+  const receipt = descriptor.metadata.find(group => group.id === 'uv-projection-receipt')
+    ?.entries[0]?.value as { companions: readonly { requirementId: string; state: string }[] }
+  const published = descriptor.dataSources.some(
+    item => item.contract === 'common.view/model-resource-refs-source',
+  )
+  if (!published) return { references: [], companions: receipt.companions }
+  const lease = await session.dataSource('common.view/model-resource-refs-source', 1)
+  const source = lease.value as {
+    references(page: { limit: number }): Promise<{
+      items: readonly { id: string; provenance: string }[]
+    }>
+  }
+  const items = (await source.references({ limit: 64 })).items
+  await lease.release()
+  return { references: items, companions: receipt.companions }
 }
 
 async function planFor(bytes: Uint8Array) {
@@ -318,12 +349,14 @@ describe('M3 textures resolved inside a container', () => {
         throw new Error(JSON.stringify(nested.result.diagnostics).slice(0, 400))
       }
       expect(nested.result.selected.contributionId).toBe('org.modkitx/m3')
-      const inspected = await nested.result.session.operations().invoke('inspect', null)
-      if (inspected.state !== 'ok' || inspected.output.kind !== 'json') throw new Error('inspect')
-      const summary = inspected.output.value as unknown as M3Summary
-      expect(summary.textureReferences).toEqual([{ value: texture, provenance: 'companion' }])
+      const facts = await resourceFacts(nested.result.session)
+      expect(facts.references).toEqual([
+        { id: texture, role: 'texture', provenance: 'reference-only' },
+      ])
       // exactly one binding: the decoy `.dds` beside it was never asked for
-      expect(summary.textureBindings).toHaveLength(1)
+      expect(facts.companions).toEqual([
+        expect.objectContaining({ requirementId: 'textures', state: 'bound' }),
+      ])
       await nested.result.session.dispose()
     } finally {
       await opened.session.dispose()
@@ -351,11 +384,11 @@ describe('M3 textures resolved inside a container', () => {
     if (snapshot.state !== 'opened' || session === undefined) {
       throw new Error(JSON.stringify(snapshot.diagnostics))
     }
-    const inspected = await session.operations().invoke('inspect', null)
-    if (inspected.state !== 'ok' || inspected.output.kind !== 'json') throw new Error('inspect')
-    const summary = inspected.output.value as unknown as M3Summary
-    expect(summary.textureReferences[0]).toMatchObject({ provenance: 'reference-only' })
-    expect(summary.textureBindings).toEqual([])
+    const facts = await resourceFacts(session)
+    expect(facts.references[0]).toMatchObject({ provenance: 'reference-only' })
+    expect(facts.companions).toEqual([
+      expect.objectContaining({ requirementId: 'textures', state: 'absent' }),
+    ])
     await session.dispose()
   })
 })
@@ -406,13 +439,11 @@ describe('the installed StarCraft II M3', () => {
         }
         // the shipped M3 decoder, on an entry it never located or extracted itself
         expect(nested.result.selected.contributionId).toBe('org.modkitx/m3')
-        const inspected = await nested.result.session.operations().invoke('inspect', null)
-        if (inspected.state !== 'ok' || inspected.output.kind !== 'json') throw new Error('inspect')
-        const summary = inspected.output.value as unknown as M3Summary
+        const facts = await resourceFacts(nested.result.session)
 
         // the model does name real textures, read out of its own string table
-        expect(summary.textureReferences.length).toBeGreaterThan(0)
-        expect(summary.textureReferences.every(item => item.value.includes('/'))).toBe(true)
+        expect(facts.references.length).toBeGreaterThan(0)
+        expect(facts.references.every(item => item.id.includes('/'))).toBe(true)
 
         /*
          * And here is the honest outcome, pinned so it cannot drift silently.
@@ -427,13 +458,13 @@ describe('the installed StarCraft II M3', () => {
          * not a silent 666,588-entry scan. Resolving it needs the `workspace-dependency-layer`
          * scope with a provider that knows SC2's mod dependency chain.
          */
-        expect(summary.textureBindings).toEqual([])
-        expect(summary.textureReferences.every(item => item.provenance === 'reference-only')).toBe(
-          true,
-        )
+        expect(facts.companions).toEqual([
+          expect.objectContaining({ requirementId: 'textures', state: 'absent' }),
+        ])
+        expect(facts.references.every(item => item.provenance === 'reference-only')).toBe(true)
         console.info(
-          `[sc2-live] M3 texture references ${summary.textureReferences.length}, bound ` +
-            `${summary.textureBindings.length} (cross-mod-root, see comment)`,
+          `[sc2-live] M3 texture references ${facts.references.length}, bound 0 ` +
+            '(cross-mod-root, see comment)',
         )
 
         /*
@@ -479,7 +510,7 @@ describe('the installed StarCraft II M3', () => {
           revision: cascRevision,
         })
         try {
-          const reference = summary.textureReferences[0]?.value
+          const reference = facts.references[0]?.id
           if (reference === undefined) throw new Error('the M3 named no texture')
           const first = await resources.resolve({
             id: 'texture-0',

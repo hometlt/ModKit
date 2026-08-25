@@ -298,6 +298,55 @@ async function directCodecOpen(value: ArtifactByteSource, resourceBudget: Resour
   )
 }
 
+/**
+ * The planes W3D moved onto contracts in slice 12-1, read from where they now live.
+ *
+ * Slice 12-2 removed the summary copies: the animation clips, the collision volumes and the
+ * texture references are published by their facet contracts, and which companions the host bound
+ * is the receipt's business. Reading them here instead of `summary` is the migration.
+ */
+async function w3dFacets(session: AssetSession): Promise<{
+  readonly clips: readonly Record<string, unknown>[]
+  readonly volumes: readonly Record<string, unknown>[]
+  readonly references: readonly Record<string, unknown>[]
+  readonly companions: readonly { readonly requirementId: string; readonly state: string }[]
+}> {
+  const descriptor = (await session.descriptor()) as unknown as {
+    dataSources: readonly { contract: string }[]
+    metadata: readonly { id: string; entries: readonly { value: unknown }[] }[]
+  }
+  const published = new Set(descriptor.dataSources.map(item => item.contract))
+  const receipt = descriptor.metadata.find(group => group.id === 'uv-projection-receipt')
+    ?.entries[0]?.value as { companions: readonly { requirementId: string; state: string }[] }
+  const page = async (contract: string, method: string): Promise<Record<string, unknown>[]> => {
+    if (!published.has(contract)) return []
+    const lease = await session.dataSource(contract as never, 1)
+    const source = lease.value as Record<
+      string,
+      (page: { limit: number }) => Promise<{
+        items: readonly Record<string, unknown>[]
+      }>
+    >
+    const items = [
+      ...(
+        await (
+          source[method] as never as (p: {
+            limit: number
+          }) => Promise<{ items: readonly Record<string, unknown>[] }>
+        )({ limit: 64 })
+      ).items,
+    ]
+    await lease.release()
+    return items
+  }
+  return {
+    clips: await page('common.view/model-animation-source', 'clips'),
+    volumes: await page('common.view/model-collision-source', 'volumes'),
+    references: await page('common.view/model-resource-refs-source', 'references'),
+    companions: receipt.companions,
+  }
+}
+
 const temporaries: string[] = []
 
 afterEach(async () => {
@@ -312,22 +361,12 @@ interface W3dSummary {
     readonly name: string
     readonly pivots: readonly { readonly name: string; readonly parentIndex: number }[]
   } | null
-  readonly animations: readonly {
-    readonly name: string
-    readonly hierarchyName: string
-    readonly frames: number
-    readonly channels: readonly { readonly pivot: number; readonly kind: string }[]
-    readonly unsupportedChannels: number
-  }[]
   readonly meshBindings: readonly {
     readonly mesh: string
     readonly binding: string
     readonly roles: { readonly render: boolean; readonly collision: boolean }
   }[]
-  readonly collision: { readonly meshes: readonly string[]; readonly boxes: number }
   readonly preservedUnsupportedChunks: readonly { readonly preservedBytes: number }[]
-  readonly textures: readonly string[]
-  readonly textureBindings: readonly { readonly bindingId: string; readonly provenance: string }[]
 }
 
 async function openOnDisk(
@@ -446,15 +485,20 @@ describe('W3D animation channels', () => {
       ]),
       animationChunk('SPIN', 'FIXTURE', 61, [{ pivot: 1, firstFrame: 1, lastFrame: 60, flags: 2 }]),
     ])
-    const { summary, model: scene, session } = await openOnDisk(bytes)
+    const { model: scene, session } = await openOnDisk(bytes)
     expect(await scene.info()).toMatchObject({ animations: 1 })
-    expect(summary.animations).toEqual([
+    expect(await w3dFacets(session).then(facts => facts.clips)).toEqual([
       {
+        id: 'w3d-animation-0',
         name: 'SPIN',
-        hierarchyName: 'FIXTURE',
+        kind: 'animation',
+        provenance: 'direct',
+        hierarchyId: 'FIXTURE',
         frames: 61,
         frameRate: 30,
-        channels: [{ pivot: 1, kind: 'translation', axis: 'z', firstFrame: 1, lastFrame: 60 }],
+        channels: [
+          { target: 'pivot-1', kind: 'translation', axis: 'z', firstFrame: 1, lastFrame: 60 },
+        ],
         unsupportedChannels: 0,
       },
     ])
@@ -466,9 +510,9 @@ describe('W3D animation channels', () => {
       hierarchyChunk('FIXTURE', [{ name: 'ROOT', parentIndex: -1 }]),
       animationChunk('TURN', 'FIXTURE', 5, [{ pivot: 0, firstFrame: 0, lastFrame: 4, flags: 3 }]),
     ])
-    const { summary, session } = await openOnDisk(bytes)
-    expect(summary.animations[0]?.channels).toEqual([
-      { pivot: 0, kind: 'rotation', firstFrame: 0, lastFrame: 4 },
+    const { session } = await openOnDisk(bytes)
+    expect((await w3dFacets(session)).clips[0]?.['channels']).toEqual([
+      { target: 'pivot-0', kind: 'rotation', firstFrame: 0, lastFrame: 4 },
     ])
     await session.dispose()
   })
@@ -480,10 +524,11 @@ describe('W3D animation channels', () => {
         { pivot: 0, firstFrame: 1, lastFrame: 60, flags: 2, truncateTo: 40 },
       ]),
     ])
-    const { summary, model: scene, session } = await openOnDisk(bytes)
+    const { model: scene, session } = await openOnDisk(bytes)
     // the animation is still reported, with the channel counted as unsupported rather than guessed
-    expect(summary.animations[0]).toMatchObject({ name: 'SHORT', unsupportedChannels: 1 })
-    expect(summary.animations[0]?.channels).toEqual([])
+    const clip = (await w3dFacets(session)).clips[0]
+    expect(clip).toMatchObject({ name: 'SHORT', unsupportedChannels: 1 })
+    expect(clip?.['channels']).toEqual([])
     // and an animation with no decoded channel is not an animation that was read
     expect(await scene.info()).toMatchObject({ animations: 0 })
     await session.dispose()
@@ -496,8 +541,8 @@ describe('W3D animation channels', () => {
         { pivot: 0, firstFrame: 0, lastFrame: 2, flags: 9, vectorLen: 1 },
       ]),
     ])
-    const { summary, session } = await openOnDisk(bytes)
-    expect(summary.animations[0]).toMatchObject({ unsupportedChannels: 1 })
+    const { session } = await openOnDisk(bytes)
+    expect((await w3dFacets(session)).clips[0]).toMatchObject({ unsupportedChannels: 1 })
     await session.dispose()
   })
 
@@ -520,28 +565,40 @@ describe('W3D animation channels', () => {
 describe('W3D texture companions', () => {
   it('declares the exact texture the model names and binds it from the sibling directory', async () => {
     const bytes = await model([])
-    const { summary, session } = await openOnDisk(bytes, {
+    const { session } = await openOnDisk(bytes, {
       [MESH_TEXTURE]: new Uint8Array([1, 2, 3, 4]),
     })
-    expect(summary.textures).toEqual([MESH_TEXTURE])
-    expect(summary.textureBindings).toEqual([expect.objectContaining({ provenance: 'companion' })])
+    const facts = await w3dFacets(session)
+    expect(facts.references).toEqual([
+      { id: MESH_TEXTURE, role: 'texture', provenance: 'reference-only' },
+    ])
+    expect(facts.companions).toEqual([
+      expect.objectContaining({ requirementId: 'textures', state: 'bound' }),
+    ])
     await session.dispose()
   })
 
   it('opens with the texture missing and reports it as unbound', async () => {
-    const { summary, model: scene, session } = await openOnDisk(await model([]))
-    expect(summary.textures).toEqual([MESH_TEXTURE])
-    expect(summary.textureBindings).toEqual([])
+    const { model: scene, session } = await openOnDisk(await model([]))
+    const facts = await w3dFacets(session)
+    expect(facts.references).toEqual([
+      { id: MESH_TEXTURE, role: 'texture', provenance: 'reference-only' },
+    ])
+    expect(facts.companions).toEqual([
+      expect.objectContaining({ requirementId: 'textures', state: 'absent' }),
+    ])
     // the reference is still published — the model names a texture whether or not it is reachable
     expect(await scene.info()).toMatchObject({ textures: 1 })
     await session.dispose()
   })
 
   it('does not bind a differently named texture that happens to sit beside the model', async () => {
-    const { summary, session } = await openOnDisk(await model([]), {
+    const { session } = await openOnDisk(await model([]), {
       'something-else.tga': new Uint8Array([9, 9]),
     })
-    expect(summary.textureBindings).toEqual([])
+    expect((await w3dFacets(session)).companions).toEqual([
+      expect.objectContaining({ requirementId: 'textures', state: 'absent' }),
+    ])
     await session.dispose()
   })
 })
@@ -638,12 +695,9 @@ describe('W3D inside a BIG namespace', () => {
         throw new Error(JSON.stringify(nested.result.diagnostics).slice(0, 400))
       }
       expect(nested.result.selected.contributionId).toBe('org.modkitx/westwood-w3d')
-      const inspected = await nested.result.session.operations().invoke('inspect', null)
-      if (inspected.state !== 'ok' || inspected.output.kind !== 'json') throw new Error('inspect')
-      const summary = inspected.output.value as unknown as W3dSummary
       // the texture lives in another folder of the same archive; the exact-name pattern finds it
-      expect(summary.textureBindings).toEqual([
-        expect.objectContaining({ provenance: 'companion' }),
+      expect((await w3dFacets(nested.result.session)).companions).toEqual([
+        expect.objectContaining({ requirementId: 'textures', state: 'bound' }),
       ])
       await nested.result.session.dispose()
     } finally {
@@ -779,10 +833,14 @@ describe('W3D inside a BIG namespace', () => {
       if (nested.result.state !== 'opened') {
         throw new Error(JSON.stringify(nested.result.diagnostics).slice(0, 400))
       }
-      const inspected = await nested.result.session.operations().invoke('inspect', null)
-      if (inspected.state !== 'ok' || inspected.output.kind !== 'json') throw new Error('inspect')
-      const summary = inspected.output.value as unknown as W3dSummary
-      expect(summary.textureBindings).toHaveLength(2)
+      /*
+       * Two archive entries answer the one declared name, and the codec binds both rather than
+       * choosing: which of two same-named textures a mod meant is not a codec's call. The receipt
+       * names the requirement as bound; the ambiguity itself is the host's diagnostic.
+       */
+      expect((await w3dFacets(nested.result.session)).companions).toEqual([
+        expect.objectContaining({ requirementId: 'textures', state: 'bound' }),
+      ])
       await nested.result.session.dispose()
     } finally {
       await opened.session.dispose()
@@ -1012,18 +1070,22 @@ describe('the configured real Westwood W3D model', () => {
        * animation for this file and this one published none. Counts are printed rather than pinned to
        * literals — the corpus belongs to the user and this repository does not ship it.
        */
+      const facts = await w3dFacets(session)
       expect(info.animations).toBeGreaterThanOrEqual(1)
       expect(summary.hierarchy).not.toBeNull()
       expect(summary.hierarchy?.pivots.length).toBeGreaterThan(1)
-      expect(summary.animations[0]?.channels.length).toBeGreaterThan(0)
-      expect(summary.textures.length).toBeGreaterThan(0)
+      expect((facts.clips[0]?.['channels'] as readonly unknown[]).length).toBeGreaterThan(0)
+      expect(facts.references.length).toBeGreaterThan(0)
       // the sibling folder holds no texture, so the reference is published unbound — and that is the
       // correct outcome, not a failure: the file names a texture that ships elsewhere
+      expect(facts.companions).toEqual([
+        expect.objectContaining({ requirementId: 'textures', state: 'absent' }),
+      ])
       expect(summary.meshBindings.every(item => item.roles.render)).toBe(true)
       console.info(
         `[w3d-live] pivots ${summary.hierarchy?.pivots.length}, animations ${info.animations}, ` +
-          `channels ${summary.animations[0]?.channels.length}, textures ${summary.textures.length}, ` +
-          `collision meshes ${summary.collision.meshes.length}, boxes ${summary.collision.boxes}`,
+          `channels ${(facts.clips[0]?.['channels'] as readonly unknown[]).length}, ` +
+          `textures ${facts.references.length}, collision volumes ${facts.volumes.length}`,
       )
       await lease.release()
       await session.dispose()

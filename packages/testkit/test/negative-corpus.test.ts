@@ -286,13 +286,35 @@ describe('W3D negative cases', () => {
 
     const result = await open(EA_MODELS, { 'model.w3d': hostile }, 'model.w3d')
     expect(result.state).toBe('opened')
-    const summary = result.summary as {
-      readonly textures: readonly string[]
-      readonly textureBindings: readonly unknown[]
+    /*
+     * The references and the bindings moved onto contracts in slice 12-1 and left the summary in
+     * 12-2, so the traversal claim is now made where the fact lives: the facet publishes the name
+     * the document spelled, verbatim and unresolved, and the receipt says nothing was bound.
+     */
+    const session = result.session
+    if (session === undefined) throw new Error('the hostile W3D opened without a session')
+    const descriptor = (await session.descriptor()) as unknown as {
+      dataSources: readonly { contract: string }[]
+      metadata: readonly { id: string; entries: readonly { value: unknown }[] }[]
     }
-    expect(summary.textureBindings).toEqual([])
+    const receipt = descriptor.metadata.find(group => group.id === 'uv-projection-receipt')
+      ?.entries[0]?.value as {
+      companions: readonly { requirementId: string; state: string }[]
+    }
+    expect(receipt.companions).toEqual([
+      expect.objectContaining({ requirementId: 'textures', state: 'absent' }),
+    ])
+    const lease = await session.dataSource('common.view/model-resource-refs-source', 1)
+    const references = (
+      await (
+        lease.value as {
+          references(page: { limit: number }): Promise<{ items: readonly { id: string }[] }>
+        }
+      ).references({ limit: 32 })
+    ).items
+    await lease.release()
     // whatever the file said, nothing that looks like a traversal became a search
-    expect(summary.textures.some(value => value.includes('..'))).toBe(true)
+    expect(references.some(item => item.id.includes('..'))).toBe(true)
     expect(result.diagnostics.every(item => !item.message.includes('evil'))).toBe(true)
     await result.session?.dispose()
   })

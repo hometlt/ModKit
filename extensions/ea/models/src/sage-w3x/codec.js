@@ -628,11 +628,13 @@ const definition = Object.freeze({
           0,
         ),
         /*
-         * Superseded by the three facet contracts published beside the base scene source. Kept for
-         * one slice so the existing readouts keep working while the authority moves; removal is
-         * scheduled with the block-12 slice 12-2 consumers.
+         * The bare texture id list and the collision part ids left the summary in slice 12-2:
+         * `model-resource-refs-source@1` and `model-collision-source@1` publish them. What stays
+         * below is what no contract carries — the shader slot a texture fills, the per-container
+         * relations, the declared pivot counts and the render/collision split of the parts. That
+         * gap is a finding for whoever widens the contracts, not a reason to keep two authorities
+         * for the same fact.
          */
-        textures: parsed.textures,
         includes: parsed.includes,
         containerRelations: containers.map(container => ({
           id: container.id,
@@ -668,7 +670,6 @@ const definition = Object.freeze({
           bytes: item.bytes,
           provenance: 'companion',
         })),
-        collisionParts: parts.filter(part => part.role === 'collision').map(part => part.id),
         renderParts: parts.filter(part => part.role === 'render').map(part => part.id),
         unknownElements: unknown,
         geometryAccess: parsed.meshes.length > 0 ? 'decoded' : 'metadata-only',

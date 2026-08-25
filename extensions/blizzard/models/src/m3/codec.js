@@ -375,21 +375,11 @@ const definition = Object.freeze({
         sections: model.sections.length,
         sectionTags: [...new Set(model.sections.map(section => section.tag))],
         /*
-         * Superseded by `common.view/model-resource-refs-source@1`, kept for one slice so the
-         * existing UI readouts do not break in the same commit that moves the authority. The
-         * contract is the authority from now on; these two keys are scheduled for removal once
-         * the facet consumers land (block 12 slice 12-2).
+         * The texture references and their bindings are gone from here on purpose (slice 12-2).
+         * `common.view/model-resource-refs-source@1` publishes the names the document spells, and
+         * the projection receipt records which companions the host actually bound. Keeping a third
+         * copy in the summary meant three places to update and two of them silently wrong.
          */
-        textureReferences: references.names.map(value => ({
-          value,
-          // 'companion' once the host bound a file for it; a reference is published either way
-          provenance: boundTextures.length > 0 ? 'companion' : 'reference-only',
-        })),
-        textureBindings: boundTextures.map(item => ({
-          bindingId: item.bindingId,
-          bytes: item.bytes,
-          provenance: 'companion',
-        })),
         geometryAccess,
         nodes: info.nodes,
         meshes: info.meshes,

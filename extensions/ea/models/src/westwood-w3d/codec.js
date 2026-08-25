@@ -620,16 +620,11 @@ const definition = Object.freeze({
           0,
         ),
         /*
-         * Superseded by the four facet contracts published beside the base scene source. Kept for
-         * one slice so existing readouts keep working while the authority moves; scheduled for
-         * removal with the block-12 slice 12-2 consumers.
+         * Textures, their bindings, the animation clips and the collision roles left the summary in
+         * slice 12-2: the four facet contracts beside the base scene source publish them, and the
+         * projection receipt records the bound companions. What stays below is what no contract
+         * carries — the pivot table with its parent links, and the per-mesh roles and containers.
          */
-        textures,
-        textureBindings: bound.map(item => ({
-          bindingId: item.bindingId,
-          bytes: item.bytes,
-          provenance: 'companion',
-        })),
         hierarchy:
           hierarchy === undefined
             ? null
@@ -654,24 +649,6 @@ const definition = Object.freeze({
             hidden: mesh.roles.hidden,
           },
         })),
-        animations: animations.map(item => ({
-          name: item.name,
-          hierarchyName: item.hierarchyName,
-          frames: item.frames,
-          frameRate: item.frameRate,
-          channels: item.channels.map(channel => ({
-            pivot: channel.pivot,
-            kind: channel.kind,
-            ...(channel.axis === undefined ? {} : { axis: channel.axis }),
-            firstFrame: channel.firstFrame,
-            lastFrame: channel.lastFrame,
-          })),
-          unsupportedChannels: item.unsupportedChannels,
-        })),
-        collision: {
-          meshes: collisionMeshes.map(mesh => mesh.id),
-          boxes: collisionBoxes.length,
-        },
         preservedUnsupportedChunks: preserved,
         geometryAccess: decoded.meshes.length > 0 ? 'decoded' : 'metadata-only',
       },

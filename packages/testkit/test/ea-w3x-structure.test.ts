@@ -192,7 +192,6 @@ interface W3xSummary {
     readonly provenance: string
   }[]
   readonly textureBindings: readonly { readonly bindingId: string }[]
-  readonly collisionParts: readonly string[]
   readonly renderParts: readonly string[]
   readonly unknownElements: readonly { readonly name: string; readonly count: number }[]
 }
@@ -248,8 +247,14 @@ describe('W3X container relations', () => {
     expect(summary.containerRelations).toEqual([
       expect.objectContaining({ id: 'TANK', hierarchyRef: 'TANK_SKL', subObjects: 3 }),
     ])
-    // the collision box is collision because the element says CollisionBox, not because of its name
-    expect(summary.collisionParts).toEqual(['OBBOX'])
+    // the collision box is collision because the element says CollisionBox, not because of its name;
+    // slice 12-2 removed the summary copy, so the claim is made where the fact now lives
+    const collisionLease = await session.dataSource('common.view/model-collision-source', 1)
+    const volumes = (await (collisionLease.value as ModelCollisionSource).volumes({ limit: 16 }))
+      .items
+    await collisionLease.release()
+    expect(volumes.map(volume => volume.id)).toEqual(['OBBOX'])
+    expect(volumes.every(volume => volume.origin === 'mesh-role')).toBe(true)
     expect(summary.renderParts).toEqual(['HULL', 'TURRET'])
     expect(summary.modelParts.map(part => [part.id, part.boneIndex])).toEqual([
       ['HULL', 1],
@@ -553,12 +558,11 @@ describe('the configured real SAGE W3X model', () => {
      * companion facts. The collision box is collision because the document says so.
      */
     expect(summary.containerRelations[0]?.hierarchyProvenance).toBe('companion')
-    expect(summary.collisionParts.length).toBeGreaterThan(0)
     expect(summary.renderParts.length).toBeGreaterThan(0)
     expect(summary.modelParts.some(part => part.boneProvenance === 'companion')).toBe(true)
     console.info(
       `[w3x-live] parts ${summary.modelParts.length}, render ${summary.renderParts.length}, ` +
-        `collision ${summary.collisionParts.length}, bones from companion ` +
+        `bones from companion ` +
         `${summary.modelParts.filter(part => part.boneProvenance === 'companion').length}`,
     )
 
@@ -595,7 +599,8 @@ describe('the configured real SAGE W3X model', () => {
     )
     const collision = collisionLease.value as ModelCollisionSource
     const collisionInfo = await collision.info()
-    expect(collisionInfo.volumes).toBe(summary.collisionParts.length)
+    // the collision plane is the contract's now: it must carry at least the box the container declares
+    expect(collisionInfo.volumes).toBeGreaterThan(0)
     await collisionLease.release()
 
     const refsLease = await containerOpen.session.dataSource(

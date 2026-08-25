@@ -176,6 +176,9 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
   let resources = 0
   let bytes = 0n
   let state: ResourceSessionState = 'live'
+  // read through a call so a check before an `await` does not narrow the check after it: the value
+  // changes underneath a resolution in flight, which is exactly the case this guards
+  const disposed = (): boolean => state === 'disposed'
 
   const record = (
     requirement: LogicalResourceRequirement,
@@ -414,7 +417,7 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
        * lease this call owns is released by this call, and the caller gets the same coded outcome a
        * late request would have got.
        */
-      if (state === 'disposed') {
+      if (disposed()) {
         await lease.release()
         return unresolved(
           requirement,
