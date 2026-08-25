@@ -44,6 +44,21 @@ export {
   type SubjectOpenCandidateState,
   type UnresolvedSubject,
 } from './subject-open.js'
+/*
+ * Opening one entry of an already-open container as a subject in its own right.
+ *
+ * Public because a product has to be able to do it: block 9 built the route and left it reachable
+ * only from tests, which meant the archive stages in Electron and the web app kept extracting bytes
+ * for a preview instead of opening the entry. The origin backend behind it stays private — a caller
+ * hands over a parent session and an entry id, never a namespace handle.
+ */
+export {
+  openNestedSubject,
+  NESTED_ENTRY_UNREADABLE,
+  NESTED_SUBJECT_UNSUPPORTED,
+  type NestedSubjectOptions,
+  type NestedSubjectResult,
+} from './nested-subject.js'
 export {
   createBundledServiceDefinitionRegistry,
   createSubjectServices,

@@ -20,8 +20,10 @@ export {
   type LoadExtensionRootsOptions,
 } from './extension-roots.js'
 export {
+  createFilesystemInputResolver,
   createPathSubjectOpener,
   DEFAULT_SUBJECT_OPEN_BUDGET,
+  type FilesystemInputResolverOptions,
   type PathSubjectOpenerOptions,
 } from './subject-opener.js'
 export {

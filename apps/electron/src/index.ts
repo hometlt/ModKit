@@ -645,3 +645,16 @@ export {
 } from './editor-ports.js'
 // S7: main.cjs opens files through the host's revision-checked adapter (no private copy here)
 export { openFileArtifactSource } from '@modkitx-x3/host/node'
+/*
+ * Block 9 step 6: main opens the byte source itself, so it cannot use `createPathSubjectOpener`
+ * wholesale — but a codec that declares companions returns a composite plan, and a composite
+ * plan without a resolver fails closed on `x3.host/input-resolver-required`. This is the same
+ * factory the path opener composes, reached from the one place Electron actually opens files.
+ */
+export { createFilesystemInputResolver } from '@modkitx-x3/host/node'
+/*
+ * The archive route, reached from the composition rather than the UI. `archive-stage.ts` still
+ * previews an entry by extracting its bytes; this is what a stage will call when block 13–14
+ * gives it somewhere to put the opened subject.
+ */
+export { openNestedSubject, type NestedSubjectResult } from '@modkitx-x3/host'

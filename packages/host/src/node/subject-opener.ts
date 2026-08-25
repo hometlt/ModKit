@@ -12,7 +12,8 @@ import { isAbsolute, relative, resolve } from 'node:path'
 import type { Diagnostic } from '@modkitx-x3/core'
 import type { PermissionGrant, ResourceBudget } from '@modkitx-x3/sdk'
 import type { SubjectServices } from '../subject-services.js'
-import type { OpenedSubject } from '../subject-open.js'
+import type { Inventory } from '../inventory.js'
+import type { OpenedSubject, SubjectInputResolver } from '../subject-open.js'
 import type { SubjectOpener, SubjectOpenSnapshot } from '../subject-rpc.js'
 import { createCompanionInputResolver, createSignatureTraitProbe } from '../input-resolution.js'
 import { createFilesystemCompanionOrigin } from './companion-origin.js'
@@ -51,18 +52,54 @@ function inside(roots: readonly string[], path: string): boolean {
   })
 }
 
+export interface FilesystemInputResolverOptions {
+  /** Absolute path of the subject being opened; its directory becomes the confined root. */
+  readonly primaryPath: string
+  /** Absolute directories the product granted; a subject outside every one of them is refused. */
+  readonly roots: readonly string[]
+  /** The inventory the subject is resolved against, for bounded `expected`-trait validation. */
+  readonly inventory: Inventory
+  /** Ceiling for the whole resolution, normally the open's own deadline. */
+  readonly deadlineMs?: number
+  /** Where named non-fatal outcomes go — an absent optional companion, an unserved scope. */
+  readonly onDiagnostic?: (item: Diagnostic) => void
+}
+
+/**
+ * The companion resolver for a subject that lives on disk.
+ *
+ * Extracted from `createPathSubjectOpener` so a product that opens files its own way can still get
+ * the same resolution instead of a second, slightly different one. Electron is exactly that case:
+ * its main process opens the byte source itself — it has already decided writability and has its
+ * own diagnostics to add — so it cannot use the path opener wholesale, and without this factory it
+ * would have had to reassemble the composition by hand and drift from it.
+ *
+ * A codec asking for a companion receives host-issued bindings: identity it may read under the
+ * `read-source` it already holds, and no directory handle, no roots list, and no way to name a file
+ * the host did not select for it.
+ */
+export function createFilesystemInputResolver(
+  options: FilesystemInputResolverOptions,
+): SubjectInputResolver {
+  return createCompanionInputResolver(
+    createFilesystemCompanionOrigin({
+      primaryPath: options.primaryPath,
+      roots: options.roots.map(root => resolve(root)),
+    }),
+    {
+      traitProbe: createSignatureTraitProbe(options.inventory),
+      ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
+      ...(options.deadlineMs === undefined ? {} : { deadlineMs: options.deadlineMs }),
+    },
+  )
+}
+
 /** The opener a host passes to `exposeSubjectRpc`; refusals throw, so the RPC reports them. */
 export function createPathSubjectOpener(options: PathSubjectOpenerOptions): SubjectOpener {
   const roots = options.roots.map(root => resolve(root))
   const grant = options.grant ?? { id: 'subject-rpc', classes: ['read-source'] }
   const budget = options.budget ?? DEFAULT_SUBJECT_OPEN_BUDGET
   const nextId = options.sessionId ?? randomUUID
-  /*
-   * Built once, from the same inventory the subject is resolved against: a codec that declares
-   * `expected` traits on a companion gets a bounded, host-owned answer instead of a refusal, and
-   * no codec is activated to produce it.
-   */
-  const traitProbe = createSignatureTraitProbe(options.subjects.inventory)
   return async (requested, signal) => {
     const path = resolve(requested)
     if (roots.length === 0 || !inside(roots, path)) {
@@ -77,14 +114,13 @@ export function createPathSubjectOpener(options: PathSubjectOpenerOptions): Subj
      * handle, no roots list and no way to name a file the host did not select for it.
      */
     const companionDiagnostics: Diagnostic[] = []
-    const resolveInput = createCompanionInputResolver(
-      createFilesystemCompanionOrigin({ primaryPath: path, roots }),
-      {
-        traitProbe,
-        onDiagnostic: item => companionDiagnostics.push(item),
-        ...(budget.deadlineMs === undefined ? {} : { deadlineMs: budget.deadlineMs }),
-      },
-    )
+    const resolveInput = createFilesystemInputResolver({
+      primaryPath: path,
+      roots,
+      inventory: options.subjects.inventory,
+      onDiagnostic: item => companionDiagnostics.push(item),
+      ...(budget.deadlineMs === undefined ? {} : { deadlineMs: budget.deadlineMs }),
+    })
     const result = await options.subjects.open({
       source,
       path,

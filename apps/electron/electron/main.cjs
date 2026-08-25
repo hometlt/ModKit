@@ -120,6 +120,7 @@ async function createWindow() {
     createGrantedRoots,
     exposeElectronSubjectRpc,
     openFileArtifactSource,
+    createFilesystemInputResolver,
     createFileEditingBackend,
     createSubjectEditing,
     createRawWriter,
@@ -352,6 +353,22 @@ async function createWindow() {
       maxDiagnostics: 10_000,
       deadlineMs: 30_000,
     }
+    /*
+     * Companion resolution for this open.
+     *
+     * A codec that declares companions — VXL naming its .hva, W3D/W3X/M3 naming textures — returns
+     * a composite plan, and a composite plan with no resolver fails closed by design. Main opens the
+     * byte source itself, so it composes the resolver the same way the Node path opener does,
+     * confined to the roots the user actually granted.
+     */
+    const companionDiagnostics = []
+    const resolveInput = createFilesystemInputResolver({
+      primaryPath: file,
+      roots: roots.list(),
+      inventory: subjectServices.application.main.inventory,
+      deadlineMs: budget.deadlineMs,
+      onDiagnostic: item => companionDiagnostics.push(item),
+    })
     const result = await subjectServices.open({
       source,
       path: file,
@@ -361,6 +378,7 @@ async function createWindow() {
         classes: writable ? ['read-source', 'write-source'] : ['read-source'],
       },
       budget,
+      resolveInput,
       ...(signal === undefined ? {} : { signal }),
     })
     if (result.state === 'unresolved') {
@@ -400,7 +418,7 @@ async function createWindow() {
           reason: result.reason,
           candidates: result.candidates,
           // the switched-off notices first: they are the reason, the rest is the consequence
-          diagnostics: [...switchedOff, ...result.diagnostics],
+          diagnostics: [...switchedOff, ...result.diagnostics, ...companionDiagnostics],
         },
       }
     }
