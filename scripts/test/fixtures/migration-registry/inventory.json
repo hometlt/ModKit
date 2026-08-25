@@ -1,0 +1,17 @@
+{
+  "$comment": "Fixture inventory for the migration registry gate regression suite.",
+  "schemaVersion": "source-inventory-1",
+  "counts": {
+    "total": 2
+  },
+  "units": [
+    {
+      "sourceUnitId": "legacy/codec-manifest/org.modkitx/demo",
+      "kind": "codec-manifest"
+    },
+    {
+      "sourceUnitId": "legacy/script/demo.ts",
+      "kind": "script-tool"
+    }
+  ]
+}

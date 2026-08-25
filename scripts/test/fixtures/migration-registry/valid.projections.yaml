@@ -1,0 +1,33 @@
+schemaVersion: 'projection-matrix-1'
+$comment: 'Fixture projection matrix for the migration registry gate regression suite.'
+actionVocabulary:
+  - 'project-live'
+  - 'retain'
+invariants:
+  - id: 'uvd-is-not-a-document'
+    rule: 'Document-plane не может объявлять portableProfile UVD.'
+    enforcedBy: 'scripts/migration/check-registry.mjs'
+counts:
+  planes: 1
+planes:
+  - plane: 'document'
+    projectionKind: 'generic-domain-contracts'
+    contract: 'common.view/text-source'
+    contractVersion: 1
+    requiredFacets:
+      - 'text'
+    optionalFacets: []
+    portableProfile: 'none'
+    artifactMaturity: 'reader-only'
+    derivedPresentation: 'layout-tree-is-derived'
+    packageTrust: 'not-applicable'
+    fidelity: 'partial'
+    action: 'project-live'
+    secondaryActions:
+      - 'retain'
+    plannedBlock: 12
+    knownLoss: []
+    resourceDependencies: []
+    corpusEvidence: []
+    capabilityIds:
+      - 'format/demo/open-inspect'
