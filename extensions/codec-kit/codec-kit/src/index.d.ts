@@ -28,12 +28,24 @@ import type {
   JsonValue,
   Lease,
   MetadataGroup,
+  ModelAnimationClip,
+  ModelAnimationSource,
+  ModelBoneBinding,
+  ModelCollisionSource,
+  ModelCollisionVolume,
+  ModelMaterialRef,
+  ModelMaterialSource,
   ModelMesh,
   ModelNode,
   ModelPrimitive,
+  ModelResourceRef,
+  ModelResourceRefsSource,
   ModelSceneInfo,
   ModelSceneSource,
+  ModelSkeletonSource,
   OperationDecl,
+  PortableSourceIdentity,
+  ProjectionReceipt,
   OperationOutput,
   OpenIntent,
   ResolvedAssetInputBinding,
@@ -87,6 +99,11 @@ export interface InspectionResult {
   readonly unsupportedFeatures?: readonly string[]
   readonly maxDecodedBytes?: bigint | number | string
   readonly companions?: readonly CompanionDescriptorWire[]
+  /**
+   * The native → live receipt for this open. Published as a descriptor metadata group under
+   * `PROJECTION_RECEIPT_METADATA_ID`, always converted to its portable form first.
+   */
+  readonly projectionReceipt?: ProjectionReceipt
 }
 
 export interface NamespaceMarker {
@@ -209,6 +226,38 @@ export function createModelSceneSource(input: {
   readonly meshes: readonly ModelMesh[]
   readonly primitives?: readonly ModelPrimitive[]
 }): ModelSceneSource
+
+// ---------------------------------------------------------------------------------------------
+// optional model facet sources and the projection receipt (block 12, slice 12-1)
+
+export function createModelResourceRefsSource(input: {
+  readonly references: readonly ModelResourceRef[]
+  readonly truncated?: boolean
+}): ModelResourceRefsSource
+export function createModelSkeletonSource(input: {
+  readonly bindings: readonly ModelBoneBinding[]
+  readonly hierarchies?: number
+}): ModelSkeletonSource
+export function createModelAnimationSource(input: {
+  readonly clips: readonly ModelAnimationClip[]
+}): ModelAnimationSource
+export function createModelCollisionSource(input: {
+  readonly volumes: readonly ModelCollisionVolume[]
+}): ModelCollisionSource
+export function createModelMaterialSource(input: {
+  readonly materials: readonly ModelMaterialRef[]
+  readonly libraries?: number
+}): ModelMaterialSource
+
+export const PROJECTION_RECEIPT_METADATA_ID: 'uv-projection-receipt'
+export function createProjectionReceipt(
+  receipt: Omit<ProjectionReceipt, 'form' | 'sourceIdentity'>,
+): ProjectionReceipt
+export function projectionReceiptMetadataGroup(
+  receipt: ProjectionReceipt,
+  identity: PortableSourceIdentity,
+): MetadataGroup
+
 export function createInspectionCodec(
   definition: InspectionCodecDefinition | NamespaceInspectionCodecDefinition,
   context?: ContributionContext,

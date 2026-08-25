@@ -4,7 +4,7 @@ import {
   createAssetSession,
   createUtf8TextDataSource,
 } from '@modkitx-x3/host'
-import { revisionId } from '@modkitx-x3/sdk'
+import { revisionId, toPortableProjectionReceipt } from '@modkitx-x3/sdk'
 
 export const INSPECTION_OPERATIONS = Object.freeze([
   Object.freeze({
@@ -410,6 +410,222 @@ export function createModelSceneSource({ info, nodes, meshes, primitives = [] })
   return Object.freeze(source)
 }
 
+// ---------------------------------------------------------------------------------------------
+// optional model facet sources (block 12, slice 12-1 — migration of the ad hoc summaries)
+//
+// The five contracts of `model-facet-sources.ts` were derived from what these codecs already
+// computed; these builders are the other half of that move. Each derives its `info()` counts from
+// the records it was handed rather than accepting them from the caller, so a publisher physically
+// cannot say "seven references" and then page four: the summary and the page are the same data.
+//
+// A publisher that cannot answer does not call the builder at all. None of these fills a missing
+// field with a zero, an empty array or an invented name — an absent facet is absent (§2.7).
+
+/** Shared page rule for the facet sources: same cursor grammar as the base model source. */
+function facetPage(items, request) {
+  if (!Number.isSafeInteger(request?.limit) || request.limit <= 0) {
+    throw new TypeError('model facet page limit must be a positive safe integer')
+  }
+  const start = pageStart(request.cursor)
+  const values = items.slice(start, start + request.limit)
+  return Object.freeze({
+    items: Object.freeze(values),
+    ...(start + values.length < items.length ? { nextCursor: String(start + values.length) } : {}),
+  })
+}
+
+function facetSource(info, key, items) {
+  const owned = Object.freeze(items.map(item => Object.freeze({ ...item })))
+  const source = {
+    async info(signal) {
+      if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
+      return info
+    },
+  }
+  source[key] = async (request, signal) => {
+    if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
+    return facetPage(owned, request)
+  }
+  return Object.freeze(source)
+}
+
+/**
+ * `common.view/model-resource-refs-source@1` — logical requirements, never opened here.
+ *
+ * `bound` counts the entries the host actually bound, which is why `bindingId` is the only thing
+ * that may promote a reference: a codec that guessed a companion existed would be reporting the
+ * resolver's job as its own.
+ */
+export function createModelResourceRefsSource({ references, truncated = false }) {
+  const items = [...references]
+  const info = Object.freeze({
+    references: items.length,
+    bound: items.filter(item => item.bindingId !== undefined).length,
+    truncated: truncated === true,
+  })
+  return facetSource(info, 'references', items)
+}
+
+/** `common.view/model-skeleton-source@1` — bone bindings and where each name came from. */
+export function createModelSkeletonSource({ bindings, hierarchies }) {
+  const items = [...bindings]
+  const info = Object.freeze({
+    bindings: items.length,
+    named: items.filter(item => item.boneName !== null).length,
+    companionBound: items.filter(item => item.provenance === 'companion').length,
+    // absent, not zero, when the publisher does not enumerate hierarchies
+    ...(hierarchies === undefined ? {} : { hierarchies }),
+  })
+  return facetSource(info, 'bindings', items)
+}
+
+/** `common.view/model-animation-source@1` — clips, and a rest pose stays a rest pose. */
+export function createModelAnimationSource({ clips }) {
+  const items = clips.map(clip => ({ ...clip, channels: Object.freeze([...clip.channels]) }))
+  const info = Object.freeze({
+    clips: items.length,
+    channelled: items.filter(clip => clip.channels.length > 0).length,
+    companionBound: items.filter(clip => clip.provenance === 'companion').length,
+  })
+  return facetSource(info, 'clips', items)
+}
+
+/** `common.view/model-collision-source@1` — declared volumes and mesh roles, kept apart. */
+export function createModelCollisionSource({ volumes }) {
+  const items = volumes.map(volume => ({
+    ...volume,
+    ...(volume.types === undefined ? {} : { types: Object.freeze([...volume.types]) }),
+  }))
+  const byKind = {}
+  for (const volume of items) byKind[volume.kind] = (byKind[volume.kind] ?? 0) + 1
+  const info = Object.freeze({ volumes: items.length, byKind: Object.freeze(byKind) })
+  return facetSource(info, 'volumes', items)
+}
+
+/** `common.view/model-material-source@1` — identity and contract coverage, not shader semantics. */
+export function createModelMaterialSource({ materials, libraries }) {
+  const items = materials.map(material => ({
+    ...material,
+    ...(material.contracts === undefined
+      ? {}
+      : { contracts: Object.freeze([...material.contracts]) }),
+  }))
+  const byContract = {}
+  for (const material of items) {
+    for (const contract of material.contracts ?? []) {
+      byContract[contract] = (byContract[contract] ?? 0) + 1
+    }
+  }
+  const info = Object.freeze({
+    materials: items.length,
+    // absent, not zero, when the format has no library concept at all
+    ...(libraries === undefined ? {} : { libraries }),
+    ...(Object.keys(byContract).length === 0 ? {} : { byContract: Object.freeze(byContract) }),
+  })
+  return facetSource(info, 'materials', items)
+}
+
+// ---------------------------------------------------------------------------------------------
+// ProjectionReceipt — the native → live boundary (§2.6, block 12 item 5)
+
+/** Metadata group id every codec publishes its projection receipt under. */
+export const PROJECTION_RECEIPT_METADATA_ID = 'uv-projection-receipt'
+
+const PLANE_STATES = new Set(['normalized', 'preserved', 'inferred', 'lost'])
+const CONFIDENCES = new Set(['exact', 'high', 'partial', 'heuristic'])
+
+/**
+ * Build the local `ProjectionReceipt` a codec emits when it opens a subject.
+ *
+ * Checked rather than trusted: a plane state outside the four §2.6 distinguishes, or a receipt with
+ * no plane and no evidence at all, is refused here instead of reaching a consumer as a receipt that
+ * says nothing. `inferred` stays separate from `normalized` because a value the adapter computed is
+ * not the same fact as one it converted.
+ */
+export function createProjectionReceipt(receipt) {
+  const planes = [...(receipt.planes ?? [])]
+  if (planes.length === 0)
+    throw new TypeError('a projection receipt must record at least one plane')
+  for (const plane of planes) {
+    if (!PLANE_STATES.has(plane.state)) {
+      throw new TypeError(`projection plane «${plane.planeId}» has an unknown state ${plane.state}`)
+    }
+  }
+  if (!CONFIDENCES.has(receipt.confidence)) {
+    throw new TypeError(`projection receipt has an unknown confidence ${receipt.confidence}`)
+  }
+  if ((receipt.evidence ?? []).length === 0) {
+    throw new TypeError(
+      'a projection receipt made of no evidence is a claim with nothing behind it; state at least one declared or observed fact',
+    )
+  }
+  return Object.freeze({
+    form: 'local',
+    adapter: Object.freeze({ ...receipt.adapter }),
+    subjectRevision: receipt.subjectRevision,
+    companions: Object.freeze((receipt.companions ?? []).map(item => Object.freeze({ ...item }))),
+    basis: Object.freeze({ ...receipt.basis }),
+    planes: Object.freeze(planes.map(plane => Object.freeze({ ...plane }))),
+    evidence: Object.freeze(receipt.evidence.map(item => Object.freeze({ ...item }))),
+    confidence: receipt.confidence,
+    ...(receipt.semanticHash === undefined ? {} : { semanticHash: receipt.semanticHash }),
+    ...(receipt.sourceUri === undefined ? {} : { sourceUri: receipt.sourceUri }),
+  })
+}
+
+/**
+ * JSON-safe deep copy: the descriptor carries `JsonValue`, and `bytesRead` is a `bigint`.
+ *
+ * Widening it to a decimal string is the honest conversion — `Number` would silently round a byte
+ * count past 2^53, and dropping the field would delete the very evidence it records.
+ */
+function jsonSafe(value) {
+  if (typeof value === 'bigint') return value.toString()
+  if (Array.isArray(value)) return value.map(jsonSafe)
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, jsonSafe(item)]))
+  }
+  return value
+}
+
+/**
+ * The descriptor metadata group that carries a projection receipt, always in its portable form.
+ *
+ * Portable is not a preference here. A descriptor crosses the worker boundary and can be persisted,
+ * so a receipt inside one must not name the machine that produced it: `toPortableProjectionReceipt`
+ * drops the ambient URI structurally, and this is the only way a codec publishes a receipt.
+ */
+export function projectionReceiptMetadataGroup(receipt, identity) {
+  const portable = toPortableProjectionReceipt(receipt, identity)
+  return Object.freeze({
+    id: PROJECTION_RECEIPT_METADATA_ID,
+    label: 'UV projection receipt',
+    entries: Object.freeze([Object.freeze({ key: 'receipt', value: jsonSafe(portable) })]),
+  })
+}
+
+/** The identity a codec publishes: the subject revision is already in the receipt beside it. */
+const CODEC_SOURCE_IDENTITY = Object.freeze({
+  kind: 'redacted',
+  reason:
+    'a codec projects a subject the host already opened; its portable identity is the subject revision this receipt carries, and an ambient URI would leak the producing machine into every copy',
+})
+
+/**
+ * Descriptor metadata plus, when the codec emitted one, its projection receipt.
+ *
+ * Appended last and under a fixed group id so a generic consumer finds a receipt the same way for
+ * every format — which is the whole point of moving codecs off their ad hoc summaries.
+ */
+function descriptorMetadata(inspection) {
+  const groups = inspection.metadata ?? []
+  if (inspection.projectionReceipt === undefined) return groups
+  return [
+    ...groups,
+    projectionReceiptMetadataGroup(inspection.projectionReceipt, CODEC_SOURCE_IDENTITY),
+  ]
+}
+
 async function readAll(source, budget, signal) {
   if (source.kind !== 'bytes' || source.size === undefined) {
     throw new TypeError('inspection codecs require a sized byte source')
@@ -644,7 +860,7 @@ export function createInspectionCodec(definition, contributionContext) {
             },
             dataSources: [...dataSources.keys()].map(contract => ({ contract, major: 1 })),
             diagnostics: inspection.diagnostics ?? [],
-            metadata: inspection.metadata,
+            metadata: descriptorMetadata(inspection),
             revision: input.revisions.revision,
           })
           const handlers = new Map([
@@ -775,7 +991,7 @@ export function createInspectionCodec(definition, contributionContext) {
           },
           dataSources: [...dataSources.keys()].map(contract => ({ contract, major: 1 })),
           diagnostics: inspection.diagnostics ?? [],
-          metadata: inspection.metadata,
+          metadata: descriptorMetadata(inspection),
           ...(inspection.companions === undefined ? {} : { companions: inspection.companions }),
           revision: input.revisions.revision,
         })
