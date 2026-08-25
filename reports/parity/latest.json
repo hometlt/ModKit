@@ -7,20 +7,20 @@
   },
   "x3": {
     "root": "C:\\FILES\\SC2Files\\coding\\modkitX3",
-    "sha": "dced1d3b9d8ac40fef826c37968150d21f24c5ee"
+    "sha": "05912d092831c3fa052c6b03dbb4f1e5319f2e2a"
   },
   "counts": {
-    "total": 69,
+    "total": 70,
     "real": 13,
-    "synthetic": 56,
-    "compared": 69,
+    "synthetic": 57,
+    "compared": 70,
     "skipped": 0,
     "failed": 0,
     "comparedReal": 13,
-    "comparedSynthetic": 56,
+    "comparedSynthetic": 57,
     "richer": 41,
-    "equal": 11,
-    "poorer": 17,
+    "equal": 13,
+    "poorer": 16,
     "incomparable": 0
   },
   "summary": [
@@ -147,8 +147,8 @@
       "kind": "synthetic",
       "contributionId": "org.modkitx/text-csv",
       "state": "compared",
-      "classification": "нет в X3",
-      "verdict": "poorer"
+      "classification": "паритет",
+      "verdict": "equal"
     },
     {
       "id": "cur-synthetic",
@@ -556,6 +556,15 @@
       "verdict": "richer"
     },
     {
+      "id": "txt-synthetic",
+      "format": "txt",
+      "kind": "synthetic",
+      "contributionId": "org.modkitx/txt",
+      "state": "compared",
+      "classification": "паритет",
+      "verdict": "equal"
+    },
+    {
       "id": "uvm-synthetic",
       "format": "uvm",
       "kind": "synthetic",
@@ -690,14 +699,6 @@
         "source:common.view/raster-image-source"
       ],
       "reason": "X3 publishes no raster image source for this format — the codec exposes a structural tree only — while the canonical image codec reports the header extent. Raster promotion is codec depth, not a harness gap."
-    },
-    {
-      "id": "csv-synthetic",
-      "format": "csv",
-      "kind": "synthetic",
-      "classification": "нет в X3",
-      "missing": ["source:common.view/text-data-source"],
-      "reason": "X3 does not recognise the sample: detectDelimited splits rows on the bare delimiter, so a spec-legal CSV whose quoted fields contain commas and newlines reports unstable arity and scores 0.05 confidence. The canonical document stack parses the same bytes."
     },
     {
       "id": "dae-synthetic",
@@ -4443,12 +4444,28 @@
         "bytes": 82,
         "sha256": "22c18382bc9c5c2d537fcca6817f6a879b443052611f224ecb14d0ec91f8f077"
       },
-      "classification": "нет в X3",
-      "missing": ["source:common.view/text-data-source"],
-      "extra": [],
-      "sourceComparisons": [],
-      "baseline": "нет в X3",
-      "allowPoorerReason": "X3 does not recognise the sample: detectDelimited splits rows on the bare delimiter, so a spec-legal CSV whose quoted fields contain commas and newlines reports unstable arity and scores 0.05 confidence. The canonical document stack parses the same bytes.",
+      "classification": "паритет",
+      "missing": [],
+      "extra": [
+        "operation:asset.search",
+        "operation:asset.validate",
+        "operation:data.parse",
+        "operation:data.scan",
+        "operation:data.serialize",
+        "operation:export.raw",
+        "operation:view.inspect",
+        "source:common.view/byte-range-source",
+        "source:common.view/table-data-source"
+      ],
+      "sourceComparisons": [
+        {
+          "contract": "common.view/text-data-source",
+          "classification": "паритет",
+          "missing": [],
+          "extra": []
+        }
+      ],
+      "baseline": "паритет",
       "canonical": {
         "formatId": "csv",
         "declaredSources": ["common.view/text-data-source"],
@@ -4473,62 +4490,89 @@
         "features": ["source:common.view/text-data-source"]
       },
       "x3": {
-        "available": false,
-        "detail": {
-          "state": "unresolved",
-          "reason": "no-match",
-          "candidates": [
-            {
-              "contributionId": "org.modkitx/text-csv",
-              "extensionId": "org.modkitx/text-delimited",
-              "variantId": "portable",
-              "offerId": "syntax-document",
-              "state": "detected",
-              "confidence": 0.05,
-              "diagnostics": [
-                {
-                  "code": "x3.host/worker-shared-process",
-                  "severity": "information",
-                  "message": "«org.modkitx/text-csv» runs worker-brokered: a crash, hang or protocol violation of this code is isolated from the host, but the worker shares the process — it is not a security sandbox (24 §6.1 SB-1).",
-                  "path": ["org.modkitx/text-csv"],
-                  "data": {
-                    "grant": "modkit-library:53200daa-eddb-4e4c-9917-6b711cc4a7e9/org.modkitx/text-csv#portable#probe",
-                    "classes": ["read-source"]
-                  }
-                }
-              ]
-            },
-            {
-              "contributionId": "org.modkitx/text-csv",
-              "extensionId": "org.modkitx/text-delimited",
-              "variantId": "trusted-node",
-              "offerId": "syntax-document",
-              "state": "rejected",
-              "diagnostics": [
-                {
-                  "code": "x3.host/codec-execution-unavailable",
-                  "severity": "error",
-                  "message": "codec org.modkitx/text-csv#trusted-node has no executable boundary in this host",
-                  "path": [],
-                  "data": {}
-                }
-              ]
+        "available": true,
+        "formatId": "csv",
+        "declaredSources": [
+          "common.view/byte-range-source",
+          "common.view/table-data-source",
+          "common.view/text-data-source"
+        ],
+        "actualSources": [
+          "common.view/byte-range-source",
+          "common.view/table-data-source",
+          "common.view/text-data-source"
+        ],
+        "sourceFailures": [],
+        "sources": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/table-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["cell", "rows", "shape"],
+            "measurements": {
+              "columns": 3,
+              "firstPageRows": 1,
+              "rows": 0,
+              "rowsKnown": false,
+              "typedColumns": 0
             }
-          ],
-          "diagnostics": []
-        }
+          },
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 5,
+              "linesKnown": true,
+              "sliceLines": 5,
+              "sliceNonEmpty": true
+            }
+          }
+        ],
+        "operations": [
+          "asset.search",
+          "asset.validate",
+          "data.parse",
+          "data.scan",
+          "data.serialize",
+          "export.raw",
+          "view.inspect"
+        ],
+        "geometryAccess": "unavailable",
+        "metadata": {},
+        "features": [
+          "operation:asset.search",
+          "operation:asset.validate",
+          "operation:data.parse",
+          "operation:data.scan",
+          "operation:data.serialize",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/table-data-source",
+          "source:common.view/text-data-source"
+        ]
       },
-      "verdict": "poorer",
+      "verdict": "equal",
       "planes": [
         {
           "plane": "subject-recognition",
-          "state": "canonical-only",
-          "verdict": "poorer"
+          "state": "compared",
+          "verdict": "equal"
         },
         {
           "plane": "structural-metadata",
-          "state": "canonical-only",
-          "verdict": "poorer"
+          "state": "compared",
+          "verdict": "equal"
         },
         {
           "plane": "geometry-counts",
@@ -4560,11 +4604,7 @@
           "state": "not-observed",
           "verdict": "not-observed"
         },
-        {
-          "plane": "payload-access",
-          "state": "canonical-only",
-          "verdict": "poorer"
-        },
+        { "plane": "payload-access", "state": "compared", "verdict": "equal" },
         {
           "plane": "protected-tail-preservation",
           "state": "not-observed",
@@ -4576,7 +4616,14 @@
           "verdict": "not-observed"
         }
       ],
-      "declared": { "canonical": ["common.view/text-data-source"], "x3": [] },
+      "declared": {
+        "canonical": ["common.view/text-data-source"],
+        "x3": [
+          "common.view/byte-range-source",
+          "common.view/table-data-source",
+          "common.view/text-data-source"
+        ]
+      },
       "observed": {
         "canonical": [
           {
@@ -4593,13 +4640,64 @@
             }
           }
         ],
-        "x3": []
+        "x3": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/table-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["cell", "rows", "shape"],
+            "measurements": {
+              "columns": 3,
+              "firstPageRows": 1,
+              "rows": 0,
+              "rowsKnown": false,
+              "typedColumns": 0
+            }
+          },
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 5,
+              "linesKnown": true,
+              "sliceLines": 5,
+              "sliceNonEmpty": true
+            }
+          }
+        ]
       },
       "comparison": {
-        "classification": "нет в X3",
-        "missing": ["source:common.view/text-data-source"],
-        "extra": [],
-        "sources": []
+        "classification": "паритет",
+        "missing": [],
+        "extra": [
+          "operation:asset.search",
+          "operation:asset.validate",
+          "operation:data.parse",
+          "operation:data.scan",
+          "operation:data.serialize",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/table-data-source"
+        ],
+        "sources": [
+          {
+            "contract": "common.view/text-data-source",
+            "classification": "паритет",
+            "missing": [],
+            "extra": []
+          }
+        ]
       }
     },
     {
@@ -17251,6 +17349,262 @@
             "classification": "X3 богаче",
             "missing": [],
             "extra": ["measurement:channels", "measurement:encodedMediaType"]
+          }
+        ]
+      }
+    },
+    {
+      "id": "txt-synthetic",
+      "format": "txt",
+      "kind": "synthetic",
+      "contributionId": "org.modkitx/txt",
+      "state": "compared",
+      "sample": "packages/testkit/test/fixtures/mk2-synthetic/minimal.txt",
+      "provenance": {
+        "kind": "synthetic",
+        "origin": "repository",
+        "relativePath": "packages/testkit/test/fixtures/mk2-synthetic/minimal.txt",
+        "bytes": 53,
+        "sha256": "3af522d70ebb2bd2cd2e74e7cb71b5bdefac6a5e14af588f2aa9767d5ed158c2"
+      },
+      "classification": "паритет",
+      "missing": [],
+      "extra": [
+        "operation:asset.search",
+        "operation:asset.validate",
+        "operation:export.raw",
+        "operation:view.inspect",
+        "source:common.view/byte-range-source",
+        "source:common.view/tree-data-source"
+      ],
+      "sourceComparisons": [
+        {
+          "contract": "common.view/text-data-source",
+          "classification": "паритет",
+          "missing": [],
+          "extra": []
+        }
+      ],
+      "baseline": "паритет",
+      "canonical": {
+        "formatId": "txt",
+        "declaredSources": ["common.view/text-data-source"],
+        "actualSources": ["common.view/text-data-source"],
+        "sources": [
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 5,
+              "linesKnown": true,
+              "sliceLines": 5,
+              "sliceNonEmpty": true
+            }
+          }
+        ],
+        "operations": [],
+        "geometryAccess": "unavailable",
+        "features": ["source:common.view/text-data-source"]
+      },
+      "x3": {
+        "available": true,
+        "formatId": "txt",
+        "declaredSources": [
+          "common.view/byte-range-source",
+          "common.view/text-data-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/byte-range-source",
+          "common.view/text-data-source",
+          "common.view/tree-data-source"
+        ],
+        "sourceFailures": [],
+        "sources": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 5,
+              "linesKnown": true,
+              "sliceLines": 5,
+              "sliceNonEmpty": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 3
+            }
+          }
+        ],
+        "operations": ["asset.search", "asset.validate", "export.raw", "view.inspect"],
+        "geometryAccess": "unavailable",
+        "metadata": {
+          "format": "txt",
+          "encoding": "utf-8",
+          "bom": false,
+          "newline": "crlf",
+          "characters": 53,
+          "lines": 5,
+          "words": 6,
+          "paragraphs": 2
+        },
+        "features": [
+          "operation:asset.search",
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/text-data-source",
+          "source:common.view/tree-data-source"
+        ]
+      },
+      "verdict": "equal",
+      "planes": [
+        {
+          "plane": "subject-recognition",
+          "state": "compared",
+          "verdict": "equal"
+        },
+        {
+          "plane": "structural-metadata",
+          "state": "compared",
+          "verdict": "equal"
+        },
+        {
+          "plane": "geometry-counts",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        { "plane": "hierarchy", "state": "x3-only", "verdict": "richer" },
+        {
+          "plane": "materials-textures",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        {
+          "plane": "animation",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        {
+          "plane": "collision",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        {
+          "plane": "palette-voxel-transforms",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        { "plane": "payload-access", "state": "compared", "verdict": "equal" },
+        {
+          "plane": "protected-tail-preservation",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        {
+          "plane": "diagnostics-on-malformed-input",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        }
+      ],
+      "declared": {
+        "canonical": ["common.view/text-data-source"],
+        "x3": [
+          "common.view/byte-range-source",
+          "common.view/text-data-source",
+          "common.view/tree-data-source"
+        ]
+      },
+      "observed": {
+        "canonical": [
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 5,
+              "linesKnown": true,
+              "sliceLines": 5,
+              "sliceNonEmpty": true
+            }
+          }
+        ],
+        "x3": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 5,
+              "linesKnown": true,
+              "sliceLines": 5,
+              "sliceNonEmpty": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 3
+            }
+          }
+        ]
+      },
+      "comparison": {
+        "classification": "паритет",
+        "missing": [],
+        "extra": [
+          "operation:asset.search",
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/tree-data-source"
+        ],
+        "sources": [
+          {
+            "contract": "common.view/text-data-source",
+            "classification": "паритет",
+            "missing": [],
+            "extra": []
           }
         ]
       }
