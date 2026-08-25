@@ -1,6 +1,6 @@
 {
-  "$comment": "Immutable oracle pre-lock (PLAN_MODKIT_MK3_FINAL_RU.md, блок 9 шаг 0). Фиксирует наблюдаемое состояние legacy modkitx до реализации companion resolver. Абсолютный путь legacy-репозитория живёт только в некоммитящемся migration/oracle/local/legacy-environment.local.json. После подтверждения владельца legacy-репозиторий read-only; любое расхождение с этими hashes — stop condition. Блок 10 расширяет этот lock до полного oracle descriptor, не меняя зафиксированные здесь hashes.",
-  "schemaVersion": "pre-lock-1",
+  "$comment": "Immutable oracle lock (PLAN_MODKIT_MK3_FINAL_RU.md §3.1). Секции legacy/toolchain/reproduction/corpusEnvironment/x3AtLock/ownerConfirmation зафиксированы pre-lock блока 9 (шаг 0) и с тех пор неприкосновенны: они описывают наблюдаемое состояние legacy modkitx до реализации companion resolver. Абсолютный путь legacy-репозитория живёт только в некоммитящемся migration/oracle/local/legacy-environment.local.json. После подтверждения владельца legacy-репозиторий read-only; любое расхождение с этими hashes — stop condition. Блок 10 расширил lock двумя новыми секциями — corpusDescriptors и inventory — не пересчитывая ни один зафиксированный hash; это дополнение, а не rebaseline.",
+  "schemaVersion": "oracle-lock-1",
   "createdUtc": "2026-08-24T16:55:27Z",
   "program": "docs/MK3/plans/PLAN_MODKIT_MK3_FINAL_RU.md",
   "blockPlan": "docs/MK3/plans/PLAN_SOL_BLOCK9_FINAL_2026-08-24.md",
@@ -52,6 +52,91 @@
       "MODKITX_SC2_ROOT": "unset"
     }
   },
+  "corpusDescriptors": {
+    "$comment": "Блок 10, работа 1: переносимые описания живых корпусов. Здесь только тип корпуса и ожидаемые маркеры; абсолютные пути этой машины живут исключительно в migration/oracle/local/legacy-environment.local.json (corpusEnvironment). Снятая переменная даёт видимый skip с её именем; заданная переменная с неверным содержимым — падение, а не skip (проверено в блоке 9).",
+    "policy": {
+      "absolutePathLocation": "environment-descriptor:corpusEnvironment",
+      "access": "read-only",
+      "unsetBehaviour": "visible-skip-naming-the-variable",
+      "wrongValueBehaviour": "failure-not-skip",
+      "proprietaryAssetsInGit": "forbidden"
+    },
+    "variables": {
+      "MODKITX_CNC3_ROOT": {
+        "corpusType": "game-installation-root",
+        "product": "Command & Conquer 3 engine installation",
+        "dialectNote": "локальный корпус — Kane's Wrath (CNC3EP1.exe), не ванильный Tiberium Wars; расхождение диалекта учитывается разделом плана §3.3",
+        "requiredMarkers": ["Core/1.0/Libraries.big"],
+        "expectedMarkers": ["Core/1.0/Misc.big", "Lang-english/1.0/English.big"],
+        "provesFormats": ["big", "sage-w3x", "westwood-w3d", "dds", "tga"],
+        "consumers": ["packages/testkit/test/cnc3-real-corpus.test.ts", "scripts/parity/check.mjs"]
+      },
+      "MODKITX_SC2_ROOT": {
+        "corpusType": "game-installation-root",
+        "product": "StarCraft II retail installation (CASC storage)",
+        "requiredMarkers": [".build.info"],
+        "expectedMarkers": [
+          "campaigns/liberty.sc2campaign/base.sc2assets (logical CASC path)",
+          "mods/liberty.sc2mod/base.sc2data (logical CASC path)"
+        ],
+        "provesFormats": ["casc", "m3", "dds", "mpq-s2ma", "sc2map"],
+        "consumers": [
+          "packages/testkit/test/sc2-casc-real.test.ts",
+          "packages/testkit/test/sc2-real-corpus.test.ts",
+          "packages/testkit/test/blizzard-m3-companion.test.ts",
+          "scripts/parity/check.mjs"
+        ]
+      },
+      "MODKITX_EMPEROR_ROOT": {
+        "corpusType": "extracted-asset-tree",
+        "product": "Emperor: Battle for Dune retail extract (живой установки нет)",
+        "requiredMarkers": ["хотя бы один *.xbf, найденный рекурсивным обходом"],
+        "expectedMarkers": ["MANIFEST.json в корне экстракта"],
+        "provesFormats": ["xbf"],
+        "consumers": [
+          "packages/testkit/test/emperor-real-corpus.test.ts",
+          "scripts/parity/check.mjs"
+        ]
+      },
+      "MODKITX_W3D_PATH": {
+        "corpusType": "single-file-sample",
+        "product": "Westwood W3D model (Renegade/Apocalypse Rising asset drop)",
+        "requiredMarkers": [
+          "W3D chunk stream с mesh header3, vertices и triangles",
+          "иерархия и pivots",
+          "хотя бы один animation channel"
+        ],
+        "expectedMarkers": ["имена текстур объявлены собственными чанками модели"],
+        "provesFormats": ["westwood-w3d"],
+        "consumers": [
+          "packages/testkit/test/ea-w3d-structure.test.ts",
+          "packages/testkit/test/mk2-ea-model-codecs.test.ts"
+        ]
+      },
+      "MODKITX_W3X_PATH": {
+        "corpusType": "single-file-sample",
+        "product": "SAGE W3X model container (C&C3 GDI Predator Tank drop)",
+        "requiredMarkers": ["документ содержит render- и collision-меши собственными словами"],
+        "expectedMarkers": [
+          "соседний *_SKL.w3x со скелетом (metadata-only, без mesh)",
+          "соседний *_SKN.w3x в той же папке"
+        ],
+        "provesFormats": ["sage-w3x"],
+        "consumers": ["packages/testkit/test/ea-w3x-structure.test.ts"]
+      },
+      "MODKITX_VXL_PATH": {
+        "corpusType": "single-file-sample",
+        "product": "Tiberian Sun / Red Alert 2 voxel model",
+        "requiredMarkers": ["VXL header с секциями"],
+        "expectedMarkers": ["парный <stem>.hva рядом с моделью (трансформы секций)"],
+        "provesFormats": ["vxl", "hva"],
+        "consumers": [
+          "packages/testkit/test/ea-vxl-hva-companion.test.ts",
+          "packages/testkit/test/mk2-ea-vxl-codec.test.ts"
+        ]
+      }
+    }
+  },
   "x3AtLock": {
     "branch": "spec/mk3-extension-reference",
     "headCommit": "091c3d15c78ae41947bfeec9f501ae4806d96399",
@@ -69,5 +154,77 @@
     "confirmedBy": "owner",
     "confirmedUtc": "2026-08-24T17:00:00Z",
     "$comment": "Подтверждено владельцем в интерактивной сессии 2026-08-24. Legacy modkitx с этого момента read-only oracle; изменение зафиксированных hashes — stop condition."
+  },
+  "inventory": {
+    "$comment": "Owned by scripts/migration/emit-inventory.mjs; refreshed by pnpm migration:emit and verified by pnpm migration:check. The legacy hashes above are never recomputed by this generator.",
+    "artifact": "migration/generated/source-inventory.json",
+    "artifactSha256": "efc7c81a2686d55e40734ac4cf1b3bc0bf0de5a9d33b0609291ec1c6480a11cd",
+    "sealedState": {
+      "legacyHeadCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+      "sealedIndexEntries": 7085,
+      "sealedWorktreeDeletions": 1029,
+      "sealedTrackedFiles": 6056,
+      "sealedUntrackedFiles": 15,
+      "sealedFiles": 6071
+    },
+    "commands": {
+      "emit": "pnpm migration:emit",
+      "check": "pnpm migration:check",
+      "enumerateSealedTracked": "git -C <legacyRoot> ls-files -z",
+      "filterSealedTracked": "keep only index paths that still exist in the legacy worktree (drops the worktree deletions recorded in migration/oracle/legacy-oracle.pre-lock.status.txt)",
+      "enumerateSealedUntracked": "read migration/oracle/legacy-oracle.pre-lock.untracked.txt (sha256 *path lines)",
+      "enumerateDocs": "walk <docsRoot>/uv recursively (the docs root is not a git repository); sort paths in UTF-8 byte order"
+    },
+    "patterns": {
+      "codec-manifest": "legacy **/codec.manifest.json",
+      "game-manifest": "legacy **/game.manifest.json",
+      "package-export": "legacy packages/*/package.json, apps/*/package.json, apps/rts/*/package.json → exports",
+      "vscode-*": "legacy apps/modkit-vscode/package.json → contributes",
+      "cli-*": "legacy apps/modkit-cli/src/commands/catalog.ts → MODKIT_COMMANDS",
+      "app, app-route": "legacy apps/*/package.json, apps/rts/*/package.json + their *.html entry points",
+      "script-tool": "legacy scripts/**/*.{ts,mts,mjs,cjs,js,sh,ps1}",
+      "workspace-script": "legacy package.json → scripts",
+      "runtime-capability": "legacy rts-shared/rts-server/world/runtime/replays/saves exports + sc2-runtime codec",
+      "multiverse-*": "docs uv/** (specs, schema, examples, proofs) + legacy multiverse/world-v0 tools"
+    },
+    "controlTotals": {
+      "codecManifests": 206,
+      "gameManifests": 31,
+      "manifestsTotal": 237,
+      "vscodeCommands": 64,
+      "vscodeCustomEditors": 11,
+      "vscodeLanguages": 8
+    },
+    "counts": {
+      "total": 1120,
+      "byKind": {
+        "app": 6,
+        "app-route": 4,
+        "cli-command": 5,
+        "cli-subcommand": 3,
+        "codec-manifest": 206,
+        "game-manifest": 31,
+        "multiverse-asset": 5,
+        "multiverse-document": 33,
+        "multiverse-fixture": 46,
+        "multiverse-proof": 8,
+        "multiverse-schema": 51,
+        "multiverse-specification": 20,
+        "multiverse-tool": 8,
+        "package-export": 134,
+        "runtime-capability": 12,
+        "script-tool": 152,
+        "vscode-command": 64,
+        "vscode-configuration-property": 67,
+        "vscode-contribution": 18,
+        "vscode-custom-editor": 11,
+        "vscode-language": 8,
+        "vscode-menu-item": 84,
+        "vscode-view": 6,
+        "workspace-script": 138
+      },
+      "bySourceRoot": { "docs": 163, "legacy": 957 },
+      "byDepth": { "resolved": 742, "shallow": 378 }
+    }
   }
 }
