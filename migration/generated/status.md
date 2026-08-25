@@ -65,36 +65,37 @@
 
 | allocation                   | Строк | migrationState         | Строк | evidenceLevel | Строк |
 | ---------------------------- | ----- | ---------------------- | ----- | ------------- | ----- |
-| `absent`                     | 94    | `equivalent-better`    | 15    | E0            | 89    |
-| `covered`                    | 198   | `implemented`          | 193   | E1            | 118   |
-| `not-applicable`             | 1     | `missing`              | 94    | E2            | 68    |
-| `superseded`                 | 13    | `partial`              | 5     | E3            | 12    |
-| `superseded-staging-present` | 2     | `relocated-multiverse` | 1     | E4            | 21    |
+| `absent`                     | 91    | `equivalent-better`    | 15    | E0            | 89    |
+| `covered`                    | 200   | `implemented`          | 195   | E1            | 115   |
+| `not-applicable`             | 2     | `missing`              | 91    | E2            | 69    |
+| `superseded`                 | 13    | `partial`              | 6     | E3            | 12    |
+| `superseded-staging-present` | 2     | `relocated-multiverse` | 1     | E4            | 23    |
 
 ### 3.3. Доказанные writers
 
-| Возможность                    | writerEvidence                         | Тест                                                                                           |
-| ------------------------------ | -------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `addition/text-ini/open-edit`  | `write-reopen-compared`                | `packages/host/test/text-writers.test.ts`                                                      |
-| `addition/text-json/open-edit` | `write-reopen-compared`                | `packages/host/test/text-writers.test.ts`<br>`packages/testkit/test/text-data.test.ts`         |
-| `format/csv/open-inspect`      | `write-reopen-compared`                | `packages/testkit/test/text-data.test.ts`<br>`packages/host/test/text-writers.test.ts`         |
-| `format/jpg/open-inspect`      | `write-reopen-compared-metadata-plane` | `packages/host/test/media-edits.test.ts`                                                       |
-| `format/mp3/open-inspect`      | `write-reopen-compared-metadata-plane` | `packages/host/test/media-edits.test.ts`                                                       |
-| `format/png/open-inspect`      | `write-reopen-compared`                | `packages/host/test/media-edits.test.ts`                                                       |
-| `format/txt/open-inspect`      | `write-reopen-compared`                | `packages/testkit/test/common-plain-text.test.ts`<br>`packages/host/test/text-writers.test.ts` |
+| Возможность                    | writerEvidence                         | Тест                                                                                                                                                         |
+| ------------------------------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `addition/text-ini/open-edit`  | `write-reopen-compared`                | `packages/host/test/text-writers.test.ts`                                                                                                                    |
+| `addition/text-json/open-edit` | `write-reopen-compared`                | `packages/host/test/text-writers.test.ts`<br>`packages/testkit/test/text-data.test.ts`                                                                       |
+| `format/csv/open-inspect`      | `write-reopen-compared`                | `packages/testkit/test/text-data.test.ts`<br>`packages/host/test/text-writers.test.ts`                                                                       |
+| `format/jpg/open-inspect`      | `write-reopen-compared-metadata-plane` | `packages/host/test/media-edits.test.ts`                                                                                                                     |
+| `format/mp3/open-inspect`      | `write-reopen-compared-metadata-plane` | `packages/host/test/media-edits.test.ts`                                                                                                                     |
+| `format/png/open-inspect`      | `write-reopen-compared`                | `packages/host/test/media-edits.test.ts`                                                                                                                     |
+| `format/txt/open-inspect`      | `write-reopen-compared`                | `packages/testkit/test/common-plain-text.test.ts`<br>`packages/host/test/text-writers.test.ts`                                                               |
+| `uv/uvm/materializer-writer`   | `write-reopen-compared`                | `packages/testkit/test/uvm-materializer.test.ts`<br>`scripts/test/uv-materializer-boundary.test.ts`<br>`packages/testkit/test/blizzard-m3-companion.test.ts` |
 
 ## 4. Именованные closure
 
 | Release             | Всего | Seed | Транзитивных | Нерешённых | Ближайший блок |
 | ------------------- | ----- | ---- | ------------ | ---------- | -------------- |
-| `mk3-ga`            | 165   | 158  | 7            | 45         | block-11       |
-| `mk3-multiverse-ga` | 167   | 167  | 0            | 46         | block-11       |
+| `mk3-ga`            | 165   | 158  | 7            | 43         | block-11       |
+| `mk3-multiverse-ga` | 167   | 167  | 0            | 44         | block-11       |
 
 ### 4.1. Дедлайны `mk3-ga` по planned block
 
 | Planned block | Units | Из них нерешённых |
 | ------------- | ----- | ----------------- |
-| `block-11`    | 14    | 2                 |
+| `block-11`    | 14    | 0                 |
 | `block-12`    | 70    | 1                 |
 | `block-13`    | 1     | 1                 |
 | `block-15`    | 24    | 7                 |
@@ -104,14 +105,7 @@
 
 ## 5. Gap list — что осталось в `mk3-ga`
 
-Строк с нерешённым состоянием: **45** из 165. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
-
-### Блок 11 — 2 строк
-
-| Возможность                  | migrationState | evidence | Владелец                   |
-| ---------------------------- | -------------- | -------- | -------------------------- |
-| `uv/uvm/live-projection`     | `missing`      | E1       | `extensions/common/models` |
-| `uv/uvm/materializer-writer` | `missing`      | E1       | `extensions/common/models` |
+Строк с нерешённым состоянием: **43** из 165. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
 
 ### Блок 12 — 1 строк
 

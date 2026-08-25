@@ -15865,36 +15865,42 @@ capabilities:
       - 'docs/uv/specification/multiverse/model/SPEC_UVM.md'
     legacyEvidence:
       - 'docs:uv/multiverse/INDEX.md'
-    hostFacilities: []
-    mk3Contributions: []
+    hostFacilities:
+      - 'read-source'
+    mk3Contributions:
+      - 'org.modkitx/model-uvm'
     mk3Operations: []
     allocation:
-      state: 'absent'
+      state: 'covered'
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'missing'
-    supportState: 'unsupported'
-    runtimeAvailability: 'none'
-    evidenceLevel: 'E1'
-    hostEvidence: 'none'
+    migrationState: 'implemented'
+    supportState: 'supported'
+    runtimeAvailability: 'browser-and-node'
+    evidenceLevel: 'E4'
+    hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
       rows: []
-      corpusKinds: []
+      corpusKinds:
+        - 'real'
       verdicts: []
-      liveSources: []
+      liveSources:
+        - 'common.view/model-scene-source'
     fixtures: []
-    corpusDescriptors: []
+    corpusDescriptors:
+      - 'MODKITX_SC2_ROOT'
     projection:
       plane: 'model'
-      liveProjection: 'planned'
-      portableMaterialization: 'planned'
+      liveProjection: 'live'
+      portableMaterialization: 'materialized'
       opaquePreservation: 'none'
       nativeExport: 'planned'
     knownLoss:
-      - 'спецификация существует и валидируется, исполняемого MK3-контракта ещё нет'
+      - 'model viewer открывает живую проекцию без материализации и без знания native game/format ID; байты UVM создаёт только материализатор'
+      - 'опциональные facet-контракты объявлены, но кодеки ещё публикуют ad hoc сводки: миграция публикаторов — блок 12'
     receipts:
       projection: null
       materialization: null
@@ -15902,7 +15908,9 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/uvm-convergence.test.ts'
+        - 'packages/testkit/test/blizzard-m3-companion.test.ts'
       reports: []
   - capabilityId: 'uv/uvm/materializer-writer'
     userScenario: 'Сохранить живую проекцию модели в стандартный UVM и снова открыть её без скрытой потери.'
@@ -15918,36 +15926,44 @@ capabilities:
       - 'docs/uv/schema/multiverse/model/schema/uvm.asset.schema.json'
     legacyEvidence:
       - 'docs:uv/multiverse/INDEX.md'
-    hostFacilities: []
-    mk3Contributions: []
+    hostFacilities:
+      - 'read-source'
+    mk3Contributions:
+      - 'org.modkitx/uvm-materializer'
+      - 'org.modkitx/uvm-writer'
     mk3Operations: []
     allocation:
-      state: 'absent'
+      state: 'covered'
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'missing'
-    supportState: 'unsupported'
-    runtimeAvailability: 'none'
-    evidenceLevel: 'E1'
-    hostEvidence: 'none'
-    writerEvidence: 'not-declared'
+    migrationState: 'implemented'
+    supportState: 'supported'
+    runtimeAvailability: 'browser-and-node'
+    evidenceLevel: 'E4'
+    hostEvidence: 'node'
+    writerEvidence: 'write-reopen-compared'
     parityEvidence:
       coverageStatus: null
       rows: []
-      corpusKinds: []
+      corpusKinds:
+        - 'real'
       verdicts: []
-      liveSources: []
+      liveSources:
+        - 'common.view/model-scene-source'
     fixtures: []
-    corpusDescriptors: []
+    corpusDescriptors:
+      - 'MODKITX_SC2_ROOT'
     projection:
       plane: 'model'
-      liveProjection: 'planned'
-      portableMaterialization: 'planned'
+      liveProjection: 'live'
+      portableMaterialization: 'materialized'
       opaquePreservation: 'none'
       nativeExport: 'planned'
     knownLoss:
-      - 'спецификация существует и валидируется, исполняемого MK3-контракта ещё нет'
+      - 'exact projectionSemanticHash достигается там, где источник уже использует позиционную конвенцию идентичности артефакта (UVM, glTF); M3/W3X/W3D/VXL перенумеровываются, и каждая расходящаяся плоскость перечислена в MaterializationReceipt'
+      - 'счётчики текстур и анимаций базовый контракт публикует без содержимого: материализатор их не выдумывает, structure-facet честно расходится'
+      - 'native export не заявлен: NativeExportReceipt существует как тип, exporters целевых кодеков — позже'
     receipts:
       projection: null
       materialization: null
@@ -15955,7 +15971,10 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/uvm-materializer.test.ts'
+        - 'scripts/test/uv-materializer-boundary.test.ts'
+        - 'packages/testkit/test/blizzard-m3-companion.test.ts'
       reports: []
   - capabilityId: 'uv/uvt/texture-profile'
     userScenario: 'Материализовать текстуру в UVT с честным color/alpha/mip/KTX2 mapping.'
@@ -15974,15 +15993,15 @@ capabilities:
     mk3Contributions: []
     mk3Operations: []
     allocation:
-      state: 'absent'
+      state: 'not-applicable'
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'missing'
-    supportState: 'unsupported'
+    migrationState: 'partial'
+    supportState: 'partial'
     runtimeAvailability: 'none'
-    evidenceLevel: 'E1'
-    hostEvidence: 'none'
+    evidenceLevel: 'E2'
+    hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
@@ -15999,7 +16018,8 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'planned'
     knownLoss:
-      - 'спецификация существует и валидируется, исполняемого MK3-контракта ещё нет'
+      - 'schema-ready, materializer отсутствует: профиль доведён до conversion-grade со схемой, тремя фикстурами и десятью векторами, но UVT-материализации нет ни в Modkit, ни в Multiverse'
+      - 'открытыми осознанно остались палитровые источники, анимационные последовательности, transcoding-таргеты, 3D-объёмы и полный набор transfer-функций — причина по каждому в specs/NOTES §7.1'
     receipts:
       projection: null
       materialization: null
@@ -16007,7 +16027,8 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'scripts/test/specs-pin.test.ts'
       reports: []
   - capabilityId: 'uv/uvw/world-materialization'
     userScenario: 'Сохранить мир игры в нейтральный UVW и снова открыть его.'

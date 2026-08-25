@@ -20,13 +20,13 @@
     },
     "byMigrationState": {
       "equivalent-better": 14,
-      "implemented": 105,
-      "missing": 40,
+      "implemented": 107,
+      "missing": 38,
       "partial": 5,
       "relocated-multiverse": 1
     },
     "byObligation": { "focused-required-addition": 13, "legacy-required": 152 },
-    "byEvidenceLevel": { "E0": 36, "E1": 35, "E2": 65, "E3": 9, "E4": 20 }
+    "byEvidenceLevel": { "E0": 36, "E1": 33, "E2": 65, "E3": 9, "E4": 22 }
   },
   "deadlines": {
     "block-11": [
@@ -2570,12 +2570,12 @@
       "obligation": "legacy-required",
       "owner": "extensions/common/models",
       "plannedBlock": 11,
-      "migrationState": "missing",
-      "supportState": "unsupported",
-      "evidenceLevel": "E1",
-      "allocationState": "absent",
+      "migrationState": "implemented",
+      "supportState": "supported",
+      "evidenceLevel": "E4",
+      "allocationState": "covered",
       "portFamily": null,
-      "corpusDescriptors": [],
+      "corpusDescriptors": ["MODKITX_SC2_ROOT"],
       "dependsOn": ["uv/projection-abi/receipts", "uv/resource-session-port/lazy-resources"],
       "requiredBy": [
         "uv/uvm/materializer-writer",
@@ -2595,12 +2595,12 @@
       "obligation": "legacy-required",
       "owner": "extensions/common/models",
       "plannedBlock": 11,
-      "migrationState": "missing",
-      "supportState": "unsupported",
-      "evidenceLevel": "E1",
-      "allocationState": "absent",
+      "migrationState": "implemented",
+      "supportState": "supported",
+      "evidenceLevel": "E4",
+      "allocationState": "covered",
       "portFamily": null,
-      "corpusDescriptors": [],
+      "corpusDescriptors": ["MODKITX_SC2_ROOT"],
       "dependsOn": ["uv/uvm/live-projection"],
       "requiredBy": [
         "vertical/beyond-all-reason/native-round-trip",
