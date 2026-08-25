@@ -5,7 +5,9 @@
 // second parity implementation — this wrapper runs scripts/parity/check.mjs against a throwaway
 // report path and then proves three things the observing run does not:
 //
-//   1. every real corpus variable is set, so a real row cannot quietly become a synthetic-only run;
+//   1. every corpus variable the parity corpus actually references is set (procurement of corpora
+//      for verticals that have no parity rows yet is corpora-readiness business, not this gate's),
+//      so a real row cannot quietly become a synthetic-only run;
 //   2. the run is clean: nothing skipped, nothing failed, and the row/verdict counts still match
 //      the committed baseline in reports/parity/latest.json;
 //   3. no row changed its classification against that baseline. The only differences a rerun may
@@ -44,9 +46,27 @@ const environmentRequired = reason => {
 }
 
 const lock = JSON.parse(readFileSync(lockPath, 'utf8'))
-const variables = Object.keys(lock.corpusDescriptors?.variables ?? {}).sort()
-if (variables.length === 0) {
+const descriptors = lock.corpusDescriptors?.variables ?? {}
+if (Object.keys(descriptors).length === 0) {
   console.error('parity:legacy: the oracle lock declares no corpus descriptors')
+  process.exit(1)
+}
+
+// Only the variables the parity corpus consumes gate this run. A descriptor for a vertical whose
+// codecs are still staged (Warzone, BAR) or whose corpus is an owner-action (TW, RA3) must not
+// hold the differential ratchet hostage — those states live in corpora-readiness.
+const corpus = JSON.parse(readFileSync(path.join(repoRoot, 'scripts/parity/corpus.json'), 'utf8'))
+const referenced = new Set()
+for (const sample of corpus.samples ?? []) {
+  if (typeof sample.environment === 'string') referenced.add(sample.environment)
+}
+const variables = Object.keys(descriptors)
+  .filter(name => referenced.has(name))
+  .sort()
+if (variables.length === 0) {
+  console.error(
+    'parity:legacy: no lock corpus descriptor matches an environment variable referenced by scripts/parity/corpus.json',
+  )
   process.exit(1)
 }
 
@@ -60,7 +80,14 @@ if (!existsSync(path.join(legacyRoot, '.git'))) {
 }
 
 const missing = variables.filter(name => {
-  const value = process.env[name]?.trim()
+  const alias = descriptors[name]?.deprecatedAlias
+  const direct = process.env[name]?.trim()
+  const value =
+    direct !== undefined && direct !== ''
+      ? direct
+      : typeof alias === 'string'
+        ? process.env[alias]?.trim()
+        : undefined
   return value === undefined || value === '' || !existsSync(value)
 })
 if (missing.length > 0) {
