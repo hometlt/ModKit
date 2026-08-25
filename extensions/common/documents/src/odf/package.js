@@ -432,6 +432,29 @@ function resolvePrefixes(rootAttributes) {
 }
 
 /**
+ * Index of the `>` that really ends the tag opened at `start`.
+ *
+ * XML forbids a raw `<` inside an attribute value but permits a raw `>`, so scanning to the first
+ * `>` splits `svg:d="M 0 0 L 1 1"` the moment someone writes `a > b` in a title. Quotes are tracked
+ * instead, which is the difference between refusing a legal document and reading it.
+ */
+function elementEnd(xml, start, label) {
+  let quote
+  for (let index = start + 1; index < xml.length; index += 1) {
+    const character = xml[index]
+    // a raw `<` is forbidden everywhere inside a tag, quoted or not, so it is a refusal either way
+    if (character === '<') throw new TypeError(`${label} has malformed XML markup`)
+    if (quote !== undefined) {
+      if (character === quote) quote = undefined
+      continue
+    }
+    if (character === '"' || character === "'") quote = character
+    else if (character === '>') return index
+  }
+  throw new TypeError(`${label} has an unterminated element`)
+}
+
+/**
  * Parse one XML part into a bounded element tree.
  *
  * `state` carries the budget spend across every part of one package, so a document cannot slip past
@@ -481,8 +504,7 @@ export function parseOdfXml(bytes, label, budget, state, signal) {
       cursor = end + 2
       continue
     }
-    const close = xml.indexOf('>', open)
-    if (close < 0) throw new TypeError(`${label} has an unterminated element`)
+    const close = elementEnd(xml, open, label)
     const token = xml.slice(open + 1, close)
     cursor = close + 1
     if (token.startsWith('/')) {

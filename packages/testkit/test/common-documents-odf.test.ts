@@ -521,6 +521,28 @@ describe('11B common/documents — the OpenDocument quartet', () => {
     }
   })
 
+  it('keeps a raw > inside an attribute value, which XML allows and a naive scan splits', async () => {
+    // `svg:d="M 0 0 L 1 1"` is not where this bites; a shape title reading `a > b` is. Scanning to
+    // the first `>` would cut the tag in half and refuse a perfectly legal document.
+    const body =
+      '<office:text><text:p text:style-name="a &gt; b">plain</text:p>' +
+      '<text:h text:style-name="x>y">heading</text:h></office:text>'
+    const bytes = odfPackage('odt', [{ name: 'content.xml', body: contentXml('odt', body) }])
+    expect(await summaryOf('odt', bytes)).toMatchObject({
+      format: 'odt',
+      paragraphs: 1,
+      headings: 1,
+    })
+    // a raw `<` inside an attribute value is *not* allowed, and is still refused
+    const illegal = contentXml(
+      'odt',
+      '<office:text><text:p text:style-name="a<b">x</text:p></office:text>',
+    )
+    await expect(
+      open('odt', odfPackage('odt', [{ name: 'content.xml', body: illegal }])),
+    ).rejects.toThrow(/malformed XML markup/u)
+  })
+
   it('resolves ODF namespaces by URI, so a document that renames the prefixes still opens', async () => {
     const drawing =
       '<?xml version="1.0"?><o:document-content' +
