@@ -80,6 +80,8 @@ describe('descriptor-v2 wire facts', () => {
       'common.view/model-scene-source',
       'common.view/relation-graph-source',
       'common.view/subject-facts-source',
+      // ADR-DOC-001: standard on the wire, `publisher-candidate` in DATA_SOURCE_MATURITY
+      'common.view/slide-deck-source',
     ])
     expect(() =>
       (STANDARD_DATA_SOURCE_CONTRACTS as unknown as string[]).push('evil/unsafe-source'),

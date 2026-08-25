@@ -189,11 +189,12 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     const outcomes = await runMk2Acceptance(corpus, { repoRoot, mk2Root })
     console.log(`\n${formatMk2AcceptanceTable(tally, outcomes)}\n`)
 
-    // Block 11 slice 11A moved plain text into product-owned `extensions/common/plain-text`, so
-    // the converter-owned tally drops by one more.
+    // Block 11 slice 11A moved plain text into product-owned `extensions/common/plain-text` and
+    // slice 11B moved ODT, ODS and ODP into `extensions/common/documents`, so the converter-owned
+    // tally drops by four.
     // Block 8 moved 17 EA contributions into product-owned `extensions/ea/*`; this tally is
     // intentionally scoped to the remaining converter-owned `extensions/mk2/*` tree.
-    expect(tally.converted).toBeGreaterThanOrEqual(87)
+    expect(tally.converted).toBeGreaterThanOrEqual(84)
     expect(tally.converted).toBe(tally.ported + tally.pending)
     // OPUS-MK2-02 definition of done: six OPUS-MK2-01 pilots plus port campaign wave 1.
     expect(tally.ported).toBeGreaterThanOrEqual(12)
