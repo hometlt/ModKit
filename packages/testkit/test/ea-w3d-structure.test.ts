@@ -651,6 +651,116 @@ describe('W3D inside a BIG namespace', () => {
     }
   })
 
+  it('resolves the same texture through the post-open ResourceSessionPort (block 12 item 7)', async () => {
+    /*
+     * The port's second container, and the point of running it twice.
+     *
+     * Slice 11C0 proved the `ResourceSessionPort` against a CASC namespace, and one container
+     * cannot tell you whether a port is container-independent or merely CASC-shaped. A BIG archive
+     * is a different beast entirely — flat big-endian index, no CDN, no encoding table — and the
+     * port is handed it through the same `createNamespaceCompanionOrigin` seam with the same
+     * confinement, the same bounded prefix listing and the same coded outcomes.
+     *
+     * Unlike the SC2 case, this reference *does* resolve: the texture is in the archive. So this is
+     * also the first end-to-end proof that the port resolves rather than only refusing well.
+     */
+    const { createNamespaceCompanionOrigin } = (await import(
+      pathToFileURL(join(repoRoot, 'packages', 'host', 'src', 'namespace-origin.js')).href
+    )) as typeof import('../../host/src/namespace-origin.js')
+    const { createResourceSession } = (await import(
+      pathToFileURL(join(repoRoot, 'packages', 'host', 'src', 'resource-session.js')).href
+    )) as typeof import('../../host/src/resource-session.js')
+
+    const { opened, nested } = await openInBig(
+      [
+        { path: 'art/models/model.w3d', bytes: await model([]) },
+        { path: 'art/textures/fixture.tga', bytes: new Uint8Array([7, 7, 7]) },
+      ],
+      'art/models/model.w3d',
+    )
+    try {
+      if (nested.result.state !== 'opened') {
+        throw new Error(JSON.stringify(nested.result.diagnostics).slice(0, 400))
+      }
+      const refsLease = await nested.result.session.dataSource(
+        'common.view/model-resource-refs-source',
+        1,
+      )
+      const references = (
+        await (refsLease.value as ModelResourceRefsSource).references({
+          limit: 10,
+        })
+      ).items
+      await refsLease.release()
+      // the facet contract publishes the logical requirement; the port is what opens it
+      expect(references.map(item => item.id)).toEqual([MESH_TEXTURE])
+
+      const namespaceLease = await opened.session.dataSource(
+        'common.view/namespace-entry-source',
+        1,
+      )
+      const containerRevision = (await opened.session.descriptor()).revision
+      const resources = createResourceSession({
+        origin: createNamespaceCompanionOrigin({
+          namespace: namespaceLease.value,
+          primaryLogicalId: 'art/models/model.w3d',
+          containerRevision,
+          extract: async (entryId, signal) => {
+            const payload = await opened.session
+              .operations()
+              .invoke('extract-entry', { entryId }, signal === undefined ? {} : { signal })
+            if (payload.state !== 'ok' || payload.output.kind !== 'bytes') {
+              throw new Error(`BIG extraction failed for ${entryId}`)
+            }
+            return payload.output.value
+          },
+        }),
+        revision: containerRevision,
+      })
+      try {
+        const first = await resources.resolve({
+          id: 'texture-0',
+          logicalId: references[0]?.id ?? MESH_TEXTURE,
+          role: 'texture',
+          scopes: ['current-mount', 'enclosing-container'],
+        })
+        if (first.state !== 'resolved') {
+          throw new Error(`the port did not resolve the texture: ${first.reason}`)
+        }
+        expect(first.provenance).toMatchObject({
+          requirementId: 'texture-0',
+          role: 'texture',
+          state: 'resolved',
+          cached: false,
+        })
+        expect(first.revision).toBe(first.lease.value.revision)
+        // the resource is the texture that is actually in the archive, three bytes and all
+        expect(first.provenance.bytes).toBe(3n)
+        await first.lease.release()
+
+        // and the budget is spent once here too: the second ask is served from the session index
+        const repeat = await resources.resolve({
+          id: 'texture-0-again',
+          logicalId: references[0]?.id ?? MESH_TEXTURE,
+          role: 'texture',
+          scopes: ['current-mount'],
+        })
+        expect(repeat.provenance.cached).toBe(true)
+        if (repeat.state === 'resolved') await repeat.lease.release()
+        expect(resources.provenance()).toHaveLength(2)
+      } finally {
+        try {
+          await resources.dispose()
+        } finally {
+          await namespaceLease.release()
+        }
+      }
+      await nested.result.session.dispose()
+    } finally {
+      await opened.session.dispose()
+    }
+  })
+
   it('refuses two archive entries that both answer the declared name', async () => {
     const { opened, nested } = await openInBig(
       [

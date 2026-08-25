@@ -220,6 +220,42 @@ describe('resource session — resolution', () => {
   })
 })
 
+describe('resource session — a name is a name, a path is a path', () => {
+  it('finds a bare file name anywhere it serves, as the pre-open companion seam does', async () => {
+    /*
+     * The two seams must agree. A W3D names its texture `fixture.tga` with no directory, and the
+     * block-9 companion resolver finds it wherever it lives in the archive; the port used to match
+     * the whole logical id and miss it, so the very same reference resolved before `open` and
+     * failed after it. The CASC case could not catch this — SC2 spells its references as paths.
+     */
+    const origin = fakeOrigin(['art/textures/fixture.tga'])
+    const session = createResourceSession({ origin, revision: SESSION_REVISION })
+    try {
+      const result = await session.resolve(requirement('r1', 'fixture.tga'))
+      expect(result.state).toBe('resolved')
+      if (result.state === 'resolved') {
+        // it resolves to the entry's real id, not to the bare name it was asked for
+        expect(result.lease.value.ref.uri).toContain('art/textures/fixture.tga')
+        await result.lease.release()
+      }
+    } finally {
+      await session.dispose()
+    }
+  })
+
+  it('holds a path to its own directory instead of matching the file name anywhere', async () => {
+    // the mirror rule: naming a place means that place, so a same-named file elsewhere is a miss
+    const origin = fakeOrigin(['art/textures/fixture.tga'])
+    const session = createResourceSession({ origin, revision: SESSION_REVISION })
+    try {
+      const result = await session.resolve(requirement('r1', 'other/fixture.tga'))
+      expect(unresolvedReason(result)).toBe('not-found')
+    } finally {
+      await session.dispose()
+    }
+  })
+})
+
 describe('resource session — confinement and allowlist', () => {
   it('refuses a logical id that could name something outside the origin', async () => {
     const origin = fakeOrigin(['textures/hull.dds'])
@@ -444,5 +480,249 @@ describe('resource session — lifecycle', () => {
     } finally {
       await session.dispose()
     }
+  })
+})
+
+/**
+ * Block 12 item 7 — the half of the conformance the 11C0 suite did not cover.
+ *
+ * Budgets, cancellation, cycles, allowlist and confinement were proved above. What was missing is
+ * everything about *trust in what the session reports*: that its cache cannot be made to hand back
+ * stale bytes, that its provenance cannot be rewritten by the caller it hands records to, that two
+ * sessions over one origin share nothing, and that tearing one down under load strands nothing.
+ */
+describe('resource session — cache integrity', () => {
+  it('caches where a resource is, never what it contains', async () => {
+    /*
+     * The poisoning question, asked precisely. The session's index exists to stop a second
+     * enumeration of a 666,588-entry namespace — it is a *location* index. If it also cached the
+     * lease or the bytes, a resource replaced between two resolutions would be served from the
+     * first read and the caller could not tell. So the second resolution must reuse the location
+     * (`cached: true`, no new enumeration) and still open the resource again, carrying whatever
+     * revision the origin gives it now.
+     */
+    const entries = [{ logicalId: 'textures/hull.dds', size: 16n }]
+    let generation = 0
+    const counts = { enumerations: 0, entriesServed: 0, opens: 0, releases: 0 }
+    let open = 0
+    const origin: FakeOrigin = {
+      primaryLogicalId: 'models/tank.m3',
+      caseSensitivity: 'sensitive',
+      scopes: ['current-mount'],
+      counts,
+      outstanding: () => open,
+      async *enumerate(_scope, options) {
+        counts.enumerations += 1
+        for (const entry of entries) {
+          if (!entry.logicalId.startsWith(options.prefix)) continue
+          counts.entriesServed += 1
+          yield entry
+        }
+      },
+      open(logicalId: string): Promise<Lease<ArtifactSource>> {
+        counts.opens += 1
+        open += 1
+        // the backing content changed between resolutions; its revision changes with it
+        generation += 1
+        const uri = `memory://poison/${logicalId}`
+        const source: ArtifactSource = {
+          kind: 'bytes',
+          ref: { id: uri, uri },
+          revision: revisionId(
+            `provider-token:${encodeURIComponent(logicalId)}-generation-${generation}`,
+          ),
+          size: 16n,
+          read: () => Promise.resolve(new Uint8Array(0)),
+          async *stream() {
+            yield new Uint8Array(0)
+          },
+        }
+        return Promise.resolve({
+          value: source,
+          release: () => {
+            counts.releases += 1
+            open -= 1
+            return Promise.resolve()
+          },
+        })
+      },
+    }
+    const session = createResourceSession({ origin, revision: SESSION_REVISION })
+    try {
+      const first = await session.resolve(requirement('r1', 'textures/hull.dds'))
+      const second = await session.resolve(requirement('r2', 'textures/hull.dds'))
+      if (first.state !== 'resolved' || second.state !== 'resolved') throw new Error('unresolved')
+
+      // one enumeration for two lookups: the location index did its job
+      expect(origin.counts.enumerations).toBe(1)
+      expect(first.provenance.cached).toBe(false)
+      expect(second.provenance.cached).toBe(true)
+      // and two opens, with two different revisions: the content was never cached
+      expect(origin.counts.opens).toBe(2)
+      expect(second.revision).not.toBe(first.revision)
+      expect(second.provenance.revision).toBe(second.revision)
+      // the session's own revision pins the plane and never moves under it
+      expect(session.revision).toBe(SESSION_REVISION)
+    } finally {
+      await session.dispose()
+    }
+  })
+
+  it('keeps a cached miss a miss, and marks it as not re-checked', async () => {
+    /*
+     * The mirror case, and the honest cost of caching a negative: within one session a resource
+     * that was absent stays absent. That is not a defect to fix by re-enumerating — the session
+     * pins one revision of the resource plane, and a file appearing mid-session belongs to a
+     * different plane. What matters is that the answer is recorded as cached, so a reader of the
+     * provenance can see it was not looked for a second time.
+     */
+    const listing: CompanionOriginEntry[] = []
+    const counts = { enumerations: 0, entriesServed: 0, opens: 0, releases: 0 }
+    const origin: FakeOrigin = {
+      primaryLogicalId: 'models/tank.m3',
+      caseSensitivity: 'sensitive',
+      scopes: ['current-mount'],
+      counts,
+      outstanding: () => 0,
+      async *enumerate(_scope, options) {
+        counts.enumerations += 1
+        for (const entry of listing) {
+          if (!entry.logicalId.startsWith(options.prefix)) continue
+          counts.entriesServed += 1
+          yield entry
+        }
+      },
+      open(): Promise<Lease<ArtifactSource>> {
+        throw new Error('a missing resource must never be opened')
+      },
+    }
+    const session = createResourceSession({ origin, revision: SESSION_REVISION })
+    try {
+      expect(unresolvedReason(await session.resolve(requirement('r1', 'late.dds')))).toBe(
+        'not-found',
+      )
+      listing.push({ logicalId: 'late.dds', size: 16n })
+      const second = await session.resolve(requirement('r2', 'late.dds'))
+      expect(unresolvedReason(second)).toBe('not-found')
+      expect(origin.counts.enumerations).toBe(1)
+      if (second.state === 'unresolved') expect(second.provenance.cached).toBe(true)
+    } finally {
+      await session.dispose()
+    }
+  })
+})
+
+describe('resource session — provenance cannot be rewritten by its reader', () => {
+  it('hands out frozen records, so a caller cannot turn a miss into a hit', async () => {
+    /*
+     * The provenance a caller receives is the same evidence the session keeps and a projection
+     * receipt is later built from. A mutable record shared between the two means the caller can
+     * edit the host's own history — and provenance a reader can edit is not provenance.
+     */
+    const origin = fakeOrigin([])
+    const session = createResourceSession({ origin, revision: SESSION_REVISION })
+    try {
+      const result = await session.resolve(requirement('r1', 'textures/missing.dds'))
+      if (result.state !== 'unresolved') throw new Error('expected a miss')
+      const record = result.provenance as unknown as { state: string; bytes?: bigint }
+      expect(() => {
+        record.state = 'resolved'
+      }).toThrow(TypeError)
+      expect(() => {
+        record.bytes = 999n
+      }).toThrow(TypeError)
+      expect(session.provenance()[0]?.state).toBe('unresolved')
+    } finally {
+      await session.dispose()
+    }
+  })
+
+  it('takes its own copy of the requirement scopes, so a later edit cannot rewrite history', async () => {
+    const origin = fakeOrigin(['textures/a.dds'])
+    const session = createResourceSession({ origin, revision: SESSION_REVISION })
+    try {
+      const scopes: InputSearchScope[] = ['current-mount']
+      await session.resolve({
+        id: 'r1',
+        logicalId: 'textures/a.dds',
+        role: 'texture',
+        scopes,
+      })
+      // the caller widens its own array afterwards; the record must not follow
+      scopes.push('sibling-directory')
+      expect(session.provenance()[0]?.scopes).toEqual(['current-mount'])
+      expect(() => {
+        ;(session.provenance() as unknown as unknown[]).push({})
+      }).toThrow(TypeError)
+    } finally {
+      await session.dispose()
+    }
+  })
+})
+
+describe('resource session — concurrency and teardown', () => {
+  it('keeps two sessions over one origin independent in cache, budget and leases', async () => {
+    const origin = fakeOrigin(['textures/a.dds', 'textures/b.dds'])
+    const left = createResourceSession({ origin, revision: SESSION_REVISION, sessionId: 'left' })
+    const right = createResourceSession({
+      origin,
+      revision: revisionId('provider-token:other-plane'),
+      sessionId: 'right',
+    })
+    try {
+      await left.resolve(requirement('r1', 'textures/a.dds'))
+      await right.resolve(requirement('r1', 'textures/a.dds'))
+      // each session pays for its own lookup: a shared index would have made the second free
+      expect(origin.counts.enumerations).toBe(2)
+      expect(origin.outstanding()).toBe(2)
+      expect(left.sessionId).not.toBe(right.sessionId)
+      expect(left.revision).not.toBe(right.revision)
+
+      await left.dispose()
+      // one session's teardown releases exactly its own leases
+      expect(origin.outstanding()).toBe(1)
+      expect(right.state()).toBe('live')
+      const stillWorks = await right.resolve(requirement('r2', 'textures/b.dds'))
+      expect(stillWorks.state).toBe('resolved')
+    } finally {
+      await right.dispose()
+      expect(origin.outstanding()).toBe(0)
+    }
+  })
+
+  it('strands no lease when a teardown lands in the middle of a burst of resolutions', async () => {
+    /*
+     * Teardown under load. Sixty-four resolutions are started at once and the session is disposed
+     * while they are in flight, so every interleaving is exercised: one that already took its
+     * lease, one inside `open`, and one that has not started. The claim is not that a particular
+     * number succeed — that is a race, and asserting it would be asserting the scheduler. The claim
+     * is that when the dust settles the origin holds nothing, every outcome is either a resolution
+     * or the coded `session-disposed`, and the provenance accounts for all of them.
+     */
+    const entries = Array.from({ length: 64 }, (_, index) => `textures/t${index}.dds`)
+    const origin = fakeOrigin(entries)
+    const session = createResourceSession({ origin, revision: SESSION_REVISION })
+    const inFlight = entries.map(async (logicalId, index) =>
+      session.resolve(requirement(`r${index}`, logicalId)),
+    )
+    await session.dispose()
+    const settled = await Promise.allSettled(inFlight)
+
+    for (const outcome of settled) {
+      expect(outcome.status).toBe('fulfilled')
+      if (outcome.status !== 'fulfilled') continue
+      if (outcome.value.state === 'unresolved') {
+        expect(outcome.value.reason).toBe('session-disposed')
+      }
+    }
+    // the invariant that matters: nothing is still open, and nothing was released twice
+    expect(origin.outstanding()).toBe(0)
+    expect(origin.counts.releases).toBe(origin.counts.opens)
+    expect(session.state()).toBe('disposed')
+    expect(session.provenance().length).toBe(entries.length)
+
+    // and a session torn down mid-burst still refuses everything afterwards
+    const after = await session.resolve(requirement('late', 'textures/t0.dds'))
+    expect(unresolvedReason(after)).toBe('session-disposed')
   })
 })

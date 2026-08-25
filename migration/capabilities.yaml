@@ -15779,17 +15779,20 @@ capabilities:
       portFamily: null
       portVerdict: null
     migrationState: 'implemented'
-    supportState: 'partial'
+    supportState: 'supported'
     runtimeAvailability: 'node-only'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E3'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
       rows: []
-      corpusKinds: []
+      corpusKinds:
+        - 'real'
+        - 'synthetic'
       verdicts: []
-      liveSources: []
+      liveSources:
+        - 'common.view/namespace-entry-source'
     fixtures: []
     corpusDescriptors:
       - 'MODKITX_SC2_ROOT'
@@ -15801,9 +15804,9 @@ capabilities:
       nativeExport: 'planned'
     knownLoss:
       - 'порт переиспользует host-private CompanionOrigin, confinement и provenance блока 9, но имеет собственный lease/revision lifecycle и не подменяет AssetInput/openBinding'
-      - 'публикаторы ещё не переведены: кодеки продолжают отдавать ad hoc сводки, миграция на facet-контракты — 11C1/блок 12'
+      - 'conformance блока 12 п.7 закрыт: budgets, cancellation, cycles, allowlist, confinement, целостность кэша, неподделываемость provenance, конкурентные сессии и teardown под нагрузкой — 26 unit-случаев'
+      - 'форматонезависимость доказана на втором контейнере: текстура W3D из BIG-архива резолвится через тот же шов, что и CASC'
       - 'на реальном корпусе SC2 межмодовый корень по-прежнему нерешаем без game-mount провайдера: artifact1.m3 даёт типизированный not-found вместо связывания, полный резолв — блоки 12/15'
-      - 'полный conformance порта — блок 12 п.7; здесь минимальная host-реализация и unit-набор'
     receipts:
       projection: null
       materialization: null
@@ -15814,6 +15817,7 @@ capabilities:
       tests:
         - 'packages/host/test/resource-session.test.ts'
         - 'packages/testkit/test/blizzard-m3-companion.test.ts'
+        - 'packages/testkit/test/ea-w3d-structure.test.ts'
       reports: []
   - capabilityId: 'uv/uvd/definitions'
     userScenario: 'Работать с нейтральными UVD-определениями, не выдавая их за документы.'

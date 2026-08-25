@@ -181,13 +181,23 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
     requirement: LogicalResourceRequirement,
     entry: Omit<ResourceProvenanceRecord, 'requirementId' | 'logicalId' | 'role' | 'scopes'>,
   ): ResourceProvenanceRecord => {
-    const value: ResourceProvenanceRecord = {
+    /*
+     * Frozen, with its own copy of `scopes`, and both halves are load-bearing.
+     *
+     * This record is handed to the caller and kept by the session as the evidence a projection
+     * receipt is built from. Sharing a mutable object between the two means the caller can rewrite
+     * the session's own history — turn an `unresolved` into a `resolved`, or widen the scopes a
+     * lookup is recorded as having searched — after the fact and without the host noticing. Sharing
+     * the caller's `scopes` array is the same hole with an extra step: mutating it later would
+     * retroactively change what the provenance says was searched.
+     */
+    const value: ResourceProvenanceRecord = Object.freeze({
       requirementId: requirement.id,
       logicalId: requirement.logicalId,
       role: requirement.role,
-      scopes: requirement.scopes,
+      scopes: Object.freeze([...requirement.scopes]),
       ...entry,
-    }
+    })
     provenance.push(value)
     byRequirementId.set(requirement.id, value)
     return value
@@ -254,13 +264,28 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
     signal: AbortSignal | undefined,
   ): Promise<{ readonly found: string | undefined; readonly overBudget: boolean }> => {
     const wanted = fold(normalized, origin.caseSensitivity)
+    /*
+     * A name is matched by name; a path is matched as a path.
+     *
+     * This is the block-9 companion rule, not a second one: a requirement spelled `fixture.tga`
+     * carries no directory, so the model is naming a *file* and the host looks for that file
+     * anywhere it serves; a requirement spelled `art/textures/fixture.tga` is naming a place and
+     * only that place will do. Matching the whole id in both cases is what the port used to do, and
+     * it made the same reference resolve through the pre-open seam and miss through this one — two
+     * resolvers disagreeing, which is the exact thing plan item 13 says this port must not become.
+     * The CASC case never caught it because SC2 spells its texture references as paths.
+     */
+    const byName = !normalized.includes('/')
     let entries = 0
     for (const scope of scopes) {
       throwIfAborted(signal)
       for await (const entry of origin.enumerate(scope, { prefix: prefixOf(normalized) }, signal)) {
         entries += 1
         if (entries > limits.maxEntries) return { found: undefined, overBudget: true }
-        if (fold(entry.logicalId, origin.caseSensitivity) === wanted) {
+        const candidate = byName
+          ? (entry.logicalId.split('/').at(-1) ?? entry.logicalId)
+          : entry.logicalId
+        if (fold(candidate, origin.caseSensitivity) === wanted) {
           return { found: entry.logicalId, overBudget: false }
         }
       }
@@ -379,6 +404,24 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
 
       throwIfAborted(signal)
       const lease = await origin.open(found, signal)
+      /*
+       * The session may have been disposed while this open was in flight.
+       *
+       * `dispose()` releases what the session held *at that instant*; a resolution that was already
+       * past the disposal check keeps going and comes back holding a lease nobody will ever release
+       * — sixty-four concurrent resolutions torn down mid-burst stranded sixty-four leases, which is
+       * what the block-12 teardown case found. Re-checking after the await is the whole fix: the
+       * lease this call owns is released by this call, and the caller gets the same coded outcome a
+       * late request would have got.
+       */
+      if (state === 'disposed') {
+        await lease.release()
+        return unresolved(
+          requirement,
+          'session-disposed',
+          `resource session ${sessionId} was disposed while «${requirement.logicalId}» was being opened`,
+        )
+      }
       const size = lease.value.kind === 'bytes' ? (lease.value.size ?? 0n) : 0n
       if (bytes + size > limits.maxBytes) {
         await lease.release()
@@ -404,7 +447,7 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
       }
     },
 
-    provenance: () => [...provenance],
+    provenance: () => Object.freeze([...provenance]),
 
     async dispose() {
       if (state === 'disposed') return
