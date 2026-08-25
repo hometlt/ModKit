@@ -7,19 +7,19 @@
   },
   "x3": {
     "root": "C:\\FILES\\SC2Files\\coding\\modkitX3",
-    "sha": "f4d1779fec026da0e6451c37b315d1282797b8ea"
+    "sha": "3cdb8bfeacf17f77484a46cb1fb3d7a5c6c19444"
   },
   "counts": {
-    "total": 70,
+    "total": 73,
     "real": 13,
-    "synthetic": 57,
-    "compared": 70,
+    "synthetic": 60,
+    "compared": 73,
     "skipped": 0,
     "failed": 0,
     "comparedReal": 13,
-    "comparedSynthetic": 57,
+    "comparedSynthetic": 60,
     "richer": 41,
-    "equal": 13,
+    "equal": 16,
     "poorer": 16,
     "incomparable": 0
   },
@@ -374,6 +374,33 @@
       "state": "compared",
       "classification": "X3 беднее",
       "verdict": "poorer"
+    },
+    {
+      "id": "odp-synthetic",
+      "format": "odp",
+      "kind": "synthetic",
+      "contributionId": "org.modkitx/odp",
+      "state": "compared",
+      "classification": "паритет",
+      "verdict": "equal"
+    },
+    {
+      "id": "ods-synthetic",
+      "format": "ods",
+      "kind": "synthetic",
+      "contributionId": "org.modkitx/ods",
+      "state": "compared",
+      "classification": "паритет",
+      "verdict": "equal"
+    },
+    {
+      "id": "odt-synthetic",
+      "format": "odt",
+      "kind": "synthetic",
+      "contributionId": "org.modkitx/odt",
+      "state": "compared",
+      "classification": "паритет",
+      "verdict": "equal"
     },
     {
       "id": "ogg-synthetic",
@@ -11816,6 +11843,865 @@
             "classification": "X3 беднее",
             "missing": ["measurement:materials:0<1"],
             "extra": ["measurement:nodes:1>0"]
+          }
+        ]
+      }
+    },
+    {
+      "id": "odp-synthetic",
+      "format": "odp",
+      "kind": "synthetic",
+      "contributionId": "org.modkitx/odp",
+      "state": "compared",
+      "sample": "packages/testkit/test/fixtures/mk2-synthetic/minimal.odp",
+      "provenance": {
+        "kind": "synthetic",
+        "origin": "repository",
+        "relativePath": "packages/testkit/test/fixtures/mk2-synthetic/minimal.odp",
+        "bytes": 964,
+        "sha256": "cb9090cb0112e671ed439dd2aa3d052251c38e4df8196f8399d14f428cc2bb1b"
+      },
+      "classification": "паритет",
+      "missing": [],
+      "extra": [
+        "operation:asset.validate",
+        "operation:export.raw",
+        "operation:view.inspect",
+        "source:common.view/byte-range-source",
+        "source:common.view/slide-deck-source",
+        "source:common.view/tree-data-source",
+        "source:common.view/vector-scene-source"
+      ],
+      "sourceComparisons": [
+        {
+          "contract": "common.view/text-data-source",
+          "classification": "паритет",
+          "missing": [],
+          "extra": []
+        }
+      ],
+      "baseline": "паритет",
+      "canonical": {
+        "formatId": "odp",
+        "declaredSources": ["common.view/text-data-source"],
+        "actualSources": ["common.view/text-data-source"],
+        "sources": [
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 1,
+              "linesKnown": true,
+              "sliceLines": 1,
+              "sliceNonEmpty": true
+            }
+          }
+        ],
+        "operations": [],
+        "geometryAccess": "unavailable",
+        "features": ["source:common.view/text-data-source"]
+      },
+      "x3": {
+        "available": true,
+        "formatId": "odp",
+        "declaredSources": [
+          "common.view/byte-range-source",
+          "common.view/slide-deck-source",
+          "common.view/text-data-source",
+          "common.view/tree-data-source",
+          "common.view/vector-scene-source"
+        ],
+        "actualSources": [
+          "common.view/byte-range-source",
+          "common.view/slide-deck-source",
+          "common.view/text-data-source",
+          "common.view/tree-data-source",
+          "common.view/vector-scene-source"
+        ],
+        "sourceFailures": [],
+        "sources": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/slide-deck-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 1,
+              "linesKnown": true,
+              "sliceLines": 1,
+              "sliceNonEmpty": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 5,
+              "maxDepth": 2,
+              "nodes": 7
+            }
+          },
+          {
+            "contract": "common.view/vector-scene-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["document", "info"],
+            "measurements": {
+              "documentNonEmpty": true,
+              "gradients": 0,
+              "height": 16,
+              "nodes": 1,
+              "paths": 0,
+              "shapes": 0,
+              "textNodes": 1
+            }
+          }
+        ],
+        "operations": ["asset.validate", "export.raw", "view.inspect"],
+        "geometryAccess": "unavailable",
+        "metadata": {
+          "mediaType": "application/vnd.oasis.opendocument.presentation",
+          "entries": 3,
+          "manifestEntries": 2,
+          "manifestUndeclared": 1,
+          "manifestMissing": 0,
+          "macroEntries": 0,
+          "decodedBytes": 624,
+          "format": "odp",
+          "slides": 1,
+          "textRuns": 1,
+          "notes": 0,
+          "unparsedShapes": 0
+        },
+        "features": [
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/slide-deck-source",
+          "source:common.view/text-data-source",
+          "source:common.view/tree-data-source",
+          "source:common.view/vector-scene-source"
+        ]
+      },
+      "verdict": "equal",
+      "planes": [
+        {
+          "plane": "subject-recognition",
+          "state": "compared",
+          "verdict": "equal"
+        },
+        {
+          "plane": "structural-metadata",
+          "state": "compared",
+          "verdict": "equal"
+        },
+        { "plane": "geometry-counts", "state": "x3-only", "verdict": "richer" },
+        { "plane": "hierarchy", "state": "x3-only", "verdict": "richer" },
+        {
+          "plane": "materials-textures",
+          "state": "x3-only",
+          "verdict": "richer"
+        },
+        {
+          "plane": "animation",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        {
+          "plane": "collision",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        {
+          "plane": "palette-voxel-transforms",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        { "plane": "payload-access", "state": "compared", "verdict": "equal" },
+        {
+          "plane": "protected-tail-preservation",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        {
+          "plane": "diagnostics-on-malformed-input",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        }
+      ],
+      "declared": {
+        "canonical": ["common.view/text-data-source"],
+        "x3": [
+          "common.view/byte-range-source",
+          "common.view/slide-deck-source",
+          "common.view/text-data-source",
+          "common.view/tree-data-source",
+          "common.view/vector-scene-source"
+        ]
+      },
+      "observed": {
+        "canonical": [
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 1,
+              "linesKnown": true,
+              "sliceLines": 1,
+              "sliceNonEmpty": true
+            }
+          }
+        ],
+        "x3": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/slide-deck-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 1,
+              "linesKnown": true,
+              "sliceLines": 1,
+              "sliceNonEmpty": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 5,
+              "maxDepth": 2,
+              "nodes": 7
+            }
+          },
+          {
+            "contract": "common.view/vector-scene-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["document", "info"],
+            "measurements": {
+              "documentNonEmpty": true,
+              "gradients": 0,
+              "height": 16,
+              "nodes": 1,
+              "paths": 0,
+              "shapes": 0,
+              "textNodes": 1
+            }
+          }
+        ]
+      },
+      "comparison": {
+        "classification": "паритет",
+        "missing": [],
+        "extra": [
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/slide-deck-source",
+          "source:common.view/tree-data-source",
+          "source:common.view/vector-scene-source"
+        ],
+        "sources": [
+          {
+            "contract": "common.view/text-data-source",
+            "classification": "паритет",
+            "missing": [],
+            "extra": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "ods-synthetic",
+      "format": "ods",
+      "kind": "synthetic",
+      "contributionId": "org.modkitx/ods",
+      "state": "compared",
+      "sample": "packages/testkit/test/fixtures/mk2-synthetic/minimal.ods",
+      "provenance": {
+        "kind": "synthetic",
+        "origin": "repository",
+        "relativePath": "packages/testkit/test/fixtures/mk2-synthetic/minimal.ods",
+        "bytes": 1085,
+        "sha256": "2abe2ffc9021448f58267bfbd355bf699ba531a29a656298f0ec152a2c6aaf04"
+      },
+      "classification": "паритет",
+      "missing": [],
+      "extra": [
+        "operation:asset.validate",
+        "operation:export.raw",
+        "operation:view.inspect",
+        "source:common.view/byte-range-source",
+        "source:common.view/table-data-source",
+        "source:common.view/tree-data-source"
+      ],
+      "sourceComparisons": [
+        {
+          "contract": "common.view/text-data-source",
+          "classification": "паритет",
+          "missing": [],
+          "extra": []
+        }
+      ],
+      "baseline": "паритет",
+      "canonical": {
+        "formatId": "ods",
+        "declaredSources": ["common.view/text-data-source"],
+        "actualSources": ["common.view/text-data-source"],
+        "sources": [
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 1,
+              "linesKnown": true,
+              "sliceLines": 1,
+              "sliceNonEmpty": true
+            }
+          }
+        ],
+        "operations": [],
+        "geometryAccess": "unavailable",
+        "features": ["source:common.view/text-data-source"]
+      },
+      "x3": {
+        "available": true,
+        "formatId": "ods",
+        "declaredSources": [
+          "common.view/byte-range-source",
+          "common.view/table-data-source",
+          "common.view/text-data-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/byte-range-source",
+          "common.view/table-data-source",
+          "common.view/text-data-source",
+          "common.view/tree-data-source"
+        ],
+        "sourceFailures": [],
+        "sources": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/table-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["cell", "rows", "shape"],
+            "measurements": {
+              "columns": 2,
+              "firstPageRows": 1,
+              "rows": 1,
+              "rowsKnown": true,
+              "typedColumns": 0
+            }
+          },
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 1,
+              "linesKnown": true,
+              "sliceLines": 1,
+              "sliceNonEmpty": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 6,
+              "maxDepth": 3,
+              "nodes": 8
+            }
+          }
+        ],
+        "operations": ["asset.validate", "export.raw", "view.inspect"],
+        "geometryAccess": "unavailable",
+        "metadata": {
+          "mediaType": "application/vnd.oasis.opendocument.spreadsheet",
+          "entries": 3,
+          "manifestEntries": 2,
+          "manifestUndeclared": 1,
+          "manifestMissing": 0,
+          "macroEntries": 0,
+          "decodedBytes": 745,
+          "format": "ods",
+          "sheets": 1,
+          "rows": 1,
+          "declaredRows": 1,
+          "cells": 2,
+          "formulas": 1,
+          "tableSheet": "Sheet 1",
+          "Sheet 1!r1c2": "of:=1+1 → 2"
+        },
+        "features": [
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/table-data-source",
+          "source:common.view/text-data-source",
+          "source:common.view/tree-data-source"
+        ]
+      },
+      "verdict": "equal",
+      "planes": [
+        {
+          "plane": "subject-recognition",
+          "state": "compared",
+          "verdict": "equal"
+        },
+        {
+          "plane": "structural-metadata",
+          "state": "compared",
+          "verdict": "equal"
+        },
+        {
+          "plane": "geometry-counts",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        { "plane": "hierarchy", "state": "x3-only", "verdict": "richer" },
+        {
+          "plane": "materials-textures",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        {
+          "plane": "animation",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        {
+          "plane": "collision",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        {
+          "plane": "palette-voxel-transforms",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        { "plane": "payload-access", "state": "compared", "verdict": "equal" },
+        {
+          "plane": "protected-tail-preservation",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        {
+          "plane": "diagnostics-on-malformed-input",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        }
+      ],
+      "declared": {
+        "canonical": ["common.view/text-data-source"],
+        "x3": [
+          "common.view/byte-range-source",
+          "common.view/table-data-source",
+          "common.view/text-data-source",
+          "common.view/tree-data-source"
+        ]
+      },
+      "observed": {
+        "canonical": [
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 1,
+              "linesKnown": true,
+              "sliceLines": 1,
+              "sliceNonEmpty": true
+            }
+          }
+        ],
+        "x3": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/table-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["cell", "rows", "shape"],
+            "measurements": {
+              "columns": 2,
+              "firstPageRows": 1,
+              "rows": 1,
+              "rowsKnown": true,
+              "typedColumns": 0
+            }
+          },
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 1,
+              "linesKnown": true,
+              "sliceLines": 1,
+              "sliceNonEmpty": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 6,
+              "maxDepth": 3,
+              "nodes": 8
+            }
+          }
+        ]
+      },
+      "comparison": {
+        "classification": "паритет",
+        "missing": [],
+        "extra": [
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/table-data-source",
+          "source:common.view/tree-data-source"
+        ],
+        "sources": [
+          {
+            "contract": "common.view/text-data-source",
+            "classification": "паритет",
+            "missing": [],
+            "extra": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "odt-synthetic",
+      "format": "odt",
+      "kind": "synthetic",
+      "contributionId": "org.modkitx/odt",
+      "state": "compared",
+      "sample": "packages/testkit/test/fixtures/mk2-synthetic/minimal.odt",
+      "provenance": {
+        "kind": "synthetic",
+        "origin": "repository",
+        "relativePath": "packages/testkit/test/fixtures/mk2-synthetic/minimal.odt",
+        "bytes": 886,
+        "sha256": "f1eebcef1fa5ed47482e8b72bc3574031e6870421536d271777d9be0f18f2c5f"
+      },
+      "classification": "паритет",
+      "missing": [],
+      "extra": [
+        "operation:asset.validate",
+        "operation:export.raw",
+        "operation:view.inspect",
+        "source:common.view/byte-range-source",
+        "source:common.view/tree-data-source"
+      ],
+      "sourceComparisons": [
+        {
+          "contract": "common.view/text-data-source",
+          "classification": "паритет",
+          "missing": [],
+          "extra": []
+        }
+      ],
+      "baseline": "паритет",
+      "canonical": {
+        "formatId": "odt",
+        "declaredSources": ["common.view/text-data-source"],
+        "actualSources": ["common.view/text-data-source"],
+        "sources": [
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 2,
+              "linesKnown": true,
+              "sliceLines": 2,
+              "sliceNonEmpty": true
+            }
+          }
+        ],
+        "operations": [],
+        "geometryAccess": "unavailable",
+        "features": ["source:common.view/text-data-source"]
+      },
+      "x3": {
+        "available": true,
+        "formatId": "odt",
+        "declaredSources": [
+          "common.view/byte-range-source",
+          "common.view/text-data-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/byte-range-source",
+          "common.view/text-data-source",
+          "common.view/tree-data-source"
+        ],
+        "sourceFailures": [],
+        "sources": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 2,
+              "linesKnown": true,
+              "sliceLines": 2,
+              "sliceNonEmpty": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 5,
+              "maxDepth": 2,
+              "nodes": 7
+            }
+          }
+        ],
+        "operations": ["asset.validate", "export.raw", "view.inspect"],
+        "geometryAccess": "unavailable",
+        "metadata": {
+          "mediaType": "application/vnd.oasis.opendocument.text",
+          "entries": 3,
+          "manifestEntries": 2,
+          "manifestUndeclared": 1,
+          "manifestMissing": 0,
+          "macroEntries": 0,
+          "decodedBytes": 546,
+          "format": "odt",
+          "headings": 1,
+          "paragraphs": 1,
+          "lists": 0,
+          "tables": 0,
+          "characters": 17
+        },
+        "features": [
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/text-data-source",
+          "source:common.view/tree-data-source"
+        ]
+      },
+      "verdict": "equal",
+      "planes": [
+        {
+          "plane": "subject-recognition",
+          "state": "compared",
+          "verdict": "equal"
+        },
+        {
+          "plane": "structural-metadata",
+          "state": "compared",
+          "verdict": "equal"
+        },
+        {
+          "plane": "geometry-counts",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        { "plane": "hierarchy", "state": "x3-only", "verdict": "richer" },
+        {
+          "plane": "materials-textures",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        {
+          "plane": "animation",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        {
+          "plane": "collision",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        {
+          "plane": "palette-voxel-transforms",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        { "plane": "payload-access", "state": "compared", "verdict": "equal" },
+        {
+          "plane": "protected-tail-preservation",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        {
+          "plane": "diagnostics-on-malformed-input",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        }
+      ],
+      "declared": {
+        "canonical": ["common.view/text-data-source"],
+        "x3": [
+          "common.view/byte-range-source",
+          "common.view/text-data-source",
+          "common.view/tree-data-source"
+        ]
+      },
+      "observed": {
+        "canonical": [
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 2,
+              "linesKnown": true,
+              "sliceLines": 2,
+              "sliceNonEmpty": true
+            }
+          }
+        ],
+        "x3": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 2,
+              "linesKnown": true,
+              "sliceLines": 2,
+              "sliceNonEmpty": true
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 5,
+              "maxDepth": 2,
+              "nodes": 7
+            }
+          }
+        ]
+      },
+      "comparison": {
+        "classification": "паритет",
+        "missing": [],
+        "extra": [
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/tree-data-source"
+        ],
+        "sources": [
+          {
+            "contract": "common.view/text-data-source",
+            "classification": "паритет",
+            "missing": [],
+            "extra": []
           }
         ]
       }

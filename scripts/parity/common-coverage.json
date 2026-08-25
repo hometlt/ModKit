@@ -421,6 +421,30 @@
       "family": "video",
       "status": "compared-synthetic",
       "parityRows": ["wmv-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/odt",
+      "family": "documents",
+      "status": "compared-synthetic",
+      "parityRows": ["odt-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/ods",
+      "family": "documents",
+      "status": "compared-synthetic",
+      "parityRows": ["ods-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/odp",
+      "family": "documents",
+      "status": "compared-synthetic",
+      "parityRows": ["odp-synthetic"]
+    },
+    {
+      "contributionId": "org.modkitx/odg",
+      "family": "documents",
+      "status": "blocked-missing-legal-corpus",
+      "reason": "ODG is an owner addition with no canonical counterpart at all: the canonical document family declares no OpenDocument Drawing format, so there is no legacy read plane to compare against, and no legally redistributable .odg corpus is available to the repository either. The synthetic fixture proves structural opening; a differential verdict would need a corpus nobody may ship."
     }
   ]
 }

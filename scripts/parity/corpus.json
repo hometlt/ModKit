@@ -818,6 +818,42 @@
       "baseline": "паритет"
     },
     {
+      "id": "odt-synthetic",
+      "kind": "synthetic",
+      "format": "odt",
+      "contributionId": "org.modkitx/odt",
+      "x3Extension": "extensions/common/documents",
+      "canonicalModule": "extensions/uncommon/documents/src/parsers.ts",
+      "canonicalAdapter": "document",
+      "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.odt",
+      "canonicalDocumentFormat": "odt",
+      "baseline": "паритет"
+    },
+    {
+      "id": "ods-synthetic",
+      "kind": "synthetic",
+      "format": "ods",
+      "contributionId": "org.modkitx/ods",
+      "x3Extension": "extensions/common/documents",
+      "canonicalModule": "extensions/uncommon/documents/src/parsers.ts",
+      "canonicalAdapter": "document",
+      "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.ods",
+      "canonicalDocumentFormat": "ods",
+      "baseline": "паритет"
+    },
+    {
+      "id": "odp-synthetic",
+      "kind": "synthetic",
+      "format": "odp",
+      "contributionId": "org.modkitx/odp",
+      "x3Extension": "extensions/common/documents",
+      "canonicalModule": "extensions/uncommon/documents/src/parsers.ts",
+      "canonicalAdapter": "document",
+      "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.odp",
+      "canonicalDocumentFormat": "odp",
+      "baseline": "паритет"
+    },
+    {
       "id": "csv-synthetic",
       "kind": "synthetic",
       "format": "csv",

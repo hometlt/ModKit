@@ -402,10 +402,49 @@ async function videoResult() {
 }
 
 /**
+ * One line per recovered text block of a canonical document view.
+ *
+ * The canonical stack keeps `sourceText` only for the formats it can also edit — plain text,
+ * Markdown, CSV. For a packaged document (ODT, ODS, ODP) it recovers text all the same, but keeps
+ * it inside the display view model's blocks. Flattening those blocks is therefore not a synthesised
+ * plane: it is the same recovered text, in the same order, addressed the way the X3 side addresses
+ * it — one line per non-empty text block, one line per table row. Presentation-only blocks (a
+ * diagram's SVG, a notice) contribute nothing, because neither side calls them document text.
+ */
+function flattenDocumentBlocks(blocks, lines = []) {
+  for (const block of blocks ?? []) {
+    if (block.kind === 'paragraph' || block.kind === 'heading') {
+      const text = (block.runs ?? []).map(run => run.text).join('')
+      if (text !== '') lines.push(text)
+    } else if (block.kind === 'code') {
+      if (typeof block.text === 'string' && block.text !== '') lines.push(block.text)
+    } else if (block.kind === 'list') {
+      for (const item of block.items ?? []) {
+        const text = item.map(run => run.text).join('')
+        if (text !== '') lines.push(text)
+      }
+    } else if (block.kind === 'table') {
+      for (const row of block.rows ?? []) {
+        const text = row.join('\t')
+        if (text.trim() !== '') lines.push(text)
+      }
+    } else if (block.kind === 'page' || block.kind === 'slide') {
+      if (typeof block.title === 'string' && block.title !== '') lines.push(block.title)
+      flattenDocumentBlocks(block.blocks, lines)
+      for (const note of block.notes ?? []) {
+        if (note.text !== '') lines.push(note.text)
+      }
+    }
+  }
+  return lines
+}
+
+/**
  * Document plane. The canonical document stack renders a display view model whose block
- * decomposition has no equally defined counterpart in X3, so only the recovered source text is
- * compared; formats that yield no source text are recorded as not comparable in the coverage
- * table instead of being forced into a number-to-number verdict.
+ * decomposition has no equally defined counterpart in X3, so only the recovered text is compared:
+ * `sourceText` where the canonical codec keeps one, and the flattened blocks where it does not.
+ * A format that yields neither is recorded as not comparable in the coverage table instead of being
+ * forced into a number-to-number verdict.
  */
 async function documentResult() {
   const definition = imported.DOCUMENT_FORMATS?.[request.canonicalDocumentFormat]
@@ -413,10 +452,12 @@ async function documentResult() {
     throw new TypeError(`canonical document format is missing: ${request.canonicalDocumentFormat}`)
   }
   const view = await imported.parseDocument(definition, bytes, definition.label)
-  if (typeof view.sourceText !== 'string' || view.sourceText === '') {
-    throw new TypeError('canonical document view exposes no source text')
-  }
-  return result(definition.id, [textSource(view.sourceText)])
+  const recovered =
+    typeof view.sourceText === 'string' && view.sourceText !== ''
+      ? view.sourceText
+      : flattenDocumentBlocks(view.blocks).join('\n')
+  if (recovered === '') throw new TypeError('canonical document view recovers no text')
+  return result(definition.id, [textSource(recovered)])
 }
 
 const adapters = {

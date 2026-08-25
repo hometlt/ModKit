@@ -132,22 +132,27 @@ capabilities:
       - 'format/odt/open-inspect'
     sourceUnitIds: []
     legacyEvidence: []
-    hostFacilities: []
-    mk3Contributions: []
-    mk3Operations: []
+    hostFacilities:
+      - 'read-source'
+    mk3Contributions:
+      - 'org.modkitx/odg'
+    mk3Operations:
+      - 'asset.validate'
+      - 'export.raw'
+      - 'view.inspect'
     allocation:
-      state: 'absent'
-      x3ContributionId: null
-      portFamily: null
+      state: 'covered'
+      x3ContributionId: 'org.modkitx/odg'
+      portFamily: 'common/documents'
       portVerdict: null
-    migrationState: 'missing'
-    supportState: 'unsupported'
-    runtimeAvailability: 'none'
-    evidenceLevel: 'E0'
-    hostEvidence: 'none'
+    migrationState: 'implemented'
+    supportState: 'partial'
+    runtimeAvailability: 'browser-and-node'
+    evidenceLevel: 'E2'
+    hostEvidence: 'node-and-browser-worker'
     writerEvidence: 'not-declared'
     parityEvidence:
-      coverageStatus: null
+      coverageStatus: 'blocked-missing-legal-corpus'
       rows: []
       corpusKinds: []
       verdicts: []
@@ -156,21 +161,33 @@ capabilities:
     corpusDescriptors: []
     projection:
       plane: 'document'
-      liveProjection: 'none'
+      liveProjection: 'live'
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
     knownLoss:
-      - 'legacy-аналога нет: E4 означает сверку со спецификацией ODF и независимым parser, а не отсутствие legacy-строки'
+      - 'legacy-аналога нет: канонический документный стек не объявляет формат OpenDocument Drawing, поэтому differential-строки не существует, а законного .odg корпуса у репозитория нет — отсюда E2, а не E3/E4'
+      - 'векторная сцена — первая draw:page; остальные страницы перечислены в дереве и посчитаны в сводке'
+      - 'рисуются прямоугольники, эллипсы, линии, полилинии, многоугольники и пути, текст рамки ставится в её начало; custom-shape с enhanced geometry, коннекторы и встроенные объекты пересчитываются как неразобранные, а не приближаются'
+      - 'layout fidelity недоступна: стили ODF (styles.xml и automatic styles) не интерпретируются, поэтому шрифты, цвета, интервалы и композиция страницы отсутствуют, а не приближаются'
+      - 'writer не объявлен: preserving repack и round-trip не доказаны, поэтому сохранность неизвестных записей пакета и XML-узлов при правке не заявляется'
+      - 'ZIP64, multi-disk, шифрование и методы сжатия кроме stored и deflate отвергаются, а не читаются частично'
     receipts:
       projection: null
       materialization: null
       nativeExport: null
     replacementWorkflow: null
     closedBy:
-      commits: []
-      tests: []
-      reports: []
+      commits:
+        - '3cdb8bf'
+        - '133f4db'
+        - '46e9ab2'
+      tests:
+        - 'packages/testkit/test/common-documents-odf.test.ts'
+        - 'apps/electron/test/odf-view-policy.test.ts'
+        - 'packages/testkit/test/mk2-acceptance.test.ts'
+      reports:
+        - 'docs/MK3/plans/PLAN_MODKIT_MK3_FINAL_RU.md#блок-11-slice-11b'
   - capabilityId: 'addition/text-ini/open-edit'
     userScenario: 'Открыть «INI-конфигурация» через общий text-data контракт, отредактировать и сохранить его без форматной ветки в приложении.'
     releaseTrack: 'mk3-priority'
@@ -7222,38 +7239,56 @@ capabilities:
     allocation:
       state: 'covered'
       x3ContributionId: 'org.modkitx/odp'
-      portFamily: 'mk2/uncommon-documents'
-      portVerdict: null
+      portFamily: 'common/documents'
+      portVerdict: 'relocated-and-rewritten'
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E1'
-    hostEvidence: 'node'
+    evidenceLevel: 'E4'
+    hostEvidence: 'node-and-browser-worker'
     writerEvidence: 'not-declared'
     parityEvidence:
-      coverageStatus: null
-      rows: []
-      corpusKinds: []
-      verdicts: []
-      liveSources: []
+      coverageStatus: 'compared-synthetic'
+      rows:
+        - 'odp-synthetic'
+      corpusKinds:
+        - 'synthetic'
+      verdicts:
+        - 'equal'
+      liveSources:
+        - 'common.view/tree-data-source'
+        - 'common.view/vector-scene-source'
     fixtures: []
     corpusDescriptors: []
     projection:
       plane: 'document'
-      liveProjection: 'planned'
+      liveProjection: 'live'
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
-    knownLoss: []
+    knownLoss:
+      - 'колода публикуется через common.view/slide-deck-source@1 — publisher-candidate по ADR-DOC-001: ODP его единственный publisher, форма может измениться по правилам dual-publish до второй slides-family (PPTX, блок 30)'
+      - 'masters, layouts, переходы и анимация не разобраны и поэтому не публикуются — не публикуются пустыми'
+      - 'векторная сцена — первая draw:page, производный структурный предпросмотр, а не рендер слайда и не второй source document'
+      - 'layout fidelity недоступна: стили ODF (styles.xml и automatic styles) не интерпретируются, поэтому шрифты, цвета, интервалы и композиция страницы отсутствуют, а не приближаются'
+      - 'writer не объявлен: preserving repack и round-trip не доказаны, поэтому сохранность неизвестных записей пакета и XML-узлов при правке не заявляется'
+      - 'ZIP64, multi-disk, шифрование и методы сжатия кроме stored и deflate отвергаются, а не читаются частично'
     receipts:
       projection: null
       materialization: null
       nativeExport: null
     replacementWorkflow: null
     closedBy:
-      commits: []
-      tests: []
-      reports: []
+      commits:
+        - '3cdb8bf'
+        - '133f4db'
+        - '46e9ab2'
+      tests:
+        - 'packages/testkit/test/common-documents-odf.test.ts'
+        - 'apps/electron/test/odf-view-policy.test.ts'
+        - 'packages/testkit/test/mk2-acceptance.test.ts'
+      reports:
+        - 'docs/MK3/plans/PLAN_MODKIT_MK3_FINAL_RU.md#блок-11-slice-11b'
   - capabilityId: 'format/ods/open-inspect'
     userScenario: 'Открыть «OpenDocument spreadsheet» в MK3 и выполнить asset.validate, export.raw, view.inspect, view.render без потери семантики legacy-маршрута.'
     releaseTrack: 'mk3-priority'
@@ -7277,38 +7312,57 @@ capabilities:
     allocation:
       state: 'covered'
       x3ContributionId: 'org.modkitx/ods'
-      portFamily: 'mk2/uncommon-documents'
-      portVerdict: null
+      portFamily: 'common/documents'
+      portVerdict: 'relocated-and-rewritten'
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E1'
-    hostEvidence: 'node'
+    evidenceLevel: 'E4'
+    hostEvidence: 'node-and-browser-worker'
     writerEvidence: 'not-declared'
     parityEvidence:
-      coverageStatus: null
-      rows: []
-      corpusKinds: []
-      verdicts: []
-      liveSources: []
+      coverageStatus: 'compared-synthetic'
+      rows:
+        - 'ods-synthetic'
+      corpusKinds:
+        - 'synthetic'
+      verdicts:
+        - 'equal'
+      liveSources:
+        - 'common.view/table-data-source'
+        - 'common.view/tree-data-source'
     fixtures: []
     corpusDescriptors: []
     projection:
       plane: 'document'
-      liveProjection: 'planned'
+      liveProjection: 'live'
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
-    knownLoss: []
+    knownLoss:
+      - 'формулы публикуются текстом с координатой ячейки и никогда не вычисляются; значение ячейки — то, которое сохранил документ'
+      - 'table-data-source несёт первый лист; остальные перечислены в дереве и посчитаны в сводке'
+      - 'повторяющаяся пустая строка или колонка сообщается заявленным числом, а не материализуется'
+      - 'числовые форматы, стили ячеек, валидация, диаграммы и сводные таблицы не разбираются'
+      - 'layout fidelity недоступна: стили ODF (styles.xml и automatic styles) не интерпретируются, поэтому шрифты, цвета, интервалы и композиция страницы отсутствуют, а не приближаются'
+      - 'writer не объявлен: preserving repack и round-trip не доказаны, поэтому сохранность неизвестных записей пакета и XML-узлов при правке не заявляется'
+      - 'ZIP64, multi-disk, шифрование и методы сжатия кроме stored и deflate отвергаются, а не читаются частично'
     receipts:
       projection: null
       materialization: null
       nativeExport: null
     replacementWorkflow: null
     closedBy:
-      commits: []
-      tests: []
-      reports: []
+      commits:
+        - '3cdb8bf'
+        - '133f4db'
+        - '46e9ab2'
+      tests:
+        - 'packages/testkit/test/common-documents-odf.test.ts'
+        - 'apps/electron/test/odf-view-policy.test.ts'
+        - 'packages/testkit/test/mk2-acceptance.test.ts'
+      reports:
+        - 'docs/MK3/plans/PLAN_MODKIT_MK3_FINAL_RU.md#блок-11-slice-11b'
   - capabilityId: 'format/odt/open-inspect'
     userScenario: 'Открыть «OpenDocument text» в MK3 и выполнить asset.validate, export.raw, view.inspect, view.render без потери семантики legacy-маршрута.'
     releaseTrack: 'mk3-priority'
@@ -7332,38 +7386,53 @@ capabilities:
     allocation:
       state: 'covered'
       x3ContributionId: 'org.modkitx/odt'
-      portFamily: 'mk2/uncommon-documents'
-      portVerdict: null
+      portFamily: 'common/documents'
+      portVerdict: 'relocated-and-rewritten'
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E1'
-    hostEvidence: 'node'
+    evidenceLevel: 'E4'
+    hostEvidence: 'node-and-browser-worker'
     writerEvidence: 'not-declared'
     parityEvidence:
-      coverageStatus: null
-      rows: []
-      corpusKinds: []
-      verdicts: []
-      liveSources: []
+      coverageStatus: 'compared-synthetic'
+      rows:
+        - 'odt-synthetic'
+      corpusKinds:
+        - 'synthetic'
+      verdicts:
+        - 'equal'
+      liveSources:
+        - 'common.view/tree-data-source'
     fixtures: []
     corpusDescriptors: []
     projection:
       plane: 'document'
-      liveProjection: 'planned'
+      liveProjection: 'live'
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
-    knownLoss: []
+    knownLoss:
+      - 'разобран поток: заголовки, абзацы и построенный по ним outline. Поля, аннотации, отслеживание изменений, сноски, колонтитулы не разбираются и не публикуются'
+      - 'layout fidelity недоступна: стили ODF (styles.xml и automatic styles) не интерпретируются, поэтому шрифты, цвета, интервалы и композиция страницы отсутствуют, а не приближаются'
+      - 'writer не объявлен: preserving repack и round-trip не доказаны, поэтому сохранность неизвестных записей пакета и XML-узлов при правке не заявляется'
+      - 'ZIP64, multi-disk, шифрование и методы сжатия кроме stored и deflate отвергаются, а не читаются частично'
     receipts:
       projection: null
       materialization: null
       nativeExport: null
     replacementWorkflow: null
     closedBy:
-      commits: []
-      tests: []
-      reports: []
+      commits:
+        - '3cdb8bf'
+        - '133f4db'
+        - '46e9ab2'
+      tests:
+        - 'packages/testkit/test/common-documents-odf.test.ts'
+        - 'apps/electron/test/odf-view-policy.test.ts'
+        - 'packages/testkit/test/mk2-acceptance.test.ts'
+      reports:
+        - 'docs/MK3/plans/PLAN_MODKIT_MK3_FINAL_RU.md#блок-11-slice-11b'
   - capabilityId: 'format/ogg/open-inspect'
     userScenario: 'Открыть «Ogg Vorbis» в MK3 и выполнить audio.export, audio.inspect без потери семантики legacy-маршрута.'
     releaseTrack: 'mk3-priority'

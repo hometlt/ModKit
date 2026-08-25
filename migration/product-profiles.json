@@ -22,7 +22,7 @@
       ],
       "plannedFamilies": [],
       "serviceProviders": [],
-      "note": "Opt-in preset плана slice 11B: minimal и plain-text не должны тянуть ZIP, XML или UI, поэтому editor и renderer сюда не входят. ODT/ODS/ODP/ODG добавляются блоком 11, а не заявляются заранее."
+      "note": "Opt-in preset плана slice 11B: minimal и plain-text не должны тянуть ZIP, XML или UI, поэтому editor и renderer сюда не входят. ODT/ODS/ODP/ODG приехали слайсом 11B внутри семейства documents вместе с приватным ODF package reader — отдельного ZIP-семейства профиль по-прежнему не тянет."
     },
     {
       "id": "sc2-mod-studio",

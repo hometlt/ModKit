@@ -20,12 +20,12 @@
     },
     "byMigrationState": {
       "equivalent-better": 15,
-      "implemented": 102,
-      "missing": 45,
+      "implemented": 103,
+      "missing": 44,
       "partial": 5
     },
     "byObligation": { "focused-required-addition": 13, "legacy-required": 154 },
-    "byEvidenceLevel": { "E0": 37, "E1": 42, "E2": 62, "E3": 9, "E4": 17 }
+    "byEvidenceLevel": { "E0": 36, "E1": 39, "E2": 63, "E3": 9, "E4": 20 }
   },
   "deadlines": {
     "block-11": [
@@ -214,11 +214,11 @@
       "obligation": "focused-required-addition",
       "owner": "extensions/common/documents",
       "plannedBlock": 11,
-      "migrationState": "missing",
-      "supportState": "unsupported",
-      "evidenceLevel": "E0",
-      "allocationState": "absent",
-      "portFamily": null,
+      "migrationState": "implemented",
+      "supportState": "partial",
+      "evidenceLevel": "E2",
+      "allocationState": "covered",
+      "portFamily": "common/documents",
       "corpusDescriptors": [],
       "dependsOn": ["format/odt/open-inspect"],
       "requiredBy": []
@@ -1429,9 +1429,9 @@
       "plannedBlock": 11,
       "migrationState": "implemented",
       "supportState": "partial",
-      "evidenceLevel": "E1",
+      "evidenceLevel": "E4",
       "allocationState": "covered",
-      "portFamily": "mk2/uncommon-documents",
+      "portFamily": "common/documents",
       "corpusDescriptors": [],
       "dependsOn": [],
       "requiredBy": []
@@ -1446,9 +1446,9 @@
       "plannedBlock": 11,
       "migrationState": "implemented",
       "supportState": "partial",
-      "evidenceLevel": "E1",
+      "evidenceLevel": "E4",
       "allocationState": "covered",
-      "portFamily": "mk2/uncommon-documents",
+      "portFamily": "common/documents",
       "corpusDescriptors": [],
       "dependsOn": [],
       "requiredBy": []
@@ -1463,9 +1463,9 @@
       "plannedBlock": 11,
       "migrationState": "implemented",
       "supportState": "partial",
-      "evidenceLevel": "E1",
+      "evidenceLevel": "E4",
       "allocationState": "covered",
-      "portFamily": "mk2/uncommon-documents",
+      "portFamily": "common/documents",
       "corpusDescriptors": [],
       "dependsOn": [],
       "requiredBy": ["addition/odg/open-inspect"]
