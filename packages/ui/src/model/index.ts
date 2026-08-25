@@ -199,9 +199,17 @@ export const modelViewer: ViewerModule = defineViewerModule({
     setState(stage, ['loading'])
     try {
       const model = await loadModelStage(lease.value as ModelSceneSource, scope.signal)
+      /*
+       * `animations` is part of `ModelSceneInfo` and was the one count this readout never showed,
+       * so a scene with animation tracks read exactly like one without. It is stated even at zero:
+       * "0 animations" is an answer, while silence is indistinguishable from a viewer that cannot
+       * tell — which is the ambiguity the block-9 smoke ran into on a W3D with one track.
+       */
       setViewerText(
         readout,
-        `${model.info.nodes} nodes · ${model.info.meshes} meshes · ${model.info.primitives} primitives · ${model.info.materials} materials`,
+        `${model.info.nodes} nodes · ${model.info.meshes} meshes · ` +
+          `${model.info.primitives} primitives · ${model.info.materials} materials · ` +
+          `${model.info.animations} animations`,
       )
       if (model.primitive === undefined) {
         canvas.remove()

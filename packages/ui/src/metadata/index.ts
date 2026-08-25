@@ -24,10 +24,19 @@ function resolved(descriptor: AnyDescriptor): ResolvedAssetDescriptor | undefine
   return 'identity' in descriptor ? (descriptor as ResolvedAssetDescriptor) : undefined
 }
 
+/** One trait as a value line: its state, then whatever parameters it carries. */
+function traitValue(trait: AnyDescriptor['traits'][number]): string {
+  const parameters = Object.entries(trait.parameters ?? {})
+  if (parameters.length === 0) return trait.state
+  const stated = parameters.map(([key, item]) => `${key}=${String(item)}`).join(', ')
+  return `${trait.state} · ${stated}`
+}
+
 function renderMetadata(root: HTMLElement, descriptor: AnyDescriptor): void {
   root.replaceChildren()
   const groups: readonly MetadataGroup[] = resolved(descriptor)?.metadata ?? []
-  if (groups.length === 0) {
+  const traits = descriptor.traits
+  if (groups.length === 0 && traits.length === 0) {
     element(root, 'p', { text: 'No metadata reported by the codec.', part: 'viewer.empty' })
     return
   }
@@ -42,6 +51,30 @@ function renderMetadata(root: HTMLElement, descriptor: AnyDescriptor): void {
       setViewerText(value, entry.value, 4096)
       value.title = String(entry.value)
     }
+  }
+
+  /*
+   * Observed traits, in the same panel as the metadata groups.
+   *
+   * A codec's `metadata` is what it chose to write out for a reader; its `traits` are what the
+   * host observed about the subject, and several facts live only there — a W3D's pivot count in
+   * `model.skeleton`, a VXL's `provenance=companion` in `model.animations`. Those were reachable
+   * through `propertiesTable` and nowhere else, so a host that offers a Metadata stage and not a
+   * Properties stage simply never showed them. Rendering both here keeps one stage answering
+   * "what is known about this subject", which is what the panel is for — and no host has to grow
+   * another tab to see descriptor truth.
+   */
+  if (traits.length === 0) return
+  const section = element(root, 'section', { part: 'metadata.group' })
+  element(section, 'h3', { text: 'Observed traits', part: 'metadata.heading' })
+  const list = element(section, 'dl')
+  for (const trait of traits) {
+    const row = element(list, 'div', { part: 'metadata.row' })
+    element(row, 'dt', { text: trait.id, part: 'metadata.label' })
+    const value = element(row, 'dd', { part: 'metadata.value' })
+    const text = traitValue(trait)
+    setViewerText(value, text, 4096)
+    value.title = text
   }
 }
 

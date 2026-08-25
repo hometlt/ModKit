@@ -41,6 +41,22 @@ export interface EditorAreaOptions {
   confirmClose?(entry: ExplorerEntry): Promise<'save' | 'discard' | 'cancel'>
   /** Save the file behind a tab. Required for `confirmClose` to be able to offer "save". */
   save?(entry: ExplorerEntry): Promise<void>
+  /**
+   * Which pieces of this component's own chrome to draw.
+   *
+   * A host embedded in an editor that already has tabs and a breadcrumb of its own must not draw a
+   * second set — two rows of file tabs for the same file is not a richer UI, it is a component
+   * that did not know where it was mounted. Switching them off leaves the working area: the view
+   * picker and the stage.
+   *
+   * Everything defaults to on, so a standalone host keeps the full component it has today.
+   */
+  readonly chrome?: {
+    /** The per-group strip of open-file tabs. */
+    readonly tabs?: boolean
+    /** The path breadcrumb above the stage. */
+    readonly breadcrumb?: boolean
+  }
 }
 
 export interface EditorStatus {
@@ -353,12 +369,20 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
   function createGroup(): Group {
     const groupRoot = element(root, 'div', { part: 'explorer.group' })
 
+    /*
+     * A switched-off part is still built, just never attached: the tab bookkeeping below writes
+     * into `strip` and `breadcrumb` unconditionally, and making every one of those writes
+     * conditional would spread the decision across the whole component. Off-screen elements keep
+     * the invariant in one place — the DOM is the only thing that changes.
+     */
     const strip = element(groupRoot, 'div', { part: 'explorer.tabstrip', role: 'tablist' })
     strip.setAttribute('aria-label', 'Open files')
+    if (options.chrome?.tabs === false) strip.remove()
 
     const header = element(groupRoot, 'div', { part: 'explorer.header' })
     const breadcrumb = element(header, 'nav', { part: 'explorer.breadcrumb' })
     breadcrumb.setAttribute('aria-label', 'File path')
+    if (options.chrome?.breadcrumb === false) breadcrumb.remove()
     const picker = element(header, 'select', { part: 'explorer.viewpicker' }) as HTMLSelectElement
     picker.setAttribute('aria-label', 'View')
     picker.disabled = true
