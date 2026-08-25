@@ -86,10 +86,16 @@ const RELOCATED_FAMILIES = new Set([
 ])
 
 // A single codec can finish the staging migration without its whole family: block 11 slice 11A
-// moved plain text into extensions/common/plain-text while the rest of `uncommon-documents` stayed.
+// moved plain text into extensions/common/plain-text while the rest of `uncommon-documents` stayed,
+// and slice 11B did the same for the OpenDocument trio into extensions/common/documents.
 // The converter keeps reading the canonical source, but stops emitting a staging duplicate for the
 // coordinates listed here. Entries are `<staging directory>/<codec local id>`.
-const RELOCATED_CODECS = new Set(['uncommon-documents/txt'])
+const RELOCATED_CODECS = new Set([
+  'uncommon-documents/odp',
+  'uncommon-documents/ods',
+  'uncommon-documents/odt',
+  'uncommon-documents/txt',
+])
 
 if (!isMk2Root(mk2Root)) {
   // `--check` runs inside `pnpm check`, and CI does not necessarily have the MK2 checkout beside

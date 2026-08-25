@@ -24,9 +24,6 @@ const formats = [
   'docx',
   'pptx',
   'xlsx',
-  'odt',
-  'odp',
-  'ods',
   'pdf',
   'ai',
   'drawio',
@@ -37,7 +34,7 @@ const formats = [
   'blend',
 ] as const
 type Format = (typeof formats)[number]
-const officeFormats = ['docx', 'pptx', 'xlsx', 'odt', 'odp', 'ods'] as const
+const officeFormats = ['docx', 'pptx', 'xlsx'] as const
 
 const fileNames: Record<Format, string> = {
   csv: 'minimal.csv',
@@ -46,9 +43,6 @@ const fileNames: Record<Format, string> = {
   docx: 'minimal.docx',
   pptx: 'minimal.pptx',
   xlsx: 'minimal.xlsx',
-  odt: 'minimal.odt',
-  odp: 'minimal.odp',
-  ods: 'minimal.ods',
   pdf: 'minimal.pdf',
   ai: 'minimal.ai',
   drawio: 'minimal.drawio',
@@ -154,7 +148,7 @@ describe('ported MK2 document codecs', () => {
       expect.arrayContaining([
         expect.objectContaining({
           id:
-            format === 'xlsx' || format === 'ods'
+            format === 'xlsx'
               ? 'table.cells'
               : format === 'pdf' || format === 'ai'
                 ? 'document.pages'

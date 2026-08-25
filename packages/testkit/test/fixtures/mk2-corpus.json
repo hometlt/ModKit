@@ -1231,31 +1231,40 @@
       "note": "Stored OOXML workbook package with one worksheet, row, formula, and two cells"
     },
     {
-      "extension": "mk2/uncommon-documents",
+      "extension": "common/documents",
       "contributionId": "org.modkitx/odt",
       "corpus": "synthetic",
       "sample": "minimal.odt",
-      "minimumConfidence": 0.75,
+      "minimumConfidence": 0.99,
       "dataSource": "tree",
       "note": "OpenDocument text package with first stored mimetype, manifest, and content XML"
     },
     {
-      "extension": "mk2/uncommon-documents",
+      "extension": "common/documents",
       "contributionId": "org.modkitx/odp",
       "corpus": "synthetic",
       "sample": "minimal.odp",
-      "minimumConfidence": 0.75,
+      "minimumConfidence": 0.99,
       "dataSource": "tree",
       "note": "OpenDocument presentation package with one page, frame, and paragraph"
     },
     {
-      "extension": "mk2/uncommon-documents",
+      "extension": "common/documents",
       "contributionId": "org.modkitx/ods",
       "corpus": "synthetic",
       "sample": "minimal.ods",
-      "minimumConfidence": 0.75,
+      "minimumConfidence": 0.99,
       "dataSource": "tree",
       "note": "OpenDocument spreadsheet package with one sheet, row, formula, and two cells"
+    },
+    {
+      "extension": "common/documents",
+      "contributionId": "org.modkitx/odg",
+      "corpus": "synthetic",
+      "sample": "minimal.odg",
+      "minimumConfidence": 0.99,
+      "dataSource": "tree",
+      "note": "OpenDocument drawing package with two pages, seven shapes, a grouped shape, framed text, one unparsed custom shape, and a declared page layout"
     },
     {
       "extension": "mk2/uncommon-documents",

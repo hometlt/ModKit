@@ -1,4 +1,8 @@
-// Shared by the six hand-ported OOXML and OpenDocument entrypoints.
+// Shared by the three hand-ported OOXML entrypoints.
+//
+// The OpenDocument trio left with block 11 slice 11B: ODT, ODS, ODP and the new ODG now live in
+// extensions/common/documents behind their own package reader, so the ODF branch went with them
+// rather than staying here as a second, weaker implementation of the same rules.
 import { createInspectionCodec, createTreeDataSource } from '@modkitx-x3/codec-kit'
 
 const utf8 = new TextDecoder('utf-8', { fatal: true })
@@ -24,27 +28,6 @@ const FORMATS = Object.freeze({
     mediaType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     family: 'ooxml',
     root: 'xl/workbook.xml',
-  }),
-  odt: Object.freeze({
-    id: 'org.modkitx/odt',
-    label: 'OpenDocument text',
-    mediaType: 'application/vnd.oasis.opendocument.text',
-    family: 'odf',
-    root: 'content.xml',
-  }),
-  odp: Object.freeze({
-    id: 'org.modkitx/odp',
-    label: 'OpenDocument presentation',
-    mediaType: 'application/vnd.oasis.opendocument.presentation',
-    family: 'odf',
-    root: 'content.xml',
-  }),
-  ods: Object.freeze({
-    id: 'org.modkitx/ods',
-    label: 'OpenDocument spreadsheet',
-    mediaType: 'application/vnd.oasis.opendocument.spreadsheet',
-    family: 'odf',
-    root: 'content.xml',
   }),
 })
 
@@ -260,43 +243,25 @@ async function inspectPackage(format, bytes, budget) {
   const details = FORMATS[format]
   const zip = parseZip(bytes, budget)
   const byName = new Map(zip.entries.map(entry => [entry.name, entry]))
-  const required =
-    details.family === 'ooxml'
-      ? ['[Content_Types].xml', '_rels/.rels', details.root]
-      : ['mimetype', 'META-INF/manifest.xml', details.root]
+  const required = ['[Content_Types].xml', '_rels/.rels', details.root]
   for (const name of required) {
     if (!byName.has(name)) throw new TypeError(`${format} package is missing required part ${name}`)
-  }
-  if (details.family === 'odf') {
-    const mimetypeEntry = byName.get('mimetype')
-    if (mimetypeEntry.localOffset !== 0 || mimetypeEntry.method !== 0) {
-      throw new TypeError(`${format} mimetype must be the first uncompressed ZIP entry`)
-    }
-    const mimetype = utf8.decode(await extractZipEntry(bytes, mimetypeEntry))
-    if (mimetype !== details.mediaType) throw new TypeError(`${format} mimetype is invalid`)
   }
 
   const state = { nodes: zip.entries.length, scalarBytes: zip.scalarBytes }
   const xmlParts = new Map()
-  for (const name of required.filter(name => name !== 'mimetype')) {
+  for (const name of required) {
     xmlParts.set(
       name,
       analyzeXml(await extractZipEntry(bytes, byName.get(name)), name, budget, state),
     )
   }
   const main = xmlParts.get(details.root)
-  if (details.family === 'ooxml') {
-    if (
-      count(xmlParts.get('[Content_Types].xml'), 'Types') !== 1 ||
-      count(xmlParts.get('_rels/.rels'), 'Relationships') !== 1
-    ) {
-      throw new TypeError(`${format} package metadata XML has an invalid root element`)
-    }
-  } else if (
-    count(xmlParts.get('META-INF/manifest.xml'), 'manifest:manifest') !== 1 ||
-    count(main, 'office:document-content') !== 1
+  if (
+    count(xmlParts.get('[Content_Types].xml'), 'Types') !== 1 ||
+    count(xmlParts.get('_rels/.rels'), 'Relationships') !== 1
   ) {
-    throw new TypeError(`${format} OpenDocument XML has an invalid root element`)
+    throw new TypeError(`${format} package metadata XML has an invalid root element`)
   }
   const summary = { format, package: details.family, entries: zip.entries.length }
   const traits = [
@@ -360,37 +325,6 @@ async function inspectPackage(format, bytes, budget) {
       { id: 'table.sheets', parameters: { count: sheets } },
       { id: 'table.cells', parameters: { count: cells } },
       { id: 'table.formulas', parameters: { count: formulas } },
-    )
-  } else if (format === 'odt') {
-    Object.assign(summary, { paragraphs: count(main, 'text:p'), headings: count(main, 'text:h') })
-    traits.push(
-      { id: 'content.text', parameters: { blocks: summary.paragraphs + summary.headings } },
-      {
-        id: 'document.flow',
-        parameters: { paragraphs: summary.paragraphs, headings: summary.headings },
-      },
-    )
-  } else if (format === 'odp') {
-    Object.assign(summary, {
-      slides: count(main, 'draw:page'),
-      frames: count(main, 'draw:frame'),
-      paragraphs: count(main, 'text:p'),
-    })
-    traits.push(
-      { id: 'presentation.slides', parameters: { count: summary.slides } },
-      { id: 'content.text', parameters: { paragraphs: summary.paragraphs } },
-    )
-  } else {
-    Object.assign(summary, {
-      sheets: count(main, 'table:table'),
-      rows: count(main, 'table:table-row'),
-      cells: count(main, 'table:table-cell'),
-      formulas: (main.xml.match(/table:formula\s*=/gu) ?? []).length,
-    })
-    traits.push(
-      { id: 'table.sheets', parameters: { count: summary.sheets } },
-      { id: 'table.cells', parameters: { count: summary.cells } },
-      { id: 'table.formulas', parameters: { count: summary.formulas } },
     )
   }
 

@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/codec-contribution",
+    "major": 1
+  },
+  "id": "org.modkitx/odp",
+  "displayName": "OpenDocument presentation",
+  "status": "partial",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/odp/codec.js",
+      "target": {
+        "environments": ["node"]
+      },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/odp/codec.js",
+      "target": {
+        "environments": ["browser-worker", "node-worker"]
+      },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "limitations": [
+    "The deck is published through common.view/slide-deck-source@1, a publisher-candidate contract (ADR-DOC-001): ODP is its only publisher, so its shape may still move under the dual-publish rules until a second slides family confirms it.",
+    "Masters, layouts, transitions and animation are not parsed and are therefore not published, rather than published empty.",
+    "The vector scene is the first draw:page drawn from the geometry that was parsed. It is a derived structural preview, not a rendering of the slide, and it does not become a second source document.",
+    "Detection reads the OpenDocument rule rather than the file name: the mimetype entry must be first, stored uncompressed, and hold this format's exact media type. A renamed file is still recognised; a file whose media type belongs to another format is refused.",
+    "Layout is not reproduced. Styles live in styles.xml and in automatic styles, which this reader does not interpret, so fonts, colours, spacing and page composition are absent rather than approximated.",
+    "Scripts and macros are never executed and external resources are never fetched; macro storages present in the package are counted and named instead.",
+    "ZIP64 and multi-disk packages, encrypted entries, and compression methods other than stored and deflate are refused rather than partially read.",
+    "Editing and source write-back are not implemented: a writer is not declarable until preserving repack and round-trip are proved, so no unknown package entry or XML node is claimed to survive an edit."
+  ],
+  "spec": {
+    "formatRefs": [
+      {
+        "formatId": "odp",
+        "label": "OpenDocument presentation",
+        "mediaType": "application/vnd.oasis.opendocument.presentation"
+      }
+    ],
+    "roles": ["semantic", "media"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored"],
+    "openIntents": ["probe", "inspect", "full", "export"],
+    "match": {
+      "extensions": ["odp"],
+      "mediaTypes": ["application/vnd.oasis.opendocument.presentation"]
+    },
+    "probe": {
+      "kind": "bytes",
+      "ranges": [
+        {
+          "from": "start",
+          "length": 4096
+        }
+      ],
+      "maxBytes": 4096
+    },
+    "representations": [
+      {
+        "id": "slide-deck",
+        "contract": "common.document/flow-metadata",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      {
+        "contract": "common.view/slide-deck-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/vector-scene-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/tree-data-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/text-data-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/byte-range-source",
+        "major": 1
+      }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "traitDeclarations": [
+      {
+        "id": "presentation.slides",
+        "representation": "source",
+        "presence": "will-expose"
+      },
+      {
+        "id": "vector.scene",
+        "representation": "source",
+        "presence": "may-expose"
+      },
+      {
+        "id": "structure.hierarchy",
+        "representation": "source",
+        "presence": "will-expose"
+      },
+      {
+        "id": "content.text",
+        "representation": "source",
+        "presence": "will-expose"
+      },
+      {
+        "id": "content.metadata",
+        "representation": "source",
+        "presence": "will-expose"
+      }
+    ],
+    "implementationTier": {
+      "claimed": 1
+    },
+    "budgets": {
+      "maxInputBytes": "268435456",
+      "maxDepth": 128,
+      "maxNodes": 1000000,
+      "maxScalarBytes": 104857600,
+      "maxDiagnostics": 10000
+    }
+  }
+}

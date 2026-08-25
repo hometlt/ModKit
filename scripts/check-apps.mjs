@@ -246,7 +246,7 @@ await checkApplicationSet(
   'headless',
   'full-codecs',
   async extensions => ({ main: (await createAutomationHost(extensions)).composition }),
-  { main: { offers: 79, active: 79 } },
+  { main: { offers: 83, active: 83 } },
 )
 await checkApplicationSet(
   'headless',
@@ -324,7 +324,7 @@ await checkApplicationSet(
   {
     main: { offers: 'none', active: 1 },
     // + the text-json writer (A6)
-    worker: { offers: 7, active: 7 },
+    worker: { offers: 11, active: 11 },
   },
 )
 await checkApplicationSet(
@@ -335,7 +335,7 @@ await checkApplicationSet(
     return { extensionHost: app.extensionHost, webview: app.webview }
   },
   {
-    extensionHost: { offers: 2, active: 2 },
+    extensionHost: { offers: 6, active: 6 },
     webview: { offers: 'none', active: 'none' },
   },
 )
@@ -383,7 +383,7 @@ await checkApplicationSet(
     return { main: app.main, renderer: app.renderer }
   },
   {
-    main: { offers: 79, active: 79 },
+    main: { offers: 83, active: 83 },
     renderer: { offers: 'none', active: 'none' },
   },
 )

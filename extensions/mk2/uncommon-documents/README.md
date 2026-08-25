@@ -21,9 +21,6 @@ renames, converter defaults and v1 operations left without a handler — is data
 | `org.modkitx/drawio`   | `extensions/uncommon/documents/codecs/drawio/codec.manifest.json`   | `src/drawio/codec.js`   | ported |
 | `org.modkitx/figma`    | `extensions/uncommon/documents/codecs/figma/codec.manifest.json`    | `src/figma/codec.js`    | ported |
 | `org.modkitx/markdown` | `extensions/uncommon/documents/codecs/markdown/codec.manifest.json` | `src/markdown/codec.js` | ported |
-| `org.modkitx/odp`      | `extensions/uncommon/documents/codecs/odp/codec.manifest.json`      | `src/odp/codec.js`      | ported |
-| `org.modkitx/ods`      | `extensions/uncommon/documents/codecs/ods/codec.manifest.json`      | `src/ods/codec.js`      | ported |
-| `org.modkitx/odt`      | `extensions/uncommon/documents/codecs/odt/codec.manifest.json`      | `src/odt/codec.js`      | ported |
 | `org.modkitx/pdf`      | `extensions/uncommon/documents/codecs/pdf/codec.manifest.json`      | `src/pdf/codec.js`      | ported |
 | `org.modkitx/pptx`     | `extensions/uncommon/documents/codecs/pptx/codec.manifest.json`     | `src/pptx/codec.js`     | ported |
 | `org.modkitx/psd`      | `extensions/uncommon/documents/codecs/psd/codec.manifest.json`      | `src/psd/codec.js`      | ported |

@@ -12,9 +12,6 @@
       "extensions/uncommon/documents/codecs/drawio/codec.manifest.json",
       "extensions/uncommon/documents/codecs/figma/codec.manifest.json",
       "extensions/uncommon/documents/codecs/markdown/codec.manifest.json",
-      "extensions/uncommon/documents/codecs/odp/codec.manifest.json",
-      "extensions/uncommon/documents/codecs/ods/codec.manifest.json",
-      "extensions/uncommon/documents/codecs/odt/codec.manifest.json",
       "extensions/uncommon/documents/codecs/pdf/codec.manifest.json",
       "extensions/uncommon/documents/codecs/pptx/codec.manifest.json",
       "extensions/uncommon/documents/codecs/psd/codec.manifest.json",
@@ -158,51 +155,6 @@
         "view.inspect",
         "view.render"
       ],
-      "needsSignatures": false,
-      "portState": "ported"
-    },
-    "org.modkitx/odp": {
-      "verdict": "convertible-with-rework",
-      "lostPlanes": [{ "plane": "viewer", "entrypoint": "./viewer.js" }],
-      "contractGaps": [],
-      "renames": [],
-      "converterDefaults": [
-        "operations:inspection-triple",
-        "probe:bytes-4096",
-        "representation:common.document/flow-metadata",
-        "variants:pair"
-      ],
-      "droppedOperations": ["asset.validate", "export.raw", "view.inspect", "view.render"],
-      "needsSignatures": false,
-      "portState": "ported"
-    },
-    "org.modkitx/ods": {
-      "verdict": "convertible-with-rework",
-      "lostPlanes": [{ "plane": "viewer", "entrypoint": "./viewer.js" }],
-      "contractGaps": [],
-      "renames": [],
-      "converterDefaults": [
-        "operations:inspection-triple",
-        "probe:bytes-4096",
-        "representation:common.document/flow-metadata",
-        "variants:pair"
-      ],
-      "droppedOperations": ["asset.validate", "export.raw", "view.inspect", "view.render"],
-      "needsSignatures": false,
-      "portState": "ported"
-    },
-    "org.modkitx/odt": {
-      "verdict": "convertible-with-rework",
-      "lostPlanes": [{ "plane": "viewer", "entrypoint": "./viewer.js" }],
-      "contractGaps": [],
-      "renames": [],
-      "converterDefaults": [
-        "operations:inspection-triple",
-        "probe:bytes-4096",
-        "representation:common.document/flow-metadata",
-        "variants:pair"
-      ],
-      "droppedOperations": ["asset.validate", "export.raw", "view.inspect", "view.render"],
       "needsSignatures": false,
       "portState": "ported"
     },

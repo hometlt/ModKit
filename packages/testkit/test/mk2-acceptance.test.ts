@@ -143,6 +143,7 @@ const completedPortableDocuments = [
   find('org.modkitx/odt'),
   find('org.modkitx/odp'),
   find('org.modkitx/ods'),
+  find('org.modkitx/odg'),
   find('org.modkitx/pdf'),
   find('org.modkitx/ai'),
   find('org.modkitx/drawio'),

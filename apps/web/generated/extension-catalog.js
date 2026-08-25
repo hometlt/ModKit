@@ -3436,24 +3436,46 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:5ca05a3563b87707cb40ce4f1db4a9ad44dd62de483b91f669a8c3d2f1563214',
+        artifactDigest: 'sha256:37eb57bbedc06d932df38f962722718016715dcccb3df74f9aa80e43751c1250',
         fileDigests: {
-          'README.md': 'sha256:5bf3e44baa235b6f02253b1c0eea36170c3121c0e4471b4ef30def8895bc0521',
+          'README.md': 'sha256:0b52b220a83c866101dce41b648816401ca4c387f9341560bb69a06df252d1de',
           'contributions/codec-markdown.json':
             'sha256:b2de3ac82f8d9c09c02f0ade58885692eaf262d36f41471268c7ade2d3305c90',
+          'contributions/codec-odg.json':
+            'sha256:95a5cf8341359ce00d76775b65513654a1654b7cee98fe8e09def764a950768d',
+          'contributions/codec-odp.json':
+            'sha256:05fa1600b291ab9ec22246d943ae3ca5c76bf8d7bd0ad9faff99c02514ad4cbd',
+          'contributions/codec-ods.json':
+            'sha256:86b7a3d92fa8c9c3750c21feb7b629c9a45dd453b005810030d9a203563e52fb',
+          'contributions/codec-odt.json':
+            'sha256:3ef7eada29545f5fb6b2cb29c7d305b187aee98f9c89dbfba5e5af5e69eba9bb',
           'contributions/codec-rtf.json':
             'sha256:30425ddb998db33fc99212bf17aed6fe01da0bbd0ffa53e5a967ce0ee4402d9a',
-          'package.json': 'sha256:60c3afc97e4f73e0ac42e96e0a156bb73a347c49ae2dcce0d2793f3dbe176256',
+          'package.json': 'sha256:c7c100ec11a3fbe70e25c48c17499394307fecd9082a0eeff3c83bb00cbf22da',
           'src/formats/markdown/codec.js':
             'sha256:cfee908833a8401b0f93343a1e638d7234282bbe4435dae25f87dbe1c8460d7c',
+          'src/formats/odg/codec.js':
+            'sha256:c29958abca29144d90629b035a4c75a64f441018d5750128201387e25881a9dc',
           'src/formats/rtf/codec.js':
             'sha256:0f4c12d070eec9f9c7b7940da9eff0a326ec302334624570327bc16a35b2c97b',
           'src/index.js': 'sha256:f1a6b90c5ee40f19b02f9e9893ac6cb78d5ac4013f16ab91c58026d10bc9d638',
           'src/linked.js':
-            'sha256:7e7ce0339ab416910ce6d23f27b6cd0836cf3269518efa94f792ce708f01a6ea',
+            'sha256:20e5f30624c8de71ed4927cfc8fcbe15f7a08e386bd32eaa59244e1e580f4d46',
+          'src/odf/document.js':
+            'sha256:37234992daf502132b28d7dd864e5a166ea7c405a4beff9f2e11762de72d39d2',
+          'src/odf/inspection.js':
+            'sha256:43fc1cd3c108e26e99f853692100faf30ebb92a95a8403107c9123c81f78e905',
+          'src/odf/package.js':
+            'sha256:4d0b32198f89251e00cfb857251fbfdf27b86a19c205b32f6c64abf7c7a50761',
+          'src/odp/codec.js':
+            'sha256:8c53da3dec10e9c08b7f57c1458816b4eac7eb38ab28c9481c4783f6bc39e5dd',
+          'src/ods/codec.js':
+            'sha256:0172eaddf48b4cdc50361850bf0f7c1e9ffe07e670c1f72b8dffc668521fbb91',
+          'src/odt/codec.js':
+            'sha256:5d84fd165b4e4252edeec9abc56e4759fea9bbfed658dc7a21ed667e6e9e1180',
         },
         inventoryRecordId:
-          'artifact:sha256:5ca05a3563b87707cb40ce4f1db4a9ad44dd62de483b91f669a8c3d2f1563214',
+          'artifact:sha256:37eb57bbedc06d932df38f962722718016715dcccb3df74f9aa80e43751c1250',
       },
       artifactRoot: 'extensions/documents/',
       containers: {
@@ -3466,8 +3488,12 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             '.': './src/index.js',
             './formats/*/codec': './src/formats/*/codec.js',
             './formats/markdown/codec': './src/formats/markdown/codec.js',
+            './formats/odg/codec': './src/formats/odg/codec.js',
             './formats/rtf/codec': './src/formats/rtf/codec.js',
             './linked': './src/linked.js',
+            './odp/codec': './src/odp/codec.js',
+            './ods/codec': './src/ods/codec.js',
+            './odt/codec': './src/odt/codec.js',
             './package.json': './package.json',
           },
           files: ['contributions', 'src', 'README.md'],
@@ -3499,6 +3525,22 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         [
           'contributions/codec-markdown.json',
           'sha256:b2de3ac82f8d9c09c02f0ade58885692eaf262d36f41471268c7ade2d3305c90',
+        ],
+        [
+          'contributions/codec-odg.json',
+          'sha256:95a5cf8341359ce00d76775b65513654a1654b7cee98fe8e09def764a950768d',
+        ],
+        [
+          'contributions/codec-odp.json',
+          'sha256:05fa1600b291ab9ec22246d943ae3ca5c76bf8d7bd0ad9faff99c02514ad4cbd',
+        ],
+        [
+          'contributions/codec-ods.json',
+          'sha256:86b7a3d92fa8c9c3750c21feb7b629c9a45dd453b005810030d9a203563e52fb',
+        ],
+        [
+          'contributions/codec-odt.json',
+          'sha256:3ef7eada29545f5fb6b2cb29c7d305b187aee98f9c89dbfba5e5af5e69eba9bb',
         ],
         [
           'contributions/codec-rtf.json',
@@ -3636,6 +3678,648 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 },
                 {
                   id: 'content.text',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+              ],
+            },
+            status: 'partial',
+          },
+        ],
+        [
+          'contributions/codec-odg.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'OpenDocument drawing',
+            id: 'org.modkitx/odg',
+            limitations: [
+              'The vector scene is the first draw:page drawn from the geometry that was parsed; every page is listed in the tree and counted in the summary.',
+              "Rectangles, ellipses, lines, polylines, polygons and paths are drawn, and frame text is placed at its frame's origin. Custom shapes with enhanced geometry, connectors and embedded objects are counted as unparsed rather than approximated.",
+              'The scene is deliberately unstyled - a neutral stroke and no fill - because ODF styles are not interpreted here.',
+              "Detection reads the OpenDocument rule rather than the file name: the mimetype entry must be first, stored uncompressed, and hold this format's exact media type. A renamed file is still recognised; a file whose media type belongs to another format is refused.",
+              'Layout is not reproduced. Styles live in styles.xml and in automatic styles, which this reader does not interpret, so fonts, colours, spacing and page composition are absent rather than approximated.',
+              'Scripts and macros are never executed and external resources are never fetched; macro storages present in the package are counted and named instead.',
+              'ZIP64 and multi-disk packages, encrypted entries, and compression methods other than stored and deflate are refused rather than partially read.',
+              'Editing and source write-back are not implemented: a writer is not declarable until preserving repack and round-trip are proved, so no unknown package entry or XML node is claimed to survive an edit.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/formats/odg/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/formats/odg/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored'],
+              budgets: {
+                maxDepth: 128,
+                maxDiagnostics: 10000,
+                maxInputBytes: '268435456',
+                maxNodes: 1000000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'odg',
+                  label: 'OpenDocument drawing',
+                  mediaType: 'application/vnd.oasis.opendocument.graphics',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['odg'],
+                mediaTypes: ['application/vnd.oasis.opendocument.graphics'],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/vector-scene-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/text-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.vector/scene-metadata',
+                  id: 'vector-scene',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['semantic', 'media'],
+              sourceTopology: 'single',
+              traitDeclarations: [
+                {
+                  id: 'document.pages',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'vector.scene',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'vector.shapes',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'vector.text',
+                  presence: 'may-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'structure.hierarchy',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.text',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.metadata',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+              ],
+            },
+            status: 'partial',
+          },
+        ],
+        [
+          'contributions/codec-odp.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'OpenDocument presentation',
+            id: 'org.modkitx/odp',
+            limitations: [
+              'The deck is published through common.view/slide-deck-source@1, a publisher-candidate contract (ADR-DOC-001): ODP is its only publisher, so its shape may still move under the dual-publish rules until a second slides family confirms it.',
+              'Masters, layouts, transitions and animation are not parsed and are therefore not published, rather than published empty.',
+              'The vector scene is the first draw:page drawn from the geometry that was parsed. It is a derived structural preview, not a rendering of the slide, and it does not become a second source document.',
+              "Detection reads the OpenDocument rule rather than the file name: the mimetype entry must be first, stored uncompressed, and hold this format's exact media type. A renamed file is still recognised; a file whose media type belongs to another format is refused.",
+              'Layout is not reproduced. Styles live in styles.xml and in automatic styles, which this reader does not interpret, so fonts, colours, spacing and page composition are absent rather than approximated.',
+              'Scripts and macros are never executed and external resources are never fetched; macro storages present in the package are counted and named instead.',
+              'ZIP64 and multi-disk packages, encrypted entries, and compression methods other than stored and deflate are refused rather than partially read.',
+              'Editing and source write-back are not implemented: a writer is not declarable until preserving repack and round-trip are proved, so no unknown package entry or XML node is claimed to survive an edit.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/odp/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/odp/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored'],
+              budgets: {
+                maxDepth: 128,
+                maxDiagnostics: 10000,
+                maxInputBytes: '268435456',
+                maxNodes: 1000000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'odp',
+                  label: 'OpenDocument presentation',
+                  mediaType: 'application/vnd.oasis.opendocument.presentation',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['odp'],
+                mediaTypes: ['application/vnd.oasis.opendocument.presentation'],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/slide-deck-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/vector-scene-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/text-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.document/flow-metadata',
+                  id: 'slide-deck',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['semantic', 'media'],
+              sourceTopology: 'single',
+              traitDeclarations: [
+                {
+                  id: 'presentation.slides',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'vector.scene',
+                  presence: 'may-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'structure.hierarchy',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.text',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.metadata',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+              ],
+            },
+            status: 'partial',
+          },
+        ],
+        [
+          'contributions/codec-ods.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'OpenDocument spreadsheet',
+            id: 'org.modkitx/ods',
+            limitations: [
+              "Formulas are published as their stored text together with the cell they came from. Nothing evaluates them and no value is recomputed: a cell's value is the value the document stored.",
+              'The table data source carries the first sheet; every sheet is listed in the tree and counted in the summary.',
+              "A repeated empty row or column is reported as a declared count rather than materialised, so a sheet's padded tail does not become millions of cells.",
+              'Number formats, cell styles, validation, charts and pivot tables are not parsed and are not published.',
+              "Detection reads the OpenDocument rule rather than the file name: the mimetype entry must be first, stored uncompressed, and hold this format's exact media type. A renamed file is still recognised; a file whose media type belongs to another format is refused.",
+              'Layout is not reproduced. Styles live in styles.xml and in automatic styles, which this reader does not interpret, so fonts, colours, spacing and page composition are absent rather than approximated.',
+              'Scripts and macros are never executed and external resources are never fetched; macro storages present in the package are counted and named instead.',
+              'ZIP64 and multi-disk packages, encrypted entries, and compression methods other than stored and deflate are refused rather than partially read.',
+              'Editing and source write-back are not implemented: a writer is not declarable until preserving repack and round-trip are proved, so no unknown package entry or XML node is claimed to survive an edit.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/ods/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/ods/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored'],
+              budgets: {
+                maxDepth: 128,
+                maxDiagnostics: 10000,
+                maxInputBytes: '268435456',
+                maxNodes: 1000000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'ods',
+                  label: 'OpenDocument spreadsheet',
+                  mediaType: 'application/vnd.oasis.opendocument.spreadsheet',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['ods'],
+                mediaTypes: ['application/vnd.oasis.opendocument.spreadsheet'],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/table-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/text-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.document/flow-metadata',
+                  id: 'sheet-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['semantic'],
+              sourceTopology: 'single',
+              traitDeclarations: [
+                {
+                  id: 'table.sheets',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'table.cells',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'table.formulas',
+                  presence: 'may-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'structure.hierarchy',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.text',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.metadata',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+              ],
+            },
+            status: 'partial',
+          },
+        ],
+        [
+          'contributions/codec-odt.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'OpenDocument text',
+            id: 'org.modkitx/odt',
+            limitations: [
+              'The recovered representation is the flow: headings, paragraphs and the outline they form. Fields, annotations, tracked changes, footnotes, headers and footers are not parsed and are not published.',
+              "Detection reads the OpenDocument rule rather than the file name: the mimetype entry must be first, stored uncompressed, and hold this format's exact media type. A renamed file is still recognised; a file whose media type belongs to another format is refused.",
+              'Layout is not reproduced. Styles live in styles.xml and in automatic styles, which this reader does not interpret, so fonts, colours, spacing and page composition are absent rather than approximated.',
+              'Scripts and macros are never executed and external resources are never fetched; macro storages present in the package are counted and named instead.',
+              'ZIP64 and multi-disk packages, encrypted entries, and compression methods other than stored and deflate are refused rather than partially read.',
+              'Editing and source write-back are not implemented: a writer is not declarable until preserving repack and round-trip are proved, so no unknown package entry or XML node is claimed to survive an edit.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/odt/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/odt/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored'],
+              budgets: {
+                maxDepth: 128,
+                maxDiagnostics: 10000,
+                maxInputBytes: '268435456',
+                maxNodes: 1000000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'odt',
+                  label: 'OpenDocument text',
+                  mediaType: 'application/vnd.oasis.opendocument.text',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['odt'],
+                mediaTypes: ['application/vnd.oasis.opendocument.text'],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/text-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.document/flow-metadata',
+                  id: 'flow-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['semantic'],
+              sourceTopology: 'single',
+              traitDeclarations: [
+                {
+                  id: 'document.flow',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'document.outline',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'structure.hierarchy',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.text',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.metadata',
                   presence: 'will-expose',
                   representation: 'source',
                 },
@@ -3786,12 +4470,23 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       files: [
         'README.md',
         'contributions/codec-markdown.json',
+        'contributions/codec-odg.json',
+        'contributions/codec-odp.json',
+        'contributions/codec-ods.json',
+        'contributions/codec-odt.json',
         'contributions/codec-rtf.json',
         'package.json',
         'src/formats/markdown/codec.js',
+        'src/formats/odg/codec.js',
         'src/formats/rtf/codec.js',
         'src/index.js',
         'src/linked.js',
+        'src/odf/document.js',
+        'src/odf/inspection.js',
+        'src/odf/package.js',
+        'src/odp/codec.js',
+        'src/ods/codec.js',
+        'src/odt/codec.js',
       ],
       name: 'documents',
       source: 'extensions/common/documents',

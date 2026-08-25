@@ -885,8 +885,12 @@ function xlsx() {
   ])
 }
 
-const odfManifest = mediaType =>
-  `<?xml version="1.0"?><manifest:manifest xmlns:manifest="urn:manifest"><manifest:file-entry manifest:full-path="/" manifest:media-type="${mediaType}"/><manifest:file-entry manifest:full-path="content.xml" manifest:media-type="text/xml"/></manifest:manifest>`
+const odfManifest = (mediaType, parts = ['content.xml']) =>
+  `<?xml version="1.0"?><manifest:manifest xmlns:manifest="urn:manifest"><manifest:file-entry manifest:full-path="/" manifest:media-type="${mediaType}"/>${parts
+    .map(
+      part => `<manifest:file-entry manifest:full-path="${part}" manifest:media-type="text/xml"/>`,
+    )
+    .join('')}</manifest:manifest>`
 
 function odt() {
   const mediaType = 'application/vnd.oasis.opendocument.text'
@@ -922,6 +926,48 @@ function ods() {
     [
       'content.xml',
       '<?xml version="1.0"?><office:document-content xmlns:office="urn:office" xmlns:table="urn:table" xmlns:text="urn:text"><office:body><office:spreadsheet><table:table><table:table-row><table:table-cell><text:p>42</text:p></table:table-cell><table:table-cell table:formula="of:=1+1"><text:p>2</text:p></table:table-cell></table:table-row></table:table></office:spreadsheet></office:body></office:document-content>',
+      8,
+    ],
+  ])
+}
+
+/**
+ * OpenDocument 1.3 drawing: two `draw:page`s, the shape kinds the common reader draws (rectangle,
+ * ellipse, line, polygon and path, one of them inside a `draw:g`), a text frame, one
+ * `draw:custom-shape` whose enhanced geometry is deliberately *not* parsed, and a `styles.xml`
+ * page layout so the declared page size is exercised rather than inferred from the shapes.
+ */
+function odg() {
+  const mediaType = 'application/vnd.oasis.opendocument.graphics'
+  const page1 =
+    '<draw:page draw:name="Page 1">' +
+    '<draw:rect svg:x="1cm" svg:y="1cm" svg:width="4cm" svg:height="2cm"/>' +
+    '<draw:ellipse svg:x="6cm" svg:y="1cm" svg:width="2cm" svg:height="2cm"/>' +
+    '<draw:line svg:x1="1cm" svg:y1="4cm" svg:x2="9cm" svg:y2="4cm"/>' +
+    '<draw:polygon svg:x="1cm" svg:y="5cm" svg:width="3cm" svg:height="3cm" svg:viewBox="0 0 100 100" draw:points="0,0 100,0 50,100"/>' +
+    '<draw:path svg:x="5cm" svg:y="5cm" svg:width="3cm" svg:height="3cm" svg:viewBox="0 0 100 100" svg:d="M 0 0 L 100 100"/>' +
+    '<draw:g><draw:rect svg:x="1cm" svg:y="9cm" svg:width="2cm" svg:height="1cm"/></draw:g>' +
+    '<draw:frame svg:x="1cm" svg:y="11cm" svg:width="8cm" svg:height="1cm"><draw:text-box><text:p>Synthetic ODG drawing</text:p></draw:text-box></draw:frame>' +
+    '<draw:custom-shape svg:x="1cm" svg:y="13cm" svg:width="2cm" svg:height="2cm"/>' +
+    '</draw:page>'
+  const page2 =
+    '<draw:page draw:name="Page 2">' +
+    '<draw:rect svg:x="0cm" svg:y="0cm" svg:width="1cm" svg:height="1cm"/>' +
+    '</draw:page>'
+  return storedZip([
+    ['mimetype', mediaType],
+    ['META-INF/manifest.xml', odfManifest(mediaType, ['content.xml', 'styles.xml']), 8],
+    [
+      'content.xml',
+      '<?xml version="1.0"?><office:document-content xmlns:office="urn:office" xmlns:draw="urn:draw" xmlns:svg="urn:svg" xmlns:text="urn:text"><office:body><office:drawing>' +
+        page1 +
+        page2 +
+        '</office:drawing></office:body></office:document-content>',
+      8,
+    ],
+    [
+      'styles.xml',
+      '<?xml version="1.0"?><office:document-styles xmlns:office="urn:office" xmlns:style="urn:style" xmlns:fo="urn:fo"><office:automatic-styles><style:page-layout style:name="PM1"><style:page-layout-properties fo:page-width="10cm" fo:page-height="15cm"/></style:page-layout></office:automatic-styles></office:document-styles>',
       8,
     ],
   ])
@@ -4745,6 +4791,7 @@ const FIXTURES = {
   'minimal.ogg': ogg,
   'minimal.odp': odp,
   'minimal.ods': ods,
+  'minimal.odg': odg,
   'minimal.odt': odt,
   'minimal.opus': opus,
   'minimal.ogv': ogv,

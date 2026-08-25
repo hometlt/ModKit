@@ -41,7 +41,14 @@ export const READY_APP_EXTENSIONS = Object.freeze({
   }),
   documents: Object.freeze({
     coordinate: 'org.modkitx/documents',
-    contributions: Object.freeze(['org.modkitx/document-markdown', 'org.modkitx/document-rtf']),
+    contributions: Object.freeze([
+      'org.modkitx/document-markdown',
+      'org.modkitx/document-rtf',
+      'org.modkitx/odg',
+      'org.modkitx/odp',
+      'org.modkitx/ods',
+      'org.modkitx/odt',
+    ]),
   }),
   'plain-text': Object.freeze({
     coordinate: 'org.modkitx/plain-text',
