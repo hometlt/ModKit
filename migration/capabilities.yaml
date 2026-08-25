@@ -3654,6 +3654,7 @@ capabilities:
       tests:
         - 'packages/testkit/test/text-data.test.ts'
         - 'packages/host/test/text-writers.test.ts'
+        - 'packages/testkit/test/detection-collisions.test.ts'
       reports:
         - 'docs/MK3/plans/PLAN_MODKIT_MK3_FINAL_RU.md#блок-11-slice-11a'
   - capabilityId: 'format/cub/open-inspect'
@@ -12736,7 +12737,8 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/detection-collisions.test.ts'
       reports: []
   - capabilityId: 'format/warzone-lev/open-inspect'
     userScenario: 'Открыть «Warzone 2100 level index» в MK3 и выполнить view.inspect без потери семантики legacy-маршрута.'
