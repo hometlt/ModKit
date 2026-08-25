@@ -1,6 +1,8 @@
 import {
   createInspectionCodec,
+  createModelResourceRefsSource,
   createModelSceneSource,
+  createProjectionReceipt,
   createTreeDataSource,
 } from '@modkitx-x3/codec-kit'
 
@@ -214,6 +216,21 @@ async function readTextureBindings(input, signal) {
   return Object.freeze(resolved)
 }
 
+/**
+ * The axes M3 vertex positions arrive in — the file's own, because nothing converts them.
+ *
+ * `preserved`, not `normalized`: the decoder copies each position verbatim, so the projected space
+ * is the M3 space. Z-up right-handed with +X forward is the format's documented convention rather
+ * than something read out of these bytes, which is why the receipt states it as `declared`.
+ */
+const M3_BASIS = Object.freeze({
+  handedness: 'right',
+  upAxis: 'z',
+  forwardAxis: '+x',
+  unit: 'source-unit',
+  sourceUnit: 'm3-model-unit',
+})
+
 const definition = Object.freeze({
   id: ID,
   version: '1.0.0',
@@ -274,12 +291,95 @@ const definition = Object.freeze({
         : decodedSceneOf(model, geometry)
     const info = await scene.info()
     const geometryAccess = info.geometryAccess
+    /*
+     * The five facet contracts, published as contracts rather than as a shape inside `summary`.
+     *
+     * M3 fills exactly one of them. Its texture *paths* come out of the `CHAR` table, so the
+     * resource facet is real; materials, skeleton and animations are counted from section tags and
+     * never decoded, so no facet is published for them — a source filled with section counts would
+     * claim a plane this reader does not read. The receipt below names each of those as `lost`.
+     *
+     * Every reference stays `reference-only`. The texture requirement is `many`, so a bound
+     * companion cannot be attributed to one name without inspecting the resolved URI, which is the
+     * line block 9 drew: the bound companions are recorded in the receipt instead, by binding id.
+     */
+    const resourceFacet =
+      references.names.length === 0
+        ? {}
+        : {
+            // an empty facet is not a facet: a model that names no texture publishes no resource
+            // source rather than an empty page a consumer would read as "the references are gone"
+            'common.view/model-resource-refs-source': createModelResourceRefsSource({
+              references: references.names.map(value => ({
+                id: value,
+                role: 'texture',
+                provenance: 'reference-only',
+              })),
+              truncated: references.truncated,
+            }),
+          }
+    const projectionReceipt = createProjectionReceipt({
+      adapter: { id: ID, version: '1.0.0' },
+      subjectRevision: context.input.revisions.revision,
+      companions: [
+        {
+          requirementId: TEXTURE_REQUIREMENT,
+          role: 'texture',
+          state: boundTextures.length > 0 ? 'bound' : 'absent',
+          ...(boundTextures[0] === undefined ? {} : { bindingId: boundTextures[0].bindingId }),
+        },
+      ],
+      basis: M3_BASIS,
+      planes: [
+        {
+          planeId: 'geometry',
+          state: geometryAccess === 'decoded' ? 'preserved' : 'lost',
+          note:
+            geometryAccess === 'decoded'
+              ? 'vertex positions are copied in the file’s own axes'
+              : 'the geometry decoder is Node-only; this open produced the section graph alone',
+        },
+        { planeId: 'structure', state: 'preserved', note: 'the M3 section index, verbatim' },
+        { planeId: 'resources', state: 'preserved', note: 'texture paths from the CHAR table' },
+        { planeId: 'materials', state: 'lost', note: 'MAT* sections are counted, never decoded' },
+        { planeId: 'skeleton', state: 'lost', note: 'BONE/STC sections are not read' },
+        { planeId: 'animation', state: 'lost', note: 'SEQS sections are counted, never decoded' },
+      ],
+      evidence: [
+        {
+          kind: 'declared',
+          statement: 'M3 authors in a right-handed Z-up space with +X forward',
+          source: 'm3-format-convention',
+        },
+        {
+          kind: 'observed',
+          statement: `${model.sections.length} sections indexed, ${references.names.length} texture path(s) read from CHAR`,
+          bytesRead: BigInt(bytes.byteLength),
+        },
+        ...(references.truncated
+          ? [
+              {
+                kind: 'diagnostic',
+                code: 'x3.m3/texture-scan-truncated',
+                message: `the texture scan stopped at its budget of ${MAX_TEXTURE_REFERENCES} references`,
+              },
+            ]
+          : []),
+      ],
+      confidence: geometryAccess === 'decoded' ? 'high' : 'partial',
+    })
     return {
       summary: {
         format: 'm3',
         container: model.tag,
         sections: model.sections.length,
         sectionTags: [...new Set(model.sections.map(section => section.tag))],
+        /*
+         * Superseded by `common.view/model-resource-refs-source@1`, kept for one slice so the
+         * existing UI readouts do not break in the same commit that moves the authority. The
+         * contract is the authority from now on; these two keys are scheduled for removal once
+         * the facet consumers land (block 12 slice 12-2).
+         */
         textureReferences: references.names.map(value => ({
           value,
           // 'companion' once the host bound a file for it; a reference is published either way
@@ -333,7 +433,9 @@ const definition = Object.freeze({
       dataSources: {
         'common.view/tree-data-source': tree,
         'common.view/model-scene-source': scene,
+        ...resourceFacet,
       },
+      projectionReceipt,
       maxDecodedBytes: BigInt(Math.max(bytes.byteLength, geometry?.decodedBytes ?? 0)),
       companions: [
         {

@@ -60,6 +60,7 @@
     ],
     "publishesDataSources": [
       { "contract": "common.view/model-scene-source", "major": 1 },
+      { "contract": "common.view/model-resource-refs-source", "major": 1 },
       { "contract": "common.view/tree-data-source", "major": 1 },
       { "contract": "common.view/byte-range-source", "major": 1 }
     ],

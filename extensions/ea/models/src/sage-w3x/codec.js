@@ -7,7 +7,11 @@
 
 import {
   createInspectionCodec,
+  createModelCollisionSource,
+  createModelResourceRefsSource,
   createModelSceneSource,
+  createModelSkeletonSource,
+  createProjectionReceipt,
   createTreeDataSource,
 } from '@modkitx-x3/codec-kit'
 import {
@@ -347,6 +351,96 @@ function modelSource(parsed) {
   })
 }
 
+/**
+ * The axes the projection publishes, after `toUvmVector` turns the document's Z-up space into the
+ * UV one. Converted, therefore `normalized`; W3X names no physical unit, so none is asserted.
+ */
+const W3X_BASIS = Object.freeze({
+  handedness: 'right',
+  upAxis: 'y',
+  forwardAxis: '-z',
+  unit: 'source-unit',
+})
+
+/**
+ * The three facet contracts a W3X document can honestly fill (block 12, slice 12-1).
+ *
+ * Animation is the interesting absence. `W3DAnimation` blocks are counted and their `Channel`
+ * children are counted, but nothing decodes a frame count, a rate or a channel target — and
+ * `ModelAnimationClip` requires `frames`. Publishing the facet would mean inventing that number, so
+ * the facet stays unpublished and the receipt records the plane as `lost` with the count as
+ * evidence. Materials are absent for the same kind of reason: the primitives carry material slots
+ * whose definitions live in `FXShader` blocks this reader does not represent.
+ */
+function modelFacets(containers, hierarchies, companionPivots, textureRefs, boundHierarchy) {
+  const facets = {}
+  const skeletonCompanion = boundHierarchy[0]
+  const hierarchyRefs = [
+    ...new Set(
+      containers.flatMap(container =>
+        container.hierarchyRef === undefined ? [] : [container.hierarchyRef],
+      ),
+    ),
+  ]
+  const references = [
+    ...textureRefs.map(item => ({
+      id: item.value,
+      role: 'texture',
+      provenance: 'reference-only',
+    })),
+    /*
+     * The skeleton sidecar is the one reference this codec can attribute, and the reason is the
+     * requirement's own shape: `zero-or-one` with a single pattern means a bound file can only be
+     * that reference. The `many` texture requirement has no such guarantee, so those stay
+     * reference-only rather than being matched by sniffing a resolved URI.
+     */
+    ...hierarchyRefs.map(ref => ({
+      id: ref,
+      role: 'sidecar',
+      provenance: skeletonCompanion === undefined ? 'reference-only' : 'companion',
+      ...(skeletonCompanion === undefined
+        ? {}
+        : { bindingId: skeletonCompanion.bindingId, bytes: skeletonCompanion.bytes }),
+    })),
+  ]
+  if (references.length > 0) {
+    facets['common.view/model-resource-refs-source'] = createModelResourceRefsSource({ references })
+  }
+  const bindings = containers.flatMap(container =>
+    container.subObjects.map(sub => ({
+      partId: sub.id,
+      boneIndex: sub.boneIndex,
+      ...boneFact(hierarchies, companionPivots, container.hierarchyRef, sub.boneIndex),
+      ...(container.hierarchyRef === undefined ? {} : { hierarchyId: container.hierarchyRef }),
+    })),
+  )
+  // an empty facet is not a facet: a document that declares a hierarchy but binds no part to a bone
+  // publishes no skeleton source rather than an empty page
+  if (bindings.length > 0) {
+    facets['common.view/model-skeleton-source'] = createModelSkeletonSource({
+      bindings: bindings.map(({ boneProvenance, ...rest }) => ({
+        ...rest,
+        provenance: boneProvenance,
+      })),
+      hierarchies: hierarchies.length + companionPivots.length,
+    })
+  }
+  const collisionParts = containers.flatMap(container =>
+    container.subObjects.filter(sub => sub.role === 'collision'),
+  )
+  if (collisionParts.length > 0) {
+    facets['common.view/model-collision-source'] = createModelCollisionSource({
+      volumes: collisionParts.map(sub => ({
+        id: sub.id,
+        kind: 'mesh',
+        origin: 'mesh-role',
+        ...(sub.renderObject === undefined ? {} : { meshId: sub.renderObject }),
+      })),
+    })
+  }
+  return facets
+}
+
 function w3xDiagnostic(id, code, message) {
   return Object.freeze({
     id,
@@ -533,6 +627,11 @@ const definition = Object.freeze({
           (sum, mesh) => sum + mesh.primitive.indices.length / 3,
           0,
         ),
+        /*
+         * Superseded by the three facet contracts published beside the base scene source. Kept for
+         * one slice so the existing readouts keep working while the authority moves; removal is
+         * scheduled with the block-12 slice 12-2 consumers.
+         */
         textures: parsed.textures,
         includes: parsed.includes,
         containerRelations: containers.map(container => ({
@@ -620,8 +719,82 @@ const definition = Object.freeze({
         { id: 'structure.hierarchy', parameters: { nodes: parsed.total, parts: parts.length } },
         { id: 'content.text', parameters: { encoding: 'utf-8' } },
       ],
+      projectionReceipt: createProjectionReceipt({
+        adapter: { id: ID, version: '1.0.0' },
+        subjectRevision: context.input.revisions.revision,
+        companions: [
+          {
+            requirementId: HIERARCHY_REQUIREMENT,
+            role: 'skeleton',
+            state: boundHierarchy[0] === undefined ? 'absent' : 'bound',
+            ...(boundHierarchy[0] === undefined ? {} : { bindingId: boundHierarchy[0].bindingId }),
+          },
+          {
+            requirementId: TEXTURE_REQUIREMENT,
+            role: 'texture',
+            state: boundTextures.length > 0 ? 'bound' : 'absent',
+            ...(boundTextures[0] === undefined ? {} : { bindingId: boundTextures[0].bindingId }),
+          },
+        ],
+        basis: W3X_BASIS,
+        planes: [
+          {
+            planeId: 'geometry',
+            state: parsed.meshes.length > 0 ? 'normalized' : 'lost',
+            note: `${parsed.meshes.length} of ${meshCount} declared mesh(es) decoded and rotated into the UV space`,
+          },
+          { planeId: 'structure', state: 'preserved', note: 'the declared element graph' },
+          {
+            planeId: 'skeleton',
+            // a bone name that arrived from the bound sidecar is a companion fact, not this
+            // document's; the facet carries the provenance per binding
+            state: hierarchies.length + companionPivots.length > 0 ? 'preserved' : 'lost',
+            note: `${hierarchies.length} direct hierarchy(ies), ${companionPivots.length} from the bound skeleton`,
+          },
+          {
+            planeId: 'animation',
+            state: 'lost',
+            note: `${animationCount} W3DAnimation block(s) counted; no frame count, rate or channel target is decoded, so no clip can be published without inventing one`,
+          },
+          {
+            planeId: 'collision',
+            state: containers.some(container =>
+              container.subObjects.some(sub => sub.role === 'collision'),
+            )
+              ? 'preserved'
+              : 'lost',
+            note: 'a part is collision because the document says <CollisionBox>, never because of its name',
+          },
+          { planeId: 'resources', state: 'preserved', note: 'texture and skeleton ids, verbatim' },
+          {
+            planeId: 'materials',
+            state: 'lost',
+            note: 'FXShader definitions are not represented; primitives carry material slots only',
+          },
+        ],
+        evidence: [
+          {
+            kind: 'observed',
+            statement: `${parsed.total} element(s), ${containers.length} container(s), ${unknown.length} undecoded element name(s)`,
+            bytesRead: BigInt(bytes.byteLength),
+          },
+          {
+            kind: 'declared',
+            statement:
+              'W3X authors in a right-handed Z-up space; the projection rotates it into the UV Y-up space',
+            source: 'sage-w3x-format-convention',
+          },
+          ...issues.map(issue => ({
+            kind: 'diagnostic',
+            code: `x3.w3x/${issue.code.replace('sage-w3x-', '')}`,
+            message: issue.message,
+          })),
+        ],
+        confidence: parsed.meshes.length > 0 ? 'high' : 'partial',
+      }),
       dataSources: {
         'common.view/model-scene-source': modelSource(parsed),
+        ...modelFacets(containers, hierarchies, companionPivots, textureRefs, boundHierarchy),
         'common.view/tree-data-source': createTreeDataSource({
           kind: 'model',
           label: 'SAGE W3X',

@@ -7718,7 +7718,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:659d60712f53cbbaf5ae3a257fb1a780aaf132ea8565d367123ff29d9c28a38c',
+        artifactDigest: 'sha256:98c1ad335c29779133109c65a61c9a9bc80ba3fd5ef51f76b04725d60609437c',
         fileDigests: {
           'MIGRATION-NOTES-common-models.json':
             'sha256:c502295ae0ba2854a5374e12acbd2ef40f0a6f4b0f7797c2817feeb5525c6892',
@@ -7728,13 +7728,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-gltf.json':
             'sha256:e0175b7acdd05f83940259fc8265d1432747c70628ba8d94afd9cba5e1da4a14',
           'contributions/codec-obj.json':
-            'sha256:c5f19c5669efb1fc596a754046e330d0be7f81ff0c514b3620c8460e53b80655',
+            'sha256:7744addfc86387dcd20ab468f333fd0dedd764e49992b82713c5073a84d4c17e',
           'contributions/codec-ply.json':
             'sha256:ecba12a9628ed206786e6d7223f7776571502820d4632246fbb53a2d0e608806',
           'contributions/codec-stl.json':
             'sha256:b704c4981ff7317294205d407dcbc0e4a1bea3c5b2f350142d511fa8e2de4a91',
           'contributions/codec-uvm.json':
-            'sha256:c4bf0ed44a61a3e079d00cb6f2620ebf18239dc5b7e5e86830b02fbc4b495e0e',
+            'sha256:b8a85a346c898298ae1a7bf8636677de2229bf0438270102b847bf9bbf89d25e',
           'package.json': 'sha256:3cb0c7419339216558f58910b05411cd6d22a802a5d64ad127bd3396dcd68aa4',
           'src/dae/codec.js':
             'sha256:c4803946e94575a6dabbcf450462deb1f09fb8aec105c4a8fa4164009eb49e74',
@@ -7743,9 +7743,9 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/formats/gltf/geometry.js':
             'sha256:84740c188cdc88ccf099f4f4c953a083f83273e8d882673797b192e060fc0a37',
           'src/formats/obj/codec.js':
-            'sha256:d8da6b21f0acbb7741fa0dd0b8addd913037c235a528d4dade7d4b295e1ca0a9',
+            'sha256:e29d3e52b1eb726dbcdc819208ae75cbecc61c9e747567114c7d809b82773d45',
           'src/formats/uvm/codec.js':
-            'sha256:5f342ed52bfcb5904f4ba643c3f8a2b51f6e1a68fde196fa572164227e28c180',
+            'sha256:57d558812ceffb07225aaafb668b43bbef653399f07a27515523a925f12b9644',
           'src/index.js': 'sha256:80f55312f768fe6d50596fe51a929c3334fd08828785b47774af6e6445e87dc8',
           'src/linked.js':
             'sha256:9e1b771fa1fd737a4848bfa43db100874d4ac70c93681281ff00772fd8d9fe34',
@@ -7755,7 +7755,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:817a71e7cfa1cae95730622521039a5c9ccc0a69a37ad3a428e45247abfa8f2c',
         },
         inventoryRecordId:
-          'artifact:sha256:659d60712f53cbbaf5ae3a257fb1a780aaf132ea8565d367123ff29d9c28a38c',
+          'artifact:sha256:98c1ad335c29779133109c65a61c9a9bc80ba3fd5ef51f76b04725d60609437c',
       },
       artifactRoot: 'extensions/models/',
       containers: {
@@ -7808,7 +7808,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-obj.json',
-          'sha256:c5f19c5669efb1fc596a754046e330d0be7f81ff0c514b3620c8460e53b80655',
+          'sha256:7744addfc86387dcd20ab468f333fd0dedd764e49992b82713c5073a84d4c17e',
         ],
         [
           'contributions/codec-ply.json',
@@ -7820,7 +7820,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-uvm.json',
-          'sha256:c4bf0ed44a61a3e079d00cb6f2620ebf18239dc5b7e5e86830b02fbc4b495e0e',
+          'sha256:b8a85a346c898298ae1a7bf8636677de2229bf0438270102b847bf9bbf89d25e',
         ],
       ],
       documents: [
@@ -8216,6 +8216,14 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                   major: 1,
                 },
                 {
+                  contract: 'common.view/model-material-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/model-resource-refs-source',
+                  major: 1,
+                },
+                {
                   contract: 'common.view/tree-data-source',
                   major: 1,
                 },
@@ -8597,6 +8605,14 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               publishesDataSources: [
                 {
                   contract: 'common.view/model-scene-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/model-collision-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/model-material-source',
                   major: 1,
                 },
                 {

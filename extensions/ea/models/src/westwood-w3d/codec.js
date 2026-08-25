@@ -7,7 +7,12 @@
 
 import {
   createInspectionCodec,
+  createModelAnimationSource,
+  createModelCollisionSource,
+  createModelResourceRefsSource,
   createModelSceneSource,
+  createModelSkeletonSource,
+  createProjectionReceipt,
   createTreeDataSource,
 } from '@modkitx-x3/codec-kit'
 import {
@@ -424,6 +429,108 @@ function sceneNodes(hierarchy, hlod, meshes, total) {
   return { nodes, boundMeshes }
 }
 
+/**
+ * The axes the projection publishes, after `toUvm` turns the file's Z-up space into the UV one.
+ *
+ * A conversion happened, so the geometry plane is `normalized` rather than `preserved`: source +Z
+ * becomes +Y and source +Y becomes −Z, which is what `[x, z, -y]` does. Stating it is what lets an
+ * exporter reproduce the mapping instead of re-deriving it from the numbers.
+ */
+const W3D_BASIS = Object.freeze({
+  handedness: 'right',
+  upAxis: 'y',
+  forwardAxis: '-z',
+  // W3D stores bare floats and names no physical unit; asserting metres would be an invention
+  unit: 'source-unit',
+})
+
+/**
+ * The four facet contracts this reader can honestly fill (block 12, slice 12-1).
+ *
+ * Materials are deliberately absent: a W3D primitive carries a `materialId` slot, but the
+ * VERTEX_MATERIAL chunks that name those slots are not decoded, so a material source here would be
+ * a list of ids and nothing else. An absent facet is absent.
+ */
+function modelFacets(decoded, structure, collisionBoxes) {
+  const hierarchy = structure.hierarchy
+  const subObjects = structure.hlod?.subObjects ?? []
+  const textures = [...new Set(decoded.meshes.flatMap(mesh => mesh.textures))]
+  const facets = {}
+  if (textures.length > 0) {
+    facets['common.view/model-resource-refs-source'] = createModelResourceRefsSource({
+      // the texture requirement is `many`, so a bound file cannot be attributed to one name
+      // without reading the resolved URI; the receipt records the companions by binding id
+      references: textures.map(value => ({
+        id: value,
+        role: 'texture',
+        provenance: 'reference-only',
+      })),
+    })
+  }
+  // an empty facet is not a facet: a hierarchy with no HLOD sub-object binds no bone to a part
+  if (subObjects.length > 0) {
+    facets['common.view/model-skeleton-source'] = createModelSkeletonSource({
+      bindings: subObjects.map(sub => {
+        const pivot = hierarchy?.pivots[sub.boneIndex]
+        return {
+          partId: sub.name,
+          boneIndex: sub.boneIndex,
+          // the HLOD names the bone by index only; without the pivot table there is no name
+          boneName: pivot?.name ?? null,
+          provenance: pivot === undefined ? 'absent' : 'direct',
+          ...(hierarchy === undefined ? {} : { hierarchyId: hierarchy.name }),
+        }
+      }),
+      hierarchies: hierarchy === undefined ? 0 : 1,
+    })
+  }
+  if (structure.animations.length > 0) {
+    facets['common.view/model-animation-source'] = createModelAnimationSource({
+      clips: structure.animations.map((item, index) => ({
+        id: `w3d-animation-${index}`,
+        name: item.name,
+        // one frame is a rest pose, not a track
+        kind: item.frames > 1 ? 'animation' : 'rest-pose',
+        provenance: 'direct',
+        frames: item.frames,
+        frameRate: item.frameRate,
+        hierarchyId: item.hierarchyName,
+        channels: item.channels.map(channel => ({
+          target: `pivot-${channel.pivot}`,
+          kind: channel.kind,
+          ...(channel.axis === undefined ? {} : { axis: channel.axis }),
+          firstFrame: channel.firstFrame,
+          lastFrame: channel.lastFrame,
+        })),
+        unsupportedChannels: item.unsupportedChannels,
+      })),
+    })
+  }
+  const collisionMeshes = decoded.meshes.filter(mesh => mesh.roles.collision)
+  if (collisionMeshes.length > 0 || collisionBoxes.length > 0) {
+    facets['common.view/model-collision-source'] = createModelCollisionSource({
+      volumes: [
+        ...collisionMeshes.map(mesh => ({
+          id: mesh.id,
+          kind: 'mesh',
+          origin: 'mesh-role',
+          meshId: mesh.id,
+          types: mesh.roles.collisionTypes,
+        })),
+        // ids are positional: a BOX chunk's name is not unique in the format, and two volumes
+        // sharing an id would be worse than a name a consumer can find in the tree source
+        ...collisionBoxes.map((box, index) => ({
+          id: `w3d-box-${index}`,
+          kind: 'box',
+          origin: 'declared-volume',
+          types: box.collisionTypes,
+        })),
+      ],
+    })
+  }
+  return facets
+}
+
 const definition = Object.freeze({
   id: ID,
   version: '1.0.0',
@@ -512,6 +619,11 @@ const definition = Object.freeze({
           (sum, mesh) => sum + mesh.primitive.indices.length / 3,
           0,
         ),
+        /*
+         * Superseded by the four facet contracts published beside the base scene source. Kept for
+         * one slice so existing readouts keep working while the authority moves; scheduled for
+         * removal with the block-12 slice 12-2 consumers.
+         */
         textures,
         textureBindings: bound.map(item => ({
           bindingId: item.bindingId,
@@ -621,8 +733,86 @@ const definition = Object.freeze({
         },
         { id: 'content.binary', parameters: { bytes: String(bytes.byteLength) } },
       ],
+      projectionReceipt: createProjectionReceipt({
+        adapter: { id: ID, version: '1.0.0' },
+        subjectRevision: context.input.revisions.revision,
+        companions: [
+          {
+            requirementId: TEXTURE_REQUIREMENT,
+            role: 'texture',
+            state: bound.length > 0 ? 'bound' : 'absent',
+            ...(bound[0] === undefined ? {} : { bindingId: bound[0].bindingId }),
+          },
+        ],
+        basis: W3D_BASIS,
+        planes: [
+          {
+            planeId: 'geometry',
+            state: decoded.meshes.length > 0 ? 'normalized' : 'lost',
+            note:
+              decoded.meshes.length > 0
+                ? 'positions converted from the file’s Z-up space by [x, z, -y]'
+                : 'no MESH chunk in this dialect decoded to a vertex stream',
+          },
+          { planeId: 'structure', state: 'preserved', note: 'the chunk tree, verbatim' },
+          {
+            planeId: 'skeleton',
+            state: hierarchy === undefined ? 'lost' : 'preserved',
+            note:
+              hierarchy === undefined
+                ? 'no HIERARCHY chunk: an HLOD bone index has no name to resolve against'
+                : 'pivot names and HLOD bone indices, as the file states them',
+          },
+          {
+            planeId: 'animation',
+            state: decodedAnimations.length > 0 ? 'preserved' : 'lost',
+            note: `${animations.length} animation chunk(s), ${decodedAnimations.length} with decoded channels`,
+          },
+          {
+            planeId: 'collision',
+            state: collisionMeshes.length > 0 || collisionBoxes.length > 0 ? 'preserved' : 'lost',
+            note: 'read from MESH_HEADER3 attribute bits and BOX chunks, never guessed from a name',
+          },
+          { planeId: 'resources', state: 'preserved', note: 'TEXTURE_NAME chunks, verbatim' },
+          { planeId: 'materials', state: 'lost', note: 'VERTEX_MATERIAL chunks are not decoded' },
+          ...(preserved.length > 0
+            ? [
+                {
+                  planeId: 'compressed-animation',
+                  state: 'preserved',
+                  note: `${preserved.length} COMPRESSED_ANIMATION chunk(s) left undecoded; their bytes stay readable through the byte-range source`,
+                },
+              ]
+            : []),
+          {
+            planeId: 'shaders-and-effects',
+            state: 'lost',
+            note: 'shader, particle and dazzle chunks are not executed or represented',
+          },
+        ],
+        evidence: [
+          {
+            kind: 'observed',
+            statement: `${all.length} chunk(s) walked, ${decoded.meshes.length} mesh(es) decoded, ${state.trailingBytes} trailing byte(s)`,
+            bytesRead: BigInt(bytes.byteLength),
+          },
+          {
+            kind: 'declared',
+            statement:
+              'W3D authors in a right-handed Z-up space; the projection rotates it into the UV Y-up space',
+            source: 'westwood-w3d-format-convention',
+          },
+          ...issues.map(issue => ({
+            kind: 'diagnostic',
+            code: `x3.w3d/${issue.code.replace('westwood-w3d-', '')}`,
+            message: issue.message,
+          })),
+        ],
+        confidence: decoded.meshes.length > 0 ? 'high' : 'partial',
+      }),
       dataSources: {
         'common.view/model-scene-source': modelSource(all.length, decoded, structure),
+        ...modelFacets(decoded, structure, collisionBoxes),
         'common.view/tree-data-source': createTreeDataSource({
           kind: 'model',
           label: 'Westwood W3D',

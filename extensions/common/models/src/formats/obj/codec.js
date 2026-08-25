@@ -1,8 +1,22 @@
 import {
   createInspectionCodec,
+  createModelMaterialSource,
+  createModelResourceRefsSource,
   createModelSceneSource,
+  createProjectionReceipt,
   createTreeDataSource,
 } from '@modkitx-x3/codec-kit'
+
+/**
+ * OBJ authors in a right-handed Y-up space and the reader copies coordinates verbatim, so the
+ * projected space is the file's own — `preserved`, not `normalized`. OBJ states no physical unit.
+ */
+const OBJ_BASIS = Object.freeze({
+  handedness: 'right',
+  upAxis: 'y',
+  forwardAxis: '-z',
+  unit: 'source-unit',
+})
 
 const decoder = new TextDecoder('utf-8', { fatal: true })
 
@@ -269,9 +283,69 @@ const definition = Object.freeze({
         { id: 'content.text', parameters: { encoding: 'utf-8' } },
       ],
       text: true,
+      projectionReceipt: createProjectionReceipt({
+        adapter: { id: 'org.modkitx/model-obj', version: '1.0.0' },
+        subjectRevision: context.input.revisions.revision,
+        companions: [],
+        basis: OBJ_BASIS,
+        planes: [
+          { planeId: 'geometry', state: 'preserved', note: 'positions copied without conversion' },
+          {
+            planeId: 'materials',
+            state: obj.materials.length > 0 ? 'preserved' : 'lost',
+            note: `${obj.materials.length} usemtl name(s); the definitions live in the ${obj.materialLibraries.length} named library file(s), which this codec does not open`,
+          },
+          {
+            planeId: 'resources',
+            state: obj.materialLibraries.length > 0 ? 'preserved' : 'lost',
+            note: 'mtllib names, exactly as the document spells them',
+          },
+          { planeId: 'skeleton', state: 'lost', note: 'OBJ carries no hierarchy' },
+          { planeId: 'animation', state: 'lost', note: 'OBJ carries no animation' },
+        ],
+        evidence: [
+          {
+            kind: 'observed',
+            statement: `${obj.statements} statement(s), ${obj.positions} vertex/vertices, ${obj.triangles} triangle(s)`,
+            bytesRead: BigInt(bytes.byteLength),
+          },
+          {
+            kind: 'declared',
+            statement: 'Wavefront OBJ authors in a right-handed Y-up space with -Z forward',
+            source: 'wavefront-obj-convention',
+          },
+        ],
+        confidence: 'exact',
+      }),
       dataSources: {
         'common.view/tree-data-source': tree,
         'common.view/model-scene-source': model,
+        /*
+         * The two facet contracts an OBJ can fill. `materials` carries the `usemtl` names as their
+         * own identity — OBJ primitives have no material slot to join against, so the name is the
+         * only identity there is — and `libraryId` stays absent because `usemtl` never says which
+         * `mtllib` a name came from. Guessing "the first one" would be a fabricated provenance.
+         */
+        ...(obj.materials.length === 0
+          ? {}
+          : {
+              'common.view/model-material-source': createModelMaterialSource({
+                materials: obj.materials.map(name => ({ id: name, name })),
+                libraries: obj.materialLibraries.length,
+              }),
+            }),
+        ...(obj.materialLibraries.length === 0
+          ? {}
+          : {
+              'common.view/model-resource-refs-source': createModelResourceRefsSource({
+                references: obj.materialLibraries.map(name => ({
+                  id: name,
+                  role: 'sidecar',
+                  // this codec declares no companion requirement at all, so nothing is ever bound
+                  provenance: 'reference-only',
+                })),
+              }),
+            }),
       },
       unsupportedFeatures: obj.materialLibraries.length > 0 ? ['material-library-resolution'] : [],
     }

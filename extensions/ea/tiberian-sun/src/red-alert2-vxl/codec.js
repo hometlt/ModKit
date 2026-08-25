@@ -7,7 +7,9 @@
 
 import {
   createInspectionCodec,
+  createModelAnimationSource,
   createModelSceneSource,
+  createProjectionReceipt,
   createTreeDataSource,
 } from '@modkitx-x3/codec-kit'
 import { bindSections, hvaMatrix, parseHva } from './hva.js'
@@ -597,6 +599,62 @@ function hvaSectionFacts(model, companion) {
   return { binding, diagnostics }
 }
 
+/**
+ * The axes the surface mesh is published in, after `toUvm` maps `[x, y, z]` to `[y, z, x]`.
+ *
+ * Forward is `+z`, not the `-z` a glTF-shaped source would use: VXL's own forward axis is +X, and
+ * this mapping sends it to +Z. Writing down what the code does beats a convention borrowed from a
+ * different format.
+ */
+const VXL_BASIS = Object.freeze({
+  handedness: 'right',
+  upAxis: 'y',
+  forwardAxis: '+z',
+  unit: 'source-unit',
+  sourceUnit: 'vxl-voxel',
+})
+
+/**
+ * The one facet contract a VXL can honestly fill: the animation the HVA sidecar carries.
+ *
+ * The sidecar is a `zero-or-one` requirement, so a bound file can only be *the* HVA — which is what
+ * makes `companion` provenance attributable here where the `many` texture requirements of the other
+ * model codecs are not. A single-frame HVA stays a `rest-pose`: it binds section transforms without
+ * being a track, and calling it an animation would report an identity pose as motion.
+ */
+function modelFacets(model, companion, facts) {
+  if (companion.hva === null) return {}
+  const channels = facts.binding.flatMap((item, index) =>
+    item.provenance === 'companion'
+      ? [
+          {
+            target: model.sections[index]?.name ?? String(index),
+            kind: 'transform',
+            firstFrame: 0,
+            lastFrame: Math.max(0, companion.hva.frames - 1),
+          },
+        ]
+      : [],
+  )
+  if (channels.length === 0) return {}
+  return {
+    'common.view/model-animation-source': createModelAnimationSource({
+      clips: [
+        {
+          id: 'vxl-hva',
+          name: 'HVA section transforms',
+          kind: companion.hva.frames > 1 ? 'animation' : 'rest-pose',
+          provenance: 'companion',
+          frames: companion.hva.frames,
+          channels,
+          // sections the sidecar declares that this model does not name are stated, not dropped
+          unsupportedChannels: Math.max(0, companion.hva.sectionCount - channels.length),
+        },
+      ],
+    }),
+  }
+}
+
 const definition = Object.freeze({
   id: ID,
   version: '1.0.0',
@@ -734,8 +792,76 @@ const definition = Object.freeze({
           : []),
         { id: 'content.binary', parameters: { bytes: String(bytes.byteLength) } },
       ],
+      projectionReceipt: createProjectionReceipt({
+        adapter: { id: ID, version: '1.0.0' },
+        subjectRevision: context.input.revisions.revision,
+        companions: [
+          {
+            requirementId: HVA_REQUIREMENT,
+            role: 'hva',
+            state: companion.bindingId === null ? 'absent' : 'bound',
+            ...(companion.bindingId === null ? {} : { bindingId: companion.bindingId }),
+          },
+        ],
+        basis: VXL_BASIS,
+        planes: [
+          {
+            planeId: 'geometry',
+            state: geometry.meshes.length > 0 ? 'normalized' : 'lost',
+            note: `${voxelCount} voxel(s) turned into ${geometry.meshes.length} occlusion-aware surface mesh(es) in the UV axes`,
+          },
+          {
+            planeId: 'structure',
+            state: 'preserved',
+            note: `${model.sections.length} section(s) with their tailer transforms`,
+          },
+          {
+            planeId: 'animation',
+            state: companion.hva === null ? 'lost' : 'preserved',
+            note:
+              companion.hva === null
+                ? `no HVA bound (${companion.state}); section transforms over time live only in that sidecar`
+                : `${companion.hva.frames} frame(s), ${bound} of ${model.sections.length} section(s) bound by name`,
+          },
+          {
+            /*
+             * The lighting sidecars are the format's other half and neither is read. `lost` rather
+             * than `preserved`: nothing in this projection carries their bytes, so a consumer that
+             * needs remap colours must go back to the native files.
+             */
+            planeId: 'palette',
+            state: 'lost',
+            note: `PAL/VPL lighting sidecars are not resolved; the ${model.header.palettes} declared palette(s) and the remap range ${model.header.startPaletteRemap}..${model.header.endPaletteRemap} are reported as numbers only`,
+          },
+          {
+            planeId: 'materials',
+            state: 'lost',
+            note: 'a voxel carries a palette index, and this reader does not turn indices into materials',
+          },
+        ],
+        evidence: [
+          {
+            kind: 'observed',
+            statement: `${model.sections.length} section(s), ${voxelCount} voxel(s), HVA ${companion.state}`,
+            bytesRead: BigInt(bytes.byteLength),
+          },
+          {
+            kind: 'declared',
+            statement:
+              'VXL authors +X forward with Z up; the projection maps [x, y, z] to [y, z, x]',
+            source: 'red-alert2-vxl-format-convention',
+          },
+          ...[...companion.diagnostics, ...facts.diagnostics].map(item => ({
+            kind: 'diagnostic',
+            code: item.code,
+            message: item.message,
+          })),
+        ],
+        confidence: geometry.meshes.length > 0 ? 'high' : 'partial',
+      }),
       dataSources: {
         'common.view/model-scene-source': modelSource(model, geometry, facts, animations),
+        ...modelFacets(model, companion, facts),
         'common.view/tree-data-source': createTreeDataSource({
           kind: 'model',
           label: 'Red Alert 2 VXL',
