@@ -253,6 +253,13 @@ write('conformance', 'schema-assertions.json', {
       expect: 'valid',
       note: 'a registered descriptor must satisfy the descriptor schema, so an incomplete descriptor cannot be registered by accident',
     },
+    {
+      document: 'semantic-scopes/texture-interchange-v1.json',
+      pointer: '',
+      schemaId: 'https://multiverse.engine/spec/semantic-scope-descriptor/1/schema.json',
+      expect: 'valid',
+      note: 'a candidate descriptor satisfies the same schema as a registered one: candidate says the scope is not a compatibility guarantee, not that it may be incomplete',
+    },
   ],
 })
 for (const name of fixtureNames) {

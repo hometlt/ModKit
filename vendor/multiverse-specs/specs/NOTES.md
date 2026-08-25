@@ -133,9 +133,23 @@ the contradiction rules a schema cannot express, orientation as a required field
 `levelCount`, cube squareness, sampler advice, and atlas regions that must lie inside their image.
 Seven of those rules are executable vectors rather than prose.
 
-**No UVT materializer exists**, in Modkit or in Multiverse. Plan item 17 asks for the schema, the
-fixtures and the validator before the operation, in that order, and the registry row says
-`schema-ready, no materializer` rather than implying a conversion nobody wrote.
+**The first UVT materializer arrived in Modkit block 12 slice 12-1**, after the schema, the fixtures
+and the validator, which is the order plan item 17 asks for. It covers one honest path — an
+uncompressed 8-bit RGBA container written from a decoded raster region, one level, one face, no
+array — and refuses a source whose colour space, alpha mode or orientation is `unknown` rather than
+defaulting one. Everything it cannot carry is enumerated in its `MaterializationReceipt`.
+
+Two things that materializer deliberately did **not** put in the profile. The source-pixel-format to
+`vkFormat` table stays a converter's decision: the schema leaves `vkFormat` unrestricted, and pinning
+a table here would make one runtime's decode path part of the format. And block-compressed
+passthrough stays open, because no reader in Modkit publishes GPU blocks as blocks — the DDS codec
+decodes to RGBA — so a passthrough would need a new live surface before it could need a profile.
+
+`texture-interchange-v1` was registered as a **candidate** scope alongside it, so a UVT
+`MaterializationReceipt` can name the scope it was taken under. Candidate rather than registered
+because two of its four facets — sampler and atlas — have no live publisher at all: a decoded region
+says nothing about how a runtime should bind it. Those two nulls are written down in the descriptor
+rather than papered over, and they are what a second texture family would have to fill.
 
 ## 8. Open items inherited, not resolved here
 

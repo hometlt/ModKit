@@ -1,7 +1,8 @@
 # UVT — Universal Verse Texture
 
-**Status:** conversion-grade profile, 2026-08-25 — schema, fixtures and executable vectors exist; no
-materializer is declared
+**Status:** conversion-grade profile with a first materializer, 2026-08-26 — schema, fixtures and
+executable vectors exist, and Modkit block 12 slice 12-1 declares a UVT/core materializer for the
+uncompressed 8-bit RGBA path (`common.uv/texture-materializer@1`)
 **Extension:** `.uvt.ktx2` (+ `.uvt.json`) · **Physical base:** KTX 2.0 profile
 **Media type:** standard `image/ktx2`; UVT conformance is metadata and validation, not a new MIME type
 **Schema:** [`schema/uvt.profile.v1.schema.json`](schema/uvt.profile.v1.schema.json) ·
@@ -17,9 +18,17 @@ produces `native representation + normalized UVT projection + explicit loss repo
 
 **What "conversion-grade" means here, and what it does not.** This document plus its schema and
 vectors are enough for two independent implementations to agree on what a conforming UVT projection
-*is*. They are not a claim that anything materializes one: no UVT materializer exists in Modkit or
-in Multiverse, and the registry says so. Plan item 17 requires the schema before the operation, in
-that order, and this is the schema.
+*is*. Plan item 17 required the schema before the operation, in that order, and this is the schema;
+the operation followed it in block 12 slice 12-1.
+
+**What the first materializer covers, and what it does not.** It writes an uncompressed 8-bit RGBA
+container from one decoded raster region: `vkFormat` is `VK_FORMAT_R8G8B8A8_SRGB` or `_UNORM`, one
+level, one face, no array, no supercompression. Mip chains, arrays, cubemaps, block-compressed
+passthrough and frame sequences are outside it, and a source that carries them records the
+difference in its `MaterializationReceipt` rather than losing it quietly. Which Vulkan format a
+converter picks for a given source is a converter's decision: this profile leaves `vkFormat`
+unrestricted on purpose, because pinning a table here would make one runtime's decode path part of
+the format.
 
 ## 1. The mapping is mandatory, not advisory
 

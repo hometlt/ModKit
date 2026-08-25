@@ -2,7 +2,7 @@
   "$comment": "The versioned SemanticScopeDescriptor registry owned by multiverse/specs (PLAN_MODKIT_MK3_FINAL_RU §2.6). Until a scope is registered here its name is not a release or compatibility guarantee.",
   "schemaVersion": "semantic-scope-registry-1",
   "owner": "multiverse/specs",
-  "updatedOn": "2026-08-25",
+  "updatedOn": "2026-08-26",
   "statuses": {
     "registered": "the descriptor is complete, has conformance vectors and may be named in a release or compatibility statement",
     "candidate": "a pinned descriptor that exists for admission-only reports; it must not be used as a compatibility guarantee",
@@ -18,6 +18,16 @@
       "vectors": "../conformance/model-interchange-v1/vectors.json",
       "registeredBy": "block 11 slice 11C0",
       "note": "computable today from common.view/model-scene-source@1 and from a UVM/core 1.0 artifact"
+    },
+    {
+      "scopeId": "texture-interchange-v1",
+      "status": "candidate",
+      "version": "1.0.0",
+      "plane": "presentation",
+      "descriptor": "texture-interchange-v1.json",
+      "vectors": null,
+      "registeredBy": "block 12 slice 12-1, alongside the first UVT materializer",
+      "note": "candidate, not registered: two of its four facets have no live publisher (a decoded raster region says nothing about sampler state or atlas regions), and there is no second independent texture path to write vectors against. It exists so a UVT MaterializationReceipt can name the scope it was taken under; its hashes are admission-only evidence."
     },
     {
       "scopeId": "world-interchange-v1",

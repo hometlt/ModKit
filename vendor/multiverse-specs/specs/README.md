@@ -120,6 +120,7 @@ is in this repository and executed by `uv-conformance`.
 | Scope                       | Status     | Meaning                                                                    |
 | --------------------------- | ---------- | -------------------------------------------------------------------------- |
 | `model-interchange-v1`      | registered | the model plane a live projection and a reopened UVM artifact must reproduce exactly |
+| `texture-interchange-v1`    | candidate  | the texture plane a live raster projection and a reopened UVT projection must reproduce; admission-only, because two of its four facets have no live publisher |
 | `world-interchange-v1`      | reserved   | id only; block 12 prepares the candidate, block 18 freezes it              |
 | `definition-interchange-v1` | reserved   | id only; block 23                                                          |
 

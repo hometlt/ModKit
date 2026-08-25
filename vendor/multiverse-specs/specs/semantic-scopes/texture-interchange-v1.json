@@ -1,0 +1,181 @@
+{
+  "$comment": "Candidate SemanticScopeDescriptor. Normative text: SPEC_SEMANTIC_SCOPE_DESCRIPTOR.md; the profile it projects: ../texture/SPEC_UVT.md. Status is `candidate`: this descriptor exists so a UVT materialization can name the scope its receipt was taken under, and its hashes are admission-only evidence. It is not a release or compatibility guarantee, and it carries no conformance vectors yet — the second independent texture path that would justify them does not exist.",
+  "schemaVersion": "semantic-scope-descriptor-1",
+  "scopeId": "texture-interchange-v1",
+  "version": "1.0.0",
+  "status": "candidate",
+  "plane": "presentation",
+  "owner": "multiverse/specs",
+  "registeredOn": "2026-08-26",
+  "summary": "The texture semantic plane a live raster projection and a materialized-then-reopened UVT projection must reproduce exactly: container topology, colour and alpha semantics, orientation and the sampler a runtime should bind.",
+  "hash": {
+    "algorithm": "sha256",
+    "canonicalForm": "uv.canonical/typed-form@1",
+    "envelopeSchemaVersion": 1,
+    "domain": "uv.semantic-scope/texture-interchange-v1",
+    "output": "algorithm-qualified",
+    "envelope": {
+      "scope": { "id": "texture-interchange-v1", "version": "1.0.0" },
+      "facets": "ordered [facetKey, value] pairs for every present facet",
+      "absentFacets": "ordered facetKey list for every optional facet the publisher did not publish"
+    },
+    "facetKey": "<facetId>@<version>"
+  },
+  "numeric": {
+    "model": "IEEE-754 binary64 only; the canonical form encodes every number as its 16 hex-digit big-endian bit pattern, so integers and reals share one representation",
+    "float32Widening": "float32 source values widen to binary64 exactly; no rounding, no requantisation. Only atlas pivots are non-integral in this scope",
+    "negativeZero": "-0 normalises to +0 before encoding",
+    "nonFinite": "NaN, +Infinity and -Infinity are rejected; a projection that would produce one is a diagnostic, never a hash",
+    "comparison": "equality is byte equality of the canonical encoding; no epsilon and no tolerance exists in this scope"
+  },
+  "missingSemantics": {
+    "absentFacet": "an optional facet the publisher did not publish; it is named in absentFacets and contributes its key, never a fabricated value",
+    "absentKey": "forbidden inside a facet value: every key declared by the facet is always present",
+    "null": "used for exactly one member, `swizzle`, which a container may genuinely not carry. A KTXswizzle entry that is absent is null and never an invented «rgba»",
+    "empty": "an empty atlas region list is not representable: a projection with no regions omits the atlas facet entirely, because the profile requires at least one region wherever the block exists",
+    "unknown": "this scope defines no unknown sentinel. A source whose colour space, alpha mode or orientation is unknown cannot be projected at all — the profile admits linear|srgb, opaque|straight|premultiplied and rd|ru, and guessing any of the three changes every pixel's meaning"
+  },
+  "ordering": {
+    "facets": "by facetKey in UTF-8 byte order",
+    "absentFacets": "by facetKey in UTF-8 byte order",
+    "objectKeys": "by UTF-8 byte order of the key, applied by the canonical form itself",
+    "atlasRegions": "by region id in UTF-8 byte order; ids are unique within a projection",
+    "sequences": "a region's x/y/width/height and its pivot keep their declared component order: they are coordinates, not a set"
+  },
+  "resourceClosure": {
+    "policy": "no-closure: a UVT projection is a single self-contained container plus its sidecar",
+    "modes": {
+      "logical": "not used by this scope; a texture projection references nothing outside its own container, so there is no logical identity to carry",
+      "content-qualified": "not used by this scope; the artifact digest of the container is the receipt's business, not a facet's"
+    },
+    "modeIsHashed": true,
+    "modeIsHashedRationale": "stated for schema conformity; this scope publishes no closure facet at all, so no mode can be selected and none can be confused with another",
+    "digestForm": "<algorithm>:<lowercase hex>; a bare hex string is rejected",
+    "acceptedAlgorithms": ["sha256"],
+    "roles": ["container"]
+  },
+  "facets": [
+    {
+      "facetId": "uv.texture/container",
+      "version": 1,
+      "requirement": "required",
+      "summary": "The KTX 2.0 header fields the UVT sidecar copies verbatim, never normalised.",
+      "keys": {
+        "vkFormat": "integer >= 0, the container's own header value",
+        "pixelWidth": "integer >= 1",
+        "pixelHeight": "integer >= 1",
+        "pixelDepth": "integer, 0 for the 2D and array/cube topologies this profile admits",
+        "layerCount": "integer >= 0, 0 for a plain image; copied verbatim rather than normalised to 1",
+        "faceCount": "1 or 6; 6 requires pixelWidth === pixelHeight",
+        "levelCount": "integer >= 1; KTX2 encodes «generate mips at load» as 0 and a normalized projection states what it contains",
+        "supercompressionScheme": "0 none, 1 BasisLZ, 2 Zstandard, 3 ZLIB"
+      },
+      "binding": {
+        "live": {
+          "contract": "common.view/raster-image-source",
+          "major": 1,
+          "members": ["info()"],
+          "note": "width/height/depth/layers/faces/mipLevels of RasterImageInfo, with layerCount carrying the container's 0-for-non-array convention rather than the source's 1"
+        },
+        "artifact": {
+          "profile": "UVT/core@1.0",
+          "note": "the eight header fields of the KTX 2.0 container, read back from the file itself"
+        }
+      }
+    },
+    {
+      "facetId": "uv.texture/color",
+      "version": 1,
+      "requirement": "required",
+      "summary": "Colour, transfer, alpha and orientation semantics, which a runtime cannot recover from the pixels.",
+      "keys": {
+        "transferFunction": "linear | srgb",
+        "primaries": "bt709 | unspecified",
+        "premultipliedAlpha": "boolean, the Data Format Descriptor flag",
+        "alphaMode": "opaque | straight | premultiplied; premultiplied requires premultipliedAlpha true and opaque forbids it",
+        "orientation": "rd | ru, KTXorientation in S-then-T form",
+        "swizzle": "four characters from rgba01, or null when the container carries no KTXswizzle entry"
+      },
+      "binding": {
+        "live": {
+          "contract": "common.view/raster-image-source",
+          "major": 1,
+          "members": ["info()"],
+          "note": "colorSpace maps to transferFunction and primaries, alphaMode maps to alphaMode and premultipliedAlpha, orientation maps top-left to rd and bottom-left to ru. `unknown` is not projectable in any of the three"
+        },
+        "artifact": {
+          "profile": "UVT/core@1.0",
+          "note": "the Data Format Descriptor's transfer function and alpha-premultiplied flag, the KTXorientation and KTXswizzle key/value entries, and the sidecar's own alphaMode"
+        }
+      }
+    },
+    {
+      "facetId": "uv.texture/sampler",
+      "version": 1,
+      "requirement": "required",
+      "summary": "How a runtime should bind the texture. Advice the projection carries, required so no consumer has to guess.",
+      "keys": {
+        "minFilter": "nearest | linear",
+        "magFilter": "nearest | linear",
+        "mipFilter": "none | nearest | linear; anything but none requires levelCount > 1",
+        "wrapS": "repeat | clamp-to-edge | mirrored-repeat",
+        "wrapT": "repeat | clamp-to-edge | mirrored-repeat"
+      },
+      "binding": {
+        "live": {
+          "contract": null,
+          "note": "no live raster contract publishes sampler state today: a decoded region says nothing about how a runtime should bind it. A projector therefore supplies the sampler, and the receipt records that it did — this null is why the scope is a candidate rather than registered"
+        },
+        "artifact": {
+          "profile": "UVT/core@1.0",
+          "note": "the sidecar's sampler block, which the profile requires"
+        }
+      }
+    },
+    {
+      "facetId": "uv.texture/atlas",
+      "version": 1,
+      "requirement": "optional",
+      "summary": "Named regions of the container that mean something on their own, with optional pivots.",
+      "keys": {
+        "regions": "array of { id, x, y, width, height, pivot: [number, number] | null }, ordered by id, each lying inside pixelWidth x pixelHeight"
+      },
+      "presenceRule": "present only when the projection declares at least one region; an atlas with no region is the absent facet, not an empty one",
+      "binding": {
+        "live": {
+          "contract": null,
+          "note": "no live raster contract publishes atlas regions today; a sprite sheet is a UV-level fact a projector supplies, and the absence of a publisher is recorded here rather than hidden"
+        },
+        "artifact": {
+          "profile": "UVT/core@1.0",
+          "note": "the sidecar's atlas.regions array"
+        }
+      }
+    }
+  ],
+  "bindings": {
+    "liveBaseContract": {
+      "contract": "common.view/raster-image-source",
+      "major": 1,
+      "maturity": "admitted",
+      "note": "the base contract the container and colour facets are computable from today, unchanged. The scope adds no member to it."
+    },
+    "artifactProfile": {
+      "profile": "UVT/core",
+      "version": "1.0",
+      "marker": "a KTX 2.0 container plus a `.uvt.json` sidecar whose `uv` block is { format: UVT, version: 1.0 }",
+      "mandatoryMapping": "every field of the sidecar's ktx2 block is a verbatim copy of a value that exists in the container; a sidecar that contradicts its container is a defect, not a preference (SPEC_UVT §1)",
+      "levelData": "level 0 only in this version: the profile carries a mip chain, and a projection built from one decoded region has one level. A source with more levels records the difference in its MaterializationReceipt"
+    },
+    "notFrozenHere": [
+      "the pixels: this scope hashes the semantics a runtime needs in order to bind a texture correctly, not the image content. Two projections that agree on every facet may still hold different pictures, and the container's artifactCanonicalDigest is what distinguishes them.",
+      "the source-pixel-format to vkFormat conversion table: which Vulkan format a converter chooses for a given decoded region is a conversion decision belonging to that converter, and the profile deliberately leaves vkFormat unrestricted.",
+      "palette-indexed sources, animated frame sequences, per-product transcoding targets, 3D volume topology and the wider Khronos transfer set — each named in ../NOTES.md with the reason it is not specified yet."
+    ]
+  },
+  "compatibility": {
+    "minorVersions": "additive only: a new optional facet, a new accepted digest algorithm or a new enum value. A 1.0 consumer keeps computing 1.0 hashes and must refuse to compare them with a hash produced under a different scope version.",
+    "majorVersions": "may remove or redefine a facet. A consumer refuses a major it does not implement rather than guessing.",
+    "hashComparability": "two hashes are comparable only when scope id, scope version, the present facet set and the absent facet set all match. A candidate scope's hashes are admission-only evidence and are never a release compatibility claim."
+  }
+}

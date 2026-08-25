@@ -3,27 +3,27 @@
   "schemaVersion": "multiverse-specs-pin-1",
   "source": {
     "repository": "multiverse (sibling repository)",
-    "commit": "911abd8d1e3c358f561caff173d4007f21e717c5",
-    "subject": "specs: поднять UVT из заглушки до conversion-grade профиля",
-    "committedOn": "2026-08-25T21:57:09+04:00"
+    "commit": "6b65eb6a39b95f2aa320546e369a1dec914308b7",
+    "subject": "specs: candidate-scope texture-interchange-v1 и статус UVT после первого материализатора",
+    "committedOn": "2026-08-26T00:21:55+04:00"
   },
   "generator": "scripts/specs-pin.mjs",
   "generatedFrom": "git objects, not the sibling working tree",
   "prefix": "specs/",
   "counts": {
-    "files": 46,
-    "bytes": 439179
+    "files": 48,
+    "bytes": 466939
   },
   "files": [
     {
       "path": "specs/NOTES.md",
-      "bytes": 13526,
-      "digest": "sha256:a9b9987c153b3fd589d5cdf96a66c8e6315ba763859ab612117f46ee17f5c7aa"
+      "bytes": 14715,
+      "digest": "sha256:a3db38849e7b9c8d7ddcf78e28086b050cff925f0511b8ec03d55d597aa3236a"
     },
     {
       "path": "specs/README.md",
-      "bytes": 11600,
-      "digest": "sha256:d02134cc5ca59f198a4ac560f408d033af381418874039f1c2f0a41ec7f85be5"
+      "bytes": 11806,
+      "digest": "sha256:7e6343071bf8613e9bc65bfc83c82e30167692d54b82727b2dce662c1eb447c8"
     },
     {
       "path": "specs/conformance/canonical-form/vectors.json",
@@ -37,8 +37,8 @@
     },
     {
       "path": "specs/conformance/schema-assertions.json",
-      "bytes": 5470,
-      "digest": "sha256:eaa6b508f20d5b7d31b60a19834e9317a61379bdac5ee1e2b437f4b8db1311b5"
+      "bytes": 5861,
+      "digest": "sha256:fb610fe465aafc2094b2826782d7ab7042a86715c53159061d415e266ab5e7d7"
     },
     {
       "path": "specs/conformance/uvm-core/vectors.json",
@@ -47,8 +47,8 @@
     },
     {
       "path": "specs/conformance/uvt/vectors.json",
-      "bytes": 4240,
-      "digest": "sha256:7b72738f2a8341501fb5abc552691595e4f4c32f4aea88b688efad11e01de319"
+      "bytes": 4336,
+      "digest": "sha256:236af8f29d480a5891707c84cfeb630d34fae6e5b40e375690f208e53858f455"
     },
     {
       "path": "specs/foundation/SPEC_UV_CANONICALIZATION.md",
@@ -177,8 +177,8 @@
     },
     {
       "path": "specs/semantic-scopes/registry.json",
-      "bytes": 1790,
-      "digest": "sha256:cd66a175ae17a6c22a73858b8f412eefbab5a134b79db92b9caab8dc28f94c0a"
+      "bytes": 2450,
+      "digest": "sha256:4fc2cbe75d52522a86e4ee7e5325a92959b6ced0a570170103cdbc25a006abd8"
     },
     {
       "path": "specs/semantic-scopes/semantic-scope-descriptor.v1.schema.json",
@@ -186,9 +186,14 @@
       "digest": "sha256:a005c1c92dc409b8b2ca737d732135d4374ce6760cb901cbd69011f6f259d263"
     },
     {
+      "path": "specs/semantic-scopes/texture-interchange-v1.json",
+      "bytes": 11387,
+      "digest": "sha256:24dfc03588275caa123bdf84ec81c2ce59136fd43eace09bfa995803bfa4b1ec"
+    },
+    {
       "path": "specs/texture/SPEC_UVT.md",
-      "bytes": 8110,
-      "digest": "sha256:00123428f34c7b5721d490504a0cef7fe736112eacfbeacae320d3c8b672f7da"
+      "bytes": 8847,
+      "digest": "sha256:69fb9ae3b1c93090ba4aa2ce1abdb3bbf4e5d8374f497226e73bb9f496055fb1"
     },
     {
       "path": "specs/texture/fixtures/uvt-2d-srgb.uvt.json",
@@ -221,14 +226,19 @@
       "digest": "sha256:3dec7ee7fcfd6d21ccbf687d1de219c7d0983bd88c837a7ca778d801e6022b86"
     },
     {
+      "path": "specs/tools/texture-interchange.mjs",
+      "bytes": 12712,
+      "digest": "sha256:4239f13f5a0a2278ec9eef75c5d9b3e3d010f67369cd45baf409fdce423af43c"
+    },
+    {
       "path": "specs/tools/uv-canonical.mjs",
       "bytes": 4708,
       "digest": "sha256:989d23abb84398be17b6a2e0fc361689996057beed95e876e86acb4da431a1e6"
     },
     {
       "path": "specs/tools/uv-conformance-emit.mjs",
-      "bytes": 25470,
-      "digest": "sha256:a4a6555818d9df21da2493edf20b9f5f6f4fd1b7ecd43f257d79ed7a1ca054f8"
+      "bytes": 25852,
+      "digest": "sha256:d58a4a9c5eab659a6734b15f1a62b1b1d4cb13eeba37dea70e1d0b8305c7c8eb"
     },
     {
       "path": "specs/tools/uv-conformance.mjs",

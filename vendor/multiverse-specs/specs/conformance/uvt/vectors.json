@@ -4,7 +4,7 @@
   "suite": "uvt",
   "profile": "UVT/core@1.0",
   "spec": "../../texture/SPEC_UVT.md",
-  "note": "No UVT materializer exists in Modkit or Multiverse. Plan item 17 requires the schema, the fixtures and the validator before the operation, and this suite is that gate rather than evidence of a conversion.",
+  "note": "Plan item 17 required the schema, the fixtures and the validator before the operation, and this suite is that gate. Block 12 slice 12-1 added the first materializer (uncompressed 8-bit RGBA, one level) on the other side of it; these vectors still test the profile rules, never a particular converter.",
   "vectors": [
     {
       "id": "uvt-2d-srgb/accept",
