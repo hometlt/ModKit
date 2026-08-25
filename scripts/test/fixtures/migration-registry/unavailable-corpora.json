@@ -1,0 +1,31 @@
+{
+  "$comment": "Fixture corpora readiness: one required corpus is published as unavailable.",
+  "schemaVersion": "corpora-readiness-1",
+  "oracleLock": "migration/oracle/legacy-oracle.lock.json",
+  "statusVocabulary": [
+    "available",
+    "owner-action-required",
+    "legal-alternative-ready",
+    "unavailable"
+  ],
+  "counts": {
+    "corpora": 1,
+    "available": 0,
+    "ownerActionRequired": 0,
+    "legalAlternativeReady": 0,
+    "unavailable": 1
+  },
+  "corpora": [
+    {
+      "id": "demo",
+      "displayName": "Demo",
+      "verticalBlock": 5,
+      "status": "unavailable",
+      "environmentVariables": ["MODKITX_DEMO_ROOT"],
+      "evidence": "Фикстура: корпус недоступен и не имеет legal alternative.",
+      "ownerAction": "Фикстура: предоставить корпус до начала вертикали.",
+      "legalAlternative": null,
+      "capabilityIds": []
+    }
+  ]
+}

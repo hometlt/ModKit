@@ -28,6 +28,7 @@ capabilities:
     obligation: 'legacy-required'
     owner: ''
     plannedBlock: 12
+    dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/demo'
     legacyEvidence:
