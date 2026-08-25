@@ -3,16 +3,16 @@
   "schemaVersion": "multiverse-specs-pin-1",
   "source": {
     "repository": "multiverse (sibling repository)",
-    "commit": "cf6eea1888f5b599901427f083e39424c079e620",
-    "subject": "specs: реестр форматов, честная матрица зрелости и заметки переноса",
-    "committedOn": "2026-08-25T20:12:40+04:00"
+    "commit": "4ec94941cfdb87846785426a7b3ffb326c010fb5",
+    "subject": "specs: эмиттер векторов с опциональным differential-оракулом",
+    "committedOn": "2026-08-25T20:31:52+04:00"
   },
   "generator": "scripts/specs-pin.mjs",
   "generatedFrom": "git objects, not the sibling working tree",
   "prefix": "specs/",
   "counts": {
-    "files": 38,
-    "bytes": 381587
+    "files": 39,
+    "bytes": 407248
   },
   "files": [
     {
@@ -22,8 +22,8 @@
     },
     {
       "path": "specs/README.md",
-      "bytes": 10851,
-      "digest": "sha256:0f23941b40553ffd63caa21980d33b2568ffb151800174ae5ad58f4b118983dd"
+      "bytes": 11311,
+      "digest": "sha256:3ca844e6a1a66c22c269d20d656366b6adcda154305adf0604928c93ff8bbabc"
     },
     {
       "path": "specs/conformance/canonical-form/vectors.json",
@@ -194,6 +194,11 @@
       "path": "specs/tools/uv-canonical.mjs",
       "bytes": 4708,
       "digest": "sha256:989d23abb84398be17b6a2e0fc361689996057beed95e876e86acb4da431a1e6"
+    },
+    {
+      "path": "specs/tools/uv-conformance-emit.mjs",
+      "bytes": 25201,
+      "digest": "sha256:a3f6b383ee5ca7ef2afdb51980540f853f9aaaf2a8ea02aaeebb4509a79044c6"
     },
     {
       "path": "specs/tools/uv-conformance.mjs",

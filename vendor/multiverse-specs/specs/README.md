@@ -25,6 +25,12 @@ That is also why the JSON Schema assertions in
 supplies an engine. Without one the runner reports them as **not executed** rather than counting
 them as passing.
 
+The vectors themselves are committed data. `tools/uv-conformance-emit.mjs` re-emits them from the
+reference implementations, and `--oracle <module url>` additionally requires a second implementation
+of the canonical form to reproduce every accept vector. Re-emitting is for a deliberate descriptor
+change, never for making a failing vector pass: it produces a reviewable diff of expected hashes,
+and a hash diff nobody can explain is the signal, not the fix.
+
 ## What is in this seed, and what is not
 
 This is the block-11 seed of the final `multiverse/specs` history — the same history block 22
