@@ -193,7 +193,7 @@ write('conformance', 'schema-assertions.json', {
     readExisting('conformance/schema-assertions.json')?.checkedOn ??
     new Date().toISOString().slice(0, 10),
   note: 'the engine and the options are the ones the sealed legacy validator used, so a pass here means what a pass meant there',
-  schemaDirectories: ['model/schema', 'semantic-scopes'],
+  schemaDirectories: ['model/schema', 'semantic-scopes', 'texture/schema'],
   assertions: [
     ...fixtureNames.flatMap(name => [
       uvmExtensionAssertion(`model/fixtures/${name}.uvm.gltf`, 'UV_asset', 'asset'),
@@ -240,6 +240,12 @@ write('conformance', 'schema-assertions.json', {
       schemaId: 'https://modkitx.org/uvm/1.0/uvm.animation.schema.json#events',
       expect: 'valid',
     },
+    ...['uvt-2d-srgb', 'uvt-cube-linear', 'uvt-atlas-array'].map(name => ({
+      document: `texture/fixtures/${name}.uvt.json`,
+      pointer: '',
+      schemaId: 'https://modkitx.org/uvt/1.0/uvt.profile.schema.json',
+      expect: 'valid',
+    })),
     {
       document: 'semantic-scopes/model-interchange-v1.json',
       pointer: '',

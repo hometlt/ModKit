@@ -1,0 +1,32 @@
+{
+  "uv": { "format": "UVT", "version": "1.0", "profile": "core" },
+  "ktx2": {
+    "vkFormat": 43,
+    "pixelWidth": 512,
+    "pixelHeight": 256,
+    "pixelDepth": 0,
+    "layerCount": 4,
+    "faceCount": 1,
+    "levelCount": 2,
+    "supercompressionScheme": 1
+  },
+  "color": { "transferFunction": "srgb", "primaries": "bt709", "premultipliedAlpha": true },
+  "alphaMode": "premultiplied",
+  "orientation": "ru",
+  "swizzle": "rgba",
+  "sampler": {
+    "minFilter": "linear",
+    "magFilter": "nearest",
+    "mipFilter": "nearest",
+    "wrapS": "clamp-to-edge",
+    "wrapT": "clamp-to-edge"
+  },
+  "atlas": {
+    "regions": [
+      { "id": "hull", "x": 0, "y": 0, "width": 128, "height": 128, "pivot": [0.5, 0.5] },
+      { "id": "turret", "x": 128, "y": 0, "width": 128, "height": 128 },
+      { "id": "tracks", "x": 256, "y": 0, "width": 256, "height": 256 }
+    ]
+  },
+  "provenance": { "source": { "format": "tga", "file": "tank_atlas.tga" }, "lost": [] }
+}

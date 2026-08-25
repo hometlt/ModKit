@@ -1,0 +1,24 @@
+{
+  "uv": { "format": "UVT", "version": "1.0", "profile": "core" },
+  "ktx2": {
+    "vkFormat": 37,
+    "pixelWidth": 256,
+    "pixelHeight": 256,
+    "pixelDepth": 0,
+    "layerCount": 0,
+    "faceCount": 1,
+    "levelCount": 1,
+    "supercompressionScheme": 0
+  },
+  "color": { "transferFunction": "srgb", "primaries": "bt709", "premultipliedAlpha": false },
+  "alphaMode": "straight",
+  "orientation": "rd",
+  "sampler": {
+    "minFilter": "linear",
+    "magFilter": "linear",
+    "mipFilter": "none",
+    "wrapS": "repeat",
+    "wrapT": "repeat"
+  },
+  "provenance": { "source": { "format": "dds", "file": "hull_diffuse.dds" }, "lost": [] }
+}

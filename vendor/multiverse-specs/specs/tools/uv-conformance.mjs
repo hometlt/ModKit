@@ -28,6 +28,7 @@ import {
   unpackGlb,
 } from './uvm-core.mjs'
 import { buildFacetBundle, projectionSemanticHash, DESCRIPTOR } from './model-interchange.mjs'
+import { assertUvtProfile } from './uvt-profile.mjs'
 
 const specsRoot = new URL('../', import.meta.url)
 const readJson = relative => JSON.parse(readFileSync(fileURLToPath(new URL(relative, specsRoot)), 'utf8'))
@@ -177,6 +178,41 @@ function runUvmCore() {
   return file.vectors.length
 }
 
+// --- suite: uvt ----------------------------------------------------------------------------------
+
+function runUvt() {
+  const suite = 'uvt'
+  const file = readJson('conformance/uvt/vectors.json')
+  for (const vector of file.vectors) {
+    const sidecar = readJson(`texture/fixtures/${vector.fixture}`)
+    const mutated = applyMutations(sidecar, vector.mutations ?? [])
+    if (vector.expect === 'reject') {
+      checks += 1
+      try {
+        assertUvtProfile(mutated)
+      } catch (error) {
+        if (error.rule !== vector.rule) {
+          fail(
+            suite,
+            vector.id,
+            `refused for rule «${String(error.rule)}», the vector names «${vector.rule}»`,
+          )
+        }
+        continue
+      }
+      fail(suite, vector.id, `expected the «${vector.rule}» rule to refuse this sidecar`)
+      continue
+    }
+    checks += 1
+    try {
+      assertUvtProfile(mutated)
+    } catch (error) {
+      fail(suite, vector.id, `a shipped fixture must conform: ${error.message}`)
+    }
+  }
+  return file.vectors.length
+}
+
 // --- suite: model-interchange-v1 -------------------------------------------------------------------
 
 function runModelInterchange() {
@@ -259,6 +295,7 @@ function runModelInterchange() {
 const suites = {
   'canonical-form': runCanonicalForm,
   'uvm-core': runUvmCore,
+  uvt: runUvt,
   'model-interchange-v1': runModelInterchange,
 }
 

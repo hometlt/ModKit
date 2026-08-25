@@ -1,0 +1,134 @@
+{
+  "$comment": "UVT/core 1.0 conformance vectors. The accept cases are the shipped fixtures; the reject cases are mutations of them, expressed in the same four-operation vocabulary the other suites use, so a second implementation executes them rather than reading them.",
+  "schemaVersion": "uv-conformance-vectors-1",
+  "suite": "uvt",
+  "profile": "UVT/core@1.0",
+  "spec": "../../texture/SPEC_UVT.md",
+  "note": "No UVT materializer exists in Modkit or Multiverse. Plan item 17 requires the schema, the fixtures and the validator before the operation, and this suite is that gate rather than evidence of a conversion.",
+  "vectors": [
+    {
+      "id": "uvt-2d-srgb/accept",
+      "expect": "accept",
+      "fixture": "uvt-2d-srgb.uvt.json",
+      "note": "the plain case: one 2D sRGB image, straight alpha, one level, no mip filtering",
+      "mutations": []
+    },
+    {
+      "id": "uvt-cube-linear/accept",
+      "expect": "accept",
+      "fixture": "uvt-cube-linear.uvt.json",
+      "note": "a square cubemap with a full mip chain and zstd supercompression",
+      "mutations": []
+    },
+    {
+      "id": "uvt-atlas-array/accept",
+      "expect": "accept",
+      "fixture": "uvt-atlas-array.uvt.json",
+      "note": "an array with premultiplied alpha, a swizzle and three atlas regions",
+      "mutations": []
+    },
+    {
+      "id": "cube-must-be-square",
+      "expect": "reject",
+      "fixture": "uvt-cube-linear.uvt.json",
+      "note": "a cubemap whose faces are not square is refused rather than stretched",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "ktx2.pixelHeight",
+          "value": 64
+        }
+      ],
+      "rule": "cube-must-be-square"
+    },
+    {
+      "id": "level-count-explicit",
+      "expect": "reject",
+      "fixture": "uvt-2d-srgb.uvt.json",
+      "note": "levelCount 0 is a loader instruction, not a description of the file",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "ktx2.levelCount",
+          "value": 0
+        }
+      ],
+      "rule": "level-count-explicit"
+    },
+    {
+      "id": "premultiplied-needs-flag",
+      "expect": "reject",
+      "fixture": "uvt-atlas-array.uvt.json",
+      "note": "a premultiplied alpha mode over a container flag that is clear is a contradiction, and it changes every pixel it touches",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "color.premultipliedAlpha",
+          "value": false
+        }
+      ],
+      "rule": "premultiplied-needs-flag"
+    },
+    {
+      "id": "opaque-cannot-be-premultiplied",
+      "expect": "reject",
+      "fixture": "uvt-2d-srgb.uvt.json",
+      "note": "the mirror rule: an opaque projection cannot sit over a premultiplied container",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "alphaMode",
+          "value": "opaque"
+        },
+        {
+          "op": "set",
+          "path": "color.premultipliedAlpha",
+          "value": true
+        }
+      ],
+      "rule": "opaque-cannot-be-premultiplied"
+    },
+    {
+      "id": "mip-filter-needs-mips",
+      "expect": "reject",
+      "fixture": "uvt-2d-srgb.uvt.json",
+      "note": "asking for mip filtering on a single-level texture is a request the file cannot satisfy",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "sampler.mipFilter",
+          "value": "linear"
+        }
+      ],
+      "rule": "mip-filter-needs-mips"
+    },
+    {
+      "id": "atlas-region-inside-image",
+      "expect": "reject",
+      "fixture": "uvt-atlas-array.uvt.json",
+      "note": "a region running off the edge is refused rather than clamped: clamping produces a different sprite",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "atlas.regions.2.width",
+          "value": 512
+        }
+      ],
+      "rule": "atlas-region-inside-image"
+    },
+    {
+      "id": "atlas-region-id-unique",
+      "expect": "reject",
+      "fixture": "uvt-atlas-array.uvt.json",
+      "note": "two regions cannot share an id: an atlas is addressed by name",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "atlas.regions.1.id",
+          "value": "hull"
+        }
+      ],
+      "rule": "atlas-region-id-unique"
+    }
+  ]
+}

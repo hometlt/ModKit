@@ -7,7 +7,8 @@
   "note": "the engine and the options are the ones the sealed legacy validator used, so a pass here means what a pass meant there",
   "schemaDirectories": [
     "model/schema",
-    "semantic-scopes"
+    "semantic-scopes",
+    "texture/schema"
   ],
   "assertions": [
     {
@@ -110,6 +111,24 @@
       "document": "model/examples/siege_tank.uvm.gltf",
       "pointer": "/animations/1/extensions/UV_game_animation_events",
       "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#events",
+      "expect": "valid"
+    },
+    {
+      "document": "texture/fixtures/uvt-2d-srgb.uvt.json",
+      "pointer": "",
+      "schemaId": "https://modkitx.org/uvt/1.0/uvt.profile.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "texture/fixtures/uvt-cube-linear.uvt.json",
+      "pointer": "",
+      "schemaId": "https://modkitx.org/uvt/1.0/uvt.profile.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "texture/fixtures/uvt-atlas-array.uvt.json",
+      "pointer": "",
+      "schemaId": "https://modkitx.org/uvt/1.0/uvt.profile.schema.json",
       "expect": "valid"
     },
     {

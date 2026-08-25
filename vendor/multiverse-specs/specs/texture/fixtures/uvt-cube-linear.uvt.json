@@ -1,0 +1,27 @@
+{
+  "uv": { "format": "UVT", "version": "1.0", "profile": "core" },
+  "ktx2": {
+    "vkFormat": 97,
+    "pixelWidth": 128,
+    "pixelHeight": 128,
+    "pixelDepth": 0,
+    "layerCount": 0,
+    "faceCount": 6,
+    "levelCount": 8,
+    "supercompressionScheme": 2
+  },
+  "color": { "transferFunction": "linear", "primaries": "unspecified", "premultipliedAlpha": false },
+  "alphaMode": "opaque",
+  "orientation": "rd",
+  "sampler": {
+    "minFilter": "linear",
+    "magFilter": "linear",
+    "mipFilter": "linear",
+    "wrapS": "clamp-to-edge",
+    "wrapT": "clamp-to-edge"
+  },
+  "provenance": {
+    "source": { "format": "dds", "file": "sky_cube.dds" },
+    "lost": ["the source mip chain was regenerated rather than carried"]
+  }
+}

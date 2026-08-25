@@ -115,6 +115,28 @@ Everything here is LF, and `.gitattributes` disables git's end-of-line translati
 repository. Consumers pin this material by digest; a checkout that rewrites line endings would break
 every pinned digest on a different platform.
 
+## 7.1. UVT: what the conversion-grade profile deliberately leaves open
+
+The UVT stub named its own deferrals, and raising it to a conversion-grade profile closed some and
+kept others. Kept, with the reason:
+
+| Open item                       | Why it is not in the profile                                                   |
+| ------------------------------- | ------------------------------------------------------------------------------ |
+| Palette-indexed source profile  | No reader, no writer, no fixture. A palette is a real conversion path and would need its own loss vocabulary. |
+| Animated frame sequences        | They belong on the shared timeline contract of the UV Foundation, and nothing publishes one yet. |
+| Per-product transcoding targets | A deployment decision. Pinning them in the interchange profile would make one runtime's GPU support part of the format. |
+| 3D volume topology              | `pixelDepth` is fixed at 0 and the boundary is reserved rather than specified.  |
+| The wider transfer-function set | The profile admits `linear` and `srgb`. The rest of the Khronos Data Format set is real, and admitting vocabulary before anything reads it is reservation wearing a specification's clothes. |
+
+What the profile does close: the mandatory KTX2 mapping table, colour/transfer/alpha semantics with
+the contradiction rules a schema cannot express, orientation as a required field, explicit
+`levelCount`, cube squareness, sampler advice, and atlas regions that must lie inside their image.
+Seven of those rules are executable vectors rather than prose.
+
+**No UVT materializer exists**, in Modkit or in Multiverse. Plan item 17 asks for the schema, the
+fixtures and the validator before the operation, in that order, and the registry row says
+`schema-ready, no materializer` rather than implying a conversion nobody wrote.
+
 ## 8. Open items inherited, not resolved here
 
 | Item                      | State                                                                                        |

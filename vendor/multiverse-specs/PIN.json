@@ -3,27 +3,27 @@
   "schemaVersion": "multiverse-specs-pin-1",
   "source": {
     "repository": "multiverse (sibling repository)",
-    "commit": "61dd6e2aaa8b4a9c4c11707a5790253a1acd5df9",
-    "subject": "specs: live-биндинг uv.model/resource-closure@1 без смены версии",
-    "committedOn": "2026-08-25T20:58:44+04:00"
+    "commit": "911abd8d1e3c358f561caff173d4007f21e717c5",
+    "subject": "specs: поднять UVT из заглушки до conversion-grade профиля",
+    "committedOn": "2026-08-25T21:57:09+04:00"
   },
   "generator": "scripts/specs-pin.mjs",
   "generatedFrom": "git objects, not the sibling working tree",
   "prefix": "specs/",
   "counts": {
-    "files": 39,
-    "bytes": 410902
+    "files": 46,
+    "bytes": 439179
   },
   "files": [
     {
       "path": "specs/NOTES.md",
-      "bytes": 11673,
-      "digest": "sha256:e3e8065532228bf6e74d421535ea80aa5835a1a861303ccd310e251fabb23be4"
+      "bytes": 13526,
+      "digest": "sha256:a9b9987c153b3fd589d5cdf96a66c8e6315ba763859ab612117f46ee17f5c7aa"
     },
     {
       "path": "specs/README.md",
-      "bytes": 11311,
-      "digest": "sha256:3ca844e6a1a66c22c269d20d656366b6adcda154305adf0604928c93ff8bbabc"
+      "bytes": 11600,
+      "digest": "sha256:d02134cc5ca59f198a4ac560f408d033af381418874039f1c2f0a41ec7f85be5"
     },
     {
       "path": "specs/conformance/canonical-form/vectors.json",
@@ -37,13 +37,18 @@
     },
     {
       "path": "specs/conformance/schema-assertions.json",
-      "bytes": 4870,
-      "digest": "sha256:a529cb443fa0f6baa4f2a0b01eed5d08ed9e691b25ad93f1d436b49d6e8decfc"
+      "bytes": 5470,
+      "digest": "sha256:eaa6b508f20d5b7d31b60a19834e9317a61379bdac5ee1e2b437f4b8db1311b5"
     },
     {
       "path": "specs/conformance/uvm-core/vectors.json",
       "bytes": 4363,
       "digest": "sha256:c39a72eeb57e7e559bc3b6f02cb6b2f297acb29c5b285a000843605e7b83db32"
+    },
+    {
+      "path": "specs/conformance/uvt/vectors.json",
+      "bytes": 4240,
+      "digest": "sha256:7b72738f2a8341501fb5abc552691595e4f4c32f4aea88b688efad11e01de319"
     },
     {
       "path": "specs/foundation/SPEC_UV_CANONICALIZATION.md",
@@ -181,6 +186,31 @@
       "digest": "sha256:a005c1c92dc409b8b2ca737d732135d4374ce6760cb901cbd69011f6f259d263"
     },
     {
+      "path": "specs/texture/SPEC_UVT.md",
+      "bytes": 8110,
+      "digest": "sha256:00123428f34c7b5721d490504a0cef7fe736112eacfbeacae320d3c8b672f7da"
+    },
+    {
+      "path": "specs/texture/fixtures/uvt-2d-srgb.uvt.json",
+      "bytes": 647,
+      "digest": "sha256:a08e27f49a88c44311ad2e70754074640053a7b05b4701e3d32ea2139b207b33"
+    },
+    {
+      "path": "specs/texture/fixtures/uvt-atlas-array.uvt.json",
+      "bytes": 964,
+      "digest": "sha256:cd8fc84fbcd9267343334dca92b4fadf65f72a4d4e34497f721da8b86a923a4f"
+    },
+    {
+      "path": "specs/texture/fixtures/uvt-cube-linear.uvt.json",
+      "bytes": 733,
+      "digest": "sha256:a9c7a4cbf8465f705db325a62db5446039ffe0aed12e4ff14d038379c031348e"
+    },
+    {
+      "path": "specs/texture/schema/uvt.profile.v1.schema.json",
+      "bytes": 6000,
+      "digest": "sha256:9300573e0c706d45c7d01d1b27d85b032ea3ae25d8f6cce565dacacb2f78772b"
+    },
+    {
       "path": "specs/tools/model-interchange.mjs",
       "bytes": 13315,
       "digest": "sha256:79df762fba2ff2fe2b4ff412ba4015929c10c21903c6954edf601963efecb31f"
@@ -197,18 +227,23 @@
     },
     {
       "path": "specs/tools/uv-conformance-emit.mjs",
-      "bytes": 25201,
-      "digest": "sha256:a3f6b383ee5ca7ef2afdb51980540f853f9aaaf2a8ea02aaeebb4509a79044c6"
+      "bytes": 25470,
+      "digest": "sha256:a4a6555818d9df21da2493edf20b9f5f6f4fd1b7ecd43f257d79ed7a1ca054f8"
     },
     {
       "path": "specs/tools/uv-conformance.mjs",
-      "bytes": 10938,
-      "digest": "sha256:b15289d93fce950b9a921ba083d13a165ea0f685d74f0bbcd695b2621d3ff3b8"
+      "bytes": 12064,
+      "digest": "sha256:e9f5a93b2a1b38fbe9b857c0af829922dc6b2edd81a128966b197751100b9fc6"
     },
     {
       "path": "specs/tools/uvm-core.mjs",
       "bytes": 13819,
       "digest": "sha256:c24e8b7ba2f9153dd13f0c23ce5358ad4f75deb0343ef03c4d0964f8f3c5e20e"
+    },
+    {
+      "path": "specs/tools/uvt-profile.mjs",
+      "bytes": 3446,
+      "digest": "sha256:a2e7d2436bc818a870505eeb24a95a8178f4dd34c0032ed5bd55877b6aca8f15"
     }
   ]
 }

@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/uvt/1.0/uvt.profile.schema.json",
+  "title": "UVT projection sidecar",
+  "description": "The `.uvt.json` sidecar of a UVT projection. Its `ktx2` block copies values that exist in the KTX 2.0 container; everything else is UV-level semantics the container has no place for. A sidecar that contradicts its container is a defect, not a preference.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["uv", "ktx2", "color", "alphaMode", "orientation", "sampler"],
+  "properties": {
+    "uv": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "version"],
+      "properties": {
+        "format": { "const": "UVT" },
+        "version": { "const": "1.0" },
+        "profile": { "const": "core" }
+      }
+    },
+    "ktx2": {
+      "description": "Verbatim copies of KTX 2.0 header fields. Never normalised: layerCount stays 0 for a non-array image so the sidecar and the container cannot drift.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "vkFormat",
+        "pixelWidth",
+        "pixelHeight",
+        "pixelDepth",
+        "layerCount",
+        "faceCount",
+        "levelCount",
+        "supercompressionScheme"
+      ],
+      "properties": {
+        "vkFormat": { "type": "integer", "minimum": 0 },
+        "pixelWidth": { "type": "integer", "minimum": 1 },
+        "pixelHeight": { "type": "integer", "minimum": 1 },
+        "pixelDepth": {
+          "description": "0 for 2D. This profile admits 2D, array and cube topologies only; a volume is reserved, not specified.",
+          "const": 0
+        },
+        "layerCount": { "type": "integer", "minimum": 0 },
+        "faceCount": {
+          "description": "1, or 6 for a cubemap. A cubemap must be square.",
+          "enum": [1, 6]
+        },
+        "levelCount": {
+          "description": "At least 1. KTX2 encodes 'generate mips at load' as 0, which is a loader instruction rather than a description of the file; a normalized runtime projection states what it contains.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "supercompressionScheme": {
+          "description": "The container's own enumeration: 0 none, 1 BasisLZ, 2 Zstandard, 3 ZLIB.",
+          "enum": [0, 1, 2, 3]
+        }
+      }
+    },
+    "color": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["transferFunction", "primaries", "premultipliedAlpha"],
+      "properties": {
+        "transferFunction": {
+          "description": "The Data Format Descriptor transfer function, restricted to what a runtime texture profile needs. The wider Khronos set is deliberately not admitted until something reads it.",
+          "enum": ["linear", "srgb"]
+        },
+        "primaries": {
+          "description": "`unspecified` is a real answer: a projection that does not know its primaries says so instead of asserting the common case.",
+          "enum": ["bt709", "unspecified"]
+        },
+        "premultipliedAlpha": {
+          "description": "The Data Format Descriptor alpha-premultiplied flag, copied verbatim.",
+          "type": "boolean"
+        }
+      }
+    },
+    "alphaMode": {
+      "description": "UV-level alpha semantics, not a restatement of the container flag. `premultiplied` requires color.premultipliedAlpha to be true.",
+      "enum": ["opaque", "straight", "premultiplied"]
+    },
+    "orientation": {
+      "description": "KTXorientation in S-then-T form. A UVT projection must state it: a runtime cannot recover it from the pixels.",
+      "enum": ["rd", "ru"]
+    },
+    "swizzle": {
+      "description": "KTXswizzle, when the container carries one. Four characters from rgba01.",
+      "type": "string",
+      "pattern": "^[rgba01]{4}$"
+    },
+    "sampler": {
+      "description": "How a runtime should bind the texture. Advice the projection carries, required so that no consumer has to guess.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minFilter", "magFilter", "mipFilter", "wrapS", "wrapT"],
+      "properties": {
+        "minFilter": { "enum": ["nearest", "linear"] },
+        "magFilter": { "enum": ["nearest", "linear"] },
+        "mipFilter": { "enum": ["none", "nearest", "linear"] },
+        "wrapS": { "enum": ["repeat", "clamp-to-edge", "mirrored-repeat"] },
+        "wrapT": { "enum": ["repeat", "clamp-to-edge", "mirrored-repeat"] }
+      }
+    },
+    "atlas": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["regions"],
+      "properties": {
+        "regions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "x", "y", "width", "height"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "x": { "type": "integer", "minimum": 0 },
+              "y": { "type": "integer", "minimum": 0 },
+              "width": { "type": "integer", "minimum": 1 },
+              "height": { "type": "integer", "minimum": 1 },
+              "pivot": {
+                "description": "Normalized region coordinates.",
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "items": { "type": "number" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "lost"],
+      "properties": {
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["format"],
+          "properties": {
+            "format": { "type": "string", "minLength": 1 },
+            "file": { "type": "string" }
+          }
+        },
+        "lost": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    }
+  }
+}

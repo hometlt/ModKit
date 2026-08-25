@@ -45,6 +45,7 @@ The seed carries the material slice 11C0 owns normatively:
 | Canonicalization (both forms)          | [`foundation/SPEC_UV_CANONICALIZATION.md`](foundation/SPEC_UV_CANONICALIZATION.md) |
 | Versioning and negotiation             | [`foundation/SPEC_UV_VERSIONING.md`](foundation/SPEC_UV_VERSIONING.md)       |
 | UVM specification, extensions, conversion | [`model/`](model/)                                                        |
+| UVT profile, schema and fixtures        | [`texture/`](texture/)                                                       |
 | UVM JSON Schemas                       | [`model/schema/`](model/schema/)                                             |
 | UVM canonical fixtures                 | [`model/fixtures/`](model/fixtures/)                                         |
 | Semantic scope registry + `model-interchange-v1` | [`semantic-scopes/`](semantic-scopes/)                             |
@@ -69,7 +70,7 @@ The registry reserves names and boundaries. It does not claim twelve implemented
 | **UVR** | `.uvr`                           | Mechanic/provider composition, slots, ordering, composition lock inputs        | canonical JSON (stub)                  | block 22     |
 | **UVP** | `.uvp`                           | Data-only game/mod/campaign/asset/localization packages                        | ZIP/directory profile (stub)           | block 22     |
 | **UVE** | `.uve`                           | Immutable extension release artifact (the only UV format with executable payloads) | deterministic ZIP + signature profile (stub) | block 22 |
-| **UVT** | `.uvt.ktx2` (+`.uvt.json`)       | Runtime textures/atlases/arrays/cubemaps/animated images                       | KTX 2.0 profile (stub)                 | slice 11C1   |
+| **UVT** | `.uvt.ktx2` (+`.uvt.json`)       | Runtime textures/atlases/arrays/cubemaps/animated images                       | KTX 2.0 profile                        | yes          |
 | **UVA** | `.uva` / `.uva.mka`              | Audio assets, stems, loops, cues, spatial metadata                            | Matroska audio profile (stub)          | block 22     |
 | **UVV** | `.uvv` / `.uvv.mkv`              | Video + audio/subtitle/metadata tracks, chapters, game events                  | Matroska profile (stub)                | block 22     |
 | **UVF** | `.uvf.otf` / `.uvf.woff2` (+`.uvf.json`) | Fonts, variable axes, color/bitmap glyphs, atlas projections           | OpenType/WOFF2 profile (stub)          | block 22     |
@@ -105,7 +106,8 @@ Maturity and support are independent axes
 | UVW                          | yes      | yes        | yes     | one example                                 | no                              | no     | no     | no     |
 | UVD                          | yes      | yes        | no      | no                                          | no                              | no     | no     | no     |
 | UVS                          | yes      | yes        | yes     | one example                                 | no                              | no     | no     | no     |
-| UVE, UVP, UVR, UVT, UVA, UVV, UVF, UVG | yes | stub    | no      | no                                          | no                              | no     | no     | no     |
+| UVT                          | yes      | conversion-grade | yes | 3 sidecar fixtures                    | yes, profile rules + schema      | no     | no     | no     |
+| UVE, UVP, UVR, UVA, UVV, UVF, UVG | yes | stub    | no      | no                                          | no                              | no     | no     | no     |
 | UVI, UVY                     | candidate| no         | no      | no                                          | no                              | no     | no     | no     |
 
 The UVW/UVD/UVS/stub rows are carried forward unchanged from the pre-seed evidence matrix dated
