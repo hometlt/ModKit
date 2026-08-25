@@ -85,6 +85,12 @@ const RELOCATED_FAMILIES = new Set([
   'ea-tiberian-sun',
 ])
 
+// A single codec can finish the staging migration without its whole family: block 11 slice 11A
+// moved plain text into extensions/common/plain-text while the rest of `uncommon-documents` stayed.
+// The converter keeps reading the canonical source, but stops emitting a staging duplicate for the
+// coordinates listed here. Entries are `<staging directory>/<codec local id>`.
+const RELOCATED_CODECS = new Set(['uncommon-documents/txt'])
+
 if (!isMk2Root(mk2Root)) {
   // `--check` runs inside `pnpm check`, and CI does not necessarily have the MK2 checkout beside
   // the lab. Without a source there is nothing to compare, which is not a failure — the same
@@ -1117,7 +1123,12 @@ if (collisions.length > 0) {
 const sortedGroups = [...groups.values()]
   .filter(group => !RELOCATED_FAMILIES.has(group.directory))
   .sort((a, b) => (a.directory < b.directory ? -1 : 1))
-for (const group of sortedGroups) group.codecs.sort((a, b) => (a.localId < b.localId ? -1 : 1))
+for (const group of sortedGroups) {
+  group.codecs = group.codecs.filter(
+    codec => !RELOCATED_CODECS.has(`${group.directory}/${codec.localId}`),
+  )
+  group.codecs.sort((a, b) => (a.localId < b.localId ? -1 : 1))
+}
 
 // ---------------------------------------------------------------- port state
 //

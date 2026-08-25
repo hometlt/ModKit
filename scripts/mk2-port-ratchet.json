@@ -12,6 +12,7 @@
     "common/containers": 1,
     "common/images": 20,
     "common/models": 3,
+    "common/plain-text": 1,
     "common/vector": 2,
     "common/video": 4,
     "mk2/adobe-flash": 3,
@@ -44,7 +45,7 @@
     "mk2/epic-games-unreal-engine": 7,
     "mk2/firelight-fmod": 1,
     "mk2/microsoft-age-series": 11,
-    "mk2/uncommon-documents": 18,
+    "mk2/uncommon-documents": 17,
     "mk2/unity-engine": 5
   }
 }

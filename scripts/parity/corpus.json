@@ -806,6 +806,18 @@
       "baseline": "паритет"
     },
     {
+      "id": "txt-synthetic",
+      "kind": "synthetic",
+      "format": "txt",
+      "contributionId": "org.modkitx/txt",
+      "x3Extension": "extensions/common/plain-text",
+      "canonicalModule": "extensions/uncommon/documents/src/parsers.ts",
+      "canonicalAdapter": "document",
+      "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.txt",
+      "canonicalDocumentFormat": "txt",
+      "baseline": "паритет"
+    },
+    {
       "id": "csv-synthetic",
       "kind": "synthetic",
       "format": "csv",
@@ -815,8 +827,7 @@
       "canonicalAdapter": "document",
       "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.csv",
       "canonicalDocumentFormat": "csv",
-      "baseline": "нет в X3",
-      "allowPoorerReason": "X3 does not recognise the sample: detectDelimited splits rows on the bare delimiter, so a spec-legal CSV whose quoted fields contain commas and newlines reports unstable arity and scores 0.05 confidence. The canonical document stack parses the same bytes."
+      "baseline": "паритет"
     }
   ]
 }

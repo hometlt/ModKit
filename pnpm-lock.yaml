@@ -290,6 +290,18 @@ importers:
         specifier: workspace:*
         version: link:../../../packages/sdk
 
+  extensions/common/plain-text:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../codec-kit/codec-kit
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../../packages/sdk
+
   extensions/common/rendering-3d:
     dependencies:
       '@modkitx-x3/host':

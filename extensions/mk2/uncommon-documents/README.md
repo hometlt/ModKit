@@ -28,6 +28,5 @@ renames, converter defaults and v1 operations left without a handler — is data
 | `org.modkitx/pptx`     | `extensions/uncommon/documents/codecs/pptx/codec.manifest.json`     | `src/pptx/codec.js`     | ported |
 | `org.modkitx/psd`      | `extensions/uncommon/documents/codecs/psd/codec.manifest.json`      | `src/psd/codec.js`      | ported |
 | `org.modkitx/rtf`      | `extensions/uncommon/documents/codecs/rtf/codec.manifest.json`      | `src/rtf/codec.js`      | ported |
-| `org.modkitx/txt`      | `extensions/uncommon/documents/codecs/txt/codec.manifest.json`      | `src/txt/codec.js`      | ported |
 | `org.modkitx/visio`    | `extensions/uncommon/documents/codecs/visio/codec.manifest.json`    | `src/visio/codec.js`    | ported |
 | `org.modkitx/xlsx`     | `extensions/uncommon/documents/codecs/xlsx/codec.manifest.json`     | `src/xlsx/codec.js`     | ported |

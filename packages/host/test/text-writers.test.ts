@@ -110,6 +110,7 @@ const services = () =>
         await linked(extensionDir('text-json')),
         await linked(extensionDir('text-ini')),
         await linked(extensionDir('text-delimited')),
+        await linked(extensionDir('plain-text')),
       ],
       policy,
     }))())
@@ -175,6 +176,8 @@ interface TextWriterCase {
   readonly source: string
   readonly find: string
   readonly replacement: string
+  /** Read-back operation after the commit; syntax formats parse, plain text inspects. */
+  readonly reopenOperation?: string
 }
 
 const CASES: readonly TextWriterCase[] = [
@@ -207,6 +210,19 @@ const CASES: readonly TextWriterCase[] = [
     source: 'id,name,size\n1,alpha,10\n2,beta,20\n',
     find: 'alpha',
     replacement: 'omega',
+  },
+  {
+    // Block 11 slice 11A: plain text could be edited before the migration and it can again — but
+    // through its own writer contribution, never through the read-only codec.
+    formatId: 'txt',
+    codecId: 'org.modkitx/txt',
+    providerId: 'org.modkitx/plain-text-writer',
+    evidenceId: 'plain-text-writer-v1',
+    file: 'sample.txt',
+    source: 'First paragraph.\nStill first.\n\nSecond paragraph.\n',
+    find: 'Second',
+    replacement: 'Third',
+    reopenOperation: 'inspect',
   },
 ]
 
@@ -323,10 +339,13 @@ describe('A6 — text writers resolve by facet and save through the host coordin
       expect(after.slice(offset + testCase.replacement.length)).toBe(tail)
       expect(after).toBe(head + testCase.replacement + tail)
 
-      // the codec still opens and parses the edited file
+      // the codec still opens and reads the edited file through the operation it actually declares:
+      // the syntax formats parse a document, plain text has no syntax and inspects instead
       const { opened: reopened } = await openCopy(testCase.file)
       expect(reopened.selected.contributionId).toBe(testCase.codecId)
-      const parsed = await reopened.session.operations().invoke('parse', {})
+      const parsed = await reopened.session
+        .operations()
+        .invoke(testCase.reopenOperation ?? 'parse', {})
       expect(parsed.state, show(parsed)).toBe('ok')
       if (parsed.state === 'ok') expect(parsed.output.kind).toBe('json')
       await reopened.session.dispose()

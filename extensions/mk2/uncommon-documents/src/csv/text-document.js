@@ -1,4 +1,5 @@
-// Shared by the four hand-ported text document entrypoints.
+// Shared by the hand-ported text document entrypoints still staged here. Plain text left this
+// package in block 11 slice 11A; its final home is extensions/common/plain-text.
 import { createInspectionCodec, createTreeDataSource } from '@modkitx-x3/codec-kit'
 
 const utf8 = new TextDecoder('utf-8', { fatal: true })
@@ -19,11 +20,6 @@ const FORMATS = Object.freeze({
     id: 'org.modkitx/rtf',
     label: 'Rich Text Format',
     mediaType: 'application/rtf',
-  }),
-  txt: Object.freeze({
-    id: 'org.modkitx/txt',
-    label: 'Plain Text Document',
-    mediaType: 'text/plain',
   }),
 })
 
@@ -252,53 +248,6 @@ function parseMarkdown(text, budget) {
   }
 }
 
-function parsePlainText(text, budget) {
-  requireDepth(budget, 1)
-  if (text.includes('\0')) throw new TypeError('plain text cannot contain NUL characters')
-  const lines = text.split(/\r\n|\n|\r/u)
-  const paragraphs = []
-  let current = []
-  const flush = () => {
-    if (current.length === 0) return
-    paragraphs.push(current.join('\n'))
-    current = []
-    if (paragraphs.length > budget.maxNodes) {
-      throw new RangeError('text paragraphs exceed maxNodes budget')
-    }
-  }
-  for (const line of lines) {
-    if (line.trim() === '') flush()
-    else current.push(line)
-  }
-  flush()
-  const words = text.trim() === '' ? 0 : text.trim().split(/\s+/u).length
-  return {
-    summary: {
-      format: 'txt',
-      characters: text.length,
-      lines: lines.length,
-      words,
-      paragraphs: paragraphs.length,
-    },
-    root: {
-      kind: 'document',
-      label: 'Plain text',
-      preview: `${lines.length} line(s), ${words} word(s)`,
-      children: paragraphs.map((value, index) => ({
-        kind: 'paragraph',
-        label: `Paragraph ${index + 1}`,
-        preview: preview(value),
-      })),
-    },
-    nodes: paragraphs.length,
-    traits: [
-      { id: 'document.flow', parameters: { paragraphs: paragraphs.length, lines: lines.length } },
-      { id: 'content.text', parameters: { encoding: 'utf-8', characters: text.length } },
-    ],
-    unsupportedFeatures: ['rich-text-formatting', 'structured-text-editing'],
-  }
-}
-
 function hasRtfHeader(bytes) {
   return /^\{\\rtf[1-9][0-9]*(?:\\|\s)/u.test(latin1.decode(bytes.subarray(0, 64)))
 }
@@ -442,15 +391,14 @@ function detect(format, bytes) {
       note: comma && rows ? 'delimited-text-rows' : 'utf8-csv-extension',
     }
   }
-  return { confidence: 0.7, kind: 'structure', note: 'bounded-utf8-text' }
+  throw new TypeError(`unknown text document format ${format}`)
 }
 
 function parse(format, bytes, budget) {
   if (format === 'rtf') return parseRtf(bytes, budget)
   const text = decodedText(bytes, budget)
   if (format === 'csv') return { ...parseCsv(text, budget), scalarText: text }
-  if (format === 'markdown') return { ...parseMarkdown(text, budget), scalarText: text }
-  return { ...parsePlainText(text, budget), scalarText: text }
+  return { ...parseMarkdown(text, budget), scalarText: text }
 }
 
 export function createTextDocumentCodec(format, context) {

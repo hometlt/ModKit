@@ -43,6 +43,10 @@ export const READY_APP_EXTENSIONS = Object.freeze({
     coordinate: 'org.modkitx/documents',
     contributions: Object.freeze(['org.modkitx/document-markdown', 'org.modkitx/document-rtf']),
   }),
+  'plain-text': Object.freeze({
+    coordinate: 'org.modkitx/plain-text',
+    contributions: Object.freeze(['org.modkitx/txt', 'org.modkitx/plain-text-writer']),
+  }),
   images: Object.freeze({
     coordinate: 'org.modkitx/images',
     contributions: Object.freeze([
@@ -265,6 +269,7 @@ const modelsAndArchives = Object.freeze(['models', 'rendering-3d', 'archives'])
 const fullCodecs = Object.freeze([
   ...structuredText,
   'documents',
+  'plain-text',
   ...media,
   ...modelsAndArchives,
   'containers',

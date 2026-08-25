@@ -1195,11 +1195,11 @@
       "note": "RTF 1 root with nested font table, section, outline, and paragraph controls"
     },
     {
-      "extension": "mk2/uncommon-documents",
+      "extension": "common/plain-text",
       "contributionId": "org.modkitx/txt",
       "corpus": "synthetic",
       "sample": "minimal.txt",
-      "minimumConfidence": 0.7,
+      "minimumConfidence": 0.9,
       "dataSource": "tree",
       "note": "Strict UTF-8-compatible plain text with CRLF lines and two paragraphs"
     },

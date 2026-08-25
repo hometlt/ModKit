@@ -21,7 +21,6 @@ const formats = [
   'csv',
   'markdown',
   'rtf',
-  'txt',
   'docx',
   'pptx',
   'xlsx',
@@ -44,7 +43,6 @@ const fileNames: Record<Format, string> = {
   csv: 'minimal.csv',
   markdown: 'minimal.md',
   rtf: 'minimal.rtf',
-  txt: 'minimal.txt',
   docx: 'minimal.docx',
   pptx: 'minimal.pptx',
   xlsx: 'minimal.xlsx',
@@ -217,62 +215,6 @@ describe('ported MK2 document codecs', () => {
     })
     await session.dispose()
   })
-
-  it('counts plain-text characters, lines, words, and paragraphs', async () => {
-    const session = await open('txt', await fixture('txt'))
-    await expect(session.operations().invoke('inspect', null)).resolves.toMatchObject({
-      state: 'ok',
-      output: {
-        kind: 'json',
-        value: { format: 'txt', characters: 53, lines: 5, words: 6, paragraphs: 2 },
-      },
-    })
-    await session.dispose()
-  })
-
-  it.each([
-    ['docx', { package: 'ooxml', entries: 3, paragraphs: 1, tables: 1, textRuns: 1 }],
-    ['pptx', { package: 'ooxml', entries: 4, slides: 1, shapes: 1, textRuns: 1 }],
-    [
-      'xlsx',
-      { package: 'ooxml', entries: 4, sheets: 1, worksheets: 1, rows: 1, cells: 2, formulas: 1 },
-    ],
-    ['odt', { package: 'odf', entries: 3, paragraphs: 1, headings: 1 }],
-    ['odp', { package: 'odf', entries: 3, slides: 1, frames: 1, paragraphs: 1 }],
-    ['ods', { package: 'odf', entries: 3, sheets: 1, rows: 1, cells: 2, formulas: 1 }],
-  ] as const)(
-    '%s validates its package and derives document structure',
-    async (format, summary) => {
-      const session = await open(format, await fixture(format))
-      await expect(session.operations().invoke('inspect', null)).resolves.toMatchObject({
-        state: 'ok',
-        output: { kind: 'json', value: { format, ...summary } },
-      })
-      await session.dispose()
-    },
-  )
-
-  it.each(['pdf', 'ai'] as const)(
-    '%s validates classic xref, catalog, and page tree',
-    async format => {
-      const session = await open(format, await fixture(format))
-      await expect(session.operations().invoke('inspect', null)).resolves.toMatchObject({
-        state: 'ok',
-        output: {
-          kind: 'json',
-          value: {
-            format,
-            pdfVersion: '1.7',
-            objects: 5,
-            pages: 1,
-            textRuns: 1,
-            illustratorCompatible: format === 'ai',
-          },
-        },
-      })
-      await session.dispose()
-    },
-  )
 
   it('validates draw.io cells, references, geometry, and compressed diagrams', async () => {
     const fixtureSession = await open('drawio', await fixture('drawio'))

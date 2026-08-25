@@ -19,7 +19,6 @@
       "extensions/uncommon/documents/codecs/pptx/codec.manifest.json",
       "extensions/uncommon/documents/codecs/psd/codec.manifest.json",
       "extensions/uncommon/documents/codecs/rtf/codec.manifest.json",
-      "extensions/uncommon/documents/codecs/txt/codec.manifest.json",
       "extensions/uncommon/documents/codecs/visio/codec.manifest.json",
       "extensions/uncommon/documents/codecs/xlsx/codec.manifest.json"
     ]
@@ -264,29 +263,6 @@
         "variants:pair"
       ],
       "droppedOperations": ["asset.validate", "export.raw", "view.inspect", "view.render"],
-      "needsSignatures": false,
-      "portState": "ported"
-    },
-    "org.modkitx/txt": {
-      "verdict": "needs-new-contract",
-      "lostPlanes": [{ "plane": "viewer", "entrypoint": "./viewer.js" }],
-      "contractGaps": [
-        "capability «edit»: 13D editing exists for text sources only; binary edit contracts absent"
-      ],
-      "renames": [],
-      "converterDefaults": [
-        "operations:inspection-triple",
-        "probe:bytes-4096",
-        "representation:common.document/flow-metadata",
-        "variants:pair"
-      ],
-      "droppedOperations": [
-        "asset.validate",
-        "edit.content",
-        "export.raw",
-        "view.inspect",
-        "view.render"
-      ],
       "needsSignatures": false,
       "portState": "ported"
     },

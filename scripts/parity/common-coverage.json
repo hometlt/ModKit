@@ -147,6 +147,12 @@
       "reason": "The canonical RTF support renders a display view model of document blocks and recovers no source text, while X3 publishes a structural tree and byte range. No plane is defined the same way on both sides, so any count-to-count verdict would be manufactured."
     },
     {
+      "contributionId": "org.modkitx/txt",
+      "family": "plain-text",
+      "status": "compared-synthetic",
+      "parityRows": ["txt-synthetic"]
+    },
+    {
       "contributionId": "org.modkitx/ani",
       "family": "images",
       "status": "compared-synthetic",
