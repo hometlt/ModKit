@@ -295,13 +295,27 @@ async function clickStage(name) {
   const clicked = await onWebviews(
     `doc => {
       const wanted = ${JSON.stringify(name.toLowerCase())};
-      // Innermost last: a wrapper whose whole text is the label would swallow the click.
-      const matches = Array.from(doc.querySelectorAll('*'))
+      /*
+       * The stage picker is a <select>, and clicking an <option> selects nothing — the browser
+       * changes a select's value through its value, not through a click on its child. Driving it
+       * the way the component listens for it is a change event on the select itself.
+       */
+      for (const select of doc.querySelectorAll('select')) {
+        const option = Array.from(select.options)
+          .find(item => (item.textContent || '').trim().toLowerCase() === wanted);
+        if (!option) continue;
+        if (select.value === option.value) return true;
+        select.value = option.value;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        return true;
+      }
+      // Anything else that carries the label is an ordinary control; innermost wins, because a
+      // wrapper whose whole text is the label would swallow the click.
+      const matches = Array.from(doc.querySelectorAll('button, [role=tab], a, li'))
         .filter(node => (node.textContent || '').trim().toLowerCase() === wanted);
       const target = matches[matches.length - 1];
       if (!target) return false;
-      if (typeof target.click === 'function') target.click();
-      else target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      target.click();
       return true;
     }`,
     (best, value) => best === true || value === true,
@@ -323,6 +337,38 @@ async function clickStage(name) {
  * absolute-path check to the diagnostics themselves rather than to the whole page, which
  * legitimately shows the opened file's path in its breadcrumb.
  */
+/**
+ * Diagnostics VS Code itself holds for a subject.
+ *
+ * This is the surface the product now publishes to, and it is a better one to assert on than the
+ * page in every way that matters: it has the code and the severity the host actually produced
+ * rather than a string scraped out of prose, it does not vanish when the next status message
+ * lands, and reading it needs no debugger — `getDiagnostics` is ordinary public API.
+ */
+function nativeDiagnostics(fsPath) {
+  return vscode.languages.getDiagnostics(vscode.Uri.file(fsPath)).map(item => ({
+    code:
+      item.code !== null && typeof item.code === 'object'
+        ? String(item.code.value)
+        : String(item.code ?? ''),
+    message: item.message,
+    severity: vscode.DiagnosticSeverity[item.severity] ?? String(item.severity),
+    source: item.source ?? '',
+  }))
+}
+
+/** Wait for the host to publish at least one problem about this subject. */
+async function waitForNativeDiagnostics(fsPath, timeoutMs = 30_000) {
+  const found = await waitFor(
+    () => {
+      const items = nativeDiagnostics(fsPath)
+      return items.length > 0 ? items : undefined
+    },
+    { timeoutMs, stepMs: 500 },
+  )
+  return found ?? []
+}
+
 function sampleDiagnostics() {
   const seen = new Set()
   let running = true
@@ -592,9 +638,10 @@ async function runScenarios(env) {
      * diagnostic must not be raised. That is the half of this scenario the page can answer for
      * certain, because a diagnostic is a thing the page is given rather than a thing it draws.
      */
-    const complainsMissing = record.details.diagnosticsSeen.some(line =>
-      line.toLowerCase().includes(COMPANION_DIAGNOSTIC),
-    )
+    record.details.nativeDiagnostics = nativeDiagnostics(target)
+    const complainsMissing =
+      record.details.nativeDiagnostics.some(item => item.code === COMPANION_DIAGNOSTIC) ||
+      record.details.diagnosticsSeen.some(line => line.toLowerCase().includes(COMPANION_DIAGNOSTIC))
     record.details.companionDiagnosticPresent = complainsMissing
     if (complainsMissing) {
       record.evidence =
@@ -708,8 +755,24 @@ async function runScenarios(env) {
           `${COMPANION_DIAGNOSTIC} could not be confirmed`
         return false
       }
-      const raised = seen.filter(line => line.toLowerCase().includes(COMPANION_DIAGNOSTIC))
+      /*
+       * The native collection first, the page second. The product publishes structured
+       * diagnostics to VS Code's own Problems surface, so that is where the code and severity
+       * are; the page's status line is kept as a secondary channel so a regression in either one
+       * is still visible here.
+       */
+      const native = await waitForNativeDiagnostics(lonely)
+      record.details.nativeDiagnostics = native
+      const nativeRaised = native.filter(item => item.code === COMPANION_DIAGNOSTIC)
+      const raised = [
+        ...nativeRaised.map(item => `${item.code}: ${item.message}`),
+        ...seen.filter(line => line.toLowerCase().includes(COMPANION_DIAGNOSTIC)),
+      ]
       record.details.diagnosticCode = raised.length > 0 ? COMPANION_DIAGNOSTIC : null
+      record.details.channels = {
+        problemsPanel: nativeRaised.length > 0,
+        pageStatusLine: seen.some(line => line.toLowerCase().includes(COMPANION_DIAGNOSTIC)),
+      }
       if (raised.length === 0) {
         record.evidence =
           `the model opened without its sidecar on ${stages.join('/')} stages, but the page never ` +
