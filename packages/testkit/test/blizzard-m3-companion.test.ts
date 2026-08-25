@@ -430,6 +430,101 @@ describe('the installed StarCraft II M3', () => {
           `[sc2-live] M3 texture references ${summary.textureReferences.length}, bound ` +
             `${summary.textureBindings.length} (cross-mod-root, see comment)`,
         )
+
+        /*
+         * The same reference, now through the post-open `ResourceSessionPort` of slice 11C0.
+         *
+         * This is the part the pre-open seam structurally cannot do: the name comes out of the
+         * model's own string table, so no input plan could have carried it. The port takes it as a
+         * logical requirement and resolves it against the very same CASC namespace, with the same
+         * confinement and the same bounded prefix listing the companion resolver uses.
+         *
+         * The verdict is expected to stay `reference-only` for the reason above — but it is now a
+         * *typed* outcome with a coded reason and a provenance record instead of an absence, which
+         * is the whole point of the port. Full resolution needs a game-mount provider that knows
+         * SC2's mod dependency chain: blocks 12 and 15.
+         */
+        const { createNamespaceCompanionOrigin } = (await import(
+          pathToFileURL(join(repoRoot, 'packages', 'host', 'src', 'namespace-origin.js')).href
+        )) as typeof import('../../host/src/namespace-origin.js')
+        const { createResourceSession, RESOURCE_NOT_FOUND } = (await import(
+          pathToFileURL(join(repoRoot, 'packages', 'host', 'src', 'resource-session.js')).href
+        )) as typeof import('../../host/src/resource-session.js')
+
+        const namespaceLease = await casc.session.dataSource(
+          'common.view/namespace-entry-source',
+          1,
+        )
+        const cascRevision = (await casc.session.descriptor()).revision
+        const resources = createResourceSession({
+          origin: createNamespaceCompanionOrigin({
+            namespace: namespaceLease.value,
+            primaryLogicalId: modelPath,
+            containerRevision: cascRevision,
+            extract: async (entryId, signal) => {
+              const payload = await casc.session
+                .operations()
+                .invoke('extract-entry', { entryId }, signal === undefined ? {} : { signal })
+              if (payload.state !== 'ok' || payload.output.kind !== 'bytes') {
+                throw new Error(`CASC extraction failed for ${entryId}`)
+              }
+              return payload.output.value
+            },
+          }),
+          revision: cascRevision,
+        })
+        try {
+          const reference = summary.textureReferences[0]?.value
+          if (reference === undefined) throw new Error('the M3 named no texture')
+          const first = await resources.resolve({
+            id: 'texture-0',
+            logicalId: reference,
+            role: 'texture',
+            scopes: ['current-mount', 'enclosing-container'],
+          })
+          // whichever way it goes, it is a named outcome carrying provenance — never an absence
+          expect(first.provenance).toMatchObject({
+            requirementId: 'texture-0',
+            logicalId: reference,
+            role: 'texture',
+            cached: false,
+          })
+          if (first.state === 'unresolved') {
+            expect(first.reason).toBe('not-found')
+            expect(first.diagnostic.code).toBe(RESOURCE_NOT_FOUND)
+            // a cross-mod-root reference is a fact about the corpus, not a defect in the model
+            expect(first.diagnostic.severity).toBe('information')
+          } else {
+            expect(first.revision).toBe(first.lease.value.revision)
+            await first.lease.release()
+          }
+
+          // the budget is spent once: asking again is served from the session index, hit or miss
+          const repeat = await resources.resolve({
+            id: 'texture-0-again',
+            logicalId: reference,
+            role: 'texture',
+            scopes: ['current-mount', 'enclosing-container'],
+          })
+          expect(repeat.provenance.cached).toBe(true)
+          expect(repeat.state).toBe(first.state)
+          if (repeat.state === 'resolved') await repeat.lease.release()
+
+          expect(resources.provenance()).toHaveLength(2)
+          console.info(
+            `[sc2-live] ResourceSessionPort «${reference}»: ${first.state}` +
+              (first.state === 'unresolved' ? ` (${first.reason})` : ''),
+          )
+        } finally {
+          // nested so a throwing dispose cannot strand the container lease behind it
+          try {
+            await resources.dispose()
+          } finally {
+            await namespaceLease.release()
+          }
+        }
+        expect(resources.state()).toBe('disposed')
+
         await nested.result.session.dispose()
       } finally {
         await casc.session.dispose()
