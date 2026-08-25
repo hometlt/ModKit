@@ -12,6 +12,10 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./manifest/validators.generated": {
+      "types": "./dist/manifest/validators.generated.d.ts",
+      "default": "./dist/manifest/validators.generated.js"
+    },
     "./subjects": {
       "types": "./dist/subjects/index.d.ts",
       "default": "./dist/subjects/index.js"

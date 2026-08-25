@@ -19,6 +19,10 @@ const bundlePath = (...parts: string[]) => join(root, ...parts)
 const PUBLISHED_ENTRIES = [
   'packages/core/dist/index.js',
   'packages/sdk/dist/index.js',
+  // the generated AJV validator table as its own entry: 2.6 MB that `validateWithSchema` loads on
+  // first use, so importing the SDK no longer makes every host pay for schema validation it may
+  // never do (closure-import p50 59 ms -> 35 ms against a 50 ms budget, BRIEF-12 §6)
+  'packages/sdk/dist/manifest/validators.generated.js',
   'packages/sdk/dist/authoring/index.js',
   'packages/sdk/dist/data-sources.js',
   'packages/sdk/dist/editing.js',

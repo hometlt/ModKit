@@ -7,7 +7,6 @@
  */
 
 import { canonicalJsonStringify, diagnostic, ModkitError, type Diagnostic } from '@modkitx-x3/core'
-import { PRECOMPILED_SCHEMA_VALIDATORS } from './validators.generated.js'
 
 export interface JsonSchemaEvaluationError {
   readonly instancePath: string
@@ -21,10 +20,28 @@ export type PrecompiledSchemaValidator = ((value: unknown) => boolean | Promise<
   errors?: readonly JsonSchemaEvaluationError[] | null
 }
 
-const platformValidators = PRECOMPILED_SCHEMA_VALIDATORS as ReadonlyMap<
-  string,
-  PrecompiledSchemaValidator
->
+/**
+ * The generated validator table is 2.6 MB of standalone AJV code — 93% of this package's published
+ * `index` bundle, and the only reason a bootstrap closure (core + sdk + vfs + host) cost ~59 ms to
+ * import when its budget is 50 ms (BRIEF-12 §6). Nothing reads the table at import time: it is
+ * consulted inside `validateWithSchema`, which is already async. Loading it on first use therefore
+ * costs nothing to a host that never validates, and costs one deferred import to a host that does.
+ *
+ * The specifier is this package's own `exports` entry rather than a relative path on purpose. The
+ * dist bundler (scripts/bundle.mjs) collapses each entry into a single file and inlines every
+ * RELATIVE import, lazy or not — the bytes would stay in `index.js` and V8 would still scan them.
+ * A bare specifier stays external, so the table becomes its own file that is fetched only when
+ * asked for. A consumer that bundles the SDK into its own output still inlines it, as before.
+ */
+let platformValidatorsPromise: Promise<ReadonlyMap<string, PrecompiledSchemaValidator>> | undefined
+
+function platformValidators(): Promise<ReadonlyMap<string, PrecompiledSchemaValidator>> {
+  platformValidatorsPromise ??= import('@modkitx-x3/sdk/manifest/validators.generated').then(
+    module =>
+      module.PRECOMPILED_SCHEMA_VALIDATORS as ReadonlyMap<string, PrecompiledSchemaValidator>,
+  )
+  return platformValidatorsPromise
+}
 
 function toPath(error: JsonSchemaEvaluationError): (string | number)[] {
   return error.instancePath
@@ -301,7 +318,7 @@ export async function validateWithSchema(
       ),
     ]
   }
-  const validate = suppliedValidator ?? platformValidators.get(schemaCacheKey)
+  const validate = suppliedValidator ?? (await platformValidators()).get(schemaCacheKey)
   if (validate === undefined) {
     return [
       diagnostic(

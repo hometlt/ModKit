@@ -251,7 +251,7 @@
     "$comment": "Reference bundle baseline блока 10: состав уже зафиксирован владельцем в scripts/bundle-hashes.json и охраняется pnpm bundle:check байт-в-байт. Здесь фиксируется только состав (какие entry входят в baseline), чтобы профиль нельзя было расширить молча.",
     "source": "scripts/bundle-hashes.json",
     "ratchet": "pnpm bundle:check",
-    "entryCount": 65,
+    "entryCount": 66,
     "entries": [
       "apps/modkit-cli/dist/main.js",
       "packages/core/dist/index.js",
@@ -276,6 +276,7 @@
       "packages/sdk/dist/games/index.js",
       "packages/sdk/dist/index.js",
       "packages/sdk/dist/language/index.js",
+      "packages/sdk/dist/manifest/validators.generated.js",
       "packages/sdk/dist/maps/index.js",
       "packages/sdk/dist/mods/index.js",
       "packages/sdk/dist/renderer/index.js",
