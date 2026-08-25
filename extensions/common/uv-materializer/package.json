@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "license": "MIT",
   "type": "module",
-  "description": "The single common UVM/core materializer and its export-only UVM writer.",
+  "description": "The single common UVM/core and UVT/core materializers and their export-only writers.",
   "exports": {
     ".": "./src/index.js",
     "./linked": "./src/linked.js",
     "./materializer": "./src/materializer.js",
+    "./texture-materializer": "./src/texture-materializer.js",
+    "./texture-writer": "./src/texture-writer.js",
     "./writer": "./src/writer.js",
     "./package.json": "./package.json"
   },

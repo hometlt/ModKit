@@ -79,25 +79,59 @@ interface SpecTools {
       options?: { digest?: (bytes: Uint8Array) => string },
     ): { bytes: Uint8Array; document: unknown; receipt: MaterializationReceipt }
   }
+  readonly textureInterchange: {
+    projectionSemanticHash(projection: unknown): string
+    projectionFromSidecar(sidecar: unknown): UvtProjection
+  }
+  readonly uvtProfile: {
+    assertUvtProfile(sidecar: unknown): unknown
+  }
+  readonly textureMaterializer: {
+    materializeUvtCore(
+      source: unknown,
+      request: unknown,
+      options?: { digest?: (bytes: Uint8Array) => string },
+    ): {
+      bytes: Uint8Array
+      sidecar: UvtSidecar
+      projection: UvtProjection
+      receipt: MaterializationReceipt
+      losses: readonly string[]
+    }
+  }
 }
 
 let cached: SpecTools | undefined
 
-/** Loads the pinned reference implementations and the materializer under test. */
+/** Loads the pinned reference implementations and the materializers under test. */
 export async function loadUvTools(repoRoot: string): Promise<SpecTools> {
   if (cached !== undefined) return cached
   const specTool = (name: string): string =>
     pathToFileURL(join(repoRoot, 'vendor', 'multiverse-specs', 'specs', 'tools', name)).href
+  const extensionModule = (name: string): string =>
+    pathToFileURL(join(repoRoot, 'extensions', 'common', 'uv-materializer', 'src', name)).href
   const modelInterchange = (await import(
     specTool('model-interchange.mjs')
   )) as SpecTools['modelInterchange']
   const uvmCore = (await import(specTool('uvm-core.mjs'))) as SpecTools['uvmCore']
+  const textureInterchange = (await import(
+    specTool('texture-interchange.mjs')
+  )) as SpecTools['textureInterchange']
+  const uvtProfile = (await import(specTool('uvt-profile.mjs'))) as SpecTools['uvtProfile']
   const materializer = (await import(
-    pathToFileURL(
-      join(repoRoot, 'extensions', 'common', 'uv-materializer', 'src', 'materializer.js'),
-    ).href
+    extensionModule('materializer.js')
   )) as SpecTools['materializer']
-  cached = { modelInterchange, uvmCore, materializer }
+  const textureMaterializer = (await import(
+    extensionModule('texture-materializer.js')
+  )) as SpecTools['textureMaterializer']
+  cached = {
+    modelInterchange,
+    uvmCore,
+    materializer,
+    textureInterchange,
+    uvtProfile,
+    textureMaterializer,
+  }
   return cached
 }
 
@@ -233,4 +267,277 @@ export function unexplainedDifferences(verdict: UvMaterializationVerdict): reado
   return [...verdict.differingFacets, ...verdict.facetPresenceDiff].filter(
     facet => !explained.has(facet),
   )
+}
+
+// ---------------------------------------------------------------------------------------------
+// UVT (block 12, slice 12-1)
+
+export const TEXTURE_INTERCHANGE_V1: SemanticScopeRef = Object.freeze({
+  scopeId: 'texture-interchange-v1',
+  version: '1.0.0',
+})
+
+/** The `.uvt.json` sidecar shape, as the pinned UVT/core 1.0 schema fixes it. */
+export interface UvtSidecar {
+  readonly uv: { readonly format: 'UVT'; readonly version: '1.0'; readonly profile: 'core' }
+  readonly ktx2: {
+    readonly vkFormat: number
+    readonly pixelWidth: number
+    readonly pixelHeight: number
+    readonly pixelDepth: number
+    readonly layerCount: number
+    readonly faceCount: number
+    readonly levelCount: number
+    readonly supercompressionScheme: number
+  }
+  readonly color: {
+    readonly transferFunction: 'linear' | 'srgb'
+    readonly primaries: 'bt709' | 'unspecified'
+    readonly premultipliedAlpha: boolean
+  }
+  readonly alphaMode: 'opaque' | 'straight' | 'premultiplied'
+  readonly orientation: 'rd' | 'ru'
+  readonly swizzle?: string
+  readonly sampler: Readonly<Record<string, string>>
+  readonly atlas?: unknown
+}
+
+/** The `texture-interchange-v1` projection: the sidecar's blocks, in the scope's own shape. */
+export interface UvtProjection {
+  readonly container: Readonly<Record<string, number>>
+  readonly color: Readonly<Record<string, unknown>>
+  readonly sampler: Readonly<Record<string, string>>
+  readonly atlas?: unknown
+}
+
+/**
+ * What a KTX 2.0 container actually says about itself.
+ *
+ * Parsed here rather than by the materializer on purpose. The whole point of the profile's
+ * mandatory mapping table (SPEC_UVT §1) is that the sidecar can be checked against the container;
+ * checking it with the writer's own view of the bytes would prove nothing. So this is a second,
+ * independent reader — deliberately small, deliberately not shared with the module under test.
+ */
+export interface Ktx2ContainerFacts {
+  readonly vkFormat: number
+  readonly typeSize: number
+  readonly pixelWidth: number
+  readonly pixelHeight: number
+  readonly pixelDepth: number
+  readonly layerCount: number
+  readonly faceCount: number
+  readonly levelCount: number
+  readonly supercompressionScheme: number
+  /** From the Data Format Descriptor, not from the sidecar. */
+  readonly transferFunction: 'linear' | 'srgb' | 'other'
+  readonly primaries: 'bt709' | 'unspecified' | 'other'
+  readonly premultipliedAlpha: boolean
+  /** From the key/value data. */
+  readonly keyValues: Readonly<Record<string, string>>
+  readonly levelBytes: Uint8Array
+}
+
+const KTX2_IDENTIFIER = [0xab, 0x4b, 0x54, 0x58, 0x20, 0x32, 0x30, 0xbb, 0x0d, 0x0a, 0x1a, 0x0a]
+
+export function readKtx2Container(bytes: Uint8Array): Ktx2ContainerFacts {
+  if (!KTX2_IDENTIFIER.every((value, index) => bytes[index] === value)) {
+    throw new TypeError('the artifact does not start with the KTX 2.0 identifier')
+  }
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+  const u32 = (offset: number): number => view.getUint32(offset, true)
+  const levelCount = u32(40)
+  if (levelCount < 1) throw new TypeError('a KTX2 container must declare at least one level')
+  const dfdOffset = u32(48)
+  const kvdOffset = u32(56)
+  const kvdLength = u32(60)
+
+  // --- the Data Format Descriptor's basic block ---------------------------------------------
+  const word2 = u32(dfdOffset + 12)
+  const transferValue = (word2 >>> 16) & 0xff
+  const primariesValue = (word2 >>> 8) & 0xff
+  const flags = (word2 >>> 24) & 0xff
+
+  // --- key/value data ------------------------------------------------------------------------
+  const keyValues: Record<string, string> = {}
+  const decoder = new TextDecoder()
+  let cursor = kvdOffset
+  const end = kvdOffset + kvdLength
+  while (cursor + 4 <= end) {
+    const length = u32(cursor)
+    if (length === 0) break
+    const entry = bytes.subarray(cursor + 4, cursor + 4 + length)
+    const separator = entry.indexOf(0)
+    if (separator < 0) throw new TypeError('a KTX2 key/value entry has no NUL-terminated key')
+    const key = decoder.decode(entry.subarray(0, separator))
+    const rawValue = entry.subarray(separator + 1)
+    const valueEnd = rawValue.indexOf(0)
+    keyValues[key] = decoder.decode(valueEnd < 0 ? rawValue : rawValue.subarray(0, valueEnd))
+    cursor += 4 + length
+    cursor += (4 - (cursor % 4)) % 4
+  }
+
+  const levelOffset = Number(view.getBigUint64(80, true))
+  const levelLength = Number(view.getBigUint64(88, true))
+  return {
+    vkFormat: u32(12),
+    typeSize: u32(16),
+    pixelWidth: u32(20),
+    pixelHeight: u32(24),
+    pixelDepth: u32(28),
+    layerCount: u32(32),
+    faceCount: u32(36),
+    levelCount,
+    supercompressionScheme: u32(44),
+    transferFunction: transferValue === 2 ? 'srgb' : transferValue === 1 ? 'linear' : 'other',
+    primaries: primariesValue === 1 ? 'bt709' : primariesValue === 0 ? 'unspecified' : 'other',
+    premultipliedAlpha: (flags & 1) !== 0,
+    keyValues: Object.freeze(keyValues),
+    levelBytes: bytes.slice(levelOffset, levelOffset + levelLength),
+  }
+}
+
+export interface UvtMaterializationVerdict {
+  /** `projectionSemanticHash(texture-interchange-v1)` of the live projection. */
+  readonly liveHash: string
+  /** The same hash of the projection rebuilt from the reopened container and its sidecar. */
+  readonly reopenedHash: string
+  readonly exact: boolean
+  readonly artifactDigest: string
+  readonly byteStable: boolean
+  readonly bytes: Uint8Array
+  readonly sidecar: UvtSidecar
+  readonly container: Ktx2ContainerFacts
+  readonly receipt: MaterializationReceipt
+  readonly losses: readonly string[]
+  /**
+   * Rows of SPEC_UVT §1's mandatory mapping table where the sidecar and the container disagree.
+   * Empty is the only passing answer: the profile calls a disagreement a defect, not a preference.
+   */
+  readonly mappingViolations: readonly string[]
+}
+
+/** Every row of the mandatory mapping table, checked against a container this harness re-read. */
+function mappingViolations(sidecar: UvtSidecar, container: Ktx2ContainerFacts): readonly string[] {
+  const problems: string[] = []
+  const compare = (field: string, sidecarValue: unknown, containerValue: unknown): void => {
+    if (sidecarValue !== containerValue) {
+      problems.push(
+        `${field}: sidecar ${String(sidecarValue)}, container ${String(containerValue)}`,
+      )
+    }
+  }
+  compare('ktx2.vkFormat', sidecar.ktx2.vkFormat, container.vkFormat)
+  compare('ktx2.pixelWidth', sidecar.ktx2.pixelWidth, container.pixelWidth)
+  compare('ktx2.pixelHeight', sidecar.ktx2.pixelHeight, container.pixelHeight)
+  compare('ktx2.pixelDepth', sidecar.ktx2.pixelDepth, container.pixelDepth)
+  compare('ktx2.layerCount', sidecar.ktx2.layerCount, container.layerCount)
+  compare('ktx2.faceCount', sidecar.ktx2.faceCount, container.faceCount)
+  compare('ktx2.levelCount', sidecar.ktx2.levelCount, container.levelCount)
+  compare(
+    'ktx2.supercompressionScheme',
+    sidecar.ktx2.supercompressionScheme,
+    container.supercompressionScheme,
+  )
+  compare('color.transferFunction', sidecar.color.transferFunction, container.transferFunction)
+  compare('color.primaries', sidecar.color.primaries, container.primaries)
+  compare(
+    'color.premultipliedAlpha',
+    sidecar.color.premultipliedAlpha,
+    container.premultipliedAlpha,
+  )
+  compare('orientation', sidecar.orientation, container.keyValues['KTXorientation'])
+  if (sidecar.swizzle !== undefined) {
+    compare('swizzle', sidecar.swizzle, container.keyValues['KTXswizzle'])
+  }
+  return problems
+}
+
+/**
+ * Materialize a decoded raster region into UVT, read the container back, and report the verdict.
+ *
+ * Three independent things are checked and none of them is the materializer checking itself: the
+ * pinned `assertUvtProfile` accepts the sidecar, a second reader in this file re-reads the
+ * container and every row of the mandatory mapping table is compared against it, and the pinned
+ * `texture-interchange-v1` tool hashes the live projection and the reopened one.
+ */
+export async function materializeTextureAndCompare(
+  repoRoot: string,
+  source: {
+    readonly info: Readonly<Record<string, unknown>>
+    readonly region: {
+      readonly width: number
+      readonly height: number
+      readonly rowStride: number
+      readonly pixelFormat: string
+      readonly pixels: Uint8Array
+    }
+    readonly sampler?: Readonly<Record<string, string>>
+    readonly atlas?: unknown
+  },
+  options: {
+    readonly assetId: string
+    readonly subjectRevision: RevisionId | string
+  },
+): Promise<UvtMaterializationVerdict> {
+  const tools = await loadUvTools(repoRoot)
+  const request = {
+    scope: TEXTURE_INTERCHANGE_V1,
+    profile: 'UVT/core@1.0',
+    subjectRevision: options.subjectRevision,
+    options: { assetId: options.assetId },
+  }
+  const first = tools.textureMaterializer.materializeUvtCore(source, request, { digest: sha256 })
+  const second = tools.textureMaterializer.materializeUvtCore(source, request, { digest: sha256 })
+  const byteStable =
+    first.bytes.byteLength === second.bytes.byteLength &&
+    first.bytes.every((value, index) => value === second.bytes[index])
+
+  // the sidecar must satisfy the pinned profile's own cross-field rules before anything else
+  tools.uvtProfile.assertUvtProfile(first.sidecar)
+  const container = readKtx2Container(first.bytes)
+
+  const liveHash = tools.textureInterchange.projectionSemanticHash(first.projection)
+  /*
+   * The reopened projection is rebuilt from the container's own header and DFD, with the two
+   * members the container has no place for — the sampler and the atlas — taken from the sidecar.
+   * That split is the profile's, not a convenience: SPEC_UVT §1 says the sidecar's ktx2 block is a
+   * copy of container values and everything else is UV-level semantics the container cannot hold.
+   */
+  const reopened: UvtProjection = {
+    container: {
+      vkFormat: container.vkFormat,
+      pixelWidth: container.pixelWidth,
+      pixelHeight: container.pixelHeight,
+      pixelDepth: container.pixelDepth,
+      layerCount: container.layerCount,
+      faceCount: container.faceCount,
+      levelCount: container.levelCount,
+      supercompressionScheme: container.supercompressionScheme,
+    },
+    color: {
+      transferFunction: container.transferFunction,
+      primaries: container.primaries,
+      premultipliedAlpha: container.premultipliedAlpha,
+      alphaMode: first.sidecar.alphaMode,
+      orientation: container.keyValues['KTXorientation'],
+      swizzle: container.keyValues['KTXswizzle'] ?? null,
+    },
+    sampler: first.sidecar.sampler,
+    ...(first.sidecar.atlas === undefined ? {} : { atlas: first.sidecar.atlas }),
+  }
+  const reopenedHash = tools.textureInterchange.projectionSemanticHash(reopened)
+
+  return {
+    liveHash,
+    reopenedHash,
+    exact: liveHash === reopenedHash,
+    artifactDigest: first.receipt.artifactDigest ?? sha256(first.bytes),
+    byteStable,
+    bytes: first.bytes,
+    sidecar: first.sidecar,
+    container,
+    receipt: first.receipt,
+    losses: first.losses,
+    mappingViolations: mappingViolations(first.sidecar, container),
+  }
 }

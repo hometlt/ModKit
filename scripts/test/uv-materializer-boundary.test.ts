@@ -35,6 +35,15 @@ const MODEL_CODECS = [
   'extensions/ea/tiberian-sun/src/red-alert2-vxl/codec.js',
 ]
 
+/** The image codecs whose decoded regions the UVT materializer consumes, and the KTX2 reader. */
+const IMAGE_CODECS = [
+  'extensions/common/images/src/bmp/codec.js',
+  'extensions/common/images/src/tga/codec.js',
+  'extensions/common/images/src/formats/png/codec.js',
+  'extensions/common/images/src/dds/codec.js',
+  'extensions/common/images/src/ktx2/codec.js',
+]
+
 const graphOf = async (entry: string): Promise<readonly string[]> => {
   const result = await build({
     absWorkingDir: repoRoot,
@@ -71,6 +80,27 @@ describe('the UVM materializer is the only writer, and no codec is a second one'
     // it is the whole point that this module is self-contained: one file, no dependencies at all
     expect(inputs).toEqual(['extensions/common/uv-materializer/src/materializer.js'])
   }, 60_000)
+
+  it('the same boundary holds for the texture materializer (block 12, slice 12-1)', async () => {
+    /*
+     * The UVT materializer joined the family, so the rule has to hold on its side too — otherwise
+     * an image codec would quietly become a second owner of the container format, which is the
+     * exact failure the model side was fenced off from.
+     */
+    for (const codec of IMAGE_CODECS) {
+      const inputs = await graphOf(codec)
+      expect(
+        inputs.some(path => path.includes('uv-materializer')),
+        `${codec} must not import the texture materializer`,
+      ).toBe(false)
+      expect(
+        inputs.some(path => /uvt-writer|texture-materializer/u.test(path)),
+        `${codec} must not carry a second UVT writer`,
+      ).toBe(false)
+    }
+    const inputs = await graphOf('extensions/common/uv-materializer/src/texture-materializer.js')
+    expect(inputs).toEqual(['extensions/common/uv-materializer/src/texture-materializer.js'])
+  }, 120_000)
 
   it('no minimal-closure profile carries the writer', () => {
     /*
@@ -122,8 +152,11 @@ describe('the UVM materializer is the only writer, and no codec is a second one'
     expect(byExtension.get('models')).not.toContain('org.modkitx/uvm-writer')
     expect(byExtension.get('uv-materializer')).toEqual([
       'org.modkitx/uv-model-materializer-contract',
+      'org.modkitx/uv-texture-materializer-contract',
       'org.modkitx/uvm-materializer',
+      'org.modkitx/uvt-materializer',
       'org.modkitx/uvm-writer',
+      'org.modkitx/uvt-writer',
     ])
   })
 })

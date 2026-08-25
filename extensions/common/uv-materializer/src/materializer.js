@@ -486,6 +486,19 @@ export function materializeUvmCore(projection, request, { digest } = {}) {
       undefined,
       'the source is metadata-only, so there was no geometry to carry',
     )
+    /*
+     * `geometryAccess` cannot round-trip out of a metadata-only source, and the reason is in the
+     * artifact binding rather than in this materializer: a reopened UVM document always reports
+     * `decoded`, because a UVM file either carries buffers or is not a UVM file. There is nothing
+     * to write that would make the two agree — found by the first real W3X container run of block
+     * 12, where a projection with no decoded mesh produced an otherwise unexplained structure diff.
+     */
+    note(
+      'uv.model/structure@1',
+      'value-differs',
+      '/geometryAccess',
+      'a metadata-only projection materialises into a document the artifact binding reopens as «decoded»; the flag describes the reader, and no byte written here could carry the source’s answer',
+    )
   }
 
   /*

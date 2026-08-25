@@ -2,10 +2,17 @@ export {
   drainModelProjection,
   loadUvTools,
   materializeAndCompare,
+  materializeTextureAndCompare,
   MODEL_INTERCHANGE_V1,
+  readKtx2Container,
+  TEXTURE_INTERCHANGE_V1,
   unexplainedDifferences,
   type DrainedModelProjection,
+  type Ktx2ContainerFacts,
   type UvMaterializationVerdict,
+  type UvtMaterializationVerdict,
+  type UvtProjection,
+  type UvtSidecar,
 } from './uv-materialization.js'
 export { runMinimalHost, type MinimalHostOptions, type MinimalHostRun } from './minimal-host.js'
 export { offersFromInventory } from '@modkitx-x3/host'
