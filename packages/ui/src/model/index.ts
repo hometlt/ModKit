@@ -1,4 +1,5 @@
 import type {
+  Lease,
   ModelPrimitive,
   ModelSceneInfo,
   ModelSceneSource,
@@ -28,9 +29,63 @@ export { createViewGizmo, GIZMO_SIZE, type ViewGizmo, type ViewGizmoOptions } fr
 
 export const MODEL_MAXIMUM_PRIMITIVE_BYTES = 64 * 1024 * 1024
 
+/**
+ * The optional model facets this stage will read when a subject publishes them.
+ *
+ * Listed as contract ids and read through one loop: the stage calls `info()` on whatever turned up
+ * and prints the counts. There is no `if (format === …)` anywhere in this file, which is the point
+ * — a facet contract with a generic consumer is what §2.7 asks for before a candidate can be
+ * admitted, and one viewer reading five different codecs' facets the same way is that consumer.
+ */
+export const MODEL_FACET_CONTRACTS = Object.freeze([
+  'common.view/model-resource-refs-source',
+  'common.view/model-skeleton-source',
+  'common.view/model-animation-source',
+  'common.view/model-collision-source',
+  'common.view/model-material-source',
+] as const)
+
+/** Facet id → the one count worth putting on a single readout line. */
+const FACET_READOUT: Readonly<Record<string, { label: string; key: string }>> = Object.freeze({
+  'common.view/model-resource-refs-source': { label: 'resources', key: 'references' },
+  'common.view/model-skeleton-source': { label: 'bones', key: 'bindings' },
+  'common.view/model-animation-source': { label: 'clips', key: 'clips' },
+  'common.view/model-collision-source': { label: 'collision', key: 'volumes' },
+  'common.view/model-material-source': { label: 'materials', key: 'materials' },
+})
+
 export interface ModelStageModel {
   readonly info: ModelSceneInfo
   readonly primitive?: ModelPrimitive
+}
+
+/**
+ * Read every published facet's `info()` and render it as text.
+ *
+ * A facet the subject does not publish has no binding, so it is simply absent from the line — the
+ * viewer never says "0 clips" for a format that has no animation plane at all, which would be
+ * indistinguishable from a format whose animations it failed to read.
+ */
+export async function readModelFacets(
+  sources: Parameters<typeof unknownSourceLease>[0],
+  slot: Parameters<typeof unknownSourceLease>[1],
+  // structural on purpose: the only thing this needs from a mount scope is somewhere to park the
+  // leases it opens, which lets the loop be exercised without a DOM
+  scope: { lease(lease: Lease<unknown>): Lease<unknown> },
+  signal?: AbortSignal,
+): Promise<readonly string[]> {
+  const parts: string[] = []
+  for (const contract of MODEL_FACET_CONTRACTS) {
+    const lease = await unknownSourceLease(sources, slot, contract)
+    if (lease === undefined) continue
+    scope.lease(lease)
+    const readout = FACET_READOUT[contract]
+    const source = lease.value as { info(abort?: AbortSignal): Promise<Record<string, unknown>> }
+    const info = await source.info(signal)
+    const value = info[readout?.key ?? '']
+    if (typeof value === 'number') parts.push(`${value} ${readout?.label ?? contract}`)
+  }
+  return parts
 }
 
 export async function loadModelStage(
@@ -205,11 +260,18 @@ export const modelViewer: ViewerModule = defineViewerModule({
        * "0 animations" is an answer, while silence is indistinguishable from a viewer that cannot
        * tell — which is the ambiguity the block-9 smoke ran into on a W3D with one track.
        */
+      /*
+       * The base scene counts, then whatever optional facets this subject published. The facet line
+       * is read through the contracts alone — the same loop answers for a SAGE W3X, a Westwood VXL
+       * and a Wavefront OBJ, which is what makes this a generic consumer rather than five readers.
+       */
+      const facets = await readModelFacets(args.sources, args.slot, scope, scope.signal)
       setViewerText(
         readout,
         `${model.info.nodes} nodes · ${model.info.meshes} meshes · ` +
           `${model.info.primitives} primitives · ${model.info.materials} materials · ` +
-          `${model.info.animations} animations`,
+          `${model.info.animations} animations` +
+          (facets.length === 0 ? '' : ` · ${facets.join(' · ')}`),
       )
       if (model.primitive === undefined) {
         canvas.remove()

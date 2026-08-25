@@ -47,7 +47,7 @@ import { hexViewer } from '@modkitx-x3/ui/hex'
 import { hexEditor } from '@modkitx-x3/ui/hex-editor'
 import { imageViewer } from '@modkitx-x3/ui/image'
 import { metadataPanel } from '@modkitx-x3/ui/metadata'
-import { modelViewer } from '@modkitx-x3/ui/model'
+import { MODEL_FACET_CONTRACTS, modelViewer } from '@modkitx-x3/ui/model'
 import { namespaceViewer } from '@modkitx-x3/ui/namespace'
 import { tableViewer } from '@modkitx-x3/ui/table'
 import { virtualTextViewer } from '@modkitx-x3/ui/text-virtual'
@@ -400,6 +400,8 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
       label: 'Model',
       contract: 'common.view/model-scene-source',
       module: modelViewer,
+      // optional, never a selection rule: a codec publishing none of these still gets the stage
+      optionalContracts: MODEL_FACET_CONTRACTS,
     },
     { id: 'audio', label: 'Audio', contract: 'common.view/audio-media-source', module: audioStage },
     {

@@ -35,6 +35,16 @@ export interface PreviewStage {
   /** Only offered when the descriptor carries this trait. */
   readonly trait?: string
   /**
+   * Extra contracts to bind when the descriptor publishes them, beside `contract`.
+   *
+   * Required and optional sources are different things, and this is the optional half: a stage is
+   * *selected* by `contract` alone, so listing a facet here never makes the stage ineligible, and a
+   * viewer reads what turned up through `bindingFor` exactly as it reads its primary source. This
+   * is what lets one generic viewer consume the optional model facets without a format branch and
+   * without a codec that publishes none of them losing its stage.
+   */
+  readonly optionalContracts?: readonly string[]
+  /**
    * This module is an `EditorModule`, not a viewer: it also needs the four host-owned ports. The
    * host supplies them through `editorPorts`, and a stage marked editable is skipped when it does
    * not — a read-only host must not mount an editor that can never save.
@@ -211,7 +221,14 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
           contributionId: 'org.modkitx.ui/explorer',
           extensionId: 'org.modkitx.ui',
           priority: 100,
-          bindings: [{ bindingId: 'content', contract: stage.contract, major: 1 }],
+          bindings: [
+            { bindingId: 'content', contract: stage.contract, major: 1 },
+            // optional sources: bound when this descriptor actually publishes them, absent when it
+            // does not, so the viewer's own `bindingFor` lookup is the whole availability check
+            ...(stage.optionalContracts ?? [])
+              .filter(contract => published.has(contract) && contract !== stage.contract)
+              .map(contract => ({ bindingId: `facet:${contract}`, contract, major: 1 })),
+          ],
         }
 
         /*
