@@ -44,7 +44,7 @@ import {
   type ResourceBudget,
   type Writer,
 } from '@modkitx-x3/sdk'
-import { createSubjectEditing } from '@modkitx-x3/host'
+import { createSubjectEditing, type OpenedSubject } from '@modkitx-x3/host'
 import { createFileEditingBackend, openFileArtifactSource } from '@modkitx-x3/host/node'
 import { materializeTextureAndCompare, readKtx2Container } from '@modkitx-x3/testkit'
 
@@ -388,7 +388,7 @@ describe('12-2 UVT export writes through the host coordinator and reopens', () =
 })
 
 /** Open a path as a subject with the shipped BMP codec, for the edit target the writer needs. */
-async function openSubjectFor(path: string): Promise<never> {
+async function openSubjectFor(path: string): Promise<OpenedSubject> {
   const { buildInventory, createHostContributionContractRegistry, createExecutionBackendRegistry } =
     await import('@modkitx-x3/host')
   const { loadExtensionDirectory } = await import('@modkitx-x3/host/node')
@@ -431,5 +431,5 @@ async function openSubjectFor(path: string): Promise<never> {
     executionBackends,
   })
   if (opened.state !== 'opened') throw new Error('the export target did not open')
-  return opened as never
+  return opened as unknown as OpenedSubject
 }

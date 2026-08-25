@@ -239,7 +239,10 @@ describe('12-2 RTF has exactly one active route', () => {
     }
     expect(descriptor.identity.codecId).toBe('org.modkitx/document-rtf')
     expect(descriptor.identity.confidence).toBe(0.998)
-    const candidates = snapshot.candidates ?? []
+    const candidates = (snapshot.candidates ?? []) as readonly {
+      contributionId: string
+      confidence?: number
+    }[]
     const retired = candidates.filter(item => item.contributionId === 'org.modkitx/rtf')
     // the retired route is still shortlisted and still probes; it simply loses, visibly
     expect(retired.some(item => item.confidence === 0.99)).toBe(true)

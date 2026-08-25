@@ -7,8 +7,10 @@ import {
   revisionId,
   type ArtifactByteSource,
   type AssetInput,
+  type AssetSession,
   type Codec,
   type ContributionContext,
+  type ModelResourceRefsSource,
   type ModelSceneSource,
   type ResourceBudget,
   type TreeDataSource,
@@ -104,6 +106,17 @@ async function inspect(session: Awaited<ReturnType<typeof open>>) {
   return result.output.value
 }
 
+/** The texture names a model declares, read from `common.view/model-resource-refs-source@1`. */
+async function expectResourceRefs(
+  session: AssetSession,
+  expected: readonly string[],
+): Promise<void> {
+  const lease = await session.dataSource('common.view/model-resource-refs-source', 1)
+  const items = (await (lease.value as ModelResourceRefsSource).references({ limit: 32 })).items
+  await lease.release()
+  expect(items.map(item => item.id)).toEqual([...expected])
+}
+
 describe('ported EA model codecs', () => {
   it('decodes a basis-converted W3X triangle with normals, UVs, material, and bounds', async () => {
     const session = await open('sage-w3x', await fixture('minimal.sage.w3x'))
@@ -117,10 +130,11 @@ describe('ported EA model codecs', () => {
       decodedMeshes: 1,
       decodedVertices: 3,
       decodedTriangles: 1,
-      textures: ['fixture.dds'],
       includes: ['shared.w3x'],
       geometryAccess: 'decoded',
     })
+    // the texture the shader names lives on the facet contract now, not in the summary
+    await expectResourceRefs(session, ['fixture.dds'])
     const lease = await session.dataSource('common.view/model-scene-source', 1)
     const model = lease.value as ModelSceneSource
     expect(await model.info()).toMatchObject({
@@ -165,9 +179,9 @@ describe('ported EA model codecs', () => {
       decodedMeshes: 1,
       decodedVertices: 3,
       decodedTriangles: 1,
-      textures: ['fixture.tga'],
       geometryAccess: 'decoded',
     })
+    await expectResourceRefs(session, ['fixture.tga'])
     const modelLease = await session.dataSource('common.view/model-scene-source', 1)
     const model = modelLease.value as ModelSceneSource
     expect(await model.info()).toMatchObject({
