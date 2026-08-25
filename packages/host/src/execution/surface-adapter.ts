@@ -1,7 +1,7 @@
 /**
  * NXT-103 → NXT-105 adapter: turns the SDK's data-only method surfaces (contract-definition
  * authority) into the capability-RPC core's `CapabilitySurface`s and builds the one surface
- * registry a host endpoint runs with — the 14 standard data-source surfaces, the auxiliary
+ * registry a host endpoint runs with — the 19 standard data-source surfaces, the auxiliary
  * `common.view/encoded-media@1`, the host-internal runtime-ABI surfaces and the surfaces of
  * every registered foreign data-source definition. No transport or application keeps a method
  * allowlist next to this.
