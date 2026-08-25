@@ -32,7 +32,10 @@ import {
   revisionId,
   type ArtifactByteSource,
   type AssetSession,
+  type ModelAnimationSource,
+  type ModelResourceRefsSource,
   type ModelSceneSource,
+  type ModelSkeletonSource,
   type NamespaceEntrySource,
   type ResourceBudget,
 } from '@modkitx-x3/sdk'
@@ -740,6 +743,129 @@ describe('W3D malformed input', () => {
       },
     }
     await expect(directCodecOpen(value, { ...budget, maxDepth: 8 })).rejects.toThrow(/maxDepth/u)
+  })
+})
+
+describe('W3D publishes its planes as facet contracts', () => {
+  /**
+   * The block-12 migration, checked against the same fixtures the ad hoc summary is checked against.
+   *
+   * The point of this block is that the *contract* now carries these facts. The summary keys are
+   * still emitted for one slice so existing readouts keep working, but a consumer that reads the
+   * facet must see the same hierarchy, the same channels and the same collision roles — otherwise
+   * the migration moved the authority and lost the data on the way.
+   */
+  it('publishes skeleton bindings, an animation clip and both kinds of collision volume', async () => {
+    const bytes = await model([
+      hierarchyChunk('FIXTURE', [
+        { name: 'ROOT', parentIndex: -1 },
+        { name: 'TRI', parentIndex: 0 },
+      ]),
+      hlodChunk('FIXTURE', 'FIXTURE', [{ boneIndex: 1, name: `${MESH_CONTAINER}.${MESH_NAME}` }]),
+      animationChunk('SPIN', 'FIXTURE', 61, [{ pivot: 1, firstFrame: 1, lastFrame: 60, flags: 2 }]),
+    ])
+    const { session } = await openOnDisk(bytes)
+    const descriptor = (await session.descriptor()) as unknown as {
+      readonly dataSources: readonly { readonly contract: string }[]
+    }
+    const contracts = descriptor.dataSources.map(item => item.contract)
+    expect(contracts).toEqual(
+      expect.arrayContaining([
+        'common.view/model-resource-refs-source',
+        'common.view/model-skeleton-source',
+        'common.view/model-animation-source',
+      ]),
+    )
+
+    const skeletonLease = await session.dataSource('common.view/model-skeleton-source', 1)
+    const skeleton = skeletonLease.value as ModelSkeletonSource
+    expect(await skeleton.info()).toEqual({
+      bindings: 1,
+      named: 1,
+      companionBound: 0,
+      hierarchies: 1,
+    })
+    expect((await skeleton.bindings({ limit: 10 })).items).toEqual([
+      {
+        partId: `${MESH_CONTAINER}.${MESH_NAME}`,
+        boneIndex: 1,
+        boneName: 'TRI',
+        provenance: 'direct',
+        hierarchyId: 'FIXTURE',
+      },
+    ])
+    await skeletonLease.release()
+
+    const animationLease = await session.dataSource('common.view/model-animation-source', 1)
+    const animation = animationLease.value as ModelAnimationSource
+    expect(await animation.info()).toEqual({ clips: 1, channelled: 1, companionBound: 0 })
+    expect((await animation.clips({ limit: 10 })).items).toEqual([
+      {
+        id: 'w3d-animation-0',
+        name: 'SPIN',
+        kind: 'animation',
+        provenance: 'direct',
+        frames: 61,
+        frameRate: 30,
+        hierarchyId: 'FIXTURE',
+        channels: [
+          { target: 'pivot-1', kind: 'translation', axis: 'z', firstFrame: 1, lastFrame: 60 },
+        ],
+        unsupportedChannels: 0,
+      },
+    ])
+    await animationLease.release()
+
+    const refsLease = await session.dataSource('common.view/model-resource-refs-source', 1)
+    const refs = refsLease.value as ModelResourceRefsSource
+    // the texture requirement is `many`, so a name stays reference-only: this codec will not guess
+    // which bound file answers which name by reading a resolved URI
+    expect(await refs.info()).toEqual({ references: 1, bound: 0, truncated: false })
+    expect((await refs.references({ limit: 10 })).items).toEqual([
+      { id: MESH_TEXTURE, role: 'texture', provenance: 'reference-only' },
+    ])
+    await refsLease.release()
+    await session.dispose()
+  })
+
+  it('states an undecoded compressed animation as a preserved plane in its receipt', async () => {
+    const bytes = await model([compressedAnimationChunk(128)])
+    const { session } = await openOnDisk(bytes)
+    const descriptor = (await session.descriptor()) as unknown as {
+      readonly metadata: readonly {
+        readonly id: string
+        readonly entries: readonly { readonly value: unknown }[]
+      }[]
+    }
+    const receipt = descriptor.metadata.find(group => group.id === 'uv-projection-receipt')
+      ?.entries[0]?.value as {
+      readonly form: string
+      readonly planes: readonly { readonly planeId: string; readonly state: string }[]
+    }
+    expect(receipt.form).toBe('portable')
+    const byPlane = new Map(receipt.planes.map(plane => [plane.planeId, plane.state]))
+    // 0x280 is not decoded, and the receipt says `preserved` rather than `lost` because the bytes
+    // are still addressable through the byte-range source — the two are different statements
+    expect(byPlane.get('compressed-animation')).toBe('preserved')
+    expect(byPlane.get('skeleton')).toBe('lost')
+    expect(byPlane.get('shaders-and-effects')).toBe('lost')
+    expect(byPlane.get('geometry')).toBe('normalized')
+    await session.dispose()
+  })
+
+  it('publishes no facet for a plane the file does not carry', async () => {
+    const bytes = await model([])
+    const { session } = await openOnDisk(bytes)
+    const descriptor = (await session.descriptor()) as unknown as {
+      readonly dataSources: readonly { readonly contract: string }[]
+    }
+    const contracts = descriptor.dataSources.map(item => item.contract)
+    // no HLOD, no animation chunk, no collision bit — and therefore no empty sources pretending
+    // those planes were read and found to hold nothing
+    expect(contracts).not.toContain('common.view/model-skeleton-source')
+    expect(contracts).not.toContain('common.view/model-animation-source')
+    expect(contracts).not.toContain('common.view/model-collision-source')
+    await session.dispose()
   })
 })
 

@@ -28,6 +28,7 @@ import {
   revisionId,
   type ArtifactByteSource,
   type AssetSession,
+  type ModelAnimationSource,
   type ModelSceneSource,
   type NamespaceEntrySource,
   type ResourceBudget,
@@ -305,6 +306,76 @@ describe('a VXL declares its HVA and reads only what the host bound', () => {
     )
     const { summary, session } = await openThroughHost(directory)
     expect(summary.hva).toMatchObject({ state: 'resolved', boundSections: 1 })
+    await session.dispose()
+  })
+})
+
+describe('VXL publishes the bound sidecar as the animation facet contract', () => {
+  /**
+   * The second independent family behind `common.view/model-animation-source@1`.
+   *
+   * W3D publishes clips the file itself declares; VXL publishes one clip that exists only because
+   * the host bound a sidecar. Both provenances and both kinds live in the same contract, which is
+   * the §2.7 evidence that admitted it — a contract proved by one publisher would only be proved
+   * for that publisher's shape.
+   */
+  it('publishes a bound multi-frame sidecar as a companion clip with one channel per section', async () => {
+    const hva = buildHva({ sectionNames: [FIXTURE_SECTION], frames: 3 })
+    const { session } = await openThroughHost(await folder(hva))
+    const lease = await session.dataSource('common.view/model-animation-source', 1)
+    const animation = lease.value as ModelAnimationSource
+    expect(await animation.info()).toEqual({ clips: 1, channelled: 1, companionBound: 1 })
+    expect((await animation.clips({ limit: 10 })).items).toEqual([
+      {
+        id: 'vxl-hva',
+        name: 'HVA section transforms',
+        kind: 'animation',
+        // the sidecar is a `zero-or-one` requirement, so the bound file can only be *the* HVA
+        provenance: 'companion',
+        frames: 3,
+        channels: [{ target: FIXTURE_SECTION, kind: 'transform', firstFrame: 0, lastFrame: 2 }],
+        unsupportedChannels: 0,
+      },
+    ])
+    await lease.release()
+    await session.dispose()
+  })
+
+  it('publishes a single-frame sidecar as a rest pose, not as a track', async () => {
+    const hva = buildHva({ sectionNames: [FIXTURE_SECTION], frames: 1 })
+    const { session } = await openThroughHost(await folder(hva))
+    const lease = await session.dataSource('common.view/model-animation-source', 1)
+    const animation = lease.value as ModelAnimationSource
+    // the facet still exists — a bound pose is a real fact — and it is honestly not an animation
+    expect((await animation.clips({ limit: 10 })).items[0]).toMatchObject({
+      kind: 'rest-pose',
+      frames: 1,
+    })
+    await lease.release()
+    await session.dispose()
+  })
+
+  it('publishes no animation facet at all when nothing was bound, and says so in the receipt', async () => {
+    const { session } = await openThroughHost(await folder())
+    const descriptor = (await session.descriptor()) as unknown as {
+      readonly dataSources: readonly { readonly contract: string }[]
+      readonly metadata: readonly {
+        readonly id: string
+        readonly entries: readonly { readonly value: unknown }[]
+      }[]
+    }
+    expect(descriptor.dataSources.map(item => item.contract)).not.toContain(
+      'common.view/model-animation-source',
+    )
+    const receipt = descriptor.metadata.find(group => group.id === 'uv-projection-receipt')
+      ?.entries[0]?.value as {
+      readonly planes: readonly { readonly planeId: string; readonly state: string }[]
+    }
+    const byPlane = new Map(receipt.planes.map(plane => [plane.planeId, plane.state]))
+    expect(byPlane.get('animation')).toBe('lost')
+    // the lighting sidecars are the format's other half and neither is read; `lost`, not
+    // `preserved`, because nothing in this projection carries their bytes
+    expect(byPlane.get('palette')).toBe('lost')
     await session.dispose()
   })
 })

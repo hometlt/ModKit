@@ -31,6 +31,9 @@ import {
   revisionId,
   type ArtifactByteSource,
   type AssetSession,
+  type ModelCollisionSource,
+  type ModelResourceRefsSource,
+  type ModelSkeletonSource,
   type NamespaceEntrySource,
   type ResourceBudget,
 } from '@modkitx-x3/sdk'
@@ -566,6 +569,69 @@ describe('the configured real SAGE W3X model', () => {
      * difference carry a receipt entry, and the harness derives the differences itself rather than
      * believing the receipt.
      */
+    /*
+     * Block 12 slice 12-1: the same facts the summary carries, read through the facet contracts
+     * that are now their authority. The numbers are printed rather than pinned — the corpus belongs
+     * to the user and this repository does not ship it — but the *shape* is asserted: bone names
+     * that arrived from the bound sidecar must be marked `companion` in the contract too, or the
+     * migration moved the authority and dropped the provenance on the way.
+     */
+    const skeletonLease = await containerOpen.session.dataSource(
+      'common.view/model-skeleton-source',
+      1,
+    )
+    const skeleton = skeletonLease.value as ModelSkeletonSource
+    const skeletonInfo = await skeleton.info()
+    expect(skeletonInfo.bindings).toBeGreaterThan(0)
+    expect(skeletonInfo.companionBound).toBeGreaterThan(0)
+    expect(skeletonInfo.companionBound).toBe(
+      summary.modelParts.filter(part => part.boneProvenance === 'companion').length,
+    )
+    await skeletonLease.release()
+
+    const collisionLease = await containerOpen.session.dataSource(
+      'common.view/model-collision-source',
+      1,
+    )
+    const collision = collisionLease.value as ModelCollisionSource
+    const collisionInfo = await collision.info()
+    expect(collisionInfo.volumes).toBe(summary.collisionParts.length)
+    await collisionLease.release()
+
+    const refsLease = await containerOpen.session.dataSource(
+      'common.view/model-resource-refs-source',
+      1,
+    )
+    const refs = refsLease.value as ModelResourceRefsSource
+    const refsInfo = await refs.info()
+    // the skeleton sidecar is a `zero-or-one` requirement, so *that* reference is attributable
+    expect(refsInfo.bound).toBeGreaterThan(0)
+    await refsLease.release()
+
+    const receipt = (
+      (await containerOpen.session.descriptor()) as unknown as {
+        readonly metadata: readonly {
+          readonly id: string
+          readonly entries: readonly { readonly value: unknown }[]
+        }[]
+      }
+    ).metadata.find(group => group.id === 'uv-projection-receipt')?.entries[0]?.value as {
+      readonly form: string
+      readonly confidence: string
+      readonly planes: readonly { readonly planeId: string; readonly state: string }[]
+      readonly companions: readonly { readonly requirementId: string; readonly state: string }[]
+    }
+    expect(receipt.form).toBe('portable')
+    expect(receipt.companions.find(item => item.requirementId === 'hierarchy')?.state).toBe('bound')
+    expect(JSON.stringify(receipt)).not.toMatch(/file:\/\/|[A-Za-z]:[\\/]/u)
+    console.info(
+      `[w3x-live] facets: refs ${refsInfo.references} (bound ${refsInfo.bound}), ` +
+        `bones ${skeletonInfo.bindings} (named ${skeletonInfo.named}, companion ` +
+        `${skeletonInfo.companionBound}), collision ${collisionInfo.volumes}; receipt planes ` +
+        `${receipt.planes.map(plane => `${plane.planeId}=${plane.state}`).join(', ')}, ` +
+        `confidence ${receipt.confidence}`,
+    )
+
     const modelLease = await containerOpen.session.dataSource('common.view/model-scene-source', 1)
     try {
       const drained = await drainModelProjection(modelLease.value, {
