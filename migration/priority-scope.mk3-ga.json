@@ -21,11 +21,12 @@
     "byMigrationState": {
       "equivalent-better": 14,
       "implemented": 103,
-      "missing": 43,
-      "partial": 5
+      "missing": 42,
+      "partial": 5,
+      "relocated-multiverse": 1
     },
     "byObligation": { "focused-required-addition": 13, "legacy-required": 152 },
-    "byEvidenceLevel": { "E0": 36, "E1": 38, "E2": 62, "E3": 9, "E4": 20 }
+    "byEvidenceLevel": { "E0": 36, "E1": 37, "E2": 63, "E3": 9, "E4": 20 }
   },
   "deadlines": {
     "block-11": [
@@ -2489,10 +2490,10 @@
       "obligation": "legacy-required",
       "owner": "multiverse/specs seed",
       "plannedBlock": 11,
-      "migrationState": "missing",
-      "supportState": "unsupported",
-      "evidenceLevel": "E1",
-      "allocationState": "absent",
+      "migrationState": "relocated-multiverse",
+      "supportState": "supported",
+      "evidenceLevel": "E2",
+      "allocationState": "not-applicable",
       "portFamily": null,
       "corpusDescriptors": [],
       "dependsOn": [],

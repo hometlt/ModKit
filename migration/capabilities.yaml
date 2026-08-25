@@ -15645,15 +15645,15 @@ capabilities:
     mk3Contributions: []
     mk3Operations: []
     allocation:
-      state: 'absent'
+      state: 'not-applicable'
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'missing'
-    supportState: 'unsupported'
-    runtimeAvailability: 'none'
-    evidenceLevel: 'E1'
-    hostEvidence: 'none'
+    migrationState: 'relocated-multiverse'
+    supportState: 'supported'
+    runtimeAvailability: 'node-only'
+    evidenceLevel: 'E2'
+    hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
@@ -15670,7 +15670,9 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'planned'
     knownLoss:
-      - 'спецификация существует и валидируется, исполняемого MK3-контракта ещё нет'
+      - 'авторитет физически перенесён в sibling-репозиторий multiverse: X3 потребляет только pinned snapshot и вторым источником не становится'
+      - 'перенесены материалы, которыми владеет слайс 11C0: UV Foundation, семейство UVM, канонизация, версионирование, semantic scopes; UVW/UVD/UVS и медиа-заглушки переносит блок 22'
+      - 'исполняемый UV Projection ABI и ResourceSessionPort здесь не заморожены — это вторая половина слайса 11C0'
     receipts:
       projection: null
       materialization: null
@@ -15678,8 +15680,10 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
-      reports: []
+      tests:
+        - 'scripts/test/specs-pin.test.ts'
+      reports:
+        - 'vendor/multiverse-specs/PIN.json'
   - capabilityId: 'uv/projection-abi/receipts'
     userScenario: 'Получать типизированные ProjectionReceipt и MaterializationReceipt на каждую проекцию и материализацию.'
     releaseTrack: 'multiverse-priority'
