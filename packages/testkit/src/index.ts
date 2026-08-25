@@ -1,3 +1,12 @@
+export {
+  drainModelProjection,
+  loadUvTools,
+  materializeAndCompare,
+  MODEL_INTERCHANGE_V1,
+  unexplainedDifferences,
+  type DrainedModelProjection,
+  type UvMaterializationVerdict,
+} from './uv-materialization.js'
 export { runMinimalHost, type MinimalHostOptions, type MinimalHostRun } from './minimal-host.js'
 export { offersFromInventory } from '@modkitx-x3/host'
 export {
