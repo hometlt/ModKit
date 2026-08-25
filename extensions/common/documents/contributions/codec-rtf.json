@@ -3,17 +3,23 @@
   "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
   "id": "org.modkitx/document-rtf",
   "displayName": "Rich Text Format",
+  "status": "partial",
+  "limitations": [
+    "The reader validates group/control framing and inventories document structure; rich formatting, fields, tables, and text layout are not rendered.",
+    "Object and picture payloads are counted but never activated, decoded, or executed.",
+    "RTF is read-only because a safe source-preserving writer is not implemented."
+  ],
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
-      "entrypoint": "./src/formats/rtf/codec.js",
+      "entrypoint": "./src/rtf/codec.js",
       "target": { "environments": ["node"] },
       "executionProfile": "trusted-in-process",
       "requestedPermissionClasses": ["read-source"]
     },
     {
       "variantId": "portable",
-      "entrypoint": "./src/formats/rtf/codec.js",
+      "entrypoint": "./src/rtf/codec.js",
       "target": { "environments": ["browser-worker", "node-worker"] },
       "executionProfile": "worker-brokered",
       "requestedPermissionClasses": ["read-source"]

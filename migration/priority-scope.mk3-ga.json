@@ -19,14 +19,14 @@
       "block-22": 2
     },
     "byMigrationState": {
-      "equivalent-better": 14,
-      "implemented": 107,
+      "equivalent-better": 15,
+      "implemented": 106,
       "missing": 38,
       "partial": 5,
       "relocated-multiverse": 1
     },
     "byObligation": { "focused-required-addition": 13, "legacy-required": 152 },
-    "byEvidenceLevel": { "E0": 36, "E1": 33, "E2": 64, "E3": 10, "E4": 22 }
+    "byEvidenceLevel": { "E0": 36, "E1": 32, "E2": 65, "E3": 10, "E4": 22 }
   },
   "deadlines": {
     "block-11": [
@@ -1698,11 +1698,11 @@
       "obligation": "legacy-required",
       "owner": "extensions/common/documents",
       "plannedBlock": 11,
-      "migrationState": "implemented",
+      "migrationState": "equivalent-better",
       "supportState": "partial",
-      "evidenceLevel": "E1",
-      "allocationState": "covered",
-      "portFamily": "mk2/uncommon-documents",
+      "evidenceLevel": "E2",
+      "allocationState": "superseded-staging-present",
+      "portFamily": "common/documents",
       "corpusDescriptors": [],
       "dependsOn": [],
       "requiredBy": []

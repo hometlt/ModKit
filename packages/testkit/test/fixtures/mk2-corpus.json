@@ -1186,13 +1186,13 @@
       "note": "CommonMark-compatible headings, link, list, and fenced code block"
     },
     {
-      "extension": "mk2/uncommon-documents",
-      "contributionId": "org.modkitx/rtf",
+      "extension": "common/documents",
+      "contributionId": "org.modkitx/document-rtf",
       "corpus": "synthetic",
       "sample": "minimal.rtf",
       "minimumConfidence": 0.99,
       "dataSource": "tree",
-      "note": "RTF 1 root with nested font table, section, outline, and paragraph controls"
+      "note": "RTF 1 root with nested font table, section, outline, and paragraph controls; the port relocated to common/documents in slice 12-2 and the staging route was retired to its generated stub"
     },
     {
       "extension": "common/plain-text",

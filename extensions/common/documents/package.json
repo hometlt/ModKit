@@ -12,7 +12,7 @@
     "./odp/codec": "./src/odp/codec.js",
     "./ods/codec": "./src/ods/codec.js",
     "./odt/codec": "./src/odt/codec.js",
-    "./formats/rtf/codec": "./src/formats/rtf/codec.js",
+    "./rtf/codec": "./src/rtf/codec.js",
     "./formats/*/codec": "./src/formats/*/codec.js",
     "./package.json": "./package.json"
   },

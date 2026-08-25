@@ -1,9 +1,11 @@
 // Shared by the hand-ported text document entrypoints still staged here. Plain text left this
-// package in block 11 slice 11A; its final home is extensions/common/plain-text.
+// package in block 11 slice 11A; its final home is extensions/common/plain-text. RTF left in
+// slice 12-2 for extensions/common/documents, and its reader went with it — what stays here is a
+// generated port-pending stub, because a retired route that still carries a full implementation is
+// not retired, it is duplicated.
 import { createInspectionCodec, createTreeDataSource } from '@modkitx-x3/codec-kit'
 
 const utf8 = new TextDecoder('utf-8', { fatal: true })
-const latin1 = new TextDecoder('latin1')
 
 const FORMATS = Object.freeze({
   csv: Object.freeze({
@@ -15,11 +17,6 @@ const FORMATS = Object.freeze({
     id: 'org.modkitx/markdown',
     label: 'Markdown Document',
     mediaType: 'text/markdown',
-  }),
-  rtf: Object.freeze({
-    id: 'org.modkitx/rtf',
-    label: 'Rich Text Format',
-    mediaType: 'application/rtf',
   }),
 })
 
@@ -248,126 +245,7 @@ function parseMarkdown(text, budget) {
   }
 }
 
-function hasRtfHeader(bytes) {
-  return /^\{\\rtf[1-9][0-9]*(?:\\|\s)/u.test(latin1.decode(bytes.subarray(0, 64)))
-}
-
-function parseRtf(bytes, budget) {
-  requireDepth(budget, 1)
-  if (!hasRtfHeader(bytes)) throw new TypeError('RTF header must start with {\\rtfN')
-  if (bytes.byteLength * 2 > budget.maxScalarBytes) {
-    throw new RangeError('decoded document exceeds maxScalarBytes budget')
-  }
-  const text = latin1.decode(bytes)
-  let depth = 0
-  let groups = 0
-  let controls = 0
-  let paragraphs = 0
-  let sections = 1
-  let pictures = 0
-  let objects = 0
-  let outlineLevels = 0
-  const frequencies = new Map()
-
-  for (let index = 0; index < text.length; index += 1) {
-    const character = text[index]
-    if (character === '{') {
-      depth += 1
-      groups += 1
-      if (depth > budget.maxDepth) throw new RangeError('RTF nesting exceeds maxDepth budget')
-      if (groups + controls > budget.maxNodes) {
-        throw new RangeError('RTF structure exceeds maxNodes budget')
-      }
-      continue
-    }
-    if (character === '}') {
-      depth -= 1
-      if (depth < 0) throw new TypeError('RTF has an unmatched closing group')
-      continue
-    }
-    if (character !== '\\') continue
-    const next = text[index + 1]
-    if (next === '\\' || next === '{' || next === '}') {
-      index += 1
-      continue
-    }
-    if (next === "'") {
-      if (!/^[0-9a-f]{2}$/iu.test(text.slice(index + 2, index + 4))) {
-        throw new TypeError('RTF hex escape is malformed')
-      }
-      index += 3
-      continue
-    }
-    const match = /^\\([A-Za-z]+)(-?[0-9]+)? ?/u.exec(text.slice(index))
-    if (match === null) continue
-    const word = match[1].toLowerCase()
-    controls += 1
-    if (groups + controls > budget.maxNodes) {
-      throw new RangeError('RTF structure exceeds maxNodes budget')
-    }
-    frequencies.set(word, (frequencies.get(word) ?? 0) + 1)
-    if (word === 'par') paragraphs += 1
-    else if (word === 'sect') sections += 1
-    else if (word === 'pict') pictures += 1
-    else if (word === 'object') objects += 1
-    else if (word === 'outlinelevel') outlineLevels += 1
-    if (word === 'bin' && match[2] !== undefined) {
-      const binaryBytes = Number.parseInt(match[2], 10)
-      if (!Number.isSafeInteger(binaryBytes) || binaryBytes < 0) {
-        throw new TypeError('RTF binary control has an invalid length')
-      }
-      index += match[0].length - 1 + binaryBytes
-      if (index >= text.length) throw new TypeError('RTF binary payload is truncated')
-    } else {
-      index += match[0].length - 1
-    }
-  }
-  if (depth !== 0) throw new TypeError('RTF groups are unbalanced')
-  const topControls = [...frequencies]
-    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
-    .slice(0, 32)
-  return {
-    summary: {
-      format: 'rtf',
-      groups,
-      controls,
-      paragraphs,
-      sections,
-      pictures,
-      objects,
-      outlineLevels,
-    },
-    root: {
-      kind: 'document',
-      label: 'RTF',
-      preview: `${paragraphs} paragraph(s), ${groups} group(s)`,
-      children: topControls.map(([word, count]) => ({
-        kind: 'control-word',
-        label: `\\${word}`,
-        preview: `${count} occurrence(s)`,
-      })),
-    },
-    nodes: groups + controls,
-    scalarText: text,
-    traits: [
-      { id: 'document.flow', parameters: { paragraphs, sections } },
-      { id: 'structure.hierarchy', parameters: { groups, lazy: true } },
-      { id: 'content.text', parameters: { encoding: 'rtf-ansi' } },
-      { id: 'content.binary', parameters: { bytes: String(bytes.byteLength) } },
-    ],
-    unsupportedFeatures: ['layout-rendering', 'embedded-object-activation', 'source-editing'],
-  }
-}
-
 function detect(format, bytes) {
-  if (format === 'rtf') {
-    const matched = hasRtfHeader(bytes)
-    return {
-      confidence: matched ? 0.995 : 0,
-      kind: 'magic',
-      note: matched ? 'rtf-header' : 'rtf-header-missing',
-    }
-  }
   if (!textLooksSafe(bytes)) {
     return { confidence: 0, kind: 'structure', note: 'utf8-text-mismatch' }
   }
@@ -395,7 +273,6 @@ function detect(format, bytes) {
 }
 
 function parse(format, bytes, budget) {
-  if (format === 'rtf') return parseRtf(bytes, budget)
   const text = decodedText(bytes, budget)
   if (format === 'csv') return { ...parseCsv(text, budget), scalarText: text }
   return { ...parseMarkdown(text, budget), scalarText: text }

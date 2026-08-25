@@ -1,5 +1,5 @@
 {
-  "$comment": "Minimum hand-written codec counts of the families taking part in the MK2 migration, keyed by the family's current home. A relocated port keeps its module at src/<codec>/codec.js and is counted; a codec authored for MK3 lives at src/formats/<codec>/codec.js and is not, because it was never an MK2 port to lose. Block 11 slice 11B follows that split inside common/documents: ODT, ODS and ODP moved in as ports, ODG was authored here. Relocating a family renames its key and keeps its count; it never retires the guarantee. Increment in the same change that ports a codec; ports:check rejects regressions, stale counts, and a family that disappears together with its entry.",
+  "$comment": "Minimum hand-written codec counts of the families taking part in the MK2 migration, keyed by the family's current home. A relocated port keeps its module at src/<codec>/codec.js and is counted; a codec authored for MK3 lives at src/formats/<codec>/codec.js and is not, because it was never an MK2 port to lose. Block 11 slice 11B follows that split inside common/documents: ODT, ODS and ODP moved in as ports, ODG was authored here. Block 12 slice 12-2 moved RTF the same way and shows the other half of the mechanic: the staging hand-port reverted to its generated port-pending stub, so mk2/uncommon-documents lost a ported codec while common/documents gained the same one, and the total never moved. Relocating a family renames its key and keeps its count; it never retires the guarantee. Increment in the same change that ports a codec; ports:check rejects regressions, stale counts, and a family that disappears together with its entry.",
   "schemaVersion": 2,
   "minimumTotal": 168,
   "families": {
@@ -10,7 +10,7 @@
     "common/archives": 14,
     "common/audio": 4,
     "common/containers": 1,
-    "common/documents": 3,
+    "common/documents": 4,
     "common/images": 20,
     "common/models": 3,
     "common/plain-text": 1,
@@ -46,7 +46,7 @@
     "mk2/epic-games-unreal-engine": 7,
     "mk2/firelight-fmod": 1,
     "mk2/microsoft-age-series": 11,
-    "mk2/uncommon-documents": 14,
+    "mk2/uncommon-documents": 13,
     "mk2/unity-engine": 5
   }
 }

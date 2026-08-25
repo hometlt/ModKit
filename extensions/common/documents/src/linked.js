@@ -12,7 +12,7 @@ import * as odg from './formats/odg/codec.js'
 import * as odp from './odp/codec.js'
 import * as ods from './ods/codec.js'
 import * as odt from './odt/codec.js'
-import * as rtf from './formats/rtf/codec.js'
+import * as rtf from './rtf/codec.js'
 
 export const documents = defineLinkedExtension({
   source: 'linked:extensions/common/documents',
@@ -31,6 +31,6 @@ export const documents = defineLinkedExtension({
     './src/odp/codec.js': odp,
     './src/ods/codec.js': ods,
     './src/odt/codec.js': odt,
-    './src/formats/rtf/codec.js': rtf,
+    './src/rtf/codec.js': rtf,
   },
 })

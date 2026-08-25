@@ -136,7 +136,8 @@ const completedPortableVector = [find('org.modkitx/emf'), find('org.modkitx/wmf'
 const completedPortableDocuments = [
   find('org.modkitx/csv'),
   find('org.modkitx/markdown'),
-  find('org.modkitx/rtf'),
+  // slice 12-2 relocated the RTF port to common/documents; staging holds the retired stub
+  find('org.modkitx/document-rtf'),
   find('org.modkitx/docx'),
   find('org.modkitx/pptx'),
   find('org.modkitx/xlsx'),

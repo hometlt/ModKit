@@ -2,13 +2,28 @@ import { createInspectionCodec, createTreeDataSource } from '@modkitx-x3/codec-k
 
 const latin1 = new TextDecoder('latin1')
 
+/**
+ * `{\rtfN` for any major version, not just `1`.
+ *
+ * The retired staging port accepted `\rtfN`; this route is the only one left, so narrowing to
+ * `\rtf1` would have made retiring the other one a loss of coverage. Only version 1 has ever
+ * shipped, but a reader that refuses to *detect* a version it has not seen tells the user "unknown
+ * file" where the truth is "RTF, newer than I know".
+ */
+const RTF_HEADER = /^\{\\rtf([1-9][0-9]*)(?:\\|\s|\{)/u
+
+function rtfVersion(bytes) {
+  const match = RTF_HEADER.exec(latin1.decode(bytes).replace(/^\uFEFF/u, ''))
+  return match === null ? undefined : Number(match[1])
+}
+
 function looksLikeRtf(bytes) {
-  return /^\{\\rtf1(?:\\|\s)/u.test(latin1.decode(bytes).replace(/^\uFEFF/u, ''))
+  return rtfVersion(bytes) !== undefined
 }
 
 function parseRtf(text, budget) {
   if (!looksLikeRtf(new TextEncoder().encode(text.slice(0, 32)))) {
-    throw new TypeError('RTF header must start with {\\rtf1')
+    throw new TypeError('RTF header must start with {\\rtfN')
   }
   let depth = 0
   let groups = 0
@@ -75,12 +90,25 @@ function parseRtf(text, budget) {
 const definition = Object.freeze({
   id: 'org.modkitx/document-rtf',
   format: Object.freeze({ id: 'rtf', label: 'Rich Text Format', mediaType: 'application/rtf' }),
-  async detect(bytes) {
-    const match = looksLikeRtf(bytes)
+  async detect(bytes, uri) {
+    const version = rtfVersion(bytes)
+    const header = version !== undefined
+    const extension = uri?.split(/[?#]/u, 1)[0]?.split('.').at(-1)?.toLowerCase()
+    const alias = extension === 'rtf'
+    /*
+     * Two pieces of evidence beat one (slice 12-2 routing, the same rule slice 11A applied to
+     * Markdown). The header alone is already decisive — it is a magic string — so a renamed RTF
+     * still resolves here rather than falling to the retired staging route; the alias only adds
+     * the margin that makes "exactly one active route" a fact rather than a coin toss.
+     *
+     * The extension alone never decides: `.rtf` over bytes that are not RTF stays far below any
+     * threshold that opens a subject.
+     */
+    const confidence = header ? (alias ? 0.998 : 0.995) : alias ? 0.3 : 0.01
     return {
-      confidence: match ? 0.995 : 0.01,
+      confidence,
       kind: 'structure',
-      note: match ? 'rtf1-header' : 'rtf-header-missing',
+      note: header ? `rtf${version}-header${alias ? '-and-alias' : ''}` : 'rtf-header-missing',
     }
   },
   async inspect(bytes, context) {

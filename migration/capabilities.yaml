@@ -9200,46 +9200,51 @@ capabilities:
     hostFacilities:
       - 'read-source'
     mk3Contributions:
-      - 'org.modkitx/rtf'
+      - 'org.modkitx/document-rtf'
     mk3Operations:
       - 'asset.validate'
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'org.modkitx/rtf'
-      portFamily: 'mk2/uncommon-documents'
-      portVerdict: null
-    migrationState: 'implemented'
+      state: 'superseded-staging-present'
+      x3ContributionId: 'org.modkitx/document-rtf'
+      portFamily: 'common/documents'
+      portVerdict: 'route-retired'
+    migrationState: 'equivalent-better'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E1'
+    evidenceLevel: 'E2'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
-      coverageStatus: null
+      coverageStatus: 'not-comparable-contract-difference'
       rows: []
       corpusKinds: []
       verdicts: []
       liveSources: []
-    fixtures: []
+    fixtures:
+      - 'packages/testkit/test/fixtures/mk2-synthetic/minimal.rtf'
     corpusDescriptors: []
     projection:
       plane: 'document'
-      liveProjection: 'planned'
+      liveProjection: 'live'
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
     knownLoss:
-      - 'second active MK3 route org.modkitx/document-rtf exists next to this port; slice 11A/11B must retire the ambiguity'
+      - 'двойной маршрут снят слайсом 12-2: до него обе стороны отдавали ровно 0.995, host объявлял ambiguous и RTF не открывался вообще; теперь org.modkitx/document-rtf выигрывает 0.998 (заголовок и алиас) против 0.99 у отставного стейджинга'
+      - 'стейджинг-вклад org.modkitx/rtf физически остаётся сгенерированной port-pending заглушкой до блока 30; его open() бросает x3.mk2/port-pending, поэтому выиграть маршрут он не может'
+      - 'layout-рендеринг и активация встроенных объектов не поддерживаются; writer не заявлен'
     receipts:
       projection: null
       materialization: null
       nativeExport: null
-    replacementWorkflow: null
+    replacementWorkflow: 'org.modkitx/document-rtf в extensions/common/documents: тот же view.inspect/asset.validate/export.raw и тот же tree-data-source, плюс детекция заголовка любой мажорной версии RTF, которую legacy-маршрут принимал, а прежний MK3-маршрут — нет'
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/common-documents-rtf.test.ts'
+        - 'packages/testkit/test/mk2-acceptance.test.ts'
       reports: []
   - capabilityId: 'format/rtx/open-inspect'
     userScenario: 'Открыть «Relic texture wrapper» в MK3 и выполнить image.inspect, image.read, image.write без потери семантики legacy-маршрута.'

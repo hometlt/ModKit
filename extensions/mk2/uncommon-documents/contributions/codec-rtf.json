@@ -21,8 +21,8 @@
     }
   ],
   "limitations": [
-    "The reader validates group/control framing and inventories document structure; rich formatting, fields, tables, and text layout are not rendered.",
-    "Object and picture payloads are counted but never activated, decoded, or executed.",
+    "The reader recovers plain text only; rich formatting, fields, tables, images, and object payloads are not rendered.",
+    "Object and picture groups are discarded and no embedded content or external action is executed.",
     "RTF is read-only because a safe source-preserving writer is not implemented."
   ],
   "spec": {

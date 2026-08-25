@@ -3436,7 +3436,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:939bf6fac3d67146b493ad139c6188885c71233d104700e98801c85be052503a',
+        artifactDigest: 'sha256:3b4e976db6d40c6518cf28935044812b733692b65a1cda2ce3f6b8be73b6ef84',
         fileDigests: {
           'README.md': 'sha256:0b52b220a83c866101dce41b648816401ca4c387f9341560bb69a06df252d1de',
           'contributions/codec-markdown.json':
@@ -3450,17 +3450,15 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-odt.json':
             'sha256:3ef7eada29545f5fb6b2cb29c7d305b187aee98f9c89dbfba5e5af5e69eba9bb',
           'contributions/codec-rtf.json':
-            'sha256:30425ddb998db33fc99212bf17aed6fe01da0bbd0ffa53e5a967ce0ee4402d9a',
-          'package.json': 'sha256:c7c100ec11a3fbe70e25c48c17499394307fecd9082a0eeff3c83bb00cbf22da',
+            'sha256:e9d7a6e13c69978412c223d31e6aa809266a158c52d43df3d519afa0eeec94dd',
+          'package.json': 'sha256:c592a1a40193f0b726457d05522ffa70429830f62b44731ef0ef35d3a250794a',
           'src/formats/markdown/codec.js':
             'sha256:cfee908833a8401b0f93343a1e638d7234282bbe4435dae25f87dbe1c8460d7c',
           'src/formats/odg/codec.js':
             'sha256:c29958abca29144d90629b035a4c75a64f441018d5750128201387e25881a9dc',
-          'src/formats/rtf/codec.js':
-            'sha256:0f4c12d070eec9f9c7b7940da9eff0a326ec302334624570327bc16a35b2c97b',
           'src/index.js': 'sha256:f1a6b90c5ee40f19b02f9e9893ac6cb78d5ac4013f16ab91c58026d10bc9d638',
           'src/linked.js':
-            'sha256:20e5f30624c8de71ed4927cfc8fcbe15f7a08e386bd32eaa59244e1e580f4d46',
+            'sha256:f5031e60ca6e86784ee86cf61c213c293209b97247526a23df868224346e1132',
           'src/odf/document.js':
             'sha256:37234992daf502132b28d7dd864e5a166ea7c405a4beff9f2e11762de72d39d2',
           'src/odf/inspection.js':
@@ -3473,9 +3471,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:0172eaddf48b4cdc50361850bf0f7c1e9ffe07e670c1f72b8dffc668521fbb91',
           'src/odt/codec.js':
             'sha256:5d84fd165b4e4252edeec9abc56e4759fea9bbfed658dc7a21ed667e6e9e1180',
+          'src/rtf/codec.js':
+            'sha256:91c126a99c43b8f62640e2ae5faaaeaf03e5f4d192a0d551bf3c4a6f74bd6e6c',
         },
         inventoryRecordId:
-          'artifact:sha256:939bf6fac3d67146b493ad139c6188885c71233d104700e98801c85be052503a',
+          'artifact:sha256:3b4e976db6d40c6518cf28935044812b733692b65a1cda2ce3f6b8be73b6ef84',
       },
       artifactRoot: 'extensions/documents/',
       containers: {
@@ -3489,12 +3489,12 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             './formats/*/codec': './src/formats/*/codec.js',
             './formats/markdown/codec': './src/formats/markdown/codec.js',
             './formats/odg/codec': './src/formats/odg/codec.js',
-            './formats/rtf/codec': './src/formats/rtf/codec.js',
             './linked': './src/linked.js',
             './odp/codec': './src/odp/codec.js',
             './ods/codec': './src/ods/codec.js',
             './odt/codec': './src/odt/codec.js',
             './package.json': './package.json',
+            './rtf/codec': './src/rtf/codec.js',
           },
           files: ['contributions', 'src', 'README.md'],
           license: 'MIT',
@@ -3544,7 +3544,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-rtf.json',
-          'sha256:30425ddb998db33fc99212bf17aed6fe01da0bbd0ffa53e5a967ce0ee4402d9a',
+          'sha256:e9d7a6e13c69978412c223d31e6aa809266a158c52d43df3d519afa0eeec94dd',
         ],
       ],
       documents: [
@@ -4337,9 +4337,14 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             },
             displayName: 'Rich Text Format',
             id: 'org.modkitx/document-rtf',
+            limitations: [
+              'The reader validates group/control framing and inventories document structure; rich formatting, fields, tables, and text layout are not rendered.',
+              'Object and picture payloads are counted but never activated, decoded, or executed.',
+              'RTF is read-only because a safe source-preserving writer is not implemented.',
+            ],
             runtimeVariants: [
               {
-                entrypoint: './src/formats/rtf/codec.js',
+                entrypoint: './src/rtf/codec.js',
                 executionProfile: 'trusted-in-process',
                 requestedPermissionClasses: ['read-source'],
                 target: {
@@ -4348,7 +4353,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 variantId: 'trusted-node',
               },
               {
-                entrypoint: './src/formats/rtf/codec.js',
+                entrypoint: './src/rtf/codec.js',
                 executionProfile: 'worker-brokered',
                 requestedPermissionClasses: ['read-source'],
                 target: {
@@ -4464,6 +4469,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 },
               ],
             },
+            status: 'partial',
           },
         ],
       ],
@@ -4478,7 +4484,6 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'package.json',
         'src/formats/markdown/codec.js',
         'src/formats/odg/codec.js',
-        'src/formats/rtf/codec.js',
         'src/index.js',
         'src/linked.js',
         'src/odf/document.js',
@@ -4487,6 +4492,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'src/odp/codec.js',
         'src/ods/codec.js',
         'src/odt/codec.js',
+        'src/rtf/codec.js',
       ],
       name: 'documents',
       source: 'extensions/common/documents',

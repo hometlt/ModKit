@@ -216,7 +216,7 @@
       ],
       "droppedOperations": ["asset.validate", "export.raw", "view.inspect", "view.render"],
       "needsSignatures": false,
-      "portState": "ported"
+      "portState": "port-pending"
     },
     "org.modkitx/visio": {
       "verdict": "convertible-with-rework",
