@@ -903,7 +903,7 @@ capabilities:
       nativeExport: 'none'
     knownLoss: []
     receipts:
-      projection: null
+      projection: 'ProjectionReceipt'
       materialization: null
       nativeExport: null
     replacementWorkflow: null
@@ -1405,7 +1405,7 @@ capabilities:
       nativeExport: 'none'
     knownLoss: []
     receipts:
-      projection: null
+      projection: 'ProjectionReceipt'
       materialization: null
       nativeExport: null
     replacementWorkflow: null
@@ -1517,7 +1517,7 @@ capabilities:
       nativeExport: 'none'
     knownLoss: []
     receipts:
-      projection: null
+      projection: 'ProjectionReceipt'
       materialization: null
       nativeExport: null
     replacementWorkflow: null
@@ -1742,7 +1742,7 @@ capabilities:
       nativeExport: 'none'
     knownLoss: []
     receipts:
-      projection: null
+      projection: 'ProjectionReceipt'
       materialization: null
       nativeExport: null
     replacementWorkflow: null
@@ -15706,38 +15706,46 @@ capabilities:
       portFamily: null
       portVerdict: null
     migrationState: 'implemented'
-    supportState: 'partial'
+    supportState: 'supported'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E3'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
       rows: []
-      corpusKinds: []
+      corpusKinds:
+        - 'real'
+        - 'synthetic'
       verdicts: []
-      liveSources: []
+      liveSources:
+        - 'common.view/model-scene-source'
+        - 'common.view/raster-image-source'
     fixtures: []
-    corpusDescriptors: []
+    corpusDescriptors:
+      - 'MODKITX_W3X_PATH'
     projection:
       plane: 'model'
       liveProjection: 'live'
-      portableMaterialization: 'planned'
+      portableMaterialization: 'materialized'
       opaquePreservation: 'none'
       nativeExport: 'planned'
     knownLoss:
-      - 'три receipt-типа раздельны и заморожены, но производителя пока нет: MaterializationReceipt даёт materializer слайса 11C1, NativeExportReceipt — exporters целевых кодеков'
+      - 'ProjectionReceipt выпускают шесть модельных кодеков (M3, W3D, W3X, VXL, OBJ, UVM) через общий helper codec-kit; квитанция публикуется в descriptor-метаданных сразу в portable-форме, путь в неё не компилируется'
+      - 'остальные модельные кодеки (DAE, glTF, PLY, STL, XBF, SCM) квитанцию пока не выпускают, и ни один не-модельный plane тоже'
+      - 'MaterializationReceipt выпускают материализаторы UVM (11C1) и UVT (12-1); NativeExportReceipt — exporters целевых кодеков, их нет'
       - 'wire semantics и canonicalization остаются в запиненных specs: SDK ссылается на scope по id и правил не дублирует'
-      - 'поле receipts этой строки остаётся null: типы существуют, артефактов ещё никто не выпускает'
     receipts:
-      projection: null
-      materialization: null
+      projection: 'ProjectionReceipt'
+      materialization: 'MaterializationReceipt'
       nativeExport: null
     replacementWorkflow: null
     closedBy:
       commits: []
       tests:
         - 'packages/sdk/test/uv-projection-abi.test.ts'
+        - 'packages/testkit/test/model-facet-contracts.test.ts'
+        - 'packages/testkit/test/uvt-materializer.test.ts'
         - 'scripts/test/specs-pin.test.ts'
       reports: []
   - capabilityId: 'uv/resource-session-port/lazy-resources'
@@ -15981,7 +15989,7 @@ capabilities:
     releaseTrack: 'multiverse-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/images'
+    owner: 'extensions/common/uv-materializer'
     plannedBlock: 11
     dependsOn:
       - 'uv/projection-abi/receipts'
@@ -15989,46 +15997,57 @@ capabilities:
       - 'docs/uv/specification/multiverse/texture/SPEC_UVT.md'
     legacyEvidence:
       - 'docs:uv/multiverse/INDEX.md'
-    hostFacilities: []
-    mk3Contributions: []
+    hostFacilities:
+      - 'read-source'
+    mk3Contributions:
+      - 'org.modkitx/uvt-materializer'
+      - 'org.modkitx/uvt-writer'
     mk3Operations: []
     allocation:
-      state: 'not-applicable'
+      state: 'covered'
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'partial'
+    migrationState: 'implemented'
     supportState: 'partial'
-    runtimeAvailability: 'none'
+    runtimeAvailability: 'browser-and-node'
     evidenceLevel: 'E2'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
       rows: []
-      corpusKinds: []
+      corpusKinds:
+        - 'synthetic'
       verdicts: []
-      liveSources: []
-    fixtures: []
+      liveSources:
+        - 'common.view/raster-image-source'
+    fixtures:
+      - 'packages/testkit/test/fixtures/mk2-synthetic/minimal.bmp'
+      - 'packages/testkit/test/fixtures/mk2-synthetic/minimal.tga'
     corpusDescriptors: []
     projection:
-      plane: 'model'
-      liveProjection: 'planned'
-      portableMaterialization: 'planned'
+      plane: 'presentation'
+      liveProjection: 'live'
+      portableMaterialization: 'materialized'
       opaquePreservation: 'none'
       nativeExport: 'planned'
     knownLoss:
-      - 'schema-ready, materializer отсутствует: профиль доведён до conversion-grade со схемой, тремя фикстурами и десятью векторами, но UVT-материализации нет ни в Modkit, ни в Multiverse'
+      - 'первый путь узкий и назван: несжатый 8-битный RGBA из декодированного raster-региона, один уровень, одна грань, без массива и суперкомпрессии; всё, что источник нёс сверх этого, перечислено в MaterializationReceipt, а не потеряно молча'
+      - 'passthrough блочных форматов (DDS BC) не реализован: ни один ридер Modkit не публикует GPU-блоки как блоки — DDS декодирует в RGBA, — поэтому путь потребовал бы сначала новой live-поверхности'
+      - 'texture-interchange-v1 зарегистрирован как candidate: у двух фасетов из четырёх (sampler, atlas) нет live-публикатора, хеши — admission-only свидетельство, не гарантия совместимости'
+      - 'writer заявлен export-only с roundTrip lossy и без write→reopen через host commit coordinator: writerEvidence остаётся not-declared, пока такой прогон не написан'
       - 'открытыми осознанно остались палитровые источники, анимационные последовательности, transcoding-таргеты, 3D-объёмы и полный набор transfer-функций — причина по каждому в specs/NOTES §7.1'
     receipts:
       projection: null
-      materialization: null
+      materialization: 'MaterializationReceipt'
       nativeExport: null
     replacementWorkflow: null
     closedBy:
       commits: []
       tests:
         - 'scripts/test/specs-pin.test.ts'
+        - 'packages/testkit/test/uvt-materializer.test.ts'
       reports: []
   - capabilityId: 'uv/uvw/world-materialization'
     userScenario: 'Сохранить мир игры в нейтральный UVW и снова открыть его.'

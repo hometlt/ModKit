@@ -66,9 +66,9 @@
 | allocation                   | Строк | migrationState         | Строк | evidenceLevel | Строк |
 | ---------------------------- | ----- | ---------------------- | ----- | ------------- | ----- |
 | `absent`                     | 91    | `equivalent-better`    | 15    | E0            | 89    |
-| `covered`                    | 200   | `implemented`          | 195   | E1            | 115   |
-| `not-applicable`             | 2     | `missing`              | 91    | E2            | 69    |
-| `superseded`                 | 13    | `partial`              | 6     | E3            | 12    |
+| `covered`                    | 201   | `implemented`          | 196   | E1            | 115   |
+| `not-applicable`             | 1     | `missing`              | 91    | E2            | 68    |
+| `superseded`                 | 13    | `partial`              | 5     | E3            | 13    |
 | `superseded-staging-present` | 2     | `relocated-multiverse` | 1     | E4            | 23    |
 
 ### 3.3. Доказанные writers
@@ -89,7 +89,7 @@
 | Release             | Всего | Seed | Транзитивных | Нерешённых | Ближайший блок |
 | ------------------- | ----- | ---- | ------------ | ---------- | -------------- |
 | `mk3-ga`            | 165   | 158  | 7            | 43         | block-11       |
-| `mk3-multiverse-ga` | 167   | 167  | 0            | 44         | block-11       |
+| `mk3-multiverse-ga` | 167   | 167  | 0            | 43         | block-11       |
 
 ### 4.1. Дедлайны `mk3-ga` по planned block
 
@@ -207,7 +207,7 @@
 
 | Plane        | Что делать     | portableProfile | Зрелость артефакта  |
 | ------------ | -------------- | --------------- | ------------------- |
-| `model`      | `project-live` | `UVM`           | `reader-only`       |
+| `model`      | `project-live` | `UVM`           | `reader-and-writer` |
 | `world`      | `project-live` | `UVW`           | `reader-only`       |
 | `definition` | `retain`       | `UVD`           | `reader-only`       |
 | `document`   | `edit`         | `none`          | `reader-and-writer` |

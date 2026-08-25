@@ -7,7 +7,7 @@
   },
   "x3": {
     "root": "C:\\FILES\\SC2Files\\coding\\modkitX3",
-    "sha": "3cdb8bfeacf17f77484a46cb1fb3d7a5c6c19444"
+    "sha": "1ba84b26837f905dba7b8fbd0b4c7ddd9fd97458"
   },
   "counts": {
     "total": 73,
@@ -15751,6 +15751,7 @@
         "operation:export.raw",
         "operation:view.inspect",
         "source:common.view/byte-range-source",
+        "source:common.view/model-animation-source",
         "source:common.view/tree-data-source"
       ],
       "sourceComparisons": [
@@ -15804,11 +15805,13 @@
         "formatId": "red-alert2-vxl",
         "declaredSources": [
           "common.view/byte-range-source",
+          "common.view/model-animation-source",
           "common.view/model-scene-source",
           "common.view/tree-data-source"
         ],
         "actualSources": [
           "common.view/byte-range-source",
+          "common.view/model-animation-source",
           "common.view/model-scene-source",
           "common.view/tree-data-source"
         ],
@@ -15820,6 +15823,13 @@
             "state": "opened",
             "features": ["read", "size"],
             "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/model-animation-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
           },
           {
             "contract": "common.view/model-scene-source",
@@ -15873,6 +15883,7 @@
           "operation:export.raw",
           "operation:view.inspect",
           "source:common.view/byte-range-source",
+          "source:common.view/model-animation-source",
           "source:common.view/model-scene-source",
           "source:common.view/tree-data-source"
         ]
@@ -15923,6 +15934,7 @@
         "canonical": ["common.view/model-scene-source"],
         "x3": [
           "common.view/byte-range-source",
+          "common.view/model-animation-source",
           "common.view/model-scene-source",
           "common.view/tree-data-source"
         ]
@@ -15955,6 +15967,13 @@
             "state": "opened",
             "features": ["read", "size"],
             "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/model-animation-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
           },
           {
             "contract": "common.view/model-scene-source",
@@ -15997,6 +16016,7 @@
           "operation:export.raw",
           "operation:view.inspect",
           "source:common.view/byte-range-source",
+          "source:common.view/model-animation-source",
           "source:common.view/tree-data-source"
         ],
         "sources": [
@@ -16316,6 +16336,7 @@
         "operation:export.raw",
         "operation:view.inspect",
         "source:common.view/byte-range-source",
+        "source:common.view/model-resource-refs-source",
         "source:common.view/tree-data-source"
       ],
       "sourceComparisons": [
@@ -16369,11 +16390,13 @@
         "formatId": "sage-w3x",
         "declaredSources": [
           "common.view/byte-range-source",
+          "common.view/model-resource-refs-source",
           "common.view/model-scene-source",
           "common.view/tree-data-source"
         ],
         "actualSources": [
           "common.view/byte-range-source",
+          "common.view/model-resource-refs-source",
           "common.view/model-scene-source",
           "common.view/tree-data-source"
         ],
@@ -16385,6 +16408,13 @@
             "state": "opened",
             "features": ["read", "size"],
             "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/model-resource-refs-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
           },
           {
             "contract": "common.view/model-scene-source",
@@ -16437,6 +16467,7 @@
           "operation:export.raw",
           "operation:view.inspect",
           "source:common.view/byte-range-source",
+          "source:common.view/model-resource-refs-source",
           "source:common.view/model-scene-source",
           "source:common.view/tree-data-source"
         ]
@@ -16487,6 +16518,7 @@
         "canonical": ["common.view/model-scene-source"],
         "x3": [
           "common.view/byte-range-source",
+          "common.view/model-resource-refs-source",
           "common.view/model-scene-source",
           "common.view/tree-data-source"
         ]
@@ -16519,6 +16551,13 @@
             "state": "opened",
             "features": ["read", "size"],
             "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/model-resource-refs-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
           },
           {
             "contract": "common.view/model-scene-source",
@@ -16563,6 +16602,7 @@
           "operation:export.raw",
           "operation:view.inspect",
           "source:common.view/byte-range-source",
+          "source:common.view/model-resource-refs-source",
           "source:common.view/tree-data-source"
         ],
         "sources": [
@@ -16600,6 +16640,7 @@
         "operation:export.raw",
         "operation:view.inspect",
         "source:common.view/byte-range-source",
+        "source:common.view/model-resource-refs-source",
         "source:common.view/tree-data-source"
       ],
       "sourceComparisons": [
@@ -16653,11 +16694,13 @@
         "formatId": "sage-w3x",
         "declaredSources": [
           "common.view/byte-range-source",
+          "common.view/model-resource-refs-source",
           "common.view/model-scene-source",
           "common.view/tree-data-source"
         ],
         "actualSources": [
           "common.view/byte-range-source",
+          "common.view/model-resource-refs-source",
           "common.view/model-scene-source",
           "common.view/tree-data-source"
         ],
@@ -16669,6 +16712,13 @@
             "state": "opened",
             "features": ["read", "size"],
             "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/model-resource-refs-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
           },
           {
             "contract": "common.view/model-scene-source",
@@ -16721,6 +16771,7 @@
           "operation:export.raw",
           "operation:view.inspect",
           "source:common.view/byte-range-source",
+          "source:common.view/model-resource-refs-source",
           "source:common.view/model-scene-source",
           "source:common.view/tree-data-source"
         ]
@@ -16771,6 +16822,7 @@
         "canonical": ["common.view/model-scene-source"],
         "x3": [
           "common.view/byte-range-source",
+          "common.view/model-resource-refs-source",
           "common.view/model-scene-source",
           "common.view/tree-data-source"
         ]
@@ -16803,6 +16855,13 @@
             "state": "opened",
             "features": ["read", "size"],
             "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/model-resource-refs-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
           },
           {
             "contract": "common.view/model-scene-source",
@@ -16847,6 +16906,7 @@
           "operation:export.raw",
           "operation:view.inspect",
           "source:common.view/byte-range-source",
+          "source:common.view/model-resource-refs-source",
           "source:common.view/tree-data-source"
         ],
         "sources": [
@@ -19612,6 +19672,7 @@
         "operation:export.raw",
         "operation:view.inspect",
         "source:common.view/byte-range-source",
+        "source:common.view/model-resource-refs-source",
         "source:common.view/tree-data-source"
       ],
       "sourceComparisons": [
@@ -19665,11 +19726,13 @@
         "formatId": "westwood-w3d",
         "declaredSources": [
           "common.view/byte-range-source",
+          "common.view/model-resource-refs-source",
           "common.view/model-scene-source",
           "common.view/tree-data-source"
         ],
         "actualSources": [
           "common.view/byte-range-source",
+          "common.view/model-resource-refs-source",
           "common.view/model-scene-source",
           "common.view/tree-data-source"
         ],
@@ -19681,6 +19744,13 @@
             "state": "opened",
             "features": ["read", "size"],
             "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/model-resource-refs-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
           },
           {
             "contract": "common.view/model-scene-source",
@@ -19731,6 +19801,7 @@
           "operation:export.raw",
           "operation:view.inspect",
           "source:common.view/byte-range-source",
+          "source:common.view/model-resource-refs-source",
           "source:common.view/model-scene-source",
           "source:common.view/tree-data-source"
         ]
@@ -19781,6 +19852,7 @@
         "canonical": ["common.view/model-scene-source"],
         "x3": [
           "common.view/byte-range-source",
+          "common.view/model-resource-refs-source",
           "common.view/model-scene-source",
           "common.view/tree-data-source"
         ]
@@ -19813,6 +19885,13 @@
             "state": "opened",
             "features": ["read", "size"],
             "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/model-resource-refs-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
           },
           {
             "contract": "common.view/model-scene-source",
@@ -19857,6 +19936,7 @@
           "operation:export.raw",
           "operation:view.inspect",
           "source:common.view/byte-range-source",
+          "source:common.view/model-resource-refs-source",
           "source:common.view/tree-data-source"
         ],
         "sources": [
@@ -19894,6 +19974,9 @@
         "operation:export.raw",
         "operation:view.inspect",
         "source:common.view/byte-range-source",
+        "source:common.view/model-animation-source",
+        "source:common.view/model-resource-refs-source",
+        "source:common.view/model-skeleton-source",
         "source:common.view/tree-data-source"
       ],
       "sourceComparisons": [
@@ -19947,12 +20030,18 @@
         "formatId": "westwood-w3d",
         "declaredSources": [
           "common.view/byte-range-source",
+          "common.view/model-animation-source",
+          "common.view/model-resource-refs-source",
           "common.view/model-scene-source",
+          "common.view/model-skeleton-source",
           "common.view/tree-data-source"
         ],
         "actualSources": [
           "common.view/byte-range-source",
+          "common.view/model-animation-source",
+          "common.view/model-resource-refs-source",
           "common.view/model-scene-source",
+          "common.view/model-skeleton-source",
           "common.view/tree-data-source"
         ],
         "sourceFailures": [],
@@ -19963,6 +20052,20 @@
             "state": "opened",
             "features": ["read", "size"],
             "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/model-animation-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
+            "contract": "common.view/model-resource-refs-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
           },
           {
             "contract": "common.view/model-scene-source",
@@ -19981,6 +20084,13 @@
               "scenes": 1,
               "textures": 1
             }
+          },
+          {
+            "contract": "common.view/model-skeleton-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
           },
           {
             "contract": "common.view/tree-data-source",
@@ -20013,7 +20123,10 @@
           "operation:export.raw",
           "operation:view.inspect",
           "source:common.view/byte-range-source",
+          "source:common.view/model-animation-source",
+          "source:common.view/model-resource-refs-source",
           "source:common.view/model-scene-source",
+          "source:common.view/model-skeleton-source",
           "source:common.view/tree-data-source"
         ]
       },
@@ -20063,7 +20176,10 @@
         "canonical": ["common.view/model-scene-source"],
         "x3": [
           "common.view/byte-range-source",
+          "common.view/model-animation-source",
+          "common.view/model-resource-refs-source",
           "common.view/model-scene-source",
+          "common.view/model-skeleton-source",
           "common.view/tree-data-source"
         ]
       },
@@ -20097,6 +20213,20 @@
             "measurements": { "firstReadBytes": 16, "nonEmpty": true }
           },
           {
+            "contract": "common.view/model-animation-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
+            "contract": "common.view/model-resource-refs-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
             "contract": "common.view/model-scene-source",
             "major": 1,
             "state": "opened",
@@ -20113,6 +20243,13 @@
               "scenes": 1,
               "textures": 1
             }
+          },
+          {
+            "contract": "common.view/model-skeleton-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
           },
           {
             "contract": "common.view/tree-data-source",
@@ -20139,6 +20276,9 @@
           "operation:export.raw",
           "operation:view.inspect",
           "source:common.view/byte-range-source",
+          "source:common.view/model-animation-source",
+          "source:common.view/model-resource-refs-source",
+          "source:common.view/model-skeleton-source",
           "source:common.view/tree-data-source"
         ],
         "sources": [

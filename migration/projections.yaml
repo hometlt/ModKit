@@ -57,13 +57,13 @@ planes:
       - 'texture-refs'
       - 'variants'
     facetMaturity:
-      animation: 'publisher-candidate'
-      collision: 'publisher-candidate'
-      materials: 'publisher-candidate'
+      animation: 'admitted'
+      collision: 'admitted'
+      materials: 'admitted'
       skeleton: 'publisher-candidate'
-      texture-refs: 'publisher-candidate'
+      texture-refs: 'admitted'
     portableProfile: 'UVM'
-    artifactMaturity: 'reader-only'
+    artifactMaturity: 'reader-and-writer'
     derivedPresentation: 'rasterised-preview-and-thumbnail-are-derived-not-a-new-source'
     packageTrust: 'not-applicable'
     fidelity: 'partial'
@@ -73,7 +73,9 @@ planes:
       - 'export-native'
     plannedBlock: 11
     knownLoss:
-      - 'materialization в UVM ещё не реализована: MaterializationReceipt отсутствует'
+      - 'materialization в UVM реализована слайсом 11C1 (common.uv/model-materializer@1 + export-only writer); MaterializationReceipt выпускается, byte-stability и три оракула доказаны'
+      - 'ProjectionReceipt выпускают M3, W3D, W3X, VXL, OBJ и UVM (слайс 12-1); остальные модельные кодеки (DAE, glTF, PLY, STL, XBF, SCM) квитанцию пока не выпускают'
+      - 'skeleton остаётся publisher-candidate: обе публикующие семьи (W3D, W3X) живут в одном extension-пакете, второй независимой семьи нет'
       - 'native export не заявлен ни одним кодеком; NativeExportReceipt отсутствует'
       - 'глубина по формату разная: M3/W3D/W3X доказаны на реальном корпусе, VXL — на реальном файле, остальные модели — только структурно'
     resourceDependencies:
@@ -222,11 +224,13 @@ planes:
     secondaryActions:
       - 'edit'
       - 'export-native'
+      - 'materialize'
     plannedBlock: 12
     knownLoss:
       - 'ASTC/AVIF/KTX2/PKM/Basis публикуют заголовки, а не декодированные пиксели — 17 честных poorer-строк паритета'
-      - 'UVT-профиль в спецификации остаётся stub: до schema + fixtures + validator материализация UVT не заявляется'
-      - 'writer доказан для PNG (пиксели) и для метаданных JPEG/MP3; остальные media-writers не заявлены'
+      - 'UVT-материализация заявлена слайсом 12-1 ровно для одного пути: несжатый 8-битный RGBA из декодированного региона, один уровень, одна грань, без массива; всё сверх этого перечислено в MaterializationReceipt'
+      - 'passthrough блочных форматов (DDS BC) не заявлен: ни один ридер не публикует GPU-блоки как блоки, поэтому путь ждёт строку block9/decoded-gpu-texture-payloads'
+      - 'writer доказан для PNG (пиксели) и для метаданных JPEG/MP3; UVT-writer — export-only с roundTrip lossy; остальные media-writers не заявлены'
     resourceDependencies:
       - 'текстура может лежать внутри архива или CASC; путь разрешает host'
     corpusEvidence:

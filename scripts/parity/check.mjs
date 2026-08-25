@@ -54,6 +54,9 @@ function readCorpusVariable(name) {
 
 /** Probing the canonical oracle costs a child process per row; the corpus is now large. */
 const CONCURRENCY = Number.parseInt(process.env.MODKIT_PARITY_CONCURRENCY ?? '4', 10)
+
+/** Descriptor metadata group every migrated codec publishes its `ProjectionReceipt` under. */
+const PROJECTION_RECEIPT_GROUP = 'uv-projection-receipt'
 /** Recursive discovery must stay bounded so a mistyped root cannot walk an entire drive. */
 const DISCOVERY_NODE_BUDGET = 100_000
 const NAMESPACE_PAGE_LIMIT = 256
@@ -418,8 +421,20 @@ async function probeX3(sample, file, temporaryRoot) {
         }
       }
       const model = sources.find(source => source.contract === 'common.view/model-scene-source')
+      /*
+       * The projection receipt is skipped, and not because it is uninteresting.
+       *
+       * A `ProjectionReceipt` carries `subjectRevision`, which is the host's per-open provider
+       * token — it encodes the physical source and changes whenever the file is re-staged. Folding
+       * it into this report would make the committed snapshot non-reproducible, and `parity:legacy`
+       * exists precisely to prove the snapshot *is* reproducible. It is also not a comparable
+       * measurement: the canonical reader emits no receipts at all, so the entry could only ever be
+       * an X3-side extra. `comparableMetadataFeatures` already ignores it; this drops the body too.
+       */
       const metadataSummary = Object.fromEntries(
-        descriptor.metadata.flatMap(group => group.entries.map(entry => [entry.key, entry.value])),
+        descriptor.metadata
+          .filter(group => group.id !== PROJECTION_RECEIPT_GROUP)
+          .flatMap(group => group.entries.map(entry => [entry.key, entry.value])),
       )
       const operations = descriptor.operations
         .filter(operation => operation.state === 'available')
