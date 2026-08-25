@@ -301,6 +301,20 @@ export interface VsCodeServeOptions {
   readonly onDocumentSaveRequested?: (path: string) => void
   readonly onDiagnostic?: (diagnostic: { code: string; message: string }) => void
   /**
+   * One structured subject diagnostic, for whatever surface the editor gives them.
+   *
+   * Kept apart from `onDiagnostic`, which is the output-channel firehose and takes prose. This one
+   * carries a code, a severity and the subject it is about, because that is the shape VS Code's
+   * own Problems panel consumes — and a diagnostic that only ever reached a log was invisible to
+   * the person who needed it.
+   */
+  readonly onSubjectDiagnostic?: (diagnostic: {
+    readonly code: string
+    readonly message: string
+    readonly severity: 'error' | 'warning' | 'information' | 'hint'
+    readonly path?: string
+  }) => void
+  /**
    * Reading and writing this window's Modkit configuration.
    *
    * Supplied by `./extension.ts`, because `vscode.workspace.getConfiguration` and
@@ -431,6 +445,29 @@ function serveVsCode(
       budget: options.budget ?? DEFAULT_OPEN_BUDGET,
     })
     const answer = await opener(requested, signal)
+
+    /*
+     * Every finding about this subject, on whatever surface the adapter gives them — reported for
+     * the unresolved arm as well, because "no codec claimed it, and here is why" is exactly the
+     * kind of thing a user needs to see and exactly the kind that used to vanish into a log.
+     */
+    if (options.onSubjectDiagnostic !== undefined) {
+      const subjectPath = resolve(requested)
+      /*
+       * The opener's snapshot, not the inner open result. Companion findings are added around the
+       * open — the resolver is the only thing that knows an optional sidecar was absent — so the
+       * inner result carries everything except the one diagnostic this host most needs to show.
+       */
+      for (const item of answer.snapshot.diagnostics) {
+        options.onSubjectDiagnostic({
+          code: item.code,
+          message: item.message,
+          severity: item.severity ?? 'information',
+          path: subjectPath,
+        })
+      }
+    }
+
     if (answer.snapshot.state !== 'opened' || opened === undefined) return answer
 
     const sessionId = answer.snapshot.sessionId

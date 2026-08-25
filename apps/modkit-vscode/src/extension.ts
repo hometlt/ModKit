@@ -318,6 +318,63 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     return answer === 'Discard' ? 'discard' : 'cancel'
   }
 
+  // ---------------------------------------------------------------- problems
+  /*
+   * Subject diagnostics on the editor's own surface.
+   *
+   * These used to reach `log()` and stop there: an output channel is a place a diagnostic goes to
+   * be forgotten, and nothing in the API can read one back. A `DiagnosticCollection` is the
+   * surface VS Code already owns for "something is worth saying about this file" — it survives the
+   * next status message, it is filterable by severity, and it is where a user looks.
+   *
+   * The range is the head of the file rather than a guess: a subject diagnostic is about the
+   * subject, not about a line, and pointing at line 1 is the honest way to say so.
+   */
+  const problems = vscode.languages.createDiagnosticCollection('modkit')
+  context.subscriptions.push(problems)
+
+  const SEVERITY: Readonly<Record<string, vscode.DiagnosticSeverity>> = Object.freeze({
+    error: vscode.DiagnosticSeverity.Error,
+    warning: vscode.DiagnosticSeverity.Warning,
+    information: vscode.DiagnosticSeverity.Information,
+    hint: vscode.DiagnosticSeverity.Hint,
+  })
+
+  /** What has already been said about each subject, so a repeat does not stack up. */
+  const problemsFor = new Map<string, vscode.Diagnostic[]>()
+
+  const publishDiagnostic = (item: {
+    readonly code: string
+    readonly message: string
+    readonly severity: 'error' | 'warning' | 'information' | 'hint'
+    readonly path?: string
+  }): void => {
+    if (item.path === undefined) return
+    const uri = vscode.Uri.file(item.path)
+    const key = uri.toString()
+    const existing = problemsFor.get(key) ?? []
+    // The same code about the same subject is one problem, however many times it is reported.
+    if (existing.some(entry => entry.code === item.code && entry.message === item.message)) return
+    const entry = new vscode.Diagnostic(
+      new vscode.Range(0, 0, 0, 0),
+      item.message,
+      SEVERITY[item.severity] ?? vscode.DiagnosticSeverity.Information,
+    )
+    entry.code = item.code
+    entry.source = 'Modkit'
+    const next = [...existing, entry]
+    problemsFor.set(key, next)
+    problems.set(uri, next)
+    log(`[problems] ${item.severity} ${item.code}: ${item.message}`)
+  }
+
+  /** Drop a subject's problems when its editor goes away; a closed file has no findings. */
+  const forgetDiagnostics = (path: string): void => {
+    const uri = vscode.Uri.file(path)
+    problemsFor.delete(uri.toString())
+    problems.delete(uri)
+  }
+
   // ---------------------------------------------------------------- webviews
   const live = new Set<VsCodeServed>()
 
@@ -352,6 +409,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             onDocumentSaveRequested: lifecycle.onSaveRequested,
           }),
       onDiagnostic: diagnostic => log(`[subject-rpc] ${diagnostic.code}: ${diagnostic.message}`),
+      onSubjectDiagnostic: publishDiagnostic,
     })
     live.add(served)
     // The listener is attached first: the page opens the endpoint the moment its bundle runs.
@@ -529,6 +587,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       panel.onDidDispose(() => {
         document.state.detach(served)
         live.delete(served)
+        forgetDiagnostics(target.path)
         void served.close('the asset editor was closed')
       })
     },

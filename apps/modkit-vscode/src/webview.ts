@@ -116,18 +116,14 @@ async function mount(
     },
   }
   const bridge = createBridge({ channel, idPrefix: 'view' })
-  const client = await connectSubjectRpc({
-    framePort: bridge.framePort,
-    // This port is emitter-shaped (`on`), and its payload is the frame itself.
-    session: snapshot.session,
-    moduleUrl: snapshot.moduleUrl,
-    contributionId: snapshot.contributionId,
-    onDiagnostic: diagnostic => {
-      bridge.emit({ op: 'status', text: `${diagnostic.code}: ${diagnostic.message}` })
-    },
-  })
 
   // ---------------------------------------------------------------- chrome
+  /*
+   * Built before the RPC client, not after. `onDiagnostic` fires from the moment the client is
+   * connected, and it has to be able to reach the status line — when this block sat below the
+   * connect, the handler could only `bridge.emit`, so a subject diagnostic went to the extension's
+   * output channel and was never drawn anywhere a person looks.
+   */
   const workbench = createWorkbench(document, {
     title: 'Modkit',
     host: { label: snapshot.webview.realmId, facilities: snapshot.webview.facilities },
@@ -141,6 +137,25 @@ async function mount(
     setViewerText(statusLine, message, 400)
     bridge.emit({ op: 'status', text: message })
   }
+
+  const client = await connectSubjectRpc({
+    framePort: bridge.framePort,
+    // This port is emitter-shaped (`on`), and its payload is the frame itself.
+    session: snapshot.session,
+    moduleUrl: snapshot.moduleUrl,
+    contributionId: snapshot.contributionId,
+    /*
+     * Said on the page, where it used to be silent. `say` also mirrors into the output channel,
+     * so this one call covers both of the page's own channels.
+     *
+     * The editor's Problems panel is fed from the extension host instead, not from here: this
+     * channel narrows a diagnostic to `{code, message}`, and a severity guessed from a code string
+     * would be a worse answer than the one the host already has.
+     */
+    onDiagnostic: diagnostic => {
+      say(`${diagnostic.code}: ${diagnostic.message}`)
+    },
+  })
 
   // ---------------------------------------------------------------- file access
   /**
@@ -302,6 +317,16 @@ async function mount(
    */
   const editors: EditorArea = createEditorArea(document, {
     preview,
+    /*
+     * In the custom editor the file already has a tab and a breadcrumb — VS Code drew them, above
+     * this webview, for this very file. A second row of tabs showing the same one file, and a
+     * second breadcrumb spelling out its absolute location, are this component not knowing where
+     * it was mounted. Switched off, what is left is the working area: the view picker and the
+     * stage. The standalone panel keeps both, because there it is the only thing that has them.
+     */
+    ...(snapshot.openPath === undefined
+      ? {}
+      : { chrome: { tabs: false, breadcrumb: false } as const }),
     read: (entry, signal) => access.read(entry.id, EXPLORER_MAXIMUM_BYTES, signal),
     async confirmClose(entry) {
       const answer = String(
