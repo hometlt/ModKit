@@ -6,6 +6,7 @@ module.exports = Object.freeze([
   'documents',
   'images',
   'models',
+  'plain-text',
   'text-delimited',
   'text-ini',
   'text-json',
