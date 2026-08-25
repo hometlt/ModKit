@@ -18,7 +18,8 @@
   "scripts": {
     "contributes:emit": "node scripts/generate-contributes.mjs",
     "contributes:check": "node scripts/generate-contributes.mjs --check",
-    "ext:build": "node scripts/build-extension.mjs"
+    "ext:build": "node scripts/build-extension.mjs",
+    "smoke:vscode": "node test-e2e/run-smoke.mjs"
   },
   "dependencies": {
     "@modkitx-x3/core": "workspace:*",
