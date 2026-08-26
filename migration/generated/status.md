@@ -179,7 +179,7 @@
 | Возможность                    | migrationState | evidence | Владелец                   |
 | ------------------------------ | -------------- | -------- | -------------------------- |
 | `uv/uvd/definitions`           | `missing`      | E1       | `packages/sdk`             |
-| `uv/uvw/world-materialization` | `missing`      | E1       | `extensions/common/models` |
+| `uv/uvw/world-materialization` | `missing`      | E2       | `extensions/common/models` |
 
 ## 6. Готовность корпусов
 
