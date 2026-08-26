@@ -4499,15 +4499,15 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:67fef9c83c1d6084bb38e94e2e475ab45fab5fa89e1636f2fb4cb359d5725801',
+        artifactDigest: 'sha256:bf79da8a493ac39707da5ac908dfa7c147fc9af24c78d8284c81dae8850ff474',
         fileDigests: {
           'MIGRATION-NOTES-common-images.json':
             'sha256:76c5e4320dbbc9b2e71030063212b4351eb11d409eb69e554749364c33415205',
           'README.md': 'sha256:4f8426d4cb4a5a43b6b37cfb8d3262b2ce94a8ec1436d6d339e7f64dc3adadeb',
           'contributions/codec-ani.json':
-            'sha256:d899d89db0da4affc508d8e9a0b37e1f0bcb3575a712c72d6688fe7e028a9b78',
+            'sha256:b1bc2fd0c8feb81a6fb5e13887265d79ab69806481cdf9e5e556e90ea143ba8e',
           'contributions/codec-astc.json':
-            'sha256:981d10b68cf6d753f7959e692af2f27e25c4e347166d5382a17bd9282804b5e3',
+            'sha256:af9d41c4f23b49f41b3de54b7df393df1c9635e959c4c9087b1ffe89b5a6f53e',
           'contributions/codec-avif.json':
             'sha256:55ccb4042b903954df9c13d1e507544259e46a8f7a86030d5bbcefa4ae9dc082',
           'contributions/codec-basis.json':
@@ -4552,9 +4552,9 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:fa03ddbb7e468a6d9948ba9f89dee07ffc682e8404adb23f379da4cf231aed49',
           'package.json': 'sha256:d6a9b60520c002c6015821e1de2705bcb12490481a5057cc50f81cf2560eefe3',
           'src/ani/codec.js':
-            'sha256:9a5cd3d84c67e1fd2354c2482a85dfa28ebdaa4605b5d8f137bc9d146574c8b4',
+            'sha256:5f0d9226306868dbaa0998f9c85c85d8507d07fb2cc25a9bd047ac8e0c810fe3',
           'src/astc/codec.js':
-            'sha256:dff8e4413a82376008818c19e5fb4b1d1450bf19bd68e289b9d8b8fcc9b41218',
+            'sha256:9ee0828c52b294cba6d2655c3f34dc7ac2cd3e363ceacf61043c6919832e0503',
           'src/avif/codec.js':
             'sha256:4db49b42e97cc393415cd85c07279495ce7cb2dd3a78226308307808a25308c2',
           'src/basis/codec.js':
@@ -4578,7 +4578,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/ico/codec.js':
             'sha256:854e9798a852f7e77a03b65d1b682816436fadc79283cffe5b684ce083139321',
           'src/ico/container.js':
-            'sha256:3335064df3564dcb732887f8de7215b1fc4783e78a75921e89501efc37c92a68',
+            'sha256:c97e85143661377a04b7567a34f3763883d165009a3dcdaa6fddaacdb130ed08',
           'src/index.js': 'sha256:bcbc40812fa5dcdb2937b0ff5b617c1483725570302b99f569249ac3c441ce41',
           'src/ktx/codec.js':
             'sha256:1eff44456f555e8e63f6229f1bfcfd27d5df29c124b07b0c6aefd47d20cf145f',
@@ -4604,9 +4604,15 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:0e659889a1ad44cf1826d4e02caf7fd311234685315543d96af366bc02bd5255',
           'src/writers/png-encoder.js':
             'sha256:411efbd8aadd7a2edfb335752f8e8bfad1a11452534bd039e227d52f49d6a65a',
+          'test/ani-raster-decode.test.ts':
+            'sha256:93bf100792fbc093f6ae022d8d18a62d67aa009537694768be9c3f2c159c45dd',
+          'test/astc-void-extent.test.ts':
+            'sha256:71a9bea94c45c7175fe761d01b9367e2315511a6476b67c288350f060af29905',
+          'test/codec-session.ts':
+            'sha256:c37e043c413ab7e02451941c5bbbad2ed2a74b5a74b0e1028ec2f69a6ef6037f',
         },
         inventoryRecordId:
-          'artifact:sha256:67fef9c83c1d6084bb38e94e2e475ab45fab5fa89e1636f2fb4cb359d5725801',
+          'artifact:sha256:bf79da8a493ac39707da5ac908dfa7c147fc9af24c78d8284c81dae8850ff474',
       },
       artifactRoot: 'extensions/images/',
       containers: {
@@ -4652,11 +4658,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       documentDigests: [
         [
           'contributions/codec-ani.json',
-          'sha256:d899d89db0da4affc508d8e9a0b37e1f0bcb3575a712c72d6688fe7e028a9b78',
+          'sha256:b1bc2fd0c8feb81a6fb5e13887265d79ab69806481cdf9e5e556e90ea143ba8e',
         ],
         [
           'contributions/codec-astc.json',
-          'sha256:981d10b68cf6d753f7959e692af2f27e25c4e347166d5382a17bd9282804b5e3',
+          'sha256:af9d41c4f23b49f41b3de54b7df393df1c9635e959c4c9087b1ffe89b5a6f53e',
         ],
         [
           'contributions/codec-avif.json',
@@ -4754,8 +4760,8 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             displayName: 'Windows Animated Cursor / Warzone Animation',
             id: 'org.modkitx/ani',
             limitations: [
-              'The MK3 port performs a bounded RIFF/ACON chunk walk, validates anih declarations and embedded ICO/CUR frame headers, and reports rate/sequence metadata.',
-              'Warzone 2100 ANIM3DFRAMES text sidecars are parsed as bounded frame lines; embedded cursor pixel decoding, playback, model application, and writing remain unsupported.',
+              'The MK3 port performs a bounded RIFF/ACON chunk walk, validates anih declarations and embedded ICO/CUR frame headers, and decodes the first supported CUR/DIB frame through the generic raster source with its AND mask.',
+              'Warzone 2100 ANIM3DFRAMES text sidecars are parsed as bounded frame lines; remaining ANI frames, playback/timeline publication, model application, PNG/indexed embedded frames, and writing remain unsupported.',
             ],
             runtimeVariants: [
               {
@@ -4851,6 +4857,10 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                   major: 1,
                 },
                 {
+                  contract: 'common.view/raster-image-source',
+                  major: 1,
+                },
+                {
                   contract: 'common.view/byte-range-source',
                   major: 1,
                 },
@@ -4880,9 +4890,9 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             displayName: 'ASTC Texture',
             id: 'org.modkitx/astc',
             limitations: [
-              'The dependency-free MK3 port validates the standalone header, dimensions and compressed block payload but deliberately publishes no raster source without an ASTC decoder.',
+              'The dependency-free MK3 port decodes only two-dimensional LDR void-extent constant-colour blocks; all ordinary, HDR void-extent and three-dimensional ASTC block modes remain compressed-only.',
               'The standalone container does not identify linear versus sRGB or LDR versus HDR profiles, so consumers must obtain that semantic from surrounding asset metadata.',
-              'Three-dimensional ASTC decode, HDR output, GPU upload and encoding remain follow-up work.',
+              'General ASTC decoding, HDR output, GPU upload and encoding remain follow-up work.',
             ],
             runtimeVariants: [
               {
@@ -4974,6 +4984,10 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 },
                 {
                   contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/raster-image-source',
                   major: 1,
                 },
               ],
@@ -7721,6 +7735,9 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'src/tiff/codec.js',
         'src/webp/codec.js',
         'src/writers/png-encoder.js',
+        'test/ani-raster-decode.test.ts',
+        'test/astc-void-extent.test.ts',
+        'test/codec-session.ts',
       ],
       name: 'images',
       source: 'extensions/common/images',
