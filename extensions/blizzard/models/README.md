@@ -10,11 +10,24 @@ publishes sequence names and counts of distinct SD timestamp samples through
 not reported as frame counts, and no frame rate is inferred. A channel gets a `bone/<index>` target
 only when its STC animation id matches exactly one BONE translation, rotation or scale reference.
 
+The Node decoder also follows `MODL.material_references` into MATM, resolves standard entries through
+`MODL.materials_standard`, and publishes their stable identity and names through
+`common.view/model-material-source@1`. Standard blend modes and flags are decoded as closed names;
+each MAT_ layer slot follows its exact LAYR reference. A non-empty LAYR texture string is joined to
+the already-published `model-resource-refs-source@1` id, so material decoding never creates a second
+authority for asset paths. DIV_ → BAT_ binds an M3 region primitive to a material only when the
+region and MATM reference are valid and unambiguous.
+
 The skeleton facet carries only the v1 contract's index/name bindings. Parent links and named flag
 bits are validated as decode evidence, but the projection receipt still marks hierarchy, flags and
 rest pose as lost because the live contract has no fields for them. Animation receipts keep SD
 keyframes and unresolved STC ids visibly lost; the sequence list is not presented as a full
 keyframe decode.
+
+The material facet's v1 ABI carries identity, name and optional contract tags, but no layer fields.
+Layer-to-resource foreign keys and standard shader semantics therefore remain explicit receipt
+evidence and a named `material-layer-facet-fields` remainder rather than a fabricated public shape.
+Exotic M3 material types are counted and named but their renderer-specific parameters remain lost.
 
 The synthetic triangle fixture and live SC2 installation corpus exercise this package. Historical
 conversion decisions and the still-unimplemented writer/export planes are recorded in

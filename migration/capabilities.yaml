@@ -7143,7 +7143,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'supported'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E3'
+    evidenceLevel: 'E4'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -7155,7 +7155,6 @@ capabilities:
         - 'real'
         - 'synthetic'
       verdicts:
-        - 'poorer'
         - 'richer'
       liveSources:
         - 'common.view/model-scene-source'
@@ -7182,16 +7181,19 @@ capabilities:
       - 'operation dropped at port: model.write'
       - 'SEQS/STC structure and distinct SD timestamp counts are published, but native millisecond bounds and SD keyframe values remain named losses'
       - 'a channel target is published only when its animation id resolves to exactly one explicit BONE animation-reference header; ambiguous or absent targets remain unsupported'
-      - 'the canonical real sample decodes five materials while X3 carries MAT* as a named lost plane; this pre-existing material-depth gap does not weaken the newly compared animation plane'
+      - 'model-material-source@1 carries MATM identity and names but has no layer slots or resource foreign-key fields; exact LAYR mappings remain receipt evidence'
+      - 'exotic M3 material types are named and counted, but their renderer-specific shader parameters remain unprojected'
     receipts:
       projection: 'ProjectionReceipt'
       materialization: null
       nativeExport: null
     replacementWorkflow: null
     closedBy:
-      commits: []
+      commits:
+        - 'a7867d0'
       tests:
         - 'extensions/blizzard/models/test/m3-animation.test.ts'
+        - 'extensions/blizzard/models/test/m3-material.test.ts'
         - 'extensions/blizzard/models/test/m3-skeleton.test.ts'
       reports: []
   - capabilityId: 'format/m4a/open-inspect'

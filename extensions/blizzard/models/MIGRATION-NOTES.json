@@ -11,7 +11,8 @@
       "verdict": "needs-new-contract",
       "lostPlanes": [],
       "contractGaps": [
-        "capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract"
+        "capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract",
+        "model-material-source@1 has no layer slots or resource foreign keys: MATM/MAT_/LAYR/BAT_ decoding publishes material identity and primitive materialId, while layer mappings remain receipt evidence"
       ],
       "renames": [],
       "converterDefaults": [
