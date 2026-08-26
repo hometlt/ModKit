@@ -1,13 +1,13 @@
 {
   "schemaVersion": 3,
-  "corpus": "C:\\FILES\\SC2Files\\coding\\modkitX3-sol-m3-bones\\scripts\\parity\\corpus.json",
+  "corpus": "C:\\FILES\\SC2Files\\coding\\modkitX3\\scripts\\parity\\corpus.json",
   "canonical": {
     "root": "C:\\FILES\\SC2Files\\coding\\modkitx",
     "sha": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d"
   },
   "x3": {
-    "root": "C:\\FILES\\SC2Files\\coding\\modkitX3-sol-m3-bones",
-    "sha": "85798a2296c6749c05c426e53ca419ddeb7ee1de"
+    "root": "C:\\FILES\\SC2Files\\coding\\modkitX3",
+    "sha": "78b80c3fed3b2c7050d58e7bf58eca76ca104131"
   },
   "counts": {
     "total": 73,
@@ -756,7 +756,6 @@
       "classification": "X3 беднее",
       "missing": [
         "common.view/namespace-entry-source:measurement:entries:2<3",
-        "common.view/namespace-entry-source:measurement:extractedBytes:512<523",
         "common.view/namespace-entry-source:measurement:files:2<3"
       ],
       "reason": "The canonical PE reader publishes two synthesised metadata documents (metadata/summary.txt, metadata/headers.json) as namespace entries; X3 publishes the raw header blob plus the same single real section. The entry-count gap is namespace modelling, not unread PE structure."
@@ -13879,11 +13878,11 @@
       "classification": "X3 беднее",
       "missing": [
         "common.view/namespace-entry-source:measurement:entries:2<3",
-        "common.view/namespace-entry-source:measurement:extractedBytes:512<523",
         "common.view/namespace-entry-source:measurement:files:2<3"
       ],
       "extra": [
         "common.view/namespace-entry-source:measurement:directories",
+        "common.view/namespace-entry-source:measurement:extractedBytes:512>510",
         "common.view/namespace-entry-source:measurement:productReopenCompleted",
         "common.view/namespace-entry-source:product-reopen",
         "operation:asset.validate",
@@ -13897,13 +13896,10 @@
         {
           "contract": "common.view/namespace-entry-source",
           "classification": "X3 беднее",
-          "missing": [
-            "measurement:entries:2<3",
-            "measurement:extractedBytes:512<523",
-            "measurement:files:2<3"
-          ],
+          "missing": ["measurement:entries:2<3", "measurement:files:2<3"],
           "extra": [
             "measurement:directories",
+            "measurement:extractedBytes:512>510",
             "measurement:productReopenCompleted",
             "product-reopen"
           ]
@@ -13925,7 +13921,7 @@
               "entries": 3,
               "files": 3,
               "complete": true,
-              "extractedBytes": 523,
+              "extractedBytes": 510,
               "extractedNonEmpty": true
             }
           }
@@ -14051,7 +14047,7 @@
           "state": "not-observed",
           "verdict": "not-observed"
         },
-        { "plane": "payload-access", "state": "compared", "verdict": "poorer" },
+        { "plane": "payload-access", "state": "compared", "verdict": "richer" },
         {
           "plane": "protected-tail-preservation",
           "state": "not-observed",
@@ -14082,7 +14078,7 @@
               "entries": 3,
               "files": 3,
               "complete": true,
-              "extractedBytes": 523,
+              "extractedBytes": 510,
               "extractedNonEmpty": true
             }
           }
@@ -14128,11 +14124,11 @@
         "classification": "X3 беднее",
         "missing": [
           "common.view/namespace-entry-source:measurement:entries:2<3",
-          "common.view/namespace-entry-source:measurement:extractedBytes:512<523",
           "common.view/namespace-entry-source:measurement:files:2<3"
         ],
         "extra": [
           "common.view/namespace-entry-source:measurement:directories",
+          "common.view/namespace-entry-source:measurement:extractedBytes:512>510",
           "common.view/namespace-entry-source:measurement:productReopenCompleted",
           "common.view/namespace-entry-source:product-reopen",
           "operation:asset.validate",
@@ -14146,13 +14142,10 @@
           {
             "contract": "common.view/namespace-entry-source",
             "classification": "X3 беднее",
-            "missing": [
-              "measurement:entries:2<3",
-              "measurement:extractedBytes:512<523",
-              "measurement:files:2<3"
-            ],
+            "missing": ["measurement:entries:2<3", "measurement:files:2<3"],
             "extra": [
               "measurement:directories",
+              "measurement:extractedBytes:512>510",
               "measurement:productReopenCompleted",
               "product-reopen"
             ]
