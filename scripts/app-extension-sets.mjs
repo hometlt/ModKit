@@ -181,6 +181,29 @@ export const READY_APP_EXTENSIONS = Object.freeze({
     coordinate: 'org.modkitx/ui-monaco',
     contributions: Object.freeze(['org.modkitx.ui-monaco/code-stage']),
   }),
+  /*
+   * The UV materializers and writers, which every application has been shipping and this table did
+   * not list.
+   *
+   * Found by slice 13C: the generated VS Code catalog enumerates roots with the product's own
+   * predicate, and `uv-materializer` turned up as a real extension root that discovery had been
+   * loading all along while `READY_APP_EXTENSIONS` — the table `apps:check` matrixes against — had
+   * no entry for it. Owner decision (2026-08-26): the table was behind the fact, and UVM/UVT export
+   * is a declared product capability in every application, so it is listed here rather than carried
+   * as `declared: false`.
+   *
+   */
+  'uv-materializer': Object.freeze({
+    coordinate: 'org.modkitx/uv-materializer',
+    contributions: Object.freeze([
+      'org.modkitx/uv-model-materializer-contract',
+      'org.modkitx/uv-texture-materializer-contract',
+      'org.modkitx/uvm-materializer',
+      'org.modkitx/uvm-writer',
+      'org.modkitx/uvt-materializer',
+      'org.modkitx/uvt-writer',
+    ]),
+  }),
   'blizzard-casc': Object.freeze({
     path: Object.freeze(['blizzard', 'casc']),
     coordinate: 'org.modkitx.blizzard/casc',
@@ -280,6 +303,16 @@ const fullCodecs = Object.freeze([
   ...media,
   ...modelsAndArchives,
   'containers',
+  /*
+   * UVM/UVT materializers and writers.
+   *
+   * Every declared directory must appear in some set — `apps:check` enforces that the table and the
+   * matrix cover each other — so listing `uv-materializer` in `READY_APP_EXTENSIONS` and nowhere
+   * here is not an option the invariant allows. `full-codecs` is where it belongs: UV export is a
+   * declared product capability in every application (owner, 2026-08-26), and a "full codecs"
+   * composition that omitted it would be the one making the odd claim.
+   */
+  'uv-materializer',
 ])
 const mk2Extended = Object.freeze([
   'blizzard-casc',

@@ -303,9 +303,12 @@ describe('the generated catalog decides what this build ships', () => {
       .filter(name => looksLikeExtensionDirectory(join(common, name), nodeProbe))
       .sort()
     expect(emitted.roots.map(root => root.name)).toEqual(onDisk)
-    // `uv-materializer` is shipped and absent from READY_APP_EXTENSIONS; the catalog says so.
-    expect(emitted.roots.filter(root => !root.declared).map(root => root.name)).toEqual([
-      'uv-materializer',
-    ])
+    /*
+     * Every shipped root is now known to the conformance matrix. `uv-materializer` was the one that
+     * was not — slice 13C found it and carried it as `declared: false`, and the owner's answer was
+     * that the table was behind the fact rather than the catalog being wrong. An undeclared root
+     * reappearing here means the same drift has happened again to something else.
+     */
+    expect(emitted.roots.filter(root => !root.declared).map(root => root.name)).toEqual([])
   })
 })
