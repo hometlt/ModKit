@@ -7,7 +7,7 @@
   },
   "x3": {
     "root": "C:\\FILES\\SC2Files\\coding\\modkitX3",
-    "sha": "dc14a4a1efb93bfc26cdae1070ba13a81f675dd6"
+    "sha": "edc7d8496cd0a178a58c5bba2394493eb3ce8bed"
   },
   "counts": {
     "total": 73,
@@ -18,9 +18,9 @@
     "failed": 0,
     "comparedReal": 13,
     "comparedSynthetic": 60,
-    "richer": 42,
+    "richer": 44,
     "equal": 16,
-    "poorer": 15,
+    "poorer": 13,
     "incomparable": 0
   },
   "summary": [
@@ -39,8 +39,8 @@
       "kind": "synthetic",
       "contributionId": "org.modkitx/ani",
       "state": "compared",
-      "classification": "X3 беднее",
-      "verdict": "poorer"
+      "classification": "X3 богаче",
+      "verdict": "richer"
     },
     {
       "id": "astc-synthetic",
@@ -48,8 +48,8 @@
       "kind": "synthetic",
       "contributionId": "org.modkitx/astc",
       "state": "compared",
-      "classification": "X3 беднее",
-      "verdict": "poorer"
+      "classification": "X3 богаче",
+      "verdict": "richer"
     },
     {
       "id": "avi-synthetic",
@@ -684,28 +684,6 @@
   ],
   "poorer": [
     {
-      "id": "ani-synthetic",
-      "format": "ani",
-      "kind": "synthetic",
-      "classification": "X3 беднее",
-      "missing": [
-        "common.view/raster-image-source:source:common.view/raster-image-source",
-        "source:common.view/raster-image-source"
-      ],
-      "reason": "X3 publishes no raster image source for this format — the codec exposes a structural tree only — while the canonical image codec reports the header extent. Raster promotion is codec depth, not a harness gap."
-    },
-    {
-      "id": "astc-synthetic",
-      "format": "astc",
-      "kind": "synthetic",
-      "classification": "X3 беднее",
-      "missing": [
-        "common.view/raster-image-source:source:common.view/raster-image-source",
-        "source:common.view/raster-image-source"
-      ],
-      "reason": "X3 publishes no raster image source for this format — the codec exposes a structural tree only — while the canonical image codec reports the header extent. Raster promotion is codec depth, not a harness gap."
-    },
-    {
       "id": "avif-synthetic",
       "format": "avif",
       "kind": "synthetic",
@@ -1125,12 +1103,11 @@
         "bytes": 146,
         "sha256": "97eb2e9597276452f1f47906f1df0bb27f586c131fc8e4baa148f7806d68d71b"
       },
-      "classification": "X3 беднее",
-      "missing": [
-        "common.view/raster-image-source:source:common.view/raster-image-source",
-        "source:common.view/raster-image-source"
-      ],
+      "classification": "X3 богаче",
+      "missing": [],
       "extra": [
+        "common.view/raster-image-source:measurement:channels",
+        "common.view/raster-image-source:measurement:encodedMediaType",
         "operation:asset.validate",
         "operation:export.raw",
         "operation:view.inspect",
@@ -1140,9 +1117,9 @@
       "sourceComparisons": [
         {
           "contract": "common.view/raster-image-source",
-          "classification": "X3 беднее",
-          "missing": ["source:common.view/raster-image-source"],
-          "extra": []
+          "classification": "X3 богаче",
+          "missing": [],
+          "extra": ["measurement:channels", "measurement:encodedMediaType"]
         }
       ],
       "baseline": "X3 беднее",
@@ -1173,8 +1150,16 @@
       "x3": {
         "available": true,
         "formatId": "ani",
-        "declaredSources": ["common.view/byte-range-source", "common.view/tree-data-source"],
-        "actualSources": ["common.view/byte-range-source", "common.view/tree-data-source"],
+        "declaredSources": [
+          "common.view/byte-range-source",
+          "common.view/raster-image-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/byte-range-source",
+          "common.view/raster-image-source",
+          "common.view/tree-data-source"
+        ],
         "sourceFailures": [],
         "sources": [
           {
@@ -1183,6 +1168,21 @@
             "state": "opened",
             "features": ["read", "size"],
             "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/raster-image-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["decoded-region", "encoded", "info"],
+            "measurements": {
+              "channels": 4,
+              "decodedAccess": true,
+              "decodedBytes": 4,
+              "encodedMediaType": "application/x-navi-animation",
+              "encodedNonEmpty": true,
+              "height": 1,
+              "width": 1
+            }
           },
           {
             "contract": "common.view/tree-data-source",
@@ -1210,17 +1210,20 @@
           "flags": 1,
           "embeddedIcons": 1,
           "hasSequence": false,
-          "hasRates": false
+          "hasRates": false,
+          "firstFramePayloadKind": "dib",
+          "firstFrameDecodedAccess": true
         },
         "features": [
           "operation:asset.validate",
           "operation:export.raw",
           "operation:view.inspect",
           "source:common.view/byte-range-source",
+          "source:common.view/raster-image-source",
           "source:common.view/tree-data-source"
         ]
       },
-      "verdict": "poorer",
+      "verdict": "richer",
       "planes": [
         {
           "plane": "subject-recognition",
@@ -1230,7 +1233,7 @@
         {
           "plane": "structural-metadata",
           "state": "compared",
-          "verdict": "equal"
+          "verdict": "richer"
         },
         {
           "plane": "geometry-counts",
@@ -1272,7 +1275,11 @@
       ],
       "declared": {
         "canonical": ["common.view/raster-image-source"],
-        "x3": ["common.view/byte-range-source", "common.view/tree-data-source"]
+        "x3": [
+          "common.view/byte-range-source",
+          "common.view/raster-image-source",
+          "common.view/tree-data-source"
+        ]
       },
       "observed": {
         "canonical": [
@@ -1299,6 +1306,21 @@
             "measurements": { "firstReadBytes": 16, "nonEmpty": true }
           },
           {
+            "contract": "common.view/raster-image-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["decoded-region", "encoded", "info"],
+            "measurements": {
+              "channels": 4,
+              "decodedAccess": true,
+              "decodedBytes": 4,
+              "encodedMediaType": "application/x-navi-animation",
+              "encodedNonEmpty": true,
+              "height": 1,
+              "width": 1
+            }
+          },
+          {
             "contract": "common.view/tree-data-source",
             "major": 1,
             "state": "opened",
@@ -1313,12 +1335,11 @@
         ]
       },
       "comparison": {
-        "classification": "X3 беднее",
-        "missing": [
-          "common.view/raster-image-source:source:common.view/raster-image-source",
-          "source:common.view/raster-image-source"
-        ],
+        "classification": "X3 богаче",
+        "missing": [],
         "extra": [
+          "common.view/raster-image-source:measurement:channels",
+          "common.view/raster-image-source:measurement:encodedMediaType",
           "operation:asset.validate",
           "operation:export.raw",
           "operation:view.inspect",
@@ -1328,9 +1349,9 @@
         "sources": [
           {
             "contract": "common.view/raster-image-source",
-            "classification": "X3 беднее",
-            "missing": ["source:common.view/raster-image-source"],
-            "extra": []
+            "classification": "X3 богаче",
+            "missing": [],
+            "extra": ["measurement:channels", "measurement:encodedMediaType"]
           }
         ]
       }
@@ -1349,12 +1370,11 @@
         "bytes": 32,
         "sha256": "7bb440713401b9d3843111ceb5123e6c281275fefd248666447b66152fac9f49"
       },
-      "classification": "X3 беднее",
-      "missing": [
-        "common.view/raster-image-source:source:common.view/raster-image-source",
-        "source:common.view/raster-image-source"
-      ],
+      "classification": "X3 богаче",
+      "missing": [],
       "extra": [
+        "common.view/raster-image-source:measurement:channels",
+        "common.view/raster-image-source:measurement:encodedMediaType",
         "operation:asset.validate",
         "operation:export.raw",
         "operation:view.inspect",
@@ -1364,9 +1384,9 @@
       "sourceComparisons": [
         {
           "contract": "common.view/raster-image-source",
-          "classification": "X3 беднее",
-          "missing": ["source:common.view/raster-image-source"],
-          "extra": []
+          "classification": "X3 богаче",
+          "missing": [],
+          "extra": ["measurement:channels", "measurement:encodedMediaType"]
         }
       ],
       "baseline": "X3 беднее",
@@ -1397,8 +1417,16 @@
       "x3": {
         "available": true,
         "formatId": "astc",
-        "declaredSources": ["common.view/byte-range-source", "common.view/tree-data-source"],
-        "actualSources": ["common.view/byte-range-source", "common.view/tree-data-source"],
+        "declaredSources": [
+          "common.view/byte-range-source",
+          "common.view/raster-image-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/byte-range-source",
+          "common.view/raster-image-source",
+          "common.view/tree-data-source"
+        ],
         "sourceFailures": [],
         "sources": [
           {
@@ -1407,6 +1435,21 @@
             "state": "opened",
             "features": ["read", "size"],
             "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/raster-image-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["decoded-region", "encoded", "info"],
+            "measurements": {
+              "channels": 4,
+              "decodedAccess": true,
+              "decodedBytes": 4,
+              "encodedMediaType": "image/astc",
+              "encodedNonEmpty": true,
+              "height": 4,
+              "width": 4
+            }
           },
           {
             "contract": "common.view/tree-data-source",
@@ -1433,6 +1476,8 @@
           "blockDepth": 1,
           "blocks": 1,
           "payloadBytes": 16,
+          "decodedSubset": "2d-ldr-void-extent",
+          "decodedAccess": true,
           "trailingBytes": 0
         },
         "features": [
@@ -1440,10 +1485,11 @@
           "operation:export.raw",
           "operation:view.inspect",
           "source:common.view/byte-range-source",
+          "source:common.view/raster-image-source",
           "source:common.view/tree-data-source"
         ]
       },
-      "verdict": "poorer",
+      "verdict": "richer",
       "planes": [
         {
           "plane": "subject-recognition",
@@ -1453,7 +1499,7 @@
         {
           "plane": "structural-metadata",
           "state": "compared",
-          "verdict": "equal"
+          "verdict": "richer"
         },
         {
           "plane": "geometry-counts",
@@ -1495,7 +1541,11 @@
       ],
       "declared": {
         "canonical": ["common.view/raster-image-source"],
-        "x3": ["common.view/byte-range-source", "common.view/tree-data-source"]
+        "x3": [
+          "common.view/byte-range-source",
+          "common.view/raster-image-source",
+          "common.view/tree-data-source"
+        ]
       },
       "observed": {
         "canonical": [
@@ -1522,6 +1572,21 @@
             "measurements": { "firstReadBytes": 16, "nonEmpty": true }
           },
           {
+            "contract": "common.view/raster-image-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["decoded-region", "encoded", "info"],
+            "measurements": {
+              "channels": 4,
+              "decodedAccess": true,
+              "decodedBytes": 4,
+              "encodedMediaType": "image/astc",
+              "encodedNonEmpty": true,
+              "height": 4,
+              "width": 4
+            }
+          },
+          {
             "contract": "common.view/tree-data-source",
             "major": 1,
             "state": "opened",
@@ -1536,12 +1601,11 @@
         ]
       },
       "comparison": {
-        "classification": "X3 беднее",
-        "missing": [
-          "common.view/raster-image-source:source:common.view/raster-image-source",
-          "source:common.view/raster-image-source"
-        ],
+        "classification": "X3 богаче",
+        "missing": [],
         "extra": [
+          "common.view/raster-image-source:measurement:channels",
+          "common.view/raster-image-source:measurement:encodedMediaType",
           "operation:asset.validate",
           "operation:export.raw",
           "operation:view.inspect",
@@ -1551,9 +1615,9 @@
         "sources": [
           {
             "contract": "common.view/raster-image-source",
-            "classification": "X3 беднее",
-            "missing": ["source:common.view/raster-image-source"],
-            "extra": []
+            "classification": "X3 богаче",
+            "missing": [],
+            "extra": ["measurement:channels", "measurement:encodedMediaType"]
           }
         ]
       }
