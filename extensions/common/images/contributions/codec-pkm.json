@@ -22,7 +22,7 @@
   ],
   "limitations": [
     "The MK3 port validates PKM 1.0 ETC1 and PKM 2.0/ETCPACK identifiers 0, 1, and 3-11, padded dimensions, block geometry, and the exact compressed payload size; retired identifier 2 is rejected.",
-    "ETC/EAC software decoding, GPU upload, mip chains, encoding, and pixel editing remain unsupported; identifiers 9-11 are reported as ETCPACK sRGB extensions."
+    "ETC1/ETC2 and unsigned EAC R11/RG11 software decoding are available; signed EAC needs an explicit signed raster view. GPU upload, mip chains, encoding, and pixel editing remain unsupported; identifiers 9-11 are reported as ETCPACK sRGB extensions."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "pkm", "label": "PKM ETC Texture" }],

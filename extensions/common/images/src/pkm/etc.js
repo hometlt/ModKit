@@ -9,14 +9,15 @@
  *
  * What is decoded here, and what is not:
  *
- *   decoded    ETC1_RGB, ETC2_RGB(+sRGB), ETC2_RGB_A1(+sRGB), ETC2_RGBA(+sRGB)
- *   not        EAC_R11 / EAC_RG11 (signed and unsigned)
+ *   decoded    ETC1_RGB, ETC2_RGB(+sRGB), ETC2_RGB_A1(+sRGB), ETC2_RGBA(+sRGB),
+ *              unsigned EAC_R11 and EAC_RG11
+ *   not        signed EAC_R11 / EAC_RG11
  *
- * The remainder is named rather than approximated. EAC's 11-bit single- and dual-channel blocks are
- * a different codeword layout with their own multiplier and table rules; they are not RGB data, and
- * producing an RGBA image from them would mean choosing a channel mapping the format does not
- * specify. A caller asking for those gets `undefined` here and `decodedAccess: false` from the
- * codec, which is the truthful answer rather than a plausible picture.
+ * Unsigned EAC is projected to the RGBA8 view using the component defaults of a sampled R/RG
+ * texture: R→(R,0,0,1), RG→(R,G,0,1). The exact 11-bit reconstruction is extended by the bit
+ * replication required by Khronos before its high byte is exposed. Signed EAC remains named: a
+ * signed-normalized channel needs a signed raster contract or an explicit visualization policy,
+ * neither of which this codec is allowed to invent.
  */
 
 /** ETC1 intensity modifiers, indexed by table codeword then by the two-bit pixel index. */
@@ -263,12 +264,81 @@ function decodeAlphaBlock(block) {
 }
 
 /**
+ * One unsigned EAC R11 channel block into exact 11-bit values.
+ *
+ * Khronos Data Format Specification 1.4 §22.5:
+ *   multiplier != 0: clamp(base*8 + 4 + modifier*multiplier*8, 0, 2047)
+ *   multiplier == 0: clamp(base*8 + 4 + modifier, 0, 2047)
+ */
+function decodeUnsignedEac11Block(block) {
+  const base = block[0]
+  const multiplier = block[1] >> 4
+  const table = ALPHA_MODIFIERS[block[1] & 0xf]
+  let bits = 0n
+  for (let index = 2; index < 8; index += 1) bits = (bits << 8n) | BigInt(block[index])
+  const values = new Uint16Array(16)
+  for (let x = 0; x < 4; x += 1) {
+    for (let y = 0; y < 4; y += 1) {
+      const shift = BigInt(45 - 3 * (x * 4 + y))
+      const selector = Number((bits >> shift) & 0x7n)
+      const modifier = table[selector]
+      const value = base * 8 + 4 + (multiplier === 0 ? modifier : modifier * multiplier * 8)
+      values[y * 4 + x] = value < 0 ? 0 : value > 2047 ? 2047 : value
+    }
+  }
+  return values
+}
+
+/** Khronos' required 11→16 bit replication, followed by the RGBA8 view's high byte. */
+function unsignedEac11ToUnorm8(value) {
+  return ((value << 5) + (value >> 6)) >> 8
+}
+
+function decodeUnsignedEac(payload, blocksWide, blocksHigh, channels) {
+  const blockBytes = channels * 8
+  const needed = blocksWide * blocksHigh * blockBytes
+  if (payload.byteLength < needed)
+    throw new RangeError('PKM payload is shorter than its block grid')
+
+  const width = blocksWide * 4
+  const stride = width * 4
+  const out = new Uint8Array(stride * blocksHigh * 4)
+  for (let by = 0; by < blocksHigh; by += 1) {
+    for (let bx = 0; bx < blocksWide; bx += 1) {
+      const offset = (by * blocksWide + bx) * blockBytes
+      const red = decodeUnsignedEac11Block(payload.subarray(offset, offset + 8))
+      const green =
+        channels === 2
+          ? decodeUnsignedEac11Block(payload.subarray(offset + 8, offset + 16))
+          : undefined
+      for (let y = 0; y < 4; y += 1) {
+        for (let x = 0; x < 4; x += 1) {
+          writePixel(
+            out,
+            stride,
+            bx * 4 + x,
+            by * 4 + y,
+            unsignedEac11ToUnorm8(red[y * 4 + x]),
+            green === undefined ? 0 : unsignedEac11ToUnorm8(green[y * 4 + x]),
+            0,
+            255,
+          )
+        }
+      }
+    }
+  }
+  return out
+}
+
+/**
  * Decode an ETC payload into RGBA8 covering the *encoded* (block-aligned) extent.
  *
  * Returns `undefined` for a format this implementation does not decode, so the caller can report
  * `decodedAccess: false` rather than publish something invented.
  */
 export function decodeEtcRgba(payload, blocksWide, blocksHigh, format) {
+  if (format === 'EAC_R11') return decodeUnsignedEac(payload, blocksWide, blocksHigh, 1)
+  if (format === 'EAC_RG11') return decodeUnsignedEac(payload, blocksWide, blocksHigh, 2)
   const alphaFirst = format.includes('RGBA') || format.includes('SRGBA')
   const punchthrough = format.includes('A1')
   const rgb = format.includes('ETC1') || format.includes('ETC2_RGB') || format.includes('ETC2_SRGB')
