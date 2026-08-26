@@ -37,8 +37,23 @@ const repoRoot = resolve(extensionRoot, '..', '..')
 const reportDir = join(repoRoot, 'reports', 'vscode-smoke')
 const logDir = join(reportDir, 'logs')
 
-/** Fixtures the scenarios need, by the variable that names them. */
-const FIXTURE_VARS = ['MODKITX_W3D_PATH', 'MODKITX_VXL_PATH', 'MODKITX_CNC3_ROOT']
+/*
+ * The Kane's Wrath install, under either name.
+ *
+ * The owner's 2026-08-25 decision split the C&C roots per game — `MODKITX_CNC3_TW_ROOT`,
+ * `MODKITX_CNC3_KW_ROOT`, `MODKITX_RA3_ROOT` — and left `MODKITX_CNC3_ROOT` as a deprecated alias
+ * for Kane's Wrath. The suite reads one name; resolving both here means a correctly-configured
+ * environment is not reported as a missing fixture, and the deprecated spelling does not quietly
+ * become the only one that works.
+ */
+const kingsWrathRoot = process.env.MODKITX_CNC3_KW_ROOT ?? process.env.MODKITX_CNC3_ROOT
+
+/** Fixtures the scenarios need, by the variable that names them and the value that resolved. */
+const FIXTURES = {
+  MODKITX_W3D_PATH: process.env.MODKITX_W3D_PATH,
+  MODKITX_VXL_PATH: process.env.MODKITX_VXL_PATH,
+  MODKITX_CNC3_KW_ROOT: kingsWrathRoot,
+}
 
 /**
  * Extension roots the smoke asks the editor to load, by the product's own `modkit.extensions`.
@@ -136,7 +151,9 @@ async function main() {
   mkdirSync(logDir, { recursive: true })
   const startedAt = new Date().toISOString()
 
-  const missing = FIXTURE_VARS.filter(name => (process.env[name] ?? '') === '')
+  const missing = Object.entries(FIXTURES)
+    .filter(([, value]) => (value ?? '') === '')
+    .map(([name]) => name)
   if (missing.length > 0) {
     console.error(`smoke: these variables are not set: ${missing.join(', ')}`)
     process.exit(2)
@@ -226,7 +243,7 @@ async function main() {
         MODKITX_SMOKE_LONELY_VXL: lonelyVxl,
         MODKITX_W3D_PATH: process.env.MODKITX_W3D_PATH,
         MODKITX_VXL_PATH: process.env.MODKITX_VXL_PATH,
-        MODKITX_CNC3_ROOT: process.env.MODKITX_CNC3_ROOT,
+        MODKITX_CNC3_ROOT: kingsWrathRoot,
       },
     })
   } catch (error) {
@@ -243,7 +260,7 @@ async function main() {
   const redact = buildRedactor({
     MODKITX_W3D_PATH: process.env.MODKITX_W3D_PATH,
     MODKITX_VXL_PATH: process.env.MODKITX_VXL_PATH,
-    MODKITX_CNC3_ROOT: process.env.MODKITX_CNC3_ROOT,
+    MODKITX_CNC3_ROOT: kingsWrathRoot,
     MODKITX_SC2_ROOT: process.env.MODKITX_SC2_ROOT,
     SMOKE_SCRATCH: scratch,
     VSCODE_CACHE: cachePath,
@@ -278,7 +295,7 @@ async function main() {
         downloadedTo: '${VSCODE_CACHE}',
       },
       extensionHost: suite?.extensionHost ?? null,
-      fixtures: FIXTURE_VARS.map(name => ({ variable: name, resolved: true })),
+      fixtures: Object.keys(FIXTURES).map(name => ({ variable: name, resolved: true })),
       /*
        * What the editor was told to load, and why it had to be told. The bundled catalog is
        * `extensions/common`; every format this smoke opens is contributed by an `ea` root outside

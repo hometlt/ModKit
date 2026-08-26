@@ -93,9 +93,31 @@ function modkitTabs() {
 
 const tabFor = target => modkitTabs().find(entry => samePath(entry.uri.fsPath, target))
 
+const tabForUri = text => modkitTabs().find(entry => entry.uri.toString() === text)
+
 async function closeAllEditors() {
   await vscode.commands.executeCommand('workbench.action.closeAllEditors')
   await waitFor(() => modkitTabs().length === 0, { timeoutMs: 5_000 })
+}
+
+// ---------------------------------------------------------------------------------------------
+// the container URI, built from outside
+//
+// Deliberately reimplemented here rather than imported from the extension. The address of a
+// container member is a *published* shape — the Explorer holds it, a keybinding can carry it, and
+// another extension could construct one — so a smoke that asked the extension to build its own URI
+// would prove only that it agrees with itself. Three lines of hex is the whole encoding.
+
+const CONTAINER_SCHEME = 'modkit-container'
+
+const containerUri = (containerPath, entryPath = '') => {
+  const token = [...Buffer.from(containerPath, 'utf8')]
+    .map(byte => byte.toString(16).padStart(2, '0'))
+    .join('')
+  return vscode.Uri.from({
+    scheme: CONTAINER_SCHEME,
+    path: entryPath === '' ? `/${token}` : `/${token}/${entryPath}`,
+  })
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -674,7 +696,7 @@ async function runScenarios(env) {
     record.details.archiveOnDisk = fs.existsSync(archive)
     record.details.entry = entry
     if (!record.details.archiveOnDisk) {
-      record.evidence = 'Misc.big is not where MODKITX_CNC3_ROOT says it should be'
+      record.evidence = "Misc.big is not where the Kane's Wrath root says it should be"
       return false
     }
     const tab = await openThroughCustomEditor(archive)
@@ -685,30 +707,99 @@ async function runScenarios(env) {
     }
     /*
      * The question this scenario asks is whether the *extension* can be told to open an entry
-     * inside the archive. Every door the extension opens takes a `vscode.Uri`, and `describeOpenTarget`
-     * accepts only `file:` — there is no scheme, no command argument and no URI shape that names a
-     * member of a container. Descending into the listing is a webview-internal action, which means
-     * the editor cannot be driven to a nested subject from outside the page at all.
+     * inside the archive — from outside the page, the way a person reaches anything else in this
+     * editor. Three doors have to line up, and each is asserted separately so a failure names which
+     * one gave:
+     *
+     *   1. the commands exist and are registered;
+     *   2. the container's members are readable through the editor's own `workspace.fs`, which is
+     *      the API the native Explorer uses — so this is the Explorer's question, asked directly;
+     *   3. `modkit.openArchiveEntry` on a member URI reaches a Modkit editor showing that member as
+     *      a subject of its own, not the archive and not a hex pane.
      */
     const commands = new Set(await vscode.commands.getCommands(true))
-    const nestedDoor = [
-      'modkit.openArchiveEntry',
-      'modkit.openEntry',
-      'modkit.openNested',
-      'modkit.openMember',
-    ].filter(command => commands.has(command))
-    record.details.nestedCommands = nestedDoor
-    if (nestedDoor.length === 0) {
+    record.details.nestedCommands = ['modkit.openArchiveEntry', 'modkit.browseContainer'].filter(
+      command => commands.has(command),
+    )
+    if (record.details.nestedCommands.length !== 2) {
       record.evidence =
-        'the archive itself opens, but the extension exposes no command or URI shape that names an ' +
-        `entry inside it — «${entry}» is unreachable from outside the page, and inside the page the ` +
-        'archive stage reads an entry’s bytes into a hex pane rather than opening it as a subject. ' +
-        'The host route exists and Electron uses it; this product does not wire it, so nested ' +
-        'opening is absent here (wiring missing, blocks 13–14)'
+        'the archive opens, but the extension registers no command that names a member inside it ' +
+        `(found ${JSON.stringify(record.details.nestedCommands)})`
       return false
     }
-    record.evidence = `unexpected nested-open command present: ${nestedDoor.join(', ')}`
-    return false
+
+    // The Explorer's own question: what does this container hold?
+    const root = containerUri(archive)
+    let listing
+    try {
+      listing = await vscode.workspace.fs.readDirectory(root)
+    } catch (error) {
+      record.evidence = `the container filesystem provider refused to list the archive: ${error}`
+      return false
+    }
+    record.details.containerRootEntries = listing.map(([name]) => name).slice(0, 12)
+    record.details.containerRootCount = listing.length
+    const member = containerUri(archive, entry)
+    let stat
+    try {
+      stat = await vscode.workspace.fs.stat(member)
+    } catch (error) {
+      record.evidence = `the provider listed the archive but could not stat «${entry}»: ${error}`
+      return false
+    }
+    record.details.memberBytes = stat.size
+    if (stat.size <= 0) {
+      record.evidence = `the provider reports «${entry}» as ${stat.size} bytes`
+      return false
+    }
+
+    // And the member as a subject: the same custom editor, reached by the same command a user runs.
+    await vscode.commands.executeCommand('modkit.openArchiveEntry', member)
+    const memberTab = await waitFor(() => tabForUri(member.toString()), { timeoutMs: 30_000 })
+    record.details.memberTabOpened = memberTab !== undefined
+    if (memberTab === undefined) {
+      record.evidence = `«${entry}» did not open in a Modkit custom editor within 30s`
+      return false
+    }
+    await waitFor(async () => (await readStageTabs()).length >= 2, {
+      timeoutMs: 45_000,
+      stepMs: 500,
+    })
+    const stages = await readStageTabs()
+    record.details.memberStages = stages
+    const pages = { 'as-opened': await readWebviewText() }
+    for (const name of ['Metadata', 'Tree', 'Model']) {
+      if (!stages.includes(name)) continue
+      if (await clickStage(name)) pages[name] = await readWebviewText()
+    }
+    const text = Object.values(pages).join('\n')
+    record.details.pageExcerpt = excerpt(text)
+    /*
+     * A member nothing claimed falls back to Text and Hex — which is exactly the behaviour this
+     * scenario used to record as the failure. The model stages are therefore the assertion: they
+     * exist only when a codec opened the entry *as a W3D*, through the host's nested route, with
+     * the container still open behind it.
+     */
+    if (!stages.includes('Model')) {
+      record.evidence =
+        `«${entry}» opened from inside the archive, but the only stages offered were ` +
+        `${JSON.stringify(stages)} — no codec claimed it, so it did not become a model subject`
+      return false
+    }
+    const nodes = /(\d+)\s*nodes?/i.exec(text)
+    record.details.memberNodes = nodes?.[1] ?? null
+    if (record.details.memberNodes === null) {
+      record.evidence =
+        `«${entry}» opened with ${JSON.stringify(stages)} stages, but the model stage printed no ` +
+        'node count, so the scene cannot be confirmed from the product surface'
+      return false
+    }
+    record.evidence =
+      `the archive lists ${listing.length} root entries through the editor's own workspace.fs, ` +
+      `«${entry}» stats at ${stat.size} bytes through the container, and ` +
+      '`modkit.openArchiveEntry` opened it in a Modkit editor as a model subject with ' +
+      `${record.details.memberNodes} scene node(s) — the member is a subject, not a hex preview`
+    return true
   })
   await closeAllEditors()
 
