@@ -3,8 +3,8 @@
   "schemaVersion": "bundle-graph-1",
   "entryCount": 67,
   "totals": {
-    "modules": 546,
-    "bytes": 6004857
+    "modules": 548,
+    "bytes": 6007706
   },
   "entries": [
     {
@@ -90,8 +90,8 @@
     {
       "entry": "packages/host/dist/index.js",
       "surface": "host",
-      "modules": 55,
-      "bytes": 495713,
+      "modules": 57,
+      "bytes": 498562,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
