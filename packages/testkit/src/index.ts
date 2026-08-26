@@ -50,6 +50,13 @@ export {
   type Mk2CorpusKind,
 } from './mk2-acceptance.js'
 export {
+  declaredEvidence,
+  proves,
+  resetDeclaredEvidence,
+  type EvidenceDeclaration,
+  type EvidenceOperation,
+} from './evidence.js'
+export {
   runRuntimeSessionV2Conformance,
   type RuntimeConformanceFailure,
   type RuntimeConformanceOptions,

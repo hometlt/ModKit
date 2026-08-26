@@ -224,6 +224,22 @@ try {
   process.exit(1)
 }
 
+/**
+ * Generated evidence declarations (block 12 slice 12-5).
+ *
+ * Absent is tolerated and means "no declaration backs anything": every operation then falls back to
+ * the older `closedBy` link. That keeps this gate runnable on a checkout that has never run the
+ * suite, which is the only state where the file legitimately does not exist.
+ */
+let evidence = { operations: {} }
+try {
+  evidence = JSON.parse(
+    readFileSync(path.join(repoRoot, 'migration', 'generated', 'evidence.json'), 'utf8'),
+  )
+} catch {
+  // no declarations yet
+}
+
 if (registry.schemaVersion !== 'capability-registry-1') {
   fail(
     `registry schemaVersion must be "capability-registry-1", found ${JSON.stringify(registry.schemaVersion)}`,
@@ -456,10 +472,29 @@ for (const row of capabilities) {
     if (proof === null) continue
     if (typeof proof !== 'string' || proof.trim() === '') {
       fail(`${label}: projection.operations.${operation} must be null or a test path`)
-    } else if (!closedTests.has(proof)) {
+      continue
+    }
+    /*
+     * Three things must line up, and slice 12-5 made the first of them possible.
+     *
+     * Until then the only available link was `closedBy.tests`, which says a test is *related* to a
+     * row — a weaker claim than "this test proves this operation". Now a test declares that with
+     * `proves()`, so the declaration is the authority and this checks against it: the operation is
+     * backed by a real declaration, the named test is the one that made it, and that file exists.
+     * A row may still name a `closedBy` test instead, for evidence that predates the mechanism.
+     */
+    const declared = evidence.operations?.[row.capabilityId]?.[operation]
+    if (declared === undefined && !closedTests.has(proof)) {
       fail(
-        `${label}: projection.operations.${operation} names «${proof}», which the row does not list in closedBy.tests`,
+        `${label}: projection.operations.${operation} names «${proof}», which no test declares and the row does not list in closedBy.tests`,
       )
+    } else if (declared !== undefined && declared !== proof) {
+      fail(
+        `${label}: projection.operations.${operation} names «${proof}», but the declaration comes from «${declared}»`,
+      )
+    }
+    if (!existsSync(path.join(repoRoot, proof))) {
+      fail(`${label}: projection.operations.${operation} names «${proof}», which does not exist`)
     }
   }
   if (

@@ -762,7 +762,7 @@ capabilities:
       opaquePreservation: 'not-applicable'
       nativeExport: 'not-applicable'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -900,7 +900,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -2236,7 +2236,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -2540,7 +2540,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -2606,7 +2606,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -2673,7 +2673,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -2739,7 +2739,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -2804,7 +2804,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -3177,7 +3177,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -3306,7 +3306,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -3941,7 +3941,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -4073,7 +4073,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -4142,7 +4142,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -4209,7 +4209,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -5219,7 +5219,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -5528,7 +5528,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -5715,7 +5715,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -6035,7 +6035,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -6107,7 +6107,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -6178,7 +6178,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -6306,7 +6306,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -6491,7 +6491,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -6741,7 +6741,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -6811,7 +6811,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -6881,7 +6881,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -6948,7 +6948,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -7018,7 +7018,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -7221,7 +7221,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -7287,7 +7287,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -7479,7 +7479,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -7550,7 +7550,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -7616,7 +7616,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -7808,7 +7808,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -7878,7 +7878,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -7956,7 +7956,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -8034,7 +8034,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -8112,7 +8112,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -8178,7 +8178,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -8247,7 +8247,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -8314,7 +8314,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -8381,7 +8381,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -8512,7 +8512,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -8641,7 +8641,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -8709,7 +8709,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -8778,7 +8778,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -8970,7 +8970,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -9160,7 +9160,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -11791,7 +11791,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -11918,7 +11918,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -12106,7 +12106,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -12235,7 +12235,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -12304,7 +12304,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -12434,7 +12434,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -13229,7 +13229,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -14176,7 +14176,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -14307,7 +14307,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -14374,7 +14374,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -14570,7 +14570,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -14635,7 +14635,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -15068,7 +15068,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: null
         materialize: null
@@ -17294,7 +17294,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'planned'
       operations:
-        inspect: null
+        inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
         read: 'packages/testkit/test/uvm-convergence.test.ts'
         materialize: 'packages/testkit/test/uvm-convergence.test.ts'

@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { proves } from '@modkitx-x3/testkit'
 
 const repoRoot = join(import.meta.dirname, '..', '..')
 const commonRoot = join(repoRoot, 'extensions', 'common')
@@ -115,6 +116,26 @@ describe('common/ parity coverage table', () => {
         defects.push(`${row.contributionId}: ${row.status} does not match the sample kinds`)
     }
     expect(defects).toEqual([])
+
+    /*
+     * The evidence declaration, made where it is earned (block 12 slice 12-5).
+     *
+     * A `compared-*` status means the parity harness put this contribution's `view.inspect` output
+     * beside the canonical oracle's, on the named rows, and the assertions above have just checked
+     * that those rows exist and really compare this contribution. That is generated evidence of
+     * `inspect` — a machine record of a comparison that happened — and not an opinion about it.
+     *
+     * The uncompared rows declare nothing on purpose. Their operation stays `null` in the registry,
+     * which is the honest reading of "no canonical probe exists" or "the corpus is not legally
+     * available": the gap is visible instead of being filled in with something plausible.
+     */
+    for (const row of coverage.filter(item => COMPARED.has(item.status))) {
+      proves({
+        contributionId: row.contributionId,
+        operation: 'inspect',
+        note: `parity ${row.status} on ${(row.parityRows ?? []).join(', ')}`,
+      })
+    }
   })
 
   it('never lets a reason stand in for a comparison', () => {
