@@ -4,5 +4,10 @@ dist/
 .eslintcache
 coverage/
 apps/modkit-vscode/dist-app/
+# Raw `proves()` declarations: the suites append one file per worker while `pnpm test` runs, and
+# `pnpm evidence:emit` merges and deletes them. The document that is kept is
+# `migration/generated/evidence.json`, which is tracked; this directory is the scratch behind it and
+# exists only between a test run and the next emit.
+reports/evidence/
 # agent worktrees and local session state (the harness owns this directory)
 .claude/
