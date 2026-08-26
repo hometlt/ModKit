@@ -1062,10 +1062,17 @@ async function runScenarios(env) {
           id: 'warzone-wz',
           source: 'Warzone .wz',
           variable: 'MODKITX_WARZONE_ROOT',
-          subject: env => path.join(env, 'data', 'terrain_overrides', 'classic.wz'),
-          command: 'subject.open',
+          /*
+           * A level deeper than the generic ZIP route, now that round 2 landed the PIE codec: the
+           * `.wz` is mounted as a container and one of its models is opened as a subject of its
+           * own. `mp.wz` rather than `base.wz` because base is 117 MiB and this host reads 64 —
+           * that ceiling is a real property of the profile, recorded rather than worked around.
+           */
+          container: env => path.join(env, 'data', 'mp.wz'),
+          entryPath: 'components/bodies/camper.pie',
+          command: 'subject.inspect',
           expect: 'ok',
-          note: 'generic ZIP route; wz semantics are mk2 staging and belong to block 17',
+          note: 'container mount plus a PIE member as its own subject (org.modkitx/warzone-pie)',
         },
         {
           id: 'bar-spring-vfs',
@@ -1075,7 +1082,11 @@ async function runScenarios(env) {
           command: 'subject.open',
           // A named refusal is the honest answer for this corpus today, and it is what the row asserts.
           expect: 'failed',
-          note: 'the 7z reader refuses BAR header form by name; Spring VFS semantics are block 17',
+          note:
+            'both container forms BAR ships are out of reach today: `.sd7` is 7z with a header the ' +
+            'reader refuses by name, and the rapid store (`.sdp` manifest plus `pool/`) has no MK3 ' +
+            'container codec. The S3O *model* codec exists after round 2 and is proven against this ' +
+            'very install by its own corpus test — what is missing is the VFS mount, block 17',
         },
       ]
 
@@ -1090,8 +1101,20 @@ async function runScenarios(env) {
           })
           continue
         }
-        const subject = typeof row.subject === 'function' ? row.subject(root) : row.subject
-        if (!fs.existsSync(subject)) {
+        /*
+         * A row either names a file, or names a container and a member inside it. The second shape
+         * is the deeper claim — the container is mounted and the member becomes a subject of its
+         * own — and it needs the container granted first, exactly as a person would by opening it.
+         */
+        const containerPath = row.container === undefined ? undefined : row.container(root)
+        const subject =
+          containerPath === undefined
+            ? typeof row.subject === 'function'
+              ? row.subject(root)
+              : row.subject
+            : containerUri(containerPath, row.entryPath).toString()
+        const onDisk = containerPath ?? subject
+        if (!fs.existsSync(onDisk)) {
           results.push({
             ...describeRow(row),
             verdict: 'skipped',
@@ -1109,8 +1132,8 @@ async function runScenarios(env) {
          * correctly and the harness asking wrongly: `modkit.openResource` is the same door the
          * Explorer's context menu uses, and it grants the file's directory before anything asks.
          */
-        await vscode.commands.executeCommand('modkit.openResource', vscode.Uri.file(subject))
-        await waitFor(() => tabFor(subject), { timeoutMs: 30_000 })
+        await vscode.commands.executeCommand('modkit.openResource', vscode.Uri.file(onDisk))
+        await waitFor(() => tabFor(onDisk), { timeoutMs: 30_000 })
         await closeAllEditors()
 
         const started = Date.now()
@@ -1134,6 +1157,13 @@ async function runScenarios(env) {
           // The sentence too: a named refusal is only named if the name is legible in the receipt.
           message: result?.message ?? result?.reason ?? null,
           selected: result?.data?.selected?.contributionId ?? null,
+          /*
+           * Which format actually claimed it. `subject.open` reports a contribution and
+           * `subject.inspect` reports an identity, and a row that recorded neither would prove only
+           * that *something* answered — which for the Warzone row is the whole question, since the
+           * point of going through the container is that the PIE codec claims the member.
+           */
+          formatId: result?.data?.identity?.formatId ?? result?.data?.formatId ?? null,
         })
       }
 

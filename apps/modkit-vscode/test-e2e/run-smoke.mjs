@@ -157,6 +157,13 @@ const EA_ROOTS = [
    * the product's own `modkit.extensions` setting, not a back door.
    */
   join(repoRoot, 'extensions', 'blizzard', 'mpq'),
+  /*
+   * Warzone PIE and Spring S3O, landed by the round-2 integration. The matrix uses the first to go
+   * a level deeper into a `.wz` than the generic ZIP route could; the second is carried so the row
+   * that cannot reach an S3O today is refused by a *composed* codec rather than by its absence.
+   */
+  join(repoRoot, 'extensions', 'opensource', 'warzone-2100'),
+  join(repoRoot, 'extensions', 'opensource', 'spring'),
 ]
 
 // ---------------------------------------------------------------------------------------------
