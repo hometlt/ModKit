@@ -1,6 +1,6 @@
 {
-  "startedAt": "2026-08-26T12:27:49.072Z",
-  "finishedAt": "2026-08-26T12:28:46.738Z",
+  "startedAt": "2026-08-26T12:59:26.171Z",
+  "finishedAt": "2026-08-26T13:00:19.099Z",
   "extensionHost": {
     "node": "24.18.1",
     "electron": "42.8.1",
@@ -9,7 +9,7 @@
   },
   "webviewChannel": {
     "cdpUsable": true,
-    "port": 54773,
+    "port": 63089,
     "note": "no vscode-webview target among 2"
   },
   "scenarios": [
@@ -17,28 +17,28 @@
       "id": "activation",
       "title": "The extension activates without error",
       "verdict": "pass",
-      "evidence": "activate() resolved in 7232 ms (budget 10000 ms) with 114 contribution(s) from the shipped catalog and none missing; all 5 modkit commands are registered, so the host composition completed inside activation",
+      "evidence": "activate() resolved in 4297 ms (budget 10000 ms) with 114 contribution(s) from the shipped catalog and none missing; all 5 modkit commands are registered, so the host composition completed inside activation",
       "details": {
         "extensionId": "modkitx.@modkitx-x3/modkit-vscode",
         "commands": {
           "expected": 5,
           "missing": []
         },
-        "activationMs": 7232,
+        "activationMs": 4297,
         "contributions": 114,
         "missingCatalogRoots": [],
         "activationBudgetMs": 10000
       },
-      "durationMs": 8118
+      "durationMs": 5345
     },
     {
       "id": "w3d-single",
       "title": "A single W3D opens with its descriptor",
       "verdict": "pass",
-      "evidence": "opened through \"Reopen Editor With… → Modkit Asset Preview\" in 3054 ms (budget 10000 ms); the page shows a 2-node scene (one node per pivot) and 1 animation, matching block 9",
+      "evidence": "opened through \"Reopen Editor With… → Modkit Asset Preview\" in 2544 ms (budget 10000 ms) and mounted Model/Metadata/Tree; what the model contains is proved in packages/testkit/test/ea-w3d-structure.test.ts, not screen-scraped here",
       "details": {
         "tabOpened": true,
-        "firstOpenMs": 3054,
+        "firstOpenMs": 2544,
         "firstOpenBudgetMs": 10000,
         "stageTabs": ["Model", "Tree", "Metadata", "Hex"],
         "stagesVisited": ["as-opened", "Metadata", "Tree", "Model"],
@@ -48,15 +48,16 @@
         "modelStages": ["Model", "Metadata", "Tree"],
         "nodes": "2",
         "pivotsLiteral": null,
-        "animationsLiteral": "1"
+        "animationsLiteral": "1",
+        "contentProvedBy": "packages/testkit/test/ea-w3d-structure.test.ts"
       },
-      "durationMs": 9433
+      "durationMs": 9180
     },
     {
       "id": "vxl-companion",
       "title": "A VXL resolves its .hva companion",
       "verdict": "pass",
-      "evidence": "opened with gnavrail.hva beside it; the page names the companion as provenance and the host raises no missing-sidecar diagnostic",
+      "evidence": "opened with gnavrail.hva beside it and mounted Model/Tree/Metadata/Hex; the host raised no x3.host/companion-unavailable, so the sidecar resolved. What the companion contains is proved in packages/testkit/test/ea-vxl-hva-companion.test.ts",
       "details": {
         "companionOnDisk": true,
         "stageTabs": ["Model", "Tree", "Metadata", "Hex"],
@@ -72,15 +73,16 @@
         ],
         "companionDiagnosticPresent": false,
         "mentionsCompanion": true,
-        "animations": "0"
+        "animations": "0",
+        "contentProvedBy": "packages/testkit/test/ea-vxl-hva-companion.test.ts"
       },
-      "durationMs": 5560
+      "durationMs": 6216
     },
     {
       "id": "big-nested",
       "title": "A W3D nested in a BIG archive opens as a subject",
       "verdict": "pass",
-      "evidence": "with no editor open on the archive, the container filesystem lists 5 root entries through the editor's own workspace.fs and stats «data/editor/molds/bowl.w3d» at 30346 bytes; `modkit.openArchiveEntry` then opened it in a Modkit editor as a model subject with 1 scene node(s) — the member is a subject, not a hex preview",
+      "evidence": "with no editor open on the archive, the container filesystem lists 5 root entries through the editor's own workspace.fs and stats «data/editor/molds/bowl.w3d» at 30346 bytes; `modkit.openArchiveEntry` then opened it in a Modkit editor with the model stages mounted — the member is a subject, not a hex preview",
       "details": {
         "archiveOnDisk": true,
         "entry": "data/editor/molds/bowl.w3d",
@@ -93,9 +95,10 @@
         "liveModkitTabs": 1,
         "memberStages": ["Model", "Tree", "Metadata", "Hex"],
         "pageExcerpt": "Modkit · Model · Tree · Metadata · Hex · 1 nodes · 1 meshes · 1 primitives · 1 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · WESTWOOD W3D MODEL · rootChunks · 1 · chunks · 15 · opaqueTailBytes · 0 · chunkTypes · MESH:1, MESH_HEADER3:1, VERTICES:1, VERTEX_NORMALS:1, TRIANGLES:1, CHUNK_0x00000022:1, CHUNK_0x00000028:1, CHUNK_0x0000002a:1, CHUNK_0x0000002b:1, CHUNK_0x0000002c:1, CHUNK_0x0000002d:1, CHUNK_0x00000029:1, MATERIAL_PASS:1, CHUNK_0x00000039:1, CHUNK_0x0000003a:1 · decodedMeshes · 1 · textures · 0 · geometryAccess · decoded · UV PROJECTION RECEIPT · receipt · [object Object] · OBSERVED TRAITS · model.geometry · available · meshes=1, decoded=true · structure.hierarchy · available · chunks=15 · content.binary · available · bytes=30346 · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · Westwood W3D · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · 1 nodes · 1 meshes · 1 primitives · 1 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities",
-        "memberNodes": "1"
+        "memberNodes": "1",
+        "contentProvedBy": "packages/host/test/nested-subject-blizzard.test.ts"
       },
-      "durationMs": 8591
+      "durationMs": 8811
     },
     {
       "id": "diagnostics-no-companion",
@@ -132,13 +135,13 @@
           "x3.host/companion-unavailable: optional companion «hva» is absent; the dependent capability stays unavailable"
         ]
       },
-      "durationMs": 8665
+      "durationMs": 9368
     },
     {
       "id": "transport-matrix",
       "title": "Five source families answer through the product route",
       "verdict": "pass",
-      "evidence": "5 of 5 source families answered through the product route (0 skipped for a missing corpus: none); common-documents=ok in 1494 ms; sc2-mpq=ok via org.modkitx/mpq in 945 ms; cnc-big=ok in 1058 ms; warzone-wz=ok in 2498 ms; bar-spring-vfs=failed in 1558 ms",
+      "evidence": "5 of 5 source families answered through the product route (0 skipped for a missing corpus: none); common-documents=ok in 1175 ms; sc2-mpq=ok via org.modkitx/mpq in 826 ms; cnc-big=ok in 832 ms; warzone-wz=ok in 1927 ms; bar-spring-vfs=failed in 2000 ms",
       "details": {
         "matrix": [
           {
@@ -149,7 +152,7 @@
             "note": "an ODT from the bundled documents catalog; no corpus needed",
             "verdict": "pass",
             "state": "ok",
-            "durationMs": 1494,
+            "durationMs": 1175,
             "code": null,
             "message": null,
             "selected": null,
@@ -163,7 +166,7 @@
             "note": "MPQ container of a retail install; CASC as a whole-install mount is block 15",
             "verdict": "pass",
             "state": "ok",
-            "durationMs": 945,
+            "durationMs": 826,
             "code": null,
             "message": null,
             "selected": "org.modkitx/mpq",
@@ -177,7 +180,7 @@
             "note": "the command runtime reading a member out of a live container",
             "verdict": "pass",
             "state": "ok",
-            "durationMs": 1058,
+            "durationMs": 832,
             "code": null,
             "message": null,
             "selected": null,
@@ -191,7 +194,7 @@
             "note": "container mount plus a PIE member as its own subject (org.modkitx/warzone-pie)",
             "verdict": "pass",
             "state": "ok",
-            "durationMs": 2498,
+            "durationMs": 1927,
             "code": null,
             "message": null,
             "selected": null,
@@ -205,7 +208,7 @@
             "note": "both container forms BAR ships are out of reach today: `.sd7` is 7z with a header the reader refuses by name, and the rapid store (`.sdp` manifest plus `pool/`) has no MK3 container codec. The S3O *model* codec exists after round 2 and is proven against this very install by its own corpus test — what is missing is the VFS mount, block 17",
             "verdict": "pass",
             "state": "failed",
-            "durationMs": 1558,
+            "durationMs": 2000,
             "code": "x3.command/subject-unresolved",
             "message": "no contribution claimed this subject: input-unresolved",
             "selected": null,
@@ -213,26 +216,7 @@
           }
         ]
       },
-      "durationMs": 8970
-    },
-    {
-      "id": "gpu-texture-stages",
-      "title": "ANI and ASTC reach the image stage",
-      "verdict": "pass",
-      "evidence": "both minimal.ani and minimal.astc opened with an Image stage from the shipped catalog, so the decoders that landed after the previous receipt are live in this build",
-      "details": {
-        "stages": {
-          "minimal.ani": ["Tree", "Metadata", "Hex", "Image", "Edit"],
-          "minimal.astc": ["Tree", "Metadata", "Hex", "Image", "Edit"]
-        },
-        "facilities": {
-          "intended": ["gpu.webgl2", "worker.module"],
-          "observed": ["gpu.webgl2", "gpu.webgpu", "worker.module"],
-          "degraded": [],
-          "ungranted": ["gpu.webgpu"]
-        }
-      },
-      "durationMs": 2469
+      "durationMs": 8261
     },
     {
       "id": "command-fixtures",
@@ -285,7 +269,7 @@
           }
         ]
       },
-      "durationMs": 5581
+      "durationMs": 5411
     },
     {
       "id": "clean-close",
@@ -297,7 +281,7 @@
         "tabsAfter": 0,
         "hostResponsiveAfterClose": true
       },
-      "durationMs": 58
+      "durationMs": 81
     }
   ]
 }
