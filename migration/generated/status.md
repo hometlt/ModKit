@@ -67,9 +67,9 @@
 | ---------------------------- | ----- | ---------------------- | ----- | ------------- | ----- |
 | `absent`                     | 91    | `equivalent-better`    | 16    | E0            | 89    |
 | `covered`                    | 200   | `implemented`          | 195   | E1            | 113   |
-| `not-applicable`             | 1     | `missing`              | 91    | E2            | 69    |
+| `not-applicable`             | 1     | `missing`              | 91    | E2            | 65    |
 | `superseded`                 | 13    | `partial`              | 5     | E3            | 14    |
-| `superseded-staging-present` | 3     | `relocated-multiverse` | 1     | E4            | 23    |
+| `superseded-staging-present` | 3     | `relocated-multiverse` | 1     | E4            | 27    |
 
 ### 3.3. Доказанные writers
 

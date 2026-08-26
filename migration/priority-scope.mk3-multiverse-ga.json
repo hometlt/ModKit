@@ -26,7 +26,7 @@
       "relocated-multiverse": 1
     },
     "byObligation": { "focused-required-addition": 13, "legacy-required": 154 },
-    "byEvidenceLevel": { "E0": 36, "E1": 31, "E2": 67, "E3": 11, "E4": 22 }
+    "byEvidenceLevel": { "E0": 36, "E1": 31, "E2": 63, "E3": 12, "E4": 25 }
   },
   "deadlines": {
     "block-11": [
@@ -698,7 +698,7 @@
       "plannedBlock": 12,
       "migrationState": "implemented",
       "supportState": "partial",
-      "evidenceLevel": "E2",
+      "evidenceLevel": "E4",
       "allocationState": "covered",
       "portFamily": "common/images",
       "corpusDescriptors": [],
@@ -715,7 +715,7 @@
       "plannedBlock": 12,
       "migrationState": "implemented",
       "supportState": "partial",
-      "evidenceLevel": "E2",
+      "evidenceLevel": "E4",
       "allocationState": "covered",
       "portFamily": "common/images",
       "corpusDescriptors": [],
@@ -1286,10 +1286,10 @@
       "plannedBlock": 15,
       "migrationState": "implemented",
       "supportState": "supported",
-      "evidenceLevel": "E2",
+      "evidenceLevel": "E3",
       "allocationState": "covered",
       "portFamily": "blizzard/models",
-      "corpusDescriptors": [],
+      "corpusDescriptors": ["MODKITX_SC2_ROOT"],
       "dependsOn": [],
       "requiredBy": [
         "block9/m3-geometry",
@@ -1583,7 +1583,7 @@
       "plannedBlock": 12,
       "migrationState": "implemented",
       "supportState": "partial",
-      "evidenceLevel": "E2",
+      "evidenceLevel": "E4",
       "allocationState": "covered",
       "portFamily": "common/images",
       "corpusDescriptors": [],

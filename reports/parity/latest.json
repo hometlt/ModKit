@@ -1,13 +1,13 @@
 {
   "schemaVersion": 3,
-  "corpus": "C:\\FILES\\SC2Files\\coding\\modkitX3\\scripts\\parity\\corpus.json",
+  "corpus": "C:\\FILES\\SC2Files\\coding\\modkitX3-sol-m3-bones\\scripts\\parity\\corpus.json",
   "canonical": {
     "root": "C:\\FILES\\SC2Files\\coding\\modkitx",
     "sha": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d"
   },
   "x3": {
-    "root": "C:\\FILES\\SC2Files\\coding\\modkitX3",
-    "sha": "dc14a4a1efb93bfc26cdae1070ba13a81f675dd6"
+    "root": "C:\\FILES\\SC2Files\\coding\\modkitX3-sol-m3-bones",
+    "sha": "85798a2296c6749c05c426e53ca419ddeb7ee1de"
   },
   "counts": {
     "total": 73,
@@ -18,9 +18,9 @@
     "failed": 0,
     "comparedReal": 13,
     "comparedSynthetic": 60,
-    "richer": 42,
+    "richer": 45,
     "equal": 16,
-    "poorer": 15,
+    "poorer": 12,
     "incomparable": 0
   },
   "summary": [
@@ -39,8 +39,8 @@
       "kind": "synthetic",
       "contributionId": "org.modkitx/ani",
       "state": "compared",
-      "classification": "X3 беднее",
-      "verdict": "poorer"
+      "classification": "X3 богаче",
+      "verdict": "richer"
     },
     {
       "id": "astc-synthetic",
@@ -48,8 +48,8 @@
       "kind": "synthetic",
       "contributionId": "org.modkitx/astc",
       "state": "compared",
-      "classification": "X3 беднее",
-      "verdict": "poorer"
+      "classification": "X3 богаче",
+      "verdict": "richer"
     },
     {
       "id": "avi-synthetic",
@@ -192,8 +192,8 @@
       "kind": "real",
       "contributionId": "org.modkitx.ea/emperor-xbf",
       "state": "compared",
-      "classification": "X3 беднее",
-      "verdict": "poorer"
+      "classification": "X3 богаче",
+      "verdict": "richer"
     },
     {
       "id": "exr-synthetic",
@@ -684,28 +684,6 @@
   ],
   "poorer": [
     {
-      "id": "ani-synthetic",
-      "format": "ani",
-      "kind": "synthetic",
-      "classification": "X3 беднее",
-      "missing": [
-        "common.view/raster-image-source:source:common.view/raster-image-source",
-        "source:common.view/raster-image-source"
-      ],
-      "reason": "X3 publishes no raster image source for this format — the codec exposes a structural tree only — while the canonical image codec reports the header extent. Raster promotion is codec depth, not a harness gap."
-    },
-    {
-      "id": "astc-synthetic",
-      "format": "astc",
-      "kind": "synthetic",
-      "classification": "X3 беднее",
-      "missing": [
-        "common.view/raster-image-source:source:common.view/raster-image-source",
-        "source:common.view/raster-image-source"
-      ],
-      "reason": "X3 publishes no raster image source for this format — the codec exposes a structural tree only — while the canonical image codec reports the header extent. Raster promotion is codec depth, not a harness gap."
-    },
-    {
       "id": "avif-synthetic",
       "format": "avif",
       "kind": "synthetic",
@@ -734,25 +712,6 @@
       "classification": "X3 беднее",
       "missing": ["common.view/model-scene-source:measurement:materials:0<1"],
       "reason": "The canonical model stack substitutes one synthesised default material when the file declares none (ensureDefaultMaterial / defaultMaterial() / materialNames.push(\"Default\")); the fixture declares zero, so the X3 count is the source fact and the difference is not a missing X3 capability."
-    },
-    {
-      "id": "emperor-xbf-real-env",
-      "format": "emperor-xbf-real",
-      "kind": "real",
-      "classification": "X3 беднее",
-      "missing": [
-        "common.view/model-scene-source:measurement:animations:0<25",
-        "common.view/model-scene-source:measurement:decodedGeometry=true",
-        "common.view/model-scene-source:measurement:decodedIndices:0<36",
-        "common.view/model-scene-source:measurement:decodedVertices:0<36",
-        "common.view/model-scene-source:measurement:materials:0<5",
-        "common.view/model-scene-source:measurement:meshes:0<4",
-        "common.view/model-scene-source:measurement:nodes:1<9",
-        "common.view/model-scene-source:measurement:primitives:0<4",
-        "common.view/model-scene-source:primitive",
-        "geometry:decoded"
-      ],
-      "reason": "X3 emperor-xbf is metadata-only on a real retail model: no meshes, materials or animation tracks are published, while the canonical codec decodes 4 meshes, 5 materials and 25 animations. A genuine depth gap, and not one Block 9 closed: its depth slices covered the priority closure (VXL, W3D, W3X, M3) and Emperor is outside it. Emperor depth belongs to Block 30 (format definitions and ecosystems); until then this row stays poorer on purpose rather than pending."
     },
     {
       "id": "ktx2-real",
@@ -797,6 +756,7 @@
       "classification": "X3 беднее",
       "missing": [
         "common.view/namespace-entry-source:measurement:entries:2<3",
+        "common.view/namespace-entry-source:measurement:extractedBytes:512<523",
         "common.view/namespace-entry-source:measurement:files:2<3"
       ],
       "reason": "The canonical PE reader publishes two synthesised metadata documents (metadata/summary.txt, metadata/headers.json) as namespace entries; X3 publishes the raw header blob plus the same single real section. The entry-count gap is namespace modelling, not unread PE structure."
@@ -1125,12 +1085,11 @@
         "bytes": 146,
         "sha256": "97eb2e9597276452f1f47906f1df0bb27f586c131fc8e4baa148f7806d68d71b"
       },
-      "classification": "X3 беднее",
-      "missing": [
-        "common.view/raster-image-source:source:common.view/raster-image-source",
-        "source:common.view/raster-image-source"
-      ],
+      "classification": "X3 богаче",
+      "missing": [],
       "extra": [
+        "common.view/raster-image-source:measurement:channels",
+        "common.view/raster-image-source:measurement:encodedMediaType",
         "operation:asset.validate",
         "operation:export.raw",
         "operation:view.inspect",
@@ -1140,13 +1099,12 @@
       "sourceComparisons": [
         {
           "contract": "common.view/raster-image-source",
-          "classification": "X3 беднее",
-          "missing": ["source:common.view/raster-image-source"],
-          "extra": []
+          "classification": "X3 богаче",
+          "missing": [],
+          "extra": ["measurement:channels", "measurement:encodedMediaType"]
         }
       ],
-      "baseline": "X3 беднее",
-      "allowPoorerReason": "X3 publishes no raster image source for this format — the codec exposes a structural tree only — while the canonical image codec reports the header extent. Raster promotion is codec depth, not a harness gap.",
+      "baseline": "X3 богаче",
       "canonical": {
         "formatId": "ani",
         "declaredSources": ["common.view/raster-image-source"],
@@ -1173,8 +1131,16 @@
       "x3": {
         "available": true,
         "formatId": "ani",
-        "declaredSources": ["common.view/byte-range-source", "common.view/tree-data-source"],
-        "actualSources": ["common.view/byte-range-source", "common.view/tree-data-source"],
+        "declaredSources": [
+          "common.view/byte-range-source",
+          "common.view/raster-image-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/byte-range-source",
+          "common.view/raster-image-source",
+          "common.view/tree-data-source"
+        ],
         "sourceFailures": [],
         "sources": [
           {
@@ -1183,6 +1149,21 @@
             "state": "opened",
             "features": ["read", "size"],
             "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/raster-image-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["decoded-region", "encoded", "info"],
+            "measurements": {
+              "channels": 4,
+              "decodedAccess": true,
+              "decodedBytes": 4,
+              "encodedMediaType": "application/x-navi-animation",
+              "encodedNonEmpty": true,
+              "height": 1,
+              "width": 1
+            }
           },
           {
             "contract": "common.view/tree-data-source",
@@ -1210,17 +1191,20 @@
           "flags": 1,
           "embeddedIcons": 1,
           "hasSequence": false,
-          "hasRates": false
+          "hasRates": false,
+          "firstFramePayloadKind": "dib",
+          "firstFrameDecodedAccess": true
         },
         "features": [
           "operation:asset.validate",
           "operation:export.raw",
           "operation:view.inspect",
           "source:common.view/byte-range-source",
+          "source:common.view/raster-image-source",
           "source:common.view/tree-data-source"
         ]
       },
-      "verdict": "poorer",
+      "verdict": "richer",
       "planes": [
         {
           "plane": "subject-recognition",
@@ -1230,7 +1214,7 @@
         {
           "plane": "structural-metadata",
           "state": "compared",
-          "verdict": "equal"
+          "verdict": "richer"
         },
         {
           "plane": "geometry-counts",
@@ -1272,7 +1256,11 @@
       ],
       "declared": {
         "canonical": ["common.view/raster-image-source"],
-        "x3": ["common.view/byte-range-source", "common.view/tree-data-source"]
+        "x3": [
+          "common.view/byte-range-source",
+          "common.view/raster-image-source",
+          "common.view/tree-data-source"
+        ]
       },
       "observed": {
         "canonical": [
@@ -1299,6 +1287,21 @@
             "measurements": { "firstReadBytes": 16, "nonEmpty": true }
           },
           {
+            "contract": "common.view/raster-image-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["decoded-region", "encoded", "info"],
+            "measurements": {
+              "channels": 4,
+              "decodedAccess": true,
+              "decodedBytes": 4,
+              "encodedMediaType": "application/x-navi-animation",
+              "encodedNonEmpty": true,
+              "height": 1,
+              "width": 1
+            }
+          },
+          {
             "contract": "common.view/tree-data-source",
             "major": 1,
             "state": "opened",
@@ -1313,12 +1316,11 @@
         ]
       },
       "comparison": {
-        "classification": "X3 беднее",
-        "missing": [
-          "common.view/raster-image-source:source:common.view/raster-image-source",
-          "source:common.view/raster-image-source"
-        ],
+        "classification": "X3 богаче",
+        "missing": [],
         "extra": [
+          "common.view/raster-image-source:measurement:channels",
+          "common.view/raster-image-source:measurement:encodedMediaType",
           "operation:asset.validate",
           "operation:export.raw",
           "operation:view.inspect",
@@ -1328,9 +1330,9 @@
         "sources": [
           {
             "contract": "common.view/raster-image-source",
-            "classification": "X3 беднее",
-            "missing": ["source:common.view/raster-image-source"],
-            "extra": []
+            "classification": "X3 богаче",
+            "missing": [],
+            "extra": ["measurement:channels", "measurement:encodedMediaType"]
           }
         ]
       }
@@ -1349,12 +1351,11 @@
         "bytes": 32,
         "sha256": "7bb440713401b9d3843111ceb5123e6c281275fefd248666447b66152fac9f49"
       },
-      "classification": "X3 беднее",
-      "missing": [
-        "common.view/raster-image-source:source:common.view/raster-image-source",
-        "source:common.view/raster-image-source"
-      ],
+      "classification": "X3 богаче",
+      "missing": [],
       "extra": [
+        "common.view/raster-image-source:measurement:channels",
+        "common.view/raster-image-source:measurement:encodedMediaType",
         "operation:asset.validate",
         "operation:export.raw",
         "operation:view.inspect",
@@ -1364,13 +1365,12 @@
       "sourceComparisons": [
         {
           "contract": "common.view/raster-image-source",
-          "classification": "X3 беднее",
-          "missing": ["source:common.view/raster-image-source"],
-          "extra": []
+          "classification": "X3 богаче",
+          "missing": [],
+          "extra": ["measurement:channels", "measurement:encodedMediaType"]
         }
       ],
-      "baseline": "X3 беднее",
-      "allowPoorerReason": "X3 publishes no raster image source for this format — the codec exposes a structural tree only — while the canonical image codec reports the header extent. Raster promotion is codec depth, not a harness gap.",
+      "baseline": "X3 богаче",
       "canonical": {
         "formatId": "astc",
         "declaredSources": ["common.view/raster-image-source"],
@@ -1397,8 +1397,16 @@
       "x3": {
         "available": true,
         "formatId": "astc",
-        "declaredSources": ["common.view/byte-range-source", "common.view/tree-data-source"],
-        "actualSources": ["common.view/byte-range-source", "common.view/tree-data-source"],
+        "declaredSources": [
+          "common.view/byte-range-source",
+          "common.view/raster-image-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/byte-range-source",
+          "common.view/raster-image-source",
+          "common.view/tree-data-source"
+        ],
         "sourceFailures": [],
         "sources": [
           {
@@ -1407,6 +1415,21 @@
             "state": "opened",
             "features": ["read", "size"],
             "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/raster-image-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["decoded-region", "encoded", "info"],
+            "measurements": {
+              "channels": 4,
+              "decodedAccess": true,
+              "decodedBytes": 4,
+              "encodedMediaType": "image/astc",
+              "encodedNonEmpty": true,
+              "height": 4,
+              "width": 4
+            }
           },
           {
             "contract": "common.view/tree-data-source",
@@ -1433,6 +1456,8 @@
           "blockDepth": 1,
           "blocks": 1,
           "payloadBytes": 16,
+          "decodedSubset": "2d-ldr-void-extent",
+          "decodedAccess": true,
           "trailingBytes": 0
         },
         "features": [
@@ -1440,10 +1465,11 @@
           "operation:export.raw",
           "operation:view.inspect",
           "source:common.view/byte-range-source",
+          "source:common.view/raster-image-source",
           "source:common.view/tree-data-source"
         ]
       },
-      "verdict": "poorer",
+      "verdict": "richer",
       "planes": [
         {
           "plane": "subject-recognition",
@@ -1453,7 +1479,7 @@
         {
           "plane": "structural-metadata",
           "state": "compared",
-          "verdict": "equal"
+          "verdict": "richer"
         },
         {
           "plane": "geometry-counts",
@@ -1495,7 +1521,11 @@
       ],
       "declared": {
         "canonical": ["common.view/raster-image-source"],
-        "x3": ["common.view/byte-range-source", "common.view/tree-data-source"]
+        "x3": [
+          "common.view/byte-range-source",
+          "common.view/raster-image-source",
+          "common.view/tree-data-source"
+        ]
       },
       "observed": {
         "canonical": [
@@ -1522,6 +1552,21 @@
             "measurements": { "firstReadBytes": 16, "nonEmpty": true }
           },
           {
+            "contract": "common.view/raster-image-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["decoded-region", "encoded", "info"],
+            "measurements": {
+              "channels": 4,
+              "decodedAccess": true,
+              "decodedBytes": 4,
+              "encodedMediaType": "image/astc",
+              "encodedNonEmpty": true,
+              "height": 4,
+              "width": 4
+            }
+          },
+          {
             "contract": "common.view/tree-data-source",
             "major": 1,
             "state": "opened",
@@ -1536,12 +1581,11 @@
         ]
       },
       "comparison": {
-        "classification": "X3 беднее",
-        "missing": [
-          "common.view/raster-image-source:source:common.view/raster-image-source",
-          "source:common.view/raster-image-source"
-        ],
+        "classification": "X3 богаче",
+        "missing": [],
         "extra": [
+          "common.view/raster-image-source:measurement:channels",
+          "common.view/raster-image-source:measurement:encodedMediaType",
           "operation:asset.validate",
           "operation:export.raw",
           "operation:view.inspect",
@@ -1551,9 +1595,9 @@
         "sources": [
           {
             "contract": "common.view/raster-image-source",
-            "classification": "X3 беднее",
-            "missing": ["source:common.view/raster-image-source"],
-            "extra": []
+            "classification": "X3 богаче",
+            "missing": [],
+            "extra": ["measurement:channels", "measurement:encodedMediaType"]
           }
         ]
       }
@@ -5805,47 +5849,32 @@
         "bytes": 283963,
         "sha256": "064f34f77402bbdc8145b5b26944835d59da966d17853ba1fff3275fd45bfb69"
       },
-      "classification": "X3 беднее",
-      "missing": [
-        "common.view/model-scene-source:measurement:animations:0<25",
-        "common.view/model-scene-source:measurement:decodedGeometry=true",
-        "common.view/model-scene-source:measurement:decodedIndices:0<36",
-        "common.view/model-scene-source:measurement:decodedVertices:0<36",
-        "common.view/model-scene-source:measurement:materials:0<5",
-        "common.view/model-scene-source:measurement:meshes:0<4",
-        "common.view/model-scene-source:measurement:nodes:1<9",
-        "common.view/model-scene-source:measurement:primitives:0<4",
-        "common.view/model-scene-source:primitive",
-        "geometry:decoded"
-      ],
+      "classification": "X3 богаче",
+      "missing": [],
       "extra": [
-        "metadata:textures",
+        "common.view/model-scene-source:measurement:textures:5>3",
+        "metadata:animations",
+        "metadata:materials",
+        "metadata:meshes",
+        "metadata:nodes",
         "operation:asset.validate",
         "operation:export.raw",
         "operation:view.inspect",
         "source:common.view/byte-range-source",
+        "source:common.view/model-animation-source",
+        "source:common.view/model-material-source",
+        "source:common.view/model-resource-refs-source",
         "source:common.view/tree-data-source"
       ],
       "sourceComparisons": [
         {
           "contract": "common.view/model-scene-source",
-          "classification": "X3 беднее",
-          "missing": [
-            "measurement:animations:0<25",
-            "measurement:decodedGeometry=true",
-            "measurement:decodedIndices:0<36",
-            "measurement:decodedVertices:0<36",
-            "measurement:materials:0<5",
-            "measurement:meshes:0<4",
-            "measurement:nodes:1<9",
-            "measurement:primitives:0<4",
-            "primitive"
-          ],
-          "extra": []
+          "classification": "X3 богаче",
+          "missing": [],
+          "extra": ["measurement:textures:5>3"]
         }
       ],
-      "baseline": "X3 беднее",
-      "allowPoorerReason": "X3 emperor-xbf is metadata-only on a real retail model: no meshes, materials or animation tracks are published, while the canonical codec decodes 4 meshes, 5 materials and 25 animations. A genuine depth gap, and not one Block 9 closed: its depth slices covered the priority closure (VXL, W3D, W3X, M3) and Emperor is outside it. Emperor depth belongs to Block 30 (format definitions and ecosystems); until then this row stays poorer on purpose rather than pending.",
+      "baseline": "X3 богаче",
       "canonical": {
         "formatId": "xbf",
         "declaredSources": ["common.view/model-scene-source"],
@@ -5888,11 +5917,17 @@
         "formatId": "emperor-xbf",
         "declaredSources": [
           "common.view/byte-range-source",
+          "common.view/model-animation-source",
+          "common.view/model-material-source",
+          "common.view/model-resource-refs-source",
           "common.view/model-scene-source",
           "common.view/tree-data-source"
         ],
         "actualSources": [
           "common.view/byte-range-source",
+          "common.view/model-animation-source",
+          "common.view/model-material-source",
+          "common.view/model-resource-refs-source",
           "common.view/model-scene-source",
           "common.view/tree-data-source"
         ],
@@ -5906,21 +5941,42 @@
             "measurements": { "firstReadBytes": 16, "nonEmpty": true }
           },
           {
+            "contract": "common.view/model-animation-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
+            "contract": "common.view/model-material-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
+            "contract": "common.view/model-resource-refs-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
             "contract": "common.view/model-scene-source",
             "major": 1,
             "state": "opened",
-            "features": ["info", "meshes", "nodes"],
+            "features": ["info", "meshes", "nodes", "primitive"],
             "measurements": {
-              "animations": 0,
-              "decodedGeometry": false,
-              "decodedIndices": 0,
-              "decodedVertices": 0,
-              "materials": 0,
-              "meshes": 0,
-              "nodes": 1,
-              "primitives": 0,
+              "animations": 25,
+              "decodedGeometry": true,
+              "decodedIndices": 36,
+              "decodedVertices": 36,
+              "materials": 5,
+              "meshes": 4,
+              "nodes": 9,
+              "primitives": 4,
               "scenes": 1,
-              "textures": 3
+              "textures": 5
             }
           },
           {
@@ -5930,34 +5986,42 @@
             "features": ["children", "facts", "root"],
             "measurements": {
               "complete": true,
-              "kinds": 3,
-              "maxDepth": 2,
-              "nodes": 7
+              "kinds": 2,
+              "maxDepth": 4,
+              "nodes": 10
             }
           }
         ],
         "operations": ["asset.validate", "export.raw", "view.inspect"],
-        "geometryAccess": "unavailable",
+        "geometryAccess": "decoded",
         "metadata": {
           "version": 1,
           "fxDataBytes": 5577,
           "textureTableBytes": 51,
-          "textures": 3,
-          "hasEndMarker": false,
-          "undecodedNodeBytes": 278323,
-          "geometryAccess": "metadata-only"
+          "nodes": 9,
+          "meshes": 4,
+          "materials": 5,
+          "animations": 25,
+          "geometryAccess": "decoded"
         },
         "features": [
-          "metadata:textures",
+          "geometry:decoded",
+          "metadata:animations",
+          "metadata:materials",
+          "metadata:meshes",
+          "metadata:nodes",
           "operation:asset.validate",
           "operation:export.raw",
           "operation:view.inspect",
           "source:common.view/byte-range-source",
+          "source:common.view/model-animation-source",
+          "source:common.view/model-material-source",
+          "source:common.view/model-resource-refs-source",
           "source:common.view/model-scene-source",
           "source:common.view/tree-data-source"
         ]
       },
-      "verdict": "poorer",
+      "verdict": "richer",
       "planes": [
         {
           "plane": "subject-recognition",
@@ -5969,18 +6033,14 @@
           "state": "compared",
           "verdict": "equal"
         },
-        {
-          "plane": "geometry-counts",
-          "state": "compared",
-          "verdict": "poorer"
-        },
-        { "plane": "hierarchy", "state": "compared", "verdict": "poorer" },
+        { "plane": "geometry-counts", "state": "compared", "verdict": "equal" },
+        { "plane": "hierarchy", "state": "compared", "verdict": "equal" },
         {
           "plane": "materials-textures",
           "state": "compared",
-          "verdict": "poorer"
+          "verdict": "richer"
         },
-        { "plane": "animation", "state": "compared", "verdict": "poorer" },
+        { "plane": "animation", "state": "compared", "verdict": "equal" },
         {
           "plane": "collision",
           "state": "not-observed",
@@ -6007,6 +6067,9 @@
         "canonical": ["common.view/model-scene-source"],
         "x3": [
           "common.view/byte-range-source",
+          "common.view/model-animation-source",
+          "common.view/model-material-source",
+          "common.view/model-resource-refs-source",
           "common.view/model-scene-source",
           "common.view/tree-data-source"
         ]
@@ -6041,21 +6104,42 @@
             "measurements": { "firstReadBytes": 16, "nonEmpty": true }
           },
           {
+            "contract": "common.view/model-animation-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
+            "contract": "common.view/model-material-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
+            "contract": "common.view/model-resource-refs-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
             "contract": "common.view/model-scene-source",
             "major": 1,
             "state": "opened",
-            "features": ["info", "meshes", "nodes"],
+            "features": ["info", "meshes", "nodes", "primitive"],
             "measurements": {
-              "animations": 0,
-              "decodedGeometry": false,
-              "decodedIndices": 0,
-              "decodedVertices": 0,
-              "materials": 0,
-              "meshes": 0,
-              "nodes": 1,
-              "primitives": 0,
+              "animations": 25,
+              "decodedGeometry": true,
+              "decodedIndices": 36,
+              "decodedVertices": 36,
+              "materials": 5,
+              "meshes": 4,
+              "nodes": 9,
+              "primitives": 4,
               "scenes": 1,
-              "textures": 3
+              "textures": 5
             }
           },
           {
@@ -6065,51 +6149,37 @@
             "features": ["children", "facts", "root"],
             "measurements": {
               "complete": true,
-              "kinds": 3,
-              "maxDepth": 2,
-              "nodes": 7
+              "kinds": 2,
+              "maxDepth": 4,
+              "nodes": 10
             }
           }
         ]
       },
       "comparison": {
-        "classification": "X3 беднее",
-        "missing": [
-          "common.view/model-scene-source:measurement:animations:0<25",
-          "common.view/model-scene-source:measurement:decodedGeometry=true",
-          "common.view/model-scene-source:measurement:decodedIndices:0<36",
-          "common.view/model-scene-source:measurement:decodedVertices:0<36",
-          "common.view/model-scene-source:measurement:materials:0<5",
-          "common.view/model-scene-source:measurement:meshes:0<4",
-          "common.view/model-scene-source:measurement:nodes:1<9",
-          "common.view/model-scene-source:measurement:primitives:0<4",
-          "common.view/model-scene-source:primitive",
-          "geometry:decoded"
-        ],
+        "classification": "X3 богаче",
+        "missing": [],
         "extra": [
-          "metadata:textures",
+          "common.view/model-scene-source:measurement:textures:5>3",
+          "metadata:animations",
+          "metadata:materials",
+          "metadata:meshes",
+          "metadata:nodes",
           "operation:asset.validate",
           "operation:export.raw",
           "operation:view.inspect",
           "source:common.view/byte-range-source",
+          "source:common.view/model-animation-source",
+          "source:common.view/model-material-source",
+          "source:common.view/model-resource-refs-source",
           "source:common.view/tree-data-source"
         ],
         "sources": [
           {
             "contract": "common.view/model-scene-source",
-            "classification": "X3 беднее",
-            "missing": [
-              "measurement:animations:0<25",
-              "measurement:decodedGeometry=true",
-              "measurement:decodedIndices:0<36",
-              "measurement:decodedVertices:0<36",
-              "measurement:materials:0<5",
-              "measurement:meshes:0<4",
-              "measurement:nodes:1<9",
-              "measurement:primitives:0<4",
-              "primitive"
-            ],
-            "extra": []
+            "classification": "X3 богаче",
+            "missing": [],
+            "extra": ["measurement:textures:5>3"]
           }
         ]
       }
@@ -9857,6 +9927,7 @@
         "operation:export.raw",
         "operation:view.inspect",
         "source:common.view/byte-range-source",
+        "source:common.view/model-skeleton-source",
         "source:common.view/tree-data-source"
       ],
       "sourceComparisons": [
@@ -9915,11 +9986,13 @@
         "declaredSources": [
           "common.view/byte-range-source",
           "common.view/model-scene-source",
+          "common.view/model-skeleton-source",
           "common.view/tree-data-source"
         ],
         "actualSources": [
           "common.view/byte-range-source",
           "common.view/model-scene-source",
+          "common.view/model-skeleton-source",
           "common.view/tree-data-source"
         ],
         "sourceFailures": [],
@@ -9948,6 +10021,13 @@
               "scenes": 1,
               "textures": 18
             }
+          },
+          {
+            "contract": "common.view/model-skeleton-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
           },
           {
             "contract": "common.view/tree-data-source",
@@ -9991,6 +10071,7 @@
           "operation:view.inspect",
           "source:common.view/byte-range-source",
           "source:common.view/model-scene-source",
+          "source:common.view/model-skeleton-source",
           "source:common.view/tree-data-source"
         ]
       },
@@ -10041,6 +10122,7 @@
         "x3": [
           "common.view/byte-range-source",
           "common.view/model-scene-source",
+          "common.view/model-skeleton-source",
           "common.view/tree-data-source"
         ]
       },
@@ -10092,6 +10174,13 @@
             }
           },
           {
+            "contract": "common.view/model-skeleton-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
             "contract": "common.view/tree-data-source",
             "major": 1,
             "state": "opened",
@@ -10123,6 +10212,7 @@
           "operation:export.raw",
           "operation:view.inspect",
           "source:common.view/byte-range-source",
+          "source:common.view/model-skeleton-source",
           "source:common.view/tree-data-source"
         ],
         "sources": [
@@ -13789,11 +13879,11 @@
       "classification": "X3 беднее",
       "missing": [
         "common.view/namespace-entry-source:measurement:entries:2<3",
+        "common.view/namespace-entry-source:measurement:extractedBytes:512<523",
         "common.view/namespace-entry-source:measurement:files:2<3"
       ],
       "extra": [
         "common.view/namespace-entry-source:measurement:directories",
-        "common.view/namespace-entry-source:measurement:extractedBytes:512>510",
         "common.view/namespace-entry-source:measurement:productReopenCompleted",
         "common.view/namespace-entry-source:product-reopen",
         "operation:asset.validate",
@@ -13807,10 +13897,13 @@
         {
           "contract": "common.view/namespace-entry-source",
           "classification": "X3 беднее",
-          "missing": ["measurement:entries:2<3", "measurement:files:2<3"],
+          "missing": [
+            "measurement:entries:2<3",
+            "measurement:extractedBytes:512<523",
+            "measurement:files:2<3"
+          ],
           "extra": [
             "measurement:directories",
-            "measurement:extractedBytes:512>510",
             "measurement:productReopenCompleted",
             "product-reopen"
           ]
@@ -13832,7 +13925,7 @@
               "entries": 3,
               "files": 3,
               "complete": true,
-              "extractedBytes": 510,
+              "extractedBytes": 523,
               "extractedNonEmpty": true
             }
           }
@@ -13958,7 +14051,7 @@
           "state": "not-observed",
           "verdict": "not-observed"
         },
-        { "plane": "payload-access", "state": "compared", "verdict": "richer" },
+        { "plane": "payload-access", "state": "compared", "verdict": "poorer" },
         {
           "plane": "protected-tail-preservation",
           "state": "not-observed",
@@ -13989,7 +14082,7 @@
               "entries": 3,
               "files": 3,
               "complete": true,
-              "extractedBytes": 510,
+              "extractedBytes": 523,
               "extractedNonEmpty": true
             }
           }
@@ -14035,11 +14128,11 @@
         "classification": "X3 беднее",
         "missing": [
           "common.view/namespace-entry-source:measurement:entries:2<3",
+          "common.view/namespace-entry-source:measurement:extractedBytes:512<523",
           "common.view/namespace-entry-source:measurement:files:2<3"
         ],
         "extra": [
           "common.view/namespace-entry-source:measurement:directories",
-          "common.view/namespace-entry-source:measurement:extractedBytes:512>510",
           "common.view/namespace-entry-source:measurement:productReopenCompleted",
           "common.view/namespace-entry-source:product-reopen",
           "operation:asset.validate",
@@ -14053,10 +14146,13 @@
           {
             "contract": "common.view/namespace-entry-source",
             "classification": "X3 беднее",
-            "missing": ["measurement:entries:2<3", "measurement:files:2<3"],
+            "missing": [
+              "measurement:entries:2<3",
+              "measurement:extractedBytes:512<523",
+              "measurement:files:2<3"
+            ],
             "extra": [
               "measurement:directories",
-              "measurement:extractedBytes:512>510",
               "measurement:productReopenCompleted",
               "product-reopen"
             ]

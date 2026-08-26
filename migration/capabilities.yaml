@@ -907,9 +907,8 @@ capabilities:
         read: 'packages/testkit/test/pkm-etc-decode.test.ts'
         materialize: null
     knownLoss:
-      - 'СУЖЕННЫЙ SCOPE (§0.2, слайс 12-5): PKM декодируется — ETC1_RGB и семейство ETC2 RGB (в т.ч. sRGB, A1-punchthrough и RGBA с EAC-альфой) реализованы по спецификации в extensions/common/images/src/pkm/etc.js, растр публикуется через readRegion под maxScalarBytes'
-      - 'НАЗВАННЫЙ ОСТАТОК, а не молчание. Канон декодирует блочные форматы сторонним WASM-пакетом texture2ddecoder (packages/image-processing/src/core/gpu-texture-wasm.ts) — это бинарная зависимость, переносить нечего, поэтому по правилу слайса нужна чистая реализация там, где она подъёмна: ASTC — сотни комбинаций блочных режимов, trits/quints, dual-plane и void-extent, честно оценено как неподъёмное для среза; AVIF — интра-декодирование AV1, у канона декодера нет вообще; Basis — транскодирование ETC1S/UASTC, у канона тоже нет; EAC_R11/RG11 — иной codeword-layout, не RGB, и отображение каналов формат не задаёт'
-      - 'не сделано в 12-5 и подъёмно потом: ANI (кадры CUR/DIB — нужен путь DIB с AND-маской, которого нет ни у ico, ни у cur) и KTX2 с суперсжатой полезной нагрузкой (зависит от того, что лежит в реальном корпусе)'
+      - 'СУЖЕННЫЙ SCOPE (§0.2): PKM декодирует ETC1_RGB и семейство ETC2 RGB; ASTC декодирует строго 2D LDR void-extent; ANI через общий ICO/CUR DIB-путь декодирует первый кадр с AND-маской. Все три публикуют raster-image-source под maxScalarBytes и имеют operation-level доказательства.'
+      - 'НАЗВАННЫЙ ОСТАТОК: обычные ASTC block modes (trits/quints, dual-plane, HDR и 3D), AVIF/AV1, Basis ETC1S/UASTC, EAC_R11/RG11 и KTX2-supercompressed. В доступном KTX2-корпусе UASTC имеет supercompressionScheme=0, ETC1S — BasisLZ; законной Zstd-фикстуры и готового decoder seam нет.'
     receipts:
       projection: null
       materialization: null
@@ -2523,7 +2522,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E4'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -2533,8 +2532,9 @@ capabilities:
       corpusKinds:
         - 'synthetic'
       verdicts:
-        - 'poorer'
+        - 'richer'
       liveSources:
+        - 'common.view/raster-image-source'
         - 'common.view/tree-data-source'
     fixtures: []
     corpusDescriptors: []
@@ -2547,11 +2547,10 @@ capabilities:
       operations:
         inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
-        read: null
+        read: 'extensions/common/images/test/ani-raster-decode.test.ts'
         materialize: null
     knownLoss:
-      - 'operation dropped at port: image.inspect'
-      - 'operation dropped at port: image.read'
+      - 'первый CUR/DIB кадр декодируется с точной AND-маской; временная шкала и последующие кадры остаются структурными данными, потому что admitted timeline-source отсутствует'
     receipts:
       projection: null
       materialization: null
@@ -2559,7 +2558,8 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'extensions/common/images/test/ani-raster-decode.test.ts'
       reports: []
   - capabilityId: 'format/astc/open-inspect'
     userScenario: 'Открыть «ASTC Texture» в MK3 и выполнить image.compressed.read, image.inspect, image.read без потери семантики legacy-маршрута.'
@@ -2589,7 +2589,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E4'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -2599,8 +2599,9 @@ capabilities:
       corpusKinds:
         - 'synthetic'
       verdicts:
-        - 'poorer'
+        - 'richer'
       liveSources:
+        - 'common.view/raster-image-source'
         - 'common.view/tree-data-source'
     fixtures: []
     corpusDescriptors: []
@@ -2613,12 +2614,11 @@ capabilities:
       operations:
         inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
-        read: null
+        read: 'extensions/common/images/test/astc-void-extent.test.ts'
         materialize: null
     knownLoss:
       - 'operation dropped at port: image.compressed-read'
-      - 'operation dropped at port: image.inspect'
-      - 'operation dropped at port: image.read'
+      - 'декодируется только 2D LDR void-extent; обычные LDR/HDR block modes, trits/quints, dual-plane и 3D честно остаются compressed-only'
     receipts:
       projection: null
       materialization: null
@@ -2626,7 +2626,8 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'extensions/common/images/test/astc-void-extent.test.ts'
       reports: []
   - capabilityId: 'format/avi/open-inspect'
     userScenario: 'Открыть «Audio Video Interleave» в MK3 и выполнить video.export, video.inspect без потери семантики legacy-маршрута.'
@@ -5384,7 +5385,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'supported'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E3'
+    evidenceLevel: 'E4'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -5394,7 +5395,7 @@ capabilities:
       corpusKinds:
         - 'real'
       verdicts:
-        - 'poorer'
+        - 'richer'
       liveSources:
         - 'common.view/model-scene-source'
         - 'common.view/tree-data-source'
@@ -5404,23 +5405,28 @@ capabilities:
     projection:
       plane: 'model'
       liveProjection: 'live'
-      portableMaterialization: 'none'
+      portableMaterialization: 'materialized'
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'extensions/ea/emperor/test/emperor-xbf-depth.test.ts'
         validate: null
-        read: null
-        materialize: null
-    knownLoss: []
+        read: 'extensions/ea/emperor/test/emperor-xbf-depth.test.ts'
+        materialize: 'extensions/ea/emperor/test/emperor-xbf-depth.test.ts'
+    knownLoss:
+      - 'native key matrices и покадровые vertex samples ограничиваются и распознаются, но admitted animation facet переносит только clip ranges и channel targets'
+      - 'prelight colours, smoothing groups, FX events и particle runtime execution не имеют admitted live facet; particle frame paths не синтезируются, публикуются только нативные stems'
+      - 'ресурсы остаются reference-only до RFH/RFD resolver; физическая единица неизвестна (source-unit); native model writer отсутствует'
     receipts:
-      projection: null
-      materialization: null
+      projection: 'ProjectionReceipt'
+      materialization: 'MaterializationReceipt'
       nativeExport: null
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'extensions/ea/emperor/test/emperor-xbf-depth.test.ts'
+        - 'packages/testkit/test/emperor-real-corpus.test.ts'
       reports: []
   - capabilityId: 'format/empire-earth-ssa/open-inspect'
     userScenario: 'Открыть «SSA (Empire Earth)» в MK3 и выполнить archive.extract, archive.inspect без потери семантики legacy-маршрута.'
@@ -7134,7 +7140,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'supported'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E3'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -7149,7 +7155,8 @@ capabilities:
         - 'common.view/model-scene-source'
         - 'common.view/tree-data-source'
     fixtures: []
-    corpusDescriptors: []
+    corpusDescriptors:
+      - 'MODKITX_SC2_ROOT'
     projection:
       plane: 'model'
       liveProjection: 'live'
@@ -7159,7 +7166,7 @@ capabilities:
       operations:
         inspect: null
         validate: null
-        read: null
+        read: 'extensions/blizzard/models/test/m3-skeleton.test.ts'
         materialize: null
     knownLoss:
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
@@ -7168,13 +7175,14 @@ capabilities:
       - 'operation dropped at port: model.render'
       - 'operation dropped at port: model.write'
     receipts:
-      projection: null
+      projection: 'ProjectionReceipt'
       materialization: null
       nativeExport: null
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'extensions/blizzard/models/test/m3-skeleton.test.ts'
       reports: []
   - capabilityId: 'format/m4a/open-inspect'
     userScenario: 'Открыть «AAC (M4A/MP4)» в MK3 и выполнить audio.export, audio.inspect без потери семантики legacy-маршрута.'
@@ -8623,7 +8631,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E4'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -8633,7 +8641,7 @@ capabilities:
       corpusKinds:
         - 'synthetic'
       verdicts:
-        - 'poorer'
+        - 'richer'
       liveSources:
         - 'common.view/raster-image-source'
         - 'common.view/tree-data-source'
@@ -8652,8 +8660,7 @@ capabilities:
         materialize: null
     knownLoss:
       - 'operation dropped at port: image.compressed-read'
-      - 'operation dropped at port: image.inspect'
-      - 'operation dropped at port: image.read'
+      - 'ETC1_RGB и ETC2 RGB/RGBA/A1 декодируются; EAC_R11/RG11 остаются compressed-only, потому что это иной channel layout без объявленного RGBA mapping'
     receipts:
       projection: null
       materialization: null
@@ -8661,7 +8668,8 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/pkm-etc-decode.test.ts'
       reports: []
   - capabilityId: 'format/ply/open-inspect'
     userScenario: 'Открыть «PLY polygon mesh» в MK3 и выполнить model.read, model.render без потери семантики legacy-маршрута.'

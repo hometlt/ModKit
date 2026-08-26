@@ -230,8 +230,7 @@
       "x3Extension": "extensions/ea/emperor",
       "canonicalModule": "extensions/ea/emperor/codecs/emperor-xbf/src/index.ts",
       "canonicalExport": "emperorXbfModelCodec",
-      "baseline": "X3 беднее",
-      "allowPoorerReason": "X3 emperor-xbf is metadata-only on a real retail model: no meshes, materials or animation tracks are published, while the canonical codec decodes 4 meshes, 5 materials and 25 animations. A genuine depth gap, and not one Block 9 closed: its depth slices covered the priority closure (VXL, W3D, W3X, M3) and Emperor is outside it. Emperor depth belongs to Block 30 (format definitions and ecosystems); until then this row stays poorer on purpose rather than pending."
+      "baseline": "X3 богаче"
     },
     {
       "id": "brotli-synthetic",
@@ -310,8 +309,7 @@
       "canonicalModule": "extensions/common/images/codecs/ani/src/index.ts",
       "canonicalAdapter": "raster",
       "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.ani",
-      "baseline": "X3 беднее",
-      "allowPoorerReason": "X3 publishes no raster image source for this format — the codec exposes a structural tree only — while the canonical image codec reports the header extent. Raster promotion is codec depth, not a harness gap."
+      "baseline": "X3 богаче"
     },
     {
       "id": "astc-synthetic",
@@ -322,8 +320,7 @@
       "canonicalModule": "extensions/common/images/codecs/astc/src/index.ts",
       "canonicalAdapter": "raster",
       "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.astc",
-      "baseline": "X3 беднее",
-      "allowPoorerReason": "X3 publishes no raster image source for this format — the codec exposes a structural tree only — while the canonical image codec reports the header extent. Raster promotion is codec depth, not a harness gap."
+      "baseline": "X3 богаче"
     },
     {
       "id": "avif-synthetic",
