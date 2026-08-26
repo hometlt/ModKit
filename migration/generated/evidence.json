@@ -250,7 +250,7 @@
       "capabilityId": "block9/archive-entry-as-subject",
       "operation": "read",
       "test": "scripts/test/command-fixtures-hosts.test.ts",
-      "note": "the shared command runtime extracts a container member identically in CLI and Electron"
+      "note": "the shared command runtime extracts a container member identically in CLI, Electron and automation hosts"
     },
     {
       "capabilityId": "block9/casc-mpq-texture-chain",
