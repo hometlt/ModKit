@@ -26,6 +26,7 @@ import { createWorkbench } from '@modkitx-x3/ui/workbench'
 import { connectSubjectRpc, type SubjectPreviewSession } from '@modkitx-x3/host'
 
 import { createBridge, type ShellEntry, type WebviewChannel } from './bridge.js'
+import { probeWebviewFacilities } from './facilities.js'
 import { createWebviewEditorPorts, type WebviewEditorPorts } from './editor-ports.js'
 import { reopenCommittedEntry } from './edit-reopen.js'
 import { createVsCodePreviewStages, VSCODE_PREVIEW_FALLBACK } from './stages.js'
@@ -142,6 +143,16 @@ async function mount(
   const say = (message: string): void => {
     bridge.emit({ op: 'status', text: message })
   }
+
+  /*
+   * What this page can actually honour, answered once and sent up (§1.5).
+   *
+   * The extension composed this realm with an intended facility set; only the page can say whether
+   * the machine agrees. The smoke's own editor runs with `--disable-gpu`, which is exactly the case
+   * where a composed `gpu.webgl2` would otherwise go on being asserted by a product that never
+   * asked.
+   */
+  bridge.emit({ op: 'facilities', observed: probeWebviewFacilities(globalThis) })
 
   const client = await connectSubjectRpc({
     framePort: bridge.framePort,

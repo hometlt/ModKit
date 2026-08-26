@@ -135,6 +135,15 @@ export type ShellEvent =
   | { readonly op: 'notice'; readonly text: string; readonly severity: 'info' | 'error' }
   /** The webview's status line, mirrored into the extension's output channel. */
   | { readonly op: 'status'; readonly text: string }
+  /**
+   * What the page's realm can actually honour, probed by the page itself (§1.5).
+   *
+   * Sent once, on load. The extension composed the realm with an intended facility set; only the
+   * page can say whether the machine it is running on agrees — `--disable-gpu`, a remote session or
+   * a driver without WebGL2 all make the composed claim untrue, and a product that never asked
+   * would go on asserting it.
+   */
+  | { readonly op: 'facilities'; readonly observed: readonly string[] }
   /** The custom document's native dirty indicator follows this one opened path only. */
   | { readonly op: 'document-dirty'; readonly path: string; readonly dirty: boolean }
   /** An in-page Save button delegates to VS Code so the provider, title marker and Ctrl+S agree. */
