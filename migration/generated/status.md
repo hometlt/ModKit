@@ -2,7 +2,7 @@
 
 # Состояние переноса modkitx → Modkit MK3
 
-Генерируемая сводка блока 10. Страница намеренно без даты: свежесть доказывается повторной генерацией (`pnpm migration:check`), а не записанным временем. Источники — опечатанный oracle, слой 1 (`migration/generated/source-inventory.json`), слой 2 (`migration/capabilities.yaml`) и два closure.
+Генерируемая сводка миграции. Страница намеренно без даты: свежесть доказывается повторной генерацией (`pnpm migration:check`), а не записанным временем. Источники — опечатанный oracle, слой 1 (`migration/generated/source-inventory.json`), workflow-ledger блока 14A, слой 2 (`migration/capabilities.yaml`) и два closure.
 
 ## 1. Опечатанный oracle
 
@@ -45,6 +45,19 @@
 | `vscode-menu-item`              | 84     |
 | `vscode-view`                   | 6      |
 | `workspace-script`              | 138    |
+
+### 2.1. Block 14A — VS Code + CLI workflow ledger
+
+Ledger распределяет ровно **258 VS Code + 8 CLI = 266** legacy-единиц. Из них **266** остаются `decision-required / unknown`: это явный pending owner, а не доказательство готовности блока 14.
+
+| Поверхность    | Legacy | X3 сейчас |
+| -------------- | ------ | --------- |
+| commands       | 64     | 7         |
+| custom editors | 11     | 1         |
+| languages      | 8      | 0         |
+| views          | 6      | 2         |
+
+Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`, `subject.open`, `subject.preview`, `subject.validate`. Доказанные callers: CLI, Electron, VS Code; PWA не заявлен.
 
 ## 3. Слой 2 — semantic capability registry
 
@@ -212,29 +225,20 @@
 
 ## 9. Неотображённый остаток инвентаря
 
-Единиц, сопоставленных хотя бы одной возможности: **246**; явно неотображённых: **874**. Сумма равна 1120 — ни одна единица не потеряна.
+Единиц, сопоставленных capability registry или workflow-ledger: **512**; явно неотображённых: **608**. Сумма равна 1120 — ни одна единица не потеряна.
 
-| Вид единицы                     | Единиц | План                                             |
-| ------------------------------- | ------ | ------------------------------------------------ |
-| `app`                           | 6      | срез 3 блока 10 (product-profiles)               |
-| `app-route`                     | 4      | срез 3 блока 10 (product-profiles)               |
-| `cli-command`                   | 5      | блок 14                                          |
-| `cli-subcommand`                | 3      | блок 14                                          |
-| `multiverse-asset`              | 5      | не переносится; остаётся историческим контекстом |
-| `multiverse-document`           | 33     | не переносится; остаётся историческим контекстом |
-| `multiverse-fixture`            | 46     | блоки 11C0 и 22                                  |
-| `multiverse-proof`              | 8      | блоки 11C0 и 22                                  |
-| `multiverse-schema`             | 49     | блоки 11C0 и 22                                  |
-| `multiverse-specification`      | 14     | блоки 11C0 и 22                                  |
-| `multiverse-tool`               | 8      | блок 11C0                                        |
-| `package-export`                | 133    | блоки 11–17 по владельцу пакета                  |
-| `runtime-capability`            | 12     | блоки 26–29                                      |
-| `script-tool`                   | 152    | блок 12 и далее по потребности                   |
-| `vscode-command`                | 64     | блоки 13–14                                      |
-| `vscode-configuration-property` | 67     | блоки 13–14                                      |
-| `vscode-contribution`           | 18     | блоки 13–14                                      |
-| `vscode-custom-editor`          | 11     | блоки 13–14                                      |
-| `vscode-language`               | 8      | блоки 13–14                                      |
-| `vscode-menu-item`              | 84     | блоки 13–14                                      |
-| `vscode-view`                   | 6      | блоки 13–14                                      |
-| `workspace-script`              | 138    | блок 12 и далее по потребности                   |
+| Вид единицы                | Единиц | План                                             |
+| -------------------------- | ------ | ------------------------------------------------ |
+| `app`                      | 6      | срез 3 блока 10 (product-profiles)               |
+| `app-route`                | 4      | срез 3 блока 10 (product-profiles)               |
+| `multiverse-asset`         | 5      | не переносится; остаётся историческим контекстом |
+| `multiverse-document`      | 33     | не переносится; остаётся историческим контекстом |
+| `multiverse-fixture`       | 46     | блоки 11C0 и 22                                  |
+| `multiverse-proof`         | 8      | блоки 11C0 и 22                                  |
+| `multiverse-schema`        | 49     | блоки 11C0 и 22                                  |
+| `multiverse-specification` | 14     | блоки 11C0 и 22                                  |
+| `multiverse-tool`          | 8      | блок 11C0                                        |
+| `package-export`           | 133    | блоки 11–17 по владельцу пакета                  |
+| `runtime-capability`       | 12     | блоки 26–29                                      |
+| `script-tool`              | 152    | блок 12 и далее по потребности                   |
+| `workspace-script`         | 138    | блок 12 и далее по потребности                   |

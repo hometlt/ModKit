@@ -1,0 +1,319 @@
+{
+  "$comment": "Block 14A workflow classification rules. Unit facts always come from source-inventory.json; this file only names semantic groups and owner-decision state.",
+  "schemaVersion": "vscode-workflow-decisions-1",
+  "workflows": [
+    {
+      "workflowId": "vscode/asset-inspect-preview-convert",
+      "title": "Asset inspection, preview and conversion",
+      "plannedSlice": "block-14b",
+      "legacyCommandIds": [
+        "modkit.assetsTexture.batchConvert",
+        "modkit.dds.convertDxt5ToDxt1",
+        "modkit.dds.convertPngIconToDds",
+        "modkit.dds.exportPng",
+        "modkit.dds.prepareSc2ButtonIcon",
+        "modkit.inspectModel",
+        "modkit.modelViewer.toggle",
+        "modkit.previewDds",
+        "modkit.previewLayout",
+        "modkit.previewMap",
+        "modkit.previewMap3d",
+        "modkit.unreal.openAudio",
+        "modkit.unreal.openVideo"
+      ],
+      "currentX3CommandIds": [],
+      "unitKinds": ["vscode-custom-editor"],
+      "classification": {
+        "disposition": "decision-required",
+        "migrationState": "unknown",
+        "releaseTrack": "decision-required",
+        "owner": "modkit-program-owner",
+        "targetState": "decision-required",
+        "replacementWorkflowId": null,
+        "reason": "The generic X3 editor exists, but per-viewer equivalence and release topology require an owner decision."
+      }
+    },
+    {
+      "workflowId": "vscode/authoring-language-data-launch",
+      "title": "SC2 authoring, language data and launch",
+      "plannedSlice": "block-14c",
+      "legacyCommandIds": [
+        "modkit.gamedata.validateMod",
+        "modkit.gamedata.validateModStrings",
+        "modkit.launchMap",
+        "modkit.openLaunchSettings",
+        "modkit.openModCard",
+        "modkit.showEntityCard",
+        "modkit.showModWiki",
+        "modkit.strings.extractChanged",
+        "modkit.strings.openColumns",
+        "modkit.strings.openText",
+        "modkit.verifyGalaxyScript",
+        "sc2layout.dtree.revealActiveFile",
+        "sc2layout.dtree.showInTextEditor",
+        "sc2layout.dtree.showProperties"
+      ],
+      "currentX3CommandIds": [],
+      "unitKinds": ["vscode-language"],
+      "classification": {
+        "disposition": "decision-required",
+        "migrationState": "unknown",
+        "releaseTrack": "decision-required",
+        "owner": "modkit-program-owner",
+        "targetState": "decision-required",
+        "replacementWorkflowId": null,
+        "reason": "Language contribution and neutral-LSP ownership are block-14 owner decisions."
+      }
+    },
+    {
+      "workflowId": "vscode/container-vfs-cache",
+      "title": "Container, VFS and cache workflows",
+      "plannedSlice": "block-14b",
+      "legacyCommandIds": [
+        "modkit.archive.clear",
+        "modkit.archive.clearSearch",
+        "modkit.archive.explore",
+        "modkit.archive.openArchive",
+        "modkit.archive.openAsRoot",
+        "modkit.archive.refresh",
+        "modkit.archive.search",
+        "modkit.browseRawFiles",
+        "modkit.casc.benchmark",
+        "modkit.casc.clearCache",
+        "modkit.casc.materialize",
+        "modkit.casc.openCacheFolder",
+        "modkit.casc.openSettings"
+      ],
+      "currentX3CommandIds": ["modkit.browseContainer", "modkit.openArchiveEntry"],
+      "unitKinds": [],
+      "classification": {
+        "disposition": "decision-required",
+        "migrationState": "unknown",
+        "releaseTrack": "decision-required",
+        "owner": "modkit-program-owner",
+        "targetState": "decision-required",
+        "replacementWorkflowId": null,
+        "reason": "Two X3 container commands are live, but they do not prove parity for all legacy VFS/cache workflows."
+      }
+    },
+    {
+      "workflowId": "vscode/diagnostics-resolution-logging",
+      "title": "Diagnostics, resolution and logging",
+      "plannedSlice": "block-14b",
+      "legacyCommandIds": [
+        "modkit.explainResolution",
+        "modkit.exportDiagnostics",
+        "modkit.openLogFile",
+        "modkit.openLogsFolder",
+        "modkit.showLog"
+      ],
+      "currentX3CommandIds": ["modkit.explainResolution", "modkit.showHostProfile"],
+      "unitKinds": [],
+      "classification": {
+        "disposition": "decision-required",
+        "migrationState": "unknown",
+        "releaseTrack": "decision-required",
+        "owner": "modkit-program-owner",
+        "targetState": "decision-required",
+        "replacementWorkflowId": null,
+        "reason": "Live X3 diagnostics do not establish replacement or release-track decisions for the full legacy group."
+      }
+    },
+    {
+      "workflowId": "vscode/manifest-settings",
+      "title": "Settings and manifest contributions",
+      "plannedSlice": "block-14d",
+      "legacyCommandIds": [],
+      "currentX3CommandIds": [],
+      "unitKinds": ["vscode-configuration-property", "vscode-contribution"],
+      "classification": {
+        "disposition": "decision-required",
+        "migrationState": "unknown",
+        "releaseTrack": "decision-required",
+        "owner": "modkit-program-owner",
+        "targetState": "decision-required",
+        "replacementWorkflowId": null,
+        "reason": "Settings, debugger, theme and container contributions need dead-command and packaging decisions."
+      }
+    },
+    {
+      "workflowId": "vscode/navigation-relations-refactors",
+      "title": "Navigation, relations and MOD tree",
+      "plannedSlice": "block-14c",
+      "legacyCommandIds": [
+        "modkit.modTree.hideDeps",
+        "modkit.modTree.open",
+        "modkit.modTree.pin",
+        "modkit.modTree.refresh",
+        "modkit.modTree.showDeps",
+        "modkit.showRelationGraph"
+      ],
+      "currentX3CommandIds": [],
+      "unitKinds": [],
+      "classification": {
+        "disposition": "decision-required",
+        "migrationState": "unknown",
+        "releaseTrack": "decision-required",
+        "owner": "modkit-program-owner",
+        "targetState": "decision-required",
+        "replacementWorkflowId": null,
+        "reason": "Navigation and relation topology awaits the block-14 owner decision."
+      }
+    },
+    {
+      "workflowId": "vscode/shared-command-shell",
+      "title": "Thin host shell over the shared subject command runtime",
+      "plannedSlice": "block-14b",
+      "legacyCommandIds": [],
+      "currentX3CommandIds": ["modkit.openWith", "modkit.runCommand"],
+      "unitKinds": [],
+      "classification": {
+        "disposition": "decision-required",
+        "migrationState": "unknown",
+        "releaseTrack": "decision-required",
+        "owner": "modkit-program-owner",
+        "targetState": "decision-required",
+        "replacementWorkflowId": null,
+        "reason": "The shared runtime is live in CLI, Electron and VS Code; mapping legacy workflows to it is still an owner decision."
+      }
+    },
+    {
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "title": "Source, workspace, discovery and lifecycle",
+      "plannedSlice": "block-14b",
+      "legacyCommandIds": [
+        "modkit.addCascInstall",
+        "modkit.addSource",
+        "modkit.archive.openCasc",
+        "modkit.archive.openConfiguredCasc",
+        "modkit.archive.openDetectedGame",
+        "modkit.configureSources",
+        "modkit.detectInstall",
+        "modkit.gameCodecs.refresh",
+        "modkit.reload",
+        "modkit.removeCascInstall",
+        "modkit.removeSource",
+        "modkit.selectInstall",
+        "modkit.unloadMod"
+      ],
+      "currentX3CommandIds": ["modkit.addExtensionFolder"],
+      "unitKinds": [],
+      "classification": {
+        "disposition": "decision-required",
+        "migrationState": "unknown",
+        "releaseTrack": "decision-required",
+        "owner": "modkit-program-owner",
+        "targetState": "decision-required",
+        "replacementWorkflowId": null,
+        "reason": "Extension-folder loading is live, but source topology, reload and recovery remain owner decisions."
+      }
+    },
+    {
+      "workflowId": "vscode/views-workbench",
+      "title": "Workbench views",
+      "plannedSlice": "block-14b",
+      "legacyCommandIds": [],
+      "currentX3CommandIds": [],
+      "unitKinds": ["vscode-view"],
+      "classification": {
+        "disposition": "decision-required",
+        "migrationState": "unknown",
+        "releaseTrack": "decision-required",
+        "owner": "modkit-program-owner",
+        "targetState": "decision-required",
+        "replacementWorkflowId": null,
+        "reason": "X3 has two views versus six legacy views; topology and replacement evidence require owner decisions."
+      }
+    },
+    {
+      "workflowId": "cli/check",
+      "title": "Headless project validation",
+      "plannedSlice": "block-14d",
+      "legacyCommandIds": [],
+      "legacyCliCommands": ["check"],
+      "currentX3CommandIds": [],
+      "unitKinds": [],
+      "classification": {
+        "disposition": "decision-required",
+        "migrationState": "unknown",
+        "releaseTrack": "decision-required",
+        "owner": "modkit-program-owner",
+        "targetState": "decision-required",
+        "replacementWorkflowId": null,
+        "reason": "The X3 CLI runtime exists, but legacy command-output parity and release track are undecided."
+      }
+    },
+    {
+      "workflowId": "cli/install",
+      "title": "Provision registered game data",
+      "plannedSlice": "block-14d",
+      "legacyCommandIds": [],
+      "legacyCliCommands": ["install"],
+      "currentX3CommandIds": [],
+      "unitKinds": [],
+      "classification": {
+        "disposition": "decision-required",
+        "migrationState": "unknown",
+        "releaseTrack": "decision-required",
+        "owner": "modkit-program-owner",
+        "targetState": "decision-required",
+        "replacementWorkflowId": null,
+        "reason": "Install workflow ownership and release inclusion require an owner decision."
+      }
+    },
+    {
+      "workflowId": "cli/lsp",
+      "title": "Neutral language server transport",
+      "plannedSlice": "block-14c",
+      "legacyCommandIds": [],
+      "legacyCliCommands": ["lsp"],
+      "currentX3CommandIds": [],
+      "unitKinds": [],
+      "classification": {
+        "disposition": "decision-required",
+        "migrationState": "unknown",
+        "releaseTrack": "decision-required",
+        "owner": "modkit-program-owner",
+        "targetState": "decision-required",
+        "replacementWorkflowId": null,
+        "reason": "Neutral LSP packaging and ownership are explicitly deferred to the owner."
+      }
+    },
+    {
+      "workflowId": "cli/scripts",
+      "title": "Script-codec tools",
+      "plannedSlice": "block-14d",
+      "legacyCommandIds": [],
+      "legacyCliCommands": ["scripts"],
+      "currentX3CommandIds": [],
+      "unitKinds": [],
+      "classification": {
+        "disposition": "decision-required",
+        "migrationState": "unknown",
+        "releaseTrack": "decision-required",
+        "owner": "modkit-program-owner",
+        "targetState": "decision-required",
+        "replacementWorkflowId": null,
+        "reason": "Script tools and audit-fallback output contracts require owner classification."
+      }
+    },
+    {
+      "workflowId": "cli/texture",
+      "title": "Texture validation and conversion",
+      "plannedSlice": "block-14d",
+      "legacyCommandIds": [],
+      "legacyCliCommands": ["texture"],
+      "currentX3CommandIds": [],
+      "unitKinds": [],
+      "classification": {
+        "disposition": "decision-required",
+        "migrationState": "unknown",
+        "releaseTrack": "decision-required",
+        "owner": "modkit-program-owner",
+        "targetState": "decision-required",
+        "replacementWorkflowId": null,
+        "reason": "Shared validate/convert targets exist, but CLI output parity and replacement are not inferred."
+      }
+    }
+  ]
+}

@@ -13,6 +13,7 @@ import { SUBJECT_COMMANDS } from './subject-commands.js'
 
 export * from './runtime.js'
 export { SUBJECT_COMMANDS } from './subject-commands.js'
+export { SUBJECT_COMMAND_TARGETS, type SubjectCommandTarget } from './subject-command-targets.js'
 
 /** The runtime every application in this repository composes. */
 export function createSubjectCommandRuntime(): CommandRuntime {

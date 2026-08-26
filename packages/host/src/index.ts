@@ -31,6 +31,7 @@ export {
   COMMAND_UNAVAILABLE,
   COMMAND_UNKNOWN,
   SUBJECT_COMMANDS,
+  SUBJECT_COMMAND_TARGETS,
   type CommandContext,
   type CommandDescriptor,
   type CommandDiagnostic,
@@ -41,6 +42,7 @@ export {
   type CommandRuntime,
   type CommandSubject,
   type CommandSubjectOpener,
+  type SubjectCommandTarget,
 } from './commands/index.js'
 export {
   buildCodecDetectionSelection,

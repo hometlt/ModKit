@@ -27,6 +27,7 @@ const readJson = file => JSON.parse(readFileSync(path.join(repoRoot, file), 'utf
 const readYaml = file => parseCanonicalYaml(readFileSync(path.join(repoRoot, file), 'utf8'))
 
 const inventory = readJson('migration/generated/source-inventory.json')
+const workflowLedger = readJson('migration/generated/vscode-workflow-ledger.json')
 const registry = readYaml('migration/capabilities.yaml')
 const projections = readYaml('migration/projections.yaml')
 const lock = readJson('migration/oracle/legacy-oracle.lock.json')
@@ -60,7 +61,7 @@ push(
 )
 push('# Состояние переноса modkitx → Modkit MK3')
 push(
-  'Генерируемая сводка блока 10. Страница намеренно без даты: свежесть доказывается повторной генерацией (`pnpm migration:check`), а не записанным временем. Источники — опечатанный oracle, слой 1 (`migration/generated/source-inventory.json`), слой 2 (`migration/capabilities.yaml`) и два closure.',
+  'Генерируемая сводка миграции. Страница намеренно без даты: свежесть доказывается повторной генерацией (`pnpm migration:check`), а не записанным временем. Источники — опечатанный oracle, слой 1 (`migration/generated/source-inventory.json`), workflow-ledger блока 14A, слой 2 (`migration/capabilities.yaml`) и два closure.',
 )
 
 push('## 1. Опечатанный oracle')
@@ -89,6 +90,43 @@ push(
       .sort(([left], [right]) => compareUtf8(left, right))
       .map(([kind, count]) => [`\`${kind}\``, String(count)]),
   ),
+)
+
+push('### 2.1. Block 14A — VS Code + CLI workflow ledger')
+push(
+  `Ledger распределяет ровно **${workflowLedger.counts.legacyVsCode} VS Code + ${workflowLedger.counts.legacyCli} CLI = ${workflowLedger.counts.total}** legacy-единиц. Из них **${workflowLedger.counts.decisionRequired}** остаются \`decision-required / unknown\`: это явный pending owner, а не доказательство готовности блока 14.`,
+)
+push(
+  table(
+    ['Поверхность', 'Legacy', 'X3 сейчас'],
+    [
+      [
+        'commands',
+        String(workflowLedger.surfaceComparison.legacyVsCode.commands),
+        String(workflowLedger.surfaceComparison.currentX3VsCode.commands),
+      ],
+      [
+        'custom editors',
+        String(workflowLedger.surfaceComparison.legacyVsCode.customEditors),
+        String(workflowLedger.surfaceComparison.currentX3VsCode.customEditors),
+      ],
+      [
+        'languages',
+        String(workflowLedger.surfaceComparison.legacyVsCode.languages),
+        String(workflowLedger.surfaceComparison.currentX3VsCode.languages),
+      ],
+      [
+        'views',
+        String(workflowLedger.surfaceComparison.legacyVsCode.views),
+        String(workflowLedger.surfaceComparison.currentX3VsCode.views),
+      ],
+    ],
+  ),
+)
+push(
+  `Shared subject commands: ${workflowLedger.sharedCommandTargets
+    .map(row => `\`${row.commandId}\``)
+    .join(', ')}. Доказанные callers: CLI, Electron, VS Code; PWA не заявлен.`,
 )
 
 const capabilities = registry.capabilities
@@ -258,7 +296,7 @@ push(
 
 push('## 9. Неотображённый остаток инвентаря')
 push(
-  `Единиц, сопоставленных хотя бы одной возможности: **${registry.counts.mappedUnits}**; явно неотображённых: **${registry.counts.unmappedUnits}**. Сумма равна ${registry.counts.inventoryUnits} — ни одна единица не потеряна.`,
+  `Единиц, сопоставленных capability registry или workflow-ledger: **${registry.counts.mappedUnits}**; явно неотображённых: **${registry.counts.unmappedUnits}**. Сумма равна ${registry.counts.inventoryUnits} — ни одна единица не потеряна.`,
 )
 push(
   table(

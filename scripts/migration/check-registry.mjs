@@ -21,7 +21,8 @@
 //   7. the projection matrix respects its own declared invariants.
 //
 // Usage: node scripts/migration/check-registry.mjs [--registry <path>] [--projections <path>]
-//                                                  [--inventory <path>] [--quiet]
+//                                                  [--inventory <path>] [--workflow-ledger <path>]
+//                                                  [--quiet]
 
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
@@ -45,6 +46,10 @@ const projectionsPath = path.resolve(
 )
 const inventoryPath = path.resolve(
   argValue('--inventory') ?? path.join(repoRoot, 'migration/generated/source-inventory.json'),
+)
+const workflowLedgerPath = path.resolve(
+  argValue('--workflow-ledger') ??
+    path.join(repoRoot, 'migration/generated/vscode-workflow-ledger.json'),
 )
 
 const problems = []
@@ -204,6 +209,25 @@ if (!existsSync(inventoryPath)) {
 const inventory = readJson(inventoryPath)
 const inventoryIds = new Set(inventory.units.map(unit => unit.sourceUnitId))
 const unitKindById = new Map(inventory.units.map(unit => [unit.sourceUnitId, unit.kind]))
+// Fixture-driven registry tests pass an alternate inventory and deliberately stay independent of
+// the production ledger. The default gate, and any explicit --workflow-ledger invocation, require
+// the block-14 allocation as a second non-vacuous mapping source.
+const useWorkflowLedger =
+  argValue('--workflow-ledger') !== undefined || argValue('--inventory') === undefined
+let workflowLedger
+if (useWorkflowLedger) {
+  if (!existsSync(workflowLedgerPath)) {
+    console.error('migration:check registry: workflow ledger is missing; run pnpm migration:emit')
+    process.exit(1)
+  }
+  workflowLedger = readJson(workflowLedgerPath)
+  if (workflowLedger.schemaVersion !== 'vscode-workflow-ledger-1') {
+    fail(`workflow ledger: unsupported schema ${String(workflowLedger.schemaVersion)}`)
+  }
+  if (workflowLedger.counts?.total !== 266 || workflowLedger.units?.length !== 266) {
+    fail('workflow ledger: expected exact 258 VS Code + 8 CLI coverage')
+  }
+}
 
 let registry
 let projections
@@ -602,7 +626,14 @@ for (const id of dependencyEdges.keys()) findCycle(id, [])
 
 // --- no source unit is lost ------------------------------------------------------------------------
 
-const mapped = new Set(capabilities.flatMap(row => row.sourceUnitIds))
+const capabilityMapped = new Set(capabilities.flatMap(row => row.sourceUnitIds))
+const workflowMapped = new Set(workflowLedger?.units?.map(row => row.sourceUnitId) ?? [])
+for (const id of workflowMapped) {
+  if (!inventoryIds.has(id)) fail(`workflow ledger: sourceUnitId ${id} does not exist in inventory`)
+  if (capabilityMapped.has(id))
+    fail(`source unit ${id} is mapped by both capability registry and workflow ledger`)
+}
+const mapped = new Set([...capabilityMapped, ...workflowMapped])
 const coveredByRule = new Map()
 for (const rule of unmappedRules) {
   if (typeof rule.selector !== 'string' || rule.selector === '')

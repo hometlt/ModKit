@@ -15,8 +15,8 @@
  * described as such rather than special-cased.
  */
 
-import { CONTAINER_EXTRACT_OPERATION_ID } from '@modkitx-x3/core'
 import type { AssetSession, JsonValue, NamespaceEntrySource } from '@modkitx-x3/sdk'
+import { SUBJECT_COMMAND_TARGETS } from './subject-command-targets.js'
 import {
   commandDiagnostic,
   failed,
@@ -30,12 +30,19 @@ import {
   type CommandSubject,
 } from './runtime.js'
 
-const NAMESPACE_ENTRY_SOURCE = 'common.view/namespace-entry-source'
-const VALIDATE = 'asset.validate'
-const CONVERT = 'export.convert'
-const RAW_EXPORT = 'export.raw'
-const THUMBNAIL = 'view.thumbnail'
-const RENDER = 'view.render'
+const OPEN_COMMAND = SUBJECT_COMMAND_TARGETS.open.commandId
+const INSPECT_COMMAND = SUBJECT_COMMAND_TARGETS.inspect.commandId
+const VALIDATE_COMMAND = SUBJECT_COMMAND_TARGETS.validate.commandId
+const VALIDATE = SUBJECT_COMMAND_TARGETS.validate.operationIds[0]
+const EXTRACT_COMMAND = SUBJECT_COMMAND_TARGETS.extract.commandId
+const CONTAINER_EXTRACT_OPERATION_ID = SUBJECT_COMMAND_TARGETS.extract.operationIds[0]
+const NAMESPACE_ENTRY_SOURCE = SUBJECT_COMMAND_TARGETS.extract.dataSourceContracts[0]
+const CONVERT_COMMAND = SUBJECT_COMMAND_TARGETS.convert.commandId
+const CONVERT = SUBJECT_COMMAND_TARGETS.convert.operationIds[0]
+const RAW_EXPORT = SUBJECT_COMMAND_TARGETS.convert.operationIds[1]
+const PREVIEW_COMMAND = SUBJECT_COMMAND_TARGETS.preview.commandId
+const THUMBNAIL = SUBJECT_COMMAND_TARGETS.preview.operationIds[0]
+const RENDER = SUBJECT_COMMAND_TARGETS.preview.operationIds[1]
 
 /** The descriptor fields these commands read. Structural, so no codec type leaks in here. */
 interface DescriptorLike {
@@ -146,22 +153,22 @@ async function invoke(
 // open
 
 const openCommand: CommandDescriptor = {
-  id: 'subject.open',
+  id: OPEN_COMMAND,
   title: 'Open',
   summary: 'Open a subject and report which contribution claimed it, and under which boundary.',
   needsSubject: true,
   mutatesSource: false,
   async run(context, input) {
     return withSubject(
-      'subject.open',
+      OPEN_COMMAND,
       context,
       String(input.subject),
       async (subject, _session, descriptor, diagnostics) => {
         const snapshot = subject.snapshot
         if (snapshot.state !== 'opened')
-          return failed('subject.open', COMMAND_SUBJECT_UNRESOLVED, 'unreachable', diagnostics)
+          return failed(OPEN_COMMAND, COMMAND_SUBJECT_UNRESOLVED, 'unreachable', diagnostics)
         return ok(
-          'subject.open',
+          OPEN_COMMAND,
           {
             ref: subject.ref,
             state: 'opened',
@@ -186,20 +193,20 @@ const openCommand: CommandDescriptor = {
 // inspect
 
 const inspectCommand: CommandDescriptor = {
-  id: 'subject.inspect',
+  id: INSPECT_COMMAND,
   title: 'Inspect',
   summary: 'Report the full descriptor of a subject: identity, traits, operations, data sources.',
   needsSubject: true,
   mutatesSource: false,
   async run(context, input) {
     return withSubject(
-      'subject.inspect',
+      INSPECT_COMMAND,
       context,
       String(input.subject),
       async (subject, _session, descriptor, diagnostics) => {
         context.progress?.({ step: 'describe', message: 'reading the descriptor' })
         return ok(
-          'subject.inspect',
+          INSPECT_COMMAND,
           {
             ref: subject.ref,
             identity: {
@@ -231,7 +238,7 @@ const inspectCommand: CommandDescriptor = {
 // validate
 
 const validateCommand: CommandDescriptor = {
-  id: 'subject.validate',
+  id: VALIDATE_COMMAND,
   title: 'Validate',
   summary: 'Run the subject’s own validation, when the codec publishes one.',
   needsSubject: true,
@@ -239,14 +246,14 @@ const validateCommand: CommandDescriptor = {
   operationId: VALIDATE,
   async run(context, input) {
     return withSubject(
-      'subject.validate',
+      VALIDATE_COMMAND,
       context,
       String(input.subject),
       async (subject, session, descriptor, diagnostics) => {
         const operation = availableOperation(descriptor, VALIDATE)
         if (operation === undefined) {
           return unavailable(
-            'subject.validate',
+            VALIDATE_COMMAND,
             `this subject publishes no available «${VALIDATE}» — ${publishedOperations(descriptor)}`,
             'run subject.inspect: it reports every trait and diagnostic the codec did produce, which ' +
               'is what validation would have been reading',
@@ -255,7 +262,7 @@ const validateCommand: CommandDescriptor = {
         }
         context.progress?.({ step: 'validate', message: 'running the codec’s validation' })
         const answer = await invoke(
-          'subject.validate',
+          VALIDATE_COMMAND,
           context,
           session,
           operation.handlerId,
@@ -264,7 +271,7 @@ const validateCommand: CommandDescriptor = {
         )
         if (answer.state === 'failed') return answer.result
         return ok(
-          'subject.validate',
+          VALIDATE_COMMAND,
           {
             ref: subject.ref,
             outputKind: answer.output.kind,
@@ -307,7 +314,7 @@ async function entryIdFor(
 }
 
 const extractCommand: CommandDescriptor = {
-  id: 'subject.extract',
+  id: EXTRACT_COMMAND,
   title: 'Extract',
   summary: 'Read one member out of a container, through the container’s own bounded extraction.',
   needsSubject: true,
@@ -316,14 +323,10 @@ const extractCommand: CommandDescriptor = {
   async run(context, input) {
     const entry = typeof input.entry === 'string' ? input.entry : ''
     if (entry === '') {
-      return failed(
-        'subject.extract',
-        'x3.command/input-invalid',
-        'subject.extract needs an «entry»',
-      )
+      return failed(EXTRACT_COMMAND, 'x3.command/input-invalid', 'subject.extract needs an «entry»')
     }
     return withSubject(
-      'subject.extract',
+      EXTRACT_COMMAND,
       context,
       String(input.subject),
       async (subject, session, descriptor, diagnostics) => {
@@ -333,7 +336,7 @@ const extractCommand: CommandDescriptor = {
         )
         if (operation === undefined || !listing) {
           return unavailable(
-            'subject.extract',
+            EXTRACT_COMMAND,
             `this subject is not a container this host can read into — ${publishedOperations(descriptor)}`,
             'run subject.inspect to see what it does publish; extraction needs both ' +
               `«${CONTAINER_EXTRACT_OPERATION_ID}» and «${NAMESPACE_ENTRY_SOURCE}»`,
@@ -344,7 +347,7 @@ const extractCommand: CommandDescriptor = {
         const entryId = await entryIdFor(session, entry, context.signal)
         if (entryId === undefined) {
           return failed(
-            'subject.extract',
+            EXTRACT_COMMAND,
             'x3.command/entry-not-found',
             `this container lists no «${entry}»`,
             diagnostics,
@@ -352,7 +355,7 @@ const extractCommand: CommandDescriptor = {
         }
         context.progress?.({ step: 'extract', message: `extracting ${entry}` })
         const answer = await invoke(
-          'subject.extract',
+          EXTRACT_COMMAND,
           context,
           session,
           operation.handlerId,
@@ -362,7 +365,7 @@ const extractCommand: CommandDescriptor = {
         if (answer.state === 'failed') return answer.result
         if (answer.output.kind !== 'bytes') {
           return failed(
-            'subject.extract',
+            EXTRACT_COMMAND,
             'x3.command/unexpected-output',
             `the container answered ${answer.output.kind}, not bytes`,
             diagnostics,
@@ -380,7 +383,7 @@ const extractCommand: CommandDescriptor = {
             ? undefined
             : await context.writeOutput(name, bytes, context.signal)
         return ok(
-          'subject.extract',
+          EXTRACT_COMMAND,
           {
             ref: subject.ref,
             entry,
@@ -398,7 +401,7 @@ const extractCommand: CommandDescriptor = {
 // convert
 
 const convertCommand: CommandDescriptor = {
-  id: 'subject.convert',
+  id: CONVERT_COMMAND,
   title: 'Convert',
   summary: 'Export a subject through the codec’s own conversion, when it publishes one.',
   needsSubject: true,
@@ -406,7 +409,7 @@ const convertCommand: CommandDescriptor = {
   operationId: CONVERT,
   async run(context, input) {
     return withSubject(
-      'subject.convert',
+      CONVERT_COMMAND,
       context,
       String(input.subject),
       async (subject, session, descriptor, diagnostics) => {
@@ -414,7 +417,7 @@ const convertCommand: CommandDescriptor = {
           availableOperation(descriptor, CONVERT) ?? availableOperation(descriptor, RAW_EXPORT)
         if (operation === undefined) {
           return unavailable(
-            'subject.convert',
+            CONVERT_COMMAND,
             `this subject publishes neither «${CONVERT}» nor «${RAW_EXPORT}» — ${publishedOperations(descriptor)}`,
             'run subject.inspect to see which data sources it does publish; a universal projection is ' +
               'the route for formats with no native export',
@@ -424,7 +427,7 @@ const convertCommand: CommandDescriptor = {
         context.progress?.({ step: 'convert', message: 'running the codec’s export' })
         const request: JsonValue = typeof input.target === 'string' ? { target: input.target } : {}
         const answer = await invoke(
-          'subject.convert',
+          CONVERT_COMMAND,
           context,
           session,
           operation.handlerId,
@@ -443,7 +446,7 @@ const convertCommand: CommandDescriptor = {
                 context.signal,
               )
         return ok(
-          'subject.convert',
+          CONVERT_COMMAND,
           {
             ref: subject.ref,
             outputKind: answer.output.kind,
@@ -461,7 +464,7 @@ const convertCommand: CommandDescriptor = {
 // preview
 
 const previewCommand: CommandDescriptor = {
-  id: 'subject.preview',
+  id: PREVIEW_COMMAND,
   title: 'Preview',
   summary: 'Produce the subject’s own preview — a thumbnail if it has one, a render otherwise.',
   needsSubject: true,
@@ -469,7 +472,7 @@ const previewCommand: CommandDescriptor = {
   operationId: THUMBNAIL,
   async run(context, input) {
     return withSubject(
-      'subject.preview',
+      PREVIEW_COMMAND,
       context,
       String(input.subject),
       async (subject, session, descriptor, diagnostics) => {
@@ -482,7 +485,7 @@ const previewCommand: CommandDescriptor = {
            * is the alternative that actually gets the caller somewhere.
            */
           return unavailable(
-            'subject.preview',
+            PREVIEW_COMMAND,
             `this subject publishes no «${THUMBNAIL}» or «${RENDER}» — ${publishedOperations(descriptor)}`,
             `mount a viewer over one of its data sources instead: ${
               (descriptor.dataSources ?? []).map(item => item.contract).join(', ') ||
@@ -493,7 +496,7 @@ const previewCommand: CommandDescriptor = {
         }
         context.progress?.({ step: 'preview', message: 'rendering the preview' })
         const answer = await invoke(
-          'subject.preview',
+          PREVIEW_COMMAND,
           context,
           session,
           operation.handlerId,
@@ -504,7 +507,7 @@ const previewCommand: CommandDescriptor = {
         const bytes =
           answer.output.kind === 'bytes' ? (answer.output.value as Uint8Array) : undefined
         return ok(
-          'subject.preview',
+          PREVIEW_COMMAND,
           {
             ref: subject.ref,
             via: thumbnail === undefined ? RENDER : THUMBNAIL,

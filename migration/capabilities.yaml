@@ -27,51 +27,15 @@ scopeLock:
     - 'free-space-3d'
 counts:
   capabilities: 308
-  unmappedRules: 22
-  unmappedUnits: 874
-  mappedUnits: 246
+  unmappedRules: 13
+  unmappedUnits: 608
+  mappedUnits: 512
   inventoryUnits: 1120
 unmapped:
   - selector: 'package-export'
     count: 133
     reason: 'Экспортируемые подпути legacy-пакетов — поверхность кода, а не пользовательская возможность; строка появляется в том блоке, который переносит соответствующий пакет.'
     plan: 'блоки 11–17 по владельцу пакета'
-  - selector: 'vscode-command'
-    count: 64
-    reason: 'Канон VS Code переносится возможностями, а не по одной команде; строки заводятся вместе с authoring-вертикалью.'
-    plan: 'блоки 13–14'
-  - selector: 'vscode-custom-editor'
-    count: 11
-    reason: 'То же: custom editor становится строкой вместе со своим viewer/editor workflow.'
-    plan: 'блоки 13–14'
-  - selector: 'vscode-language'
-    count: 8
-    reason: 'Языковые вклады переносятся вместе с language-контрактами.'
-    plan: 'блоки 13–14'
-  - selector: 'vscode-view'
-    count: 6
-    reason: 'Панели переносятся вместе с workbench-вертикалью.'
-    plan: 'блоки 13–14'
-  - selector: 'vscode-menu-item'
-    count: 84
-    reason: 'Пункты меню — привязка команд, отдельной пользовательской возможностью не являются.'
-    plan: 'блоки 13–14'
-  - selector: 'vscode-configuration-property'
-    count: 67
-    reason: 'Настройки переносятся вместе с возможностью, которой они управляют.'
-    plan: 'блоки 13–14'
-  - selector: 'vscode-contribution'
-    count: 18
-    reason: 'Прочие contributes (грамматики, сниппеты, темы, debugger) переносятся вместе со своей вертикалью.'
-    plan: 'блоки 13–14'
-  - selector: 'cli-command'
-    count: 5
-    reason: 'CLI-профиль переносится целиком в блоке 14; команда станет строкой вместе с machine-readable контрактом вывода.'
-    plan: 'блок 14'
-  - selector: 'cli-subcommand'
-    count: 3
-    reason: 'То же, что и cli-command.'
-    plan: 'блок 14'
   - selector: 'app'
     count: 6
     reason: 'Приложения — host-профили, а не возможности; их строки описаны профилями продукта.'

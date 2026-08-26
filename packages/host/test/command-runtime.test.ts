@@ -17,6 +17,7 @@ import {
   COMMAND_INPUT_INVALID,
   COMMAND_UNKNOWN,
   SUBJECT_COMMANDS,
+  SUBJECT_COMMAND_TARGETS,
   type CommandDescriptor,
   type CommandSubject,
 } from '../src/index.js'
@@ -28,17 +29,71 @@ const nowhere = async (): Promise<CommandSubject> => {
 describe('the command runtime answers rather than throws', () => {
   it('registers the six commands of block 13, sorted, each with a summary', () => {
     const runtime = createSubjectCommandRuntime()
-    expect(runtime.descriptors.map(item => item.id)).toEqual([
+    const expectedIds = [
       'subject.convert',
       'subject.extract',
       'subject.inspect',
       'subject.open',
       'subject.preview',
       'subject.validate',
-    ])
+    ]
+    expect(runtime.descriptors.map(item => item.id)).toEqual(expectedIds)
+    expect(
+      Object.values(SUBJECT_COMMAND_TARGETS)
+        .map(target => target.commandId)
+        .sort(),
+    ).toEqual(expectedIds)
     expect(runtime.descriptors.every(item => item.summary.length > 20)).toBe(true)
     // None of the first six writes; a mutating command would need a write-source grant it is not given
     expect(runtime.descriptors.some(item => item.mutatesSource)).toBe(false)
+  })
+
+  it('pins the machine-readable targets to live operations and proved non-PWA callers', () => {
+    expect(SUBJECT_COMMAND_TARGETS).toMatchObject({
+      open: { operationIds: [] },
+      inspect: { operationIds: [] },
+      validate: { operationIds: ['asset.validate'] },
+      extract: {
+        operationIds: ['container.extract'],
+        dataSourceContracts: ['common.view/namespace-entry-source'],
+      },
+      convert: { operationIds: ['export.convert', 'export.raw'] },
+      preview: { operationIds: ['view.thumbnail', 'view.render'] },
+    })
+    for (const target of Object.values(SUBJECT_COMMAND_TARGETS)) {
+      expect(target.hostCallers).toEqual(['cli', 'electron', 'vscode'])
+      expect(target.hostCallers).not.toContain('pwa')
+      const descriptor = createSubjectCommandRuntime().descriptors.find(
+        item => item.id === target.commandId,
+      )
+      expect(descriptor).toMatchObject({
+        needsSubject: target.needsSubject,
+        mutatesSource: target.mutatesSource,
+      })
+    }
+  })
+
+  it('keeps the shared target catalogue deeply immutable at runtime', () => {
+    expect(Object.isFrozen(SUBJECT_COMMAND_TARGETS)).toBe(true)
+    for (const target of Object.values(SUBJECT_COMMAND_TARGETS)) {
+      expect(Object.isFrozen(target)).toBe(true)
+      expect(Object.isFrozen(target.operationIds)).toBe(true)
+      expect(Object.isFrozen(target.dataSourceContracts)).toBe(true)
+      expect(Object.isFrozen(target.hostCallers)).toBe(true)
+    }
+
+    expect(() =>
+      Object.defineProperty(SUBJECT_COMMAND_TARGETS.open, 'commandId', {
+        value: 'subject.mutated',
+      }),
+    ).toThrow(TypeError)
+    expect(() =>
+      Object.defineProperty(SUBJECT_COMMAND_TARGETS.validate.operationIds, 0, {
+        value: 'operation.mutated',
+      }),
+    ).toThrow(TypeError)
+    expect(SUBJECT_COMMAND_TARGETS.open.commandId).toBe('subject.open')
+    expect(SUBJECT_COMMAND_TARGETS.validate.operationIds).toEqual(['asset.validate'])
   })
 
   it('refuses two commands under one id, rather than letting the last registration win', () => {
