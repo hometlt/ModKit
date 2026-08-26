@@ -17,6 +17,8 @@
  * shapes it consumes.
  */
 
+import { CONTAINER_SCHEME, parseContainerUriText } from './container-uri.js'
+
 /** The two fields of `vscode.Uri` this host reads, plus the identity it prints when refusing. */
 export interface UriLike {
   readonly scheme: string
@@ -26,7 +28,15 @@ export interface UriLike {
 }
 
 export type OpenTarget =
-  | { readonly state: 'accepted'; readonly path: string }
+  | {
+      readonly state: 'accepted'
+      /**
+       * What the subject opener is handed. A platform path for a file; the URI text itself for a
+       * container member, which is not a path and has no `fsPath` worth trusting.
+       */
+      readonly path: string
+      readonly kind: 'file' | 'container-entry'
+    }
   | { readonly state: 'refused'; readonly reason: string }
 
 /** Schemes worth naming: a generic refusal reads as a bug, a specific one reads as a limit. */
@@ -52,7 +62,31 @@ export function describeOpenTarget(uri: UriLike): OpenTarget {
     if (uri.fsPath.length === 0) {
       return { state: 'refused', reason: `«${uri.toString()}» is a file URI with an empty path` }
     }
-    return { state: 'accepted', path: uri.fsPath }
+    return { state: 'accepted', path: uri.fsPath, kind: 'file' }
+  }
+  /*
+   * The second thing this host opens: one member of a container it can already read.
+   *
+   * The scheme is served by this extension's own read-only `FileSystemProvider`, so unlike every
+   * other non-`file:` scheme above there *is* a route to bytes — through the open container, never
+   * through a temporary file on disk. The container's own path is confined exactly as a direct open
+   * would be, one layer down, so accepting the URI here grants nothing the window did not have.
+   */
+  if (uri.scheme === CONTAINER_SCHEME) {
+    const location = parseContainerUriText(uri.toString())
+    if (location === undefined) {
+      return {
+        state: 'refused',
+        reason: `«${uri.toString()}» is a Modkit container URI that names no container`,
+      }
+    }
+    if (location.entry === '') {
+      return {
+        state: 'refused',
+        reason: 'this URI names the container itself; open the container file to browse it',
+      }
+    }
+    return { state: 'accepted', path: uri.toString(), kind: 'container-entry' }
   }
   const known = KNOWN_SCHEMES[uri.scheme]
   return {

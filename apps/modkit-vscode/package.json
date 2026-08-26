@@ -49,8 +49,16 @@
         "title": "Modkit: Add Extension Folder…"
       },
       {
+        "command": "modkit.browseContainer",
+        "title": "Modkit: Browse Container in Explorer"
+      },
+      {
         "command": "modkit.explainResolution",
         "title": "Modkit: Explain Resolution"
+      },
+      {
+        "command": "modkit.openArchiveEntry",
+        "title": "Modkit: Open Container Member…"
       },
       {
         "command": "modkit.openWith",
@@ -137,12 +145,15 @@
   },
   "activationEvents": [
     "onCommand:modkit.addExtensionFolder",
+    "onCommand:modkit.browseContainer",
     "onCommand:modkit.explainResolution",
+    "onCommand:modkit.openArchiveEntry",
     "onCommand:modkit.openWith",
     "onCommand:modkit.showHostProfile",
     "onCustomEditor:modkit.genericAssetPreview",
     "onView:modkit.extensions",
-    "onView:modkit.host"
+    "onView:modkit.host",
+    "onFileSystem:modkit-container"
   ],
   "icon": "media/icon-128.png"
 }

@@ -60,6 +60,8 @@ import {
   type ShellSettingsView,
   type WebviewChannel,
 } from './bridge.js'
+import { isContainerUriText, parseContainerUriText } from './container-uri.js'
+import { createContainerRegistry, type ContainerRegistry } from './containers.js'
 import { describeInventoryContributions, type ContributionRow } from './contributions.js'
 import {
   configuredDisabledContributions,
@@ -140,8 +142,23 @@ export interface VsCodeSubjectHost {
    * reloads — which is the honest thing for this editor to say.
    */
   readonly contributions: readonly ContributionRow[]
+  /**
+   * Container browsing for this window, under the same grant and budget every other open runs
+   * under.
+   *
+   * One per window rather than one per webview: the filesystem provider the Explorer talks to is
+   * registered once at activation, and an archive opened for the Explorer is the same archive a
+   * custom editor then opens a member of. Two registries would mean two open BIGs.
+   */
+  containers(options: VsCodeContainerOptions): ContainerRegistry
   /** Serve the subject RPC and the shell over one webview channel. */
   serve(options: VsCodeServeOptions): VsCodeServed
+}
+
+export interface VsCodeContainerOptions {
+  /** Granted directories, read per request — the same confinement every open uses. */
+  readonly roots: () => readonly string[]
+  readonly onDiagnostic?: (diagnostic: Diagnostic) => void
 }
 
 export interface VsCodeSubjectHostOptions {
@@ -273,6 +290,14 @@ export async function createVsCodeSubjectHost(
     extensions,
     contributions,
     supportedExtensions: services.supportedExtensions,
+    containers: (container: VsCodeContainerOptions) =>
+      createContainerRegistry({
+        services,
+        roots: container.roots,
+        grant: DEFAULT_OPEN_GRANT,
+        budget: DEFAULT_OPEN_BUDGET,
+        ...(container.onDiagnostic === undefined ? {} : { onDiagnostic: container.onDiagnostic }),
+      }),
     serve: (served: VsCodeServeOptions) =>
       serveVsCode(services, served, { extensions, contributions }),
   })
@@ -336,6 +361,15 @@ export interface VsCodeServeOptions {
    * follows elsewhere in this lab.
    */
   readonly configuration?: VsCodeConfigurationPort
+  /**
+   * Where a `modkit-container:` subject path is opened.
+   *
+   * The page asks for a subject by naming a string, and one of the strings it can now be handed is
+   * a container member. Routing that here — rather than teaching the page a second way to open
+   * things — is what makes an archive entry a subject in this product: the page mounts the same
+   * stages, the same viewers and the same editing arm, and never learns which of the two it got.
+   */
+  readonly containers?: ContainerRegistry
 }
 
 /** What the extension side lets the page do to configuration, and nothing more. */
@@ -366,6 +400,12 @@ export interface VsCodeServed {
   revertDocument(path: string): Promise<void>
   close(reason: string): Promise<void>
 }
+
+/** What every open in this window runs under; named so the container route cannot drift from it. */
+const DEFAULT_OPEN_GRANT: PermissionGrant = Object.freeze({
+  id: 'vscode',
+  classes: Object.freeze(['read-source' as const]),
+})
 
 const DEFAULT_OPEN_BUDGET: ResourceBudget = Object.freeze({
   maxInputBytes: BigInt(VSCODE_MAXIMUM_SUBJECT_BYTES),
@@ -433,7 +473,48 @@ function serveVsCode(
     }
   }
 
+  /** Findings about one subject, on whatever surface the adapter gave them. */
+  const publishSubjectDiagnostics = (
+    subject: string,
+    items: readonly { code: string; message: string; severity?: string }[],
+  ): void => {
+    if (options.onSubjectDiagnostic === undefined) return
+    for (const item of items) {
+      options.onSubjectDiagnostic({
+        code: item.code,
+        message: item.message,
+        severity: (item.severity as 'error' | 'warning' | 'information' | 'hint') ?? 'information',
+        path: subject,
+      })
+    }
+  }
+
   const openSubject: SubjectOpener = async (requested, signal) => {
+    /*
+     * A container member, opened as a subject of its own.
+     *
+     * The RPC's contract is "a string names a subject", and this is the second kind of string it
+     * accepts. Everything downstream — the snapshot, the diagnostics, the status bar — is the same
+     * code as for a file, which is the whole reason the route was put behind the same opener rather
+     * than beside it.
+     */
+    if (isContainerUriText(requested)) {
+      const containers = options.containers
+      if (containers === undefined) {
+        throw new TypeError('this window did not compose container browsing')
+      }
+      const answer = await containers.open(requested, signal)
+      publishSubjectDiagnostics(requested, answer.snapshot.diagnostics)
+      if (answer.snapshot.state === 'opened') {
+        options.onSubjectOpened?.({
+          path: requested,
+          contributionId: answer.snapshot.selected.contributionId,
+          variantId: answer.snapshot.selected.variantId,
+          confidence: answer.snapshot.selected.confidence,
+        })
+      }
+      return answer
+    }
     /*
      * `createPathSubjectOpener` hides the `OpenedSubject` behind its snapshot, and
      * `createSubjectEditing` needs it. Rather than re-implementing the opener to get at it, the
@@ -453,7 +534,7 @@ function serveVsCode(
     const opener = createPathSubjectOpener({
       subjects: capturing,
       roots: options.roots(),
-      grant: options.grant ?? { id: 'vscode', classes: ['read-source'] },
+      grant: options.grant ?? DEFAULT_OPEN_GRANT,
       budget: options.budget ?? DEFAULT_OPEN_BUDGET,
     })
     const answer = await opener(requested, signal)
@@ -463,22 +544,12 @@ function serveVsCode(
      * the unresolved arm as well, because "no codec claimed it, and here is why" is exactly the
      * kind of thing a user needs to see and exactly the kind that used to vanish into a log.
      */
-    if (options.onSubjectDiagnostic !== undefined) {
-      const subjectPath = resolve(requested)
-      /*
-       * The opener's snapshot, not the inner open result. Companion findings are added around the
-       * open — the resolver is the only thing that knows an optional sidecar was absent — so the
-       * inner result carries everything except the one diagnostic this host most needs to show.
-       */
-      for (const item of answer.snapshot.diagnostics) {
-        options.onSubjectDiagnostic({
-          code: item.code,
-          message: item.message,
-          severity: item.severity ?? 'information',
-          path: subjectPath,
-        })
-      }
-    }
+    /*
+     * The opener's snapshot, not the inner open result. Companion findings are added around the
+     * open — the resolver is the only thing that knows an optional sidecar was absent — so the
+     * inner result carries everything except the one diagnostic this host most needs to show.
+     */
+    publishSubjectDiagnostics(resolve(requested), answer.snapshot.diagnostics)
 
     if (answer.snapshot.state === 'opened') {
       options.onSubjectOpened?.({
@@ -690,7 +761,7 @@ function serveVsCode(
     bridge,
     exposure,
     open(path: string) {
-      bridge.emit({ op: 'open', path: resolve(path), name: basename(path) })
+      bridge.emit({ op: 'open', path: subjectKey(path), name: subjectLabel(path) })
     },
     publishRoots() {
       bridge.emit({
@@ -705,12 +776,12 @@ function serveVsCode(
       bridge.emit({ op: 'notice', text, severity })
     },
     async saveDocument(path: string) {
-      if ((await bridge.request({ op: 'document-save', path: resolve(path) })) !== true) {
+      if ((await bridge.request({ op: 'document-save', path: subjectKey(path) })) !== true) {
         throw new Error('the webview did not confirm that the custom document was saved')
       }
     },
     async revertDocument(path: string) {
-      if ((await bridge.request({ op: 'document-revert', path: resolve(path) })) !== true) {
+      if ((await bridge.request({ op: 'document-revert', path: subjectKey(path) })) !== true) {
         throw new Error('the webview did not confirm that the custom document was reverted')
       }
     },
@@ -724,6 +795,31 @@ function serveVsCode(
 
 const describe = (error: unknown): string =>
   error instanceof Error ? error.message : String(error)
+
+/**
+ * The identity a subject is keyed by, for both kinds of subject path.
+ *
+ * A file is keyed by its resolved path — two spellings of one file are one subject. A container
+ * member is keyed by its URI text, which is already canonical (the container path is resolved
+ * before it is encoded), and which `resolve` would turn into nonsense by treating `modkit-container:`
+ * as a relative directory name.
+ */
+export function subjectKey(path: string): string {
+  return isContainerUriText(path) ? path : resolve(path)
+}
+
+/**
+ * What this subject is called out loud.
+ *
+ * For a member, the container's own file name and the member's path inside it — never the
+ * container's absolute path, which is what the owner's screenshot caught the old footer printing.
+ * The URI keeps the absolute path (it has to address something), the label does not.
+ */
+export function subjectLabel(path: string): string {
+  const location = parseContainerUriText(path)
+  if (location === undefined) return basename(path)
+  return `${basename(location.container)} › ${location.entry}`
+}
 
 async function listDirectory(
   roots: readonly string[],

@@ -18,11 +18,21 @@ import { pathToFileURL } from 'node:url'
 import * as vscode from 'vscode'
 
 import type { CloseAnswer, WebviewChannel } from './bridge.js'
+import {
+  containerUriPath,
+  CONTAINER_SCHEME,
+  parseContainerUriPath,
+  parseContainerUriText,
+  type ContainerNode,
+} from './container-uri.js'
+import type { ContainerRegistry } from './containers.js'
 import { CustomDocumentState } from './custom-document.js'
 import { withExtensionRoot } from './extension-roots.js'
 import {
   catalogCandidates,
   createVsCodeSubjectHost,
+  subjectKey,
+  subjectLabel,
   VSCODE_MAXIMUM_SUBJECT_BYTES,
   VSCODE_SUBJECT_CONTRIBUTION_ID,
   VSCODE_SUBJECT_SERVICES_URL,
@@ -35,11 +45,30 @@ import { describeOpenTarget } from './uri.js'
 
 const CUSTOM_EDITOR_TYPE = 'modkit.genericAssetPreview'
 
+/**
+ * The subject string a URI names.
+ *
+ * A `file:` URI names a path; a `modkit-container:` URI names a member of an open container and has
+ * no meaningful `fsPath` at all — its own text *is* the identity, and handing `fsPath` to anything
+ * downstream would silently address a file that does not exist.
+ */
+function subjectPathOf(uri: vscode.Uri): string {
+  return uri.scheme === CONTAINER_SCHEME ? uri.toString() : uri.fsPath
+}
+
+/** The inverse: the URI a subject string names, for the editor surfaces that take one. */
+function subjectUriOf(path: string): vscode.Uri {
+  return parseContainerUriText(path) === undefined ? vscode.Uri.file(path) : vscode.Uri.parse(path)
+}
+
 class ModkitCustomDocument implements vscode.CustomDocument {
   readonly state: CustomDocumentState
+  /** A container member is served by a read-only provider; there is nothing to save it back into. */
+  readonly readOnly: boolean
 
   constructor(readonly uri: vscode.Uri) {
-    this.state = new CustomDocumentState(uri.fsPath)
+    this.state = new CustomDocumentState(subjectPathOf(uri))
+    this.readOnly = uri.scheme === CONTAINER_SCHEME
   }
 
   dispose(): void {
@@ -299,6 +328,118 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const granted = new Set<string>()
   const roots = (): readonly string[] => [...new Set([...workspaceFolders(), ...granted])]
 
+  // ---------------------------------------------------------------- containers
+  /*
+   * Archive members, in the editor's own Explorer.
+   *
+   * The owner's requirement names the mechanism (REQUEST_VSCODE_NATIVE_SHELL §3): not a bespoke
+   * tree of our own beside the native one, but a `FileSystemProvider` over the host's
+   * `openNestedSubject` route, so a BIG, a CASC or an MPQ is browsed by the same Explorer, the same
+   * Quick Open and the same "Open With" as any other folder. Everything below is the adapter for
+   * that; the decisions live in `./containers.ts`, which knows no `vscode`.
+   *
+   * Read-only, and declared so: the provider serves what a container holds and this host has no
+   * route that writes a member back. `isReadonly` makes the workbench say that instead of offering
+   * a Save that would fail.
+   */
+  const containers: ContainerRegistry = host.containers({
+    roots,
+    onDiagnostic: item =>
+      log(`[container] ${item.severity ?? 'information'} ${item.code}: ${item.message}`),
+  })
+  context.subscriptions.push({
+    dispose: () => {
+      void containers.dispose()
+    },
+  })
+
+  const containerLocation = (uri: vscode.Uri): { container: string; entry: string } => {
+    const location = parseContainerUriPath(uri.path)
+    if (location === undefined) throw vscode.FileSystemError.FileNotFound(uri)
+    return location
+  }
+
+  const FILE_TYPE: Readonly<Record<ContainerNode['kind'], vscode.FileType>> = Object.freeze({
+    file: vscode.FileType.File,
+    directory: vscode.FileType.Directory,
+  })
+
+  /** Anything the registry refuses becomes the editor's own vocabulary, never a raw throw. */
+  const asFileSystemError = (uri: vscode.Uri, error: unknown): Error => {
+    if (error instanceof vscode.FileSystemError) return error
+    const message = error instanceof Error ? error.message : String(error)
+    log(`[container] ${uri.path}: ${message}`)
+    return vscode.FileSystemError.FileNotFound(
+      `${vscode.workspace.asRelativePath(uri)}: ${message}`,
+    )
+  }
+
+  const containerFileSystem: vscode.FileSystemProvider = {
+    // Containers are opened once and read; nothing under this scheme changes while a window lives,
+    // so an event that never fires is the honest implementation rather than a missing one.
+    onDidChangeFile: new vscode.EventEmitter<vscode.FileChangeEvent[]>().event,
+    watch: () => new vscode.Disposable(() => undefined),
+
+    async stat(uri) {
+      const { container, entry } = containerLocation(uri)
+      try {
+        const node = await containers.stat(container, entry)
+        return {
+          type: FILE_TYPE[node.kind],
+          ctime: node.modifiedAt ?? 0,
+          mtime: node.modifiedAt ?? 0,
+          size: node.size ?? 0,
+          permissions: vscode.FilePermission.Readonly,
+        }
+      } catch (error) {
+        throw asFileSystemError(uri, error)
+      }
+    },
+
+    async readDirectory(uri) {
+      const { container, entry } = containerLocation(uri)
+      try {
+        const children = await containers.list(container, entry)
+        return children.map(
+          child => [child.name, FILE_TYPE[child.kind]] as [string, vscode.FileType],
+        )
+      } catch (error) {
+        throw asFileSystemError(uri, error)
+      }
+    },
+
+    async readFile(uri) {
+      const { container, entry } = containerLocation(uri)
+      try {
+        return await containers.read(container, entry)
+      } catch (error) {
+        throw asFileSystemError(uri, error)
+      }
+    },
+
+    createDirectory: uri => {
+      throw vscode.FileSystemError.NoPermissions(uri)
+    },
+    writeFile: uri => {
+      throw vscode.FileSystemError.NoPermissions(uri)
+    },
+    delete: uri => {
+      throw vscode.FileSystemError.NoPermissions(uri)
+    },
+    rename: uri => {
+      throw vscode.FileSystemError.NoPermissions(uri)
+    },
+  }
+
+  context.subscriptions.push(
+    vscode.workspace.registerFileSystemProvider(CONTAINER_SCHEME, containerFileSystem, {
+      // Container entry paths come out of the container's own tables; two members differing only in
+      // case are two members, and folding them would hide one.
+      isCaseSensitive: true,
+      isReadonly: true,
+    }),
+  )
+
   // ---------------------------------------------------------------- configuration
   /*
    * The only place in this product that writes a VS Code setting.
@@ -385,7 +526,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     readonly path?: string
   }): void => {
     if (item.path === undefined) return
-    const uri = vscode.Uri.file(item.path)
+    // Either kind of subject, on the same panel: a finding about a member of an archive is shown
+    // against the member, addressed by the URI the Explorer already shows it under.
+    const uri = subjectUriOf(item.path)
     const key = uri.toString()
     const existing = problemsFor.get(key) ?? []
     // The same code about the same subject is one problem, however many times it is reported.
@@ -405,7 +548,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   /** Drop a subject's problems when its editor goes away; a closed file has no findings. */
   const forgetDiagnostics = (path: string): void => {
-    const uri = vscode.Uri.file(path)
+    const uri = subjectUriOf(path)
     problemsFor.delete(uri.toString())
     problems.delete(uri)
   }
@@ -465,6 +608,26 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'dist-app')],
   })
 
+  /**
+   * Widen the grant to whatever directory this subject needs, in one place.
+   *
+   * A file needs its own directory. A container member needs the *container's* directory, because
+   * the member is reached by opening the container through the very same confined path opener — so
+   * granting the member without granting its container would produce a URI that addresses something
+   * this window then refuses to read.
+   */
+  const grantFor = (target: {
+    readonly path: string
+    readonly kind: 'file' | 'container-entry'
+  }) => {
+    if (target.kind === 'file') {
+      granted.add(dirname(target.path))
+      return
+    }
+    const location = parseContainerUriText(target.path)
+    if (location !== undefined) granted.add(dirname(location.container))
+  }
+
   /** Grant the file's directory and open it in the custom editor, or say why it cannot be opened. */
   const openResource = (uri: vscode.Uri): void => {
     const target = describeOpenTarget(uri)
@@ -473,7 +636,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       void vscode.window.showWarningMessage(`Modkit cannot open this: ${target.reason}`)
       return
     }
-    granted.add(dirname(target.path))
+    grantFor(target)
     // The custom editor is the one place a subject is shown; there is no second panel any more.
     void vscode.commands.executeCommand('vscode.openWith', uri, CUSTOM_EDITOR_TYPE)
   }
@@ -507,6 +670,121 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         })
         const first = picked?.[0]
         if (first !== undefined) openResource(first)
+      })()
+    }),
+
+    /*
+     * Put a container in the Explorer.
+     *
+     * The folder added is a `modkit-container:` URI derived from the archive's own path, so it is
+     * stable: the same archive yields the same folder in every window, and a saved workspace
+     * reopens it. VS Code restarts the extension host when the *first* folder of a window changes,
+     * which would tear down the composition mid-command — so an empty window is told to open a
+     * folder first rather than being restarted behind the user's back.
+     */
+    vscode.commands.registerCommand('modkit.browseContainer', (argument: unknown) => {
+      void (async () => {
+        const uri =
+          argument instanceof vscode.Uri
+            ? argument
+            : (vscode.window.activeTextEditor?.document.uri ??
+              (
+                await vscode.window.showOpenDialog({
+                  canSelectMany: false,
+                  openLabel: 'Browse container',
+                })
+              )?.[0])
+        if (uri === undefined) return
+        const target = describeOpenTarget(uri)
+        if (target.state === 'refused' || target.kind !== 'file') {
+          void vscode.window.showWarningMessage(
+            `Modkit cannot browse this: ${target.state === 'refused' ? target.reason : 'it is already a container member'}`,
+          )
+          return
+        }
+        granted.add(dirname(target.path))
+        try {
+          // Opens and indexes it; a subject that is not a container is refused here by name,
+          // before a folder the Explorer could not list appears in the workspace.
+          await containers.index(target.path)
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          log(`browse refused ${basename(target.path)}: ${message}`)
+          void vscode.window.showWarningMessage(`Modkit cannot browse this file: ${message}`)
+          return
+        }
+        const existing = vscode.workspace.workspaceFolders
+        if (existing === undefined || existing.length === 0) {
+          void vscode.window.showWarningMessage(
+            'Modkit: open a folder in this window first — adding the first workspace folder ' +
+              'restarts the extension host, which would close the container again.',
+          )
+          return
+        }
+        const folder = vscode.Uri.from({
+          scheme: CONTAINER_SCHEME,
+          path: containerUriPath(target.path),
+        })
+        if (existing.some(item => item.uri.toString() === folder.toString())) {
+          void vscode.commands.executeCommand('revealInExplorer', folder)
+          return
+        }
+        const added = vscode.workspace.updateWorkspaceFolders(existing.length, 0, {
+          uri: folder,
+          name: basename(target.path),
+        })
+        log(
+          added
+            ? `container added to the workspace: ${basename(target.path)}`
+            : `the workspace refused the container folder for ${basename(target.path)}`,
+        )
+        if (!added) {
+          void vscode.window.showWarningMessage(
+            'Modkit: VS Code did not accept the container as a workspace folder.',
+          )
+        }
+      })()
+    }),
+
+    /*
+     * Open one member of a container as a subject of its own.
+     *
+     * With a URI (from the Explorer, from a keybinding, from another extension) it opens that
+     * member. Without one it lists the members of the container in the active editor, which is the
+     * palette's answer to "I am looking at an archive and I want what is inside it".
+     */
+    vscode.commands.registerCommand('modkit.openArchiveEntry', (argument: unknown) => {
+      void (async () => {
+        if (argument instanceof vscode.Uri) {
+          openResource(argument)
+          return
+        }
+        const active = activeSubject
+        if (active === undefined || parseContainerUriText(active) !== undefined) {
+          void vscode.window.showInformationMessage(
+            'Modkit: open a container file first, then run this command to pick a member.',
+          )
+          return
+        }
+        let members: readonly string[]
+        try {
+          const index = await containers.index(active)
+          members = [...index.files.keys()].sort()
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          void vscode.window.showWarningMessage(
+            `Modkit: ${basename(active)} holds no entries: ${message}`,
+          )
+          return
+        }
+        const picked = await vscode.window.showQuickPick([...members], {
+          title: `Members of ${basename(active)}`,
+          placeHolder: 'Open a member as a subject of its own',
+        })
+        if (picked === undefined) return
+        openResource(
+          vscode.Uri.from({ scheme: CONTAINER_SCHEME, path: containerUriPath(active, picked) }),
+        )
       })()
     }),
 
@@ -564,6 +842,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     if (token.isCancellationRequested) throw new vscode.CancellationError()
   }
 
+  /**
+   * A container member has nowhere to be saved back into.
+   *
+   * The provider is registered read-only, so VS Code normally never asks — but a custom editor is
+   * asked directly by `workbench.action.files.save`, and answering "done" to a save that wrote
+   * nothing is the one failure mode worth being loud about.
+   */
+  const refuseWriteToContainer = (document: ModkitCustomDocument): void => {
+    if (!document.readOnly) return
+    throw new Error(
+      `${subjectLabel(subjectPathOf(document.uri))} lives inside a container, which this host opens read-only`,
+    )
+  }
+
   const customEditor: vscode.CustomEditorProvider<ModkitCustomDocument> = {
     onDidChangeCustomDocument: customDocumentChanged.event,
 
@@ -587,7 +879,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         panel.webview.html = refusalHtml(target.reason)
         return
       }
-      granted.add(dirname(target.path))
+      grantFor(target)
       const served = attach(panel.webview, target.path, {
         onDirty(path, dirty) {
           if (path !== document.state.path) return
@@ -608,7 +900,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
        * open at once, and only the one in front is what the bar is describing.
        */
       const followActive = (): void => {
-        const key = resolve(target.path)
+        const key = subjectKey(target.path)
         if (panel.active) {
           activeSubject = key
           showSubjectStatus(target.path)
@@ -621,11 +913,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       panel.onDidChangeViewState(followActive)
 
       panel.onDidDispose(() => {
-        if (activeSubject === resolve(target.path)) {
+        if (activeSubject === subjectKey(target.path)) {
           activeSubject = undefined
           showSubjectStatus(undefined)
         }
-        subjectFacts.delete(resolve(target.path))
+        subjectFacts.delete(subjectKey(target.path))
         document.state.detach(served)
         live.delete(served)
         forgetDiagnostics(target.path)
@@ -635,13 +927,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     async saveCustomDocument(document, token) {
       checkCancellation(token)
+      refuseWriteToContainer(document)
       await document.state.save()
       checkCancellation(token)
     },
 
     async saveCustomDocumentAs(document, destination, token) {
       checkCancellation(token)
-      await document.state.save()
+      // Saving a container member *elsewhere* is extraction, and it is allowed: the copy below
+      // reads through the read-only provider and writes a file that is no longer a member.
+      if (!document.readOnly) await document.state.save()
       checkCancellation(token)
       if (destination.toString() !== document.uri.toString()) {
         await vscode.workspace.fs.copy(document.uri, destination, { overwrite: true })
@@ -650,6 +945,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     async revertCustomDocument(document, token) {
       checkCancellation(token)
+      refuseWriteToContainer(document)
       await document.state.revert()
       checkCancellation(token)
     },
@@ -662,7 +958,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
        * exact committed bytes to VS Code's backup destination. It may save earlier than shutdown,
        * but it never fabricates or drops an editor-specific buffer.
        */
-      await document.state.save()
+      if (!document.readOnly) await document.state.save()
       checkCancellation(token)
       await vscode.workspace.fs.copy(document.uri, backupContext.destination, { overwrite: true })
       return {
@@ -737,6 +1033,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
    * used instead. A status bar has no room for a full path anyway, and no need for one.
    */
   const describeSubject = (path: string): string => {
+    // A container member is named by its container's file name and its own path inside it — the
+    // container's absolute path stays inside the URI and never reaches the bar.
+    if (parseContainerUriText(path) !== undefined) return subjectLabel(path)
     const relative = vscode.workspace.asRelativePath(vscode.Uri.file(path), false)
     return isAbsolute(relative) ? basename(relative) : relative
   }
@@ -746,7 +1045,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       status.hide()
       return
     }
-    const facts = subjectFacts.get(resolve(path))
+    const facts = subjectFacts.get(subjectKey(path))
     const size =
       facts?.bytes === undefined
         ? undefined
@@ -773,8 +1072,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     readonly contributionId: string
     readonly variantId: string
   }): void => {
-    const key = resolve(opened.path)
-    void vscode.workspace.fs.stat(vscode.Uri.file(key)).then(
+    const key = subjectKey(opened.path)
+    // The size of a container member comes from the provider registered above, so this one call
+    // answers for both kinds of subject.
+    void vscode.workspace.fs.stat(subjectUriOf(key)).then(
       stat => {
         subjectFacts.set(key, {
           contributionId: opened.contributionId,

@@ -16,6 +16,14 @@
     {
       "command": "modkit.showHostProfile",
       "title": "Modkit: Open Workbench"
+    },
+    {
+      "command": "modkit.browseContainer",
+      "title": "Modkit: Browse Container in Explorer"
+    },
+    {
+      "command": "modkit.openArchiveEntry",
+      "title": "Modkit: Open Container Member…"
     }
   ],
   "configuration": {
@@ -90,5 +98,6 @@
         "name": "Extensions"
       }
     ]
-  }
+  },
+  "fileSystemSchemes": ["modkit-container"]
 }

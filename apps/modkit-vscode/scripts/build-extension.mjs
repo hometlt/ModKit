@@ -117,6 +117,14 @@ if (dist === tracked) {
   const manifestPath = join(appRoot, 'package.json')
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
   const contributes = JSON.parse(readFileSync(join(appRoot, 'contributes.generated.json'), 'utf8'))
+  /*
+   * Filesystem schemes are an activation point with no `contributes` entry of their own — a
+   * provider is registered in code — so they are declared in the authority document rather than in
+   * this script: a saved workspace holding a `modkit-container:` folder has to start this extension
+   * before the Explorer can ask anything of it, and a scheme spelled in two places would drift.
+   */
+  const authority = JSON.parse(readFileSync(join(appRoot, 'bundled-contributes.v1.json'), 'utf8'))
+  const fileSystemSchemes = [...(authority.fileSystemSchemes ?? [])].sort()
 
   const previous = JSON.stringify([manifest.contributes ?? null, manifest.activationEvents ?? null])
   manifest.contributes = contributes
@@ -130,6 +138,7 @@ if (dist === tracked) {
     ...Object.values(contributes.views)
       .flat()
       .map(view => `onView:${view.id}`),
+    ...fileSystemSchemes.map(scheme => `onFileSystem:${scheme}`),
   ]
 
   if (JSON.stringify([manifest.contributes, manifest.activationEvents]) !== previous) {
