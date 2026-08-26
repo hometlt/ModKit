@@ -51,7 +51,8 @@
       "canonicalModule": "extensions/blizzard/starcraft-2/codecs/m3/src/index.ts",
       "canonicalExport": "createM3ModelCodec",
       "canonicalFactory": true,
-      "baseline": "X3 богаче"
+      "allowPoorerReason": "The canonical reader reports five material slots while X3 publishes two decoded materials; X3 is otherwise richer on the live artifact through hierarchy, skeleton, animation and resource-reference facets.",
+      "baseline": "X3 беднее"
     },
     {
       "id": "warzone-pie-real-base-wz",
