@@ -1,4 +1,9 @@
-import { createInspectionCodec, createTreeDataSource } from '@modkitx-x3/codec-kit'
+import {
+  createInspectionCodec,
+  createRasterImageSource,
+  createTreeDataSource,
+} from '@modkitx-x3/codec-kit'
+import { decodeEmbeddedIconFrame } from '../ico/container.js'
 
 const ID = 'org.modkitx/ani'
 const latin1 = new TextDecoder('latin1')
@@ -21,10 +26,12 @@ function isWarzoneAni(bytes) {
 }
 
 function walkChunks(bytes, start, end, depth, state) {
+  if (state.signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
   if (depth > state.maxDepth) throw new RangeError('ANI RIFF nesting exceeds maxDepth budget')
   const chunks = []
   let offset = start
   while (offset < end) {
+    if (state.signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
     if (state.nodes >= state.maxNodes)
       throw new RangeError('ANI chunk count exceeds maxNodes budget')
     state.nodes += 1
@@ -62,11 +69,17 @@ function flatten(chunks) {
 }
 
 function parseWindowsAni(bytes, context) {
+  if (context.signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
   if (!isWindowsAni(bytes)) throw new TypeError('Windows ANI RIFF/ACON header is invalid')
   const riffEnd = 8 + u32(bytes, 4)
   if (riffEnd !== bytes.byteLength)
     throw new TypeError('Windows ANI RIFF size does not match the source')
-  const state = { nodes: 0, maxNodes: context.budget.maxNodes, maxDepth: context.budget.maxDepth }
+  const state = {
+    nodes: 0,
+    maxNodes: context.budget.maxNodes,
+    maxDepth: context.budget.maxDepth,
+    signal: context.signal,
+  }
   const chunks = walkChunks(bytes, 12, riffEnd, 0, state)
   const all = flatten(chunks)
   const headerChunk = all.find(chunk => chunk.id === 'anih')
@@ -150,6 +163,36 @@ const definition = Object.freeze({
   async inspect(bytes, context) {
     if (isWindowsAni(bytes)) {
       const ani = parseWindowsAni(bytes, context)
+      const firstIcon = ani.iconChunks[0]
+      if (firstIcon === undefined) throw new TypeError('Windows ANI has no first icon frame')
+      const firstFrameBytes = bytes.subarray(firstIcon.payload, firstIcon.payload + firstIcon.size)
+      const firstFrame = decodeEmbeddedIconFrame(firstFrameBytes, context.budget)
+      if (
+        firstFrame.decodedBytes !== undefined &&
+        firstFrame.decodedBytes > BigInt(context.budget.maxScalarBytes)
+      ) {
+        throw new RangeError('Windows ANI first frame exceeds maxScalarBytes budget')
+      }
+      const raster = createRasterImageSource(
+        bytes,
+        'application/x-navi-animation',
+        {
+          width: firstFrame.width,
+          height: firstFrame.height,
+          depth: 1,
+          layers: 1,
+          faces: 1,
+          mipLevels: 1,
+          frames: 1,
+          channels: 4,
+          bitDepth: 8,
+          colorSpace: 'srgb',
+          alphaMode: 'straight',
+          orientation: 'top-left',
+          decodedAccess: firstFrame.decodedAccess,
+        },
+        firstFrame.readRegion,
+      )
       const tree = createTreeDataSource({
         kind: 'animation',
         label: 'Windows ANI',
@@ -169,6 +212,8 @@ const definition = Object.freeze({
           width: ani.header.width,
           height: ani.header.height,
           jiffiesPerStep: ani.header.jiffiesPerStep,
+          firstFramePayloadKind: firstFrame.payloadKind,
+          firstFrameDecodedAccess: firstFrame.decodedAccess,
         },
         metadata: [
           {
@@ -186,6 +231,8 @@ const definition = Object.freeze({
               { key: 'embeddedIcons', value: ani.iconChunks.length },
               { key: 'hasSequence', value: ani.sequence !== undefined },
               { key: 'hasRates', value: ani.rates !== undefined },
+              { key: 'firstFramePayloadKind', value: firstFrame.payloadKind },
+              { key: 'firstFrameDecodedAccess', value: firstFrame.decodedAccess },
             ],
           },
         ],
@@ -193,8 +240,19 @@ const definition = Object.freeze({
           { id: 'image.frames', parameters: { count: ani.header.frames } },
           { id: 'content.binary', parameters: { bytes: String(bytes.byteLength) } },
         ],
-        dataSources: { 'common.view/tree-data-source': tree },
-        unsupportedFeatures: ['embedded-icon-pixel-decoding', 'animation-playback', 'ani-writing'],
+        dataSources: {
+          'common.view/tree-data-source': tree,
+          'common.view/raster-image-source': raster,
+        },
+        ...(firstFrame.decodedBytes === undefined
+          ? {}
+          : { maxDecodedBytes: firstFrame.decodedBytes }),
+        unsupportedFeatures: [
+          ...(firstFrame.decodedAccess ? [] : ['embedded-icon-pixel-decoding']),
+          ...(ani.header.frames > 1 ? ['remaining-embedded-icon-frame-decoding'] : []),
+          'animation-playback',
+          'ani-writing',
+        ],
       }
     }
     const warzone = parseWarzoneAni(bytes, context.budget.maxNodes)

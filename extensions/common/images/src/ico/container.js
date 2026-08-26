@@ -132,7 +132,7 @@ function selectEntry(entries, cursor) {
   })[0]
 }
 
-function parseDib(bytes, entry, maxScalarBytes) {
+function parseDib(bytes, entry, maxScalarBytes, strictPayload = false) {
   if (entry.payloadKind !== 'dib') return undefined
   const headerBytes = u32(bytes, entry.offset)
   const width = i32(bytes, entry.offset + 4)
@@ -159,10 +159,20 @@ function parseDib(bytes, entry, maxScalarBytes) {
     BigInt(xorOffset) + xorBytesBig > entryEnd ||
     xorRowBytesBig > BigInt(Number.MAX_SAFE_INTEGER)
   ) {
+    if (strictPayload && BigInt(xorOffset) + xorBytesBig > entryEnd) {
+      throw new TypeError('embedded ICO/CUR DIB pixel data is truncated')
+    }
     return undefined
   }
   const maskOffsetBig = BigInt(xorOffset) + xorBytesBig
   const maskBytesBig = maskRowBytesBig * BigInt(entry.height)
+  if (
+    strictPayload &&
+    absoluteHeight === entry.height * 2 &&
+    maskOffsetBig + maskBytesBig > entryEnd
+  ) {
+    throw new TypeError('embedded ICO/CUR DIB AND mask is truncated')
+  }
   const decodedBytes = BigInt(width) * BigInt(entry.height) * 4n
   return Object.freeze({
     width,
@@ -181,7 +191,8 @@ function parseDib(bytes, entry, maxScalarBytes) {
 
 function regionReader(bytes, dib) {
   let storedAlpha
-  return async request => {
+  return async (request, signal) => {
+    if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
     const integers = [request.x, request.y, request.width, request.height, request.maxBytes]
     if (!integers.every(value => Number.isSafeInteger(value) && value >= 0)) {
       throw new TypeError(
@@ -220,6 +231,7 @@ function regionReader(bytes, dib) {
     const pixels = new Uint8Array(outputBytes)
     const bytesPerPixel = dib.bitDepth / 8
     for (let row = 0; row < request.height; row += 1) {
+      if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
       const logicalY = request.y + row
       const sourceY = dib.topDown ? logicalY : dib.height - 1 - logicalY
       const xorRow = dib.xorOffset + sourceY * dib.xorRowBytes
@@ -249,6 +261,41 @@ function regionReader(bytes, dib) {
       pixels,
     })
   }
+}
+
+/**
+ * Decode the first image carried by an embedded ICO/CUR container.
+ *
+ * Windows ANI stores each frame as a complete ICO or CUR payload in an `icon` RIFF chunk. Keeping
+ * this parser here makes ANI use the same directory, DIB stride, alpha and AND-mask rules as the
+ * standalone codecs. It deliberately returns no reader for PNG or unsupported DIB variants rather
+ * than inventing pixels.
+ */
+export function decodeEmbeddedIconFrame(bytes, budget) {
+  if (bytes.byteLength < 4 || bytes[0] !== 0 || bytes[1] !== 0) {
+    throw new TypeError('embedded ANI frame has no ICO/CUR header')
+  }
+  const type = bytes[2]
+  if (type !== 1 && type !== 2) {
+    throw new TypeError('embedded ANI frame has no ICO/CUR header')
+  }
+  const entries = parseEntries(bytes, type, budget.maxNodes)
+  const selected = selectEntry(entries, type === 2)
+  if (selected === undefined) throw new TypeError('embedded ANI frame has no selectable image')
+  const dib = parseDib(bytes, selected, budget.maxScalarBytes, true)
+  const decodedAccess = dib?.decodedAccess === true
+  return Object.freeze({
+    width: selected.width,
+    height: selected.height,
+    payloadKind: selected.payloadKind,
+    decodedAccess,
+    ...(dib === undefined
+      ? {}
+      : {
+          decodedBytes: dib.decodedBytes,
+          readRegion: decodedAccess ? regionReader(bytes, dib) : undefined,
+        }),
+  })
 }
 
 export function createIconDefinition({ id, formatId, label, type }) {

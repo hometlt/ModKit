@@ -21,8 +21,8 @@
     }
   ],
   "limitations": [
-    "The MK3 port performs a bounded RIFF/ACON chunk walk, validates anih declarations and embedded ICO/CUR frame headers, and reports rate/sequence metadata.",
-    "Warzone 2100 ANIM3DFRAMES text sidecars are parsed as bounded frame lines; embedded cursor pixel decoding, playback, model application, and writing remain unsupported."
+    "The MK3 port performs a bounded RIFF/ACON chunk walk, validates anih declarations and embedded ICO/CUR frame headers, and decodes the first supported CUR/DIB frame through the generic raster source with its AND mask.",
+    "Warzone 2100 ANIM3DFRAMES text sidecars are parsed as bounded frame lines; remaining ANI frames, playback/timeline publication, model application, PNG/indexed embedded frames, and writing remain unsupported."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "ani", "label": "Windows Animated Cursor / Warzone Animation" }],
@@ -49,6 +49,7 @@
     ],
     "publishesDataSources": [
       { "contract": "common.view/tree-data-source", "major": 1 },
+      { "contract": "common.view/raster-image-source", "major": 1 },
       { "contract": "common.view/byte-range-source", "major": 1 }
     ],
     "operations": [
