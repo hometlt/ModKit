@@ -2536,6 +2536,7 @@ capabilities:
       verdicts:
         - 'poorer'
       liveSources:
+        - 'common.view/raster-image-source'
         - 'common.view/tree-data-source'
     fixtures: []
     corpusDescriptors: []
@@ -2602,6 +2603,7 @@ capabilities:
       verdicts:
         - 'poorer'
       liveSources:
+        - 'common.view/raster-image-source'
         - 'common.view/tree-data-source'
     fixtures: []
     corpusDescriptors: []
