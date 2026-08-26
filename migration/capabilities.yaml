@@ -902,7 +902,7 @@ capabilities:
       operations:
         inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
-        read: null
+        read: 'packages/testkit/test/pkm-etc-decode.test.ts'
         materialize: null
     knownLoss:
       - 'СУЖЕННЫЙ SCOPE (§0.2, слайс 12-5): PKM декодируется — ETC1_RGB и семейство ETC2 RGB (в т.ч. sRGB, A1-punchthrough и RGBA с EAC-альфой) реализованы по спецификации в extensions/common/images/src/pkm/etc.js, растр публикуется через readRegion под maxScalarBytes'
@@ -8646,7 +8646,7 @@ capabilities:
       operations:
         inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
-        read: null
+        read: 'packages/testkit/test/pkm-etc-decode.test.ts'
         materialize: null
     knownLoss:
       - 'operation dropped at port: image.compressed-read'

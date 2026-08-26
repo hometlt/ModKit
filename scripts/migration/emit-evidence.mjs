@@ -67,6 +67,14 @@ for (const name of readdirSync(rawDir).sort()) {
   for (const line of readFileSync(path.join(rawDir, name), 'utf8').split('\n')) {
     if (line.trim() === '') continue
     const raw = JSON.parse(line)
+    /*
+     * The harness's own self-test is not evidence about the product.
+     *
+     * `packages/testkit/test/evidence.test.ts` exercises `proves()` with invented subjects — that is
+     * its job, and those declarations reach this file like any other. Excluding it by name is the
+     * honest reading: a fixture used to prove the mechanism works is not a claim about a codec.
+     */
+    if (raw.test === 'packages/testkit/test/evidence.test.ts') continue
     const targets =
       raw.capabilityId !== undefined
         ? [raw.capabilityId]
