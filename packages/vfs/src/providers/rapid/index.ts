@@ -229,79 +229,85 @@ class RapidMount implements VfsMount {
       throw rapidError('not-a-file', `rapid path «${path}» is not a file`, { path })
     }
     const retained = BigInt(record.size)
-    if (retained > this.limits.maxMaterializedBytes - this.materializedBytes) {
-      throw rapidError(
-        'materialized-budget-exceeded',
-        'rapid mount exhausted its materialized-byte boundary',
-        {
-          path: record.path,
-          requestedBytes: record.size,
-          retainedBytes: String(this.materializedBytes),
-          maxMaterializedBytes: String(this.limits.maxMaterializedBytes),
-        },
-      )
-    }
-    const poolPath = resolve(this.poolRoot, record.md5.slice(0, 2), `${record.md5.slice(2)}.gz`)
-    let compressed: Uint8Array
+    const releaseMaterialized = this.reserveMaterialized(retained, record.path)
+    let inner: RandomAccessSource | undefined
     try {
-      compressed = await readFile(poolPath, signal === undefined ? undefined : { signal })
-    } catch (cause) {
-      throw rapidError('pool-blob-unavailable', 'rapid pool blob is unavailable', {
-        path: record.path,
-        md5: record.md5,
-        cause: cause instanceof Error ? cause.message : String(cause),
-      })
-    }
-    throwIfAborted(signal)
-    let bytes: Uint8Array
-    try {
-      bytes = gunzipSync(compressed, { maxOutputLength: record.size + 1 })
-    } catch (cause) {
-      throw rapidError('pool-blob-invalid', 'rapid pool blob is not a bounded valid gzip stream', {
-        path: record.path,
-        md5: record.md5,
-        cause: cause instanceof Error ? cause.message : String(cause),
-      })
-    }
-    throwIfAborted(signal)
-    const actualMd5 = createHash('md5').update(bytes).digest('hex')
-    if (bytes.byteLength !== record.size || actualMd5 !== record.md5) {
-      throw rapidError(
-        'pool-integrity-mismatch',
-        'rapid pool blob does not match its manifest record',
-        {
+      const poolPath = resolve(this.poolRoot, record.md5.slice(0, 2), `${record.md5.slice(2)}.gz`)
+      let compressed: Uint8Array
+      try {
+        compressed = await readFile(poolPath, signal === undefined ? undefined : { signal })
+      } catch (cause) {
+        throw rapidError('pool-blob-unavailable', 'rapid pool blob is unavailable', {
           path: record.path,
-          expectedBytes: record.size,
-          actualBytes: bytes.byteLength,
-          expectedMd5: record.md5,
-          actualMd5,
-        },
+          md5: record.md5,
+          cause: cause instanceof Error ? cause.message : String(cause),
+        })
+      }
+      throwIfAborted(signal)
+      let bytes: Uint8Array
+      try {
+        bytes = gunzipSync(compressed, { maxOutputLength: record.size + 1 })
+      } catch (cause) {
+        throw rapidError(
+          'pool-blob-invalid',
+          'rapid pool blob is not a bounded valid gzip stream',
+          {
+            path: record.path,
+            md5: record.md5,
+            cause: cause instanceof Error ? cause.message : String(cause),
+          },
+        )
+      }
+      throwIfAborted(signal)
+      const actualMd5 = createHash('md5').update(bytes).digest('hex')
+      if (bytes.byteLength !== record.size || actualMd5 !== record.md5) {
+        throw rapidError(
+          'pool-integrity-mismatch',
+          'rapid pool blob does not match its manifest record',
+          {
+            path: record.path,
+            expectedBytes: record.size,
+            actualBytes: bytes.byteLength,
+            expectedMd5: record.md5,
+            actualMd5,
+          },
+        )
+      }
+      const id = `${this.rootUri}#${encodeURIComponent(record.path)}`
+      const innerSource = budgetRandomAccessSource(
+        createMemorySource(id, bytes),
+        record.size,
+        this.limits,
+        this.readBudget,
       )
+      inner = innerSource
+      let disposed = false
+      const tracked: RandomAccessSource = {
+        id: innerSource.id,
+        size: innerSource.size.bind(innerSource),
+        readAt: innerSource.readAt.bind(innerSource),
+        stream: innerSource.stream.bind(innerSource),
+        dispose: async () => {
+          if (disposed) return
+          disposed = true
+          this.sources.delete(tracked)
+          releaseMaterialized()
+          await innerSource.dispose()
+        },
+      }
+      this.sources.add(tracked)
+      return tracked
+    } catch (error) {
+      releaseMaterialized()
+      if (inner !== undefined) {
+        try {
+          await inner.dispose()
+        } catch {
+          // Preserve the materialization failure that triggered this rollback.
+        }
+      }
+      throw error
     }
-    this.materializedBytes += retained
-    const id = `${this.rootUri}#${encodeURIComponent(record.path)}`
-    const inner = budgetRandomAccessSource(
-      createMemorySource(id, bytes),
-      record.size,
-      this.limits,
-      this.readBudget,
-    )
-    let disposed = false
-    const tracked: RandomAccessSource = {
-      id: inner.id,
-      size: inner.size.bind(inner),
-      readAt: inner.readAt.bind(inner),
-      stream: inner.stream.bind(inner),
-      dispose: async () => {
-        if (disposed) return
-        disposed = true
-        this.materializedBytes -= retained
-        this.sources.delete(tracked)
-        await inner.dispose()
-      },
-    }
-    this.sources.add(tracked)
-    return tracked
   }
 
   async dispose(): Promise<void> {
@@ -319,6 +325,39 @@ class RapidMount implements VfsMount {
       size: BigInt(record.size),
       revision: `content-hash.md5:${record.md5}`,
     })
+  }
+
+  private reserveMaterialized(retained: bigint, path: string): () => void {
+    if (retained > this.limits.maxMaterializedBytes - this.materializedBytes) {
+      throw rapidError(
+        'materialized-budget-exceeded',
+        'rapid mount exhausted its materialized-byte boundary',
+        {
+          path,
+          requestedBytes: String(retained),
+          retainedBytes: String(this.materializedBytes),
+          maxMaterializedBytes: String(this.limits.maxMaterializedBytes),
+        },
+      )
+    }
+    this.materializedBytes += retained
+    let released = false
+    return () => {
+      if (released) return
+      released = true
+      if (this.materializedBytes < retained) {
+        throw rapidError(
+          'materialized-budget-accounting-invalid',
+          'rapid mount materialized-byte reservation underflowed',
+          {
+            path,
+            releasedBytes: String(retained),
+            retainedBytes: String(this.materializedBytes),
+          },
+        )
+      }
+      this.materializedBytes -= retained
+    }
   }
 
   private assertLive(): void {

@@ -128,4 +128,35 @@ describe('Spring rapid VFS provider', () => {
     await validMount.dispose()
     await vfs.dispose()
   })
+
+  it('reserves materialized bytes across concurrent opens and releases capacity exactly once', async () => {
+    const bytes = new Uint8Array(80).fill(0x5a)
+    const fixture = await rapidFixture([
+      { path: 'valid.bin', bytes },
+      { path: 'corrupt.bin', bytes: new Uint8Array(80).fill(0xa5), corrupt: true },
+    ])
+    const limits = { ...DEFAULT_VFS_LIMITS, maxMaterializedBytes: 128n }
+    const provider = createRapidVfsProvider({ limits })
+    const mount = await provider.open(fixture.uri, { limits })
+
+    await expect(mount.open('corrupt.bin')).rejects.toSatisfy(
+      error => isModkitError(error) && error.code === 'x3.vfs/rapid-pool-integrity-mismatch',
+    )
+
+    const firstOpen = mount.open('valid.bin')
+    await expect(Promise.all([firstOpen, mount.open('corrupt.bin')])).rejects.toSatisfy(
+      error => isModkitError(error) && error.code === 'x3.vfs/rapid-materialized-budget-exceeded',
+    )
+    const first = await firstOpen
+    await first.dispose()
+    await first.dispose()
+
+    const restoredOpen = mount.open('valid.bin')
+    await expect(Promise.all([restoredOpen, mount.open('corrupt.bin')])).rejects.toSatisfy(
+      error => isModkitError(error) && error.code === 'x3.vfs/rapid-materialized-budget-exceeded',
+    )
+    const restored = await restoredOpen
+    await restored.dispose()
+    await mount.dispose()
+  })
 })
