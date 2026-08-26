@@ -84,15 +84,23 @@ function boneIndexPreflight(bytes, budget) {
   const indexBytes = indexCount * 16
   if (
     !Number.isSafeInteger(indexBytes) ||
-    indexCount > budget.maxNodes ||
     indexOffset < headerBytes ||
     indexOffset + indexBytes > bytes.byteLength
   ) {
     return {
       entries: [],
       issue: issue(
+        'x3.m3/skeleton-container-invalid',
+        'the M3 section index is invalid or outside the source',
+      ),
+    }
+  }
+  if (indexCount > budget.maxNodes) {
+    return {
+      entries: [],
+      issue: issue(
         'x3.m3/skeleton-budget-exceeded',
-        'the M3 section index is invalid or exceeds the maxNodes budget',
+        'the M3 section index exceeds the maxNodes budget',
         'warning',
         'performance',
       ),
@@ -142,12 +150,23 @@ function boneIndexPreflight(bytes, budget) {
     scalarBytes += required
     entries.push(section)
   }
-  if (bones > budget.maxNodes || scalarBytes > budget.maxScalarBytes) {
+  if (bones > budget.maxNodes) {
     return {
       entries: [],
       issue: issue(
         'x3.m3/skeleton-budget-exceeded',
-        'the BONE table exceeds the skeleton decode budget',
+        'the BONE table exceeds the maxNodes budget',
+        'warning',
+        'performance',
+      ),
+    }
+  }
+  if (scalarBytes > budget.maxScalarBytes) {
+    return {
+      entries: [],
+      issue: issue(
+        'x3.m3/skeleton-budget-exceeded',
+        'the BONE table exceeds the maxScalarBytes budget',
         'warning',
         'performance',
       ),
@@ -246,17 +265,23 @@ export async function decodeM3Skeleton(bytes, budget, signal) {
     ])
   }
   const declared = Number(modelReference?.entries)
-  if (
-    !Number.isSafeInteger(declared) ||
-    declared < 0 ||
-    declared > boneSection.content.length ||
-    declared > budget.maxNodes
-  ) {
+  if (!Number.isSafeInteger(declared) || declared < 0 || declared > boneSection.content.length) {
+    return emptyResult(
+      [
+        issue(
+          'x3.m3/skeleton-reference-refused',
+          'MODL.bones declares an invalid count for the addressed BONE table',
+        ),
+      ],
+      true,
+    )
+  }
+  if (declared > budget.maxNodes) {
     return emptyResult(
       [
         issue(
           'x3.m3/skeleton-budget-exceeded',
-          'MODL.bones declares an invalid count or exceeds the maxNodes budget',
+          'MODL.bones exceeds the maxNodes budget',
           'warning',
           'performance',
         ),

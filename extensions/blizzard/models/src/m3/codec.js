@@ -280,6 +280,15 @@ const definition = Object.freeze({
   async inspect(bytes, context) {
     const model = parseM3(bytes, context.budget.maxNodes)
     const skeleton = await skeletonOf(bytes, context.budget, context.signal)
+    const skeletonBudgetRefusal = skeleton?.issues.find(
+      item => item.code === 'x3.m3/skeleton-budget-exceeded',
+    )
+    if (skeletonBudgetRefusal !== undefined) {
+      // A resource budget is a hard host boundary, not a feature that may silently disappear.
+      // Structural BONE damage remains inspectable below, but exhaustion must fail closed just as
+      // the geometry decoder does.
+      throw new RangeError(`M3 ${skeletonBudgetRefusal.message}`)
+    }
     // A truncated BONE table makes the schema parser unsafe for geometry too: both paths load the
     // same section list. Keep the subject inspectable as a section graph and report the refusal.
     const geometry = skeleton?.fatal === true ? undefined : await geometryOf(bytes, context.budget)

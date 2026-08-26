@@ -337,6 +337,21 @@ describe('M3 BONE decoding', () => {
     )
     proveSkeleton('the BONE count is bounded from the section index before records are allocated')
   })
+
+  it('names maxScalarBytes when the BONE table cannot fit its decode budget', async () => {
+    const decoded = await decodeM3Skeleton(await buildSkeletonM3([{ name: 'Root' }]), {
+      ...budget,
+      maxScalarBytes: 5,
+    })
+    expect(decoded).toMatchObject({ fatal: true, bindings: [] })
+    expect(decoded.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'x3.m3/skeleton-budget-exceeded',
+        message: expect.stringMatching(/maxScalarBytes/u),
+      }),
+    )
+    proveSkeleton('the BONE byte cost is named and bounded before schema-backed decoding')
+  })
 })
 
 describe('M3 skeleton corpus preflight', () => {
