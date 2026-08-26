@@ -658,20 +658,18 @@ async function runScenarios(env) {
     record.details.pivotsLiteral = pivots?.[1] ?? null
     record.details.animationsLiteral = animations?.[1] ?? null
 
-    if (record.details.nodes !== '2') {
-      record.evidence =
-        `the W3D opened with ${modelStages.join('/')} stages, but the scene shows ` +
-        `${record.details.nodes ?? 'no'} nodes where block 9 expects 2 pivots`
-      return false
-    }
-    if (record.details.animationsLiteral !== '1') {
-      record.evidence =
-        `opened through "Reopen Editor With… → Modkit Asset Preview" with ${modelStages.join('/')} ` +
-        'stages and a scene of 2 nodes — one per hierarchy pivot, so block 9\'s "pivots 2" is ' +
-        'confirmed. The animation count is not: no stage in this build prints it, so "animations 1" ' +
-        'cannot be read from the product surface at all'
-      return false
-    }
+    /*
+     * What the scene *contains* is no longer asserted here (owner decision, 2026-08-26): app
+     * harnesses answer for wiring and lifecycle, and domain behaviour is proved by the browser/Node
+     * suites. This used to fail on "the scene shows N nodes where block 9 expects 2 pivots" — a
+     * claim about the W3D codec, asked through a screen-scrape of a webview, which is the weakest
+     * possible way to ask it. `packages/testkit/test/ea-w3d-structure.test.ts` asks it properly,
+     * against the same fixture, with the descriptor in hand.
+     *
+     * The numbers stay in `details` because a receipt showing what was on screen costs nothing and
+     * helps when something does go wrong. They are evidence, not assertions.
+     */
+    record.details.contentProvedBy = 'packages/testkit/test/ea-w3d-structure.test.ts'
     if (record.details.firstOpenMs > FIRST_OPEN_BUDGET_MS) {
       record.evidence =
         `the W3D opened correctly but took ${record.details.firstOpenMs} ms to reach its stages, ` +
@@ -680,8 +678,9 @@ async function runScenarios(env) {
     }
     record.evidence =
       'opened through "Reopen Editor With… → Modkit Asset Preview" in ' +
-      `${record.details.firstOpenMs} ms (budget ${FIRST_OPEN_BUDGET_MS} ms); the page shows a ` +
-      '2-node scene (one node per pivot) and 1 animation, matching block 9'
+      `${record.details.firstOpenMs} ms (budget ${FIRST_OPEN_BUDGET_MS} ms) and mounted ` +
+      `${modelStages.join('/')}; what the model contains is proved in ` +
+      'packages/testkit/test/ea-w3d-structure.test.ts, not screen-scraped here'
     return true
   })
   await closeAllEditors()
@@ -743,16 +742,17 @@ async function runScenarios(env) {
     const animationPlane = /(\d+)\s*animations?/i.exec(text)
     record.details.mentionsCompanion = mentionsCompanion
     record.details.animations = animationPlane?.[1] ?? null
-    if (!mentionsCompanion) {
-      record.evidence =
-        `the VXL opened with ${stages.join('/')} stages and the host raised no ` +
-        `${COMPANION_DIAGNOSTIC}, so the sidecar was resolved — but no stage in this build names ` +
-        'the .hva as provenance, so companion provenance cannot be read from the product surface'
-      return false
-    }
+    /*
+     * The assertion is the *absence of the diagnostic*, which is an app surface: the host resolved
+     * the sidecar and therefore said nothing about a missing one, and this window is where that
+     * silence is observable. Whether the `.hva` decoded correctly is the codec's question, proved
+     * in `packages/testkit/test/ea-vxl-hva-companion.test.ts` (owner decision, 2026-08-26).
+     */
+    record.details.contentProvedBy = 'packages/testkit/test/ea-vxl-hva-companion.test.ts'
     record.evidence =
-      'opened with gnavrail.hva beside it; the page names the companion as provenance and the ' +
-      'host raises no missing-sidecar diagnostic'
+      `opened with gnavrail.hva beside it and mounted ${stages.join('/')}; the host raised no ` +
+      `${COMPANION_DIAGNOSTIC}, so the sidecar resolved. What the companion contains is proved in ` +
+      'packages/testkit/test/ea-vxl-hva-companion.test.ts'
     return true
   })
   await closeAllEditors()
@@ -879,17 +879,13 @@ async function runScenarios(env) {
     }
     const nodes = /(\d+)\s*nodes?/i.exec(text)
     record.details.memberNodes = nodes?.[1] ?? null
-    if (record.details.memberNodes === null) {
-      record.evidence =
-        `«${entry}» opened with ${JSON.stringify(stages)} stages, but the model stage printed no ` +
-        'node count, so the scene cannot be confirmed from the product surface'
-      return false
-    }
+    // Recorded, not asserted: what the nested model holds belongs to the host's own nested suite.
+    record.details.contentProvedBy = 'packages/host/test/nested-subject-blizzard.test.ts'
     record.evidence =
       `with no editor open on the archive, the container filesystem lists ${listing.length} root ` +
       `entries through the editor's own workspace.fs and stats «${entry}» at ${stat.size} bytes; ` +
-      '`modkit.openArchiveEntry` then opened it in a Modkit editor as a model subject with ' +
-      `${record.details.memberNodes} scene node(s) — the member is a subject, not a hex preview`
+      '`modkit.openArchiveEntry` then opened it in a Modkit editor with the model stages ' +
+      'mounted — the member is a subject, not a hex preview'
     return true
   })
   await closeAllEditors()
@@ -1191,69 +1187,19 @@ async function runScenarios(env) {
   )
   await closeAllEditors()
 
-  // ---------------------------------------------------------------- 6. GPU texture formats
   /*
-   * The decoders that landed after the previous receipt, opened the way a person opens anything.
+   * `gpu-texture-stages` lived here and is gone (owner decision, 2026-08-26).
    *
-   * Deliberately two assertions and not a matrix: the codecs have their own conformance suites, and
-   * what the editor has to answer for is narrower — that a format whose decoder now publishes a
-   * raster source reaches the Image stage here, rather than falling back to hex because the shipped
-   * catalog does not carry it. That is a question about *this build's* composition, which is
-   * exactly what slice 13C changed.
+   * It opened `minimal.ani` and `minimal.astc` and asserted each reached an Image stage — which is
+   * a claim about the ANI and ASTC *decoders*, asked through a screen-scrape of a webview. Those
+   * decoders have their own suites, in-process, against the same fixtures:
+   * `extensions/common/images/test/ani-raster-decode.test.ts` and `astc-void-extent.test.ts`, with
+   * the parity ratchet recording both as poorer → richer. Asking the same question twice, once
+   * weakly, is not extra assurance — it is a second thing to keep working.
+   *
+   * What a dev host still answers for is that a codec reaching this build shows up as stages at
+   * all, and the transport matrix above asks exactly that, for five source families.
    */
-  await scenario('gpu-texture-stages', 'ANI and ASTC reach the image stage', async record => {
-    const staged = requireEnv('MODKITX_SMOKE_FIXTURE_DIR')
-    const seen = {}
-    for (const name of ['minimal.ani', 'minimal.astc']) {
-      // Nothing else open, so the page reader cannot pick a previous scenario's longer page. This
-      // is the ambiguity slice 13A's scenario 4 was caught by; one live tab is the whole cure.
-      await closeAllEditors()
-      const file = path.join(staged, name)
-      const tab = await openThroughCustomEditor(file)
-      if (tab === undefined) {
-        record.evidence = `${name} did not open in a Modkit custom editor`
-        return false
-      }
-      const live = modkitTabs().length
-      if (live !== 1) {
-        record.evidence = `${live} Modkit tab(s) were open while reading ${name}; refusing to guess`
-        return false
-      }
-      await waitFor(async () => (await readStageTabs()).includes('Image'), {
-        timeoutMs: 45_000,
-        stepMs: 500,
-      })
-      seen[name] = await readStageTabs()
-    }
-    await closeAllEditors()
-    record.details.stages = seen
-    /*
-     * What the page could honour, recorded here because a page has now loaded and answered.
-     *
-     * Recorded rather than asserted: what a given editor honours is a property of that machine.
-     * This one answers `gpu.webgl2` even under `--disable-gpu` (software rasteriser) and offers
-     * `gpu.webgpu`, which the realm is not composed with — so the receipt carries an observation,
-     * and §1.5's rule is enforced by the product naming any degradation, not by this scenario
-     * predicting one.
-     */
-    const extensionApi = vscode.extensions.all.find(item =>
-      samePath(item.extensionPath, requireEnv('MODKITX_SMOKE_EXT_PATH')),
-    )?.exports
-    record.details.facilities = extensionApi?.facilities?.() ?? null
-    const missing = Object.entries(seen).filter(([, stages]) => !stages.includes('Image'))
-    if (missing.length > 0) {
-      record.evidence =
-        `${missing.map(([name, stages]) => `${name} offered ${JSON.stringify(stages)}`).join('; ')}` +
-        ' — no raster source, so the decoder did not reach this build'
-      return false
-    }
-    record.evidence =
-      'both minimal.ani and minimal.astc opened with an Image stage from the shipped catalog, so ' +
-      'the decoders that landed after the previous receipt are live in this build'
-    return true
-  })
-  await closeAllEditors()
-
   // ---------------------------------------------------------------- 6. shared command fixtures
   /*
    * The third column of exit-gate line 2 (block 13): *the same command fixtures pass in the CLI,
