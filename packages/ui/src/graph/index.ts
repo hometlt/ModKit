@@ -12,9 +12,17 @@ import type {
   RelationGraphNode as SourceGraphNode,
   RelationGraphSource,
   RelationGraphTypeBucket as SourceGraphTypeBucket,
+  ViewerModule,
 } from '@modkitx-x3/sdk'
 import { setPart, setState } from '../parts.js'
-import { safeViewerText } from '../viewer/index.js'
+import {
+  createSurface,
+  createViewerMount,
+  defineViewerModule,
+  safeViewerText,
+  unknownSourceLease,
+  ViewerMountScope,
+} from '../viewer/index.js'
 
 export type GraphNode = SourceGraphNode
 export type GraphEdge = SourceGraphEdge
@@ -67,6 +75,9 @@ export interface RelationGraphOptions {
   /** Producer completeness is independent from this component's visible-node cap. */
   readonly sourceCompleteness?: RelationGraphCompleteness
   readonly sourceReason?: string
+  /** Completeness of the bounded snapshot materialized by this consumer. */
+  readonly consumerCompleteness?: RelationGraphCompleteness
+  readonly consumerReason?: string
   readonly footer?: readonly GraphFooterGroup[]
   /** Maximum nodes drawn at once. Beyond this the view reports itself as capped. */
   readonly cap?: number
@@ -92,19 +103,44 @@ async function loadPages<T>(
   read: (cursor: string | undefined, limit: number) => Promise<Page<T>>,
   maximum: number,
   pageSize: number,
-): Promise<readonly T[]> {
+  signal?: AbortSignal,
+): Promise<{
+  readonly items: readonly T[]
+  readonly completeness: 'complete' | 'capped'
+}> {
   const items: T[] = []
   let cursor: string | undefined
   const seen = new Set<string>()
   while (items.length < maximum) {
-    const page = await read(cursor, Math.min(pageSize, maximum - items.length))
-    items.push(...page.items)
-    if (page.nextCursor === undefined) break
+    signal?.throwIfAborted()
+    const remaining = maximum - items.length
+    const requested = Math.min(pageSize, remaining)
+    const page = await read(cursor, requested)
+    signal?.throwIfAborted()
+    items.push(...page.items.slice(0, requested))
+    if (page.items.length > requested) {
+      return { items: Object.freeze(items), completeness: 'capped' }
+    }
+    if (page.nextCursor === undefined) {
+      return { items: Object.freeze(items), completeness: 'complete' }
+    }
+    if (page.items.length === 0) {
+      throw new Error('relation graph source returned an empty page with a continuation cursor')
+    }
     if (seen.has(page.nextCursor)) throw new Error('relation graph source repeated a page cursor')
     seen.add(page.nextCursor)
     cursor = page.nextCursor
   }
-  return Object.freeze(items)
+  return { items: Object.freeze(items), completeness: 'capped' }
+}
+
+function loadedCountReason(
+  nodeCount: number,
+  totalNodes: number,
+  edgeCount: number,
+  totalEdges: number,
+): string {
+  return `loaded ${nodeCount.toLocaleString('en-US')} of ${totalNodes.toLocaleString('en-US')} nodes and ${edgeCount.toLocaleString('en-US')} of ${totalEdges.toLocaleString('en-US')} edges`
 }
 
 /** Host-side adapter: codecs publish facts; the UI decides how many pages to materialize. */
@@ -115,31 +151,59 @@ export async function loadRelationGraphOptions(
   const nodeLimit = positiveLimit(options.nodeLimit ?? 500, 'nodeLimit')
   const edgeLimit = positiveLimit(options.edgeLimit ?? 5_000, 'edgeLimit')
   const pageSize = positiveLimit(options.pageSize ?? 250, 'pageSize')
+  options.signal?.throwIfAborted()
   const summary = await source.summary(options.signal)
-  const [nodes, edges] = await Promise.all([
+  options.signal?.throwIfAborted()
+  const [nodeLoad, edgeLoad] = await Promise.all([
     loadPages(
       (cursor, limit) =>
         source.nodes({ ...(cursor === undefined ? {} : { cursor }), limit }, options.signal),
       nodeLimit,
       pageSize,
+      options.signal,
     ),
     loadPages(
       (cursor, limit) =>
         source.edges({ ...(cursor === undefined ? {} : { cursor }), limit }, options.signal),
       edgeLimit,
       pageSize,
+      options.signal,
     ),
   ])
-  const consumerCapped = nodes.length < summary.totalNodes || edges.length < summary.totalEdges
+  options.signal?.throwIfAborted()
+  const consumerCapped =
+    nodeLoad.completeness === 'capped' ||
+    edgeLoad.completeness === 'capped' ||
+    (nodeLoad.items.length >= nodeLimit && nodeLoad.items.length < summary.totalNodes) ||
+    (edgeLoad.items.length >= edgeLimit && edgeLoad.items.length < summary.totalEdges)
+  const consumerPartial =
+    !consumerCapped &&
+    (nodeLoad.items.length < summary.totalNodes || edgeLoad.items.length < summary.totalEdges)
+  const consumerCompleteness: RelationGraphCompleteness = consumerCapped
+    ? 'capped'
+    : consumerPartial
+      ? 'partial'
+      : 'complete'
   return {
     label: options.label,
-    nodes,
-    edges,
+    nodes: nodeLoad.items,
+    edges: edgeLoad.items,
     types: summary.types,
     totalNodes: summary.totalNodes,
     totalEdges: summary.totalEdges,
-    sourceCompleteness: consumerCapped ? 'capped' : summary.completeness,
+    sourceCompleteness: summary.completeness,
     ...(summary.reason === undefined ? {} : { sourceReason: summary.reason }),
+    consumerCompleteness,
+    ...(consumerCompleteness === 'complete'
+      ? {}
+      : {
+          consumerReason: loadedCountReason(
+            nodeLoad.items.length,
+            summary.totalNodes,
+            edgeLoad.items.length,
+            summary.totalEdges,
+          ),
+        }),
     cap: nodeLimit,
   }
 }
@@ -294,10 +358,6 @@ export function createRelationGraph(
     return select
   }
 
-  control('View', ['Related', 'All', 'Direct'], 'Related')
-  const depth = control('Depth', ['1', '2', '3'], '2')
-  const direction = control('Direction', ['both', 'out', 'in'], 'both')
-
   const labelsWrapper = document.createElement('label')
   labelsWrapper.className = 'modkit-graph__control'
   setPart(labelsWrapper, 'graph.control')
@@ -307,7 +367,10 @@ export function createRelationGraph(
   labelsWrapper.append(labels, document.createTextNode('Labels'))
   controls.append(labelsWrapper)
 
-  const nodesCap = control('Nodes', ['100', '250', '500', '1000'], String(cap))
+  const nodeChoices = [...new Set([100, 250, 500, 1_000, cap])]
+    .sort((left, right) => left - right)
+    .map(String)
+  const nodesCap = control('Nodes', nodeChoices, String(cap))
 
   const rendererIds = ['canvas-2d', ...(options.renderers ?? []).map(item => item.id)]
   const rendererSelect = control(
@@ -337,8 +400,12 @@ export function createRelationGraph(
 
   const hint = document.createElement('p')
   hint.className = 'modkit-graph__hint'
-  hint.textContent =
-    'Drag empty space to orbit · drag a node to reposition it · scroll to zoom · double-click a node to open its entity card.'
+  hint.textContent = [
+    'Drag empty space to pan',
+    'drag a node to reposition it',
+    'scroll to zoom',
+    ...(options.onOpen === undefined ? [] : ['double-click a node to open its linked subject']),
+  ].join(' · ')
   setPart(hint, 'graph.hint')
 
   main.append(controls, canvas, hint)
@@ -381,6 +448,40 @@ export function createRelationGraph(
     return options.nodes.filter(node => !(hidden.get(node.type) ?? false)).slice(0, limit)
   }
 
+  const completenessNotice = (
+    owner: 'source' | 'view',
+    completeness: RelationGraphCompleteness | undefined,
+    reason: string | undefined,
+  ): string | undefined => {
+    if (completeness === undefined || (completeness === 'complete' && reason === undefined)) {
+      return undefined
+    }
+    const state =
+      completeness === undefined || completeness === 'complete' ? '' : ` ${completeness}`
+    const explanation = reason === undefined ? '' : `: ${safeViewerText(reason, 240)}`
+    return `${owner}${state}${explanation}`
+  }
+
+  const statusText = (drawnEdges: number, renderer?: string): string => {
+    const totalNodes = options.totalNodes ?? options.nodes.length
+    const visibleCandidates = options.nodes.filter(node => !(hidden.get(node.type) ?? false))
+    const notices = [
+      completenessNotice('source', options.sourceCompleteness, options.sourceReason),
+      completenessNotice('view', options.consumerCompleteness, options.consumerReason),
+      ...(placed.length < visibleCandidates.length
+        ? [`visible selection capped at ${placed.length.toLocaleString('en-US')} nodes`]
+        : []),
+    ].filter((item): item is string => item !== undefined)
+    return [
+      `${placed.length.toLocaleString('en-US')} / ${totalNodes.toLocaleString('en-US')} nodes`,
+      `${drawnEdges.toLocaleString('en-US')} visible edges`,
+      renderer,
+      ...notices,
+    ]
+      .filter((item): item is string => item !== undefined)
+      .join(' · ')
+  }
+
   function layout(): void {
     const nodes = visibleNodes()
     const radius = Math.min(canvas.width, canvas.height) / 2.6
@@ -402,7 +503,10 @@ export function createRelationGraph(
   }
 
   function draw(): void {
-    if (context === null) return
+    if (context === null) {
+      status.textContent = statusText(0)
+      return
+    }
     const styles = getComputedStyle(root)
     const token = (name: string, fallback: string): string =>
       styles.getPropertyValue(name).trim() || fallback
@@ -449,14 +553,7 @@ export function createRelationGraph(
       }
     }
 
-    const total = options.totalNodes ?? options.nodes.length
-    const capped =
-      options.sourceCompleteness === 'capped' ||
-      options.sourceCompleteness === 'partial' ||
-      placed.length < options.nodes.filter(n => !(hidden.get(n.type) ?? false)).length
-    const completeness =
-      options.sourceCompleteness === 'partial' ? ' · partial' : capped ? ' · capped' : ''
-    status.textContent = `${placed.length} / ${total.toLocaleString('en-US')} nodes · ${drawnEdges.toLocaleString('en-US')} visible edges${completeness}`
+    status.textContent = statusText(drawnEdges)
   }
 
   const pick = (event: PointerEvent): Placed | undefined => {
@@ -498,15 +595,17 @@ export function createRelationGraph(
     zoom = Math.max(0.2, Math.min(6, zoom * (event.deltaY < 0 ? 1.12 : 0.89)))
     draw()
   })
-  canvas.addEventListener('dblclick', event => {
-    const box = canvas.getBoundingClientRect()
-    const x = (event.clientX - box.left - canvas.width / 2 - originX) / zoom
-    const y = (event.clientY - box.top - canvas.height / 2 - originY) / zoom
-    const hit = placed.find(item => Math.hypot(item.x - x, item.y - y) < 8 / zoom)
-    if (hit !== undefined) options.onOpen?.(hit.node)
-  })
+  if (options.onOpen !== undefined) {
+    canvas.addEventListener('dblclick', event => {
+      const box = canvas.getBoundingClientRect()
+      const x = (event.clientX - box.left - canvas.width / 2 - originX) / zoom
+      const y = (event.clientY - box.top - canvas.height / 2 - originY) / zoom
+      const hit = placed.find(item => Math.hypot(item.x - x, item.y - y) < 8 / zoom)
+      if (hit !== undefined) options.onOpen?.(hit.node)
+    })
+  }
 
-  for (const input of [depth, direction, nodesCap]) {
+  for (const input of [nodesCap]) {
     input.addEventListener('change', () => {
       layout()
       draw()
@@ -566,8 +665,7 @@ export function createRelationGraph(
     external.resize(Math.max(240, Math.round(box.width)), Math.max(200, Math.round(box.height)))
     external.render(externalState())
     const drawn = external.drawnEdges?.() ?? options.edges.length
-    const total = options.totalNodes ?? options.nodes.length
-    status.textContent = `${placed.length} / ${total.toLocaleString('en-US')} nodes · ${drawn.toLocaleString('en-US')} visible edges · ${factory.label}`
+    status.textContent = statusText(drawn, factory.label)
   }
 
   rendererSelect.addEventListener('change', selectRenderer)
@@ -598,3 +696,38 @@ export function createRelationGraph(
     },
   }
 }
+
+/** Standard stage adapter over the selected relation-graph data-source binding. */
+export const relationGraphViewer: ViewerModule = defineViewerModule({
+  abiVersion: 1,
+  async mount(args) {
+    const scope = new ViewerMountScope(args.signal)
+    const root = createSurface(args.container, 'Relation graph viewer')
+    try {
+      const lease = await unknownSourceLease(
+        args.sources,
+        args.slot,
+        'common.view/relation-graph-source',
+      )
+      if (lease === undefined) throw new TypeError('relation graph binding is unavailable')
+      scope.lease(lease)
+      const options = await loadRelationGraphOptions(lease.value as RelationGraphSource, {
+        label: 'Relation graph',
+        signal: scope.signal,
+      })
+      const graph = createRelationGraph(root.ownerDocument, options)
+      root.append(graph.root)
+      scope.cleanup(() => graph.destroy())
+      root.dataset['revision'] = args.descriptor.revision
+      return createViewerMount(root, scope, args, ({ descriptor }) => {
+        root.dataset['revision'] = descriptor.revision
+      })
+    } catch (error) {
+      await scope.close()
+      root.remove()
+      throw error
+    }
+  },
+})
+
+export default relationGraphViewer

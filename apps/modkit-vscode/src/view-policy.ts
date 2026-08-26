@@ -29,6 +29,7 @@ export const STAGE_ORDER: readonly string[] = Object.freeze([
   'entries',
   'table',
   'tree',
+  'relations',
   'text',
   'text-virtual',
   'text-editor',

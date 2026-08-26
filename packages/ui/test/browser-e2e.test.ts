@@ -431,6 +431,111 @@ describe('13C real-browser viewer host', () => {
     expect(await page.locator('img').count()).toBe(0)
   })
 
+  it('mounts the bounded relation viewer and releases its aborted lease on unmount', async () => {
+    await reset()
+    await page.evaluate(async () => {
+      const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
+      const root = document.querySelector('#app') as HTMLElement
+      const nodes = Array.from({ length: 501 }, (_, index) => ({
+        id: String(index),
+        label: `Node ${index}`,
+        type: 'entity',
+      }))
+      let releases = 0
+      let observedSignal: AbortSignal | undefined
+      const source = {
+        async summary(signal: AbortSignal) {
+          observedSignal = signal
+          return {
+            snapshotId: 'browser-relations-v1',
+            totalNodes: nodes.length,
+            totalEdges: 1,
+            completeness: 'partial',
+            reason: 'dependency catalogue was unavailable',
+            types: [{ id: 'entity', label: 'Entities', count: nodes.length, tone: 0 }],
+          }
+        },
+        async nodes(request: { cursor?: string; limit: number }, signal: AbortSignal) {
+          observedSignal = signal
+          const offset = request.cursor === undefined ? 0 : Number(request.cursor)
+          const end = Math.min(nodes.length, offset + request.limit)
+          return {
+            items: nodes.slice(offset, end),
+            ...(end < nodes.length ? { nextCursor: String(end) } : {}),
+          }
+        },
+        async edges(_request: unknown, signal: AbortSignal) {
+          observedSignal = signal
+          return { items: [{ from: '0', to: '500', role: 'reference' }] }
+        },
+      }
+      const mount = await (
+        ui['relationGraphViewer'] as { mount(args: unknown): Promise<unknown> }
+      ).mount({
+        container: root,
+        descriptor: { revision: 'r', operations: [], diagnostics: [] },
+        slot: {
+          slotId: 'relations',
+          kind: 'stage',
+          contributionId: 'org.modkitx.ui/relation-graph-stage',
+          extensionId: 'org.modkitx/ui',
+          priority: 300,
+          bindings: [
+            {
+              bindingId: 'relations',
+              contract: 'common.view/relation-graph-source',
+              major: 1,
+            },
+          ],
+        },
+        sources: {
+          async get() {
+            return {
+              value: source,
+              async release() {
+                releases += 1
+              },
+            }
+          },
+        },
+        operations: { async invoke() {}, async dispose() {} },
+      })
+      ;(globalThis as unknown as Record<string, unknown>)['relationViewerMount'] = mount
+      ;(globalThis as unknown as Record<string, unknown>)['relationViewerState'] = () => ({
+        releases,
+        aborted: observedSignal?.aborted ?? false,
+      })
+    })
+
+    await page.waitForFunction(() =>
+      document.querySelector('.modkit-graph__status')?.textContent?.includes('view capped'),
+    )
+    const status = (await page.locator('.modkit-graph__status').textContent()) ?? ''
+    expect(status).toContain('source partial: dependency catalogue was unavailable')
+    expect(status).toContain('view capped: loaded 500 of 501 nodes and 1 of 1 edges')
+    const controls = await page.locator('.modkit-graph__control').allTextContents()
+    expect(controls.some(label => /^(?:View|Depth|Direction)/u.test(label))).toBe(false)
+    expect(await page.locator('.modkit-graph__hint').textContent()).not.toMatch(
+      /double-click|entity card/u,
+    )
+
+    await page.evaluate(async () => {
+      await (
+        globalThis as unknown as { relationViewerMount: { unmount(): Promise<void> } }
+      ).relationViewerMount.unmount()
+    })
+    expect(
+      await page.evaluate(() =>
+        (
+          globalThis as unknown as {
+            relationViewerState: () => { releases: number; aborted: boolean }
+          }
+        ).relationViewerState(),
+      ),
+    ).toEqual({ releases: 1, aborted: true })
+    expect(await page.locator('#app').evaluate(element => element.childElementCount)).toBe(0)
+  })
+
   it('switches stages 100 times without reopening the asset and releases every lease', async () => {
     await reset()
     const result = await page.evaluate(async () => {

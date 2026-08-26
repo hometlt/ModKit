@@ -100,6 +100,7 @@ export {
 export {
   createRelationGraph,
   loadRelationGraphOptions,
+  relationGraphViewer,
   type GraphEdge,
   type GraphFooterGroup,
   type GraphNode,

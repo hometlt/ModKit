@@ -14,6 +14,7 @@ import { audioViewer } from '@modkitx-x3/ui/audio'
 import { boundedTextViewer } from '@modkitx-x3/ui/code'
 import { textEditor } from '@modkitx-x3/ui/editor'
 import type { PreviewStage } from '@modkitx-x3/ui/explorer'
+import { relationGraphViewer } from '@modkitx-x3/ui/graph'
 import { hexViewer } from '@modkitx-x3/ui/hex'
 import { hexEditor } from '@modkitx-x3/ui/hex-editor'
 import { imageViewer } from '@modkitx-x3/ui/image'
@@ -75,6 +76,12 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
     },
     { id: 'table', label: 'Table', contract: 'common.view/table-data-source', module: tableViewer },
     { id: 'tree', label: 'Tree', contract: 'common.view/tree-data-source', module: treeViewer },
+    {
+      id: 'relations',
+      label: 'Relations',
+      contract: 'common.view/relation-graph-source',
+      module: relationGraphViewer,
+    },
     {
       id: 'text',
       label: 'Text',

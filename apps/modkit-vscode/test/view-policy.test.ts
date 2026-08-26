@@ -42,6 +42,7 @@ const CATALOG: readonly StageFacts[] = [
   { id: 'entries', label: 'Entries', contract: 'common.view/namespace-entry-source' },
   { id: 'table', label: 'Table', contract: 'common.view/table-data-source' },
   { id: 'tree', label: 'Tree', contract: 'common.view/tree-data-source' },
+  { id: 'relations', label: 'Relations', contract: 'common.view/relation-graph-source' },
   {
     id: 'text',
     label: 'Text',
@@ -125,6 +126,44 @@ async function openJsonDescriptor(): Promise<Record<string, unknown>> {
   return descriptor
 }
 
+async function openGltfDescriptor(): Promise<Record<string, unknown>> {
+  const roots = await loadExtensionRoots([join(repositoryRoot, 'extensions', 'common', 'models')], {
+    origin: 'bundled',
+  })
+  expect(roots.failures).toEqual([])
+  const services = await createNodeSubjectServices({
+    topology: createVsCodeDesktopTopology(),
+    realms: { host: VSCODE_DESKTOP_EXTENSION_REALM, workers: VSCODE_DESKTOP_WORKER_REALM },
+    extensions: roots.inputs,
+  })
+  const result = await services.open({
+    source: memorySource(
+      'sample.gltf',
+      JSON.stringify({
+        asset: { version: '2.0', generator: 'VS Code relation-stage fixture' },
+        scenes: [{ name: 'Scene', nodes: [0] }],
+        nodes: [{ name: 'Triangle', mesh: 0 }],
+        meshes: [{ name: 'Mesh', primitives: [{ attributes: { POSITION: 0 } }] }],
+        buffers: [{ byteLength: 36, uri: 'triangle.bin' }],
+      }),
+    ),
+    path: 'sample.gltf',
+    intent: 'full',
+    grant: { id: 'relation-stage-test', classes: ['read-source'] },
+    budget: {
+      maxInputBytes: 1_000_000n,
+      maxDepth: 128,
+      maxNodes: 100_000,
+      maxScalarBytes: 1_000_000,
+      maxDiagnostics: 100,
+    },
+  })
+  if (result.state !== 'opened') throw new Error(`glTF did not open: ${result.reason}`)
+  const descriptor = result.descriptor as unknown as Record<string, unknown>
+  await result.session.dispose()
+  return descriptor
+}
+
 describe('VS Code view policy', () => {
   it('imports only the UI surfaces that the stage catalog enables', () => {
     const source = readFileSync(new URL('../src/stages.ts', import.meta.url), 'utf8')
@@ -137,6 +176,7 @@ describe('VS Code view policy', () => {
       'code',
       'editor',
       'explorer',
+      'graph',
       'hex',
       'hex-editor',
       'image',
@@ -149,7 +189,7 @@ describe('VS Code view policy', () => {
       'video',
     ])
     expect(source).not.toMatch(/from '@modkitx-x3\/ui'/u)
-    expect(source).not.toContain('@modkitx-x3/ui/graph')
+    expect(source).toContain('module: relationGraphViewer')
     expect(source).not.toContain('@modkitx-x3/ui/monaco')
     expect(source).not.toContain('@modkitx-x3/ui/settings')
     expect(source).not.toContain('@modkitx-x3/ui/workbench')
@@ -161,6 +201,7 @@ describe('VS Code view policy', () => {
       STAGE_ORDER.filter(id => CATALOG.some(stage => stageIdOf(stage) === id)),
     )
     expect(new Set(ordered.map(stageIdOf)).size).toBe(CATALOG.length)
+    expect(STAGE_ORDER.indexOf('relations')).toBe(STAGE_ORDER.indexOf('tree') + 1)
   })
 
   it('refuses a stage the order does not rank, rather than dropping it from every picker', () => {
@@ -196,6 +237,14 @@ describe('VS Code view policy', () => {
     // the first offered view is the richest one the descriptor supports, never hex
     expect(preferredStage(editable, undefined)).toBe(editable[0])
     expect(preferredStage(editable, undefined)).not.toBe('hex')
+  })
+
+  it('offers Relations after Tree for a real bundled glTF graph source', async () => {
+    const descriptor = await openGltfDescriptor()
+    expect(publishedContracts(descriptor)).toContain('common.view/relation-graph-source')
+    const applicable = applicableStages(CATALOG, descriptor).map(stageIdOf)
+    expect(applicable).toContain('relations')
+    expect(applicable.indexOf('relations')).toBe(applicable.indexOf('tree') + 1)
   })
 
   it('honours a plan-selected stage only when it survived applicability', async () => {
