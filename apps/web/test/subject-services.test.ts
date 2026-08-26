@@ -12,18 +12,21 @@ import { pathToFileURL } from 'node:url'
 import { MessageChannel } from 'node:worker_threads'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { Diagnostic } from '@modkitx-x3/core'
+import { commandRequest, COMMAND_PROTOCOL_SCHEMA_VERSION } from '@modkitx-x3/host'
 import { revisionId, type ArtifactByteSource } from '@modkitx-x3/sdk'
 import {
   installBrowserWorkerEntry,
   type BrowserObjectUrlLike,
   type BrowserWorkerLike,
 } from '@modkitx-x3/host/browser'
+import { checkCommandFixture, COMMAND_FIXTURES } from '@modkitx-x3/testkit'
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
 import {
   catalogToExtensionInputs,
   createWebSubjectServices,
   type WebExtensionCatalog,
 } from '../src/subjects.js'
+import { createSingleFileAccess } from '../src/files.js'
 
 const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
 const ORIGIN = 'https://pwa.example/app/'
@@ -135,6 +138,25 @@ function fileSource(path: string, name: string): ArtifactByteSource {
   }
 }
 
+/** One actual FileSystemHandle-shaped authority over a disk snapshot for command tests. */
+function pickedFile(path: string, name: string) {
+  const bytes = new Uint8Array(readFileSync(path))
+  const file = {
+    name,
+    size: bytes.byteLength,
+    lastModified: 1,
+    slice(start: number, end: number) {
+      return {
+        async arrayBuffer(): Promise<ArrayBuffer> {
+          return bytes.slice(start, end).buffer
+        },
+      }
+    },
+  }
+  const handle = { kind: 'file' as const, name, getFile: async () => file }
+  return createSingleFileAccess(file, handle)
+}
+
 const budget = {
   maxInputBytes: 10_000_000n,
   maxDepth: 128,
@@ -223,6 +245,49 @@ describe('PWA product path — catalog → composition → worker-brokered open'
     expect(typeof root.id).toBe('string')
     await tree.release()
     await result.session.dispose()
+
+    /*
+     * Block 14C: use the exact shared fixture rows this repository runs through CLI, Electron,
+     * automation and VS Code. The current PWA artifact catalog honestly carries the PNG vertical
+     * but not the game-specific BIG extension (14D packaging is owner-gated), so only the four PNG
+     * rows can be claimed here; the two archive rows remain named rather than fabricated.
+     */
+    const picked = pickedFile(png, 'favicon-32.png')
+    const authority = services.commands.authorize({
+      access: picked.access,
+      entry: picked.entry,
+      request: {
+        intent: 'full',
+        grant: { id: 'pwa-command-fixtures', classes: ['read-source'] },
+        budget,
+      },
+    })
+    expect(services.commands.catalog).toMatchObject({
+      schemaVersion: COMMAND_PROTOCOL_SCHEMA_VERSION,
+      commands: expect.arrayContaining([
+        expect.objectContaining({ id: 'subject.open', callers: expect.arrayContaining(['pwa']) }),
+      ]),
+    })
+    const pwaFixtures = COMMAND_FIXTURES.filter(fixture => fixture.subject === 'png')
+    expect(pwaFixtures).toHaveLength(4)
+    for (const fixture of pwaFixtures) {
+      const receipt = await services.commands.execute(
+        commandRequest(fixture.command, { subject: authority.ref }),
+        { runId: `pwa-fixture:${fixture.id}` },
+      )
+      const verdict = checkCommandFixture(fixture, receipt.result)
+      expect(verdict, `${fixture.id}: ${fixture.proves} — ${verdict.note ?? ''}`).toMatchObject({
+        passed: true,
+      })
+    }
+    expect(authority.revoke()).toBe(true)
+    const refused = await services.commands.execute(
+      commandRequest('subject.open', { subject: authority.ref }),
+    )
+    expect(refused.result).toMatchObject({
+      state: 'failed',
+      message: expect.stringMatching(/not authorized/u),
+    })
   }, 30_000)
 
   it('a served artifact that drifted from the attestation is refused at load, not silently run', async () => {

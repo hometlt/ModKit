@@ -665,7 +665,14 @@ export { openNestedSubject, type NestedSubjectResult } from '@modkitx-x3/host'
  */
 export {
   commandSubjectsFrom,
+  commandRequest,
+  createSubjectCommandEndpoint,
   createSubjectCommandRuntime,
+  type CommandContractDocument,
+  type CommandProtocolRunOptions,
+  type CommandReceipt,
+  type CommandRequest,
   type CommandResult,
   type CommandRuntime,
+  type SubjectCommandEndpoint,
 } from '@modkitx-x3/host'

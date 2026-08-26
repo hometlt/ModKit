@@ -30,9 +30,7 @@ import {
 } from '@modkitx-x3/testkit'
 import {
   commandRequest,
-  commandSubjectsFrom,
-  createSubjectCommandRuntime,
-  executeCommandRequest,
+  createSubjectCommandEndpoint,
   COMMAND_PROTOCOL_SCHEMA_VERSION,
   COMMAND_UNKNOWN,
   type CommandReceipt,
@@ -106,29 +104,25 @@ function electronRunner(): Promise<(fixture: CommandFixture) => Promise<CommandR
     disposers.push(async () => {
       await (subjects as unknown as { dispose?: () => Promise<void> }).dispose?.()
     })
-    const runtime = createSubjectCommandRuntime()
     /*
      * `main.cjs` confines a requested path through `roots.require` before it opens anything; the
      * headless equivalent is the path opener with the staged workspace as its root. Same opener,
      * same confinement, no window.
      */
-    const opener = commandSubjectsFrom(
-      createPathSubjectOpener({
+    const endpoint = createSubjectCommandEndpoint({
+      openSubject: createPathSubjectOpener({
         subjects,
         roots: [workspace],
         grant: { id: 'electron-fixtures', classes: ['read-source'] },
       }),
-    )
+    })
+    disposers.push(() => endpoint.dispose())
     return async (fixture: CommandFixture) =>
-      executeCommandRequest(
-        runtime,
+      endpoint.execute(
         commandRequest(fixture.command, {
           subject: subjectPath(fixture),
           ...(fixture.entry === undefined ? {} : { entry: fixture.entry }),
         }),
-        {
-          openSubject: opener,
-        },
       )
   })()
   return electronRuntime

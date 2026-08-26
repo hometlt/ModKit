@@ -33,6 +33,16 @@ const targetsPath = path.resolve(
   argValue('--targets') ??
     path.join(repoRoot, 'packages/host/src/commands/subject-command-targets.ts'),
 )
+const pwaCommandProofPaths = Object.freeze({
+  commands: path.resolve(
+    argValue('--pwa-commands') ?? path.join(repoRoot, 'apps/web/src/commands.ts'),
+  ),
+  subjects: path.resolve(
+    argValue('--pwa-subjects') ?? path.join(repoRoot, 'apps/web/src/subjects.ts'),
+  ),
+  shell: path.resolve(argValue('--pwa-shell') ?? path.join(repoRoot, 'apps/web/src/shell.ts')),
+  embed: path.resolve(argValue('--pwa-embed') ?? path.join(repoRoot, 'apps/web/src/embed.ts')),
+})
 const outputPath = path.resolve(
   argValue('--output') ?? path.join(repoRoot, 'migration/generated/vscode-workflow-ledger.json'),
 )
@@ -46,7 +56,13 @@ const fail = message => {
   process.exit(1)
 }
 
-for (const input of [inventoryPath, decisionsPath, manifestPath, targetsPath]) {
+for (const input of [
+  inventoryPath,
+  decisionsPath,
+  manifestPath,
+  targetsPath,
+  ...Object.values(pwaCommandProofPaths),
+]) {
   if (!existsSync(input)) fail(`missing input ${path.relative(repoRoot, input)}`)
 }
 
@@ -54,6 +70,32 @@ const inventory = readJson(inventoryPath)
 const decisions = readJson(decisionsPath)
 const manifest = readJson(manifestPath)
 const targetSource = readFileSync(targetsPath, 'utf8')
+
+const provePwaCommandCaller = () => {
+  const sources = Object.fromEntries(
+    Object.entries(pwaCommandProofPaths).map(([name, file]) => [name, readFileSync(file, 'utf8')]),
+  )
+  const requiredProductionWiring = Object.freeze({
+    commands: [
+      'createSubjectCommandEndpoint({',
+      'openSubject: async',
+      'async dispose(): Promise<void>',
+    ],
+    subjects: ['const commands = createWebCommandProtocol(services)', 'commands.dispose()'],
+    shell: [
+      'services.commands.authorize({',
+      "window.addEventListener('pagehide', () => void services.dispose(), { once: true })",
+    ],
+    embed: ['disposeEmbedHosts()', 'installEmbedHostLifecycle()'],
+  })
+  for (const [surface, needles] of Object.entries(requiredProductionWiring)) {
+    for (const needle of needles) {
+      if (!sources[surface].includes(needle)) {
+        fail(`PWA command caller proof is missing ${surface} wiring: ${needle}`)
+      }
+    }
+  }
+}
 
 const EXPECTED_BY_KIND = Object.freeze({
   'cli-command': 5,
@@ -436,6 +478,7 @@ const expectedTargetIds = [
 if (sorted(targets.map(target => target.commandId)).join('|') !== expectedTargetIds.join('|')) {
   fail('shared command target catalog must contain exactly the six live subject commands')
 }
+if (targets.some(target => target.hostCallers?.includes('pwa'))) provePwaCommandCaller()
 for (const target of targets) {
   if (!Array.isArray(target.operationIds) || !Array.isArray(target.dataSourceContracts)) {
     fail(`${target.commandId}: target operations and data-source contracts must be arrays`)
@@ -446,10 +489,8 @@ for (const target of targets) {
   if (!Array.isArray(target.hostCallers) || target.hostCallers.length === 0) {
     fail(`${target.commandId}: hostCallers must name proved callers`)
   }
-  if (target.hostCallers.includes('pwa'))
-    fail(`${target.commandId}: PWA is not a proved runtime caller`)
   for (const caller of target.hostCallers) {
-    if (!['automation', 'cli', 'electron', 'vscode'].includes(caller)) {
+    if (!['automation', 'cli', 'electron', 'pwa', 'vscode'].includes(caller)) {
       fail(`${target.commandId}: unknown or unproved host caller ${caller}`)
     }
   }

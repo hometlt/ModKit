@@ -56,6 +56,7 @@ import { element, setPart, setState, setViewerText } from '@modkitx-x3/ui/viewer
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
 import { createWebTopology, mountWebWorkbench, probeWebFacilities } from './index.js'
 import { createWebSubjectServices, type WebSubjectServices } from './subjects.js'
+import type { WebCommandSubjectLease } from './commands.js'
 import { createIndexedDbExtensionStore, type IdbFactoryLike } from './extension-store.js'
 import { mountExtensionsUi } from './extensions-ui.js'
 import {
@@ -288,6 +289,7 @@ async function boot(): Promise<void> {
       console.info(`[worker] ${diagnostic.severity} ${diagnostic.code}: ${diagnostic.message}`)
     },
   })
+  window.addEventListener('pagehide', () => void services.dispose(), { once: true })
 
   host.services = services
   // conflicts are only knowable once both lists are in one inventory; the panel re-reads them
@@ -553,6 +555,14 @@ async function boot(): Promise<void> {
         id: `pwa-${openCount}`,
         classes: writable ? ['read-source', 'write-source'] : ['read-source'],
       }
+      const budget = {
+        maxInputBytes: BigInt(EXPLORER_MAXIMUM_BYTES),
+        maxDepth: 256,
+        maxNodes: 1_000_000,
+        maxScalarBytes: 64 * 1024 * 1024,
+        maxDiagnostics: 10_000,
+        deadlineMs: 30_000,
+      }
       /*
        * A member of a container was already opened by the nested route, with its container held
        * behind it. Opening it again here would open it from bytes alone and quietly drop that.
@@ -566,14 +576,7 @@ async function boot(): Promise<void> {
           path: entry.name,
           intent: 'full',
           grant,
-          budget: {
-            maxInputBytes: BigInt(EXPLORER_MAXIMUM_BYTES),
-            maxDepth: 256,
-            maxNodes: 1_000_000,
-            maxScalarBytes: 64 * 1024 * 1024,
-            maxDiagnostics: 10_000,
-            deadlineMs: 30_000,
-          },
+          budget,
           ...(signal === undefined ? {} : { signal }),
         }))
       if (result.state === 'unresolved') {
@@ -602,6 +605,25 @@ async function boot(): Promise<void> {
       }
       const key = descriptorKey(result.descriptor)
       const operations = session.operations()
+      let commandAuthority: WebCommandSubjectLease | undefined
+      /*
+       * The protocol gets no raw browser path. Only a file that this explorer resolved through its
+       * current WebFileAccess (and can still answer with an actual FileSystemHandle) is registered.
+       * The authority holds that access object, so changing the global `access` on the next picker
+       * does not retarget an already-open tab. Nested/archive members have a different parent lease
+       * and are intentionally not smuggled through this file-handle route.
+       */
+      if (nested === undefined && access?.handleOf(entry.id) !== undefined) {
+        try {
+          commandAuthority = services.commands.authorize({
+            access,
+            entry,
+            request: { intent: 'full', grant, budget },
+          })
+        } catch (error) {
+          say(`${entry.name} — shared commands unavailable: ${String(error)}`)
+        }
+      }
       operationSessions.set(key, operations)
       // Kept beside the operations arm so a container member can be opened as a subject of its own.
       assetSessions.set(key, result.session)
@@ -644,6 +666,7 @@ async function boot(): Promise<void> {
           openedEntries.delete(entry.id)
           subjectEditors.delete(entry.id)
           writableHandles.delete(sourceUriFor(entry.id))
+          commandAuthority?.revoke()
           if (inspecting === entry.id) inspect(undefined)
           await session.dispose()
         },

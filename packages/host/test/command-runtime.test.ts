@@ -14,6 +14,7 @@ import {
   commandRequest,
   commandUnavailable,
   createCommandRuntime,
+  createSubjectCommandEndpoint,
   createSubjectCommandRuntime,
   commandSubjectsFrom,
   describeSubjectCommandContracts,
@@ -55,7 +56,7 @@ describe('the command runtime answers rather than throws', () => {
     expect(runtime.descriptors.some(item => item.mutatesSource)).toBe(false)
   })
 
-  it('pins the machine-readable targets to live operations and proved non-PWA callers', () => {
+  it('pins the machine-readable targets to live operations and proved application callers', () => {
     expect(SUBJECT_COMMAND_TARGETS).toMatchObject({
       open: { operationIds: [] },
       inspect: { operationIds: [] },
@@ -68,8 +69,7 @@ describe('the command runtime answers rather than throws', () => {
       preview: { operationIds: ['view.thumbnail', 'view.render'] },
     })
     for (const target of Object.values(SUBJECT_COMMAND_TARGETS)) {
-      expect(target.hostCallers).toEqual(['automation', 'cli', 'electron', 'vscode'])
-      expect(target.hostCallers).not.toContain('pwa')
+      expect(target.hostCallers).toEqual(['automation', 'cli', 'electron', 'pwa', 'vscode'])
       const descriptor = createSubjectCommandRuntime().descriptors.find(
         item => item.id === target.commandId,
       )
@@ -191,6 +191,131 @@ describe('the command runtime answers rather than throws', () => {
     expect(JSON.parse(JSON.stringify(receipt))).toEqual(receipt)
     expect(Object.isFrozen(receipt)).toBe(true)
     expect(Object.isFrozen(receipt.result)).toBe(true)
+  })
+
+  it('binds catalog, progress and JSON receipts into one bounded application endpoint', async () => {
+    const progress: string[] = []
+    let disposed = 0
+    const endpoint = createSubjectCommandEndpoint({
+      openSubject: async ref => ({
+        snapshot: {
+          state: 'opened',
+          sessionId: 'session-1',
+          descriptor: { identity: { formatId: 'fixture', formatLabel: 'Fixture' }, operations: [] },
+          selected: { contributionId: 'fixture/codec', variantId: 'portable', confidence: 1 },
+          candidates: [],
+          diagnostics: [],
+        },
+        session: {
+          descriptor: async () => ({
+            identity: { formatId: 'fixture', formatLabel: 'Fixture' },
+            operations: [],
+          }),
+          dispose: async () => {
+            disposed += 1
+          },
+        } as never,
+        ref,
+      }),
+      maxConcurrentRuns: 2,
+    })
+    expect(endpoint.catalog).toEqual(describeSubjectCommandContracts())
+    const receipt = await endpoint.execute(
+      commandRequest('subject.open', { subject: 'opaque:fixture' }),
+      { runId: 'run-1', progress: item => progress.push(item.step) },
+    )
+    expect(receipt).toMatchObject({
+      schemaVersion: COMMAND_PROTOCOL_SCHEMA_VERSION,
+      request: { command: 'subject.open', input: { subject: 'opaque:fixture' } },
+      result: { state: 'ok', data: { formatId: 'fixture' } },
+    })
+    expect(progress).toEqual(['open'])
+    expect(disposed).toBe(1)
+    expect(endpoint.activeRuns).toBe(0)
+  })
+
+  it('cancels by live handle, refuses duplicate/unbounded runs and cleans up after errors', async () => {
+    const endpoint = createSubjectCommandEndpoint({
+      maxConcurrentRuns: 1,
+      openSubject: async (_ref, signal) =>
+        await new Promise((_, reject) => {
+          const abort = new Error('stopped')
+          abort.name = 'AbortError'
+          signal?.addEventListener('abort', () => reject(abort), { once: true })
+        }),
+    })
+    const first = endpoint.execute(commandRequest('subject.open', { subject: 'opaque:slow' }), {
+      runId: 'slow',
+    })
+    expect(endpoint.activeRuns).toBe(1)
+    await expect(
+      endpoint.execute(commandRequest('subject.open', { subject: 'opaque:second' }), {
+        runId: 'second',
+      }),
+    ).rejects.toThrow(/permitted runs/u)
+    expect(endpoint.cancel('slow')).toBe(true)
+    expect((await first).result).toMatchObject({ state: 'failed', code: COMMAND_CANCELLED })
+    expect(endpoint.cancel('slow')).toBe(false)
+    expect(endpoint.activeRuns).toBe(0)
+
+    const duplicate = createSubjectCommandEndpoint({
+      maxConcurrentRuns: 2,
+      openSubject: async (_ref, signal) =>
+        await new Promise((_, reject) => {
+          signal?.addEventListener('abort', () => reject(new Error('cancelled')), { once: true })
+        }),
+    })
+    const live = duplicate.execute(commandRequest('subject.open', { subject: 'opaque:a' }), {
+      runId: 'same',
+    })
+    await expect(
+      duplicate.execute(commandRequest('subject.open', { subject: 'opaque:b' }), {
+        runId: 'same',
+      }),
+    ).rejects.toThrow(/already active/u)
+    duplicate.cancel('same')
+    await live
+
+    const broken = createSubjectCommandEndpoint({
+      openSubject: async () => {
+        throw new Error('realm failed')
+      },
+    })
+    const failure = await broken.execute(
+      commandRequest('subject.open', { subject: 'opaque:broken' }),
+    )
+    expect(failure.result).toMatchObject({ state: 'failed', message: 'realm failed' })
+    await expect(
+      broken.execute({
+        ...commandRequest('subject.open', { subject: 'opaque:broken' }),
+        schemaVersion: 'modkit-command-protocol-99',
+      } as unknown as CommandRequest),
+    ).rejects.toThrow(/unsupported command protocol/u)
+    expect(broken.activeRuns).toBe(0)
+  })
+
+  it('terminal disposal is idempotent, drains live runs and refuses later execution', async () => {
+    const endpoint = createSubjectCommandEndpoint({
+      openSubject: async (_ref, signal) =>
+        await new Promise((_, reject) => {
+          const abort = new Error('host closed')
+          abort.name = 'AbortError'
+          signal?.addEventListener('abort', () => reject(abort), { once: true })
+        }),
+    })
+    const running = endpoint.execute(commandRequest('subject.open', { subject: 'opaque:live' }), {
+      runId: 'live',
+    })
+    expect(endpoint.activeRuns).toBe(1)
+    const firstDispose = endpoint.dispose()
+    expect(endpoint.closed).toBe(true)
+    expect((await running).result).toMatchObject({ state: 'failed', code: COMMAND_CANCELLED })
+    await firstDispose
+    expect(endpoint.activeRuns).toBe(0)
+    await expect(
+      endpoint.execute(commandRequest('subject.open', { subject: 'opaque:later' })),
+    ).rejects.toThrow(/closed/u)
+    await expect(endpoint.dispose()).resolves.toBeUndefined()
   })
 
   it('keeps the shared target catalogue deeply immutable at runtime', () => {

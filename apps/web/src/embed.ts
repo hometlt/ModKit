@@ -479,6 +479,39 @@ export interface EmbedHost {
 }
 
 const embedHosts = new Map<string, Promise<EmbedHost>>()
+const embedLifecycleScopes = new WeakSet<object>()
+
+/**
+ * Dispose every shared host once for the page, not once per custom element.
+ *
+ * Elements with the same asset/catalog pair deliberately share one cached host; tying disposal to
+ * `disconnectedCallback` would let removing one element kill the sessions of its siblings. The
+ * page lifecycle is the owner of this cache, so pagehide is the one terminal boundary.
+ */
+export async function disposeEmbedHosts(): Promise<void> {
+  const pending = [...embedHosts.values()]
+  embedHosts.clear()
+  const settled = await Promise.allSettled(pending)
+  await Promise.allSettled(
+    settled.flatMap(item => (item.status === 'fulfilled' ? [item.value.services.dispose()] : [])),
+  )
+}
+
+/** Install the one pagehide hook for a lifecycle scope. Exported for wiring-only smoke tests. */
+export function installEmbedHostLifecycle(
+  scope: object & {
+    addEventListener?: (
+      type: string,
+      listener: () => void,
+      options?: { readonly once?: boolean },
+    ) => void
+  } = globalThis,
+): boolean {
+  if (embedLifecycleScopes.has(scope) || scope.addEventListener === undefined) return false
+  embedLifecycleScopes.add(scope)
+  scope.addEventListener('pagehide', () => void disposeEmbedHosts(), { once: true })
+  return true
+}
 
 /** Identity of a mounted descriptor — the key a stage can look its session up by. */
 const descriptorKey = (descriptor: AnyDescriptor): string =>
@@ -567,6 +600,7 @@ async function composeEmbedHost(
 
 /** The one host for this asset/catalog pair, composed on first use. */
 export function embedHostFor(assetBase: string, extensionCatalogUrl?: string): Promise<EmbedHost> {
+  installEmbedHostLifecycle()
   const key = JSON.stringify([assetBase, extensionCatalogUrl ?? null])
   return shareByAssetBase(embedHosts, key, () => composeEmbedHost(assetBase, extensionCatalogUrl))
 }

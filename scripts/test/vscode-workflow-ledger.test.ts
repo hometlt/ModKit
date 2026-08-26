@@ -10,6 +10,7 @@ const emitter = join(repoRoot, 'scripts', 'migration', 'emit-vscode-workflow-led
 const inventory = join(repoRoot, 'migration', 'generated', 'source-inventory.json')
 const decisions = join(repoRoot, 'migration', 'vscode-workflows.json')
 const targets = join(repoRoot, 'packages', 'host', 'src', 'commands', 'subject-command-targets.ts')
+const pwaCommands = join(repoRoot, 'apps', 'web', 'src', 'commands.ts')
 const committedLedger = join(repoRoot, 'migration', 'generated', 'vscode-workflow-ledger.json')
 
 function run(args: readonly string[]) {
@@ -189,13 +190,9 @@ describe('block 14A VS Code + CLI workflow ledger', () => {
       'subject.validate',
     ])
     expect(
-      ledger.sharedCommandTargets.some((row: { hostCallers: string[] }) =>
-        row.hostCallers.includes('pwa'),
-      ),
-    ).toBe(false)
-    expect(
-      ledger.sharedCommandTargets.every((row: { hostCallers: string[] }) =>
-        row.hostCallers.includes('automation'),
+      ledger.sharedCommandTargets.every(
+        (row: { hostCallers: string[] }) =>
+          row.hostCallers.includes('automation') && row.hostCallers.includes('pwa'),
       ),
     ).toBe(true)
   })
@@ -312,15 +309,17 @@ describe('block 14A VS Code + CLI workflow ledger', () => {
   })
 
   it('refuses to claim PWA as a caller without runtime wiring evidence', () => {
-    const brokenTargets = readFileSync(targets, 'utf8').replace(
-      "hostCallers: ['automation', 'cli', 'electron', 'vscode']",
-      "hostCallers: ['automation', 'cli', 'electron', 'vscode', 'pwa']",
+    const source = readFileSync(pwaCommands, 'utf8')
+    const brokenCommands = source.replace(
+      'createSubjectCommandEndpoint({',
+      'createSubjectCommandEndpointWithoutProductionWiring({',
     )
-    const targetsPath = tempPath('subject-command-targets.ts')
-    writeFileSync(targetsPath, brokenTargets)
-    const result = run(['--targets', targetsPath, '--output', tempPath('ledger.json')])
+    expect(brokenCommands).not.toBe(source)
+    const commandsPath = tempPath('commands.ts')
+    writeFileSync(commandsPath, brokenCommands)
+    const result = run(['--pwa-commands', commandsPath, '--output', tempPath('ledger.json')])
     expect(result.status).toBe(1)
-    expect(result.stderr).toContain('PWA is not a proved runtime caller')
+    expect(result.stderr).toContain('PWA command caller proof is missing commands wiring')
   })
 
   it('rejects executable syntax inside the TypeScript target catalog instead of evaluating it', () => {

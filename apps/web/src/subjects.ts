@@ -59,6 +59,7 @@ import {
   type WebFacilityProbe,
   type WebRuntimeIdentity,
 } from './index.js'
+import { createWebCommandProtocol, type WebCommandProtocol } from './commands.js'
 
 // ---------------------------------------------------------------------------------------------
 // the generated catalog → ExtensionInput
@@ -234,6 +235,10 @@ export interface WebSubjectServices extends SubjectServices {
   readonly worker: HostComposition
   /** User folders dropped here because the catalog already claims their coordinate. */
   readonly userExtensionConflicts: readonly UserExtensionRootFailure[]
+  /** Versioned shared commands bound to opaque handles authorized in this browser realm. */
+  readonly commands: WebCommandProtocol
+  /** Terminal page lifecycle: revoke command handles and abort every in-flight command. */
+  dispose(): Promise<void>
 }
 
 export async function createWebSubjectServices(
@@ -344,8 +349,11 @@ export async function createWebSubjectServices(
     executionBackends,
     ...(definitions === undefined ? {} : { serviceDefinitions: definitions }),
   })
+  const commands = createWebCommandProtocol(services)
   return Object.freeze({
     ...services,
+    commands,
+    dispose: () => commands.dispose(),
     main,
     worker,
     userExtensionConflicts: Object.freeze(userExtensionConflicts),

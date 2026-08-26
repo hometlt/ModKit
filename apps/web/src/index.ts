@@ -18,6 +18,15 @@ export {
 } from '@modkitx-x3/host/browser'
 export { createWorkbench, type Workbench } from '@modkitx-x3/ui/workbench'
 export {
+  createWebCommandProtocol,
+  DEFAULT_WEB_COMMAND_MAX_AUTHORIZATIONS,
+  DEFAULT_WEB_COMMAND_MAX_CONCURRENT_RUNS,
+  type WebCommandProtocol,
+  type WebCommandProtocolOptions,
+  type WebCommandSubjectAuthorization,
+  type WebCommandSubjectLease,
+} from './commands.js'
+export {
   catalogCoordinates,
   catalogToExtensionInputs,
   createWebSubjectServices,

@@ -108,13 +108,16 @@ contextBridge.exposeInMainWorld('modkitHost', {
 /*
  * The shared command surface (block 13, works 4–6).
  *
- * Four named methods and no dispatcher: the renderer may list the commands this build has, run one,
- * cancel one by the id it chose, and subscribe to progress. `runId` is the renderer's own string,
- * so cancelling never needs a handle table on either side of the boundary.
+ * The original list/run/cancel/progress API stays intact. `catalog` and `execute` expose the same
+ * versioned document/receipt automation and PWA consume, without asking the renderer to infer a
+ * protocol from those legacy convenience methods. `runId` stays out-of-band cancellation state.
  */
 contextBridge.exposeInMainWorld('modkitCommands', {
   list: () => ipcRenderer.invoke('modkit.command.list'),
   run: request => ipcRenderer.invoke('modkit.command.run', request),
+  catalog: () => ipcRenderer.invoke('modkit.command.catalog'),
+  execute: (request, options = {}) =>
+    ipcRenderer.invoke('modkit.command.execute', { request, runId: options.runId }),
   cancel: runId => ipcRenderer.invoke('modkit.command.cancel', runId),
   onProgress: handler => {
     const listener = (_event, step) => handler(step)

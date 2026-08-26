@@ -5,7 +5,7 @@ interface SubjectCommandTargetShape {
   readonly mutatesSource: false
   readonly operationIds: readonly string[]
   readonly dataSourceContracts: readonly string[]
-  readonly hostCallers: readonly ('automation' | 'cli' | 'electron' | 'vscode')[]
+  readonly hostCallers: readonly ('automation' | 'cli' | 'electron' | 'pwa' | 'vscode')[]
 }
 
 function deepFreeze<T>(value: T): T {

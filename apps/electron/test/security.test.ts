@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   createGrantedRoots,
@@ -8,6 +10,12 @@ import {
   createElectronApp,
   isAllowedElectronNavigation,
 } from '../src/index.js'
+
+const mainSource = readFileSync(join(import.meta.dirname, '..', 'electron', 'main.cjs'), 'utf8')
+const preloadSource = readFileSync(
+  join(import.meta.dirname, '..', 'electron', 'preload.cjs'),
+  'utf8',
+)
 
 describe('Electron composition security', () => {
   it('does not leak main-process facilities into the renderer or worker profiles', async () => {
@@ -56,6 +64,19 @@ describe('Electron composition security', () => {
   it('allows navigation only inside the exact application origin', () => {
     expect(isAllowedElectronNavigation('app://modkit/index.html', 'app://modkit/')).toBe(true)
     expect(isAllowedElectronNavigation('https://example.com/', 'app://modkit/')).toBe(false)
+  })
+
+  it('wires the versioned command endpoint through preload and tears it down with its realm', () => {
+    expect(mainSource).toContain('createSubjectCommandEndpoint({')
+    expect(mainSource).toContain("ipcMain.handle('modkit.command.catalog'")
+    expect(mainSource).toContain("ipcMain.handle('modkit.command.execute'")
+    expect(mainSource).toContain("event.sender.once('destroyed', senderDestroyed)")
+    expect(mainSource).toContain("window.once('closed', () => void commandEndpoint.dispose())")
+    expect(preloadSource).toContain("catalog: () => ipcRenderer.invoke('modkit.command.catalog')")
+    expect(preloadSource).toContain("ipcRenderer.invoke('modkit.command.execute'")
+    // The compatibility surface is still present beside the protocol-native calls.
+    expect(preloadSource).toContain("list: () => ipcRenderer.invoke('modkit.command.list')")
+    expect(preloadSource).toContain("run: request => ipcRenderer.invoke('modkit.command.run'")
   })
 })
 

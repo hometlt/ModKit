@@ -127,8 +127,8 @@ async function createWindow() {
     createEvidenceRegistry,
     codecFidelityEvidenceRecords,
     resolveFormatWriter,
-    commandSubjectsFrom,
-    createSubjectCommandRuntime,
+    commandRequest,
+    createSubjectCommandEndpoint,
   } = await root
 
   const repositoryRoot = path.resolve(__dirname, '..', '..', '..')
@@ -581,20 +581,41 @@ async function createWindow() {
    * roots. What a command decides is not written in this file, and that is exit-gate line 1 of the
    * block: no domain handler exists only inside an adapter.
    */
-  const commandRuntime = createSubjectCommandRuntime()
-  const commandSubjects = commandSubjectsFrom(openSubjectForRpc)
-  /** Runs in flight, so the renderer can cancel one by the id it was given. */
-  const runningCommands = new Map()
+  const commandEndpoint = createSubjectCommandEndpoint({
+    openSubject: openSubjectForRpc,
+    // The renderer has only four task lanes; a larger table would add queued authority, not work.
+    maxConcurrentRuns: 8,
+  })
+  window.once('closed', () => void commandEndpoint.dispose())
 
   ipcMain.handle('modkit.command.list', () =>
-    commandRuntime.descriptors.map(descriptor => ({
-      id: descriptor.id,
-      title: descriptor.title,
-      summary: descriptor.summary,
-      needsSubject: descriptor.needsSubject,
-      mutatesSource: descriptor.mutatesSource,
+    commandEndpoint.catalog.commands.map(contract => ({
+      id: contract.id,
+      title: contract.title,
+      summary: contract.summary,
+      needsSubject: contract.input.subject === 'required',
+      mutatesSource: contract.effects.mutatesSource,
     })),
   )
+  ipcMain.handle('modkit.command.catalog', () => commandEndpoint.catalog)
+
+  const executeCommand = (event, request, runId) => {
+    const caller = new AbortController()
+    const senderDestroyed = () => caller.abort()
+    event.sender.once('destroyed', senderDestroyed)
+    return commandEndpoint
+      .execute(request, {
+        ...(typeof runId === 'string' ? { runId } : {}),
+        signal: caller.signal,
+        // Progress travels back on the sender that asked; a closed window simply stops listening.
+        progress: step => {
+          if (!event.sender.isDestroyed()) {
+            event.sender.send('modkit.command.progress', { runId, ...step })
+          }
+        },
+      })
+      .finally(() => event.sender.removeListener('destroyed', senderDestroyed))
+  }
 
   ipcMain.handle('modkit.command.run', async (event, request) => {
     const { command, subject, entry, target, runId } = request ?? {}
@@ -607,36 +628,38 @@ async function createWindow() {
         diagnostics: [],
       }
     }
-    const controller = new AbortController()
-    if (typeof runId === 'string') runningCommands.set(runId, controller)
     try {
-      return await commandRuntime.run(
-        command,
-        {
+      const receipt = await executeCommand(
+        event,
+        commandRequest(command, {
           subject,
           ...(typeof entry === 'string' ? { entry } : {}),
           ...(typeof target === 'string' ? { target } : {}),
-        },
-        {
-          openSubject: commandSubjects,
-          signal: controller.signal,
-          // Progress travels back on the sender that asked; a closed window simply stops listening.
-          progress: step => {
-            if (!event.sender.isDestroyed()) {
-              event.sender.send('modkit.command.progress', { runId, ...step })
-            }
-          },
-        },
+        }),
+        runId,
       )
-    } finally {
-      if (typeof runId === 'string') runningCommands.delete(runId)
+      return receipt.result
+    } catch (error) {
+      return {
+        state: 'failed',
+        command,
+        code: 'x3.command/host-refused',
+        message: error instanceof Error ? error.message : String(error),
+        diagnostics: [],
+      }
     }
   })
 
+  ipcMain.handle('modkit.command.execute', (event, payload) => {
+    const request = payload?.request
+    if (request === null || typeof request !== 'object') {
+      throw new TypeError('a protocol command call needs a request document')
+    }
+    return executeCommand(event, request, payload?.runId)
+  })
+
   ipcMain.handle('modkit.command.cancel', (_event, runId) => {
-    const controller = typeof runId === 'string' ? runningCommands.get(runId) : undefined
-    controller?.abort()
-    return controller !== undefined
+    return typeof runId === 'string' && commandEndpoint.cancel(runId)
   })
 
   /** One capability-RPC endpoint per handed-out port; closed with the window. */

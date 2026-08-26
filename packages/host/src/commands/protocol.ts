@@ -1,5 +1,5 @@
 /**
- * Versioned, JSON-safe command documents for CLI and automation callers (block 14B).
+ * Versioned, JSON-safe command documents for every application caller (blocks 14B/14C).
  *
  * The executable behaviour remains in `CommandRuntime`. This module only snapshots that runtime's
  * public contract and wraps one invocation/result in a stable envelope, so a batch runner never

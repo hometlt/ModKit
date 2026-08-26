@@ -21,6 +21,7 @@ export {
   commandSubjectsFrom,
   commandRequest,
   createCommandRuntime,
+  createSubjectCommandEndpoint,
   createSubjectCommandRuntime,
   describeCommandContracts,
   describeSubjectCommandContracts,
@@ -35,6 +36,7 @@ export {
   COMMAND_UNAVAILABLE,
   COMMAND_UNKNOWN,
   COMMAND_PROTOCOL_SCHEMA_VERSION,
+  DEFAULT_COMMAND_MAX_CONCURRENT_RUNS,
   SUBJECT_COMMANDS,
   SUBJECT_COMMAND_TARGETS,
   type CommandContext,
@@ -44,6 +46,7 @@ export {
   type CommandDiagnostic,
   type CommandInput,
   type CommandOutputSink,
+  type CommandProtocolRunOptions,
   type CommandProgress,
   type CommandResult,
   type CommandReceipt,
@@ -51,6 +54,8 @@ export {
   type CommandRuntime,
   type CommandSubject,
   type CommandSubjectOpener,
+  type SubjectCommandEndpoint,
+  type SubjectCommandEndpointOptions,
   type SubjectCommandTarget,
 } from './commands/index.js'
 export {
