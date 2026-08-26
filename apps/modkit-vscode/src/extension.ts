@@ -580,6 +580,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       roots,
       confirmClose,
       configuration,
+      // The window's one registry, so a page opening a member reaches the archive the Explorer
+      // already has open rather than a second copy of it.
+      containers,
       ...(lifecycle === undefined
         ? {}
         : {

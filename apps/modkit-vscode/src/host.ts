@@ -60,7 +60,7 @@ import {
   type ShellSettingsView,
   type WebviewChannel,
 } from './bridge.js'
-import { isContainerUriText, parseContainerUriText } from './container-uri.js'
+import { containerUriText, isContainerUriText, parseContainerUriText } from './container-uri.js'
 import { createContainerRegistry, type ContainerRegistry } from './containers.js'
 import { describeInventoryContributions, type ContributionRow } from './contributions.js'
 import {
@@ -670,10 +670,24 @@ function serveVsCode(
     const roots = options.roots().map(root => resolve(root))
     const configuration = options.configuration
     switch (request.op) {
+      /*
+       * The page's own file access, for both kinds of subject.
+       *
+       * A container member is not a path, and routing it at `resolve()` was the defect the first
+       * run of the reworked smoke found: the member opened in a tab, and the page then asked the
+       * shell for its bytes and was told the URI «is outside the folders this window granted».
+       * The bytes are readable — through the open container, by the same registry the editor's
+       * filesystem provider answers from — so the shell reads them the same way rather than a
+       * second way.
+       */
       case 'list':
-        return listDirectory(roots, request.path)
+        return isContainerUriText(request.path ?? '')
+          ? listContainer(options.containers, request.path ?? '')
+          : listDirectory(roots, request.path)
       case 'read':
-        return readEntry(roots, request.path, request.maxBytes)
+        return isContainerUriText(request.path)
+          ? readContainerEntry(options.containers, request.path, request.maxBytes)
+          : readEntry(roots, request.path, request.maxBytes)
       case 'confirm':
         // No adapter means no way to ask, and discarding silently is the one answer that loses
         // work — so an unanswerable prompt keeps the tab open.
@@ -857,6 +871,52 @@ async function listDirectory(
     })
   }
   return out
+}
+
+/** A container's own listing, in the shape the page's explorer consumes. */
+async function listContainer(
+  containers: ContainerRegistry | undefined,
+  requested: string,
+): Promise<readonly ShellEntry[]> {
+  const location = parseContainerUriText(requested)
+  if (containers === undefined || location === undefined) {
+    throw new Error(`«${requested}» does not name a container this window composed`)
+  }
+  const children = await containers.list(location.container, location.entry)
+  return children.map(child => ({
+    // the child's own address, so the page can descend without knowing the encoding
+    id: containerUriText(
+      location.container,
+      location.entry === '' ? child.name : `${location.entry}/${child.name}`,
+    ),
+    name: child.name,
+    directory: child.kind === 'directory',
+    ...(child.size === undefined ? {} : { size: child.size }),
+  }))
+}
+
+/** One member's bytes, under the same ceiling a file on disk is read with. */
+async function readContainerEntry(
+  containers: ContainerRegistry | undefined,
+  requested: string,
+  maxBytes: number,
+): Promise<Uint8Array> {
+  const location = parseContainerUriText(requested)
+  if (containers === undefined || location === undefined) {
+    throw new Error(`«${requested}» does not name a container this window composed`)
+  }
+  const limit = Math.min(
+    Number.isSafeInteger(maxBytes) && maxBytes > 0 ? maxBytes : VSCODE_MAXIMUM_SUBJECT_BYTES,
+    VSCODE_MAXIMUM_SUBJECT_BYTES,
+  )
+  const node = await containers.stat(location.container, location.entry)
+  if (node.size !== undefined && node.size > limit) {
+    throw new Error(
+      `${node.name} is ${(node.size / (1024 * 1024)).toFixed(1)} MiB, over the ` +
+        `${(limit / (1024 * 1024)).toFixed(0)} MiB this host will read into memory`,
+    )
+  }
+  return containers.read(location.container, location.entry)
 }
 
 async function readEntry(

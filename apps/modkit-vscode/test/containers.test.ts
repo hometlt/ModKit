@@ -338,5 +338,33 @@ describe('a member is a subject in its own right', () => {
     expect(subjectLabel(uri)).toBe('fixture.big › art/w3d/minimal.w3d')
     expect(subjectLabel(uri)).not.toContain(workspace)
     expect(parseContainerUriText(uri)?.container).toBe(archive)
+
+    /*
+     * The page's *other* channel, and the reason this assertion exists.
+     *
+     * Opening a subject is the RPC; reading its bytes for the hex and text stages is the shell —
+     * two channels, and the first run of the reworked VS Code smoke found only the first of them
+     * wired. The member opened in a tab and the page then said «is outside the folders this window
+     * granted», because the shell resolved the URI as a filesystem path. Both are asserted here so
+     * a regression cannot pass by satisfying one of them.
+     */
+    const bytes = await page.request({
+      op: 'read',
+      path: containerUriText(archive, 'readme.txt'),
+      maxBytes: 1024,
+    })
+    expect(new TextDecoder().decode(bytes as Uint8Array)).toBe('inside the archive')
+
+    const root = (await page.request({
+      op: 'list',
+      path: containerUriText(archive),
+    })) as readonly { readonly id: string; readonly name: string; readonly directory: boolean }[]
+    expect(root.map(item => [item.name, item.directory]).sort()).toEqual([
+      ['art', true],
+      ['readme.txt', false],
+    ])
+    // a child's id is its own address, so the page descends without knowing the encoding
+    const art = root.find(item => item.name === 'art')
+    expect(parseContainerUriText(art?.id ?? '')).toEqual({ container: archive, entry: 'art' })
   }, 180_000)
 })
