@@ -2,6 +2,7 @@ import {
   createInspectionCodec,
   createModelResourceRefsSource,
   createModelSceneSource,
+  createModelSkeletonSource,
   createProjectionReceipt,
   createTreeDataSource,
 } from '@modkitx-x3/codec-kit'
@@ -129,6 +130,12 @@ async function geometryOf(bytes, budget) {
   if (globalThis.process?.versions?.node === undefined) return undefined
   const { decodeM3Geometry } = await import('./geometry.node.js')
   return decodeM3Geometry(bytes, budget)
+}
+
+async function skeletonOf(bytes, budget, signal) {
+  if (globalThis.process?.versions?.node === undefined) return undefined
+  const { decodeM3Skeleton } = await import('./skeleton.node.js')
+  return decodeM3Skeleton(bytes, budget, signal)
 }
 
 /**
@@ -272,7 +279,10 @@ const definition = Object.freeze({
   },
   async inspect(bytes, context) {
     const model = parseM3(bytes, context.budget.maxNodes)
-    const geometry = await geometryOf(bytes, context.budget)
+    const skeleton = await skeletonOf(bytes, context.budget, context.signal)
+    // A truncated BONE table makes the schema parser unsafe for geometry too: both paths load the
+    // same section list. Keep the subject inspectable as a section graph and report the refusal.
+    const geometry = skeleton?.fatal === true ? undefined : await geometryOf(bytes, context.budget)
     const references = scanTextureReferences(bytes)
     const boundTextures = await readTextureBindings(context.input, context.signal)
     const tree = createTreeDataSource({
@@ -294,10 +304,10 @@ const definition = Object.freeze({
     /*
      * The five facet contracts, published as contracts rather than as a shape inside `summary`.
      *
-     * M3 fills exactly one of them. Its texture *paths* come out of the `CHAR` table, so the
-     * resource facet is real; materials, skeleton and animations are counted from section tags and
-     * never decoded, so no facet is published for them — a source filled with section counts would
-     * claim a plane this reader does not read. The receipt below names each of those as `lost`.
+     * M3 fills two of them. Texture *paths* come out of `CHAR`, while skeleton bindings follow
+     * `MODL.bones → BONE.name → CHAR`. Parent links and flags are validated but stay out of the
+     * skeleton facet because its v1 ABI carries neither; IREF rest poses and STC animation remain
+     * unread. Materials and animations are still counts, so no facet is published for them.
      *
      * Every reference stays `reference-only`. The texture requirement is `many`, so a bound
      * companion cannot be attributed to one name without inspecting the resolved URI, which is the
@@ -316,6 +326,15 @@ const definition = Object.freeze({
                 provenance: 'reference-only',
               })),
               truncated: references.truncated,
+            }),
+          }
+    const skeletonFacet =
+      skeleton === undefined || skeleton.bindings.length === 0
+        ? {}
+        : {
+            'common.view/model-skeleton-source': createModelSkeletonSource({
+              bindings: skeleton.bindings,
+              ...(skeleton.hierarchyComplete ? { hierarchies: 1 } : {}),
             }),
           }
     const projectionReceipt = createProjectionReceipt({
@@ -342,7 +361,39 @@ const definition = Object.freeze({
         { planeId: 'structure', state: 'preserved', note: 'the M3 section index, verbatim' },
         { planeId: 'resources', state: 'preserved', note: 'texture paths from the CHAR table' },
         { planeId: 'materials', state: 'lost', note: 'MAT* sections are counted, never decoded' },
-        { planeId: 'skeleton', state: 'lost', note: 'BONE/STC sections are not read' },
+        ...(skeleton === undefined || skeleton.bindings.length === 0
+          ? [
+              {
+                planeId: 'skeleton-bindings',
+                state: 'lost',
+                note: 'this open published no BONE bindings',
+              },
+            ]
+          : [
+              {
+                planeId: 'skeleton-bindings',
+                state: skeleton.rejectedNames === 0 ? 'preserved' : 'lost',
+                note: `${skeleton.bindings.length} BONE index/name binding(s) decoded through their CHAR references`,
+              },
+            ]),
+        {
+          planeId: 'skeleton-hierarchy',
+          state: 'lost',
+          note:
+            skeleton === undefined
+              ? 'the Node-only BONE decoder did not run, and model-skeleton-source@1 carries no parent links'
+              : `${skeleton.roots} root(s) validated, but model-skeleton-source@1 carries no parent links`,
+        },
+        {
+          planeId: 'skeleton-flags',
+          state: 'lost',
+          note: 'named BONE flag bits are not carried by the live facet contract',
+        },
+        {
+          planeId: 'skeleton-rest-pose',
+          state: 'lost',
+          note: 'IREF matrices and animation-reference defaults are not projected',
+        },
         { planeId: 'animation', state: 'lost', note: 'SEQS sections are counted, never decoded' },
       ],
       evidence: [
@@ -353,7 +404,9 @@ const definition = Object.freeze({
         },
         {
           kind: 'observed',
-          statement: `${model.sections.length} sections indexed, ${references.names.length} texture path(s) read from CHAR`,
+          statement:
+            `${model.sections.length} sections indexed, ${references.names.length} texture path(s) read from CHAR, ` +
+            `${skeleton?.bindings.length ?? 0} BONE binding(s) decoded`,
           bytesRead: BigInt(bytes.byteLength),
         },
         ...(references.truncated
@@ -366,7 +419,8 @@ const definition = Object.freeze({
             ]
           : []),
       ],
-      confidence: geometryAccess === 'decoded' ? 'high' : 'partial',
+      confidence:
+        geometryAccess === 'decoded' && (skeleton?.issues.length ?? 0) === 0 ? 'high' : 'partial',
     })
     return {
       summary: {
@@ -417,6 +471,19 @@ const definition = Object.freeze({
               },
             ]
           : []),
+        ...(skeleton === undefined || skeleton.bindings.length === 0
+          ? []
+          : [
+              {
+                id: 'model.skeleton',
+                parameters: {
+                  bindings: skeleton.bindings.length,
+                  named: skeleton.bindings.filter(item => item.boneName !== null).length,
+                  roots: skeleton.roots,
+                  rejectedParentLinks: skeleton.rejectedParentLinks,
+                },
+              },
+            ]),
         { id: 'structure.hierarchy', parameters: { sections: model.sections.length } },
         { id: 'content.binary', parameters: { bytes: String(bytes.byteLength) } },
       ],
@@ -424,9 +491,13 @@ const definition = Object.freeze({
         'common.view/tree-data-source': tree,
         'common.view/model-scene-source': scene,
         ...resourceFacet,
+        ...skeletonFacet,
       },
       projectionReceipt,
-      maxDecodedBytes: BigInt(Math.max(bytes.byteLength, geometry?.decodedBytes ?? 0)),
+      diagnostics: skeleton?.issues ?? [],
+      maxDecodedBytes: BigInt(
+        Math.max(bytes.byteLength, geometry?.decodedBytes ?? 0, skeleton?.decodedBytes ?? 0),
+      ),
       companions: [
         {
           id: TEXTURE_REQUIREMENT,
@@ -442,7 +513,9 @@ const definition = Object.freeze({
         ...(geometryAccess === 'decoded' ? [] : ['decoded-geometry-buffers']),
         'materials',
         'texture-decoding',
-        'skeleton',
+        'skeleton-parent-links',
+        'skeleton-flags',
+        'skeleton-rest-pose',
         'animations',
         'external-m3a-sidecars',
         'm3-writing',
