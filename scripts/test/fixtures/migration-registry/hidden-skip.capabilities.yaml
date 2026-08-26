@@ -68,6 +68,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null

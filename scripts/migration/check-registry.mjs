@@ -91,7 +91,23 @@ const PROJECTION_KEYS = [
   'portableMaterialization',
   'opaquePreservation',
   'nativeExport',
+  'operations',
 ]
+
+/*
+ * Operation-level projection evidence (block 12 item 10).
+ *
+ * The four state fields above answer "does a projection of this kind exist", which is not the same
+ * question as "which operations over it are actually proven" — and a single badge let a row that
+ * proved `inspect` read as though it had proved `materialize` too. Each operation now names the
+ * test that proves it, or `null`, and null is the honest default: an unproven operation is the
+ * normal state for most rows and says so.
+ *
+ * The rule below is what stops the field from becoming decorative: a named test must also appear in
+ * the row's own `closedBy.tests`, so evidence cannot be claimed by pointing at a file nobody
+ * connected to this capability.
+ */
+const PROJECTION_OPERATION_KEYS = ['inspect', 'validate', 'read', 'materialize']
 
 const ENUMS = {
   releaseTrack: ['mk3-priority', 'multiverse-priority', 'post-ga'],
@@ -428,6 +444,31 @@ for (const row of capabilities) {
     'nativeExport',
   ]) {
     checkEnum(label, `projection.${field}`, row.projection[field], ENUMS.projectionState)
+  }
+  checkKeyOrder(
+    `${label}.projection.operations`,
+    row.projection.operations,
+    PROJECTION_OPERATION_KEYS,
+  )
+  const closedTests = new Set(row.closedBy.tests ?? [])
+  for (const operation of PROJECTION_OPERATION_KEYS) {
+    const proof = row.projection.operations[operation]
+    if (proof === null) continue
+    if (typeof proof !== 'string' || proof.trim() === '') {
+      fail(`${label}: projection.operations.${operation} must be null or a test path`)
+    } else if (!closedTests.has(proof)) {
+      fail(
+        `${label}: projection.operations.${operation} names «${proof}», which the row does not list in closedBy.tests`,
+      )
+    }
+  }
+  if (
+    row.projection.operations.materialize !== null &&
+    row.projection.portableMaterialization === 'none'
+  ) {
+    fail(
+      `${label}: projection.operations.materialize names a proof while portableMaterialization is none`,
+    )
   }
 
   for (const id of row.sourceUnitIds) {

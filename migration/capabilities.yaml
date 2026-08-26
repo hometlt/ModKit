@@ -165,6 +165,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'legacy-аналога нет: канонический документный стек не объявляет формат OpenDocument Drawing, поэтому differential-строки не существует, а законного .odg корпуса у репозитория нет — отсюда E2, а не E3/E4'
       - 'векторная сцена — первая draw:page; остальные страницы перечислены в дереве и посчитаны в сводке'
@@ -234,6 +239,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'MK3-native формат без legacy-аналога: строка заморожена как focused-required-addition блоком 10 и не расширяет release scope дальше'
     receipts:
@@ -292,6 +302,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'MK3-native формат без legacy-аналога: строка заморожена как focused-required-addition блоком 10 и не расширяет release scope дальше'
     receipts:
@@ -353,6 +368,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'MK3-native формат без legacy-аналога: строка заморожена как focused-required-addition блоком 10 и не расширяет release scope дальше'
     receipts:
@@ -411,6 +431,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'MK3-native формат без legacy-аналога: строка заморожена как focused-required-addition блоком 10 и не расширяет release scope дальше'
     receipts:
@@ -470,6 +495,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'MK3-native формат без legacy-аналога: строка заморожена как focused-required-addition блоком 10 и не расширяет release scope дальше'
       - 'детекция TSV читает ту же quote-aware грамматику, что и разбор: закавыченная табуляция и встроенный CR/LF больше не ломают арность'
@@ -532,6 +562,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'MK3-native формат без legacy-аналога: строка заморожена как focused-required-addition блоком 10 и не расширяет release scope дальше'
     receipts:
@@ -590,6 +625,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'MK3-native формат без legacy-аналога: строка заморожена как focused-required-addition блоком 10 и не расширяет release scope дальше'
     receipts:
@@ -652,6 +692,11 @@ capabilities:
       portableMaterialization: 'not-applicable'
       opaquePreservation: 'not-applicable'
       nativeExport: 'not-applicable'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'UI-wiring вложенных субъектов в web и VS Code — блоки 13–14'
     receipts:
@@ -716,6 +761,11 @@ capabilities:
       portableMaterialization: 'not-applicable'
       opaquePreservation: 'not-applicable'
       nativeExport: 'not-applicable'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -775,6 +825,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'детекция и разбор теперь читают одну грамматику; строка паритета csv-synthetic вышла из «нет в X3» в «паритет», и baseline поднят замком'
     receipts:
@@ -844,6 +899,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'X3 публикует структурные заголовки; растровый план не декодируется — 17 честных poorer-строк паритета'
     receipts:
@@ -901,6 +961,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: 'ProjectionReceipt'
@@ -957,6 +1022,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -1016,6 +1086,11 @@ capabilities:
       portableMaterialization: 'not-applicable'
       opaquePreservation: 'not-applicable'
       nativeExport: 'not-applicable'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'межмодовая ссылка даёт честный reference-only; шов блока 11C0 + game mounts блока 15'
     receipts:
@@ -1070,6 +1145,11 @@ capabilities:
       portableMaterialization: 'not-applicable'
       opaquePreservation: 'not-applicable'
       nativeExport: 'not-applicable'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -1123,6 +1203,11 @@ capabilities:
       portableMaterialization: 'not-applicable'
       opaquePreservation: 'not-applicable'
       nativeExport: 'not-applicable'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -1178,6 +1263,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -1234,6 +1324,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -1292,6 +1387,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'проверяемого корпуса .pal/.vpl нет; строка ждёт файла, backport в блоке 16'
     receipts:
@@ -1347,6 +1447,11 @@ capabilities:
       portableMaterialization: 'not-applicable'
       opaquePreservation: 'not-applicable'
       nativeExport: 'not-applicable'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -1403,6 +1508,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: 'ProjectionReceipt'
@@ -1459,6 +1569,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -1515,6 +1630,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: 'ProjectionReceipt'
@@ -1570,6 +1690,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -1625,6 +1750,11 @@ capabilities:
       portableMaterialization: 'not-applicable'
       opaquePreservation: 'not-applicable'
       nativeExport: 'not-applicable'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'межархивная ссылка вне pre-open шва; нужен ResourceSessionPort блока 11C0 и game mounts блока 16'
     receipts:
@@ -1683,6 +1813,11 @@ capabilities:
       portableMaterialization: 'not-applicable'
       opaquePreservation: 'not-applicable'
       nativeExport: 'not-applicable'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'доказано на синтетике; реальная модель C&C 3 ссылается межархивно'
     receipts:
@@ -1740,6 +1875,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: 'ProjectionReceipt'
@@ -1796,6 +1936,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -1851,6 +1996,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -1901,6 +2051,11 @@ capabilities:
       portableMaterialization: 'not-applicable'
       opaquePreservation: 'not-applicable'
       nativeExport: 'not-applicable'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'экспериментальная строка: не закрывает legacy gap и не расширяет release scope без отдельного решения владельца'
     receipts:
@@ -1950,6 +2105,11 @@ capabilities:
       portableMaterialization: 'not-applicable'
       opaquePreservation: 'not-applicable'
       nativeExport: 'not-applicable'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'экспериментальная строка: не закрывает legacy gap и не расширяет release scope без отдельного решения владельца'
     receipts:
@@ -2007,6 +2167,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: archive.extract'
@@ -2070,6 +2235,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: audio.export'
       - 'operation dropped at port: audio.inspect'
@@ -2128,6 +2298,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -2184,6 +2359,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -2234,6 +2414,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'no MK3 contribution exists for this legacy route yet'
     receipts:
@@ -2290,6 +2475,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -2349,6 +2539,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: image.inspect'
       - 'operation dropped at port: image.read'
@@ -2410,6 +2605,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: image.compressed-read'
       - 'operation dropped at port: image.inspect'
@@ -2472,6 +2672,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: video.export'
       - 'operation dropped at port: video.inspect'
@@ -2533,6 +2738,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: image.inspect'
     receipts:
@@ -2593,6 +2803,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: image.compressed-read'
       - 'operation dropped at port: image.inspect'
@@ -2660,6 +2875,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -2715,6 +2935,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -2770,6 +2995,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -2820,6 +3050,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'no MK3 contribution exists for this legacy route yet'
     receipts:
@@ -2876,6 +3111,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -2936,6 +3176,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: image.inspect'
@@ -2994,6 +3239,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -3055,6 +3305,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: archive.extract'
@@ -3114,6 +3369,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -3171,6 +3431,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: archive.extract'
@@ -3232,6 +3497,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: archive.extract'
       - 'operation dropped at port: archive.inspect'
@@ -3289,6 +3559,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: archive.extract'
     receipts:
@@ -3345,6 +3620,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -3405,6 +3685,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -3465,6 +3750,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -3526,6 +3816,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -3581,6 +3876,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -3640,6 +3940,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'stage-вклад org.modkitx/csv физически остаётся в extensions/mk2/uncommon-documents: MK3-маршрут выигрывает детекцию (0.94 против 0.9), а физическое опустошение mk2 принадлежит блоку 30'
       - 'диалекты с локальными разделителями и структурное редактирование ячеек не заявляются'
@@ -3702,6 +4007,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -3762,6 +4072,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: image.inspect'
@@ -3826,6 +4141,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: model.read'
       - 'operation dropped at port: model.render'
@@ -3888,6 +4208,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: image.compressed-read'
@@ -3948,6 +4273,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -4003,6 +4333,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -4053,6 +4388,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'no MK3 contribution exists for this legacy route yet'
     receipts:
@@ -4104,6 +4444,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'no MK3 contribution exists for this legacy route yet'
     receipts:
@@ -4155,6 +4500,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'no MK3 contribution exists for this legacy route yet'
     receipts:
@@ -4211,6 +4561,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -4261,6 +4616,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'no MK3 contribution exists for this legacy route yet'
     receipts:
@@ -4317,6 +4677,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -4374,6 +4739,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: archive.extract'
       - 'operation dropped at port: archive.inspect'
@@ -4431,6 +4801,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -4486,6 +4861,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -4536,6 +4916,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'no MK3 contribution exists for this legacy route yet'
     receipts:
@@ -4592,6 +4977,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -4642,6 +5032,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'no MK3 contribution exists for this legacy route yet'
     receipts:
@@ -4698,6 +5093,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -4753,6 +5153,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -4813,6 +5218,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: vector.inspect'
     receipts:
@@ -4864,6 +5274,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'no MK3 contribution exists for this legacy route yet'
     receipts:
@@ -4921,6 +5336,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -4982,6 +5402,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -5037,6 +5462,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -5097,6 +5527,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: image.inspect'
       - 'operation dropped at port: image.read'
@@ -5154,6 +5589,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -5210,6 +5650,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -5269,6 +5714,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: audio.export'
       - 'operation dropped at port: audio.inspect'
@@ -5326,6 +5776,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -5381,6 +5836,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -5436,6 +5896,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -5491,6 +5956,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «edit»: 13D editing exists for text sources only; binary edit contracts absent'
       - 'capability «language»: language contribution kind / language contracts not in X3'
@@ -5564,6 +6034,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: image.inspect'
@@ -5631,6 +6106,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: model.read'
       - 'operation dropped at port: model.render'
@@ -5697,6 +6177,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: model.read'
       - 'operation dropped at port: model.render'
@@ -5754,6 +6239,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -5815,6 +6305,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: archive.extract'
@@ -5874,6 +6369,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -5924,6 +6424,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'no MK3 contribution exists for this legacy route yet'
     receipts:
@@ -5985,6 +6490,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: image.inspect'
@@ -6044,6 +6554,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -6099,6 +6614,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -6155,6 +6675,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -6215,6 +6740,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: image.inspect'
@@ -6280,6 +6810,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: archive.extract'
       - 'operation dropped at port: archive.inspect'
@@ -6345,6 +6880,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: image.inspect'
     receipts:
@@ -6407,6 +6947,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: image.compressed-read'
@@ -6472,6 +7017,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: image.compressed-read'
@@ -6534,6 +7084,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: archive.extract'
       - 'operation dropped at port: archive.inspect'
@@ -6596,6 +7151,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: model.export'
@@ -6660,6 +7220,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: audio.export'
       - 'operation dropped at port: audio.inspect'
@@ -6721,6 +7286,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'stage-вклад org.modkitx/markdown физически остаётся в extensions/mk2/uncommon-documents: маршрут он больше не выигрывает ни на одном алиасе, а физическое опустошение mk2 принадлежит блоку 30 и перепроверяется блоком 31'
       - 'предпросмотр безопасен по построению: кодек не объявляет ни render, ни thumbnail; санитизация разметки остаётся заботой viewer-а и здесь не заявляется'
@@ -6777,6 +7347,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'no MK3 contribution exists for this legacy route yet'
     receipts:
@@ -6833,6 +7408,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -6898,6 +7478,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: audio.export'
       - 'operation dropped at port: audio.inspect'
@@ -6964,6 +7549,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: video.export'
       - 'operation dropped at port: video.inspect'
@@ -7025,6 +7615,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: video.export'
       - 'operation dropped at port: video.inspect'
@@ -7083,6 +7678,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: archive.extract'
@@ -7142,6 +7742,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -7202,6 +7807,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: model.export'
@@ -7267,6 +7877,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'колода публикуется через common.view/slide-deck-source@1 — publisher-candidate по ADR-DOC-001: ODP его единственный publisher, форма может измениться по правилам dual-publish до второй slides-family (PPTX, блок 30)'
       - 'masters, layouts, переходы и анимация не разобраны и поэтому не публикуются — не публикуются пустыми'
@@ -7340,6 +7955,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'формулы публикуются текстом с координатой ячейки и никогда не вычисляются; значение ячейки — то, которое сохранил документ'
       - 'table-data-source несёт первый лист; остальные перечислены в дереве и посчитаны в сводке'
@@ -7413,6 +8033,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'разобран поток: заголовки, абзацы и построенный по ним outline. Поля, аннотации, отслеживание изменений, сноски, колонтитулы не разбираются и не публикуются'
       - 'layout fidelity недоступна: стили ODF (styles.xml и automatic styles) не интерпретируются, поэтому шрифты, цвета, интервалы и композиция страницы отсутствуют, а не приближаются'
@@ -7486,6 +8111,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: audio.export'
       - 'operation dropped at port: audio.inspect'
@@ -7547,6 +8177,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: video.export'
       - 'operation dropped at port: video.inspect'
@@ -7611,6 +8246,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: audio.export'
       - 'operation dropped at port: audio.inspect'
@@ -7673,6 +8313,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: image.inspect'
       - 'operation dropped at port: image.read'
@@ -7735,6 +8380,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'testedGames evidence has no codec-spec field (game plane absent in X3)'
@@ -7795,6 +8445,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -7856,6 +8511,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: archive.extract'
@@ -7915,6 +8575,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -7975,6 +8640,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: image.compressed-read'
       - 'operation dropped at port: image.inspect'
@@ -8038,6 +8708,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: model.read'
       - 'operation dropped at port: model.render'
@@ -8102,6 +8777,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: image.inspect'
@@ -8162,6 +8842,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -8217,6 +8902,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -8279,6 +8969,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: archive.extract'
       - 'operation dropped at port: archive.inspect'
@@ -8337,6 +9032,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: archive.extract'
       - 'operation dropped at port: archive.inspect'
@@ -8394,6 +9094,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -8454,6 +9159,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: image.compressed-read'
       - 'operation dropped at port: image.inspect'
@@ -8512,6 +9222,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -8567,6 +9282,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -8624,6 +9344,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: archive.extract'
       - 'operation dropped at port: archive.inspect'
@@ -8689,6 +9414,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -8739,6 +9469,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'no MK3 contribution exists for this legacy route yet'
     receipts:
@@ -8795,6 +9530,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -8850,6 +9590,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -8900,6 +9645,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'no MK3 contribution exists for this legacy route yet'
     receipts:
@@ -8956,6 +9706,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -9011,6 +9766,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -9066,6 +9826,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -9121,6 +9886,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -9176,6 +9946,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -9232,6 +10007,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'двойной маршрут снят слайсом 12-2: до него обе стороны отдавали ровно 0.995, host объявлял ambiguous и RTF не открывался вообще; теперь org.modkitx/document-rtf выигрывает 0.998 (заголовок и алиас) против 0.99 у отставного стейджинга'
       - 'стейджинг-вклад org.modkitx/rtf физически остаётся сгенерированной port-pending заглушкой до блока 30; его open() бросает x3.mk2/port-pending, поэтому выиграть маршрут он не может'
@@ -9294,6 +10074,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -9344,6 +10129,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'no MK3 contribution exists for this legacy route yet'
     receipts:
@@ -9405,6 +10195,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -9468,6 +10263,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -9523,6 +10323,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «edit»: 13D editing exists for text sources only; binary edit contracts absent'
       - 'capability «sign»: no signing/launch/runtime plane in X3 (17 runtime/launch)'
@@ -9587,6 +10392,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «edit»: 13D editing exists for text sources only; binary edit contracts absent'
       - 'capability «language»: language contribution kind / language contracts not in X3'
@@ -9656,6 +10466,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «edit»: 13D editing exists for text sources only; binary edit contracts absent'
       - 'operation dropped at port: asset.validate'
@@ -9717,6 +10532,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «edit»: 13D editing exists for text sources only; binary edit contracts absent'
       - 'capability «language»: language contribution kind / language contracts not in X3'
@@ -9782,6 +10602,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «edit»: 13D editing exists for text sources only; binary edit contracts absent'
       - 'capability «launch»: launch is a runtime side-effect operation (17); not in X3'
@@ -9846,6 +10671,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «edit»: 13D editing exists for text sources only; binary edit contracts absent'
       - 'operation dropped at port: asset.compare'
@@ -9910,6 +10740,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «play»: runtime plane not in X3'
       - 'operation dropped at port: asset.validate'
@@ -9976,6 +10811,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: runtime.execute'
       - 'operation dropped at port: runtime.replay-assist'
@@ -10040,6 +10880,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «edit»: 13D editing exists for text sources only; binary edit contracts absent'
       - 'capability «language»: language contribution kind / language contracts not in X3'
@@ -10107,6 +10952,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «edit»: 13D editing exists for text sources only; binary edit contracts absent'
       - 'operation dropped at port: asset.search'
@@ -10169,6 +11019,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -10224,6 +11079,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -10279,6 +11139,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -10334,6 +11199,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -10389,6 +11259,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -10444,6 +11319,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -10499,6 +11379,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -10549,6 +11434,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'no MK3 contribution exists for this legacy route yet'
     receipts:
@@ -10607,6 +11497,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -10662,6 +11557,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -10712,6 +11612,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'no MK3 contribution exists for this legacy route yet'
     receipts:
@@ -10763,6 +11668,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'no MK3 contribution exists for this legacy route yet'
     receipts:
@@ -10814,6 +11724,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'no MK3 contribution exists for this legacy route yet'
     receipts:
@@ -10875,6 +11790,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: model.read'
       - 'operation dropped at port: model.render'
@@ -10932,6 +11852,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -10992,6 +11917,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: vector.inspect'
     receipts:
@@ -11048,6 +11978,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -11104,6 +12039,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -11165,6 +12105,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: archive.extract'
@@ -11224,6 +12169,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -11284,6 +12234,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: image.inspect'
@@ -11348,6 +12303,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: image.inspect'
@@ -11407,6 +12367,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -11468,6 +12433,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'UTF-16 принимается только с byte-order mark, и такой документ не публикует ленивый text-data-source: его индекс строк строится по байтам источника и верен лишь для UTF-8'
       - 'полный collision suite (generic текст против форматного текста игры) — блок 12 п.4; здесь закреплено одно правило: .txt внутри контейнера SC2 или под LocalizedData/ уступает кодеку игры'
@@ -11529,6 +12499,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -11585,6 +12560,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -11640,6 +12620,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -11695,6 +12680,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -11750,6 +12740,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -11806,6 +12801,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -11861,6 +12861,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -11917,6 +12922,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -11973,6 +12983,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -12028,6 +13043,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -12083,6 +13103,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -12138,6 +13163,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -12198,6 +13228,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: model.export'
@@ -12258,6 +13293,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -12313,6 +13353,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -12368,6 +13413,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -12418,6 +13468,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'no MK3 contribution exists for this legacy route yet'
     receipts:
@@ -12469,6 +13524,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'no MK3 contribution exists for this legacy route yet'
     receipts:
@@ -12520,6 +13580,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'no MK3 contribution exists for this legacy route yet'
     receipts:
@@ -12571,6 +13636,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'no MK3 contribution exists for this legacy route yet'
     receipts:
@@ -12622,6 +13692,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'no MK3 contribution exists for this legacy route yet'
     receipts:
@@ -12673,6 +13748,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'no MK3 contribution exists for this legacy route yet'
     receipts:
@@ -12729,6 +13809,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -12785,6 +13870,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -12840,6 +13930,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -12895,6 +13990,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -12950,6 +14050,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -13006,6 +14111,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -13065,6 +14175,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: audio.decode'
       - 'operation dropped at port: audio.export'
@@ -13123,6 +14238,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -13186,6 +14306,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: video.export'
       - 'operation dropped at port: video.inspect'
@@ -13248,6 +14373,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: image.inspect'
     receipts:
@@ -13304,6 +14434,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -13369,6 +14504,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -13429,6 +14569,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: vector.inspect'
     receipts:
@@ -13489,6 +14634,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: video.export'
       - 'operation dropped at port: video.inspect'
@@ -13541,6 +14691,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'no MK3 contribution exists for this legacy route yet'
     receipts:
@@ -13597,6 +14752,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -13652,6 +14812,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -13707,6 +14872,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -13762,6 +14932,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -13819,6 +14994,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: archive.extract'
@@ -13887,6 +15067,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: archive.extract'
@@ -13949,6 +15134,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'operation dropped at port: archive.extract'
       - 'operation dropped at port: archive.inspect'
@@ -14001,6 +15191,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -14053,6 +15248,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -14104,6 +15304,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -14158,6 +15363,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -14212,6 +15422,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -14263,6 +15478,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -14315,6 +15535,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -14366,6 +15591,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -14419,6 +15649,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -14471,6 +15706,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -14523,6 +15763,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -14575,6 +15820,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -14627,6 +15877,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -14681,6 +15936,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -14734,6 +15994,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -14787,6 +16052,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -14839,6 +16109,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -14890,6 +16165,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -14942,6 +16222,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -14995,6 +16280,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -15047,6 +16337,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -15099,6 +16394,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -15163,6 +16463,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss: []
     receipts:
       projection: null
@@ -15215,6 +16520,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -15268,6 +16578,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -15321,6 +16636,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -15373,6 +16693,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -15425,6 +16750,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -15477,6 +16807,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -15530,6 +16865,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -15581,6 +16921,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
     receipts:
@@ -15630,6 +16975,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'legacy modkitx не содержит codec-манифеста карты RA2; строка — обязательное post-GA доказательство, а не перенос'
     receipts:
@@ -15681,6 +17031,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'planned'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'авторитет физически перенесён в sibling-репозиторий multiverse: X3 потребляет только pinned snapshot и вторым источником не становится'
       - 'перенесены материалы, которыми владеет слайс 11C0: UV Foundation, семейство UVM, канонизация, версионирование, semantic scopes; UVW/UVD/UVS и медиа-заглушки переносит блок 22'
@@ -15743,6 +17098,11 @@ capabilities:
       portableMaterialization: 'materialized'
       opaquePreservation: 'none'
       nativeExport: 'planned'
+      operations:
+        inspect: 'packages/testkit/test/model-facet-contracts.test.ts'
+        validate: 'packages/sdk/test/uv-projection-abi.test.ts'
+        read: null
+        materialize: null
     knownLoss:
       - 'ProjectionReceipt выпускают шесть модельных кодеков (M3, W3D, W3X, VXL, OBJ, UVM) через общий helper codec-kit; квитанция публикуется в descriptor-метаданных сразу в portable-форме, путь в неё не компилируется'
       - 'остальные модельные кодеки (DAE, glTF, PLY, STL, XBF, SCM) квитанцию пока не выпускают, и ни один не-модельный plane тоже'
@@ -15807,6 +17167,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'planned'
+      operations:
+        inspect: null
+        validate: null
+        read: 'packages/host/test/resource-session.test.ts'
+        materialize: null
     knownLoss:
       - 'порт переиспользует host-private CompanionOrigin, confinement и provenance блока 9, но имеет собственный lease/revision lifecycle и не подменяет AssetInput/openBinding'
       - 'conformance блока 12 п.7 закрыт: budgets, cancellation, cycles, allowlist, confinement, целостность кэша, неподделываемость provenance, конкурентные сессии и teardown под нагрузкой — 26 unit-случаев'
@@ -15865,6 +17230,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'planned'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'спецификация существует и валидируется, исполняемого MK3-контракта ещё нет'
     receipts:
@@ -15923,6 +17293,11 @@ capabilities:
       portableMaterialization: 'materialized'
       opaquePreservation: 'none'
       nativeExport: 'planned'
+      operations:
+        inspect: null
+        validate: null
+        read: 'packages/testkit/test/uvm-convergence.test.ts'
+        materialize: 'packages/testkit/test/uvm-convergence.test.ts'
     knownLoss:
       - 'model viewer открывает живую проекцию без материализации и без знания native game/format ID; байты UVM создаёт только материализатор'
       - 'опциональные facet-контракты объявлены и публикуются: слайс 12-2 снял ad hoc сводки там, где контракт несёт факт целиком (M3 textureReferences/textureBindings, W3D textures/animations/collision, W3X textures/collisionParts). Осталось намеренно то, чего у контрактов нет: иерархия W3D с parentIndex, роли meshBindings, слот и шейдер в textureReferences W3X — расширение контрактов, а не дублирование'
@@ -15985,6 +17360,11 @@ capabilities:
       portableMaterialization: 'materialized'
       opaquePreservation: 'none'
       nativeExport: 'planned'
+      operations:
+        inspect: null
+        validate: 'scripts/test/uv-materializer-boundary.test.ts'
+        read: null
+        materialize: 'packages/testkit/test/uvm-materializer.test.ts'
     knownLoss:
       - 'write-reopen-compared здесь означает и round-trip артефакта (материализация → переоткрытие → сравнение), и коммит через host coordinator: слайс 12-3 открыл шов, и UVM пишется через prepare/commit в namespace-цель, а прочитанное побайтно совпадает с тем, что записал координатор. Писателю UVM подтверждение не требуется — он заявляет semantic, а не lossy'
       - 'exact projectionSemanticHash достигается там, где источник уже использует позиционную конвенцию идентичности артефакта (UVM, glTF); M3/W3X/W3D/VXL перенумеровываются, и каждая расходящаяся плоскость перечислена в MaterializationReceipt'
@@ -16051,6 +17431,11 @@ capabilities:
       portableMaterialization: 'materialized'
       opaquePreservation: 'none'
       nativeExport: 'planned'
+      operations:
+        inspect: null
+        validate: 'packages/testkit/test/uvt-writer.test.ts'
+        read: null
+        materialize: 'packages/testkit/test/uvt-materializer.test.ts'
     knownLoss:
       - 'первый путь узкий и назван: несжатый 8-битный RGBA из декодированного raster-региона, один уровень, одна грань, без массива и суперкомпрессии; всё, что источник нёс сверх этого, перечислено в MaterializationReceipt, а не потеряно молча'
       - 'passthrough блочных форматов (DDS BC) не реализован: ни один ридер Modkit не публикует GPU-блоки как блоки — DDS декодирует в RGBA, — поэтому путь потребовал бы сначала новой live-поверхности'
@@ -16112,6 +17497,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'planned'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'спецификация существует и валидируется, исполняемого MK3-контракта ещё нет'
     receipts:
@@ -16165,6 +17555,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -16217,6 +17612,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -16271,6 +17671,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'planned'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -16325,6 +17730,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -16380,6 +17790,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -16432,6 +17847,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -16483,6 +17903,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -16536,6 +17961,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'planned'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -16589,6 +18019,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -16643,6 +18078,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -16697,6 +18137,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -16750,6 +18195,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -16805,6 +18255,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'planned'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -16860,6 +18315,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -16916,6 +18376,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -16969,6 +18434,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -17021,6 +18491,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -17075,6 +18550,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'planned'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -17129,6 +18609,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -17184,6 +18669,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -17238,6 +18728,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -17295,6 +18790,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'CASC/M3/map/data читаются; полный authoring workflow вертикали ещё не закрыт'
     receipts:
@@ -17351,6 +18851,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'planned'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -17406,6 +18911,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -17462,6 +18972,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -17515,6 +19030,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -17567,6 +19087,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -17621,6 +19146,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'planned'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -17675,6 +19205,11 @@ capabilities:
       portableMaterialization: 'planned'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:
@@ -17730,6 +19265,11 @@ capabilities:
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
     knownLoss:
       - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
     receipts:

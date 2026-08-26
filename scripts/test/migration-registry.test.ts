@@ -37,6 +37,21 @@ describe('capability registry gate (plan §3.3–3.4, block 10 works 4–6 and 1
     expect(stdout).toContain('1 mapped + 1 unmapped = 2 source units')
   })
 
+  it('refuses an operation-level projection proof the row does not actually list', () => {
+    /*
+     * Block 12 item 10. The four projection state fields answer "does a projection of this kind
+     * exist", which is a different question from "which operations over it are proven" — and one
+     * badge let a row that proved `inspect` read as though it had proved `materialize` too. Each
+     * operation now names its test, and this is the rule that stops the field being decorative: a
+     * named test must also be in the row's own `closedBy.tests`, so evidence cannot be claimed by
+     * pointing at a file nobody connected to this capability.
+     */
+    const { status, stderr } = runGate('unlisted-operation-proof.capabilities.yaml')
+    expect(status).toBe(1)
+    expect(stderr).toContain('projection.operations.inspect')
+    expect(stderr).toContain('does not list in closedBy.tests')
+  })
+
   it('refuses a capability row with no owner', () => {
     const { status, stderr } = runGate('no-owner.capabilities.yaml')
     expect(status).toBe(1)
