@@ -1,7 +1,12 @@
 // Hand-ported from the MK2 ASTC codec. This dependency-free MK3 slice validates the standalone
-// container and block layout; it does not claim decoded pixels without an ASTC decoder.
+// container and decodes only the mandatory 2D LDR void-extent constant-colour block mode. All
+// other ASTC block modes remain compressed-only instead of being approximated.
 
-import { createInspectionCodec, createTreeDataSource } from '@modkitx-x3/codec-kit'
+import {
+  createInspectionCodec,
+  createRasterImageSource,
+  createTreeDataSource,
+} from '@modkitx-x3/codec-kit'
 
 const ID = 'org.modkitx/astc'
 const HEADER_BYTES = 16
@@ -74,6 +79,79 @@ function parseHeader(bytes, requirePayload) {
   })
 }
 
+/**
+ * Khronos Data Format Specification 1.4, sections 23.9.3 and 23.22:
+ * bits 8..0 are 111111100 for a void-extent block; bit 9 selects LDR/HDR; bits 10 and 11 are
+ * reserved and must be one. The first 64 bits are little-endian block configuration, so checking
+ * the low 16-bit word is sufficient to classify this deliberately bounded decoder path.
+ */
+function classifyBlock(bytes, offset) {
+  const low = (bytes[offset] ?? 0) | ((bytes[offset + 1] ?? 0) << 8)
+  if ((low & 0x1ff) !== 0x1fc) return 'other-block-mode'
+  if ((low & 0xc00) !== 0xc00) return 'illegal-void-extent'
+  return (low & 0x200) === 0 ? 'ldr-void-extent' : 'hdr-void-extent'
+}
+
+function decodedSubset(bytes, info, signal) {
+  if (info.depth !== 1 || info.blockDepth !== 1) {
+    return Object.freeze({ decodedAccess: false, unsupported: 'three-dimensional-blocks' })
+  }
+  for (let index = 0; index < info.blocks; index += 1) {
+    if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
+    const classification = classifyBlock(bytes, HEADER_BYTES + index * BLOCK_BYTES)
+    if (classification !== 'ldr-void-extent') {
+      return Object.freeze({ decodedAccess: false, unsupported: classification, index })
+    }
+  }
+  return Object.freeze({ decodedAccess: true, subset: '2d-ldr-void-extent' })
+}
+
+function regionReader(bytes, info) {
+  return async (request, signal) => {
+    if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
+    const values = [request.x, request.y, request.width, request.height, request.maxBytes]
+    if (!values.every(value => Number.isSafeInteger(value) && value >= 0)) {
+      throw new TypeError('ASTC region coordinates and budget must be non-negative safe integers')
+    }
+    if (
+      request.pixelFormat !== 'rgba8' ||
+      (request.frame ?? 0) !== 0 ||
+      (request.mipLevel ?? 0) !== 0 ||
+      (request.layer ?? 0) !== 0 ||
+      (request.face ?? 0) !== 0 ||
+      (request.slice ?? 0) !== 0
+    ) {
+      throw new RangeError('ASTC void-extent decoder exposes only the first 2D image as rgba8')
+    }
+    if (request.x + request.width > info.width || request.y + request.height > info.height) {
+      throw new RangeError('ASTC region is outside the image')
+    }
+    const length = request.width * request.height * 4
+    if (!Number.isSafeInteger(length) || length > request.maxBytes) {
+      throw new RangeError('ASTC region exceeds maxBytes budget')
+    }
+
+    const pixels = new Uint8Array(length)
+    for (let row = 0; row < request.height; row += 1) {
+      if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
+      const sourceY = request.y + row
+      for (let column = 0; column < request.width; column += 1) {
+        const sourceX = request.x + column
+        const blockX = Math.floor(sourceX / info.blockWidth)
+        const blockY = Math.floor(sourceY / info.blockHeight)
+        const block = HEADER_BYTES + (blockY * info.blockColumns + blockX) * BLOCK_BYTES
+        const target = (row * request.width + column) * 4
+        // LDR void-extent components are little-endian UNORM16. decode_unorm8 takes the top byte.
+        pixels[target] = bytes[block + 9]
+        pixels[target + 1] = bytes[block + 11]
+        pixels[target + 2] = bytes[block + 13]
+        pixels[target + 3] = bytes[block + 15]
+      }
+    }
+    return { pixelFormat: 'rgba8', width: request.width, height: request.height, pixels }
+  }
+}
+
 const definition = Object.freeze({
   id: ID,
   format: Object.freeze({ id: 'astc', label: 'ASTC Texture', mediaType: 'image/astc' }),
@@ -86,9 +164,34 @@ const definition = Object.freeze({
       return { confidence: 0.4, kind: 'magic', note: 'astc-header-invalid' }
     }
   },
-  async inspect(bytes) {
+  async inspect(bytes, context) {
     const info = parseHeader(bytes, true)
     const profile = info.depth === 1 ? '2D' : '3D'
+    const decoded = decodedSubset(bytes, info, context.signal)
+    const decodedBytes = BigInt(info.width) * BigInt(info.height) * 4n
+    if (decoded.decodedAccess && decodedBytes > BigInt(context.budget.maxScalarBytes)) {
+      throw new RangeError('ASTC decoded pixels exceed the scalar budget')
+    }
+    const raster = createRasterImageSource(
+      bytes,
+      'image/astc',
+      {
+        width: info.width,
+        height: info.height,
+        depth: info.depth,
+        layers: 1,
+        faces: 1,
+        mipLevels: 1,
+        frames: 1,
+        channels: 4,
+        bitDepth: 8,
+        colorSpace: 'unknown',
+        alphaMode: 'straight',
+        orientation: 'top-left',
+        decodedAccess: decoded.decodedAccess,
+      },
+      decoded.decodedAccess ? regionReader(bytes, info) : undefined,
+    )
     const tree = createTreeDataSource({
       kind: 'image',
       label: 'ASTC',
@@ -130,6 +233,8 @@ const definition = Object.freeze({
         blockDepth: info.blockDepth,
         blocks: info.blocks,
         payloadBytes: info.payloadBytes,
+        decodedSubset: decoded.subset ?? 'none',
+        decodedAccess: decoded.decodedAccess,
       },
       metadata: [
         {
@@ -145,6 +250,14 @@ const definition = Object.freeze({
             { key: 'blockDepth', value: info.blockDepth },
             { key: 'blocks', value: info.blocks },
             { key: 'payloadBytes', value: info.payloadBytes },
+            { key: 'decodedSubset', value: decoded.subset ?? 'none' },
+            { key: 'decodedAccess', value: decoded.decodedAccess },
+            ...(decoded.unsupported === undefined
+              ? []
+              : [{ key: 'firstUnsupportedBlock', value: decoded.unsupported }]),
+            ...(decoded.index === undefined
+              ? []
+              : [{ key: 'firstUnsupportedBlockIndex', value: decoded.index }]),
             { key: 'trailingBytes', value: bytes.byteLength - info.requiredBytes },
           ],
         },
@@ -161,13 +274,25 @@ const definition = Object.freeze({
         },
         {
           id: 'image.raster',
-          parameters: { width: info.width, height: info.height, depth: info.depth, decoded: false },
+          parameters: {
+            width: info.width,
+            height: info.height,
+            depth: info.depth,
+            decoded: decoded.decodedAccess,
+          },
         },
         { id: 'content.binary', parameters: { bytes: String(bytes.byteLength) } },
       ],
-      dataSources: { 'common.view/tree-data-source': tree },
+      dataSources: {
+        'common.view/tree-data-source': tree,
+        'common.view/raster-image-source': raster,
+      },
+      ...(decoded.decodedAccess ? { maxDecodedBytes: decodedBytes } : {}),
       unsupportedFeatures: [
-        'rgba-decoding',
+        ...(decoded.decodedAccess ? [] : ['rgba-decoding']),
+        'non-void-extent-block-decoding',
+        'hdr-void-extent-decoding',
+        'three-dimensional-astc-decoding',
         'color-profile-inference',
         'hdr-output',
         'pixel-editing',

@@ -21,9 +21,9 @@
     }
   ],
   "limitations": [
-    "The dependency-free MK3 port validates the standalone header, dimensions and compressed block payload but deliberately publishes no raster source without an ASTC decoder.",
+    "The dependency-free MK3 port decodes only two-dimensional LDR void-extent constant-colour blocks; all ordinary, HDR void-extent and three-dimensional ASTC block modes remain compressed-only.",
     "The standalone container does not identify linear versus sRGB or LDR versus HDR profiles, so consumers must obtain that semantic from surrounding asset metadata.",
-    "Three-dimensional ASTC decode, HDR output, GPU upload and encoding remain follow-up work."
+    "General ASTC decoding, HDR output, GPU upload and encoding remain follow-up work."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "astc", "label": "ASTC Texture" }],
@@ -47,7 +47,8 @@
     ],
     "publishesDataSources": [
       { "contract": "common.view/tree-data-source", "major": 1 },
-      { "contract": "common.view/byte-range-source", "major": 1 }
+      { "contract": "common.view/byte-range-source", "major": 1 },
+      { "contract": "common.view/raster-image-source", "major": 1 }
     ],
     "operations": [
       {
