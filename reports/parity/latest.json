@@ -7,7 +7,7 @@
   },
   "x3": {
     "root": "C:\\FILES\\SC2Files\\coding\\modkitX3",
-    "sha": "01efd755611746f5ee9edac7836da1951dbc45ee"
+    "sha": "dc14a4a1efb93bfc26cdae1070ba13a81f675dd6"
   },
   "counts": {
     "total": 73,
@@ -18,9 +18,9 @@
     "failed": 0,
     "comparedReal": 13,
     "comparedSynthetic": 60,
-    "richer": 41,
+    "richer": 42,
     "equal": 16,
-    "poorer": 16,
+    "poorer": 15,
     "incomparable": 0
   },
   "summary": [
@@ -453,8 +453,8 @@
       "kind": "synthetic",
       "contributionId": "org.modkitx/pkm",
       "state": "compared",
-      "classification": "X3 беднее",
-      "verdict": "poorer"
+      "classification": "X3 богаче",
+      "verdict": "richer"
     },
     {
       "id": "ply-synthetic",
@@ -800,18 +800,6 @@
         "common.view/namespace-entry-source:measurement:files:2<3"
       ],
       "reason": "The canonical PE reader publishes two synthesised metadata documents (metadata/summary.txt, metadata/headers.json) as namespace entries; X3 publishes the raw header blob plus the same single real section. The entry-count gap is namespace modelling, not unread PE structure."
-    },
-    {
-      "id": "pkm-synthetic",
-      "format": "pkm",
-      "kind": "synthetic",
-      "classification": "X3 беднее",
-      "missing": [
-        "common.view/raster-image-source:decoded-region",
-        "common.view/raster-image-source:measurement:decodedAccess=true",
-        "common.view/raster-image-source:measurement:decodedBytes:0<4"
-      ],
-      "reason": "X3 reads the PKM header but publishes no decoded region; the canonical codec decodes the ETC1 block."
     },
     {
       "id": "ply-synthetic",
@@ -14090,12 +14078,8 @@
         "bytes": 24,
         "sha256": "8f5e81a8d4903acd22bf0b86c8c00e825cd607432f7d72315f72b8bc583391ef"
       },
-      "classification": "X3 беднее",
-      "missing": [
-        "common.view/raster-image-source:decoded-region",
-        "common.view/raster-image-source:measurement:decodedAccess=true",
-        "common.view/raster-image-source:measurement:decodedBytes:0<4"
-      ],
+      "classification": "X3 богаче",
+      "missing": [],
       "extra": [
         "common.view/raster-image-source:measurement:channels",
         "common.view/raster-image-source:measurement:encodedMediaType",
@@ -14108,12 +14092,8 @@
       "sourceComparisons": [
         {
           "contract": "common.view/raster-image-source",
-          "classification": "X3 беднее",
-          "missing": [
-            "decoded-region",
-            "measurement:decodedAccess=true",
-            "measurement:decodedBytes:0<4"
-          ],
+          "classification": "X3 богаче",
+          "missing": [],
           "extra": ["measurement:channels", "measurement:encodedMediaType"]
         }
       ],
@@ -14168,11 +14148,11 @@
             "contract": "common.view/raster-image-source",
             "major": 1,
             "state": "opened",
-            "features": ["encoded", "info"],
+            "features": ["decoded-region", "encoded", "info"],
             "measurements": {
               "channels": 3,
-              "decodedAccess": false,
-              "decodedBytes": 0,
+              "decodedAccess": true,
+              "decodedBytes": 4,
               "encodedMediaType": "image/x-pkm",
               "encodedNonEmpty": true,
               "height": 1,
@@ -14213,7 +14193,7 @@
           "source:common.view/tree-data-source"
         ]
       },
-      "verdict": "poorer",
+      "verdict": "richer",
       "planes": [
         {
           "plane": "subject-recognition",
@@ -14251,7 +14231,7 @@
           "state": "not-observed",
           "verdict": "not-observed"
         },
-        { "plane": "payload-access", "state": "compared", "verdict": "poorer" },
+        { "plane": "payload-access", "state": "compared", "verdict": "equal" },
         {
           "plane": "protected-tail-preservation",
           "state": "not-observed",
@@ -14299,11 +14279,11 @@
             "contract": "common.view/raster-image-source",
             "major": 1,
             "state": "opened",
-            "features": ["encoded", "info"],
+            "features": ["decoded-region", "encoded", "info"],
             "measurements": {
               "channels": 3,
-              "decodedAccess": false,
-              "decodedBytes": 0,
+              "decodedAccess": true,
+              "decodedBytes": 4,
               "encodedMediaType": "image/x-pkm",
               "encodedNonEmpty": true,
               "height": 1,
@@ -14325,12 +14305,8 @@
         ]
       },
       "comparison": {
-        "classification": "X3 беднее",
-        "missing": [
-          "common.view/raster-image-source:decoded-region",
-          "common.view/raster-image-source:measurement:decodedAccess=true",
-          "common.view/raster-image-source:measurement:decodedBytes:0<4"
-        ],
+        "classification": "X3 богаче",
+        "missing": [],
         "extra": [
           "common.view/raster-image-source:measurement:channels",
           "common.view/raster-image-source:measurement:encodedMediaType",
@@ -14343,12 +14319,8 @@
         "sources": [
           {
             "contract": "common.view/raster-image-source",
-            "classification": "X3 беднее",
-            "missing": [
-              "decoded-region",
-              "measurement:decodedAccess=true",
-              "measurement:decodedBytes:0<4"
-            ],
+            "classification": "X3 богаче",
+            "missing": [],
             "extra": ["measurement:channels", "measurement:encodedMediaType"]
           }
         ]
