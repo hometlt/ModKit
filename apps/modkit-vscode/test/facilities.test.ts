@@ -2,9 +2,10 @@
  * Intent against reality, without a webview.
  *
  * The probe reads four globals and the comparison is set arithmetic, so both are asserted here
- * rather than through a running editor. The case that matters is the one the smoke actually
- * produces: VS Code is launched with `--disable-gpu`, so the page cannot honour the `gpu.webgl2`
- * its realm was composed with — and §1.5 asks that this be named, not hidden and not emulated.
+ * rather than through a running editor — a real webview cannot be made to lack WebGL2 on demand.
+ * The receipt records what the smoke's own editor answers (`gpu.webgl2` honoured even under
+ * `--disable-gpu`, `gpu.webgpu` offered and ungranted); these cases cover the shapes that editor
+ * happens not to produce, which is the half a live run can never reach.
  */
 import { describe, expect, it } from 'vitest'
 import {
@@ -26,7 +27,7 @@ describe('what a page can honour', () => {
     expect(probeWebviewFacilities({ Worker: workerGlobal, document: canvasReturning({}) })).toEqual(
       ['gpu.webgl2', 'worker.module'],
     )
-    // `--disable-gpu` is exactly this: the canvas exists and answers null
+    // a driver or a headless container without WebGL2: the canvas exists and answers null
     expect(
       probeWebviewFacilities({ Worker: workerGlobal, document: canvasReturning(null) }),
     ).toEqual(['worker.module'])

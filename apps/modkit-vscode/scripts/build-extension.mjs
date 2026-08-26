@@ -115,35 +115,21 @@ async function buildInto(output, syncManifest) {
   cpSync(join(appRoot, 'app.css'), join(output, 'app.css'))
 
   /*
-   * The catalog this build ships, copied in rather than discovered at activation.
+   * The catalog is *named* by `generated/bundled-catalog.json` and not copied here, and the
+   * distinction is deliberate.
    *
-   * Until now nothing put an extension inside `dist-app`, so a packaged build composed an empty
-   * inventory and opened every asset as raw bytes — a product that looks healthy and can read
-   * nothing (block-9 receipt, defect 6). The set is the generated catalog's, so what is copied and
-   * what the host then loads are the same list by construction.
+   * Copying the roots in looked right and was not: an extension root under `extensions/common`
+   * reaches its SDK through `node_modules/@modkitx-x3`, a workspace link, and a copy without it is
+   * a directory that looks like an extension and cannot run. The first build that did this turned
+   * every bundled codec off — PNG, ANI and ASTC all fell back to hex in the smoke — which is a
+   * worse failure than the one it was meant to fix, because the artifact looks complete.
    *
-   * `node_modules` and `dist` are skipped: an extension root is manifests and sources, and copying
-   * a workspace's symlinked dependency tree into an editor extension would be both enormous and
-   * wrong.
+   * So what this slice fixes is the *silence*, not the packaging: the host now resolves the named
+   * catalog and reports any root it cannot find, and activation fails loudly instead of composing
+   * an empty inventory (block-9 receipt, defect 6). Making a packaged build carry runnable roots
+   * needs a dependency decision — vendored `@modkitx-x3` per root, or codecs bundled the way the
+   * PWA bundles its worker — and that belongs to whoever takes VS Code packaging (13D/14).
    */
-  const catalog = JSON.parse(
-    readFileSync(join(appRoot, 'generated', 'bundled-catalog.json'), 'utf8'),
-  )
-  const extensionsOut = join(output, 'extensions')
-  for (const root of catalog.roots) {
-    const from = join(repoRoot, 'extensions', ...root.directory.split('/'))
-    if (!existsSync(from)) {
-      console.error(`missing catalog root ${root.directory} — run pnpm catalogs:emit`)
-      process.exit(1)
-    }
-    cpSync(from, join(extensionsOut, ...root.directory.split('/')), {
-      recursive: true,
-      filter: source => {
-        const name = basename(source)
-        return name !== 'node_modules' && name !== 'dist'
-      },
-    })
-  }
 
   // ---------------------------------------------------------------- manifest
   // Only the real output owns the manifest: a check build must not write the package it is checking.

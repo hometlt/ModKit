@@ -1012,10 +1012,17 @@ export function catalogCandidates(
   extensionRoot: string,
   repositoryRoot?: string,
 ): readonly string[] {
-  const candidates = [
-    join(extensionRoot, 'extensions'),
-    join(extensionRoot, 'dist-app', 'extensions'),
-  ]
-  if (repositoryRoot !== undefined) candidates.push(join(repositoryRoot, 'extensions', 'common'))
+  /*
+   * Bases, not catalogs: the generated catalog stores `common/images`, so each candidate is the
+   * directory that `extensions/` prefix is joined onto.
+   *
+   * A checkout's own tree comes before the packaged location because it is the one whose roots can
+   * actually run — an extension root reaches its SDK through a `node_modules` workspace link that
+   * only exists there. `existsSync` keeps the ordering safe for a real package, where no repository
+   * sits above the extension and only the packaged candidate survives.
+   */
+  const candidates = [join(extensionRoot, 'extensions')]
+  if (repositoryRoot !== undefined) candidates.push(join(repositoryRoot, 'extensions'))
+  candidates.push(join(extensionRoot, 'dist-app', 'extensions'))
   return Object.freeze(candidates.filter(path => existsSync(path)))
 }

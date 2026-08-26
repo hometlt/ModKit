@@ -545,8 +545,7 @@ async function runScenarios(env) {
       return false
     }
     if (api.activationMs > ACTIVATION_BUDGET_MS) {
-      record.evidence =
-        `activate() took ${api.activationMs} ms, over the ${ACTIVATION_BUDGET_MS} ms budget`
+      record.evidence = `activate() took ${api.activationMs} ms, over the ${ACTIVATION_BUDGET_MS} ms budget`
       return false
     }
     record.evidence =
@@ -996,10 +995,18 @@ async function runScenarios(env) {
     const staged = requireEnv('MODKITX_SMOKE_FIXTURE_DIR')
     const seen = {}
     for (const name of ['minimal.ani', 'minimal.astc']) {
+      // Nothing else open, so the page reader cannot pick a previous scenario's longer page. This
+      // is the ambiguity slice 13A's scenario 4 was caught by; one live tab is the whole cure.
+      await closeAllEditors()
       const file = path.join(staged, name)
       const tab = await openThroughCustomEditor(file)
       if (tab === undefined) {
         record.evidence = `${name} did not open in a Modkit custom editor`
+        return false
+      }
+      const live = modkitTabs().length
+      if (live !== 1) {
+        record.evidence = `${live} Modkit tab(s) were open while reading ${name}; refusing to guess`
         return false
       }
       await waitFor(async () => (await readStageTabs()).includes('Image'), {
@@ -1007,15 +1014,17 @@ async function runScenarios(env) {
         stepMs: 500,
       })
       seen[name] = await readStageTabs()
-      await closeAllEditors()
     }
+    await closeAllEditors()
     record.details.stages = seen
     /*
      * What the page could honour, recorded here because a page has now loaded and answered.
      *
-     * This editor runs with `--disable-gpu`, so `gpu.webgl2` is expected to be *degraded* — and a
-     * receipt that showed the composed set without saying so would be asserting a capability this
-     * window does not have (§1.5).
+     * Recorded rather than asserted: what a given editor honours is a property of that machine.
+     * This one answers `gpu.webgl2` even under `--disable-gpu` (software rasteriser) and offers
+     * `gpu.webgpu`, which the realm is not composed with — so the receipt carries an observation,
+     * and §1.5's rule is enforced by the product naming any degradation, not by this scenario
+     * predicting one.
      */
     const extensionApi = vscode.extensions.all.find(item =>
       samePath(item.extensionPath, requireEnv('MODKITX_SMOKE_EXT_PATH')),

@@ -4,10 +4,14 @@
  *
  * The VS Code topology declares its webview realm with `gpu.webgl2` and `worker.module`, and that
  * declaration is a *statement of intent*: it is what the realm is composed to be allowed. Whether
- * the running page can honour it is a different question with a different answer per machine — and
- * this lab already has a standing example of the two disagreeing, because `pnpm smoke:vscode`
- * launches the editor with `--disable-gpu`. A page that claims WebGL2 in that window is telling the
- * user something untrue about their own machine.
+ * the running page can honour it is a different question with a different answer per machine — a
+ * driver without WebGL2, a remote session, a headless container. A page that claims WebGL2 where
+ * the canvas refuses one is telling the user something untrue about their own machine.
+ *
+ * Measured, not assumed: `pnpm smoke:vscode` launches with `--disable-gpu` and the webview still
+ * reports `gpu.webgl2` — Chromium falls back to a software rasteriser — while `gpu.webgpu` turns up
+ * *ungranted*, offered by the page and not composed into the realm. Both facts are in the receipt,
+ * and neither was what this file's first draft guessed.
  *
  * §1.5 asks for host-native capability rather than imitation, and §4.2 for a *named* structured
  * outcome when a facility is absent. So the intended set stays where it is (a composed realm cannot
