@@ -27,7 +27,7 @@
  * pinned profile. A writer that can only be verified by the thing that wrote it is not verified.
  */
 import { createHash } from 'node:crypto'
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -44,8 +44,8 @@ import {
   type ResourceBudget,
   type Writer,
 } from '@modkitx-x3/sdk'
-import { createSubjectEditing, type OpenedSubject } from '@modkitx-x3/host'
-import { createFileEditingBackend, openFileArtifactSource } from '@modkitx-x3/host/node'
+import { createSubjectEditing, type UnresolvedSubject } from '@modkitx-x3/host'
+import { createFileEditingBackend } from '@modkitx-x3/host/node'
 import { materializeTextureAndCompare, readKtx2Container } from '@modkitx-x3/testkit'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
@@ -165,16 +165,14 @@ describe('12-2 UVT export writes through the host coordinator and reopens', () =
     const directory = await mkdtemp(join(tmpdir(), 'x3-uvt-write-'))
     scratchDirectories.push(directory)
     /*
-     * The subject being written *into* is a package, not the image.
+     * The subject being written *into* is the namespace the artifacts land in.
      *
      * A `create` edit is anchored to a namespace whose revision the coordinator can check for
-     * conflicts — that is what `expectedRevision.namespaceRevision` is for, and a plain file subject
-     * has none. Exporting a UVT projection into a mod package is the shape that actually exists, so
-     * that is the shape proved here; "create a file beside a file subject" is a seam that does not
-     * exist yet and is named in the registry rather than faked with a direct write.
+     * conflicts — that is what `expectedRevision.namespaceRevision` is for. Slice 12-2 could only
+     * pin the absence of such a target; slice 12-3 supplies one, because a directory opened through
+     * block 9's file provider *is* a namespace subject. So the export now runs the whole way to
+     * disk through the one durable-write seam, which is what this file was written to prove.
      */
-    const packagePath = join(directory, 'package.zip')
-    await writeFile(packagePath, new Uint8Array(await readFile(join(fixtures, 'minimal.zip'))))
 
     const image = await decodedBmp()
     const verdict = await materializeTextureAndCompare(repoRoot, image, {
@@ -204,8 +202,8 @@ describe('12-2 UVT export writes through the host coordinator and reopens', () =
       minimumRoundTrip: 'lossy',
     })
 
-    // the subject being exported *from* is the image; the artifacts land beside it
-    const opened = await openSubjectFor(packagePath)
+    // the subject being exported *from* is the image; the artifacts land inside the namespace
+    const opened = await openNamespaceSubjectFor(directory)
     const backend = createFileEditingBackend({ roots: [directory] })
     const evidence: FidelityEvidence = {
       roundTrip: 'lossy',
@@ -225,13 +223,14 @@ describe('12-2 UVT export writes through the host coordinator and reopens', () =
       backendFor: () => backend,
       evidenceFor: () => evidence,
       writer,
+      confirmationMatches: token => token === UVT_EXPORT_CONFIRMED,
     })
     if (editing.session === undefined) throw new Error('the UVT writer produced no session')
     const target = editing.targets[0]
     if (target === undefined) throw new Error('no edit target')
 
-    const containerPath = 'textures/source.uvt.ktx2'
-    const sidecarPath = 'textures/source.uvt.json'
+    const containerPath = 'source.uvt.ktx2'
+    const sidecarPath = 'source.uvt.json'
     const sidecarBytes = new TextEncoder().encode(`${JSON.stringify(verdict.sidecar, null, 2)}\n`)
     const change: ChangeSet = {
       targets: editing.targets,
@@ -265,21 +264,22 @@ describe('12-2 UVT export writes through the host coordinator and reopens', () =
     expect(plan.edits.map(edit => edit.operation)).toEqual(['create', 'create'])
 
     /*
-     * And here the seam runs out. Both edits are creates, the target is a `single`-topology subject
-     * with no `namespaceRevision`, and `invalidPlan` refuses exactly that combination — a create
-     * whose namespace nobody pinned cannot be checked for conflicts, so the coordinator will not
-     * take it. The refusal is asserted rather than worked around: an export that reached disk by
-     * some other route would prove the opposite of what this file is for.
+     * And here the seam now holds. The target is the namespace, so it carries the
+     * `namespaceRevision` the create rule requires, and the coordinator takes the plan: prepare,
+     * then commit, then two artifacts on disk written by the host and nobody else. The lossy claim
+     * still needs an explicit confirmation, which an export that creates new bytes should need.
      */
-    const prepared = await editing.coordinator.prepare(plan, { grant: editing.grantSnapshot })
-    expect(prepared.state).toBe('rejected')
-    if (prepared.state === 'rejected') expect(prepared.reason).toBe('plan-invalid')
-    expect(editing.targets[0]?.expectedRevision.namespaceRevision).toBeUndefined()
-    await opened.session.dispose()
-
-    // the reopen half stands on its own: these are the bytes the materializer produced
-    await writeFile(join(directory, 'source.uvt.ktx2'), verdict.bytes)
-    await writeFile(join(directory, 'source.uvt.json'), sidecarBytes)
+    expect(editing.targets[0]?.expectedRevision.namespaceRevision).toBeDefined()
+    const prepared = await editing.coordinator.prepare(plan, {
+      grant: editing.grantSnapshot,
+      confirmationToken: UVT_EXPORT_CONFIRMED,
+    })
+    expect(prepared.state, JSON.stringify(prepared)).toBe('ready')
+    if (prepared.state !== 'ready') return
+    const committed = await editing.coordinator.commit(prepared.prepared, {
+      grant: editing.grantSnapshot,
+    })
+    expect(committed.state, JSON.stringify(committed)).toBe('committed')
 
     // --- reopen ---------------------------------------------------------------------------
     const writtenContainer = new Uint8Array(await readFile(join(directory, 'source.uvt.ktx2')))
@@ -387,49 +387,136 @@ describe('12-2 UVT export writes through the host coordinator and reopens', () =
   })
 })
 
-/** Open a path as a subject with the shipped BMP codec, for the edit target the writer needs. */
-async function openSubjectFor(path: string): Promise<OpenedSubject> {
+describe('12-3 the UVM export takes the same coordinator seam', () => {
+  /*
+   * Slice 12-2 recorded that UVM's `write-reopen-compared` meant an *artifact* round-trip —
+   * materialize, reopen, compare — and not a commit through the host coordinator, because no
+   * writer could create anything at all. The seam exists now, so the claim is made to mean the
+   * stronger thing for UVM too: the bytes reach disk through `prepare`/`commit`, and what is read
+   * back is what the coordinator wrote.
+   *
+   * The UVM writer claims `semantic` round-trip rather than `lossy`, so unlike UVT it needs no
+   * confirmation token — which is the coordinator's rule working, not an inconsistency.
+   */
+  it('commits a materialized UVM artifact and reads back exactly those bytes', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'x3-uvm-write-'))
+    scratchDirectories.push(directory)
+
+    const { loadUvTools, materializeAndCompare } = await import('@modkitx-x3/testkit')
+    const gltf = (await import(
+      pathToFileURL(join(repoRoot, 'vendor', 'multiverse-specs', 'specs', 'tools', 'uvm-core.mjs'))
+        .href
+    )) as { readGltfFixture(path: string): { document: unknown; binary: Uint8Array } }
+    const tools = await loadUvTools(repoRoot)
+    const fixture = join(
+      repoRoot,
+      'vendor',
+      'multiverse-specs',
+      'specs',
+      'model',
+      'fixtures',
+      'uvm-core-triangle.uvm.gltf',
+    )
+    const { document, binary } = gltf.readGltfFixture(fixture)
+    const verdict = await materializeAndCompare(
+      repoRoot,
+      tools.uvmCore.projectionFromUvmCore(document, binary),
+      {
+        assetId: 'synthetic/uvm-core-triangle',
+        sourceFormat: 'uvm',
+        subjectRevision: 'provider-token:uvm-writer-seam',
+      },
+    )
+
+    const writerModule = (await import(
+      pathToFileURL(join(repoRoot, 'extensions', 'common', 'uv-materializer', 'src', 'writer.js'))
+        .href
+    )) as { createProvider(selection: { offerId: string }): Promise<{ value: Writer }> }
+    const writer = (await writerModule.createProvider({ offerId: 'uvm-source' })).value
+    expect(writer.offer).toMatchObject({ formatId: 'uvm', mutationMode: 'export-only' })
+
+    const opened = await openNamespaceSubjectFor(directory)
+    const editing = createSubjectEditing({
+      opened,
+      grant: WRITE,
+      backendFor: () => createFileEditingBackend({ roots: [directory] }),
+      evidenceFor: () => ({
+        roundTrip: 'semantic',
+        preservesUnknownData: false,
+        evidenceId: writer.offer.fidelityEvidenceId,
+        corpusId: 'modkitX3/packages/testkit/test/uvm-writer-seam',
+        corpusDigest: `sha256:${createHash('sha256').update(verdict.bytes).digest('hex')}`,
+        conformanceProfile: 'common.edit/writer-v1' as never,
+        writer: writer.identity,
+        optionsFingerprint: 'options:uvm-core-1.0',
+        inputClass: 'uvm-core-triangle',
+        provenAt: '2026-08-26T00:00:00Z',
+      }),
+      writer,
+    })
+    if (editing.session === undefined) throw new Error('the UVM writer produced no session')
+    const editTarget = editing.targets[0]
+    if (editTarget === undefined) throw new Error('no edit target')
+    expect(editTarget.expectedRevision.namespaceRevision).toBeDefined()
+
+    const change: ChangeSet = {
+      targets: editing.targets,
+      edits: [
+        {
+          operation: 'create',
+          targetId: editTarget.targetId,
+          source: editTarget.ownerSource,
+          newPath: 'triangle.uvm.glb',
+          payload: { kind: 'inline', bytes: verdict.bytes },
+          label: 'UVM artifact',
+        },
+      ],
+      provenance: { actor: 'user', note: 'block 12 slice 12-3 UVM export' },
+    }
+    expect(await editing.session.propose(change)).toEqual({ valid: true, diagnostics: [] })
+    const plan = await editing.session.plan(change)
+    const prepared = await editing.coordinator.prepare(plan, { grant: editing.grantSnapshot })
+    expect(prepared.state, JSON.stringify(prepared)).toBe('ready')
+    if (prepared.state !== 'ready') return
+    const committed = await editing.coordinator.commit(prepared.prepared, {
+      grant: editing.grantSnapshot,
+    })
+    expect(committed.state, JSON.stringify(committed)).toBe('committed')
+
+    // what the coordinator wrote is byte-for-byte what the materializer produced
+    const written = new Uint8Array(await readFile(join(directory, 'triangle.uvm.glb')))
+    expect(Buffer.compare(Buffer.from(written), Buffer.from(verdict.bytes))).toBe(0)
+  }, 120_000)
+})
+
+/** The explicit confirmation a lossy export must carry before the coordinator will prepare it. */
+const UVT_EXPORT_CONFIRMED = 'uvt-export-confirmed'
+
+/**
+ * Open a directory as a namespace subject — the edit target a `create` needs.
+ *
+ * `unresolved` is the right state and not a failure: no codec claims a bare directory, and the
+ * descriptor still carries the namespace origin, which is all an edit target is derived from.
+ */
+async function openNamespaceSubjectFor(directory: string): Promise<UnresolvedSubject> {
+  const { openSubject, artifactNamespaceSourceFromVfsMount } = await import('@modkitx-x3/host')
+  const { VirtualFileSystem } = await import('@modkitx-x3/vfs')
+  const { createFileVfsProvider } = await import('@modkitx-x3/vfs/providers/file')
   const { buildInventory, createHostContributionContractRegistry, createExecutionBackendRegistry } =
     await import('@modkitx-x3/host')
-  const { loadExtensionDirectory } = await import('@modkitx-x3/host/node')
-  const { openSubject } = (await import(
-    pathToFileURL(join(repoRoot, 'packages', 'host', 'src', 'subject-open.js')).href
-  )) as typeof import('../../host/src/subject-open.js')
-  const inventory = await buildInventory(
-    [
-      {
-        ...(await loadExtensionDirectory(join(repoRoot, 'extensions', 'common', 'images'))),
-        execution: { origin: 'bundled' as const, allowTrustedInProcess: true },
-      },
-      {
-        ...(await loadExtensionDirectory(join(repoRoot, 'extensions', 'common', 'archives'))),
-        execution: { origin: 'bundled' as const, allowTrustedInProcess: true },
-      },
-    ],
-    createHostContributionContractRegistry(),
-  )
-  const executionBackends = createExecutionBackendRegistry([
-    {
-      profile: 'trusted-in-process',
-      supports: (_target, variant) => variant.executionProfile === 'trusted-in-process',
-      async activate(activation) {
-        return {
-          module: (await import(activation.entrypoint.href)) as Record<string, unknown>,
-          release: async () => undefined,
-        }
-      },
-    },
-  ])
+  const vfs = new VirtualFileSystem().registerProvider(createFileVfsProvider())
+  const mount = await vfs.openMount(pathToFileURL(directory).href)
+  const uri = pathToFileURL(directory).href
   const opened = await openSubject({
-    inventory,
-    source: await openFileArtifactSource(path),
-    path,
+    inventory: await buildInventory([], createHostContributionContractRegistry()),
+    source: artifactNamespaceSourceFromVfsMount(mount, { ref: { id: uri, uri } }),
+    path: directory,
     intent: 'full',
     target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
     grant: WRITE,
     budget,
-    executionBackends,
+    executionBackends: createExecutionBackendRegistry([]),
   })
-  if (opened.state !== 'opened') throw new Error('the export target did not open')
-  return opened as unknown as OpenedSubject
+  if (opened.state !== 'unresolved') throw new Error(`unexpected subject state ${opened.state}`)
+  return opened
 }

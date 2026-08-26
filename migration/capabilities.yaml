@@ -15985,7 +15985,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'planned'
     knownLoss:
-      - 'то же ограничение шва касается и UVM: write-reopen-compared здесь означает round-trip артефакта (материализация → переоткрытие → сравнение), а не коммит через host coordinator — create-правка писателя туда сегодня не проходит ни для одного формата'
+      - 'write-reopen-compared здесь означает и round-trip артефакта (материализация → переоткрытие → сравнение), и коммит через host coordinator: слайс 12-3 открыл шов, и UVM пишется через prepare/commit в namespace-цель, а прочитанное побайтно совпадает с тем, что записал координатор. Писателю UVM подтверждение не требуется — он заявляет semantic, а не lossy'
       - 'exact projectionSemanticHash достигается там, где источник уже использует позиционную конвенцию идентичности артефакта (UVM, glTF); M3/W3X/W3D/VXL перенумеровываются, и каждая расходящаяся плоскость перечислена в MaterializationReceipt'
       - 'счётчики текстур и анимаций базовый контракт публикует без содержимого: материализатор их не выдумывает, structure-facet честно расходится'
       - 'native export не заявлен: NativeExportReceipt существует как тип, exporters целевых кодеков — позже'
@@ -15998,6 +15998,7 @@ capabilities:
       commits: []
       tests:
         - 'packages/testkit/test/uvm-materializer.test.ts'
+        - 'packages/testkit/test/uvt-writer.test.ts'
         - 'scripts/test/uv-materializer-boundary.test.ts'
         - 'packages/testkit/test/blizzard-m3-companion.test.ts'
       reports: []
@@ -16026,11 +16027,11 @@ capabilities:
       portFamily: null
       portVerdict: null
     migrationState: 'implemented'
-    supportState: 'partial'
+    supportState: 'supported'
     runtimeAvailability: 'browser-and-node'
     evidenceLevel: 'E2'
     hostEvidence: 'node'
-    writerEvidence: 'not-declared'
+    writerEvidence: 'write-reopen-compared'
     parityEvidence:
       coverageStatus: null
       rows: []
@@ -16053,7 +16054,7 @@ capabilities:
       - 'первый путь узкий и назван: несжатый 8-битный RGBA из декодированного raster-региона, один уровень, одна грань, без массива и суперкомпрессии; всё, что источник нёс сверх этого, перечислено в MaterializationReceipt, а не потеряно молча'
       - 'passthrough блочных форматов (DDS BC) не реализован: ни один ридер Modkit не публикует GPU-блоки как блоки — DDS декодирует в RGBA, — поэтому путь потребовал бы сначала новой live-поверхности'
       - 'texture-interchange-v1 зарегистрирован как candidate: у двух фасетов из четырёх (sampler, atlas) нет live-публикатора, хеши — admission-only свидетельство, не гарантия совместимости'
-      - 'writer заявлен export-only с roundTrip lossy; write→reopen через host commit coordinator написан и упёрся в шов: create-правка требует target с namespaceRevision, а любой субъект, который писатель может получить сегодня, имеет топологию single, поэтому coordinator отклоняет план как plan-invalid — writerEvidence остаётся not-declared, отказ и его причина закреплены тестом'
+      - 'writer заявлен export-only с roundTrip lossy; слайс 12-3 довёл write→reopen до конца ЧЕРЕЗ host commit coordinator: цель правки — namespace-субъект каталога (файловый VFS-провайдер блока 9), он несёт namespaceRevision, которого требует правило create, и оба артефакта (контейнер и sidecar) пишет координатор, а не тест. Переоткрывает штатный ktx2-кодек; lossy-план требует явного подтверждения'
       - 'открытыми осознанно остались палитровые источники, анимационные последовательности, transcoding-таргеты, 3D-объёмы и полный набор transfer-функций — причина по каждому в specs/NOTES §7.1'
     receipts:
       projection: null

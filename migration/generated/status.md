@@ -73,16 +73,17 @@
 
 ### 3.3. Доказанные writers
 
-| Возможность                    | writerEvidence                         | Тест                                                                                                                                                         |
-| ------------------------------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `addition/text-ini/open-edit`  | `write-reopen-compared`                | `packages/host/test/text-writers.test.ts`                                                                                                                    |
-| `addition/text-json/open-edit` | `write-reopen-compared`                | `packages/host/test/text-writers.test.ts`<br>`packages/testkit/test/text-data.test.ts`                                                                       |
-| `format/csv/open-inspect`      | `write-reopen-compared`                | `packages/testkit/test/text-data.test.ts`<br>`packages/host/test/text-writers.test.ts`<br>`packages/testkit/test/detection-collisions.test.ts`               |
-| `format/jpg/open-inspect`      | `write-reopen-compared-metadata-plane` | `packages/host/test/media-edits.test.ts`                                                                                                                     |
-| `format/mp3/open-inspect`      | `write-reopen-compared-metadata-plane` | `packages/host/test/media-edits.test.ts`                                                                                                                     |
-| `format/png/open-inspect`      | `write-reopen-compared`                | `packages/host/test/media-edits.test.ts`                                                                                                                     |
-| `format/txt/open-inspect`      | `write-reopen-compared`                | `packages/testkit/test/common-plain-text.test.ts`<br>`packages/host/test/text-writers.test.ts`                                                               |
-| `uv/uvm/materializer-writer`   | `write-reopen-compared`                | `packages/testkit/test/uvm-materializer.test.ts`<br>`scripts/test/uv-materializer-boundary.test.ts`<br>`packages/testkit/test/blizzard-m3-companion.test.ts` |
+| Возможность                    | writerEvidence                         | Тест                                                                                                                                                                                                       |
+| ------------------------------ | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `addition/text-ini/open-edit`  | `write-reopen-compared`                | `packages/host/test/text-writers.test.ts`                                                                                                                                                                  |
+| `addition/text-json/open-edit` | `write-reopen-compared`                | `packages/host/test/text-writers.test.ts`<br>`packages/testkit/test/text-data.test.ts`                                                                                                                     |
+| `format/csv/open-inspect`      | `write-reopen-compared`                | `packages/testkit/test/text-data.test.ts`<br>`packages/host/test/text-writers.test.ts`<br>`packages/testkit/test/detection-collisions.test.ts`                                                             |
+| `format/jpg/open-inspect`      | `write-reopen-compared-metadata-plane` | `packages/host/test/media-edits.test.ts`                                                                                                                                                                   |
+| `format/mp3/open-inspect`      | `write-reopen-compared-metadata-plane` | `packages/host/test/media-edits.test.ts`                                                                                                                                                                   |
+| `format/png/open-inspect`      | `write-reopen-compared`                | `packages/host/test/media-edits.test.ts`                                                                                                                                                                   |
+| `format/txt/open-inspect`      | `write-reopen-compared`                | `packages/testkit/test/common-plain-text.test.ts`<br>`packages/host/test/text-writers.test.ts`                                                                                                             |
+| `uv/uvm/materializer-writer`   | `write-reopen-compared`                | `packages/testkit/test/uvm-materializer.test.ts`<br>`packages/testkit/test/uvt-writer.test.ts`<br>`scripts/test/uv-materializer-boundary.test.ts`<br>`packages/testkit/test/blizzard-m3-companion.test.ts` |
+| `uv/uvt/texture-profile`       | `write-reopen-compared`                | `packages/testkit/test/uvt-materializer.test.ts`<br>`packages/testkit/test/uvt-writer.test.ts`<br>`scripts/test/specs-pin.test.ts`                                                                         |
 
 ## 4. Именованные closure
 
