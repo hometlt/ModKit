@@ -34,6 +34,18 @@ export interface ViewerApplicabilityFacts {
 export interface ViewerContributionEligibility {
   readonly eligible: boolean
   readonly missing: readonly string[]
+  /**
+   * The stage's *optional* data sources that this descriptor actually publishes.
+   *
+   * Optional facets never decide eligibility — a stage that named one in `consumesDataSources`
+   * would lose every subject that publishes no facets at all, which is the opposite of optional.
+   * But something still has to decide which of them to bind, and until block 12 slice 12-3 that
+   * decision lived in each application's catalog: web bound them by hand in `views.ts`, Electron
+   * gained the same list separately in slice 12-2. Two applications answering one question about
+   * one descriptor is exactly the shape this stage exists to remove, so the answer is computed
+   * here, once, beside the eligibility it belongs with.
+   */
+  readonly optionalBound: readonly string[]
 }
 
 export function evaluateViewerApplicability(
@@ -64,7 +76,11 @@ export function evaluateViewerApplicability(
       missing.push(`longest-line<=${rule.longestLineBytes.maximum}`)
     }
   }
-  return Object.freeze({ eligible: missing.length === 0, missing: Object.freeze(missing) })
+  return Object.freeze({
+    eligible: missing.length === 0,
+    missing: Object.freeze(missing),
+    optionalBound: Object.freeze([]),
+  })
 }
 
 /** Data-only preflight. Viewer code is not imported or activated by this evaluation. */
@@ -108,7 +124,21 @@ export function evaluateViewerContribution(
     }
   }
   const ordered = Object.freeze([...new Set(missing)].sort(compareUtf8))
-  return Object.freeze({ eligible: ordered.length === 0, missing: ordered })
+  // optional facets are bound when published and simply absent otherwise; they never gate the stage
+  const optionalBound = Object.freeze(
+    [
+      ...new Set(
+        (spec.optionalDataSources ?? [])
+          .filter(optional =>
+            descriptor.dataSources.some(
+              item => item.contract === optional.contract && item.major === optional.major,
+            ),
+          )
+          .map(optional => optional.contract),
+      ),
+    ].sort(compareUtf8),
+  )
+  return Object.freeze({ eligible: ordered.length === 0, missing: ordered, optionalBound })
 }
 
 export interface CatalogPresentationCandidate extends PresentationSlot {
