@@ -38,19 +38,24 @@ const vscode = require('vscode')
 const CUSTOM_EDITOR = 'modkit.genericAssetPreview'
 
 /*
- * Activation and first-open budgets (block 13, exit-gate line 4: "activation time and bundle
- * closure did not regress").
+ * Per-run ceilings (block 13, exit-gate line 4: "activation time and bundle closure did not
+ * regress"). Slice 13D replaced the guesses behind them with measurement, and split the job in two.
  *
- * These are *budgets*, not measured baselines, and the difference is worth stating: a smoke run is
- * one cold activation on one machine, so a median in the sense of §7.4 does not exist yet. The
- * ceilings are set with generous headroom over what this build actually does, so they catch a
- * regression of the kind that matters — composition that suddenly reads the disk twice, a catalog
- * that grew an order of magnitude — without turning ordinary machine variance into a red gate. The
- * receipt records the observed figures every run, which is what a real baseline will be built from
- * when 13D gives repeats across the corpus matrix.
+ * These constants are **crash guards**, not the §7.4 comparison. Their only purpose is to fail a
+ * run where something has gone categorically wrong — a composition that started reading the disk
+ * twice, a catalog that grew an order of magnitude — so they sit above the worst value ever
+ * observed on this machine (activation ranged 2795–6493 ms across two sessions of five cold
+ * launches; first open 1517–3640 ms). A ceiling nearer the median would fire on a busy laptop and
+ * be trained away within a week.
+ *
+ * The real §7.4 work happens in `run-smoke.mjs`: five cold launches per run, raw samples kept, and
+ * the medians compared against `reports/vscode-smoke/performance-baseline.json` with the policy's
+ * own 5% threshold. That comparison is recorded as an alarm for investigation rather than an
+ * automatic red gate, because §7.4 says an alarm may be accepted only by an ADR and a smoke run is
+ * not an ADR.
  */
 const ACTIVATION_BUDGET_MS = 10_000
-const FIRST_OPEN_BUDGET_MS = 45_000
+const FIRST_OPEN_BUDGET_MS = 10_000
 const COMPANION_DIAGNOSTIC = 'x3.host/companion-unavailable'
 
 // ---------------------------------------------------------------------------------------------
@@ -110,6 +115,15 @@ function modkitTabs() {
 const tabFor = target => modkitTabs().find(entry => samePath(entry.uri.fsPath, target))
 
 const tabForUri = text => modkitTabs().find(entry => entry.uri.toString() === text)
+
+/** The declared half of a matrix row, carried into the receipt whether the row ran or not. */
+const describeRow = row => ({
+  id: row.id,
+  source: row.source,
+  route: row.command,
+  expect: row.expect,
+  note: row.note,
+})
 
 async function closeAllEditors() {
   await vscode.commands.executeCommand('workbench.action.closeAllEditors')
@@ -980,6 +994,172 @@ async function runScenarios(env) {
       return true
     },
   )
+
+  // ---------------------------------------------------------------- 6. transport/shell matrix
+  /*
+   * Block 13, work 7, verbatim: "prove transport/shell smoke of Common Documents, SC2 CASC/MPQ,
+   * C&C BIG, Warzone `.wz` and BAR Spring VFS flows in a real window".
+   *
+   * What this scenario is and is not. It asks the *transport and shell* question — can this editor
+   * reach these five kinds of source through the product route and get a structured answer — and
+   * the plan says in the same sentence that it "does not replace the semantic E4/E5 acceptance of
+   * the corresponding contributions in blocks 15–17". So a row passes when the route reaches the
+   * codec and the codec answers *by name*, whether that answer is a subject or a refusal. A row
+   * fails when the editor crashes, hangs, or answers nothing.
+   *
+   * That distinction is what lets two rows be honest instead of absent:
+   *
+   *   - Warzone `.wz` is a ZIP, and today it opens through the generic `org.modkitx/archive-zip`
+   *     route. The `wz` semantics — what those entries *mean* to Warzone — are still in mk2
+   *     staging and belong to block 17. The row records the generic route it actually took.
+   *   - BAR ships its maps as `.sd7`, and this lab's 7z reader refuses their header form by name.
+   *     That is a real answer about a real corpus and it is recorded as one; making the row green
+   *     by choosing a different file would be measuring the harness.
+   *
+   * Rows whose corpus variable is unset are skipped by name rather than failing: an owner running
+   * this without Warzone installed should see "environment-required", not a red gate.
+   */
+  await scenario(
+    'transport-matrix',
+    'Five source families answer through the product route',
+    async record => {
+      if ((process.env.MODKITX_SMOKE_MATRIX ?? '') === '') {
+        record.evidence = 'not the matrix run of this repeat set'
+        record.details.skipped = 'sampling-run'
+        return true
+      }
+      const staged = requireEnv('MODKITX_SMOKE_FIXTURE_DIR')
+      const rows = [
+        {
+          id: 'common-documents',
+          source: 'Common Documents',
+          variable: null,
+          subject: path.join(staged, 'fixture.odt'),
+          command: 'subject.inspect',
+          expect: 'ok',
+          note: 'an ODT from the bundled documents catalog; no corpus needed',
+        },
+        {
+          id: 'sc2-mpq',
+          source: 'SC2 CASC/MPQ',
+          variable: 'MODKITX_SC2_ROOT',
+          subject: env => path.join(env, 'Maps', 'Amphion.SC2Map'),
+          command: 'subject.open',
+          expect: 'ok',
+          note: 'MPQ container of a retail install; CASC as a whole-install mount is block 15',
+        },
+        {
+          id: 'cnc-big',
+          source: 'C&C BIG',
+          variable: 'MODKITX_CNC3_ROOT',
+          subject: env => path.join(env, 'Core', '1.0', 'Misc.big'),
+          command: 'subject.extract',
+          entry: 'data/editor/molds/bowl.w3d',
+          expect: 'ok',
+          note: 'the command runtime reading a member out of a live container',
+        },
+        {
+          id: 'warzone-wz',
+          source: 'Warzone .wz',
+          variable: 'MODKITX_WARZONE_ROOT',
+          subject: env => path.join(env, 'data', 'terrain_overrides', 'classic.wz'),
+          command: 'subject.open',
+          expect: 'ok',
+          note: 'generic ZIP route; wz semantics are mk2 staging and belong to block 17',
+        },
+        {
+          id: 'bar-spring-vfs',
+          source: 'BAR Spring VFS',
+          variable: 'MODKITX_BAR_ROOT',
+          subject: env => path.join(env, 'data', 'maps', 'avalanche_3.4.sd7'),
+          command: 'subject.open',
+          // A named refusal is the honest answer for this corpus today, and it is what the row asserts.
+          expect: 'failed',
+          note: 'the 7z reader refuses BAR header form by name; Spring VFS semantics are block 17',
+        },
+      ]
+
+      const results = []
+      for (const row of rows) {
+        const root = row.variable === null ? '' : (process.env[row.variable] ?? '')
+        if (row.variable !== null && root === '') {
+          results.push({
+            ...describeRow(row),
+            verdict: 'skipped',
+            reason: `${row.variable} is not set`,
+          })
+          continue
+        }
+        const subject = typeof row.subject === 'function' ? row.subject(root) : row.subject
+        if (!fs.existsSync(subject)) {
+          results.push({
+            ...describeRow(row),
+            verdict: 'skipped',
+            reason: 'the corpus does not hold this file',
+          })
+          continue
+        }
+        /*
+         * Grant the directory the way a person does — by opening the file.
+         *
+         * The command runtime opens through this window's confined path opener, and a corpus
+         * outside the workspace is not granted until something opens it. The first run of this
+         * matrix failed SC2 and Warzone in under 300 ms for exactly that reason while C&C passed,
+         * because an earlier scenario had already opened the BIG. That is the product behaving
+         * correctly and the harness asking wrongly: `modkit.openResource` is the same door the
+         * Explorer's context menu uses, and it grants the file's directory before anything asks.
+         */
+        await vscode.commands.executeCommand('modkit.openResource', vscode.Uri.file(subject))
+        await waitFor(() => tabFor(subject), { timeoutMs: 30_000 })
+        await closeAllEditors()
+
+        const started = Date.now()
+        const result = await vscode.commands.executeCommand('modkit.runCommand', {
+          command: row.command,
+          subject,
+          ...(row.entry === undefined ? {} : { entry: row.entry }),
+        })
+        const durationMs = Date.now() - started
+        const state = result?.state ?? 'no-answer'
+        results.push({
+          ...describeRow(row),
+          verdict: state === row.expect ? 'pass' : 'fail',
+          state,
+          durationMs,
+          /*
+           * The identity of the answer, not its prose: a refusal has to be *named* for the row to
+           * count as a transport success, and a code is what naming means here.
+           */
+          code: result?.code ?? null,
+          // The sentence too: a named refusal is only named if the name is legible in the receipt.
+          message: result?.message ?? result?.reason ?? null,
+          selected: result?.data?.selected?.contributionId ?? null,
+        })
+      }
+
+      record.details.matrix = results
+      const failed = results.filter(item => item.verdict === 'fail')
+      const ran = results.filter(item => item.verdict !== 'skipped')
+      const skipped = results.filter(item => item.verdict === 'skipped')
+      if (failed.length > 0) {
+        record.evidence =
+          `${failed.length} of ${rows.length} source families did not answer as recorded: ` +
+          failed.map(item => `${item.id} (expected ${item.expect}, got ${item.state})`).join('; ')
+        return false
+      }
+      record.evidence =
+        `${ran.length} of ${rows.length} source families answered through the product route ` +
+        `(${skipped.length} skipped for a missing corpus: ${skipped.map(item => item.id).join(', ') || 'none'}); ` +
+        ran
+          .map(
+            item =>
+              `${item.id}=${item.state}${item.selected ? ` via ${item.selected}` : ''} in ${item.durationMs} ms`,
+          )
+          .join('; ')
+      return true
+    },
+  )
+  await closeAllEditors()
 
   // ---------------------------------------------------------------- 6. GPU texture formats
   /*

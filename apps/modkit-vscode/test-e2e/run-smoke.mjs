@@ -48,6 +48,88 @@ const logDir = join(reportDir, 'logs')
  */
 const kingsWrathRoot = process.env.MODKITX_CNC3_KW_ROOT ?? process.env.MODKITX_CNC3_ROOT
 
+/**
+ * Cold editor launches per smoke run.
+ *
+ * §7.4 wants a median and a p95, and both need samples: one launch is an anecdote. Five is the
+ * smallest count that gives a median which is an observation rather than the single value, and each
+ * launch costs about a minute and a half, so this is the honest floor rather than a round number.
+ * `--repeat N` overrides it for a deliberate longer baseline.
+ */
+const repeatFlag = process.argv.indexOf('--repeat')
+const repeats = Math.max(
+  1,
+  repeatFlag === -1 ? 5 : Number.parseInt(process.argv[repeatFlag + 1] ?? '5', 10) || 5,
+)
+
+/** Nearest-rank on the sorted samples: with five runs a p95 *is* the maximum, and says so. */
+const quantile = (values, fraction) => {
+  if (values.length === 0) return null
+  const sorted = [...values].sort((left, right) => left - right)
+  const rank = Math.max(1, Math.ceil(fraction * sorted.length))
+  return sorted[rank - 1]
+}
+
+const median = values => {
+  if (values.length === 0) return null
+  const sorted = [...values].sort((left, right) => left - right)
+  const middle = Math.floor(sorted.length / 2)
+  return sorted.length % 2 === 0
+    ? Math.round((sorted[middle - 1] + sorted[middle]) / 2)
+    : sorted[middle]
+}
+
+/**
+ * The budget a future run is held to, from what this one measured.
+ *
+ * `median + 50%`, floored at one second of headroom. The formula is written down rather than a
+ * number chosen by feel: §7.4's alarm is a 5% median regression, and a budget that tight would fire
+ * on ordinary machine variance — this catches the order-of-magnitude kind while leaving the
+ * percentage comparison to the recorded samples.
+ */
+const budgetFrom = value =>
+  value === null ? null : Math.max(value + 1000, Math.round(value * 1.5))
+
+/** The committed §7.4 baseline, or `undefined` before one exists. */
+const readBaseline = () => {
+  try {
+    return JSON.parse(readFileSync(join(reportDir, 'performance-baseline.json'), 'utf8'))
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * This run's medians against the committed ones.
+ *
+ * `alarm` follows §7.4 exactly: a median more than 5% worse. It is reported, never thrown — the
+ * policy says an alarm requires investigation and may be accepted only by an ADR with the owner's
+ * decision, which is not something a smoke run can do on its own. One agent session on one machine
+ * cannot tell a regression from a busy laptop, and a gate that pretended otherwise would be trained
+ * to be ignored.
+ */
+const compareBaseline = observed => {
+  const baseline = readBaseline()
+  if (baseline === undefined) return { state: 'no-baseline' }
+  const rows = {}
+  let alarm = false
+  for (const key of ['activationMs', 'firstOpenMs']) {
+    const before = baseline[key]?.median ?? null
+    const after = observed[key] ?? null
+    if (before === null || after === null) continue
+    const changePercent = Math.round(((after - before) / before) * 1000) / 10
+    const raised = changePercent > 5
+    if (raised) alarm = true
+    rows[key] = { baselineMedian: before, observedMedian: after, changePercent, alarm: raised }
+  }
+  return {
+    state: alarm ? 'alarm' : 'within-policy',
+    policy: 'median worse by more than 5% (§7.4); an alarm is investigated, not auto-accepted',
+    baselineCommit: baseline.recordedFrom?.x3Commit ?? null,
+    rows,
+  }
+}
+
 /** Fixtures the scenarios need, by the variable that names them and the value that resolved. */
 const FIXTURES = {
   MODKITX_W3D_PATH: process.env.MODKITX_W3D_PATH,
@@ -67,9 +149,15 @@ const FIXTURES = {
  * setting `modkit.addExtensionFolder` appends to — so this is the product's own mechanism, not a
  * back door around it.
  */
-const EA_ROOTS = ['models', 'tiberian-sun', 'big'].map(name =>
-  join(repoRoot, 'extensions', 'ea', name),
-)
+const EA_ROOTS = [
+  ...['models', 'tiberian-sun', 'big'].map(name => join(repoRoot, 'extensions', 'ea', name)),
+  /*
+   * The transport matrix's SC2 row. MPQ is not in the bundled `common` catalog and never was —
+   * the block-13 matrix needs it, so the smoke adds it the same way it adds the EA roots: through
+   * the product's own `modkit.extensions` setting, not a back door.
+   */
+  join(repoRoot, 'extensions', 'blizzard', 'mpq'),
+]
 
 // ---------------------------------------------------------------------------------------------
 // redaction
@@ -213,6 +301,12 @@ async function main() {
   for (const name of ['minimal.ani', 'minimal.astc']) {
     copyFileSync(join(syntheticDir, name), join(workspace, name))
   }
+  /*
+   * The Common Documents row of the transport matrix. An ODT rather than a text file, because the
+   * question is whether the *documents* family reaches this editor from the bundled catalog — and
+   * a `.txt` would have answered for plain-text instead.
+   */
+  copyFileSync(join(syntheticDir, 'minimal.odt'), join(workspace, 'fixture.odt'))
 
   // The EA catalog, added the way the product documents: a workspace setting the host reads once
   // at activation. Missing roots are reported rather than silently narrowing what the smoke proves.
@@ -248,35 +342,77 @@ async function main() {
     `--remote-debugging-port=${port}`,
   ]
 
-  let runnerCode = 0
-  let runnerError
-  try {
-    runnerCode = await runTests({
-      vscodeExecutablePath: executable,
-      extensionDevelopmentPath: extensionRoot,
-      extensionTestsPath: join(here, 'suite', 'index.cjs'),
-      launchArgs,
-      extensionTestsEnv: {
-        MODKITX_SMOKE_EXT_PATH: extensionRoot,
-        MODKITX_SMOKE_RESULTS: resultsPath,
-        MODKITX_SMOKE_CDP_PORT: String(port),
-        MODKITX_SMOKE_LONELY_VXL: lonelyVxl,
-        MODKITX_SMOKE_FIXTURE_DIR: workspace,
-        MODKITX_SMOKE_REPO_ROOT: repoRoot,
-        MODKITX_W3D_PATH: process.env.MODKITX_W3D_PATH,
-        MODKITX_VXL_PATH: process.env.MODKITX_VXL_PATH,
-        MODKITX_CNC3_ROOT: kingsWrathRoot,
-      },
-    })
-  } catch (error) {
-    runnerError = error instanceof Error ? error.message : String(error)
-    runnerCode = typeof error?.code === 'number' ? error.code : 1
+  /**
+   * One cold editor, start to finish.
+   *
+   * Factored out because §7.4 asks for raw samples rather than a single figure, and the only
+   * honest way to sample a *cold* activation is to launch the editor again. Each run gets its own
+   * results file and its own debugging port, so nothing from the previous one can be read by
+   * mistake.
+   */
+  const runEditorOnce = async index => {
+    const runPort = index === 0 ? port : await freePort()
+    const runResults = join(scratch, `results-${index}.json`)
+    let code = 0
+    let error
+    try {
+      code = await runTests({
+        vscodeExecutablePath: executable,
+        extensionDevelopmentPath: extensionRoot,
+        extensionTestsPath: join(here, 'suite', 'index.cjs'),
+        launchArgs: [...launchArgs.slice(0, -1), `--remote-debugging-port=${runPort}`],
+        extensionTestsEnv: {
+          MODKITX_SMOKE_EXT_PATH: extensionRoot,
+          MODKITX_SMOKE_RESULTS: runResults,
+          MODKITX_SMOKE_CDP_PORT: String(runPort),
+          MODKITX_SMOKE_LONELY_VXL: lonelyVxl,
+          MODKITX_SMOKE_FIXTURE_DIR: workspace,
+          MODKITX_SMOKE_REPO_ROOT: repoRoot,
+          MODKITX_W3D_PATH: process.env.MODKITX_W3D_PATH,
+          MODKITX_VXL_PATH: process.env.MODKITX_VXL_PATH,
+          MODKITX_CNC3_ROOT: kingsWrathRoot,
+          MODKITX_SC2_ROOT: process.env.MODKITX_SC2_ROOT,
+          MODKITX_WARZONE_ROOT: process.env.MODKITX_WARZONE_ROOT,
+          MODKITX_BAR_ROOT: process.env.MODKITX_BAR_ROOT,
+          /*
+           * Only the last run walks the transport matrix. The repeats exist to sample activation
+           * and first open; opening five real corpus containers five times would multiply the run
+           * for numbers nobody is collecting.
+           */
+          MODKITX_SMOKE_MATRIX: index === repeats - 1 ? '1' : '',
+        },
+      })
+    } catch (failure) {
+      error = failure instanceof Error ? failure.message : String(failure)
+      code = typeof failure?.code === 'number' ? failure.code : 1
+    }
+    const parsed = existsSync(runResults) ? JSON.parse(readFileSync(runResults, 'utf8')) : undefined
+    if (parsed !== undefined) writeFileSync(resultsPath, JSON.stringify(parsed, null, 2))
+    return { code, error, suite: parsed }
   }
 
-  // ------------------------------------------------------------------ 5. collect
+  /*
+   * Samples across cold runs, for the §7.4 baseline. The *verdicts* come from the last run — one
+   * set of scenario answers, not an average of five — while the timings come from all of them.
+   */
+  const samples = []
+  let runnerCode = 0
+  let runnerError
   let suite
-  if (existsSync(resultsPath)) {
-    suite = JSON.parse(readFileSync(resultsPath, 'utf8'))
+  for (let index = 0; index < repeats; index += 1) {
+    console.log(`smoke: editor run ${index + 1}/${repeats}…`)
+    const attempt = await runEditorOnce(index)
+    runnerCode = attempt.code
+    runnerError = attempt.error
+    suite = attempt.suite ?? suite
+    const scenarios = attempt.suite?.scenarios ?? []
+    const activation = scenarios.find(entry => entry.id === 'activation')?.details?.activationMs
+    const firstOpen = scenarios.find(entry => entry.id === 'w3d-single')?.details?.firstOpenMs
+    samples.push({
+      run: index + 1,
+      ...(typeof activation === 'number' ? { activationMs: activation } : {}),
+      ...(typeof firstOpen === 'number' ? { firstOpenMs: firstOpen } : {}),
+    })
   }
 
   const redact = buildRedactor({
@@ -296,6 +432,13 @@ async function main() {
 
   const scenarios = suite?.scenarios ?? []
   const failed = scenarios.filter(entry => entry.verdict !== 'pass')
+  const activationSamples = samples.flatMap(item =>
+    typeof item.activationMs === 'number' ? [item.activationMs] : [],
+  )
+  const firstOpenSamples = samples.flatMap(item =>
+    typeof item.firstOpenMs === 'number' ? [item.firstOpenMs] : [],
+  )
+
   const receipt = {
     kind: 'x3.vscode-smoke-receipt',
     version: 1,
@@ -303,6 +446,35 @@ async function main() {
     block: 'block-9',
     startedAt,
     finishedAt: new Date().toISOString(),
+    /*
+     * §7.4's raw samples, kept rather than reduced away: a median with the numbers behind it
+     * discarded cannot be compared with the next one, and the policy asks for before/after on every
+     * touched hot path.
+     */
+    performance: {
+      note:
+        'Cold editor launches. `activationMs` is the extension`s own figure (activate() start to ' +
+        'return); `firstOpenMs` is command to stage list for the W3D. Budget formula: ' +
+        'max(median + 1000 ms, median * 1.5) — see run-smoke.mjs `budgetFrom`.',
+      runs: repeats,
+      samples,
+      activationMs: {
+        samples: activationSamples,
+        median: median(activationSamples),
+        p95: quantile(activationSamples, 0.95),
+        budget: budgetFrom(median(activationSamples)),
+      },
+      firstOpenMs: {
+        samples: firstOpenSamples,
+        median: median(firstOpenSamples),
+        p95: quantile(firstOpenSamples, 0.95),
+        budget: budgetFrom(median(firstOpenSamples)),
+      },
+      againstBaseline: compareBaseline({
+        activationMs: median(activationSamples),
+        firstOpenMs: median(firstOpenSamples),
+      }),
+    },
     subject: {
       x3Commit: commit,
       extension: { id: `${manifest.publisher}.${manifest.name}`, version: manifest.version },

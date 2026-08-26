@@ -1,0 +1,25 @@
+{
+  "$comment": "Committed §7.4 baseline for the VS Code smoke. Written by hand from a recorded run and compared against by scripts/../run-smoke.mjs on every run. Raw samples are kept, not reduced away: a median whose numbers were discarded cannot be compared with the next one. Update deliberately, in a commit that says which run replaced it and why.",
+  "schemaVersion": 1,
+  "recordedFrom": {
+    "x3Commit": "2c99dbf78f9ec0e71f32d88304c3afc4bce033d6",
+    "vscode": "1.134.0",
+    "os": "win32 10.0.26200 x64",
+    "runs": 5,
+    "note": "block 13 slice D; five cold editor launches in one session"
+  },
+  "activationMs": {
+    "samples": [2806, 3138, 2948, 3734, 2795],
+    "median": 2948,
+    "p95": 3734
+  },
+  "firstOpenMs": {
+    "samples": [1517, 2299, 2304, 2537, 1563],
+    "median": 2299,
+    "p95": 2537
+  },
+  "crossSessionObserved": {
+    "$comment": "A second session of five launches on the same machine, kept because it is the honest spread: activation ranged 2795–6493 ms across sessions while within-session p95 was 3734. The per-run ceilings in the suite are set above the cross-session maximum for that reason; the §7.4 comparison is against the medians above.",
+    "activationMs": [3047, 6493, 5482, 5199, 6308]
+  }
+}
