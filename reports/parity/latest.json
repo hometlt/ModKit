@@ -7,7 +7,7 @@
   },
   "x3": {
     "root": "C:\\FILES\\SC2Files\\coding\\modkitX3-sol-round2-integration",
-    "sha": "947867523317f4a1344cb70db23a727ddbf0b7c6"
+    "sha": "c684d5196198a28d9600d6724f102b03062a00c6"
   },
   "counts": {
     "total": 76,
@@ -17432,7 +17432,8 @@
         "operation:view.inspect",
         "source:common.view/byte-range-source",
         "source:common.view/model-resource-refs-source",
-        "source:common.view/model-scene-source"
+        "source:common.view/model-scene-source",
+        "source:common.view/tree-data-source"
       ],
       "sourceComparisons": [],
       "baseline": "X3 богаче",
@@ -17451,12 +17452,14 @@
         "declaredSources": [
           "common.view/byte-range-source",
           "common.view/model-resource-refs-source",
-          "common.view/model-scene-source"
+          "common.view/model-scene-source",
+          "common.view/tree-data-source"
         ],
         "actualSources": [
           "common.view/byte-range-source",
           "common.view/model-resource-refs-source",
-          "common.view/model-scene-source"
+          "common.view/model-scene-source",
+          "common.view/tree-data-source"
         ],
         "sourceFailures": [],
         "sources": [
@@ -17491,6 +17494,18 @@
               "scenes": 1,
               "textures": 2
             }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 2
+            }
           }
         ],
         "operations": ["asset.validate", "export.raw", "view.inspect"],
@@ -17503,7 +17518,8 @@
           "operation:view.inspect",
           "source:common.view/byte-range-source",
           "source:common.view/model-resource-refs-source",
-          "source:common.view/model-scene-source"
+          "source:common.view/model-scene-source",
+          "source:common.view/tree-data-source"
         ]
       },
       "verdict": "incomparable",
@@ -17553,7 +17569,8 @@
         "x3": [
           "common.view/byte-range-source",
           "common.view/model-resource-refs-source",
-          "common.view/model-scene-source"
+          "common.view/model-scene-source",
+          "common.view/tree-data-source"
         ]
       },
       "observed": {
@@ -17590,6 +17607,18 @@
               "scenes": 1,
               "textures": 2
             }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 2
+            }
           }
         ]
       },
@@ -17603,7 +17632,8 @@
           "operation:view.inspect",
           "source:common.view/byte-range-source",
           "source:common.view/model-resource-refs-source",
-          "source:common.view/model-scene-source"
+          "source:common.view/model-scene-source",
+          "source:common.view/tree-data-source"
         ],
         "sources": []
       }
@@ -19563,7 +19593,8 @@
         "operation:view.inspect",
         "source:common.view/byte-range-source",
         "source:common.view/model-animation-source",
-        "source:common.view/model-resource-refs-source"
+        "source:common.view/model-resource-refs-source",
+        "source:common.view/tree-data-source"
       ],
       "sourceComparisons": [
         {
@@ -19623,13 +19654,15 @@
           "common.view/byte-range-source",
           "common.view/model-animation-source",
           "common.view/model-resource-refs-source",
-          "common.view/model-scene-source"
+          "common.view/model-scene-source",
+          "common.view/tree-data-source"
         ],
         "actualSources": [
           "common.view/byte-range-source",
           "common.view/model-animation-source",
           "common.view/model-resource-refs-source",
-          "common.view/model-scene-source"
+          "common.view/model-scene-source",
+          "common.view/tree-data-source"
         ],
         "sourceFailures": [],
         "sources": [
@@ -19671,6 +19704,18 @@
               "scenes": 1,
               "textures": 1
             }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 7
+            }
           }
         ],
         "operations": ["asset.validate", "export.raw", "view.inspect"],
@@ -19684,7 +19729,8 @@
           "source:common.view/byte-range-source",
           "source:common.view/model-animation-source",
           "source:common.view/model-resource-refs-source",
-          "source:common.view/model-scene-source"
+          "source:common.view/model-scene-source",
+          "source:common.view/tree-data-source"
         ]
       },
       "verdict": "poorer",
@@ -19735,7 +19781,8 @@
           "common.view/byte-range-source",
           "common.view/model-animation-source",
           "common.view/model-resource-refs-source",
-          "common.view/model-scene-source"
+          "common.view/model-scene-source",
+          "common.view/tree-data-source"
         ]
       },
       "observed": {
@@ -19798,6 +19845,18 @@
               "scenes": 1,
               "textures": 1
             }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 7
+            }
           }
         ]
       },
@@ -19813,7 +19872,8 @@
           "operation:view.inspect",
           "source:common.view/byte-range-source",
           "source:common.view/model-animation-source",
-          "source:common.view/model-resource-refs-source"
+          "source:common.view/model-resource-refs-source",
+          "source:common.view/tree-data-source"
         ],
         "sources": [
           {
