@@ -1,6 +1,7 @@
 import {
   createInspectionCodec,
   createModelAnimationSource,
+  createModelMaterialSource,
   createModelResourceRefsSource,
   createModelSceneSource,
   createModelSkeletonSource,
@@ -75,7 +76,7 @@ function parseM3(bytes, maxNodes) {
   return Object.freeze({ tag, indexOffset, sections: Object.freeze(sections) })
 }
 
-function metadataSceneOf(model, animations) {
+function metadataSceneOf(model, animations, materials) {
   const sectionNodes = model.sections.map(section => ({
     id: `section/${section.index}`,
     name: `${section.tag} v${section.version}`,
@@ -89,7 +90,7 @@ function metadataSceneOf(model, animations) {
       nodes: sectionNodes.length + 1,
       meshes: 0,
       primitives: 0,
-      materials: model.sections.filter(section => section.tag.startsWith('MAT')).length,
+      materials,
       textures: model.sections.filter(section => section.tag === 'LAYR').length,
       animations,
       geometryAccess: 'metadata-only',
@@ -108,14 +109,14 @@ function metadataSceneOf(model, animations) {
   })
 }
 
-function decodedSceneOf(model, geometry, animations) {
+function decodedSceneOf(model, geometry, animations, materials) {
   return createModelSceneSource({
     info: {
       scenes: 1,
       nodes: geometry.nodes.length,
       meshes: geometry.meshes.length,
       primitives: geometry.primitives.length,
-      materials: model.sections.filter(section => section.tag.startsWith('MAT')).length,
+      materials,
       textures: model.sections.filter(section => section.tag === 'LAYR').length,
       animations,
       ...(geometry.bounds === undefined ? {} : { bounds: geometry.bounds }),
@@ -143,6 +144,28 @@ async function animationOf(bytes, budget, signal) {
   if (globalThis.process?.versions?.node === undefined) return undefined
   const { decodeM3Animations } = await import('./animation.node.js')
   return decodeM3Animations(bytes, budget, signal)
+}
+
+async function materialOf(bytes, budget, signal, resourceIds) {
+  if (globalThis.process?.versions?.node === undefined) return undefined
+  const { decodeM3Materials } = await import('./material.node.js')
+  return decodeM3Materials(bytes, budget, signal, resourceIds)
+}
+
+function geometryWithMaterials(geometry, bindings) {
+  if (geometry === undefined || bindings.length === 0) return geometry
+  const materialByPrimitive = new Map(
+    bindings.map(binding => [binding.primitiveId, binding.materialId]),
+  )
+  return Object.freeze({
+    ...geometry,
+    primitives: Object.freeze(
+      geometry.primitives.map(primitive => {
+        const materialId = materialByPrimitive.get(primitive.id)
+        return materialId === undefined ? primitive : Object.freeze({ ...primitive, materialId })
+      }),
+    ),
+  })
 }
 
 /**
@@ -286,8 +309,10 @@ const definition = Object.freeze({
   },
   async inspect(bytes, context) {
     const model = parseM3(bytes, context.budget.maxNodes)
+    const references = scanTextureReferences(bytes)
     const skeleton = await skeletonOf(bytes, context.budget, context.signal)
     const animation = await animationOf(bytes, context.budget, context.signal)
+    const material = await materialOf(bytes, context.budget, context.signal, references.names)
     const skeletonBudgetRefusal = skeleton?.issues.find(
       item => item.code === 'x3.m3/skeleton-budget-exceeded',
     )
@@ -303,13 +328,19 @@ const definition = Object.freeze({
     if (animationBudgetRefusal !== undefined) {
       throw new RangeError(`M3 ${animationBudgetRefusal.message}`)
     }
+    const materialBudgetRefusal = material?.issues.find(
+      item => item.code === 'x3.m3/material-budget-exceeded',
+    )
+    if (materialBudgetRefusal !== undefined) {
+      throw new RangeError(`M3 ${materialBudgetRefusal.message}`)
+    }
     // A truncated BONE table makes the schema parser unsafe for geometry too: both paths load the
     // same section list. Keep the subject inspectable as a section graph and report the refusal.
-    const geometry =
-      skeleton?.fatal === true || animation?.fatal === true
+    const decodedGeometry =
+      skeleton?.fatal === true || animation?.fatal === true || material?.fatal === true
         ? undefined
         : await geometryOf(bytes, context.budget)
-    const references = scanTextureReferences(bytes)
+    const geometry = geometryWithMaterials(decodedGeometry, material?.primitiveBindings ?? [])
     const boundTextures = await readTextureBindings(context.input, context.signal)
     const tree = createTreeDataSource({
       kind: 'model',
@@ -331,21 +362,28 @@ const definition = Object.freeze({
       animation !== undefined && animation.clips.length > 0
         ? animation.clips.length
         : declaredAnimationCount
+    const declaredMaterialCount = model.sections
+      .filter(section => section.tag === 'MATM')
+      .reduce((total, section) => total + section.repetitions, 0)
+    const materialCount =
+      material?.fatal === false ? material.materials.length : declaredMaterialCount
     const scene =
       geometry === undefined || geometry.primitives.length === 0
-        ? metadataSceneOf(model, animationCount)
-        : decodedSceneOf(model, geometry, animationCount)
+        ? metadataSceneOf(model, animationCount, materialCount)
+        : decodedSceneOf(model, geometry, animationCount, materialCount)
     const info = await scene.info()
     const geometryAccess = info.geometryAccess
     /*
      * The five facet contracts, published as contracts rather than as a shape inside `summary`.
      *
-     * M3 fills three of them. Texture *paths* come out of `CHAR`, skeleton bindings follow
+     * M3 fills four of them. Texture *paths* come out of `CHAR`, skeleton bindings follow
      * `MODL.bones → BONE.name → CHAR`. Parent links and flags are validated but stay out of the
      * skeleton facet because its v1 ABI carries neither. SEQS supplies clip names and bounds used
      * to validate distinct SD timestamp samples; their count is the clip's `frames`, while no frame
      * rate is inferred. STG/STC/STS can attribute only those channels whose animation ids match
-     * explicit BONE reference headers. SD keyframe values and IREF rest poses remain unread.
+     * explicit BONE reference headers. MATM supplies stable identity, MAT_ supplies standard names
+     * and semantics, LAYR texture strings join to resource ids, and BAT_ binds regions to material
+     * ids. Layer records remain evidence because model-material-source@1 has no layer field.
      *
      * Every reference stays `reference-only`. The texture requirement is `many`, so a bound
      * companion cannot be attributed to one name without inspecting the resolved URI, which is the
@@ -383,6 +421,29 @@ const definition = Object.freeze({
               clips: animation.clips,
             }),
           }
+    const materialFacet =
+      material === undefined || material.fatal || material.materials.length === 0
+        ? {}
+        : {
+            'common.view/model-material-source': createModelMaterialSource({
+              materials: material.materials.map(item => ({
+                id: item.id,
+                ...(item.name === undefined ? {} : { name: item.name }),
+              })),
+            }),
+          }
+    const materialComplete =
+      material !== undefined &&
+      !material.fatal &&
+      material.materials.length > 0 &&
+      material.exoticMaterials === 0 &&
+      material.rejectedNames === 0 &&
+      material.rejectedLayerReferences === 0 &&
+      material.unresolvedLayerResources === 0 &&
+      material.rejectedMaterialReferences === 0 &&
+      material.ambiguousPrimitiveBindings === 0 &&
+      material.unsupportedBlendModes === 0 &&
+      material.unknownFlagRecords === 0
     const projectionReceipt = createProjectionReceipt({
       adapter: { id: ID, version: '1.0.0' },
       subjectRevision: context.input.revisions.revision,
@@ -406,7 +467,25 @@ const definition = Object.freeze({
         },
         { planeId: 'structure', state: 'preserved', note: 'the M3 section index, verbatim' },
         { planeId: 'resources', state: 'preserved', note: 'texture paths from the CHAR table' },
-        { planeId: 'materials', state: 'lost', note: 'MAT* sections are counted, never decoded' },
+        {
+          planeId: 'materials',
+          state: materialComplete ? 'normalized' : 'lost',
+          note:
+            material === undefined || material.materials.length === 0
+              ? 'this open published no decoded MATM material identity'
+              : `${material.materials.length} MATM material(s), ${material.decodedLayers} LAYR slot(s), ` +
+                `${material.linkedLayers} resource foreign key(s), and ${material.primitiveBindings.length} BAT_ primitive binding(s) decoded`,
+        },
+        {
+          planeId: 'material-layer-facet-fields',
+          state: 'lost',
+          note: 'model-material-source@1 carries material identity but no layer slots; decoded layers retain resource ids only as validation evidence',
+        },
+        {
+          planeId: 'material-shader-parameters',
+          state: 'lost',
+          note: `${material?.exoticMaterials ?? 0} exotic material(s) and renderer-specific shader parameters are not projected`,
+        },
         ...(skeleton === undefined || skeleton.bindings.length === 0
           ? [
               {
@@ -478,7 +557,9 @@ const definition = Object.freeze({
           statement:
             `${model.sections.length} sections indexed, ${references.names.length} texture path(s) read from CHAR, ` +
             `${skeleton?.bindings.length ?? 0} BONE binding(s), ${animation?.clips.length ?? 0} SEQS clip(s), ` +
-            `${animation?.supportedChannels ?? 0} BONE channel target(s) decoded`,
+            `${animation?.supportedChannels ?? 0} BONE channel target(s), ${material?.materials.length ?? 0} MATM material(s), ` +
+            `${material?.decodedLayers ?? 0} LAYR slot(s), ${material?.linkedLayers ?? 0} resource link(s), and ` +
+            `${material?.primitiveBindings.length ?? 0} BAT_ primitive binding(s) decoded`,
           bytesRead: BigInt(bytes.byteLength),
         },
         ...(references.truncated
@@ -492,7 +573,11 @@ const definition = Object.freeze({
           : []),
       ],
       confidence:
-        geometryAccess === 'decoded' && (skeleton?.issues.length ?? 0) === 0 ? 'high' : 'partial',
+        geometryAccess === 'decoded' &&
+        (skeleton?.issues.length ?? 0) === 0 &&
+        (material?.issues.length ?? 0) === 0
+          ? 'high'
+          : 'partial',
     })
     return {
       summary: {
@@ -555,6 +640,25 @@ const definition = Object.freeze({
                 ],
               },
             ]),
+        ...(material === undefined || material.materials.length === 0
+          ? []
+          : [
+              {
+                id: 'm3-materials',
+                label: 'M3 materials',
+                entries: [
+                  { key: 'materialReferences', value: material.materials.length },
+                  { key: 'standardMaterials', value: material.standardMaterials },
+                  { key: 'exoticMaterials', value: material.exoticMaterials },
+                  { key: 'layerSlots', value: material.decodedLayers },
+                  { key: 'resourceLinkedLayers', value: material.linkedLayers },
+                  { key: 'primitiveBindings', value: material.primitiveBindings.length },
+                  { key: 'rejectedReferences', value: material.rejectedMaterialReferences },
+                  { key: 'unresolvedLayerResources', value: material.unresolvedLayerResources },
+                  { key: 'layerFacetState', value: 'lost/model-material-source@1-has-no-layers' },
+                ],
+              },
+            ]),
       ],
       traits: [
         ...(geometryAccess === 'decoded'
@@ -590,6 +694,21 @@ const definition = Object.freeze({
                 },
               },
             ]),
+        ...(material === undefined || material.materials.length === 0
+          ? []
+          : [
+              {
+                id: 'model.materials',
+                parameters: {
+                  materials: material.materials.length,
+                  standard: material.standardMaterials,
+                  exotic: material.exoticMaterials,
+                  layers: material.decodedLayers,
+                  resourceLinks: material.linkedLayers,
+                  primitiveBindings: material.primitiveBindings.length,
+                },
+              },
+            ]),
         { id: 'structure.hierarchy', parameters: { sections: model.sections.length } },
         { id: 'content.binary', parameters: { bytes: String(bytes.byteLength) } },
       ],
@@ -599,15 +718,21 @@ const definition = Object.freeze({
         ...resourceFacet,
         ...skeletonFacet,
         ...animationFacet,
+        ...materialFacet,
       },
       projectionReceipt,
-      diagnostics: [...(skeleton?.issues ?? []), ...(animation?.issues ?? [])],
+      diagnostics: [
+        ...(skeleton?.issues ?? []),
+        ...(animation?.issues ?? []),
+        ...(material?.issues ?? []),
+      ],
       maxDecodedBytes: BigInt(
         Math.max(
           bytes.byteLength,
           geometry?.decodedBytes ?? 0,
           skeleton?.decodedBytes ?? 0,
           animation?.decodedBytes ?? 0,
+          material?.decodedBytes ?? 0,
         ),
       ),
       companions: [
@@ -623,7 +748,10 @@ const definition = Object.freeze({
       ],
       unsupportedFeatures: [
         ...(geometryAccess === 'decoded' ? [] : ['decoded-geometry-buffers']),
-        'materials',
+        ...(material === undefined || material.materials.length === 0 ? ['materials'] : []),
+        'material-layer-facet-fields',
+        'material-shader-parameters',
+        ...((material?.exoticMaterials ?? 0) === 0 ? [] : ['exotic-material-parameters']),
         'texture-decoding',
         'skeleton-parent-links',
         'skeleton-flags',

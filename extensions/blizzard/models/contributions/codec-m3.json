@@ -24,7 +24,7 @@
     "The browser-main runtime embeds structures.xml; browser-worker remains unavailable until its XML parser path has dedicated worker coverage.",
     "M3A external-animation sidecars are resolved by the runtime; the v1 companions field names codec IDs rather than same-codec path patterns.",
     "Game support associations remain documented in the codec README until game manifests land in Slice C3.",
-    "Node runtimes decode M3 region positions, indices, normals, the first UV channel, BONE index/name bindings, and SEQS/STG/STC/STS clip structure. Bone channels are published only when STC ids resolve to explicit BONE animation-reference headers; SD keyframes, IREF rest poses, materials, external M3A sidecars, browser-worker geometry, and writing remain pending."
+    "Node runtimes decode M3 region positions, indices, normals, the first UV channel, BONE index/name bindings, SEQS/STG/STC/STS clip structure, MATM material identity, MAT_ standard names/blend/flags, LAYR slots joined to resource ids, and unambiguous BAT_ region bindings. model-material-source@1 carries identity but no layer or shader-parameter fields, so decoded layer mappings remain receipt evidence; exotic material parameters, SD keyframes, IREF rest poses, external M3A sidecars, browser-worker deep facets, and writing remain pending."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "m3", "label": "StarCraft II M3/M3A" }],
@@ -63,6 +63,7 @@
       { "contract": "common.view/model-resource-refs-source", "major": 1 },
       { "contract": "common.view/model-skeleton-source", "major": 1 },
       { "contract": "common.view/model-animation-source", "major": 1 },
+      { "contract": "common.view/model-material-source", "major": 1 },
       { "contract": "common.view/tree-data-source", "major": 1 },
       { "contract": "common.view/byte-range-source", "major": 1 }
     ],
