@@ -46,7 +46,9 @@ import {
   type VsCodeServed,
   type VsCodeSubjectHost,
 } from './host.js'
+import { describeDegradation, describeFacilities, type FacilityReport } from './facilities.js'
 import { pageHtml, refusalHtml, type WebviewLike } from './page.js'
+import BUNDLED_CATALOG from '../generated/bundled-catalog.json' with { type: 'json' }
 import { describeOpenTarget } from './uri.js'
 
 const CUSTOM_EDITOR_TYPE = 'modkit.genericAssetPreview'
@@ -204,10 +206,21 @@ interface HostNode {
 }
 
 class HostView implements vscode.TreeDataProvider<HostNode> {
+  private readonly changed = new vscode.EventEmitter<HostNode | undefined>()
+  readonly onDidChangeTreeData = this.changed.event
+  /** What the page answered for; undefined until a page has loaded and reported. */
+  private facilities: FacilityReport | undefined
+
   constructor(
     private readonly host: VsCodeSubjectHost,
     private readonly topologyId: string,
   ) {}
+
+  /** Called when a page reports its facilities, so the rail stops guessing and starts knowing. */
+  report(facilities: FacilityReport | undefined): void {
+    this.facilities = facilities
+    this.changed.fire(undefined)
+  }
 
   getTreeItem(node: HostNode): vscode.TreeItem {
     const item = new vscode.TreeItem(
@@ -260,9 +273,33 @@ class HostView implements vscode.TreeDataProvider<HostNode> {
         ],
       },
       {
+        /*
+         * Composed against honoured. Before a page has loaded there is nothing to compare, and the
+         * rail says the composed set and no more — inventing an observation would be the exact
+         * imitation §1.5 forbids.
+         */
         label: 'Facilities',
         icon: 'list-unordered',
-        children: webviewFacilities.map(facility => ({ label: facility })),
+        children:
+          this.facilities === undefined
+            ? webviewFacilities.map(facility => ({
+                label: facility,
+                detail: 'composed; no page has reported yet',
+              }))
+            : [
+                ...this.facilities.intended.map(facility => ({
+                  label: facility,
+                  detail: this.facilities?.observed.includes(facility)
+                    ? 'honoured by the page'
+                    : 'composed, but this page cannot honour it — unavailable, not emulated',
+                  icon: this.facilities?.observed.includes(facility) ? 'pass' : 'warning',
+                })),
+                ...this.facilities.ungranted.map(facility => ({
+                  label: facility,
+                  detail: 'the page offers it; this realm is not composed with it',
+                  icon: 'circle-outline',
+                })),
+              ],
       },
     ]
   }
@@ -271,7 +308,31 @@ class HostView implements vscode.TreeDataProvider<HostNode> {
 // ---------------------------------------------------------------------------------------------
 // activation
 
-export async function activate(context: vscode.ExtensionContext): Promise<void> {
+/**
+ * What `activate()` hands back to anyone holding this extension.
+ *
+ * Exit-gate line 4 of block 13 asks that activation time not regress, and a number nobody can read
+ * cannot be gated. VS Code exposes an extension's return value as `extension.exports`, so the
+ * smoke reads the same figure the output channel prints rather than timing the editor from outside
+ * and measuring the editor's own startup along with it.
+ */
+export interface ModkitExtensionApi {
+  /** Wall time of `activate()` itself: composition, catalog load, every registration. */
+  readonly activationMs: number
+  /** Roots the shipped catalog named that this build does not contain. Empty is the healthy state. */
+  readonly missingCatalogRoots: readonly string[]
+  readonly contributions: number
+  /**
+   * What the most recent page reported it can honour, or `undefined` before any page has loaded.
+   *
+   * A function rather than a value because the answer arrives *after* activation: the realm is
+   * composed first and the page reports second, so a frozen field would always say "unknown".
+   */
+  facilities(): FacilityReport | undefined
+}
+
+export async function activate(context: vscode.ExtensionContext): Promise<ModkitExtensionApi> {
+  const activationStarted = Date.now()
   const output = vscode.window.createOutputChannel('Modkit MK3')
   context.subscriptions.push(output)
   const log = (line: string): void => output.appendLine(line)
@@ -286,7 +347,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
    * command would silently invalidate them — and composing is where extension roots are read, so
    * doing it twice would also report every failure twice.
    */
+  /*
+   * What this build ships, read from the generated catalog rather than found by scanning.
+   *
+   * `catalogCandidates` still answers *where* — `dist-app/extensions` in a packaged build, the
+   * repository's `extensions/` in a checkout — but the list of roots is now data committed beside
+   * the code, the same arrangement Electron and the PWA have had all along.
+   */
   const host = await createVsCodeSubjectHost({
+    bundledCatalog: BUNDLED_CATALOG.roots,
     catalogCandidates: catalogCandidates(extensionRoot, repositoryRoot),
     workspaceFolders: workspaceFolders(),
     configuredExtensions: vscode.workspace.getConfiguration('modkit').get('extensions'),
@@ -331,6 +400,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // ---------------------------------------------------------------- granted roots
   /** Directories the user reached outside the workspace (a single file opened by name). */
+  /** The realm rail. Held rather than constructed inline, because a page's report refreshes it. */
+  const hostView = new HostView(host, host.services.host.topology.topologyId)
+
   const granted = new Set<string>()
   const roots = (): readonly string[] => [...new Set([...workspaceFolders(), ...granted])]
 
@@ -559,6 +631,26 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     problems.delete(uri)
   }
 
+  // ---------------------------------------------------------------- facilities
+  /*
+   * What the page reports it can honour, against what the realm was composed with (§1.5).
+   *
+   * The composed set cannot change after activation — every resolution cache is keyed to the
+   * realm's revision — so the honest arrangement is to keep the intent, learn the reality, and name
+   * the difference. `--disable-gpu`, a remote session or a driver without WebGL2 all produce a real
+   * degradation here, and the Host view says which rather than the product going on asserting it.
+   */
+  let facilityReport: FacilityReport | undefined
+  const recordFacilities = (observed: readonly string[]): void => {
+    facilityReport = describeFacilities(observed)
+    log(
+      `[facilities] page honours ${facilityReport.observed.join(', ') || 'none'}` +
+        ` (composed: ${facilityReport.intended.join(', ')})`,
+    )
+    for (const line of describeDegradation(facilityReport)) log(`[facilities] ${line}`)
+    hostView.report(facilityReport)
+  }
+
   // ---------------------------------------------------------------- webviews
   const live = new Set<VsCodeServed>()
 
@@ -598,6 +690,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       onDiagnostic: diagnostic => log(`[subject-rpc] ${diagnostic.code}: ${diagnostic.message}`),
       onSubjectDiagnostic: publishDiagnostic,
       onSubjectOpened: rememberSubject,
+      onFacilities: recordFacilities,
     })
     live.add(served)
     // The listener is attached first: the page opens the endpoint the moment its bundle runs.
@@ -1133,10 +1226,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
    * the archive stage in the editor is where container entries are listed.
    */
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider(
-      'modkit.host',
-      new HostView(host, host.services.host.topology.topologyId),
-    ),
+    vscode.window.registerTreeDataProvider('modkit.host', hostView),
     vscode.window.registerTreeDataProvider('modkit.extensions', new ExtensionsView(host)),
     vscode.workspace.onDidChangeWorkspaceFolders(() => {
       // The grant widened or narrowed; every open page reloads its tree and is told why.
@@ -1245,7 +1335,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     },
   })
 
-  log('Modkit MK3 activated')
+  const activationMs = Date.now() - activationStarted
+  log(`Modkit MK3 activated in ${activationMs} ms`)
+  return Object.freeze({
+    activationMs,
+    /*
+     * A catalog root that was named and not shipped is the failure block-9's receipt caught as its
+     * sixth defect, and it is reported three ways because it is the kind of fault that otherwise
+     * looks like a healthy product: here for a harness, in the Extensions view for a person, and in
+     * the warning `host.extensions.problems` already raises.
+     */
+    missingCatalogRoots: Object.freeze(
+      host.extensions.problems.filter(problem => problem.startsWith('the shipped catalog names')),
+    ),
+    contributions: host.contributions.length,
+    facilities: () => facilityReport,
+  })
 }
 
 export function deactivate(): void {

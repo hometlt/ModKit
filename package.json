@@ -27,7 +27,7 @@
     "profiles:check": "node scripts/migration/check-profiles.mjs",
     "parity:legacy": "node scripts/migration/check-parity-legacy.mjs",
     "parity": "node scripts/parity/check.mjs",
-    "catalogs:emit": "node scripts/emit-app-catalogs.mjs && node scripts/emit-web-catalog.mjs",
+    "catalogs:emit": "node scripts/emit-app-catalogs.mjs && node scripts/emit-web-catalog.mjs && node scripts/emit-vscode-catalog.mjs",
     "catalogs:check": "node scripts/emit-app-catalogs.mjs --check",
     "check": "pnpm build && pnpm bench:universal:gate && pnpm lint && pnpm format:check && pnpm test && pnpm evidence:check && pnpm specs:check && pnpm schemas:check && pnpm manifests:check && pnpm tokens:check && pnpm themes:check && pnpm icons:check && pnpm facilities:check && pnpm apps:check && pnpm check:legacy && pnpm check:imports && pnpm check:extensions && pnpm check:mk2 && pnpm ports:check && pnpm migration:check && pnpm priority:check --phase block-12 && pnpm profiles:check && pnpm bundle:graph:check && pnpm docs:conformance && pnpm parity:legacy",
     "schemas:emit": "node scripts/emit-schemas.mjs",
@@ -52,12 +52,13 @@
     "evidence:emit": "node scripts/migration/emit-evidence.mjs",
     "evidence:check": "node scripts/migration/emit-evidence.mjs --check",
     "scaffold:extension": "node scripts/scaffold-extension.mjs",
-    "build": "pnpm catalogs:check && pnpm typecheck && pnpm catalogs:check:web && pnpm bundle",
+    "build": "pnpm catalogs:check && pnpm typecheck && pnpm catalogs:check:web && pnpm catalogs:check:vscode && pnpm bundle",
     "tokens:check": "pnpm --filter @modkitx-x3/ui tokens:check",
     "themes:check": "node scripts/check-themes.mjs",
     "icons:emit": "node scripts/generate-icons.mjs",
     "icons:check": "node scripts/generate-icons.mjs --check",
-    "catalogs:check:web": "node scripts/emit-web-catalog.mjs --check"
+    "catalogs:check:web": "node scripts/emit-web-catalog.mjs --check",
+    "catalogs:check:vscode": "node scripts/emit-vscode-catalog.mjs --check"
   },
   "devDependencies": {
     "@modkitx-x3/core": "workspace:*",

@@ -70,10 +70,12 @@ import {
   describeConfiguredExtensions,
   discoverCatalogRoots,
   discoverWorkspaceRoots,
+  resolveBundledCatalog,
   withContributionDisabled,
   withExtensionEnabled,
   withExtensionRoot,
   withoutExtension,
+  type BundledCatalogRoot,
   type DirectoryProbe,
   type ExtensionRootRequestLike,
 } from './extension-roots.js'
@@ -187,6 +189,14 @@ export interface VsCodeSubjectHostOptions {
    */
   readonly bootstrapUrl?: URL
   readonly onDiagnostic?: (diagnostic: Diagnostic) => void
+  /**
+   * The generated catalog of roots this build ships (`generated/bundled-catalog.json`).
+   *
+   * When present it is the authority on *what* the product carries and the candidates above are
+   * only searched for *where*. Absent — which is the case in the unit tests, which inject a probe
+   * describing a catalog of their own — the old directory discovery runs instead.
+   */
+  readonly bundledCatalog?: readonly BundledCatalogRoot[]
   /** Injectable for tests; defaults to `node:fs`. */
   readonly probe?: DirectoryProbe
 }
@@ -221,7 +231,26 @@ export async function createVsCodeSubjectHost(
   options: VsCodeSubjectHostOptions,
 ): Promise<VsCodeSubjectHost> {
   const probe = options.probe ?? nodeProbe
-  const catalogRoots = discoverCatalogRoots(options.catalogCandidates, probe)
+  /*
+   * What this build ships, from the catalog when it has one.
+   *
+   * A root the catalog names and the disk does not hold is reported through the same channel a
+   * broken `modkit.extensions` entry is: the user sees it, the output channel records it, and the
+   * editor still starts with whatever did load. Silence here was the shape of block-9's sixth
+   * defect — a packaged build with no codecs that looked perfectly healthy.
+   */
+  const resolved =
+    options.bundledCatalog === undefined
+      ? undefined
+      : resolveBundledCatalog(options.bundledCatalog, options.catalogCandidates, probe)
+  const catalogRoots = resolved?.roots ?? discoverCatalogRoots(options.catalogCandidates, probe)
+  const catalogProblems =
+    resolved === undefined || resolved.missing.length === 0
+      ? []
+      : [
+          `the shipped catalog names ${resolved.missing.length} root(s) this build does not ` +
+            `contain: ${resolved.missing.join(', ')}`,
+        ]
   const configured = configuredExtensionRoots(options.configuredExtensions, path => resolve(path))
   const userRequests: readonly ExtensionRootRequestLike[] = dedupeRoots([
     ...discoverWorkspaceRoots(options.workspaceFolders ?? [], probe),
@@ -278,7 +307,7 @@ export async function createVsCodeSubjectHost(
     failures: Object.freeze([...bundled.failures, ...installed.failures]),
     // a malformed `modkit.disabledContributions` is the user's setting too, so it is reported in
     // the same place a malformed `modkit.extensions` entry is, not swallowed on the way past
-    problems: Object.freeze([...configured.problems, ...switchedOff.problems]),
+    problems: Object.freeze([...catalogProblems, ...configured.problems, ...switchedOff.problems]),
     disabledContributions: switchedOff.ids,
   })
 
@@ -345,6 +374,8 @@ export interface VsCodeServeOptions {
     readonly variantId: string
     readonly confidence: number
   }) => void
+  /** What the page reported it can honour; compared with the composed realm by the adapter. */
+  readonly onFacilities?: (observed: readonly string[]) => void
   readonly onSubjectDiagnostic?: (diagnostic: {
     readonly code: string
     readonly message: string
@@ -797,6 +828,8 @@ function serveVsCode(
   bridge.onEvent(event => {
     if (event.op === 'status') {
       options.onDiagnostic?.({ code: 'x3.app/vscode-webview-status', message: event.text })
+    } else if (event.op === 'facilities') {
+      options.onFacilities?.(event.observed)
     } else if (event.op === 'document-dirty') {
       options.onDocumentDirty?.(event.path, event.dirty)
     } else if (event.op === 'document-save-requested') {

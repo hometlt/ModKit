@@ -25,7 +25,7 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -113,6 +113,37 @@ async function buildInto(output, syncManifest) {
   // Shell chrome only: the shipped stylesheet has no layout for the `workbench` parts on purpose, so
   // the host places them. Everything else the page draws comes from `modkit-ui.css`.
   cpSync(join(appRoot, 'app.css'), join(output, 'app.css'))
+
+  /*
+   * The catalog this build ships, copied in rather than discovered at activation.
+   *
+   * Until now nothing put an extension inside `dist-app`, so a packaged build composed an empty
+   * inventory and opened every asset as raw bytes — a product that looks healthy and can read
+   * nothing (block-9 receipt, defect 6). The set is the generated catalog's, so what is copied and
+   * what the host then loads are the same list by construction.
+   *
+   * `node_modules` and `dist` are skipped: an extension root is manifests and sources, and copying
+   * a workspace's symlinked dependency tree into an editor extension would be both enormous and
+   * wrong.
+   */
+  const catalog = JSON.parse(
+    readFileSync(join(appRoot, 'generated', 'bundled-catalog.json'), 'utf8'),
+  )
+  const extensionsOut = join(output, 'extensions')
+  for (const root of catalog.roots) {
+    const from = join(repoRoot, 'extensions', ...root.directory.split('/'))
+    if (!existsSync(from)) {
+      console.error(`missing catalog root ${root.directory} — run pnpm catalogs:emit`)
+      process.exit(1)
+    }
+    cpSync(from, join(extensionsOut, ...root.directory.split('/')), {
+      recursive: true,
+      filter: source => {
+        const name = basename(source)
+        return name !== 'node_modules' && name !== 'dist'
+      },
+    })
+  }
 
   // ---------------------------------------------------------------- manifest
   // Only the real output owns the manifest: a check build must not write the package it is checking.

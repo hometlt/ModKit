@@ -6,7 +6,15 @@
  * reporting is asserted against the real loader and a real temporary directory, because "reported"
  * is a property of `loadExtensionRoots`' answer travelling all the way into the host's report.
  */
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
@@ -16,8 +24,35 @@ import {
   discoverCatalogRoots,
   discoverWorkspaceRoots,
   looksLikeExtensionDirectory,
+  resolveBundledCatalog,
   type DirectoryProbe,
 } from '../src/extension-roots.js'
+
+/** The real filesystem, as the probe shape — for the one assertion that reads the repository. */
+const nodeProbe: DirectoryProbe = {
+  readDirectory: path => {
+    try {
+      return readdirSync(path)
+    } catch {
+      return undefined
+    }
+  },
+  isFile: path => {
+    try {
+      return statSync(path).isFile()
+    } catch {
+      return false
+    }
+  },
+  readJson: path => {
+    try {
+      return JSON.parse(readFileSync(path, 'utf8')) as unknown
+    } catch {
+      return undefined
+    }
+  },
+  join: (...parts) => join(...parts),
+}
 import { createVsCodeSubjectHost } from '../src/host.js'
 
 const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
@@ -201,4 +236,76 @@ describe('a root that is not an extension', () => {
     expect(failure?.message).toContain('acme/not-this-one')
     expect(host.extensions.installed).toEqual([])
   }, 60_000)
+})
+
+describe('the generated catalog decides what this build ships', () => {
+  /*
+   * Discovery asked the disk what the product contains; the catalog asks the product. The cases
+   * below are the two the old scan got wrong: a packaged build whose roots were never copied said
+   * nothing at all and composed empty, and a root appearing under `extensions/common` joined the
+   * product with no diff anywhere near it.
+   */
+  const catalog = [
+    { name: 'images', directory: 'common/images', declared: true },
+    { name: 'models', directory: 'common/models', declared: true },
+  ]
+
+  const probeFor = (present: readonly string[]): DirectoryProbe => ({
+    readDirectory: () => undefined,
+    isFile: path => present.some(item => path === `${item}/package.json`),
+    readJson: path =>
+      present.some(item => path === `${item}/package.json`) ? { modkit: {} } : undefined,
+    join: (...parts) => parts.join('/'),
+  })
+
+  it('resolves the named roots under the first candidate that holds any of them', () => {
+    const resolution = resolveBundledCatalog(
+      catalog,
+      ['/packaged/dist-app/extensions', '/checkout/extensions'],
+      probeFor(['/checkout/extensions/common/images', '/checkout/extensions/common/models']),
+    )
+    expect(resolution.roots).toEqual([
+      '/checkout/extensions/common/images',
+      '/checkout/extensions/common/models',
+    ])
+    expect(resolution.missing).toEqual([])
+    expect(resolution.base).toBe('/checkout/extensions')
+  })
+
+  it('names a root the catalog claims and the build does not contain', () => {
+    const resolution = resolveBundledCatalog(
+      catalog,
+      ['/packaged/dist-app/extensions'],
+      probeFor(['/packaged/dist-app/extensions/common/images']),
+    )
+    expect(resolution.roots).toEqual(['/packaged/dist-app/extensions/common/images'])
+    // The half that block-9's sixth defect was missing: the absence is reported, not skipped.
+    expect(resolution.missing).toEqual(['models'])
+  })
+
+  it('reports every root as missing rather than composing an empty catalog in silence', () => {
+    const resolution = resolveBundledCatalog(
+      catalog,
+      ['/packaged/dist-app/extensions'],
+      probeFor([]),
+    )
+    expect(resolution.roots).toEqual([])
+    expect(resolution.missing).toEqual(['images', 'models'])
+    expect(resolution.base).toBeUndefined()
+  })
+
+  it('ships exactly what activation would have discovered — the emitted catalog is not narrower', () => {
+    const emitted = JSON.parse(
+      readFileSync(join(import.meta.dirname, '..', 'generated', 'bundled-catalog.json'), 'utf8'),
+    ) as { readonly roots: readonly { name: string; declared: boolean }[] }
+    const common = join(import.meta.dirname, '..', '..', '..', 'extensions', 'common')
+    const onDisk = readdirSync(common)
+      .filter(name => looksLikeExtensionDirectory(join(common, name), nodeProbe))
+      .sort()
+    expect(emitted.roots.map(root => root.name)).toEqual(onDisk)
+    // `uv-materializer` is shipped and absent from READY_APP_EXTENSIONS; the catalog says so.
+    expect(emitted.roots.filter(root => !root.declared).map(root => root.name)).toEqual([
+      'uv-materializer',
+    ])
+  })
 })

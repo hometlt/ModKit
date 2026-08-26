@@ -62,6 +62,64 @@ export function looksLikeExtensionDirectory(path: string, probe: DirectoryProbe)
  * are sorted, which makes the loaded set — and therefore every inventory identity derived from it
  * — independent of directory order on disk.
  */
+/** One root of the generated catalog: what the build says it ships, and where it lives. */
+export interface BundledCatalogRoot {
+  readonly name: string
+  /** Path under `extensions/`, e.g. `common/images`. */
+  readonly directory: string
+  /** False when the product ships it and `READY_APP_EXTENSIONS` does not list it. */
+  readonly declared: boolean
+}
+
+export interface BundledCatalogResolution {
+  readonly roots: readonly string[]
+  /** Roots the catalog names that are not on disk — reported, never silently dropped. */
+  readonly missing: readonly string[]
+  /** Which candidate directory the roots were resolved under, for the output channel. */
+  readonly base?: string
+}
+
+/**
+ * Resolve the generated catalog against the directories this build might hold it in.
+ *
+ * The difference from `discoverCatalogRoots` is the direction of authority. Discovery asked the
+ * disk what the product contains; this asks the *catalog*, and uses the disk only to find where
+ * those named roots are — `dist-app/extensions` in a packaged build, the repository's own
+ * `extensions/` in a checkout.
+ *
+ * A named root that is nowhere is returned in `missing` rather than skipped. That is the whole
+ * point: the old behaviour composed an empty catalog and opened every asset as hex, which looks
+ * exactly like a product that works and can read nothing (block-9 receipt, defect 6).
+ */
+export function resolveBundledCatalog(
+  catalog: readonly BundledCatalogRoot[],
+  candidates: readonly string[],
+  probe: DirectoryProbe,
+): BundledCatalogResolution {
+  for (const candidate of candidates) {
+    const found: string[] = []
+    const missing: string[] = []
+    for (const root of catalog) {
+      // The catalog stores `common/images`; a packaged build flattens to `<base>/common/images`
+      // exactly as it was copied, so one join serves both layouts.
+      const path = probe.join(candidate, ...root.directory.split('/'))
+      if (looksLikeExtensionDirectory(path, probe)) found.push(path)
+      else missing.push(root.name)
+    }
+    if (found.length > 0) {
+      return Object.freeze({
+        roots: Object.freeze(found),
+        missing: Object.freeze(missing),
+        base: candidate,
+      })
+    }
+  }
+  return Object.freeze({
+    roots: Object.freeze([]),
+    missing: Object.freeze(catalog.map(root => root.name)),
+  })
+}
+
 export function discoverCatalogRoots(
   candidates: readonly string[],
   probe: DirectoryProbe,
