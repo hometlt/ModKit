@@ -22,10 +22,12 @@
 //                       error, so the gate does not block work that is not due yet. The audit walks
 //                       the union of every named closure — see `auditedUnits` for why.
 //
-//                       `pnpm check` runs `--phase block-10`, and that number moves when a block
+//                       `pnpm check` runs `--phase block-12`, and that number moves when a block
 //                       *closes*, not when one opens: the phase names the last block whose
 //                       deadlines everyone has agreed are behind us. Raising it early would turn
-//                       work in progress into a red gate for the person doing it.
+//                       work in progress into a red gate for the person doing it. Blocks 11 and 12
+//                       closed on 2026-08-26, so the gate moved 10 → 12 with them; block 13 is in
+//                       progress and is deliberately not named here yet.
 //   --release <name>    the block 20–21 / 29 form: zero closure units left in mk2 and zero
 //                       unresolved migration states. It is expected to fail until that release is
 //                       actually ready; it is not part of `pnpm check`.

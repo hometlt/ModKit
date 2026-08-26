@@ -354,7 +354,7 @@
       "evidenceLevel": "E3",
       "allocationState": "covered",
       "portFamily": null,
-      "corpusDescriptors": ["MODKITX_SC2_ROOT"],
+      "corpusDescriptors": ["MODKITX_SC2_ROOT", "MODKITX_CNC3_KW_ROOT"],
       "dependsOn": [
         "format/big/open-inspect",
         "format/casc/open-inspect",
