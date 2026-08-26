@@ -11468,10 +11468,10 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'extensions/opensource/spring/test/corpus-preflight.test.ts'
+        inspect: 'extensions/opensource/spring/test/codec.test.ts'
         validate: null
-        read: 'extensions/opensource/spring/test/corpus-preflight.test.ts'
-        materialize: 'extensions/opensource/spring/test/corpus-preflight.test.ts'
+        read: 'extensions/opensource/spring/test/codec.test.ts'
+        materialize: 'extensions/opensource/spring/test/codec.test.ts'
     knownLoss:
       - 'legacy publishes only an unsupported metadata manifest, so the real parity row has no semantic plane shared by both readers; X3 decodes geometry, hierarchy and texture references'
       - 'S3O contains no animation clips or script path; BAR/Recoil unit animation is selected externally through BOS/COB or Lua, so no animation facet or companion is fabricated'
@@ -13973,10 +13973,10 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'extensions/opensource/warzone-2100/test/corpus-preflight.test.ts'
+        inspect: 'extensions/opensource/warzone-2100/test/codec.test.ts'
         validate: null
-        read: 'extensions/opensource/warzone-2100/test/corpus-preflight.test.ts'
-        materialize: 'extensions/opensource/warzone-2100/test/corpus-preflight.test.ts'
+        read: 'extensions/opensource/warzone-2100/test/codec.test.ts'
+        materialize: 'extensions/opensource/warzone-2100/test/codec.test.ts'
     knownLoss:
       - 'canonical PIE synthesizes one default material; X3 refuses to invent one, so the real differential is honestly poorer on material count while richer on hierarchy, texture references and ANIMOBJECT clips'
       - 'ANIMOBJECT translation/rotation/scale envelopes are published, but numeric samples remain a named receipt loss because model-animation-source@1 does not carry them'
