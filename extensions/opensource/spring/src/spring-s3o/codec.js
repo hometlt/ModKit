@@ -12,7 +12,7 @@ const HEADER_BYTES = 52
 const PIECE_BYTES = 52
 const VERTEX_BYTES = 32
 
-function modelTree(label, nodes) {
+export function modelTree(label, nodes) {
   const byId = new Map(nodes.map(node => [node.id, node]))
   const childIds = new Set(nodes.flatMap(node => node.childIds))
   const treeNode = id => {
@@ -138,7 +138,7 @@ function trianglesFrom(type, source) {
   throw new RangeError(`S3O primitive type ${type} is unsupported`)
 }
 
-function parseS3o(bytes, budget, signal) {
+export function parseS3o(bytes, budget, signal) {
   if (!hasMagic(bytes)) throw new TypeError('S3O magic is missing')
   checkedRange(bytes, 0, HEADER_BYTES, 'header')
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
