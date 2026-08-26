@@ -20,7 +20,7 @@ import { createPathSubjectOpener, loadExtensionDirectory } from '@modkitx-x3/hos
 import { VirtualFileSystem } from '@modkitx-x3/vfs'
 import { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'
 import { createRapidVfsProvider } from '@modkitx-x3/vfs/providers/rapid'
-import { format as formatWithPrettier } from 'prettier'
+import { format as formatWithPrettier, resolveConfig as resolvePrettierConfig } from 'prettier'
 import { classifyFormatParity, comparableMetadataFeatures } from './classify.mjs'
 import { observeDataSource } from './observe.mjs'
 import { blockingParityResults, buildParityReport, gitSha } from './report.mjs'
@@ -719,7 +719,11 @@ try {
     results,
   })
   await mkdir(dirname(outputPath), { recursive: true })
-  await writeFile(outputPath, await formatWithPrettier(JSON.stringify(report), { parser: 'json' }))
+  const prettierConfig = (await resolvePrettierConfig(outputPath)) ?? {}
+  await writeFile(
+    outputPath,
+    await formatWithPrettier(JSON.stringify(report), { ...prettierConfig, parser: 'json' }),
+  )
   console.log(`canonical SHA: ${canonicalSha}`)
   console.log(`X3 SHA:        ${x3Sha}`)
   console.log('format                     kind       state     verdict       detail')
