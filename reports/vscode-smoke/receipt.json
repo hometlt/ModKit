@@ -3,10 +3,10 @@
   "version": 1,
   "rung": "E5",
   "block": "block-9",
-  "startedAt": "2026-08-25T08:18:01.934Z",
-  "finishedAt": "2026-08-25T08:18:39.319Z",
+  "startedAt": "2026-08-26T05:15:02.438Z",
+  "finishedAt": "2026-08-26T05:15:51.537Z",
   "subject": {
-    "x3Commit": "2767ea6c14230c4149996608e00f6ff944d5ce79",
+    "x3Commit": "3e4926933bde4844b9e6c7b4d167abaab8cc8db4",
     "extension": {
       "id": "modkitx.@modkitx-x3/modkit-vscode",
       "version": "0.1.0"
@@ -37,7 +37,7 @@
         "resolved": true
       },
       {
-        "variable": "MODKITX_CNC3_ROOT",
+        "variable": "MODKITX_CNC3_KW_ROOT",
         "resolved": true
       }
     ],
@@ -45,7 +45,11 @@
       "setting": "modkit.extensions",
       "scope": "workspace .vscode/settings.json",
       "bundledCatalog": "extensions/common",
-      "roots": ["extensions/ea/models", "extensions/ea/tiberian-sun", "extensions/ea/big"],
+      "roots": [
+        "extensions/ea/models",
+        "extensions/ea/tiberian-sun",
+        "extensions/ea/big"
+      ],
       "missing": []
     },
     "hermetic": {
@@ -57,7 +61,7 @@
   "build": {
     "command": "pnpm --filter @modkitx-x3/modkit-vscode ext:build",
     "exitCode": 0,
-    "output": "\n    packages/host/dist/node/worker-backend.js:60:17:\n      60 │     const base = import.meta.url;\n         ╵                  ~~~~~~~~~~~\n\n  You need to set the output format to \"esm\" for \"import.meta\" to work correctly.\n\nbuilt ${X3_ROOT}\\apps\\modkit-vscode\\dist-app",
+    "output": "\n    packages/host/dist/node/index.js:8589:15:\n      8589 │   const base = import.meta.url;\n           ╵                ~~~~~~~~~~~\n\n  You need to set the output format to \"esm\" for \"import.meta\" to work correctly.\n\nbuilt ${X3_ROOT}\\apps\\modkit-vscode\\dist-app",
     "distAppCheck": {
       "command": "pnpm --filter @modkitx-x3/modkit-vscode dist-app:check",
       "exitCode": 0,
@@ -67,7 +71,7 @@
   },
   "webviewChannel": {
     "cdpUsable": true,
-    "port": 54322,
+    "port": 58754,
     "note": "no vscode-webview target among 2"
   },
   "scenarios": [
@@ -76,7 +80,7 @@
       "title": "The extension activates without error",
       "verdict": "PASS",
       "evidence": "activate() resolved and all 5 modkit commands are registered, so the host composition completed inside activation",
-      "durationMs": 3056,
+      "durationMs": 3798,
       "details": {
         "extensionId": "modkitx.@modkitx-x3/modkit-vscode",
         "commands": {
@@ -90,15 +94,29 @@
       "title": "A single W3D opens with its descriptor",
       "verdict": "PASS",
       "evidence": "opened through \"Reopen Editor With… → Modkit Asset Preview\"; the page shows a 2-node scene (one node per pivot) and 1 animation, matching block 9",
-      "durationMs": 8509,
+      "durationMs": 8906,
       "details": {
         "tabOpened": true,
-        "stageTabs": ["Model", "Tree", "Metadata", "Hex"],
-        "stagesVisited": ["as-opened", "Metadata", "Tree", "Model"],
+        "stageTabs": [
+          "Model",
+          "Tree",
+          "Metadata",
+          "Hex"
+        ],
+        "stagesVisited": [
+          "as-opened",
+          "Metadata",
+          "Tree",
+          "Model"
+        ],
         "diagnosticsSeen": [],
         "webviewReadable": true,
-        "pageExcerpt": "Modkit · Model · Tree · Metadata · Hex · 2 nodes · 1 meshes · 1 primitives · 1 materials · 1 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · WESTWOOD W3D MODEL · rootChunks · 4 · chunks · 33 · opaqueTailBytes · 0 · chunkTypes · HIERARCHY:1, HIERARCHY_HEADER:1, PIVOTS:1, CHUNK_0x00000103:1, ANIMATION:1, CHUNK_0x00000201:1, CHUNK_0x00000202:1, MESH:1, MESH_HEADER3:1, VERTICES:1, VERTEX_NORMALS:1, TRIANGLES:1, CHUNK_0x00000022:1, CHUNK_0x00000028:1, CHUNK_0x0000002a:1, CHUNK_0x0000002b:1, CHUNK_0x0000002c:1, CHUNK_0x0000002d:1, CHUNK_0x00000029:1, TEXTURES:1, TEXTURE:1, TEXTURE_NAME:1, MATERIAL_PASS:1, CHUNK_0x00000039:1, CHUNK_0x0000003a:1, TEXTURE_STAGE:1, TEXTURE_IDS:1, STAGE_TEXCOORDS:1, HLOD:1, CHUNK_0x00000701:1, CHUNK_0x00000702:1, CHUNK_0x00000703:1, CHUNK_0x00000704:1 · decodedMeshes · 1 · textures · 1 · geometryAccess · decoded · OBSERVED TRAITS · model.geometry · available · meshes=1, decoded=true · model.textures · available · count=1 · model.skeleton · available · pivots=2, name=D_TESLACOIL_CH · model.animations · available · animations=1, channels=1, frames=61 · structure.hierarchy · available · chunks=33, pivots=2 · content.binary · available · bytes=15737 · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · Westwood W3D · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · 2 nodes · 1 meshes · 1 primitives · 1 materials · 1 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities",
-        "modelStages": ["Model", "Metadata", "Tree"],
+        "pageExcerpt": "Modkit · Model · Tree · Metadata · Hex · 2 nodes · 1 meshes · 1 primitives · 1 materials · 1 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · WESTWOOD W3D MODEL · rootChunks · 4 · chunks · 33 · opaqueTailBytes · 0 · chunkTypes · HIERARCHY:1, HIERARCHY_HEADER:1, PIVOTS:1, CHUNK_0x00000103:1, ANIMATION:1, CHUNK_0x00000201:1, CHUNK_0x00000202:1, MESH:1, MESH_HEADER3:1, VERTICES:1, VERTEX_NORMALS:1, TRIANGLES:1, CHUNK_0x00000022:1, CHUNK_0x00000028:1, CHUNK_0x0000002a:1, CHUNK_0x0000002b:1, CHUNK_0x0000002c:1, CHUNK_0x0000002d:1, CHUNK_0x00000029:1, TEXTURES:1, TEXTURE:1, TEXTURE_NAME:1, MATERIAL_PASS:1, CHUNK_0x00000039:1, CHUNK_0x0000003a:1, TEXTURE_STAGE:1, TEXTURE_IDS:1, STAGE_TEXCOORDS:1, HLOD:1, CHUNK_0x00000701:1, CHUNK_0x00000702:1, CHUNK_0x00000703:1, CHUNK_0x00000704:1 · decodedMeshes · 1 · textures · 1 · geometryAccess · decoded · UV PROJECTION RECEIPT · receipt · [object Object] · OBSERVED TRAITS · model.geometry · available · meshes=1, decoded=true · model.textures · available · count=1 · model.skeleton · available · pivots=2, name=D_TESLACOIL_CH · model.animations · available · animations=1, channels=1, frames=61 · structure.hierarchy · available · chunks=33, pivots=2 · content.binary · available · bytes=15737 · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · Westwood W3D · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · 2 nodes · 1 meshes · 1 primitives · 1 materials · 1 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities",
+        "modelStages": [
+          "Model",
+          "Metadata",
+          "Tree"
+        ],
         "nodes": "2",
         "pivotsLiteral": null,
         "animationsLiteral": "1"
@@ -109,12 +127,17 @@
       "title": "A VXL resolves its .hva companion",
       "verdict": "PASS",
       "evidence": "opened with gnavrail.hva beside it; the page names the companion as provenance and the host raises no missing-sidecar diagnostic",
-      "durationMs": 5494,
+      "durationMs": 5586,
       "details": {
         "companionOnDisk": true,
-        "stageTabs": ["Model", "Tree", "Metadata", "Hex"],
+        "stageTabs": [
+          "Model",
+          "Tree",
+          "Metadata",
+          "Hex"
+        ],
         "diagnosticsSeen": [],
-        "pageExcerpt": "Modkit · Model · Tree · Metadata · Hex · 1 nodes · 11 meshes · 11 primitives · 11 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · WESTWOOD VOXEL MODEL · sections · 1 · bodyBytes · 24303 · palettes · 1 · voxels · 5466 · decodedMeshes · 11 · geometryAccess · decoded · companionState · resolved · companionBindingId · hva#gnavrail.hva · companionFrames · 1 · companionBoundSections · 1 · companionKind · rest-pose · OBSERVED TRAITS · model.geometry · available · sections=1, meshes=11, decoded=true · structure.hierarchy · available · nodes=1 · content.binary · available · bytes=25225 · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · 1 nodes · 11 meshes · 11 primitives · 11 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities",
+        "pageExcerpt": "Modkit · Model · Tree · Metadata · Hex · 1 nodes · 11 meshes · 11 primitives · 11 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · WESTWOOD VOXEL MODEL · sections · 1 · bodyBytes · 24303 · palettes · 1 · voxels · 5466 · decodedMeshes · 11 · geometryAccess · decoded · companionState · resolved · companionBindingId · hva#gnavrail.hva · companionFrames · 1 · companionBoundSections · 1 · companionKind · rest-pose · UV PROJECTION RECEIPT · receipt · [object Object] · OBSERVED TRAITS · model.geometry · available · sections=1, meshes=11, decoded=true · structure.hierarchy · available · nodes=1 · content.binary · available · bytes=25225 · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · 1 nodes · 11 meshes · 11 primitives · 11 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities",
         "nativeDiagnostics": [
           {
             "code": "x3.host/worker-shared-process",
@@ -131,14 +154,36 @@
     {
       "id": "big-nested",
       "title": "A W3D nested in a BIG archive opens as a subject",
-      "verdict": "FAIL",
-      "evidence": "the archive itself opens, but the extension exposes no command or URI shape that names an entry inside it — «data/editor/molds/bowl.w3d» is unreachable from outside the page, and inside the page the archive stage reads an entry’s bytes into a hex pane rather than opening it as a subject. The host route exists and Electron uses it; this product does not wire it, so nested opening is absent here (wiring missing, blocks 13–14)",
-      "durationMs": 142,
+      "verdict": "PASS",
+      "evidence": "with no editor open on the archive, the container filesystem lists 5 root entries through the editor's own workspace.fs and stats «data/editor/molds/bowl.w3d» at 30346 bytes; `modkit.openArchiveEntry` then opened it in a Modkit editor as a model subject with 1 scene node(s) — the member is a subject, not a hex preview",
+      "durationMs": 7756,
       "details": {
         "archiveOnDisk": true,
         "entry": "data/editor/molds/bowl.w3d",
         "archiveTabOpened": true,
-        "nestedCommands": []
+        "nestedCommands": [
+          "modkit.openArchiveEntry",
+          "modkit.browseContainer"
+        ],
+        "containerRootEntries": [
+          "langdata.dat",
+          "russellsquare.ttf",
+          "window",
+          "data",
+          "shaders"
+        ],
+        "containerRootCount": 5,
+        "memberBytes": 30346,
+        "memberTabOpened": true,
+        "liveModkitTabs": 1,
+        "memberStages": [
+          "Model",
+          "Tree",
+          "Metadata",
+          "Hex"
+        ],
+        "pageExcerpt": "Modkit · Model · Tree · Metadata · Hex · 1 nodes · 1 meshes · 1 primitives · 1 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · WESTWOOD W3D MODEL · rootChunks · 1 · chunks · 15 · opaqueTailBytes · 0 · chunkTypes · MESH:1, MESH_HEADER3:1, VERTICES:1, VERTEX_NORMALS:1, TRIANGLES:1, CHUNK_0x00000022:1, CHUNK_0x00000028:1, CHUNK_0x0000002a:1, CHUNK_0x0000002b:1, CHUNK_0x0000002c:1, CHUNK_0x0000002d:1, CHUNK_0x00000029:1, MATERIAL_PASS:1, CHUNK_0x00000039:1, CHUNK_0x0000003a:1 · decodedMeshes · 1 · textures · 0 · geometryAccess · decoded · UV PROJECTION RECEIPT · receipt · [object Object] · OBSERVED TRAITS · model.geometry · available · meshes=1, decoded=true · structure.hierarchy · available · chunks=15 · content.binary · available · bytes=30346 · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · Westwood W3D · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · 1 nodes · 1 meshes · 1 primitives · 1 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities",
+        "memberNodes": "1"
       }
     },
     {
@@ -146,13 +191,18 @@
       "title": "A VXL without its sidecar reports a leak-free diagnostic",
       "verdict": "PASS",
       "evidence": "the model opened without its sidecar, the host raised x3.host/companion-unavailable, and the 1 diagnostic line(s) carry no drive letter, UNC path, ${FILE_URL} URL or home directory",
-      "durationMs": 8532,
+      "durationMs": 8668,
       "details": {
         "copyOnDisk": true,
         "companionAbsent": true,
-        "stageTabs": ["Model", "Tree", "Metadata", "Hex"],
+        "stageTabs": [
+          "Model",
+          "Tree",
+          "Metadata",
+          "Hex"
+        ],
         "diagnosticsSeen": [],
-        "pageExcerpt": "Modkit · Model · Tree · Metadata · Hex · 1 nodes · 11 meshes · 11 primitives · 11 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · WESTWOOD VOXEL MODEL · sections · 1 · bodyBytes · 24303 · palettes · 1 · voxels · 5466 · decodedMeshes · 11 · geometryAccess · decoded · companionState · absent · OBSERVED TRAITS · model.geometry · available · sections=1, meshes=11, decoded=true · structure.hierarchy · available · nodes=1 · content.binary · available · bytes=25225 · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · 1 nodes · 11 meshes · 11 primitives · 11 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities",
+        "pageExcerpt": "Modkit · Model · Tree · Metadata · Hex · 1 nodes · 11 meshes · 11 primitives · 11 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · WESTWOOD VOXEL MODEL · sections · 1 · bodyBytes · 24303 · palettes · 1 · voxels · 5466 · decodedMeshes · 11 · geometryAccess · decoded · companionState · absent · UV PROJECTION RECEIPT · receipt · [object Object] · OBSERVED TRAITS · model.geometry · available · sections=1, meshes=11, decoded=true · structure.hierarchy · available · nodes=1 · content.binary · available · bytes=25225 · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · 1 nodes · 11 meshes · 11 primitives · 11 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities",
         "nativeDiagnostics": [
           {
             "code": "x3.host/worker-shared-process",
@@ -183,7 +233,7 @@
       "title": "Editors close and the host stays responsive",
       "verdict": "PASS",
       "evidence": "all 1 Modkit tab(s) closed and the extension host still answers commands afterwards; the editor’s own exit is recorded by the harness",
-      "durationMs": 14,
+      "durationMs": 22,
       "details": {
         "tabsBefore": 1,
         "tabsAfter": 0,
@@ -210,7 +260,12 @@
     "performed": true,
     "clean": true,
     "scope": "the diagnostic lines themselves, not the whole page — the breadcrumb legitimately shows the opened file’s location, while a diagnostic is what travels into logs",
-    "patterns": ["drive letter", "UNC path", "file:// URL", "home directory"],
+    "patterns": [
+      "drive letter",
+      "UNC path",
+      "file:// URL",
+      "home directory"
+    ],
     "linesChecked": [
       "x3.host/companion-unavailable: optional companion «hva» is absent; the dependent capability stays unavailable"
     ],
@@ -222,9 +277,11 @@
   },
   "summary": {
     "total": 6,
-    "passed": 5,
-    "failed": 1,
-    "allPassed": false
+    "passed": 6,
+    "failed": 0,
+    "allPassed": true
   },
-  "logs": ["reports/vscode-smoke/logs/suite-results.json"]
+  "logs": [
+    "reports/vscode-smoke/logs/suite-results.json"
+  ]
 }
