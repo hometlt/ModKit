@@ -3,6 +3,7 @@ import {
   createModelResourceRefsSource,
   createModelSceneSource,
   createProjectionReceipt,
+  createTreeDataSource,
 } from '@modkitx-x3/codec-kit'
 
 const ID = 'org.modkitx/spring-s3o'
@@ -10,6 +11,27 @@ const MAGIC = new TextEncoder().encode('Spring unit\0')
 const HEADER_BYTES = 52
 const PIECE_BYTES = 52
 const VERTEX_BYTES = 32
+
+function modelTree(label, nodes) {
+  const byId = new Map(nodes.map(node => [node.id, node]))
+  const childIds = new Set(nodes.flatMap(node => node.childIds))
+  const treeNode = id => {
+    const node = byId.get(id)
+    if (node === undefined) throw new TypeError(`S3O tree names an unknown piece ${id}`)
+    return {
+      kind: 'model-node',
+      label: node.name ?? node.id,
+      preview: `${node.meshIds.length} mesh(es)`,
+      children: node.childIds.map(treeNode),
+    }
+  }
+  return createTreeDataSource({
+    kind: 'model',
+    label,
+    preview: `${nodes.length} piece(s)`,
+    children: nodes.filter(node => !childIds.has(node.id)).map(node => treeNode(node.id)),
+  })
+}
 
 function hasMagic(bytes) {
   return (
@@ -426,6 +448,7 @@ const definition = Object.freeze({
           meshes: parsed.meshes,
           primitives: parsed.primitives,
         }),
+        'common.view/tree-data-source': modelTree('Spring/Recoil S3O', parsed.nodes),
         ...(parsed.resources.length === 0
           ? {}
           : {

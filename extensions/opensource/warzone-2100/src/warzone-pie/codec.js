@@ -4,6 +4,7 @@ import {
   createModelResourceRefsSource,
   createModelSceneSource,
   createProjectionReceipt,
+  createTreeDataSource,
 } from '@modkitx-x3/codec-kit'
 
 const ID = 'org.modkitx/warzone-pie'
@@ -22,6 +23,27 @@ const TEXTURE_DIRECTIVES = new Set([
   'SPECULAR',
   'SPEC',
 ])
+
+function modelTree(label, nodes) {
+  const byId = new Map(nodes.map(node => [node.id, node]))
+  const childIds = new Set(nodes.flatMap(node => node.childIds))
+  const treeNode = id => {
+    const node = byId.get(id)
+    if (node === undefined) throw new TypeError(`PIE tree names an unknown node ${id}`)
+    return {
+      kind: 'model-node',
+      label: node.name ?? node.id,
+      preview: `${node.meshIds.length} mesh(es)`,
+      children: node.childIds.map(treeNode),
+    }
+  }
+  return createTreeDataSource({
+    kind: 'model',
+    label,
+    preview: `${nodes.length} node(s)`,
+    children: nodes.filter(node => !childIds.has(node.id)).map(node => treeNode(node.id)),
+  })
+}
 
 function finite(token, label, line) {
   if (token === undefined) throw new TypeError(`PIE ${label} is missing at line ${line}`)
@@ -450,6 +472,7 @@ const definition = Object.freeze({
         meshes: parsed.meshes,
         primitives: parsed.primitives,
       }),
+      'common.view/tree-data-source': modelTree('Warzone 2100 PIE', parsed.nodes),
       ...(parsed.resources.length === 0
         ? {}
         : {

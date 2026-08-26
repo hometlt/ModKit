@@ -267,6 +267,6 @@ describe('12-2 RTF has exactly one active route', () => {
     // the port relocated rather than evaporated: one family lost it, the other gained it
     expect(ratchet.families['mk2/uncommon-documents']).toBe(13)
     expect(ratchet.families['common/documents']).toBe(4)
-    expect(ratchet.minimumTotal).toBe(168)
+    expect(ratchet.minimumTotal).toBe(169)
   })
 })

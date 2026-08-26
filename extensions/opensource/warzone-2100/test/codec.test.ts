@@ -11,6 +11,7 @@ import {
   type ModelResourceRefsSource,
   type ModelSceneSource,
   type ResourceBudget,
+  type TreeDataSource,
 } from '@modkitx-x3/sdk'
 import {
   drainModelProjection,
@@ -154,6 +155,7 @@ describe('Warzone PIE final MK3 codec', () => {
           'common.view/model-scene-source',
           'common.view/model-resource-refs-source',
           'common.view/model-animation-source',
+          'common.view/tree-data-source',
         ]),
       )
       proves({
@@ -161,6 +163,17 @@ describe('Warzone PIE final MK3 codec', () => {
         operation: 'inspect',
         note: 'decoded PIE publishes model, resource and record-backed animation contracts',
       })
+
+      const treeLease = await session.dataSource('common.view/tree-data-source', 1)
+      const tree = treeLease.value as TreeDataSource
+      const root = await tree.root()
+      expect(await tree.facts(root)).toMatchObject({
+        kind: 'model',
+        label: 'Warzone 2100 PIE',
+        preview: '1 node(s)',
+      })
+      expect((await tree.children(root, { limit: 10 })).items).toHaveLength(1)
+      await treeLease.release()
 
       const modelLease = await session.dataSource('common.view/model-scene-source', 1)
       const model = modelLease.value as ModelSceneSource

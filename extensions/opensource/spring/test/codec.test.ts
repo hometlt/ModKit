@@ -10,6 +10,7 @@ import {
   type ModelResourceRefsSource,
   type ModelSceneSource,
   type ResourceBudget,
+  type TreeDataSource,
 } from '@modkitx-x3/sdk'
 import {
   drainModelProjection,
@@ -204,6 +205,7 @@ describe('Spring/Recoil S3O final MK3 codec', () => {
         expect.arrayContaining([
           'common.view/model-scene-source',
           'common.view/model-resource-refs-source',
+          'common.view/tree-data-source',
         ]),
       )
       expect(descriptor.dataSources.map(item => item.contract)).not.toContain(
@@ -214,6 +216,21 @@ describe('Spring/Recoil S3O final MK3 codec', () => {
         operation: 'inspect',
         note: 'official S3O v0 records publish model and resource contracts without invented animation',
       })
+
+      const treeLease = await session.dataSource('common.view/tree-data-source', 1)
+      const tree = treeLease.value as TreeDataSource
+      const root = await tree.root()
+      expect(await tree.facts(root)).toMatchObject({
+        kind: 'model',
+        label: 'Spring/Recoil S3O',
+        preview: '2 piece(s)',
+      })
+      const pieces = await tree.children(root, { limit: 10 })
+      expect(pieces.items).toHaveLength(1)
+      const piece = pieces.items[0]
+      if (piece === undefined) throw new Error('S3O tree did not publish its root piece')
+      expect((await tree.children(piece, { limit: 10 })).items).toHaveLength(1)
+      await treeLease.release()
 
       const modelLease = await session.dataSource('common.view/model-scene-source', 1)
       const model = modelLease.value as ModelSceneSource
