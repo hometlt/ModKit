@@ -126,16 +126,13 @@ describe('GPU remainder ASTC ordinary 2D LDR decode', () => {
       pixelFormat: 'rgba8',
     })
     expect(Buffer.from(decoded.pixels).toString('hex')).toBe(fixture.rgba)
-    await lease.release()
-    await session.dispose()
-  })
-
-  it('publishes one composite operation proof for binary/trit/quint, infill and dual-plane', () => {
     proves({
       contributionId: 'org.modkitx/astc',
       operation: 'read',
       note: 'five astcenc 5.6 blocks prove binary/trit/quint weights, trit/quint endpoints, infill and dual-plane exact RGBA8',
     })
+    await lease.release()
+    await session.dispose()
   })
 
   it('withholds decoded access for multi-partition and HDR endpoint blocks', async () => {

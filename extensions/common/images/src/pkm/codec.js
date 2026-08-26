@@ -155,7 +155,9 @@ const definition = Object.freeze({
      * from the specification in ./etc.js. Signed EAC stays compressed-only until a signed raster
      * contract or an explicit visualization policy exists.
      */
-    const decodedBytes = pkm.width * pkm.height * 4
+    // ./etc.js decodes the complete block grid before regionReader crops to the logical extent.
+    // Budget that actual allocation, including padding, rather than only the visible pixels.
+    const decodedBytes = pkm.encodedWidth * pkm.encodedHeight * 4
     if (!Number.isSafeInteger(decodedBytes)) {
       throw new RangeError('PKM decoded pixel count is not representable')
     }

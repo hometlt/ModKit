@@ -100,6 +100,9 @@ describe('GPU remainder unsigned EAC R11/RG11 decode', () => {
 
     const unsigned = pkm(4, channel(103, 2, 13, 3))
     await expect(rasterOf(unsigned, 63)).rejects.toThrow(/scalar budget/u)
+    const narrow = pkm(4, channel(103, 2, 13, 3), 1, 1)
+    // The logical crop is four bytes, but decoding its one 4x4 block allocates 64 RGBA bytes.
+    await expect(rasterOf(narrow, 63)).rejects.toThrow(/scalar budget/u)
     const opened = await rasterOf(unsigned)
     const controller = new AbortController()
     controller.abort()
