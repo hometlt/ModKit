@@ -79,6 +79,21 @@ export const ARCHIVE_LISTING_PAGES = 25
  */
 export interface WebViewContext {
   operationsFor(descriptor: AnyDescriptor): OperationSession | undefined
+  /**
+   * Open one member of this container as a subject of its own (block 13 slice B).
+   *
+   * The stage below can already read an entry's *bytes* — that is what `container.extract` is for,
+   * and it is what this pane has shown since block 9. Bytes are a preview of a member, not the
+   * member: a W3D previewed this way has no texture, because nothing resolved its companions
+   * inside the archive it came from. The host route that does is `openNestedSubject`, and only the
+   * shell can reach it because only the shell holds the container's live session. So the stage
+   * asks, and answers with a sentence when the shell cannot.
+   */
+  openNestedEntry?(
+    descriptor: AnyDescriptor,
+    entryId: string,
+    entryPath: string,
+  ): Promise<string | undefined>
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -250,6 +265,41 @@ function archiveStage(context: WebViewContext): ViewerModule {
       const tree = await namespaceViewer.mount({ ...args, container: treeHost, slot })
 
       const status = element(entryHost, 'output', { part: 'viewer.status' })
+      /*
+       * "Open as subject" — the member, not a preview of it (block 13 slice B).
+       *
+       * Disabled until an entry is picked, and hidden entirely when this shell composed no nested
+       * route, so the page never offers a control that would answer with a refusal it caused.
+       */
+      const openAsSubject = entryHost.ownerDocument.createElement('button')
+      openAsSubject.className = 'web-archive-open-subject'
+      openAsSubject.type = 'button'
+      openAsSubject.textContent = 'Open as subject'
+      entryHost.append(openAsSubject)
+      openAsSubject.disabled = true
+      if (context.openNestedEntry === undefined) openAsSubject.hidden = true
+      let picked: { readonly entryId: string; readonly path: string } | undefined
+      openAsSubject.addEventListener('click', () => {
+        const target = picked
+        const route = context.openNestedEntry
+        if (target === undefined || route === undefined) return
+        openAsSubject.disabled = true
+        void route(args.descriptor, target.entryId, target.path)
+          .then(problem => {
+            if (problem !== undefined) setViewerText(status, problem)
+          })
+          .catch((error: unknown) => {
+            setViewerText(
+              status,
+              `opening ${target.path} as a subject failed: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            )
+          })
+          .finally(() => {
+            openAsSubject.disabled = picked === undefined
+          })
+      })
       const body = element(entryHost, 'pre', { part: 'hex.content' })
       setViewerText(status, 'Pick an entry in the tree to inspect it.')
 
@@ -343,6 +393,9 @@ function archiveStage(context: WebViewContext): ViewerModule {
                 text === undefined ? 'hex' : 'text'
               }`,
             )
+            // The bytes above are the preview; this is what turns the same entry into a subject.
+            picked = { entryId, path }
+            openAsSubject.disabled = context.openNestedEntry === undefined
           } catch (error) {
             setViewerText(
               body,

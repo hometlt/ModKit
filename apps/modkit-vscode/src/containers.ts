@@ -38,6 +38,7 @@ import type {
   ResourceBudget,
 } from '@modkitx-x3/sdk'
 import {
+  nestedSubjectServices,
   openNestedSubject,
   subjectOpenSnapshot,
   type SubjectOpener,
@@ -292,15 +293,10 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
       const nested = await openNestedSubject({
         parent: holder.session,
         entryId,
-        inventory: options.services.inventory,
-        target: options.services.target,
-        executionBackends: options.services.executionBackends,
+        ...nestedSubjectServices(options.services),
         grant: options.grant,
         budget: options.budget,
         pageLimit: PAGE_LIMIT,
-        ...(options.services.serviceDefinitions === undefined
-          ? {}
-          : { serviceDefinitions: options.services.serviceDefinitions }),
         onDiagnostic: item => {
           diagnostics.push(item)
           options.onDiagnostic?.(item)

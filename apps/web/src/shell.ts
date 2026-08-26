@@ -25,13 +25,16 @@
  * replaced by the editor area (tabs and split groups), so this file owns "open a file" and "accept a
  * drop" rather than letting the explorer preview into a pane that is no longer in the document.
  */
+import { CONTAINER_EXTRACT_OPERATION_ID } from '@modkitx-x3/core'
 import {
   revisionId,
   type AnyDescriptor,
+  type AssetSession,
   type ArtifactByteSource,
   type OperationSession,
   type PermissionGrant,
 } from '@modkitx-x3/sdk'
+import { nestedSubjectServices, openNestedSubject, type OpenSubjectResult } from '@modkitx-x3/host'
 import type {
   BrowserBlobConstructorLike,
   BrowserMessageChannelConstructorLike,
@@ -313,6 +316,28 @@ async function boot(): Promise<void> {
    * shell opened it, so the shell keeps it, keyed by the descriptor identity a viewer is given.
    */
   const operationSessions = new Map<string, OperationSession>()
+  /*
+   * The container's live session, kept beside its operations arm.
+   *
+   * The archive stage can reach `container.extract` through `operationSessions` and read a
+   * member's bytes; opening that member *as a subject* needs the session itself, because
+   * `openNestedSubject` leases the parent's namespace for as long as the child lives so the
+   * child's companions resolve inside the same archive. Bytes could never carry that.
+   */
+  const assetSessions = new Map<string, AssetSession>()
+  /**
+   * Subjects already opened by the nested route, waiting for their tab to mount.
+   *
+   * The editor area opens a tab from an entry and bytes; this host now has a second way to reach a
+   * subject, and rather than teach the tab about it, the opened result is left here under the
+   * virtual entry id the tab will ask for. `openSession` takes it instead of opening again — which
+   * matters for more than speed: opening again from bytes would lose the archive the member came
+   * from, and with it every companion inside that archive.
+   */
+  const pendingNested = new Map<
+    string,
+    { readonly result: OpenSubjectResult; readonly bytes: Uint8Array; readonly label: string }
+  >()
   /** What the panel should show for each open tab, so switching tabs re-targets it. */
   const inspected = new Map<string, InspectorTarget>()
   /** The entry id behind a mounted descriptor, so a panel holding only one finds its tab. */
@@ -449,8 +474,65 @@ async function boot(): Promise<void> {
 
   // ---------------------------------------------------------------- preview policy
   let openCount = 0
+  /** The id a member of a container gets as a tab; derived, so reopening the same member reuses it. */
+  const nestedEntryId = (containerKey: string, entryPath: string): string =>
+    `x3-nested:${containerKey}#${entryPath}`
+
   const stages = createWebPreviewStages({
     operationsFor: descriptor => operationSessions.get(descriptorKey(descriptor)),
+    /*
+     * The web half of `block9/archive-entry-as-subject` (block 13 slice B).
+     *
+     * Electron reached this route from its composition and VS Code reached it from its Explorer;
+     * this page reached it from nowhere, and its archive stage settled for a hex pane. The route is
+     * the host's, unchanged: the parent container stays open and leased for as long as the child
+     * lives, so a model inside an archive finds its texture inside that same archive rather than
+     * through a file this browser could not open anyway.
+     */
+    async openNestedEntry(descriptor, entryId, entryPath) {
+      const key = descriptorKey(descriptor)
+      const parent = assetSessions.get(key)
+      if (parent === undefined) return 'The session that opened this container is no longer held.'
+      const nested = await openNestedSubject({
+        parent,
+        entryId,
+        ...nestedSubjectServices(services),
+        grant: { id: `pwa-nested-${openCount}`, classes: ['read-source'] },
+        budget: {
+          maxInputBytes: BigInt(EXPLORER_MAXIMUM_BYTES),
+          maxDepth: 256,
+          maxNodes: 1_000_000,
+          maxScalarBytes: 64 * 1024 * 1024,
+          maxDiagnostics: 10_000,
+          deadlineMs: 30_000,
+        },
+      })
+      if (nested.result.state !== 'opened') {
+        return `${entryPath} — no codec claimed it inside this container (${nested.result.reason}).`
+      }
+      /*
+       * The bytes the tab's hex and text stages read. Taken from the same extraction the preview
+       * pane used, so the tab shows the member the subject was opened from and not a second read
+       * that could disagree with it.
+       */
+      const operations = operationSessions.get(key)
+      const extract = descriptor.operations.find(
+        operation =>
+          operation.state === 'available' &&
+          !operation.mutatesSource &&
+          operation.id === CONTAINER_EXTRACT_OPERATION_ID,
+      )
+      let bytes = new Uint8Array()
+      if (operations !== undefined && extract !== undefined) {
+        const read = await operations.invoke(extract.handlerId, { entryId }, {})
+        if (read.state === 'ok' && read.output.kind === 'bytes') bytes = read.output.value.slice()
+      }
+      const id = nestedEntryId(key, entryPath)
+      const label = entryPath.slice(entryPath.lastIndexOf('/') + 1)
+      pendingNested.set(id, { result: nested.result, bytes, label })
+      await editors.open({ id, name: label, directory: false })
+      return undefined
+    },
   })
 
   const previewBase = {
@@ -471,21 +553,29 @@ async function boot(): Promise<void> {
         id: `pwa-${openCount}`,
         classes: writable ? ['read-source', 'write-source'] : ['read-source'],
       }
-      const result = await services.open({
-        source: bytesSource(entry.id, bytes, token),
-        path: entry.name,
-        intent: 'full',
-        grant,
-        budget: {
-          maxInputBytes: BigInt(EXPLORER_MAXIMUM_BYTES),
-          maxDepth: 256,
-          maxNodes: 1_000_000,
-          maxScalarBytes: 64 * 1024 * 1024,
-          maxDiagnostics: 10_000,
-          deadlineMs: 30_000,
-        },
-        ...(signal === undefined ? {} : { signal }),
-      })
+      /*
+       * A member of a container was already opened by the nested route, with its container held
+       * behind it. Opening it again here would open it from bytes alone and quietly drop that.
+       */
+      const nested = pendingNested.get(entry.id)
+      if (nested !== undefined) pendingNested.delete(entry.id)
+      const result =
+        nested?.result ??
+        (await services.open({
+          source: bytesSource(entry.id, bytes, token),
+          path: entry.name,
+          intent: 'full',
+          grant,
+          budget: {
+            maxInputBytes: BigInt(EXPLORER_MAXIMUM_BYTES),
+            maxDepth: 256,
+            maxNodes: 1_000_000,
+            maxScalarBytes: 64 * 1024 * 1024,
+            maxDiagnostics: 10_000,
+            deadlineMs: 30_000,
+          },
+          ...(signal === undefined ? {} : { signal }),
+        }))
       if (result.state === 'unresolved') {
         say(`${entry.name} — no codec claimed it (${result.reason}); showing the raw bytes.`)
         return undefined
@@ -513,6 +603,8 @@ async function boot(): Promise<void> {
       const key = descriptorKey(result.descriptor)
       const operations = session.operations()
       operationSessions.set(key, operations)
+      // Kept beside the operations arm so a container member can be opened as a subject of its own.
+      assetSessions.set(key, result.session)
       openedEntries.set(entry.id, entry)
       entryOfDescriptor.set(key, entry.id)
       /*
@@ -546,6 +638,7 @@ async function boot(): Promise<void> {
         dataSource: (contract: string, major: number) => session.dataSource(contract, major),
         async dispose() {
           operationSessions.delete(key)
+          assetSessions.delete(key)
           entryOfDescriptor.delete(key)
           inspected.delete(entry.id)
           openedEntries.delete(entry.id)
@@ -608,6 +701,9 @@ async function boot(): Promise<void> {
         : 'cancel'
     },
     async read(entry, signal) {
+      // A container member has no file behind it; its bytes came out of the archive already.
+      const nested = pendingNested.get(entry.id)
+      if (nested !== undefined) return nested.bytes
       if (access === undefined) throw new Error('no folder or file is open')
       /*
        * The revision is pinned from the handle *before* the bytes are read, never after: if the

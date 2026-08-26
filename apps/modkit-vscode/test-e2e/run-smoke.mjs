@@ -28,7 +28,7 @@ import {
 } from 'node:fs'
 import { homedir, tmpdir, platform, release, arch } from 'node:os'
 import { dirname, join, resolve, extname, basename } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { downloadAndUnzipVSCode, runTests } from '@vscode/test-electron'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -194,6 +194,16 @@ async function main() {
     throw new Error('the staged copy unexpectedly has a companion beside it')
   }
 
+  /*
+   * The shared command fixtures, staged from the same bytes the CLI and Electron tests use
+   * (`packages/testkit/src/command-fixtures.ts`). Inside the workspace folder, so the extension's
+   * own confinement grants them without a second dialog.
+   */
+  const { stageCommandFixtures } = await import(
+    pathToFileURL(join(repoRoot, 'packages', 'testkit', 'dist', 'index.js')).href
+  )
+  stageCommandFixtures(workspace, repoRoot)
+
   // The EA catalog, added the way the product documents: a workspace setting the host reads once
   // at activation. Missing roots are reported rather than silently narrowing what the smoke proves.
   const presentRoots = EA_ROOTS.filter(root => existsSync(root))
@@ -241,6 +251,8 @@ async function main() {
         MODKITX_SMOKE_RESULTS: resultsPath,
         MODKITX_SMOKE_CDP_PORT: String(port),
         MODKITX_SMOKE_LONELY_VXL: lonelyVxl,
+        MODKITX_SMOKE_FIXTURE_DIR: workspace,
+        MODKITX_SMOKE_REPO_ROOT: repoRoot,
         MODKITX_W3D_PATH: process.env.MODKITX_W3D_PATH,
         MODKITX_VXL_PATH: process.env.MODKITX_VXL_PATH,
         MODKITX_CNC3_ROOT: kingsWrathRoot,

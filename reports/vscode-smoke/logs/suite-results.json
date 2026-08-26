@@ -1,6 +1,6 @@
 {
-  "startedAt": "2026-08-26T05:15:15.240Z",
-  "finishedAt": "2026-08-26T05:15:50.029Z",
+  "startedAt": "2026-08-26T06:45:52.776Z",
+  "finishedAt": "2026-08-26T06:46:32.013Z",
   "extensionHost": {
     "node": "24.18.1",
     "electron": "42.8.1",
@@ -9,7 +9,7 @@
   },
   "webviewChannel": {
     "cdpUsable": true,
-    "port": 58754,
+    "port": 59057,
     "note": "no vscode-webview target among 2"
   },
   "scenarios": [
@@ -25,7 +25,7 @@
           "missing": []
         }
       },
-      "durationMs": 3798
+      "durationMs": 4487
     },
     {
       "id": "w3d-single",
@@ -44,7 +44,7 @@
         "pivotsLiteral": null,
         "animationsLiteral": "1"
       },
-      "durationMs": 8906
+      "durationMs": 8834
     },
     {
       "id": "vxl-companion",
@@ -68,7 +68,7 @@
         "mentionsCompanion": true,
         "animations": "0"
       },
-      "durationMs": 5586
+      "durationMs": 5546
     },
     {
       "id": "big-nested",
@@ -89,7 +89,7 @@
         "pageExcerpt": "Modkit · Model · Tree · Metadata · Hex · 1 nodes · 1 meshes · 1 primitives · 1 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · WESTWOOD W3D MODEL · rootChunks · 1 · chunks · 15 · opaqueTailBytes · 0 · chunkTypes · MESH:1, MESH_HEADER3:1, VERTICES:1, VERTEX_NORMALS:1, TRIANGLES:1, CHUNK_0x00000022:1, CHUNK_0x00000028:1, CHUNK_0x0000002a:1, CHUNK_0x0000002b:1, CHUNK_0x0000002c:1, CHUNK_0x0000002d:1, CHUNK_0x00000029:1, MATERIAL_PASS:1, CHUNK_0x00000039:1, CHUNK_0x0000003a:1 · decodedMeshes · 1 · textures · 0 · geometryAccess · decoded · UV PROJECTION RECEIPT · receipt · [object Object] · OBSERVED TRAITS · model.geometry · available · meshes=1, decoded=true · structure.hierarchy · available · chunks=15 · content.binary · available · bytes=30346 · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · Westwood W3D · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · 1 nodes · 1 meshes · 1 primitives · 1 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities",
         "memberNodes": "1"
       },
-      "durationMs": 7756
+      "durationMs": 7543
     },
     {
       "id": "diagnostics-no-companion",
@@ -126,19 +126,72 @@
           "x3.host/companion-unavailable: optional companion «hva» is absent; the dependent capability stays unavailable"
         ]
       },
-      "durationMs": 8668
+      "durationMs": 8592
+    },
+    {
+      "id": "command-fixtures",
+      "title": "The shared command fixtures run in the editor",
+      "verdict": "pass",
+      "evidence": "all 6 shared command fixtures reached the same state here as in the CLI and the Electron fake host — one runtime, three products, one verdict per fixture",
+      "details": {
+        "fixtures": [
+          {
+            "id": "open-png",
+            "command": "subject.open",
+            "expected": "ok",
+            "actual": "ok",
+            "passed": true
+          },
+          {
+            "id": "inspect-png",
+            "command": "subject.inspect",
+            "expected": "ok",
+            "actual": "ok",
+            "passed": true
+          },
+          {
+            "id": "validate-png",
+            "command": "subject.validate",
+            "expected": "ok",
+            "actual": "ok",
+            "passed": true
+          },
+          {
+            "id": "preview-png",
+            "command": "subject.preview",
+            "expected": "unavailable",
+            "actual": "unavailable",
+            "passed": true
+          },
+          {
+            "id": "extract-archive-member",
+            "command": "subject.extract",
+            "expected": "ok",
+            "actual": "ok",
+            "passed": true
+          },
+          {
+            "id": "extract-missing-member",
+            "command": "subject.extract",
+            "expected": "failed",
+            "actual": "failed",
+            "passed": true
+          }
+        ]
+      },
+      "durationMs": 4003
     },
     {
       "id": "clean-close",
       "title": "Editors close and the host stays responsive",
       "verdict": "pass",
-      "evidence": "all 1 Modkit tab(s) closed and the extension host still answers commands afterwards; the editor’s own exit is recorded by the harness",
+      "evidence": "all 0 Modkit tab(s) closed and the extension host still answers commands afterwards; the editor’s own exit is recorded by the harness",
       "details": {
-        "tabsBefore": 1,
+        "tabsBefore": 0,
         "tabsAfter": 0,
         "hostResponsiveAfterClose": true
       },
-      "durationMs": 22
+      "durationMs": 87
     }
   ]
 }

@@ -24,6 +24,10 @@
     {
       "command": "modkit.openArchiveEntry",
       "title": "Modkit: Open Container Member…"
+    },
+    {
+      "command": "modkit.runCommand",
+      "title": "Modkit: Run Command…"
     }
   ],
   "configuration": {

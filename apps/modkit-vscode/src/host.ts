@@ -401,6 +401,39 @@ export interface VsCodeServed {
   close(reason: string): Promise<void>
 }
 
+/**
+ * The opener the shared command runtime is handed in this window.
+ *
+ * Two routes and no third: a `modkit-container:` ref is a member of an open container, anything
+ * else is a path confined to the granted roots. It is the same pair `serveVsCode` uses for the
+ * page — the page's version additionally attaches an editing arm and publishes subject diagnostics,
+ * which are serving concerns a batch command has no use for.
+ *
+ * Exported because `./extension.ts` composes the runtime at activation, before any webview exists:
+ * a command run from the palette must not require an open editor.
+ */
+export function createVsCodeCommandOpener(options: {
+  readonly services: NodeSubjectServices
+  readonly roots: () => readonly string[]
+  readonly containers?: ContainerRegistry
+}): SubjectOpener {
+  return async (requested, signal) => {
+    if (isContainerUriText(requested)) {
+      if (options.containers === undefined) {
+        throw new TypeError('this window did not compose container browsing')
+      }
+      return options.containers.open(requested, signal)
+    }
+    const opener = createPathSubjectOpener({
+      subjects: options.services,
+      roots: options.roots(),
+      grant: DEFAULT_OPEN_GRANT,
+      budget: DEFAULT_OPEN_BUDGET,
+    })
+    return opener(requested, signal)
+  }
+}
+
 /** What every open in this window runs under; named so the container route cannot drift from it. */
 const DEFAULT_OPEN_GRANT: PermissionGrant = Object.freeze({
   id: 'vscode',

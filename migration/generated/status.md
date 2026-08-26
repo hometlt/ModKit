@@ -66,9 +66,9 @@
 | allocation                   | Строк | migrationState         | Строк | evidenceLevel | Строк |
 | ---------------------------- | ----- | ---------------------- | ----- | ------------- | ----- |
 | `absent`                     | 91    | `equivalent-better`    | 16    | E0            | 89    |
-| `covered`                    | 200   | `implemented`          | 195   | E1            | 113   |
+| `covered`                    | 200   | `implemented`          | 196   | E1            | 113   |
 | `not-applicable`             | 1     | `missing`              | 91    | E2            | 65    |
-| `superseded`                 | 13    | `partial`              | 5     | E3            | 14    |
+| `superseded`                 | 13    | `partial`              | 4     | E3            | 14    |
 | `superseded-staging-present` | 3     | `relocated-multiverse` | 1     | E4            | 27    |
 
 ### 3.3. Доказанные writers
@@ -89,8 +89,8 @@
 
 | Release             | Всего | Seed | Транзитивных | Нерешённых | Ближайший блок |
 | ------------------- | ----- | ---- | ------------ | ---------- | -------------- |
-| `mk3-ga`            | 165   | 158  | 7            | 43         | block-12       |
-| `mk3-multiverse-ga` | 167   | 167  | 0            | 43         | block-12       |
+| `mk3-ga`            | 165   | 158  | 7            | 42         | block-12       |
+| `mk3-multiverse-ga` | 167   | 167  | 0            | 42         | block-12       |
 
 ### 4.1. Дедлайны `mk3-ga` по planned block
 
@@ -98,7 +98,7 @@
 | ------------- | ----- | ----------------- |
 | `block-11`    | 14    | 0                 |
 | `block-12`    | 70    | 1                 |
-| `block-13`    | 1     | 1                 |
+| `block-13`    | 1     | 0                 |
 | `block-15`    | 24    | 7                 |
 | `block-16`    | 33    | 19                |
 | `block-17`    | 21    | 13                |
@@ -106,19 +106,13 @@
 
 ## 5. Gap list — что осталось в `mk3-ga`
 
-Строк с нерешённым состоянием: **43** из 165. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
+Строк с нерешённым состоянием: **42** из 165. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
 
 ### Блок 12 — 1 строк
 
 | Возможность                           | migrationState | evidence | Владелец                   |
 | ------------------------------------- | -------------- | -------- | -------------------------- |
 | `block9/decoded-gpu-texture-payloads` | `partial`      | E2       | `extensions/common/images` |
-
-### Блок 13 — 1 строк
-
-| Возможность                       | migrationState | evidence | Владелец        |
-| --------------------------------- | -------------- | -------- | --------------- |
-| `block9/archive-entry-as-subject` | `partial`      | E3       | `packages/host` |
 
 ### Блок 15 — 7 строк
 

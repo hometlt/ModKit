@@ -67,6 +67,10 @@
         "title": "Modkit: Open Active File in Workbench"
       },
       {
+        "command": "modkit.runCommand",
+        "title": "Modkit: Run Command…"
+      },
+      {
         "command": "modkit.showHostProfile",
         "title": "Modkit: Open Workbench"
       }
@@ -151,6 +155,7 @@
     "onCommand:modkit.explainResolution",
     "onCommand:modkit.openArchiveEntry",
     "onCommand:modkit.openWith",
+    "onCommand:modkit.runCommand",
     "onCommand:modkit.showHostProfile",
     "onCustomEditor:modkit.genericAssetPreview",
     "onView:modkit.extensions",

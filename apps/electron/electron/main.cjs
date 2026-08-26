@@ -127,6 +127,8 @@ async function createWindow() {
     createEvidenceRegistry,
     codecFidelityEvidenceRecords,
     resolveFormatWriter,
+    commandSubjectsFrom,
+    createSubjectCommandRuntime,
   } = await root
 
   const repositoryRoot = path.resolve(__dirname, '..', '..', '..')
@@ -570,6 +572,72 @@ async function createWindow() {
 
   /** The writer for editors that know nothing about the format (hex, plain text). */
   const rawWriter = createRawWriter()
+
+  /*
+   * The shared command runtime (block 13, works 4–6).
+   *
+   * The same six descriptors the CLI runs and VS Code puts in its palette. Everything Electron
+   * contributes is `openSubjectForRpc` — which already confines a requested path to the granted
+   * roots. What a command decides is not written in this file, and that is exit-gate line 1 of the
+   * block: no domain handler exists only inside an adapter.
+   */
+  const commandRuntime = createSubjectCommandRuntime()
+  const commandSubjects = commandSubjectsFrom(openSubjectForRpc)
+  /** Runs in flight, so the renderer can cancel one by the id it was given. */
+  const runningCommands = new Map()
+
+  ipcMain.handle('modkit.command.list', () =>
+    commandRuntime.descriptors.map(descriptor => ({
+      id: descriptor.id,
+      title: descriptor.title,
+      summary: descriptor.summary,
+      needsSubject: descriptor.needsSubject,
+      mutatesSource: descriptor.mutatesSource,
+    })),
+  )
+
+  ipcMain.handle('modkit.command.run', async (event, request) => {
+    const { command, subject, entry, target, runId } = request ?? {}
+    if (typeof command !== 'string' || typeof subject !== 'string') {
+      return {
+        state: 'failed',
+        command: String(command ?? ''),
+        code: 'x3.command/input-invalid',
+        message: 'a command run names a command and a subject',
+        diagnostics: [],
+      }
+    }
+    const controller = new AbortController()
+    if (typeof runId === 'string') runningCommands.set(runId, controller)
+    try {
+      return await commandRuntime.run(
+        command,
+        {
+          subject,
+          ...(typeof entry === 'string' ? { entry } : {}),
+          ...(typeof target === 'string' ? { target } : {}),
+        },
+        {
+          openSubject: commandSubjects,
+          signal: controller.signal,
+          // Progress travels back on the sender that asked; a closed window simply stops listening.
+          progress: step => {
+            if (!event.sender.isDestroyed()) {
+              event.sender.send('modkit.command.progress', { runId, ...step })
+            }
+          },
+        },
+      )
+    } finally {
+      if (typeof runId === 'string') runningCommands.delete(runId)
+    }
+  })
+
+  ipcMain.handle('modkit.command.cancel', (_event, runId) => {
+    const controller = typeof runId === 'string' ? runningCommands.get(runId) : undefined
+    controller?.abort()
+    return controller !== undefined
+  })
 
   /** One capability-RPC endpoint per handed-out port; closed with the window. */
   const subjectEndpoints = new Set()
