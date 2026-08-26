@@ -16,6 +16,7 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { format, resolveConfig } from 'prettier'
 import { parseCanonicalYaml } from './lib/canonical-yaml.mjs'
+import { nearestOwedBlock } from './lib/nearest-block.mjs'
 
 const repoRoot = path.resolve(fileURLToPath(new URL('../..', import.meta.url)))
 const check = process.argv.includes('--check')
@@ -160,7 +161,11 @@ push(
       String(scope.counts.seed),
       String(scope.counts.transitiveDependencies),
       String(scope.units.filter(unit => UNRESOLVED.has(unit.migrationState)).length),
-      Object.keys(scope.deadlines).sort(compareUtf8)[0] ?? '—',
+      // The earliest block that still owes something — not merely the first key. See
+      // `lib/nearest-block.mjs` for the two ways the old one-liner lied.
+      nearestOwedBlock(scope.deadlines, id =>
+        UNRESOLVED.has(scope.units.find(unit => unit.capabilityId === id)?.migrationState),
+      ) ?? '—',
     ]),
   ),
 )

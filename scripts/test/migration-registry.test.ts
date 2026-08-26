@@ -7,6 +7,8 @@ import { describe, expect, it } from 'vitest'
 
 // @ts-expect-error -- the canonical YAML subset reader is untyped tooling JavaScript
 import { parseCanonicalYaml } from '../migration/lib/canonical-yaml.mjs'
+// @ts-expect-error -- untyped tooling JavaScript, like the reader above
+import { blockNumber, nearestOwedBlock } from '../migration/lib/nearest-block.mjs'
 
 const scriptsDir = fileURLToPath(new URL('..', import.meta.url))
 const gate = join(scriptsDir, 'migration', 'check-registry.mjs')
@@ -224,5 +226,50 @@ describe('product profile gate (plan §4.2–4.3, block 10 work 8)', () => {
     )
     expect(result.status).toBe(1)
     expect(result.stderr).toContain('is not declared in scripts/app-extension-sets.mjs')
+  })
+})
+
+describe('the generated status page names the block that still owes something', () => {
+  /*
+   * The line this covers said «block-11» while block 11 had zero unresolved rows: its deadlines
+   * were all met. `Object.keys(deadlines).sort()[0]` answers "the first key by text", which is
+   * neither "the earliest block" nor "the earliest block that still owes anything" — and a reader
+   * asking what is due next was pointed at finished work.
+   */
+  const unresolved = (...ids: readonly string[]) => {
+    const owed = new Set(ids)
+    return (id: string) => owed.has(id)
+  }
+
+  it('skips blocks whose deadlines are all met', () => {
+    const deadlines = { 'block-11': ['a', 'b'], 'block-12': ['c'], 'block-15': ['d'] }
+    expect(nearestOwedBlock(deadlines, unresolved('c'))).toBe('block-12')
+    // and when a later block is the only one owing, it is not overtaken by an earlier finished one
+    expect(nearestOwedBlock(deadlines, unresolved('d'))).toBe('block-15')
+  })
+
+  it('orders blocks by number, not by text', () => {
+    // the bug this pins: `block-11` sorts before `block-9`, and `block-22` before both
+    const deadlines = { 'block-9': ['nine'], 'block-11': ['eleven'], 'block-22': ['twentytwo'] }
+    expect(Object.keys(deadlines).sort()[0]).toBe('block-11')
+    expect(nearestOwedBlock(deadlines, unresolved('nine', 'eleven', 'twentytwo'))).toBe('block-9')
+    expect(blockNumber('block-9')).toBeLessThan(blockNumber('block-11'))
+  })
+
+  it('answers nothing when the closure owes nothing, rather than naming a block at random', () => {
+    const deadlines = { 'block-11': ['a'], 'block-12': ['b'] }
+    expect(nearestOwedBlock(deadlines, unresolved())).toBeUndefined()
+    expect(nearestOwedBlock({}, unresolved('a'))).toBeUndefined()
+  })
+
+  it('agrees with the committed page: its nearest block is the first with a non-zero gap', () => {
+    const page = readFileSync(join(scriptsDir, '..', 'migration', 'generated', 'status.md'), 'utf8')
+    const named = /\|\s*`mk3-ga`\s*\|(?:[^|]*\|){4}\s*(block-\d+)\s*\|/u.exec(page)?.[1]
+    expect(named).toBeDefined()
+    // the deadline table below it lists units and unresolved counts per block, in block order
+    const rows = [...page.matchAll(/\|\s*`(block-\d+)`\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|/gu)]
+    const firstOwing = rows.find(row => Number(row[3]) > 0)?.[1]
+    expect(firstOwing).toBeDefined()
+    expect(named).toBe(firstOwing)
   })
 })
