@@ -2643,7 +2643,7 @@
       "owner": "extensions/common/uv-materializer",
       "plannedBlock": 11,
       "migrationState": "implemented",
-      "supportState": "partial",
+      "supportState": "supported",
       "evidenceLevel": "E2",
       "allocationState": "covered",
       "portFamily": null,

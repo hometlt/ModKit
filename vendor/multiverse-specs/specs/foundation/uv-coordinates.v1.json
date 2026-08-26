@@ -1,0 +1,81 @@
+{
+  "$comment": "Machine form of SPEC_UV_COORDINATES.md. A converter reads this instead of the prose; a reviewer checks the prose against it. Source entries carry only conversions that were measured against real files — a frame nobody has verified is absent from this list rather than guessed at, because a plausible-looking basis is indistinguishable from a measured one once it is written down.",
+  "schemaVersion": "uv-coordinates-1",
+  "formId": "uv.foundation/coordinates@1",
+  "appliesTo": ["model plane", "world plane"],
+  "abi": {
+    "type": "ProjectionBasis",
+    "note": "the fields already existed and adapters already filled them correctly; this form fixes which combination is canonical and what a conversion must do",
+    "fields": ["handedness", "upAxis", "forwardAxis", "unit", "metersPerUnit", "sourceUnit", "unitsPerCell"]
+  },
+  "canonical": {
+    "handedness": "right",
+    "upAxis": "y",
+    "forwardAxis": "+z",
+    "unit": "meter",
+    "rationale": "glTF is the model substrate; agreeing with it removes a conversion from the common path"
+  },
+  "unitStates": {
+    "stated": {
+      "basis": { "unit": "meter", "metersPerUnit": "from the source's own declaration" },
+      "planeState": "normalized",
+      "lossless": true
+    },
+    "impliedByGrid": {
+      "basis": { "unit": "meter", "unitsPerCell": "the source's grid relationship", "metersPerUnit": "derived from the game's documented cell size" },
+      "planeState": "inferred",
+      "note": "a value computed because the source did not state it is not the same fact as a value converted from one that did"
+    },
+    "absent": {
+      "basis": { "unit": "source-unit", "sourceUnit": "the source's own unit name, verbatim" },
+      "planeState": "normalized",
+      "rule": "no metre factor is invented; a consumer needing physical scale asks the project, not the artifact"
+    }
+  },
+  "conversionRules": {
+    "handednessBySign": "negating exactly one axis flips handedness and leaves the other two meanings intact; a swap also flips it but silently renames up or forward",
+    "swapsRestateHandedness": "where a Z-up source genuinely requires a swap, the entry states the swap and restates the resulting handedness",
+    "scaleIsScalar": "one scalar, applied after orientation; non-uniform scale belongs to a node transform, not to a frame",
+    "boundsFromCorners": "an axis-aligned bound is recomputed from the converted corner set, never by converting min and max individually",
+    "emptyHasNoBounds": "an empty subject has no bounds; it does not have a zero-volume box at the origin"
+  },
+  "sources": [
+    {
+      "id": "m3",
+      "label": "StarCraft II M3",
+      "from": { "handedness": "right", "upAxis": "z", "forwardAxis": "+y" },
+      "map": "(x, y, z) -> (x, z, -y)",
+      "selfInverse": true,
+      "unit": "absent",
+      "sourceUnit": "sc2-game-unit",
+      "measuredIn": "SPEC_UVM_CONVERSION.md#3"
+    },
+    {
+      "id": "s3o",
+      "label": "Spring S3O",
+      "from": { "handedness": "left", "upAxis": "y", "forwardAxis": "+z" },
+      "map": "(x, y, z) -> (-x, y, z)",
+      "selfInverse": true,
+      "unit": "impliedByGrid",
+      "sourceUnit": "elmo",
+      "unitsPerCell": 8,
+      "note": "1 elmo = 1/8 map square; the metre factor comes from the map's squareSize, so a standalone model records sourceUnit rather than guessing",
+      "measuredIn": "SPEC_UVM_CONVERSION.md#5"
+    },
+    {
+      "id": "unreal",
+      "label": "Unreal Engine",
+      "from": { "handedness": "left", "upAxis": "z", "forwardAxis": "+x" },
+      "map": "(x, y, z) -> (x, z, -y) then negate x",
+      "selfInverse": false,
+      "unit": "stated",
+      "sourceUnit": "centimeter",
+      "metersPerUnit": 0.01,
+      "measuredIn": "SPEC_UVM_CONVERSION.md#6.3"
+    }
+  ],
+  "unmeasured": {
+    "note": "these formats are converted by shipped adapters but their frame is not stated in the conversion spec, so no entry is published here. Adding one means measuring it against a real file, not reading it off another engine that looks similar.",
+    "ids": ["w3d", "mdx", "scm", "psk", "vxl"]
+  }
+}

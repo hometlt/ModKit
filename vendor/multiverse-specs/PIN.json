@@ -3,16 +3,16 @@
   "schemaVersion": "multiverse-specs-pin-1",
   "source": {
     "repository": "multiverse (sibling repository)",
-    "commit": "6b65eb6a39b95f2aa320546e369a1dec914308b7",
-    "subject": "specs: candidate-scope texture-interchange-v1 и статус UVT после первого материализатора",
-    "committedOn": "2026-08-26T00:21:55+04:00"
+    "commit": "ce034199ffa35f9df1cc4ac67c85bf8dc0cacfe0",
+    "subject": "specs: свести систему координат и единиц модельной и мировой плоскостей в один контракт",
+    "committedOn": "2026-08-26T05:19:25+04:00"
   },
   "generator": "scripts/specs-pin.mjs",
   "generatedFrom": "git objects, not the sibling working tree",
   "prefix": "specs/",
   "counts": {
-    "files": 48,
-    "bytes": 466939
+    "files": 50,
+    "bytes": 476954
   },
   "files": [
     {
@@ -22,8 +22,8 @@
     },
     {
       "path": "specs/README.md",
-      "bytes": 11806,
-      "digest": "sha256:7e6343071bf8613e9bc65bfc83c82e30167692d54b82727b2dce662c1eb447c8"
+      "bytes": 11928,
+      "digest": "sha256:4bfcdb4109d23b2db9382cf72a1ae71bfc1671cd5697a95160092983d72acba9"
     },
     {
       "path": "specs/conformance/canonical-form/vectors.json",
@@ -56,6 +56,11 @@
       "digest": "sha256:6ff8c9eb2ae432480fa70fc37a4a344a92654eb30572a459ec679239a8749074"
     },
     {
+      "path": "specs/foundation/SPEC_UV_COORDINATES.md",
+      "bytes": 5800,
+      "digest": "sha256:8b571046f44f6b56123a5ea754190231b4368b2363fe4c3df4ada55d2a210554"
+    },
+    {
       "path": "specs/foundation/SPEC_UV_FOUNDATION.md",
       "bytes": 6237,
       "digest": "sha256:a66700ba3de6b3dd33308fe69e3d717bc3b91f43a166060362b8ee3ba59cc353"
@@ -69,6 +74,11 @@
       "path": "specs/foundation/uv-canonical-form.v1.json",
       "bytes": 2691,
       "digest": "sha256:75353296ce549dc64cc95811eb474ef6fdaaeebf009cffe2bbaf76300a493d03"
+    },
+    {
+      "path": "specs/foundation/uv-coordinates.v1.json",
+      "bytes": 4093,
+      "digest": "sha256:ad8b125f4a1afb874c5a5b868eaf6acd76bebfd91fcfbfbef52a488b50207412"
     },
     {
       "path": "specs/model/SPEC_UVM.md",

@@ -15685,6 +15685,7 @@ capabilities:
       - 'авторитет физически перенесён в sibling-репозиторий multiverse: X3 потребляет только pinned snapshot и вторым источником не становится'
       - 'перенесены материалы, которыми владеет слайс 11C0: UV Foundation, семейство UVM, канонизация, версионирование, semantic scopes; UVW/UVD/UVS и медиа-заглушки переносит блок 22'
       - 'исполняемый UV Projection ABI и ResourceSessionPort здесь не заморожены — это вторая половина слайса 11C0'
+      - 'слайс 12-3 добавил SPEC_UV_COORDINATES: канон рамки (right/+Y/+Z/meter, то есть glTF) и три состояния единиц для модельной и мировой плоскостей, плюс машинная форма uv-coordinates.v1.json. Записи источников только измеренные (M3, S3O, Unreal); W3D, MDX, SCM, PSK и VXL перечислены как неизмеренные, а не списаны с похожего движка'
     receipts:
       projection: null
       materialization: null
