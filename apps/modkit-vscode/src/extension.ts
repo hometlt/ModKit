@@ -25,11 +25,17 @@ import {
   parseContainerUriText,
   type ContainerNode,
 } from './container-uri.js'
+import {
+  commandSubjectsFrom,
+  createSubjectCommandRuntime,
+  type CommandResult,
+} from '@modkitx-x3/host'
 import type { ContainerRegistry } from './containers.js'
 import { CustomDocumentState } from './custom-document.js'
 import { withExtensionRoot } from './extension-roots.js'
 import {
   catalogCandidates,
+  createVsCodeCommandOpener,
   createVsCodeSubjectHost,
   subjectKey,
   subjectLabel,
@@ -644,6 +650,85 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     void vscode.commands.executeCommand('vscode.openWith', uri, CUSTOM_EDITOR_TYPE)
   }
 
+  // ---------------------------------------------------------------- shared command runtime
+  /*
+   * The same six commands the CLI runs and Electron dispatches (block 13, works 4–6).
+   *
+   * Nothing about them is written here: the descriptors, what each one does, and how a missing
+   * operation is reported all live in `@modkitx-x3/host`. This is the editor-shaped half — a
+   * palette entry, a progress notification, a cancellation token — and it is the only half that
+   * should ever differ between the three applications.
+   */
+  const commandRuntime = createSubjectCommandRuntime()
+  const commandOpener = commandSubjectsFrom(
+    createVsCodeCommandOpener({ services: host.services, roots, containers }),
+  )
+
+  /** Run one command with the editor's own progress and cancellation, and report it natively. */
+  const runSharedCommand = async (request: {
+    readonly command: string
+    readonly subject: string
+    readonly entry?: string
+    readonly target?: string
+  }): Promise<CommandResult> => {
+    const descriptor = commandRuntime.get(request.command)
+    const title = `Modkit: ${descriptor?.title ?? request.command}`
+    const result = await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title, cancellable: true },
+      async (progress, token) => {
+        /*
+         * VS Code cancels through a token; the runtime cancels through an `AbortSignal`. One
+         * listener bridges them, and the runtime turns the abort into a `x3.command/cancelled`
+         * result rather than an exception — so the notification closes on an answer either way.
+         */
+        const controller = new AbortController()
+        const subscription = token.onCancellationRequested(() => controller.abort())
+        try {
+          return await commandRuntime.run(
+            request.command,
+            {
+              subject: request.subject,
+              ...(request.entry === undefined ? {} : { entry: request.entry }),
+              ...(request.target === undefined ? {} : { target: request.target }),
+            },
+            {
+              openSubject: commandOpener,
+              signal: controller.signal,
+              progress: step => progress.report({ message: step.message }),
+            },
+          )
+        } finally {
+          subscription.dispose()
+        }
+      },
+    )
+    log(`[command] ${JSON.stringify(result)}`)
+    // Findings about the subject go where every other subject finding goes.
+    for (const item of result.diagnostics) {
+      publishDiagnostic({
+        code: item.code,
+        message: item.message,
+        severity: item.severity ?? 'information',
+        path: request.subject,
+      })
+    }
+    if (result.state === 'ok') {
+      void vscode.window.showInformationMessage(
+        `${title}: ${subjectLabel(request.subject)} — see the Modkit MK3 output for the full result.`,
+      )
+    } else if (result.state === 'unavailable') {
+      // §4.2: the reason and the alternative, both, on a surface the person is already looking at.
+      void vscode.window
+        .showWarningMessage(`${title}: ${result.reason}`, 'What instead?')
+        .then(choice => {
+          if (choice !== undefined) void vscode.window.showInformationMessage(result.alternative)
+        })
+    } else {
+      void vscode.window.showErrorMessage(`${title}: ${result.message}`)
+    }
+    return result
+  }
+
   // ---------------------------------------------------------------- commands
   context.subscriptions.push(
     /*
@@ -673,6 +758,61 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         })
         const first = picked?.[0]
         if (first !== undefined) openResource(first)
+      })()
+    }),
+
+    /*
+     * The shared command surface, in the palette.
+     *
+     * One entry rather than six: the list of commands is the runtime's, and a manifest that
+     * repeated it would be a second copy to keep in step. Called with an argument object it runs
+     * exactly that command, which is how the smoke drives one fixture through this host.
+     */
+    vscode.commands.registerCommand('modkit.runCommand', (argument: unknown) => {
+      const request = argument as
+        { command?: string; subject?: string; entry?: string; target?: string } | undefined
+      return (async (): Promise<CommandResult | undefined> => {
+        if (typeof request?.command === 'string' && typeof request.subject === 'string') {
+          return runSharedCommand({
+            command: request.command,
+            subject: request.subject,
+            ...(typeof request.entry === 'string' ? { entry: request.entry } : {}),
+            ...(typeof request.target === 'string' ? { target: request.target } : {}),
+          })
+        }
+        const subject = activeSubject ?? vscode.window.activeTextEditor?.document.uri.fsPath
+        if (subject === undefined) {
+          void vscode.window.showInformationMessage(
+            'Modkit: open a file first — these commands run against the active subject.',
+          )
+          return undefined
+        }
+        const picked = await vscode.window.showQuickPick(
+          commandRuntime.descriptors.map(item => ({
+            label: item.title,
+            description: item.id,
+            detail: item.summary,
+          })),
+          { title: `Run on ${subjectLabel(subject)}`, placeHolder: 'Pick a command' },
+        )
+        if (picked === undefined) return undefined
+        /*
+         * `subject.extract` is the one of the six that needs a second word, and asking for it is
+         * better than running it with an empty entry and reporting a refusal the user caused.
+         */
+        let entry: string | undefined
+        if (picked.description === 'subject.extract') {
+          entry = await vscode.window.showInputBox({
+            title: 'Member to extract',
+            prompt: 'Path of the entry inside the container',
+          })
+          if (entry === undefined) return undefined
+        }
+        return runSharedCommand({
+          command: picked.description,
+          subject,
+          ...(entry === undefined ? {} : { entry }),
+        })
       })()
     }),
 
@@ -720,7 +860,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         if (existing === undefined || existing.length === 0) {
           void vscode.window.showWarningMessage(
             'Modkit: open a folder in this window first — adding the first workspace folder ' +
-              'restarts the extension host, which would close the container again.',
+              'restarts the extension host, which would close the container again. ' +
+              'Open a folder and run this command again.',
           )
           return
         }

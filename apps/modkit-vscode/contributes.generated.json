@@ -21,6 +21,10 @@
       "title": "Modkit: Open Active File in Workbench"
     },
     {
+      "command": "modkit.runCommand",
+      "title": "Modkit: Run Command…"
+    },
+    {
       "command": "modkit.showHostProfile",
       "title": "Modkit: Open Workbench"
     }
