@@ -1,25 +1,36 @@
 {
-  "$comment": "Committed §7.4 baseline for the VS Code smoke. Written by hand from a recorded run and compared against by scripts/../run-smoke.mjs on every run. Raw samples are kept, not reduced away: a median whose numbers were discarded cannot be compared with the next one. Update deliberately, in a commit that says which run replaced it and why.",
+  "$comment": "Committed §7.4 baseline for the VS Code smoke, compared against by test-e2e/run-smoke.mjs on every run. Raw samples are kept, not reduced away: a median whose numbers were discarded cannot be compared with the next one. Update deliberately, in a commit that says which runs replaced it and why.",
   "schemaVersion": 1,
   "recordedFrom": {
-    "x3Commit": "2c99dbf78f9ec0e71f32d88304c3afc4bce033d6",
+    "x3Commit": "6c3c5ef75b689718d05ef70719cf44f106181e72",
     "vscode": "1.134.0",
     "os": "win32 10.0.26200 x64",
-    "runs": 5,
-    "note": "block 13 slice D; five cold editor launches in one session"
+    "sessions": 3,
+    "runsPerSession": 5,
+    "note": "block 13 slice D; fifteen cold editor launches pooled across three sessions on one machine, with no product change between them"
   },
   "activationMs": {
-    "samples": [2806, 3138, 2948, 3734, 2795],
-    "median": 2948,
-    "p95": 3734
+    "samples": [
+      3047, 6493, 5482, 5199, 6308, 2806, 3138, 2948, 3734, 2795, 4170, 3647, 3478, 5232, 3469
+    ],
+    "median": 3647,
+    "p95": 6493,
+    "min": 2795,
+    "max": 6493
   },
   "firstOpenMs": {
-    "samples": [1517, 2299, 2304, 2537, 1563],
-    "median": 2299,
-    "p95": 2537
+    "samples": [
+      2378, 3640, 2487, 2306, 2437, 1517, 2299, 2304, 2537, 1563, 3027, 2420, 2549, 3194, 2440
+    ],
+    "median": 2437,
+    "p95": 3640,
+    "min": 1517,
+    "max": 3640
   },
-  "crossSessionObserved": {
-    "$comment": "A second session of five launches on the same machine, kept because it is the honest spread: activation ranged 2795–6493 ms across sessions while within-session p95 was 3734. The per-run ceilings in the suite are set above the cross-session maximum for that reason; the §7.4 comparison is against the medians above.",
-    "activationMs": [3047, 6493, 5482, 5199, 6308]
+  "spread": {
+    "$comment": "Why this baseline is pooled, and what its comparison can and cannot detect. The first baseline was recorded from a single session of five launches (activation median 2948) and the very next run — with nothing changed in the product — reported +23.7% against it and raised a §7.4 alarm. Across three sessions activation ranges 2795–6493 ms and first open 1517–3640 ms: a 2.3x spread on the same machine, same commit, driven by whatever else the laptop was doing. The policy's 5% median threshold is therefore below this hardware's own noise floor, and a single-session comparison cannot separate a regression from a busy machine.",
+    "consequence": "The comparison stays in the receipt as an investigation trigger, exactly as §7.4 intends, and is deliberately not wired to fail the run. What a red comparison means here is 'look at the samples', not 'a regression happened'. A comparison that could actually decide needs either a quiet-machine protocol or many more launches, and neither belongs in a smoke run.",
+    "activationRatio": 2.32,
+    "firstOpenRatio": 2.4
   }
 }
