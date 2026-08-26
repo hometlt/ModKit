@@ -21,9 +21,9 @@
     }
   ],
   "limitations": [
-    "The dependency-free MK3 port decodes only two-dimensional LDR void-extent constant-colour blocks; all ordinary, HDR void-extent and three-dimensional ASTC block modes remain compressed-only.",
+    "The dependency-free MK3 decoder covers two-dimensional LDR void-extent and five fixture-pinned single-partition block modes (0x42, 0x163, 0x243, 0x452 and 0x7cd), including binary/trit/quint weights, infill and single/dual planes.",
     "The standalone container does not identify linear versus sRGB or LDR versus HDR profiles, so consumers must obtain that semantic from surrounding asset metadata.",
-    "General ASTC decoding, HDR output, GPU upload and encoding remain follow-up work."
+    "All unverified block modes, multi-partition blocks, HDR endpoints/void extents, three-dimensional ASTC, HDR output, GPU upload and encoding remain follow-up work."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "astc", "label": "ASTC Texture" }],

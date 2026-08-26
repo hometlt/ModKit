@@ -163,15 +163,17 @@ describe('12-5 PKM publishes decoded ETC pixels', () => {
     expect(() => decodeEtcRgba(new Uint8Array(7), 1, 1, 'ETC1_RGB')).toThrow(/shorter than/u)
   })
 
-  it('returns nothing for EAC, so the codec can say decodedAccess: false honestly', async () => {
-    /*
-     * The named remainder. EAC's 11-bit blocks are a different layout carrying one or two channels,
-     * and turning them into RGBA means choosing a mapping the format does not specify. Undefined is
-     * the truthful answer; a plausible picture would be worse than none.
-     */
+  it('decodes unsigned EAC but keeps signed channels without a raster view', async () => {
     const { decodeEtcRgba } = await decodeModule()
-    expect(decodeEtcRgba(new Uint8Array(16), 1, 1, 'EAC_R11')).toBeUndefined()
-    expect(decodeEtcRgba(new Uint8Array(32), 1, 1, 'EAC_RG11')).toBeUndefined()
+    const unsigned = decodeEtcRgba(
+      Uint8Array.from([103, 0x2d, 0x6d, 0xb6, 0xdb, 0x6d, 0xb6, 0xdb]),
+      1,
+      1,
+      'EAC_R11',
+    ) as Uint8Array
+    expect([...unsigned.subarray(0, 4)]).toEqual([83, 0, 0, 255])
+    expect(decodeEtcRgba(new Uint8Array(8), 1, 1, 'EAC_SIGNED_R11')).toBeUndefined()
+    expect(decodeEtcRgba(new Uint8Array(16), 1, 1, 'EAC_SIGNED_RG11')).toBeUndefined()
   })
 
   it('opens the shipped fixture and serves its pixel through the raster contract', async () => {

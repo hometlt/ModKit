@@ -221,8 +221,13 @@ describe('block 14A VS Code + CLI workflow ledger', () => {
       const brokenInventory = readInventory()
       const candidates = brokenInventory.units.filter(unit => unit.kind === kind)
       expect(candidates.length).toBeGreaterThan(1)
-      const duplicate = stringField(candidates[0], key)
-      candidates[1].extracted[key] = duplicate
+      const first = candidates[0]
+      const second = candidates[1]
+      if (first === undefined || second === undefined) {
+        throw new Error(`expected at least two ${kind} candidates`)
+      }
+      const duplicate = stringField(first, key)
+      second.extracted[key] = duplicate
       const inventoryPath = tempPath('inventory.json')
       writeFileSync(inventoryPath, JSON.stringify(brokenInventory))
 

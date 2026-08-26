@@ -1,5 +1,5 @@
 /**
- * Bounded ASTC depth: only the mandatory 2D LDR void-extent constant-colour mode.
+ * Original bounded ASTC depth: the mandatory 2D LDR void-extent constant-colour mode.
  *
  * The expected channels are derived independently from Khronos Data Format Specification 1.4,
  * §§23.9.3, 23.18 and 23.22: bits 8..0 identify void extent, bit 9 selects LDR, bits 10..11
@@ -87,7 +87,7 @@ describe('IMAGE_GPU_DEPTH ASTC LDR void-extent decode', () => {
   })
 
   it.each([
-    ['ordinary ASTC block mode', (bytes: Uint8Array) => (bytes[PAYLOAD] = 0)],
+    ['reserved ASTC block mode', (bytes: Uint8Array) => (bytes[PAYLOAD] = 0)],
     ['HDR void extent', (bytes: Uint8Array) => (bytes[PAYLOAD + 1] |= 0x02)],
     [
       'void extent with a cleared reserved bit',

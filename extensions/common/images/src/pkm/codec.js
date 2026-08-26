@@ -84,7 +84,20 @@ function parsePkm(bytes) {
 
 /** Which formats ./etc.js implements; the budget rule applies only to images it can produce. */
 const decodable = format =>
-  format.includes('ETC1') || format.includes('ETC2_RGB') || format.includes('ETC2_SRGB')
+  format.includes('ETC1') ||
+  format.includes('ETC2_RGB') ||
+  format.includes('ETC2_SRGB') ||
+  format === 'EAC_R11' ||
+  format === 'EAC_RG11'
+
+const channelsOf = format =>
+  format.endsWith('RG11')
+    ? 2
+    : format.endsWith('R11')
+      ? 1
+      : format.includes('RGBA') || format.includes('A1')
+        ? 4
+        : 3
 
 /**
  * Bounded reader over the decoded image.
@@ -138,12 +151,13 @@ const definition = Object.freeze({
   async inspect(bytes, context) {
     const pkm = parsePkm(bytes)
     /*
-     * Decoding is per-format and honest about it: ETC1 and the ETC2 RGB family are implemented from
-     * the specification in ./etc.js, EAC's 11-bit channel formats are not. `decoded === undefined`
-     * is what a caller sees as `decodedAccess: false`, so an EAC payload keeps saying "blocks only"
-     * instead of publishing an invented channel mapping.
+     * Decoding is per-format and honest about it: ETC1/ETC2 and unsigned EAC R/RG are implemented
+     * from the specification in ./etc.js. Signed EAC stays compressed-only until a signed raster
+     * contract or an explicit visualization policy exists.
      */
-    const decodedBytes = pkm.width * pkm.height * 4
+    // ./etc.js decodes the complete block grid before regionReader crops to the logical extent.
+    // Budget that actual allocation, including padding, rather than only the visible pixels.
+    const decodedBytes = pkm.encodedWidth * pkm.encodedHeight * 4
     if (!Number.isSafeInteger(decodedBytes)) {
       throw new RangeError('PKM decoded pixel count is not representable')
     }
@@ -163,8 +177,8 @@ const definition = Object.freeze({
         faces: 1,
         mipLevels: 1,
         frames: 1,
-        channels: pkm.blockBytes === 16 ? 4 : 3,
-        bitDepth: 8,
+        channels: channelsOf(pkm.format),
+        bitDepth: pkm.format.startsWith('EAC_') ? 11 : 8,
         colorSpace: pkm.format.includes('SRGB') ? 'srgb' : 'unknown',
         alphaMode: pkm.format.includes('RGBA') || pkm.format.includes('A1') ? 'straight' : 'none',
         orientation: 'top-left',
@@ -230,7 +244,7 @@ const definition = Object.freeze({
       },
       unsupportedFeatures: [
         ...(decoded === undefined
-          ? ['decoded-region-provider', 'eac-11-bit-channel-decoding']
+          ? ['decoded-region-provider', 'signed-eac-11-bit-channel-view']
           : []),
         'mip-chains',
         'pkm-writing',
