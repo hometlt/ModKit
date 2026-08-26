@@ -3,10 +3,10 @@
   "version": 1,
   "rung": "E5",
   "block": "block-9",
-  "startedAt": "2026-08-26T06:45:44.760Z",
-  "finishedAt": "2026-08-26T06:46:33.444Z",
+  "startedAt": "2026-08-26T08:48:50.964Z",
+  "finishedAt": "2026-08-26T08:50:01.661Z",
   "subject": {
-    "x3Commit": "06c34a3ede984d4d645eeee1f32b9a5bd6c00247",
+    "x3Commit": "6692e5804ce88ac1ed1d0e5453bc6056fb26e2d6",
     "extension": {
       "id": "modkitx.@modkitx-x3/modkit-vscode",
       "version": "0.1.0"
@@ -57,7 +57,7 @@
   "build": {
     "command": "pnpm --filter @modkitx-x3/modkit-vscode ext:build",
     "exitCode": 0,
-    "output": "\n    packages/host/dist/node/index.js:8589:15:\n      8589 │   const base = import.meta.url;\n           ╵                ~~~~~~~~~~~\n\n  You need to set the output format to \"esm\" for \"import.meta\" to work correctly.\n\nbuilt ${X3_ROOT}\\apps\\modkit-vscode\\dist-app",
+    "output": "\n    packages/host/dist/node/worker-backend.js:60:17:\n      60 │     const base = import.meta.url;\n         ╵                  ~~~~~~~~~~~\n\n  You need to set the output format to \"esm\" for \"import.meta\" to work correctly.\n\nbuilt ${X3_ROOT}\\apps\\modkit-vscode\\dist-app",
     "distAppCheck": {
       "command": "pnpm --filter @modkitx-x3/modkit-vscode dist-app:check",
       "exitCode": 0,
@@ -67,7 +67,7 @@
   },
   "webviewChannel": {
     "cdpUsable": true,
-    "port": 59057,
+    "port": 58641,
     "note": "no vscode-webview target among 2"
   },
   "scenarios": [
@@ -75,24 +75,30 @@
       "id": "activation",
       "title": "The extension activates without error",
       "verdict": "PASS",
-      "evidence": "activate() resolved and all 5 modkit commands are registered, so the host composition completed inside activation",
-      "durationMs": 4487,
+      "evidence": "activate() resolved in 4040 ms (budget 10000 ms) with 111 contribution(s) from the shipped catalog and none missing; all 5 modkit commands are registered, so the host composition completed inside activation",
+      "durationMs": 5612,
       "details": {
         "extensionId": "modkitx.@modkitx-x3/modkit-vscode",
         "commands": {
           "expected": 5,
           "missing": []
-        }
+        },
+        "activationMs": 4040,
+        "contributions": 111,
+        "missingCatalogRoots": [],
+        "activationBudgetMs": 10000
       }
     },
     {
       "id": "w3d-single",
       "title": "A single W3D opens with its descriptor",
       "verdict": "PASS",
-      "evidence": "opened through \"Reopen Editor With… → Modkit Asset Preview\"; the page shows a 2-node scene (one node per pivot) and 1 animation, matching block 9",
-      "durationMs": 8834,
+      "evidence": "opened through \"Reopen Editor With… → Modkit Asset Preview\" in 2371 ms (budget 45000 ms); the page shows a 2-node scene (one node per pivot) and 1 animation, matching block 9",
+      "durationMs": 8989,
       "details": {
         "tabOpened": true,
+        "firstOpenMs": 2371,
+        "firstOpenBudgetMs": 45000,
         "stageTabs": ["Model", "Tree", "Metadata", "Hex"],
         "stagesVisited": ["as-opened", "Metadata", "Tree", "Model"],
         "diagnosticsSeen": [],
@@ -109,7 +115,7 @@
       "title": "A VXL resolves its .hva companion",
       "verdict": "PASS",
       "evidence": "opened with gnavrail.hva beside it; the page names the companion as provenance and the host raises no missing-sidecar diagnostic",
-      "durationMs": 5546,
+      "durationMs": 5612,
       "details": {
         "companionOnDisk": true,
         "stageTabs": ["Model", "Tree", "Metadata", "Hex"],
@@ -133,7 +139,7 @@
       "title": "A W3D nested in a BIG archive opens as a subject",
       "verdict": "PASS",
       "evidence": "with no editor open on the archive, the container filesystem lists 5 root entries through the editor's own workspace.fs and stats «data/editor/molds/bowl.w3d» at 30346 bytes; `modkit.openArchiveEntry` then opened it in a Modkit editor as a model subject with 1 scene node(s) — the member is a subject, not a hex preview",
-      "durationMs": 7543,
+      "durationMs": 9584,
       "details": {
         "archiveOnDisk": true,
         "entry": "data/editor/molds/bowl.w3d",
@@ -154,7 +160,7 @@
       "title": "A VXL without its sidecar reports a leak-free diagnostic",
       "verdict": "PASS",
       "evidence": "the model opened without its sidecar, the host raised x3.host/companion-unavailable, and the 1 diagnostic line(s) carry no drive letter, UNC path, ${FILE_URL} URL or home directory",
-      "durationMs": 8592,
+      "durationMs": 9091,
       "details": {
         "copyOnDisk": true,
         "companionAbsent": true,
@@ -187,11 +193,30 @@
       }
     },
     {
+      "id": "gpu-texture-stages",
+      "title": "ANI and ASTC reach the image stage",
+      "verdict": "PASS",
+      "evidence": "both minimal.ani and minimal.astc opened with an Image stage from the shipped catalog, so the decoders that landed after the previous receipt are live in this build",
+      "durationMs": 3494,
+      "details": {
+        "stages": {
+          "minimal.ani": ["Tree", "Metadata", "Hex", "Image", "Edit"],
+          "minimal.astc": ["Tree", "Metadata", "Hex", "Image", "Edit"]
+        },
+        "facilities": {
+          "intended": ["gpu.webgl2", "worker.module"],
+          "observed": ["gpu.webgl2", "gpu.webgpu", "worker.module"],
+          "degraded": [],
+          "ungranted": ["gpu.webgpu"]
+        }
+      }
+    },
+    {
       "id": "command-fixtures",
       "title": "The shared command fixtures run in the editor",
       "verdict": "PASS",
       "evidence": "all 6 shared command fixtures reached the same state here as in the CLI and the Electron fake host — one runtime, three products, one verdict per fixture",
-      "durationMs": 4003,
+      "durationMs": 9363,
       "details": {
         "fixtures": [
           {
@@ -244,7 +269,7 @@
       "title": "Editors close and the host stays responsive",
       "verdict": "PASS",
       "evidence": "all 0 Modkit tab(s) closed and the extension host still answers commands afterwards; the editor’s own exit is recorded by the harness",
-      "durationMs": 87,
+      "durationMs": 4,
       "details": {
         "tabsBefore": 0,
         "tabsAfter": 0,
@@ -282,8 +307,8 @@
     "editorExited": true
   },
   "summary": {
-    "total": 7,
-    "passed": 7,
+    "total": 8,
+    "passed": 8,
     "failed": 0,
     "allPassed": true
   },
