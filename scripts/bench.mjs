@@ -28,11 +28,42 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import process from 'node:process'
+import {
+  checkBenchBundlePrecondition,
+  formatBenchBundleIssues,
+} from './bench/bundle-precondition.mjs'
 import { pairedStats, percentileOf } from './bench/paired.mjs'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const gate = process.argv.includes('--gate')
 const asJson = process.argv.includes('--json')
+
+const bundlePrecondition = checkBenchBundlePrecondition({ root })
+if (!bundlePrecondition.ok) {
+  const summary =
+    'INCONCLUSIVE — bundled dist precondition failed; no timings were collected.\n  ' +
+    formatBenchBundleIssues(bundlePrecondition.issues) +
+    '\nRun `pnpm build`, then review any scripts/bundle-hashes.json change before retrying.'
+  if (asJson) {
+    console.log(
+      JSON.stringify(
+        {
+          verdict: 'INCONCLUSIVE',
+          reason: 'bundle-precondition',
+          message: 'Bundled dist precondition failed; no timings were collected.',
+          issues: bundlePrecondition.issues,
+        },
+        null,
+        2,
+      ),
+    )
+  } else if (gate) {
+    console.error(`bench gate: ${summary}`)
+  } else {
+    console.log(`bench: ${summary}`)
+  }
+  process.exit(gate ? 2 : 0)
+}
 
 /** A scenario whose own noise exceeds this cannot decide anything. */
 const NOISE_CEILING = 0.35
