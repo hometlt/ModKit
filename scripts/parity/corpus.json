@@ -33,8 +33,7 @@
       "canonicalModule": "extensions/blizzard/starcraft-2/codecs/m3/src/index.ts",
       "canonicalExport": "createM3ModelCodec",
       "canonicalFactory": true,
-      "allowPoorerReason": "The canonical M3 reader decodes five materials; X3 still carries MAT* as a named lost plane, while the real animation, hierarchy, skeleton and texture-reference planes are published.",
-      "baseline": "X3 беднее"
+      "baseline": "X3 богаче"
     },
     {
       "id": "m3-real-sc2-casc",
@@ -51,8 +50,7 @@
       "canonicalModule": "extensions/blizzard/starcraft-2/codecs/m3/src/index.ts",
       "canonicalExport": "createM3ModelCodec",
       "canonicalFactory": true,
-      "allowPoorerReason": "The canonical reader reports five material slots while X3 publishes two decoded materials; X3 is otherwise richer on the live artifact through hierarchy, skeleton, animation and resource-reference facets.",
-      "baseline": "X3 беднее"
+      "baseline": "X3 богаче"
     },
     {
       "id": "warzone-pie-real-base-wz",
