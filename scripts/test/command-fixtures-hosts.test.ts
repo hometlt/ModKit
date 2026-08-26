@@ -1,13 +1,13 @@
 /**
- * The same command fixtures, in two of the three hosts (block 13, exit-gate line 2).
+ * The same command fixtures, in three headless hosts (blocks 13 and 14B).
  *
  * The gate reads: *the same command fixtures pass in the CLI, the Electron fake host and the
- * VS Code integration*. Two of those three are here, and they are deliberately as unalike as the
- * products are — the CLI is spawned as a real process and asserted through its stdout, the Electron
- * host is composed in this process and asserted on the returned object. If the runtime had drifted
- * into either adapter, one of these two columns would move and the other would not.
+ * VS Code integration*. CLI and Electron remain the original two columns; block 14B adds the
+ * automation host as a third headless column over the same runtime and fixtures. The CLI is spawned
+ * as a real process, while Electron and automation are composed in this process. If behaviour had
+ * drifted into an adapter, at least one column would move and the others would not.
  *
- * The third column is `pnpm smoke:vscode`, which runs the identical `COMMAND_FIXTURES` inside a
+ * The editor column is `pnpm smoke:vscode`, which runs the identical `COMMAND_FIXTURES` inside a
  * real editor and records the verdicts in its receipt. It cannot live here: it needs an editor.
  *
  * The fixtures and the checker are imported, never restated — `packages/testkit/src/command-fixtures.ts`
@@ -29,11 +29,17 @@ import {
   type CommandFixtureVerdict,
 } from '@modkitx-x3/testkit'
 import {
+  commandRequest,
   commandSubjectsFrom,
   createSubjectCommandRuntime,
+  executeCommandRequest,
+  COMMAND_PROTOCOL_SCHEMA_VERSION,
+  COMMAND_UNKNOWN,
+  type CommandReceipt,
   type CommandResult,
 } from '@modkitx-x3/host'
 import { createPathSubjectOpener } from '@modkitx-x3/host/node'
+import { createAutomationHost } from '../../apps/automation-host/src/index.js'
 import { createElectronSubjectServices } from '../../apps/electron/src/index.js'
 
 const repoRoot = join(fileURLToPath(new URL('..', import.meta.url)), '..')
@@ -56,7 +62,7 @@ const subjectPath = (fixture: CommandFixture): string =>
 // host 1: the CLI, as a process
 
 /** Run `modkit run` for real and parse the one JSON document it prints. */
-function runThroughCli(fixture: CommandFixture): CommandResult {
+function runCliJson(fixture: CommandFixture, format: 'json' | 'protocol-json'): unknown {
   const argv = [
     cliEntry,
     'run',
@@ -65,7 +71,7 @@ function runThroughCli(fixture: CommandFixture): CommandResult {
     ...extensionRoots.flatMap(root => ['--ext', root]),
     ...(fixture.entry === undefined ? [] : ['--entry', fixture.entry]),
     '--format',
-    'json',
+    format,
   ]
   let stdout = ''
   try {
@@ -77,15 +83,24 @@ function runThroughCli(fixture: CommandFixture): CommandResult {
     stdout = failure.stdout ?? ''
     if (stdout.trim() === '') throw error
   }
-  return JSON.parse(stdout) as CommandResult
+  return JSON.parse(stdout)
 }
+
+const runThroughCli = (fixture: CommandFixture): CommandResult =>
+  runCliJson(fixture, 'json') as CommandResult
+
+const runThroughCliProtocol = (fixture: CommandFixture): CommandReceipt =>
+  runCliJson(fixture, 'protocol-json') as CommandReceipt
+
+const listCliCommands = (format: '--json' | '--protocol-json'): unknown =>
+  JSON.parse(execFileSync(process.execPath, [cliEntry, 'commands', format], { encoding: 'utf8' }))
 
 // ---------------------------------------------------------------------------------------------
 // host 2: the Electron composition, headless
 
-let electronRuntime: Promise<(fixture: CommandFixture) => Promise<CommandResult>> | undefined
+let electronRuntime: Promise<(fixture: CommandFixture) => Promise<CommandReceipt>> | undefined
 
-function electronRunner(): Promise<(fixture: CommandFixture) => Promise<CommandResult>> {
+function electronRunner(): Promise<(fixture: CommandFixture) => Promise<CommandReceipt>> {
   electronRuntime ??= (async () => {
     const subjects = await createElectronSubjectServices(extensionRoots)
     disposers.push(async () => {
@@ -105,21 +120,46 @@ function electronRunner(): Promise<(fixture: CommandFixture) => Promise<CommandR
       }),
     )
     return async (fixture: CommandFixture) =>
-      runtime.run(
-        fixture.command,
-        {
+      executeCommandRequest(
+        runtime,
+        commandRequest(fixture.command, {
           subject: subjectPath(fixture),
           ...(fixture.entry === undefined ? {} : { entry: fixture.entry }),
+        }),
+        {
+          openSubject: opener,
         },
-        { openSubject: opener },
       )
   })()
   return electronRuntime
 }
 
 // ---------------------------------------------------------------------------------------------
+// host 3: the automation composition, with an explicit filesystem grant root
 
-describe('one command fixture set, two hosts, one verdict each', () => {
+let automationRuntime: Promise<(fixture: CommandFixture) => Promise<CommandReceipt>> | undefined
+
+function automationRunner(): Promise<(fixture: CommandFixture) => Promise<CommandReceipt>> {
+  automationRuntime ??= (async () => {
+    const host = await createAutomationHost([], { extensionRoots })
+    disposers.push(async () => {
+      await (host.subjects as unknown as { dispose?: () => Promise<void> }).dispose?.()
+    })
+    return async (fixture: CommandFixture) =>
+      host.runCommand(
+        commandRequest(fixture.command, {
+          subject: subjectPath(fixture),
+          ...(fixture.entry === undefined ? {} : { entry: fixture.entry }),
+        }),
+        { roots: [workspace] },
+      )
+  })()
+  return automationRuntime
+}
+
+// ---------------------------------------------------------------------------------------------
+
+describe('one command fixture set, three headless hosts, one verdict each', () => {
   it.each(COMMAND_FIXTURES.map(fixture => [fixture.id, fixture] as const))(
     'CLI: %s',
     (_id, fixture) => {
@@ -135,7 +175,7 @@ describe('one command fixture set, two hosts, one verdict each', () => {
     'Electron fake host: %s',
     async (_id, fixture) => {
       const run = await electronRunner()
-      const verdict = checkCommandFixture(fixture, await run(fixture))
+      const verdict = checkCommandFixture(fixture, (await run(fixture)).result)
       expect(verdict, `${fixture.id}: ${fixture.proves} — ${verdict.note ?? ''}`).toMatchObject({
         passed: true,
       })
@@ -143,33 +183,85 @@ describe('one command fixture set, two hosts, one verdict each', () => {
     180_000,
   )
 
-  it('the two hosts agree fixture for fixture, not merely each with itself', async () => {
-    const run = await electronRunner()
+  it.each(COMMAND_FIXTURES.map(fixture => [fixture.id, fixture] as const))(
+    'Automation host: %s',
+    async (_id, fixture) => {
+      const run = await automationRunner()
+      const verdict = checkCommandFixture(fixture, (await run(fixture)).result)
+      expect(verdict, `${fixture.id}: ${fixture.proves} — ${verdict.note ?? ''}`).toMatchObject({
+        passed: true,
+      })
+    },
+    180_000,
+  )
+
+  it('keeps legacy CLI JSON while offering the versioned protocol envelope', () => {
+    const fixture = COMMAND_FIXTURES[0] as CommandFixture
+    const legacy = runThroughCli(fixture)
+    expect(legacy).toMatchObject({ state: 'ok', command: fixture.command })
+    expect(legacy).not.toHaveProperty('schemaVersion')
+    const receipt = runThroughCliProtocol(fixture)
+    expect(receipt).toMatchObject({
+      schemaVersion: COMMAND_PROTOCOL_SCHEMA_VERSION,
+      request: { command: fixture.command },
+      result: { state: 'ok', command: fixture.command },
+    })
+    const legacyContracts = listCliCommands('--json')
+    expect(Array.isArray(legacyContracts)).toBe(true)
+    expect(legacyContracts).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: 'subject.open', needsSubject: true })]),
+    )
+    const protocolContracts = listCliCommands('--protocol-json')
+    expect(protocolContracts).toMatchObject({
+      schemaVersion: COMMAND_PROTOCOL_SCHEMA_VERSION,
+      commands: expect.arrayContaining([
+        expect.objectContaining({ id: 'subject.open', callers: expect.arrayContaining(['cli']) }),
+      ]),
+    })
+    const unknown = runThroughCliProtocol({
+      ...fixture,
+      id: 'unknown-command-protocol',
+      command: 'subject.teleport',
+    })
+    expect(unknown.result).toMatchObject({ state: 'failed', code: COMMAND_UNKNOWN })
+  }, 180_000)
+
+  it('the three headless hosts agree fixture for fixture, not merely each with itself', async () => {
+    const runElectron = await electronRunner()
+    const runAutomation = await automationRunner()
     const rows: CommandFixtureVerdict[] = []
     for (const fixture of COMMAND_FIXTURES) {
-      const cli = runThroughCli(fixture)
-      const electron = await run(fixture)
+      const cli = runThroughCliProtocol(fixture)
+      const electron = await runElectron(fixture)
+      const automation = await runAutomation(fixture)
       /*
-       * The comparison that makes this a *parity* test rather than two suites in one file: the two
+       * The comparison that makes this a *parity* test rather than three suites in one file: all
        * hosts must reach the same state for the same input. A refusal in one and a success in the
-       * other is exactly the drift exit-gate line 1 forbids, and it would pass both loops above.
+       * others is exactly the drift exit-gate line 1 forbids, and it would pass the loops above.
        */
       expect(
-        electron.state,
-        `${fixture.id}: CLI says ${cli.state}, Electron says ${electron.state}`,
-      ).toBe(cli.state)
-      if (cli.state === 'unavailable' && electron.state === 'unavailable') {
-        // Both must offer an alternative; §4.2 makes it part of the answer, not decoration.
-        expect(cli.alternative.length).toBeGreaterThan(0)
-        expect(electron.alternative.length).toBeGreaterThan(0)
+        [electron.result.state, automation.result.state],
+        `${fixture.id}: CLI says ${cli.result.state}, Electron says ${electron.result.state}, ` +
+          `automation says ${automation.result.state}`,
+      ).toEqual([cli.result.state, cli.result.state])
+      if (
+        cli.result.state === 'unavailable' &&
+        electron.result.state === 'unavailable' &&
+        automation.result.state === 'unavailable'
+      ) {
+        // All must offer an alternative; §4.2 makes it part of the answer, not decoration.
+        expect(cli.result.alternative.length).toBeGreaterThan(0)
+        expect(electron.result.alternative.length).toBeGreaterThan(0)
+        expect(automation.result.alternative.length).toBeGreaterThan(0)
       }
-      rows.push(checkCommandFixture(fixture, electron))
+      rows.push(checkCommandFixture(fixture, electron.result))
+      rows.push(checkCommandFixture(fixture, automation.result))
     }
     expect(rows.every(row => row.passed)).toBe(true)
     proves({
       capabilityId: 'block9/archive-entry-as-subject',
       operation: 'read',
-      note: 'the shared command runtime extracts a container member identically in CLI and Electron',
+      note: 'the shared command runtime extracts a container member identically in CLI, Electron and automation hosts',
     })
   }, 300_000)
 })

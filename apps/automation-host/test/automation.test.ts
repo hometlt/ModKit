@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { commandRequest, COMMAND_PROTOCOL_SCHEMA_VERSION } from '@modkitx-x3/host'
 import { openFileArtifactSource } from '@modkitx-x3/host/node'
 
 import {
@@ -16,6 +17,9 @@ describe('automation host composition root', () => {
     expect(description.realmId).toBe(AUTOMATION_REALM)
     expect(description.contributions).toEqual([])
     expect(description.diagnostics).toBe(0)
+    expect(host.commandContracts.schemaVersion).toBe(COMMAND_PROTOCOL_SCHEMA_VERSION)
+    expect(host.commandContracts.commands).toHaveLength(6)
+    expect(typeof host.runCommand).toBe('function')
   })
 
   it('inspects the same composition contract the interactive apps use', async () => {
@@ -80,6 +84,19 @@ describe('automation open path (S7)', () => {
     })
     expect(result.diagnostics.map(item => item.code)).toContain('x3.host/worker-shared-process')
     await result.session.dispose()
+
+    const outsideGrant = await host.runCommand(
+      commandRequest('subject.open', {
+        subject: join(repositoryRoot, 'apps', 'web', 'public', 'favicon-32.png'),
+      }),
+      { roots: [join(repositoryRoot, 'extensions')] },
+    )
+    expect(outsideGrant.result).toMatchObject({
+      state: 'failed',
+      code: 'x3.command/failed',
+    })
+    if (outsideGrant.result.state !== 'failed') throw new Error('expected a bounded-root refusal')
+    expect(outsideGrant.result.message).toMatch(/outside the granted roots/u)
   }, 30_000)
 
   it('keeps a disabled configured contribution inventoried but removes it from resolution', async () => {

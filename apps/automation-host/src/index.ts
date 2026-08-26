@@ -2,13 +2,25 @@ import { uint64 } from '@modkitx-x3/core'
 import { createHostTopology, type HostTopology } from '@modkitx-x3/sdk'
 import type { Diagnostic } from '@modkitx-x3/core'
 import type {
+  CommandContractDocument,
+  CommandOutputSink,
+  CommandProgress,
+  CommandReceipt,
+  CommandRequest,
   ExecutionBackendRegistry,
   ExtensionInput,
   HostComposition,
   SubjectServices,
 } from '@modkitx-x3/host'
 import {
+  commandSubjectsFrom,
+  createSubjectCommandRuntime,
+  describeSubjectCommandContracts,
+  executeCommandRequest,
+} from '@modkitx-x3/host'
+import {
   createNodeSubjectServices,
+  createPathSubjectOpener,
   loadExtensionRoots,
   nodeRuntimeTargetBase,
   nodeWorkerLinks,
@@ -100,7 +112,20 @@ export interface AutomationHost {
   readonly subjects: SubjectServices
   /** Configured directories that could not be loaded; other roots remain available. */
   readonly extensionRootFailures: readonly ExtensionRootFailure[]
+  /** Stable JSON contract for batch planners; it is derived from the live shared runtime. */
+  readonly commandContracts: CommandContractDocument
+  /** Execute one structured request through that runtime and the automation host's subject realm. */
+  runCommand(request: CommandRequest, options: AutomationCommandOptions): Promise<CommandReceipt>
   describeHost(): AutomationHostDescription
+}
+
+export interface AutomationCommandOptions {
+  /** Absolute directories the request is allowed to name; no implicit discovery is performed. */
+  readonly roots: readonly string[]
+  /** Optional batch-owned sink for export/convert output. */
+  readonly writeOutput?: CommandOutputSink
+  readonly progress?: (progress: CommandProgress) => void
+  readonly signal?: AbortSignal
 }
 
 export interface AutomationHostOptions {
@@ -130,12 +155,30 @@ export async function createAutomationHost(
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
   })
   const { host: composition, workers, executionBackends } = subjects
+  const commandRuntime = createSubjectCommandRuntime()
+  const commandContracts = describeSubjectCommandContracts()
   return Object.freeze({
     composition,
     workers,
     executionBackends,
     subjects,
     extensionRootFailures: loadedRoots.failures,
+    commandContracts,
+    runCommand: (request: CommandRequest, commandOptions: AutomationCommandOptions) =>
+      executeCommandRequest(commandRuntime, request, {
+        openSubject: commandSubjectsFrom(
+          createPathSubjectOpener({
+            subjects,
+            roots: commandOptions.roots,
+            grant: { id: 'automation-command', classes: ['read-source'] },
+          }),
+        ),
+        ...(commandOptions.writeOutput === undefined
+          ? {}
+          : { writeOutput: commandOptions.writeOutput }),
+        ...(commandOptions.progress === undefined ? {} : { progress: commandOptions.progress }),
+        ...(commandOptions.signal === undefined ? {} : { signal: commandOptions.signal }),
+      }),
     describeHost: () =>
       Object.freeze({
         topologyId: composition.topology.topologyId,

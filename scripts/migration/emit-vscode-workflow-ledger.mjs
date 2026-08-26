@@ -449,7 +449,7 @@ for (const target of targets) {
   if (target.hostCallers.includes('pwa'))
     fail(`${target.commandId}: PWA is not a proved runtime caller`)
   for (const caller of target.hostCallers) {
-    if (!['cli', 'electron', 'vscode'].includes(caller)) {
+    if (!['automation', 'cli', 'electron', 'vscode'].includes(caller)) {
       fail(`${target.commandId}: unknown or unproved host caller ${caller}`)
     }
   }

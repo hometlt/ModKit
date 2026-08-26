@@ -1,5 +1,5 @@
 /**
- * One set of command fixtures, run by three hosts (block 13, exit-gate line 2).
+ * One set of command fixtures, run by four hosts (block 13 plus automation in block 14B).
  *
  * The gate asks that "the same command fixtures pass in the CLI, the Electron fake host and the
  * VS Code integration". The only way that sentence means anything is if the fixtures are one

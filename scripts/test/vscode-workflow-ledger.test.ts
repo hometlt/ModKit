@@ -193,6 +193,11 @@ describe('block 14A VS Code + CLI workflow ledger', () => {
         row.hostCallers.includes('pwa'),
       ),
     ).toBe(false)
+    expect(
+      ledger.sharedCommandTargets.every((row: { hostCallers: string[] }) =>
+        row.hostCallers.includes('automation'),
+      ),
+    ).toBe(true)
   })
 
   it('refuses to promote an unknown workflow to mk3-priority', () => {
@@ -308,8 +313,8 @@ describe('block 14A VS Code + CLI workflow ledger', () => {
 
   it('refuses to claim PWA as a caller without runtime wiring evidence', () => {
     const brokenTargets = readFileSync(targets, 'utf8').replace(
-      "hostCallers: ['cli', 'electron', 'vscode']",
-      "hostCallers: ['cli', 'electron', 'vscode', 'pwa']",
+      "hostCallers: ['automation', 'cli', 'electron', 'vscode']",
+      "hostCallers: ['automation', 'cli', 'electron', 'vscode', 'pwa']",
     )
     const targetsPath = tempPath('subject-command-targets.ts')
     writeFileSync(targetsPath, brokenTargets)

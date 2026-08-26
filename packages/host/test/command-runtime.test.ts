@@ -10,15 +10,22 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
+  commandOk,
+  commandRequest,
+  commandUnavailable,
   createCommandRuntime,
   createSubjectCommandRuntime,
   commandSubjectsFrom,
+  describeSubjectCommandContracts,
+  executeCommandRequest,
   COMMAND_CANCELLED,
   COMMAND_INPUT_INVALID,
+  COMMAND_PROTOCOL_SCHEMA_VERSION,
   COMMAND_UNKNOWN,
   SUBJECT_COMMANDS,
   SUBJECT_COMMAND_TARGETS,
   type CommandDescriptor,
+  type CommandRequest,
   type CommandSubject,
 } from '../src/index.js'
 
@@ -61,7 +68,7 @@ describe('the command runtime answers rather than throws', () => {
       preview: { operationIds: ['view.thumbnail', 'view.render'] },
     })
     for (const target of Object.values(SUBJECT_COMMAND_TARGETS)) {
-      expect(target.hostCallers).toEqual(['cli', 'electron', 'vscode'])
+      expect(target.hostCallers).toEqual(['automation', 'cli', 'electron', 'vscode'])
       expect(target.hostCallers).not.toContain('pwa')
       const descriptor = createSubjectCommandRuntime().descriptors.find(
         item => item.id === target.commandId,
@@ -71,6 +78,119 @@ describe('the command runtime answers rather than throws', () => {
         mutatesSource: target.mutatesSource,
       })
     }
+  })
+
+  it('describes one deterministic, deeply frozen JSON contract from the live runtime', () => {
+    const first = describeSubjectCommandContracts()
+    const second = describeSubjectCommandContracts()
+    expect(first.schemaVersion).toBe(COMMAND_PROTOCOL_SCHEMA_VERSION)
+    expect(first.commands.map(command => command.id)).toEqual([
+      'subject.convert',
+      'subject.extract',
+      'subject.inspect',
+      'subject.open',
+      'subject.preview',
+      'subject.validate',
+    ])
+    expect(JSON.stringify(first)).toBe(JSON.stringify(second))
+    expect(JSON.parse(JSON.stringify(first))).toEqual(first)
+    expect(Object.isFrozen(first)).toBe(true)
+    expect(Object.isFrozen(first.commands)).toBe(true)
+    for (const command of first.commands) {
+      expect(Object.isFrozen(command)).toBe(true)
+      expect(Object.isFrozen(command.input)).toBe(true)
+      expect(Object.isFrozen(command.routing.operationIds)).toBe(true)
+      expect(Object.isFrozen(command.routing.dataSourceContracts)).toBe(true)
+      expect(Object.isFrozen(command.callers)).toBe(true)
+      expect(command.result.states).toEqual(['ok', 'unavailable', 'failed'])
+    }
+  })
+
+  it('canonicalizes undefined fields instead of putting non-JSON values in a request', () => {
+    const request = commandRequest('subject.open', { subject: 'x', omitted: undefined })
+    expect(Object.hasOwn(request.input, 'omitted')).toBe(false)
+    expect(JSON.parse(JSON.stringify(request))).toEqual(request)
+  })
+
+  it('rejects an unknown protocol version before running a command', async () => {
+    const request = {
+      ...commandRequest('subject.open', { subject: 'x' }),
+      schemaVersion: 'modkit-command-protocol-99',
+    } as unknown as CommandRequest
+    await expect(
+      executeCommandRequest(createSubjectCommandRuntime(), request, { openSubject: nowhere }),
+    ).rejects.toThrow(/unsupported command protocol/u)
+  })
+
+  it('wraps unknown, cancelled and unavailable outcomes in stable receipts', async () => {
+    const runtime = createSubjectCommandRuntime()
+    const unknown = await executeCommandRequest(
+      runtime,
+      commandRequest('subject.teleport', { subject: 'x' }),
+      { openSubject: nowhere },
+    )
+    expect(unknown).toMatchObject({
+      schemaVersion: COMMAND_PROTOCOL_SCHEMA_VERSION,
+      request: { command: 'subject.teleport' },
+      result: { state: 'failed', code: COMMAND_UNKNOWN },
+    })
+
+    const controller = new AbortController()
+    controller.abort()
+    const cancelled = await executeCommandRequest(
+      runtime,
+      commandRequest('subject.open', { subject: 'x' }),
+      { openSubject: nowhere, signal: controller.signal },
+    )
+    expect(cancelled.result).toMatchObject({ state: 'failed', code: COMMAND_CANCELLED })
+
+    const unavailableRuntime = createCommandRuntime([
+      {
+        id: 'test.unavailable',
+        title: 'Unavailable',
+        summary: 'A command that proves a structured alternative survives the protocol envelope.',
+        needsSubject: false,
+        mutatesSource: false,
+        run: async () => commandUnavailable('test.unavailable', 'not here', 'run elsewhere'),
+      },
+    ])
+    const unavailable = await executeCommandRequest(
+      unavailableRuntime,
+      commandRequest('test.unavailable', {}),
+      { openSubject: nowhere },
+    )
+    expect(unavailable.result).toMatchObject({
+      state: 'unavailable',
+      reason: 'not here',
+      alternative: 'run elsewhere',
+    })
+    expect(JSON.parse(JSON.stringify(unavailable))).toEqual(unavailable)
+  })
+
+  it('keeps progress out-of-band while the final receipt stays JSON-stable', async () => {
+    const progress: string[] = []
+    const runtime = createCommandRuntime([
+      {
+        id: 'test.progress',
+        title: 'Progress',
+        summary: 'A command that emits progress without changing its final structured answer.',
+        needsSubject: false,
+        mutatesSource: false,
+        run: async context => {
+          context.progress?.({ step: 'one', message: 'working', completed: 1, total: 1 })
+          return commandOk('test.progress', { completed: true })
+        },
+      },
+    ])
+    const receipt = await executeCommandRequest(runtime, commandRequest('test.progress', {}), {
+      openSubject: nowhere,
+      progress: step => progress.push(`${step.step}:${step.completed}/${step.total}`),
+    })
+    expect(progress).toEqual(['one:1/1'])
+    expect(receipt.result).toMatchObject({ state: 'ok', data: { completed: true } })
+    expect(JSON.parse(JSON.stringify(receipt))).toEqual(receipt)
+    expect(Object.isFrozen(receipt)).toBe(true)
+    expect(Object.isFrozen(receipt.result)).toBe(true)
   })
 
   it('keeps the shared target catalogue deeply immutable at runtime', () => {

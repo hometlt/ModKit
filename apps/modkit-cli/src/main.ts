@@ -22,6 +22,7 @@ import { isQualifiedId } from '@modkitx-x3/core'
 import { type OpenIntent, type ProviderOffer, type ProviderRequest } from '@modkitx-x3/sdk'
 import {
   createSubjectCommandRuntime,
+  describeSubjectCommandContracts,
   explainProviderResolution,
   inventoryHasErrors,
   renderProviderResolutionExplanation,
@@ -44,7 +45,7 @@ export {
 } from './profile.js'
 
 const USAGE =
-  'usage: modkit validate <dir> [--json] | modkit explain <fixture.json> [--json] | modkit host-profile [--json] | modkit create codec <dir> --id <qualified-id> | modkit open <file> --ext <dir> [--ext <dir>...] [--intent inspect|full] [--trust] [--json] | modkit commands [--json] | modkit run <command> <file> --ext <dir> [--ext <dir>...] [--entry <path>] [--target <id>] [--out <file>] [--trust] [--format text|json]\n'
+  'usage: modkit validate <dir> [--json] | modkit explain <fixture.json> [--json] | modkit host-profile [--json] | modkit create codec <dir> --id <qualified-id> | modkit open <file> --ext <dir> [--ext <dir>...] [--intent inspect|full] [--trust] [--json] | modkit commands [--json|--protocol-json] | modkit run <command> <file> --ext <dir> [--ext <dir>...] [--entry <path>] [--target <id>] [--out <file>] [--trust] [--format text|json|protocol-json]\n'
 
 type CliOpenIntent = Exclude<OpenIntent, 'probe'>
 const OPEN_INTENTS: readonly CliOpenIntent[] = ['inspect', 'full']
@@ -255,6 +256,7 @@ function render(inventory: Inventory, json: boolean): string {
 async function main(argv: readonly string[]): Promise<number> {
   const [command, target, ...rest] = argv
   const json = rest.includes('--json') || target === '--json'
+  const protocolJson = rest.includes('--protocol-json') || target === '--protocol-json'
   if (command === 'host-profile') {
     process.stdout.write(`${JSON.stringify(createModkitCliTopology(), null, json ? 2 : 0)}\n`)
     return 0
@@ -305,7 +307,12 @@ async function main(argv: readonly string[]): Promise<number> {
    * than from a literal in each of them.
    */
   if (command === 'commands') {
+    if (target !== undefined && target !== '--json' && target !== '--protocol-json') {
+      process.stderr.write(USAGE)
+      return 2
+    }
     const runtime = createSubjectCommandRuntime()
+    const contracts = describeSubjectCommandContracts()
     const rows = runtime.descriptors.map(item => ({
       id: item.id,
       title: item.title,
@@ -315,9 +322,11 @@ async function main(argv: readonly string[]): Promise<number> {
       ...(item.operationId === undefined ? {} : { operationId: item.operationId }),
     }))
     process.stdout.write(
-      json
-        ? `${JSON.stringify(rows, null, 2)}\n`
-        : `${rows.map(row => `${row.id}\t${row.summary}`).join('\n')}\n`,
+      protocolJson
+        ? `${JSON.stringify(contracts, null, 2)}\n`
+        : json
+          ? `${JSON.stringify(rows, null, 2)}\n`
+          : `${rows.map(row => `${row.id}\t${row.summary}`).join('\n')}\n`,
     )
     return 0
   }

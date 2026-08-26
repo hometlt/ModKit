@@ -9,15 +9,26 @@
 
 import type { SubjectOpener } from '../subject-rpc.js'
 import { createCommandRuntime, type CommandRuntime, type CommandSubjectOpener } from './runtime.js'
+import { describeCommandContracts, type CommandContractDocument } from './protocol.js'
 import { SUBJECT_COMMANDS } from './subject-commands.js'
+import { SUBJECT_COMMAND_TARGETS } from './subject-command-targets.js'
 
 export * from './runtime.js'
+export * from './protocol.js'
 export { SUBJECT_COMMANDS } from './subject-commands.js'
 export { SUBJECT_COMMAND_TARGETS, type SubjectCommandTarget } from './subject-command-targets.js'
 
 /** The runtime every application in this repository composes. */
 export function createSubjectCommandRuntime(): CommandRuntime {
   return createCommandRuntime(SUBJECT_COMMANDS)
+}
+
+/** The versioned data contract exposed by non-interactive command hosts. */
+export function describeSubjectCommandContracts(): CommandContractDocument {
+  return describeCommandContracts(
+    createSubjectCommandRuntime(),
+    Object.values(SUBJECT_COMMAND_TARGETS),
+  )
 }
 
 /**

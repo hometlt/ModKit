@@ -18,9 +18,12 @@ import { dirname, resolve } from 'node:path'
 import { writeFile } from 'node:fs/promises'
 import process from 'node:process'
 import {
+  commandRequest,
   commandSubjectsFrom,
   createSubjectCommandRuntime,
+  executeCommandRequest,
   type CommandInput,
+  type CommandReceipt,
   type CommandResult,
   type ExtensionInput,
 } from '@modkitx-x3/host'
@@ -29,7 +32,9 @@ import { createModkitCliSubjectServices } from './profile.js'
 
 export const RUN_USAGE =
   'usage: modkit run <command> <file> --ext <dir> [--ext <dir>...] [--entry <path>] ' +
-  '[--target <id>] [--out <file>] [--trust] [--format text|json]\n'
+  '[--target <id>] [--out <file>] [--trust] [--format text|json|protocol-json]\n'
+
+export type RunOutputFormat = 'text' | 'json' | 'protocol-json'
 
 export interface RunArguments {
   readonly command: string
@@ -39,7 +44,7 @@ export interface RunArguments {
   readonly target?: string
   readonly out?: string
   readonly trust: boolean
-  readonly json: boolean
+  readonly format: RunOutputFormat
 }
 
 /** argv → arguments, or `undefined` for anything the usage line does not describe. */
@@ -55,7 +60,7 @@ export function parseRunArguments(
   let convertTarget: string | undefined
   let out: string | undefined
   let trust = false
-  let json = false
+  let format: RunOutputFormat = 'text'
   const value = (index: number): string | undefined => {
     const found = rest[index]
     return found === undefined || found.startsWith('--') ? undefined : found
@@ -81,11 +86,11 @@ export function parseRunArguments(
       index += 1
     } else if (argument === '--format') {
       const next = value(index + 1)
-      if (next !== 'text' && next !== 'json') return undefined
-      json = next === 'json'
+      if (next !== 'text' && next !== 'json' && next !== 'protocol-json') return undefined
+      format = next
       index += 1
     } else if (argument === '--trust') trust = true
-    else if (argument === '--json') json = true
+    else if (argument === '--json') format = 'json'
     else return undefined
   }
   if (roots.length === 0) return undefined
@@ -97,7 +102,7 @@ export function parseRunArguments(
     ...(convertTarget === undefined ? {} : { target: convertTarget }),
     ...(out === undefined ? {} : { out }),
     trust,
-    json,
+    format,
   }
 }
 
@@ -131,12 +136,28 @@ export function renderCommandResult(result: CommandResult, json: boolean): strin
   return `${lines.join('\n')}\n`
 }
 
+/** One parseable protocol document on stdout; progress and usage remain on stderr. */
+export const renderCommandReceipt = (receipt: CommandReceipt): string => jsonText(receipt)
+
 /** Exit code from a result: 0 only when the command did what it was asked. */
 export const exitCodeFor = (result: CommandResult): number => (result.state === 'ok' ? 0 : 1)
 
 export async function runCommand(arguments_: RunArguments): Promise<number> {
   const runtime = createSubjectCommandRuntime()
   if (runtime.get(arguments_.command) === undefined) {
+    if (arguments_.format === 'protocol-json') {
+      const receipt = await executeCommandRequest(
+        runtime,
+        commandRequest(arguments_.command, { subject: resolve(arguments_.file) }),
+        {
+          openSubject: async () => {
+            throw new Error('an unknown command must not try to open a subject')
+          },
+        },
+      )
+      process.stdout.write(renderCommandReceipt(receipt))
+      return exitCodeFor(receipt.result)
+    }
     process.stderr.write(
       `modkit run: unknown command «${arguments_.command}»; this build has ` +
         `${runtime.descriptors.map(item => item.id).join(', ')}\n`,
@@ -166,23 +187,31 @@ export async function runCommand(arguments_: RunArguments): Promise<number> {
       ...(arguments_.target === undefined ? {} : { target: arguments_.target }),
     }
     const out = arguments_.out
-    const result = await runtime.run(arguments_.command, input, {
-      openSubject: commandSubjectsFrom(opener),
-      ...(out === undefined
-        ? {}
-        : {
-            writeOutput: async (_name: string, bytes: Uint8Array) => {
-              await writeFile(resolve(out), bytes)
-              return resolve(out)
-            },
-          }),
-      // Progress goes to stderr so `--format json` on stdout stays a single parseable document.
-      ...(arguments_.json
-        ? {}
-        : { progress: step => void process.stderr.write(`… ${step.message}\n`) }),
-    })
-    process.stdout.write(renderCommandResult(result, arguments_.json))
-    return exitCodeFor(result)
+    const receipt = await executeCommandRequest(
+      runtime,
+      commandRequest(arguments_.command, input),
+      {
+        openSubject: commandSubjectsFrom(opener),
+        ...(out === undefined
+          ? {}
+          : {
+              writeOutput: async (_name: string, bytes: Uint8Array) => {
+                await writeFile(resolve(out), bytes)
+                return resolve(out)
+              },
+            }),
+        // Progress goes to stderr so `--format json` on stdout stays a single parseable document.
+        ...(arguments_.format === 'text'
+          ? { progress: step => void process.stderr.write(`… ${step.message}\n`) }
+          : {}),
+      },
+    )
+    process.stdout.write(
+      arguments_.format === 'protocol-json'
+        ? renderCommandReceipt(receipt)
+        : renderCommandResult(receipt.result, arguments_.format === 'json'),
+    )
+    return exitCodeFor(receipt.result)
   } catch (error) {
     process.stderr.write(`modkit run: ${(error as Error).message}\n`)
     return 2

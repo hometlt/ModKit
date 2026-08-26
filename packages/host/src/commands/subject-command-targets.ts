@@ -4,7 +4,8 @@
  * This is deliberately a data-only module. The runtime consumes the same ids that migration
  * tooling reports, so block-14 workflow evidence cannot drift into a second handwritten command
  * catalog. Host callers are limited to callers proved in the current tree; PWA is intentionally
- * absent until it composes this runtime and carries its own wiring evidence.
+ * absent until it composes this runtime and carries its own wiring evidence. Automation is present
+ * because block 14B runs the shared fixtures through its bounded path opener.
  */
 import { defineSubjectCommandTargets } from './immutable-command-targets.js'
 
@@ -15,7 +16,7 @@ export const SUBJECT_COMMAND_TARGETS = defineSubjectCommandTargets({
     mutatesSource: false,
     operationIds: [],
     dataSourceContracts: [],
-    hostCallers: ['cli', 'electron', 'vscode'],
+    hostCallers: ['automation', 'cli', 'electron', 'vscode'],
   },
   inspect: {
     commandId: 'subject.inspect',
@@ -23,7 +24,7 @@ export const SUBJECT_COMMAND_TARGETS = defineSubjectCommandTargets({
     mutatesSource: false,
     operationIds: [],
     dataSourceContracts: [],
-    hostCallers: ['cli', 'electron', 'vscode'],
+    hostCallers: ['automation', 'cli', 'electron', 'vscode'],
   },
   validate: {
     commandId: 'subject.validate',
@@ -31,7 +32,7 @@ export const SUBJECT_COMMAND_TARGETS = defineSubjectCommandTargets({
     mutatesSource: false,
     operationIds: ['asset.validate'],
     dataSourceContracts: [],
-    hostCallers: ['cli', 'electron', 'vscode'],
+    hostCallers: ['automation', 'cli', 'electron', 'vscode'],
   },
   extract: {
     commandId: 'subject.extract',
@@ -39,7 +40,7 @@ export const SUBJECT_COMMAND_TARGETS = defineSubjectCommandTargets({
     mutatesSource: false,
     operationIds: ['container.extract'],
     dataSourceContracts: ['common.view/namespace-entry-source'],
-    hostCallers: ['cli', 'electron', 'vscode'],
+    hostCallers: ['automation', 'cli', 'electron', 'vscode'],
   },
   convert: {
     commandId: 'subject.convert',
@@ -47,7 +48,7 @@ export const SUBJECT_COMMAND_TARGETS = defineSubjectCommandTargets({
     mutatesSource: false,
     operationIds: ['export.convert', 'export.raw'],
     dataSourceContracts: [],
-    hostCallers: ['cli', 'electron', 'vscode'],
+    hostCallers: ['automation', 'cli', 'electron', 'vscode'],
   },
   preview: {
     commandId: 'subject.preview',
@@ -55,7 +56,7 @@ export const SUBJECT_COMMAND_TARGETS = defineSubjectCommandTargets({
     mutatesSource: false,
     operationIds: ['view.thumbnail', 'view.render'],
     dataSourceContracts: [],
-    hostCallers: ['cli', 'electron', 'vscode'],
+    hostCallers: ['automation', 'cli', 'electron', 'vscode'],
   },
 } as const)
 
