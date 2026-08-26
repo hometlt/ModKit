@@ -16,6 +16,32 @@ export {
   VIEWER_CONTRIBUTION_INVENTORY_FACT,
 } from './contribution-registry.js'
 export { offersFromInventory } from './offers.js'
+// Block 13 works 4–6: one command runtime, composed by every application, owned by none.
+export {
+  commandSubjectsFrom,
+  createCommandRuntime,
+  createSubjectCommandRuntime,
+  commandDiagnostic,
+  failed as commandFailed,
+  ok as commandOk,
+  unavailable as commandUnavailable,
+  COMMAND_CANCELLED,
+  COMMAND_INPUT_INVALID,
+  COMMAND_SUBJECT_UNRESOLVED,
+  COMMAND_UNAVAILABLE,
+  COMMAND_UNKNOWN,
+  SUBJECT_COMMANDS,
+  type CommandContext,
+  type CommandDescriptor,
+  type CommandDiagnostic,
+  type CommandInput,
+  type CommandOutputSink,
+  type CommandProgress,
+  type CommandResult,
+  type CommandRuntime,
+  type CommandSubject,
+  type CommandSubjectOpener,
+} from './commands/index.js'
 export {
   buildCodecDetectionSelection,
   parseCodecDetectionSelection,
@@ -61,6 +87,7 @@ export {
  * hands over a parent session and an entry id, never a namespace handle.
  */
 export {
+  nestedSubjectServices,
   openNestedSubject,
   NESTED_ENTRY_UNREADABLE,
   NESTED_SUBJECT_UNSUPPORTED,
