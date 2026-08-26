@@ -66,6 +66,9 @@ export {
 export {
   artifactNamespaceSourceFromVfsMount,
   type ArtifactNamespaceSourceFromVfsOptions,
+  createVfsCompanionOrigin,
+  createVfsInputResolver,
+  type VfsCompanionOriginOptions,
 } from './vfs-source.js'
 export {
   openSubject,

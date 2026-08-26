@@ -5,9 +5,10 @@ import { pathToFileURL } from 'node:url'
 
 import { afterEach, describe, expect, it } from 'vitest'
 import { isCancellation } from '@modkitx-x3/core'
-import { artifactNamespaceSourceFromVfsMount } from '@modkitx-x3/host'
+import { artifactNamespaceSourceFromVfsMount, createVfsCompanionOrigin } from '@modkitx-x3/host'
 import { VirtualFileSystem } from '@modkitx-x3/vfs'
 import { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'
+import { createMemoryVfsProvider } from '@modkitx-x3/vfs/providers/memory'
 
 const temporaryRoots: string[] = []
 
@@ -18,6 +19,41 @@ afterEach(async () => {
 })
 
 describe('public VFS to Host namespace bridge', () => {
+  it('resolves exact companion paths without exposing the mount to a codec', async () => {
+    const vfs = new VirtualFileSystem().registerProvider(
+      createMemoryVfsProvider({
+        authority: 'spring-fixture',
+        entries: {
+          'units/test.lua': new TextEncoder().encode('unit'),
+          'objects3d/units/test.s3o': Uint8Array.from([1, 2, 3]),
+        },
+      }),
+    )
+    const mount = await vfs.openMount('memory://spring-fixture')
+    const origin = createVfsCompanionOrigin({
+      mount,
+      primaryLogicalId: 'units/test.lua',
+      caseSensitivity: 'insensitive',
+    })
+    const entries = []
+    for await (const entry of origin.enumerate('current-mount', {
+      prefix: 'objects3d/units/test.s3o',
+    })) {
+      entries.push(entry)
+    }
+    expect(entries).toEqual([{ logicalId: 'objects3d/units/test.s3o', size: 3n }])
+    const lease = await origin.open('objects3d/units/test.s3o')
+    try {
+      expect(lease.value.kind).toBe('bytes')
+      if (lease.value.kind !== 'bytes') throw new Error('expected byte companion source')
+      expect([...(await lease.value.read(0n, 3))]).toEqual([1, 2, 3])
+    } finally {
+      await lease.release()
+      await mount.dispose()
+      await vfs.dispose()
+    }
+  })
+
   it('opens small ranges above 512 MiB without materializing the file', async () => {
     const temporary = await mkdtemp(join(tmpdir(), 'modkit-x3-host-vfs-'))
     temporaryRoots.push(temporary)
