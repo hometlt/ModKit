@@ -48,9 +48,13 @@ describe('browser-safety of the portable closure (S2)', () => {
     for (const pkg of ['core', 'sdk', 'ui']) {
       expect(offenders(join(root, 'packages', pkg, 'dist')), pkg).toEqual([])
     }
-    const fileProvider = join(root, 'packages', 'vfs', 'dist', 'providers', 'file')
+    const nodeOnlyProviders = ['file', 'rapid'].map(provider =>
+      join(root, 'packages', 'vfs', 'dist', 'providers', provider),
+    )
     expect(
-      offenders(join(root, 'packages', 'vfs', 'dist'), path => path.startsWith(fileProvider)),
+      offenders(join(root, 'packages', 'vfs', 'dist'), path =>
+        nodeOnlyProviders.some(provider => path.startsWith(provider)),
+      ),
     ).toEqual([])
   })
 

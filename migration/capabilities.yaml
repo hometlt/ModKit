@@ -11435,6 +11435,7 @@ capabilities:
       - 'read-source'
     mk3Contributions:
       - 'org.modkitx/spring-s3o'
+      - 'org.modkitx/spring-unit-definition'
     mk3Operations:
       - 'asset.validate'
       - 'export.raw'
@@ -11447,7 +11448,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'supported'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E3'
+    evidenceLevel: 'E4'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -11472,13 +11473,14 @@ capabilities:
       nativeExport: 'none'
       operations:
         inspect: 'extensions/opensource/spring/test/codec.test.ts'
-        validate: null
-        read: 'extensions/opensource/spring/test/codec.test.ts'
+        validate: 'extensions/opensource/spring/test/animation-binding.test.ts'
+        read: 'extensions/opensource/spring/test/animation-binding.test.ts'
         materialize: 'extensions/opensource/spring/test/codec.test.ts'
     knownLoss:
       - 'legacy publishes only an unsupported metadata manifest, so the real parity row has no semantic plane shared by both readers; X3 decodes geometry, hierarchy and texture references'
-      - 'S3O contains no animation clips or script path; BAR/Recoil unit animation is selected externally through BOS/COB or Lua, so no animation facet or companion is fabricated'
-      - 'Spring 3DO, external script binding, native S3O writing, materials and collision remain named remainders for block 17'
+      - 'a direct S3O contains no animation clips or script path and therefore remains honestly static; the separate spring-unit-definition contribution publishes animation only after host-bound unit → objectName/script → COB/BOS companions prove tracks against stable S3O piece ids'
+      - 'only explicit BOS Frame markers are normalized as tracks; COB bytecode and Lua unit-script motion are parsed as inert data but never executed'
+      - 'Spring 3DO, native S3O writing, materials, collision and runtime script execution remain named remainders for block 17'
     receipts:
       projection: 'ProjectionReceipt'
       materialization: 'MaterializationReceipt'
@@ -11487,6 +11489,7 @@ capabilities:
     closedBy:
       commits: []
       tests:
+        - 'extensions/opensource/spring/test/animation-binding.test.ts'
         - 'extensions/opensource/spring/test/codec.test.ts'
         - 'extensions/opensource/spring/test/corpus-preflight.test.ts'
       reports: []

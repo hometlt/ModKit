@@ -28,6 +28,10 @@
     "./providers/browser-file": {
       "types": "./dist/providers/browser-file/index.d.ts",
       "default": "./dist/providers/browser-file/index.js"
+    },
+    "./providers/rapid": {
+      "types": "./dist/providers/rapid/index.d.ts",
+      "default": "./dist/providers/rapid/index.js"
     }
   },
   "files": [

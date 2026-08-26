@@ -5,7 +5,6 @@ import { mkdtemp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, extname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { tmpdir } from 'node:os'
-import { gunzipSync } from 'node:zlib'
 import {
   buildInventory,
   artifactNamespaceSourceFromVfsMount,
@@ -20,6 +19,7 @@ import { createModkit } from '@modkitx-x3/host/node'
 import { createPathSubjectOpener, loadExtensionDirectory } from '@modkitx-x3/host/node'
 import { VirtualFileSystem } from '@modkitx-x3/vfs'
 import { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'
+import { createRapidVfsProvider } from '@modkitx-x3/vfs/providers/rapid'
 import { format as formatWithPrettier } from 'prettier'
 import { classifyFormatParity, comparableMetadataFeatures } from './classify.mjs'
 import { observeDataSource } from './observe.mjs'
@@ -290,15 +290,10 @@ async function extractContainerEntry(sample, temporaryRoot, archivePath) {
   }
 }
 
-function hex(bytes) {
-  return [...bytes].map(value => value.toString(16).padStart(2, '0')).join('')
-}
-
 /**
- * Resolves a BAR rapid-pool entry without materialising the installed corpus. The manifest is a
- * gzip stream of path/md5/crc/size records and the pool blob is another gzip stream addressed by
- * that md5. Pinned identity fields turn a wrong package or a stale launcher cache into a corpus
- * failure rather than a convenient skip.
+ * Resolves a BAR rapid-pool entry through the same bounded public VFS provider used by hosts and
+ * codecs. Pinned identity fields turn a wrong package or stale launcher cache into a corpus failure
+ * rather than a convenient skip; parity owns only the temporary file required by the sealed probe.
  */
 async function extractRapidEntry(sample, temporaryRoot, root) {
   const manifestPath = resolve(root, sample.rapid.manifestRelativePath)
@@ -307,76 +302,50 @@ async function extractRapidEntry(sample, temporaryRoot, root) {
       `${sample.environment} does not contain ${sample.rapid.manifestRelativePath}`,
     )
   }
-  let manifest
+  const vfs = new VirtualFileSystem().registerProvider(createRapidVfsProvider())
+  let mount
+  let source
   try {
-    manifest = gunzipSync(await readFile(manifestPath))
-  } catch (error) {
-    return corpusFailure(
-      `${sample.environment} rapid manifest is not a readable gzip stream: ${String(error)}`,
-    )
-  }
-  const view = new DataView(manifest.buffer, manifest.byteOffset, manifest.byteLength)
-  let cursor = 0
-  let record
-  while (cursor < manifest.byteLength) {
-    const nameLength = manifest[cursor] ?? 0
-    cursor += 1
-    if (nameLength === 0 || cursor + nameLength + 24 > manifest.byteLength) {
-      return corpusFailure(`${sample.environment} rapid manifest record is truncated`)
+    mount = await vfs.openMount(`rapid+${pathToFileURL(manifestPath).href}`)
+    const node = await mount.stat(sample.rapid.entry)
+    if (node?.kind !== 'file') {
+      return corpusFailure(
+        `${sample.environment} rapid manifest has no entry ${sample.rapid.entry}`,
+      )
     }
-    const path = new TextDecoder('ascii').decode(manifest.subarray(cursor, cursor + nameLength))
-    cursor += nameLength
-    const md5 = hex(manifest.subarray(cursor, cursor + 16))
-    cursor += 16
-    cursor += 4
-    const size = view.getUint32(cursor, false)
-    cursor += 4
-    if (path === sample.rapid.entry) record = { md5, size }
-  }
-  if (record === undefined) {
-    return corpusFailure(`${sample.environment} rapid manifest has no entry ${sample.rapid.entry}`)
-  }
-  if (record.md5 !== sample.rapid.md5 || record.size !== sample.rapid.size) {
-    return corpusFailure(
-      `${sample.environment} rapid entry identity differs for ${sample.rapid.entry}`,
-    )
-  }
-  const poolPath = resolve(
-    root,
-    'data',
-    'pool',
-    record.md5.slice(0, 2),
-    `${record.md5.slice(2)}.gz`,
-  )
-  if (!(await exists(poolPath))) {
-    return corpusFailure(
-      `${sample.environment} rapid pool blob is missing for ${sample.rapid.entry}`,
-    )
-  }
-  let bytes
-  try {
-    bytes = gunzipSync(await readFile(poolPath))
+    if (
+      node.size !== BigInt(sample.rapid.size) ||
+      node.revision !== `content-hash.md5:${sample.rapid.md5}`
+    ) {
+      return corpusFailure(
+        `${sample.environment} rapid entry identity differs for ${sample.rapid.entry}`,
+      )
+    }
+    source = await mount.open(node.path)
+    const size = await source.size()
+    const bytes = await source.readAt(0, size)
+    const sha256 = createHash('sha256').update(bytes).digest('hex')
+    if (sha256 !== sample.rapid.sha256) {
+      return corpusFailure(
+        `${sample.environment} rapid pool digest differs for ${sample.rapid.entry}`,
+      )
+    }
+    const leaf = sample.rapid.entry.split('/').at(-1) ?? 'entry.bin'
+    const path = join(temporaryRoot, `${sample.format}-${leaf}`)
+    await writeFile(path, bytes)
+    return {
+      state: 'ready',
+      path,
+      publishedPath: `${sample.rapid.manifestRelativePath}!${sample.rapid.entry}`,
+    }
   } catch (error) {
     return corpusFailure(
-      `${sample.environment} rapid pool blob is not a readable gzip stream: ${String(error)}`,
+      `${sample.environment} rapid entry could not be resolved by the public VFS: ${String(error)}`,
     )
-  }
-  if (bytes.byteLength !== record.size) {
-    return corpusFailure(`${sample.environment} rapid pool size differs for ${sample.rapid.entry}`)
-  }
-  const sha256 = createHash('sha256').update(bytes).digest('hex')
-  if (sha256 !== sample.rapid.sha256) {
-    return corpusFailure(
-      `${sample.environment} rapid pool digest differs for ${sample.rapid.entry}`,
-    )
-  }
-  const leaf = sample.rapid.entry.split('/').at(-1) ?? 'entry.bin'
-  const path = join(temporaryRoot, `${sample.format}-${leaf}`)
-  await writeFile(path, bytes)
-  return {
-    state: 'ready',
-    path,
-    publishedPath: `${sample.rapid.manifestRelativePath}!${sample.rapid.entry}`,
+  } finally {
+    await source?.dispose()
+    await mount?.dispose()
+    await vfs.dispose()
   }
 }
 

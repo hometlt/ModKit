@@ -28,7 +28,10 @@ export interface VfsLimits {
 }
 
 export const DEFAULT_VFS_LIMITS: VfsLimits = Object.freeze({
-  maxEntries: 10_000,
+  // Large installed-game indexes are normal inputs (the pinned BAR rapid package has 18,413
+  // records). Providers still count before exposing an entry; this ceiling merely lets a caller
+  // grant a bounded installed-game-sized index instead of making that valid input impossible.
+  maxEntries: 25_000,
   maxMaterializedBytes: 512n * 1024n * 1024n,
   maxFileBytes: 8n * 1024n * 1024n * 1024n * 1024n,
   maxReadBytes: 512n * 1024n * 1024n,

@@ -1,4 +1,4 @@
-import { ModkitError } from '@modkitx-x3/core'
+import { ModkitError, throwIfAborted } from '@modkitx-x3/core'
 
 import { rangeError, type RandomAccessSource } from './source.js'
 import type { VfsLimits } from './vfs.js'
@@ -118,6 +118,7 @@ export function budgetRandomAccessSource(
     },
     async readAt(offset, length, signal) {
       assertLive()
+      throwIfAborted(signal)
       if (
         !Number.isSafeInteger(offset) ||
         !Number.isSafeInteger(length) ||

@@ -1,15 +1,20 @@
 import { createHash } from 'node:crypto'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { gunzipSync } from 'node:zlib'
+import { pathToFileURL } from 'node:url'
+
 import { describe, expect, it } from 'vitest'
+import { artifactByteSourceFromRandomAccess, createVfsInputResolver } from '@modkitx-x3/host'
 import {
   revisionId,
   type ArtifactByteSource,
   type AssetInput,
   type ContributionContext,
+  type DetectionResult,
+  type ModelAnimationSource,
   type ModelResourceRefsSource,
   type ModelSceneSource,
+  type RelationGraphSource,
   type ResourceBudget,
 } from '@modkitx-x3/sdk'
 import {
@@ -18,7 +23,10 @@ import {
   proves,
   unexplainedDifferences,
 } from '@modkitx-x3/testkit'
+import { VirtualFileSystem, type VfsMount } from '@modkitx-x3/vfs'
+import { createRapidVfsProvider } from '@modkitx-x3/vfs/providers/rapid'
 import { createCodec as createS3oCodec } from '../src/spring-s3o/codec.js'
+import { createCodec as createUnitCodec } from '../src/formats/spring-unit/codec.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..', '..')
 const corpusRoot = process.env['MODKITX_BAR_ROOT']
@@ -26,7 +34,8 @@ const configured = typeof corpusRoot === 'string' && corpusRoot.length > 0
 const manifestPath = configured
   ? join(corpusRoot, 'data', 'packages', '705fa44d676b3633ea970038d8c593a8.sdp')
   : ''
-const candidatePath = 'objects3d/airbomb.s3o'
+const airbombPath = 'objects3d/airbomb.s3o'
+const armpwPath = 'units/armbots/armpw.lua'
 const budget: ResourceBudget = {
   maxInputBytes: 1_073_741_824n,
   maxDepth: 128,
@@ -39,63 +48,63 @@ const context: ContributionContext = {
   diagnostics: { report: () => undefined },
   contracts: {
     async resolve() {
-      throw new Error('S3O codec has no service dependency')
+      throw new Error('Spring codecs have no service dependency')
     },
     async resolveUnknown() {
-      throw new Error('S3O codec has no foreign service dependency')
+      throw new Error('Spring codecs have no foreign service dependency')
     },
   },
 }
+const detection: DetectionResult = Object.freeze({
+  codecId: 'org.modkitx/spring-unit-definition',
+  confidence: 1,
+  evidence: Object.freeze([]),
+  requiredRanges: Object.freeze([]),
+}) as DetectionResult
 
-interface RapidRecord {
-  readonly path: string
-  readonly md5: string
-  readonly size: number
-}
-
-function hex(bytes: Uint8Array): string {
-  return [...bytes].map(value => value.toString(16).padStart(2, '0')).join('')
-}
-
-function parseRapidRecords(bytes: Uint8Array): RapidRecord[] {
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
-  const records: RapidRecord[] = []
-  let cursor = 0
-  while (cursor < bytes.byteLength) {
-    const nameLength = bytes[cursor] ?? 0
-    cursor += 1
-    if (nameLength === 0 || cursor + nameLength + 24 > bytes.byteLength) {
-      throw new TypeError('Spring rapid manifest record is truncated')
-    }
-    const path = new TextDecoder('ascii').decode(bytes.subarray(cursor, cursor + nameLength))
-    cursor += nameLength
-    const md5 = hex(bytes.subarray(cursor, cursor + 16))
-    cursor += 16
-    cursor += 4
-    const size = view.getUint32(cursor, false)
-    cursor += 4
-    records.push({ path, md5, size })
+function rapidUri(): string {
+  if (!existsSync(manifestPath)) {
+    throw new Error('MODKITX_BAR_ROOT does not identify BAR data with the pinned rapid manifest')
   }
-  return records
+  return `rapid+${pathToFileURL(manifestPath).href}`
 }
 
-function inputFor(bytes: Uint8Array): AssetInput {
-  const uri = 'memory://bar-rapid/objects3d/airbomb.s3o'
-  const source: ArtifactByteSource = {
-    kind: 'bytes',
-    ref: { id: uri, uri },
-    revision: revisionId(
-      'content-hash.sha256:c208233aabfd58fa83237ddf69e56c0ac29fd44c1290fee11c198be1d8fe37c2',
-    ),
-    size: BigInt(bytes.byteLength),
-    async read(offset, length, signal) {
-      signal?.throwIfAborted()
-      return bytes.slice(Number(offset), Number(offset) + length)
-    },
-    async *stream() {
-      yield bytes
-    },
+async function rapidMount(): Promise<{
+  readonly vfs: VirtualFileSystem
+  readonly mount: VfsMount
+}> {
+  const vfs = new VirtualFileSystem().registerProvider(createRapidVfsProvider())
+  const mount = await vfs.openMount(rapidUri())
+  return { vfs, mount }
+}
+
+async function sourceAt(
+  mount: VfsMount,
+  path: string,
+): Promise<{
+  readonly source: ArtifactByteSource
+  readonly release: () => Promise<void>
+}> {
+  const node = await mount.stat(path)
+  if (node?.kind !== 'file') throw new Error(`rapid fixture has no ${path}`)
+  const random = await mount.open(path)
+  try {
+    const source = await artifactByteSourceFromRandomAccess(random, {
+      ref: {
+        id: `${mount.id}?vfs-path=${encodeURIComponent(node.path)}`,
+        uri: `${mount.rootUri}?vfs-path=${encodeURIComponent(node.path)}`,
+        parentIds: [mount.id],
+      },
+      revision: revisionId(node.revision ?? mount.revision),
+    })
+    return { source, release: async () => random.dispose() }
+  } catch (error) {
+    await random.dispose()
+    throw error
   }
+}
+
+function singleInput(source: ArtifactByteSource): AssetInput {
   const binding = {
     sourceKind: 'candidate' as const,
     bindingId: 'content',
@@ -139,125 +148,179 @@ function receiptOf(descriptor: unknown): Receipt {
   ).metadata.find(group => group.id === 'uv-projection-receipt')?.entries[0]?.value as Receipt
 }
 
-describe.skipIf(!configured)('Beyond All Reason S3O live corpus', () => {
-  it('opens airbomb.s3o directly from the rapid pool stream and materializes it', async () => {
-    if (!existsSync(manifestPath)) {
-      throw new Error('MODKITX_BAR_ROOT does not identify BAR data with the pinned rapid manifest')
-    }
-    const records = parseRapidRecords(gunzipSync(readFileSync(manifestPath)))
-    expect(records.filter(record => record.path.endsWith('.s3o'))).toHaveLength(2_036)
-    const candidate = records.find(record => record.path === candidatePath)
-    expect(candidate).toEqual({
-      path: candidatePath,
-      md5: '3b2a9fb660e91f63d76afbfb1aa4c022',
-      size: 19_189,
-    })
-    if (candidate === undefined) throw new Error('the pinned S3O rapid record is missing')
-    const poolPath = join(
-      corpusRoot ?? '',
-      'data',
-      'pool',
-      candidate.md5.slice(0, 2),
-      `${candidate.md5.slice(2)}.gz`,
-    )
-    if (!existsSync(poolPath)) throw new Error('the pinned S3O rapid pool blob is missing')
-    const bytes = gunzipSync(readFileSync(poolPath))
-    expect(bytes).toHaveLength(candidate.size)
-    expect(createHash('sha256').update(bytes).digest('hex')).toBe(
-      'c208233aabfd58fa83237ddf69e56c0ac29fd44c1290fee11c198be1d8fe37c2',
-    )
-
-    const session = await createS3oCodec(context).open(inputFor(bytes), 'full', budget)
+describe.skipIf(!configured)('Beyond All Reason live rapid corpus', () => {
+  it('opens airbomb.s3o through the public rapid VFS and keeps direct S3O static', async () => {
+    const { vfs, mount } = await rapidMount()
+    const opened = await sourceAt(mount, airbombPath)
     try {
-      const descriptor = await session.descriptor()
-      expect(descriptor.identity.codecId).toBe('org.modkitx/spring-s3o')
-      expect(descriptor.dataSources.map(item => item.contract)).not.toContain(
-        'common.view/model-animation-source',
+      expect(opened.source.size).toBe(19_189n)
+      const sourceBytes = await opened.source.read(0n, Number(opened.source.size))
+      expect(createHash('sha256').update(sourceBytes).digest('hex')).toBe(
+        'c208233aabfd58fa83237ddf69e56c0ac29fd44c1290fee11c198be1d8fe37c2',
       )
-      proves({
-        contributionId: 'org.modkitx/spring-s3o',
-        operation: 'inspect',
-        note: 'real airbomb.s3o opens from the BAR rapid pool without a materialized corpus file',
-      })
-      const inspectOperation = descriptor.operations.find(item => item.id === 'view.inspect')
-      if (inspectOperation === undefined) throw new Error('the S3O inspect operation is absent')
-      const inspected = await session.operations().invoke(inspectOperation.handlerId, null)
-      if (inspected.state !== 'ok' || inspected.output.kind !== 'json') {
-        throw new Error('the S3O inspect operation did not return its summary')
+      const session = await createS3oCodec(context).open(singleInput(opened.source), 'full', budget)
+      try {
+        const descriptor = await session.descriptor()
+        expect(descriptor.dataSources.map(item => item.contract)).not.toContain(
+          'common.view/model-animation-source',
+        )
+        proves({
+          contributionId: 'org.modkitx/spring-s3o',
+          operation: 'inspect',
+          note: 'real airbomb.s3o opens through the public rapid VFS and remains correctly static',
+        })
+        const inspectOperation = descriptor.operations.find(item => item.id === 'view.inspect')
+        if (inspectOperation === undefined) throw new Error('the S3O inspect operation is absent')
+        const inspected = await session.operations().invoke(inspectOperation.handlerId, null)
+        if (inspected.state !== 'ok' || inspected.output.kind !== 'json') {
+          throw new Error('the S3O inspect operation did not return its summary')
+        }
+        expect(inspected.output.value).toEqual({
+          format: 'spring-s3o',
+          meshes: 1,
+          namedRemainder: ['spring-3do', 's3o-writing', 'external-bos-cob-lua-animation-binding'],
+          pieces: 1,
+          primitives: 1,
+          textures: 2,
+          triangles: 264,
+          version: 0,
+          vertices: 496,
+        })
+
+        const modelLease = await session.dataSource('common.view/model-scene-source', 1)
+        const model = modelLease.value as ModelSceneSource
+        const info = await model.info()
+        const projection = await drainModelProjection(model, { maxBytes: budget.maxScalarBytes })
+        await modelLease.release()
+        expect(info).toMatchObject({ nodes: 1, meshes: 1, primitives: 1, animations: 0 })
+
+        const refsLease = await session.dataSource('common.view/model-resource-refs-source', 1)
+        const refs = refsLease.value as ModelResourceRefsSource
+        expect((await refs.info()).references).toBe(2)
+        await refsLease.release()
+
+        const receipt = receiptOf(descriptor)
+        expect(receipt.companions).toEqual([])
+        expect(receipt.planes.find(plane => plane.planeId === 'animation')).toMatchObject({
+          state: 'lost',
+          note: expect.stringMatching(/BOS\/COB|Lua/u),
+        })
+        expect(JSON.stringify(receipt)).not.toMatch(/file:\/\/|[A-Za-z]:[\\/]/u)
+
+        const verdict = await materializeAndCompare(repoRoot, projection, {
+          assetId: `bar/${airbombPath}`,
+          sourceFormat: 's3o',
+          subjectRevision: session.revision,
+          assetClass: 'unit',
+        })
+        expect(verdict.byteStable).toBe(true)
+        expect(unexplainedDifferences(verdict)).toEqual([])
+      } finally {
+        await session.dispose()
       }
-      const summary = inspected.output.value
-
-      const modelLease = await session.dataSource('common.view/model-scene-source', 1)
-      const model = modelLease.value as ModelSceneSource
-      const info = await model.info()
-      const projection = await drainModelProjection(model, { maxBytes: budget.maxScalarBytes })
-      await modelLease.release()
-      expect(info).toMatchObject({
-        nodes: 1,
-        meshes: 1,
-        primitives: 1,
-        textures: 2,
-        animations: 0,
-        geometryAccess: 'decoded',
-      })
-      expect(summary).toEqual({
-        format: 'spring-s3o',
-        meshes: 1,
-        namedRemainder: ['spring-3do', 's3o-writing', 'external-bos-cob-lua-animation-binding'],
-        pieces: 1,
-        primitives: 1,
-        textures: 2,
-        triangles: 264,
-        version: 0,
-        vertices: 496,
-      })
-
-      const refsLease = await session.dataSource('common.view/model-resource-refs-source', 1)
-      const refs = refsLease.value as ModelResourceRefsSource
-      const refsInfo = await refs.info()
-      const refPage = await refs.references({ limit: 8 })
-      await refsLease.release()
-      expect(refsInfo.references).toBe(2)
-      expect(refPage.items).toHaveLength(2)
-
-      const receipt = receiptOf(descriptor)
-      expect(receipt.form).toBe('portable')
-      expect(receipt.companions).toEqual([])
-      expect(receipt.planes.find(plane => plane.planeId === 'animation')).toMatchObject({
-        state: 'lost',
-        note: expect.stringMatching(/BOS\/COB|Lua/u),
-      })
-      expect(JSON.stringify(receipt)).not.toMatch(/file:\/\/|[A-Za-z]:[\\/]/u)
-      proves({
-        contributionId: 'org.modkitx/spring-s3o',
-        operation: 'read',
-        note: 'real S3O publishes stable piece hierarchy and texture refs while naming external animation',
-      })
-
-      const verdict = await materializeAndCompare(repoRoot, projection, {
-        assetId: `bar/${candidatePath}`,
-        sourceFormat: 's3o',
-        subjectRevision: session.revision,
-        assetClass: 'unit',
-      })
-      expect(verdict.byteStable).toBe(true)
-      expect(verdict.exact).toBe(false)
-      expect(verdict.bytes).toHaveLength(20_528)
-      expect(verdict.receipt.diff).toHaveLength(6)
-      expect(unexplainedDifferences(verdict)).toEqual([])
-      proves({
-        contributionId: 'org.modkitx/spring-s3o',
-        operation: 'materialize',
-        note: 'real S3O projection materializes byte-stably with every independently observed diff explained',
-      })
-      console.info(
-        `[bar-live] ${candidatePath}: ${info.nodes} nodes, ${info.meshes} meshes, ` +
-          `${info.primitives} primitives, ${refsInfo.references} texture refs; ` +
-          `UVM ${verdict.bytes.byteLength} bytes, exact=${verdict.exact}, ` +
-          `receipt=${verdict.receipt.diff.length}; summary=${JSON.stringify(summary)}`,
-      )
     } finally {
-      await session.dispose()
+      await opened.release()
+      await mount.dispose()
+      await vfs.dispose()
+    }
+  }, 300_000)
+
+  it('binds armpw Lua→S3O→COB/BOS through the host and publishes 2 honest clips', async () => {
+    const { vfs, mount } = await rapidMount()
+    const opened = await sourceAt(mount, armpwPath)
+    try {
+      expect(opened.source.size).toBe(3_125n)
+      const unitBytes = await opened.source.read(0n, Number(opened.source.size))
+      expect(createHash('sha256').update(unitBytes).digest('hex')).toBe(
+        '7782d3ae394765dd56f39e41223c69f5f5dcf5339fa48be75c25172d58c848fe',
+      )
+      const codec = await createUnitCodec(context)
+      const plan = await codec.planInput(opened.source, detection)
+      expect(plan.requirements.map(item => ({ id: item.id, patterns: item.patterns }))).toEqual([
+        { id: 'spring-object-model', patterns: ['objects3d/Units/ARMPW.s3o'] },
+        { id: 'spring-unit-script', patterns: ['scripts/Units/ARMPW.cob'] },
+        { id: 'spring-script-source', patterns: ['scripts/Units/ARMPW.bos'] },
+      ])
+      const resolve = createVfsInputResolver(
+        { mount, primaryLogicalId: armpwPath, caseSensitivity: 'insensitive' },
+        { limits: { maxEntries: 16, maxBindings: 4, maxProbes: 0, maxProbeBytes: 1 } },
+      )
+      const input = await resolve({ source: opened.source, plan, detection })
+      const session = await codec.open(input, 'full', budget)
+      try {
+        const descriptor = await session.descriptor()
+        expect(descriptor.dataSources.map(item => item.contract)).toEqual(
+          expect.arrayContaining([
+            'common.view/model-animation-source',
+            'common.view/relation-graph-source',
+          ]),
+        )
+        const inspectOperation = descriptor.operations.find(item => item.id === 'view.inspect')
+        if (inspectOperation === undefined) throw new Error('the unit inspect operation is absent')
+        const inspected = await session.operations().invoke(inspectOperation.handlerId, null)
+        if (inspected.state !== 'ok' || inspected.output.kind !== 'json') {
+          throw new Error('the unit inspect operation did not return its summary')
+        }
+        expect(inspected.output.value).toMatchObject({
+          format: 'spring-unit-definition',
+          objectName: 'Units/ARMPW.s3o',
+          script: 'Units/ARMPW.cob',
+          pieces: 19,
+          cob: { state: 'resolved', scripts: 22, pieces: 19 },
+          bos: { state: 'resolved', functions: 6, motionStatements: 1162 },
+          animations: 2,
+          channels: 73,
+          boundPieces: 13,
+          unsupportedChannels: 1,
+        })
+
+        const animationLease = await session.dataSource('common.view/model-animation-source', 1)
+        const animation = animationLease.value as ModelAnimationSource
+        const clips = (await animation.clips({ limit: 10 })).items
+        expect(clips).toEqual([
+          expect.objectContaining({ name: 'Walk', frames: 19, channels: expect.any(Array) }),
+          expect.objectContaining({ name: 'DeathAnim', frames: 51, channels: expect.any(Array) }),
+        ])
+        expect(clips[0]?.channels).toHaveLength(30)
+        expect(clips[1]?.channels).toHaveLength(43)
+        const channels = clips.flatMap(clip => clip.channels)
+        expect(new Set(channels.map(channel => channel.target)).size).toBe(13)
+        expect(channels.every(channel => /^s3o-piece-\d+$/u.test(channel.target))).toBe(true)
+        await animationLease.release()
+
+        const graphLease = await session.dataSource('common.view/relation-graph-source', 1)
+        const graph = graphLease.value as RelationGraphSource
+        expect(await graph.summary()).toMatchObject({ completeness: 'complete' })
+        expect((await graph.edges({ limit: 200 })).items).toEqual(
+          expect.arrayContaining([
+            { from: 'spring-unit', to: 'spring-model', role: 'objectName' },
+            { from: 'spring-unit', to: 'spring-script', role: 'script' },
+          ]),
+        )
+        await graphLease.release()
+
+        const receipt = receiptOf(descriptor)
+        expect(receipt.companions).toHaveLength(3)
+        expect(receipt.planes.find(plane => plane.planeId === 'animation')).toMatchObject({
+          state: 'normalized',
+          note: expect.stringMatching(/no COB\/BOS\/Lua execution/u),
+        })
+        expect(JSON.stringify(receipt)).not.toMatch(/file:\/\/|[A-Za-z]:[\\/]/u)
+        proves({
+          contributionId: 'org.modkitx/spring-unit-definition',
+          operation: 'read',
+          note: 'real BAR armpw publishes 2 clips/73 channels/13 stable piece bindings through host-selected rapid companions',
+        })
+        console.info(
+          `[bar-live] ${armpwPath}: 19 pieces, 22 COB scripts, 2 BOS clips, 73 channels, 13 bound pieces`,
+        )
+      } finally {
+        await session.dispose()
+      }
+    } finally {
+      await opened.release()
+      await mount.dispose()
+      await vfs.dispose()
     }
   }, 300_000)
 })
