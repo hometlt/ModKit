@@ -1,13 +1,13 @@
 {
   "schemaVersion": 3,
-  "corpus": "C:\\FILES\\SC2Files\\coding\\modkitX3-sol-round2-integration\\scripts\\parity\\corpus.json",
+  "corpus": "C:\\FILES\\SC2Files\\coding\\modkitX3-sol-spring-anim-binding\\scripts\\parity\\corpus.json",
   "canonical": {
     "root": "C:\\FILES\\SC2Files\\coding\\modkitx",
     "sha": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d"
   },
   "x3": {
-    "root": "C:\\FILES\\SC2Files\\coding\\modkitX3-sol-round2-integration",
-    "sha": "c684d5196198a28d9600d6724f102b03062a00c6"
+    "root": "C:\\FILES\\SC2Files\\coding\\modkitX3-sol-spring-anim-binding",
+    "sha": "8b86209a7fbb34c254db590159bce45bea0884e7"
   },
   "counts": {
     "total": 76,
@@ -791,7 +791,7 @@
       "classification": "X3 беднее",
       "missing": [
         "common.view/namespace-entry-source:measurement:entries:2<3",
-        "common.view/namespace-entry-source:measurement:extractedBytes:512<533",
+        "common.view/namespace-entry-source:measurement:extractedBytes:512<534",
         "common.view/namespace-entry-source:measurement:files:2<3"
       ],
       "reason": "The canonical PE reader publishes two synthesised metadata documents (metadata/summary.txt, metadata/headers.json) as namespace entries; X3 publishes the raw header blob plus the same single real section. The entry-count gap is namespace modelling, not unread PE structure."
@@ -14300,7 +14300,7 @@
       "classification": "X3 беднее",
       "missing": [
         "common.view/namespace-entry-source:measurement:entries:2<3",
-        "common.view/namespace-entry-source:measurement:extractedBytes:512<533",
+        "common.view/namespace-entry-source:measurement:extractedBytes:512<534",
         "common.view/namespace-entry-source:measurement:files:2<3"
       ],
       "extra": [
@@ -14320,7 +14320,7 @@
           "classification": "X3 беднее",
           "missing": [
             "measurement:entries:2<3",
-            "measurement:extractedBytes:512<533",
+            "measurement:extractedBytes:512<534",
             "measurement:files:2<3"
           ],
           "extra": [
@@ -14346,7 +14346,7 @@
               "entries": 3,
               "files": 3,
               "complete": true,
-              "extractedBytes": 533,
+              "extractedBytes": 534,
               "extractedNonEmpty": true
             }
           }
@@ -14503,7 +14503,7 @@
               "entries": 3,
               "files": 3,
               "complete": true,
-              "extractedBytes": 533,
+              "extractedBytes": 534,
               "extractedNonEmpty": true
             }
           }
@@ -14549,7 +14549,7 @@
         "classification": "X3 беднее",
         "missing": [
           "common.view/namespace-entry-source:measurement:entries:2<3",
-          "common.view/namespace-entry-source:measurement:extractedBytes:512<533",
+          "common.view/namespace-entry-source:measurement:extractedBytes:512<534",
           "common.view/namespace-entry-source:measurement:files:2<3"
         ],
         "extra": [
@@ -14569,7 +14569,7 @@
             "classification": "X3 беднее",
             "missing": [
               "measurement:entries:2<3",
-              "measurement:extractedBytes:512<533",
+              "measurement:extractedBytes:512<534",
               "measurement:files:2<3"
             ],
             "extra": [

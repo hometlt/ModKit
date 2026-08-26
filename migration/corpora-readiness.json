@@ -97,7 +97,7 @@
       "verticalBlock": 17,
       "status": "available",
       "environmentVariables": ["MODKITX_BAR_ROOT"],
-      "evidence": "Установка предоставлена владельцем и проверена read-only: data/engine (required, ровно одна сборка recoil_2026.07.04 — её имя и есть версия), data/LuaMenu и data/LuaUI (expected). Кодеки этого корпуса ещё в mk2 (блок 17), поэтому переменная готова, а потребителей у неё пока нет.",
+      "evidence": "Установка предоставлена владельцем и проверена read-only: pinned rapid manifest содержит 18 413 записей и читается публичным host/VFS-провайдером manifest → MD5 pool → gzip. Реальные airbomb.s3o и units/armbots/armpw.lua доказывают соответственно отсутствие сфабрикованной direct-S3O анимации и unit → objectName/script → COB/BOS → 13 stable piece ids; named-game discovery/profile остаётся блоку 17.",
       "ownerAction": null,
       "legalAlternative": {
         "reachable": true,
@@ -105,6 +105,7 @@
         "note": "Свободный дистрибутив сам является legal alternative evidence path. Spring/Recoil и BAR остаются разными строками: движок не объявляется игрой."
       },
       "capabilityIds": [
+        "format/spring-s3o/open-inspect",
         "game/beyond-all-reason/discover-open",
         "vertical/beyond-all-reason/native-inspect-authoring"
       ]

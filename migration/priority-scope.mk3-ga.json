@@ -26,7 +26,7 @@
       "relocated-multiverse": 1
     },
     "byObligation": { "focused-required-addition": 13, "legacy-required": 152 },
-    "byEvidenceLevel": { "E0": 35, "E1": 30, "E2": 61, "E3": 14, "E4": 25 }
+    "byEvidenceLevel": { "E0": 35, "E1": 30, "E2": 61, "E3": 13, "E4": 26 }
   },
   "deadlines": {
     "block-11": [
@@ -1960,7 +1960,7 @@
       "plannedBlock": 17,
       "migrationState": "implemented",
       "supportState": "supported",
-      "evidenceLevel": "E3",
+      "evidenceLevel": "E4",
       "allocationState": "covered",
       "portFamily": "opensource/spring",
       "corpusDescriptors": ["MODKITX_BAR_ROOT"],

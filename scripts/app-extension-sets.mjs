@@ -287,7 +287,7 @@ export const READY_APP_EXTENSIONS = Object.freeze({
   'opensource-spring': Object.freeze({
     path: Object.freeze(['opensource', 'spring']),
     coordinate: 'org.modkitx.opensource/spring',
-    contributions: Object.freeze(['org.modkitx/spring-s3o']),
+    contributions: Object.freeze(['org.modkitx/spring-s3o', 'org.modkitx/spring-unit-definition']),
   }),
   'opensource-warzone-2100': Object.freeze({
     path: Object.freeze(['opensource', 'warzone-2100']),
