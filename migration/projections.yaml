@@ -126,7 +126,7 @@ planes:
       - 'карта ссылается на моды и ассеты игры; разрешение требует game mount вертикали'
     corpusEvidence:
       - 'MODKITX_SC2_ROOT'
-      - 'MODKITX_CNC3_ROOT'
+      - 'MODKITX_CNC3_KW_ROOT'
     capabilityIds:
       - 'format/sc2-map/open-inspect'
       - 'uv/uvw/world-materialization'
@@ -159,7 +159,7 @@ planes:
       - 'данные ссылаются на локализацию и ассеты того же мода'
     corpusEvidence:
       - 'MODKITX_SC2_ROOT'
-      - 'MODKITX_CNC3_ROOT'
+      - 'MODKITX_CNC3_KW_ROOT'
     capabilityIds:
       - 'format/sc2-data/open-inspect'
       - 'format/cnc3-data/open-inspect'
@@ -235,7 +235,7 @@ planes:
       - 'текстура может лежать внутри архива или CASC; путь разрешает host'
     corpusEvidence:
       - 'MODKITX_SC2_ROOT'
-      - 'MODKITX_CNC3_ROOT'
+      - 'MODKITX_CNC3_KW_ROOT'
     capabilityIds:
       - 'block9/decoded-gpu-texture-payloads'
       - 'format/dds/open-inspect'
@@ -327,7 +327,7 @@ planes:
       - 'вложенные контейнеры монтируются host-ом через VfsMount; кодек не строит URI'
     corpusEvidence:
       - 'MODKITX_SC2_ROOT'
-      - 'MODKITX_CNC3_ROOT'
+      - 'MODKITX_CNC3_KW_ROOT'
     capabilityIds:
       - 'block9/archive-entry-as-subject'
       - 'block9/casc-mpq-texture-chain'

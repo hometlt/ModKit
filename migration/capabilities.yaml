@@ -1748,7 +1748,7 @@ capabilities:
       liveSources: []
     fixtures: []
     corpusDescriptors:
-      - 'MODKITX_CNC3_ROOT'
+      - 'MODKITX_CNC3_KW_ROOT'
     projection:
       plane: 'opaque'
       liveProjection: 'not-applicable'
@@ -2873,7 +2873,7 @@ capabilities:
         - 'common.view/tree-data-source'
     fixtures: []
     corpusDescriptors:
-      - 'MODKITX_CNC3_ROOT'
+      - 'MODKITX_CNC3_KW_ROOT'
     projection:
       plane: 'container'
       liveProjection: 'live'
@@ -14502,7 +14502,7 @@ capabilities:
     fixtures: []
     corpusDescriptors:
       - 'MODKITX_W3D_PATH'
-      - 'MODKITX_CNC3_ROOT'
+      - 'MODKITX_CNC3_KW_ROOT'
     projection:
       plane: 'model'
       liveProjection: 'live'
@@ -15420,7 +15420,7 @@ capabilities:
       liveSources: []
     fixtures: []
     corpusDescriptors:
-      - 'MODKITX_CNC3_ROOT'
+      - 'MODKITX_CNC3_KW_ROOT'
     projection:
       plane: 'world'
       liveProjection: 'none'
@@ -17849,7 +17849,7 @@ capabilities:
       liveSources: []
     fixtures: []
     corpusDescriptors:
-      - 'MODKITX_CNC3_ROOT'
+      - 'MODKITX_CNC3_KW_ROOT'
     projection:
       plane: 'world'
       liveProjection: 'none'
@@ -17905,7 +17905,7 @@ capabilities:
       liveSources: []
     fixtures: []
     corpusDescriptors:
-      - 'MODKITX_CNC3_ROOT'
+      - 'MODKITX_CNC3_KW_ROOT'
     projection:
       plane: 'world'
       liveProjection: 'none'
@@ -17963,7 +17963,7 @@ capabilities:
       liveSources: []
     fixtures: []
     corpusDescriptors:
-      - 'MODKITX_CNC3_ROOT'
+      - 'MODKITX_CNC3_KW_ROOT'
     projection:
       plane: 'world'
       liveProjection: 'none'
@@ -18021,7 +18021,7 @@ capabilities:
       liveSources: []
     fixtures: []
     corpusDescriptors:
-      - 'MODKITX_CNC3_ROOT'
+      - 'MODKITX_CNC3_KW_ROOT'
     projection:
       plane: 'world'
       liveProjection: 'none'
@@ -18080,7 +18080,7 @@ capabilities:
       liveSources: []
     fixtures: []
     corpusDescriptors:
-      - 'MODKITX_CNC3_ROOT'
+      - 'MODKITX_CNC3_KW_ROOT'
     projection:
       plane: 'definition'
       liveProjection: 'none'
@@ -18139,7 +18139,7 @@ capabilities:
       liveSources: []
     fixtures: []
     corpusDescriptors:
-      - 'MODKITX_CNC3_ROOT'
+      - 'MODKITX_CNC3_KW_ROOT'
     projection:
       plane: 'world'
       liveProjection: 'none'
@@ -18197,7 +18197,7 @@ capabilities:
       liveSources: []
     fixtures: []
     corpusDescriptors:
-      - 'MODKITX_CNC3_ROOT'
+      - 'MODKITX_CNC3_KW_ROOT'
     projection:
       plane: 'world'
       liveProjection: 'none'
@@ -18257,7 +18257,7 @@ capabilities:
       liveSources: []
     fixtures: []
     corpusDescriptors:
-      - 'MODKITX_CNC3_ROOT'
+      - 'MODKITX_CNC3_KW_ROOT'
     projection:
       plane: 'world'
       liveProjection: 'none'
@@ -18317,7 +18317,7 @@ capabilities:
       liveSources: []
     fixtures: []
     corpusDescriptors:
-      - 'MODKITX_CNC3_ROOT'
+      - 'MODKITX_CNC3_KW_ROOT'
     projection:
       plane: 'world'
       liveProjection: 'none'
@@ -18378,7 +18378,7 @@ capabilities:
       liveSources: []
     fixtures: []
     corpusDescriptors:
-      - 'MODKITX_CNC3_ROOT'
+      - 'MODKITX_CNC3_KW_ROOT'
     projection:
       plane: 'definition'
       liveProjection: 'none'

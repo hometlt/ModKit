@@ -574,7 +574,7 @@
       "evidenceLevel": "E0",
       "allocationState": "absent",
       "portFamily": null,
-      "corpusDescriptors": ["MODKITX_CNC3_ROOT"],
+      "corpusDescriptors": ["MODKITX_CNC3_KW_ROOT"],
       "dependsOn": ["format/westwood-w3d/open-inspect"],
       "requiredBy": []
     },
@@ -786,7 +786,7 @@
       "evidenceLevel": "E4",
       "allocationState": "covered",
       "portFamily": "ea/big",
-      "corpusDescriptors": ["MODKITX_CNC3_ROOT"],
+      "corpusDescriptors": ["MODKITX_CNC3_KW_ROOT"],
       "dependsOn": [],
       "requiredBy": [
         "block9/archive-entry-as-subject",
@@ -2271,7 +2271,7 @@
       "evidenceLevel": "E4",
       "allocationState": "covered",
       "portFamily": "ea/models",
-      "corpusDescriptors": ["MODKITX_W3D_PATH", "MODKITX_CNC3_ROOT"],
+      "corpusDescriptors": ["MODKITX_W3D_PATH", "MODKITX_CNC3_KW_ROOT"],
       "dependsOn": [],
       "requiredBy": [
         "block9/w3d-animation",
@@ -2410,7 +2410,7 @@
       "evidenceLevel": "E0",
       "allocationState": "absent",
       "portFamily": null,
-      "corpusDescriptors": ["MODKITX_CNC3_ROOT"],
+      "corpusDescriptors": ["MODKITX_CNC3_KW_ROOT"],
       "dependsOn": ["format/big/open-inspect", "format/sage-w3x/open-inspect"],
       "requiredBy": [
         "vertical/cnc3-kanes-wrath/deterministic-playable-subset",
@@ -2792,7 +2792,7 @@
       "evidenceLevel": "E0",
       "allocationState": "absent",
       "portFamily": null,
-      "corpusDescriptors": ["MODKITX_CNC3_ROOT"],
+      "corpusDescriptors": ["MODKITX_CNC3_KW_ROOT"],
       "dependsOn": [
         "game/cnc3-tiberium-wars/discover-open",
         "vertical/cnc3-kanes-wrath/neutral-definitions-world"
@@ -2812,7 +2812,7 @@
       "evidenceLevel": "E0",
       "allocationState": "absent",
       "portFamily": null,
-      "corpusDescriptors": ["MODKITX_CNC3_ROOT"],
+      "corpusDescriptors": ["MODKITX_CNC3_KW_ROOT"],
       "dependsOn": ["game/cnc3-tiberium-wars/discover-open"],
       "requiredBy": [
         "vertical/cnc3-kanes-wrath/native-round-trip",
@@ -2832,7 +2832,7 @@
       "evidenceLevel": "E0",
       "allocationState": "absent",
       "portFamily": null,
-      "corpusDescriptors": ["MODKITX_CNC3_ROOT"],
+      "corpusDescriptors": ["MODKITX_CNC3_KW_ROOT"],
       "dependsOn": [
         "game/cnc3-tiberium-wars/discover-open",
         "uv/uvm/materializer-writer",
@@ -2853,7 +2853,7 @@
       "evidenceLevel": "E0",
       "allocationState": "absent",
       "portFamily": null,
-      "corpusDescriptors": ["MODKITX_CNC3_ROOT"],
+      "corpusDescriptors": ["MODKITX_CNC3_KW_ROOT"],
       "dependsOn": [
         "game/cnc3-tiberium-wars/discover-open",
         "uv/uvm/live-projection",
@@ -2874,7 +2874,7 @@
       "evidenceLevel": "E0",
       "allocationState": "absent",
       "portFamily": null,
-      "corpusDescriptors": ["MODKITX_CNC3_ROOT"],
+      "corpusDescriptors": ["MODKITX_CNC3_KW_ROOT"],
       "dependsOn": [
         "game/cnc3-tiberium-wars/discover-open",
         "uv/uvd/definitions",
@@ -2896,7 +2896,7 @@
       "evidenceLevel": "E0",
       "allocationState": "absent",
       "portFamily": null,
-      "corpusDescriptors": ["MODKITX_CNC3_ROOT"],
+      "corpusDescriptors": ["MODKITX_CNC3_KW_ROOT"],
       "dependsOn": [
         "game/cnc3-tiberium-wars/discover-open",
         "vertical/cnc3-tiberium-wars/neutral-definitions-world"
@@ -2916,7 +2916,7 @@
       "evidenceLevel": "E0",
       "allocationState": "absent",
       "portFamily": null,
-      "corpusDescriptors": ["MODKITX_CNC3_ROOT"],
+      "corpusDescriptors": ["MODKITX_CNC3_KW_ROOT"],
       "dependsOn": ["game/cnc3-tiberium-wars/discover-open"],
       "requiredBy": [
         "vertical/cnc3-tiberium-wars/native-round-trip",
@@ -2936,7 +2936,7 @@
       "evidenceLevel": "E0",
       "allocationState": "absent",
       "portFamily": null,
-      "corpusDescriptors": ["MODKITX_CNC3_ROOT"],
+      "corpusDescriptors": ["MODKITX_CNC3_KW_ROOT"],
       "dependsOn": [
         "game/cnc3-tiberium-wars/discover-open",
         "uv/uvm/materializer-writer",
@@ -2957,7 +2957,7 @@
       "evidenceLevel": "E0",
       "allocationState": "absent",
       "portFamily": null,
-      "corpusDescriptors": ["MODKITX_CNC3_ROOT"],
+      "corpusDescriptors": ["MODKITX_CNC3_KW_ROOT"],
       "dependsOn": [
         "game/cnc3-tiberium-wars/discover-open",
         "uv/uvm/live-projection",
@@ -2978,7 +2978,7 @@
       "evidenceLevel": "E0",
       "allocationState": "absent",
       "portFamily": null,
-      "corpusDescriptors": ["MODKITX_CNC3_ROOT"],
+      "corpusDescriptors": ["MODKITX_CNC3_KW_ROOT"],
       "dependsOn": [
         "game/cnc3-tiberium-wars/discover-open",
         "uv/uvd/definitions",
