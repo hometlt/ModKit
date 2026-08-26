@@ -19,6 +19,8 @@
     "contributes:emit": "node scripts/generate-contributes.mjs",
     "contributes:check": "node scripts/generate-contributes.mjs --check",
     "ext:build": "node scripts/build-extension.mjs",
+    "prepack": "pnpm ext:build",
+    "vscode:prepublish": "pnpm ext:build",
     "smoke:vscode": "node test-e2e/run-smoke.mjs",
     "dist-app:check": "node scripts/build-extension.mjs --check"
   },

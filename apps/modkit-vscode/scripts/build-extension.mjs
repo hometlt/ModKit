@@ -1,5 +1,5 @@
 /**
- * Bundle the VS Code extension into `dist-app/`.
+ * Bundle the VS Code extension into generated `dist-app/`.
  *
  *   node scripts/build-extension.mjs
  *
@@ -10,6 +10,8 @@
  *
  * The static `contributes` block is merged into the manifest from the generated catalog, which is
  * the deterministic artifact `contributes:check` guards. Nothing here authors contribution points.
+ * `dist-app/` is deliberately not tracked: release and smoke build it from source, while `--check`
+ * compares that generated output with two independent fresh builds.
  */
 import { build } from 'esbuild'
 import {
@@ -33,139 +35,175 @@ const repoRoot = resolve(appRoot, '..', '..')
 /*
  * Where the bundle lands.
  *
- * `--check` builds into a throwaway directory and compares the result with the committed
- * `dist-app/`, the same shape `contributes:check` uses for its generated document. It exists
- * because that directory is tracked and had silently drifted dozens of commits behind its own
- * sources: an extension loaded from the checkout ran pre-block-9 behaviour while every unit test
- * passed, because nothing compared the two.
+ * `--check` builds twice into throwaway directories and compares both results with the generated
+ * `dist-app/`. This catches both source drift (the checkout was not rebuilt) and non-deterministic
+ * output without keeping tens of thousands of generated lines under version control.
  */
 const check = process.argv.includes('--check')
 const outFlag = process.argv.indexOf('--out')
-const tracked = join(appRoot, 'dist-app')
-const dist = check
-  ? mkdtempSync(join(tmpdir(), 'x3-dist-app-'))
-  : outFlag > 0
-    ? resolve(process.argv[outFlag + 1])
-    : tracked
-
-mkdirSync(dist, { recursive: true })
-
-await build({
-  entryPoints: [join(appRoot, 'src', 'extension.ts')],
-  outfile: join(dist, 'extension.cjs'),
-  bundle: true,
-  format: 'cjs',
-  platform: 'node',
-  target: ['node20'],
-  // Supplied by the VS Code runtime; bundling it would shadow the real API.
-  external: ['vscode'],
-  /*
-   * No rewrite of `import.meta.url` here any more. The extension names the bootstrap it shipped
-   * through `bootstrapUrl`, which the Node factories now thread through — a host saying where its
-   * own file is, rather than a build making one expression mean something other than it says.
-   */
-  absWorkingDir: repoRoot,
-  logLevel: 'warning',
-})
-
-const bootstrapEntry = join(repoRoot, 'packages', 'host', 'dist', 'node', 'worker-bootstrap.js')
-if (!existsSync(bootstrapEntry)) {
-  console.error(`missing ${bootstrapEntry} — run pnpm build (tsc -b) before bundling the extension`)
+const generated = join(appRoot, 'dist-app')
+if (check && outFlag > 0) {
+  console.error('dist-app --check cannot be combined with --out')
   process.exit(1)
 }
-// Its own self-contained ES module: a worker thread is its own entry point, and the bootstrap
-// verifies artifact bytes against the inventory's digests, so it must not be reached through a
-// bundle that could have rewritten it.
-await build({
-  entryPoints: [bootstrapEntry],
-  outfile: join(dist, 'worker-bootstrap.js'),
-  bundle: true,
-  format: 'esm',
-  platform: 'node',
-  target: ['node20'],
-  absWorkingDir: repoRoot,
-  logLevel: 'warning',
-})
+const dist = outFlag > 0 ? resolve(process.argv[outFlag + 1]) : generated
 
-await build({
-  entryPoints: [join(appRoot, 'src', 'webview.ts')],
-  outfile: join(dist, 'webview.js'),
-  bundle: true,
-  format: 'esm',
-  platform: 'browser',
-  target: ['chrome120'],
-  absWorkingDir: repoRoot,
-  logLevel: 'warning',
-})
+async function buildInto(output, syncManifest) {
+  mkdirSync(output, { recursive: true })
 
-const stylesheet = join(repoRoot, 'packages', 'ui', 'styles', 'modkit-ui.css')
-if (!existsSync(stylesheet)) {
-  console.error(
-    'missing packages/ui/styles/modkit-ui.css — run pnpm --filter @modkitx-x3/ui tokens:emit',
-  )
-  process.exit(1)
-}
-cpSync(stylesheet, join(dist, 'modkit-ui.css'))
+  await build({
+    entryPoints: [join(appRoot, 'src', 'extension.ts')],
+    outfile: join(output, 'extension.cjs'),
+    bundle: true,
+    format: 'cjs',
+    platform: 'node',
+    target: ['node20'],
+    // Supplied by the VS Code runtime; bundling it would shadow the real API.
+    external: ['vscode'],
+    /*
+     * No rewrite of `import.meta.url` here any more. The extension names the bootstrap it shipped
+     * through `bootstrapUrl`, which the Node factories now thread through — a host saying where its
+     * own file is, rather than a build making one expression mean something other than it says.
+     */
+    absWorkingDir: repoRoot,
+    logLevel: 'warning',
+  })
 
-// Shell chrome only: the shipped stylesheet has no layout for the `workbench` parts on purpose, so
-// the host places them. Everything else the page draws comes from `modkit-ui.css`.
-cpSync(join(appRoot, 'app.css'), join(dist, 'app.css'))
-
-// ---------------------------------------------------------------- manifest
-// Only the real output owns the manifest: a check build must not write the package it is checking.
-if (dist === tracked) {
-  const manifestPath = join(appRoot, 'package.json')
-  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
-  const contributes = JSON.parse(readFileSync(join(appRoot, 'contributes.generated.json'), 'utf8'))
-  /*
-   * Filesystem schemes are an activation point with no `contributes` entry of their own — a
-   * provider is registered in code — so they are declared in the authority document rather than in
-   * this script: a saved workspace holding a `modkit-container:` folder has to start this extension
-   * before the Explorer can ask anything of it, and a scheme spelled in two places would drift.
-   */
-  const authority = JSON.parse(readFileSync(join(appRoot, 'bundled-contributes.v1.json'), 'utf8'))
-  const fileSystemSchemes = [...(authority.fileSystemSchemes ?? [])].sort()
-
-  const previous = JSON.stringify([manifest.contributes ?? null, manifest.activationEvents ?? null])
-  manifest.contributes = contributes
-  // Every command and every custom editor in the generated catalog is an activation point; VS Code
-  // 1.75+ infers the commands, but a custom editor still has to be declared or the provider is never
-  // registered and "Reopen Editor With… → Modkit Asset Preview" opens an editor nothing resolves.
-  manifest.activationEvents = [
-    ...contributes.commands.map(command => `onCommand:${command.command}`),
-    ...contributes.customEditors.map(editor => `onCustomEditor:${editor.viewType}`),
-    // The tree views are the other way in: opening the Modkit container has to start the host.
-    ...Object.values(contributes.views)
-      .flat()
-      .map(view => `onView:${view.id}`),
-    ...fileSystemSchemes.map(scheme => `onFileSystem:${scheme}`),
-  ]
-
-  if (JSON.stringify([manifest.contributes, manifest.activationEvents]) !== previous) {
-    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
-    console.log('manifest contributes and activation events synced from contributes.generated.json')
+  const bootstrapEntry = join(repoRoot, 'packages', 'host', 'dist', 'node', 'worker-bootstrap.js')
+  if (!existsSync(bootstrapEntry)) {
+    console.error(
+      `missing ${bootstrapEntry} — run pnpm build (tsc -b) before bundling the extension`,
+    )
+    process.exit(1)
   }
+  // Its own self-contained ES module: a worker thread is its own entry point, and the bootstrap
+  // verifies artifact bytes against the inventory's digests, so it must not be reached through a
+  // bundle that could have rewritten it.
+  await build({
+    entryPoints: [bootstrapEntry],
+    outfile: join(output, 'worker-bootstrap.js'),
+    bundle: true,
+    format: 'esm',
+    platform: 'node',
+    target: ['node20'],
+    absWorkingDir: repoRoot,
+    logLevel: 'warning',
+  })
+
+  await build({
+    entryPoints: [join(appRoot, 'src', 'webview.ts')],
+    outfile: join(output, 'webview.js'),
+    bundle: true,
+    format: 'esm',
+    platform: 'browser',
+    target: ['chrome120'],
+    absWorkingDir: repoRoot,
+    logLevel: 'warning',
+  })
+
+  const stylesheet = join(repoRoot, 'packages', 'ui', 'styles', 'modkit-ui.css')
+  if (!existsSync(stylesheet)) {
+    console.error(
+      'missing packages/ui/styles/modkit-ui.css — run pnpm --filter @modkitx-x3/ui tokens:emit',
+    )
+    process.exit(1)
+  }
+  cpSync(stylesheet, join(output, 'modkit-ui.css'))
+
+  // Shell chrome only: the shipped stylesheet has no layout for the `workbench` parts on purpose, so
+  // the host places them. Everything else the page draws comes from `modkit-ui.css`.
+  cpSync(join(appRoot, 'app.css'), join(output, 'app.css'))
+
+  // ---------------------------------------------------------------- manifest
+  // Only the real output owns the manifest: a check build must not write the package it is checking.
+  if (syncManifest) {
+    const manifestPath = join(appRoot, 'package.json')
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+    const contributes = JSON.parse(
+      readFileSync(join(appRoot, 'contributes.generated.json'), 'utf8'),
+    )
+    /*
+     * Filesystem schemes are an activation point with no `contributes` entry of their own — a
+     * provider is registered in code — so they are declared in the authority document rather than in
+     * this script: a saved workspace holding a `modkit-container:` folder has to start this extension
+     * before the Explorer can ask anything of it, and a scheme spelled in two places would drift.
+     */
+    const authority = JSON.parse(readFileSync(join(appRoot, 'bundled-contributes.v1.json'), 'utf8'))
+    const fileSystemSchemes = [...(authority.fileSystemSchemes ?? [])].sort()
+
+    const previous = JSON.stringify([
+      manifest.contributes ?? null,
+      manifest.activationEvents ?? null,
+    ])
+    manifest.contributes = contributes
+    // Every command and every custom editor in the generated catalog is an activation point; VS Code
+    // 1.75+ infers the commands, but a custom editor still has to be declared or the provider is never
+    // registered and "Reopen Editor With… → Modkit Asset Preview" opens an editor nothing resolves.
+    manifest.activationEvents = [
+      ...contributes.commands.map(command => `onCommand:${command.command}`),
+      ...contributes.customEditors.map(editor => `onCustomEditor:${editor.viewType}`),
+      // The tree views are the other way in: opening the Modkit container has to start the host.
+      ...Object.values(contributes.views)
+        .flat()
+        .map(view => `onView:${view.id}`),
+      ...fileSystemSchemes.map(scheme => `onFileSystem:${scheme}`),
+    ]
+
+    if (JSON.stringify([manifest.contributes, manifest.activationEvents]) !== previous) {
+      writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
+      console.log(
+        'manifest contributes and activation events synced from contributes.generated.json',
+      )
+    }
+  }
+}
+
+function differingFiles(left, right) {
+  const names = [...new Set([...readdirSync(left), ...readdirSync(right)])].sort()
+  return names.filter(name => {
+    const leftBytes = existsSync(join(left, name)) ? readFileSync(join(left, name)) : undefined
+    const rightBytes = existsSync(join(right, name)) ? readFileSync(join(right, name)) : undefined
+    return leftBytes === undefined || rightBytes === undefined || !leftBytes.equals(rightBytes)
+  })
 }
 
 if (!check) {
+  await buildInto(dist, dist === generated)
   console.log(`built ${dist}`)
 } else {
-  const names = [...new Set([...readdirSync(dist), ...readdirSync(tracked)])].sort()
-  const differing = names.filter(name => {
-    const fresh = existsSync(join(dist, name)) ? readFileSync(join(dist, name)) : undefined
-    const committed = existsSync(join(tracked, name))
-      ? readFileSync(join(tracked, name))
-      : undefined
-    return fresh === undefined || committed === undefined || !fresh.equals(committed)
-  })
-  rmSync(dist, { recursive: true, force: true })
-  if (differing.length > 0) {
-    console.error(
-      `dist-app --check: ${differing.length} of ${names.length} file(s) differ from a fresh ` +
-        `build: ${differing.join(', ')}`,
-    )
-    console.error('Run `pnpm --filter @modkitx-x3/modkit-vscode ext:build` and commit the result.')
+  if (!existsSync(generated)) {
+    console.error('dist-app --check: generated dist-app is missing; run ext:build first')
     process.exit(1)
   }
-  console.log(`dist-app --check: ${names.length} file(s) byte-identical`)
+  const freshA = mkdtempSync(join(tmpdir(), 'x3-dist-app-a-'))
+  const freshB = mkdtempSync(join(tmpdir(), 'x3-dist-app-b-'))
+  try {
+    await buildInto(freshA, false)
+    await buildInto(freshB, false)
+    const nonDeterministic = differingFiles(freshA, freshB)
+    const stale = differingFiles(freshA, generated)
+    if (nonDeterministic.length > 0) {
+      console.error(
+        `dist-app --check: non-deterministic output in ${nonDeterministic.length} file(s): ` +
+          nonDeterministic.join(', '),
+      )
+      process.exitCode = 1
+    }
+    if (stale.length > 0) {
+      console.error(
+        `dist-app --check: generated output is stale in ${stale.length} file(s): ${stale.join(', ')}`,
+      )
+      console.error('Run `pnpm --filter @modkitx-x3/modkit-vscode ext:build`.')
+      process.exitCode = 1
+    }
+    if (process.exitCode !== 1) {
+      console.log(
+        `dist-app --check: ${readdirSync(freshA).length} generated file(s) are fresh and ` +
+          'byte-deterministic across two clean builds',
+      )
+    }
+  } finally {
+    rmSync(freshA, { recursive: true, force: true })
+    rmSync(freshB, { recursive: true, force: true })
+  }
 }

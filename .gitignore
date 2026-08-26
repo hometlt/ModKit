@@ -3,5 +3,6 @@ dist/
 *.tsbuildinfo
 .eslintcache
 coverage/
+apps/modkit-vscode/dist-app/
 # agent worktrees and local session state (the harness owns this directory)
 .claude/

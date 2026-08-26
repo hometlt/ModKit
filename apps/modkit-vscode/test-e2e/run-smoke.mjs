@@ -165,12 +165,12 @@ async function main() {
   console.log(`smoke: build exited ${build.code}`)
 
   /*
-   * And then: does the committed bundle match what was just built?
+   * And then: is the generated bundle fresh and deterministic?
    *
-   * The smoke runs against `extensionDevelopmentPath`, which loads `dist-app/` — so without this
-   * the receipt would attest to whatever happened to be on disk. It is a step here rather than a
-   * member of `pnpm check` because bundling the extension is slow, and it belongs to this run in
-   * particular: the thing the receipt claims to have tested is the thing the repository ships.
+   * The smoke runs against `extensionDevelopmentPath`, which loads generated `dist-app/`. The
+   * check compares it with two independent clean builds, proving freshness and deterministic
+   * release output without relying on a committed bundle. It stays outside general `pnpm check`
+   * because bundling the extension is slow and belongs to the receipt that claims to test it.
    */
   const distCheck = await run('pnpm', ['--filter', '@modkitx-x3/modkit-vscode', 'dist-app:check'])
   console.log(`smoke: dist-app:check exited ${distCheck.code}`)
@@ -323,7 +323,7 @@ async function main() {
       distAppCheck: {
         command: 'pnpm --filter @modkitx-x3/modkit-vscode dist-app:check',
         exitCode: distCheck.code,
-        matchesCommittedBundle: distCheck.code === 0,
+        matchesFreshDeterministicBuild: distCheck.code === 0,
         output: redact(tail(distCheck.output, 4)),
       },
     },
