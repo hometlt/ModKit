@@ -34,26 +34,12 @@
       "evidence": "opened through \"Reopen Editor With… → Modkit Asset Preview\"; the page shows a 2-node scene (one node per pivot) and 1 animation, matching block 9",
       "details": {
         "tabOpened": true,
-        "stageTabs": [
-          "Model",
-          "Tree",
-          "Metadata",
-          "Hex"
-        ],
-        "stagesVisited": [
-          "as-opened",
-          "Metadata",
-          "Tree",
-          "Model"
-        ],
+        "stageTabs": ["Model", "Tree", "Metadata", "Hex"],
+        "stagesVisited": ["as-opened", "Metadata", "Tree", "Model"],
         "diagnosticsSeen": [],
         "webviewReadable": true,
         "pageExcerpt": "Modkit · Model · Tree · Metadata · Hex · 2 nodes · 1 meshes · 1 primitives · 1 materials · 1 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · WESTWOOD W3D MODEL · rootChunks · 4 · chunks · 33 · opaqueTailBytes · 0 · chunkTypes · HIERARCHY:1, HIERARCHY_HEADER:1, PIVOTS:1, CHUNK_0x00000103:1, ANIMATION:1, CHUNK_0x00000201:1, CHUNK_0x00000202:1, MESH:1, MESH_HEADER3:1, VERTICES:1, VERTEX_NORMALS:1, TRIANGLES:1, CHUNK_0x00000022:1, CHUNK_0x00000028:1, CHUNK_0x0000002a:1, CHUNK_0x0000002b:1, CHUNK_0x0000002c:1, CHUNK_0x0000002d:1, CHUNK_0x00000029:1, TEXTURES:1, TEXTURE:1, TEXTURE_NAME:1, MATERIAL_PASS:1, CHUNK_0x00000039:1, CHUNK_0x0000003a:1, TEXTURE_STAGE:1, TEXTURE_IDS:1, STAGE_TEXCOORDS:1, HLOD:1, CHUNK_0x00000701:1, CHUNK_0x00000702:1, CHUNK_0x00000703:1, CHUNK_0x00000704:1 · decodedMeshes · 1 · textures · 1 · geometryAccess · decoded · UV PROJECTION RECEIPT · receipt · [object Object] · OBSERVED TRAITS · model.geometry · available · meshes=1, decoded=true · model.textures · available · count=1 · model.skeleton · available · pivots=2, name=D_TESLACOIL_CH · model.animations · available · animations=1, channels=1, frames=61 · structure.hierarchy · available · chunks=33, pivots=2 · content.binary · available · bytes=15737 · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · Westwood W3D · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · 2 nodes · 1 meshes · 1 primitives · 1 materials · 1 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities",
-        "modelStages": [
-          "Model",
-          "Metadata",
-          "Tree"
-        ],
+        "modelStages": ["Model", "Metadata", "Tree"],
         "nodes": "2",
         "pivotsLiteral": null,
         "animationsLiteral": "1"
@@ -67,12 +53,7 @@
       "evidence": "opened with gnavrail.hva beside it; the page names the companion as provenance and the host raises no missing-sidecar diagnostic",
       "details": {
         "companionOnDisk": true,
-        "stageTabs": [
-          "Model",
-          "Tree",
-          "Metadata",
-          "Hex"
-        ],
+        "stageTabs": ["Model", "Tree", "Metadata", "Hex"],
         "diagnosticsSeen": [],
         "pageExcerpt": "Modkit · Model · Tree · Metadata · Hex · 1 nodes · 11 meshes · 11 primitives · 11 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · WESTWOOD VOXEL MODEL · sections · 1 · bodyBytes · 24303 · palettes · 1 · voxels · 5466 · decodedMeshes · 11 · geometryAccess · decoded · companionState · resolved · companionBindingId · hva#gnavrail.hva · companionFrames · 1 · companionBoundSections · 1 · companionKind · rest-pose · UV PROJECTION RECEIPT · receipt · [object Object] · OBSERVED TRAITS · model.geometry · available · sections=1, meshes=11, decoded=true · structure.hierarchy · available · nodes=1 · content.binary · available · bytes=25225 · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · 1 nodes · 11 meshes · 11 primitives · 11 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities",
         "nativeDiagnostics": [
@@ -98,27 +79,13 @@
         "archiveOnDisk": true,
         "entry": "data/editor/molds/bowl.w3d",
         "archiveTabOpened": true,
-        "nestedCommands": [
-          "modkit.openArchiveEntry",
-          "modkit.browseContainer"
-        ],
-        "containerRootEntries": [
-          "langdata.dat",
-          "russellsquare.ttf",
-          "window",
-          "data",
-          "shaders"
-        ],
+        "nestedCommands": ["modkit.openArchiveEntry", "modkit.browseContainer"],
+        "containerRootEntries": ["langdata.dat", "russellsquare.ttf", "window", "data", "shaders"],
         "containerRootCount": 5,
         "memberBytes": 30346,
         "memberTabOpened": true,
         "liveModkitTabs": 1,
-        "memberStages": [
-          "Model",
-          "Tree",
-          "Metadata",
-          "Hex"
-        ],
+        "memberStages": ["Model", "Tree", "Metadata", "Hex"],
         "pageExcerpt": "Modkit · Model · Tree · Metadata · Hex · 1 nodes · 1 meshes · 1 primitives · 1 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · WESTWOOD W3D MODEL · rootChunks · 1 · chunks · 15 · opaqueTailBytes · 0 · chunkTypes · MESH:1, MESH_HEADER3:1, VERTICES:1, VERTEX_NORMALS:1, TRIANGLES:1, CHUNK_0x00000022:1, CHUNK_0x00000028:1, CHUNK_0x0000002a:1, CHUNK_0x0000002b:1, CHUNK_0x0000002c:1, CHUNK_0x0000002d:1, CHUNK_0x00000029:1, MATERIAL_PASS:1, CHUNK_0x00000039:1, CHUNK_0x0000003a:1 · decodedMeshes · 1 · textures · 0 · geometryAccess · decoded · UV PROJECTION RECEIPT · receipt · [object Object] · OBSERVED TRAITS · model.geometry · available · meshes=1, decoded=true · structure.hierarchy · available · chunks=15 · content.binary · available · bytes=30346 · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · Westwood W3D · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · 1 nodes · 1 meshes · 1 primitives · 1 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities",
         "memberNodes": "1"
       },
@@ -132,12 +99,7 @@
       "details": {
         "copyOnDisk": true,
         "companionAbsent": true,
-        "stageTabs": [
-          "Model",
-          "Tree",
-          "Metadata",
-          "Hex"
-        ],
+        "stageTabs": ["Model", "Tree", "Metadata", "Hex"],
         "diagnosticsSeen": [],
         "pageExcerpt": "Modkit · Model · Tree · Metadata · Hex · 1 nodes · 11 meshes · 11 primitives · 11 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · WESTWOOD VOXEL MODEL · sections · 1 · bodyBytes · 24303 · palettes · 1 · voxels · 5466 · decodedMeshes · 11 · geometryAccess · decoded · companionState · absent · UV PROJECTION RECEIPT · receipt · [object Object] · OBSERVED TRAITS · model.geometry · available · sections=1, meshes=11, decoded=true · structure.hierarchy · available · nodes=1 · content.binary · available · bytes=25225 · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · 1 nodes · 11 meshes · 11 primitives · 11 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities",
         "nativeDiagnostics": [
