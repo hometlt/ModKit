@@ -1,13 +1,13 @@
 {
   "schemaVersion": 3,
-  "corpus": "C:\\FILES\\SC2Files\\coding\\modkitX3-sol-round2-integration\\scripts\\parity\\corpus.json",
+  "corpus": "C:\\FILES\\SC2Files\\coding\\modkitX3-sol-image-gpu-remainder\\scripts\\parity\\corpus.json",
   "canonical": {
     "root": "C:\\FILES\\SC2Files\\coding\\modkitx",
     "sha": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d"
   },
   "x3": {
-    "root": "C:\\FILES\\SC2Files\\coding\\modkitX3-sol-round2-integration",
-    "sha": "c684d5196198a28d9600d6724f102b03062a00c6"
+    "root": "C:\\FILES\\SC2Files\\coding\\modkitX3-sol-image-gpu-remainder",
+    "sha": "59a62148566ad7c7f7ca481804a644218dc02abd"
   },
   "counts": {
     "total": 76,
@@ -773,7 +773,9 @@
       "format": "ogg",
       "kind": "synthetic",
       "classification": "X3 беднее",
-      "missing": ["common.view/audio-media-source:measurement:durationKnown=true"],
+      "missing": [
+        "common.view/audio-media-source:measurement:durationKnown=true"
+      ],
       "reason": "The canonical Ogg describe() derives a duration from the granule position; the X3 audio source reports durationMs \"unknown\" for the same bytes."
     },
     {
@@ -791,7 +793,6 @@
       "classification": "X3 беднее",
       "missing": [
         "common.view/namespace-entry-source:measurement:entries:2<3",
-        "common.view/namespace-entry-source:measurement:extractedBytes:512<533",
         "common.view/namespace-entry-source:measurement:files:2<3"
       ],
       "reason": "The canonical PE reader publishes two synthesised metadata documents (metadata/summary.txt, metadata/headers.json) as namespace entries; X3 publishes the raw header blob plus the same single real section. The entry-count gap is namespace modelling, not unread PE structure."
@@ -1507,6 +1508,9 @@
           "payloadBytes": 16,
           "decodedSubset": "2d-ldr-void-extent",
           "decodedAccess": true,
+          "decodedBlockModes": [],
+          "decodedEndpointModes": [],
+          "decodedEndpointRanges": [],
           "trailingBytes": 0
         },
         "features": [
@@ -1682,7 +1686,11 @@
           "contract": "common.view/video-media-source",
           "classification": "X3 богаче",
           "missing": [],
-          "extra": ["measurement:frameAccess", "measurement:seekable", "measurement:tracks"]
+          "extra": [
+            "measurement:frameAccess",
+            "measurement:seekable",
+            "measurement:tracks"
+          ]
         }
       ],
       "baseline": "X3 богаче",
@@ -1907,7 +1915,11 @@
             "contract": "common.view/video-media-source",
             "classification": "X3 богаче",
             "missing": [],
-            "extra": ["measurement:frameAccess", "measurement:seekable", "measurement:tracks"]
+            "extra": [
+              "measurement:frameAccess",
+              "measurement:seekable",
+              "measurement:tracks"
+            ]
           }
         ]
       }
@@ -1974,8 +1986,14 @@
       "x3": {
         "available": true,
         "formatId": "avif",
-        "declaredSources": ["common.view/byte-range-source", "common.view/tree-data-source"],
-        "actualSources": ["common.view/byte-range-source", "common.view/tree-data-source"],
+        "declaredSources": [
+          "common.view/byte-range-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/byte-range-source",
+          "common.view/tree-data-source"
+        ],
         "sourceFailures": [],
         "sources": [
           {
@@ -2194,8 +2212,14 @@
       "x3": {
         "available": true,
         "formatId": "basis",
-        "declaredSources": ["common.view/byte-range-source", "common.view/tree-data-source"],
-        "actualSources": ["common.view/byte-range-source", "common.view/tree-data-source"],
+        "declaredSources": [
+          "common.view/byte-range-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/byte-range-source",
+          "common.view/tree-data-source"
+        ],
         "sourceFailures": [],
         "sources": [
           {
@@ -2398,14 +2422,25 @@
       "baseline": "паритет",
       "canonical": {
         "formatId": "big",
-        "declaredSources": ["common.view/namespace-entry-source", "common.view/tree-data-source"],
-        "actualSources": ["common.view/namespace-entry-source", "common.view/tree-data-source"],
+        "declaredSources": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
         "sources": [
           {
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "entries": 2,
               "files": 2,
@@ -2462,7 +2497,12 @@
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "complete": true,
               "directories": 0,
@@ -2486,7 +2526,12 @@
             }
           }
         ],
-        "operations": ["asset.validate", "container.extract", "export.raw", "view.inspect"],
+        "operations": [
+          "asset.validate",
+          "container.extract",
+          "export.raw",
+          "view.inspect"
+        ],
         "geometryAccess": "unavailable",
         "metadata": {
           "version": "BIG4",
@@ -2556,7 +2601,10 @@
         }
       ],
       "declared": {
-        "canonical": ["common.view/namespace-entry-source", "common.view/tree-data-source"],
+        "canonical": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
         "x3": [
           "common.view/byte-range-source",
           "common.view/namespace-entry-source",
@@ -2569,7 +2617,12 @@
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "entries": 2,
               "files": 2,
@@ -2605,7 +2658,12 @@
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "complete": true,
               "directories": 0,
@@ -2697,14 +2755,25 @@
       "baseline": "паритет",
       "canonical": {
         "formatId": "big",
-        "declaredSources": ["common.view/namespace-entry-source", "common.view/tree-data-source"],
-        "actualSources": ["common.view/namespace-entry-source", "common.view/tree-data-source"],
+        "declaredSources": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
         "sources": [
           {
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "entries": 21,
               "files": 21,
@@ -2761,7 +2830,12 @@
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "complete": true,
               "directories": 0,
@@ -2785,7 +2859,12 @@
             }
           }
         ],
-        "operations": ["asset.validate", "container.extract", "export.raw", "view.inspect"],
+        "operations": [
+          "asset.validate",
+          "container.extract",
+          "export.raw",
+          "view.inspect"
+        ],
         "geometryAccess": "unavailable",
         "metadata": {
           "version": "BIG4",
@@ -2855,7 +2934,10 @@
         }
       ],
       "declared": {
-        "canonical": ["common.view/namespace-entry-source", "common.view/tree-data-source"],
+        "canonical": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
         "x3": [
           "common.view/byte-range-source",
           "common.view/namespace-entry-source",
@@ -2868,7 +2950,12 @@
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "entries": 21,
               "files": 21,
@@ -2904,7 +2991,12 @@
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "complete": true,
               "directories": 0,
@@ -3321,7 +3413,12 @@
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "complete": true,
               "directories": 0,
@@ -3345,7 +3442,12 @@
             }
           }
         ],
-        "operations": ["asset.validate", "container.extract", "export.raw", "view.inspect"],
+        "operations": [
+          "asset.validate",
+          "container.extract",
+          "export.raw",
+          "view.inspect"
+        ],
         "geometryAccess": "unavailable",
         "metadata": {
           "decodedBytes": 6,
@@ -3448,7 +3550,12 @@
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "complete": true,
               "directories": 0,
@@ -4278,14 +4385,25 @@
       "allowPoorerReason": "Block 8 M5: the staging map namespace cannot extract chunk bytes yet.",
       "canonical": {
         "formatId": "cnc3-map",
-        "declaredSources": ["common.view/namespace-entry-source", "common.view/tree-data-source"],
-        "actualSources": ["common.view/namespace-entry-source", "common.view/tree-data-source"],
+        "declaredSources": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
         "sources": [
           {
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "entries": 1,
               "files": 1,
@@ -4342,7 +4460,12 @@
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "complete": true,
               "directories": 0,
@@ -4366,7 +4489,12 @@
             }
           }
         ],
-        "operations": ["asset.validate", "container.extract", "export.raw", "view.inspect"],
+        "operations": [
+          "asset.validate",
+          "container.extract",
+          "export.raw",
+          "view.inspect"
+        ],
         "geometryAccess": "unavailable",
         "metadata": {
           "envelope": "EAR + RefPack",
@@ -4438,7 +4566,10 @@
         }
       ],
       "declared": {
-        "canonical": ["common.view/namespace-entry-source", "common.view/tree-data-source"],
+        "canonical": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
         "x3": [
           "common.view/byte-range-source",
           "common.view/namespace-entry-source",
@@ -4451,7 +4582,12 @@
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "entries": 1,
               "files": 1,
@@ -4487,7 +4623,12 @@
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "complete": true,
               "directories": 0,
@@ -5131,7 +5272,10 @@
         ],
         "operations": [],
         "geometryAccess": "decoded",
-        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
+        "features": [
+          "geometry:decoded",
+          "source:common.view/model-scene-source"
+        ],
         "summary": {
           "scenes": 1,
           "nodes": 0,
@@ -5950,7 +6094,10 @@
         ],
         "operations": [],
         "geometryAccess": "decoded",
-        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
+        "features": [
+          "geometry:decoded",
+          "source:common.view/model-scene-source"
+        ],
         "summary": {
           "scenes": 1,
           "nodes": 9,
@@ -6524,7 +6671,11 @@
           "contract": "common.view/audio-media-source",
           "classification": "X3 богаче",
           "missing": [],
-          "extra": ["measurement:pcmAccess", "measurement:seekable", "measurement:tracks"]
+          "extra": [
+            "measurement:pcmAccess",
+            "measurement:seekable",
+            "measurement:tracks"
+          ]
         }
       ],
       "baseline": "X3 богаче",
@@ -6748,7 +6899,11 @@
             "contract": "common.view/audio-media-source",
             "classification": "X3 богаче",
             "missing": [],
-            "extra": ["measurement:pcmAccess", "measurement:seekable", "measurement:tracks"]
+            "extra": [
+              "measurement:pcmAccess",
+              "measurement:seekable",
+              "measurement:tracks"
+            ]
           }
         ]
       }
@@ -7079,7 +7234,10 @@
         ],
         "operations": [],
         "geometryAccess": "decoded",
-        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
+        "features": [
+          "geometry:decoded",
+          "source:common.view/model-scene-source"
+        ],
         "summary": {
           "scenes": 1,
           "nodes": 1,
@@ -7419,7 +7577,10 @@
         ],
         "operations": [],
         "geometryAccess": "decoded",
-        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
+        "features": [
+          "geometry:decoded",
+          "source:common.view/model-scene-source"
+        ],
         "summary": {
           "scenes": 1,
           "nodes": 3,
@@ -7760,7 +7921,10 @@
         ],
         "operations": [],
         "geometryAccess": "decoded",
-        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
+        "features": [
+          "geometry:decoded",
+          "source:common.view/model-scene-source"
+        ],
         "summary": {
           "scenes": 1,
           "nodes": 1,
@@ -8152,7 +8316,12 @@
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "complete": true,
               "directories": 0,
@@ -8176,7 +8345,12 @@
             }
           }
         ],
-        "operations": ["asset.validate", "container.extract", "export.raw", "view.inspect"],
+        "operations": [
+          "asset.validate",
+          "container.extract",
+          "export.raw",
+          "view.inspect"
+        ],
         "geometryAccess": "unavailable",
         "metadata": {
           "originalName": null,
@@ -8284,7 +8458,12 @@
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "complete": true,
               "directories": 0,
@@ -8943,7 +9122,12 @@
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "complete": true,
               "directories": 0,
@@ -8967,7 +9151,12 @@
             }
           }
         ],
-        "operations": ["asset.validate", "container.extract", "export.raw", "view.inspect"],
+        "operations": [
+          "asset.validate",
+          "container.extract",
+          "export.raw",
+          "view.inspect"
+        ],
         "geometryAccess": "unavailable",
         "metadata": {
           "volumeIdentifier": "MODKITX",
@@ -9073,7 +9262,12 @@
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "complete": true,
               "directories": 0,
@@ -10019,7 +10213,10 @@
         ],
         "operations": [],
         "geometryAccess": "decoded",
-        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
+        "features": [
+          "geometry:decoded",
+          "source:common.view/model-scene-source"
+        ],
         "summary": {
           "scenes": 1,
           "nodes": 0,
@@ -10351,7 +10548,10 @@
         ],
         "operations": [],
         "geometryAccess": "decoded",
-        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
+        "features": [
+          "geometry:decoded",
+          "source:common.view/model-scene-source"
+        ],
         "summary": {
           "scenes": 1,
           "nodes": 0,
@@ -11208,7 +11408,11 @@
           "contract": "common.view/audio-media-source",
           "classification": "X3 богаче",
           "missing": [],
-          "extra": ["measurement:pcmAccess", "measurement:seekable", "measurement:tracks"]
+          "extra": [
+            "measurement:pcmAccess",
+            "measurement:seekable",
+            "measurement:tracks"
+          ]
         }
       ],
       "baseline": "X3 богаче",
@@ -11469,7 +11673,11 @@
             "contract": "common.view/audio-media-source",
             "classification": "X3 богаче",
             "missing": [],
-            "extra": ["measurement:pcmAccess", "measurement:seekable", "measurement:tracks"]
+            "extra": [
+              "measurement:pcmAccess",
+              "measurement:seekable",
+              "measurement:tracks"
+            ]
           }
         ]
       }
@@ -11510,7 +11718,11 @@
           "contract": "common.view/video-media-source",
           "classification": "X3 богаче",
           "missing": [],
-          "extra": ["measurement:frameAccess", "measurement:seekable", "measurement:tracks"]
+          "extra": [
+            "measurement:frameAccess",
+            "measurement:seekable",
+            "measurement:tracks"
+          ]
         }
       ],
       "baseline": "X3 богаче",
@@ -11766,7 +11978,11 @@
             "contract": "common.view/video-media-source",
             "classification": "X3 богаче",
             "missing": [],
-            "extra": ["measurement:frameAccess", "measurement:seekable", "measurement:tracks"]
+            "extra": [
+              "measurement:frameAccess",
+              "measurement:seekable",
+              "measurement:tracks"
+            ]
           }
         ]
       }
@@ -12098,7 +12314,10 @@
         ],
         "operations": [],
         "geometryAccess": "decoded",
-        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
+        "features": [
+          "geometry:decoded",
+          "source:common.view/model-scene-source"
+        ],
         "summary": {
           "scenes": 1,
           "nodes": 0,
@@ -13220,7 +13439,9 @@
         "sha256": "06896a5932703e281219453dba91f1d94369130d2deb3966195640a796867afa"
       },
       "classification": "X3 беднее",
-      "missing": ["common.view/audio-media-source:measurement:durationKnown=true"],
+      "missing": [
+        "common.view/audio-media-source:measurement:durationKnown=true"
+      ],
       "extra": [
         "common.view/audio-media-source:measurement:pcmAccess",
         "common.view/audio-media-source:measurement:seekable",
@@ -13240,7 +13461,11 @@
           "contract": "common.view/audio-media-source",
           "classification": "X3 беднее",
           "missing": ["measurement:durationKnown=true"],
-          "extra": ["measurement:pcmAccess", "measurement:seekable", "measurement:tracks"]
+          "extra": [
+            "measurement:pcmAccess",
+            "measurement:seekable",
+            "measurement:tracks"
+          ]
         }
       ],
       "baseline": "X3 беднее",
@@ -13474,7 +13699,9 @@
       },
       "comparison": {
         "classification": "X3 беднее",
-        "missing": ["common.view/audio-media-source:measurement:durationKnown=true"],
+        "missing": [
+          "common.view/audio-media-source:measurement:durationKnown=true"
+        ],
         "extra": [
           "common.view/audio-media-source:measurement:pcmAccess",
           "common.view/audio-media-source:measurement:seekable",
@@ -13494,7 +13721,11 @@
             "contract": "common.view/audio-media-source",
             "classification": "X3 беднее",
             "missing": ["measurement:durationKnown=true"],
-            "extra": ["measurement:pcmAccess", "measurement:seekable", "measurement:tracks"]
+            "extra": [
+              "measurement:pcmAccess",
+              "measurement:seekable",
+              "measurement:tracks"
+            ]
           }
         ]
       }
@@ -13530,7 +13761,11 @@
           "contract": "common.view/video-media-source",
           "classification": "X3 беднее",
           "missing": ["measurement:width:16<65537"],
-          "extra": ["measurement:frameAccess", "measurement:seekable", "measurement:tracks"]
+          "extra": [
+            "measurement:frameAccess",
+            "measurement:seekable",
+            "measurement:tracks"
+          ]
         }
       ],
       "baseline": "X3 беднее",
@@ -13740,7 +13975,9 @@
       },
       "comparison": {
         "classification": "X3 беднее",
-        "missing": ["common.view/video-media-source:measurement:width:16<65537"],
+        "missing": [
+          "common.view/video-media-source:measurement:width:16<65537"
+        ],
         "extra": [
           "common.view/video-media-source:measurement:frameAccess",
           "common.view/video-media-source:measurement:seekable",
@@ -13756,7 +13993,11 @@
             "contract": "common.view/video-media-source",
             "classification": "X3 беднее",
             "missing": ["measurement:width:16<65537"],
-            "extra": ["measurement:frameAccess", "measurement:seekable", "measurement:tracks"]
+            "extra": [
+              "measurement:frameAccess",
+              "measurement:seekable",
+              "measurement:tracks"
+            ]
           }
         ]
       }
@@ -14300,11 +14541,11 @@
       "classification": "X3 беднее",
       "missing": [
         "common.view/namespace-entry-source:measurement:entries:2<3",
-        "common.view/namespace-entry-source:measurement:extractedBytes:512<533",
         "common.view/namespace-entry-source:measurement:files:2<3"
       ],
       "extra": [
         "common.view/namespace-entry-source:measurement:directories",
+        "common.view/namespace-entry-source:measurement:extractedBytes:512>476",
         "common.view/namespace-entry-source:measurement:productReopenCompleted",
         "common.view/namespace-entry-source:product-reopen",
         "operation:asset.validate",
@@ -14318,13 +14559,10 @@
         {
           "contract": "common.view/namespace-entry-source",
           "classification": "X3 беднее",
-          "missing": [
-            "measurement:entries:2<3",
-            "measurement:extractedBytes:512<533",
-            "measurement:files:2<3"
-          ],
+          "missing": ["measurement:entries:2<3", "measurement:files:2<3"],
           "extra": [
             "measurement:directories",
+            "measurement:extractedBytes:512>476",
             "measurement:productReopenCompleted",
             "product-reopen"
           ]
@@ -14346,7 +14584,7 @@
               "entries": 3,
               "files": 3,
               "complete": true,
-              "extractedBytes": 533,
+              "extractedBytes": 476,
               "extractedNonEmpty": true
             }
           }
@@ -14381,7 +14619,12 @@
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "complete": true,
               "directories": 0,
@@ -14405,7 +14648,12 @@
             }
           }
         ],
-        "operations": ["asset.validate", "container.extract", "export.raw", "view.inspect"],
+        "operations": [
+          "asset.validate",
+          "container.extract",
+          "export.raw",
+          "view.inspect"
+        ],
         "geometryAccess": "unavailable",
         "metadata": {
           "kind": "PE32",
@@ -14472,7 +14720,7 @@
           "state": "not-observed",
           "verdict": "not-observed"
         },
-        { "plane": "payload-access", "state": "compared", "verdict": "poorer" },
+        { "plane": "payload-access", "state": "compared", "verdict": "richer" },
         {
           "plane": "protected-tail-preservation",
           "state": "not-observed",
@@ -14503,7 +14751,7 @@
               "entries": 3,
               "files": 3,
               "complete": true,
-              "extractedBytes": 533,
+              "extractedBytes": 476,
               "extractedNonEmpty": true
             }
           }
@@ -14520,7 +14768,12 @@
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "complete": true,
               "directories": 0,
@@ -14549,11 +14802,11 @@
         "classification": "X3 беднее",
         "missing": [
           "common.view/namespace-entry-source:measurement:entries:2<3",
-          "common.view/namespace-entry-source:measurement:extractedBytes:512<533",
           "common.view/namespace-entry-source:measurement:files:2<3"
         ],
         "extra": [
           "common.view/namespace-entry-source:measurement:directories",
+          "common.view/namespace-entry-source:measurement:extractedBytes:512>476",
           "common.view/namespace-entry-source:measurement:productReopenCompleted",
           "common.view/namespace-entry-source:product-reopen",
           "operation:asset.validate",
@@ -14567,13 +14820,10 @@
           {
             "contract": "common.view/namespace-entry-source",
             "classification": "X3 беднее",
-            "missing": [
-              "measurement:entries:2<3",
-              "measurement:extractedBytes:512<533",
-              "measurement:files:2<3"
-            ],
+            "missing": ["measurement:entries:2<3", "measurement:files:2<3"],
             "extra": [
               "measurement:directories",
+              "measurement:extractedBytes:512>476",
               "measurement:productReopenCompleted",
               "product-reopen"
             ]
@@ -14903,7 +15153,10 @@
         ],
         "operations": [],
         "geometryAccess": "decoded",
-        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
+        "features": [
+          "geometry:decoded",
+          "source:common.view/model-scene-source"
+        ],
         "summary": {
           "scenes": 1,
           "nodes": 0,
@@ -15228,7 +15481,12 @@
             }
           }
         ],
-        "operations": ["asset.validate", "edit.field", "export.raw", "view.inspect"],
+        "operations": [
+          "asset.validate",
+          "edit.field",
+          "export.raw",
+          "view.inspect"
+        ],
         "geometryAccess": "unavailable",
         "metadata": {
           "width": 1,
@@ -15473,7 +15731,12 @@
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "complete": true,
               "directories": 0,
@@ -15497,7 +15760,12 @@
             }
           }
         ],
-        "operations": ["asset.validate", "container.extract", "export.raw", "view.inspect"],
+        "operations": [
+          "asset.validate",
+          "container.extract",
+          "export.raw",
+          "view.inspect"
+        ],
         "geometryAccess": "unavailable",
         "metadata": {
           "companion": "minimal.bin",
@@ -15606,7 +15874,12 @@
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "complete": true,
               "directories": 0,
@@ -16000,7 +16273,10 @@
         ],
         "operations": [],
         "geometryAccess": "decoded",
-        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
+        "features": [
+          "geometry:decoded",
+          "source:common.view/model-scene-source"
+        ],
         "summary": {
           "scenes": 1,
           "nodes": 0,
@@ -16278,7 +16554,10 @@
         ],
         "operations": [],
         "geometryAccess": "decoded",
-        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
+        "features": [
+          "geometry:decoded",
+          "source:common.view/model-scene-source"
+        ],
         "summary": {
           "scenes": 1,
           "nodes": 0,
@@ -16558,8 +16837,14 @@
       "baseline": "паритет",
       "canonical": {
         "formatId": "sage-skudef",
-        "declaredSources": ["common.view/namespace-entry-source", "common.view/tree-data-source"],
-        "actualSources": ["common.view/namespace-entry-source", "common.view/tree-data-source"],
+        "declaredSources": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
         "sources": [
           {
             "contract": "common.view/namespace-entry-source",
@@ -16707,7 +16992,10 @@
         }
       ],
       "declared": {
-        "canonical": ["common.view/namespace-entry-source", "common.view/tree-data-source"],
+        "canonical": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
         "x3": [
           "common.view/byte-range-source",
           "common.view/namespace-entry-source",
@@ -16863,7 +17151,10 @@
         ],
         "operations": [],
         "geometryAccess": "decoded",
-        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
+        "features": [
+          "geometry:decoded",
+          "source:common.view/model-scene-source"
+        ],
         "summary": {
           "scenes": 1,
           "nodes": 0,
@@ -17167,7 +17458,10 @@
         ],
         "operations": [],
         "geometryAccess": "decoded",
-        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
+        "features": [
+          "geometry:decoded",
+          "source:common.view/model-scene-source"
+        ],
         "summary": {
           "scenes": 1,
           "nodes": 0,
@@ -17698,7 +17992,10 @@
         ],
         "operations": [],
         "geometryAccess": "decoded",
-        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
+        "features": [
+          "geometry:decoded",
+          "source:common.view/model-scene-source"
+        ],
         "summary": {
           "scenes": 1,
           "nodes": 0,
@@ -18313,7 +18610,12 @@
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "complete": true,
               "directories": 0,
@@ -18337,7 +18639,12 @@
             }
           }
         ],
-        "operations": ["asset.validate", "container.extract", "export.raw", "view.inspect"],
+        "operations": [
+          "asset.validate",
+          "container.extract",
+          "export.raw",
+          "view.inspect"
+        ],
         "geometryAccess": "unavailable",
         "metadata": {
           "entries": 1,
@@ -18441,7 +18748,12 @@
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "complete": true,
               "directories": 0,
@@ -19128,7 +19440,12 @@
             }
           }
         ],
-        "operations": ["asset.search", "asset.validate", "export.raw", "view.inspect"],
+        "operations": [
+          "asset.search",
+          "asset.validate",
+          "export.raw",
+          "view.inspect"
+        ],
         "geometryAccess": "unavailable",
         "metadata": {
           "format": "txt",
@@ -19341,7 +19658,10 @@
         ],
         "operations": [],
         "geometryAccess": "decoded",
-        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
+        "features": [
+          "geometry:decoded",
+          "source:common.view/model-scene-source"
+        ],
         "summary": {
           "scenes": 1,
           "nodes": 1,
@@ -19636,7 +19956,10 @@
         ],
         "operations": [],
         "geometryAccess": "decoded",
-        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
+        "features": [
+          "geometry:decoded",
+          "source:common.view/model-scene-source"
+        ],
         "summary": {
           "scenes": 1,
           "nodes": 0,
@@ -19920,7 +20243,11 @@
           "contract": "common.view/audio-media-source",
           "classification": "X3 богаче",
           "missing": [],
-          "extra": ["measurement:pcmAccess", "measurement:seekable", "measurement:tracks"]
+          "extra": [
+            "measurement:pcmAccess",
+            "measurement:seekable",
+            "measurement:tracks"
+          ]
         }
       ],
       "baseline": "X3 богаче",
@@ -20146,7 +20473,11 @@
             "contract": "common.view/audio-media-source",
             "classification": "X3 богаче",
             "missing": [],
-            "extra": ["measurement:pcmAccess", "measurement:seekable", "measurement:tracks"]
+            "extra": [
+              "measurement:pcmAccess",
+              "measurement:seekable",
+              "measurement:tracks"
+            ]
           }
         ]
       }
@@ -20187,7 +20518,11 @@
           "contract": "common.view/video-media-source",
           "classification": "X3 богаче",
           "missing": [],
-          "extra": ["measurement:frameAccess", "measurement:seekable", "measurement:tracks"]
+          "extra": [
+            "measurement:frameAccess",
+            "measurement:seekable",
+            "measurement:tracks"
+          ]
         }
       ],
       "baseline": "X3 богаче",
@@ -20424,7 +20759,11 @@
             "contract": "common.view/video-media-source",
             "classification": "X3 богаче",
             "missing": [],
-            "extra": ["measurement:frameAccess", "measurement:seekable", "measurement:tracks"]
+            "extra": [
+              "measurement:frameAccess",
+              "measurement:seekable",
+              "measurement:tracks"
+            ]
           }
         ]
       }
@@ -20751,7 +21090,10 @@
         ],
         "operations": [],
         "geometryAccess": "decoded",
-        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
+        "features": [
+          "geometry:decoded",
+          "source:common.view/model-scene-source"
+        ],
         "summary": {
           "scenes": 1,
           "nodes": 0,
@@ -21055,7 +21397,10 @@
         ],
         "operations": [],
         "geometryAccess": "decoded",
-        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
+        "features": [
+          "geometry:decoded",
+          "source:common.view/model-scene-source"
+        ],
         "summary": {
           "scenes": 1,
           "nodes": 0,
@@ -21393,7 +21738,10 @@
         ],
         "operations": [],
         "geometryAccess": "decoded",
-        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
+        "features": [
+          "geometry:decoded",
+          "source:common.view/model-scene-source"
+        ],
         "summary": {
           "scenes": 1,
           "nodes": 0,
@@ -22196,14 +22544,25 @@
       "baseline": "паритет",
       "canonical": {
         "formatId": "zip",
-        "declaredSources": ["common.view/namespace-entry-source", "common.view/tree-data-source"],
-        "actualSources": ["common.view/namespace-entry-source", "common.view/tree-data-source"],
+        "declaredSources": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
         "sources": [
           {
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "entries": 1,
               "files": 1,
@@ -22260,7 +22619,12 @@
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "complete": true,
               "directories": 0,
@@ -22363,7 +22727,10 @@
         }
       ],
       "declared": {
-        "canonical": ["common.view/namespace-entry-source", "common.view/tree-data-source"],
+        "canonical": [
+          "common.view/namespace-entry-source",
+          "common.view/tree-data-source"
+        ],
         "x3": [
           "common.view/byte-range-source",
           "common.view/namespace-entry-source",
@@ -22376,7 +22743,12 @@
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "entries": 1,
               "files": 1,
@@ -22412,7 +22784,12 @@
             "contract": "common.view/namespace-entry-source",
             "major": 1,
             "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
+            "features": [
+              "extract-bytes",
+              "list",
+              "open-entry",
+              "product-reopen"
+            ],
             "measurements": {
               "complete": true,
               "directories": 0,

@@ -230,7 +230,7 @@ planes:
       - 'materialize'
     plannedBlock: 12
     knownLoss:
-      - 'ASTC/AVIF/KTX2/PKM/Basis публикуют заголовки, а не декодированные пиксели — 17 честных poorer-строк паритета'
+      - 'ASTC частично публикует декодированные 2D LDR-пиксели, PKM — ETC1/ETC2 и unsigned EAC_R11/RG11; AVIF/AV1, Basis ETC1S/UASTC, KTX2-supercompressed, непроверенные ASTC modes и signed EAC остаются названным остатком'
       - 'UVT-материализация заявлена слайсом 12-1 ровно для одного пути: несжатый 8-битный RGBA из декодированного региона, один уровень, одна грань, без массива; всё сверх этого перечислено в MaterializationReceipt'
       - 'passthrough блочных форматов (DDS BC) не заявлен: ни один ридер не публикует GPU-блоки как блоки, поэтому путь ждёт строку block9/decoded-gpu-texture-payloads'
       - 'writer доказан для PNG (пиксели) и для метаданных JPEG/MP3; UVT-writer — export-only с roundTrip lossy; остальные media-writers не заявлены'

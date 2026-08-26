@@ -7,6 +7,10 @@ const moduleUrl = pathToFileURL(resolve(request.canonicalRoot, request.canonical
 const imported =
   request.canonicalAdapter === 'manifest-metadata-only' ? {} : await import(moduleUrl)
 const bytes = new Uint8Array(await readFile(request.file))
+// The PE archive synthesises summary text containing its label. Give that one adapter the stable
+// corpus label so extracted-byte measurements do not depend on a checkout name. Other codecs keep
+// the physical path because companion-aware readers (notably CUE/BIN) resolve siblings from it.
+const subjectPath = request.format === 'pe' ? (request.publishedFile ?? request.file) : request.file
 
 function source(contract, features, measurements) {
   return {
@@ -70,7 +74,7 @@ async function modelResult() {
   const codec = request.canonicalFactory === true ? candidate() : candidate
   if (typeof codec?.parse !== 'function')
     throw new TypeError('canonical model codec has no parse()')
-  const model = await codec.parse(bytes, request.file)
+  const model = await codec.parse(bytes, subjectPath)
   const primitiveCount = Array.isArray(model.meshes)
     ? model.meshes.reduce((total, mesh) => total + (mesh?.positions?.length > 0 ? 1 : 0), 0)
     : 0
@@ -159,7 +163,7 @@ function zipResult() {
 
 async function bigResult() {
   const archive = imported.parseBigArchive(bytes)
-  const reader = await imported.default.open(bytes, request.file)
+  const reader = await imported.default.open(bytes, subjectPath)
   const extracted =
     archive.entries[0] === undefined ? new Uint8Array() : await reader.get(archive.entries[0].name)
   return result('big', [
@@ -307,11 +311,11 @@ async function rasterResult() {
     throw new TypeError('canonical image codec exposes neither describe() nor decode()')
   }
   const described =
-    typeof codec.describe === 'function' ? await codec.describe(bytes, request.file) : undefined
+    typeof codec.describe === 'function' ? await codec.describe(bytes, subjectPath) : undefined
   let decoded
   if (typeof codec.decode === 'function') {
     try {
-      decoded = await codec.decode(bytes, request.file)
+      decoded = await codec.decode(bytes, subjectPath)
     } catch {
       decoded = undefined
     }
@@ -332,7 +336,7 @@ async function vectorResult() {
   if (typeof codec.describe !== 'function') {
     throw new TypeError('canonical vector codec exposes no describe()')
   }
-  const described = await codec.describe(bytes, request.file)
+  const described = await codec.describe(bytes, subjectPath)
   const measurements = {}
   optionalNumber(measurements, 'width', described.width)
   optionalNumber(measurements, 'height', described.height)
@@ -347,7 +351,7 @@ async function archiveResult() {
   if (typeof codec.open !== 'function') {
     throw new TypeError('canonical archive codec exposes no open()')
   }
-  const reader = await codec.open(bytes, request.file)
+  const reader = await codec.open(bytes, subjectPath)
   try {
     const entries = await reader.list('')
     const first = entries[0]
@@ -372,7 +376,7 @@ async function audioResult() {
   if (typeof codec.describe !== 'function') {
     throw new TypeError('canonical audio codec exposes no describe()')
   }
-  const described = await codec.describe(bytes, request.file)
+  const described = await codec.describe(bytes, subjectPath)
   const measurements = {
     durationKnown: typeof described.durationSec === 'number',
     encodedNonEmpty: bytes.length > 0,
@@ -390,7 +394,7 @@ async function videoResult() {
   if (typeof codec.describe !== 'function') {
     throw new TypeError('canonical video codec exposes no describe()')
   }
-  const described = await codec.describe(bytes, request.file)
+  const described = await codec.describe(bytes, subjectPath)
   const measurements = {
     durationKnown: typeof described.durationSec === 'number',
     encodedNonEmpty: bytes.length > 0,

@@ -905,11 +905,11 @@ capabilities:
       operations:
         inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
-        read: 'extensions/common/images/test/astc-void-extent.test.ts'
+        read: 'extensions/common/images/test/astc-ordinary-ldr.test.ts'
         materialize: null
     knownLoss:
-      - 'СУЖЕННЫЙ SCOPE (§0.2): PKM декодирует ETC1_RGB и семейство ETC2 RGB; ASTC декодирует строго 2D LDR void-extent; ANI через общий ICO/CUR DIB-путь декодирует первый кадр с AND-маской. Все три публикуют raster-image-source под maxScalarBytes и имеют operation-level доказательства.'
-      - 'НАЗВАННЫЙ ОСТАТОК: обычные ASTC block modes (trits/quints, dual-plane, HDR и 3D), AVIF/AV1, Basis ETC1S/UASTC, EAC_R11/RG11 и KTX2-supercompressed. В доступном KTX2-корпусе UASTC имеет supercompressionScheme=0, ETC1S — BasisLZ; законной Zstd-фикстуры и готового decoder seam нет.'
+      - 'СУЖЕННЫЙ SCOPE (§0.2): PKM декодирует ETC1/ETC2 и unsigned EAC_R11/RG11; ASTC декодирует 2D LDR void-extent и пять независимо закреплённых single-partition block modes 0x42/0x163/0x243/0x452/0x7cd (binary/trit/quint, infill, single/dual plane); ANI через общий ICO/CUR DIB-путь декодирует первый кадр с AND-маской. Все три публикуют raster-image-source под maxScalarBytes и имеют operation-level доказательства.'
+      - 'НАЗВАННЫЙ ОСТАТОК: все непроверенные ASTC block modes, multi-partition/HDR/3D, signed EAC_R11/RG11 без согласованного signed raster-view, AVIF/AV1, Basis ETC1S/UASTC и KTX2-supercompressed. В доступном KTX2-корпусе UASTC имеет supercompressionScheme=0, ETC1S — BasisLZ; законной Zstd-фикстуры и готового decoder seam нет.'
     receipts:
       projection: null
       materialization: null
@@ -919,7 +919,9 @@ capabilities:
       commits: []
       tests:
         - 'extensions/common/images/test/ani-raster-decode.test.ts'
+        - 'extensions/common/images/test/astc-ordinary-ldr.test.ts'
         - 'extensions/common/images/test/astc-void-extent.test.ts'
+        - 'extensions/common/images/test/eac-r11-decode.test.ts'
         - 'packages/testkit/test/mk2-image-codecs.test.ts'
         - 'packages/testkit/test/pkm-etc-decode.test.ts'
       reports:
@@ -2616,12 +2618,12 @@ capabilities:
       nativeExport: 'none'
       operations:
         inspect: 'scripts/test/parity-coverage.test.ts'
-        validate: null
-        read: 'extensions/common/images/test/astc-void-extent.test.ts'
+        validate: 'extensions/common/images/test/astc-ordinary-ldr.test.ts'
+        read: 'extensions/common/images/test/astc-ordinary-ldr.test.ts'
         materialize: null
     knownLoss:
       - 'operation dropped at port: image.compressed-read'
-      - 'декодируется только 2D LDR void-extent; обычные LDR/HDR block modes, trits/quints, dual-plane и 3D честно остаются compressed-only'
+      - 'декодируются 2D LDR void-extent и пять независимо закреплённых single-partition block modes 0x42/0x163/0x243/0x452/0x7cd; все непроверенные block modes, multi-partition, HDR и 3D честно остаются compressed-only'
     receipts:
       projection: null
       materialization: null
@@ -2630,6 +2632,7 @@ capabilities:
     closedBy:
       commits: []
       tests:
+        - 'extensions/common/images/test/astc-ordinary-ldr.test.ts'
         - 'extensions/common/images/test/astc-void-extent.test.ts'
       reports: []
   - capabilityId: 'format/avi/open-inspect'
@@ -8665,12 +8668,12 @@ capabilities:
       nativeExport: 'none'
       operations:
         inspect: 'scripts/test/parity-coverage.test.ts'
-        validate: null
-        read: 'packages/testkit/test/pkm-etc-decode.test.ts'
+        validate: 'extensions/common/images/test/eac-r11-decode.test.ts'
+        read: 'extensions/common/images/test/eac-r11-decode.test.ts'
         materialize: null
     knownLoss:
       - 'operation dropped at port: image.compressed-read'
-      - 'ETC1_RGB и ETC2 RGB/RGBA/A1 декодируются; EAC_R11/RG11 остаются compressed-only, потому что это иной channel layout без объявленного RGBA mapping'
+      - 'ETC1_RGB, ETC2 RGB/RGBA/A1 и unsigned EAC_R11/RG11 декодируются; signed EAC остаётся compressed-only до согласования signed raster-view'
     receipts:
       projection: null
       materialization: null
@@ -8679,6 +8682,7 @@ capabilities:
     closedBy:
       commits: []
       tests:
+        - 'extensions/common/images/test/eac-r11-decode.test.ts'
         - 'packages/testkit/test/pkm-etc-decode.test.ts'
       reports: []
   - capabilityId: 'format/ply/open-inspect'

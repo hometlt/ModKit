@@ -474,7 +474,7 @@ async function resolveSample(sample, temporaryRoot) {
   }
 }
 
-function runCanonicalProbe(sample, file) {
+function runCanonicalProbe(sample, file, publishedFile) {
   const windowsPnpm =
     process.platform === 'win32'
       ? resolve(
@@ -488,6 +488,7 @@ function runCanonicalProbe(sample, file) {
     JSON.stringify({
       ...sample,
       file,
+      publishedFile,
       canonicalRoot,
     }),
   ).toString('base64url')
@@ -679,7 +680,7 @@ async function evaluateSample(sample, temporaryRoot) {
   }
   try {
     const [canonical, x3] = await Promise.all([
-      runCanonicalProbe(sample, resolved.path),
+      runCanonicalProbe(sample, resolved.path, resolved.provenance.relativePath),
       probeX3(sample, resolved.path, temporaryRoot),
     ])
     if (
