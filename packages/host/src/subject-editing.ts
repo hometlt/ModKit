@@ -40,12 +40,12 @@ import {
   type HostCommitCoordinatorOptions,
   type ManagedEditSession,
 } from './editing.js'
-import type { OpenedSubject } from './subject-open.js'
+import type { OpenedSubject, UnresolvedSubject } from './subject-open.js'
 
 function unsupported(kind: string): ModkitError {
   return new ModkitError({
     code: 'x3.host/edit-topology-unsupported',
-    message: `editing a «${kind}» subject is not supported yet (single-source subjects only)`,
+    message: `editing a «${kind}» subject is not supported yet (single-source and namespace subjects only)`,
     context: { kind },
   })
 }
@@ -53,9 +53,31 @@ function unsupported(kind: string): ModkitError {
 /**
  * The subject's composite revision as 13D sees it, derived from the descriptor's origin with
  * subject-open's fingerprint rule (`{topology, bindingId, source, revision}` canonical JSON).
+ *
+ * Two topologies answer, and the difference between them is the whole point of the namespace case.
+ * A `single` subject is one artifact: it can be replaced, and its revision is that artifact's. A
+ * `namespace` subject is a directory of artifacts: it can gain and lose entries, so its revision is
+ * the namespace's own, carried in `namespaceRevision` — the field the commit coordinator requires
+ * before it will accept a `create`, `delete` or `rename`. Slice 12-2 pinned the absence of this
+ * branch as the reason a writer could not export a new artifact through the durable-write seam at
+ * all; this is that hole closed, and it needed no ABI change, because `topology: 'namespace'`
+ * already carries exactly the field the rule asks for.
  */
 export function assetRevisionFromDescriptor(descriptor: AnyDescriptor): AssetRevision {
   const origin = descriptor.origin
+  if (origin.kind === 'namespace') {
+    // one binding, and it is the namespace itself: the file backend edits single-binding subjects,
+    // and a directory is exactly one thing to pin
+    return Object.freeze({
+      bindings: Object.freeze({ [origin.root.id]: origin.revision }),
+      namespaceRevision: origin.revision,
+      compositionFingerprint: canonicalJsonStringify({
+        topology: 'namespace',
+        root: { id: origin.root.id, uri: origin.root.uri },
+        revision: origin.revision,
+      }),
+    })
+  }
   if (origin.kind !== 'single') throw unsupported(origin.kind)
   const binding = origin.binding
   return Object.freeze({
@@ -74,8 +96,19 @@ export function subjectEditTargetsFromDescriptor(
   descriptor: AnyDescriptor,
 ): readonly SubjectEditTarget[] {
   const origin = descriptor.origin
-  if (origin.kind !== 'single') throw unsupported(origin.kind)
   const revision = assetRevisionFromDescriptor(descriptor)
+  if (origin.kind === 'namespace') {
+    return Object.freeze([
+      Object.freeze({
+        targetId: origin.root.id,
+        subjectUri: descriptor.subjectUri,
+        ownerSource: Object.freeze({ id: origin.root.id, uri: origin.root.uri }),
+        semanticPath: Object.freeze([]),
+        expectedRevision: revision,
+      }),
+    ])
+  }
+  if (origin.kind !== 'single') throw unsupported(origin.kind)
   return Object.freeze([
     Object.freeze({
       targetId: origin.binding.id,
@@ -98,7 +131,16 @@ export const NO_STAGED_PAYLOADS: PayloadStore = Object.freeze({
 })
 
 export interface SubjectEditingOptions {
-  readonly opened: OpenedSubject
+  /**
+   * The subject being edited — or, for a namespace target, merely *identified*.
+   *
+   * Only the descriptor is read here, and an unresolved subject carries one. That is not a
+   * loophole but the point: a directory no codec claims is still a perfectly good namespace to
+   * create an artifact in, and requiring a codec to have interpreted it first would mean an export
+   * could only write next to file types the host already understands. Editing the *bytes* of a
+   * subject still needs a writer, which needs a session; creating an entry beside them does not.
+   */
+  readonly opened: OpenedSubject | UnresolvedSubject
   /** The grant the subject was opened under; commit needs `write-source` in it. */
   readonly grant: PermissionGrant
   readonly backendFor: (sourceId: string) => EditingBackend | undefined

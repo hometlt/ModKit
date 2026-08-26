@@ -389,3 +389,28 @@ export class FileVfsProvider implements VfsProvider {
 export function createFileVfsProvider(options: FileVfsProviderOptions = {}): FileVfsProvider {
   return new FileVfsProvider(options)
 }
+
+/**
+ * The revision token this provider mints for a path, for anyone who must agree with it.
+ *
+ * A namespace subject's revision comes from a mount, and whoever later re-reads that revision to
+ * check for a conflict has to compute it *the same way* — otherwise the check compares two
+ * spellings of the same state and reports a conflict that never happened. Block 12 slice 12-3 hit
+ * exactly that: the host's file editing backend read `stat(..., { bigint: true })` while this
+ * provider reads plain `stat`, and on Windows, where inode indices exceed 2^53, the two disagreed
+ * on every directory. Exporting the minting function makes the agreement structural instead of a
+ * formula copied into a second file and left to drift.
+ *
+ * Note for whoever owns precision here: `snapshotOf` loses bits by design of the plain `stat` path
+ * (`ino` through `Number`, `mtimeNs` through `mtimeMs * 1e6`). Two genuinely different states can
+ * therefore share a token, which understates conflicts. Widening it is a separate change — it
+ * moves every mount revision string — and is deliberately not done here.
+ */
+export async function fileSystemRevisionToken(path: string): Promise<string> {
+  try {
+    return fileRevision(snapshotOf(await stat(path)))
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return 'provider-token:absent'
+    throw error
+  }
+}

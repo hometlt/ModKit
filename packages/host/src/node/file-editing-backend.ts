@@ -36,6 +36,7 @@ import { tmpdir } from 'node:os'
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { canonicalJsonStringify, throwIfAborted } from '@modkitx-x3/core'
+import { fileSystemRevisionToken } from '@modkitx-x3/vfs/providers/file'
 import {
   revisionId,
   type AssetRevision,
@@ -121,6 +122,25 @@ async function liveRevisionToken(path: string): Promise<string> {
   }
 }
 
+/**
+ * The live token of the *directory* an edit creates into, read rather than remembered.
+ *
+ * This is the half that makes a namespace target's optimistic check real. Every `namespaceRevision`
+ * in this backend used to be copied through from the plan's expected revision, so comparing live
+ * against expected compared a value with itself and could never disagree. A directory's own
+ * `dev-ino-size-mtimeNs` does change when an entry is created or removed, so observing it here is
+ * what turns "two writers race to create the same name" into a detected conflict instead of a
+ * silent last-writer-wins.
+ *
+ * It delegates to the VFS file provider on purpose. A namespace revision is *minted* by the mount
+ * the subject was opened from, so the check has to speak that mint's exact dialect; this backend's
+ * own `revisionTokenOf` reads `stat` with bigints and disagreed with the provider's plain-`stat`
+ * form on every Windows directory, turning each commit into a phantom conflict.
+ */
+async function liveNamespaceToken(path: string): Promise<string> {
+  return fileSystemRevisionToken(path)
+}
+
 /** The single-binding revision vector this backend reports (subject-open's fingerprint rule). */
 function revisionFor(
   bindingId: string,
@@ -139,6 +159,36 @@ function revisionFor(
       revision,
     }),
   })
+}
+
+/**
+ * The revision vector a *namespace* target reports, matching `subjectEditTargetsFromDescriptor`.
+ *
+ * The shape has to agree exactly: `sameRevision` compares whole canonical JSON, fingerprint
+ * included, so a namespace target whose live vector claimed `topology: 'single'` would never match
+ * the plan and every commit would look like a lost conditional write.
+ */
+function namespaceRevisionFor(source: AssetSourceRef, token: string): AssetRevision {
+  const revision = revisionId(token)
+  return Object.freeze({
+    bindings: Object.freeze({ [source.id]: revision }),
+    namespaceRevision: revision,
+    compositionFingerprint: canonicalJsonStringify({
+      topology: 'namespace',
+      root: { id: source.id, uri: source.uri },
+      revision,
+    }),
+  })
+}
+
+/** Does this path name a directory? The discriminator between a file target and a namespace one. */
+async function isDirectory(path: string): Promise<boolean> {
+  try {
+    return (await stat(path)).isDirectory()
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false
+    throw error
+  }
 }
 
 function bindingIdOf(expected: AssetRevision): string {
@@ -236,6 +286,9 @@ export function createFileEditingBackend(
     async currentRevision(target: SubjectEditTarget, signal?: AbortSignal): Promise<AssetRevision> {
       throwIfAborted(signal)
       const path = confine(filePathOf(target.ownerSource))
+      if (await isDirectory(path)) {
+        return namespaceRevisionFor(target.ownerSource, await liveNamespaceToken(path))
+      }
       const bindingId = bindingIdOf(target.expectedRevision)
       return revisionFor(
         bindingId,
@@ -249,13 +302,18 @@ export function createFileEditingBackend(
       const { signal } = applyOptions
       throwIfAborted(signal)
       const path = targetOf(edit)
+      // a directory target is a namespace: its revision is the directory's own, read now
+      const namespaceDirectory = (await isDirectory(path)) ? path : undefined
       const bindingId = bindingIdOf(applyOptions.expectedRevision)
-      const live = revisionFor(
-        bindingId,
-        edit.source,
-        await liveRevisionToken(path),
-        applyOptions.expectedRevision.namespaceRevision,
-      )
+      const live =
+        namespaceDirectory === undefined
+          ? revisionFor(
+              bindingId,
+              edit.source,
+              await liveRevisionToken(path),
+              applyOptions.expectedRevision.namespaceRevision,
+            )
+          : namespaceRevisionFor(edit.source, await liveNamespaceToken(namespaceDirectory))
       if (!sameRevision(live, applyOptions.expectedRevision)) {
         throw editingError(
           'x3.host/edit-conditional-write-lost',
@@ -280,8 +338,17 @@ export function createFileEditingBackend(
           break
         }
         case 'create': {
+          /*
+           * A create resolves against the namespace it names, and the two targets name it
+           * differently: a file target means "beside me", a directory target means "inside me".
+           * Using `dirname` unconditionally would put a namespace target's new entries one level
+           * above the directory the plan pinned — outside the very namespace whose revision was
+           * checked, which is both wrong and unguarded by the conflict check.
+           */
           const created = confine(
-            isAbsolute(edit.newPath) ? edit.newPath : join(dirname(path), edit.newPath),
+            isAbsolute(edit.newPath)
+              ? edit.newPath
+              : join(namespaceDirectory ?? dirname(path), edit.newPath),
           )
           const bytes = await payloadBytes(
             edit.payload,
@@ -294,11 +361,16 @@ export function createFileEditingBackend(
           list.push({ kind: 'absent', path: created })
           await writeFile(created, bytes, { flag: 'wx' })
           return {
-            after: revisionFor(
-              bindingId,
-              { id: pathToFileURL(created).href, uri: pathToFileURL(created).href },
-              await liveRevisionToken(created),
-            ),
+            after:
+              namespaceDirectory === undefined
+                ? revisionFor(
+                    bindingId,
+                    { id: pathToFileURL(created).href, uri: pathToFileURL(created).href },
+                    await liveRevisionToken(created),
+                  )
+                : // the namespace moved, so the vector that follows is the namespace's new one —
+                  // a second create in the same plan is checked against it, not against a stale copy
+                  namespaceRevisionFor(edit.source, await liveNamespaceToken(namespaceDirectory)),
           }
         }
         case 'delete': {
@@ -324,12 +396,15 @@ export function createFileEditingBackend(
         }
       }
       return {
-        after: revisionFor(
-          bindingId,
-          edit.source,
-          await liveRevisionToken(path),
-          applyOptions.expectedRevision.namespaceRevision,
-        ),
+        after:
+          namespaceDirectory === undefined
+            ? revisionFor(
+                bindingId,
+                edit.source,
+                await liveRevisionToken(path),
+                applyOptions.expectedRevision.namespaceRevision,
+              )
+            : namespaceRevisionFor(edit.source, await liveNamespaceToken(namespaceDirectory)),
       }
     },
 
@@ -347,6 +422,9 @@ export function createFileEditingBackend(
       const list = preImages.get(transactionId) ?? []
       // restore latest first, only the pre-images this edit's source touched
       const path = targetOf(edit)
+      // the same "beside me / inside me" rule as apply: rolling back a namespace create must
+      // recognise the entry it actually wrote, or the created file survives the rollback
+      const namespaceDirectory = (await isDirectory(path)) ? path : undefined
       for (let index = list.length - 1; index >= 0; index -= 1) {
         const image = list[index]
         if (image === undefined) continue
@@ -355,7 +433,11 @@ export function createFileEditingBackend(
           (edit.operation !== 'replace' &&
             edit.operation !== 'delete' &&
             resolve(image.path) ===
-              confine(isAbsolute(edit.newPath) ? edit.newPath : join(dirname(path), edit.newPath)))
+              confine(
+                isAbsolute(edit.newPath)
+                  ? edit.newPath
+                  : join(namespaceDirectory ?? dirname(path), edit.newPath),
+              ))
         if (!related) continue
         if (image.kind === 'file' && image.staged !== undefined) {
           await copyFile(image.staged, image.path)
@@ -365,12 +447,14 @@ export function createFileEditingBackend(
         list.splice(index, 1)
       }
       const bindingId = bindingIdOf(before)
-      return revisionFor(
-        bindingId,
-        edit.source,
-        await liveRevisionToken(path),
-        before.namespaceRevision,
-      )
+      return namespaceDirectory === undefined
+        ? revisionFor(
+            bindingId,
+            edit.source,
+            await liveRevisionToken(path),
+            before.namespaceRevision,
+          )
+        : namespaceRevisionFor(edit.source, await liveNamespaceToken(namespaceDirectory))
     },
 
     async dispose() {
