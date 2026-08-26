@@ -252,7 +252,8 @@ describe('13C packed external viewer in the real browser host (C-18a)', () => {
         }
       })
       expect(initial).toEqual({
-        eligibility: { eligible: true, missing: [] },
+        // the packed stage declares no optional facets, so nothing beyond the required source binds
+        eligibility: { eligible: true, missing: [], optionalBound: [] },
         activeStage: 'packed-stage',
       })
       await page.getByRole('button', { name: 'Next page' }).click()

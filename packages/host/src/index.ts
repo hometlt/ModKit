@@ -218,6 +218,7 @@ export {
   type PresentationResolverOptions,
   type PresentationValidatorOptions,
   type ViewerApplicabilityFacts,
+  type ViewerApplicabilityResult,
   type ViewerContributionEligibility,
 } from './presentation.js'
 export {

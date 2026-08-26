@@ -31,6 +31,18 @@ export interface ViewerApplicabilityFacts {
   readonly longestLineBytes?: number | 'unknown'
 }
 
+/**
+ * The result of evaluating *applicability rules* alone — interpretation, size, line length.
+ *
+ * Deliberately narrower than `ViewerContributionEligibility`: these rules are about the subject's
+ * shape, not about what it publishes, so this evaluator has nothing to say about data sources and
+ * does not pretend to by carrying an always-empty list.
+ */
+export interface ViewerApplicabilityResult {
+  readonly eligible: boolean
+  readonly missing: readonly string[]
+}
+
 export interface ViewerContributionEligibility {
   readonly eligible: boolean
   readonly missing: readonly string[]
@@ -51,7 +63,7 @@ export interface ViewerContributionEligibility {
 export function evaluateViewerApplicability(
   rule: ViewerApplicability | undefined,
   facts: ViewerApplicabilityFacts,
-): ViewerContributionEligibility {
+): ViewerApplicabilityResult {
   const missing: string[] = []
   if (
     rule?.interpretation !== undefined &&
@@ -76,11 +88,7 @@ export function evaluateViewerApplicability(
       missing.push(`longest-line<=${rule.longestLineBytes.maximum}`)
     }
   }
-  return Object.freeze({
-    eligible: missing.length === 0,
-    missing: Object.freeze(missing),
-    optionalBound: Object.freeze([]),
-  })
+  return Object.freeze({ eligible: missing.length === 0, missing: Object.freeze(missing) })
 }
 
 /** Data-only preflight. Viewer code is not imported or activated by this evaluation. */
