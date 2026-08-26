@@ -1,6 +1,12 @@
 /** Host definition, routing matcher and activation adapter for the standard language contract. */
 
-import { contractId, diagnostic, type Diagnostic } from '@modkitx-x3/core'
+import {
+  contractId,
+  diagnostic,
+  isCancellation,
+  throwIfAborted,
+  type Diagnostic,
+} from '@modkitx-x3/core'
 import {
   LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
   LANGUAGE_DOCUMENT_MATCHER_PROFILE,
@@ -229,6 +235,7 @@ function isLanguageProvider(value: unknown): value is LanguageProvider {
 export async function resolveLanguageProvider(
   request: ResolveLanguageProviderRequest,
 ): Promise<LanguageProviderResolution> {
+  throwIfAborted(request.signal)
   const definitions = request.services.serviceDefinitions
   if (definitions === undefined) {
     return {
@@ -251,6 +258,12 @@ export async function resolveLanguageProvider(
     budgets: request.budgets,
     ...(request.signal === undefined ? {} : { signal: request.signal }),
   })
+  let released = false
+  const releaseResolver = async (): Promise<void> => {
+    if (released) return
+    released = true
+    await resolver.release()
+  }
   const facet: LanguageProviderRequestFacet = {
     languageId: request.languageId,
     ...(request.documentKind === undefined ? {} : { documentKind: request.documentKind }),
@@ -264,7 +277,7 @@ export async function resolveLanguageProvider(
       ...(request.signal === undefined ? {} : { signal: request.signal }),
     })
     if (!isLanguageProvider(lease.value) || !lease.value.languageIds.includes(request.languageId)) {
-      await resolver.release()
+      await releaseResolver()
       return {
         state: 'unresolved',
         diagnostics: [
@@ -277,6 +290,9 @@ export async function resolveLanguageProvider(
         ],
       }
     }
+    // Activation may complete concurrently with caller cancellation. Check while the resolver
+    // still owns the lease so that this boundary can release it before cancellation escapes.
+    throwIfAborted(request.signal)
     return Object.freeze({
       state: 'resolved',
       provider: lease.value,
@@ -288,10 +304,18 @@ export async function resolveLanguageProvider(
           `selected a language provider for ${request.languageId}`,
         ),
       ]),
-      release: () => resolver.release(),
+      release: releaseResolver,
     })
   } catch (error) {
-    await resolver.release()
+    let releaseError: unknown
+    try {
+      await releaseResolver()
+    } catch (failure) {
+      releaseError = failure
+    }
+    if (isCancellation(error)) throw error
+    throwIfAborted(request.signal)
+    if (releaseError !== undefined) throw releaseError
     return {
       state: 'unresolved',
       diagnostics: [
@@ -305,3 +329,20 @@ export async function resolveLanguageProvider(
     }
   }
 }
+
+export {
+  createLanguageWorkspace,
+  languageProviderRoutes,
+  LANGUAGE_ANALYSIS_INVALID,
+  LANGUAGE_DOCUMENT_ALREADY_OPEN,
+  LANGUAGE_DOCUMENT_CHANGE_INVALID,
+  LANGUAGE_DOCUMENT_NOT_OPEN,
+  LANGUAGE_PROVIDER_FAILED,
+  LANGUAGE_WORKSPACE_NOT_INITIALIZED,
+  LANGUAGE_WORKSPACE_SHUT_DOWN,
+  type LanguageProviderRoute,
+  type LanguageWorkspace,
+  type LanguageWorkspaceAnalysisResult,
+  type LanguageWorkspaceDocumentRequest,
+  type LanguageWorkspaceOptions,
+} from './workspace.js'

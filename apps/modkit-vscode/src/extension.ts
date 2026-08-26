@@ -30,6 +30,7 @@ import {
   createSubjectCommandRuntime,
   type CommandResult,
 } from '@modkitx-x3/host'
+import { createLanguageWorkspace, languageProviderRoutes } from '@modkitx-x3/host/language'
 import type { ContainerRegistry } from './containers.js'
 import { CustomDocumentState } from './custom-document.js'
 import { withExtensionRoot } from './extension-roots.js'
@@ -50,8 +51,25 @@ import { describeDegradation, describeFacilities, type FacilityReport } from './
 import { pageHtml, refusalHtml, type WebviewLike } from './page.js'
 import BUNDLED_CATALOG from '../generated/bundled-catalog.json' with { type: 'json' }
 import { describeOpenTarget } from './uri.js'
+import {
+  createLanguageSessionController,
+  LANGUAGE_TOKEN_MODIFIERS,
+  LANGUAGE_TOKEN_TYPES,
+  type EditorDocumentSymbol,
+  type EditorLanguageDocument,
+} from './language-session.js'
 
 const CUSTOM_EDITOR_TYPE = 'modkit.genericAssetPreview'
+
+let activeLanguageShutdown: (() => Promise<void>) | undefined
+
+const LANGUAGE_ACTIVATION_BUDGET = Object.freeze({
+  maxInputBytes: 16_777_216n,
+  maxDepth: 64,
+  maxNodes: 250_000,
+  maxScalarBytes: 16_777_216,
+  maxDiagnostics: 1_000,
+})
 
 /**
  * The subject string a URI names.
@@ -332,6 +350,7 @@ export interface ModkitExtensionApi {
 }
 
 export async function activate(context: vscode.ExtensionContext): Promise<ModkitExtensionApi> {
+  if (activeLanguageShutdown !== undefined) await activeLanguageShutdown()
   const activationStarted = Date.now()
   const output = vscode.window.createOutputChannel('Modkit MK3')
   context.subscriptions.push(output)
@@ -630,6 +649,222 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     problemsFor.delete(uri.toString())
     problems.delete(uri)
   }
+
+  // ---------------------------------------------------------------- language providers
+  /*
+   * Provider routes are runtime inventory data. No Galaxy id, filename pattern or language
+   * contribution is baked into this application: a configured/bundled language-provider
+   * extension contributes the route, and the host resolver still decides which provider runs.
+   */
+  const languageRoutes = languageProviderRoutes(host.services.inventory)
+  const languageDiagnostics = vscode.languages.createDiagnosticCollection('modkit-language')
+  context.subscriptions.push(languageDiagnostics)
+
+  const languageWorkspace = createLanguageWorkspace({
+    services: host.services,
+    grant: { id: 'org.modkitx.app.vscode/language', classes: [] },
+    budgets: LANGUAGE_ACTIVATION_BUDGET,
+  })
+
+  const rangeOf = (range: {
+    readonly start: { readonly line: number; readonly character: number }
+    readonly end: { readonly line: number; readonly character: number }
+  }): vscode.Range =>
+    new vscode.Range(range.start.line, range.start.character, range.end.line, range.end.character)
+
+  const SYMBOL_KIND: Readonly<Record<EditorDocumentSymbol['kind'], vscode.SymbolKind>> =
+    Object.freeze({
+      class: vscode.SymbolKind.Class,
+      constant: vscode.SymbolKind.Constant,
+      enum: vscode.SymbolKind.Enum,
+      field: vscode.SymbolKind.Field,
+      function: vscode.SymbolKind.Function,
+      interface: vscode.SymbolKind.Interface,
+      module: vscode.SymbolKind.Module,
+      namespace: vscode.SymbolKind.Namespace,
+      property: vscode.SymbolKind.Property,
+      struct: vscode.SymbolKind.Struct,
+      variable: vscode.SymbolKind.Variable,
+    })
+
+  const nativeSymbol = (symbol: EditorDocumentSymbol): vscode.DocumentSymbol => {
+    const native = new vscode.DocumentSymbol(
+      symbol.name,
+      symbol.detail ?? '',
+      SYMBOL_KIND[symbol.kind],
+      rangeOf(symbol.range),
+      rangeOf(symbol.selectionRange),
+    )
+    native.children = symbol.children.map(nativeSymbol)
+    return native
+  }
+
+  const languageDocument = (document: vscode.TextDocument): EditorLanguageDocument => ({
+    uri: document.uri.toString(),
+    fileName: document.fileName,
+    languageId: document.languageId,
+    version: document.version,
+    // Full snapshots only: the neutral provider contract has no incremental-edit vocabulary.
+    text: document.getText(),
+  })
+
+  const languageController = createLanguageSessionController({
+    workspace: languageWorkspace,
+    routes: languageRoutes,
+    publishDiagnostics: (uri, diagnostics) => {
+      const target = vscode.Uri.parse(uri)
+      languageDiagnostics.set(
+        target,
+        diagnostics.map(item => {
+          const native = new vscode.Diagnostic(
+            rangeOf(item.range),
+            item.message,
+            SEVERITY[item.severity] ?? vscode.DiagnosticSeverity.Information,
+          )
+          if (item.code !== undefined) native.code = item.code
+          native.source = item.source ?? 'Modkit Language'
+          return native
+        }),
+      )
+    },
+    reportHostDiagnostics: (uri, diagnostics) => {
+      for (const item of diagnostics) {
+        log(`[language-host] ${uri}: ${item.severity} ${item.code}: ${item.message}`)
+      }
+    },
+    reportNotice: notice =>
+      log(
+        `[language] ${notice.code}${notice.uri === undefined ? '' : ` ${notice.uri}`}: ${notice.message}`,
+      ),
+  })
+  await languageController.initialize()
+
+  const selectorEntries = new Map<string, vscode.DocumentFilter>()
+  for (const route of languageRoutes) {
+    const byLanguage: vscode.DocumentFilter = { language: route.languageId }
+    selectorEntries.set(JSON.stringify(byLanguage), byLanguage)
+    if (route.extension !== undefined) {
+      const byExtension: vscode.DocumentFilter = {
+        scheme: 'file',
+        pattern: `**/*.${route.extension.replace(/^\./u, '')}`,
+      }
+      selectorEntries.set(JSON.stringify(byExtension), byExtension)
+    }
+  }
+  const languageSelector: vscode.DocumentSelector = [...selectorEntries.values()]
+
+  const signalFor = (
+    token: vscode.CancellationToken,
+  ): { readonly signal: AbortSignal; dispose(): void } => {
+    const controller = new AbortController()
+    if (token.isCancellationRequested) controller.abort('VS Code cancelled the language request')
+    const subscription = token.onCancellationRequested(() =>
+      controller.abort('VS Code cancelled the language request'),
+    )
+    return { signal: controller.signal, dispose: () => subscription.dispose() }
+  }
+
+  if (languageSelector.length > 0) {
+    const legend = new vscode.SemanticTokensLegend(
+      [...LANGUAGE_TOKEN_TYPES],
+      [...LANGUAGE_TOKEN_MODIFIERS],
+    )
+    const tokenTypes = new Map(LANGUAGE_TOKEN_TYPES.map((kind, index) => [kind, index]))
+    const tokenModifiers = new Map(LANGUAGE_TOKEN_MODIFIERS.map((kind, index) => [kind, index]))
+    context.subscriptions.push(
+      vscode.languages.registerDocumentSymbolProvider(languageSelector, {
+        async provideDocumentSymbols(document, token) {
+          const cancellation = signalFor(token)
+          try {
+            const symbols = await languageController.documentSymbols(
+              languageDocument(document),
+              cancellation.signal,
+            )
+            return symbols?.map(nativeSymbol)
+          } catch (error) {
+            if (token.isCancellationRequested) return undefined
+            log(
+              `[language] document symbols failed: ${error instanceof Error ? error.message : String(error)}`,
+            )
+            return undefined
+          } finally {
+            cancellation.dispose()
+          }
+        },
+      }),
+      vscode.languages.registerDocumentSemanticTokensProvider(
+        languageSelector,
+        {
+          async provideDocumentSemanticTokens(document, token) {
+            const cancellation = signalFor(token)
+            try {
+              const tokens = await languageController.semanticTokens(
+                languageDocument(document),
+                cancellation.signal,
+              )
+              if (tokens === undefined) return undefined
+              const builder = new vscode.SemanticTokensBuilder(legend)
+              for (const item of tokens) {
+                const tokenType = tokenTypes.get(item.tokenType)
+                if (tokenType === undefined) continue
+                const modifierBits = item.modifiers.reduce((bits, modifier) => {
+                  const index = tokenModifiers.get(modifier)
+                  return index === undefined ? bits : bits | (1 << index)
+                }, 0)
+                builder.push(item.line, item.character, item.length, tokenType, modifierBits)
+              }
+              return builder.build()
+            } catch (error) {
+              if (token.isCancellationRequested) return undefined
+              log(
+                `[language] semantic tokens failed: ${error instanceof Error ? error.message : String(error)}`,
+              )
+              return undefined
+            } finally {
+              cancellation.dispose()
+            }
+          },
+        },
+        legend,
+      ),
+      vscode.workspace.onDidOpenTextDocument(document =>
+        languageController.open(languageDocument(document)),
+      ),
+      vscode.workspace.onDidChangeTextDocument(event =>
+        languageController.change(languageDocument(event.document)),
+      ),
+      vscode.workspace.onDidCloseTextDocument(document => {
+        void languageController
+          .close(document.uri.toString())
+          .catch(error =>
+            log(
+              `[language] close failed: ${error instanceof Error ? error.message : String(error)}`,
+            ),
+          )
+      }),
+    )
+    for (const document of vscode.workspace.textDocuments) {
+      languageController.open(languageDocument(document))
+    }
+  }
+
+  let languageClosed = false
+  const shutDownLanguage = async (): Promise<void> => {
+    if (languageClosed) return
+    languageClosed = true
+    languageDiagnostics.clear()
+    await languageController.shutdown()
+  }
+  activeLanguageShutdown = shutDownLanguage
+  context.subscriptions.push({
+    dispose: () =>
+      void shutDownLanguage().catch(error =>
+        log(
+          `[language] shutdown failed: ${error instanceof Error ? error.message : String(error)}`,
+        ),
+      ),
+  })
+  log(`language routes configured: ${languageRoutes.length}`)
 
   // ---------------------------------------------------------------- facilities
   /*
@@ -1353,6 +1588,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   })
 }
 
-export function deactivate(): void {
-  // Nothing to tear down: every disposable is registered on the extension context.
+export async function deactivate(): Promise<void> {
+  const shutdown = activeLanguageShutdown
+  activeLanguageShutdown = undefined
+  await shutdown?.()
 }

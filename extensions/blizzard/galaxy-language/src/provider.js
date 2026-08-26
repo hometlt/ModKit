@@ -26,11 +26,23 @@ const TYPES = new Set([
   'void',
 ])
 const OPERATORS = new Set('{}[]();,.=+-*/%!<>?:&|')
+const CANCELLATION_CHECKPOINT_CHARS = 64 * 1024
+const CANCELLATION_CHECKPOINT_LINES = 1024
 
-function lineStarts(text) {
+/** Yield a worker turn so an inbound cancel frame can abort a long synchronous scan. */
+async function cancellationCheckpoint(signal) {
+  signal?.throwIfAborted()
+  await new Promise(resolve => setTimeout(resolve, 0))
+  signal?.throwIfAborted()
+}
+
+async function lineStarts(text, signal) {
   const starts = [0]
   for (let offset = 0; offset < text.length; offset += 1) {
     if (text[offset] === '\n') starts.push(offset + 1)
+    if ((offset + 1) % CANCELLATION_CHECKPOINT_CHARS === 0) {
+      await cancellationCheckpoint(signal)
+    }
   }
   return starts
 }
@@ -52,7 +64,7 @@ const rangeAt = (starts, start, end) => ({
   end: positionAt(starts, end),
 })
 
-function lexicalAnalysis(text, starts) {
+async function lexicalAnalysis(text, starts, signal) {
   const tokens = []
   const diagnostics = []
   const braces = []
@@ -67,7 +79,12 @@ function lexicalAnalysis(text, starts) {
     })
 
   let offset = 0
+  let nextCheckpoint = CANCELLATION_CHECKPOINT_CHARS
   while (offset < text.length) {
+    if (offset >= nextCheckpoint) {
+      await cancellationCheckpoint(signal)
+      nextCheckpoint = offset + CANCELLATION_CHECKPOINT_CHARS
+    }
     const current = text[offset]
     const next = text[offset + 1]
     if (/\s/u.test(current)) {
@@ -76,7 +93,8 @@ function lexicalAnalysis(text, starts) {
     }
     if (current === '/' && next === '/') {
       const end = text.indexOf('\n', offset)
-      const limit = end === -1 ? text.length : end
+      const lineEnd = end === -1 ? text.length : end
+      const limit = lineEnd > offset && text[lineEnd - 1] === '\r' ? lineEnd - 1 : lineEnd
       token('comment', offset, limit)
       offset = limit
       continue
@@ -95,6 +113,10 @@ function lexicalAnalysis(text, starts) {
       offset += 1
       let closed = false
       while (offset < text.length) {
+        if (offset >= nextCheckpoint) {
+          await cancellationCheckpoint(signal)
+          nextCheckpoint = offset + CANCELLATION_CHECKPOINT_CHARS
+        }
         if (text[offset] === '\\') {
           offset += 2
           continue
@@ -104,7 +126,7 @@ function lexicalAnalysis(text, starts) {
           closed = true
           break
         }
-        if (text[offset] === '\n') break
+        if (text[offset] === '\n' || text[offset] === '\r') break
         offset += 1
       }
       token('string', start, Math.min(offset, text.length))
@@ -136,7 +158,10 @@ function lexicalAnalysis(text, starts) {
     }
     offset += 1
   }
-  for (const opening of braces) {
+  for (const [index, opening] of braces.entries()) {
+    if (index > 0 && index % CANCELLATION_CHECKPOINT_LINES === 0) {
+      await cancellationCheckpoint(signal)
+    }
     issue(
       'galaxy/unclosed-brace',
       'Opening brace has no matching closing brace.',
@@ -147,10 +172,14 @@ function lexicalAnalysis(text, starts) {
   return { tokens, diagnostics }
 }
 
-function documentSymbols(text, starts) {
+async function documentSymbols(text, starts, signal) {
   const symbols = []
   const lines = text.split('\n')
-  for (const [line, source] of lines.entries()) {
+  for (const [line, rawSource] of lines.entries()) {
+    if (line > 0 && line % CANCELLATION_CHECKPOINT_LINES === 0) {
+      await cancellationCheckpoint(signal)
+    }
+    const source = rawSource.endsWith('\r') ? rawSource.slice(0, -1) : rawSource
     const lineOffset = starts[line]
     const structure = source.match(/^\s*struct\s+([A-Za-z_]\w*)/u)
     const callable = source.match(/^\s*(?:native\s+)?([A-Za-z_]\w*)\s+([A-Za-z_]\w*)\s*\(/u)
@@ -174,27 +203,27 @@ function documentSymbols(text, starts) {
   return symbols
 }
 
-export function analyzeGalaxy(request) {
+export async function analyzeGalaxy(request) {
   request.signal?.throwIfAborted()
   if (request.document.languageId !== 'galaxy') {
     throw new TypeError(`Galaxy provider cannot analyze ${request.document.languageId}`)
   }
-  const starts = lineStarts(request.document.text)
-  const lexical = lexicalAnalysis(request.document.text, starts)
+  const starts = await lineStarts(request.document.text, request.signal)
+  const lexical = await lexicalAnalysis(request.document.text, starts, request.signal)
   const include = request.include
   const selected = name => include === undefined || include[name] === true
   request.signal?.throwIfAborted()
-  return Promise.resolve(
-    Object.freeze({
-      documentUri: request.document.uri,
-      documentVersion: request.document.version,
-      tokens: Object.freeze(selected('tokens') ? lexical.tokens : []),
-      diagnostics: Object.freeze(selected('diagnostics') ? lexical.diagnostics : []),
-      symbols: Object.freeze(
-        selected('symbols') ? documentSymbols(request.document.text, starts) : [],
-      ),
-    }),
-  )
+  const symbols = selected('symbols')
+    ? await documentSymbols(request.document.text, starts, request.signal)
+    : []
+  request.signal?.throwIfAborted()
+  return Object.freeze({
+    documentUri: request.document.uri,
+    documentVersion: request.document.version,
+    tokens: Object.freeze(selected('tokens') ? lexical.tokens : []),
+    diagnostics: Object.freeze(selected('diagnostics') ? lexical.diagnostics : []),
+    symbols: Object.freeze(symbols),
+  })
 }
 
 export const abiVersion = 1
