@@ -23,3 +23,7 @@ vendor/multiverse-specs/
 # prettier collapses its short arrays and the two spellings would fight each other forever
 reports/bundle-graph.json
 reports/bundle-graph.md
+# scratch directories the scaffold and docs gates create and delete; a crashed run can leave one
+extensions/.x3-scaffold-*/
+extensions/.x3-docs-*/
+.x3-docs-check-*/
