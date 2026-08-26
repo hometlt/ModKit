@@ -6,15 +6,15 @@ import {
   createProjectionReceipt,
 } from '@modkitx-x3/codec-kit'
 
-import { parseBos } from '../scripts/bos.js'
-import { parseCob } from '../scripts/cob.js'
-import { modelTree, parseS3o } from '../spring-s3o/codec.js'
+import { parseBos } from '../../scripts/bos.js'
+import { parseCob } from '../../scripts/cob.js'
+import { modelTree, parseS3o } from '../../spring-s3o/codec.js'
 import {
   bosPathFor,
   modelPathFor,
   parseUnitDefinition,
   scriptPathFor,
-} from '../unit-definition/parse.js'
+} from '../../unit-definition/parse.js'
 
 const ID = 'org.modkitx/spring-unit-definition'
 const MODEL_REQUIREMENT = 'spring-object-model'

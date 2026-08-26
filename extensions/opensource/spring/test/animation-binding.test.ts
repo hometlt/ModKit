@@ -10,7 +10,7 @@ import {
   type ResourceBudget,
 } from '@modkitx-x3/sdk'
 import { proves } from '@modkitx-x3/testkit'
-import { createCodec as createUnitCodec } from '../src/spring-unit/codec.js'
+import { createCodec as createUnitCodec } from '../src/formats/spring-unit/codec.js'
 
 const budget: ResourceBudget = {
   maxInputBytes: 1_000_000n,

@@ -26,7 +26,7 @@ import {
 import { VirtualFileSystem, type VfsMount } from '@modkitx-x3/vfs'
 import { createRapidVfsProvider } from '@modkitx-x3/vfs/providers/rapid'
 import { createCodec as createS3oCodec } from '../src/spring-s3o/codec.js'
-import { createCodec as createUnitCodec } from '../src/spring-unit/codec.js'
+import { createCodec as createUnitCodec } from '../src/formats/spring-unit/codec.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..', '..')
 const corpusRoot = process.env['MODKITX_BAR_ROOT']
