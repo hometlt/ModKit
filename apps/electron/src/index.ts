@@ -658,3 +658,14 @@ export { createFilesystemInputResolver } from '@modkitx-x3/host/node'
  * gives it somewhere to put the opened subject.
  */
 export { openNestedSubject, type NestedSubjectResult } from '@modkitx-x3/host'
+/*
+ * Block 13 works 4–6: the same command runtime the CLI and VS Code run. `main.cjs` supplies the
+ * one thing it cannot have — `openSubjectForRpc`, which already confines a path to the granted
+ * roots — and owns nothing else about what a command does.
+ */
+export {
+  commandSubjectsFrom,
+  createSubjectCommandRuntime,
+  type CommandResult,
+  type CommandRuntime,
+} from '@modkitx-x3/host'

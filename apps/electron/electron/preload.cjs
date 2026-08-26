@@ -106,6 +106,24 @@ contextBridge.exposeInMainWorld('modkitHost', {
 })
 
 /*
+ * The shared command surface (block 13, works 4–6).
+ *
+ * Four named methods and no dispatcher: the renderer may list the commands this build has, run one,
+ * cancel one by the id it chose, and subscribe to progress. `runId` is the renderer's own string,
+ * so cancelling never needs a handle table on either side of the boundary.
+ */
+contextBridge.exposeInMainWorld('modkitCommands', {
+  list: () => ipcRenderer.invoke('modkit.command.list'),
+  run: request => ipcRenderer.invoke('modkit.command.run', request),
+  cancel: runId => ipcRenderer.invoke('modkit.command.cancel', runId),
+  onProgress: handler => {
+    const listener = (_event, step) => handler(step)
+    ipcRenderer.on('modkit.command.progress', listener)
+    return () => ipcRenderer.removeListener('modkit.command.progress', listener)
+  },
+})
+
+/*
  * R6: the subject bridge is capability-RPC over a dedicated MessagePort pair. Main creates the
  * channel and posts one end here; the preload forwards the DOM port into the main world with
  * `window.postMessage` (the documented Electron pattern for context-isolated pages). No method
