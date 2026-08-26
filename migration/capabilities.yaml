@@ -905,7 +905,7 @@ capabilities:
       operations:
         inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
-        read: 'packages/testkit/test/pkm-etc-decode.test.ts'
+        read: 'extensions/common/images/test/astc-void-extent.test.ts'
         materialize: null
     knownLoss:
       - 'СУЖЕННЫЙ SCOPE (§0.2): PKM декодирует ETC1_RGB и семейство ETC2 RGB; ASTC декодирует строго 2D LDR void-extent; ANI через общий ICO/CUR DIB-путь декодирует первый кадр с AND-маской. Все три публикуют raster-image-source под maxScalarBytes и имеют operation-level доказательства.'
@@ -918,6 +918,8 @@ capabilities:
     closedBy:
       commits: []
       tests:
+        - 'extensions/common/images/test/ani-raster-decode.test.ts'
+        - 'extensions/common/images/test/astc-void-extent.test.ts'
         - 'packages/testkit/test/mk2-image-codecs.test.ts'
         - 'packages/testkit/test/pkm-etc-decode.test.ts'
       reports:
