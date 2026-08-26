@@ -21,9 +21,11 @@
     }
   ],
   "limitations": [
-    "Referenced texture names are exposed as metadata; resolving them through paired RFH/RFD archives is not implemented.",
+    "Decodes the recursive node hierarchy, local transforms, triangle geometry, normals and face UV coordinates from retail XBF version 1.",
+    "Publishes native and FX material identities plus logical texture references; resolving them through paired RFH/RFD archives is not implemented, so every resource remains reference-only.",
+    "Publishes the 25 native FX clip intervals and the nodes driven by transform or vertex-morph data, but does not expose the native key matrices or per-frame vertex samples.",
+    "Particle texture sequences contribute named materials and resources; particle execution, FX events, prelight colours and smoothing groups have no admitted live facet and remain named losses in the projection receipt.",
     "Only XBF version 1 is accepted; other versions fail detection or parsing instead of being guessed.",
-    "This portable structural port bounds the FX and texture-name planes but does not decode XBF nodes, geometry, skeletal animation, or FX runtime events.",
     "Model writing is not implemented."
   ],
   "spec": {
@@ -48,6 +50,9 @@
     ],
     "publishesDataSources": [
       { "contract": "common.view/model-scene-source", "major": 1 },
+      { "contract": "common.view/model-resource-refs-source", "major": 1 },
+      { "contract": "common.view/model-animation-source", "major": 1 },
+      { "contract": "common.view/model-material-source", "major": 1 },
       { "contract": "common.view/tree-data-source", "major": 1 },
       { "contract": "common.view/byte-range-source", "major": 1 }
     ],
@@ -73,6 +78,14 @@
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]
       }
+    ],
+    "traitDeclarations": [
+      { "id": "model.geometry", "representation": "source", "presence": "will-expose" },
+      { "id": "model.materials", "representation": "source", "presence": "may-expose" },
+      { "id": "model.textures", "representation": "source", "presence": "may-expose" },
+      { "id": "model.animations", "representation": "source", "presence": "may-expose" },
+      { "id": "structure.hierarchy", "representation": "source", "presence": "will-expose" },
+      { "id": "content.binary", "representation": "source", "presence": "will-expose" }
     ],
     "implementationTier": { "claimed": 1 },
     "budgets": {
