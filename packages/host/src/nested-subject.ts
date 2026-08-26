@@ -51,6 +51,7 @@ import {
   NESTED_ENTRY_NOT_FOUND,
 } from './namespace-origin.js'
 import { openSubject, type OpenSubjectResult } from './subject-open.js'
+import type { SubjectServices } from './subject-services.js'
 
 /** The parent subject publishes no entry listing, or no bounded extraction for its entries. */
 export const NESTED_SUBJECT_UNSUPPORTED = 'x3.host/nested-subject-unsupported'
@@ -85,6 +86,32 @@ export interface NestedSubjectOptions {
   /** Named non-fatal companion outcomes (an absent optional companion, an unserved scope). */
   readonly onDiagnostic?: (item: Diagnostic) => void
   readonly signal?: AbortSignal
+}
+
+/**
+ * The four things a nested open needs from the composition that produced the parent.
+ *
+ * Assembling them by hand is a trap with one silent failure mode, and slice 13B walked into it: a
+ * caller that passes `inventory`, `target` and `executionBackends` but forgets `serviceDefinitions`
+ * opens most formats perfectly and fails *only* on the codecs that use a service contribution —
+ * CSV, INI, JSON, TOML, XML, YAML — with `x3.host/service-contract-unregistered`. Three products
+ * now open nested subjects; spelling this bundle out three times means two of them are one
+ * oversight away from a format-shaped hole.
+ */
+export function nestedSubjectServices(
+  services: Pick<
+    SubjectServices,
+    'inventory' | 'target' | 'executionBackends' | 'serviceDefinitions'
+  >,
+): Pick<NestedSubjectOptions, 'inventory' | 'target' | 'executionBackends' | 'serviceDefinitions'> {
+  return {
+    inventory: services.inventory,
+    target: services.target,
+    executionBackends: services.executionBackends,
+    ...(services.serviceDefinitions === undefined
+      ? {}
+      : { serviceDefinitions: services.serviceDefinitions }),
+  }
 }
 
 export interface NestedSubjectResult {
