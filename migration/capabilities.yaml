@@ -686,6 +686,7 @@ capabilities:
     fixtures: []
     corpusDescriptors:
       - 'MODKITX_SC2_ROOT'
+      - 'MODKITX_CNC3_KW_ROOT'
     projection:
       plane: 'opaque'
       liveProjection: 'not-applicable'
@@ -693,12 +694,12 @@ capabilities:
       opaquePreservation: 'not-applicable'
       nativeExport: 'not-applicable'
       operations:
-        inspect: null
+        inspect: 'apps/modkit-vscode/test/containers.test.ts'
         validate: null
-        read: null
+        read: 'apps/modkit-vscode/test/containers.test.ts'
         materialize: null
     knownLoss:
-      - 'UI-wiring вложенных субъектов в web и VS Code — блоки 13–14'
+      - 'UI-wiring вложенных субъектов в web — слайс 13B (в VS Code закрыто слайсом 13A: FileSystemProvider modkit-container + modkit.openArchiveEntry)'
     receipts:
       projection: null
       materialization: null
@@ -709,6 +710,7 @@ capabilities:
       tests:
         - 'packages/host/test/nested-subject-blizzard.test.ts'
         - 'apps/electron/test/subject-open-smoke.test.ts'
+        - 'apps/modkit-vscode/test/containers.test.ts'
       reports:
         - 'docs/MK3/reports/REPORT_FABLE_BLOCK9_FINAL_2026-08-25.md'
   - capabilityId: 'block9/casc-mpq-texture-chain'
