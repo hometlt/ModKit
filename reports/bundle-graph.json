@@ -4,7 +4,7 @@
   "entryCount": 67,
   "totals": {
     "modules": 543,
-    "bytes": 5996654
+    "bytes": 5997722
   },
   "entries": [
     {
@@ -650,7 +650,7 @@
       "entry": "packages/vfs/dist/providers/rapid/index.js",
       "surface": "vfs/providers/rapid",
       "modules": 4,
-      "bytes": 22639,
+      "bytes": 23707,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core"
