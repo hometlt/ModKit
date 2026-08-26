@@ -41105,6 +41105,9 @@ function containerUriPath(container, entry3 = "") {
   const normalized = normalizeEntryPath(entry3);
   return `/${toHex(container)}${normalized === "" ? "" : `/${normalized}`}`;
 }
+function containerUriText(container, entry3 = "") {
+  return `${CONTAINER_SCHEME}:${containerUriPath(container, entry3)}`;
+}
 function parseContainerUriPath(path) {
   const segments = path.split("/").filter((segment) => segment.length > 0);
   const token = segments[0];
@@ -65911,10 +65914,20 @@ function serveVsCode(services, options, composed) {
     const roots = options.roots().map((root) => (0, import_node_path6.resolve)(root));
     const configuration = options.configuration;
     switch (request.op) {
+      /*
+       * The page's own file access, for both kinds of subject.
+       *
+       * A container member is not a path, and routing it at `resolve()` was the defect the first
+       * run of the reworked smoke found: the member opened in a tab, and the page then asked the
+       * shell for its bytes and was told the URI «is outside the folders this window granted».
+       * The bytes are readable — through the open container, by the same registry the editor's
+       * filesystem provider answers from — so the shell reads them the same way rather than a
+       * second way.
+       */
       case "list":
-        return listDirectory(roots, request.path);
+        return isContainerUriText(request.path ?? "") ? listContainer(options.containers, request.path ?? "") : listDirectory(roots, request.path);
       case "read":
-        return readEntry(roots, request.path, request.maxBytes);
+        return isContainerUriText(request.path) ? readContainerEntry(options.containers, request.path, request.maxBytes) : readEntry(roots, request.path, request.maxBytes);
       case "confirm":
         return await options.confirmClose?.(request.message, request.savable) ?? "cancel";
       case "settings":
@@ -66058,6 +66071,40 @@ async function listDirectory(roots, requested) {
     });
   }
   return out;
+}
+async function listContainer(containers, requested) {
+  const location = parseContainerUriText(requested);
+  if (containers === void 0 || location === void 0) {
+    throw new Error(`\xAB${requested}\xBB does not name a container this window composed`);
+  }
+  const children = await containers.list(location.container, location.entry);
+  return children.map((child) => ({
+    // the child's own address, so the page can descend without knowing the encoding
+    id: containerUriText(
+      location.container,
+      location.entry === "" ? child.name : `${location.entry}/${child.name}`
+    ),
+    name: child.name,
+    directory: child.kind === "directory",
+    ...child.size === void 0 ? {} : { size: child.size }
+  }));
+}
+async function readContainerEntry(containers, requested, maxBytes) {
+  const location = parseContainerUriText(requested);
+  if (containers === void 0 || location === void 0) {
+    throw new Error(`\xAB${requested}\xBB does not name a container this window composed`);
+  }
+  const limit = Math.min(
+    Number.isSafeInteger(maxBytes) && maxBytes > 0 ? maxBytes : VSCODE_MAXIMUM_SUBJECT_BYTES,
+    VSCODE_MAXIMUM_SUBJECT_BYTES
+  );
+  const node = await containers.stat(location.container, location.entry);
+  if (node.size !== void 0 && node.size > limit) {
+    throw new Error(
+      `${node.name} is ${(node.size / (1024 * 1024)).toFixed(1)} MiB, over the ${(limit / (1024 * 1024)).toFixed(0)} MiB this host will read into memory`
+    );
+  }
+  return containers.read(location.container, location.entry);
 }
 async function readEntry(roots, requested, maxBytes) {
   const path = requireInside(roots, requested);
@@ -66542,6 +66589,9 @@ async function activate(context) {
       roots,
       confirmClose,
       configuration,
+      // The window's one registry, so a page opening a member reaches the archive the Explorer
+      // already has open rather than a second copy of it.
+      containers,
       ...lifecycle === void 0 ? {} : {
         onDocumentDirty: lifecycle.onDirty,
         onDocumentSaveRequested: lifecycle.onSaveRequested
