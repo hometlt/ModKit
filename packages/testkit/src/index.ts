@@ -110,3 +110,16 @@ export {
   type SupervisionEnd,
   type WorkerExit,
 } from './capability-rpc/node/worker-harness.js'
+// Block 13 exit-gate line 2: one fixture set, run by the CLI, the Electron fake host and VS Code.
+export {
+  buildFixtureArchive,
+  checkCommandFixture,
+  stageCommandFixtures,
+  COMMAND_FIXTURES,
+  COMMAND_FIXTURE_ENTRY,
+  COMMAND_FIXTURE_EXTENSIONS,
+  COMMAND_FIXTURE_FILES,
+  type CommandFixture,
+  type CommandFixtureSubject,
+  type CommandFixtureVerdict,
+} from './command-fixtures.js'

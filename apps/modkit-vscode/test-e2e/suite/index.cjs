@@ -32,6 +32,7 @@
 
 const fs = require('node:fs')
 const path = require('node:path')
+const url = require('node:url')
 const vscode = require('vscode')
 
 const CUSTOM_EDITOR = 'modkit.genericAssetPreview'
@@ -926,6 +927,72 @@ async function runScenarios(env) {
       return true
     },
   )
+
+  // ---------------------------------------------------------------- 6. shared command fixtures
+  /*
+   * The third column of exit-gate line 2 (block 13): *the same command fixtures pass in the CLI,
+   * the Electron fake host and the VS Code integration*. The first two are asserted in
+   * `scripts/test/command-fixtures-hosts.test.ts`; this is the one that needs a real editor.
+   *
+   * The fixture list is imported from the testkit, not restated — if it were restated, "the same
+   * fixtures" would be a claim about three lists that happen to look alike. The command is reached
+   * through `modkit.runCommand` with an argument object, which is the same door the palette opens.
+   */
+  await scenario(
+    'command-fixtures',
+    'The shared command fixtures run in the editor',
+    async record => {
+      const staged = requireEnv('MODKITX_SMOKE_FIXTURE_DIR')
+      /*
+       * `import()` rather than `require()`: the testkit is an ES module and this suite is CommonJS
+       * (the editor's `extensionTestsPath` requires it). Node can require an ESM graph these days,
+       * but a dynamic import is the form that is true on every version this smoke might run under.
+       */
+      const testkitUrl = url.pathToFileURL(
+        path.join(requireEnv('MODKITX_SMOKE_REPO_ROOT'), 'packages', 'testkit', 'dist', 'index.js'),
+      ).href
+      const { COMMAND_FIXTURES, COMMAND_FIXTURE_FILES, checkCommandFixture } = await import(
+        testkitUrl
+      )
+      const subjectFor = fixture =>
+        path.join(
+          staged,
+          fixture.subject === 'png' ? COMMAND_FIXTURE_FILES.png : COMMAND_FIXTURE_FILES.archive,
+        )
+
+      const verdicts = []
+      for (const fixture of COMMAND_FIXTURES) {
+        const result = await vscode.commands.executeCommand('modkit.runCommand', {
+          command: fixture.command,
+          subject: subjectFor(fixture),
+          ...(fixture.entry === undefined ? {} : { entry: fixture.entry }),
+        })
+        verdicts.push(
+          result === undefined
+            ? {
+                id: fixture.id,
+                command: fixture.command,
+                passed: false,
+                note: 'the command returned nothing',
+              }
+            : checkCommandFixture(fixture, result),
+        )
+      }
+      record.details.fixtures = verdicts
+      const failed = verdicts.filter(verdict => !verdict.passed)
+      if (failed.length > 0) {
+        record.evidence =
+          `${failed.length} of ${verdicts.length} shared command fixture(s) did not reach their ` +
+          `expected state in the editor: ${failed.map(item => `${item.id} (${item.note ?? ''})`).join('; ')}`
+        return false
+      }
+      record.evidence =
+        `all ${verdicts.length} shared command fixtures reached the same state here as in the CLI ` +
+        'and the Electron fake host — one runtime, three products, one verdict per fixture'
+      return true
+    },
+  )
+  await closeAllEditors()
 
   // ---------------------------------------------------------------- 6. clean shutdown
   await scenario('clean-close', 'Editors close and the host stays responsive', async record => {
