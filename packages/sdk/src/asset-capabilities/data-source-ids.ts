@@ -42,30 +42,15 @@ export type DataSourceMaturity = 'admitted' | 'publisher-candidate'
 /**
  * Maturity of every standard data-source contract.
  *
- * Two candidates left, and each is a candidate for a stated reason rather than by default.
+ * One candidate remains, for a stated reason rather than by default.
  *
  * `common.view/slide-deck-source`: block 11 slice 11B publishes it from ODP alone. Its admission
  * waits for a second, independent slides family (PPTX) plus a generic consumer — block 30.
  *
- * `common.view/model-skeleton-source`: block 12 slice 12-1 migrated W3D and W3X onto it, and those
- * two are the only publishers. They are different readers of different containers, but they ship
- * in one extension package from one vendor lineage, which is a weaker claim than the two
- * independent families §2.7 asks for.
- *
- * Slice 12-2 checked the two candidate second families and found neither available without new
- * decoding work, which is why this is still a candidate rather than an oversight:
- *
- * - **M3 bones.** The format has `BONE`/`STC` sections and the codec reads neither — it knows the
- *   section index by tag and nothing inside those records. Publishing a skeleton from it means
- *   implementing M3 bone decoding, which is a deepening of M3 and belongs to its own slice
- *   (block 15), not to a maturity promotion that would be the reason for doing it.
- * - **UVM joints.** UVM/core carries no skins: the pinned `uvm-core.mjs` reader has no `joints` or
- *   `skins` at all, and the asset schema's `skinned` is an advisory capability boolean the spec
- *   marks "readers MUST NOT rely on it for correctness". Turning a boolean into bone bindings would
- *   be invention, which is the one thing the facet contracts exist to prevent.
- *
- * A candidate with a named, checked reason is a healthier state than an admission bought by writing
- * a publisher for the sake of the count.
+ * `common.view/model-skeleton-source` was admitted after the independent Blizzard M3 family began
+ * decoding `MODL.bones → BONE.name → CHAR` and publishing twelve corpus-backed bindings. W3D/W3X
+ * remain the SAGE/Westwood family; M3 is a different format, parser, package and vendor lineage.
+ * Together they satisfy §2.7 without inventing joints from UVM/core's advisory `skinned` boolean.
  *
  * The other four optional model facets are `admitted` as of slice 12-1. Each has at least two
  * independent publishers that exercise *different* shapes of the same contract, so the shape is
@@ -98,7 +83,7 @@ export const DATA_SOURCE_MATURITY: Readonly<Record<StandardDataSourceId, DataSou
     'common.view/video-media-source': 'admitted',
     'common.view/model-scene-source': 'admitted',
     'common.view/model-resource-refs-source': 'admitted',
-    'common.view/model-skeleton-source': 'publisher-candidate',
+    'common.view/model-skeleton-source': 'admitted',
     'common.view/model-animation-source': 'admitted',
     'common.view/model-collision-source': 'admitted',
     'common.view/model-material-source': 'admitted',
