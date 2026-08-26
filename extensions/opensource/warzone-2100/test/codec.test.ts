@@ -18,7 +18,7 @@ import {
   proves,
   unexplainedDifferences,
 } from '@modkitx-x3/testkit'
-import { createCodec as createPieCodec } from '../src/formats/warzone-pie/codec.js'
+import { createCodec as createPieCodec } from '../src/warzone-pie/codec.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..', '..')
 const encoder = new TextEncoder()

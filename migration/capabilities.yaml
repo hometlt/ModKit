@@ -7149,10 +7149,13 @@ capabilities:
     parityEvidence:
       coverageStatus: null
       rows:
+        - 'm3-real-sc2-casc'
         - 'm3-synthetic-triangle'
       corpusKinds:
+        - 'real'
         - 'synthetic'
       verdicts:
+        - 'poorer'
         - 'richer'
       liveSources:
         - 'common.view/model-scene-source'
@@ -7167,7 +7170,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'extensions/blizzard/models/test/m3-animation.test.ts'
         validate: null
         read: 'extensions/blizzard/models/test/m3-skeleton.test.ts'
         materialize: null
@@ -7177,6 +7180,9 @@ capabilities:
       - 'operation dropped at port: model.read'
       - 'operation dropped at port: model.render'
       - 'operation dropped at port: model.write'
+      - 'SEQS/STC structure and distinct SD timestamp counts are published, but native millisecond bounds and SD keyframe values remain named losses'
+      - 'a channel target is published only when its animation id resolves to exactly one explicit BONE animation-reference header; ambiguous or absent targets remain unsupported'
+      - 'the canonical real sample decodes five materials while X3 carries MAT* as a named lost plane; this pre-existing material-depth gap does not weaken the newly compared animation plane'
     receipts:
       projection: 'ProjectionReceipt'
       materialization: null
@@ -7185,6 +7191,7 @@ capabilities:
     closedBy:
       commits: []
       tests:
+        - 'extensions/blizzard/models/test/m3-animation.test.ts'
         - 'extensions/blizzard/models/test/m3-skeleton.test.ts'
       reports: []
   - capabilityId: 'format/m4a/open-inspect'
@@ -11415,56 +11422,70 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/opensource-spring'
+    owner: 'extensions/opensource/spring'
     plannedBlock: 17
     dependsOn: []
     sourceUnitIds:
       - 'legacy/codec-manifest/org.modkitx/spring-s3o'
     legacyEvidence:
       - 'legacy:extensions/opensource/spring/codecs/spring-s3o/codec.manifest.json'
-    hostFacilities: []
-    mk3Contributions: []
-    mk3Operations: []
+    hostFacilities:
+      - 'read-source'
+    mk3Contributions:
+      - 'org.modkitx/spring-s3o'
+    mk3Operations:
+      - 'asset.validate'
+      - 'export.raw'
+      - 'view.inspect'
     allocation:
-      state: 'absent'
-      x3ContributionId: null
-      portFamily: null
-      portVerdict: null
-    migrationState: 'missing'
-    supportState: 'unsupported'
-    runtimeAvailability: 'none'
-    evidenceLevel: 'E0'
-    hostEvidence: 'none'
+      state: 'covered'
+      x3ContributionId: 'org.modkitx/spring-s3o'
+      portFamily: 'opensource/spring'
+      portVerdict: 'needs-new-contract'
+    migrationState: 'implemented'
+    supportState: 'supported'
+    runtimeAvailability: 'browser-and-node'
+    evidenceLevel: 'E3'
+    hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
-      rows: []
-      corpusKinds: []
-      verdicts: []
-      liveSources: []
+      rows:
+        - 'spring-s3o-real-bar-rapid'
+      corpusKinds:
+        - 'real'
+      verdicts:
+        - 'richer'
+      liveSources:
+        - 'common.view/model-scene-source'
     fixtures: []
-    corpusDescriptors: []
+    corpusDescriptors:
+      - 'MODKITX_BAR_ROOT'
     projection:
       plane: 'model'
-      liveProjection: 'planned'
-      portableMaterialization: 'planned'
+      liveProjection: 'live'
+      portableMaterialization: 'materialized'
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'extensions/opensource/spring/test/corpus-preflight.test.ts'
         validate: null
-        read: null
-        materialize: null
+        read: 'extensions/opensource/spring/test/corpus-preflight.test.ts'
+        materialize: 'extensions/opensource/spring/test/corpus-preflight.test.ts'
     knownLoss:
-      - 'no MK3 contribution exists for this legacy route yet'
+      - 'legacy publishes only an unsupported metadata manifest, so the real parity row has no semantic plane shared by both readers; X3 decodes geometry, hierarchy and texture references'
+      - 'S3O contains no animation clips or script path; BAR/Recoil unit animation is selected externally through BOS/COB or Lua, so no animation facet or companion is fabricated'
+      - 'Spring 3DO, external script binding, native S3O writing, materials and collision remain named remainders for block 17'
     receipts:
-      projection: null
-      materialization: null
+      projection: 'ProjectionReceipt'
+      materialization: 'MaterializationReceipt'
       nativeExport: null
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'extensions/opensource/spring/test/codec.test.ts'
+        - 'extensions/opensource/spring/test/corpus-preflight.test.ts'
       reports: []
   - capabilityId: 'format/spring-vfs/open-inspect'
     userScenario: 'Открыть «Spring archive VFS and load order» в MK3 и выполнить content.mount, content.resolve-dependencies, view.inspect без потери семантики legacy-маршрута.'
@@ -13906,7 +13927,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/opensource-warzone-2100'
+    owner: 'extensions/opensource/warzone-2100'
     plannedBlock: 17
     dependsOn: []
     sourceUnitIds:
@@ -13924,42 +13945,52 @@ capabilities:
     allocation:
       state: 'covered'
       x3ContributionId: 'org.modkitx/warzone-pie'
-      portFamily: 'mk2/opensource-warzone-2100'
-      portVerdict: null
+      portFamily: 'opensource/warzone-2100'
+      portVerdict: 'relocated-and-rewritten'
     migrationState: 'implemented'
-    supportState: 'partial'
+    supportState: 'supported'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E1'
+    evidenceLevel: 'E3'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
-      rows: []
-      corpusKinds: []
-      verdicts: []
-      liveSources: []
+      rows:
+        - 'warzone-pie-real-base-wz'
+      corpusKinds:
+        - 'real'
+      verdicts:
+        - 'poorer'
+      liveSources:
+        - 'common.view/model-scene-source'
     fixtures: []
-    corpusDescriptors: []
+    corpusDescriptors:
+      - 'MODKITX_WARZONE_ROOT'
     projection:
       plane: 'model'
-      liveProjection: 'planned'
-      portableMaterialization: 'planned'
+      liveProjection: 'live'
+      portableMaterialization: 'materialized'
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'extensions/opensource/warzone-2100/test/corpus-preflight.test.ts'
         validate: null
-        read: null
-        materialize: null
-    knownLoss: []
+        read: 'extensions/opensource/warzone-2100/test/corpus-preflight.test.ts'
+        materialize: 'extensions/opensource/warzone-2100/test/corpus-preflight.test.ts'
+    knownLoss:
+      - 'canonical PIE synthesizes one default material; X3 refuses to invent one, so the real differential is honestly poorer on material count while richer on hierarchy, texture references and ANIMOBJECT clips'
+      - 'ANIMOBJECT translation/rotation/scale envelopes are published, but numeric samples remain a named receipt loss because model-animation-source@1 does not carry them'
+      - 'connectors, events, shadows, native PIE writing and Warzone 3DO remain named remainders for block 17'
     receipts:
-      projection: null
-      materialization: null
+      projection: 'ProjectionReceipt'
+      materialization: 'MaterializationReceipt'
       nativeExport: null
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'extensions/opensource/warzone-2100/test/codec.test.ts'
+        - 'extensions/opensource/warzone-2100/test/corpus-preflight.test.ts'
       reports: []
   - capabilityId: 'format/warzone-wrf/open-inspect'
     userScenario: 'Открыть «Warzone 2100 resource list» в MK3 и выполнить view.inspect без потери семантики legacy-маршрута.'

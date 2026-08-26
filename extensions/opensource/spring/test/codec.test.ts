@@ -17,7 +17,7 @@ import {
   proves,
   unexplainedDifferences,
 } from '@modkitx-x3/testkit'
-import { createCodec as createS3oCodec } from '../src/formats/spring-s3o/codec.js'
+import { createCodec as createS3oCodec } from '../src/spring-s3o/codec.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..', '..')
 const budget: ResourceBudget = {

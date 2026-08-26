@@ -321,11 +321,16 @@ const definition = Object.freeze({
         preview: `v${section.version}, ${section.repetitions} record(s), ${section.byteLength} bytes`,
       })),
     })
+    const declaredAnimationCount = model.sections
+      .filter(section => section.tag === 'SEQS')
+      .reduce((total, section) => total + section.repetitions, 0)
+    // A SEQS record proves that the source declares an animation even when no SD timestamp can be
+    // represented as a live clip. Keep that structural count in model-scene-source, while the
+    // optional animation facet remains absent and the receipt names the lost executable plane.
     const animationCount =
-      animation?.clips.length ??
-      model.sections
-        .filter(section => section.tag === 'SEQS')
-        .reduce((total, section) => total + section.repetitions, 0)
+      animation !== undefined && animation.clips.length > 0
+        ? animation.clips.length
+        : declaredAnimationCount
     const scene =
       geometry === undefined || geometry.primitives.length === 0
         ? metadataSceneOf(model, animationCount)

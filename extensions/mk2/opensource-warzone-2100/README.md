@@ -15,7 +15,6 @@ renames, converter defaults and v1 operations left without a handler — is data
 | ----------------------------- | ------------------------------------------------------------------------------- | ------------------------------ | ------ |
 | `org.modkitx/warzone-img`     | `extensions/opensource/warzone-2100/codecs/warzone-img/codec.manifest.json`     | `src/warzone-img/codec.js`     | ported |
 | `org.modkitx/warzone-lev`     | `extensions/opensource/warzone-2100/codecs/warzone-lev/codec.manifest.json`     | `src/warzone-lev/codec.js`     | ported |
-| `org.modkitx/warzone-pie`     | `extensions/opensource/warzone-2100/codecs/warzone-pie/codec.manifest.json`     | `src/warzone-pie/codec.js`     | ported |
 | `org.modkitx/warzone-wrf`     | `extensions/opensource/warzone-2100/codecs/warzone-wrf/codec.manifest.json`     | `src/warzone-wrf/codec.js`     | ported |
 | `org.modkitx/warzone-wz`      | `extensions/opensource/warzone-2100/codecs/warzone-wz/codec.manifest.json`      | `src/warzone-wz/codec.js`      | ported |
 | `org.modkitx/warzone2100-map` | `extensions/opensource/warzone-2100/codecs/warzone2100-map/codec.manifest.json` | `src/warzone2100-map/codec.js` | ported |

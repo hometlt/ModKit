@@ -7,14 +7,14 @@
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
-      "entrypoint": "./src/formats/spring-s3o/codec.js",
+      "entrypoint": "./src/spring-s3o/codec.js",
       "target": { "environments": ["node"] },
       "executionProfile": "trusted-in-process",
       "requestedPermissionClasses": ["read-source"]
     },
     {
       "variantId": "portable",
-      "entrypoint": "./src/formats/spring-s3o/codec.js",
+      "entrypoint": "./src/spring-s3o/codec.js",
       "target": { "environments": ["browser-worker", "node-worker"] },
       "executionProfile": "worker-brokered",
       "requestedPermissionClasses": ["read-source"]

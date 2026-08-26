@@ -4,7 +4,8 @@ import { pathToFileURL } from 'node:url'
 
 const request = JSON.parse(Buffer.from(process.argv[2], 'base64url').toString('utf8'))
 const moduleUrl = pathToFileURL(resolve(request.canonicalRoot, request.canonicalModule)).href
-const imported = await import(moduleUrl)
+const imported =
+  request.canonicalAdapter === 'manifest-metadata-only' ? {} : await import(moduleUrl)
 const bytes = new Uint8Array(await readFile(request.file))
 
 function source(contract, features, measurements) {
@@ -460,6 +461,21 @@ async function documentResult() {
   return result(definition.id, [textSource(recovered)])
 }
 
+/**
+ * An unsupported canonical manifest is still an oracle result: it proves that the legacy product
+ * knows the format name but publishes no executable model surface. Treating that as a missing probe
+ * would hide the exact depth difference this parity row exists to preserve.
+ */
+async function manifestMetadataOnlyResult() {
+  const manifest = JSON.parse(
+    await readFile(resolve(request.canonicalRoot, request.canonicalModule), 'utf8'),
+  )
+  if (manifest.status !== 'unsupported' || (manifest.capabilities?.length ?? 0) !== 0) {
+    throw new TypeError('canonical metadata-only manifest unexpectedly claims executable support')
+  }
+  return result(manifest.id ?? request.format, [])
+}
+
 const adapters = {
   model: modelResult,
   image: imageResult,
@@ -475,6 +491,7 @@ const adapters = {
   'cnc3-localization': localizationResult,
   'cnc3-map': cnc3MapResult,
   'sage-skudef': skuDefResult,
+  'manifest-metadata-only': manifestMetadataOnlyResult,
 }
 const adapter = adapters[request.canonicalAdapter ?? 'model']
 if (adapter === undefined)

@@ -261,6 +261,16 @@ export const READY_APP_EXTENSIONS = Object.freeze({
     coordinate: 'org.modkitx.ea/tiberian-sun',
     contributions: Object.freeze(['org.modkitx/red-alert2-vxl']),
   }),
+  'opensource-spring': Object.freeze({
+    path: Object.freeze(['opensource', 'spring']),
+    coordinate: 'org.modkitx.opensource/spring',
+    contributions: Object.freeze(['org.modkitx/spring-s3o']),
+  }),
+  'opensource-warzone-2100': Object.freeze({
+    path: Object.freeze(['opensource', 'warzone-2100']),
+    coordinate: 'org.modkitx.opensource/warzone-2100',
+    contributions: Object.freeze(['org.modkitx/warzone-pie']),
+  }),
 })
 
 const structuredText = Object.freeze([
@@ -295,6 +305,8 @@ const mk2Extended = Object.freeze([
   'ea-sage',
   'ea-models',
   'ea-tiberian-sun',
+  'opensource-spring',
+  'opensource-warzone-2100',
 ])
 
 export const APP_EXTENSION_SETS = Object.freeze({
