@@ -4,6 +4,8 @@ import {
   createTreeDataSource,
 } from '@modkitx-x3/codec-kit'
 
+import { decodeEtcRgba } from './etc.js'
+
 const ID = 'org.modkitx/pkm'
 const ascii = new TextDecoder('latin1')
 
@@ -80,6 +82,51 @@ function parsePkm(bytes) {
   })
 }
 
+/** Which formats ./etc.js implements; the budget rule applies only to images it can produce. */
+const decodable = format =>
+  format.includes('ETC1') || format.includes('ETC2_RGB') || format.includes('ETC2_SRGB')
+
+/**
+ * Bounded reader over the decoded image.
+ *
+ * The decode covers the block-aligned extent; the logical image is the top-left crop of it, so the
+ * stride here is the encoded width and every request is clipped to the logical one. Getting that
+ * backwards is how a 1x1 PKM ends up showing three pixels of padding it was never meant to have.
+ */
+function regionReader(decoded, pkm) {
+  const stride = pkm.encodedWidth * 4
+  return async (request, signal) => {
+    if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
+    const values = [request.x, request.y, request.width, request.height, request.maxBytes]
+    if (!values.every(value => Number.isSafeInteger(value) && value >= 0)) {
+      throw new TypeError('PKM region coordinates and budget must be non-negative safe integers')
+    }
+    if (
+      request.pixelFormat !== 'rgba8' ||
+      (request.frame ?? 0) !== 0 ||
+      (request.mipLevel ?? 0) !== 0 ||
+      (request.layer ?? 0) !== 0 ||
+      (request.face ?? 0) !== 0 ||
+      (request.slice ?? 0) !== 0
+    ) {
+      throw new RangeError('PKM decoder exposes only the first image as rgba8')
+    }
+    if (request.x + request.width > pkm.width || request.y + request.height > pkm.height) {
+      throw new RangeError('PKM region is outside the image')
+    }
+    const length = request.width * request.height * 4
+    if (!Number.isSafeInteger(length) || length > request.maxBytes) {
+      throw new RangeError('PKM region exceeds maxBytes budget')
+    }
+    const pixels = new Uint8Array(length)
+    for (let row = 0; row < request.height; row += 1) {
+      const start = (request.y + row) * stride + request.x * 4
+      pixels.set(decoded.subarray(start, start + request.width * 4), row * request.width * 4)
+    }
+    return { pixelFormat: 'rgba8', width: request.width, height: request.height, pixels }
+  }
+}
+
 const definition = Object.freeze({
   id: ID,
   format: Object.freeze({ id: 'pkm', label: 'PKM ETC Texture', mediaType: 'image/x-pkm' }),
@@ -88,23 +135,43 @@ const definition = Object.freeze({
       ? { confidence: 0, kind: 'magic', note: 'signature-mismatch' }
       : { confidence: 0.99, kind: 'magic', note: 'pkm-identifier' }
   },
-  async inspect(bytes) {
+  async inspect(bytes, context) {
     const pkm = parsePkm(bytes)
-    const raster = createRasterImageSource(bytes, 'image/x-pkm', {
-      width: pkm.width,
-      height: pkm.height,
-      depth: 1,
-      layers: 1,
-      faces: 1,
-      mipLevels: 1,
-      frames: 1,
-      channels: pkm.blockBytes === 16 ? 4 : 3,
-      bitDepth: 8,
-      colorSpace: pkm.format.includes('SRGB') ? 'srgb' : 'unknown',
-      alphaMode: pkm.format.includes('RGBA') || pkm.format.includes('A1') ? 'straight' : 'none',
-      orientation: 'top-left',
-      decodedAccess: false,
-    })
+    /*
+     * Decoding is per-format and honest about it: ETC1 and the ETC2 RGB family are implemented from
+     * the specification in ./etc.js, EAC's 11-bit channel formats are not. `decoded === undefined`
+     * is what a caller sees as `decodedAccess: false`, so an EAC payload keeps saying "blocks only"
+     * instead of publishing an invented channel mapping.
+     */
+    const decodedBytes = pkm.width * pkm.height * 4
+    if (!Number.isSafeInteger(decodedBytes)) {
+      throw new RangeError('PKM decoded pixel count is not representable')
+    }
+    if (decodable(pkm.format) && decodedBytes > context.budget.maxScalarBytes) {
+      // an image this codec *can* decode but the caller has no room for: refused, never truncated
+      throw new RangeError('PKM decoded pixels exceed the scalar budget')
+    }
+    const decoded = decodeEtcRgba(bytes.subarray(16), pkm.blocksWide, pkm.blocksHigh, pkm.format)
+    const raster = createRasterImageSource(
+      bytes,
+      'image/x-pkm',
+      {
+        width: pkm.width,
+        height: pkm.height,
+        depth: 1,
+        layers: 1,
+        faces: 1,
+        mipLevels: 1,
+        frames: 1,
+        channels: pkm.blockBytes === 16 ? 4 : 3,
+        bitDepth: 8,
+        colorSpace: pkm.format.includes('SRGB') ? 'srgb' : 'unknown',
+        alphaMode: pkm.format.includes('RGBA') || pkm.format.includes('A1') ? 'straight' : 'none',
+        orientation: 'top-left',
+        decodedAccess: decoded !== undefined,
+      },
+      decoded === undefined ? undefined : regionReader(decoded, pkm),
+    )
     const tree = createTreeDataSource({
       kind: 'image',
       label: 'PKM',
@@ -162,8 +229,9 @@ const definition = Object.freeze({
         'common.view/raster-image-source': raster,
       },
       unsupportedFeatures: [
-        'decoded-region-provider',
-        'etc-eac-software-decoding',
+        ...(decoded === undefined
+          ? ['decoded-region-provider', 'eac-11-bit-channel-decoding']
+          : []),
         'mip-chains',
         'pkm-writing',
         'pixel-editing',

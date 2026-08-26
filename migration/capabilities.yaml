@@ -905,7 +905,9 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
-      - 'X3 публикует структурные заголовки; растровый план не декодируется — 17 честных poorer-строк паритета'
+      - 'СУЖЕННЫЙ SCOPE (§0.2, слайс 12-5): PKM декодируется — ETC1_RGB и семейство ETC2 RGB (в т.ч. sRGB, A1-punchthrough и RGBA с EAC-альфой) реализованы по спецификации в extensions/common/images/src/pkm/etc.js, растр публикуется через readRegion под maxScalarBytes'
+      - 'НАЗВАННЫЙ ОСТАТОК, а не молчание. Канон декодирует блочные форматы сторонним WASM-пакетом texture2ddecoder (packages/image-processing/src/core/gpu-texture-wasm.ts) — это бинарная зависимость, переносить нечего, поэтому по правилу слайса нужна чистая реализация там, где она подъёмна: ASTC — сотни комбинаций блочных режимов, trits/quints, dual-plane и void-extent, честно оценено как неподъёмное для среза; AVIF — интра-декодирование AV1, у канона декодера нет вообще; Basis — транскодирование ETC1S/UASTC, у канона тоже нет; EAC_R11/RG11 — иной codeword-layout, не RGB, и отображение каналов формат не задаёт'
+      - 'не сделано в 12-5 и подъёмно потом: ANI (кадры CUR/DIB — нужен путь DIB с AND-маской, которого нет ни у ico, ни у cur) и KTX2 с суперсжатой полезной нагрузкой (зависит от того, что лежит в реальном корпусе)'
     receipts:
       projection: null
       materialization: null
@@ -915,6 +917,7 @@ capabilities:
       commits: []
       tests:
         - 'packages/testkit/test/mk2-image-codecs.test.ts'
+        - 'packages/testkit/test/pkm-etc-decode.test.ts'
       reports:
         - 'docs/MK3/reports/REPORT_FABLE_BLOCK9_FINAL_2026-08-25.md'
   - capabilityId: 'block9/m3-geometry'
