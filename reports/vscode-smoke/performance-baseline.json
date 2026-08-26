@@ -28,9 +28,18 @@
     "max": 3640
   },
   "spread": {
-    "$comment": "Why this baseline is pooled, and what its comparison can and cannot detect. The first baseline was recorded from a single session of five launches (activation median 2948) and the very next run — with nothing changed in the product — reported +23.7% against it and raised a §7.4 alarm. Across three sessions activation ranges 2795–6493 ms and first open 1517–3640 ms: a 2.3x spread on the same machine, same commit, driven by whatever else the laptop was doing. The policy's 5% median threshold is therefore below this hardware's own noise floor, and a single-session comparison cannot separate a regression from a busy machine.",
+    "$comment": "Why this baseline is pooled, and what its comparison can and cannot detect. The first baseline was recorded from a single session of five launches (activation median 2948) and the very next run — with nothing changed in the product — reported +23.7% against it and raised a §7.4 alarm. Across four sessions of five launches activation ranges 2795–7126 ms and first open 1517–4904 ms: a 2.6x spread on the same machine, same commit, driven by whatever else the laptop was doing. Session medians alone were 5482, 2948, 3647 and 5169. The policy's 5% median threshold is therefore below this hardware's own noise floor, and a single-session comparison cannot separate a regression from a busy machine.",
     "consequence": "The comparison stays in the receipt as an investigation trigger, exactly as §7.4 intends, and is deliberately not wired to fail the run. What a red comparison means here is 'look at the samples', not 'a regression happened'. A comparison that could actually decide needs either a quiet-machine protocol or many more launches, and neither belongs in a smoke run.",
-    "activationRatio": 2.32,
-    "firstOpenRatio": 2.4
+    "activationRatio": 2.55,
+    "firstOpenRatio": 3.23,
+    "sessionMedians": {
+      "activationMs": [5482, 2948, 3647, 5169],
+      "note": "four sessions, one machine, one commit, no product change between them"
+    },
+    "observedMax": {
+      "activationMs": 7126,
+      "firstOpenMs": 4904,
+      "note": "the crash-guard ceilings in the suite are 10000 ms for both; no launch has approached them"
+    }
   }
 }
