@@ -14,7 +14,11 @@ import type { PermissionGrant, ResourceBudget } from '@modkitx-x3/sdk'
 import type { SubjectServices } from '../subject-services.js'
 import type { Inventory } from '../inventory.js'
 import type { OpenedSubject, SubjectInputResolver } from '../subject-open.js'
-import type { SubjectOpener, SubjectOpenSnapshot } from '../subject-rpc.js'
+import {
+  subjectOpenSnapshot,
+  type SubjectOpener,
+  type SubjectOpenSnapshot,
+} from '../subject-rpc.js'
 import { createCompanionInputResolver, createSignatureTraitProbe } from '../input-resolution.js'
 import { createFilesystemCompanionOrigin } from './companion-origin.js'
 import { openFileArtifactSource } from './file-artifact-source.js'
@@ -139,26 +143,14 @@ export function createPathSubjectOpener(options: PathSubjectOpenerOptions): Subj
       severity: item.severity,
     }))
     if (result.state === 'unresolved') {
-      const snapshot: SubjectOpenSnapshot = {
-        state: 'unresolved',
-        reason: result.reason,
-        candidates: result.candidates,
+      const snapshot: SubjectOpenSnapshot = subjectOpenSnapshot({
+        result,
+        sessionId: nextId,
         diagnostics,
-      }
+      })
       return { snapshot }
     }
-    const snapshot: SubjectOpenSnapshot = {
-      state: 'opened',
-      sessionId: nextId(),
-      descriptor: result.descriptor as unknown as Record<string, unknown>,
-      selected: {
-        contributionId: result.selected.contributionId,
-        variantId: result.selected.variantId,
-        confidence: result.selected.confidence,
-      },
-      candidates: result.candidates,
-      diagnostics,
-    }
+    const snapshot = subjectOpenSnapshot({ result, sessionId: nextId, diagnostics })
     /*
      * The opened subject, handed over before the snapshot leaves.
      *

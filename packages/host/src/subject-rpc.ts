@@ -149,6 +149,80 @@ export interface SubjectUnresolvedSnapshot {
 
 export type SubjectOpenSnapshot = SubjectOpenedSnapshot | SubjectUnresolvedSnapshot
 
+/**
+ * The one mapping from an open result to the snapshot that travels over the RPC.
+ *
+ * There are two ways a subject is reached now — a path on disk, and an entry inside an open
+ * container — and both have to arrive at the page looking identical, because the page has no idea
+ * which one it asked for. Writing the mapping twice would be an invitation to drift: the day a
+ * field is added to `SubjectOpenedSnapshot`, one of the two callers gets it and the other silently
+ * does not, and the symptom is a nested subject that renders with something missing.
+ *
+ * `diagnostics` is passed in rather than read off the result because the result is not the whole
+ * story: companion findings are produced by the resolver *around* the open, so the caller holds
+ * findings the open itself never saw.
+ */
+/** The fields of an unresolved open this mapping reads; declared structurally, not imported. */
+export interface UnresolvedOpenLike {
+  readonly state: 'unresolved'
+  readonly reason: string
+  readonly candidates: readonly unknown[]
+}
+
+/** The fields of a resolved open this mapping reads. */
+export interface OpenedSubjectLike {
+  readonly state: 'opened'
+  readonly descriptor: unknown
+  readonly selected: {
+    readonly contributionId: string
+    readonly variantId: string
+    readonly confidence: number
+  }
+  readonly candidates: readonly unknown[]
+}
+
+export interface SubjectOpenSnapshotOptions<Result> {
+  readonly result: Result
+  /** Minted only for an open that resolved, so an unresolved answer consumes no id. */
+  readonly sessionId: () => string
+  readonly diagnostics: readonly SnapshotDiagnostic[]
+}
+
+export function subjectOpenSnapshot(
+  options: SubjectOpenSnapshotOptions<OpenedSubjectLike>,
+): SubjectOpenedSnapshot
+export function subjectOpenSnapshot(
+  options: SubjectOpenSnapshotOptions<UnresolvedOpenLike>,
+): SubjectUnresolvedSnapshot
+export function subjectOpenSnapshot(
+  options: SubjectOpenSnapshotOptions<OpenedSubjectLike | UnresolvedOpenLike>,
+): SubjectOpenSnapshot
+export function subjectOpenSnapshot(
+  options: SubjectOpenSnapshotOptions<OpenedSubjectLike | UnresolvedOpenLike>,
+): SubjectOpenSnapshot {
+  const { result, diagnostics } = options
+  if (result.state === 'unresolved') {
+    return {
+      state: 'unresolved',
+      reason: result.reason,
+      candidates: result.candidates,
+      diagnostics,
+    }
+  }
+  return {
+    state: 'opened',
+    sessionId: options.sessionId(),
+    descriptor: result.descriptor as Record<string, unknown>,
+    selected: {
+      contributionId: result.selected.contributionId,
+      variantId: result.selected.variantId,
+      confidence: result.selected.confidence,
+    },
+    candidates: result.candidates,
+    diagnostics,
+  }
+}
+
 /** What the editing arm reports about the subject it can write. */
 export interface SubjectEditingState {
   readonly revision: AssetRevision
