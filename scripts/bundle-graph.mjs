@@ -1,0 +1,208 @@
+#!/usr/bin/env node
+// Bundle graph report (plan block 12 item 20).
+//
+// `bundle-hashes.json` already answers "did any entry's bytes change", byte for byte. What it
+// cannot answer is *why*, and that is the question a platform change actually raises: an entry that
+// grew by 4 KB grew because it started pulling in something, and the something is the fact worth
+// reviewing. This emits that: per entry, its size, its module count, and — the part that matters —
+// which other publication units it reaches.
+//
+// The cross-unit edge list is the architectural signal. Bytes drift for a dozen innocent reasons;
+// a *new edge* from `sdk/runtime` to `host` is a boundary being crossed, and it shows up here as
+// one added line rather than as a number that got bigger.
+//
+// Determinism, so the artifact can be committed and diffed: same esbuild options as scripts/
+// bundle.mjs, sorted keys everywhere, LF endings, no timestamps, no absolute paths.
+//
+// Usage:
+//   node scripts/bundle-graph.mjs            # emit reports/bundle-graph.json and .md
+//   node scripts/bundle-graph.mjs --check    # rebuild in memory and refuse drift
+
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import path from 'node:path'
+import process from 'node:process'
+import { fileURLToPath } from 'node:url'
+import { build } from 'esbuild'
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+const check = process.argv.includes('--check')
+const reportPath = path.join(repoRoot, 'reports', 'bundle-graph.json')
+const readablePath = path.join(repoRoot, 'reports', 'bundle-graph.md')
+
+/** Same externalisation rule as the bundler: bare specifiers stay external, relatives are inlined. */
+const externalPlugin = {
+  name: 'externalise-bare',
+  setup(builder) {
+    // esbuild compiles this filter with Go's regexp engine, which rejects the `u` flag
+    builder.onResolve({ filter: /.*/ }, args => {
+      if (args.kind === 'entry-point') return undefined
+      const isRelative = args.path.startsWith('.') || args.path.startsWith('/')
+      return isRelative ? undefined : { path: args.path, external: true }
+    })
+  },
+}
+
+/** `packages/host/dist/runtime/index.js` → the source entry esbuild should read. */
+function sourceFor(entry) {
+  return entry.replace(/\/dist\//u, '/src/').replace(/\.js$/u, '.ts')
+}
+
+/** The publication unit a module path belongs to, or undefined for anything outside packages/. */
+function unitOf(modulePath) {
+  const match = /(?:^|\/)packages\/([a-z-]+)\//u.exec(modulePath.replaceAll('\\', '/'))
+  return match?.[1]
+}
+
+/** The subpath surface an entry publishes, e.g. `host/runtime`. */
+function surfaceOf(entry) {
+  const match =
+    /^(?:packages|apps)\/([a-z0-9-]+)\/dist\/(.*)\/?index\.js$|^(?:packages|apps)\/([a-z0-9-]+)\/dist\/(.+)\.js$/u.exec(
+      entry,
+    )
+  if (match === null) return entry
+  const owner = match[1] ?? match[3] ?? ''
+  const rest = (match[2] ?? match[4] ?? '').replace(/\/$/u, '')
+  return rest === '' || rest === 'index' ? owner : `${owner}/${rest}`
+}
+
+async function graphFor(entry) {
+  const source = path.join(repoRoot, sourceFor(entry))
+  let result
+  try {
+    result = await build({
+      entryPoints: [source],
+      bundle: true,
+      format: 'esm',
+      platform: 'neutral',
+      target: 'es2023',
+      write: false,
+      minify: false,
+      sourcemap: false,
+      legalComments: 'none',
+      metafile: true,
+      plugins: [externalPlugin],
+      logLevel: 'silent',
+    })
+  } catch {
+    // an entry whose source is not a .ts (a generated .js, an app bundle) is reported without a graph
+    return undefined
+  }
+  const output = Object.values(result.metafile.outputs)[0]
+  if (output === undefined) return undefined
+  const inputs = Object.keys(output.inputs).map(item => item.replaceAll('\\', '/'))
+  const own = unitOf(source.replaceAll('\\', '/'))
+  const reaches = new Set()
+  for (const input of inputs) {
+    const unit = unitOf(input)
+    if (unit !== undefined && unit !== own) reaches.add(unit)
+  }
+  const external = new Set(
+    (output.imports ?? [])
+      .filter(item => item.external === true)
+      .map(item => item.path)
+      .filter(item => item.startsWith('@modkitx-x3/')),
+  )
+  return {
+    modules: inputs.length,
+    bytes: output.bytes,
+    reachesUnits: [...reaches].sort(),
+    externalUnits: [...external].sort(),
+  }
+}
+
+const baseline = JSON.parse(
+  readFileSync(path.join(repoRoot, 'migration', 'product-profiles.json'), 'utf8'),
+).bundleBaseline
+const entries = [...(baseline.entries ?? [])].sort()
+
+const rows = []
+for (const entry of entries) {
+  const graph = await graphFor(entry)
+  if (graph === undefined) continue
+  rows.push({ entry, surface: surfaceOf(entry), ...graph })
+}
+rows.sort((left, right) => (left.entry < right.entry ? -1 : left.entry > right.entry ? 1 : 0))
+
+const report = {
+  $comment:
+    'Generated by scripts/bundle-graph.mjs (block 12 item 20). Deterministic: sorted, no timestamps, no absolute paths. `reachesUnits` is the architectural signal — a new unit in that list is a boundary crossing, which a byte count would only show as a bigger number.',
+  schemaVersion: 'bundle-graph-1',
+  entryCount: rows.length,
+  totals: {
+    modules: rows.reduce((sum, row) => sum + row.modules, 0),
+    bytes: rows.reduce((sum, row) => sum + row.bytes, 0),
+  },
+  entries: rows,
+}
+
+const serialised = `${JSON.stringify(report, null, 2)}\n`.replace(/\r\n/gu, '\n')
+
+const readable = [
+  '# Bundle graph',
+  '',
+  '<!-- Generated by scripts/bundle-graph.mjs. Do not edit by hand; run `pnpm bundle:graph`. -->',
+  '',
+  `${report.entryCount} entries, ${report.totals.modules} modules, ${report.totals.bytes} bytes.`,
+  '',
+  '| Surface | Modules | Bytes | Depends on |',
+  '| --- | ---: | ---: | --- |',
+  ...rows.map(
+    row =>
+      `| \`${row.surface}\` | ${row.modules} | ${row.bytes} | ${row.externalUnits.length === 0 ? '—' : row.externalUnits.map(unit => `\`${unit.replace('@modkitx-x3/', '')}\``).join(', ')} |`,
+  ),
+  '',
+].join('\n')
+
+if (check) {
+  let committed
+  try {
+    committed = readFileSync(reportPath, 'utf8')
+  } catch {
+    console.error(
+      'bundle:graph --check: reports/bundle-graph.json is missing; run pnpm bundle:graph',
+    )
+    process.exit(1)
+  }
+  if (committed !== serialised) {
+    const before = JSON.parse(committed)
+    const previous = new Map(before.entries.map(row => [row.entry, row]))
+    const problems = []
+    for (const row of rows) {
+      const old = previous.get(row.entry)
+      if (old === undefined) {
+        problems.push(`${row.surface}: new entry (${row.modules} modules, ${row.bytes} bytes)`)
+        continue
+      }
+      const added = row.externalUnits.filter(unit => !old.externalUnits.includes(unit))
+      if (added.length > 0) {
+        problems.push(
+          `${row.surface}: now depends on ${added.join(', ')} — a new edge, not a size change`,
+        )
+      }
+      const inlined = row.reachesUnits.filter(unit => !old.reachesUnits.includes(unit))
+      if (inlined.length > 0) {
+        problems.push(
+          `${row.surface}: inlines ${inlined.join(', ')} across a package boundary — worse than a dependency, because it is invisible in the manifest`,
+        )
+      }
+      if (row.bytes !== old.bytes) {
+        problems.push(`${row.surface}: ${old.bytes} → ${row.bytes} bytes (${row.modules} modules)`)
+      }
+    }
+    for (const entry of previous.keys()) {
+      if (!rows.some(row => row.entry === entry)) problems.push(`${entry}: entry disappeared`)
+    }
+    console.error(`bundle:graph --check: report is stale (${problems.length} difference(s))`)
+    for (const problem of problems.slice(0, 40)) console.error(`  - ${problem}`)
+    console.error('  run pnpm bundle:graph and review the diff before committing it')
+    process.exit(1)
+  }
+  console.log(`bundle:graph --check: ${report.entryCount} entries unchanged`)
+} else {
+  mkdirSync(path.dirname(reportPath), { recursive: true })
+  writeFileSync(reportPath, serialised, 'utf8')
+  writeFileSync(readablePath, readable.replace(/\r\n/gu, '\n'), 'utf8')
+  console.log(
+    `bundle:graph: ${report.entryCount} entries, ${report.totals.modules} modules, ${report.totals.bytes} bytes`,
+  )
+}

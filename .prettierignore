@@ -19,3 +19,7 @@ packages/testkit/test/fixtures/mk2-synthetic/minimal.mdx
 # generated snapshot of one pinned multiverse/specs commit — byte-exact by construction and
 # verified by `pnpm specs:check`; reformatting it would break every pinned digest
 vendor/multiverse-specs/
+# generated bundle graph — owned by scripts/bundle-graph.mjs, byte-compared by `pnpm bundle:graph:check`;
+# prettier collapses its short arrays and the two spellings would fight each other forever
+reports/bundle-graph.json
+reports/bundle-graph.md
