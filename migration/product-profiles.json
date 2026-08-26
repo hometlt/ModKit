@@ -3,7 +3,12 @@
   "schemaVersion": "product-profiles-1",
   "compositionSource": "scripts/app-extension-sets.mjs",
   "optionalFamilies": ["rendering-3d", "ui-monaco"],
-  "counts": { "presets": 7, "available": 5, "planned": 2, "referenceProfiles": 13 },
+  "counts": {
+    "presets": 7,
+    "available": 5,
+    "planned": 2,
+    "referenceProfiles": 13
+  },
   "presets": [
     {
       "id": "common-documents",
@@ -319,6 +324,52 @@
       "packages/vfs/dist/providers/file/index.js",
       "packages/vfs/dist/providers/http/index.js",
       "packages/vfs/dist/providers/memory/index.js"
+    ]
+  },
+  "optionalClosures": {
+    "$comment": "Block 12 item 18: capability-scoped optional closures. A closure names the published surfaces a product must add to take on one capability — and, by being named, the surfaces a product that declines it never pays for. `units` are canonical publication units (§2.3 rule 1); `subpaths` are the exact published entries, because the unit is not the granularity that gets dropped: a headless host keeps `host` and drops `host/runtime`.",
+    "capabilities": ["lsp", "renderer", "runtime", "agent", "external-tools"],
+    "closures": [
+      {
+        "capability": "lsp",
+        "status": "available",
+        "units": ["sdk", "host"],
+        "subpaths": ["@modkitx-x3/sdk/language", "@modkitx-x3/host/language"],
+        "extensionFamilies": [],
+        "note": "language contracts plus the host router; the editor surface itself is ui and is a separate choice"
+      },
+      {
+        "capability": "renderer",
+        "status": "available",
+        "units": ["sdk"],
+        "subpaths": ["@modkitx-x3/sdk/renderer"],
+        "extensionFamilies": ["rendering-3d"],
+        "note": "contracts in sdk, concrete renderers as contributions (2.3 rule 2); the family is already an optionalFamily above"
+      },
+      {
+        "capability": "runtime",
+        "status": "available",
+        "units": ["sdk", "host"],
+        "subpaths": ["@modkitx-x3/sdk/runtime", "@modkitx-x3/host/runtime"],
+        "extensionFamilies": [],
+        "note": "session v2 was frozen in slice 12-4; no runtime provider ships yet, so a product taking this closure gets the contract and the routing, not an engine"
+      },
+      {
+        "capability": "agent",
+        "status": "planned",
+        "units": [],
+        "subpaths": [],
+        "extensionFamilies": [],
+        "note": "legacy @modkitx/agent-tools has an owner row (sdk) and no ported surface; a closure with no published subpath cannot be declared available"
+      },
+      {
+        "capability": "external-tools",
+        "status": "planned",
+        "units": [],
+        "subpaths": [],
+        "extensionFamilies": [],
+        "note": "no published surface yet; named here so the closure exists as a reservation rather than appearing later as a surprise"
+      }
     ]
   }
 }

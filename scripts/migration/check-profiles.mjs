@@ -19,7 +19,7 @@
 // Usage: node scripts/migration/check-profiles.mjs [--profiles <path>] [--quiet]
 
 import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
@@ -175,6 +175,72 @@ for (const profile of profiles.referenceProfiles?.profiles ?? []) {
       fail(
         `reference profile ${profile.id}: budget ${profile.budgetBytes} is not asserted by the minimal build test`,
       )
+    }
+  }
+}
+
+// --- 7: capability-scoped optional closures (block 12 item 18) ------------------------------------
+
+/*
+ * A closure is only meaningful if declining it is cheap, so two things are checked: that every
+ * surface a closure names is really published (otherwise a product cannot opt in), and that every
+ * such surface is its own bundle entry (otherwise it cannot be dropped, and «optional» is a word
+ * rather than a property). A closure with no published surface may only be `planned` — declaring
+ * it available would promise an opt-in nobody can take.
+ */
+const OPTIONAL_CAPABILITIES = ['lsp', 'renderer', 'runtime', 'agent', 'external-tools']
+const optionalClosures = profiles.optionalClosures
+if (optionalClosures === undefined) {
+  fail('product-profiles.json declares no optionalClosures; block 12 item 18 requires all five')
+} else {
+  const declared = optionalClosures.closures.map(closure => closure.capability)
+  if (declared.join(',') !== OPTIONAL_CAPABILITIES.join(',')) {
+    fail(
+      `optional closures must be exactly ${OPTIONAL_CAPABILITIES.join(', ')}; found ${declared.join(', ')}`,
+    )
+  }
+  const baselineEntries = new Set(baseline.entries ?? [])
+  for (const closure of optionalClosures.closures) {
+    const label = `optional closure ${closure.capability}`
+    if (!['available', 'planned'].includes(closure.status)) {
+      fail(`${label}: status must be available or planned`)
+    }
+    if (closure.status === 'planned' && closure.subpaths.length > 0) {
+      fail(`${label}: a planned closure names published subpaths; it is available, not planned`)
+    }
+    if (closure.status === 'available' && closure.subpaths.length === 0) {
+      fail(`${label}: an available closure must name at least one published subpath`)
+    }
+    for (const family of closure.extensionFamilies ?? []) {
+      if (!optional.has(family)) {
+        fail(`${label}: names extension family ${family}, which is not declared optional`)
+      }
+    }
+    for (const subpath of closure.subpaths) {
+      const match = /^@modkitx-x3\/([a-z-]+)(\/.+)?$/u.exec(subpath)
+      if (match === null) {
+        fail(`${label}: ${subpath} is not a @modkitx-x3 specifier`)
+        continue
+      }
+      const [, packageName, rest] = match
+      const manifestPath = path.join(repoRoot, 'packages', packageName, 'package.json')
+      if (!existsSync(manifestPath)) {
+        fail(`${label}: ${subpath} names package ${packageName}, which does not exist`)
+        continue
+      }
+      const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+      const key = rest === undefined ? '.' : `.${rest}`
+      if (manifest.exports?.[key] === undefined) {
+        fail(`${label}: ${subpath} is not a published export of ${packageName}`)
+        continue
+      }
+      // droppable means "its own entry": a surface fused into the package root cannot be declined
+      const entry = `packages/${packageName}/dist${rest === undefined ? '' : rest}/index.js`
+      if (!baselineEntries.has(entry)) {
+        fail(
+          `${label}: ${subpath} is not a separate bundle entry (${entry}); a surface that cannot be dropped is not optional`,
+        )
+      }
     }
   }
 }
