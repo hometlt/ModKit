@@ -11458,6 +11458,7 @@ capabilities:
         - 'richer'
       liveSources:
         - 'common.view/model-scene-source'
+        - 'common.view/tree-data-source'
     fixtures: []
     corpusDescriptors:
       - 'MODKITX_BAR_ROOT'
@@ -13963,6 +13964,7 @@ capabilities:
         - 'poorer'
       liveSources:
         - 'common.view/model-scene-source'
+        - 'common.view/tree-data-source'
     fixtures: []
     corpusDescriptors:
       - 'MODKITX_WARZONE_ROOT'
