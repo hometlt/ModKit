@@ -3,10 +3,10 @@
   "version": 1,
   "rung": "E5",
   "block": "block-9",
-  "startedAt": "2026-08-26T05:15:02.438Z",
-  "finishedAt": "2026-08-26T05:15:51.537Z",
+  "startedAt": "2026-08-26T06:45:44.760Z",
+  "finishedAt": "2026-08-26T06:46:33.444Z",
   "subject": {
-    "x3Commit": "3e4926933bde4844b9e6c7b4d167abaab8cc8db4",
+    "x3Commit": "06c34a3ede984d4d645eeee1f32b9a5bd6c00247",
     "extension": {
       "id": "modkitx.@modkitx-x3/modkit-vscode",
       "version": "0.1.0"
@@ -61,13 +61,13 @@
     "distAppCheck": {
       "command": "pnpm --filter @modkitx-x3/modkit-vscode dist-app:check",
       "exitCode": 0,
-      "matchesCommittedBundle": true,
-      "output": "\n  You need to set the output format to \"esm\" for \"import.meta\" to work correctly.\n\ndist-app --check: 5 file(s) byte-identical"
+      "matchesFreshDeterministicBuild": true,
+      "output": "\n  You need to set the output format to \"esm\" for \"import.meta\" to work correctly.\n\ndist-app --check: 5 generated file(s) are fresh and byte-deterministic across two clean builds"
     }
   },
   "webviewChannel": {
     "cdpUsable": true,
-    "port": 58754,
+    "port": 59057,
     "note": "no vscode-webview target among 2"
   },
   "scenarios": [
@@ -76,7 +76,7 @@
       "title": "The extension activates without error",
       "verdict": "PASS",
       "evidence": "activate() resolved and all 5 modkit commands are registered, so the host composition completed inside activation",
-      "durationMs": 3798,
+      "durationMs": 4487,
       "details": {
         "extensionId": "modkitx.@modkitx-x3/modkit-vscode",
         "commands": {
@@ -90,7 +90,7 @@
       "title": "A single W3D opens with its descriptor",
       "verdict": "PASS",
       "evidence": "opened through \"Reopen Editor With… → Modkit Asset Preview\"; the page shows a 2-node scene (one node per pivot) and 1 animation, matching block 9",
-      "durationMs": 8906,
+      "durationMs": 8834,
       "details": {
         "tabOpened": true,
         "stageTabs": ["Model", "Tree", "Metadata", "Hex"],
@@ -109,7 +109,7 @@
       "title": "A VXL resolves its .hva companion",
       "verdict": "PASS",
       "evidence": "opened with gnavrail.hva beside it; the page names the companion as provenance and the host raises no missing-sidecar diagnostic",
-      "durationMs": 5586,
+      "durationMs": 5546,
       "details": {
         "companionOnDisk": true,
         "stageTabs": ["Model", "Tree", "Metadata", "Hex"],
@@ -133,7 +133,7 @@
       "title": "A W3D nested in a BIG archive opens as a subject",
       "verdict": "PASS",
       "evidence": "with no editor open on the archive, the container filesystem lists 5 root entries through the editor's own workspace.fs and stats «data/editor/molds/bowl.w3d» at 30346 bytes; `modkit.openArchiveEntry` then opened it in a Modkit editor as a model subject with 1 scene node(s) — the member is a subject, not a hex preview",
-      "durationMs": 7756,
+      "durationMs": 7543,
       "details": {
         "archiveOnDisk": true,
         "entry": "data/editor/molds/bowl.w3d",
@@ -154,7 +154,7 @@
       "title": "A VXL without its sidecar reports a leak-free diagnostic",
       "verdict": "PASS",
       "evidence": "the model opened without its sidecar, the host raised x3.host/companion-unavailable, and the 1 diagnostic line(s) carry no drive letter, UNC path, ${FILE_URL} URL or home directory",
-      "durationMs": 8668,
+      "durationMs": 8592,
       "details": {
         "copyOnDisk": true,
         "companionAbsent": true,
@@ -187,13 +187,66 @@
       }
     },
     {
+      "id": "command-fixtures",
+      "title": "The shared command fixtures run in the editor",
+      "verdict": "PASS",
+      "evidence": "all 6 shared command fixtures reached the same state here as in the CLI and the Electron fake host — one runtime, three products, one verdict per fixture",
+      "durationMs": 4003,
+      "details": {
+        "fixtures": [
+          {
+            "id": "open-png",
+            "command": "subject.open",
+            "expected": "ok",
+            "actual": "ok",
+            "passed": true
+          },
+          {
+            "id": "inspect-png",
+            "command": "subject.inspect",
+            "expected": "ok",
+            "actual": "ok",
+            "passed": true
+          },
+          {
+            "id": "validate-png",
+            "command": "subject.validate",
+            "expected": "ok",
+            "actual": "ok",
+            "passed": true
+          },
+          {
+            "id": "preview-png",
+            "command": "subject.preview",
+            "expected": "unavailable",
+            "actual": "unavailable",
+            "passed": true
+          },
+          {
+            "id": "extract-archive-member",
+            "command": "subject.extract",
+            "expected": "ok",
+            "actual": "ok",
+            "passed": true
+          },
+          {
+            "id": "extract-missing-member",
+            "command": "subject.extract",
+            "expected": "failed",
+            "actual": "failed",
+            "passed": true
+          }
+        ]
+      }
+    },
+    {
       "id": "clean-close",
       "title": "Editors close and the host stays responsive",
       "verdict": "PASS",
-      "evidence": "all 1 Modkit tab(s) closed and the extension host still answers commands afterwards; the editor’s own exit is recorded by the harness",
-      "durationMs": 22,
+      "evidence": "all 0 Modkit tab(s) closed and the extension host still answers commands afterwards; the editor’s own exit is recorded by the harness",
+      "durationMs": 87,
       "details": {
-        "tabsBefore": 1,
+        "tabsBefore": 0,
         "tabsAfter": 0,
         "hostResponsiveAfterClose": true
       }
@@ -229,8 +282,8 @@
     "editorExited": true
   },
   "summary": {
-    "total": 6,
-    "passed": 6,
+    "total": 7,
+    "passed": 7,
     "failed": 0,
     "allPassed": true
   },
