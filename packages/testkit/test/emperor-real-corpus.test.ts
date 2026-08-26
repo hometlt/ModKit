@@ -102,14 +102,22 @@ describe('installed Emperor: Battle for Dune product vertical', () => {
           const treeLease = await opened.session.dataSource('common.view/tree-data-source', 1)
           try {
             const info = await (modelLease.value as ModelSceneSource).info()
-            expect(info).toMatchObject({ scenes: 1, nodes: 1, geometryAccess: 'metadata-only' })
-            expect(info.textures).toBeGreaterThan(0)
+            expect(info).toMatchObject({
+              scenes: 1,
+              nodes: 9,
+              meshes: 4,
+              primitives: 4,
+              materials: 5,
+              animations: 25,
+              geometryAccess: 'decoded',
+            })
+            expect(info.textures).toBe(5)
             const tree = treeLease.value as TreeDataSource
             expect(
               (await tree.children(await tree.root(), { limit: 100 })).items.length,
             ).toBeGreaterThan(0)
             console.info(
-              `[emperor-live] codec emperor-xbf, textures ${info.textures}, geometry ${info.geometryAccess}`,
+              `[emperor-live] codec emperor-xbf, nodes ${info.nodes}, meshes ${info.meshes}, materials ${info.materials}, animations ${info.animations}`,
             )
           } finally {
             await treeLease.release()
