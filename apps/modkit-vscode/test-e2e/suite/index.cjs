@@ -728,6 +728,21 @@ async function runScenarios(env) {
       return false
     }
 
+    /*
+     * The archive's own tab is closed before anything else is read, and that is not tidying.
+     *
+     * `readWebviewText` keeps the *longest* answer among all live webview targets, so two open
+     * Modkit pages are indistinguishable to it — and a BIG listing 210 entries is always longer
+     * than one small model, which means the stages read back would be the archive's. (The first
+     * run of this scenario reported exactly that: `["Tree","Metadata","Hex","Entries","Edit"]`,
+     * where `Entries` is a stage only a namespace subject publishes.)
+     *
+     * Closing it also strengthens the claim. The granted directory and the container session
+     * outlive the tab, so what follows shows the container filesystem answering with no Modkit
+     * editor open on the archive at all — which is the situation the native Explorer is in.
+     */
+    await closeAllEditors()
+
     // The Explorer's own question: what does this container hold?
     const root = containerUri(archive)
     let listing
@@ -759,6 +774,14 @@ async function runScenarios(env) {
     record.details.memberTabOpened = memberTab !== undefined
     if (memberTab === undefined) {
       record.evidence = `«${entry}» did not open in a Modkit custom editor within 30s`
+      return false
+    }
+    // One Modkit page is live, so the text read below is unambiguously this member's.
+    record.details.liveModkitTabs = modkitTabs().length
+    if (record.details.liveModkitTabs !== 1) {
+      record.evidence =
+        `${record.details.liveModkitTabs} Modkit tab(s) are open, so the page reader cannot be ` +
+        'attributed to the member; the scenario refuses to guess'
       return false
     }
     await waitFor(async () => (await readStageTabs()).length >= 2, {
@@ -795,9 +818,9 @@ async function runScenarios(env) {
       return false
     }
     record.evidence =
-      `the archive lists ${listing.length} root entries through the editor's own workspace.fs, ` +
-      `«${entry}» stats at ${stat.size} bytes through the container, and ` +
-      '`modkit.openArchiveEntry` opened it in a Modkit editor as a model subject with ' +
+      `with no editor open on the archive, the container filesystem lists ${listing.length} root ` +
+      `entries through the editor's own workspace.fs and stats «${entry}» at ${stat.size} bytes; ` +
+      '`modkit.openArchiveEntry` then opened it in a Modkit editor as a model subject with ' +
       `${record.details.memberNodes} scene node(s) — the member is a subject, not a hex preview`
     return true
   })
