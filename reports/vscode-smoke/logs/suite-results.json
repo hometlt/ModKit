@@ -1,6 +1,6 @@
 {
-  "startedAt": "2026-08-26T08:49:08.027Z",
-  "finishedAt": "2026-08-26T08:49:59.923Z",
+  "startedAt": "2026-08-26T11:22:24.088Z",
+  "finishedAt": "2026-08-26T11:23:15.246Z",
   "extensionHost": {
     "node": "24.18.1",
     "electron": "42.8.1",
@@ -9,7 +9,7 @@
   },
   "webviewChannel": {
     "cdpUsable": true,
-    "port": 58641,
+    "port": 58955,
     "note": "no vscode-webview target among 2"
   },
   "scenarios": [
@@ -17,29 +17,29 @@
       "id": "activation",
       "title": "The extension activates without error",
       "verdict": "pass",
-      "evidence": "activate() resolved in 4040 ms (budget 10000 ms) with 111 contribution(s) from the shipped catalog and none missing; all 5 modkit commands are registered, so the host composition completed inside activation",
+      "evidence": "activate() resolved in 3040 ms (budget 10000 ms) with 112 contribution(s) from the shipped catalog and none missing; all 5 modkit commands are registered, so the host composition completed inside activation",
       "details": {
         "extensionId": "modkitx.@modkitx-x3/modkit-vscode",
         "commands": {
           "expected": 5,
           "missing": []
         },
-        "activationMs": 4040,
-        "contributions": 111,
+        "activationMs": 3040,
+        "contributions": 112,
         "missingCatalogRoots": [],
         "activationBudgetMs": 10000
       },
-      "durationMs": 5612
+      "durationMs": 3859
     },
     {
       "id": "w3d-single",
       "title": "A single W3D opens with its descriptor",
       "verdict": "pass",
-      "evidence": "opened through \"Reopen Editor With… → Modkit Asset Preview\" in 2371 ms (budget 45000 ms); the page shows a 2-node scene (one node per pivot) and 1 animation, matching block 9",
+      "evidence": "opened through \"Reopen Editor With… → Modkit Asset Preview\" in 2324 ms (budget 10000 ms); the page shows a 2-node scene (one node per pivot) and 1 animation, matching block 9",
       "details": {
         "tabOpened": true,
-        "firstOpenMs": 2371,
-        "firstOpenBudgetMs": 45000,
+        "firstOpenMs": 2324,
+        "firstOpenBudgetMs": 10000,
         "stageTabs": ["Model", "Tree", "Metadata", "Hex"],
         "stagesVisited": ["as-opened", "Metadata", "Tree", "Model"],
         "diagnosticsSeen": [],
@@ -50,7 +50,7 @@
         "pivotsLiteral": null,
         "animationsLiteral": "1"
       },
-      "durationMs": 8989
+      "durationMs": 8713
     },
     {
       "id": "vxl-companion",
@@ -74,7 +74,7 @@
         "mentionsCompanion": true,
         "animations": "0"
       },
-      "durationMs": 5612
+      "durationMs": 6920
     },
     {
       "id": "big-nested",
@@ -95,7 +95,7 @@
         "pageExcerpt": "Modkit · Model · Tree · Metadata · Hex · 1 nodes · 1 meshes · 1 primitives · 1 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · WESTWOOD W3D MODEL · rootChunks · 1 · chunks · 15 · opaqueTailBytes · 0 · chunkTypes · MESH:1, MESH_HEADER3:1, VERTICES:1, VERTEX_NORMALS:1, TRIANGLES:1, CHUNK_0x00000022:1, CHUNK_0x00000028:1, CHUNK_0x0000002a:1, CHUNK_0x0000002b:1, CHUNK_0x0000002c:1, CHUNK_0x0000002d:1, CHUNK_0x00000029:1, MATERIAL_PASS:1, CHUNK_0x00000039:1, CHUNK_0x0000003a:1 · decodedMeshes · 1 · textures · 0 · geometryAccess · decoded · UV PROJECTION RECEIPT · receipt · [object Object] · OBSERVED TRAITS · model.geometry · available · meshes=1, decoded=true · structure.hierarchy · available · chunks=15 · content.binary · available · bytes=30346 · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · Westwood W3D · org.modkitx.app.vscode/webview · 2 facilities · Modkit · Model · Tree · Metadata · Hex · 1 nodes · 1 meshes · 1 primitives · 1 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities",
         "memberNodes": "1"
       },
-      "durationMs": 9584
+      "durationMs": 8656
     },
     {
       "id": "diagnostics-no-companion",
@@ -132,7 +132,83 @@
           "x3.host/companion-unavailable: optional companion «hva» is absent; the dependent capability stays unavailable"
         ]
       },
-      "durationMs": 9091
+      "durationMs": 8767
+    },
+    {
+      "id": "transport-matrix",
+      "title": "Five source families answer through the product route",
+      "verdict": "pass",
+      "evidence": "5 of 5 source families answered through the product route (0 skipped for a missing corpus: none); common-documents=ok in 1067 ms; sc2-mpq=ok via org.modkitx/mpq in 709 ms; cnc-big=ok in 708 ms; warzone-wz=ok via org.modkitx/archive-zip in 691 ms; bar-spring-vfs=failed in 1793 ms",
+      "details": {
+        "matrix": [
+          {
+            "id": "common-documents",
+            "source": "Common Documents",
+            "route": "subject.inspect",
+            "expect": "ok",
+            "note": "an ODT from the bundled documents catalog; no corpus needed",
+            "verdict": "pass",
+            "state": "ok",
+            "durationMs": 1067,
+            "code": null,
+            "message": null,
+            "selected": null
+          },
+          {
+            "id": "sc2-mpq",
+            "source": "SC2 CASC/MPQ",
+            "route": "subject.open",
+            "expect": "ok",
+            "note": "MPQ container of a retail install; CASC as a whole-install mount is block 15",
+            "verdict": "pass",
+            "state": "ok",
+            "durationMs": 709,
+            "code": null,
+            "message": null,
+            "selected": "org.modkitx/mpq"
+          },
+          {
+            "id": "cnc-big",
+            "source": "C&C BIG",
+            "route": "subject.extract",
+            "expect": "ok",
+            "note": "the command runtime reading a member out of a live container",
+            "verdict": "pass",
+            "state": "ok",
+            "durationMs": 708,
+            "code": null,
+            "message": null,
+            "selected": null
+          },
+          {
+            "id": "warzone-wz",
+            "source": "Warzone .wz",
+            "route": "subject.open",
+            "expect": "ok",
+            "note": "generic ZIP route; wz semantics are mk2 staging and belong to block 17",
+            "verdict": "pass",
+            "state": "ok",
+            "durationMs": 691,
+            "code": null,
+            "message": null,
+            "selected": "org.modkitx/archive-zip"
+          },
+          {
+            "id": "bar-spring-vfs",
+            "source": "BAR Spring VFS",
+            "route": "subject.open",
+            "expect": "failed",
+            "note": "the 7z reader refuses BAR header form by name; Spring VFS semantics are block 17",
+            "verdict": "pass",
+            "state": "failed",
+            "durationMs": 1793,
+            "code": "x3.command/subject-unresolved",
+            "message": "no contribution claimed this subject: input-unresolved",
+            "selected": null
+          }
+        ]
+      },
+      "durationMs": 6416
     },
     {
       "id": "gpu-texture-stages",
@@ -151,7 +227,7 @@
           "ungranted": ["gpu.webgpu"]
         }
       },
-      "durationMs": 3494
+      "durationMs": 2536
     },
     {
       "id": "command-fixtures",
@@ -204,7 +280,7 @@
           }
         ]
       },
-      "durationMs": 9363
+      "durationMs": 4992
     },
     {
       "id": "clean-close",
@@ -216,7 +292,7 @@
         "tabsAfter": 0,
         "hostResponsiveAfterClose": true
       },
-      "durationMs": 4
+      "durationMs": 55
     }
   ]
 }

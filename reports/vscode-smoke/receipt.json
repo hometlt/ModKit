@@ -3,10 +3,72 @@
   "version": 1,
   "rung": "E5",
   "block": "block-9",
-  "startedAt": "2026-08-26T08:48:50.964Z",
-  "finishedAt": "2026-08-26T08:50:01.661Z",
+  "startedAt": "2026-08-26T11:16:45.825Z",
+  "finishedAt": "2026-08-26T11:23:16.845Z",
+  "performance": {
+    "note": "Cold editor launches. `activationMs` is the extension`s own figure (activate() start to return); `firstOpenMs` is command to stage list for the W3D. Budget formula: max(median + 1000 ms, median * 1.5) — see run-smoke.mjs `budgetFrom`.",
+    "runs": 5,
+    "samples": [
+      {
+        "run": 1,
+        "activationMs": 6853,
+        "firstOpenMs": 4904
+      },
+      {
+        "run": 2,
+        "activationMs": 3645,
+        "firstOpenMs": 3178
+      },
+      {
+        "run": 3,
+        "activationMs": 7126,
+        "firstOpenMs": 4268
+      },
+      {
+        "run": 4,
+        "activationMs": 5169,
+        "firstOpenMs": 2757
+      },
+      {
+        "run": 5,
+        "activationMs": 3040,
+        "firstOpenMs": 2324
+      }
+    ],
+    "activationMs": {
+      "samples": [6853, 3645, 7126, 5169, 3040],
+      "median": 5169,
+      "p95": 7126,
+      "budget": 7754
+    },
+    "firstOpenMs": {
+      "samples": [4904, 3178, 4268, 2757, 2324],
+      "median": 3178,
+      "p95": 4904,
+      "budget": 4767
+    },
+    "againstBaseline": {
+      "state": "alarm",
+      "policy": "median worse by more than 5% (§7.4); an alarm is investigated, not auto-accepted",
+      "baselineCommit": "6c3c5ef75b689718d05ef70719cf44f106181e72",
+      "rows": {
+        "activationMs": {
+          "baselineMedian": 3647,
+          "observedMedian": 5169,
+          "changePercent": 41.7,
+          "alarm": true
+        },
+        "firstOpenMs": {
+          "baselineMedian": 2437,
+          "observedMedian": 3178,
+          "changePercent": 30.4,
+          "alarm": true
+        }
+      }
+    }
+  },
   "subject": {
-    "x3Commit": "6692e5804ce88ac1ed1d0e5453bc6056fb26e2d6",
+    "x3Commit": "2e7f5f9bb6c7d1f3d346cff62d14913b84815654",
     "extension": {
       "id": "modkitx.@modkitx-x3/modkit-vscode",
       "version": "0.1.0"
@@ -45,7 +107,12 @@
       "setting": "modkit.extensions",
       "scope": "workspace .vscode/settings.json",
       "bundledCatalog": "extensions/common",
-      "roots": ["extensions/ea/models", "extensions/ea/tiberian-sun", "extensions/ea/big"],
+      "roots": [
+        "extensions/ea/models",
+        "extensions/ea/tiberian-sun",
+        "extensions/ea/big",
+        "extensions/blizzard/mpq"
+      ],
       "missing": []
     },
     "hermetic": {
@@ -57,7 +124,7 @@
   "build": {
     "command": "pnpm --filter @modkitx-x3/modkit-vscode ext:build",
     "exitCode": 0,
-    "output": "\n    packages/host/dist/node/worker-backend.js:60:17:\n      60 │     const base = import.meta.url;\n         ╵                  ~~~~~~~~~~~\n\n  You need to set the output format to \"esm\" for \"import.meta\" to work correctly.\n\nbuilt ${X3_ROOT}\\apps\\modkit-vscode\\dist-app",
+    "output": "\n    packages/host/dist/node/index.js:8589:15:\n      8589 │   const base = import.meta.url;\n           ╵                ~~~~~~~~~~~\n\n  You need to set the output format to \"esm\" for \"import.meta\" to work correctly.\n\nbuilt ${X3_ROOT}\\apps\\modkit-vscode\\dist-app",
     "distAppCheck": {
       "command": "pnpm --filter @modkitx-x3/modkit-vscode dist-app:check",
       "exitCode": 0,
@@ -67,7 +134,7 @@
   },
   "webviewChannel": {
     "cdpUsable": true,
-    "port": 58641,
+    "port": 58955,
     "note": "no vscode-webview target among 2"
   },
   "scenarios": [
@@ -75,16 +142,16 @@
       "id": "activation",
       "title": "The extension activates without error",
       "verdict": "PASS",
-      "evidence": "activate() resolved in 4040 ms (budget 10000 ms) with 111 contribution(s) from the shipped catalog and none missing; all 5 modkit commands are registered, so the host composition completed inside activation",
-      "durationMs": 5612,
+      "evidence": "activate() resolved in 3040 ms (budget 10000 ms) with 112 contribution(s) from the shipped catalog and none missing; all 5 modkit commands are registered, so the host composition completed inside activation",
+      "durationMs": 3859,
       "details": {
         "extensionId": "modkitx.@modkitx-x3/modkit-vscode",
         "commands": {
           "expected": 5,
           "missing": []
         },
-        "activationMs": 4040,
-        "contributions": 111,
+        "activationMs": 3040,
+        "contributions": 112,
         "missingCatalogRoots": [],
         "activationBudgetMs": 10000
       }
@@ -93,12 +160,12 @@
       "id": "w3d-single",
       "title": "A single W3D opens with its descriptor",
       "verdict": "PASS",
-      "evidence": "opened through \"Reopen Editor With… → Modkit Asset Preview\" in 2371 ms (budget 45000 ms); the page shows a 2-node scene (one node per pivot) and 1 animation, matching block 9",
-      "durationMs": 8989,
+      "evidence": "opened through \"Reopen Editor With… → Modkit Asset Preview\" in 2324 ms (budget 10000 ms); the page shows a 2-node scene (one node per pivot) and 1 animation, matching block 9",
+      "durationMs": 8713,
       "details": {
         "tabOpened": true,
-        "firstOpenMs": 2371,
-        "firstOpenBudgetMs": 45000,
+        "firstOpenMs": 2324,
+        "firstOpenBudgetMs": 10000,
         "stageTabs": ["Model", "Tree", "Metadata", "Hex"],
         "stagesVisited": ["as-opened", "Metadata", "Tree", "Model"],
         "diagnosticsSeen": [],
@@ -115,7 +182,7 @@
       "title": "A VXL resolves its .hva companion",
       "verdict": "PASS",
       "evidence": "opened with gnavrail.hva beside it; the page names the companion as provenance and the host raises no missing-sidecar diagnostic",
-      "durationMs": 5612,
+      "durationMs": 6920,
       "details": {
         "companionOnDisk": true,
         "stageTabs": ["Model", "Tree", "Metadata", "Hex"],
@@ -139,7 +206,7 @@
       "title": "A W3D nested in a BIG archive opens as a subject",
       "verdict": "PASS",
       "evidence": "with no editor open on the archive, the container filesystem lists 5 root entries through the editor's own workspace.fs and stats «data/editor/molds/bowl.w3d» at 30346 bytes; `modkit.openArchiveEntry` then opened it in a Modkit editor as a model subject with 1 scene node(s) — the member is a subject, not a hex preview",
-      "durationMs": 9584,
+      "durationMs": 8656,
       "details": {
         "archiveOnDisk": true,
         "entry": "data/editor/molds/bowl.w3d",
@@ -160,7 +227,7 @@
       "title": "A VXL without its sidecar reports a leak-free diagnostic",
       "verdict": "PASS",
       "evidence": "the model opened without its sidecar, the host raised x3.host/companion-unavailable, and the 1 diagnostic line(s) carry no drive letter, UNC path, ${FILE_URL} URL or home directory",
-      "durationMs": 9091,
+      "durationMs": 8767,
       "details": {
         "copyOnDisk": true,
         "companionAbsent": true,
@@ -193,11 +260,87 @@
       }
     },
     {
+      "id": "transport-matrix",
+      "title": "Five source families answer through the product route",
+      "verdict": "PASS",
+      "evidence": "5 of 5 source families answered through the product route (0 skipped for a missing corpus: none); common-documents=ok in 1067 ms; sc2-mpq=ok via org.modkitx/mpq in 709 ms; cnc-big=ok in 708 ms; warzone-wz=ok via org.modkitx/archive-zip in 691 ms; bar-spring-vfs=failed in 1793 ms",
+      "durationMs": 6416,
+      "details": {
+        "matrix": [
+          {
+            "id": "common-documents",
+            "source": "Common Documents",
+            "route": "subject.inspect",
+            "expect": "ok",
+            "note": "an ODT from the bundled documents catalog; no corpus needed",
+            "verdict": "pass",
+            "state": "ok",
+            "durationMs": 1067,
+            "code": null,
+            "message": null,
+            "selected": null
+          },
+          {
+            "id": "sc2-mpq",
+            "source": "SC2 CASC/MPQ",
+            "route": "subject.open",
+            "expect": "ok",
+            "note": "MPQ container of a retail install; CASC as a whole-install mount is block 15",
+            "verdict": "pass",
+            "state": "ok",
+            "durationMs": 709,
+            "code": null,
+            "message": null,
+            "selected": "org.modkitx/mpq"
+          },
+          {
+            "id": "cnc-big",
+            "source": "C&C BIG",
+            "route": "subject.extract",
+            "expect": "ok",
+            "note": "the command runtime reading a member out of a live container",
+            "verdict": "pass",
+            "state": "ok",
+            "durationMs": 708,
+            "code": null,
+            "message": null,
+            "selected": null
+          },
+          {
+            "id": "warzone-wz",
+            "source": "Warzone .wz",
+            "route": "subject.open",
+            "expect": "ok",
+            "note": "generic ZIP route; wz semantics are mk2 staging and belong to block 17",
+            "verdict": "pass",
+            "state": "ok",
+            "durationMs": 691,
+            "code": null,
+            "message": null,
+            "selected": "org.modkitx/archive-zip"
+          },
+          {
+            "id": "bar-spring-vfs",
+            "source": "BAR Spring VFS",
+            "route": "subject.open",
+            "expect": "failed",
+            "note": "the 7z reader refuses BAR header form by name; Spring VFS semantics are block 17",
+            "verdict": "pass",
+            "state": "failed",
+            "durationMs": 1793,
+            "code": "x3.command/subject-unresolved",
+            "message": "no contribution claimed this subject: input-unresolved",
+            "selected": null
+          }
+        ]
+      }
+    },
+    {
       "id": "gpu-texture-stages",
       "title": "ANI and ASTC reach the image stage",
       "verdict": "PASS",
       "evidence": "both minimal.ani and minimal.astc opened with an Image stage from the shipped catalog, so the decoders that landed after the previous receipt are live in this build",
-      "durationMs": 3494,
+      "durationMs": 2536,
       "details": {
         "stages": {
           "minimal.ani": ["Tree", "Metadata", "Hex", "Image", "Edit"],
@@ -216,7 +359,7 @@
       "title": "The shared command fixtures run in the editor",
       "verdict": "PASS",
       "evidence": "all 6 shared command fixtures reached the same state here as in the CLI and the Electron fake host — one runtime, three products, one verdict per fixture",
-      "durationMs": 9363,
+      "durationMs": 4992,
       "details": {
         "fixtures": [
           {
@@ -269,7 +412,7 @@
       "title": "Editors close and the host stays responsive",
       "verdict": "PASS",
       "evidence": "all 0 Modkit tab(s) closed and the extension host still answers commands afterwards; the editor’s own exit is recorded by the harness",
-      "durationMs": 4,
+      "durationMs": 55,
       "details": {
         "tabsBefore": 0,
         "tabsAfter": 0,
@@ -307,8 +450,8 @@
     "editorExited": true
   },
   "summary": {
-    "total": 8,
-    "passed": 8,
+    "total": 9,
+    "passed": 9,
     "failed": 0,
     "allPassed": true
   },
