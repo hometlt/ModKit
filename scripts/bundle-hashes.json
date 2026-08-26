@@ -22,7 +22,7 @@
   "packages/vfs/dist/providers/memory/index.js": "0f4480a7772a0fa558e4113bbdc024fcdb538df462018723806a54de165c2e8f",
   "packages/vfs/dist/providers/http/index.js": "3593278e6703906660796efbe37b1c60653cbd0d72ae196e8977979af2e844ca",
   "packages/vfs/dist/providers/browser-file/index.js": "18378500f438779575b895c4735840aa9e27e4d79a61123bfea3e571b7b80645",
-  "packages/host/dist/index.js": "a395ccac11d2c866c789d08b4fa8031999027cd3d30d9533371ba818641f3076",
+  "packages/host/dist/index.js": "3e67e84cbe3cd4cf0d1f54445fa7e4bcea7d2b5d3fd691fcdbd3b4f0184b9c83",
   "packages/host/dist/node/index.js": "1f298ecbd5608f52ed7ac1d75ddeb05c2339fbdf30bf2df1127e2e5dbeff4c62",
   "packages/host/dist/browser/index.js": "a10302d71c6e7efb37607323d80260b2f65331500197cdf92ac644e9134da098",
   "packages/host/dist/execution/index.js": "9cb2c2bbe81e58163de689db5c849b2151da32a73fe1e1c7e064393586faddba",
@@ -64,5 +64,5 @@
   "packages/ui/dist/explorer/index.js": "4518e9fa53c23c4b97bcd5aa226a7c28b99c76a1ff88764f094c1a971d903b60",
   "packages/ui/dist/hex-editor/index.js": "196f13e4da82850bf14ae146e6ce8801bcfcf4b34089b9def55b87e3032ac799",
   "packages/ui/dist/media/encoded.js": "8ca2b8d5766aaed002079f9fa014b3add300755ab0740af81f8108bcdd2955c8",
-  "apps/modkit-cli/dist/main.js": "d97c54e7a4716be186b8a96018bcad984d2d6f37d641d92a4494777f9b0337fa"
+  "apps/modkit-cli/dist/main.js": "8650cb5b3ccbae7d551b115955326dc36d7a8838d7634a55261b5b029be2cf73"
 }

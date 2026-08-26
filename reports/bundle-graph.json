@@ -3,15 +3,15 @@
   "schemaVersion": "bundle-graph-1",
   "entryCount": 66,
   "totals": {
-    "modules": 535,
-    "bytes": 5944464
+    "modules": 539,
+    "bytes": 5967964
   },
   "entries": [
     {
       "entry": "apps/modkit-cli/dist/main.js",
       "surface": "modkit-cli/main",
-      "modules": 2,
-      "bytes": 17597,
+      "modules": 3,
+      "bytes": 23660,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -90,8 +90,8 @@
     {
       "entry": "packages/host/dist/index.js",
       "surface": "host",
-      "modules": 49,
-      "bytes": 467912,
+      "modules": 52,
+      "bytes": 485349,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
