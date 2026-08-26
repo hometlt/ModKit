@@ -33,6 +33,60 @@
       "canonicalModule": "extensions/blizzard/starcraft-2/codecs/m3/src/index.ts",
       "canonicalExport": "createM3ModelCodec",
       "canonicalFactory": true,
+      "allowPoorerReason": "The canonical M3 reader decodes five materials; X3 still carries MAT* as a named lost plane, while the real animation, hierarchy, skeleton and texture-reference planes are published.",
+      "baseline": "X3 беднее"
+    },
+    {
+      "id": "m3-real-sc2-casc",
+      "kind": "real",
+      "format": "m3-real",
+      "contributionId": "org.modkitx.blizzard/m3",
+      "environment": "MODKITX_SC2_ROOT",
+      "container": {
+        "relativePath": ".",
+        "x3Extension": "extensions/blizzard/casc",
+        "entry": "campaigns/liberty.sc2campaign/base.sc2assets/assets/campaign/terran/artifact1/artifact1.m3"
+      },
+      "x3Extension": "extensions/blizzard/models",
+      "canonicalModule": "extensions/blizzard/starcraft-2/codecs/m3/src/index.ts",
+      "canonicalExport": "createM3ModelCodec",
+      "canonicalFactory": true,
+      "allowPoorerReason": "The canonical reader reports five material slots while X3 publishes two decoded materials; X3 is otherwise richer on the live artifact through hierarchy, skeleton, animation and resource-reference facets.",
+      "baseline": "X3 беднее"
+    },
+    {
+      "id": "warzone-pie-real-base-wz",
+      "kind": "real",
+      "format": "warzone-pie",
+      "contributionId": "org.modkitx/warzone-pie",
+      "environment": "MODKITX_WARZONE_ROOT",
+      "container": {
+        "relativePath": "data/base.wz",
+        "x3Extensions": ["extensions/common/archives", "extensions/opensource/warzone-2100"],
+        "entry": "components/bodies/cybd_run.pie"
+      },
+      "x3Extension": "extensions/opensource/warzone-2100",
+      "canonicalModule": "extensions/opensource/warzone-2100/codecs/warzone-pie/src/index.ts",
+      "canonicalExport": "warzonePieModelCodec",
+      "allowPoorerReason": "The canonical PIE reader synthesizes one default material; X3 does not invent a material, while publishing richer hierarchy, texture-reference and ANIMOBJECT planes.",
+      "baseline": "X3 беднее"
+    },
+    {
+      "id": "spring-s3o-real-bar-rapid",
+      "kind": "real",
+      "format": "spring-s3o",
+      "contributionId": "org.modkitx/spring-s3o",
+      "environment": "MODKITX_BAR_ROOT",
+      "rapid": {
+        "manifestRelativePath": "data/packages/705fa44d676b3633ea970038d8c593a8.sdp",
+        "entry": "objects3d/airbomb.s3o",
+        "md5": "3b2a9fb660e91f63d76afbfb1aa4c022",
+        "size": 19189,
+        "sha256": "c208233aabfd58fa83237ddf69e56c0ac29fd44c1290fee11c198be1d8fe37c2"
+      },
+      "x3Extension": "extensions/opensource/spring",
+      "canonicalModule": "extensions/opensource/spring/codecs/spring-s3o/codec.manifest.json",
+      "canonicalAdapter": "manifest-metadata-only",
       "baseline": "X3 богаче"
     },
     {

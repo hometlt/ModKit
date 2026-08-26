@@ -258,7 +258,7 @@ await checkApplicationSet(
   'headless',
   'mk2-extended',
   async extensions => ({ main: (await createAutomationHost(extensions)).composition }),
-  { main: { offers: 69, active: 69 } },
+  { main: { offers: 71, active: 71 } },
 )
 await checkApplicationSet(
   'pwa',
@@ -307,7 +307,7 @@ await checkApplicationSet(
   },
   {
     main: { offers: 'none', active: 'none' },
-    worker: { offers: 70, active: 70 },
+    worker: { offers: 72, active: 72 },
   },
 )
 await checkApplicationSet(
@@ -359,7 +359,7 @@ await checkApplicationSet(
     return { extensionHost: app.extensionHost, webview: app.webview }
   },
   {
-    extensionHost: { offers: 69, active: 69 },
+    extensionHost: { offers: 71, active: 71 },
     webview: { offers: 'none', active: 'none' },
   },
 )
@@ -395,7 +395,7 @@ await checkApplicationSet(
     return { main: app.main, renderer: app.renderer }
   },
   {
-    main: { offers: 69, active: 69 },
+    main: { offers: 71, active: 71 },
     renderer: { offers: 'none', active: 'none' },
   },
 )

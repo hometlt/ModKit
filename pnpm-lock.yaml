@@ -644,6 +644,18 @@ importers:
         specifier: workspace:*
         version: link:../../codec-kit/codec-kit
 
+  extensions/opensource/spring:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../codec-kit/codec-kit
+
+  extensions/opensource/warzone-2100:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../codec-kit/codec-kit
+
   packages/core: {}
 
   packages/host:

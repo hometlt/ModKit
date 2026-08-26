@@ -1,7 +1,7 @@
 {
-  "$comment": "Minimum hand-written codec counts of the families taking part in the MK2 migration, keyed by the family's current home. A relocated port keeps its module at src/<codec>/codec.js and is counted; a codec authored for MK3 lives at src/formats/<codec>/codec.js and is not, because it was never an MK2 port to lose. Block 11 slice 11B follows that split inside common/documents: ODT, ODS and ODP moved in as ports, ODG was authored here. Block 12 slice 12-2 moved RTF the same way and shows the other half of the mechanic: the staging hand-port reverted to its generated port-pending stub, so mk2/uncommon-documents lost a ported codec while common/documents gained the same one, and the total never moved. Relocating a family renames its key and keeps its count; it never retires the guarantee. Increment in the same change that ports a codec; ports:check rejects regressions, stale counts, and a family that disappears together with its entry.",
+  "$comment": "Minimum hand-written codec counts of the families taking part in the MK2 migration, keyed by the family's current home. A completed legacy allocation keeps its module at src/<codec>/codec.js and is counted, including a clean-room implementation such as S3O whose legacy manifest had no executable decoder. An MK3-only owner addition lives at src/formats/<codec>/codec.js and is not counted because there was no legacy allocation to lose. Block 11 slice 11B follows that split inside common/documents: ODT, ODS and ODP moved in as ports, ODG was authored here. Block 12 slice 12-2 moved RTF the same way and shows the other half of the mechanic: the staging hand-port reverted to its generated port-pending stub, so mk2/uncommon-documents lost a ported codec while common/documents gained the same one, and the total never moved. Relocating a family renames its key and keeps its count; it never retires the guarantee. Increment in the same change that ports a codec; ports:check rejects regressions, stale counts, and a family that disappears together with its entry.",
   "schemaVersion": 2,
-  "minimumTotal": 168,
+  "minimumTotal": 169,
   "families": {
     "blizzard/casc": 1,
     "blizzard/models": 1,
@@ -34,7 +34,9 @@
     "mk2/new-world-computing-heroes-3": 2,
     "mk2/new-world-computing-heroes-4": 1,
     "mk2/opensource-spring": 2,
-    "mk2/opensource-warzone-2100": 6,
+    "mk2/opensource-warzone-2100": 5,
+    "opensource/spring": 1,
+    "opensource/warzone-2100": 1,
     "mk2/petroglyph-glyphx": 2,
     "mk2/rad-game-tools-video": 2,
     "mk2/realitypump-earth-2150": 2,

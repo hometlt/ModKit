@@ -65,10 +65,10 @@
 
 | allocation                   | Строк | migrationState         | Строк | evidenceLevel | Строк |
 | ---------------------------- | ----- | ---------------------- | ----- | ------------- | ----- |
-| `absent`                     | 91    | `equivalent-better`    | 16    | E0            | 89    |
-| `covered`                    | 200   | `implemented`          | 196   | E1            | 113   |
-| `not-applicable`             | 1     | `missing`              | 91    | E2            | 65    |
-| `superseded`                 | 13    | `partial`              | 4     | E3            | 14    |
+| `absent`                     | 90    | `equivalent-better`    | 16    | E0            | 88    |
+| `covered`                    | 201   | `implemented`          | 197   | E1            | 112   |
+| `not-applicable`             | 1     | `missing`              | 90    | E2            | 65    |
+| `superseded`                 | 13    | `partial`              | 4     | E3            | 16    |
 | `superseded-staging-present` | 3     | `relocated-multiverse` | 1     | E4            | 27    |
 
 ### 3.3. Доказанные writers
@@ -89,8 +89,8 @@
 
 | Release             | Всего | Seed | Транзитивных | Нерешённых | Ближайший блок |
 | ------------------- | ----- | ---- | ------------ | ---------- | -------------- |
-| `mk3-ga`            | 165   | 158  | 7            | 42         | block-12       |
-| `mk3-multiverse-ga` | 167   | 167  | 0            | 42         | block-12       |
+| `mk3-ga`            | 165   | 158  | 7            | 41         | block-12       |
+| `mk3-multiverse-ga` | 167   | 167  | 0            | 41         | block-12       |
 
 ### 4.1. Дедлайны `mk3-ga` по planned block
 
@@ -101,12 +101,12 @@
 | `block-13`    | 1     | 0                 |
 | `block-15`    | 24    | 7                 |
 | `block-16`    | 33    | 19                |
-| `block-17`    | 21    | 13                |
+| `block-17`    | 21    | 12                |
 | `block-22`    | 2     | 2                 |
 
 ## 5. Gap list — что осталось в `mk3-ga`
 
-Строк с нерешённым состоянием: **42** из 165. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
+Строк с нерешённым состоянием: **41** из 165. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
 
 ### Блок 12 — 1 строк
 
@@ -150,11 +150,10 @@
 | `vertical/red-alert-3/native-to-uv`                         | `missing`      | E0       | `extensions/ea/sage` |
 | `vertical/red-alert-3/neutral-definitions-world`            | `missing`      | E0       | `extensions/ea/sage` |
 
-### Блок 17 — 13 строк
+### Блок 17 — 12 строк
 
 | Возможность                                                | migrationState | evidence | Владелец                                 |
 | ---------------------------------------------------------- | -------------- | -------- | ---------------------------------------- |
-| `format/spring-s3o/open-inspect`                           | `missing`      | E0       | `extensions/mk2/opensource-spring`       |
 | `game/beyond-all-reason/discover-open`                     | `missing`      | E0       | `unassigned`                             |
 | `game/warzone-2100/discover-open`                          | `missing`      | E0       | `unassigned`                             |
 | `vertical/beyond-all-reason/deterministic-playable-subset` | `missing`      | E0       | `extensions/mk2/opensource-spring`       |

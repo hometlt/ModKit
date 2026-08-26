@@ -3,7 +3,7 @@
   "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
   "id": "org.modkitx/warzone-pie",
   "displayName": "Warzone 2100 PIE model",
-  "status": "partial",
+  "status": "supported",
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
@@ -21,14 +21,17 @@
     }
   ],
   "limitations": [
-    "PIE EVENT model paths and PNG/TGA texture requests are exposed for host resolution; the v1 companions field names codec IDs rather than these path-pattern sidecars.",
-    "The portable MK3 port inventories PIE directives and version metadata. Geometry preview, PIE export, texture reading, EVENT resolution, and deprecated shadow interpretation are not implemented."
+    "Decodes PIE levels, polygon geometry, UV coordinates, logical texture references and structurally valid ANIMOBJECT records.",
+    "ANIMOBJECT channels are published only when frame records are present and valid; polygon texture animation and directive counts are not reported as skeletal animation.",
+    "Connector, event, shadow and material semantics remain named losses in the projection receipt.",
+    "Warzone 3DO models are a named remainder and are not claimed by this contribution.",
+    "PIE writing is not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "warzone-pie", "label": "Warzone 2100 PIE model" }],
     "roles": ["media"],
     "sourceTopology": "single",
-    "artifactStages": ["authored", "compiled", "runtime"],
+    "artifactStages": ["authored", "runtime"],
     "openIntents": ["probe", "inspect", "full", "export"],
     "match": {
       "extensions": ["pie"],
@@ -37,15 +40,17 @@
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {
-        "id": "geometry-metadata",
+        "id": "decoded-model",
         "contract": "common.model/geometry-metadata",
         "major": 1,
         "stage": "authored",
-        "lossy": false
+        "lossy": true
       }
     ],
     "publishesDataSources": [
-      { "contract": "common.view/table-data-source", "major": 1 },
+      { "contract": "common.view/model-scene-source", "major": 1 },
+      { "contract": "common.view/model-resource-refs-source", "major": 1 },
+      { "contract": "common.view/model-animation-source", "major": 1 },
       { "contract": "common.view/tree-data-source", "major": 1 },
       { "contract": "common.view/byte-range-source", "major": 1 }
     ],
@@ -71,6 +76,13 @@
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]
       }
+    ],
+    "traitDeclarations": [
+      { "id": "model.geometry", "representation": "source", "presence": "will-expose" },
+      { "id": "model.textures", "representation": "source", "presence": "may-expose" },
+      { "id": "model.animations", "representation": "source", "presence": "may-expose" },
+      { "id": "structure.hierarchy", "representation": "source", "presence": "will-expose" },
+      { "id": "content.text", "representation": "source", "presence": "will-expose" }
     ],
     "implementationTier": { "claimed": 1 },
     "budgets": {

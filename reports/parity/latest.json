@@ -1,27 +1,27 @@
 {
   "schemaVersion": 3,
-  "corpus": "C:\\FILES\\SC2Files\\coding\\modkitX3\\scripts\\parity\\corpus.json",
+  "corpus": "C:\\FILES\\SC2Files\\coding\\modkitX3-sol-round2-integration\\scripts\\parity\\corpus.json",
   "canonical": {
     "root": "C:\\FILES\\SC2Files\\coding\\modkitx",
     "sha": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d"
   },
   "x3": {
-    "root": "C:\\FILES\\SC2Files\\coding\\modkitX3",
-    "sha": "78b80c3fed3b2c7050d58e7bf58eca76ca104131"
+    "root": "C:\\FILES\\SC2Files\\coding\\modkitX3-sol-round2-integration",
+    "sha": "c684d5196198a28d9600d6724f102b03062a00c6"
   },
   "counts": {
-    "total": 73,
-    "real": 13,
+    "total": 76,
+    "real": 16,
     "synthetic": 60,
-    "compared": 73,
+    "compared": 76,
     "skipped": 0,
     "failed": 0,
-    "comparedReal": 13,
+    "comparedReal": 16,
     "comparedSynthetic": 60,
     "richer": 45,
     "equal": 16,
-    "poorer": 12,
-    "incomparable": 0
+    "poorer": 14,
+    "incomparable": 1
   },
   "summary": [
     {
@@ -322,6 +322,15 @@
       "verdict": "richer"
     },
     {
+      "id": "m3-real-sc2-casc",
+      "format": "m3-real",
+      "kind": "real",
+      "contributionId": "org.modkitx.blizzard/m3",
+      "state": "compared",
+      "classification": "X3 беднее",
+      "verdict": "poorer"
+    },
+    {
       "id": "m4a-synthetic",
       "format": "m4a",
       "kind": "synthetic",
@@ -538,6 +547,15 @@
       "verdict": "richer"
     },
     {
+      "id": "spring-s3o-real-bar-rapid",
+      "format": "spring-s3o",
+      "kind": "real",
+      "contributionId": "org.modkitx/spring-s3o",
+      "state": "compared",
+      "classification": "X3 богаче",
+      "verdict": "incomparable"
+    },
+    {
       "id": "stl-synthetic",
       "format": "stl",
       "kind": "synthetic",
@@ -596,6 +614,15 @@
       "format": "uvm",
       "kind": "synthetic",
       "contributionId": "org.modkitx/model-uvm",
+      "state": "compared",
+      "classification": "X3 беднее",
+      "verdict": "poorer"
+    },
+    {
+      "id": "warzone-pie-real-base-wz",
+      "format": "warzone-pie",
+      "kind": "real",
+      "contributionId": "org.modkitx/warzone-pie",
       "state": "compared",
       "classification": "X3 беднее",
       "verdict": "poorer"
@@ -726,6 +753,14 @@
       "reason": "X3 reads the KTX2 header (40x40, 4 channels) but publishes no decoded region; the canonical codec transcodes UASTC through the Basis transcoder. Transcoding is codec depth, not a harness gap."
     },
     {
+      "id": "m3-real-sc2-casc",
+      "format": "m3-real",
+      "kind": "real",
+      "classification": "X3 беднее",
+      "missing": ["common.view/model-scene-source:measurement:materials:2<5"],
+      "reason": "The canonical reader reports five material slots while X3 publishes two decoded materials; X3 is otherwise richer on the live artifact through hierarchy, skeleton, animation and resource-reference facets."
+    },
+    {
       "id": "obj-synthetic",
       "format": "obj",
       "kind": "synthetic",
@@ -756,6 +791,7 @@
       "classification": "X3 беднее",
       "missing": [
         "common.view/namespace-entry-source:measurement:entries:2<3",
+        "common.view/namespace-entry-source:measurement:extractedBytes:512<533",
         "common.view/namespace-entry-source:measurement:files:2<3"
       ],
       "reason": "The canonical PE reader publishes two synthesised metadata documents (metadata/summary.txt, metadata/headers.json) as namespace entries; X3 publishes the raw header blob plus the same single real section. The entry-count gap is namespace modelling, not unread PE structure."
@@ -794,9 +830,23 @@
       "classification": "X3 беднее",
       "missing": ["common.view/model-scene-source:measurement:materials:0<1"],
       "reason": "The canonical model stack substitutes one synthesised default material when the file declares none (ensureDefaultMaterial / defaultMaterial() / materialNames.push(\"Default\")); the fixture declares zero, so the X3 count is the source fact and the difference is not a missing X3 capability."
+    },
+    {
+      "id": "warzone-pie-real-base-wz",
+      "format": "warzone-pie",
+      "kind": "real",
+      "classification": "X3 беднее",
+      "missing": ["common.view/model-scene-source:measurement:materials:0<1"],
+      "reason": "The canonical PIE reader synthesizes one default material; X3 does not invent a material, while publishing richer hierarchy, texture-reference and ANIMOBJECT planes."
     }
   ],
-  "incomparable": [],
+  "incomparable": [
+    {
+      "id": "spring-s3o-real-bar-rapid",
+      "format": "spring-s3o",
+      "reason": "no semantic plane is observed by both readers"
+    }
+  ],
   "skipped": [],
   "results": [
     {
@@ -9941,7 +9991,8 @@
           ]
         }
       ],
-      "baseline": "X3 богаче",
+      "baseline": "X3 беднее",
+      "allowPoorerReason": "The canonical M3 reader decodes five materials; X3 still carries MAT* as a named lost plane, while the real animation, hierarchy, skeleton and texture-reference planes are published.",
       "canonical": {
         "formatId": "m3",
         "declaredSources": ["common.view/model-scene-source"],
@@ -10224,6 +10275,377 @@
               "measurement:nodes:1>0",
               "measurement:textures:18>0"
             ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "m3-real-sc2-casc",
+      "format": "m3-real",
+      "kind": "real",
+      "contributionId": "org.modkitx.blizzard/m3",
+      "state": "compared",
+      "sample": "MODKITX_SC2_ROOT",
+      "provenance": {
+        "kind": "real",
+        "origin": "container-entry",
+        "environment": "MODKITX_SC2_ROOT",
+        "relativePath": ".!campaigns/liberty.sc2campaign/base.sc2assets/assets/campaign/terran/artifact1/artifact1.m3",
+        "bytes": 60128,
+        "sha256": "fb7680019ca7ec88aeb37591a7477c2555dd674d57f0c7486736ccb11919a436"
+      },
+      "classification": "X3 беднее",
+      "missing": ["common.view/model-scene-source:measurement:materials:2<5"],
+      "extra": [
+        "common.view/model-scene-source:measurement:nodes:1>0",
+        "common.view/model-scene-source:measurement:textures:65>0",
+        "metadata:animations",
+        "metadata:materials",
+        "metadata:meshes",
+        "metadata:nodes",
+        "metadata:primitives",
+        "metadata:scenes",
+        "metadata:textures",
+        "operation:asset.validate",
+        "operation:export.raw",
+        "operation:view.inspect",
+        "source:common.view/byte-range-source",
+        "source:common.view/model-animation-source",
+        "source:common.view/model-resource-refs-source",
+        "source:common.view/model-skeleton-source",
+        "source:common.view/tree-data-source"
+      ],
+      "sourceComparisons": [
+        {
+          "contract": "common.view/model-scene-source",
+          "classification": "X3 беднее",
+          "missing": ["measurement:materials:2<5"],
+          "extra": ["measurement:nodes:1>0", "measurement:textures:65>0"]
+        }
+      ],
+      "baseline": "X3 беднее",
+      "allowPoorerReason": "The canonical reader reports five material slots while X3 publishes two decoded materials; X3 is otherwise richer on the live artifact through hierarchy, skeleton, animation and resource-reference facets.",
+      "canonical": {
+        "formatId": "m3",
+        "declaredSources": ["common.view/model-scene-source"],
+        "actualSources": ["common.view/model-scene-source"],
+        "sources": [
+          {
+            "contract": "common.view/model-scene-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "meshes", "nodes", "primitive"],
+            "measurements": {
+              "scenes": 1,
+              "nodes": 0,
+              "meshes": 2,
+              "primitives": 2,
+              "materials": 5,
+              "textures": 0,
+              "animations": 1,
+              "decodedGeometry": true,
+              "decodedVertices": 242,
+              "decodedIndices": 1170
+            }
+          }
+        ],
+        "operations": [],
+        "geometryAccess": "decoded",
+        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
+        "summary": {
+          "scenes": 1,
+          "nodes": 0,
+          "meshes": 2,
+          "primitives": 2,
+          "materials": 5,
+          "textures": 0,
+          "animations": 1
+        }
+      },
+      "x3": {
+        "available": true,
+        "formatId": "m3",
+        "declaredSources": [
+          "common.view/byte-range-source",
+          "common.view/model-animation-source",
+          "common.view/model-resource-refs-source",
+          "common.view/model-scene-source",
+          "common.view/model-skeleton-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/byte-range-source",
+          "common.view/model-animation-source",
+          "common.view/model-resource-refs-source",
+          "common.view/model-scene-source",
+          "common.view/model-skeleton-source",
+          "common.view/tree-data-source"
+        ],
+        "sourceFailures": [],
+        "sources": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/model-animation-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
+            "contract": "common.view/model-resource-refs-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
+            "contract": "common.view/model-scene-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "meshes", "nodes", "primitive"],
+            "measurements": {
+              "animations": 1,
+              "decodedGeometry": true,
+              "decodedIndices": 1170,
+              "decodedVertices": 242,
+              "materials": 2,
+              "meshes": 2,
+              "nodes": 1,
+              "primitives": 2,
+              "scenes": 1,
+              "textures": 65
+            }
+          },
+          {
+            "contract": "common.view/model-skeleton-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 175
+            }
+          }
+        ],
+        "operations": ["asset.validate", "export.raw", "view.inspect"],
+        "geometryAccess": "decoded",
+        "metadata": {
+          "container": "MD34",
+          "indexOffset": 57344,
+          "sections": 174,
+          "geometryAccess": "decoded",
+          "nodes": 1,
+          "meshes": 2,
+          "primitives": 2,
+          "scenes": 1,
+          "materials": 2,
+          "textures": 65,
+          "animations": 1,
+          "sequences": 1,
+          "timelineContainers": 1,
+          "supportedBoneChannels": 0,
+          "unsupportedChannels": 6,
+          "sampleFrames": 110,
+          "timelineNames": "Stand_full"
+        },
+        "features": [
+          "geometry:decoded",
+          "metadata:animations",
+          "metadata:materials",
+          "metadata:meshes",
+          "metadata:nodes",
+          "metadata:primitives",
+          "metadata:scenes",
+          "metadata:textures",
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/model-animation-source",
+          "source:common.view/model-resource-refs-source",
+          "source:common.view/model-scene-source",
+          "source:common.view/model-skeleton-source",
+          "source:common.view/tree-data-source"
+        ]
+      },
+      "verdict": "poorer",
+      "planes": [
+        {
+          "plane": "subject-recognition",
+          "state": "compared",
+          "verdict": "equal"
+        },
+        {
+          "plane": "structural-metadata",
+          "state": "compared",
+          "verdict": "equal"
+        },
+        { "plane": "geometry-counts", "state": "compared", "verdict": "equal" },
+        { "plane": "hierarchy", "state": "compared", "verdict": "richer" },
+        {
+          "plane": "materials-textures",
+          "state": "compared",
+          "verdict": "poorer"
+        },
+        { "plane": "animation", "state": "compared", "verdict": "equal" },
+        {
+          "plane": "collision",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        {
+          "plane": "palette-voxel-transforms",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        { "plane": "payload-access", "state": "x3-only", "verdict": "richer" },
+        {
+          "plane": "protected-tail-preservation",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        {
+          "plane": "diagnostics-on-malformed-input",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        }
+      ],
+      "declared": {
+        "canonical": ["common.view/model-scene-source"],
+        "x3": [
+          "common.view/byte-range-source",
+          "common.view/model-animation-source",
+          "common.view/model-resource-refs-source",
+          "common.view/model-scene-source",
+          "common.view/model-skeleton-source",
+          "common.view/tree-data-source"
+        ]
+      },
+      "observed": {
+        "canonical": [
+          {
+            "contract": "common.view/model-scene-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "meshes", "nodes", "primitive"],
+            "measurements": {
+              "scenes": 1,
+              "nodes": 0,
+              "meshes": 2,
+              "primitives": 2,
+              "materials": 5,
+              "textures": 0,
+              "animations": 1,
+              "decodedGeometry": true,
+              "decodedVertices": 242,
+              "decodedIndices": 1170
+            }
+          }
+        ],
+        "x3": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/model-animation-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
+            "contract": "common.view/model-resource-refs-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
+            "contract": "common.view/model-scene-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "meshes", "nodes", "primitive"],
+            "measurements": {
+              "animations": 1,
+              "decodedGeometry": true,
+              "decodedIndices": 1170,
+              "decodedVertices": 242,
+              "materials": 2,
+              "meshes": 2,
+              "nodes": 1,
+              "primitives": 2,
+              "scenes": 1,
+              "textures": 65
+            }
+          },
+          {
+            "contract": "common.view/model-skeleton-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 175
+            }
+          }
+        ]
+      },
+      "comparison": {
+        "classification": "X3 беднее",
+        "missing": ["common.view/model-scene-source:measurement:materials:2<5"],
+        "extra": [
+          "common.view/model-scene-source:measurement:nodes:1>0",
+          "common.view/model-scene-source:measurement:textures:65>0",
+          "metadata:animations",
+          "metadata:materials",
+          "metadata:meshes",
+          "metadata:nodes",
+          "metadata:primitives",
+          "metadata:scenes",
+          "metadata:textures",
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/model-animation-source",
+          "source:common.view/model-resource-refs-source",
+          "source:common.view/model-skeleton-source",
+          "source:common.view/tree-data-source"
+        ],
+        "sources": [
+          {
+            "contract": "common.view/model-scene-source",
+            "classification": "X3 беднее",
+            "missing": ["measurement:materials:2<5"],
+            "extra": ["measurement:nodes:1>0", "measurement:textures:65>0"]
           }
         ]
       }
@@ -13878,11 +14300,11 @@
       "classification": "X3 беднее",
       "missing": [
         "common.view/namespace-entry-source:measurement:entries:2<3",
+        "common.view/namespace-entry-source:measurement:extractedBytes:512<533",
         "common.view/namespace-entry-source:measurement:files:2<3"
       ],
       "extra": [
         "common.view/namespace-entry-source:measurement:directories",
-        "common.view/namespace-entry-source:measurement:extractedBytes:512>510",
         "common.view/namespace-entry-source:measurement:productReopenCompleted",
         "common.view/namespace-entry-source:product-reopen",
         "operation:asset.validate",
@@ -13896,10 +14318,13 @@
         {
           "contract": "common.view/namespace-entry-source",
           "classification": "X3 беднее",
-          "missing": ["measurement:entries:2<3", "measurement:files:2<3"],
+          "missing": [
+            "measurement:entries:2<3",
+            "measurement:extractedBytes:512<533",
+            "measurement:files:2<3"
+          ],
           "extra": [
             "measurement:directories",
-            "measurement:extractedBytes:512>510",
             "measurement:productReopenCompleted",
             "product-reopen"
           ]
@@ -13921,7 +14346,7 @@
               "entries": 3,
               "files": 3,
               "complete": true,
-              "extractedBytes": 510,
+              "extractedBytes": 533,
               "extractedNonEmpty": true
             }
           }
@@ -14047,7 +14472,7 @@
           "state": "not-observed",
           "verdict": "not-observed"
         },
-        { "plane": "payload-access", "state": "compared", "verdict": "richer" },
+        { "plane": "payload-access", "state": "compared", "verdict": "poorer" },
         {
           "plane": "protected-tail-preservation",
           "state": "not-observed",
@@ -14078,7 +14503,7 @@
               "entries": 3,
               "files": 3,
               "complete": true,
-              "extractedBytes": 510,
+              "extractedBytes": 533,
               "extractedNonEmpty": true
             }
           }
@@ -14124,11 +14549,11 @@
         "classification": "X3 беднее",
         "missing": [
           "common.view/namespace-entry-source:measurement:entries:2<3",
+          "common.view/namespace-entry-source:measurement:extractedBytes:512<533",
           "common.view/namespace-entry-source:measurement:files:2<3"
         ],
         "extra": [
           "common.view/namespace-entry-source:measurement:directories",
-          "common.view/namespace-entry-source:measurement:extractedBytes:512>510",
           "common.view/namespace-entry-source:measurement:productReopenCompleted",
           "common.view/namespace-entry-source:product-reopen",
           "operation:asset.validate",
@@ -14142,10 +14567,13 @@
           {
             "contract": "common.view/namespace-entry-source",
             "classification": "X3 беднее",
-            "missing": ["measurement:entries:2<3", "measurement:files:2<3"],
+            "missing": [
+              "measurement:entries:2<3",
+              "measurement:extractedBytes:512<533",
+              "measurement:files:2<3"
+            ],
             "extra": [
               "measurement:directories",
-              "measurement:extractedBytes:512>510",
               "measurement:productReopenCompleted",
               "product-reopen"
             ]
@@ -16981,6 +17409,236 @@
       }
     },
     {
+      "id": "spring-s3o-real-bar-rapid",
+      "format": "spring-s3o",
+      "kind": "real",
+      "contributionId": "org.modkitx/spring-s3o",
+      "state": "compared",
+      "sample": "MODKITX_BAR_ROOT",
+      "provenance": {
+        "kind": "real",
+        "origin": "rapid-pool-entry",
+        "environment": "MODKITX_BAR_ROOT",
+        "relativePath": "data/packages/705fa44d676b3633ea970038d8c593a8.sdp!objects3d/airbomb.s3o",
+        "bytes": 19189,
+        "sha256": "c208233aabfd58fa83237ddf69e56c0ac29fd44c1290fee11c198be1d8fe37c2"
+      },
+      "classification": "X3 богаче",
+      "missing": [],
+      "extra": [
+        "geometry:decoded",
+        "operation:asset.validate",
+        "operation:export.raw",
+        "operation:view.inspect",
+        "source:common.view/byte-range-source",
+        "source:common.view/model-resource-refs-source",
+        "source:common.view/model-scene-source",
+        "source:common.view/tree-data-source"
+      ],
+      "sourceComparisons": [],
+      "baseline": "X3 богаче",
+      "canonical": {
+        "formatId": "spring-s3o",
+        "declaredSources": [],
+        "actualSources": [],
+        "sources": [],
+        "operations": [],
+        "geometryAccess": "unavailable",
+        "features": []
+      },
+      "x3": {
+        "available": true,
+        "formatId": "spring-s3o",
+        "declaredSources": [
+          "common.view/byte-range-source",
+          "common.view/model-resource-refs-source",
+          "common.view/model-scene-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/byte-range-source",
+          "common.view/model-resource-refs-source",
+          "common.view/model-scene-source",
+          "common.view/tree-data-source"
+        ],
+        "sourceFailures": [],
+        "sources": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/model-resource-refs-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
+            "contract": "common.view/model-scene-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "meshes", "nodes", "primitive"],
+            "measurements": {
+              "animations": 0,
+              "decodedGeometry": true,
+              "decodedIndices": 792,
+              "decodedVertices": 496,
+              "materials": 0,
+              "meshes": 1,
+              "nodes": 1,
+              "primitives": 1,
+              "scenes": 1,
+              "textures": 2
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 2
+            }
+          }
+        ],
+        "operations": ["asset.validate", "export.raw", "view.inspect"],
+        "geometryAccess": "decoded",
+        "metadata": {},
+        "features": [
+          "geometry:decoded",
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/model-resource-refs-source",
+          "source:common.view/model-scene-source",
+          "source:common.view/tree-data-source"
+        ]
+      },
+      "verdict": "incomparable",
+      "planes": [
+        {
+          "plane": "subject-recognition",
+          "state": "x3-only",
+          "verdict": "richer"
+        },
+        {
+          "plane": "structural-metadata",
+          "state": "x3-only",
+          "verdict": "richer"
+        },
+        { "plane": "geometry-counts", "state": "x3-only", "verdict": "richer" },
+        { "plane": "hierarchy", "state": "x3-only", "verdict": "richer" },
+        {
+          "plane": "materials-textures",
+          "state": "x3-only",
+          "verdict": "richer"
+        },
+        { "plane": "animation", "state": "x3-only", "verdict": "richer" },
+        {
+          "plane": "collision",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        {
+          "plane": "palette-voxel-transforms",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        { "plane": "payload-access", "state": "x3-only", "verdict": "richer" },
+        {
+          "plane": "protected-tail-preservation",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        {
+          "plane": "diagnostics-on-malformed-input",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        }
+      ],
+      "declared": {
+        "canonical": [],
+        "x3": [
+          "common.view/byte-range-source",
+          "common.view/model-resource-refs-source",
+          "common.view/model-scene-source",
+          "common.view/tree-data-source"
+        ]
+      },
+      "observed": {
+        "canonical": [],
+        "x3": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/model-resource-refs-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
+            "contract": "common.view/model-scene-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "meshes", "nodes", "primitive"],
+            "measurements": {
+              "animations": 0,
+              "decodedGeometry": true,
+              "decodedIndices": 792,
+              "decodedVertices": 496,
+              "materials": 0,
+              "meshes": 1,
+              "nodes": 1,
+              "primitives": 1,
+              "scenes": 1,
+              "textures": 2
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 2
+            }
+          }
+        ]
+      },
+      "comparison": {
+        "classification": "X3 богаче",
+        "missing": [],
+        "extra": [
+          "geometry:decoded",
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/model-resource-refs-source",
+          "source:common.view/model-scene-source",
+          "source:common.view/tree-data-source"
+        ],
+        "sources": []
+      }
+    },
+    {
       "id": "stl-synthetic",
       "format": "stl",
       "kind": "synthetic",
@@ -18905,6 +19563,328 @@
             "classification": "X3 беднее",
             "missing": ["measurement:materials:0<1"],
             "extra": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "warzone-pie-real-base-wz",
+      "format": "warzone-pie",
+      "kind": "real",
+      "contributionId": "org.modkitx/warzone-pie",
+      "state": "compared",
+      "sample": "MODKITX_WARZONE_ROOT",
+      "provenance": {
+        "kind": "real",
+        "origin": "container-entry",
+        "environment": "MODKITX_WARZONE_ROOT",
+        "relativePath": "data/base.wz!components/bodies/cybd_run.pie",
+        "bytes": 22053,
+        "sha256": "0674a8044d71f12c8f9362eae9efea946f5b0ba04b065d9d8b861eae669fef23"
+      },
+      "classification": "X3 беднее",
+      "missing": ["common.view/model-scene-source:measurement:materials:0<1"],
+      "extra": [
+        "common.view/model-scene-source:measurement:animations:6>1",
+        "common.view/model-scene-source:measurement:nodes:6>0",
+        "common.view/model-scene-source:measurement:textures:1>0",
+        "operation:asset.validate",
+        "operation:export.raw",
+        "operation:view.inspect",
+        "source:common.view/byte-range-source",
+        "source:common.view/model-animation-source",
+        "source:common.view/model-resource-refs-source",
+        "source:common.view/tree-data-source"
+      ],
+      "sourceComparisons": [
+        {
+          "contract": "common.view/model-scene-source",
+          "classification": "X3 беднее",
+          "missing": ["measurement:materials:0<1"],
+          "extra": [
+            "measurement:animations:6>1",
+            "measurement:nodes:6>0",
+            "measurement:textures:1>0"
+          ]
+        }
+      ],
+      "baseline": "X3 беднее",
+      "allowPoorerReason": "The canonical PIE reader synthesizes one default material; X3 does not invent a material, while publishing richer hierarchy, texture-reference and ANIMOBJECT planes.",
+      "canonical": {
+        "formatId": "pie",
+        "declaredSources": ["common.view/model-scene-source"],
+        "actualSources": ["common.view/model-scene-source"],
+        "sources": [
+          {
+            "contract": "common.view/model-scene-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "meshes", "nodes", "primitive"],
+            "measurements": {
+              "scenes": 1,
+              "nodes": 0,
+              "meshes": 6,
+              "primitives": 6,
+              "materials": 1,
+              "textures": 0,
+              "animations": 1,
+              "decodedGeometry": true,
+              "decodedVertices": 102,
+              "decodedIndices": 102
+            }
+          }
+        ],
+        "operations": [],
+        "geometryAccess": "decoded",
+        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
+        "summary": {
+          "scenes": 1,
+          "nodes": 0,
+          "meshes": 6,
+          "primitives": 6,
+          "materials": 1,
+          "textures": 0,
+          "animations": 1
+        }
+      },
+      "x3": {
+        "available": true,
+        "formatId": "warzone-pie",
+        "declaredSources": [
+          "common.view/byte-range-source",
+          "common.view/model-animation-source",
+          "common.view/model-resource-refs-source",
+          "common.view/model-scene-source",
+          "common.view/tree-data-source"
+        ],
+        "actualSources": [
+          "common.view/byte-range-source",
+          "common.view/model-animation-source",
+          "common.view/model-resource-refs-source",
+          "common.view/model-scene-source",
+          "common.view/tree-data-source"
+        ],
+        "sourceFailures": [],
+        "sources": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/model-animation-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
+            "contract": "common.view/model-resource-refs-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
+            "contract": "common.view/model-scene-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "meshes", "nodes", "primitive"],
+            "measurements": {
+              "animations": 6,
+              "decodedGeometry": true,
+              "decodedIndices": 102,
+              "decodedVertices": 102,
+              "materials": 0,
+              "meshes": 6,
+              "nodes": 6,
+              "primitives": 6,
+              "scenes": 1,
+              "textures": 1
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 7
+            }
+          }
+        ],
+        "operations": ["asset.validate", "export.raw", "view.inspect"],
+        "geometryAccess": "decoded",
+        "metadata": {},
+        "features": [
+          "geometry:decoded",
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/model-animation-source",
+          "source:common.view/model-resource-refs-source",
+          "source:common.view/model-scene-source",
+          "source:common.view/tree-data-source"
+        ]
+      },
+      "verdict": "poorer",
+      "planes": [
+        {
+          "plane": "subject-recognition",
+          "state": "compared",
+          "verdict": "equal"
+        },
+        {
+          "plane": "structural-metadata",
+          "state": "compared",
+          "verdict": "equal"
+        },
+        { "plane": "geometry-counts", "state": "compared", "verdict": "equal" },
+        { "plane": "hierarchy", "state": "compared", "verdict": "richer" },
+        {
+          "plane": "materials-textures",
+          "state": "compared",
+          "verdict": "poorer"
+        },
+        { "plane": "animation", "state": "compared", "verdict": "richer" },
+        {
+          "plane": "collision",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        {
+          "plane": "palette-voxel-transforms",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        { "plane": "payload-access", "state": "x3-only", "verdict": "richer" },
+        {
+          "plane": "protected-tail-preservation",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        },
+        {
+          "plane": "diagnostics-on-malformed-input",
+          "state": "not-observed",
+          "verdict": "not-observed"
+        }
+      ],
+      "declared": {
+        "canonical": ["common.view/model-scene-source"],
+        "x3": [
+          "common.view/byte-range-source",
+          "common.view/model-animation-source",
+          "common.view/model-resource-refs-source",
+          "common.view/model-scene-source",
+          "common.view/tree-data-source"
+        ]
+      },
+      "observed": {
+        "canonical": [
+          {
+            "contract": "common.view/model-scene-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "meshes", "nodes", "primitive"],
+            "measurements": {
+              "scenes": 1,
+              "nodes": 0,
+              "meshes": 6,
+              "primitives": 6,
+              "materials": 1,
+              "textures": 0,
+              "animations": 1,
+              "decodedGeometry": true,
+              "decodedVertices": 102,
+              "decodedIndices": 102
+            }
+          }
+        ],
+        "x3": [
+          {
+            "contract": "common.view/byte-range-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["read", "size"],
+            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
+          },
+          {
+            "contract": "common.view/model-animation-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
+            "contract": "common.view/model-resource-refs-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
+            "contract": "common.view/model-scene-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "meshes", "nodes", "primitive"],
+            "measurements": {
+              "animations": 6,
+              "decodedGeometry": true,
+              "decodedIndices": 102,
+              "decodedVertices": 102,
+              "materials": 0,
+              "meshes": 6,
+              "nodes": 6,
+              "primitives": 6,
+              "scenes": 1,
+              "textures": 1
+            }
+          },
+          {
+            "contract": "common.view/tree-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["children", "facts", "root"],
+            "measurements": {
+              "complete": true,
+              "kinds": 2,
+              "maxDepth": 1,
+              "nodes": 7
+            }
+          }
+        ]
+      },
+      "comparison": {
+        "classification": "X3 беднее",
+        "missing": ["common.view/model-scene-source:measurement:materials:0<1"],
+        "extra": [
+          "common.view/model-scene-source:measurement:animations:6>1",
+          "common.view/model-scene-source:measurement:nodes:6>0",
+          "common.view/model-scene-source:measurement:textures:1>0",
+          "operation:asset.validate",
+          "operation:export.raw",
+          "operation:view.inspect",
+          "source:common.view/byte-range-source",
+          "source:common.view/model-animation-source",
+          "source:common.view/model-resource-refs-source",
+          "source:common.view/tree-data-source"
+        ],
+        "sources": [
+          {
+            "contract": "common.view/model-scene-source",
+            "classification": "X3 беднее",
+            "missing": ["measurement:materials:0<1"],
+            "extra": [
+              "measurement:animations:6>1",
+              "measurement:nodes:6>0",
+              "measurement:textures:1>0"
+            ]
           }
         ]
       }

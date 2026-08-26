@@ -1,5 +1,6 @@
 import {
   createInspectionCodec,
+  createModelAnimationSource,
   createModelResourceRefsSource,
   createModelSceneSource,
   createModelSkeletonSource,
@@ -74,7 +75,7 @@ function parseM3(bytes, maxNodes) {
   return Object.freeze({ tag, indexOffset, sections: Object.freeze(sections) })
 }
 
-function metadataSceneOf(model) {
+function metadataSceneOf(model, animations) {
   const sectionNodes = model.sections.map(section => ({
     id: `section/${section.index}`,
     name: `${section.tag} v${section.version}`,
@@ -90,7 +91,7 @@ function metadataSceneOf(model) {
       primitives: 0,
       materials: model.sections.filter(section => section.tag.startsWith('MAT')).length,
       textures: model.sections.filter(section => section.tag === 'LAYR').length,
-      animations: model.sections.filter(section => section.tag === 'SEQS').length,
+      animations,
       geometryAccess: 'metadata-only',
     },
     nodes: [
@@ -107,7 +108,7 @@ function metadataSceneOf(model) {
   })
 }
 
-function decodedSceneOf(model, geometry) {
+function decodedSceneOf(model, geometry, animations) {
   return createModelSceneSource({
     info: {
       scenes: 1,
@@ -116,7 +117,7 @@ function decodedSceneOf(model, geometry) {
       primitives: geometry.primitives.length,
       materials: model.sections.filter(section => section.tag.startsWith('MAT')).length,
       textures: model.sections.filter(section => section.tag === 'LAYR').length,
-      animations: model.sections.filter(section => section.tag === 'SEQS').length,
+      animations,
       ...(geometry.bounds === undefined ? {} : { bounds: geometry.bounds }),
       geometryAccess: 'decoded',
     },
@@ -136,6 +137,12 @@ async function skeletonOf(bytes, budget, signal) {
   if (globalThis.process?.versions?.node === undefined) return undefined
   const { decodeM3Skeleton } = await import('./skeleton.node.js')
   return decodeM3Skeleton(bytes, budget, signal)
+}
+
+async function animationOf(bytes, budget, signal) {
+  if (globalThis.process?.versions?.node === undefined) return undefined
+  const { decodeM3Animations } = await import('./animation.node.js')
+  return decodeM3Animations(bytes, budget, signal)
 }
 
 /**
@@ -280,6 +287,7 @@ const definition = Object.freeze({
   async inspect(bytes, context) {
     const model = parseM3(bytes, context.budget.maxNodes)
     const skeleton = await skeletonOf(bytes, context.budget, context.signal)
+    const animation = await animationOf(bytes, context.budget, context.signal)
     const skeletonBudgetRefusal = skeleton?.issues.find(
       item => item.code === 'x3.m3/skeleton-budget-exceeded',
     )
@@ -289,9 +297,18 @@ const definition = Object.freeze({
       // the geometry decoder does.
       throw new RangeError(`M3 ${skeletonBudgetRefusal.message}`)
     }
+    const animationBudgetRefusal = animation?.issues.find(
+      item => item.code === 'x3.m3/animation-budget-exceeded',
+    )
+    if (animationBudgetRefusal !== undefined) {
+      throw new RangeError(`M3 ${animationBudgetRefusal.message}`)
+    }
     // A truncated BONE table makes the schema parser unsafe for geometry too: both paths load the
     // same section list. Keep the subject inspectable as a section graph and report the refusal.
-    const geometry = skeleton?.fatal === true ? undefined : await geometryOf(bytes, context.budget)
+    const geometry =
+      skeleton?.fatal === true || animation?.fatal === true
+        ? undefined
+        : await geometryOf(bytes, context.budget)
     const references = scanTextureReferences(bytes)
     const boundTextures = await readTextureBindings(context.input, context.signal)
     const tree = createTreeDataSource({
@@ -304,19 +321,31 @@ const definition = Object.freeze({
         preview: `v${section.version}, ${section.repetitions} record(s), ${section.byteLength} bytes`,
       })),
     })
+    const declaredAnimationCount = model.sections
+      .filter(section => section.tag === 'SEQS')
+      .reduce((total, section) => total + section.repetitions, 0)
+    // A SEQS record proves that the source declares an animation even when no SD timestamp can be
+    // represented as a live clip. Keep that structural count in model-scene-source, while the
+    // optional animation facet remains absent and the receipt names the lost executable plane.
+    const animationCount =
+      animation !== undefined && animation.clips.length > 0
+        ? animation.clips.length
+        : declaredAnimationCount
     const scene =
       geometry === undefined || geometry.primitives.length === 0
-        ? metadataSceneOf(model)
-        : decodedSceneOf(model, geometry)
+        ? metadataSceneOf(model, animationCount)
+        : decodedSceneOf(model, geometry, animationCount)
     const info = await scene.info()
     const geometryAccess = info.geometryAccess
     /*
      * The five facet contracts, published as contracts rather than as a shape inside `summary`.
      *
-     * M3 fills two of them. Texture *paths* come out of `CHAR`, while skeleton bindings follow
+     * M3 fills three of them. Texture *paths* come out of `CHAR`, skeleton bindings follow
      * `MODL.bones → BONE.name → CHAR`. Parent links and flags are validated but stay out of the
-     * skeleton facet because its v1 ABI carries neither; IREF rest poses and STC animation remain
-     * unread. Materials and animations are still counts, so no facet is published for them.
+     * skeleton facet because its v1 ABI carries neither. SEQS supplies clip names and bounds used
+     * to validate distinct SD timestamp samples; their count is the clip's `frames`, while no frame
+     * rate is inferred. STG/STC/STS can attribute only those channels whose animation ids match
+     * explicit BONE reference headers. SD keyframe values and IREF rest poses remain unread.
      *
      * Every reference stays `reference-only`. The texture requirement is `many`, so a bound
      * companion cannot be attributed to one name without inspecting the resolved URI, which is the
@@ -344,6 +373,14 @@ const definition = Object.freeze({
             'common.view/model-skeleton-source': createModelSkeletonSource({
               bindings: skeleton.bindings,
               ...(skeleton.hierarchyComplete ? { hierarchies: 1 } : {}),
+            }),
+          }
+    const animationFacet =
+      animation === undefined || animation.clips.length === 0
+        ? {}
+        : {
+            'common.view/model-animation-source': createModelAnimationSource({
+              clips: animation.clips,
             }),
           }
     const projectionReceipt = createProjectionReceipt({
@@ -403,7 +440,32 @@ const definition = Object.freeze({
           state: 'lost',
           note: 'IREF matrices and animation-reference defaults are not projected',
         },
-        { planeId: 'animation', state: 'lost', note: 'SEQS sections are counted, never decoded' },
+        {
+          planeId: 'animation',
+          state: animation !== undefined && animation.clips.length > 0 ? 'normalized' : 'lost',
+          note:
+            animation !== undefined && animation.clips.length > 0
+              ? `${animation.clips.length} SEQS name(s) and distinct SD timestamp count(s) normalized as clips`
+              : 'this open published no SEQS clip with a measured SD timestamp count',
+        },
+        {
+          planeId: 'animation-native-time-bounds',
+          state: 'lost',
+          note: 'SEQS millisecond start/end bounds validate SD timestamps but are not frame counts',
+        },
+        {
+          planeId: 'animation-bone-targets',
+          state: (animation?.supportedChannels ?? 0) > 0 ? 'normalized' : 'lost',
+          note:
+            (animation?.supportedChannels ?? 0) > 0
+              ? `${animation.supportedChannels} STC channel(s) matched explicit BONE animation-reference ids`
+              : 'no STC channel matched an explicit BONE animation-reference id',
+        },
+        {
+          planeId: 'animation-sd-keyframes',
+          state: 'lost',
+          note: `${animation?.unsupportedChannels ?? 0} STC channel(s) remain unsupported; SD keyframes are not decoded`,
+        },
       ],
       evidence: [
         {
@@ -415,7 +477,8 @@ const definition = Object.freeze({
           kind: 'observed',
           statement:
             `${model.sections.length} sections indexed, ${references.names.length} texture path(s) read from CHAR, ` +
-            `${skeleton?.bindings.length ?? 0} BONE binding(s) decoded`,
+            `${skeleton?.bindings.length ?? 0} BONE binding(s), ${animation?.clips.length ?? 0} SEQS clip(s), ` +
+            `${animation?.supportedChannels ?? 0} BONE channel target(s) decoded`,
           bytesRead: BigInt(bytes.byteLength),
         },
         ...(references.truncated
@@ -470,6 +533,28 @@ const definition = Object.freeze({
             { key: 'animations', value: info.animations },
           ],
         },
+        ...(animation === undefined || animation.clips.length === 0
+          ? []
+          : [
+              {
+                id: 'm3-animation',
+                label: 'M3 animation',
+                entries: [
+                  { key: 'sequences', value: animation.clips.length },
+                  { key: 'timelineContainers', value: animation.timelineContainers.length },
+                  { key: 'supportedBoneChannels', value: animation.supportedChannels },
+                  { key: 'unsupportedChannels', value: animation.unsupportedChannels },
+                  {
+                    key: 'sampleFrames',
+                    value: animation.clips.reduce((total, clip) => total + clip.frames, 0),
+                  },
+                  {
+                    key: 'timelineNames',
+                    value: animation.timelineContainers.map(item => item.name).join(', '),
+                  },
+                ],
+              },
+            ]),
       ],
       traits: [
         ...(geometryAccess === 'decoded'
@@ -493,6 +578,18 @@ const definition = Object.freeze({
                 },
               },
             ]),
+        ...(animation === undefined || animation.clips.length === 0
+          ? []
+          : [
+              {
+                id: 'model.animations',
+                parameters: {
+                  clips: animation.clips.length,
+                  channels: animation.supportedChannels,
+                  unsupportedChannels: animation.unsupportedChannels,
+                },
+              },
+            ]),
         { id: 'structure.hierarchy', parameters: { sections: model.sections.length } },
         { id: 'content.binary', parameters: { bytes: String(bytes.byteLength) } },
       ],
@@ -501,11 +598,17 @@ const definition = Object.freeze({
         'common.view/model-scene-source': scene,
         ...resourceFacet,
         ...skeletonFacet,
+        ...animationFacet,
       },
       projectionReceipt,
-      diagnostics: skeleton?.issues ?? [],
+      diagnostics: [...(skeleton?.issues ?? []), ...(animation?.issues ?? [])],
       maxDecodedBytes: BigInt(
-        Math.max(bytes.byteLength, geometry?.decodedBytes ?? 0, skeleton?.decodedBytes ?? 0),
+        Math.max(
+          bytes.byteLength,
+          geometry?.decodedBytes ?? 0,
+          skeleton?.decodedBytes ?? 0,
+          animation?.decodedBytes ?? 0,
+        ),
       ),
       companions: [
         {
@@ -525,7 +628,8 @@ const definition = Object.freeze({
         'skeleton-parent-links',
         'skeleton-flags',
         'skeleton-rest-pose',
-        'animations',
+        ...(animation === undefined || animation.clips.length === 0 ? ['animations'] : []),
+        'animation-sd-keyframes',
         'external-m3a-sidecars',
         'm3-writing',
       ],

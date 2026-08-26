@@ -1,0 +1,19 @@
+{
+  "name": "modkit-extension-x3-opensource-warzone-2100",
+  "version": "0.1.0",
+  "license": "GPL-2.0-or-later",
+  "private": true,
+  "type": "module",
+  "description": "Warzone 2100 format contributions for MK3.",
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "org.modkitx.opensource",
+    "id": "warzone-2100",
+    "contributionManifests": [
+      "./contributions/*.json"
+    ]
+  },
+  "dependencies": {
+    "@modkitx-x3/codec-kit": "workspace:*"
+  }
+}

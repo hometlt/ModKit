@@ -3,8 +3,23 @@ import { createHash } from 'node:crypto'
 import { readdirSync } from 'node:fs'
 import { mkdtemp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, extname, join, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { tmpdir } from 'node:os'
+import { gunzipSync } from 'node:zlib'
+import {
+  buildInventory,
+  artifactNamespaceSourceFromVfsMount,
+  createBundledServiceDefinitionRegistry,
+  createExecutionBackendRegistry,
+  createHostContributionContractRegistry,
+  createSubjectServices,
+  openSubject,
+  registerServiceDefinitionsOrThrow,
+} from '@modkitx-x3/host'
 import { createModkit } from '@modkitx-x3/host/node'
+import { createPathSubjectOpener, loadExtensionDirectory } from '@modkitx-x3/host/node'
+import { VirtualFileSystem } from '@modkitx-x3/vfs'
+import { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'
 import { format as formatWithPrettier } from 'prettier'
 import { classifyFormatParity, comparableMetadataFeatures } from './classify.mjs'
 import { observeDataSource } from './observe.mjs'
@@ -60,9 +75,39 @@ const PROJECTION_RECEIPT_GROUP = 'uv-projection-receipt'
 /** Recursive discovery must stay bounded so a mistyped root cannot walk an entire drive. */
 const DISCOVERY_NODE_BUDGET = 100_000
 const NAMESPACE_PAGE_LIMIT = 256
+const CONTAINER_TARGET = Object.freeze({
+  environment: 'node',
+  operatingSystem: process.platform === 'win32' ? 'windows' : 'linux',
+  architecture: process.arch === 'arm64' ? 'arm64' : 'x64',
+})
+const CONTAINER_GRANT = Object.freeze({ id: 'parity-container', classes: ['read-source'] })
+const CONTAINER_BUDGET = Object.freeze({
+  maxInputBytes: 1_073_741_824n,
+  maxDepth: 128,
+  maxNodes: 1_000_000,
+  maxScalarBytes: 256 * 1024 * 1024,
+  maxDiagnostics: 200,
+})
+const CONTAINER_EXECUTION_BACKENDS = createExecutionBackendRegistry([
+  {
+    profile: 'trusted-in-process',
+    supports: (_target, variant) => variant.executionProfile === 'trusted-in-process',
+    async activate(context) {
+      return {
+        module: await import(context.entrypoint.href),
+        release: async () => undefined,
+      }
+    },
+  },
+])
 
 async function exists(path) {
   return (await stat(path).catch(() => undefined))?.isFile() === true
+}
+
+async function isOpenablePath(path) {
+  const entry = await stat(path).catch(() => undefined)
+  return entry?.isFile() === true || entry?.isDirectory() === true
 }
 
 function pad4(bytes, fill = 0) {
@@ -162,54 +207,176 @@ async function listNamespace(source) {
 }
 
 /**
- * Resolves a model that only exists inside a shipped archive by walking the real container with
- * the X3 BIG codec and invoking its own extraction operation. The canonical oracle then reads the
+ * Resolves a model that only exists inside a shipped namespace by walking the real BIG, ZIP or
+ * CASC subject with its X3 codec and invoking the subject's own extraction operation. The oracle reads the
  * very same bytes from a scratch file, so both sides compare one archived asset rather than two
  * differently obtained copies.
  */
 async function extractContainerEntry(sample, temporaryRoot, archivePath) {
-  const modkit = await createModkit({
-    extensions: [resolve(repoRoot, sample.container.x3Extension)],
-    roots: [dirname(archivePath), temporaryRoot],
-    intent: 'full',
+  const containerExtensions = sample.container.x3Extensions ?? [sample.container.x3Extension]
+  const inputs = await Promise.all(
+    containerExtensions.map(async extension => ({
+      ...(await loadExtensionDirectory(resolve(repoRoot, extension))),
+      execution: { origin: 'bundled', allowTrustedInProcess: true },
+    })),
+  )
+  const inventory = await buildInventory(inputs, createHostContributionContractRegistry())
+  const serviceDefinitions = createBundledServiceDefinitionRegistry()
+  await registerServiceDefinitionsOrThrow(inventory, serviceDefinitions)
+  const subjects = createSubjectServices({
+    inventory,
+    target: CONTAINER_TARGET,
+    executionBackends: CONTAINER_EXECUTION_BACKENDS,
+    serviceDefinitions,
   })
+  const archiveStat = await stat(archivePath)
+  let session
+  if (archiveStat.isDirectory()) {
+    const mount = await new VirtualFileSystem()
+      .registerProvider(createFileVfsProvider())
+      .openMount(pathToFileURL(archivePath).href)
+    const opened = await openSubject({
+      inventory,
+      source: artifactNamespaceSourceFromVfsMount(mount),
+      path: archivePath,
+      intent: 'full',
+      target: CONTAINER_TARGET,
+      grant: CONTAINER_GRANT,
+      budget: CONTAINER_BUDGET,
+      executionBackends: CONTAINER_EXECUTION_BACKENDS,
+      serviceDefinitions,
+    })
+    if (opened.state === 'opened') session = opened.session
+  } else {
+    const open = createPathSubjectOpener({
+      subjects,
+      roots: [dirname(archivePath), temporaryRoot],
+      budget: CONTAINER_BUDGET,
+      grant: CONTAINER_GRANT,
+    })
+    const opened = await open(archivePath)
+    if (opened.snapshot.state === 'opened') session = opened.session
+  }
+  if (session === undefined) {
+    return corpusFailure(`${sample.environment} container did not open: ${archivePath}`)
+  }
   try {
-    const opened = await modkit.open(archivePath)
-    if (opened.snapshot.state !== 'opened' || opened.session === undefined) {
-      return corpusFailure(`${sample.environment} container did not open: ${archivePath}`)
-    }
+    const lease = await session.dataSource('common.view/namespace-entry-source', 1)
     try {
-      const lease = await opened.session.dataSource('common.view/namespace-entry-source', 1)
-      try {
-        const wanted = sample.container.entry.toLocaleLowerCase()
-        const entry = (await listNamespace(lease.value)).find(
-          item => item.path.replaceAll('\\', '/').toLocaleLowerCase() === wanted,
+      const wanted = sample.container.entry.toLocaleLowerCase()
+      const entry = (await listNamespace(lease.value)).find(
+        item => item.path.replaceAll('\\', '/').toLocaleLowerCase() === wanted,
+      )
+      if (entry === undefined) {
+        return corpusFailure(
+          `${sample.environment} container ${sample.container.relativePath} has no entry ${sample.container.entry}`,
         )
-        if (entry === undefined) {
-          return corpusFailure(
-            `${sample.environment} container ${sample.container.relativePath} has no entry ${sample.container.entry}`,
-          )
-        }
-        const extracted = await opened.session
-          .operations()
-          .invoke('extract-entry', { entryId: entry.id })
-        if (extracted.state !== 'ok' || extracted.output.kind !== 'bytes') {
-          return corpusFailure(
-            `${sample.environment} container entry ${sample.container.entry} did not extract`,
-          )
-        }
-        const leaf = sample.container.entry.split('/').at(-1) ?? 'entry.bin'
-        const path = join(temporaryRoot, `${sample.format}-${leaf}`)
-        await writeFile(path, extracted.output.value)
-        return { state: 'ready', path }
-      } finally {
-        await lease.release()
       }
+      const extracted = await session.operations().invoke('extract-entry', { entryId: entry.id })
+      if (extracted.state !== 'ok' || extracted.output.kind !== 'bytes') {
+        return corpusFailure(
+          `${sample.environment} container entry ${sample.container.entry} did not extract`,
+        )
+      }
+      const leaf = sample.container.entry.split('/').at(-1) ?? 'entry.bin'
+      const path = join(temporaryRoot, `${sample.format}-${leaf}`)
+      await writeFile(path, extracted.output.value)
+      return { state: 'ready', path }
     } finally {
-      await opened.close()
+      await lease.release()
     }
   } finally {
-    await modkit.close()
+    await session.dispose()
+  }
+}
+
+function hex(bytes) {
+  return [...bytes].map(value => value.toString(16).padStart(2, '0')).join('')
+}
+
+/**
+ * Resolves a BAR rapid-pool entry without materialising the installed corpus. The manifest is a
+ * gzip stream of path/md5/crc/size records and the pool blob is another gzip stream addressed by
+ * that md5. Pinned identity fields turn a wrong package or a stale launcher cache into a corpus
+ * failure rather than a convenient skip.
+ */
+async function extractRapidEntry(sample, temporaryRoot, root) {
+  const manifestPath = resolve(root, sample.rapid.manifestRelativePath)
+  if (!(await exists(manifestPath))) {
+    return corpusFailure(
+      `${sample.environment} does not contain ${sample.rapid.manifestRelativePath}`,
+    )
+  }
+  let manifest
+  try {
+    manifest = gunzipSync(await readFile(manifestPath))
+  } catch (error) {
+    return corpusFailure(
+      `${sample.environment} rapid manifest is not a readable gzip stream: ${String(error)}`,
+    )
+  }
+  const view = new DataView(manifest.buffer, manifest.byteOffset, manifest.byteLength)
+  let cursor = 0
+  let record
+  while (cursor < manifest.byteLength) {
+    const nameLength = manifest[cursor] ?? 0
+    cursor += 1
+    if (nameLength === 0 || cursor + nameLength + 24 > manifest.byteLength) {
+      return corpusFailure(`${sample.environment} rapid manifest record is truncated`)
+    }
+    const path = new TextDecoder('ascii').decode(manifest.subarray(cursor, cursor + nameLength))
+    cursor += nameLength
+    const md5 = hex(manifest.subarray(cursor, cursor + 16))
+    cursor += 16
+    cursor += 4
+    const size = view.getUint32(cursor, false)
+    cursor += 4
+    if (path === sample.rapid.entry) record = { md5, size }
+  }
+  if (record === undefined) {
+    return corpusFailure(`${sample.environment} rapid manifest has no entry ${sample.rapid.entry}`)
+  }
+  if (record.md5 !== sample.rapid.md5 || record.size !== sample.rapid.size) {
+    return corpusFailure(
+      `${sample.environment} rapid entry identity differs for ${sample.rapid.entry}`,
+    )
+  }
+  const poolPath = resolve(
+    root,
+    'data',
+    'pool',
+    record.md5.slice(0, 2),
+    `${record.md5.slice(2)}.gz`,
+  )
+  if (!(await exists(poolPath))) {
+    return corpusFailure(
+      `${sample.environment} rapid pool blob is missing for ${sample.rapid.entry}`,
+    )
+  }
+  let bytes
+  try {
+    bytes = gunzipSync(await readFile(poolPath))
+  } catch (error) {
+    return corpusFailure(
+      `${sample.environment} rapid pool blob is not a readable gzip stream: ${String(error)}`,
+    )
+  }
+  if (bytes.byteLength !== record.size) {
+    return corpusFailure(`${sample.environment} rapid pool size differs for ${sample.rapid.entry}`)
+  }
+  const sha256 = createHash('sha256').update(bytes).digest('hex')
+  if (sha256 !== sample.rapid.sha256) {
+    return corpusFailure(
+      `${sample.environment} rapid pool digest differs for ${sample.rapid.entry}`,
+    )
+  }
+  const leaf = sample.rapid.entry.split('/').at(-1) ?? 'entry.bin'
+  const path = join(temporaryRoot, `${sample.format}-${leaf}`)
+  await writeFile(path, bytes)
+  return {
+    state: 'ready',
+    path,
+    publishedPath: `${sample.rapid.manifestRelativePath}!${sample.rapid.entry}`,
   }
 }
 
@@ -235,9 +402,12 @@ async function locateSample(sample, temporaryRoot) {
       return skipped(`${sample.environment} is not set`)
     }
     const root = resolve(value.trim())
+    if (sample.rapid !== undefined) {
+      return extractRapidEntry(sample, temporaryRoot, root)
+    }
     if (sample.container !== undefined) {
       const archivePath = resolve(root, sample.container.relativePath)
-      if (!(await exists(archivePath))) {
+      if (!(await isOpenablePath(archivePath))) {
         return corpusFailure(
           `${sample.environment} does not contain ${sample.container.relativePath}`,
         )
@@ -287,13 +457,15 @@ async function resolveSample(sample, temporaryRoot) {
     provenance: {
       kind: sample.kind,
       origin:
-        sample.container !== undefined
-          ? 'container-entry'
-          : typeof sample.environment === 'string'
-            ? 'environment'
-            : typeof sample.mk2Relative === 'string'
-              ? 'legacy-checkout'
-              : 'repository',
+        sample.rapid !== undefined
+          ? 'rapid-pool-entry'
+          : sample.container !== undefined
+            ? 'container-entry'
+            : typeof sample.environment === 'string'
+              ? 'environment'
+              : typeof sample.mk2Relative === 'string'
+                ? 'legacy-checkout'
+                : 'repository',
       ...(sample.environment === undefined ? {} : { environment: sample.environment }),
       relativePath: located.publishedPath,
       bytes: bytes.byteLength,

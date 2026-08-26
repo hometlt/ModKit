@@ -454,8 +454,9 @@ describe('MK2 → MK3 converter (OPUS-MK2-01 task A, OPUS-MK2-02 tasks D/D2/E)',
     // Block 8 moved 18 valid contributions into domain-owned roots, block 11 slice 11A moved plain
     // text into extensions/common/plain-text, and slice 11B moved the OpenDocument trio into
     // extensions/common/documents. Keep the remaining converted staging tree ratcheted while
-    // check-mk2-ports guards all 168 ports globally.
-    expect(contributions).toBeGreaterThanOrEqual(84)
+    // PIE moved to the final opensource/warzone-2100 owner in round 2. The staging floor
+    // therefore drops by one while check-mk2-ports strengthens the global floor to 169.
+    expect(contributions).toBeGreaterThanOrEqual(83)
   })
 
   it('the committed tree carries notes per extension whose port states match the modules', () => {

@@ -74,11 +74,11 @@ planes:
     plannedBlock: 11
     knownLoss:
       - 'materialization в UVM реализована слайсом 11C1 (common.uv/model-materializer@1 + export-only writer); MaterializationReceipt выпускается, byte-stability и три оракула доказаны'
-      - 'ProjectionReceipt выпускают M3, W3D, W3X, VXL, OBJ и UVM (слайс 12-1); остальные модельные кодеки (DAE, glTF, PLY, STL, XBF, SCM) квитанцию пока не выпускают'
+      - 'ProjectionReceipt выпускают M3, W3D, W3X, VXL, OBJ, UVM, PIE и S3O; остальные модельные кодеки (DAE, glTF, PLY, STL, SCM) квитанцию пока не выпускают'
       - 'skeleton admitted после независимой семьи M3: MODL.bones → BONE.name → CHAR декодируется в blizzard/models и доказан на artifact1.m3 (12 именованных bindings); W3D/W3X остаются отдельной SAGE/Westwood семьёй'
       - 'родительские связи, flags и IREF rest pose M3 валидируются или честно помечаются lost в ProjectionReceipt, но model-skeleton-source@1 пока переносит только index/name bindings'
       - 'native export не заявлен ни одним кодеком; NativeExportReceipt отсутствует'
-      - 'глубина по формату разная: M3/W3D/W3X доказаны на реальном корпусе, VXL — на реальном файле, остальные модели — только структурно'
+      - 'глубина по формату разная: M3/W3D/W3X/PIE/S3O/XBF доказаны на реальном корпусе, VXL — на реальном файле, остальные модели — только структурно'
     resourceDependencies:
       - 'текстуры и sidecar объявляются моделью как логические требования; открывает их host, не кодек'
       - 'post-open ResourceSessionPort блока 11C0 существует: у ссылки теперь типизированный исход с кодом и provenance, а не отсутствие'
@@ -88,6 +88,8 @@ planes:
       - 'MODKITX_W3D_PATH'
       - 'MODKITX_W3X_PATH'
       - 'MODKITX_VXL_PATH'
+      - 'MODKITX_WARZONE_ROOT'
+      - 'MODKITX_BAR_ROOT'
     capabilityIds:
       - 'block9/m3-geometry'
       - 'block9/vxl-voxel-geometry'

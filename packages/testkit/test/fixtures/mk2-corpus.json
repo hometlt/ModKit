@@ -1740,13 +1740,13 @@
       "note": "Warzone campaign dataset and multiplayer level declarations"
     },
     {
-      "extension": "mk2/opensource-warzone-2100",
+      "extension": "opensource/warzone-2100",
       "contributionId": "org.modkitx/warzone-pie",
       "corpus": "synthetic",
       "sample": "minimal.warzone.pie",
       "minimumConfidence": 0.99,
-      "dataSource": "tree",
-      "note": "Warzone PIE 3 structural model metadata"
+      "dataSource": "model",
+      "note": "Final-owner Warzone PIE 3 model geometry and hierarchy"
     },
     {
       "extension": "mk2/opensource-warzone-2100",

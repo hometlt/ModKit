@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.modkitx/spring-s3o",
+  "displayName": "Spring/Recoil S3O model",
+  "status": "supported",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/spring-s3o/codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/spring-s3o/codec.js",
+      "target": { "environments": ["browser-worker", "node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "limitations": [
+    "Clean-room reader of the official Spring/Recoil S3O version 0 layout; the canonical legacy contribution is metadata-only and is not used as a depth oracle.",
+    "Decodes recursive pieces, local offsets, vertices, normals, UV coordinates, triangle lists, strips and quads.",
+    "Publishes the two header texture names as reference-only resources; texture resolution, materials and collision are not inferred.",
+    "S3O itself is static. Unit animation belongs to separately selected BOS/COB or Lua scripts; the file carries no script path, so no animation facet or companion requirement is fabricated.",
+    "Spring 3DO is a named remainder and is not claimed by this contribution.",
+    "S3O writing is not implemented."
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "spring-s3o", "label": "Spring/Recoil S3O model" }],
+    "roles": ["media"],
+    "sourceTopology": "single",
+    "artifactStages": ["compiled", "runtime"],
+    "openIntents": ["probe", "inspect", "full", "export"],
+    "match": {
+      "extensions": ["s3o"],
+      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "537072696e6720756e697400" }]
+    },
+    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 52 }], "maxBytes": 52 },
+    "representations": [
+      {
+        "id": "decoded-model",
+        "contract": "common.model/geometry-metadata",
+        "major": 1,
+        "stage": "compiled",
+        "lossy": true
+      }
+    ],
+    "publishesDataSources": [
+      { "contract": "common.view/model-scene-source", "major": 1 },
+      { "contract": "common.view/model-resource-refs-source", "major": 1 },
+      { "contract": "common.view/tree-data-source", "major": 1 },
+      { "contract": "common.view/byte-range-source", "major": 1 }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "traitDeclarations": [
+      { "id": "model.geometry", "representation": "source", "presence": "will-expose" },
+      { "id": "model.textures", "representation": "source", "presence": "may-expose" },
+      { "id": "structure.hierarchy", "representation": "source", "presence": "will-expose" },
+      { "id": "content.binary", "representation": "source", "presence": "will-expose" }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1073741824",
+      "maxDepth": 64,
+      "maxNodes": 100000,
+      "maxScalarBytes": 104857600,
+      "maxDiagnostics": 1000
+    }
+  }
+}

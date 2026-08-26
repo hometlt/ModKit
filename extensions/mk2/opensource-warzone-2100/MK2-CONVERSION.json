@@ -6,7 +6,6 @@
     "manifests": [
       "extensions/opensource/warzone-2100/codecs/warzone-img/codec.manifest.json",
       "extensions/opensource/warzone-2100/codecs/warzone-lev/codec.manifest.json",
-      "extensions/opensource/warzone-2100/codecs/warzone-pie/codec.manifest.json",
       "extensions/opensource/warzone-2100/codecs/warzone-wrf/codec.manifest.json",
       "extensions/opensource/warzone-2100/codecs/warzone-wz/codec.manifest.json",
       "extensions/opensource/warzone-2100/codecs/warzone2100-map/codec.manifest.json"
@@ -47,21 +46,6 @@
         "variants:pair"
       ],
       "droppedOperations": ["view.inspect"],
-      "needsSignatures": false,
-      "portState": "ported"
-    },
-    "org.modkitx/warzone-pie": {
-      "verdict": "mechanical",
-      "lostPlanes": [],
-      "contractGaps": [],
-      "renames": [],
-      "converterDefaults": [
-        "operations:inspection-triple",
-        "probe:bytes-4096",
-        "representation:common.model/geometry-metadata",
-        "variants:pair"
-      ],
-      "droppedOperations": ["model.read", "model.render"],
       "needsSignatures": false,
       "portState": "ported"
     },
