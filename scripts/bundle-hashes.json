@@ -1,6 +1,6 @@
 {
   "packages/core/dist/index.js": "b64705030409fa47ab0f7639bd5044af95234556dfed1c13492b2841938497fd",
-  "packages/sdk/dist/index.js": "0c0037000e68432274521c75bbc9e14eb63c76cc44fef50203891954dce94dc8",
+  "packages/sdk/dist/index.js": "d4985fed29bc6a919a0ee7ddbbe87c81234d6ecc70df1242cba2b6a3acc43e88",
   "packages/sdk/dist/manifest/validators.generated.js": "d243cb6bc1996067de403bf9a5e7d992b2f5abdfdefc864458149abaa7513e09",
   "packages/sdk/dist/subjects/index.js": "52f7a29e1ceed02b80062bc47f1d9056eb2609be1fda32b77a70d6d534b02415",
   "packages/sdk/dist/authoring/index.js": "da0ed7d44b1c3a764fc4c267ce1c2596807000b6c88a1368997ebfffcff70e28",
@@ -8,7 +8,7 @@
   "packages/sdk/dist/data-sources.js": "a59704ffbac573ca8e6bdadcde84b62a2f6f16429c4c8f29daf60165049829a7",
   "packages/sdk/dist/service-contracts.js": "9005f4fbf1ec2f0c92989cdd4ed1484f59de2c2eb405fadd72e93c1a94566d82",
   "packages/sdk/dist/language/index.js": "48dd72ab24e1372cb92f22dbcf2b2592580b252a76ff8623530d012c100c2952",
-  "packages/sdk/dist/runtime/index.js": "81698619b067bf6e342e40e2d3ecdac37654a8c2233f3b9fc561a899dcf37c6b",
+  "packages/sdk/dist/runtime/index.js": "d25d5787f81361e94f50dd00e6171c411cfdabd03d3e5216322d6f0f0fbc8fb5",
   "packages/sdk/dist/renderer/index.js": "fe6020361835f18dc721765042aee073268138b7c24a78a372986555eaf4c3b2",
   "packages/sdk/dist/games/index.js": "e86780d70d5175a2406b959447fee58763772b509f27c61525b575ce69d52df0",
   "packages/sdk/dist/mods/index.js": "70d96c4caab1b3163a628caeb9472f52c7a4bacb9d8852662a20318f09309ccd",
