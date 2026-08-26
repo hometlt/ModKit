@@ -6,7 +6,7 @@
     "sourceInventorySha256": "efc7c81a2686d55e40734ac4cf1b3bc0bf0de5a9d33b0609291ec1c6480a11cd",
     "decisionsSha256": "f7a6dcb2b4a62f6a2d3cf1a890191a7fb415a9bea22369bdc135af1563473606",
     "vscodeManifestSha256": "91a9f8b28795423759cc540076b2e408bedd7e2fbdbcecdce2d09d977cfed0ee",
-    "sharedCommandTargetsSha256": "368bb4484a3c0ed1153a94f9f6fc2a7bfbf4a5913347152b4b80cd90b054b698"
+    "sharedCommandTargetsSha256": "681a0341044ffea3d7ab2e1ad5d9736564ce90f122ab7c7e60b7ac9fd604529c"
   },
   "counts": {
     "total": 266,
@@ -49,7 +49,7 @@
       "mutatesSource": false,
       "operationIds": ["export.convert", "export.raw"],
       "dataSourceContracts": [],
-      "hostCallers": ["cli", "electron", "vscode"]
+      "hostCallers": ["automation", "cli", "electron", "vscode"]
     },
     {
       "commandId": "subject.extract",
@@ -57,7 +57,7 @@
       "mutatesSource": false,
       "operationIds": ["container.extract"],
       "dataSourceContracts": ["common.view/namespace-entry-source"],
-      "hostCallers": ["cli", "electron", "vscode"]
+      "hostCallers": ["automation", "cli", "electron", "vscode"]
     },
     {
       "commandId": "subject.inspect",
@@ -65,7 +65,7 @@
       "mutatesSource": false,
       "operationIds": [],
       "dataSourceContracts": [],
-      "hostCallers": ["cli", "electron", "vscode"]
+      "hostCallers": ["automation", "cli", "electron", "vscode"]
     },
     {
       "commandId": "subject.open",
@@ -73,7 +73,7 @@
       "mutatesSource": false,
       "operationIds": [],
       "dataSourceContracts": [],
-      "hostCallers": ["cli", "electron", "vscode"]
+      "hostCallers": ["automation", "cli", "electron", "vscode"]
     },
     {
       "commandId": "subject.preview",
@@ -81,7 +81,7 @@
       "mutatesSource": false,
       "operationIds": ["view.thumbnail", "view.render"],
       "dataSourceContracts": [],
-      "hostCallers": ["cli", "electron", "vscode"]
+      "hostCallers": ["automation", "cli", "electron", "vscode"]
     },
     {
       "commandId": "subject.validate",
@@ -89,7 +89,7 @@
       "mutatesSource": false,
       "operationIds": ["asset.validate"],
       "dataSourceContracts": [],
-      "hostCallers": ["cli", "electron", "vscode"]
+      "hostCallers": ["automation", "cli", "electron", "vscode"]
     }
   ],
   "workflows": [
