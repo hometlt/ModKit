@@ -50,6 +50,12 @@ export {
   type Mk2CorpusKind,
 } from './mk2-acceptance.js'
 export {
+  runRuntimeSessionV2Conformance,
+  type RuntimeConformanceFailure,
+  type RuntimeConformanceOptions,
+  type RuntimeConformanceReport,
+} from './runtime-conformance.js'
+export {
   runTextDataConformance,
   type TextDataConformanceCase,
   type TextDataConformanceFailure,
