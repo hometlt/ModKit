@@ -21,6 +21,7 @@ import process from 'node:process'
 import { isQualifiedId } from '@modkitx-x3/core'
 import { type OpenIntent, type ProviderOffer, type ProviderRequest } from '@modkitx-x3/sdk'
 import {
+  createSubjectCommandRuntime,
   explainProviderResolution,
   inventoryHasErrors,
   renderProviderResolutionExplanation,
@@ -34,6 +35,7 @@ import {
   createModkitCliSubjectServices,
   createModkitCliTopology,
 } from './profile.js'
+import { parseRunArguments, runCommand } from './commands.js'
 
 export {
   createModkitCliComposition,
@@ -42,7 +44,7 @@ export {
 } from './profile.js'
 
 const USAGE =
-  'usage: modkit validate <dir> [--json] | modkit explain <fixture.json> [--json] | modkit host-profile [--json] | modkit create codec <dir> --id <qualified-id> | modkit open <file> --ext <dir> [--ext <dir>...] [--intent inspect|full] [--trust] [--json]\n'
+  'usage: modkit validate <dir> [--json] | modkit explain <fixture.json> [--json] | modkit host-profile [--json] | modkit create codec <dir> --id <qualified-id> | modkit open <file> --ext <dir> [--ext <dir>...] [--intent inspect|full] [--trust] [--json] | modkit commands [--json] | modkit run <command> <file> --ext <dir> [--ext <dir>...] [--entry <path>] [--target <id>] [--out <file>] [--trust] [--format text|json]\n'
 
 type CliOpenIntent = Exclude<OpenIntent, 'probe'>
 const OPEN_INTENTS: readonly CliOpenIntent[] = ['inspect', 'full']
@@ -296,6 +298,36 @@ async function main(argv: readonly string[]): Promise<number> {
       return 2
     }
     return openCommand(parsed)
+  }
+  /*
+   * The shared surface. `modkit commands` prints what this build can do — the same list Electron
+   * puts on its IPC channel and VS Code registers into the palette, read from the runtime rather
+   * than from a literal in each of them.
+   */
+  if (command === 'commands') {
+    const runtime = createSubjectCommandRuntime()
+    const rows = runtime.descriptors.map(item => ({
+      id: item.id,
+      title: item.title,
+      summary: item.summary,
+      needsSubject: item.needsSubject,
+      mutatesSource: item.mutatesSource,
+      ...(item.operationId === undefined ? {} : { operationId: item.operationId }),
+    }))
+    process.stdout.write(
+      json
+        ? `${JSON.stringify(rows, null, 2)}\n`
+        : `${rows.map(row => `${row.id}\t${row.summary}`).join('\n')}\n`,
+    )
+    return 0
+  }
+  if (command === 'run') {
+    const parsed = parseRunArguments(target, rest[0], rest.slice(1))
+    if (parsed === undefined) {
+      process.stderr.write(USAGE)
+      return 2
+    }
+    return runCommand(parsed)
   }
   if (command !== 'validate' || target === undefined || target.startsWith('--')) {
     process.stderr.write(USAGE)
