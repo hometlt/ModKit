@@ -20,9 +20,9 @@
     },
     "byMigrationState": {
       "equivalent-better": 15,
-      "implemented": 106,
+      "implemented": 107,
       "missing": 38,
-      "partial": 5,
+      "partial": 4,
       "relocated-multiverse": 1
     },
     "byObligation": { "focused-required-addition": 13, "legacy-required": 152 },
@@ -349,8 +349,8 @@
       "obligation": "legacy-required",
       "owner": "packages/host",
       "plannedBlock": 13,
-      "migrationState": "partial",
-      "supportState": "partial",
+      "migrationState": "implemented",
+      "supportState": "supported",
       "evidenceLevel": "E3",
       "allocationState": "covered",
       "portFamily": null,

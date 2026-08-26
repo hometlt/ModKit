@@ -671,8 +671,8 @@ capabilities:
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'partial'
-    supportState: 'partial'
+    migrationState: 'implemented'
+    supportState: 'supported'
     runtimeAvailability: 'browser-and-node'
     evidenceLevel: 'E3'
     hostEvidence: 'node'
@@ -698,8 +698,7 @@ capabilities:
         validate: null
         read: 'apps/modkit-vscode/test/containers.test.ts'
         materialize: null
-    knownLoss:
-      - 'UI-wiring вложенных субъектов в web — слайс 13B (в VS Code закрыто слайсом 13A: FileSystemProvider modkit-container + modkit.openArchiveEntry)'
+    knownLoss: []
     receipts:
       projection: null
       materialization: null
@@ -711,6 +710,8 @@ capabilities:
         - 'packages/host/test/nested-subject-blizzard.test.ts'
         - 'apps/electron/test/subject-open-smoke.test.ts'
         - 'apps/modkit-vscode/test/containers.test.ts'
+        - 'apps/web/test/nested-subject.test.ts'
+        - 'scripts/test/command-fixtures-hosts.test.ts'
       reports:
         - 'docs/MK3/reports/REPORT_FABLE_BLOCK9_FINAL_2026-08-25.md'
   - capabilityId: 'block9/casc-mpq-texture-chain'
