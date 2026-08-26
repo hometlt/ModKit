@@ -5,7 +5,7 @@
  * worth checking is not "does it have these methods" — TypeScript already says that — but the
  * promises the methods make to each other:
  *
- *  - a declared capability works, and an undeclared one is *refused*, not thrown. A provider that
+ *  - a declared offer works, and an undeclared one is *refused*, not thrown. A provider that
  *    throws on an unsupported call forces every caller into a try/catch and makes "unsupported" and
  *    "broken" the same shape.
  *  - `step` is deterministic: the same state stepped the same way lands on the same state hash.
@@ -15,7 +15,7 @@
  *    `digest-mismatch`. Both are the identity earning its place: without them `restore` would read
  *    hopefully and fail later, somewhere else.
  *
- * The harness never assumes a provider supports everything. It reads `capabilities` and checks each
+ * The harness never assumes a provider supports everything. It reads `offers` and checks each
  * one both ways — present ones must work, absent ones must refuse — so a minimal provider is
  * conformant by refusing honestly rather than by implementing more.
  */
@@ -23,7 +23,7 @@ import {
   RUNTIME_SESSION_V2_MEMBERS,
   type RuntimeRefusal,
   type RuntimeEvent,
-  type RuntimeSessionCapability,
+  type RuntimeSessionOffer,
   type RuntimeSessionV2,
   type RuntimeSnapshot,
 } from '@modkitx-x3/sdk/runtime'
@@ -36,7 +36,7 @@ export interface RuntimeConformanceFailure {
 export interface RuntimeConformanceReport {
   readonly checks: number
   readonly failures: readonly RuntimeConformanceFailure[]
-  readonly capabilities: readonly RuntimeSessionCapability[]
+  readonly offers: readonly RuntimeSessionOffer[]
 }
 
 const isRefusal = (value: unknown): value is RuntimeRefusal =>
@@ -63,8 +63,8 @@ export async function runRuntimeSessionV2Conformance(
   }
 
   const session = await options.openSession()
-  const capabilities = [...session.capabilities]
-  const has = (capability: RuntimeSessionCapability): boolean => capabilities.includes(capability)
+  const offers = [...session.offers]
+  const has = (offer: RuntimeSessionOffer): boolean => offers.includes(offer)
 
   // --- the surface itself ----------------------------------------------------------------------
   for (const member of RUNTIME_SESSION_V2_MEMBERS) {
@@ -93,13 +93,13 @@ export async function runRuntimeSessionV2Conformance(
     check(
       'step:works',
       !isRefusal(stepped),
-      `a declared «step» capability must step: ${JSON.stringify(stepped)}`,
+      `a declared «step» offer must step: ${JSON.stringify(stepped)}`,
     )
   } else {
     check(
       'step:refused-when-undeclared',
-      isRefusal(stepped) && stepped.reason === 'capability-unavailable',
-      'an undeclared «step» must be refused with capability-unavailable, not thrown',
+      isRefusal(stepped) && stepped.reason === 'offer-unavailable',
+      'an undeclared «step» must be refused with offer-unavailable, not thrown',
     )
   }
 
@@ -216,5 +216,5 @@ export async function runRuntimeSessionV2Conformance(
     )
   }
 
-  return { checks, failures, capabilities }
+  return { checks, failures, offers }
 }

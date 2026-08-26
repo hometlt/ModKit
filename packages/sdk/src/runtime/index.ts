@@ -131,11 +131,11 @@ export interface RuntimeProviderRequestFacet {
 //
 // v1 is not deprecated and is not removed. A provider that only executes is a legitimate provider;
 // v2 is what a provider must implement to be replayable, snapshot-able and negotiable, and the
-// capability list is how it says which of those it actually does. Claiming a capability and then
+// offer list is how it says which of those it actually does. Declaring an offer and then
 // refusing it is the one thing conformance will not let a provider do.
 
-/** What a v2 session may be asked to do. Anything absent is refused, not attempted. */
-export type RuntimeSessionCapability =
+/** What a v2 session offers. Anything absent is refused, not attempted. */
+export type RuntimeSessionOffer =
   /** `step` advances the state deterministically. */
   | 'step'
   /** `events` yields a bounded, ordered event stream. */
@@ -181,8 +181,8 @@ export interface RuntimeEvent {
 
 /** Why a v2 call was refused. Every refusal is one of these; none of them is an exception. */
 export type RuntimeRefusalReason =
-  /** The session does not declare the capability this call needs. */
-  | 'capability-unavailable'
+  /** The session does not offer what this call needs. */
+  | 'offer-unavailable'
   /** The snapshot names a schema this provider does not implement at that major. */
   | 'schema-mismatch'
   /** The snapshot's bytes do not match its own content digest. */
@@ -225,8 +225,8 @@ export interface RuntimeStateHashResult {
 /** Frozen v2 session surface. */
 export interface RuntimeSessionV2 extends RuntimeSession {
   readonly contract: typeof RUNTIME_SESSION_CONTRACT
-  /** Exactly what this provider will do. Anything not listed is refused by `capability-unavailable`. */
-  readonly capabilities: readonly RuntimeSessionCapability[]
+  /** Exactly what this provider will do. Anything not listed is refused by `offer-unavailable`. */
+  readonly offers: readonly RuntimeSessionOffer[]
   /** The identity the session's state currently carries. */
   identity(): Promise<RuntimeStateIdentity>
   /** Advance by a bounded number of ticks. Deterministic: equal state plus equal ticks, equal result. */
@@ -243,7 +243,7 @@ export interface RuntimeSessionV2 extends RuntimeSession {
 
 /** The frozen member list, so a conformance run checks the contract rather than one implementation. */
 export const RUNTIME_SESSION_V2_MEMBERS = Object.freeze([
-  'capabilities',
+  'offers',
   'identity',
   'step',
   'events',
