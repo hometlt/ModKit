@@ -36,6 +36,21 @@ const url = require('node:url')
 const vscode = require('vscode')
 
 const CUSTOM_EDITOR = 'modkit.genericAssetPreview'
+
+/*
+ * Activation and first-open budgets (block 13, exit-gate line 4: "activation time and bundle
+ * closure did not regress").
+ *
+ * These are *budgets*, not measured baselines, and the difference is worth stating: a smoke run is
+ * one cold activation on one machine, so a median in the sense of §7.4 does not exist yet. The
+ * ceilings are set with generous headroom over what this build actually does, so they catch a
+ * regression of the kind that matters — composition that suddenly reads the disk twice, a catalog
+ * that grew an order of magnitude — without turning ordinary machine variance into a red gate. The
+ * receipt records the observed figures every run, which is what a real baseline will be built from
+ * when 13D gives repeats across the corpus matrix.
+ */
+const ACTIVATION_BUDGET_MS = 10_000
+const FIRST_OPEN_BUDGET_MS = 45_000
 const COMPANION_DIAGNOSTIC = 'x3.host/companion-unavailable'
 
 // ---------------------------------------------------------------------------------------------
@@ -508,9 +523,37 @@ async function runScenarios(env) {
       record.evidence = `activated, but these commands were never registered: ${missing.join(', ')}`
       return false
     }
+    /*
+     * The extension's own figure, not the harness's stopwatch: timing from out here would include
+     * the editor's startup and the test runner's own scheduling, and would drift with both.
+     */
+    const api = extension.exports
+    record.details.activationMs = api?.activationMs ?? null
+    record.details.contributions = api?.contributions ?? null
+    record.details.missingCatalogRoots = api?.missingCatalogRoots ?? null
+    record.details.activationBudgetMs = ACTIVATION_BUDGET_MS
+    if (api === undefined || typeof api.activationMs !== 'number') {
+      record.evidence =
+        'the extension activated but exported no activation figure, so exit-gate line 4 cannot be ' +
+        'measured from the product surface'
+      return false
+    }
+    if (api.missingCatalogRoots.length > 0) {
+      record.evidence =
+        'activated, but the shipped catalog names roots this build does not contain: ' +
+        api.missingCatalogRoots.join('; ')
+      return false
+    }
+    if (api.activationMs > ACTIVATION_BUDGET_MS) {
+      record.evidence =
+        `activate() took ${api.activationMs} ms, over the ${ACTIVATION_BUDGET_MS} ms budget`
+      return false
+    }
     record.evidence =
-      `activate() resolved and all ${expected.length} modkit commands are registered, ` +
-      'so the host composition completed inside activation'
+      `activate() resolved in ${api.activationMs} ms (budget ${ACTIVATION_BUDGET_MS} ms) with ` +
+      `${api.contributions} contribution(s) from the shipped catalog and none missing; all ` +
+      `${expected.length} modkit commands are registered, so the host composition completed ` +
+      'inside activation'
     return true
   })
 
@@ -532,6 +575,7 @@ async function runScenarios(env) {
   await scenario('w3d-single', 'A single W3D opens with its descriptor', async record => {
     const target = requireEnv('MODKITX_W3D_PATH')
     const diagnostics = sampleDiagnostics()
+    const openStarted = Date.now()
     const tab = await openThroughCustomEditor(target)
     record.details.tabOpened = tab !== undefined
     if (tab === undefined) {
@@ -549,6 +593,9 @@ async function runScenarios(env) {
       timeoutMs: 45_000,
       stepMs: 500,
     })
+    // First open, end to end: the command, the host's open, the worker spawn, the page's stages.
+    record.details.firstOpenMs = Date.now() - openStarted
+    record.details.firstOpenBudgetMs = FIRST_OPEN_BUDGET_MS
     const stages = await readStageTabs()
     record.details.stageTabs = stages
 
@@ -612,9 +659,16 @@ async function runScenarios(env) {
         'cannot be read from the product surface at all'
       return false
     }
+    if (record.details.firstOpenMs > FIRST_OPEN_BUDGET_MS) {
+      record.evidence =
+        `the W3D opened correctly but took ${record.details.firstOpenMs} ms to reach its stages, ` +
+        `over the ${FIRST_OPEN_BUDGET_MS} ms budget`
+      return false
+    }
     record.evidence =
-      'opened through "Reopen Editor With… → Modkit Asset Preview"; the page shows a 2-node scene ' +
-      '(one node per pivot) and 1 animation, matching block 9'
+      'opened through "Reopen Editor With… → Modkit Asset Preview" in ' +
+      `${record.details.firstOpenMs} ms (budget ${FIRST_OPEN_BUDGET_MS} ms); the page shows a ` +
+      '2-node scene (one node per pivot) and 1 animation, matching block 9'
     return true
   })
   await closeAllEditors()
@@ -927,6 +981,59 @@ async function runScenarios(env) {
       return true
     },
   )
+
+  // ---------------------------------------------------------------- 6. GPU texture formats
+  /*
+   * The decoders that landed after the previous receipt, opened the way a person opens anything.
+   *
+   * Deliberately two assertions and not a matrix: the codecs have their own conformance suites, and
+   * what the editor has to answer for is narrower — that a format whose decoder now publishes a
+   * raster source reaches the Image stage here, rather than falling back to hex because the shipped
+   * catalog does not carry it. That is a question about *this build's* composition, which is
+   * exactly what slice 13C changed.
+   */
+  await scenario('gpu-texture-stages', 'ANI and ASTC reach the image stage', async record => {
+    const staged = requireEnv('MODKITX_SMOKE_FIXTURE_DIR')
+    const seen = {}
+    for (const name of ['minimal.ani', 'minimal.astc']) {
+      const file = path.join(staged, name)
+      const tab = await openThroughCustomEditor(file)
+      if (tab === undefined) {
+        record.evidence = `${name} did not open in a Modkit custom editor`
+        return false
+      }
+      await waitFor(async () => (await readStageTabs()).includes('Image'), {
+        timeoutMs: 45_000,
+        stepMs: 500,
+      })
+      seen[name] = await readStageTabs()
+      await closeAllEditors()
+    }
+    record.details.stages = seen
+    /*
+     * What the page could honour, recorded here because a page has now loaded and answered.
+     *
+     * This editor runs with `--disable-gpu`, so `gpu.webgl2` is expected to be *degraded* — and a
+     * receipt that showed the composed set without saying so would be asserting a capability this
+     * window does not have (§1.5).
+     */
+    const extensionApi = vscode.extensions.all.find(item =>
+      samePath(item.extensionPath, requireEnv('MODKITX_SMOKE_EXT_PATH')),
+    )?.exports
+    record.details.facilities = extensionApi?.facilities?.() ?? null
+    const missing = Object.entries(seen).filter(([, stages]) => !stages.includes('Image'))
+    if (missing.length > 0) {
+      record.evidence =
+        `${missing.map(([name, stages]) => `${name} offered ${JSON.stringify(stages)}`).join('; ')}` +
+        ' — no raster source, so the decoder did not reach this build'
+      return false
+    }
+    record.evidence =
+      'both minimal.ani and minimal.astc opened with an Image stage from the shipped catalog, so ' +
+      'the decoders that landed after the previous receipt are live in this build'
+    return true
+  })
+  await closeAllEditors()
 
   // ---------------------------------------------------------------- 6. shared command fixtures
   /*

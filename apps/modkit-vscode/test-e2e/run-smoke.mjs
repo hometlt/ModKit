@@ -204,6 +204,16 @@ async function main() {
   )
   stageCommandFixtures(workspace, repoRoot)
 
+  /*
+   * Two GPU-texture formats whose decoders landed after the last receipt (ANI's first CUR/DIB
+   * frame, ASTC's LDR void-extent block). They are staged as ordinary workspace files because the
+   * question the smoke asks about them is the ordinary one: does this editor open them.
+   */
+  const syntheticDir = join(repoRoot, 'packages', 'testkit', 'test', 'fixtures', 'mk2-synthetic')
+  for (const name of ['minimal.ani', 'minimal.astc']) {
+    copyFileSync(join(syntheticDir, name), join(workspace, name))
+  }
+
   // The EA catalog, added the way the product documents: a workspace setting the host reads once
   // at activation. Missing roots are reported rather than silently narrowing what the smoke proves.
   const presentRoots = EA_ROOTS.filter(root => existsSync(root))
