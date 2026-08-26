@@ -1,0 +1,73 @@
+{
+  "uv": {
+    "format": "UVW",
+    "version": "1.0",
+    "status": "candidate"
+  },
+  "basis": {
+    "handedness": "right",
+    "upAxis": "y",
+    "forwardAxis": "+z",
+    "unit": "meter",
+    "metersPerUnit": 1,
+    "unitsPerCell": 1
+  },
+  "bounds": {
+    "min": [
+      0,
+      0,
+      0
+    ],
+    "max": [
+      8.0,
+      3.0,
+      6.0
+    ]
+  },
+  "layers": [
+    {
+      "id": "terrain",
+      "kind": "heightfield",
+      "label": "Ground",
+      "columns": 5,
+      "rows": 4,
+      "cellSize": 2.0,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "noDataValue": -9999.0,
+      "samples": [
+        [
+          0.0,
+          0.5,
+          1.0,
+          1.5,
+          2.0
+        ],
+        [
+          0.25,
+          0.75,
+          1.25,
+          1.75,
+          2.25
+        ],
+        [
+          0.5,
+          1.0,
+          1.5,
+          -9999.0,
+          2.5
+        ],
+        [
+          0.75,
+          1.25,
+          1.75,
+          2.25,
+          2.75
+        ]
+      ]
+    }
+  ]
+}

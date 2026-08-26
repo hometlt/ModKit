@@ -37,7 +37,7 @@
       "descriptor": null,
       "vectors": null,
       "registeredBy": "block 12 prepares the candidate, block 18 freezes it at admission",
-      "note": "reserved id only. No descriptor exists, so the name carries no guarantee."
+      "note": "reserved id only, and deliberately still reserved after block 12 slice 12-3. That slice added the UVW *artifact* schema, fixtures and vectors (../world/), which is a different thing from a semantic scope: a scope names the facets a hash is taken over, and no host publishes a live world facet to take one from. Minting the scope now would let a hash claim coverage of facets nobody can produce. It is frozen at admission in block 18."
     },
     {
       "scopeId": "definition-interchange-v1",

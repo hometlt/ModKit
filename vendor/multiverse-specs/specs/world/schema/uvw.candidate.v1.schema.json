@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.dev/specs/world/uvw.candidate.v1.schema.json",
+  "title": "UVW candidate profile, version 1",
+  "$comment": "Candidate. No host publishes a live world facet yet, so this schema is proven self-consistent by its fixtures and proven by nothing else. See SPEC_UVW.md for what that distinction costs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["uv", "basis", "bounds", "layers"],
+  "properties": {
+    "uv": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "version"],
+      "properties": {
+        "format": { "const": "UVW" },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" },
+        "status": { "const": "candidate" }
+      }
+    },
+    "basis": {
+      "$comment": "The ProjectionBasis of SPEC_UV_COORDINATES. A UVW document is canonical-frame, so the four frame fields are pinned; only the unit story varies.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["handedness", "upAxis", "forwardAxis", "unit"],
+      "properties": {
+        "handedness": { "const": "right" },
+        "upAxis": { "const": "y" },
+        "forwardAxis": { "const": "+z" },
+        "unit": { "enum": ["meter", "source-unit"] },
+        "metersPerUnit": { "type": "number", "exclusiveMinimum": 0 },
+        "sourceUnit": { "type": "string", "minLength": 1 },
+        "unitsPerCell": { "type": "number", "exclusiveMinimum": 0 }
+      },
+      "allOf": [
+        {
+          "$comment": "source-unit means no metre factor was known; stating one anyway is the lie SPEC_UV_COORDINATES section 2 forbids",
+          "if": { "properties": { "unit": { "const": "source-unit" } }, "required": ["unit"] },
+          "then": {
+            "required": ["sourceUnit"],
+            "not": { "required": ["metersPerUnit"] }
+          }
+        }
+      ]
+    },
+    "bounds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["min", "max"],
+      "properties": {
+        "min": { "$ref": "#/$defs/vec3" },
+        "max": { "$ref": "#/$defs/vec3" }
+      }
+    },
+    "layers": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/layer" }
+    }
+  },
+  "$defs": {
+    "vec3": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "type": "number" }
+    },
+    "layer": {
+      "type": "object",
+      "required": ["id", "kind"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": {
+          "$comment": "heightfield is defined by this profile; the rest are reserved so that the day a publisher lands the name is already taken by the right thing",
+          "enum": [
+            "heightfield",
+            "grid",
+            "mesh",
+            "raster",
+            "vector",
+            "objects",
+            "regions",
+            "navigation"
+          ]
+        },
+        "label": { "type": "string" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "heightfield" } }, "required": ["kind"] },
+          "then": { "$ref": "#/$defs/heightfieldLayer" }
+        }
+      ]
+    },
+    "heightfieldLayer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "columns", "rows", "cellSize", "origin", "samples"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": { "const": "heightfield" },
+        "label": { "type": "string" },
+        "columns": { "type": "integer", "minimum": 2 },
+        "rows": { "type": "integer", "minimum": 2 },
+        "cellSize": { "type": "number", "exclusiveMinimum": 0 },
+        "origin": { "$ref": "#/$defs/vec3" },
+        "noDataValue": { "type": "number" },
+        "samples": {
+          "$comment": "row-major: `rows` arrays of `columns` numbers. Sample counts, not cell counts — the usual off-by-one.",
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "array",
+            "minItems": 2,
+            "items": { "type": "number" }
+          }
+        }
+      }
+    }
+  }
+}

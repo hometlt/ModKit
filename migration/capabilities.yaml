@@ -17480,7 +17480,7 @@ capabilities:
     migrationState: 'missing'
     supportState: 'unsupported'
     runtimeAvailability: 'none'
-    evidenceLevel: 'E1'
+    evidenceLevel: 'E2'
     hostEvidence: 'none'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -17503,7 +17503,10 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
-      - 'спецификация существует и валидируется, исполняемого MK3-контракта ещё нет'
+      - 'слайс 12-3 добавил кандидатный артефактный профиль: схема heightfield-мира, две фикстуры, валидатор uvw-profile.mjs и девять исполняемых векторов (2 accept, 7 reject) в multiverse/specs; в X3 они прогоняются из запиненного snapshot'
+      - 'материализация только testkit-уровня и намеренно: публичной операции и вклада, публикующего UVW, нет до admission блока 18, и это утверждается тестом, а не намерением'
+      - 'живого источника мира нет ни в одном host (семейства карт — блоки 15-16), поэтому все входы синтетические: это свидетельство о ФОРМАТЕ, а не об игре, и именно поэтому профиль кандидатный'
+      - 'семантический scope world-interchange-v1 не чеканится и остаётся reserved: scope называет фасеты, по которым берётся хеш, а публиковать живой мировой фасет некому'
     receipts:
       projection: null
       materialization: null
@@ -17511,7 +17514,8 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/uvw-candidate.test.ts'
       reports: []
   - capabilityId: 'vertical/beyond-all-reason/deterministic-playable-subset'
     userScenario: 'Для «Beyond All Reason» получить детерминированный воспроизводимый playable subset.'

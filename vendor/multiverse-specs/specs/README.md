@@ -47,6 +47,7 @@ The seed carries the material slice 11C0 owns normatively:
 | Coordinates and units (model + world)  | [`foundation/SPEC_UV_COORDINATES.md`](foundation/SPEC_UV_COORDINATES.md)     |
 | UVM specification, extensions, conversion | [`model/`](model/)                                                        |
 | UVT profile, schema and fixtures        | [`texture/`](texture/)                                                       |
+| UVW candidate profile, schema, fixtures | [`world/`](world/)                                                           |
 | UVM JSON Schemas                       | [`model/schema/`](model/schema/)                                             |
 | UVM canonical fixtures                 | [`model/fixtures/`](model/fixtures/)                                         |
 | Semantic scope registry + `model-interchange-v1` | [`semantic-scopes/`](semantic-scopes/)                             |

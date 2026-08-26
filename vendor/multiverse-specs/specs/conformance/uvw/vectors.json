@@ -1,0 +1,80 @@
+{
+  "$comment": "UVW candidate 1.0 conformance vectors. Accept cases are the shipped fixtures; reject cases are mutations of them in the same vocabulary the other suites use, so a second implementation executes them rather than reading them. Candidate status is a statement about coverage, not about rigour: these rules are enforced exactly as strictly as an admitted profile's would be, and what is missing is a real game world to enforce them against.",
+  "schemaVersion": "uv-conformance-vectors-1",
+  "suite": "uvw",
+  "profile": "UVW/candidate@1.0",
+  "spec": "../../world/SPEC_UVW.md",
+  "note": "No host publishes a live world facet yet — map families arrive in Modkit blocks 15-16 — so every fixture here was authored to match the schema. That proves the schema is self-consistent and proves nothing about whether it can carry StarCraft II or Command & Conquer terrain.",
+  "vectors": [
+    {
+      "id": "uvw-heightfield-basic/accept",
+      "expect": "accept",
+      "fixture": "uvw-heightfield-basic.uvw.json",
+      "note": "the plain case: one metre-scaled heightfield with a no-data hole",
+      "mutations": []
+    },
+    {
+      "id": "uvw-source-unit-layers/accept",
+      "expect": "accept",
+      "fixture": "uvw-source-unit-layers.uvw.json",
+      "note": "two layers in canonical id order, in source units with no invented metre factor",
+      "mutations": []
+    },
+    {
+      "id": "sample-grid-matches/rows",
+      "expect": "reject",
+      "fixture": "uvw-heightfield-basic.uvw.json",
+      "note": "declaring more rows than the grid carries is refused, not padded: padding invents ground",
+      "mutations": [{ "op": "set", "path": "layers.0.rows", "value": 5 }],
+      "rule": "sample-grid-matches"
+    },
+    {
+      "id": "sample-grid-matches/columns",
+      "expect": "reject",
+      "fixture": "uvw-heightfield-basic.uvw.json",
+      "note": "the cells-versus-samples off-by-one, which otherwise shows up as terrain one cell narrow",
+      "mutations": [{ "op": "set", "path": "layers.0.columns", "value": 4 }],
+      "rule": "sample-grid-matches"
+    },
+    {
+      "id": "samples-finite",
+      "expect": "reject",
+      "fixture": "uvw-heightfield-basic.uvw.json",
+      "note": "absence of ground is noDataValue; a non-finite elevation is a defect",
+      "mutations": [{ "op": "set", "path": "layers.0.samples.0.0", "value": null }],
+      "rule": "samples-finite"
+    },
+    {
+      "id": "layer-within-bounds",
+      "expect": "reject",
+      "fixture": "uvw-heightfield-basic.uvw.json",
+      "note": "a layer wider than the world it belongs to; the extent is (samples - 1) * cellSize",
+      "mutations": [{ "op": "set", "path": "layers.0.cellSize", "value": 8 }],
+      "rule": "layer-within-bounds"
+    },
+    {
+      "id": "layer-order-canonical",
+      "expect": "reject",
+      "fixture": "uvw-source-unit-layers.uvw.json",
+      "note": "authoring order is not a property of the world; two converters must emit one document",
+      "mutations": [{ "op": "set", "path": "layers.0.id", "value": "zwater" }],
+      "rule": "layer-order-canonical"
+    },
+    {
+      "id": "layer-id-unique",
+      "expect": "reject",
+      "fixture": "uvw-source-unit-layers.uvw.json",
+      "note": "two layers sharing an id make paging ambiguous, since a page names layers by id",
+      "mutations": [{ "op": "set", "path": "layers.1.id", "value": "cliffs" }],
+      "rule": "layer-id-unique"
+    },
+    {
+      "id": "no-invented-scale",
+      "expect": "reject",
+      "fixture": "uvw-source-unit-layers.uvw.json",
+      "note": "source-unit means nobody measured a metre factor; stating one asserts a measurement that was never made",
+      "mutations": [{ "op": "set", "path": "basis.metersPerUnit", "value": 0.5 }],
+      "rule": "no-invented-scale"
+    }
+  ]
+}

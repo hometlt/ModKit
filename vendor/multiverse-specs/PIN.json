@@ -3,16 +3,16 @@
   "schemaVersion": "multiverse-specs-pin-1",
   "source": {
     "repository": "multiverse (sibling repository)",
-    "commit": "ce034199ffa35f9df1cc4ac67c85bf8dc0cacfe0",
-    "subject": "specs: свести систему координат и единиц модельной и мировой плоскостей в один контракт",
-    "committedOn": "2026-08-26T05:19:25+04:00"
+    "commit": "5dc8c40abff3e19e80f7d6018ad9e82827dc3afa",
+    "subject": "specs: кандидатный UVW — схема heightfield-мира, фикстуры и исполняемые векторы",
+    "committedOn": "2026-08-26T05:27:07+04:00"
   },
   "generator": "scripts/specs-pin.mjs",
   "generatedFrom": "git objects, not the sibling working tree",
   "prefix": "specs/",
   "counts": {
-    "files": 50,
-    "bytes": 476954
+    "files": 56,
+    "bytes": 498095
   },
   "files": [
     {
@@ -22,8 +22,8 @@
     },
     {
       "path": "specs/README.md",
-      "bytes": 11928,
-      "digest": "sha256:4bfcdb4109d23b2db9382cf72a1ae71bfc1671cd5697a95160092983d72acba9"
+      "bytes": 12051,
+      "digest": "sha256:e3788eb0f38d0c6613d0a2128c8ad26cca46401c287b9c05a9215401c65e8c1f"
     },
     {
       "path": "specs/conformance/canonical-form/vectors.json",
@@ -49,6 +49,11 @@
       "path": "specs/conformance/uvt/vectors.json",
       "bytes": 4336,
       "digest": "sha256:236af8f29d480a5891707c84cfeb630d34fae6e5b40e375690f208e53858f455"
+    },
+    {
+      "path": "specs/conformance/uvw/vectors.json",
+      "bytes": 3801,
+      "digest": "sha256:8a1acc85b842c4a934f9c310e7b29ebcd32945628488670c7d6f5072b4685f0e"
     },
     {
       "path": "specs/foundation/SPEC_UV_CANONICALIZATION.md",
@@ -187,8 +192,8 @@
     },
     {
       "path": "specs/semantic-scopes/registry.json",
-      "bytes": 2450,
-      "digest": "sha256:4fc2cbe75d52522a86e4ee7e5325a92959b6ced0a570170103cdbc25a006abd8"
+      "bytes": 2810,
+      "digest": "sha256:5cbaf2865fe49b907c67d6f5c877e67002125fb2e6bbbaf37f78ea726b5334f1"
     },
     {
       "path": "specs/semantic-scopes/semantic-scope-descriptor.v1.schema.json",
@@ -264,6 +269,31 @@
       "path": "specs/tools/uvt-profile.mjs",
       "bytes": 3446,
       "digest": "sha256:a2e7d2436bc818a870505eeb24a95a8178f4dd34c0032ed5bd55877b6aca8f15"
+    },
+    {
+      "path": "specs/tools/uvw-profile.mjs",
+      "bytes": 5340,
+      "digest": "sha256:defcdc12404384f43439f4b0c35a285b242c982c6d1f3a27b7e0baff5a4742f2"
+    },
+    {
+      "path": "specs/world/SPEC_UVW.md",
+      "bytes": 5041,
+      "digest": "sha256:05840edb8bdc78bb9d1c313be944eeb5991460de32e6f75fe12d50f5c8a0bbfc"
+    },
+    {
+      "path": "specs/world/fixtures/uvw-heightfield-basic.uvw.json",
+      "bytes": 1036,
+      "digest": "sha256:578ef8350f28edea5fc38b95da3d0a9baba291cb58b08b42b4ca74f1de32494e"
+    },
+    {
+      "path": "specs/world/fixtures/uvw-source-unit-layers.uvw.json",
+      "bytes": 1254,
+      "digest": "sha256:19950769f34798350ed8170263afabade6bfc3c7ef0861bb03779ddd33b6c2ad"
+    },
+    {
+      "path": "specs/world/schema/uvw.candidate.v1.schema.json",
+      "bytes": 4186,
+      "digest": "sha256:b3270dafaef85fb112d181f5060b240fe97b7f32ae23782c2206e1e222c7a5a6"
     }
   ]
 }

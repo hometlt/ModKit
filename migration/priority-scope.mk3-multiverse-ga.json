@@ -26,7 +26,7 @@
       "relocated-multiverse": 1
     },
     "byObligation": { "focused-required-addition": 13, "legacy-required": 154 },
-    "byEvidenceLevel": { "E0": 36, "E1": 32, "E2": 66, "E3": 11, "E4": 22 }
+    "byEvidenceLevel": { "E0": 36, "E1": 31, "E2": 67, "E3": 11, "E4": 22 }
   },
   "deadlines": {
     "block-11": [
@@ -2661,7 +2661,7 @@
       "plannedBlock": 22,
       "migrationState": "missing",
       "supportState": "unsupported",
-      "evidenceLevel": "E1",
+      "evidenceLevel": "E2",
       "allocationState": "absent",
       "portFamily": null,
       "corpusDescriptors": [],
