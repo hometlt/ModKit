@@ -1,0 +1,19 @@
+{
+  "name": "modkit-extension-x3-opensource-spring",
+  "version": "0.1.0",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "description": "Spring/Recoil format contributions for MK3.",
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "org.modkitx.opensource",
+    "id": "spring",
+    "contributionManifests": [
+      "./contributions/*.json"
+    ]
+  },
+  "dependencies": {
+    "@modkitx-x3/codec-kit": "workspace:*"
+  }
+}
