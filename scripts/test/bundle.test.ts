@@ -63,6 +63,7 @@ const PUBLISHED_ENTRIES = [
   'packages/host/dist/browser/worker-entry.js',
   'packages/ui/dist/index.js',
   'packages/ui/dist/viewer/index.js',
+  'packages/ui/dist/world/index.js',
   'packages/ui/dist/localization/index.js',
   'packages/ui/dist/code/index.js',
   'packages/ui/dist/editor/index.js',
