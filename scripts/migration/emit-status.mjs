@@ -40,6 +40,13 @@ const closures = {
 
 const compareUtf8 = (left, right) => Buffer.compare(Buffer.from(left), Buffer.from(right))
 const UNRESOLVED = new Set(['missing', 'blocked', 'partial', 'unknown', 'deferred-post-ga'])
+const CALLER_LABELS = new Map([
+  ['automation', 'Automation'],
+  ['cli', 'CLI'],
+  ['electron', 'Electron'],
+  ['pwa', 'PWA'],
+  ['vscode', 'VS Code'],
+])
 
 const tally = (rows, pick) => {
   const counts = {}
@@ -123,10 +130,21 @@ push(
     ],
   ),
 )
+const sharedCommandCallers =
+  workflowLedger.sharedCommandTargets.length === 0
+    ? []
+    : [...new Set(workflowLedger.sharedCommandTargets[0].hostCallers ?? [])]
+        .filter(caller =>
+          workflowLedger.sharedCommandTargets.every(row => row.hostCallers?.includes(caller)),
+        )
+        .sort(compareUtf8)
 push(
   `Shared subject commands: ${workflowLedger.sharedCommandTargets
     .map(row => `\`${row.commandId}\``)
-    .join(', ')}. Доказанные callers: CLI, Electron, VS Code; PWA не заявлен.`,
+    .join(', ')}. Доказанные callers: ${
+    sharedCommandCallers.map(caller => CALLER_LABELS.get(caller) ?? `\`${caller}\``).join(', ') ||
+    'нет общих callers'
+  }.`,
 )
 
 const capabilities = registry.capabilities
