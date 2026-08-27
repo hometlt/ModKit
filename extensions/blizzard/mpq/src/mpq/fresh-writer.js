@@ -193,8 +193,22 @@ function validateFreshMpqEnvelope(bytes, sourceEntryCount) {
   const hashView = new DataView(hashData.buffer, hashData.byteOffset, hashData.byteLength)
   const usedBlocks = new Set()
   for (let index = 0; index < hashEntries; index += 1) {
-    const blockIndex = hashView.getUint32(index * HASH_ENTRY_BYTES + 12, true)
-    if (blockIndex === EMPTY_BLOCK || blockIndex === DELETED_BLOCK) continue
+    const offset = index * HASH_ENTRY_BYTES
+    const blockIndex = hashView.getUint32(offset + 12, true)
+    if (blockIndex === EMPTY_BLOCK) {
+      if (
+        hashView.getUint32(offset, true) !== 0 ||
+        hashView.getUint32(offset + 4, true) !== 0 ||
+        hashView.getUint16(offset + 8, true) !== 0 ||
+        hashView.getUint16(offset + 10, true) !== 0
+      ) {
+        throw new TypeError('fresh MPQ empty hash slots are not canonical')
+      }
+      continue
+    }
+    if (blockIndex === DELETED_BLOCK) {
+      throw new TypeError('fresh MPQ canonical hash table contains no deleted slots')
+    }
     if (blockIndex >= blockEntries || usedBlocks.has(blockIndex)) {
       throw new TypeError('fresh MPQ hash table does not name each canonical block exactly once')
     }
@@ -599,6 +613,7 @@ export async function snapshotFreshMpq(options) {
       cursor === undefined ? { limit: pageLimit } : { cursor, limit: pageLimit },
       signal,
     )
+    await assertSourceRevision('while listing')
     if (!Array.isArray(page.items) || page.items.length > pageLimit) {
       throw new TypeError('fresh MPQ source returned an invalid or overproduced page')
     }
@@ -642,6 +657,7 @@ export async function snapshotFreshMpq(options) {
     abort(signal)
     const bytes = await source.read(sourcePath, signal)
     abort(signal)
+    await assertSourceRevision(`after reading ${path}`)
     if (!(bytes instanceof Uint8Array)) {
       throw new TypeError(`fresh MPQ read ${sourcePath} returned no bytes`)
     }
