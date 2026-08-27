@@ -5,6 +5,11 @@
   "private": true,
   "type": "module",
   "description": "Warzone 2100 format contributions for MK3.",
+  "exports": {
+    ".": "./src/provider.js",
+    "./pie": "./src/warzone-pie/codec.js",
+    "./package.json": "./package.json"
+  },
   "modkit": {
     "schemaVersion": 1,
     "publisher": "org.modkitx.opensource",
@@ -15,5 +20,8 @@
   },
   "dependencies": {
     "@modkitx-x3/codec-kit": "workspace:*"
+  },
+  "peerDependencies": {
+    "@modkitx-x3/sdk": "workspace:*"
   }
 }
