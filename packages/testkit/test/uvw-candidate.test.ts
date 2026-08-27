@@ -82,9 +82,11 @@ function admissionInfo(options?: {
   readonly lods?: readonly string[]
   readonly transformState?: 'identity' | 'known' | 'unknown'
   readonly knownBounds?: boolean
+  readonly nativeTransform?: boolean
 }): CandidateWorldSceneInfo {
   const snapshotId = options?.snapshotId ?? admissionSnapshotId
   const knownBounds = options?.knownBounds ?? true
+  const nativeTransform = options?.nativeTransform ?? false
   return Object.freeze({
     contract: admissionContract,
     major: 1,
@@ -101,6 +103,19 @@ function admissionInfo(options?: {
         rotationUnit: 'none',
         origin: 'grid-zero',
       }),
+      ...(nativeTransform
+        ? [
+            Object.freeze({
+              id: 'map-native',
+              horizontalAxes: Object.freeze(['x', 'y'] as const),
+              verticalAxis: 'z',
+              handedness: 'native-unspecified',
+              linearUnit: 'example-native-unit',
+              rotationUnit: 'native-scalar',
+              origin: 'native-origin',
+            }),
+          ]
+        : []),
     ]),
     crossSpaceTransforms: Object.freeze([
       Object.freeze({
@@ -112,7 +127,7 @@ function admissionInfo(options?: {
     bounds: Object.freeze([
       Object.freeze({
         facet: 'terrain',
-        coordinateSpaceId: 'height-grid',
+        coordinateSpaceId: nativeTransform ? 'map-native' : 'height-grid',
         x: Object.freeze({ state: 'known', minimum: 0, maximum: 1 }),
         y: Object.freeze({ state: 'known', minimum: 0, maximum: 1 }),
         z: knownBounds
@@ -120,6 +135,42 @@ function admissionInfo(options?: {
           : Object.freeze({ state: 'unknown' as const, reason: 'height unit unproven' }),
       }),
     ]),
+    ...(nativeTransform
+      ? {
+          terrainTransform: Object.freeze({
+            schemaVersion: 1 as const,
+            snapshotId,
+            descriptorVersion: 113,
+            source: Object.freeze({
+              terrainDocumentPath: 'example/t3terrain.xml',
+              heightDocumentPath: 'example/t3heightmap',
+              rootElement: 'terrain' as const,
+              heightMapElement: 'heightMap' as const,
+              quantizationElement: 'vertData' as const,
+            }),
+            heightMap: Object.freeze({
+              dim: Object.freeze([2, 2] as const),
+              offset: Object.freeze({ x: 0, y: 0, z: 0 }),
+              scale: Object.freeze({ x: 1, y: 1, z: 1 }),
+            }),
+            vertData: Object.freeze({
+              quantizeBias: 0,
+              quantizeScale: 1,
+              standardHeight: 8,
+            }),
+            mapping: Object.freeze({
+              horizontal: 'offset-plus-grid-index-times-scale' as const,
+              vertical:
+                'dequantized-base-times-scale-plus-offset-plus-dequantized-adjustment' as const,
+            }),
+            bounds: Object.freeze({
+              coordinateSpaceId: 'map-native' as const,
+              minimum: Object.freeze({ x: 0, y: 0, z: 0 }),
+              maximum: Object.freeze({ x: 1, y: 1, z: 65_535 }),
+            }),
+          }),
+        }
+      : {}),
     facets: Object.freeze([
       Object.freeze({
         facet: 'terrain',
@@ -437,6 +488,25 @@ describe('15F UVW candidate — world admission refuses missing exact semantic p
       ]),
     )
     expect(pageCalls).toBe(0)
+  })
+
+  it('drops only native bounds, cell-size and vertical blockers for a validated transform', async () => {
+    const report = await assessCandidateWorldUvwAdmission(
+      admissionSource(admissionInfo({ nativeTransform: true })),
+      { maxPageItems: 4, maxTerrainItems: 4 },
+    )
+    expect(report.refusalCodes).toEqual([
+      'coordinate-transform-unproven',
+      'source-unit-unproven',
+      'canonical-origin-unproven',
+    ])
+    expect(report).toMatchObject({
+      state: 'refused',
+      pageRequests: 1,
+      observedTerrainItems: 0,
+      materialized: false,
+      serialized: false,
+    })
   })
 
   it('names cancellation, stale leases and identity drift without collapsing them', async () => {

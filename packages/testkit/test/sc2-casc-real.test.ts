@@ -661,6 +661,42 @@ describe('installed StarCraft II CASC product path', () => {
               x: 256,
               y: 256,
             })
+            expect(semanticMap.snapshot.terrainTransform).toMatchObject({
+              schemaVersion: 1,
+              descriptorVersion: 113,
+              snapshotId: semanticMap.snapshot.snapshotId,
+              source: {
+                terrainDocumentPath: `${mapRoot}/t3terrain.xml`,
+                heightDocumentPath: `${mapRoot}/t3heightmap`,
+                rootElement: 'terrain',
+                heightMapElement: 'heightMap',
+                quantizationElement: 'vertData',
+              },
+              heightMap: {
+                dim: [257, 257],
+                offset: { x: 0, y: 0, z: 0 },
+                scale: { x: 1, y: 1, z: 1 },
+              },
+              vertData: {
+                quantizeBias: 8.000585,
+                quantizeScale: 0.0002898855,
+                standardHeight: 9.999965,
+              },
+              bounds: {
+                coordinateSpaceId: 'map-native',
+                minimum: { x: 0, y: 0 },
+                maximum: { x: 256, y: 256 },
+              },
+            })
+            expect(Number.isFinite(semanticMap.snapshot.terrainTransform?.bounds.minimum.z)).toBe(
+              true,
+            )
+            expect(Number.isFinite(semanticMap.snapshot.terrainTransform?.bounds.maximum.z)).toBe(
+              true,
+            )
+            expect(semanticMap.snapshot.snapshotId).toContain(
+              '#sha256:994658707b6a56dd2b6261e9114b61ee10095a0801d57cbdc0dcec82181bcc6f',
+            )
             expect(semanticMap.snapshot.semantic.regions).toContainEqual(
               expect.objectContaining({ regionId: 1, name: 'Cheer' }),
             )
@@ -678,7 +714,7 @@ describe('installed StarCraft II CASC product path', () => {
             )
             expect(mapResources.provenance()).toEqual(
               expect.arrayContaining(
-                ['objects', 'regions', 't3heightmap'].map(name =>
+                ['objects', 'regions', 't3heightmap', 't3terrain.xml'].map(name =>
                   expect.objectContaining({ logicalId: `${mapRoot}/${name}`, state: 'resolved' }),
                 ),
               ),
@@ -693,7 +729,17 @@ describe('installed StarCraft II CASC product path', () => {
               expect.objectContaining({
                 from: 'height-grid',
                 to: 'map-native',
-                state: 'unknown',
+                state: 'known',
+              }),
+            )
+            expect(worldInfo.terrainTransform).toEqual(semanticMap.snapshot.terrainTransform)
+            expect(worldInfo.bounds).toContainEqual(
+              expect.objectContaining({
+                facet: 'terrain',
+                coordinateSpaceId: 'map-native',
+                x: { state: 'known', minimum: 0, maximum: 256 },
+                y: { state: 'known', minimum: 0, maximum: 256 },
+                z: expect.objectContaining({ state: 'known' }),
               }),
             )
             expect(worldInfo.facets).toContainEqual(
@@ -709,12 +755,9 @@ describe('installed StarCraft II CASC product path', () => {
               maxTerrainItems: 100_000,
             })
             expect(uvwAdmission.refusalCodes).toEqual([
-              'terrain-bounds-unproven',
               'coordinate-transform-unproven',
               'source-unit-unproven',
               'canonical-origin-unproven',
-              'cell-size-unproven',
-              'vertical-quantization-unproven',
             ])
             expect(uvwAdmission).toMatchObject({
               state: 'refused',
@@ -765,7 +808,7 @@ describe('installed StarCraft II CASC product path', () => {
               note: 'Generic world harness consumes the SC2 publisher candidate with exact resource joins.',
             })
             console.info(
-              `[sc2-live] world ${mapRoot}: ${semanticMap.snapshot.semantic.objects.length} objects, ${semanticMap.snapshot.semantic.regions.length} regions, navigation=${String(semanticMap.snapshot.navigation !== undefined)}, candidate=${semanticMap.world.value.contract}@1, uvw=${uvwAdmission.state}:${uvwAdmission.refusalCodes.join(',')}`,
+              `[sc2-live] world ${mapRoot}: ${semanticMap.snapshot.semantic.objects.length} objects, ${semanticMap.snapshot.semantic.regions.length} regions, terrain-transform=${String(semanticMap.snapshot.terrainTransform !== undefined)}, navigation=${String(semanticMap.snapshot.navigation !== undefined)}, candidate=${semanticMap.world.value.contract}@1, uvw=${uvwAdmission.state}:${uvwAdmission.refusalCodes.join(',')}`,
             )
           } finally {
             await semanticMap.release()

@@ -112,6 +112,12 @@ function navigationMap(): Uint8Array {
   return bytes
 }
 
+function terrainXml(quantizeBias = 1): Uint8Array {
+  return new TextEncoder().encode(
+    `<?xml version="1.0"?><terrain version="113"><heightMap dim="2 2 " offset="10 20 30 " scale="2.000000e+000 3.000000e+000 4.000000e+000 "><vertData quantizeBias="${String(quantizeBias)}" quantizeScale="5.000000e-001" standardHeight="8" name="t3HeightMap"/></heightMap></terrain>`,
+  )
+}
+
 const encoder = new TextEncoder()
 const documents = [
   {
@@ -278,6 +284,7 @@ function workspaceFiles(root = mapRoot): ReadonlyMap<string, Uint8Array> {
     [`${root}/objects`, documents[0].bytes],
     [`${root}/regions`, documents[1].bytes],
     [`${root}/t3heightmap`, documents[2].bytes],
+    [`${root}/t3terrain.xml`, terrainXml()],
     [`${root}/t3syncpathinginfo`, navigationMap()],
   ])
 }
@@ -381,11 +388,35 @@ describe('standard map contract and semantic game provider', () => {
         `${mapRoot}/objects`,
         `${mapRoot}/regions`,
         `${mapRoot}/t3heightmap`,
+        `${mapRoot}/t3terrain.xml`,
         `${mapRoot}/t3syncpathinginfo`,
       ])
-      expect(resources.provenance()).toHaveLength(4)
+      expect(resources.provenance()).toHaveLength(5)
       expect(result.snapshot.semantic.complete).toBe(true)
       expect(result.snapshot.navigation).toMatchObject({ width: 2, height: 2, cellCount: 4 })
+      expect(result.snapshot.terrainTransform).toMatchObject({
+        schemaVersion: 1,
+        snapshotId: result.snapshot.snapshotId,
+        descriptorVersion: 113,
+        source: {
+          terrainDocumentPath: `${mapRoot}/t3terrain.xml`,
+          heightDocumentPath: `${mapRoot}/t3heightmap`,
+          rootElement: 'terrain',
+          heightMapElement: 'heightMap',
+          quantizationElement: 'vertData',
+        },
+        heightMap: {
+          dim: [2, 2],
+          offset: { x: 10, y: 20, z: 30 },
+          scale: { x: 2, y: 3, z: 4 },
+        },
+        vertData: { quantizeBias: 1, quantizeScale: 0.5, standardHeight: 8 },
+        bounds: {
+          coordinateSpaceId: 'map-native',
+          minimum: { x: 10, y: 20, z: 230 },
+          maximum: { x: 12, y: 23, z: 237.5 },
+        },
+      })
       const info = await source.info()
       expect(source.contract).toBe('org.modkitx.blizzard.starcraft2/world-scene-source')
       expect(info.coordinateSpaces.map(item => item.id)).toEqual([
@@ -394,10 +425,17 @@ describe('standard map contract and semantic game provider', () => {
         'navigation-grid',
       ])
       expect(info.crossSpaceTransforms).toContainEqual(
-        expect.objectContaining({ from: 'height-grid', to: 'map-native', state: 'unknown' }),
+        expect.objectContaining({ from: 'height-grid', to: 'map-native', state: 'known' }),
       )
+      expect(info.terrainTransform).toEqual(result.snapshot.terrainTransform)
       expect(info.bounds).toContainEqual(
-        expect.objectContaining({ facet: 'terrain', coordinateSpaceId: 'height-grid' }),
+        expect.objectContaining({
+          facet: 'terrain',
+          coordinateSpaceId: 'map-native',
+          x: { state: 'known', minimum: 10, maximum: 12 },
+          y: { state: 'known', minimum: 20, maximum: 23 },
+          z: { state: 'known', minimum: 230, maximum: 237.5 },
+        }),
       )
       const firstLayers = await source.page({ facet: 'layers', limit: 2 })
       expect(firstLayers.items).toHaveLength(2)
@@ -448,6 +486,7 @@ describe('standard map contract and semantic game provider', () => {
       expect(terrainPage.items[0]).toMatchObject({
         facet: 'terrain',
         coordinateSpaceId: 'height-grid',
+        mapNativePosition: { x: 10, y: 20, z: 230 },
       })
       if (terrainPage.nextCursor === undefined) throw new Error('terrain cursor absent')
       let queryFailure: unknown
@@ -564,7 +603,12 @@ describe('standard map contract and semantic game provider', () => {
     expect(result.state).toBe('resolved')
     if (result.state === 'resolved') {
       expect(result.snapshot.unresolvedRequirementIds).toEqual(['map-navigation'])
+      expect(result.snapshot.terrainTransform).toBeUndefined()
       const sparseInfo = await result.world.value.info()
+      expect(sparseInfo.terrainTransform).toBeUndefined()
+      expect(sparseInfo.crossSpaceTransforms).toContainEqual(
+        expect.objectContaining({ from: 'height-grid', to: 'map-native', state: 'unknown' }),
+      )
       expect(sparseInfo.facets).toContainEqual(
         expect.objectContaining({ facet: 'navigation', state: 'unavailable' }),
       )
@@ -616,6 +660,83 @@ describe('standard map contract and semantic game provider', () => {
       ).toBe(false)
       await resolution.release()
     }
+  })
+
+  it('rejects malformed or over-budget native terrain descriptors without partial transform facts', async () => {
+    const malformed = [
+      '<terrain version="113"><heightMap dim="2 2" offset="0 0 0" scale="1 1 1"/><heightMap dim="2 2" offset="0 0 0" scale="1 1 1"/></terrain>',
+      '<terrain version="113"><heightMap dim="2 2" offset="0 0 0" scale="1 1 1" quantizeBias="1" quantizeScale="0.5" standardHeight="8"/></terrain>',
+      '<terrain version="113"><heightMap dim="2 2" offset="0 0 0" scale="1 1 1"><vertData quantizeBias="1" quantizeScale="0.5" standardHeight="8"/><vertData quantizeBias="1" quantizeScale="0.5" standardHeight="8"/></heightMap></terrain>',
+      '<terrain version="113"><heightMap dim="3 2" offset="0 0 0" scale="1 1 1"><vertData quantizeBias="1" quantizeScale="0.5" standardHeight="8"/></heightMap></terrain>',
+      '<terrain version="113"><heightMap dim="2 2" offset="0 0 0" scale="1 0 1"><vertData quantizeBias="1" quantizeScale="0.5" standardHeight="8"/></heightMap></terrain>',
+      '<terrain version="113"><heightMap dim="2 2" offset="0 0 0" scale="1 1 1"><vertData quantizeBias="1" quantizeScale="-0.5" standardHeight="8"/></heightMap></terrain>',
+      '<!DOCTYPE terrain [<!ENTITY value "1">]><terrain version="113"><heightMap dim="2 2" offset="0 0 0" scale="1 1 1"><vertData quantizeBias="&value;" quantizeScale="0.5" standardHeight="8"/></heightMap></terrain>',
+    ]
+    for (const [index, xml] of malformed.entries()) {
+      const files = new Map(workspaceFiles())
+      files.set(`${mapRoot}/t3terrain.xml`, encoder.encode(xml))
+      const resources = createResourceSession({
+        origin: memoryOrigin(files),
+        revision: revisionId(`provider-token:malformed-terrain-${String(index)}`),
+      })
+      const result = await analyzeResolvedMapWorkspace({
+        services: { ...composition, serviceDefinitions: definitions },
+        grant: { id: `maps-malformed-terrain-${String(index)}`, classes: [] },
+        budgets: activationBudget,
+        workspace: workspaceLock(),
+        resources,
+        catalog,
+        limits: { ...limits, maxRequirements: 8, maxPageSize: 2, maxDiagnostics: 32 },
+      })
+      expect(result.state, `malformed descriptor ${String(index)}`).toBe('resolved')
+      if (result.state === 'resolved') {
+        expect(result.snapshot.complete).toBe(false)
+        expect(result.snapshot.terrainTransform).toBeUndefined()
+        expect(result.snapshot.diagnostics).toContainEqual(
+          expect.objectContaining({
+            code: 'org.modkitx.blizzard.starcraft2/map-document-invalid',
+            path: `${mapRoot}/t3terrain.xml`,
+          }),
+        )
+        const info = await result.world.value.info()
+        expect(info.terrainTransform).toBeUndefined()
+        expect(info.crossSpaceTransforms).toContainEqual(
+          expect.objectContaining({ from: 'height-grid', to: 'map-native', state: 'unknown' }),
+        )
+        await result.release()
+      }
+      await resources.dispose()
+    }
+
+    const resources = createResourceSession({
+      origin: memoryOrigin(workspaceFiles()),
+      revision: revisionId('provider-token:terrain-xml-budget'),
+    })
+    const result = await analyzeResolvedMapWorkspace({
+      services: { ...composition, serviceDefinitions: definitions },
+      grant: { id: 'maps-terrain-xml-budget', classes: [] },
+      budgets: activationBudget,
+      workspace: workspaceLock(),
+      resources,
+      catalog,
+      limits: {
+        ...limits,
+        maxRequirements: 8,
+        maxDocumentBytes: terrainXml().byteLength - 1,
+        maxPageSize: 2,
+        maxDiagnostics: 32,
+      },
+    })
+    expect(result.state).toBe('resolved')
+    if (result.state === 'resolved') {
+      expect(result.snapshot.unresolvedRequirementIds).toContain('map-terrain-native-parameters')
+      expect(result.snapshot.terrainTransform).toBeUndefined()
+      expect(result.diagnostics.map(item => item.code)).toContain(
+        'x3.host/resolved-map-document-budget-exceeded',
+      )
+      await result.release()
+    }
+    await resources.dispose()
   })
 
   it('binds snapshots to map/path/content and stops cumulative streams at the byte cap', async () => {
@@ -675,10 +796,7 @@ describe('standard map contract and semantic game provider', () => {
     }
 
     const changedFiles = new Map(workspaceFiles())
-    const changedHeight = heightMap()
-    const finalByte = changedHeight.byteLength - 1
-    changedHeight[finalByte] = (changedHeight[finalByte] ?? 0) ^ 1
-    changedFiles.set(`${mapRoot}/t3heightmap`, changedHeight)
+    changedFiles.set(`${mapRoot}/t3terrain.xml`, terrainXml(2))
     const contentAResources = createResourceSession({
       origin: memoryOrigin(workspaceFiles(), { fixedRevision: true }),
       revision: sharedRevision,
@@ -697,6 +815,17 @@ describe('standard map contract and semantic game provider', () => {
       throw new Error('content-collision fixtures did not resolve')
     }
     expect(contentA.snapshot.snapshotId).not.toBe(contentB.snapshot.snapshotId)
+    expect(contentA.snapshot.terrainTransform?.vertData.quantizeBias).toBe(1)
+    expect(contentB.snapshot.terrainTransform?.vertData.quantizeBias).toBe(2)
+    const contentCursor = await contentA.world.value.page({ facet: 'layers', limit: 1 })
+    if (contentCursor.nextCursor === undefined) throw new Error('terrain-content cursor absent')
+    await expect(
+      contentB.world.value.page({
+        facet: 'layers',
+        cursor: contentCursor.nextCursor,
+        limit: 1,
+      }),
+    ).rejects.toThrow(/stale/u)
     await contentA.release()
     await contentB.release()
     await contentAResources.dispose()
@@ -731,6 +860,7 @@ describe('standard map contract and semantic game provider', () => {
       expect(bounded.snapshot.unresolvedRequirementIds).toEqual([
         'map-regions',
         'map-terrain-height',
+        'map-terrain-native-parameters',
         'map-navigation',
       ])
       await bounded.release()
@@ -738,6 +868,7 @@ describe('standard map contract and semantic game provider', () => {
     expect(chunks.get(`${mapRoot}/regions`)).toBe(2)
     expect(releases.get(`${mapRoot}/regions`)).toBe(1)
     expect(chunks.has(`${mapRoot}/t3heightmap`)).toBe(false)
+    expect(chunks.has(`${mapRoot}/t3terrain.xml`)).toBe(false)
     await streamedResources.dispose()
   })
 
