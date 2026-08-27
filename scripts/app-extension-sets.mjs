@@ -224,6 +224,7 @@ export const READY_APP_EXTENSIONS = Object.freeze({
     coordinate: 'org.modkitx.blizzard/starcraft2',
     contributions: Object.freeze([
       'org.modkitx/galaxy',
+      'org.modkitx.blizzard/sc2-authored-text-writers',
       'org.modkitx/sc2-bank',
       'org.modkitx/sc2-data',
       'org.modkitx/sc2-document-metadata',
@@ -234,6 +235,7 @@ export const READY_APP_EXTENSIONS = Object.freeze({
       'org.modkitx/sc2-runtime',
       'org.modkitx/sc2-strings',
       'org.modkitx/sc2-triggers',
+      'org.modkitx.blizzard/sc2-workspace-copy-writer',
     ]),
   }),
   'ea-archives': Object.freeze({
