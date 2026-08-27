@@ -15,6 +15,7 @@ const publicationInventory = join(repoRoot, 'apps', 'modkit-vscode', 'publicatio
 const targets = join(repoRoot, 'packages', 'host', 'src', 'commands', 'subject-command-targets.ts')
 const pwaCommands = join(repoRoot, 'apps', 'web', 'src', 'commands.ts')
 const committedLedger = join(repoRoot, 'migration', 'generated', 'vscode-workflow-ledger.json')
+const generatedStatus = join(repoRoot, 'migration', 'generated', 'status.md')
 
 function run(args: readonly string[]) {
   return spawnSync(process.execPath, [emitter, ...args], { encoding: 'utf8' })
@@ -224,6 +225,9 @@ describe('block 14A VS Code + CLI workflow ledger', () => {
           row.hostCallers.includes('automation') && row.hostCallers.includes('pwa'),
       ),
     ).toBe(true)
+    const status = readFileSync(generatedStatus, 'utf8')
+    expect(status).toContain('Доказанные callers: Automation, CLI, Electron, PWA, VS Code.')
+    expect(status).not.toContain('PWA не заявлен')
     expect(ledger.currentX3Facts).toHaveLength(15)
     expect(
       ledger.currentX3Facts.every((row: { state: string }) => row.state === 'observed-only'),

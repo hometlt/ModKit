@@ -57,7 +57,7 @@ Ledger распределяет ровно **258 VS Code + 8 CLI = 266** legacy-
 | languages      | 8      | 0         |
 | views          | 6      | 2         |
 
-Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`, `subject.open`, `subject.preview`, `subject.validate`. Доказанные callers: CLI, Electron, VS Code; PWA не заявлен.
+Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`, `subject.open`, `subject.preview`, `subject.validate`. Доказанные callers: Automation, CLI, Electron, PWA, VS Code.
 
 ## 3. Слой 2 — semantic capability registry
 
