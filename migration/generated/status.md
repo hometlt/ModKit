@@ -79,9 +79,9 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 | allocation                   | Строк | migrationState         | Строк | evidenceLevel | Строк |
 | ---------------------------- | ----- | ---------------------- | ----- | ------------- | ----- |
 | `absent`                     | 90    | `equivalent-better`    | 16    | E0            | 88    |
-| `covered`                    | 201   | `implemented`          | 197   | E1            | 111   |
+| `covered`                    | 201   | `implemented`          | 198   | E1            | 111   |
 | `not-applicable`             | 1     | `missing`              | 90    | E2            | 65    |
-| `superseded`                 | 13    | `partial`              | 4     | E3            | 14    |
+| `superseded`                 | 13    | `partial`              | 3     | E3            | 14    |
 | `superseded-staging-present` | 3     | `relocated-multiverse` | 1     | E4            | 30    |
 
 ### 3.3. Доказанные writers
@@ -102,15 +102,15 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 | Release             | Всего | Seed | Транзитивных | Нерешённых | Ближайший блок |
 | ------------------- | ----- | ---- | ------------ | ---------- | -------------- |
-| `mk3-ga`            | 165   | 158  | 7            | 41         | block-12       |
-| `mk3-multiverse-ga` | 167   | 167  | 0            | 41         | block-12       |
+| `mk3-ga`            | 165   | 158  | 7            | 40         | block-15       |
+| `mk3-multiverse-ga` | 167   | 167  | 0            | 40         | block-15       |
 
 ### 4.1. Дедлайны `mk3-ga` по planned block
 
 | Planned block | Units | Из них нерешённых |
 | ------------- | ----- | ----------------- |
 | `block-11`    | 14    | 0                 |
-| `block-12`    | 70    | 1                 |
+| `block-12`    | 70    | 0                 |
 | `block-13`    | 1     | 0                 |
 | `block-15`    | 24    | 7                 |
 | `block-16`    | 33    | 19                |
@@ -119,13 +119,7 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 ## 5. Gap list — что осталось в `mk3-ga`
 
-Строк с нерешённым состоянием: **41** из 165. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
-
-### Блок 12 — 1 строк
-
-| Возможность                           | migrationState | evidence | Владелец                   |
-| ------------------------------------- | -------------- | -------- | -------------------------- |
-| `block9/decoded-gpu-texture-payloads` | `partial`      | E2       | `extensions/common/images` |
+Строк с нерешённым состоянием: **40** из 165. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
 
 ### Блок 15 — 7 строк
 

@@ -846,7 +846,7 @@ capabilities:
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'partial'
+    migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
     evidenceLevel: 'E2'
@@ -880,7 +880,10 @@ capabilities:
       nativeExport: null
     replacementWorkflow: null
     closedBy:
-      commits: []
+      commits:
+        - '3199496'
+        - '59a6214'
+        - '0d7a858'
       tests:
         - 'extensions/common/images/test/ani-raster-decode.test.ts'
         - 'extensions/common/images/test/astc-ordinary-ldr.test.ts'
@@ -890,6 +893,7 @@ capabilities:
         - 'packages/testkit/test/pkm-etc-decode.test.ts'
       reports:
         - 'docs/MK3/reports/REPORT_FABLE_BLOCK9_FINAL_2026-08-25.md'
+        - 'docs/MK3/reports/REPORT_SOL_ROUND3_IMAGE_GPU_REMAINDER_2026-08-26.md'
   - capabilityId: 'block9/m3-geometry'
     userScenario: 'Открыть M3 и увидеть геометрию.'
     releaseTrack: 'mk3-priority'
