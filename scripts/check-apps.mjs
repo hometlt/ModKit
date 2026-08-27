@@ -307,7 +307,9 @@ await checkApplicationSet(
   },
   {
     main: { offers: 'none', active: 'none' },
-    worker: { offers: 73, active: 73 },
+    // Two SC2 writer providers are worker-brokered; their per-format offers stay behind each
+    // provider contribution and do not activate in native main/extension-host realms.
+    worker: { offers: 75, active: 75 },
   },
 )
 await checkApplicationSet(

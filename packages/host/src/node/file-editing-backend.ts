@@ -28,6 +28,7 @@ import {
   readFile,
   rename,
   rm,
+  rmdir,
   stat,
   unlink,
   writeFile,
@@ -207,9 +208,11 @@ function sameRevision(left: AssetRevision, right: AssetRevision): boolean {
 }
 
 interface PreImage {
-  readonly kind: 'file' | 'absent'
+  readonly kind: 'file' | 'absent' | 'absent-directory'
   readonly path: string
   readonly staged?: string
+  /** The concrete create edit that owns an absent path/directory record. */
+  readonly ownerPath?: string
 }
 
 export function createFileEditingBackend(
@@ -257,6 +260,75 @@ export function createFileEditingBackend(
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
       list.push({ kind: 'absent', path })
+    }
+  }
+
+  const rollBackPreImageAt = async (transactionId: string, index: number): Promise<void> => {
+    const list = preImages.get(transactionId) ?? []
+    const image = list[index]
+    if (image === undefined) return
+    if (image.kind === 'file' && image.staged !== undefined) {
+      await copyFile(image.staged, image.path)
+    } else if (image.kind === 'absent-directory') {
+      try {
+        await rmdir(image.path)
+      } catch (error) {
+        const code = (error as NodeJS.ErrnoException).code
+        if (code !== 'ENOTEMPTY' && code !== 'ENOENT') throw error
+        // The directory is no longer exclusively ours. Relinquish the record so a later undo
+        // cannot remove it after the foreign entry disappears.
+      }
+    } else {
+      await rm(image.path, { force: true })
+    }
+    list.splice(index, 1)
+  }
+
+  const rollBackPreImagesFrom = async (transactionId: string, start: number): Promise<void> => {
+    const list = preImages.get(transactionId) ?? []
+    for (let index = list.length - 1; index >= start; index -= 1) {
+      await rollBackPreImageAt(transactionId, index)
+    }
+  }
+
+  /**
+   * Create parents one component at a time and record only a mkdir that actually succeeded. An
+   * EEXIST after our check belongs to another actor and is deliberately not added to our rollback
+   * set. Records are outermost first, so reverse rollback removes children before parents.
+   */
+  const ensureParentDirectories = async (
+    transactionId: string,
+    path: string,
+    boundary: string,
+  ): Promise<void> => {
+    const root = resolve(boundary)
+    const parent = dirname(path)
+    const rel = relative(root, parent)
+    if (rel.startsWith('..') || isAbsolute(rel)) {
+      throw editingError(
+        'x3.host/edit-path-outside-roots',
+        `parent «${parent}» escapes namespace «${root}»`,
+      )
+    }
+    const rootStats = await stat(root)
+    if (!rootStats.isDirectory()) {
+      throw editingError('x3.host/edit-source-not-directory', `«${root}» is not a directory`)
+    }
+    const list = preImages.get(transactionId) ?? []
+    preImages.set(transactionId, list)
+    let cursor = root
+    for (const component of rel.split(/[\\/]/u).filter(Boolean)) {
+      cursor = join(cursor, component)
+      try {
+        await mkdir(cursor)
+        list.push({ kind: 'absent-directory', path: cursor, ownerPath: path })
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
+        const stats = await stat(cursor)
+        if (!stats.isDirectory()) {
+          throw editingError('x3.host/edit-source-not-directory', `«${cursor}» is not a directory`)
+        }
+      }
     }
   }
 
@@ -358,19 +430,30 @@ export function createFileEditingBackend(
           )
           const list = preImages.get(applyOptions.transactionId) ?? []
           preImages.set(applyOptions.transactionId, list)
-          list.push({ kind: 'absent', path: created })
-          await writeFile(created, bytes, { flag: 'wx' })
-          return {
-            after:
-              namespaceDirectory === undefined
-                ? revisionFor(
-                    bindingId,
-                    { id: pathToFileURL(created).href, uri: pathToFileURL(created).href },
-                    await liveRevisionToken(created),
-                  )
-                : // the namespace moved, so the vector that follows is the namespace's new one —
-                  // a second create in the same plan is checked against it, not against a stale copy
-                  namespaceRevisionFor(edit.source, await liveNamespaceToken(namespaceDirectory)),
+          const preImageStart = list.length
+          try {
+            await ensureParentDirectories(
+              applyOptions.transactionId,
+              created,
+              namespaceDirectory ?? dirname(path),
+            )
+            await writeFile(created, bytes, { flag: 'wx' })
+            list.push({ kind: 'absent', path: created, ownerPath: created })
+            return {
+              after:
+                namespaceDirectory === undefined
+                  ? revisionFor(
+                      bindingId,
+                      { id: pathToFileURL(created).href, uri: pathToFileURL(created).href },
+                      await liveRevisionToken(created),
+                    )
+                  : // the namespace moved, so the vector that follows is the namespace's new one —
+                    // a second create in the same plan is checked against it, not against a stale copy
+                    namespaceRevisionFor(edit.source, await liveNamespaceToken(namespaceDirectory)),
+            }
+          } catch (error) {
+            await rollBackPreImagesFrom(applyOptions.transactionId, preImageStart)
+            throw error
           }
         }
         case 'delete': {
@@ -409,12 +492,27 @@ export function createFileEditingBackend(
     },
 
     async applyBatch(requests, batchOptions) {
-      return applySequentialBatch(requests, (edit, expectedRevision) =>
-        backend.apply(edit, {
-          ...batchOptions,
-          expectedRevision,
-        }),
-      )
+      const applied: { edit: SourceEdit; before: AssetRevision }[] = []
+      try {
+        return await applySequentialBatch(requests, async (edit, expectedRevision) => {
+          const result = await backend.apply(edit, {
+            ...batchOptions,
+            expectedRevision,
+          })
+          applied.push({ edit, before: expectedRevision })
+          return result
+        })
+      } catch (error) {
+        for (const item of applied.reverse()) {
+          await backend.rollback?.(
+            batchOptions.transactionId,
+            item.edit,
+            item.before,
+            batchOptions.signal,
+          )
+        }
+        throw error
+      }
     },
 
     async rollback(transactionId, edit, before, signal) {
@@ -425,11 +523,20 @@ export function createFileEditingBackend(
       // the same "beside me / inside me" rule as apply: rolling back a namespace create must
       // recognise the entry it actually wrote, or the created file survives the rollback
       const namespaceDirectory = (await isDirectory(path)) ? path : undefined
+      const createdPath =
+        edit.operation === 'create'
+          ? confine(
+              isAbsolute(edit.newPath)
+                ? edit.newPath
+                : join(namespaceDirectory ?? dirname(path), edit.newPath),
+            )
+          : undefined
       for (let index = list.length - 1; index >= 0; index -= 1) {
         const image = list[index]
         if (image === undefined) continue
         const related =
           image.path === path ||
+          (createdPath !== undefined && image.ownerPath === createdPath) ||
           (edit.operation !== 'replace' &&
             edit.operation !== 'delete' &&
             resolve(image.path) ===
@@ -439,12 +546,7 @@ export function createFileEditingBackend(
                   : join(namespaceDirectory ?? dirname(path), edit.newPath),
               ))
         if (!related) continue
-        if (image.kind === 'file' && image.staged !== undefined) {
-          await copyFile(image.staged, image.path)
-        } else {
-          await rm(image.path, { force: true })
-        }
-        list.splice(index, 1)
+        await rollBackPreImageAt(transactionId, index)
       }
       const bindingId = bindingIdOf(before)
       return namespaceDirectory === undefined
