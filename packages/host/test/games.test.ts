@@ -1,8 +1,7 @@
 import { existsSync } from 'node:fs'
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { uint64 } from '@modkitx-x3/core'
 import { createHostTopology } from '@modkitx-x3/sdk'
@@ -10,19 +9,15 @@ import {
   createBundledServiceDefinitionRegistry,
   createExecutionBackendRegistry,
   createHostComposition,
-  linkedExtensionInputs,
-  linkedInProcessBackend,
   registerServiceDefinitionsOrThrow,
+  TRUSTED_IN_PROCESS_EXECUTION_BACKEND,
   type HostComposition,
-  type LinkedExtension,
 } from '@modkitx-x3/host'
 import { resolveGameInstallationDiscovery } from '@modkitx-x3/host/games'
+import { loadExtensionDirectory } from '@modkitx-x3/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const { starcraft2Game } = (await import(
-  pathToFileURL(join(repoRoot, 'extensions', 'blizzard', 'starcraft2-game', 'src', 'linked.js'))
-    .href
-)) as { readonly starcraft2Game: LinkedExtension }
+const starcraft2ExtensionRoot = join(repoRoot, 'extensions', 'blizzard', 'starcraft2-game')
 
 const GAME_ID = 'org.modkitx/starcraft-2'
 const REALM = 'org.modkitx.test/games-host'
@@ -73,12 +68,17 @@ let composition: HostComposition
 let definitions: ReturnType<typeof createBundledServiceDefinitionRegistry>
 
 beforeAll(async () => {
-  const linked = linkedExtensionInputs([starcraft2Game])
-  const executionBackends = createExecutionBackendRegistry([linkedInProcessBackend(linked.modules)])
+  const extension = await loadExtensionDirectory(starcraft2ExtensionRoot)
+  const executionBackends = createExecutionBackendRegistry([TRUSTED_IN_PROCESS_EXECUTION_BACKEND])
   composition = await createHostComposition({
     topology,
     realmId: REALM,
-    extensions: linked.inputs,
+    extensions: [
+      {
+        ...extension,
+        execution: { origin: 'bundled', allowTrustedInProcess: true },
+      },
+    ],
     executionBackends,
   })
   definitions = createBundledServiceDefinitionRegistry()
@@ -127,6 +127,9 @@ async function resolveStarcraft2() {
 describe('standard game-installation contract and StarCraft II provider', () => {
   it('verifies an installation through bounded filesystem evidence', async () => {
     const root = await syntheticInstallation()
+    const buildPath = join(root, '.build.info')
+    const beforeBytes = await readFile(buildPath)
+    const before = await stat(buildPath)
     const resolution = await resolveStarcraft2()
     try {
       const result = await resolution.discovery.discover({
@@ -148,6 +151,52 @@ describe('standard game-installation contract and StarCraft II provider', () => 
       expect(probe?.confirmed).toBe(true)
       expect(probe?.evidence).toHaveLength(5)
       expect(probe?.evidence.every(item => item.found)).toBe(true)
+    } finally {
+      await resolution.release()
+    }
+    const after = await stat(buildPath)
+    expect(await readFile(buildPath)).toEqual(beforeBytes)
+    expect({ size: after.size, mtimeMs: after.mtimeMs }).toEqual({
+      size: before.size,
+      mtimeMs: before.mtimeMs,
+    })
+  })
+
+  it('stays within each configured candidate and never promotes parent markers', async () => {
+    const parent = await syntheticInstallation()
+    const child = join(parent, 'child-without-markers')
+    await mkdir(child)
+    const resolution = await resolveStarcraft2()
+    try {
+      const result = await resolution.discovery.discover({
+        gameId: GAME_ID,
+        configuredPaths: [child],
+        maxCandidates: 16,
+      })
+      const normalized = child.replace(/\\/gu, '/')
+      expect(result.installations.some(item => item.normalizedPath === normalized)).toBe(false)
+      const probe = result.probes.find(item => item.normalizedPath === normalized)
+      expect(probe).toMatchObject({ confirmed: false })
+      expect(probe?.evidence.every(item => item.path.startsWith(child))).toBe(true)
+    } finally {
+      await resolution.release()
+    }
+  })
+
+  it('honors cancellation before reading installation evidence', async () => {
+    const root = await syntheticInstallation()
+    const resolution = await resolveStarcraft2()
+    const cancelled = new AbortController()
+    cancelled.abort()
+    try {
+      await expect(
+        resolution.discovery.discover({
+          gameId: GAME_ID,
+          configuredPaths: [root],
+          maxCandidates: 16,
+          signal: cancelled.signal,
+        }),
+      ).rejects.toMatchObject({ name: 'AbortError' })
     } finally {
       await resolution.release()
     }

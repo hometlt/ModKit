@@ -44,6 +44,7 @@ describe('game-neutral mod workspace graph', () => {
     expect(lock.complete).toBe(true)
     expect(lock.loadOrder.map(item => item.rootId)).toEqual(['core', 'game', 'assets', 'map'])
     expect(lock.dependencyOrder.map(item => item.rootId)).toEqual(['core', 'game', 'assets'])
+    expect(lock.logicalRoots?.map(item => item.rootId)).toEqual(['map', 'assets', 'game', 'core'])
   })
 
   it('keeps structured evidence for missing and cyclic required dependencies', () => {
@@ -73,6 +74,38 @@ describe('game-neutral mod workspace graph', () => {
           dependencyRef: 'missing',
         }),
       ]),
+    )
+  })
+
+  it('keeps sibling-branch overlay precedence independent of root enumeration order', () => {
+    const map = root('map', [
+      { targetRootId: 'left', ref: 'left', required: true, provenance: 'declared' },
+      { targetRootId: 'right', ref: 'right', required: true, provenance: 'declared' },
+    ])
+    const left = root('left', [
+      { targetRootId: 'base', ref: 'base', required: true, provenance: 'declared' },
+    ])
+    const right = root('right', [
+      { targetRootId: 'base', ref: 'base', required: true, provenance: 'declared' },
+    ])
+    const base = root('base')
+    const resolve = (roots: readonly ModWorkspaceGraphRoot[]) =>
+      resolveModWorkspaceGraph({
+        workspaceId: 'branches',
+        gameId: 'example/game',
+        activeRootId: 'map',
+        sources: [source],
+        roots,
+        maxRoots: 16,
+        maxDepth: 8,
+      })
+
+    const forward = resolve([map, left, right, base])
+    const scrambled = resolve([right, base, map, left])
+    expect(forward.loadOrder.map(item => item.rootId)).toEqual(['base', 'left', 'right', 'map'])
+    expect(forward.logicalRoots?.map(item => item.rootId)).toEqual(['map', 'right', 'left', 'base'])
+    expect(scrambled.logicalRoots?.map(item => item.rootId)).toEqual(
+      forward.logicalRoots?.map(item => item.rootId),
     )
   })
 })

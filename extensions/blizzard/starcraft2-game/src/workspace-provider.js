@@ -39,12 +39,30 @@ function positiveLimit(value, label, maximum) {
   return value
 }
 
-function normalizeRef(value) {
-  return value
+function normalizeRef(value, label = 'dependency reference') {
+  if (value.includes('\0')) throw new TypeError(`${label} must not contain NUL bytes`)
+  if (/^[a-z]:[\\/]/iu.test(value) || /^[\\/]/u.test(value)) {
+    throw new TypeError(`${label} must be relative to its declared source root`)
+  }
+  const normalized = value
     .replace(/^[a-z][a-z0-9+.-]*:/iu, '')
     .replace(/\\/gu, '/')
     .replace(/^\/+|\/+$/gu, '')
-    .toLowerCase()
+  const parts = []
+  for (const part of normalized.split('/')) {
+    if (part === '' || part === '.') continue
+    if (part === '..') throw new TypeError(`${label} must not escape its declared source root`)
+    parts.push(part)
+  }
+  if (parts.length === 0) throw new TypeError(`${label} must name a logical path`)
+  return parts.join('/').toLowerCase()
+}
+
+function validateRootPath(value, label) {
+  if (/^[a-z][a-z0-9+.-]*:/iu.test(value)) {
+    throw new TypeError(`${label} must be a logical path, not a source URI`)
+  }
+  normalizeRef(value, label)
 }
 
 function basename(value) {
@@ -102,6 +120,7 @@ function validateRequest(request) {
     nonEmptyString(item.rootId, `roots[${index}].rootId`)
     nonEmptyString(item.sourceId, `roots[${index}].sourceId`)
     nonEmptyString(item.sourcePath, `roots[${index}].sourcePath`)
+    validateRootPath(item.sourcePath, `roots[${index}].sourcePath`)
     nonEmptyString(item.displayName, `roots[${index}].displayName`)
     nonEmptyString(item.kind, `roots[${index}].kind`)
     if (
@@ -123,6 +142,7 @@ function validateRequest(request) {
         declaration.ref,
         `roots[${index}].declaredDependencies[${dependencyIndex}].ref`,
       )
+      normalizeRef(declaration.ref, `roots[${index}].declaredDependencies[${dependencyIndex}].ref`)
       if (typeof declaration.required !== 'boolean') {
         throw new TypeError(
           `roots[${index}].declaredDependencies[${dependencyIndex}].required must be boolean`,

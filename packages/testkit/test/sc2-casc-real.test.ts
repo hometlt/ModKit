@@ -7,19 +7,20 @@ import {
   TRUSTED_IN_PROCESS_EXECUTION_BACKEND,
   artifactNamespaceSourceFromVfsMount,
   buildInventory,
+  createBundledServiceDefinitionRegistry,
   createExecutionBackendRegistry,
   createHostContributionContractRegistry,
+  openNestedSubject,
   openSubject,
+  registerServiceDefinitionsOrThrow,
+  resolveDataCatalogAnalysis,
+  resolveGameInstallationDiscovery,
+  resolveMapSemanticAnalysis,
+  resolveModWorkspaceComposition,
 } from '@modkitx-x3/host'
 import { loadExtensionDirectory } from '@modkitx-x3/host/node'
 import {
-  revisionId,
-  type ArtifactByteSource,
-  type DataCatalogAnalysis,
-  type GameInstallationDiscovery,
-  type MapSemanticAnalysis,
   type ModelSceneSource,
-  type ModWorkspaceComposition,
   type NamespaceEntrySource,
   type RasterImageSource,
   type ResourceBudget,
@@ -37,25 +38,6 @@ const ddsPath = 'campaigns/liberty.sc2campaign/base.sc2assets/assets/textures/al
 const mpqPath =
   'mods/liberty.sc2mod/base.sc2data/battlenetcache/fc2161abf876306f1a0467cfacf5e513cba4281fdc13532b440e8c8abb8835ac.s2ma'
 const mapRoot = 'campaigns/liberty.sc2campaign/base.sc2maps/maps/campaign/tarcade.sc2map'
-const { discoverStarcraft2Installations } = (await import(
-  pathToFileURL(join(repoRoot, 'extensions', 'blizzard', 'starcraft2-game', 'src', 'provider.js'))
-    .href
-)) as { readonly discoverStarcraft2Installations: GameInstallationDiscovery['discover'] }
-const { composeStarcraft2Workspace } = (await import(
-  pathToFileURL(
-    join(repoRoot, 'extensions', 'blizzard', 'starcraft2-game', 'src', 'workspace-provider.js'),
-  ).href
-)) as { readonly composeStarcraft2Workspace: ModWorkspaceComposition['compose'] }
-const { analyzeStarcraft2Data } = (await import(
-  pathToFileURL(
-    join(repoRoot, 'extensions', 'blizzard', 'starcraft2-game', 'src', 'data-provider.js'),
-  ).href
-)) as { readonly analyzeStarcraft2Data: DataCatalogAnalysis['analyze'] }
-const { openStarcraft2Map } = (await import(
-  pathToFileURL(
-    join(repoRoot, 'extensions', 'blizzard', 'starcraft2-game', 'src', 'map-provider.js'),
-  ).href
-)) as { readonly openStarcraft2Map: MapSemanticAnalysis['open'] }
 
 const budget: ResourceBudget = {
   maxInputBytes: 268_435_456n,
@@ -65,46 +47,13 @@ const budget: ResourceBudget = {
   maxDiagnostics: 100,
 }
 
-function memorySource(bytes: Uint8Array, name: string): ArtifactByteSource {
-  const uri = `memory://sc2-casc/${encodeURIComponent(name)}`
-  return {
-    kind: 'bytes',
-    ref: { id: uri, uri },
-    revision: revisionId(
-      `provider-token:${encodeURIComponent(`sc2-casc:${name}:${bytes.byteLength}`)}`,
-    ),
-    size: BigInt(bytes.byteLength),
-    async read(offset, length, signal) {
-      if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
-      return bytes.slice(Number(offset), Number(offset) + length)
-    },
-    async *stream(range, signal) {
-      if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
-      const offset = Number(range?.offset ?? 0n)
-      const length = Number(range?.length ?? BigInt(bytes.byteLength - offset))
-      yield bytes.slice(offset, offset + length)
-    },
-  }
-}
-
 describe('installed StarCraft II CASC product path', () => {
   it.skipIf(!existsSync(buildInfoPath))(
     'discovers the install, resolves dependencies and opens a real semantic map through CASC',
     async () => {
       const before = statSync(buildInfoPath)
-      const discovered = await discoverStarcraft2Installations({
-        gameId: 'org.modkitx/starcraft-2',
-        configuredPaths: [sc2Root],
-        maxCandidates: 16,
-      })
-      expect(
-        discovered.installations.some(
-          installation =>
-            installation.normalizedPath.toLowerCase() ===
-            sc2Root.replace(/\\/gu, '/').replace(/\/+$/gu, '').toLowerCase(),
-        ),
-      ).toBe(true)
       const directories = [
+        ['blizzard', 'starcraft2-game'],
         ['blizzard', 'casc'],
         ['blizzard', 'models'],
         ['blizzard', 'mpq'],
@@ -123,24 +72,103 @@ describe('installed StarCraft II CASC product path', () => {
       const executionBackends = createExecutionBackendRegistry([
         TRUSTED_IN_PROCESS_EXECUTION_BACKEND,
       ])
-      const vfs = new VirtualFileSystem().registerProvider(createFileVfsProvider())
-      const mount = await vfs.openMount(pathToFileURL(sc2Root).href)
-      const casc = await openSubject({
-        inventory,
-        source: artifactNamespaceSourceFromVfsMount(mount),
-        path: 'StarCraft II',
-        intent: 'full',
-        target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
-        grant: { id: 'sc2-casc-real', classes: ['read-source'] },
-        executionBackends,
-        budget,
+      const serviceDefinitions = createBundledServiceDefinitionRegistry()
+      await registerServiceDefinitionsOrThrow(inventory, serviceDefinitions)
+      const target = {
+        environment: 'node' as const,
+        operatingSystem: 'windows' as const,
+        architecture: 'x64' as const,
+      }
+      const services = { inventory, target, executionBackends, serviceDefinitions }
+      const serviceGrant = {
+        id: 'sc2-casc-real-services',
+        classes: ['filesystem-read', 'process-launch'] as const,
+      }
+      const discoveryResolution = await resolveGameInstallationDiscovery({
+        services,
+        gameId: 'org.modkitx/starcraft-2',
+        grant: serviceGrant,
+        budgets: budget,
       })
+      if (discoveryResolution.state !== 'resolved') {
+        throw new Error(
+          `SC2 discovery service did not resolve: ${discoveryResolution.diagnostics.map(item => item.message).join('; ')}`,
+        )
+      }
+      const workspaceResolution = await resolveModWorkspaceComposition({
+        services,
+        gameId: 'org.modkitx/starcraft-2',
+        grant: { id: 'sc2-casc-real-workspace', classes: [] },
+        budgets: budget,
+      })
+      if (workspaceResolution.state !== 'resolved') {
+        await discoveryResolution.release()
+        throw new Error(
+          `SC2 workspace service did not resolve: ${workspaceResolution.diagnostics.map(item => item.message).join('; ')}`,
+        )
+      }
+      const dataResolution = await resolveDataCatalogAnalysis({
+        services,
+        gameId: 'org.modkitx/starcraft-2',
+        grant: { id: 'sc2-casc-real-data', classes: [] },
+        budgets: budget,
+      })
+      if (dataResolution.state !== 'resolved') {
+        await workspaceResolution.release()
+        await discoveryResolution.release()
+        throw new Error(
+          `SC2 data service did not resolve: ${dataResolution.diagnostics.map(item => item.message).join('; ')}`,
+        )
+      }
+      const mapResolution = await resolveMapSemanticAnalysis({
+        services,
+        gameId: 'org.modkitx/starcraft-2',
+        grant: { id: 'sc2-casc-real-map', classes: [] },
+        budgets: budget,
+      })
+      if (mapResolution.state !== 'resolved') {
+        await dataResolution.release()
+        await workspaceResolution.release()
+        await discoveryResolution.release()
+        throw new Error(
+          `SC2 map service did not resolve: ${mapResolution.diagnostics.map(item => item.message).join('; ')}`,
+        )
+      }
+      const vfs = new VirtualFileSystem().registerProvider(createFileVfsProvider())
+      let casc: Awaited<ReturnType<typeof openSubject>> | undefined
       try {
+        const discovered = await discoveryResolution.discovery.discover({
+          gameId: 'org.modkitx/starcraft-2',
+          configuredPaths: [sc2Root],
+          maxCandidates: 16,
+        })
+        const normalizedInstallPath = sc2Root
+          .replace(/\\/gu, '/')
+          .replace(/\/+$/gu, '')
+          .toLowerCase()
+        const installation = discovered.installations.find(
+          candidate => candidate.normalizedPath.toLowerCase() === normalizedInstallPath,
+        )
+        expect(installation).toBeDefined()
+        if (installation === undefined) throw new Error('configured SC2 installation was not found')
+        const installationUri = pathToFileURL(installation.installPath).href
+        const mount = await vfs.openMount(installationUri)
+        casc = await openSubject({
+          inventory,
+          source: artifactNamespaceSourceFromVfsMount(mount),
+          path: 'StarCraft II',
+          intent: 'full',
+          target,
+          grant: { id: 'sc2-casc-real', classes: ['read-source'] },
+          executionBackends,
+          budget,
+        })
         if (casc.state !== 'opened') {
           throw new Error(
             `CASC open failed: ${casc.reason} ${JSON.stringify({ candidates: casc.candidates, diagnostics: casc.diagnostics })}`,
           )
         }
+        const cascSession = casc.session
         expect(casc.selected).toMatchObject({
           contributionId: 'org.modkitx/casc',
           confidence: 0.99,
@@ -150,10 +178,7 @@ describe('installed StarCraft II CASC product path', () => {
           constraints: { readOnly: true, randomAccess: false },
         })
 
-        const namespaceLease = await casc.session.dataSource(
-          'common.view/namespace-entry-source',
-          1,
-        )
+        const namespaceLease = await cascSession.dataSource('common.view/namespace-entry-source', 1)
         try {
           const namespace = namespaceLease.value as NamespaceEntrySource
           const first = await namespace.list('campaigns/liberty.sc2campaign/', { limit: 1 })
@@ -174,7 +199,7 @@ describe('installed StarCraft II CASC product path', () => {
               1,
             )
           }
-          const workspace = await composeStarcraft2Workspace({
+          const workspace = await workspaceResolution.composition.compose({
             workspaceId: 'installed-liberty-tarcade',
             gameId: 'org.modkitx/starcraft-2',
             activeRootId: 'retail:tarcade.sc2map',
@@ -182,7 +207,7 @@ describe('installed StarCraft II CASC product path', () => {
               {
                 sourceId: 'retail-casc',
                 kind: 'casc',
-                location: pathToFileURL(sc2Root).href,
+                location: installationUri,
                 fingerprint: `${before.size}:${before.mtimeMs}`,
               },
             ],
@@ -222,9 +247,15 @@ describe('installed StarCraft II CASC product path', () => {
             'Liberty.SC2Campaign',
             'TArcade.SC2Map',
           ])
+          expect(workspace.logicalRoots?.map(root => root.displayName)).toEqual([
+            'TArcade.SC2Map',
+            'Liberty.SC2Campaign',
+            'Liberty.SC2Mod',
+            'Core.SC2Mod',
+          ])
 
           const extractCascBytes = async (path: string): Promise<Uint8Array> => {
-            const extracted = await casc.session
+            const extracted = await cascSession
               .operations()
               .invoke('extract-entry', { entryId: path })
             if (extracted.state !== 'ok' || extracted.output.kind !== 'bytes') {
@@ -249,7 +280,7 @@ describe('installed StarCraft II CASC product path', () => {
             maxTerrainSamples: 32,
             maxDepth: 64,
           } as const
-          const preliminaryMap = await openStarcraft2Map({
+          const preliminaryMap = await mapResolution.analysis.open({
             workspaceId: workspace.workspaceId,
             gameId: workspace.gameId,
             mapId: mapRoot,
@@ -276,7 +307,7 @@ describe('installed StarCraft II CASC product path', () => {
               }),
             )
           ).filter(document => document !== undefined)
-          const catalog = await analyzeStarcraft2Data({
+          const catalog = await dataResolution.analysis.analyze({
             workspaceId: workspace.workspaceId,
             gameId: workspace.gameId,
             documents: catalogDocuments,
@@ -298,7 +329,7 @@ describe('installed StarCraft II CASC product path', () => {
           )
           expect(marine?.sources.length).toBeGreaterThan(0)
 
-          const semanticMap = await openStarcraft2Map({
+          const semanticMap = await mapResolution.analysis.open({
             workspaceId: workspace.workspaceId,
             gameId: workspace.gameId,
             mapId: mapRoot,
@@ -342,57 +373,18 @@ describe('installed StarCraft II CASC product path', () => {
         }
 
         const reopen = async (path: string, expectedFormat: string): Promise<void> => {
-          const extracted = await casc.session
-            .operations()
-            .invoke('extract-entry', { entryId: path })
-          if (extracted.state !== 'ok' || extracted.output.kind !== 'bytes') {
-            throw new Error(`CASC extraction failed for ${path}`)
-          }
-          /*
-           * The nested subject is resolved against the CASC it came out of, exactly as the product
-           * does. A codec that declares companions — M3 names its textures — returns a composite
-           * plan, and a plan with requirements has to be resolved by somebody; without an origin
-           * this open would fail closed on `x3.host/input-resolver-required`, which is the host
-           * refusing to guess rather than anything wrong with the model.
-           */
-          const { createCompanionInputResolver } = await import(
-            pathToFileURL(join(repoRoot, 'packages', 'host', 'src', 'input-resolution.js')).href
-          )
-          const { createNamespaceCompanionOrigin } = await import(
-            pathToFileURL(join(repoRoot, 'packages', 'host', 'src', 'namespace-origin.js')).href
-          )
-          const companionLease = await casc.session.dataSource(
-            'common.view/namespace-entry-source',
-            1,
-          )
-          const resolveInput = createCompanionInputResolver(
-            createNamespaceCompanionOrigin({
-              namespace: companionLease.value as NamespaceEntrySource,
-              primaryLogicalId: path,
-              containerRevision: (await casc.session.descriptor()).revision,
-              extract: async (entryId: string, signal?: AbortSignal) => {
-                const payload = await casc.session
-                  .operations()
-                  .invoke('extract-entry', { entryId }, signal === undefined ? {} : { signal })
-                if (payload.state !== 'ok' || payload.output.kind !== 'bytes') {
-                  throw new Error(`CASC extraction failed for ${entryId}`)
-                }
-                return payload.output.value
-              },
-            }),
-          )
-          const nested = await openSubject({
+          const opened = await openNestedSubject({
+            parent: cascSession,
+            entryId: path,
             inventory,
-            source: memorySource(extracted.output.value, path),
-            path,
             intent: 'full',
-            target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+            target,
             grant: { id: `sc2-casc-nested-${expectedFormat}`, classes: ['read-source'] },
             executionBackends,
             budget,
-            resolveInput,
+            serviceDefinitions,
           })
-          if (nested.state !== 'opened') await companionLease.release()
+          const nested = opened.result
           if (nested.state !== 'opened') {
             throw new Error(
               `nested ${expectedFormat} open failed: ${nested.reason} ${JSON.stringify(nested.candidates)}`,
@@ -459,26 +451,18 @@ describe('installed StarCraft II CASC product path', () => {
                 expect(paths).not.toHaveLength(0)
                 const nestedDdsPath = paths.find(item => /\.dds$/iu.test(item))
                 if (nestedDdsPath === undefined) throw new Error(`MPQ ${path} contains no DDS`)
-                const extractedDds = await nested.session
-                  .operations()
-                  .invoke('extract-entry', { entryId: nestedDdsPath })
-                if (extractedDds.state !== 'ok' || extractedDds.output.kind !== 'bytes') {
-                  throw new Error(`MPQ extraction failed for ${nestedDdsPath}`)
-                }
-                const nestedDds = await openSubject({
+                const openedDds = await openNestedSubject({
+                  parent: nested.session,
+                  entryId: nestedDdsPath,
                   inventory,
-                  source: memorySource(extractedDds.output.value, `${path}/${nestedDdsPath}`),
-                  path: nestedDdsPath,
                   intent: 'full',
-                  target: {
-                    environment: 'node',
-                    operatingSystem: 'windows',
-                    architecture: 'x64',
-                  },
+                  target,
                   grant: { id: 'sc2-casc-mpq-dds', classes: ['read-source'] },
                   executionBackends,
                   budget,
+                  serviceDefinitions,
                 })
+                const nestedDds = openedDds.result
                 if (nestedDds.state !== 'opened') {
                   throw new Error(`nested MPQ DDS open failed: ${nestedDds.reason}`)
                 }
@@ -516,7 +500,6 @@ describe('installed StarCraft II CASC product path', () => {
             }
           } finally {
             await nested.session.dispose()
-            await companionLease.release()
           }
         }
 
@@ -524,8 +507,12 @@ describe('installed StarCraft II CASC product path', () => {
         await reopen(ddsPath, 'dds')
         await reopen(mpqPath, 'mpq')
       } finally {
-        if (casc.state === 'opened') await casc.session.dispose()
+        if (casc?.state === 'opened') await casc.session.dispose()
         await vfs.dispose()
+        await mapResolution.release()
+        await dataResolution.release()
+        await workspaceResolution.release()
+        await discoveryResolution.release()
       }
       const after = statSync(buildInfoPath)
       expect({ size: after.size, mtimeMs: after.mtimeMs }).toEqual({

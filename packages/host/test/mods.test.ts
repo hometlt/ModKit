@@ -1,5 +1,4 @@
 import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { uint64 } from '@modkitx-x3/core'
 import { createHostTopology, type ModWorkspaceRootCandidate } from '@modkitx-x3/sdk'
@@ -7,19 +6,15 @@ import {
   createBundledServiceDefinitionRegistry,
   createExecutionBackendRegistry,
   createHostComposition,
-  linkedExtensionInputs,
-  linkedInProcessBackend,
   registerServiceDefinitionsOrThrow,
+  TRUSTED_IN_PROCESS_EXECUTION_BACKEND,
   type HostComposition,
-  type LinkedExtension,
 } from '@modkitx-x3/host'
 import { resolveModWorkspaceComposition } from '@modkitx-x3/host/mods'
+import { loadExtensionDirectory } from '@modkitx-x3/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const { starcraft2Game } = (await import(
-  pathToFileURL(join(repoRoot, 'extensions', 'blizzard', 'starcraft2-game', 'src', 'linked.js'))
-    .href
-)) as { readonly starcraft2Game: LinkedExtension }
+const starcraft2ExtensionRoot = join(repoRoot, 'extensions', 'blizzard', 'starcraft2-game')
 
 const GAME_ID = 'org.modkitx/starcraft-2'
 const REALM = 'org.modkitx.test/mods-host'
@@ -60,12 +55,17 @@ let composition: HostComposition
 let definitions: ReturnType<typeof createBundledServiceDefinitionRegistry>
 
 beforeAll(async () => {
-  const linked = linkedExtensionInputs([starcraft2Game])
-  const executionBackends = createExecutionBackendRegistry([linkedInProcessBackend(linked.modules)])
+  const extension = await loadExtensionDirectory(starcraft2ExtensionRoot)
+  const executionBackends = createExecutionBackendRegistry([TRUSTED_IN_PROCESS_EXECUTION_BACKEND])
   composition = await createHostComposition({
     topology,
     realmId: REALM,
-    extensions: linked.inputs,
+    extensions: [
+      {
+        ...extension,
+        execution: { origin: 'bundled', allowTrustedInProcess: true },
+      },
+    ],
     executionBackends,
   })
   definitions = createBundledServiceDefinitionRegistry()
@@ -126,6 +126,12 @@ describe('standard mod-workspace contract and StarCraft II provider', () => {
         'Liberty.SC2Mod',
         'Swarm.SC2Mod',
         'Void.SC2Mod',
+      ])
+      expect(lock.logicalRoots?.map(item => item.displayName)).toEqual([
+        'Void.SC2Mod',
+        'Swarm.SC2Mod',
+        'Liberty.SC2Mod',
+        'Core.SC2Mod',
       ])
       expect(
         lock.loadOrder.flatMap(root => root.dependencies.map(dependency => dependency.provenance)),
@@ -189,6 +195,83 @@ describe('standard mod-workspace contract and StarCraft II provider', () => {
         'local:map',
       ])
       expect(lock.loadOrder.map(item => item.rootId)).not.toContain('fallback:assets')
+      expect(lock.logicalRoots?.map(item => item.rootId)).toEqual([
+        'local:map',
+        'local:assets',
+        'retail:liberty.sc2mod',
+        'retail:core.sc2mod',
+      ])
+    } finally {
+      await resolution.release()
+    }
+  })
+
+  it('refuses logical roots and dependency refs that escape their declared source', async () => {
+    const resolution = await resolveStarcraft2Workspace()
+    try {
+      await expect(
+        resolution.composition.compose({
+          workspaceId: 'escaping-root',
+          gameId: GAME_ID,
+          activeRootId: 'local:map',
+          sources: [source],
+          roots: [
+            {
+              rootId: 'local:map',
+              sourceId: source.sourceId,
+              sourcePath: '../outside/Scenario.SC2Map',
+              displayName: 'Scenario.SC2Map',
+              kind: 'map',
+              declaredDependencies: [],
+            },
+          ],
+          maxRoots: 4,
+          maxDepth: 4,
+        }),
+      ).rejects.toThrow(/must not escape/u)
+
+      await expect(
+        resolution.composition.compose({
+          workspaceId: 'escaping-dependency',
+          gameId: GAME_ID,
+          activeRootId: 'local:map',
+          sources: [source],
+          roots: [
+            {
+              rootId: 'local:map',
+              sourceId: source.sourceId,
+              sourcePath: 'Maps/Scenario.SC2Map',
+              displayName: 'Scenario.SC2Map',
+              kind: 'map',
+              declaredDependencies: [{ ref: '../../outside.SC2Mod', required: true }],
+            },
+          ],
+          maxRoots: 4,
+          maxDepth: 4,
+        }),
+      ).rejects.toThrow(/must not escape/u)
+    } finally {
+      await resolution.release()
+    }
+  })
+
+  it('honors cancellation before composing a workspace lock', async () => {
+    const resolution = await resolveStarcraft2Workspace()
+    const cancelled = new AbortController()
+    cancelled.abort()
+    try {
+      await expect(
+        resolution.composition.compose({
+          workspaceId: 'cancelled',
+          gameId: GAME_ID,
+          activeRootId: 'retail:core.sc2mod',
+          sources: [source],
+          roots: [stockRoot('Core.SC2Mod')],
+          maxRoots: 4,
+          maxDepth: 4,
+          signal: cancelled.signal,
+        }),
+      ).rejects.toMatchObject({ name: 'AbortError' })
     } finally {
       await resolution.release()
     }

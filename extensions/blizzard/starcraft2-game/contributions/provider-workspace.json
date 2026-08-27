@@ -42,7 +42,8 @@
     "lifecycleScope": "session"
   },
   "limitations": [
-    "Composition consumes bounded source/root descriptors and declared dependency references; content mounting and DocumentInfo decoding remain owned by source adapters and codecs.",
+    "Composition consumes bounded, confined source/root descriptors and declared dependency references; content mounting and DocumentInfo decoding remain owned by source adapters and codecs.",
+    "The lock exposes dependency-first loadOrder and its exact winner-first logicalRoots reverse; callers must not infer precedence from source enumeration.",
     "The first slice emits an immutable dependency lock with StarCraft II engine layering; persistent caches, remote depot downloads, disabled-mod configuration and edit transactions are outside this provider."
   ]
 }

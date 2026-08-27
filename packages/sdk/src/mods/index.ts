@@ -99,6 +99,12 @@ export interface ModWorkspaceLock {
   readonly loadOrder: readonly ModWorkspaceGraphRoot[]
   /** loadOrder without the active root. */
   readonly dependencyOrder: readonly ModWorkspaceGraphRoot[]
+  /**
+   * Logical roots in VFS overlay precedence: the active root first, then dependencies from the
+   * nearest layer to the deepest base. Consumers resolve the first matching logical path while
+   * semantic merge consumers continue to use dependency-first loadOrder.
+   */
+  readonly logicalRoots?: readonly ModWorkspaceGraphRoot[]
   readonly diagnostics: readonly ModWorkspaceDiagnostic[]
   readonly complete: boolean
 }
@@ -258,6 +264,7 @@ export function resolveModWorkspaceGraph(input: ModWorkspaceGraphInput): ModWork
 
   const loadOrder = Object.freeze([...order])
   const dependencyOrder = Object.freeze(order.filter(root => root.rootId !== input.activeRootId))
+  const logicalRoots = Object.freeze([...order].reverse())
   return Object.freeze({
     schemaVersion: 1,
     workspaceId: input.workspaceId,
@@ -266,6 +273,7 @@ export function resolveModWorkspaceGraph(input: ModWorkspaceGraphInput): ModWork
     sources: Object.freeze(input.sources.map(immutableSource)),
     loadOrder,
     dependencyOrder,
+    logicalRoots,
     diagnostics: Object.freeze(diagnostics.map(immutableDiagnostic)),
     complete,
   })
