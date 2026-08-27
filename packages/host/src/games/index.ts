@@ -5,6 +5,7 @@ import {
   GAME_INSTALLATION_DISCOVERY_CONTRACT,
   GAME_INSTALLATION_MATCHER_PROFILE,
   type GameInstallationDiscovery,
+  type GameInstallationDiscoveryResult,
   type GameInstallationOfferFacet,
   type GameInstallationOrigin,
   type GameInstallationRequestFacet,
@@ -187,6 +188,23 @@ export type GameInstallationResolution =
       diagnostics: readonly Diagnostic[]
     }>
 
+/** One complete, host-owned installation-discovery operation. */
+export interface DiscoverGameInstallationsRequest extends ResolveGameInstallationRequest {
+  readonly configuredPaths?: readonly string[]
+  readonly maxCandidates: number
+}
+
+export type GameInstallationsDiscovery =
+  | Readonly<{
+      state: 'discovered'
+      result: GameInstallationDiscoveryResult
+      diagnostics: readonly Diagnostic[]
+    }>
+  | Readonly<{
+      state: 'unresolved'
+      diagnostics: readonly Diagnostic[]
+    }>
+
 function isGameInstallationDiscovery(value: unknown): value is GameInstallationDiscovery {
   const record = recordOf(value)
   return (
@@ -274,5 +292,31 @@ export async function resolveGameInstallationDiscovery(
         ),
       ],
     }
+  }
+}
+
+/** Resolve, run and release one installation provider without exposing its lease to callers. */
+export async function discoverGameInstallations(
+  request: DiscoverGameInstallationsRequest,
+): Promise<GameInstallationsDiscovery> {
+  const resolution = await resolveGameInstallationDiscovery(request)
+  if (resolution.state === 'unresolved') return resolution
+
+  try {
+    const result = await resolution.discovery.discover({
+      gameId: request.gameId,
+      ...(request.configuredPaths === undefined
+        ? {}
+        : { configuredPaths: request.configuredPaths }),
+      maxCandidates: request.maxCandidates,
+      ...(request.signal === undefined ? {} : { signal: request.signal }),
+    })
+    return Object.freeze({
+      state: 'discovered',
+      result,
+      diagnostics: resolution.diagnostics,
+    })
+  } finally {
+    await resolution.release()
   }
 }

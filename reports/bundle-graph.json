@@ -4,7 +4,7 @@
   "entryCount": 68,
   "totals": {
     "modules": 555,
-    "bytes": 6202981
+    "bytes": 6209698
   },
   "entries": [
     {
@@ -79,7 +79,7 @@
       "entry": "packages/host/dist/games/index.js",
       "surface": "host/games",
       "modules": 11,
-      "bytes": 53711,
+      "bytes": 54405,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -91,7 +91,7 @@
       "entry": "packages/host/dist/index.js",
       "surface": "host",
       "modules": 59,
-      "bytes": 581179,
+      "bytes": 581873,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -435,7 +435,7 @@
       "entry": "packages/ui/dist/index.js",
       "surface": "ui",
       "modules": 42,
-      "bytes": 252568,
+      "bytes": 255197,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -510,7 +510,7 @@
       "entry": "packages/ui/dist/settings/index.js",
       "surface": "ui/settings",
       "modules": 4,
-      "bytes": 30165,
+      "bytes": 32865,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core"

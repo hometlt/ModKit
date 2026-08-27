@@ -48,6 +48,7 @@
         "blizzard-models",
         "blizzard-mpq",
         "blizzard-starcraft2",
+        "blizzard-starcraft2-game",
         "images",
         "models",
         "rendering-3d",
@@ -60,9 +61,10 @@
         "org.modkitx.blizzard/starcraft2-data",
         "org.modkitx.blizzard/starcraft2-installation",
         "org.modkitx.blizzard/starcraft2-map-semantic",
+        "org.modkitx.blizzard/starcraft2-resolved-data",
         "org.modkitx.blizzard/starcraft2-workspace"
       ],
-      "note": "Единственный preset, у которого сегодня есть живые game-provider вклады и доступный корпус (MODKITX_SC2_ROOT)."
+      "note": "Профиль использует отдельное игровое расширение с автоматическим поиском установки и ручными путями из настроек; общий хост не импортирует код StarCraft II."
     },
     {
       "id": "cnc-sage-studio",
@@ -92,22 +94,27 @@
       "status": "planned",
       "hosts": ["electron", "vscode"],
       "minimalClosure": false,
-      "extensionFamilies": ["archives", "images", "models", "rendering-3d"],
+      "extensionFamilies": [
+        "archives",
+        "images",
+        "models",
+        "opensource-warzone-2100",
+        "rendering-3d"
+      ],
       "plannedFamilies": [
         {
           "directory": "extensions/mk2/opensource-warzone-2100",
           "contributions": [
             "org.modkitx/warzone-img",
             "org.modkitx/warzone-lev",
-            "org.modkitx/warzone-pie",
             "org.modkitx/warzone-wrf",
             "org.modkitx/warzone-wz",
             "org.modkitx/warzone2100-map"
           ]
         }
       ],
-      "serviceProviders": [],
-      "note": "Кодеки Warzone ещё стоят в mk2-стейджинге и не образуют продуктовое семейство; preset станет available вертикалью блока 17. Корпус — owner-action-required со свободным legal path."
+      "serviceProviders": ["org.modkitx.opensource/warzone2100-installation"],
+      "note": "Профиль уже использует отдельное игровое расширение для PIE и автоматического поиска установки; остальные форматы карт и данных остаются запланированными до завершения вертикали Warzone."
     },
     {
       "id": "bar-spring-studio",

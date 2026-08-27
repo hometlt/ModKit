@@ -13,7 +13,7 @@ import {
   TRUSTED_IN_PROCESS_EXECUTION_BACKEND,
   type HostComposition,
 } from '@modkitx-x3/host'
-import { resolveGameInstallationDiscovery } from '@modkitx-x3/host/games'
+import { discoverGameInstallations, resolveGameInstallationDiscovery } from '@modkitx-x3/host/games'
 import { loadExtensionDirectory } from '@modkitx-x3/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
@@ -126,6 +126,27 @@ async function resolveStarcraft2() {
 }
 
 describe('standard game-installation contract and StarCraft II provider', () => {
+  it('runs discovery through a host-owned provider lease', async () => {
+    const root = await syntheticInstallation()
+    const discovery = await discoverGameInstallations({
+      services: { ...composition, serviceDefinitions: definitions },
+      gameId: GAME_ID,
+      configuredPaths: [root],
+      maxCandidates: 1,
+      grant: { id: 'games-test-coordinator', classes: discoveryPermissions },
+      budgets: activationBudget,
+    })
+
+    expect(
+      discovery.state,
+      discovery.diagnostics.map(item => `${item.code}: ${item.message}`).join('\n'),
+    ).toBe('discovered')
+    if (discovery.state !== 'discovered') throw new Error('installation discovery did not run')
+    expect(discovery.result.installations).toHaveLength(1)
+    expect(discovery.result.installations[0]?.normalizedPath).toBe(root.replace(/\\/gu, '/'))
+    expect('release' in discovery).toBe(false)
+  })
+
   it('verifies an installation through bounded filesystem evidence', async () => {
     const root = await syntheticInstallation()
     const buildPath = join(root, '.build.info')

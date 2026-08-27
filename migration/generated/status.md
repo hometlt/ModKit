@@ -202,9 +202,9 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 | Preset                   | Входит с release     | Статус      | Семейств | Планируемых | Минимальный closure |
 | ------------------------ | -------------------- | ----------- | -------- | ----------- | ------------------- |
 | Common/Documents         | `mk3-ga`             | `available` | 7        | 0           | да                  |
-| SC2 Mod Studio           | `mk3-ga`             | `available` | 10       | 0           | нет                 |
+| SC2 Mod Studio           | `mk3-ga`             | `available` | 11       | 0           | нет                 |
 | C&C SAGE Studio          | `mk3-pre-multiverse` | `available` | 8        | 0           | нет                 |
-| Warzone 2100 Studio      | `mk3-ga`             | `planned`   | 4        | 1           | нет                 |
+| Warzone 2100 Studio      | `mk3-ga`             | `planned`   | 5        | 1           | нет                 |
 | BAR/Spring Studio        | `mk3-pre-multiverse` | `planned`   | 4        | 1           | нет                 |
 | Universal Asset Explorer | `mk3-ga`             | `available` | 16       | 0           | нет                 |
 | Headless Mod CI          | `mk3-ga`             | `available` | 11       | 0           | да                  |

@@ -37,10 +37,16 @@ export interface RecentEntry {
   readonly kind: 'folder' | 'file'
 }
 
+/** Ordered manual installation roots for one qualified game id. */
+export interface GameInstallationSetting {
+  readonly configuredPaths: readonly string[]
+}
+
 export interface SettingsDocument {
   readonly schemaVersion: 1
   readonly appearance: AppearanceSettings
   readonly extensions: readonly ExtensionSetting[]
+  readonly gameInstallations: Readonly<Record<string, GameInstallationSetting>>
   readonly recent: readonly RecentEntry[]
   /**
    * Contribution ids (`org.example/image-png`) the user switched off, one level below an
@@ -56,6 +62,8 @@ export interface SettingsDocument {
 
 /** Bounded so the menu stays readable and the file cannot grow without limit. */
 export const RECENT_LIMIT = 10
+export const GAME_INSTALLATION_PATH_LIMIT = 16
+export const GAME_INSTALLATION_PATH_LENGTH_LIMIT = 4096
 
 export const SETTINGS_SCHEMA_VERSION = 1
 
@@ -63,6 +71,7 @@ export const DEFAULT_SETTINGS: SettingsDocument = Object.freeze({
   schemaVersion: SETTINGS_SCHEMA_VERSION,
   appearance: Object.freeze({ theme: 'modkit-dark', density: 'compact' as Density }),
   extensions: Object.freeze([]),
+  gameInstallations: Object.freeze({}),
   recent: Object.freeze([]),
   disabledContributions: Object.freeze([]),
 })
@@ -78,6 +87,9 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 const asText = (value: unknown): string | undefined =>
   typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined
+
+const isAbsoluteLocalPath = (value: string): boolean =>
+  /^(?:[a-z]:[\\/]|[\\/]{2}[^\\/]+[\\/][^\\/]+|\/)/iu.test(value)
 
 /**
  * Coerce arbitrary JSON into a valid document.
@@ -148,6 +160,60 @@ export function normalizeSettings(value: unknown): NormalizedSettings {
     }
   }
 
+  const gameInstallations: Record<string, GameInstallationSetting> = {}
+  const gameInstallationsInput = value['gameInstallations']
+  if (gameInstallationsInput !== undefined && !isRecord(gameInstallationsInput)) {
+    problems.push('gameInstallations must be an object; it was ignored')
+  } else {
+    for (const [rawGameId, item] of Object.entries(gameInstallationsInput ?? {})) {
+      const gameId = rawGameId.trim().toLowerCase()
+      if (!/^[a-z0-9][a-z0-9.-]*\/[a-z0-9][a-z0-9._-]*$/u.test(gameId)) {
+        problems.push(`gameInstallations key "${rawGameId}" is not a qualified game id; ignored`)
+        continue
+      }
+      if (!isRecord(item) || !Array.isArray(item['configuredPaths'])) {
+        problems.push(`gameInstallations.${gameId}.configuredPaths must be an array; ignored`)
+        continue
+      }
+      const configuredPaths: string[] = []
+      const seenPaths = new Set<string>()
+      for (const [index, pathInput] of item['configuredPaths'].entries()) {
+        const path = asText(pathInput)
+        if (
+          path === undefined ||
+          path.includes('\0') ||
+          path.length > GAME_INSTALLATION_PATH_LENGTH_LIMIT ||
+          !isAbsoluteLocalPath(path) ||
+          /^(?:[a-z][a-z0-9+.-]*:\/\/|file:)/iu.test(path)
+        ) {
+          problems.push(
+            `gameInstallations.${gameId}.configuredPaths[${index}] is not a valid local path; ignored`,
+          )
+          continue
+        }
+        if (seenPaths.has(path)) continue
+        seenPaths.add(path)
+        configuredPaths.push(path)
+        if (configuredPaths.length >= GAME_INSTALLATION_PATH_LIMIT) {
+          if (index + 1 < item['configuredPaths'].length) {
+            problems.push(
+              `gameInstallations.${gameId}.configuredPaths was truncated at ${GAME_INSTALLATION_PATH_LIMIT}`,
+            )
+          }
+          break
+        }
+      }
+      if (gameInstallations[gameId] !== undefined) {
+        problems.push(
+          `gameInstallations key "${rawGameId}" duplicates "${gameId}"; the later entry won`,
+        )
+      }
+      gameInstallations[gameId] = Object.freeze({
+        configuredPaths: Object.freeze(configuredPaths),
+      })
+    }
+  }
+
   const recent: RecentEntry[] = []
   const recentInput = value['recent']
   if (recentInput !== undefined && !Array.isArray(recentInput)) {
@@ -193,6 +259,7 @@ export function normalizeSettings(value: unknown): NormalizedSettings {
       schemaVersion: SETTINGS_SCHEMA_VERSION,
       appearance: Object.freeze({ theme, density }),
       extensions: Object.freeze(extensions),
+      gameInstallations: Object.freeze(gameInstallations),
       recent: Object.freeze(recent),
       disabledContributions: Object.freeze(disabled),
     }),
@@ -221,6 +288,11 @@ export function serializeSettings(document: SettingsDocument): string {
       recent: document.recent.map(entry => ({ path: entry.path, kind: entry.kind })),
       // A set: sorted, so the same choice made in two hosts produces the same bytes.
       disabledContributions: [...document.disabledContributions].sort(compareUtf8),
+      gameInstallations: Object.fromEntries(
+        Object.entries(document.gameInstallations)
+          .sort(([left], [right]) => compareUtf8(left, right))
+          .map(([gameId, setting]) => [gameId, { configuredPaths: [...setting.configuredPaths] }]),
+      ),
       extensions: [...document.extensions]
         .sort((a, b) => compareUtf8(a.id, b.id))
         .map(entry => ({

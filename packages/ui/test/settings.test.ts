@@ -4,6 +4,7 @@ import {
   createMemorySettingsStore,
   DEFAULT_SETTINGS,
   enabledExtensions,
+  GAME_INSTALLATION_PATH_LIMIT,
   normalizeSettings,
   RECENT_LIMIT,
   serializeSettings,
@@ -53,6 +54,59 @@ describe('portable settings', () => {
       'org.example/a',
       'org.example/z',
     ])
+  })
+
+  it('normalizes bounded local game installation paths and preserves their priority order', () => {
+    const tooMany = Array.from(
+      { length: GAME_INSTALLATION_PATH_LIMIT + 2 },
+      (_, index) => `C:\\Games\\SC2-${index}`,
+    )
+    const normalized = normalizeSettings({
+      gameInstallations: {
+        'ORG.MODKITX/STARCRAFT-2': {
+          configuredPaths: [
+            ' C:\\Games\\StarCraft II ',
+            'https://example.invalid/game',
+            'relative/game',
+            'C:\\Games\\StarCraft II',
+            ...tooMany,
+          ],
+        },
+        'not-qualified': { configuredPaths: ['/ignored'] },
+        'org.modkitx/warzone-2100': {
+          configuredPaths: ['/opt/warzone2100', 'bad\0path'],
+        },
+      },
+    })
+
+    expect(
+      normalized.document.gameInstallations['org.modkitx/starcraft-2']?.configuredPaths,
+    ).toEqual(['C:\\Games\\StarCraft II', ...tooMany.slice(0, GAME_INSTALLATION_PATH_LIMIT - 1)])
+    expect(
+      normalized.document.gameInstallations['org.modkitx/warzone-2100']?.configuredPaths,
+    ).toEqual(['/opt/warzone2100'])
+    expect(normalized.document.gameInstallations['not-qualified']).toBeUndefined()
+    expect(normalized.problems).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('not a valid local path'),
+        expect.stringContaining('was truncated'),
+        expect.stringContaining('is not a qualified game id'),
+      ]),
+    )
+  })
+
+  it('serializes game ids deterministically without reordering configured paths', () => {
+    const document = normalizeSettings({
+      gameInstallations: {
+        'org.modkitx/warzone-2100': { configuredPaths: ['/second', '/first'] },
+        'org.modkitx/starcraft-2': { configuredPaths: ['D:\\SC2', 'C:\\SC2'] },
+      },
+    }).document
+    const serialized = serializeSettings(document)
+    expect(serialized.indexOf('org.modkitx/starcraft-2')).toBeLessThan(
+      serialized.indexOf('org.modkitx/warzone-2100'),
+    )
+    expect(serialized.indexOf('D:\\\\SC2')).toBeLessThan(serialized.indexOf('C:\\\\SC2'))
   })
 })
 

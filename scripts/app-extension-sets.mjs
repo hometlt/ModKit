@@ -240,6 +240,17 @@ export const READY_APP_EXTENSIONS = Object.freeze({
       'org.modkitx.blizzard/sc2-workspace-copy-writer',
     ]),
   }),
+  'blizzard-starcraft2-game': Object.freeze({
+    path: Object.freeze(['blizzard', 'starcraft2-game']),
+    coordinate: 'org.modkitx.blizzard/starcraft2-game',
+    contributions: Object.freeze([
+      'org.modkitx.blizzard/starcraft2-data',
+      'org.modkitx.blizzard/starcraft2-installation',
+      'org.modkitx.blizzard/starcraft2-map-semantic',
+      'org.modkitx.blizzard/starcraft2-resolved-data',
+      'org.modkitx.blizzard/starcraft2-workspace',
+    ]),
+  }),
   'ea-archives': Object.freeze({
     path: Object.freeze(['ea', 'archives']),
     coordinate: 'org.modkitx.ea/archives',
@@ -296,7 +307,10 @@ export const READY_APP_EXTENSIONS = Object.freeze({
   'opensource-warzone-2100': Object.freeze({
     path: Object.freeze(['opensource', 'warzone-2100']),
     coordinate: 'org.modkitx.opensource/warzone-2100',
-    contributions: Object.freeze(['org.modkitx/warzone-pie']),
+    contributions: Object.freeze([
+      'org.modkitx/warzone-pie',
+      'org.modkitx.opensource/warzone2100-installation',
+    ]),
   }),
 })
 
@@ -357,6 +371,8 @@ export const APP_EXTENSION_SETS = Object.freeze({
   'blizzard-models': Object.freeze(['blizzard-models']),
   'blizzard-mpq': Object.freeze(['blizzard-mpq']),
   'blizzard-starcraft2': Object.freeze(['blizzard-starcraft2']),
+  'blizzard-starcraft2-game': Object.freeze(['blizzard-starcraft2-game']),
+  'opensource-warzone-2100': Object.freeze(['opensource-warzone-2100']),
   'mk2-extended': mk2Extended,
 })
 
