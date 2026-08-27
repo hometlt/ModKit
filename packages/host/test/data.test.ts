@@ -155,7 +155,11 @@ function completeWorkspaceFiles(): Map<string, string> {
   )
   files.set(
     `${roots.core}/base.sc2data/gamedata/effectdata.xml`,
-    '<Catalog><CEffectDamage id="RifleDamage"><Amount value="6"/></CEffectDamage></Catalog>',
+    '<Catalog><CEffectSet id="RifleImpactSet"><EffectArray value="RifleDamage"/><EffectArray value="ApplyStim"/></CEffectSet><CEffectDamage id="RifleDamage"><Amount value="6"/></CEffectDamage><CEffectApplyBehavior id="ApplyStim"><Behavior value="StimBehavior"/></CEffectApplyBehavior></Catalog>',
+  )
+  files.set(
+    `${roots.core}/base.sc2data/gamedata/behaviordata.xml`,
+    '<Catalog><CBehavior id="StimBehavior"><DurationMin value="8"/></CBehavior></Catalog>',
   )
   files.set(
     `${roots.liberty}/base.sc2data/gamedata/unitdata.xml`,
@@ -425,6 +429,24 @@ describe('standard data contract and semantic game provider', () => {
             to: { namespace: 'Behavior', entityId: 'MissingBehavior' },
             dead: true,
           }),
+          expect.objectContaining({
+            from: { namespace: 'Effect', entityId: 'RifleImpactSet' },
+            to: { namespace: 'Effect', entityId: 'RifleDamage' },
+            role: 'EffectArray',
+            dead: false,
+          }),
+          expect.objectContaining({
+            from: { namespace: 'Effect', entityId: 'RifleImpactSet' },
+            to: { namespace: 'Effect', entityId: 'ApplyStim' },
+            role: 'EffectArray',
+            dead: false,
+          }),
+          expect.objectContaining({
+            from: { namespace: 'Effect', entityId: 'ApplyStim' },
+            to: { namespace: 'Behavior', entityId: 'StimBehavior' },
+            role: 'Behavior',
+            dead: false,
+          }),
         ]),
       )
       expect(result.snapshot.diagnostics).toEqual(
@@ -471,7 +493,17 @@ describe('standard data contract and semantic game provider', () => {
         completeness: 'partial',
       })
       const edges = await result.facets.relations.value.edges({ limit: 2 })
-      expect(edges.items).toContainEqual(expect.objectContaining({ dead: true }))
+      const pagedEdges = [...edges.items]
+      let edgeCursor = edges.nextCursor
+      while (edgeCursor !== undefined) {
+        const next = await result.facets.relations.value.edges({
+          limit: 2,
+          cursor: edgeCursor,
+        })
+        pagedEdges.push(...next.items)
+        edgeCursor = next.nextCursor
+      }
+      expect(pagedEdges).toContainEqual(expect.objectContaining({ dead: true }))
       const cancelled = new AbortController()
       cancelled.abort()
       await expect(
@@ -485,6 +517,67 @@ describe('standard data contract and semantic game provider', () => {
       await resources.dispose()
     }
     expect(() => result.facets.definitions.value.shape()).toThrow(/lease is released/u)
+  })
+
+  it('parses only the schema-confirmed concrete effect links and keeps adjacent types as named remainder', async () => {
+    const resolution = await resolveCatalog()
+    try {
+      const snapshot = await resolution.analysis.analyze({
+        workspaceId: 'effect-schema-slice',
+        gameId: GAME_ID,
+        documents: [
+          {
+            rootId: 'active',
+            path: 'Active.SC2Data/GameData/EffectData.xml',
+            text: '<Catalog><CEffectSet id="ImpactSet"><EffectArray value="Damage"/><EffectArray value="ApplyBuff"/></CEffectSet><CEffectApplyBehavior id="ApplyBuff"><Behavior value="Buff"/></CEffectApplyBehavior><CEffectDamage id="Damage"><Amount value="10"/></CEffectDamage><CEffectRemoveBehavior id="Unverified"><Behavior value="Buff"/></CEffectRemoveBehavior><CEffectSet><EffectArray value="Damage"/></CEffectSet></Catalog>',
+          },
+        ],
+        queries: [
+          { namespace: 'Effect', entityId: 'ImpactSet' },
+          { namespace: 'Effect', entityId: 'ApplyBuff' },
+          { namespace: 'Effect', entityId: 'Unverified' },
+        ],
+        maxDocuments: 1,
+        maxTextBytes: 32_768,
+        maxEntities: 32,
+        maxDepth: 8,
+      })
+
+      expect(snapshot.entities).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            namespace: 'Effect',
+            typeId: 'CEffectSet',
+            entityId: 'ImpactSet',
+            fields: { EffectArray: ['Damage', 'ApplyBuff'] },
+          }),
+          expect.objectContaining({
+            namespace: 'Effect',
+            typeId: 'CEffectApplyBehavior',
+            entityId: 'ApplyBuff',
+            fields: { Behavior: 'Buff' },
+          }),
+        ]),
+      )
+      expect(snapshot.entities).not.toContainEqual(
+        expect.objectContaining({ entityId: 'Unverified' }),
+      )
+      expect(snapshot.complete).toBe(false)
+      expect(snapshot.diagnostics).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: 'org.modkitx.blizzard.starcraft2/data-schema-slice-partial',
+            message: expect.stringContaining('1 unsupported and 1 anonymous'),
+          }),
+          expect.objectContaining({
+            code: 'common.data/entity-query-unresolved',
+            entityId: 'Unverified',
+          }),
+        ]),
+      )
+    } finally {
+      await resolution.release()
+    }
   })
 
   it('fails closed for truncated plans, malformed logical roots, missing reads and stale snapshots', async () => {
