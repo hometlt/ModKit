@@ -147,14 +147,18 @@ function terrainMapNativePosition(
   sample: MapTerrainSample,
   transform: MapTerrainNativeTransform,
 ): Readonly<{ x: number; y: number; z: number }> {
-  const base =
-    sample.heightBase * transform.vertData.quantizeScale - transform.vertData.quantizeBias
-  const adjustment =
-    sample.heightAdjustment * transform.vertData.quantizeScale - transform.vertData.quantizeBias
+  const vertical =
+    'vertData' in transform
+      ? (sample.heightBase * transform.vertData.quantizeScale - transform.vertData.quantizeBias) *
+          transform.heightMap.scale.z +
+        transform.heightMap.offset.z +
+        (sample.heightAdjustment * transform.vertData.quantizeScale -
+          transform.vertData.quantizeBias)
+      : sample.heightBase * transform.heightMap.scale.z + transform.heightMap.offset.z
   return Object.freeze({
     x: transform.heightMap.offset.x + sample.x * transform.heightMap.scale.x,
     y: transform.heightMap.offset.y + sample.y * transform.heightMap.scale.y,
-    z: base * transform.heightMap.scale.z + transform.heightMap.offset.z + adjustment,
+    z: vertical,
   })
 }
 
@@ -179,6 +183,24 @@ function admittedTerrainTransform(
   if (transform === undefined || terrain === undefined || !exact) return undefined
   const finite = (value: number): boolean => Number.isFinite(value)
   const positive = (value: number): boolean => finite(value) && value > 0
+  const verticalMappingValid = (value: MapTerrainNativeTransform): boolean => {
+    if ('vertData' in value) {
+      return (
+        finite(value.vertData.quantizeBias) &&
+        positive(value.vertData.quantizeScale) &&
+        finite(value.vertData.standardHeight) &&
+        value.mapping.vertical ===
+          'dequantized-base-times-scale-plus-offset-plus-dequantized-adjustment'
+      )
+    }
+    return (
+      value.mapping.vertical === 'direct-base-times-scale-plus-offset' &&
+      value.source.format === 'warzone-game-map' &&
+      (value.source.heightEncoding === 'uint8-times-2' ||
+        value.source.heightEncoding === 'uint16-le') &&
+      terrain.samples.every(sample => sample.heightAdjustment === 0)
+    )
+  }
   if (
     transform.schemaVersion !== 1 ||
     !Number.isSafeInteger(transform.descriptorVersion) ||
@@ -189,12 +211,8 @@ function admittedTerrainTransform(
     transform.heightMap.dim[1] !== terrain.height ||
     !Object.values(transform.heightMap.offset).every(finite) ||
     !Object.values(transform.heightMap.scale).every(positive) ||
-    !finite(transform.vertData.quantizeBias) ||
-    !positive(transform.vertData.quantizeScale) ||
-    !finite(transform.vertData.standardHeight) ||
     transform.mapping.horizontal !== 'offset-plus-grid-index-times-scale' ||
-    transform.mapping.vertical !==
-      'dequantized-base-times-scale-plus-offset-plus-dequantized-adjustment' ||
+    !verticalMappingValid(transform) ||
     transform.bounds.coordinateSpaceId !== 'map-native'
   ) {
     return undefined

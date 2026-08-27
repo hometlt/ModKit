@@ -83,7 +83,7 @@ function logicalPath(value, label, line) {
 }
 
 function position(values) {
-  return [values[0], values[2], values[1]]
+  return [values[0], values[1], values[2]]
 }
 
 function normal(values) {
@@ -527,8 +527,8 @@ const definition = Object.freeze({
         planes: [
           {
             planeId: 'geometry',
-            state: 'normalized',
-            note: 'PIE points are projected with the canonical x,z,y mapping and polygons are fan-triangulated',
+            state: 'preserved',
+            note: 'PIE POINTS and NORMALS already use the renderer x,y,z frame and polygons are fan-triangulated without changing that frame',
           },
           {
             planeId: 'structure',

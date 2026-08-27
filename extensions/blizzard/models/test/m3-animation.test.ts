@@ -31,6 +31,31 @@ import { loadM3StructuresXml } from '../src/m3/native/binary/parser.js'
 installM3PlatformAdapters({ DOMParser })
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..', '..')
+
+async function installedSc2Root(): Promise<string | undefined> {
+  const configured = process.env['MODKITX_SC2_ROOT']?.trim()
+  const { discoverStarcraft2Installations } = (await import(
+    pathToFileURL(join(repoRoot, 'extensions', 'blizzard', 'starcraft2-game', 'src', 'provider.js'))
+      .href
+  )) as {
+    readonly discoverStarcraft2Installations: (request: {
+      readonly gameId: string
+      readonly configuredPaths?: readonly string[]
+      readonly maxCandidates: number
+    }) => Promise<{
+      readonly installations: readonly { readonly normalizedPath: string }[]
+    }>
+  }
+  const result = await discoverStarcraft2Installations({
+    gameId: 'org.modkitx/starcraft-2',
+    ...(configured === undefined || configured.length === 0
+      ? {}
+      : { configuredPaths: [configured] }),
+    maxCandidates: 128,
+  })
+  return result.installations[0]?.normalizedPath
+}
+
 const logicalId =
   'campaigns/liberty.sc2campaign/base.sc2assets/assets/campaign/terran/artifact1/artifact1.m3'
 const target = { environment: 'node', operatingSystem: 'windows', architecture: 'x64' } as const
@@ -573,8 +598,10 @@ describe('M3 SEQS/STC decoding', () => {
 
 describe('M3 animation corpus stop/go', () => {
   it('measures the pinned M3 through the host/CASC route', async () => {
-    const sc2Root = process.env.MODKITX_SC2_ROOT?.trim()
-    if (sc2Root === undefined) throw new Error('MODKITX_SC2_ROOT is required')
+    const sc2Root = await installedSc2Root()
+    if (sc2Root === undefined) {
+      throw new Error('StarCraft II installation discovery found no confirmed installation')
+    }
     const mount = await new VirtualFileSystem()
       .registerProvider(createFileVfsProvider())
       .openMount(pathToFileURL(sc2Root).href)

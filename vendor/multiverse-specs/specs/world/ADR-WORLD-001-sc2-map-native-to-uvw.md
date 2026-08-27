@@ -2,7 +2,8 @@
 
 **Status:** accepted for the UVW candidate, 2026-08-27  
 **Admission effect:** closes the SC2 coordinate, source-unit and origin proof gaps; does not mint
-`world-interchange-v1`, which still requires an independent second game family
+`world-interchange-v1`; the independent second family is now recorded by ADR-WORLD-002, while the
+scope itself still waits for block 18 admission
 
 ## Context
 
@@ -99,8 +100,9 @@ serializes both as `0`. Float64 is the semantic lane. Float32 is retained as a s
 parity lane and is never used to lower UVW precision.
 
 Acceptance also requires canonical serialization, reopen through an independent reader, stable
-artifact digest and a machine-readable materialization receipt. A receipt from only SC2 remains a
-candidate receipt until the Warzone family passes its own measured differential.
+artifact digest and a machine-readable materialization receipt. The Warzone family now passes its
+own measured differential in ADR-WORLD-002; both receipts remain candidate evidence until block 18
+freezes the admitted scope.
 
 ## Consequences
 
@@ -109,4 +111,5 @@ candidate receipt until the Warzone family passes its own measured differential.
 - Consumers never infer metres from SC2 game units.
 - Source-row reversal is observable and testable rather than an undocumented renderer choice.
 - Non-uniform SC2 grids fail with a named reason until the UVW profile can represent them.
-- Warzone coordinate and mixed terrain/model tests remain the independent admission gate.
+- Warzone closes the independent coordinate gate in ADR-WORLD-002; mixed terrain/model and release
+  freeze checks remain.

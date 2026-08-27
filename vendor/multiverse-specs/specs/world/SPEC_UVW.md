@@ -1,9 +1,9 @@
 # UVW — Universal Verse World
 
-**Status:** **candidate**, 2026-08-27 — schema, fixtures and executable vectors exist for the
-heightfield base facet, and the StarCraft II live publisher has one measured candidate
-materialization. A second independent game family is still required before admission, so nothing
-here is an admitted format or a compatibility guarantee
+**Status:** **candidate**, 2026-08-28 — schema, fixtures and executable vectors exist for the
+heightfield base facet, and the StarCraft II and Warzone 2100 live publishers have independent
+measured candidate materializations. The two-family evidence gate is closed, but block 18 has not
+yet frozen the admitted scope, so nothing here is a release compatibility guarantee
 **Extension:** `.uvw.json` · **Physical base:** canonical JSON
 **Schema:** [`schema/uvw.candidate.v1.schema.json`](schema/uvw.candidate.v1.schema.json) ·
 **Vectors:** [`../conformance/uvw/vectors.json`](../conformance/uvw/vectors.json)
@@ -11,15 +11,20 @@ here is an admitted format or a compatibility guarantee
 **Role.** A portable projection of a world's *spatial* facts: extent, coordinate frame, layers, and
 a 2.5-D heightfield surface. It is the world-plane counterpart of UVM.
 
-**What candidate means here, precisely.** The StarCraft II publisher now tests the base facet
-against a real map and a sealed world-space oracle, but one family cannot prove that the shape is
-universal. Warzone 2100 is the required independent family. Synthetic fixtures still prove only
-self-consistency; the SC2 differential proves the first real mapping; neither alone admits the
-profile.
+**What candidate means here, precisely.** The StarCraft II publisher tests the base facet against a
+real map and a sealed world-space oracle; the independent Warzone 2100 publisher tests a different
+direct-height encoding against official engine source and a real installed archive. Together they
+close the required two-family evidence gate. Synthetic fixtures still prove only
+self-consistency, and the profile remains a candidate until block 18 freezes its scope and release
+vectors.
 
 Until admission (Modkit block 18) the name `world-interchange-v1` is not used as a release or
 compatibility claim, and a pinned candidate descriptor is permitted only for admission-only
 reports.
+
+The measured source mappings are fixed by
+[`ADR-WORLD-001`](ADR-WORLD-001-sc2-map-native-to-uvw.md) and
+[`ADR-WORLD-002`](ADR-WORLD-002-warzone-map-native-to-uvw.md).
 
 **Not a promise.** UVW is not a scenario format and not a definition format. Triggers, objectives
 and scripted behaviour belong to UVS; unit, weapon and ability definitions belong to UVD. A world

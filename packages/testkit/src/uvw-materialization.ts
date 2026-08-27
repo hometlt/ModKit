@@ -198,6 +198,17 @@ function hasProvenNativeTerrainTransform(info: CandidateWorldSceneInfo): boolean
   const bounds = info.bounds.find(
     item => item.facet === 'terrain' && item.coordinateSpaceId === 'map-native',
   )
+  const verticalMappingValid =
+    'vertData' in transform
+      ? finite(transform.vertData.quantizeBias) &&
+        positive(transform.vertData.quantizeScale) &&
+        finite(transform.vertData.standardHeight) &&
+        transform.mapping.vertical ===
+          'dequantized-base-times-scale-plus-offset-plus-dequantized-adjustment'
+      : transform.mapping.vertical === 'direct-base-times-scale-plus-offset' &&
+        transform.source.format === 'warzone-game-map' &&
+        (transform.source.heightEncoding === 'uint8-times-2' ||
+          transform.source.heightEncoding === 'uint16-le')
   return (
     transform.schemaVersion === 1 &&
     Number.isSafeInteger(transform.descriptorVersion) &&
@@ -206,12 +217,8 @@ function hasProvenNativeTerrainTransform(info: CandidateWorldSceneInfo): boolean
     transform.heightMap.dim.every(value => Number.isSafeInteger(value) && value > 0) &&
     Object.values(transform.heightMap.offset).every(finite) &&
     Object.values(transform.heightMap.scale).every(positive) &&
-    finite(transform.vertData.quantizeBias) &&
-    positive(transform.vertData.quantizeScale) &&
-    finite(transform.vertData.standardHeight) &&
     transform.mapping.horizontal === 'offset-plus-grid-index-times-scale' &&
-    transform.mapping.vertical ===
-      'dequantized-base-times-scale-plus-offset-plus-dequantized-adjustment' &&
+    verticalMappingValid &&
     transform.bounds.coordinateSpaceId === 'map-native' &&
     bounds !== undefined &&
     bounds.x.state === 'known' &&

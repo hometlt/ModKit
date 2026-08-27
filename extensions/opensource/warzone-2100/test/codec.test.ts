@@ -188,7 +188,7 @@ describe('Warzone PIE final MK3 codec', () => {
         throw new Error('the decoded PIE scene has no readable primitive')
       }
       const primitive = await model.primitive(primitiveId, { maxBytes: 1_000_000 })
-      expect([...primitive.positions]).toEqual([0, 0, 0, 1, 0, 0, 0, 0, 1])
+      expect([...primitive.positions]).toEqual([0, 0, 0, 1, 0, 0, 0, 1, 0])
       if (primitive.indices === undefined)
         throw new Error('the decoded PIE primitive has no indices')
       expect([...primitive.indices]).toEqual([0, 2, 1])
@@ -235,6 +235,55 @@ describe('Warzone PIE final MK3 codec', () => {
         operation: 'read',
         note: 'facet pages agree with bulk reads and the receipt is portable',
       })
+    } finally {
+      await session.dispose()
+    }
+  })
+
+  it('keeps official renderer axes for POINTS and NORMALS', async () => {
+    const source = `PIE 3
+TYPE 200
+LEVELS 1
+LEVEL 1
+POINTS 3
+1 2 3
+4 5 6
+7 8 9
+NORMALS 1
+1 2 3 4 5 6 7 8 9
+POLYGONS 1
+0 3 0 1 2
+`
+    const session = await open(source, 'renderer-axes')
+    try {
+      const modelLease = await session.dataSource('common.view/model-scene-source', 1)
+      const model = modelLease.value as ModelSceneSource
+      const primitive = await model.primitive?.('pie-level-1-primitive', {
+        maxBytes: 1_000_000,
+      })
+      if (primitive === undefined) throw new Error('PIE axis fixture has no primitive')
+      expect([...primitive.positions]).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9])
+      expect([...(primitive.normals ?? [])]).toEqual([
+        ...new Float32Array([
+          1 / Math.hypot(1, 2, 3),
+          2 / Math.hypot(1, 2, 3),
+          3 / Math.hypot(1, 2, 3),
+          4 / Math.hypot(4, 5, 6),
+          5 / Math.hypot(4, 5, 6),
+          6 / Math.hypot(4, 5, 6),
+          7 / Math.hypot(7, 8, 9),
+          8 / Math.hypot(7, 8, 9),
+          9 / Math.hypot(7, 8, 9),
+        ]),
+      ])
+      expect(receiptOf(await session.descriptor()).planes).toContainEqual(
+        expect.objectContaining({
+          planeId: 'geometry',
+          state: 'preserved',
+          note: expect.stringContaining('renderer x,y,z frame'),
+        }),
+      )
+      await modelLease.release()
     } finally {
       await session.dispose()
     }

@@ -3,16 +3,16 @@
   "schemaVersion": "multiverse-specs-pin-1",
   "source": {
     "repository": "multiverse (sibling repository)",
-    "commit": "21ac5088b2bd86a3aa41f9d1646dc09fad6d7a30",
-    "subject": "spec(world): define measured SC2 map coordinates",
-    "committedOn": "2026-08-27T23:26:07+04:00"
+    "commit": "a72b703c3b133153464d6d29a8ac1e4c7f9e45a7",
+    "subject": "docs(world): normalize Warzone ADR formatting",
+    "committedOn": "2026-08-28T01:53:22+04:00"
   },
   "generator": "scripts/specs-pin.mjs",
   "generatedFrom": "git objects, not the sibling working tree",
   "prefix": "specs/",
   "counts": {
-    "files": 57,
-    "bytes": 505843
+    "files": 58,
+    "bytes": 511118
   },
   "files": [
     {
@@ -52,8 +52,8 @@
     },
     {
       "path": "specs/conformance/uvw/vectors.json",
-      "bytes": 3801,
-      "digest": "sha256:8a1acc85b842c4a934f9c310e7b29ebcd32945628488670c7d6f5072b4685f0e"
+      "bytes": 3691,
+      "digest": "sha256:5b952a2f71e66d9c6b8cc32859b7b198bdb5af615f0b81a6ddb9e192d929ab76"
     },
     {
       "path": "specs/foundation/SPEC_UV_CANONICALIZATION.md",
@@ -62,8 +62,8 @@
     },
     {
       "path": "specs/foundation/SPEC_UV_COORDINATES.md",
-      "bytes": 6815,
-      "digest": "sha256:598523238a6e24c73787098cc32b5d0fc807a587e42fc60462c30f2205e60067"
+      "bytes": 7186,
+      "digest": "sha256:354b3c8eef9c53588901a069e314623ee937acf52fec945c2480e242f91696ee"
     },
     {
       "path": "specs/foundation/SPEC_UV_FOUNDATION.md",
@@ -82,8 +82,8 @@
     },
     {
       "path": "specs/foundation/uv-coordinates.v1.json",
-      "bytes": 5193,
-      "digest": "sha256:7093b48ea1078f2e683b905cfd10e1c25f1b25cfedac6954152d41913bf0b11e"
+      "bytes": 5769,
+      "digest": "sha256:7bd0ca4e01033571c6614f0b28256b0fc8ba07a0e6e530a8e6906b0b7268428e"
     },
     {
       "path": "specs/model/SPEC_UVM.md",
@@ -277,13 +277,18 @@
     },
     {
       "path": "specs/world/ADR-WORLD-001-sc2-map-native-to-uvw.md",
-      "bytes": 4875,
-      "digest": "sha256:ff44e0b7c99c324a031868fc72afca87652f92b8b4babd95b32f123744876ab8"
+      "bytes": 5021,
+      "digest": "sha256:efe80cab1489f1cb3f761059b7503ca6122553e6b8d87c844f0c0ee2d8310f5f"
+    },
+    {
+      "path": "specs/world/ADR-WORLD-002-warzone-map-native-to-uvw.md",
+      "bytes": 3963,
+      "digest": "sha256:215ff6c362ee97052099d9cba2bf3208ec7fe806084128d707f112c4b7c83043"
     },
     {
       "path": "specs/world/SPEC_UVW.md",
-      "bytes": 5799,
-      "digest": "sha256:5f3012cffc722668be93261ddbf0202601c7d361bc02491ca45dfa6efab4189d"
+      "bytes": 6098,
+      "digest": "sha256:3f6cd04620c54df1c276685ecacf3a494b464c7f36933551c6b85c3b0c6d34e3"
     },
     {
       "path": "specs/world/fixtures/uvw-heightfield-basic.uvw.json",
@@ -297,8 +302,8 @@
     },
     {
       "path": "specs/world/schema/uvw.candidate.v1.schema.json",
-      "bytes": 4186,
-      "digest": "sha256:b3270dafaef85fb112d181f5060b240fe97b7f32ae23782c2206e1e222c7a5a6"
+      "bytes": 4216,
+      "digest": "sha256:b2c3ba00cc1d32f50ed01d8e9d9a70ba8d041759c204625ec4491e2c749f37a8"
     }
   ]
 }

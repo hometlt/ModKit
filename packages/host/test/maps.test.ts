@@ -35,8 +35,12 @@ const { starcraft2Game } = (await import(
   pathToFileURL(join(repoRoot, 'extensions', 'blizzard', 'starcraft2-game', 'src', 'linked.js'))
     .href
 )) as { readonly starcraft2Game: LinkedExtension }
+const { warzone2100 } = (await import(
+  pathToFileURL(join(repoRoot, 'extensions', 'opensource', 'warzone-2100', 'src', 'linked.js')).href
+)) as { readonly warzone2100: LinkedExtension }
 
 const GAME_ID = 'org.modkitx/starcraft-2'
+const WARZONE_GAME_ID = 'org.modkitx/warzone-2100'
 const REALM = 'org.modkitx.test/maps-host'
 const operatingSystem =
   process.platform === 'win32' ? 'windows' : process.platform === 'darwin' ? 'darwin' : 'linux'
@@ -74,7 +78,7 @@ let composition: HostComposition
 let definitions: ReturnType<typeof createBundledServiceDefinitionRegistry>
 
 beforeAll(async () => {
-  const linked = linkedExtensionInputs([starcraft2Game])
+  const linked = linkedExtensionInputs([starcraft2Game, warzone2100])
   const executionBackends = createExecutionBackendRegistry([linkedInProcessBackend(linked.modules)])
   composition = await createHostComposition({
     topology,
@@ -186,6 +190,7 @@ const limits = {
 } as const
 
 const mapRoot = 'workspace/active.sc2map'
+const warzoneMapRoot = 'multiplay/maps/fixture'
 
 function workspaceLock(activePath = mapRoot) {
   return resolveModWorkspaceGraph({
@@ -206,6 +211,49 @@ function workspaceLock(activePath = mapRoot) {
     maxRoots: 4,
     maxDepth: 4,
   })
+}
+
+function warzoneWorkspaceLock() {
+  return resolveModWorkspaceGraph({
+    workspaceId: 'warzone-map-workspace',
+    gameId: WARZONE_GAME_ID,
+    activeRootId: 'active',
+    sources: [{ sourceId: 'workspace', kind: 'memory', location: 'memory:warzone-workspace' }],
+    roots: [
+      {
+        rootId: 'active',
+        sourceId: 'workspace',
+        sourcePath: warzoneMapRoot,
+        displayName: 'Warzone fixture',
+        kind: 'map',
+        dependencies: [],
+      },
+    ],
+    maxRoots: 4,
+    maxDepth: 4,
+  })
+}
+
+function warzoneGameMap(): Uint8Array {
+  const width = 2
+  const height = 3
+  const count = width * height
+  const bytes = new Uint8Array(16 + count * 3 + 8 + 4)
+  bytes.set(new TextEncoder().encode('map '), 0)
+  const view = new DataView(bytes.buffer)
+  view.setUint32(4, 10, true)
+  view.setUint32(8, width, true)
+  view.setUint32(12, height, true)
+  let offset = 16
+  for (let index = 0; index < count; index += 1) {
+    view.setUint16(offset, index, true)
+    view.setUint8(offset + 2, index + 1)
+    offset += 3
+  }
+  view.setUint32(offset, 1, true)
+  view.setUint32(offset + 4, 1, true)
+  bytes.set([0, 0, 1, 2], offset + 8)
+  return bytes
 }
 
 function memoryOrigin(
@@ -290,6 +338,70 @@ function workspaceFiles(root = mapRoot): ReadonlyMap<string, Uint8Array> {
 }
 
 describe('standard map contract and semantic game provider', () => {
+  it('routes Warzone game.map through ResourceSession into the same exact world candidate', async () => {
+    const files = new Map([[`${warzoneMapRoot}/game.map`, warzoneGameMap()]])
+    const resources = createResourceSession({
+      origin: memoryOrigin(files, { primaryLogicalId: warzoneMapRoot }),
+      revision: revisionId('provider-token:warzone-map-fixture'),
+    })
+    const result = await analyzeResolvedMapWorkspace({
+      services: { ...composition, serviceDefinitions: definitions },
+      grant: { id: 'warzone-maps-test', classes: [] },
+      budgets: activationBudget,
+      workspace: warzoneWorkspaceLock(),
+      resources,
+      limits: {
+        ...limits,
+        maxRequirements: 8,
+        maxTerrainCells: 65_536,
+        maxTerrainSamples: 65_536,
+        maxPageSize: 64,
+        maxDiagnostics: 32,
+      },
+    })
+    expect(
+      result.state,
+      result.diagnostics.map(item => `${item.code}: ${item.message}`).join('\n'),
+    ).toBe('resolved')
+    if (result.state !== 'resolved') throw new Error('Warzone map workspace did not resolve')
+    try {
+      expect(result.snapshot.terrainTransform).toMatchObject({
+        source: { format: 'warzone-game-map', heightEncoding: 'uint8-times-2' },
+        mapping: { vertical: 'direct-base-times-scale-plus-offset' },
+      })
+      const info = await result.world.value.info()
+      expect(info).toMatchObject({
+        contract: 'org.modkitx.opensource.warzone2100/world-scene-source',
+        terrainTransform: result.snapshot.terrainTransform,
+        uvwTransform: result.snapshot.uvwTransform,
+      })
+      const page = await result.world.value.page({
+        facet: 'terrain',
+        layerId: `${result.snapshot.snapshotId}:layer:terrain`,
+        lod: 'exact',
+        limit: 64,
+      })
+      expect(page.items).toHaveLength(6)
+      expect(page.items[0]).toMatchObject({
+        x: 0,
+        y: 0,
+        heightBase: 2,
+        mapNativePosition: { x: 0, y: 0, z: 2 },
+        uvwPosition: { x: 0, y: 2, z: 0 },
+      })
+      expect(page.items[5]).toMatchObject({
+        x: 1,
+        y: 2,
+        heightBase: 12,
+        mapNativePosition: { x: 128, y: 256, z: 12 },
+        uvwPosition: { x: 128, y: 12, z: -256 },
+      })
+    } finally {
+      await result.release()
+      await resources.dispose()
+    }
+  })
+
   it('opens terrain, regions and placed objects, then binds them to the resolved catalog', async () => {
     const resolution = await resolveMaps()
     try {
@@ -826,8 +938,18 @@ describe('standard map contract and semantic game provider', () => {
       throw new Error('content-collision fixtures did not resolve')
     }
     expect(contentA.snapshot.snapshotId).not.toBe(contentB.snapshot.snapshotId)
-    expect(contentA.snapshot.terrainTransform?.vertData.quantizeBias).toBe(1)
-    expect(contentB.snapshot.terrainTransform?.vertData.quantizeBias).toBe(2)
+    expect(
+      contentA.snapshot.terrainTransform !== undefined &&
+        'vertData' in contentA.snapshot.terrainTransform
+        ? contentA.snapshot.terrainTransform.vertData.quantizeBias
+        : undefined,
+    ).toBe(1)
+    expect(
+      contentB.snapshot.terrainTransform !== undefined &&
+        'vertData' in contentB.snapshot.terrainTransform
+        ? contentB.snapshot.terrainTransform.vertData.quantizeBias
+        : undefined,
+    ).toBe(2)
     const contentCursor = await contentA.world.value.page({ facet: 'layers', limit: 1 })
     if (contentCursor.nextCursor === undefined) throw new Error('terrain-content cursor absent')
     await expect(

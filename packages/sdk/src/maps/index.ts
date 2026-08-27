@@ -127,31 +127,36 @@ export interface MapTerrainSummary {
   readonly maximumHeightBase: number
   readonly minimumHeightAdjustment: number
   readonly maximumHeightAdjustment: number
-  readonly cliffCellCount: number
+  /** Present only when the publisher exposes a proved cliff bit in this native terrain record. */
+  readonly cliffCellCount?: number
   readonly trailingBytes: number
   readonly samples: readonly MapTerrainSample[]
 }
 
-/**
- * Exact native terrain mapping admitted only when one structurally valid `t3Terrain.xml` matches
- * a completely retained HMAP grid. Attribute names mirror their authoritative XML elements; no
- * engine defaults or canonical/UVW coordinates are inferred.
- */
-export interface MapTerrainNativeTransform {
+interface MapTerrainNativeTransformBase {
   readonly schemaVersion: 1
   readonly snapshotId: string
   readonly descriptorVersion: number
+  readonly heightMap: Readonly<{
+    readonly dim: readonly [number, number]
+    readonly offset: MapPosition
+    readonly scale: MapPosition
+  }>
+  readonly bounds: Readonly<{
+    readonly coordinateSpaceId: 'map-native'
+    readonly minimum: MapPosition
+    readonly maximum: MapPosition
+  }>
+}
+
+/** Exact SC2 native terrain mapping from one matching `t3Terrain.xml` and complete HMAP grid. */
+export interface MapQuantizedTerrainNativeTransform extends MapTerrainNativeTransformBase {
   readonly source: Readonly<{
     readonly terrainDocumentPath: string
     readonly heightDocumentPath: string
     readonly rootElement: 'terrain'
     readonly heightMapElement: 'heightMap'
     readonly quantizationElement: 'vertData'
-  }>
-  readonly heightMap: Readonly<{
-    readonly dim: readonly [number, number]
-    readonly offset: MapPosition
-    readonly scale: MapPosition
   }>
   readonly vertData: Readonly<{
     readonly quantizeBias: number
@@ -162,12 +167,24 @@ export interface MapTerrainNativeTransform {
     readonly horizontal: 'offset-plus-grid-index-times-scale'
     readonly vertical: 'dequantized-base-times-scale-plus-offset-plus-dequantized-adjustment'
   }>
-  readonly bounds: Readonly<{
-    readonly coordinateSpaceId: 'map-native'
-    readonly minimum: MapPosition
-    readonly maximum: MapPosition
+}
+
+/** Exact direct-height terrain mapping, currently qualified against Warzone `game.map`. */
+export interface MapDirectTerrainNativeTransform extends MapTerrainNativeTransformBase {
+  readonly source: Readonly<{
+    readonly terrainDocumentPath: string
+    readonly format: 'warzone-game-map'
+    readonly heightEncoding: 'uint8-times-2' | 'uint16-le'
+  }>
+  readonly mapping: Readonly<{
+    readonly horizontal: 'offset-plus-grid-index-times-scale'
+    readonly vertical: 'direct-base-times-scale-plus-offset'
   }>
 }
+
+/** Exact publisher-native terrain mapping; each member names its real stored height encoding. */
+export type MapTerrainNativeTransform =
+  MapQuantizedTerrainNativeTransform | MapDirectTerrainNativeTransform
 
 export type MapCoordinateAxis = 'x' | 'y' | 'z'
 

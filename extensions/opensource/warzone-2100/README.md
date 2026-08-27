@@ -7,7 +7,8 @@ accepted only when `base.wz` exists in a supported content layout and starts wit
 signature; `mp.wz` and `sequences.wz` are optional evidence. It never enumerates `WindowsApps` or
 recursively scans a disk.
 
-This slice also implements the PIE model reader. Maps, WZ containers and the other Warzone staging
+This slice also implements the PIE model reader and an exact `game.map` terrain provider with a
+measured map-native to UVW candidate transform. WZ container writing and the other Warzone staging
 routes remain outside this package until their own migration slices.
 
 The reader publishes decoded geometry, logical texture references and `ANIMOBJECT` tracks. It does

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://modkitx.dev/specs/world/uvw.candidate.v1.schema.json",
   "title": "UVW candidate profile, version 1",
-  "$comment": "Candidate. No host publishes a live world facet yet, so this schema is proven self-consistent by its fixtures and proven by nothing else. See SPEC_UVW.md for what that distinction costs.",
+  "$comment": "Candidate. Independent SC2 and Warzone publishers now materialize the base heightfield from real maps, but world-interchange-v1 is not a release claim until the block 18 scope and vectors are frozen. See SPEC_UVW.md.",
   "type": "object",
   "additionalProperties": false,
   "required": ["uv", "basis", "bounds", "layers"],

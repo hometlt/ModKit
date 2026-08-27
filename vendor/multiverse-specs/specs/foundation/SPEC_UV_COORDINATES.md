@@ -105,6 +105,11 @@ Its right-handed Z-up frame maps to the canonical frame as `(x, y, z) -> (x, z, 
 heightfield advances rows along canonical `+Z`, an SC2 HMAP is serialized with its source rows in
 reverse order. Its grid relationship is exact, but no public physical metre scale is asserted.
 
+The independent second entry is Warzone 2100 `game.map`, recorded by
+[`../world/ADR-WORLD-002-warzone-map-native-to-uvw.md`](../world/ADR-WORLD-002-warzone-map-native-to-uvw.md).
+It uses the same right-handed Z-up axis mapping but a different direct-height tile encoding and a
+fixed `128` world-unit grid relationship. Its physical metre scale is likewise not invented.
+
 ## 7. Machine form
 
 `uv-coordinates.v1.json` beside this file carries the canonical basis and one entry per known

@@ -16887,7 +16887,7 @@ capabilities:
       - 'installation-discovery'
     mk3Contributions:
       - 'org.modkitx.opensource/warzone2100-installation'
-      - 'org.modkitx/warzone-pie'
+      - 'org.modkitx.opensource/warzone2100-map-semantic'
     mk3Operations: []
     allocation:
       state: 'covered'
@@ -16912,16 +16912,16 @@ capabilities:
     projection:
       plane: 'world'
       liveProjection: 'live'
-      portableMaterialization: 'none'
+      portableMaterialization: 'materialized'
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'extensions/opensource/warzone-2100/test/corpus-preflight.test.ts'
-        validate: null
-        read: null
-        materialize: null
+        inspect: 'extensions/opensource/warzone-2100/test/map-provider.test.ts'
+        validate: 'extensions/opensource/warzone-2100/test/map-provider.test.ts'
+        read: 'extensions/opensource/warzone-2100/test/map-provider.test.ts'
+        materialize: 'packages/testkit/test/warzone-real.test.ts'
     knownLoss:
-      - 'E3 covers bounded local installation discovery plus base.wz and nested PIE inspection; map/data semantics, writing, browser discovery and packaged-app E5 remain unavailable'
+      - 'E3 covers bounded local installation discovery, exact game.map terrain semantics and byte-stable UVW candidate materialization from installed mp.wz; structures, droids, features, scripts, native writing, browser discovery and packaged-app E5 remain unavailable'
     receipts:
       projection: null
       materialization: null
@@ -16932,6 +16932,8 @@ capabilities:
       tests:
         - 'extensions/opensource/warzone-2100/test/installation-provider.test.ts'
         - 'extensions/opensource/warzone-2100/test/corpus-preflight.test.ts'
+        - 'extensions/opensource/warzone-2100/test/map-provider.test.ts'
+        - 'packages/testkit/test/warzone-real.test.ts'
       reports: []
   - capabilityId: 'game/world-of-warcraft/discover-open'
     userScenario: 'Найти установку «World of Warcraft», открыть её содержимое как рабочее пространство и увидеть форматы, которые игра действительно объявляет.'

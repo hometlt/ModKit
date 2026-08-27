@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/service-provider-contribution",
+    "major": 1
+  },
+  "id": "org.modkitx.opensource/warzone2100-map-semantic",
+  "displayName": "Warzone 2100 semantic map analysis",
+  "status": "supported",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/map-provider.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    },
+    {
+      "variantId": "worker-portable",
+      "entrypoint": "./src/map-provider.js",
+      "target": { "environments": ["node-worker", "browser-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "provides": [
+      {
+        "offerId": "warzone2100-map-semantic-v1",
+        "contract": "common.map/semantic-analysis",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": { "gameIds": ["org.modkitx/warzone-2100"] }
+      },
+      {
+        "offerId": "warzone2100-map-resolved-workspace-v1",
+        "contract": "common.map/resolved-workspace",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": { "gameIds": ["org.modkitx/warzone-2100"] }
+      }
+    ],
+    "lifecycleScope": "session"
+  },
+  "limitations": [
+    "The bounded slice reads exact game.map terrain tiles and gateways; structures, droids, features, scroll limits and scenario scripts remain named unavailable facets.",
+    "Container extraction, rendering, launch, writing and packing remain outside this provider.",
+    "The world scene surface is publisher-qualified candidate org.modkitx.opensource.warzone2100/world-scene-source@1, not an admitted common.view contract."
+  ]
+}

@@ -59,6 +59,9 @@ function sc2WorldTupleDigests(
   samples: readonly MapTerrainSample[],
   transform: MapTerrainNativeTransform,
 ): Readonly<{ native: string; renderer: string; canonical: string }> {
+  if (!('vertData' in transform)) {
+    throw new TypeError('SC2 world oracle requires a quantized HMAP transform')
+  }
   const count = transform.heightMap.dim[0] * transform.heightMap.dim[1]
   if (samples.length !== count) throw new TypeError('SC2 world oracle requires the exact HMAP grid')
   const positions = new Array<readonly [number, number, number]>(count)

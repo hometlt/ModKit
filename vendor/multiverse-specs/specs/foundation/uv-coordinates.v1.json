@@ -68,6 +68,18 @@
       "measuredIn": "../world/ADR-WORLD-001-sc2-map-native-to-uvw.md"
     },
     {
+      "id": "warzone-map-native",
+      "label": "Warzone 2100 game.map terrain",
+      "from": { "handedness": "right", "upAxis": "z", "forwardAxis": "+y" },
+      "map": "(x, y, z) -> (x, z, -y)",
+      "selfInverse": true,
+      "unit": "gridRelationshipWithoutPhysicalScale",
+      "sourceUnit": "warzone-world-unit",
+      "unitsPerCell": 128,
+      "origin": "heightfield origin = (0, 0, -((rows - 1) * 128)); source rows are reversed so serialized rows advance along canonical +Z",
+      "measuredIn": "../world/ADR-WORLD-002-warzone-map-native-to-uvw.md"
+    },
+    {
       "id": "s3o",
       "label": "Spring S3O",
       "from": { "handedness": "left", "upAxis": "y", "forwardAxis": "+z" },
