@@ -20,9 +20,9 @@
     },
     "byMigrationState": {
       "equivalent-better": 16,
-      "implemented": 109,
+      "implemented": 110,
       "missing": 37,
-      "partial": 4,
+      "partial": 3,
       "relocated-multiverse": 1
     },
     "byObligation": { "focused-required-addition": 13, "legacy-required": 154 },
@@ -410,7 +410,7 @@
       "obligation": "legacy-required",
       "owner": "extensions/common/images",
       "plannedBlock": 12,
-      "migrationState": "partial",
+      "migrationState": "implemented",
       "supportState": "partial",
       "evidenceLevel": "E2",
       "allocationState": "covered",
