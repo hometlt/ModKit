@@ -298,6 +298,39 @@ describe('the VS Code product open path with a configured extension', () => {
     })
     await answer.session.dispose()
   }, 60_000)
+
+  it('selects the semantic SC2Campaign codec through configured and workspace roots', async () => {
+    const fixtureRoot = join(
+      repositoryRoot,
+      'packages',
+      'testkit',
+      'test',
+      'fixtures',
+      'mk2-synthetic',
+    )
+    const sc2Campaign = join(fixtureRoot, 'minimal.SC2Campaign')
+    const host = await createVsCodeSubjectHost({
+      catalogCandidates: [],
+      configuredExtensions: [join(repositoryRoot, 'extensions', 'blizzard', 'starcraft2')],
+    })
+    const open = createVsCodeCommandOpener({
+      services: host.services,
+      roots: () => [fixtureRoot],
+    })
+    const answer = await open(sc2Campaign)
+    expect(answer.snapshot.state).toBe('opened')
+    if (answer.snapshot.state !== 'opened' || answer.session === undefined) {
+      throw new Error(`the VS Code SC2Campaign open failed: ${JSON.stringify(answer.snapshot)}`)
+    }
+    expect(answer.snapshot.selected).toMatchObject({
+      contributionId: 'org.modkitx/sc2-campaign',
+      variantId: 'portable',
+    })
+    expect(
+      (answer.snapshot.descriptor as { identity: { formatId: string } }).identity.formatId,
+    ).toBe('sc2-campaign')
+    await answer.session.dispose()
+  }, 60_000)
 })
 
 describe('the generated catalog decides what this build ships', () => {

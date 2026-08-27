@@ -150,6 +150,15 @@ describe('modkit open (S7): the product open path of the CLI', () => {
     'mk2-synthetic',
     'minimal.SC2Map',
   )
+  const sc2Campaign = join(
+    repositoryRoot,
+    'packages',
+    'testkit',
+    'test',
+    'fixtures',
+    'mk2-synthetic',
+    'minimal.SC2Campaign',
+  )
 
   it('opens a real PNG worker-brokered with a linked root, prints the selection and exits 0; the process ends', () => {
     const { status, stdout } = run(['open', png, '--ext', images, '--json'])
@@ -221,6 +230,33 @@ describe('modkit open (S7): the product open path of the CLI', () => {
       operation: 'read',
       note: 'the CLI opens the pinned packed SC2Map through an explicit linked extension root',
     })
+  }, 60_000)
+
+  it('selects the semantic SC2Campaign codec through the CLI linked-root contract', () => {
+    const { status, stdout } = run(['open', sc2Campaign, '--ext', starcraft2, '--json'])
+    expect(status).toBe(0)
+    const report = JSON.parse(stdout) as {
+      state: string
+      selected: { contributionId: string; variantId: string }
+      descriptor: {
+        identity: { formatId: string }
+        traits: { id: string; state: string; parameters?: Record<string, unknown> }[]
+      }
+    }
+    expect(report.state).toBe('opened')
+    expect(report.selected).toMatchObject({
+      contributionId: 'org.modkitx/sc2-campaign',
+      variantId: 'portable',
+    })
+    expect(report.descriptor.identity.formatId).toBe('sc2-campaign')
+    expect(report.descriptor.traits).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'container.entries', parameters: { count: 9 } }),
+        expect.objectContaining({ id: 'game.catalog', parameters: { files: 1 } }),
+        expect.objectContaining({ id: 'game.layout', parameters: { files: 1 } }),
+        expect.objectContaining({ id: 'game.localization', parameters: { files: 1 } }),
+      ]),
+    )
   }, 60_000)
 
   it('exits 1 for a subject no linked codec claims, 2 for usage and IO failures', () => {
