@@ -16873,7 +16873,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'unassigned'
+    owner: 'extensions/opensource/warzone-2100'
     plannedBlock: 17
     dependsOn:
       - 'format/warzone-pie/open-inspect'
@@ -16882,19 +16882,23 @@ capabilities:
       - 'legacy/game-manifest/org.modkitx/warzone-2100'
     legacyEvidence:
       - 'legacy:extensions/opensource/warzone-2100/games/warzone-2100/game.manifest.json'
-    hostFacilities: []
-    mk3Contributions: []
+    hostFacilities:
+      - 'read-source'
+      - 'installation-discovery'
+    mk3Contributions:
+      - 'org.modkitx.opensource/warzone2100-installation'
+      - 'org.modkitx/warzone-pie'
     mk3Operations: []
     allocation:
-      state: 'absent'
-      x3ContributionId: null
+      state: 'covered'
+      x3ContributionId: 'org.modkitx.opensource/warzone2100-installation'
       portFamily: null
       portVerdict: null
-    migrationState: 'missing'
+    migrationState: 'implemented'
     supportState: 'partial'
-    runtimeAvailability: 'none'
-    evidenceLevel: 'E0'
-    hostEvidence: 'none'
+    runtimeAvailability: 'node-only'
+    evidenceLevel: 'E3'
+    hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
@@ -16903,20 +16907,21 @@ capabilities:
       verdicts: []
       liveSources: []
     fixtures: []
-    corpusDescriptors: []
+    corpusDescriptors:
+      - 'MODKITX_WARZONE_ROOT'
     projection:
       plane: 'world'
-      liveProjection: 'none'
+      liveProjection: 'live'
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'extensions/opensource/warzone-2100/test/corpus-preflight.test.ts'
         validate: null
         read: null
         materialize: null
     knownLoss:
-      - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
+      - 'E3 covers bounded local installation discovery plus base.wz and nested PIE inspection; map/data semantics, writing, browser discovery and packaged-app E5 remain unavailable'
     receipts:
       projection: null
       materialization: null
@@ -16924,7 +16929,9 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'extensions/opensource/warzone-2100/test/installation-provider.test.ts'
+        - 'extensions/opensource/warzone-2100/test/corpus-preflight.test.ts'
       reports: []
   - capabilityId: 'game/world-of-warcraft/discover-open'
     userScenario: 'Найти установку «World of Warcraft», открыть её содержимое как рабочее пространство и увидеть форматы, которые игра действительно объявляет.'

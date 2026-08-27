@@ -78,10 +78,10 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 | allocation                   | Строк | migrationState         | Строк | evidenceLevel | Строк |
 | ---------------------------- | ----- | ---------------------- | ----- | ------------- | ----- |
-| `absent`                     | 90    | `equivalent-better`    | 16    | E0            | 88    |
-| `covered`                    | 201   | `implemented`          | 200   | E1            | 110   |
-| `not-applicable`             | 1     | `missing`              | 90    | E2            | 65    |
-| `superseded`                 | 13    | `partial`              | 1     | E3            | 14    |
+| `absent`                     | 89    | `equivalent-better`    | 16    | E0            | 87    |
+| `covered`                    | 202   | `implemented`          | 201   | E1            | 110   |
+| `not-applicable`             | 1     | `missing`              | 89    | E2            | 65    |
+| `superseded`                 | 13    | `partial`              | 1     | E3            | 15    |
 | `superseded-staging-present` | 3     | `relocated-multiverse` | 1     | E4            | 31    |
 
 ### 3.3. Доказанные writers
@@ -102,9 +102,9 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 | Release              | Всего | Seed | Транзитивных | Нерешённых | Ближайший блок |
 | -------------------- | ----- | ---- | ------------ | ---------- | -------------- |
-| `mk3-ga`             | 124   | 116  | 8            | 13         | block-15       |
-| `mk3-pre-multiverse` | 165   | 158  | 7            | 38         | block-15       |
-| `mk3-multiverse-ga`  | 167   | 167  | 0            | 38         | block-15       |
+| `mk3-ga`             | 124   | 116  | 8            | 12         | block-15       |
+| `mk3-pre-multiverse` | 165   | 158  | 7            | 37         | block-15       |
+| `mk3-multiverse-ga`  | 167   | 167  | 0            | 37         | block-15       |
 
 ### 4.1. Дедлайны `mk3-ga` по planned block
 
@@ -115,12 +115,12 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 | `block-13`    | 1     | 0                 |
 | `block-15`    | 24    | 5                 |
 | `block-16`    | 1     | 0                 |
-| `block-17`    | 12    | 6                 |
+| `block-17`    | 12    | 5                 |
 | `block-22`    | 2     | 2                 |
 
 ## 5. Gap list — что осталось в `mk3-ga`
 
-Строк с нерешённым состоянием: **13** из 124. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
+Строк с нерешённым состоянием: **12** из 124. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
 
 ### Блок 15 — 5 строк
 
@@ -132,11 +132,10 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 | `vertical/starcraft-2/native-to-uv`                  | `missing`      | E0       | `extensions/blizzard/starcraft2-game` |
 | `vertical/starcraft-2/neutral-definitions-world`     | `missing`      | E0       | `extensions/blizzard/starcraft2-game` |
 
-### Блок 17 — 6 строк
+### Блок 17 — 5 строк
 
 | Возможность                                           | migrationState | evidence | Владелец                                 |
 | ----------------------------------------------------- | -------------- | -------- | ---------------------------------------- |
-| `game/warzone-2100/discover-open`                     | `missing`      | E0       | `unassigned`                             |
 | `vertical/warzone-2100/deterministic-playable-subset` | `missing`      | E0       | `extensions/mk2/opensource-warzone-2100` |
 | `vertical/warzone-2100/native-inspect-authoring`      | `missing`      | E0       | `extensions/mk2/opensource-warzone-2100` |
 | `vertical/warzone-2100/native-round-trip`             | `missing`      | E0       | `extensions/mk2/opensource-warzone-2100` |

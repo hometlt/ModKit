@@ -21,13 +21,13 @@
     },
     "byMigrationState": {
       "equivalent-better": 16,
-      "implemented": 112,
-      "missing": 37,
+      "implemented": 113,
+      "missing": 36,
       "partial": 1,
       "relocated-multiverse": 1
     },
     "byObligation": { "focused-required-addition": 13, "legacy-required": 154 },
-    "byEvidenceLevel": { "E0": 35, "E1": 28, "E2": 63, "E3": 12, "E4": 29 }
+    "byEvidenceLevel": { "E0": 34, "E1": 28, "E2": 63, "E3": 13, "E4": 29 }
   },
   "deadlines": {
     "block-11": [
@@ -2485,14 +2485,14 @@
       "releaseTrack": "mk3-priority",
       "origin": "legacy",
       "obligation": "legacy-required",
-      "owner": "unassigned",
+      "owner": "extensions/opensource/warzone-2100",
       "plannedBlock": 17,
-      "migrationState": "missing",
+      "migrationState": "implemented",
       "supportState": "partial",
-      "evidenceLevel": "E0",
-      "allocationState": "absent",
+      "evidenceLevel": "E3",
+      "allocationState": "covered",
       "portFamily": null,
-      "corpusDescriptors": [],
+      "corpusDescriptors": ["MODKITX_WARZONE_ROOT"],
       "dependsOn": ["format/warzone-pie/open-inspect", "format/zip/open-inspect"],
       "requiredBy": [
         "vertical/warzone-2100/deterministic-playable-subset",
