@@ -14,7 +14,10 @@ import {
 } from '@modkitx-x3/sdk'
 import { describe, expect, it } from 'vitest'
 import { decodeM3Attachments } from '../src/m3/attachments.node.js'
-import { resolveM3AnimationSidecars } from '../src/m3/sidecar-projection.node.js'
+import {
+  discoverM3AnimationSidecars,
+  resolveM3AnimationSidecars,
+} from '../src/m3/sidecar-projection.node.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..', '..')
 const fixturePath = join(
@@ -149,6 +152,32 @@ function resourceSession(
   return { port, releases: () => released }
 }
 
+function completedDiscovery(
+  logicalId: string,
+  expectedRevision: ReturnType<typeof revisionId>,
+  size: bigint,
+) {
+  const receipt = Object.freeze({
+    complete: true,
+    pages: 1,
+    entries: 1,
+    candidates: 1,
+    bytes: size,
+    searches: Object.freeze([Object.freeze({ rootId: 'test-root', logicalPrefix: 'animations' })]),
+  })
+  return Object.freeze({
+    async discover() {
+      return Object.freeze({
+        state: 'complete',
+        candidates: Object.freeze([
+          Object.freeze({ logicalId, expectedRevision, size, rootId: 'test-root' }),
+        ]),
+        receipt,
+      })
+    },
+  })
+}
+
 describe('M3 ATT_/ATVL and M3A projection', () => {
   it('pins stable attachment identity and exact native source names', async () => {
     const bytes = await fixture()
@@ -222,6 +251,141 @@ describe('M3 ATT_/ATVL and M3A projection', () => {
     })
     expect(distinct.accepted).toEqual([])
     expect(distinct.diagnostics.map(item => item.code)).toContain('x3.m3/m3a-sidecar-hash-mismatch')
+  })
+
+  it('admits fully discovered candidates through revision and compatibility gates', async () => {
+    const bytes = await fixture()
+    const baseBytes = algorithmicBase(bytes)
+    const actualRevision = revisionId('provider-token:m3a-fixture')
+    const resources = resourceSession({ 'animations/cybros-cover.m3a': bytes })
+    const result = await discoverM3AnimationSidecars({
+      baseBytes,
+      candidateDiscovery: completedDiscovery(
+        'animations/cybros-cover.m3a',
+        actualRevision,
+        BigInt(bytes.byteLength),
+      ),
+      resources: resources.port,
+      budget,
+    })
+
+    expect(result.accepted).toEqual([
+      expect.objectContaining({ logicalId: 'animations/cybros-cover.m3a', clips: 1 }),
+    ])
+    expect(result.discovery).toMatchObject({ complete: true, candidates: 1 })
+    expect(resources.releases()).toBe(1)
+
+    const staleResources = resourceSession(
+      { 'animations/cybros-cover.m3a': bytes },
+      { revision: 'provider-token:actual' },
+    )
+    const stale = await discoverM3AnimationSidecars({
+      baseBytes,
+      candidateDiscovery: completedDiscovery(
+        'animations/cybros-cover.m3a',
+        revisionId('provider-token:expected'),
+        BigInt(bytes.byteLength),
+      ),
+      resources: staleResources.port,
+      budget,
+    })
+    expect(stale.accepted).toEqual([])
+    expect(stale.diagnostics.map(item => item.code)).toContain('x3.m3/m3a-sidecar-stale')
+    expect(staleResources.releases()).toBe(1)
+  })
+
+  it('does not open resources after refused or empty discovery', async () => {
+    const bytes = await fixture()
+    const baseBytes = algorithmicBase(bytes)
+    const resources = resourceSession({ 'animations/cybros-cover.m3a': bytes })
+    const refused = await discoverM3AnimationSidecars({
+      baseBytes,
+      candidateDiscovery: {
+        async discover() {
+          return {
+            state: 'refused',
+            reason: 'budget-exceeded',
+            message: 'bounded discovery stopped',
+            candidates: [],
+            receipt: {
+              complete: false,
+              pages: 1,
+              entries: 2,
+              candidates: 0,
+              bytes: 0n,
+              searches: [],
+            },
+          }
+        },
+      },
+      resources: resources.port,
+      budget,
+    })
+    expect(refused.accepted).toEqual([])
+    expect(refused.diagnostics.map(item => item.code)).toEqual([
+      'x3.m3/m3a-discovery-budget-exceeded',
+    ])
+    expect(resources.port.provenance()).toEqual([])
+
+    const empty = await discoverM3AnimationSidecars({
+      baseBytes,
+      candidateDiscovery: {
+        async discover() {
+          return {
+            state: 'complete',
+            candidates: [],
+            receipt: {
+              complete: true,
+              pages: 1,
+              entries: 0,
+              candidates: 0,
+              bytes: 0n,
+              searches: [],
+            },
+          }
+        },
+      },
+      resources: resources.port,
+      budget,
+    })
+    expect(empty.accepted).toEqual([])
+    expect(empty.diagnostics.map(item => item.code)).toEqual(['x3.m3/m3a-discovery-empty'])
+    expect(resources.port.provenance()).toEqual([])
+    expect(resources.releases()).toBe(0)
+
+    const inconsistent = await discoverM3AnimationSidecars({
+      baseBytes,
+      candidateDiscovery: {
+        async discover() {
+          return {
+            state: 'complete',
+            candidates: [
+              {
+                logicalId: 'animations/cybros-cover.m3a',
+                expectedRevision: revisionId('provider-token:m3a-fixture'),
+                size: BigInt(bytes.byteLength),
+                rootId: 'test-root',
+              },
+            ],
+            receipt: {
+              complete: false,
+              pages: 1,
+              entries: 1,
+              candidates: 0,
+              bytes: 0n,
+              searches: [],
+            },
+          }
+        },
+      },
+      resources: resources.port,
+      budget,
+    })
+    expect(inconsistent.accepted).toEqual([])
+    expect(inconsistent.diagnostics.map(item => item.code)).toEqual([
+      'x3.m3/m3a-discovery-namespace-invalid',
+    ])
+    expect(resources.port.provenance()).toEqual([])
   })
 
   it('names missing, wrong-hash and stale sidecars without attaching them', async () => {

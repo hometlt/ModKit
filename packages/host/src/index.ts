@@ -113,6 +113,25 @@ export {
   type NestedSubjectOptions,
   type NestedSubjectResult,
 } from './nested-subject.js'
+/*
+ * Bounded candidate enumeration inside game-provider-owned logical roots.
+ *
+ * Public because a product/game provider must select the exact dependency-composed roots and
+ * subtrees to search, while the codec must not receive a namespace handle or invent paths from a
+ * base filename. The adapter publishes only revision-pinned logical candidates; bytes still flow
+ * through the caller's ResourceSessionPort and its lease/budget policy.
+ */
+export {
+  createWorkspaceNamespaceCandidateDiscovery,
+  type WorkspaceNamespaceCandidateDiscovery,
+  type WorkspaceNamespaceCandidateDiscoveryLimits,
+  type WorkspaceNamespaceCandidateDiscoveryOptions,
+  type WorkspaceNamespaceCandidateDiscoveryReceipt,
+  type WorkspaceNamespaceCandidateDiscoveryResult,
+  type WorkspaceNamespaceCandidateSearch,
+  type WorkspaceNamespaceDiscoveredCandidate,
+  type WorkspaceNamespaceLogicalRoot,
+} from './namespace-origin.js'
 export {
   createBundledServiceDefinitionRegistry,
   createSubjectServices,
