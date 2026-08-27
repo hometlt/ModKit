@@ -73,7 +73,7 @@ export interface MapPosition {
   readonly z: number
 }
 
-export type MapObjectKind = 'unit' | 'doodad' | 'point' | 'camera'
+export type MapObjectKind = 'unit' | 'structure' | 'feature' | 'doodad' | 'point' | 'camera'
 
 /** A schema link for an object, resolved when the supplied catalog contains the entity. */
 export interface MapCatalogBinding {
@@ -84,12 +84,20 @@ export interface MapCatalogBinding {
 export interface MapPlacedObject {
   readonly kind: MapObjectKind
   readonly objectId: number
+  /** Source-authored id when it exists separately from the workspace-unique object identity. */
+  readonly sourceObjectId?: number
+  /** Stable publisher key used when the source format does not carry a numeric id. */
+  readonly sourceKey?: string
   readonly position: MapPosition
+  /** Two means the publisher deliberately ignored any authored third component. */
+  readonly sourcePositionDimensions?: 2 | 3
   readonly rotation?: number
+  readonly nativeRotationUnit?: string
   readonly scale?: MapPosition
   readonly typeId?: string
   readonly player?: number
   readonly variation?: number
+  readonly modules?: number
   readonly name?: string
   readonly catalog?: MapCatalogBinding
 }

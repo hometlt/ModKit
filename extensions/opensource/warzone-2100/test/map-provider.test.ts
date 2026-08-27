@@ -51,6 +51,8 @@ function request(bytes = gameMap()) {
   }
 }
 
+const jsonBytes = (value: unknown): Uint8Array => new TextEncoder().encode(JSON.stringify(value))
+
 describe('Warzone 2100 semantic map provider', () => {
   it('parses every direct height and publishes measured native and canonical transforms', async () => {
     const semantic = await openWarzoneMap(request())
@@ -144,6 +146,111 @@ describe('Warzone 2100 semantic map provider', () => {
       contributionId: 'org.modkitx.opensource/warzone2100-map-semantic',
       operation: 'validate',
       note: 'malformed gateway tables are refused instead of being silently truncated',
+    })
+  })
+
+  it('reads official version 1/2 object JSON without treating the ignored third value as height', async () => {
+    const semantic = await openWarzoneMap({
+      ...request(),
+      documents: [
+        { path: 'multiplay/maps/fixture/game.map', bytes: gameMap() },
+        {
+          path: 'multiplay/maps/fixture/droid.json',
+          bytes: jsonBytes({
+            droid_0010: {
+              id: 10,
+              position: [128, 256, 999],
+              rotation: [65_535, 0, 0],
+              startpos: 1,
+              template: 'ConstructorDroid',
+            },
+          }),
+        },
+        {
+          path: 'multiplay/maps/fixture/struct.json',
+          bytes: jsonBytes({
+            version: 2,
+            structures: [
+              {
+                name: 'A0PowerGenerator',
+                position: [384, 512],
+                rotation: 32_768,
+                player: 'scavenger',
+                modules: 2,
+              },
+            ],
+          }),
+        },
+        {
+          path: 'multiplay/maps/fixture/feature.json',
+          bytes: jsonBytes({
+            feature_0007: {
+              name: 'TreeSnow1',
+              position: [640, 768, 123],
+              rotation: [0, 0, 0],
+            },
+          }),
+        },
+      ],
+    })
+
+    expect(semantic.complete).toBe(true)
+    expect(semantic.objects).toEqual([
+      {
+        kind: 'unit',
+        objectId: 4_294_967_306,
+        sourceObjectId: 10,
+        sourceKey: 'droid_0010',
+        position: { x: 128, y: 256, z: 0 },
+        sourcePositionDimensions: 2,
+        rotation: 65_535,
+        nativeRotationUnit: 'uint16-turn',
+        typeId: 'ConstructorDroid',
+        player: 1,
+        name: 'droid_0010',
+        catalog: { ref: { namespace: 'warzone.templates', entityId: 'ConstructorDroid' } },
+      },
+      {
+        kind: 'structure',
+        objectId: 8_589_934_593,
+        sourceKey: 'structures[0]',
+        position: { x: 384, y: 512, z: 0 },
+        sourcePositionDimensions: 2,
+        rotation: 32_768,
+        nativeRotationUnit: 'uint16-turn',
+        typeId: 'A0PowerGenerator',
+        player: -1,
+        modules: 2,
+        name: 'structures[0]',
+        catalog: { ref: { namespace: 'warzone.structures', entityId: 'A0PowerGenerator' } },
+      },
+      {
+        kind: 'feature',
+        objectId: 12_884_901_895,
+        sourceKey: 'feature_0007',
+        position: { x: 640, y: 768, z: 0 },
+        sourcePositionDimensions: 2,
+        rotation: 0,
+        nativeRotationUnit: 'uint16-turn',
+        typeId: 'TreeSnow1',
+        name: 'feature_0007',
+        catalog: { ref: { namespace: 'warzone.features', entityId: 'TreeSnow1' } },
+      },
+    ])
+    expect(semantic.catalogQueries).toEqual([
+      { namespace: 'warzone.templates', entityId: 'ConstructorDroid' },
+      { namespace: 'warzone.structures', entityId: 'A0PowerGenerator' },
+      { namespace: 'warzone.features', entityId: 'TreeSnow1' },
+    ])
+    expect(
+      semantic.diagnostics.filter(
+        item => item.code === 'org.modkitx.opensource.warzone2100/map-object-elevation-unavailable',
+      ),
+    ).toHaveLength(3)
+    proves({
+      contributionId: 'org.modkitx.opensource/warzone2100-map-semantic',
+      operation: 'inspect',
+      note: 'official version 1/2 static map objects retain exact x/y, rotation and catalog joins',
     })
   })
 })

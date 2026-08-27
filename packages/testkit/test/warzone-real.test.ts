@@ -42,6 +42,12 @@ const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const GAME_ID = 'org.modkitx/warzone-2100'
 const MAP_ROOT = 'multiplay/maps/2c-highground'
 const MAP_PATH = `${MAP_ROOT}/game.map`
+const MAP_DOCUMENT_PATHS = [
+  MAP_PATH,
+  `${MAP_ROOT}/droid.json`,
+  `${MAP_ROOT}/struct.json`,
+  `${MAP_ROOT}/feature.json`,
+] as const
 const ARCHIVE_DIGEST = 'd698475eaa7b3386c2465e5850e5609b0d524157280c7d659dc5f79cde6e5688'
 const MAP_DIGEST = 'c03e17c13a837339a1b8066047385758539cdc14ef903d806fcf871d30409111'
 const NATIVE_DIGEST = 'bc29f38775548ebf04d37fddf1d2750c4532721afdc9ccae32aebcc2f943c6a2'
@@ -105,8 +111,7 @@ function bytesSource(bytes: Uint8Array, name: string): ArtifactByteSource {
   return Object.freeze(source)
 }
 
-function mapOrigin(bytes: Uint8Array): CompanionOrigin {
-  const source = bytesSource(bytes, MAP_PATH)
+function mapOrigin(files: ReadonlyMap<string, Uint8Array>): CompanionOrigin {
   return Object.freeze({
     primaryLogicalId: MAP_ROOT,
     caseSensitivity: 'sensitive',
@@ -121,14 +126,20 @@ function mapOrigin(bytes: Uint8Array): CompanionOrigin {
       signal?: AbortSignal,
     ) {
       signal?.throwIfAborted()
-      if (MAP_PATH.startsWith(options.prefix)) {
-        yield Object.freeze({ logicalId: MAP_PATH, size: BigInt(bytes.byteLength) })
+      for (const [logicalId, bytes] of files) {
+        if (logicalId.startsWith(options.prefix)) {
+          yield Object.freeze({ logicalId, size: BigInt(bytes.byteLength) })
+        }
       }
     },
     async open(logicalId: string, signal?: AbortSignal): Promise<Lease<ArtifactSource>> {
       signal?.throwIfAborted()
-      if (logicalId !== MAP_PATH) throw new RangeError(`unknown Warzone map resource ${logicalId}`)
-      return Object.freeze({ value: source, release: async () => undefined })
+      const bytes = files.get(logicalId)
+      if (bytes === undefined) throw new RangeError(`unknown Warzone map resource ${logicalId}`)
+      return Object.freeze({
+        value: bytesSource(bytes, logicalId),
+        release: async () => undefined,
+      })
     },
   })
 }
@@ -190,7 +201,7 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
       if (archive.state !== 'opened') {
         throw new Error(`mp.wz did not open through the archive codec: ${archive.reason}`)
       }
-      let gameMapBytes
+      const mapDocuments = new Map<string, Uint8Array>()
       try {
         expect(archive.descriptor).toMatchObject({
           identity: { codecId: 'org.modkitx/warzone-wz', formatId: 'warzone-wz' },
@@ -200,24 +211,28 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
           1,
         )
         try {
-          const page = await (namespaceLease.value as NamespaceEntrySource).list(MAP_PATH, {
-            limit: 16,
+          const page = await (namespaceLease.value as NamespaceEntrySource).list(MAP_ROOT, {
+            limit: 64,
           })
-          const entry = page.items.find(item => item.path === MAP_PATH)
-          if (entry === undefined) throw new Error(`${MAP_PATH} is absent from installed mp.wz`)
-          const extracted = await archive.session
-            .operations()
-            .invoke('extract-entry', { entryId: entry.id })
-          if (extracted.state !== 'ok' || extracted.output.kind !== 'bytes') {
-            throw new Error('installed game.map extraction did not return bytes')
+          for (const path of MAP_DOCUMENT_PATHS) {
+            const entry = page.items.find(item => item.path === path)
+            if (entry === undefined) throw new Error(`${path} is absent from installed mp.wz`)
+            const extracted = await archive.session
+              .operations()
+              .invoke('extract-entry', { entryId: entry.id })
+            if (extracted.state !== 'ok' || extracted.output.kind !== 'bytes') {
+              throw new Error(`installed ${path} extraction did not return bytes`)
+            }
+            mapDocuments.set(path, extracted.output.value)
           }
-          gameMapBytes = extracted.output.value
         } finally {
           await namespaceLease.release()
         }
       } finally {
         await archive.session.dispose()
       }
+      const gameMapBytes = mapDocuments.get(MAP_PATH)
+      if (gameMapBytes === undefined) throw new Error('installed game.map bytes are absent')
       expect(gameMapBytes).toHaveLength(15_132)
       expect(createHash('sha256').update(gameMapBytes).digest('hex')).toBe(MAP_DIGEST)
 
@@ -260,7 +275,7 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
       const definitions = createBundledServiceDefinitionRegistry()
       await registerServiceDefinitionsOrThrow(composition.inventory, definitions)
       const resources = createResourceSession({
-        origin: mapOrigin(gameMapBytes),
+        origin: mapOrigin(mapDocuments),
         revision: revisionId(`content-hash.sha256:${MAP_DIGEST}`),
       })
       const result = await analyzeResolvedMapWorkspace({
@@ -297,6 +312,18 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
           maximumHeightBase: 510,
           trailingBytes: 1_168,
         })
+        expect(result.snapshot.semantic.objects).toHaveLength(177)
+        expect(result.snapshot.semantic.objects.filter(item => item.kind === 'unit')).toHaveLength(
+          13,
+        )
+        expect(
+          result.snapshot.semantic.objects.filter(item => item.kind === 'structure'),
+        ).toHaveLength(113)
+        expect(
+          result.snapshot.semantic.objects.filter(item => item.kind === 'feature'),
+        ).toHaveLength(51)
+        expect(result.snapshot.semantic.catalogQueries).toHaveLength(30)
+        expect(result.snapshot.semantic.resolvedCatalogObjects).toBe(0)
         expect(result.snapshot.terrainTransform).toMatchObject({
           bounds: {
             minimum: { x: 0, y: 0, z: 0 },
@@ -315,6 +342,19 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
             canonicalTupleDigest: `sha256:${CANONICAL_DIGEST}`,
           },
         })
+        const worldInfo = await result.world.value.info()
+        expect(worldInfo.facets).toContainEqual(
+          expect.objectContaining({ facet: 'objects', state: 'partial', itemCount: 177 }),
+        )
+        expect(worldInfo.bounds).toContainEqual(
+          expect.objectContaining({
+            facet: 'objects',
+            z: expect.objectContaining({
+              state: 'unknown',
+              reason: expect.stringContaining('elevation'),
+            }),
+          }),
+        )
         const first = await assessCandidateWorldUvwAdmission(result.world.value, {
           maxPageItems: 1_024,
           maxTerrainItems: 65_536,

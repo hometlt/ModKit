@@ -43,7 +43,9 @@
     "lifecycleScope": "session"
   },
   "limitations": [
-    "The bounded slice reads exact game.map terrain tiles and gateways; structures, droids, features, scroll limits and scenario scripts remain named unavailable facets.",
+    "The bounded slice reads exact game.map terrain tiles and gateways plus version 1/2 droid.json, struct.json and feature.json object placement.",
+    "Official wzmaplib ignores the authored third position component for these objects; Modkit preserves exact x/y and uint16-turn rotation while naming elevation, footprints and model bindings unavailable.",
+    "Scroll limits, scenario scripts, terrain materials, water and navigation remain named unavailable facets.",
     "Container extraction, rendering, launch, writing and packing remain outside this provider.",
     "The world scene surface is publisher-qualified candidate org.modkitx.opensource.warzone2100/world-scene-source@1, not an admitted common.view contract."
   ]

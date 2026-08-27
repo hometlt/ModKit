@@ -364,6 +364,9 @@ export function createCandidateWorldSceneLease(
   })
   const duplicateObjectCount = semantic.objects.length - semanticObjects.length
   const duplicateRegionCount = semantic.regions.length - semanticRegions.length
+  const incompleteObjectPositionCount = semanticObjects.filter(
+    item => item.sourcePositionDimensions === 2,
+  ).length
 
   const terrain: readonly WorldSceneItem[] = Object.freeze(
     (semantic.terrain?.samples ?? []).map(item => {
@@ -486,15 +489,26 @@ export function createCandidateWorldSceneLease(
       state:
         semanticObjects.length === 0
           ? ('unavailable' as const)
-          : duplicateObjectCount > 0
+          : duplicateObjectCount > 0 || incompleteObjectPositionCount > 0
             ? ('partial' as const)
             : ('available' as const),
       itemCount: semanticObjects.length,
       lods: Object.freeze(['exact']),
       ...(semanticObjects.length === 0
         ? { reason: 'semantic snapshot contains no objects' }
-        : duplicateObjectCount > 0
-          ? { reason: `${duplicateObjectCount} duplicate object identities were omitted` }
+        : duplicateObjectCount > 0 || incompleteObjectPositionCount > 0
+          ? {
+              reason: [
+                ...(duplicateObjectCount > 0
+                  ? [`${duplicateObjectCount} duplicate object identities were omitted`]
+                  : []),
+                ...(incompleteObjectPositionCount > 0
+                  ? [
+                      `${incompleteObjectPositionCount} objects publish two-dimensional source positions; elevation remains unknown`,
+                    ]
+                  : []),
+              ].join('; '),
+            }
           : {}),
     }),
     Object.freeze({
@@ -657,11 +671,16 @@ export function createCandidateWorldSceneLease(
         z:
           semanticObjects.length === 0
             ? Object.freeze({ state: 'unknown' as const, reason: 'object bounds unavailable' })
-            : Object.freeze({
-                state: 'known' as const,
-                minimum: Math.min(...semanticObjects.map(item => item.position.z)),
-                maximum: Math.max(...semanticObjects.map(item => item.position.z)),
-              }),
+            : incompleteObjectPositionCount > 0
+              ? Object.freeze({
+                  state: 'unknown' as const,
+                  reason: 'one or more objects have no publisher-defined elevation',
+                })
+              : Object.freeze({
+                  state: 'known' as const,
+                  minimum: Math.min(...semanticObjects.map(item => item.position.z)),
+                  maximum: Math.max(...semanticObjects.map(item => item.position.z)),
+                }),
       }),
       Object.freeze({
         facet: 'regions' as const,
@@ -710,7 +729,11 @@ export function createCandidateWorldSceneLease(
     provenance: Object.freeze(provenance.map(item => Object.freeze({ ...item }))),
     unknownFacets: snapshot.worldCandidate.unknownFacets,
     lossPolicy: 'explicit-partial',
-    complete: snapshot.complete && duplicateObjectCount === 0 && duplicateRegionCount === 0,
+    complete:
+      snapshot.complete &&
+      duplicateObjectCount === 0 &&
+      duplicateRegionCount === 0 &&
+      incompleteObjectPositionCount === 0,
   })
   let live = true
   const assertLive = (signal?: AbortSignal): void => {

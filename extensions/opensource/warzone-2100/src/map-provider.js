@@ -16,6 +16,7 @@ const MAXIMUM_TERRAIN_CELLS = 65_536
 const MAXIMUM_TERRAIN_SAMPLES = MAXIMUM_TERRAIN_CELLS
 const MAXIMUM_DIAGNOSTICS = 10_000
 const decoder = new TextDecoder()
+const jsonDecoder = new TextDecoder('utf-8', { fatal: true })
 
 const WARZONE_WORLD_ORACLE = Object.freeze({
   kind: 'adapter-qualification',
@@ -104,7 +105,34 @@ function diagnostic(severity, code, message, path) {
   return Object.freeze({ severity, code, message, ...(path === undefined ? {} : { path }) })
 }
 
-/** Provider-owned single-document plan; the host still owns the ResourceSession/VFS read. */
+const MAP_DOCUMENTS = Object.freeze([
+  Object.freeze({
+    requirementId: 'warzone-game-map',
+    basename: 'game.map',
+    kind: 'terrain-height',
+    required: true,
+  }),
+  Object.freeze({
+    requirementId: 'warzone-map-droids',
+    basename: 'droid.json',
+    kind: 'objects',
+    required: false,
+  }),
+  Object.freeze({
+    requirementId: 'warzone-map-structures',
+    basename: 'struct.json',
+    kind: 'objects',
+    required: false,
+  }),
+  Object.freeze({
+    requirementId: 'warzone-map-features',
+    basename: 'feature.json',
+    kind: 'objects',
+    required: false,
+  }),
+])
+
+/** Provider-owned confined reads; the host still owns the ResourceSession/VFS access. */
 export async function planWarzoneMap(request) {
   request?.signal?.throwIfAborted()
   const value = recordOf(request)
@@ -141,20 +169,22 @@ export async function planWarzoneMap(request) {
     '\\',
     '/',
   )
-  const requirement = Object.freeze({
-    requirementId: 'warzone-game-map',
-    path: `${root}/game.map`,
-    kind: 'terrain-height',
-    required: true,
-  })
-  const complete = maxRequirements >= 1
+  const requirements = MAP_DOCUMENTS.slice(0, maxRequirements).map(item =>
+    Object.freeze({
+      requirementId: item.requirementId,
+      path: `${root}/${item.basename}`,
+      kind: item.kind,
+      required: item.required,
+    }),
+  )
+  const complete = requirements[0]?.requirementId === 'warzone-game-map'
   return Object.freeze({
     schemaVersion: 1,
     workspaceId: String(workspace.workspaceId),
     gameId: GAME_ID,
     mapId: root,
     analyzerId: ANALYZER_ID,
-    requirements: Object.freeze(complete ? [requirement] : []),
+    requirements: Object.freeze(complete ? requirements : []),
     diagnostics: Object.freeze(
       complete
         ? []
@@ -252,6 +282,241 @@ function parseGameMap(document, request) {
     maximumHeightAdjustment: 0,
     trailingBytes: bytes.byteLength - gatewayEnd,
     samples: Object.freeze(samples),
+  })
+}
+
+const OBJECT_DOCUMENTS = Object.freeze({
+  'droid.json': Object.freeze({
+    kind: 'unit',
+    root: 'droids',
+    definitionKey: 'template',
+    namespace: 'warzone.templates',
+    identityPrefix: 1,
+    playerRequired: true,
+  }),
+  'struct.json': Object.freeze({
+    kind: 'structure',
+    root: 'structures',
+    definitionKey: 'name',
+    namespace: 'warzone.structures',
+    identityPrefix: 2,
+    playerRequired: true,
+  }),
+  'feature.json': Object.freeze({
+    kind: 'feature',
+    root: 'features',
+    definitionKey: 'name',
+    namespace: 'warzone.features',
+    identityPrefix: 3,
+    playerRequired: false,
+  }),
+})
+
+function jsonDepth(value, maximum) {
+  const pending = [{ value, depth: 1 }]
+  while (pending.length > 0) {
+    const item = pending.pop()
+    if (item.depth > maximum) throw new TypeError(`JSON nesting exceeds maxDepth (${maximum})`)
+    if (Array.isArray(item.value)) {
+      for (const child of item.value) pending.push({ value: child, depth: item.depth + 1 })
+      continue
+    }
+    const record = recordOf(item.value)
+    if (record !== undefined) {
+      for (const child of Object.values(record)) {
+        pending.push({ value: child, depth: item.depth + 1 })
+      }
+    }
+  }
+}
+
+function integer(value, label, minimum, maximum) {
+  if (!Number.isSafeInteger(value) || value < minimum || value > maximum) {
+    throw new TypeError(`${label} must be an integer from ${minimum} through ${maximum}`)
+  }
+  return value
+}
+
+function objectPosition(value, version, label) {
+  const maximumLength = version > 1 ? 2 : 3
+  if (!Array.isArray(value) || value.length < 2 || value.length > maximumLength) {
+    throw new TypeError(
+      `${label}.position must contain two${version === 1 ? ' or three' : ''} values`,
+    )
+  }
+  const x = integer(value[0], `${label}.position[0]`, 0, 0xffff_ffff)
+  const y = integer(value[1], `${label}.position[1]`, 0, 0xffff_ffff)
+  return Object.freeze({ x, y, z: 0 })
+}
+
+function objectRotation(value, version, label) {
+  if (value === undefined) return undefined
+  const values = Array.isArray(value) ? value : version > 1 ? [value] : []
+  const maximumLength = version > 1 ? 1 : 3
+  if (values.length < 1 || values.length > maximumLength) {
+    throw new TypeError(`${label}.rotation has an invalid component count`)
+  }
+  return integer(values[0], `${label}.rotation[0]`, 0, 0xffff)
+}
+
+function objectPlayer(value, label) {
+  if (typeof value === 'string' && value.startsWith('scavenger')) return -1
+  return integer(value, label, -1, 127)
+}
+
+function sourceIdentity(item, sourceKey, ordinal) {
+  if (item.id !== undefined) return integer(item.id, `${sourceKey}.id`, 1, 0xffff_ffff)
+  const match = /([0-9]+)$/u.exec(sourceKey)
+  if (match !== null) return integer(Number(match[1]), `${sourceKey} suffix`, 1, 0xffff_ffff)
+  return ordinal + 1
+}
+
+function parseObjectDocument(document, request, diagnostics) {
+  const configuration = OBJECT_DOCUMENTS[basename(document.path)]
+  if (configuration === undefined) return []
+  let root
+  try {
+    root = JSON.parse(jsonDecoder.decode(document.bytes))
+    jsonDepth(root, request.maxDepth)
+  } catch (error) {
+    throw new TypeError(
+      `${document.path}: invalid JSON: ${error instanceof Error ? error.message : String(error)}`,
+    )
+  }
+  const rootRecord = recordOf(root)
+  if (rootRecord === undefined) throw new TypeError(`${document.path}: JSON root must be an object`)
+  const version =
+    rootRecord.version === undefined
+      ? 1
+      : integer(rootRecord.version, `${document.path}.version`, 2, 2)
+  const container = version === 1 ? rootRecord : rootRecord[configuration.root]
+  const entries =
+    version === 1
+      ? Object.entries(container)
+      : Array.isArray(container)
+        ? container.map((item, index) => [String(index), item])
+        : undefined
+  if (entries === undefined) {
+    throw new TypeError(`${document.path}: ${configuration.root} must be an array for version 2`)
+  }
+  const parsed = []
+  for (const [key, raw] of entries) {
+    if (version === 1 && key === 'version') continue
+    const item = recordOf(raw)
+    const sourceKey = version === 1 ? key : `${configuration.root}[${key}]`
+    try {
+      if (item === undefined) throw new TypeError(`${sourceKey} must be an object`)
+      const typeId = nonEmptyString(item[configuration.definitionKey], `${sourceKey}.definition`)
+      const sourceId = sourceIdentity(item, sourceKey, parsed.length)
+      const playerValue = item.player ?? item.startpos
+      if (configuration.playerRequired && playerValue === undefined) {
+        throw new TypeError(`${sourceKey} must name player or startpos`)
+      }
+      const rotation = objectRotation(item.rotation, version, sourceKey)
+      const modules =
+        configuration.kind === 'structure' && item.modules !== undefined
+          ? integer(item.modules, `${sourceKey}.modules`, 0, 0xff)
+          : undefined
+      parsed.push(
+        Object.freeze({
+          kind: configuration.kind,
+          objectId: configuration.identityPrefix * 0x1_0000_0000 + sourceId,
+          ...(item.id === undefined ? {} : { sourceObjectId: sourceId }),
+          sourceKey,
+          position: objectPosition(item.position, version, sourceKey),
+          sourcePositionDimensions: 2,
+          ...(rotation === undefined ? {} : { rotation, nativeRotationUnit: 'uint16-turn' }),
+          typeId,
+          ...(configuration.kind === 'feature' || playerValue === undefined
+            ? {}
+            : { player: objectPlayer(playerValue, `${sourceKey}.player`) }),
+          ...(modules === undefined ? {} : { modules }),
+          name: sourceKey,
+          catalogNamespace: configuration.namespace,
+        }),
+      )
+    } catch (error) {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'org.modkitx.opensource.warzone2100/map-object-invalid',
+          `${document.path}: ${error instanceof Error ? error.message : String(error)}`,
+          document.path,
+        ),
+      )
+    }
+  }
+  if (parsed.length > 0) {
+    diagnostics.push(
+      diagnostic(
+        'information',
+        'org.modkitx.opensource.warzone2100/map-object-elevation-unavailable',
+        `${document.path}: official wzmaplib uses x/y and ignores an authored third position component; elevation remains unknown`,
+        document.path,
+      ),
+    )
+  }
+  return parsed
+}
+
+function catalogEntityKey(namespace, entityId) {
+  return `${namespace}\u0000${entityId}`
+}
+
+function bindObjectCatalog(objects, catalog, diagnostics) {
+  const queries = []
+  const queryKeys = new Set()
+  for (const object of objects) {
+    const ref = Object.freeze({ namespace: object.catalogNamespace, entityId: object.typeId })
+    const key = catalogEntityKey(ref.namespace, ref.entityId)
+    if (queryKeys.has(key)) continue
+    queryKeys.add(key)
+    queries.push(ref)
+  }
+  const entities = new Map(
+    (catalog?.entities ?? []).map(entity => [
+      catalogEntityKey(entity.namespace, entity.entityId),
+      entity,
+    ]),
+  )
+  const missing = new Map()
+  let resolvedCatalogObjects = 0
+  const bound = objects.map(object => {
+    const ref = Object.freeze({ namespace: object.catalogNamespace, entityId: object.typeId })
+    const entity = entities.get(catalogEntityKey(ref.namespace, ref.entityId))
+    if (entity === undefined) missing.set(catalogEntityKey(ref.namespace, ref.entityId), ref)
+    else resolvedCatalogObjects += 1
+    const placed = { ...object }
+    delete placed.catalogNamespace
+    return Object.freeze({
+      ...placed,
+      catalog: Object.freeze({ ref, ...(entity === undefined ? {} : { entity }) }),
+    })
+  })
+  if (queries.length > 0 && catalog === undefined) {
+    diagnostics.push(
+      diagnostic(
+        'information',
+        'org.modkitx.opensource.warzone2100/map-catalog-required',
+        `reopen with the ${queries.length} catalogQueries to bind placed objects to game definitions`,
+      ),
+    )
+  } else {
+    for (const ref of missing.values()) {
+      diagnostics.push(
+        Object.freeze({
+          severity: 'error',
+          code: 'org.modkitx.opensource.warzone2100/map-catalog-entity-unresolved',
+          message: `placed object references unavailable catalog entity ${ref.namespace}/${ref.entityId}`,
+          catalogRef: ref,
+        }),
+      )
+    }
+  }
+  return Object.freeze({
+    objects: Object.freeze(bound),
+    catalogQueries: Object.freeze(queries),
+    resolvedCatalogObjects,
   })
 }
 
@@ -371,6 +636,34 @@ export async function openWarzoneMap(request) {
       )
     }
   }
+  const parsedObjects = []
+  for (const objectDocument of value.documents.filter(
+    item => OBJECT_DOCUMENTS[basename(item.path)] !== undefined,
+  )) {
+    try {
+      parsedObjects.push(...parseObjectDocument(objectDocument, value, diagnostics))
+    } catch (error) {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'org.modkitx.opensource.warzone2100/map-object-document-invalid',
+          error instanceof Error ? error.message : String(error),
+          objectDocument.path,
+        ),
+      )
+    }
+  }
+  if (parsedObjects.length > value.maxObjects) {
+    diagnostics.push(
+      diagnostic(
+        'error',
+        'org.modkitx.opensource.warzone2100/map-object-budget-exceeded',
+        `map objects exceeds maxObjects (${parsedObjects.length} > ${value.maxObjects})`,
+      ),
+    )
+    parsedObjects.length = value.maxObjects
+  }
+  const catalog = bindObjectCatalog(parsedObjects, value.catalog, diagnostics)
   return Object.freeze({
     schemaVersion: 1,
     workspaceId: value.workspaceId,
@@ -380,9 +673,9 @@ export async function openWarzoneMap(request) {
     documentPaths: Object.freeze(value.documents.map(item => item.path)),
     ...(terrain === undefined ? {} : { terrain }),
     regions: Object.freeze([]),
-    objects: Object.freeze([]),
-    catalogQueries: Object.freeze([]),
-    resolvedCatalogObjects: 0,
+    objects: catalog.objects,
+    catalogQueries: catalog.catalogQueries,
+    resolvedCatalogObjects: catalog.resolvedCatalogObjects,
     diagnostics: Object.freeze(diagnostics),
     complete: terrain !== undefined && diagnostics.every(item => item.severity !== 'error'),
   })
@@ -452,7 +745,7 @@ export async function analyzeWarzoneMapWorkspace(request) {
           verticalAxis: 'z',
           handedness: 'right',
           linearUnit: 'warzone-world-unit',
-          rotationUnit: 'degree',
+          rotationUnit: 'uint16-turn',
           origin: 'game-map-north-west-tile',
         }),
         Object.freeze({
@@ -484,7 +777,8 @@ export async function analyzeWarzoneMapWorkspace(request) {
         }),
       ]),
       unknownFacets: Object.freeze([
-        'objects-and-structures',
+        'object-elevation-and-footprints',
+        'object-model-bindings',
         'terrain-material-layers',
         'water',
         'navigation',
