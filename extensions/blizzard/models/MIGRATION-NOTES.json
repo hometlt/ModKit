@@ -12,14 +12,14 @@
       "lostPlanes": [
         "attachment orientation and native rest transform",
         "ATVL native matrix, size and vertex payload",
-        "automatic external M3A discovery from a base M3"
+        "automatic selection of M3A logical discovery roots during ordinary base-M3 open"
       ],
       "contractGaps": [
         "capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract",
         "model-material-source@1 has no layer slots or resource foreign keys: MATM/MAT_/LAYR/BAT_ decoding publishes material identity and primitive materialId, while layer mappings remain receipt evidence",
         "model-collision-source@1 carries ATVL identity/kind but not native matrices, sizes or vertices; attachment orientation/rest transforms are likewise unavailable",
         "M3 ATT_ bone/<index> targets have no exact scene-node join until the bone hierarchy is published in model-scene-source; UVM materialization excludes the socket facet instead of fabricating nodes",
-        "M3A ResourceSessionPort projection has a pinned compatible retail pair; automatically deriving exact sidecar candidates from a base M3 remains unavailable"
+        "bounded M3A enumeration is available inside caller-owned explicit logical roots and subtrees, with ResourceSessionPort admission and a pinned compatible retail pair; ordinary codec open still cannot select trustworthy discovery roots from a base M3"
       ],
       "renames": [],
       "converterDefaults": [

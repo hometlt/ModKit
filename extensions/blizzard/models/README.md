@@ -44,16 +44,22 @@ Layer-to-resource foreign keys and standard shader semantics therefore remain ex
 evidence and a named `material-layer-facet-fields` remainder rather than a fabricated public shape.
 Exotic M3 material types are counted and named but their renderer-specific parameters remain lost.
 
-M3A remains caller-driven rather than automatically discovered by ordinary codec open. The bounded
-service takes exact logical IDs, uses `ResourceSessionPort`, releases every lease and requires
-explicit hash intersection, full skeleton compatibility and executable channels. The installed SC2
-corpus now pins the genuine `sm_zeratul.m3` + `sm_zeratul_dialogue03.m3a` pair through the product
-CASC namespace. The sidecar is 1,382,592 bytes with SHA-256
+M3A remains caller-driven rather than automatically discovered by ordinary codec open. A bounded
+host adapter now enumerates exact `.m3a` entries only inside caller-owned logical roots and explicit
+subtrees. It completes the namespace search before publishing candidates, pins their revisions and
+opens them only through `ResourceSessionPort`; truncated or over-budget discovery publishes no
+partial candidate set. The codec releases every lease and still requires explicit hash intersection,
+full skeleton compatibility and executable channels. The installed SC2 corpus pins the genuine
+`sm_zeratul.m3` + `sm_zeratul_dialogue03.m3a` pair through the product CASC namespace. Searching the
+explicit Protoss story-model subtree finds two M3As: `sm_zeratul_dialogue03.m3a` is admitted, while
+`sm_zeratul_requiredanims.m3a` is rejected by the mandatory skeleton gate. The admitted sidecar is
+1,382,592 bytes with SHA-256
 `3549347c81c70f63c72d84ea441b21e6405c6b748001c33f84b8e04c6dba16ad`; it attaches as the
 `Dialogue 03` companion clip with 1,684 timestamp samples and 402 executable channels. Opening that
 M3A directly publishes its animation, 134-bone skeleton and 16 texture references without claiming
 any companion or texture binding, while an unrelated shipped base is rejected by exact hash
-compatibility. Deriving candidate paths automatically from a base M3 remains a named remainder.
+compatibility. Selecting trustworthy logical search roots automatically during ordinary M3 open
+remains a named remainder; neither the host nor codec derives ambient sibling paths from a base name.
 
 The synthetic triangle fixture and live SC2 installation corpus exercise this package. Historical
 conversion decisions and the still-unimplemented writer/export planes are recorded in

@@ -102,6 +102,66 @@ export interface WorkspaceNamespaceCompanionOriginOptions extends Omit<
   readonly maxPages?: number
 }
 
+/** One caller-owned subtree to inspect inside a game-provider-resolved logical root. */
+export interface WorkspaceNamespaceCandidateSearch {
+  readonly rootId: string
+  /** Resource-relative directory. The empty string explicitly selects the whole logical root. */
+  readonly logicalPrefix: string
+}
+
+export interface WorkspaceNamespaceCandidateDiscoveryLimits {
+  readonly pageItems: number
+  readonly maxPages: number
+  readonly maxEntries: number
+  readonly maxCandidates: number
+  readonly maxBytes: bigint
+}
+
+export interface WorkspaceNamespaceCandidateDiscoveryOptions {
+  readonly namespace: NamespaceEntrySource
+  readonly containerRevision: RevisionId
+  readonly logicalRoots: readonly WorkspaceNamespaceLogicalRoot[]
+  readonly searches: readonly WorkspaceNamespaceCandidateSearch[]
+  /** Exact suffix including the leading dot, for example `.m3a`. No glob syntax is accepted. */
+  readonly extension: string
+  readonly limits: WorkspaceNamespaceCandidateDiscoveryLimits
+  readonly caseSensitivity?: CompanionCaseSensitivity
+}
+
+export interface WorkspaceNamespaceDiscoveredCandidate {
+  readonly logicalId: string
+  readonly expectedRevision: RevisionId
+  readonly size: bigint
+  readonly rootId: string
+}
+
+export interface WorkspaceNamespaceCandidateDiscoveryReceipt {
+  readonly complete: boolean
+  readonly pages: number
+  readonly entries: number
+  readonly candidates: number
+  readonly bytes: bigint
+  readonly searches: readonly WorkspaceNamespaceCandidateSearch[]
+}
+
+export type WorkspaceNamespaceCandidateDiscoveryResult =
+  | {
+      readonly state: 'complete'
+      readonly candidates: readonly WorkspaceNamespaceDiscoveredCandidate[]
+      readonly receipt: WorkspaceNamespaceCandidateDiscoveryReceipt
+    }
+  | {
+      readonly state: 'refused'
+      readonly reason: 'budget-exceeded' | 'namespace-invalid' | 'size-unavailable'
+      readonly message: string
+      readonly candidates: readonly []
+      readonly receipt: WorkspaceNamespaceCandidateDiscoveryReceipt
+    }
+
+export interface WorkspaceNamespaceCandidateDiscovery {
+  discover(signal?: AbortSignal): Promise<WorkspaceNamespaceCandidateDiscoveryResult>
+}
+
 interface IndexedEntry {
   readonly entryId: string
   readonly path: string
@@ -384,6 +444,257 @@ export function createWorkspaceNamespaceCompanionOrigin(
           bytes,
         ),
         release: () => refLease.release(),
+      })
+    },
+  })
+}
+
+function positiveDiscoveryLimit(value: number, label: string): number {
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new TypeError(`${label} must be a positive safe integer`)
+  }
+  return value
+}
+
+/**
+ * Enumerate one exact extension inside caller-owned workspace roots.
+ *
+ * This is deliberately not a path-derivation service. The game provider supplies both the logical
+ * roots and every subtree that may be searched; the host only pages those explicit prefixes,
+ * strips the already-declared root prefix and applies an exact extension suffix. Results are fully
+ * collected before they are published. A page, entry, candidate, byte or revision-shape failure
+ * therefore returns no partial candidates for a codec to accidentally attach.
+ */
+export function createWorkspaceNamespaceCandidateDiscovery(
+  options: WorkspaceNamespaceCandidateDiscoveryOptions,
+): WorkspaceNamespaceCandidateDiscovery {
+  const pageItems = positiveDiscoveryLimit(options.limits.pageItems, 'pageItems')
+  const maxPages = positiveDiscoveryLimit(options.limits.maxPages, 'maxPages')
+  const maxEntries = positiveDiscoveryLimit(options.limits.maxEntries, 'maxEntries')
+  const maxCandidates = positiveDiscoveryLimit(options.limits.maxCandidates, 'maxCandidates')
+  if (typeof options.limits.maxBytes !== 'bigint' || options.limits.maxBytes < 0n) {
+    throw new TypeError('maxBytes must be a non-negative bigint')
+  }
+  if (!/^\.[a-z0-9][a-z0-9_-]*$/iu.test(options.extension)) {
+    throw new TypeError('candidate extension must be an exact dotted suffix without glob syntax')
+  }
+  const caseSensitivity = options.caseSensitivity ?? 'insensitive'
+  const fold = (value: string): string =>
+    caseSensitivity === 'insensitive' ? value.toLowerCase() : value
+  const extension = fold(options.extension)
+  const roots = options.logicalRoots.map((root, index) => {
+    if (typeof root.rootId !== 'string' || root.rootId.trim() === '') {
+      throw new TypeError(`logicalRoots[${index}].rootId must be a non-empty string`)
+    }
+    const pathPrefix = normalizeCompanionLogicalId(root.pathPrefix).replace(/\/$/u, '')
+    return Object.freeze({ rootId: root.rootId, pathPrefix, rank: index })
+  })
+  if (roots.length === 0) throw new TypeError('candidate discovery requires a logical root')
+  const rootsById = new Map(roots.map(root => [root.rootId, root]))
+  if (rootsById.size !== roots.length)
+    throw new TypeError('candidate discovery root ids must differ')
+  if (options.searches.length === 0) {
+    throw new TypeError('candidate discovery requires an explicit search root')
+  }
+  const searches = options.searches.map((search, index) => {
+    const root = rootsById.get(search.rootId)
+    if (root === undefined) {
+      throw new TypeError(`searches[${index}] names unknown logical root «${search.rootId}»`)
+    }
+    if (typeof search.logicalPrefix !== 'string') {
+      throw new TypeError(`searches[${index}].logicalPrefix must be a string`)
+    }
+    const logicalPrefix =
+      search.logicalPrefix.trim() === ''
+        ? ''
+        : normalizeCompanionLogicalId(search.logicalPrefix).replace(/\/$/u, '')
+    return Object.freeze({ root, logicalPrefix, rank: index })
+  })
+  const receiptSearches = Object.freeze(
+    searches.map(search =>
+      Object.freeze({ rootId: search.root.rootId, logicalPrefix: search.logicalPrefix }),
+    ),
+  )
+
+  return Object.freeze({
+    async discover(signal?: AbortSignal): Promise<WorkspaceNamespaceCandidateDiscoveryResult> {
+      throwIfAborted(signal)
+      let pages = 0
+      let entries = 0
+      let bytes = 0n
+      const candidates = new Map<
+        string,
+        WorkspaceNamespaceDiscoveredCandidate & {
+          readonly rootRank: number
+          readonly searchRank: number
+        }
+      >()
+      const receipt = (complete: boolean): WorkspaceNamespaceCandidateDiscoveryReceipt =>
+        Object.freeze({
+          complete,
+          pages,
+          entries,
+          candidates: complete ? candidates.size : 0,
+          bytes: complete ? bytes : 0n,
+          searches: receiptSearches,
+        })
+      const refused = (
+        reason: 'budget-exceeded' | 'namespace-invalid' | 'size-unavailable',
+        message: string,
+      ): WorkspaceNamespaceCandidateDiscoveryResult =>
+        Object.freeze({
+          state: 'refused' as const,
+          reason,
+          message,
+          candidates: Object.freeze([]) as readonly [],
+          receipt: receipt(false),
+        })
+
+      for (const search of searches) {
+        const rootPrefix = `${search.root.pathPrefix}/`
+        const namespacePrefix =
+          search.logicalPrefix === ''
+            ? rootPrefix
+            : `${rootPrefix}${search.logicalPrefix.replace(/\/$/u, '')}/`
+        const spellings = [
+          ...new Set(
+            caseSensitivity === 'insensitive'
+              ? [namespacePrefix, fold(namespacePrefix)]
+              : [namespacePrefix],
+          ),
+        ]
+        for (const spelling of spellings) {
+          let cursor: string | undefined
+          const seenCursors = new Set<string>()
+          do {
+            throwIfAborted(signal)
+            if (pages >= maxPages) {
+              return refused(
+                'budget-exceeded',
+                `candidate discovery exceeded its ${maxPages}-page budget`,
+              )
+            }
+            if (cursor !== undefined) {
+              if (seenCursors.has(cursor)) {
+                return refused('namespace-invalid', 'candidate discovery cursor repeated')
+              }
+              seenCursors.add(cursor)
+            }
+            const page = await options.namespace.list(
+              spelling,
+              cursor === undefined ? { limit: pageItems } : { cursor, limit: pageItems },
+              signal,
+            )
+            pages += 1
+            throwIfAborted(signal)
+            if (
+              page === null ||
+              typeof page !== 'object' ||
+              !Array.isArray(page.items) ||
+              (page.nextCursor !== undefined &&
+                (typeof page.nextCursor !== 'string' || page.nextCursor === ''))
+            ) {
+              return refused('namespace-invalid', 'candidate discovery received a malformed page')
+            }
+            if (page.items.length > pageItems) {
+              return refused(
+                'namespace-invalid',
+                `candidate discovery page exceeded its requested ${pageItems}-entry limit`,
+              )
+            }
+            for (const entry of page.items) {
+              throwIfAborted(signal)
+              if (
+                entry === null ||
+                typeof entry !== 'object' ||
+                typeof entry.id !== 'string' ||
+                entry.id === '' ||
+                typeof entry.path !== 'string' ||
+                entry.path === '' ||
+                typeof entry.kind !== 'string'
+              ) {
+                return refused(
+                  'namespace-invalid',
+                  'candidate discovery received a malformed namespace entry',
+                )
+              }
+              entries += 1
+              if (entries > maxEntries) {
+                return refused(
+                  'budget-exceeded',
+                  `candidate discovery exceeded its ${maxEntries}-entry budget`,
+                )
+              }
+              if (entry.kind !== 'file' || !fold(entry.path).endsWith(extension)) continue
+              if (!fold(entry.path).startsWith(fold(rootPrefix))) {
+                return refused(
+                  'namespace-invalid',
+                  `namespace entry «${entry.path}» escaped logical root «${search.root.rootId}»`,
+                )
+              }
+              const logicalId = entry.path.slice(rootPrefix.length)
+              if (logicalId === '') continue
+              const key = fold(logicalId)
+              if (candidates.has(key)) continue
+              if (
+                entry.size === undefined ||
+                typeof entry.size !== 'bigint' ||
+                entry.size < 0n ||
+                entry.size > BigInt(Number.MAX_SAFE_INTEGER)
+              ) {
+                return refused(
+                  'size-unavailable',
+                  `candidate «${logicalId}» has no bounded revision-safe size`,
+                )
+              }
+              if (candidates.size >= maxCandidates) {
+                return refused(
+                  'budget-exceeded',
+                  `candidate discovery exceeded its ${maxCandidates}-candidate budget`,
+                )
+              }
+              if (bytes + entry.size > options.limits.maxBytes) {
+                return refused(
+                  'budget-exceeded',
+                  `candidate discovery exceeded its ${options.limits.maxBytes}-byte budget`,
+                )
+              }
+              bytes += entry.size
+              candidates.set(
+                key,
+                Object.freeze({
+                  logicalId,
+                  expectedRevision: containerEntryRevision(
+                    options.containerRevision,
+                    entry.id,
+                    Number(entry.size),
+                  ),
+                  size: entry.size,
+                  rootId: search.root.rootId,
+                  rootRank: search.root.rank,
+                  searchRank: search.rank,
+                }),
+              )
+            }
+            cursor = page.nextCursor
+          } while (cursor !== undefined)
+        }
+      }
+
+      const ordered = [...candidates.values()]
+        .sort(
+          (left, right) =>
+            left.rootRank - right.rootRank ||
+            left.searchRank - right.searchRank ||
+            (left.logicalId < right.logicalId ? -1 : left.logicalId > right.logicalId ? 1 : 0),
+        )
+        .map(({ logicalId, expectedRevision, size, rootId }) =>
+          Object.freeze({ logicalId, expectedRevision, size, rootId }),
+        )
+      return Object.freeze({
+        state: 'complete' as const,
+        candidates: Object.freeze(ordered),
+        receipt: receipt(true),
       })
     },
   })

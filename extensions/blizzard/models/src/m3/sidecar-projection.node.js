@@ -220,3 +220,122 @@ export async function resolveM3AnimationSidecars({
     provenance: resources.provenance(),
   })
 }
+
+function refusedDiscovery(resources, receipt, code, message, severity = 'warning') {
+  return Object.freeze({
+    clips: Object.freeze([]),
+    references: Object.freeze([]),
+    accepted: Object.freeze([]),
+    diagnostics: Object.freeze([diagnostic(code, message, severity)]),
+    provenance: resources.provenance(),
+    discovery: receipt,
+  })
+}
+
+/**
+ * Discover M3A candidates inside caller-owned logical roots and admit them through the exact same
+ * hash + skeleton + executable-channel gate as explicit candidates.
+ *
+ * `candidateDiscovery` is a host-owned namespace adapter. The codec never sees a filesystem path,
+ * never derives a sibling/stem prefix and never broadens the roots selected by the game provider.
+ * Discovery must finish completely before any candidate is opened; a truncated namespace result
+ * therefore cannot attach an arbitrary prefix of the available sidecars.
+ */
+export async function discoverM3AnimationSidecars({
+  baseBytes,
+  candidateDiscovery,
+  resources,
+  budget,
+  signal,
+}) {
+  throwIfAborted(signal)
+  if (typeof candidateDiscovery?.discover !== 'function') {
+    throw new TypeError('M3A discovery requires a candidate discovery port')
+  }
+  const discovered = await candidateDiscovery.discover(signal)
+  throwIfAborted(signal)
+  if (discovered?.state === 'refused') {
+    return refusedDiscovery(
+      resources,
+      discovered.receipt,
+      `m3a-discovery-${discovered.reason}`,
+      discovered.message,
+    )
+  }
+  if (discovered?.state !== 'complete' || !Array.isArray(discovered.candidates)) {
+    throw new TypeError('M3A candidate discovery returned an invalid result')
+  }
+  if (
+    discovered.receipt?.complete !== true ||
+    discovered.receipt.candidates !== discovered.candidates.length ||
+    typeof discovered.receipt.bytes !== 'bigint'
+  ) {
+    return refusedDiscovery(
+      resources,
+      discovered.receipt,
+      'm3a-discovery-namespace-invalid',
+      'M3A candidate discovery returned an incomplete or inconsistent receipt',
+    )
+  }
+  if (discovered.candidates.length === 0) {
+    return refusedDiscovery(
+      resources,
+      discovered.receipt,
+      'm3a-discovery-empty',
+      'the caller-owned logical roots contain no M3A candidates',
+      'information',
+    )
+  }
+  const maxCandidates = Math.min(MAX_SIDECARS, budget.maxNodes)
+  if (discovered.candidates.length > maxCandidates) {
+    return refusedDiscovery(
+      resources,
+      discovered.receipt,
+      'm3a-discovery-budget-exceeded',
+      `M3A discovery returned more than ${maxCandidates} candidates`,
+    )
+  }
+  let totalBytes = 0n
+  for (const [index, candidate] of discovered.candidates.entries()) {
+    throwIfAborted(signal)
+    if (
+      typeof candidate?.logicalId !== 'string' ||
+      candidate.logicalId.trim() === '' ||
+      typeof candidate.expectedRevision !== 'string' ||
+      candidate.expectedRevision.trim() === '' ||
+      typeof candidate.size !== 'bigint' ||
+      candidate.size < 0n
+    ) {
+      throw new TypeError(`M3A discovered candidate ${index} is invalid`)
+    }
+    totalBytes += candidate.size
+    if (candidate.size > budget.maxInputBytes || totalBytes > BigInt(budget.maxScalarBytes)) {
+      return refusedDiscovery(
+        resources,
+        discovered.receipt,
+        'm3a-discovery-budget-exceeded',
+        'M3A discovery exceeds the codec byte budget',
+      )
+    }
+  }
+  if (totalBytes !== discovered.receipt.bytes) {
+    return refusedDiscovery(
+      resources,
+      discovered.receipt,
+      'm3a-discovery-namespace-invalid',
+      'M3A candidate discovery byte receipt did not match its candidates',
+    )
+  }
+  const resolved = await resolveM3AnimationSidecars({
+    baseBytes,
+    candidates: discovered.candidates.map(candidate => ({
+      logicalId: candidate.logicalId,
+      expectedRevision: candidate.expectedRevision,
+      scopes: ['workspace-dependency-layer'],
+    })),
+    resources,
+    budget,
+    signal,
+  })
+  return Object.freeze({ ...resolved, discovery: discovered.receipt })
+}

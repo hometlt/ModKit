@@ -8,6 +8,7 @@ import {
   buildInventory,
   createExecutionBackendRegistry,
   createHostContributionContractRegistry,
+  createWorkspaceNamespaceCandidateDiscovery,
   openNestedSubject,
   openSubject,
   type Inventory,
@@ -27,7 +28,7 @@ import { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createWorkspaceNamespaceCompanionOrigin } from '../../../../packages/host/src/namespace-origin.js'
 import { createResourceSession } from '../../../../packages/host/src/resource-session.js'
-import { resolveM3AnimationSidecars } from '../src/m3/sidecar-projection.node.js'
+import { discoverM3AnimationSidecars } from '../src/m3/sidecar-projection.node.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..', '..')
 const sc2Root = process.env.MODKITX_SC2_ROOT?.trim()
@@ -43,6 +44,7 @@ const budget: ResourceBudget = {
 }
 
 const ROOT_PREFIX = 'campaigns/liberty.sc2campaign/base.sc2assets'
+const DISCOVERY_PREFIX = 'assets/storymodecharacters/protoss'
 const BASE_DIRECTORY = `${ROOT_PREFIX}/assets/storymodecharacters/protoss/sm_zeratul/`
 const BASE_PATH = `${BASE_DIRECTORY}sm_zeratul.m3`
 const SIDECAR_DIRECTORY = `${ROOT_PREFIX}/assets/storymodecharacters/protoss/sm_zeratul_dialogue03/`
@@ -151,6 +153,39 @@ function resourceSession(primaryLogicalId: string) {
   })
 }
 
+function candidateDiscovery(
+  logicalPrefix = DISCOVERY_PREFIX,
+  limitOverrides: Partial<{
+    readonly pageItems: number
+    readonly maxPages: number
+    readonly maxEntries: number
+    readonly maxCandidates: number
+    readonly maxBytes: bigint
+  }> = {},
+) {
+  if (cascRevision === undefined) throw new TypeError('M3A corpus revision is absent')
+  return createWorkspaceNamespaceCandidateDiscovery({
+    namespace: namespace(),
+    containerRevision: cascRevision,
+    logicalRoots: [
+      {
+        rootId: 'retail:liberty.sc2campaign',
+        pathPrefix: ROOT_PREFIX,
+      },
+    ],
+    searches: [{ rootId: 'retail:liberty.sc2campaign', logicalPrefix }],
+    extension: '.m3a',
+    limits: {
+      pageItems: 64,
+      maxPages: 8,
+      maxEntries: 512,
+      maxCandidates: 16,
+      maxBytes: 67_108_864n,
+      ...limitOverrides,
+    },
+  })
+}
+
 describe.skipIf(!installed)('installed StarCraft II M3A corpus', () => {
   beforeAll(async () => {
     if (sc2Root === undefined) throw new TypeError('MODKITX_SC2_ROOT is not set')
@@ -194,7 +229,7 @@ describe.skipIf(!installed)('installed StarCraft II M3A corpus', () => {
     }
   })
 
-  it('pairs a pinned retail Zeratul M3A through the workspace resource session', async () => {
+  it('discovers and pairs a pinned retail Zeratul M3A through product namespace routes', async () => {
     expect(await directoryEntries(BASE_DIRECTORY)).toContain(BASE_PATH)
     expect(await directoryEntries(SIDECAR_DIRECTORY)).toContain(SIDECAR_PATH)
 
@@ -204,12 +239,18 @@ describe.skipIf(!installed)('installed StarCraft II M3A corpus', () => {
 
     const resources = resourceSession(BASE_PATH)
     try {
-      const pairing = await resolveM3AnimationSidecars({
+      const pairing = await discoverM3AnimationSidecars({
         baseBytes,
-        candidates: [{ logicalId: SIDECAR_LOGICAL_ID }],
+        candidateDiscovery: candidateDiscovery(),
         resources,
         budget,
       })
+      expect(pairing.discovery).toMatchObject({
+        complete: true,
+        candidates: 2,
+        searches: [{ rootId: 'retail:liberty.sc2campaign', logicalPrefix: DISCOVERY_PREFIX }],
+      })
+      expect(pairing.discovery.bytes).toBeGreaterThan(BigInt(SIDECAR_BYTES))
       expect(pairing.accepted).toEqual([
         expect.objectContaining({
           logicalId: SIDECAR_LOGICAL_ID,
@@ -240,12 +281,19 @@ describe.skipIf(!installed)('installed StarCraft II M3A corpus', () => {
       expect(pairing.clips[0]?.channels.every(channel => channel.target.startsWith('bone/'))).toBe(
         true,
       )
-      expect(pairing.diagnostics.map(item => item.code)).toEqual(['x3.m3/animation-target-refused'])
+      expect(pairing.diagnostics.map(item => item.code)).toContain(
+        'x3.m3/m3a-sidecar-skeleton-mismatch',
+      )
       expect(pairing.provenance).toEqual([
         expect.objectContaining({
           logicalId: SIDECAR_LOGICAL_ID,
           state: 'resolved',
           bytes: BigInt(SIDECAR_BYTES),
+        }),
+        expect.objectContaining({
+          logicalId:
+            'assets/storymodecharacters/protoss/sm_zeratul_requiredanims/sm_zeratul_requiredanims.m3a',
+          state: 'resolved',
         }),
       ])
     } finally {
@@ -327,12 +375,12 @@ describe.skipIf(!installed)('installed StarCraft II M3A corpus', () => {
     }
   })
 
-  it('rejects that retail M3A against an unrelated shipped base', async () => {
+  it('rejects discovered retail M3As against an unrelated shipped base', async () => {
     const resources = resourceSession(UNRELATED_BASE_PATH)
     try {
-      const pairing = await resolveM3AnimationSidecars({
+      const pairing = await discoverM3AnimationSidecars({
         baseBytes: await extract(UNRELATED_BASE_PATH),
-        candidates: [{ logicalId: SIDECAR_LOGICAL_ID }],
+        candidateDiscovery: candidateDiscovery(),
         resources,
         budget,
       })
@@ -344,10 +392,51 @@ describe.skipIf(!installed)('installed StarCraft II M3A corpus', () => {
       )
       expect(pairing.provenance).toEqual([
         expect.objectContaining({ logicalId: SIDECAR_LOGICAL_ID, state: 'resolved' }),
+        expect.objectContaining({
+          logicalId:
+            'assets/storymodecharacters/protoss/sm_zeratul_requiredanims/sm_zeratul_requiredanims.m3a',
+          state: 'resolved',
+        }),
       ])
     } finally {
       await resources.dispose()
     }
     expect(resources.state()).toBe('disposed')
+  })
+
+  it('fails closed for missing and over-budget explicit discovery roots', async () => {
+    const baseBytes = await extract(BASE_PATH)
+    const missingResources = resourceSession(BASE_PATH)
+    try {
+      const missing = await discoverM3AnimationSidecars({
+        baseBytes,
+        candidateDiscovery: candidateDiscovery('assets/storymodecharacters/not-a-real-root'),
+        resources: missingResources,
+        budget,
+      })
+      expect(missing.accepted).toEqual([])
+      expect(missing.diagnostics.map(item => item.code)).toEqual(['x3.m3/m3a-discovery-empty'])
+      expect(missing.provenance).toEqual([])
+    } finally {
+      await missingResources.dispose()
+    }
+
+    const boundedResources = resourceSession(BASE_PATH)
+    try {
+      const bounded = await discoverM3AnimationSidecars({
+        baseBytes,
+        candidateDiscovery: candidateDiscovery(DISCOVERY_PREFIX, { maxEntries: 1 }),
+        resources: boundedResources,
+        budget,
+      })
+      expect(bounded.accepted).toEqual([])
+      expect(bounded.diagnostics.map(item => item.code)).toEqual([
+        'x3.m3/m3a-discovery-budget-exceeded',
+      ])
+      expect(bounded.discovery).toMatchObject({ complete: false, candidates: 0, bytes: 0n })
+      expect(bounded.provenance).toEqual([])
+    } finally {
+      await boundedResources.dispose()
+    }
   })
 })
