@@ -1,10 +1,15 @@
 /** Protocol-neutral contracts for bounded semantic map opening. */
 
 import type { DataCatalogSnapshot, DataEntityRef, DataResolvedEntity } from '../data/index.js'
+import type { ModWorkspaceLock } from '../mods/index.js'
+import type { ResourceProvenanceRecord } from '../resource-session.js'
 import type { ServiceProviderModule } from '../runtime-abi.js'
 
 /** Standard service coordinate for game-specific semantic map opening. */
 export const MAP_SEMANTIC_ANALYSIS_CONTRACT = 'common.map/semantic-analysis' as const
+
+/** Additive VFS/workspace service; semantic-analysis@1 remains frozen and authoritative. */
+export const RESOLVED_MAP_WORKSPACE_CONTRACT = 'common.map/resolved-workspace' as const
 
 /** Host-owned matcher profile for exact game-id routing. */
 export const MAP_SEMANTIC_MATCHER_PROFILE = 'org.modkitx/map-semantic-matcher' as const
@@ -31,6 +36,33 @@ export interface MapSemanticAnalysisRequest {
   readonly maxTerrainSamples: number
   readonly maxDepth: number
   readonly signal?: AbortSignal
+}
+
+export type MapSemanticDocumentKind = 'objects' | 'regions' | 'terrain-height' | 'navigation'
+
+/** One provider-authored logical read; the host resolves it through ResourceSessionPort. */
+export interface MapSemanticDocumentRequirement {
+  readonly requirementId: string
+  readonly path: string
+  readonly kind: MapSemanticDocumentKind
+  readonly required: boolean
+}
+
+export interface ResolvedMapWorkspacePlanRequest {
+  readonly workspace: ModWorkspaceLock
+  readonly maxRequirements: number
+  readonly signal?: AbortSignal
+}
+
+export interface ResolvedMapWorkspacePlan {
+  readonly schemaVersion: 1
+  readonly workspaceId: string
+  readonly gameId: string
+  readonly mapId: string
+  readonly analyzerId: string
+  readonly requirements: readonly MapSemanticDocumentRequirement[]
+  readonly diagnostics: readonly MapSemanticDiagnostic[]
+  readonly complete: boolean
 }
 
 export interface MapPosition {
@@ -95,6 +127,49 @@ export interface MapTerrainSummary {
   readonly samples: readonly MapTerrainSample[]
 }
 
+export interface MapNavigationSample {
+  readonly x: number
+  readonly y: number
+  /** Publisher-native flags whose bit meanings remain explicit candidate metadata. */
+  readonly flags: number
+}
+
+/** Bounded summary of a publisher-native navigation grid. */
+export interface MapNavigationSummary {
+  readonly version: number
+  readonly width: number
+  readonly height: number
+  readonly cellCount: number
+  readonly minimumFlags: number
+  readonly maximumFlags: number
+  readonly trailingBytes: number
+  readonly samples: readonly MapNavigationSample[]
+}
+
+export interface MapWorldCandidateDescriptor {
+  /** Publisher-qualified candidate coordinate. This is deliberately not an admitted common ID. */
+  readonly contract: string
+  readonly major: 1
+  readonly maturity: 'publisher-candidate'
+  readonly coordinateSpaces: readonly Readonly<{
+    readonly id: string
+    horizontalAxes: readonly [string, string]
+    verticalAxis: string
+    handedness: string
+    linearUnit: string
+    rotationUnit: string
+    origin: string
+  }>[]
+  /** No cross-space transform may be inferred when the publisher has not proved one. */
+  readonly crossSpaceTransforms: readonly Readonly<{
+    readonly from: string
+    readonly to: string
+    readonly state: 'identity' | 'known' | 'unknown'
+    readonly reason?: string
+  }>[]
+  readonly unknownFacets: readonly string[]
+}
+
 export type MapSemanticDiagnosticSeverity = 'error' | 'warning' | 'information'
 
 export interface MapSemanticDiagnostic {
@@ -124,12 +199,196 @@ export interface MapSemanticSnapshot {
   readonly complete: boolean
 }
 
+export interface ResolvedMapWorkspaceAnalysisRequest extends MapSemanticAnalysisRequest {
+  readonly snapshotId: string
+  readonly unresolvedRequirementIds: readonly string[]
+  readonly requiredRequirementIds: readonly string[]
+  readonly maxDiagnostics: number
+}
+
+/** Additive result; `semantic` is the untouched authoritative semantic-analysis@1 snapshot. */
+export interface ResolvedMapWorkspaceSnapshot {
+  readonly schemaVersion: 1
+  readonly workspaceId: string
+  readonly gameId: string
+  readonly mapId: string
+  readonly analyzerId: string
+  readonly snapshotId: string
+  readonly semantic: MapSemanticSnapshot
+  readonly navigation?: MapNavigationSummary
+  readonly worldCandidate: MapWorldCandidateDescriptor
+  readonly unresolvedRequirementIds: readonly string[]
+  readonly diagnostics: readonly MapSemanticDiagnostic[]
+  readonly diagnosticsTruncated: boolean
+  readonly complete: boolean
+}
+
+export type WorldSceneFacet =
+  'layers' | 'terrain' | 'objects' | 'regions' | 'resources' | 'navigation'
+export type WorldSceneLayerKind = Exclude<WorldSceneFacet, 'layers'>
+
+export type WorldSceneAxisExtent =
+  | Readonly<{ state: 'known'; minimum: number; maximum: number }>
+  | Readonly<{ state: 'unknown'; reason: string }>
+
+export interface WorldSceneFacetBounds {
+  readonly facet: WorldSceneLayerKind
+  readonly coordinateSpaceId: string
+  readonly x: WorldSceneAxisExtent
+  readonly y: WorldSceneAxisExtent
+  readonly z: WorldSceneAxisExtent
+}
+
+export interface WorldSceneFacetState {
+  readonly facet: WorldSceneLayerKind
+  readonly layerId: string
+  readonly state: 'available' | 'unavailable' | 'partial'
+  readonly itemCount: number
+  readonly lods: readonly string[]
+  readonly reason?: string
+}
+
+export interface CandidateWorldSceneInfo {
+  readonly contract: string
+  readonly major: 1
+  readonly maturity: 'publisher-candidate'
+  readonly snapshotId: string
+  readonly mapId: string
+  readonly coordinateSpaces: MapWorldCandidateDescriptor['coordinateSpaces']
+  readonly crossSpaceTransforms: MapWorldCandidateDescriptor['crossSpaceTransforms']
+  readonly bounds: readonly WorldSceneFacetBounds[]
+  readonly facets: readonly WorldSceneFacetState[]
+  readonly provenance: readonly ResourceProvenanceRecord[]
+  readonly unknownFacets: readonly string[]
+  readonly lossPolicy: 'explicit-partial'
+  readonly complete: boolean
+}
+
+export interface WorldSceneLayerItem {
+  readonly facet: 'layers'
+  readonly id: string
+  readonly layerId: string
+  readonly kind: WorldSceneLayerKind
+  readonly state: WorldSceneFacetState['state']
+  readonly itemCount: number
+  readonly lods: readonly string[]
+}
+
+export interface WorldSceneTerrainItem extends MapTerrainSample {
+  readonly facet: 'terrain'
+  readonly id: string
+  readonly layerId: string
+  readonly coordinateSpaceId: string
+  readonly lod: 'sampled'
+}
+
+export interface WorldSceneNavigationItem extends MapNavigationSample {
+  readonly facet: 'navigation'
+  readonly id: string
+  readonly layerId: string
+  readonly coordinateSpaceId: string
+  readonly lod: 'sampled'
+}
+
+export interface WorldSceneObjectItem extends MapPlacedObject {
+  readonly facet: 'objects'
+  readonly id: string
+  readonly layerId: string
+  readonly coordinateSpaceId: string
+  /** Stable join into the resources facet when this object names a catalog entity. */
+  readonly resourceId?: string
+}
+
+export interface WorldSceneRegionShape {
+  readonly kind: string
+  readonly center?: Readonly<{ x: number; y: number }>
+  readonly radius?: number
+  readonly rawParameters: Readonly<Record<string, string>>
+}
+
+export interface WorldSceneRegionItem {
+  readonly facet: 'regions'
+  readonly id: string
+  readonly layerId: string
+  readonly coordinateSpaceId: string
+  readonly regionId: number
+  readonly name: string
+  readonly color?: string
+  readonly shapes: readonly WorldSceneRegionShape[]
+}
+
+export interface WorldSceneResourceItem {
+  readonly facet: 'resources'
+  readonly id: string
+  readonly layerId: string
+  readonly namespace: string
+  readonly entityId: string
+  readonly resolved: boolean
+  /** Exact reverse join to every placed object that references this resource. */
+  readonly objectIds: readonly string[]
+}
+
+export type WorldSceneItem =
+  | WorldSceneLayerItem
+  | WorldSceneTerrainItem
+  | WorldSceneNavigationItem
+  | WorldSceneObjectItem
+  | WorldSceneRegionItem
+  | WorldSceneResourceItem
+
+export interface WorldScenePageRequest {
+  /** Unknown facet names produce a named unsupported page, not a silently empty success. */
+  readonly facet: string
+  readonly layerId?: string
+  readonly lod?: string
+  readonly cursor?: string
+  readonly limit: number
+  readonly bounds?: Readonly<{
+    minimumX: number
+    minimumY: number
+    maximumX: number
+    maximumY: number
+  }>
+}
+
+export interface WorldScenePage {
+  readonly snapshotId: string
+  readonly facet: string
+  readonly state: 'available' | 'unavailable' | 'unsupported'
+  readonly items: readonly WorldSceneItem[]
+  readonly nextCursor?: string
+  readonly reason?: string
+}
+
+/**
+ * Structural candidate surface consumed by the generic Block 15 harness.
+ *
+ * It intentionally has no ContractMap augmentation and no common.view coordinate. Block 18 may
+ * admit a common contract only through the documented adapter/dual-publish transition.
+ */
+export interface CandidateWorldSceneSource {
+  readonly contract: string
+  readonly major: 1
+  readonly snapshotId: string
+  info(signal?: AbortSignal): Promise<CandidateWorldSceneInfo>
+  page(request: WorldScenePageRequest, signal?: AbortSignal): Promise<WorldScenePage>
+}
+
 /** Activated game-specific semantic map analyzer. */
 export interface MapSemanticAnalysis {
   readonly contract: typeof MAP_SEMANTIC_ANALYSIS_CONTRACT
   readonly analyzerId: string
   readonly gameIds: readonly string[]
   open(request: MapSemanticAnalysisRequest): Promise<MapSemanticSnapshot>
+}
+
+/** Workspace-aware service composed by the host over ResourceSession/VFS reads. */
+export interface ResolvedMapWorkspaceAnalysis {
+  readonly contract: typeof RESOLVED_MAP_WORKSPACE_CONTRACT
+  readonly analyzerId: string
+  readonly gameIds: readonly string[]
+  plan(request: ResolvedMapWorkspacePlanRequest): Promise<ResolvedMapWorkspacePlan>
+  analyze(request: ResolvedMapWorkspaceAnalysisRequest): Promise<ResolvedMapWorkspaceSnapshot>
 }
 
 /** JSON-safe route advertised by a map contribution. */
@@ -145,10 +404,14 @@ export interface MapSemanticRequestFacet {
 declare module '../service-contracts.js' {
   interface ContractMap {
     'common.map/semantic-analysis': { 1: MapSemanticAnalysis }
+    'common.map/resolved-workspace': { 1: ResolvedMapWorkspaceAnalysis }
   }
 
   interface ContractRequestMap {
     'common.map/semantic-analysis': {
+      1: { presence: 'required'; facet: MapSemanticRequestFacet }
+    }
+    'common.map/resolved-workspace': {
       1: { presence: 'required'; facet: MapSemanticRequestFacet }
     }
   }
@@ -157,10 +420,18 @@ declare module '../service-contracts.js' {
     'common.map/semantic-analysis': {
       1: { presence: 'required'; facet: MapSemanticOfferFacet }
     }
+    'common.map/resolved-workspace': {
+      1: { presence: 'required'; facet: MapSemanticOfferFacet }
+    }
   }
 }
 
 export type MapSemanticProviderModule = ServiceProviderModule<
   typeof MAP_SEMANTIC_ANALYSIS_CONTRACT,
+  1
+>
+
+export type ResolvedMapWorkspaceProviderModule = ServiceProviderModule<
+  typeof RESOLVED_MAP_WORKSPACE_CONTRACT,
   1
 >

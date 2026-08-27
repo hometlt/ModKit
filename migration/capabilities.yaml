@@ -10566,6 +10566,7 @@ capabilities:
       - 'read-source'
     mk3Contributions:
       - 'org.modkitx/sc2-map'
+      - 'org.modkitx.blizzard/starcraft2-map-semantic'
     mk3Operations:
       - 'asset.validate'
       - 'export.raw'
@@ -10578,7 +10579,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E1'
+    evidenceLevel: 'E4'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -10588,28 +10589,30 @@ capabilities:
       verdicts: []
       liveSources: []
     fixtures: []
-    corpusDescriptors: []
+    corpusDescriptors:
+      - 'MODKITX_SC2_ROOT'
     projection:
       plane: 'world'
-      liveProjection: 'planned'
+      liveProjection: 'live'
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'packages/testkit/test/sc2-casc-real.test.ts'
         validate: null
-        read: null
+        read: 'packages/testkit/test/sc2-casc-real.test.ts'
         materialize: null
     knownLoss:
       - 'capability «edit»: 13D editing exists for text sources only; binary edit contracts absent'
       - 'capability «launch»: launch is a runtime side-effect operation (17); not in X3'
       - 'languages → language contribution kind not in X3'
       - 'operation dropped at port: asset.validate'
-      - 'operation dropped at port: container.extract'
       - 'operation dropped at port: game.launch-map'
-      - 'operation dropped at port: view.inspect'
       - 'operation dropped at port: view.render'
       - 'operation dropped at port: view.thumbnail'
+      - 'world source remains publisher-candidate org.modkitx.blizzard.starcraft2/world-scene-source@1; common.view admission is reserved for block 18'
+      - 'the pinned retail TArcade corpus has no PATH document, so real navigation is named unavailable; bounded PATH parsing/paging is synthetic-proof only'
+      - 'terrain is a bounded HMAP summary/sample layer; material, water, normalized cliff and cross-space transforms remain explicit unknown/partial facets'
     receipts:
       projection: null
       materialization: null
@@ -10617,7 +10620,8 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/sc2-casc-real.test.ts'
       reports: []
   - capabilityId: 'format/sc2-mod/open-inspect'
     userScenario: 'Открыть «StarCraft II mod» в MK3 и выполнить asset.compare, asset.validate, container.extract, content.mount, content.resolve-dependencies, edit.structure, export.convert, view.inspect без потери семантики legacy-маршрута.'

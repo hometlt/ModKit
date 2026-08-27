@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest'
 import {
   MAP_SEMANTIC_ANALYSIS_CONTRACT,
   MAP_SEMANTIC_MATCHER_PROFILE,
+  RESOLVED_MAP_WORKSPACE_CONTRACT,
   type MapSemanticSnapshot,
 } from '@modkitx-x3/sdk/maps'
 
 describe('game-neutral semantic map contract', () => {
   it('publishes stable service and matcher coordinates without game-specific ids', () => {
     expect(MAP_SEMANTIC_ANALYSIS_CONTRACT).toBe('common.map/semantic-analysis')
+    expect(RESOLVED_MAP_WORKSPACE_CONTRACT).toBe('common.map/resolved-workspace')
     expect(MAP_SEMANTIC_MATCHER_PROFILE).toBe('org.modkitx/map-semantic-matcher')
   })
 
