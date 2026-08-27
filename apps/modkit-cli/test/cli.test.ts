@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { proves } from '@modkitx-x3/testkit'
 
 const appDir = fileURLToPath(new URL('..', import.meta.url))
 const cli = join(appDir, 'dist', 'main.js')
@@ -139,6 +140,16 @@ describe('modkit open (S7): the product open path of the CLI', () => {
   const repositoryRoot = join(appDir, '..', '..')
   const images = join(repositoryRoot, 'extensions', 'common', 'images')
   const png = join(repositoryRoot, 'apps', 'web', 'public', 'favicon-32.png')
+  const starcraft2 = join(repositoryRoot, 'extensions', 'blizzard', 'starcraft2')
+  const sc2Map = join(
+    repositoryRoot,
+    'packages',
+    'testkit',
+    'test',
+    'fixtures',
+    'mk2-synthetic',
+    'minimal.SC2Map',
+  )
 
   it('opens a real PNG worker-brokered with a linked root, prints the selection and exits 0; the process ends', () => {
     const { status, stdout } = run(['open', png, '--ext', images, '--json'])
@@ -165,6 +176,51 @@ describe('modkit open (S7): the product open path of the CLI', () => {
     )
     // the human rendering names the boundary
     expect(run(['open', png, '--ext', images]).stdout).toContain('· worker-brokered')
+  }, 60_000)
+
+  it('opens the pinned SC2Map through the CLI linked-root contract', () => {
+    const { status, stdout } = run(['open', sc2Map, '--ext', starcraft2, '--json'])
+    expect(status).toBe(0)
+    const report = JSON.parse(stdout) as {
+      state: string
+      selected: { contributionId: string; variantId: string }
+      descriptor: {
+        identity: { formatId: string }
+        traits: { id: string; state: string; parameters?: Record<string, unknown> }[]
+        dataSources: { contract: string; major: number }[]
+      }
+      candidates: { variantId: string; state: string }[]
+      diagnostics: { code: string }[]
+    }
+    expect(report.state).toBe('opened')
+    expect(report.selected).toMatchObject({
+      contributionId: 'org.modkitx/sc2-map',
+      variantId: 'portable',
+    })
+    expect(report.descriptor.identity.formatId).toBe('sc2-map')
+    expect(report.descriptor.traits).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'game.map', parameters: { packed: true, documents: 3 } }),
+        expect.objectContaining({ id: 'container.entries', parameters: { count: 5 } }),
+        expect.objectContaining({ id: 'content.scripts', parameters: { files: 1 } }),
+      ]),
+    )
+    expect(
+      report.descriptor.dataSources.map(item => `${item.contract}@${item.major}`).sort(),
+    ).toEqual([
+      'common.view/byte-range-source@1',
+      'common.view/namespace-entry-source@1',
+      'common.view/tree-data-source@1',
+    ])
+    expect(report.diagnostics.map(item => item.code)).toContain('x3.host/worker-shared-process')
+    expect(report.candidates.find(item => item.variantId === 'trusted-node')?.state).toBe(
+      'rejected',
+    )
+    proves({
+      capabilityId: 'format/sc2-map/open-inspect',
+      operation: 'read',
+      note: 'the CLI opens the pinned packed SC2Map through an explicit linked extension root',
+    })
   }, 60_000)
 
   it('exits 1 for a subject no linked codec claims, 2 for usage and IO failures', () => {
