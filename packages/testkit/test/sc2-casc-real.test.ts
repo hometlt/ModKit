@@ -301,7 +301,7 @@ describe('installed StarCraft II CASC product path', () => {
             maxObjects: 10_000,
             maxRegions: 1_000,
             maxTerrainCells: 100_000,
-            maxTerrainSamples: 32,
+            maxTerrainSamples: 100_000,
             maxDepth: 64,
           } as const
           const preliminaryMap = await mapResolution.analysis.open({
@@ -580,7 +580,7 @@ describe('installed StarCraft II CASC product path', () => {
             limits: {
               ...mapLimits,
               maxRequirements: 8,
-              maxPageSize: 16,
+              maxPageSize: 4_096,
               maxDiagnostics: 100,
             },
           })
@@ -604,6 +604,15 @@ describe('installed StarCraft II CASC product path', () => {
               width: 257,
               height: 257,
               cellCount: 66_049,
+            })
+            expect(semanticMap.snapshot.semantic.terrain?.samples).toHaveLength(66_049)
+            expect(semanticMap.snapshot.semantic.terrain?.samples.at(0)).toMatchObject({
+              x: 0,
+              y: 0,
+            })
+            expect(semanticMap.snapshot.semantic.terrain?.samples.at(-1)).toMatchObject({
+              x: 256,
+              y: 256,
             })
             expect(semanticMap.snapshot.semantic.regions).toContainEqual(
               expect.objectContaining({ regionId: 1, name: 'Cheer' }),
@@ -640,13 +649,19 @@ describe('installed StarCraft II CASC product path', () => {
                 state: 'unknown',
               }),
             )
+            expect(worldInfo.facets).toContainEqual(
+              expect.objectContaining({
+                facet: 'terrain',
+                state: 'available',
+                itemCount: 66_049,
+                lods: ['exact'],
+              }),
+            )
             const uvwAdmission = await assessCandidateWorldUvwAdmission(semanticMap.world.value, {
-              maxPageItems: 16,
+              maxPageItems: 4_096,
               maxTerrainItems: 100_000,
             })
             expect(uvwAdmission.refusalCodes).toEqual([
-              'terrain-not-exact',
-              'exact-lod-missing',
               'terrain-bounds-unproven',
               'coordinate-transform-unproven',
               'source-unit-unproven',
@@ -662,8 +677,8 @@ describe('installed StarCraft II CASC product path', () => {
                 infoSnapshotId: semanticMap.snapshot.snapshotId,
               },
               requestedLod: 'exact',
-              pageRequests: 0,
-              observedTerrainItems: 0,
+              pageRequests: 17,
+              observedTerrainItems: 66_049,
               materialized: false,
               serialized: false,
               serializedBytes: 0,

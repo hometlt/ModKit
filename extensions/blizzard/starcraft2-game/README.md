@@ -53,7 +53,10 @@ revision-pinned `ResourceSessionPort`; the result embeds the authoritative seman
 bounded native navigation samples and the versioned publisher contract
 `org.modkitx.blizzard.starcraft2/world-scene-source@1`. Its generic structural adapter pages stable
 terrain, object, region, catalog-resource and navigation identities with coordinate, unit, bounds,
-LOD, provenance and loss metadata. It is explicitly a publisher candidate: it is not registered as
-`common.view/world-scene-source@1`, is not a second eager world DTO, and publishes no writer. Block
+LOD, provenance and loss metadata. When the caller's explicit cell/node budgets retain every HMAP
+tuple, terrain is available as an exact native `height-grid` LOD; cell size, origin, vertical
+quantization and the canonical transform remain unknown. It is explicitly a publisher candidate:
+it is not registered as `common.view/world-scene-source@1`, is not a second eager world DTO, and
+publishes no writer. Block
 18 is the earliest admission boundary; if that block standardizes the common coordinate, this
 publisher must adapt/dual-publish during migration rather than silently changing this contract.

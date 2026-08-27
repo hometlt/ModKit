@@ -122,6 +122,24 @@ function pageItems(
   })
 }
 
+function hasExactTerrainGrid(
+  terrain: NonNullable<ResolvedMapWorkspaceSnapshot['semantic']['terrain']> | undefined,
+): boolean {
+  if (terrain === undefined || terrain.samples.length !== terrain.cellCount) return false
+  const expectedCellCount = terrain.width * terrain.height
+  if (
+    !Number.isSafeInteger(expectedCellCount) ||
+    expectedCellCount <= 0 ||
+    expectedCellCount !== terrain.cellCount
+  ) {
+    return false
+  }
+  return terrain.samples.every(
+    (sample, index) =>
+      sample.x === index % terrain.width && sample.y === Math.floor(index / terrain.width),
+  )
+}
+
 /** Creates a lease whose release makes every page/cursor stale immediately. */
 export function createCandidateWorldSceneLease(
   snapshot: ResolvedMapWorkspaceSnapshot,
@@ -135,6 +153,9 @@ export function createCandidateWorldSceneLease(
   const regionLayerId = layerId(snapshot.snapshotId, 'regions')
   const resourceLayerId = layerId(snapshot.snapshotId, 'resources')
   const navigationLayerId = layerId(snapshot.snapshotId, 'navigation')
+  const terrainSummary = semantic.terrain
+  const terrainExact = hasExactTerrainGrid(terrainSummary)
+  const terrainLod = terrainExact ? ('exact' as const) : ('sampled' as const)
   const objectIdentities = new Set<number>()
   const semanticObjects = semantic.objects.filter(item => {
     if (objectIdentities.has(item.objectId)) return false
@@ -157,7 +178,7 @@ export function createCandidateWorldSceneLease(
         id: `${terrainLayerId}:sample:${String(item.x)}:${String(item.y)}`,
         layerId: terrainLayerId,
         coordinateSpaceId: 'height-grid',
-        lod: 'sampled' as const,
+        lod: terrainLod,
         ...item,
       }),
     ),
@@ -239,12 +260,23 @@ export function createCandidateWorldSceneLease(
     Object.freeze({
       facet: 'terrain' as const,
       layerId: terrainLayerId,
-      state: semantic.terrain === undefined ? ('unavailable' as const) : ('partial' as const),
+      state:
+        terrainSummary === undefined
+          ? ('unavailable' as const)
+          : terrainExact
+            ? ('available' as const)
+            : ('partial' as const),
       itemCount: semantic.terrain?.cellCount ?? 0,
-      lods: Object.freeze(semantic.terrain === undefined ? [] : ['summary', 'sampled']),
-      ...(semantic.terrain === undefined
+      lods: Object.freeze(
+        terrainSummary === undefined ? [] : terrainExact ? ['exact'] : ['summary', 'sampled'],
+      ),
+      ...(terrainSummary === undefined
         ? { reason: 'authoritative semantic snapshot contains no terrain height grid' }
-        : { reason: 'candidate exposes bounded deterministic samples, not an eager full grid' }),
+        : terrainExact
+          ? {}
+          : {
+              reason: 'candidate exposes bounded deterministic samples, not the full native grid',
+            }),
     }),
     Object.freeze({
       facet: 'objects' as const,
@@ -322,7 +354,6 @@ export function createCandidateWorldSceneLease(
     ['resources', resources],
     ['navigation', navigation],
   ])
-  const terrainSummary = semantic.terrain
   const info: CandidateWorldSceneInfo = Object.freeze({
     contract: snapshot.worldCandidate.contract,
     major: snapshot.worldCandidate.major,
@@ -465,17 +496,20 @@ export function createCandidateWorldSceneLease(
         if (request.layerId !== facetState?.layerId) {
           throw new TypeError(`world facet ${request.facet} requires its exact layerId`)
         }
-        if (
-          (request.facet === 'terrain' || request.facet === 'navigation') &&
-          request.lod !== 'sampled'
-        ) {
+        const expectedLod =
+          request.facet === 'terrain'
+            ? terrainLod
+            : request.facet === 'navigation'
+              ? 'sampled'
+              : undefined
+        if (expectedLod !== undefined && request.lod !== expectedLod) {
           return Promise.resolve(
             Object.freeze({
               snapshotId: snapshot.snapshotId,
               facet: request.facet,
               state: 'unsupported' as const,
               items: Object.freeze([]),
-              reason: `facet ${request.facet} only pages sampled LOD items`,
+              reason: `facet ${request.facet} only pages ${expectedLod} LOD items`,
             }),
           )
         }
