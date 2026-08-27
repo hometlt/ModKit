@@ -3,7 +3,7 @@
   "version": 1,
   "block": "block-14",
   "subject": {
-    "x3Commit": "1b0743eb7c2e90f7df1a5783ea0c40e337529be5",
+    "x3Commit": "7bc8b7f5a38f84fdf91ef6ee3f34d5cb14ce6d9f",
     "extensionVersion": "0.1.0",
     "publicationArtifact": "deterministic-shell",
     "shellEntries": [
@@ -37,7 +37,7 @@
     "deterministicExitCode": 0
   },
   "lifecycle": {
-    "currentHead": "1b0743eb7c2e90f7df1a5783ea0c40e337529be5",
+    "currentHead": "7bc8b7f5a38f84fdf91ef6ee3f34d5cb14ce6d9f",
     "predecessor": {
       "version": "0.0.0",
       "entryDigest": "sha256:7e29265c815d87d8787826836842f796a07ce1d5285168f80ccfff2a8781081d",
