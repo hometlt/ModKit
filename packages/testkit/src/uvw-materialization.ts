@@ -201,7 +201,7 @@ export async function assessCandidateWorldUvwAdmission(
     } else if (isStale(error)) {
       refuse('source-stale', 'world candidate source was released or stale while reading info')
     } else {
-      refuse('source-info-failed', `world candidate info failed: ${String(error)}`)
+      refuse('source-info-failed', 'world candidate info failed closed')
     }
     return finish()
   }
@@ -334,14 +334,11 @@ export async function assessCandidateWorldUvwAdmission(
       if (isAbort(error, options.signal)) {
         refuse('cancelled', 'UVW candidate admission was cancelled while reading terrain')
       } else if (cursor !== undefined) {
-        refuse(
-          'cursor-rejected',
-          `world candidate rejected its exact-page cursor: ${String(error)}`,
-        )
+        refuse('cursor-rejected', 'world candidate rejected its exact-page cursor')
       } else if (isStale(error)) {
         refuse('source-stale', 'world candidate source was released or stale while reading terrain')
       } else {
-        refuse('source-page-failed', `exact terrain page failed: ${String(error)}`)
+        refuse('source-page-failed', 'exact terrain page failed closed')
       }
       break
     }
