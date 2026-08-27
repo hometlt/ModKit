@@ -26,7 +26,7 @@
       "relocated-multiverse": 1
     },
     "byObligation": { "focused-required-addition": 13, "legacy-required": 154 },
-    "byEvidenceLevel": { "E0": 35, "E1": 30, "E2": 63, "E3": 12, "E4": 27 }
+    "byEvidenceLevel": { "E0": 35, "E1": 29, "E2": 63, "E3": 12, "E4": 28 }
   },
   "deadlines": {
     "block-11": [
@@ -1843,10 +1843,10 @@
       "plannedBlock": 15,
       "migrationState": "implemented",
       "supportState": "partial",
-      "evidenceLevel": "E1",
+      "evidenceLevel": "E4",
       "allocationState": "covered",
       "portFamily": "blizzard/starcraft2",
-      "corpusDescriptors": [],
+      "corpusDescriptors": ["MODKITX_SC2_ROOT"],
       "dependsOn": [],
       "requiredBy": ["game/starcraft-2/discover-open"]
     },
