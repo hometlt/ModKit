@@ -10966,7 +10966,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'packages/testkit/test/sc2-scenario-workflows.test.ts'
         validate: null
         read: null
         materialize: null
@@ -10977,7 +10977,7 @@ capabilities:
       - 'operation dropped at port: export.convert'
       - 'operation dropped at port: script.references'
       - 'operation dropped at port: script.symbols'
-      - 'operation dropped at port: view.inspect'
+      - 'TriggerData inspection reports local/external library ids; dependency resolution, semantic lowering/conversion, language execution and source writes remain unavailable'
     receipts:
       projection: null
       materialization: null
@@ -10985,7 +10985,8 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/sc2-scenario-workflows.test.ts'
       reports: []
   - capabilityId: 'format/shp/open-inspect'
     userScenario: 'Открыть «Westwood TS/RA2 SHP sprite» в MK3 и выполнить image.inspect, image.read, image.write без потери семантики legacy-маршрута.'
