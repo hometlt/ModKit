@@ -458,6 +458,13 @@ Game/vendor/community extensions в target state публикуются из н�
 immutable artifacts. Текущее физическое размещение extensions в monorepo является migration state,
 а не требованием runtime architecture.
 
+Первыми обязательными extraction targets являются расширения `Blizzard/StarCraft2` и
+`WZ2100Project/Warzone2100`: после Focused Product GA они переносятся в отдельные repositories и
+сохраняют собственные license/provenance boundaries. До переноса game-specific discovery, codecs,
+map/model transforms, scripts и runtime adapters остаются только внутри соответствующего extension;
+platform и bundled `common` владеют лишь game-neutral contracts, host routing и conformance fixtures.
+Ни один из этих extension packages не импортирует implementation другого.
+
 ### D40. Catalog, install и operation resolution разделены
 
 Catalog перечисляет release metadata без исполнения кода. Install resolver строит exact artifact/

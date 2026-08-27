@@ -446,6 +446,11 @@ profiles и complete foundation проверяются только после �
 - Fresh generic CLI/Electron/IDE host contains platform + bundled `common`, no game/vendor code.
 - One extension built from an independent repository installs from immutable local artifact without
   source checkout, workspace enrollment or authored main-repository switch.
+- The `Blizzard/StarCraft2` and `WZ2100Project/Warzone2100` extraction fixtures each build against
+  public Modkit contracts only, retain distinct license/provenance metadata and contain every
+  game-specific discovery, codec, map/model transform, script and runtime adapter for that game.
+- The generic host and bundled `common` dependency graph reaches neither extracted extension, and
+  neither extracted extension imports the other's implementation.
 - Catalog query, release inspection, declarative product matching and dry-run plan activate no
   extension code.
 - Official, community, private and direct/local artifacts preserve the same extension/contribution
