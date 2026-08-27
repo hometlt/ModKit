@@ -65,8 +65,8 @@
       "verticalBlock": 16,
       "status": "owner-action-required",
       "environmentVariables": ["MODKITX_RA3_ROOT"],
-      "evidence": "Установки Red Alert 3 на машине нет; переменная окружения ещё не заведена в oracle lock, потому что описывать нечего.",
-      "ownerAction": "Предоставить read-only установку Red Alert 3 и завести MODKITX_RA3_ROOT в corpusDescriptors oracle lock до начала вертикали блока 16.",
+      "evidence": "Установки Red Alert 3 на машине нет; переносимый descriptor MODKITX_RA3_ROOT уже заведён в oracle lock со статусом expected-by-specification, но локальный путь не задан и его маркеры не проверены.",
+      "ownerAction": "Предоставить read-only установку Red Alert 3, задать MODKITX_RA3_ROOT в локальном environment descriptor и подтвердить версию, сборку, язык, хеш и маркеры до начала вертикали блока 16.",
       "legalAlternative": null,
       "capabilityIds": [
         "game/red-alert-3/discover-open",

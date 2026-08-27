@@ -2391,7 +2391,7 @@
       "evidenceLevel": "E0",
       "allocationState": "absent",
       "portFamily": null,
-      "corpusDescriptors": ["MODKITX_CNC3_KW_ROOT"],
+      "corpusDescriptors": ["MODKITX_CNC3_TW_ROOT"],
       "dependsOn": ["format/big/open-inspect", "format/sage-w3x/open-inspect"],
       "requiredBy": [
         "vertical/cnc3-kanes-wrath/deterministic-playable-subset",
