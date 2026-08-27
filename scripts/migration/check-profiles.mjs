@@ -47,6 +47,8 @@ if (profiles.schemaVersion !== 'product-profiles-1') {
   )
 }
 
+const RELEASE_CLOSURES = ['mk3-ga', 'mk3-pre-multiverse', 'mk3-multiverse-ga']
+
 const contributionIds = new Set()
 for (const file of execFileSync(
   'git',
@@ -75,6 +77,11 @@ for (const preset of profiles.presets ?? []) {
   presetIds.add(preset.id)
   if (!['available', 'planned'].includes(preset.status)) {
     fail(`${label}: status must be available or planned, found ${preset.status}`)
+  }
+  if (!RELEASE_CLOSURES.includes(preset.introducedInClosure)) {
+    fail(
+      `${label}: introducedInClosure must be one of ${RELEASE_CLOSURES.join(' | ')}, found ${JSON.stringify(preset.introducedInClosure)}`,
+    )
   }
   if (!Array.isArray(preset.hosts) || preset.hosts.length === 0)
     fail(`${label}: hosts must not be empty`)
@@ -131,6 +138,25 @@ const actual = {
 for (const [key, value] of Object.entries(actual)) {
   if (declaredCounts[key] !== value)
     fail(`counts.${key} declares ${declaredCounts[key]}, actual ${value}`)
+}
+const declaredByClosure = declaredCounts.byIntroducedInClosure ?? {}
+const actualByClosure = Object.fromEntries(
+  RELEASE_CLOSURES.map(closure => [
+    closure,
+    (profiles.presets ?? []).filter(preset => preset.introducedInClosure === closure).length,
+  ]),
+)
+if (Object.keys(declaredByClosure).join('\n') !== RELEASE_CLOSURES.join('\n')) {
+  fail(
+    `counts.byIntroducedInClosure must name exactly ${RELEASE_CLOSURES.join(', ')} in release order`,
+  )
+}
+for (const [closure, count] of Object.entries(actualByClosure)) {
+  if (declaredByClosure[closure] !== count) {
+    fail(
+      `counts.byIntroducedInClosure.${closure} declares ${declaredByClosure[closure]}, actual ${count}`,
+    )
+  }
 }
 
 // --- reference bundle baseline ---------------------------------------------------------------------

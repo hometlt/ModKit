@@ -115,7 +115,7 @@ const PROJECTION_KEYS = [
 const PROJECTION_OPERATION_KEYS = ['inspect', 'validate', 'read', 'materialize']
 
 const ENUMS = {
-  releaseTrack: ['mk3-priority', 'multiverse-priority', 'post-ga'],
+  releaseTrack: ['mk3-priority', 'pre-multiverse-priority', 'multiverse-priority', 'post-ga'],
   origin: ['legacy', 'owner-addition'],
   obligation: [
     'legacy-required',
@@ -740,6 +740,10 @@ if (isDefaultRegistry) {
     if (seen.has(entry.id)) fail(`${label}: duplicate corpus id`)
     seen.add(entry.id)
     checkEnum(label, 'status', entry.status, CORPUS_STATUSES)
+    checkEnum(label, 'releaseTrack', entry.releaseTrack, [
+      'mk3-priority',
+      'pre-multiverse-priority',
+    ])
     if (!Number.isInteger(entry.verticalBlock)) fail(`${label}: verticalBlock is required`)
     if (typeof entry.evidence !== 'string' || entry.evidence.length < 10) {
       fail(`${label}: evidence must state what was actually observed`)
@@ -762,6 +766,13 @@ if (isDefaultRegistry) {
     for (const id of entry.capabilityIds ?? []) {
       if (!capabilityIds.has(id))
         fail(`${label}: capabilityId ${id} does not exist in the registry`)
+
+      const capability = capabilityById.get(id)
+      if (capability !== undefined && capability.releaseTrack !== entry.releaseTrack) {
+        fail(
+          `${label}: capabilityId ${id} has releaseTrack ${capability.releaseTrack}, expected ${entry.releaseTrack}`,
+        )
+      }
 
       if (/^game\/.+\/discover-open$/u.test(id)) {
         const expectedRootVariables = (entry.environmentVariables ?? []).filter(variable =>
@@ -800,6 +811,11 @@ if (isDefaultRegistry) {
       entry => entry.status === 'legal-alternative-ready',
     ).length,
     unavailable: (corpora.corpora ?? []).filter(entry => entry.status === 'unavailable').length,
+    mk3Priority: (corpora.corpora ?? []).filter(entry => entry.releaseTrack === 'mk3-priority')
+      .length,
+    preMultiversePriority: (corpora.corpora ?? []).filter(
+      entry => entry.releaseTrack === 'pre-multiverse-priority',
+    ).length,
   }
   for (const [key, value] of Object.entries(expected)) {
     if (corpora.counts?.[key] !== value) {

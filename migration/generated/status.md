@@ -2,7 +2,7 @@
 
 # Состояние переноса modkitx → Modkit MK3
 
-Генерируемая сводка миграции. Страница намеренно без даты: свежесть доказывается повторной генерацией (`pnpm migration:check`), а не записанным временем. Источники — опечатанный oracle, слой 1 (`migration/generated/source-inventory.json`), workflow-ledger блока 14A, слой 2 (`migration/capabilities.yaml`) и два closure.
+Генерируемая сводка миграции. Страница намеренно без даты: свежесть доказывается повторной генерацией (`pnpm migration:check`), а не записанным временем. Источники — опечатанный oracle, слой 1 (`migration/generated/source-inventory.json`), workflow-ledger блока 14A, слой 2 (`migration/capabilities.yaml`) и три closure.
 
 ## 1. Опечатанный oracle
 
@@ -65,12 +65,12 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 ### 3.1. Release track и обязательность
 
-| releaseTrack          | Строк | obligation                  | Строк |
-| --------------------- | ----- | --------------------------- | ----- |
-| `mk3-priority`        | 158   | `experimental-optional`     | 2     |
-| `multiverse-priority` | 9     | `focused-required-addition` | 13    |
-| `post-ga`             | 141   | `legacy-required`           | 289   |
-|                       |       | `post-ga-required-proof`    | 4     |
+| releaseTrack              | Строк | obligation                  | Строк |
+| ------------------------- | ----- | --------------------------- | ----- |
+| `mk3-priority`            | 116   | `experimental-optional`     | 2     |
+| `multiverse-priority`     | 9     | `focused-required-addition` | 13    |
+| `post-ga`                 | 141   | `legacy-required`           | 289   |
+| `pre-multiverse-priority` | 42    | `post-ga-required-proof`    | 4     |
 
 ### 3.2. Три независимые оси
 
@@ -100,10 +100,11 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 ## 4. Именованные closure
 
-| Release             | Всего | Seed | Транзитивных | Нерешённых | Ближайший блок |
-| ------------------- | ----- | ---- | ------------ | ---------- | -------------- |
-| `mk3-ga`            | 165   | 158  | 7            | 38         | block-15       |
-| `mk3-multiverse-ga` | 167   | 167  | 0            | 38         | block-15       |
+| Release              | Всего | Seed | Транзитивных | Нерешённых | Ближайший блок |
+| -------------------- | ----- | ---- | ------------ | ---------- | -------------- |
+| `mk3-ga`             | 124   | 116  | 8            | 13         | block-15       |
+| `mk3-pre-multiverse` | 165   | 158  | 7            | 38         | block-15       |
+| `mk3-multiverse-ga`  | 167   | 167  | 0            | 38         | block-15       |
 
 ### 4.1. Дедлайны `mk3-ga` по planned block
 
@@ -113,13 +114,13 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 | `block-12`    | 70    | 0                 |
 | `block-13`    | 1     | 0                 |
 | `block-15`    | 24    | 5                 |
-| `block-16`    | 33    | 19                |
-| `block-17`    | 21    | 12                |
+| `block-16`    | 1     | 0                 |
+| `block-17`    | 12    | 6                 |
 | `block-22`    | 2     | 2                 |
 
 ## 5. Gap list — что осталось в `mk3-ga`
 
-Строк с нерешённым состоянием: **38** из 165. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
+Строк с нерешённым состоянием: **13** из 124. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
 
 ### Блок 15 — 5 строк
 
@@ -131,46 +132,16 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 | `vertical/starcraft-2/native-to-uv`                  | `missing`      | E0       | `extensions/blizzard/starcraft2-game` |
 | `vertical/starcraft-2/neutral-definitions-world`     | `missing`      | E0       | `extensions/blizzard/starcraft2-game` |
 
-### Блок 16 — 19 строк
+### Блок 17 — 6 строк
 
-| Возможность                                                 | migrationState | evidence | Владелец             |
-| ----------------------------------------------------------- | -------------- | -------- | -------------------- |
-| `block9/w3d-texture-cross-archive`                          | `missing`      | E0       | `packages/host`      |
-| `format/sage-asset-bundle/open-inspect`                     | `missing`      | E0       | `extensions/ea/sage` |
-| `game/cnc3-tiberium-wars/discover-open`                     | `missing`      | E0       | `unassigned`         |
-| `game/red-alert-3/discover-open`                            | `missing`      | E0       | `unassigned`         |
-| `vertical/cnc3-kanes-wrath/deterministic-playable-subset`   | `missing`      | E0       | `extensions/ea/sage` |
-| `vertical/cnc3-kanes-wrath/native-inspect-authoring`        | `missing`      | E0       | `extensions/ea/sage` |
-| `vertical/cnc3-kanes-wrath/native-round-trip`               | `missing`      | E0       | `extensions/ea/sage` |
-| `vertical/cnc3-kanes-wrath/native-to-uv`                    | `missing`      | E0       | `extensions/ea/sage` |
-| `vertical/cnc3-kanes-wrath/neutral-definitions-world`       | `missing`      | E0       | `extensions/ea/sage` |
-| `vertical/cnc3-tiberium-wars/deterministic-playable-subset` | `missing`      | E0       | `extensions/ea/sage` |
-| `vertical/cnc3-tiberium-wars/native-inspect-authoring`      | `missing`      | E0       | `extensions/ea/sage` |
-| `vertical/cnc3-tiberium-wars/native-round-trip`             | `missing`      | E0       | `extensions/ea/sage` |
-| `vertical/cnc3-tiberium-wars/native-to-uv`                  | `missing`      | E0       | `extensions/ea/sage` |
-| `vertical/cnc3-tiberium-wars/neutral-definitions-world`     | `missing`      | E0       | `extensions/ea/sage` |
-| `vertical/red-alert-3/deterministic-playable-subset`        | `missing`      | E0       | `extensions/ea/sage` |
-| `vertical/red-alert-3/native-inspect-authoring`             | `missing`      | E0       | `extensions/ea/sage` |
-| `vertical/red-alert-3/native-round-trip`                    | `missing`      | E0       | `extensions/ea/sage` |
-| `vertical/red-alert-3/native-to-uv`                         | `missing`      | E0       | `extensions/ea/sage` |
-| `vertical/red-alert-3/neutral-definitions-world`            | `missing`      | E0       | `extensions/ea/sage` |
-
-### Блок 17 — 12 строк
-
-| Возможность                                                | migrationState | evidence | Владелец                                 |
-| ---------------------------------------------------------- | -------------- | -------- | ---------------------------------------- |
-| `game/beyond-all-reason/discover-open`                     | `missing`      | E0       | `unassigned`                             |
-| `game/warzone-2100/discover-open`                          | `missing`      | E0       | `unassigned`                             |
-| `vertical/beyond-all-reason/deterministic-playable-subset` | `missing`      | E0       | `extensions/mk2/opensource-spring`       |
-| `vertical/beyond-all-reason/native-inspect-authoring`      | `missing`      | E0       | `extensions/mk2/opensource-spring`       |
-| `vertical/beyond-all-reason/native-round-trip`             | `missing`      | E0       | `extensions/mk2/opensource-spring`       |
-| `vertical/beyond-all-reason/native-to-uv`                  | `missing`      | E0       | `extensions/mk2/opensource-spring`       |
-| `vertical/beyond-all-reason/neutral-definitions-world`     | `missing`      | E0       | `extensions/mk2/opensource-spring`       |
-| `vertical/warzone-2100/deterministic-playable-subset`      | `missing`      | E0       | `extensions/mk2/opensource-warzone-2100` |
-| `vertical/warzone-2100/native-inspect-authoring`           | `missing`      | E0       | `extensions/mk2/opensource-warzone-2100` |
-| `vertical/warzone-2100/native-round-trip`                  | `missing`      | E0       | `extensions/mk2/opensource-warzone-2100` |
-| `vertical/warzone-2100/native-to-uv`                       | `missing`      | E0       | `extensions/mk2/opensource-warzone-2100` |
-| `vertical/warzone-2100/neutral-definitions-world`          | `missing`      | E0       | `extensions/mk2/opensource-warzone-2100` |
+| Возможность                                           | migrationState | evidence | Владелец                                 |
+| ----------------------------------------------------- | -------------- | -------- | ---------------------------------------- |
+| `game/warzone-2100/discover-open`                     | `missing`      | E0       | `unassigned`                             |
+| `vertical/warzone-2100/deterministic-playable-subset` | `missing`      | E0       | `extensions/mk2/opensource-warzone-2100` |
+| `vertical/warzone-2100/native-inspect-authoring`      | `missing`      | E0       | `extensions/mk2/opensource-warzone-2100` |
+| `vertical/warzone-2100/native-round-trip`             | `missing`      | E0       | `extensions/mk2/opensource-warzone-2100` |
+| `vertical/warzone-2100/native-to-uv`                  | `missing`      | E0       | `extensions/mk2/opensource-warzone-2100` |
+| `vertical/warzone-2100/neutral-definitions-world`     | `missing`      | E0       | `extensions/mk2/opensource-warzone-2100` |
 
 ### Блок 22 — 2 строк
 
@@ -179,30 +150,66 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 | `uv/uvd/definitions`           | `missing`      | E1       | `packages/sdk`             |
 | `uv/uvw/world-materialization` | `missing`      | E2       | `extensions/common/models` |
 
-## 6. Готовность корпусов
+## 6. Дополнительные gaps следующих release
 
-| Корпус                             | Вертикаль | Статус                  | Переменные                                                     | Действие владельца                                                                                                                                                                       |
-| ---------------------------------- | --------- | ----------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| StarCraft II                       | блок 15   | `available`             | `MODKITX_SC2_ROOT`                                             | —                                                                                                                                                                                        |
-| Command & Conquer 3: Kane's Wrath  | блок 16   | `available`             | `MODKITX_CNC3_KW_ROOT`, `MODKITX_W3X_PATH`, `MODKITX_W3D_PATH` | —                                                                                                                                                                                        |
-| Command & Conquer 3: Tiberium Wars | блок 16   | `owner-action-required` | `MODKITX_CNC3_TW_ROOT`                                         | Установить или предоставить read-only корпус ванильного C&C3 Tiberium Wars до начала вертикали блока 16; иначе TW-строки остаются видимым owner-action, а не поздним environment skip.   |
-| Command & Conquer: Red Alert 3     | блок 16   | `owner-action-required` | `MODKITX_RA3_ROOT`                                             | Предоставить read-only установку Red Alert 3, задать MODKITX_RA3_ROOT в локальном environment descriptor и подтвердить версию, сборку, язык, хеш и маркеры до начала вертикали блока 16. |
-| Warzone 2100                       | блок 17   | `available`             | `MODKITX_WARZONE_ROOT`                                         | —                                                                                                                                                                                        |
-| Beyond All Reason                  | блок 17   | `available`             | `MODKITX_BAR_ROOT`                                             | —                                                                                                                                                                                        |
+### `mk3-pre-multiverse` сверх `mk3-ga` — 25 строк
 
-## 7. Профили продукта
+| Возможность                                                 | migrationState | evidence | Владелец                           |
+| ----------------------------------------------------------- | -------------- | -------- | ---------------------------------- |
+| `block9/w3d-texture-cross-archive`                          | `missing`      | E0       | `packages/host`                    |
+| `format/sage-asset-bundle/open-inspect`                     | `missing`      | E0       | `extensions/ea/sage`               |
+| `game/cnc3-tiberium-wars/discover-open`                     | `missing`      | E0       | `unassigned`                       |
+| `game/red-alert-3/discover-open`                            | `missing`      | E0       | `unassigned`                       |
+| `vertical/cnc3-kanes-wrath/deterministic-playable-subset`   | `missing`      | E0       | `extensions/ea/sage`               |
+| `vertical/cnc3-kanes-wrath/native-inspect-authoring`        | `missing`      | E0       | `extensions/ea/sage`               |
+| `vertical/cnc3-kanes-wrath/native-round-trip`               | `missing`      | E0       | `extensions/ea/sage`               |
+| `vertical/cnc3-kanes-wrath/native-to-uv`                    | `missing`      | E0       | `extensions/ea/sage`               |
+| `vertical/cnc3-kanes-wrath/neutral-definitions-world`       | `missing`      | E0       | `extensions/ea/sage`               |
+| `vertical/cnc3-tiberium-wars/deterministic-playable-subset` | `missing`      | E0       | `extensions/ea/sage`               |
+| `vertical/cnc3-tiberium-wars/native-inspect-authoring`      | `missing`      | E0       | `extensions/ea/sage`               |
+| `vertical/cnc3-tiberium-wars/native-round-trip`             | `missing`      | E0       | `extensions/ea/sage`               |
+| `vertical/cnc3-tiberium-wars/native-to-uv`                  | `missing`      | E0       | `extensions/ea/sage`               |
+| `vertical/cnc3-tiberium-wars/neutral-definitions-world`     | `missing`      | E0       | `extensions/ea/sage`               |
+| `vertical/red-alert-3/deterministic-playable-subset`        | `missing`      | E0       | `extensions/ea/sage`               |
+| `vertical/red-alert-3/native-inspect-authoring`             | `missing`      | E0       | `extensions/ea/sage`               |
+| `vertical/red-alert-3/native-round-trip`                    | `missing`      | E0       | `extensions/ea/sage`               |
+| `vertical/red-alert-3/native-to-uv`                         | `missing`      | E0       | `extensions/ea/sage`               |
+| `vertical/red-alert-3/neutral-definitions-world`            | `missing`      | E0       | `extensions/ea/sage`               |
+| `game/beyond-all-reason/discover-open`                      | `missing`      | E0       | `unassigned`                       |
+| `vertical/beyond-all-reason/deterministic-playable-subset`  | `missing`      | E0       | `extensions/mk2/opensource-spring` |
+| `vertical/beyond-all-reason/native-inspect-authoring`       | `missing`      | E0       | `extensions/mk2/opensource-spring` |
+| `vertical/beyond-all-reason/native-round-trip`              | `missing`      | E0       | `extensions/mk2/opensource-spring` |
+| `vertical/beyond-all-reason/native-to-uv`                   | `missing`      | E0       | `extensions/mk2/opensource-spring` |
+| `vertical/beyond-all-reason/neutral-definitions-world`      | `missing`      | E0       | `extensions/mk2/opensource-spring` |
 
-| Preset                   | Статус      | Семейств | Планируемых | Минимальный closure |
-| ------------------------ | ----------- | -------- | ----------- | ------------------- |
-| Common/Documents         | `available` | 7        | 0           | да                  |
-| SC2 Mod Studio           | `available` | 10       | 0           | нет                 |
-| C&C SAGE Studio          | `available` | 8        | 0           | нет                 |
-| Warzone 2100 Studio      | `planned`   | 4        | 1           | нет                 |
-| BAR/Spring Studio        | `planned`   | 4        | 1           | нет                 |
-| Universal Asset Explorer | `available` | 16       | 0           | нет                 |
-| Headless Mod CI          | `available` | 11       | 0           | да                  |
+### `mk3-multiverse-ga` сверх `mk3-pre-multiverse` — 0 строк
 
-## 8. Матрица проекций
+Новых нерешённых строк нет.
+
+## 7. Готовность корпусов
+
+| Корпус                             | Release track             | Вертикаль | Статус                  | Переменные                                                     | Действие владельца                                                                                                                                                                       |
+| ---------------------------------- | ------------------------- | --------- | ----------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| StarCraft II                       | `mk3-priority`            | блок 15   | `available`             | `MODKITX_SC2_ROOT`                                             | —                                                                                                                                                                                        |
+| Command & Conquer 3: Kane's Wrath  | `pre-multiverse-priority` | блок 16   | `available`             | `MODKITX_CNC3_KW_ROOT`, `MODKITX_W3X_PATH`, `MODKITX_W3D_PATH` | —                                                                                                                                                                                        |
+| Command & Conquer 3: Tiberium Wars | `pre-multiverse-priority` | блок 16   | `owner-action-required` | `MODKITX_CNC3_TW_ROOT`                                         | Установить или предоставить read-only корпус ванильного C&C3 Tiberium Wars до начала вертикали блока 16; иначе TW-строки остаются видимым owner-action, а не поздним environment skip.   |
+| Command & Conquer: Red Alert 3     | `pre-multiverse-priority` | блок 16   | `owner-action-required` | `MODKITX_RA3_ROOT`                                             | Предоставить read-only установку Red Alert 3, задать MODKITX_RA3_ROOT в локальном environment descriptor и подтвердить версию, сборку, язык, хеш и маркеры до начала вертикали блока 16. |
+| Warzone 2100                       | `mk3-priority`            | блок 17   | `available`             | `MODKITX_WARZONE_ROOT`                                         | —                                                                                                                                                                                        |
+| Beyond All Reason                  | `pre-multiverse-priority` | блок 17   | `available`             | `MODKITX_BAR_ROOT`                                             | —                                                                                                                                                                                        |
+
+## 8. Профили продукта
+
+| Preset                   | Входит с release     | Статус      | Семейств | Планируемых | Минимальный closure |
+| ------------------------ | -------------------- | ----------- | -------- | ----------- | ------------------- |
+| Common/Documents         | `mk3-ga`             | `available` | 7        | 0           | да                  |
+| SC2 Mod Studio           | `mk3-ga`             | `available` | 10       | 0           | нет                 |
+| C&C SAGE Studio          | `mk3-pre-multiverse` | `available` | 8        | 0           | нет                 |
+| Warzone 2100 Studio      | `mk3-ga`             | `planned`   | 4        | 1           | нет                 |
+| BAR/Spring Studio        | `mk3-pre-multiverse` | `planned`   | 4        | 1           | нет                 |
+| Universal Asset Explorer | `mk3-ga`             | `available` | 16       | 0           | нет                 |
+| Headless Mod CI          | `mk3-ga`             | `available` | 11       | 0           | да                  |
+
+## 9. Матрица проекций
 
 | Plane        | Что делать     | portableProfile | Зрелость артефакта  |
 | ------------ | -------------- | --------------- | ------------------- |
@@ -215,7 +222,7 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 | `code`       | `retain`       | `none`          | `reader-only`       |
 | `container`  | `project-live` | `none`          | `reader-only`       |
 
-## 9. Неотображённый остаток инвентаря
+## 10. Неотображённый остаток инвентаря
 
 Единиц, сопоставленных capability registry или workflow-ledger: **512**; явно неотображённых: **608**. Сумма равна 1120 — ни одна единица не потеряна.
 

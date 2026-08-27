@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Human-readable migration status and gap list (PLAN_MODKIT_MK3_FINAL_RU.md §3.5, блок 10 работа 7).
 //
-// Reads the generated inventory, the capability registry, the two release closures, the corpora
+// Reads the generated inventory, the capability registry, the three release closures, the corpora
 // readiness matrix, the product profiles and the projection matrix, and renders one page a person
 // can read: what exists, what is proved, and exactly what is still missing inside each named
 // release. Deterministic and timestamp-free — the freshness of the page is proved by regenerating
@@ -35,6 +35,7 @@ const corpora = readJson('migration/corpora-readiness.json')
 const profiles = readJson('migration/product-profiles.json')
 const closures = {
   'mk3-ga': readJson('migration/priority-scope.mk3-ga.json'),
+  'mk3-pre-multiverse': readJson('migration/priority-scope.mk3-pre-multiverse.json'),
   'mk3-multiverse-ga': readJson('migration/priority-scope.mk3-multiverse-ga.json'),
 }
 
@@ -68,7 +69,7 @@ push(
 )
 push('# Состояние переноса modkitx → Modkit MK3')
 push(
-  'Генерируемая сводка миграции. Страница намеренно без даты: свежесть доказывается повторной генерацией (`pnpm migration:check`), а не записанным временем. Источники — опечатанный oracle, слой 1 (`migration/generated/source-inventory.json`), workflow-ledger блока 14A, слой 2 (`migration/capabilities.yaml`) и два closure.',
+  'Генерируемая сводка миграции. Страница намеренно без даты: свежесть доказывается повторной генерацией (`pnpm migration:check`), а не записанным временем. Источники — опечатанный oracle, слой 1 (`migration/generated/source-inventory.json`), workflow-ledger блока 14A, слой 2 (`migration/capabilities.yaml`) и три closure.',
 )
 
 push('## 1. Опечатанный oracle')
@@ -271,12 +272,42 @@ for (const block of [...new Set(gaps.map(unit => unit.plannedBlock))].sort((a, b
   )
 }
 
-push('## 6. Готовность корпусов')
+push('## 6. Дополнительные gaps следующих release')
+const closureEntries = Object.entries(closures)
+for (let index = 1; index < closureEntries.length; index += 1) {
+  const [name, scope] = closureEntries[index]
+  const [predecessorName, predecessor] = closureEntries[index - 1]
+  const predecessorIds = new Set(predecessor.units.map(unit => unit.capabilityId))
+  const incrementalGaps = scope.units
+    .filter(unit => !predecessorIds.has(unit.capabilityId) && UNRESOLVED.has(unit.migrationState))
+    .sort(
+      (left, right) =>
+        left.plannedBlock - right.plannedBlock ||
+        compareUtf8(left.capabilityId, right.capabilityId),
+    )
+  push(`### \`${name}\` сверх \`${predecessorName}\` — ${incrementalGaps.length} строк`)
+  push(
+    incrementalGaps.length === 0
+      ? 'Новых нерешённых строк нет.'
+      : table(
+          ['Возможность', 'migrationState', 'evidence', 'Владелец'],
+          incrementalGaps.map(unit => [
+            `\`${unit.capabilityId}\``,
+            `\`${unit.migrationState}\``,
+            unit.evidenceLevel,
+            `\`${unit.owner}\``,
+          ]),
+        ),
+  )
+}
+
+push('## 7. Готовность корпусов')
 push(
   table(
-    ['Корпус', 'Вертикаль', 'Статус', 'Переменные', 'Действие владельца'],
+    ['Корпус', 'Release track', 'Вертикаль', 'Статус', 'Переменные', 'Действие владельца'],
     corpora.corpora.map(entry => [
       entry.displayName,
+      `\`${entry.releaseTrack}\``,
       `блок ${entry.verticalBlock}`,
       `\`${entry.status}\``,
       entry.environmentVariables.map(variable => `\`${variable}\``).join(', '),
@@ -285,12 +316,13 @@ push(
   ),
 )
 
-push('## 7. Профили продукта')
+push('## 8. Профили продукта')
 push(
   table(
-    ['Preset', 'Статус', 'Семейств', 'Планируемых', 'Минимальный closure'],
+    ['Preset', 'Входит с release', 'Статус', 'Семейств', 'Планируемых', 'Минимальный closure'],
     profiles.presets.map(preset => [
       preset.displayName,
+      `\`${preset.introducedInClosure}\``,
       `\`${preset.status}\``,
       String(preset.extensionFamilies.length),
       String(preset.plannedFamilies.length),
@@ -299,7 +331,7 @@ push(
   ),
 )
 
-push('## 8. Матрица проекций')
+push('## 9. Матрица проекций')
 push(
   table(
     ['Plane', 'Что делать', 'portableProfile', 'Зрелость артефакта'],
@@ -312,7 +344,7 @@ push(
   ),
 )
 
-push('## 9. Неотображённый остаток инвентаря')
+push('## 10. Неотображённый остаток инвентаря')
 push(
   `Единиц, сопоставленных capability registry или workflow-ledger: **${registry.counts.mappedUnits}**; явно неотображённых: **${registry.counts.unmappedUnits}**. Сумма равна ${registry.counts.inventoryUnits} — ни одна единица не потеряна.`,
 )
