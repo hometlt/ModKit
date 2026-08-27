@@ -18,6 +18,7 @@ import {
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
+import { proves } from '@modkitx-x3/testkit'
 import {
   configuredExtensionRoots,
   dedupeRoots,
@@ -53,7 +54,7 @@ const nodeProbe: DirectoryProbe = {
   },
   join: (...parts) => join(...parts),
 }
-import { createVsCodeSubjectHost } from '../src/host.js'
+import { createVsCodeCommandOpener, createVsCodeSubjectHost } from '../src/host.js'
 
 const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
 const scratches: string[] = []
@@ -235,6 +236,67 @@ describe('a root that is not an extension', () => {
     expect(failure?.code).toBe('x3.host/extension-identity-mismatch')
     expect(failure?.message).toContain('acme/not-this-one')
     expect(host.extensions.installed).toEqual([])
+  }, 60_000)
+})
+
+describe('the VS Code product open path with a configured extension', () => {
+  it('opens the pinned SC2Map through configured and workspace roots', async () => {
+    const fixtureRoot = join(
+      repositoryRoot,
+      'packages',
+      'testkit',
+      'test',
+      'fixtures',
+      'mk2-synthetic',
+    )
+    const sc2Map = join(fixtureRoot, 'minimal.SC2Map')
+    const host = await createVsCodeSubjectHost({
+      catalogCandidates: [],
+      configuredExtensions: [join(repositoryRoot, 'extensions', 'blizzard', 'starcraft2')],
+    })
+    expect(host.extensions.failures).toEqual([])
+    expect(host.extensions.installed).toEqual(['org.modkitx.blizzard/starcraft2'])
+
+    const open = createVsCodeCommandOpener({
+      services: host.services,
+      roots: () => [fixtureRoot],
+    })
+    const answer = await open(sc2Map)
+    expect(answer.snapshot.state).toBe('opened')
+    if (answer.snapshot.state !== 'opened' || answer.session === undefined) {
+      throw new Error(`the VS Code SC2Map open failed: ${JSON.stringify(answer.snapshot)}`)
+    }
+    expect(answer.snapshot.selected).toMatchObject({
+      contributionId: 'org.modkitx/sc2-map',
+      variantId: 'portable',
+    })
+    const descriptor = answer.snapshot.descriptor as {
+      readonly identity: { readonly formatId: string }
+      readonly traits: readonly {
+        readonly id: string
+        readonly parameters?: Readonly<Record<string, unknown>>
+      }[]
+      readonly dataSources: readonly { readonly contract: string; readonly major: number }[]
+    }
+    expect(descriptor.identity.formatId).toBe('sc2-map')
+    expect(descriptor.traits).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'game.map', parameters: { packed: true, documents: 3 } }),
+        expect.objectContaining({ id: 'container.entries', parameters: { count: 5 } }),
+        expect.objectContaining({ id: 'content.scripts', parameters: { files: 1 } }),
+      ]),
+    )
+    expect(descriptor.dataSources.map(item => `${item.contract}@${item.major}`).sort()).toEqual([
+      'common.view/byte-range-source@1',
+      'common.view/namespace-entry-source@1',
+      'common.view/tree-data-source@1',
+    ])
+    proves({
+      capabilityId: 'format/sc2-map/open-inspect',
+      operation: 'read',
+      note: 'VS Code opens the pinned packed SC2Map through configured-extension and workspace roots',
+    })
+    await answer.session.dispose()
   }, 60_000)
 })
 

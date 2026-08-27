@@ -17,6 +17,8 @@ import { webcrypto } from 'node:crypto'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ModkitError } from '@modkitx-x3/core'
+import { commandRequest } from '@modkitx-x3/host'
+import { proves } from '@modkitx-x3/testkit'
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
 import {
   EXTENSION_ROOT_FAILURE_CODES,
@@ -28,7 +30,7 @@ import {
   type WebExtensionDirectoryHandle,
   type WebPermissionState,
 } from '../src/extension-roots.js'
-import type { WebFileHandleLike } from '../src/files.js'
+import { createDirectoryAccess, type WebFileHandleLike } from '../src/files.js'
 import {
   catalogCoordinates,
   createWebSubjectServices,
@@ -363,11 +365,12 @@ async function servicesOverUserFolder(
   extra: {
     readonly loaderLimits?: { readonly maxFiles?: number; readonly maxTotalBytes?: number }
   } = {},
+  catalog: WebExtensionCatalog = catalogWithout('images'),
 ) {
   const site = diskOrigin()
   return createWebSubjectServices({
     baseUrl: ORIGIN,
-    catalog: catalogWithout('images'),
+    catalog,
     userExtensions: loaded,
     identity,
     probe,
@@ -406,6 +409,74 @@ describe('user extension folders — the whole path', () => {
       'x3.host/full-process-authority',
     )
     await result.session.dispose()
+  }, 30_000)
+
+  it('opens the pinned SC2Map from a selected content folder through a user extension folder', async () => {
+    const starcraft2Root = join(repositoryRoot, 'extensions', 'blizzard', 'starcraft2')
+    const loaded = await load([
+      request('root-starcraft2', directoryHandle('starcraft2', treeFromDisk(starcraft2Root))),
+    ])
+    expect(loaded.failures).toEqual([])
+    expect(loaded.coordinates).toEqual(['org.modkitx.blizzard/starcraft2'])
+    const services = await servicesOverUserFolder(loaded, {}, WEB_EXTENSION_CATALOG)
+
+    const content: FakeTree = new Map([
+      [
+        'minimal.SC2Map',
+        new Uint8Array(
+          readFileSync(
+            join(
+              repositoryRoot,
+              'packages',
+              'testkit',
+              'test',
+              'fixtures',
+              'mk2-synthetic',
+              'minimal.SC2Map',
+            ),
+          ),
+        ),
+      ],
+    ])
+    const access = createDirectoryAccess(directoryHandle('selected-maps', content))
+    const entries = await access.list(undefined)
+    expect(entries.map(entry => entry.id)).toEqual(['minimal.SC2Map'])
+    const entry = entries[0]
+    if (entry === undefined) throw new Error('the selected folder lost its SC2Map')
+    const authority = services.commands.authorize({
+      access,
+      entry,
+      request: {
+        intent: 'full',
+        grant: { id: 'pwa-sc2-selected-folder', classes: ['read-source'] },
+        budget,
+      },
+    })
+    const receipt = await services.commands.execute(
+      commandRequest('subject.open', { subject: authority.ref }),
+      { runId: 'pwa-sc2-selected-folder' },
+    )
+    expect(receipt.result).toMatchObject({
+      state: 'ok',
+      command: 'subject.open',
+      data: {
+        state: 'opened',
+        selected: {
+          contributionId: 'org.modkitx/sc2-map',
+          variantId: 'portable',
+        },
+        formatId: 'sc2-map',
+      },
+    })
+    expect(spawned.length).toBeGreaterThan(0)
+    expect(spawned.every(worker => worker.includes(`${ORIGIN}worker-entry.js`))).toBe(true)
+    proves({
+      capabilityId: 'format/sc2-map/open-inspect',
+      operation: 'read',
+      note: 'the PWA opens the pinned packed SC2Map through selected-folder authority and a user extension root',
+    })
+    expect(authority.revoke()).toBe(true)
+    await services.commands.dispose()
   }, 30_000)
 
   it('a file changed after its digest was taken is refused at load, not evaluated', async () => {

@@ -34,6 +34,7 @@ import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
 import type { Diagnostic } from '@modkitx-x3/core'
 import { isModkitError } from '@modkitx-x3/core'
+import { proves } from '@modkitx-x3/testkit'
 import {
   revisionId,
   type ArtifactByteSource,
@@ -350,6 +351,64 @@ describe('the Electron composition opens a subject headlessly', () => {
     const call = /await subjectServices\.open\(\{[\s\S]*?\n {4}\}\)/u.exec(main)?.[0] ?? ''
     expect(call, 'main.cjs opens subjects without a companion resolver').toContain('resolveInput,')
   })
+
+  it('opens the pinned SC2Map through an installed extension and the main-process file path', async () => {
+    const fixtureRoot = syntheticDir
+    const file = join(fixtureRoot, 'minimal.SC2Map')
+    const subjects = await createElectronSubjectServices([], {
+      userRoots: [join(extensionsRoot, 'blizzard', 'starcraft2')],
+    })
+    services.push(subjects)
+    expect(subjects.extensions.bundled).toEqual([])
+    expect(subjects.extensions.installed).toEqual(['org.modkitx.blizzard/starcraft2'])
+
+    const opened = await subjects.open({
+      source: await openFileArtifactSource(file),
+      path: file,
+      intent: 'full',
+      grant,
+      budget,
+      resolveInput: createFilesystemInputResolver({
+        primaryPath: file,
+        roots: [fixtureRoot],
+        inventory: subjects.application.main.inventory,
+      }),
+    })
+    if (opened.state !== 'opened') {
+      throw new Error(`the Electron SC2Map open failed: ${JSON.stringify(opened.diagnostics)}`)
+    }
+    expect(opened.selected).toMatchObject({
+      contributionId: 'org.modkitx/sc2-map',
+      variantId: 'portable',
+    })
+    const inspected = await opened.session.operations().invoke('inspect', null)
+    if (inspected.state !== 'ok' || inspected.output.kind !== 'json') {
+      throw new Error('the Electron SC2Map did not inspect')
+    }
+    expect(inspected.output.value).toMatchObject({
+      format: 'sc2-map',
+      entries: 5,
+      mapDocuments: ['MapInfo', 'Objects', 'Terrain'],
+      localizedData: 0,
+      scripts: 1,
+    })
+    const listing = await opened.session.dataSource('common.view/namespace-entry-source', 1)
+    const page = await (listing.value as NamespaceEntrySource).list('', { limit: 20 })
+    expect(page.items.map(item => item.path)).toEqual([
+      '(listfile)',
+      'MapInfo',
+      'MapScript.galaxy',
+      'Objects',
+      'Terrain',
+    ])
+    await listing.release()
+    proves({
+      capabilityId: 'format/sc2-map/open-inspect',
+      operation: 'read',
+      note: 'Electron opens and reads the pinned packed SC2Map through an installed extension root',
+    })
+    await opened.session.dispose()
+  }, 120_000)
 })
 
 describe('an archive entry opens as a subject of its own', () => {
