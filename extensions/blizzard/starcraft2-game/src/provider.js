@@ -1,14 +1,22 @@
 import { execFile } from 'node:child_process'
-import { readFile, stat } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { open, stat } from 'node:fs/promises'
+import { homedir } from 'node:os'
+import { basename, dirname, join, resolve } from 'node:path'
 import { promisify } from 'node:util'
 import { GAME_INSTALLATION_DISCOVERY_CONTRACT } from '@modkitx-x3/sdk/games'
+import {
+  collectStarcraft2InstallationCandidates,
+  normalizeStarcraft2InstallationPath,
+} from './installation-candidates.js'
 
 const execFileAsync = promisify(execFile)
 const DISCOVERY_ID = 'org.modkitx.blizzard.starcraft2'
 const GAME_ID = 'org.modkitx/starcraft-2'
 const DISPLAY_NAME = 'StarCraft II'
 const MAXIMUM_CANDIDATES = 128
+const MAXIMUM_BUILD_INFO_BYTES = 256 * 1024
+const REGISTRY_TIMEOUT_MS = 2_000
+const REGISTRY_MAX_BUFFER_BYTES = 256 * 1024
 const MARKER_DIRECTORIES = Object.freeze([
   ['casc-config-directory', 'SC2Data', 'config'],
   ['casc-data-directory', 'SC2Data', 'data'],
@@ -20,26 +28,6 @@ const REGISTRY_KEYS = Object.freeze([
   'HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\StarCraft II',
 ])
 
-function normalizePath(value) {
-  return resolve(value).replace(/\\/g, '/').replace(/\/+$/, '')
-}
-
-function candidateKey(candidate) {
-  const path = normalizePath(candidate.path)
-  return process.platform === 'win32' ? path.toLowerCase() : path
-}
-
-function nonEmptyPath(value, label) {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    throw new TypeError(`${label} must be a non-empty path`)
-  }
-  return resolve(value.trim())
-}
-
-function candidate(origin, path) {
-  return Object.freeze({ origin, displayName: DISPLAY_NAME, path: normalizePath(path) })
-}
-
 async function pathKind(path, expected) {
   try {
     const value = await stat(path)
@@ -49,16 +37,27 @@ async function pathKind(path, expected) {
   }
 }
 
-async function registryCandidates() {
+function normalizeRegistryInstallationPath(value) {
+  const path = resolve(value.trim())
+  const leaf = basename(path).toLowerCase()
+  return leaf === 'support' || leaf === 'support64' ? dirname(path) : path
+}
+
+async function registryCandidates(signal) {
   if (process.platform !== 'win32') return []
   const candidates = []
   for (const key of REGISTRY_KEYS) {
+    signal?.throwIfAborted()
     try {
-      const { stdout } = await execFileAsync('reg', ['query', key, '/v', 'InstallLocation'], {
+      const { stdout } = await execFileAsync('reg.exe', ['query', key, '/v', 'InstallLocation'], {
+        encoding: 'utf8',
+        maxBuffer: REGISTRY_MAX_BUFFER_BYTES,
+        timeout: REGISTRY_TIMEOUT_MS,
         windowsHide: true,
       })
       const match = /^\s*InstallLocation\s+REG_\w+\s+(.+)$/im.exec(stdout)
-      if (match?.[1]) candidates.push(candidate('registry', match[1].trim()))
+      const path = match?.[1]?.trim()
+      if (path) candidates.push(normalizeRegistryInstallationPath(path))
     } catch {
       // An absent registry view is normal and contributes no candidate.
     }
@@ -68,14 +67,34 @@ async function registryCandidates() {
 
 function defaultCandidates() {
   if (process.platform === 'darwin') {
-    return [candidate('default-directory', '/Applications/StarCraft II')]
+    return ['/Applications/StarCraft II', join(homedir(), 'Applications', 'StarCraft II')]
+  }
+  if (process.platform === 'linux') {
+    return [
+      join(homedir(), '.wine', 'drive_c', 'Program Files (x86)', 'StarCraft II'),
+      join(homedir(), '.wine', 'drive_c', 'Program Files', 'StarCraft II'),
+    ]
   }
   if (process.platform !== 'win32') return []
   const roots = []
   for (const base of [process.env['ProgramFiles(x86)'], process.env['ProgramFiles']]) {
-    if (base) roots.push(candidate('default-directory', join(base, 'StarCraft II')))
+    if (base?.trim()) roots.push(join(base.trim(), 'StarCraft II'))
   }
   return roots
+}
+
+async function readBoundedBuildInformation(path) {
+  const handle = await open(path, 'r')
+  try {
+    const buffer = Buffer.allocUnsafe(MAXIMUM_BUILD_INFO_BYTES + 1)
+    const { bytesRead } = await handle.read(buffer, 0, buffer.byteLength, 0)
+    if (bytesRead > MAXIMUM_BUILD_INFO_BYTES) {
+      throw new RangeError(`.build.info exceeds ${MAXIMUM_BUILD_INFO_BYTES} bytes`)
+    }
+    return buffer.subarray(0, bytesRead).toString('utf8')
+  } finally {
+    await handle.close()
+  }
 }
 
 function parseBuildInformation(text) {
@@ -123,7 +142,7 @@ async function probeCandidate(candidateValue, signal) {
   let build
   if (hasBuildInfo) {
     try {
-      build = parseBuildInformation(await readFile(buildInfoPath, 'utf8'))
+      build = parseBuildInformation(await readBoundedBuildInformation(buildInfoPath))
     } catch {
       build = undefined
     }
@@ -148,7 +167,7 @@ async function probeCandidate(candidateValue, signal) {
   const confirmed = evidence.every(entry => entry.found)
   return Object.freeze({
     candidate: candidateValue,
-    normalizedPath: normalizePath(root),
+    normalizedPath: normalizeStarcraft2InstallationPath(root),
     confirmed,
     ...(build?.version ? { version: build.version } : {}),
     ...(build?.buildName ? { buildName: build.buildName } : {}),
@@ -166,31 +185,30 @@ function validatedLimit(value) {
   return value
 }
 
-function configuredCandidates(paths) {
-  if (paths === undefined) return []
-  if (!Array.isArray(paths)) throw new TypeError('configuredPaths must be an array when present')
-  return paths.map((path, index) =>
-    candidate('configured-path', nonEmptyPath(path, `configuredPaths[${index}]`)),
-  )
-}
-
 async function collectCandidates(request, limit) {
-  const discovered = [
-    ...configuredCandidates(request.configuredPaths),
-    ...(await registryCandidates()),
-    ...defaultCandidates(),
-  ]
-  const priority = { 'configured-path': 0, registry: 1, 'default-directory': 2 }
-  discovered.sort((left, right) => {
-    const pathOrder = candidateKey(left).localeCompare(candidateKey(right))
-    return pathOrder === 0 ? priority[left.origin] - priority[right.origin] : pathOrder
-  })
-  const unique = new Map()
-  for (const entry of discovered) {
-    const key = candidateKey(entry)
-    if (!unique.has(key)) unique.set(key, entry)
+  const explicit = collectStarcraft2InstallationCandidates(
+    {
+      environmentPath: process.env['MODKITX_SC2_ROOT'],
+      configuredPaths: request.configuredPaths,
+      registryPaths: [],
+      defaultPaths: [],
+      platform: process.platform,
+    },
+    limit,
+  )
+  if (explicit.candidates.length >= limit) {
+    return Object.freeze({ ...explicit, truncated: true })
   }
-  return { candidates: [...unique.values()].slice(0, limit), truncated: unique.size > limit }
+  return collectStarcraft2InstallationCandidates(
+    {
+      environmentPath: process.env['MODKITX_SC2_ROOT'],
+      configuredPaths: request.configuredPaths,
+      registryPaths: await registryCandidates(request.signal),
+      defaultPaths: defaultCandidates(),
+      platform: process.platform,
+    },
+    limit,
+  )
 }
 
 export async function discoverStarcraft2Installations(request) {
@@ -205,7 +223,7 @@ export async function discoverStarcraft2Installations(request) {
     request.signal?.throwIfAborted()
     probes.push(await probeCandidate(entry, request.signal))
   }
-  const installations = probes.flatMap(probe =>
+  const installations = probes.flatMap((probe, index) =>
     probe.confirmed
       ? [
           Object.freeze({
@@ -213,7 +231,7 @@ export async function discoverStarcraft2Installations(request) {
             displayName: DISPLAY_NAME,
             installPath: probe.candidate.path,
             normalizedPath: probe.normalizedPath,
-            origins: Object.freeze([probe.candidate.origin]),
+            origins: collected.candidateOrigins[index] ?? Object.freeze([probe.candidate.origin]),
             ...(probe.version === undefined ? {} : { version: probe.version }),
             ...(probe.buildName === undefined ? {} : { buildName: probe.buildName }),
             ...(probe.buildUid === undefined ? {} : { buildUid: probe.buildUid }),

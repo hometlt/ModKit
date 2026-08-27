@@ -4,6 +4,13 @@ Provider for `common.game/installation-discovery@1`. It verifies user-selected, 
 and Windows uninstall-registry candidates using the active CASC build record and the bounded
 `SC2Data/config`, `SC2Data/data` and `SC2Data/indices` marker set.
 
+Candidate precedence is fixed: every `request.configuredPaths` entry in caller order, then a
+non-empty `MODKITX_SC2_ROOT`, Windows uninstall-registry locations, and finally
+platform defaults. Normalized duplicates are probed once and the earlier source wins (with
+case-insensitive comparison on Windows), while all matching origins are retained. Every candidate still has to pass the complete marker and
+active-build identity check; empty manual paths are rejected, an empty environment value is ignored,
+and missing or mismatched roots never become installations.
+
 This extension does not recursively scan disks, provision or launch the game, or enumerate
 Steam/Epic manifests. A host resolves this service from inventory, verifies one installation and
 hands the returned install path to its registered file VFS; ordinary subject resolution then
