@@ -7,12 +7,18 @@
     "presets": 7,
     "available": 5,
     "planned": 2,
-    "referenceProfiles": 13
+    "referenceProfiles": 13,
+    "byIntroducedInClosure": {
+      "mk3-ga": 5,
+      "mk3-pre-multiverse": 2,
+      "mk3-multiverse-ga": 0
+    }
   },
   "presets": [
     {
       "id": "common-documents",
       "displayName": "Common/Documents",
+      "introducedInClosure": "mk3-ga",
       "status": "available",
       "hosts": ["cli", "electron", "pwa", "vscode"],
       "minimalClosure": true,
@@ -32,6 +38,7 @@
     {
       "id": "sc2-mod-studio",
       "displayName": "SC2 Mod Studio",
+      "introducedInClosure": "mk3-ga",
       "status": "available",
       "hosts": ["electron", "vscode"],
       "minimalClosure": false,
@@ -60,6 +67,7 @@
     {
       "id": "cnc-sage-studio",
       "displayName": "C&C SAGE Studio",
+      "introducedInClosure": "mk3-pre-multiverse",
       "status": "available",
       "hosts": ["electron", "vscode"],
       "minimalClosure": false,
@@ -80,6 +88,7 @@
     {
       "id": "warzone-2100-studio",
       "displayName": "Warzone 2100 Studio",
+      "introducedInClosure": "mk3-ga",
       "status": "planned",
       "hosts": ["electron", "vscode"],
       "minimalClosure": false,
@@ -103,6 +112,7 @@
     {
       "id": "bar-spring-studio",
       "displayName": "BAR/Spring Studio",
+      "introducedInClosure": "mk3-pre-multiverse",
       "status": "planned",
       "hosts": ["electron", "vscode"],
       "minimalClosure": false,
@@ -119,6 +129,7 @@
     {
       "id": "universal-asset-explorer",
       "displayName": "Universal Asset Explorer",
+      "introducedInClosure": "mk3-ga",
       "status": "available",
       "hosts": ["electron", "pwa", "vscode"],
       "minimalClosure": false,
@@ -147,6 +158,7 @@
     {
       "id": "headless-mod-ci",
       "displayName": "Headless Mod CI",
+      "introducedInClosure": "mk3-ga",
       "status": "available",
       "hosts": ["automation-host", "cli", "server"],
       "minimalClosure": true,

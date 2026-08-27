@@ -20,6 +20,7 @@
       "id": "demo",
       "displayName": "Demo",
       "verticalBlock": 5,
+      "releaseTrack": "mk3-priority",
       "status": "unavailable",
       "environmentVariables": ["MODKITX_DEMO_ROOT"],
       "evidence": "Фикстура: корпус недоступен и не имеет legal alternative.",

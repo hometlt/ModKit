@@ -6,12 +6,15 @@
     "available": 0,
     "ownerActionRequired": 6,
     "legalAlternativeReady": 0,
-    "unavailable": 0
+    "unavailable": 0,
+    "mk3Priority": 2,
+    "preMultiversePriority": 4
   },
   "corpora": [
     {
       "id": "starcraft-2",
       "verticalBlock": 15,
+      "releaseTrack": "mk3-priority",
       "status": "owner-action-required",
       "environmentVariables": ["MODKITX_SC2_ROOT"],
       "evidence": "Negative fixture keeps this corpus unavailable.",
@@ -21,6 +24,7 @@
     {
       "id": "cnc3-tiberium-wars",
       "verticalBlock": 16,
+      "releaseTrack": "pre-multiverse-priority",
       "status": "owner-action-required",
       "environmentVariables": ["MODKITX_CNC3_KW_ROOT"],
       "evidence": "The TW discovery row is deliberately assigned the KW root.",
@@ -30,6 +34,7 @@
     {
       "id": "cnc3-kanes-wrath",
       "verticalBlock": 16,
+      "releaseTrack": "pre-multiverse-priority",
       "status": "owner-action-required",
       "environmentVariables": ["MODKITX_CNC3_KW_ROOT"],
       "evidence": "Negative fixture keeps this corpus unavailable.",
@@ -39,6 +44,7 @@
     {
       "id": "red-alert-3",
       "verticalBlock": 16,
+      "releaseTrack": "pre-multiverse-priority",
       "status": "owner-action-required",
       "environmentVariables": ["MODKITX_RA3_ROOT"],
       "evidence": "Negative fixture keeps this corpus unavailable.",
@@ -48,6 +54,7 @@
     {
       "id": "warzone-2100",
       "verticalBlock": 17,
+      "releaseTrack": "mk3-priority",
       "status": "owner-action-required",
       "environmentVariables": ["MODKITX_WARZONE_ROOT"],
       "evidence": "Negative fixture keeps this corpus unavailable.",
@@ -57,6 +64,7 @@
     {
       "id": "beyond-all-reason",
       "verticalBlock": 17,
+      "releaseTrack": "pre-multiverse-priority",
       "status": "owner-action-required",
       "environmentVariables": ["MODKITX_BAR_ROOT"],
       "evidence": "Negative fixture keeps this corpus unavailable.",

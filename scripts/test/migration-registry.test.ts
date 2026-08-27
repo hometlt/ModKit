@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -163,6 +163,90 @@ function runPriority(registry: string, extra: readonly string[] = []) {
 }
 
 describe('phase-aware priority gate (plan §3.5, block 10 works 6–7)', () => {
+  it('emits three monotonic release closures deterministically', () => {
+    const outDir = mkdtempSync(join(tmpdir(), 'x3-three-release-scope-'))
+    const run = () =>
+      spawnSync(
+        process.execPath,
+        [
+          priorityGate,
+          '--registry',
+          join(fixtures, 'valid.capabilities.yaml'),
+          '--out-dir',
+          outDir,
+        ],
+        { encoding: 'utf8' },
+      )
+    const first = run()
+    expect(first.stderr).toBe('')
+    expect(first.status).toBe(0)
+    const names = ['mk3-ga', 'mk3-pre-multiverse', 'mk3-multiverse-ga'] as const
+    const before = names.map(name =>
+      readFileSync(join(outDir, `priority-scope.${name}.json`), 'utf8'),
+    )
+    const documents = before.map(text => JSON.parse(text))
+    expect(documents.map(document => document.release)).toEqual(names)
+    expect(documents.map(document => document.extends)).toEqual([
+      null,
+      'mk3-ga',
+      'mk3-pre-multiverse',
+    ])
+    for (let index = 1; index < documents.length; index += 1) {
+      const current = new Set(
+        documents[index].units.map((unit: { capabilityId: string }) => unit.capabilityId),
+      )
+      expect(
+        documents[index - 1].units.every((unit: { capabilityId: string }) =>
+          current.has(unit.capabilityId),
+        ),
+      ).toBe(true)
+    }
+    const second = run()
+    expect(second.stderr).toBe('')
+    expect(second.status).toBe(0)
+    expect(
+      names.map(name => readFileSync(join(outDir, `priority-scope.${name}.json`), 'utf8')),
+    ).toEqual(before)
+    rmSync(outDir, { recursive: true, force: true })
+  })
+
+  it('fails closed when a registry row uses a release track outside the three-release model', () => {
+    const temp = mkdtempSync(join(tmpdir(), 'x3-unknown-release-track-'))
+    const registry = join(temp, 'capabilities.yaml')
+    writeFileSync(
+      registry,
+      readFileSync(join(fixtures, 'valid.capabilities.yaml'), 'utf8').replace(
+        "releaseTrack: 'mk3-priority'",
+        "releaseTrack: 'misspelled-priority'",
+      ),
+    )
+    const result = spawnSync(
+      process.execPath,
+      [priorityGate, '--registry', registry, '--out-dir', temp],
+      { encoding: 'utf8' },
+    )
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('unsupported releaseTrack "misspelled-priority"')
+    rmSync(temp, { recursive: true, force: true })
+  })
+
+  it('fails freshness when the middle closure is missing', () => {
+    const outDir = mkdtempSync(join(tmpdir(), 'x3-missing-release-scope-'))
+    const args = [
+      priorityGate,
+      '--registry',
+      join(fixtures, 'valid.capabilities.yaml'),
+      '--out-dir',
+      outDir,
+    ]
+    expect(spawnSync(process.execPath, args, { encoding: 'utf8' }).status).toBe(0)
+    rmSync(join(outDir, 'priority-scope.mk3-pre-multiverse.json'))
+    const checked = spawnSync(process.execPath, [...args, '--check'], { encoding: 'utf8' })
+    expect(checked.status).toBe(1)
+    expect(checked.stderr).toContain('priority-scope.mk3-pre-multiverse.json is missing')
+    rmSync(outDir, { recursive: true, force: true })
+  })
+
   it('passes a phase in which nothing is due yet', () => {
     const { status, stdout, stderr } = runPriority('valid.capabilities.yaml', [
       '--phase',
@@ -180,21 +264,33 @@ describe('phase-aware priority gate (plan §3.5, block 10 works 6–7)', () => {
     expect(stderr).toContain('migrationState missing')
   })
 
-  it('audits every closure, not just mk3-ga: a multiverse-priority row can be overdue too', () => {
+  it('audits a later closure when its phase scope is selected explicitly', () => {
     /*
-     * The blind spot slice 12-2 closed. Every UV row is `multiverse-priority`, so it lives only in
-     * the `mk3-multiverse-ga` closure — and the audit used to walk `mk3-ga` alone. This fixture has
-     * *no* mk3-ga units at all, so an mk3-ga-only audit reports it clean by construction; the union
-     * audit finds the overdue row and names the closure it came from.
+     * Block numbers repeat across release waves after C&C moved behind Product GA. The default
+     * phase scope is deliberately mk3-ga; a later wave names its wider closure and gets the same
+     * overdue-unit protection without making Block 16 C&C block Block 17A Warzone.
      */
     const { status, stderr } = runPriority('overdue-multiverse.capabilities.yaml', [
       '--phase',
       'block-10',
+      '--phase-scope',
+      'mk3-multiverse-ga',
     ])
     expect(status).toBe(1)
     expect(stderr).toContain('overdue priority unit')
     expect(stderr).toContain('[mk3-multiverse-ga]')
     expect(stderr).toContain('migrationState missing')
+  })
+
+  it('fails closed on an unknown phase scope', () => {
+    const { status, stderr } = runPriority('valid.capabilities.yaml', [
+      '--phase',
+      'block-10',
+      '--phase-scope',
+      'mk3-typo',
+    ])
+    expect(status).toBe(1)
+    expect(stderr).toContain('--phase-scope expects one of')
   })
 
   it('names no closure for a row that mk3-ga already carries, so the common case stays quiet', () => {
@@ -241,6 +337,27 @@ describe('phase-aware priority gate (plan §3.5, block 10 works 6–7)', () => {
     expect(stderr).toBe('')
     expect(status).toBe(0)
     expect(stdout).toContain('phase block-16 clean')
+  })
+
+  it('keeps pre-multiverse corpora out of the first-GA phase gate but audits them at release', () => {
+    const phase = runPriority('valid.capabilities.yaml', [
+      '--phase',
+      'block-17',
+      '--corpora',
+      join(fixtures, 'phase-start-ready-corpora.json'),
+    ])
+    expect(phase.stderr).toBe('')
+    expect(phase.status).toBe(0)
+
+    const release = runPriority('valid.capabilities.yaml', [
+      '--release',
+      'mk3-pre-multiverse',
+      '--corpora',
+      join(fixtures, 'phase-start-ready-corpora.json'),
+    ])
+    expect(release.status).toBe(1)
+    expect(release.stderr).toContain('mk3-pre-multiverse corpus')
+    expect(release.stderr).toContain('owner-action-later')
   })
 
   it('fails closed when the phase-start readiness document cannot be read', () => {
@@ -296,6 +413,26 @@ describe('phase-aware priority gate (plan §3.5, block 10 works 6–7)', () => {
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('mk3-ga')
   })
+
+  it('keeps C&C and BAR product rows outside mk3-ga and inside pre-multiverse', () => {
+    const root = join(scriptsDir, '..', 'migration')
+    const ga = JSON.parse(readFileSync(join(root, 'priority-scope.mk3-ga.json'), 'utf8'))
+    const pre = JSON.parse(
+      readFileSync(join(root, 'priority-scope.mk3-pre-multiverse.json'), 'utf8'),
+    )
+    const gaIds = new Set(ga.units.map((unit: { capabilityId: string }) => unit.capabilityId))
+    const preIds = new Set(pre.units.map((unit: { capabilityId: string }) => unit.capabilityId))
+    for (const id of [
+      'game/cnc3-tiberium-wars/discover-open',
+      'game/red-alert-3/discover-open',
+      'game/beyond-all-reason/discover-open',
+      'vertical/cnc3-kanes-wrath/native-inspect-authoring',
+      'vertical/beyond-all-reason/native-inspect-authoring',
+    ]) {
+      expect(gaIds.has(id), id).toBe(false)
+      expect(preIds.has(id), id).toBe(true)
+    }
+  })
 })
 
 describe('product profile gate (plan §4.2–4.3, block 10 work 8)', () => {
@@ -321,6 +458,24 @@ describe('product profile gate (plan §4.2–4.3, block 10 work 8)', () => {
     )
     expect(result.status).toBe(1)
     expect(result.stderr).toContain('is not declared in scripts/app-extension-sets.mjs')
+  })
+
+  it('refuses a preset assigned outside the three named release closures', () => {
+    const temp = mkdtempSync(join(tmpdir(), 'x3-profile-release-'))
+    const profiles = JSON.parse(
+      readFileSync(join(scriptsDir, '..', 'migration', 'product-profiles.json'), 'utf8'),
+    )
+    profiles.presets[0].introducedInClosure = 'ad-hoc-release'
+    const broken = join(temp, 'profiles.json')
+    writeFileSync(broken, JSON.stringify(profiles))
+    const result = spawnSync(
+      process.execPath,
+      [join(scriptsDir, 'migration', 'check-profiles.mjs'), '--profiles', broken],
+      { encoding: 'utf8' },
+    )
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('introducedInClosure must be one of')
+    rmSync(temp, { recursive: true, force: true })
   })
 })
 
