@@ -21,7 +21,7 @@
     }
   ],
   "limitations": [
-    "Portable inspection validates TriggerData XML nesting and publishes libraries, authored element types, custom ScriptCode presence, and the exact source text.",
+    "Portable inspection validates TriggerData XML nesting and publishes local libraries, referenced external library ids, authored element types, custom ScriptCode presence, and the exact source text; dependency libraries are not resolved.",
     "Semantic trigger-library lowering, Trigger-to-Galaxy conversion, gamelink edits, language services, compilation, execution, and source writes remain unavailable."
   ],
   "spec": {

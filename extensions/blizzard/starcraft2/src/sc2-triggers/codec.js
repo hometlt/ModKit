@@ -18,10 +18,12 @@ function scanTriggers(text, budget) {
     .filter(Boolean)
   const authored = elements.filter(element => element.name === 'Element')
   const typeCounts = {}
-  const externalLibraries = new Set()
   for (const element of authored) {
     const type = element.attributes.Type ?? 'Unknown'
     typeCounts[type] = (typeCounts[type] ?? 0) + 1
+  }
+  const externalLibraries = new Set()
+  for (const element of elements) {
     const library = element.attributes.Library
     if (library !== undefined && !libraries.includes(library)) externalLibraries.add(library)
   }
@@ -108,6 +110,7 @@ const definition = Object.freeze({
         }),
       },
       unsupportedFeatures: [
+        'trigger-library-dependency-resolution',
         'semantic-trigger-library-lowering',
         'trigger-to-galaxy-conversion',
         'catalog-gamelink-rename',
