@@ -13,9 +13,11 @@ revision-pinned workspace directory. Its contract accepts a read-only CASC sourc
 current installed proof names only the remote-key refusal; successful commit/reopen proof is for a
 complete loose workspace. No app/command owns the snapshot planner yet, so this is provider
 foundation, not a product export workflow. A remote-only CASC encoding key stops planning before
-any target write rather than producing a partial map. It is deliberately not an MPQ repacker: native
-preserving `.SC2Map`, `.SC2Mod` and `.SC2Campaign` round-trip remains unavailable until encrypted,
-patch, high-offset and unknown MPQ layout features can be retained.
+any target write rather than producing a partial map. The separate MPQ extension can Save As a
+complete bounded loose `.SC2Map`, `.SC2Mod` or `.SC2Campaign` namespace as a fresh deterministic
+MPQ v0 and reopen every entry through `org.modkitx/mpq`; that is semantic container fidelity with
+byte-identical entry payloads, not a native repack. Preserving an existing packed archive remains
+unavailable until encrypted, patch, high-offset and unknown MPQ layout features can be retained.
 
 The separately resolved `common.runtime/provider@1` contribution exposes exactly
 `blizzard.starcraft2.galaxy-pure-bounded-v1`. It executes zero-argument Galaxy functions whose
