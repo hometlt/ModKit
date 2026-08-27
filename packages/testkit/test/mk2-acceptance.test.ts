@@ -62,6 +62,7 @@ const completedPortableStarcraft2 = [
   find('org.modkitx/sc2-runtime'),
   find('org.modkitx/sc2-map'),
   find('org.modkitx/sc2-mod'),
+  find('org.modkitx/sc2-campaign'),
   find('org.modkitx/sc2-replay'),
 ]
 const completedPortableWarcraft3 = [find('org.modkitx/war3-mdx')]
@@ -571,6 +572,16 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
       'DocumentInfo',
       'GameData/UnitData.xml',
       'UI/Layout/Fixture.SC2Layout',
+      'enUS.SC2Data/LocalizedData/GameStrings.txt',
+    ])
+    expect(sc2Listfile('minimal.SC2Campaign')).toEqual([
+      'ComponentList.SC2Components',
+      'DocumentInfo',
+      'CampaignData/Story.xml',
+      'Base.SC2Data/GameData/CampaignData.xml',
+      'Base.SC2Maps/Maps/Campaign/Fixture.SC2Map/MapInfo',
+      'Base.SC2Maps/Maps/Campaign/Fixture.SC2Map/Objects',
+      'UI/Layout/Campaign.SC2Layout',
       'enUS.SC2Data/LocalizedData/GameStrings.txt',
     ])
     const replayBytes = readFileSync(join(root, 'minimal.SC2Replay'))

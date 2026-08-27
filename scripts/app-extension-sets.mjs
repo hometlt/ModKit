@@ -226,6 +226,7 @@ export const READY_APP_EXTENSIONS = Object.freeze({
       'org.modkitx/galaxy',
       'org.modkitx.blizzard/sc2-authored-text-writers',
       'org.modkitx/sc2-bank',
+      'org.modkitx/sc2-campaign',
       'org.modkitx/sc2-data',
       'org.modkitx/sc2-document-metadata',
       'org.modkitx/sc2-layout',

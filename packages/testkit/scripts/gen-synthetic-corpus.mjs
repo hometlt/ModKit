@@ -1811,6 +1811,23 @@ function sc2Mod() {
   ])
 }
 
+/** Packed SC2Campaign with campaign data and one bounded contained-map namespace. */
+function sc2Campaign() {
+  return sc2Mpq([
+    ['ComponentList.SC2Components', ascii('<Components/>')],
+    ['DocumentInfo', ascii('<DocInfo/>')],
+    ['CampaignData/Story.xml', ascii('<Story id="Fixture"/>')],
+    [
+      'Base.SC2Data/GameData/CampaignData.xml',
+      ascii('<Catalog><CCampaign id="Fixture"/></Catalog>'),
+    ],
+    ['Base.SC2Maps/Maps/Campaign/Fixture.SC2Map/MapInfo', ascii('MapInfo fixture\0')],
+    ['Base.SC2Maps/Maps/Campaign/Fixture.SC2Map/Objects', ascii('<PlacedObjects/>')],
+    ['UI/Layout/Campaign.SC2Layout', ascii('<Desc/>')],
+    ['enUS.SC2Data/LocalizedData/GameStrings.txt', ascii('Campaign/Name=Fixture\n')],
+  ])
+}
+
 /** SC2Replay user-data header plus known stored replay streams in the contained MPQ. */
 function sc2Replay() {
   return sc2Mpq(
@@ -4729,6 +4746,7 @@ const FIXTURES = {
   'minimal-runtime.galaxy': sc2RuntimeProgram,
   'minimal.SC2Map': sc2Map,
   'minimal.SC2Mod': sc2Mod,
+  'minimal.SC2Campaign': sc2Campaign,
   'minimal.SC2Replay': sc2Replay,
   'minimal.mdx': war3Mdx,
   'minimal.scm': supcomScm,

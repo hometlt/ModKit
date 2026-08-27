@@ -930,6 +930,17 @@
     },
     {
       "extension": "blizzard/starcraft2",
+      "contributionId": "org.modkitx/sc2-campaign",
+      "corpus": "synthetic",
+      "sample": "minimal.SC2Campaign",
+      "minimumConfidence": 0.99,
+      "dataSource": "namespace",
+      "route": "opaque",
+      "expectSignatureMatch": true,
+      "note": "Packed MPQ SC2Campaign with CampaignData, a Base.SC2Maps contained-map root, GameData, layout, and localized data entries"
+    },
+    {
+      "extension": "blizzard/starcraft2",
       "contributionId": "org.modkitx/sc2-replay",
       "corpus": "synthetic",
       "sample": "minimal.SC2Replay",

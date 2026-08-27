@@ -25,6 +25,7 @@ type CodecId =
   | 'sc2-runtime'
   | 'sc2-map'
   | 'sc2-mod'
+  | 'sc2-campaign'
   | 'sc2-replay'
 
 const root = join(import.meta.dirname, '..', '..', '..')
@@ -98,7 +99,11 @@ function input(value: ArtifactByteSource): AssetInput {
 }
 
 async function codec(id: CodecId): Promise<Codec> {
-  const module = (await import(pathToFileURL(join(extension, 'src', id, 'codec.js')).href)) as {
+  const entrypoint =
+    id === 'sc2-campaign'
+      ? join(extension, 'src', 'formats', id, 'codec.js')
+      : join(extension, 'src', id, 'codec.js')
+  const module = (await import(pathToFileURL(entrypoint).href)) as {
     createCodec(context: ContributionContext): Codec
   }
   return module.createCodec(context)
@@ -314,7 +319,7 @@ describe('ported StarCraft II authored and structural codecs', () => {
     await expect(open('sc2-document-metadata', malformedVersion)).rejects.toThrow(/not supported/u)
   })
 
-  it('decrypts packed SC2Map and SC2Mod namespaces and classifies their semantic markers', async () => {
+  it('decrypts packed SC2Map, SC2Mod, and SC2Campaign namespaces and classifies semantic markers', async () => {
     const cases = [
       {
         id: 'sc2-map' as const,
@@ -341,6 +346,32 @@ describe('ported StarCraft II authored and structural codecs', () => {
           'enUS.SC2Data/LocalizedData/GameStrings.txt',
           'GameData/UnitData.xml',
           'UI/Layout/Fixture.SC2Layout',
+        ],
+      },
+      {
+        id: 'sc2-campaign' as const,
+        sample: 'minimal.SC2Campaign',
+        summary: {
+          format: 'sc2-campaign',
+          entries: 9,
+          campaignDataEntries: 1,
+          containedMapRoots: ['Base.SC2Maps/Maps/Campaign/Fixture.SC2Map'],
+          componentLists: 1,
+          documentInfo: 1,
+          gameDataEntries: 1,
+          layouts: 1,
+          localizedData: 1,
+        },
+        names: [
+          '(listfile)',
+          'Base.SC2Data/GameData/CampaignData.xml',
+          'Base.SC2Maps/Maps/Campaign/Fixture.SC2Map/MapInfo',
+          'Base.SC2Maps/Maps/Campaign/Fixture.SC2Map/Objects',
+          'CampaignData/Story.xml',
+          'ComponentList.SC2Components',
+          'DocumentInfo',
+          'enUS.SC2Data/LocalizedData/GameStrings.txt',
+          'UI/Layout/Campaign.SC2Layout',
         ],
       },
     ]
@@ -381,10 +412,20 @@ describe('ported StarCraft II authored and structural codecs', () => {
     await session.dispose()
   })
 
-  it('does not reinterpret a generic MPQ as a map, mod, or replay', async () => {
+  it('does not reinterpret a generic MPQ as a map, mod, campaign, or replay', async () => {
     const bytes = await fixture('minimal.mpq')
     await expect(open('sc2-map', bytes)).rejects.toThrow(/map documents/u)
     await expect(open('sc2-mod', bytes)).rejects.toThrow(/ComponentList|GameData/u)
+    await expect(open('sc2-campaign', bytes)).rejects.toThrow(/CampaignData|SC2Map roots/u)
     await expect(open('sc2-replay', bytes)).rejects.toThrow(/replay signature/u)
+  })
+
+  it('requires campaign-specific structure and does not reinterpret packed maps or mods', async () => {
+    await expect(open('sc2-campaign', await fixture('minimal.SC2Map'))).rejects.toThrow(
+      /CampaignData|SC2Map roots/u,
+    )
+    await expect(open('sc2-campaign', await fixture('minimal.SC2Mod'))).rejects.toThrow(
+      /CampaignData|SC2Map roots/u,
+    )
   })
 })

@@ -409,6 +409,44 @@ describe('the Electron composition opens a subject headlessly', () => {
     })
     await opened.session.dispose()
   }, 120_000)
+
+  it('selects the semantic SC2Campaign codec through the main-process file path', async () => {
+    const file = join(syntheticDir, 'minimal.SC2Campaign')
+    const subjects = await createElectronSubjectServices([], {
+      userRoots: [join(extensionsRoot, 'blizzard', 'starcraft2')],
+    })
+    services.push(subjects)
+    const opened = await subjects.open({
+      source: await openFileArtifactSource(file),
+      path: file,
+      intent: 'full',
+      grant,
+      budget,
+      resolveInput: createFilesystemInputResolver({
+        primaryPath: file,
+        roots: [syntheticDir],
+        inventory: subjects.application.main.inventory,
+      }),
+    })
+    if (opened.state !== 'opened') {
+      throw new Error(`the Electron SC2Campaign open failed: ${JSON.stringify(opened.diagnostics)}`)
+    }
+    expect(opened.selected).toMatchObject({
+      contributionId: 'org.modkitx/sc2-campaign',
+      variantId: 'portable',
+    })
+    const inspected = await opened.session.operations().invoke('inspect', null)
+    if (inspected.state !== 'ok' || inspected.output.kind !== 'json') {
+      throw new Error('the Electron SC2Campaign did not inspect')
+    }
+    expect(inspected.output.value).toMatchObject({
+      format: 'sc2-campaign',
+      entries: 9,
+      campaignDataEntries: 1,
+      containedMapRoots: ['Base.SC2Maps/Maps/Campaign/Fixture.SC2Map'],
+    })
+    await opened.session.dispose()
+  }, 120_000)
 })
 
 describe('an archive entry opens as a subject of its own', () => {

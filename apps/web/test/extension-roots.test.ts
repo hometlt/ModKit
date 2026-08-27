@@ -479,6 +479,56 @@ describe('user extension folders — the whole path', () => {
     await services.commands.dispose()
   }, 30_000)
 
+  it('selects the semantic SC2Campaign codec from selected content and extension folders', async () => {
+    const starcraft2Root = join(repositoryRoot, 'extensions', 'blizzard', 'starcraft2')
+    const loaded = await load([
+      request('root-starcraft2', directoryHandle('starcraft2', treeFromDisk(starcraft2Root))),
+    ])
+    const services = await servicesOverUserFolder(loaded, {}, WEB_EXTENSION_CATALOG)
+    const name = 'minimal.SC2Campaign'
+    const content: FakeTree = new Map([
+      [
+        name,
+        new Uint8Array(
+          readFileSync(
+            join(repositoryRoot, 'packages', 'testkit', 'test', 'fixtures', 'mk2-synthetic', name),
+          ),
+        ),
+      ],
+    ])
+    const access = createDirectoryAccess(directoryHandle('selected-campaigns', content))
+    const entries = await access.list(undefined)
+    const entry = entries[0]
+    if (entry === undefined) throw new Error('the selected folder lost its SC2Campaign')
+    const authority = services.commands.authorize({
+      access,
+      entry,
+      request: {
+        intent: 'full',
+        grant: { id: 'pwa-sc2-campaign-selected-folder', classes: ['read-source'] },
+        budget,
+      },
+    })
+    const receipt = await services.commands.execute(
+      commandRequest('subject.open', { subject: authority.ref }),
+      { runId: 'pwa-sc2-campaign-selected-folder' },
+    )
+    expect(receipt.result).toMatchObject({
+      state: 'ok',
+      command: 'subject.open',
+      data: {
+        state: 'opened',
+        selected: {
+          contributionId: 'org.modkitx/sc2-campaign',
+          variantId: 'portable',
+        },
+        formatId: 'sc2-campaign',
+      },
+    })
+    expect(authority.revoke()).toBe(true)
+    await services.commands.dispose()
+  }, 30_000)
+
   it('a file changed after its digest was taken is refused at load, not evaluated', async () => {
     const files = treeFromDisk(imagesRoot)
     const loaded = await load([request('root-images', directoryHandle('images', files))])
