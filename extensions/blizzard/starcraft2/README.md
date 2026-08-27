@@ -17,4 +17,21 @@ any target write rather than producing a partial map. It is deliberately not an 
 preserving `.SC2Map`, `.SC2Mod` and `.SC2Campaign` round-trip remains unavailable until encrypted,
 patch, high-offset and unknown MPQ layout features can be retained.
 
+The separately resolved `common.runtime/provider@1` contribution exposes exactly
+`blizzard.starcraft2.galaxy-pure-bounded-v1`. It executes zero-argument Galaxy functions whose
+bodies contain only direct zero-argument calls and exact `int32`/`bool`/`string`/`null` literal
+returns. Runtime inputs are logical `ResourceSessionPort` requirements supplied by a trusted
+in-process host; the context is rejected before `createSession` for worker, process and remote
+profiles. The v2 session provides deterministic bounded step/events/snapshot/restore/state-hash.
+Trigger XML remains native authored input with unavailable semantic lowering. Catalog mechanics,
+general Galaxy expressions/control flow, replay/save/network semantics, and native signing,
+launch and playback remain named Block 19/GA blockers.
+
+This slice adds a capability-refusal variant to the public v1 `RuntimeExecutionResult` union so
+unsupported entrypoints, natives, subset constructs, cancellation and disposal are not mislabeled
+as numeric budget failures. It does not change any frozen runtime-session v2 member or refusal wire
+shape. It is additive at runtime and covered by the SDK public-type compile fixture, but TypeScript
+consumers that intentionally exhaust every former union member must add the new reasons; this is a
+source-level migration obligation, not claimed as a no-impact type change.
+
 Historical conversion decisions remain in inert `MIGRATION-NOTES.json`.

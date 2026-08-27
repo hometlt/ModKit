@@ -5,9 +5,12 @@ import { uint64 } from '@modkitx-x3/core'
 import { createHostTopology } from '@modkitx-x3/sdk'
 import type { RuntimeBudget } from '@modkitx-x3/sdk/runtime'
 import {
+  buildInventory,
   createBundledServiceDefinitionRegistry,
   createExecutionBackendRegistry,
+  createHostContributionContractRegistry,
   createHostComposition,
+  createHostServiceResolver,
   linkedExtensionInputs,
   linkedInProcessBackend,
   registerServiceDefinitionsOrThrow,
@@ -15,6 +18,8 @@ import {
   type LinkedExtension,
 } from '@modkitx-x3/host'
 import { openRuntimeSession } from '@modkitx-x3/host/runtime'
+import { loadExtensionDirectory } from '@modkitx-x3/host/node'
+import type { ExecutionProfile, RuntimeEnvironment } from '@modkitx-x3/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const { counterRuntime } = (await import(
@@ -231,4 +236,122 @@ describe('standard executable runtime contract and counter provider', () => {
       'x3.host/runtime-provider-unresolved',
     )
   })
+
+  it('passes host-internal invocation context only to the gate-admitted trusted provider', async () => {
+    const resources = Object.freeze({
+      sessionId: 'trusted-pass-through',
+      revision: 'provider-token:trusted-pass-through',
+      state: () => 'live',
+      resolve: () => Promise.reject(new Error('the counter does not resolve SC2 inputs')),
+      provenance: () => Object.freeze([]),
+      dispose: () => Promise.resolve(),
+    })
+    const resolution = await openRuntimeSession({
+      services: services(),
+      runtimeId: 'reference.counter',
+      sessionId: 'trusted-invocation',
+      budget: { maxWallTimeMs: 5, maxTicks: 6, maxMemoryBytes: 100 },
+      grant: { id: 'runtime-test-trusted-invocation', classes: [] },
+      activationBudget,
+      providerInvocation: { resources: resources as never, inputs: [] },
+    })
+    expect(resolution.state).toBe('resolved')
+    if (resolution.state === 'resolved') await resolution.release()
+  })
+
+  it('publishes mutation-resistant activation facts', async () => {
+    const resolver = createHostServiceResolver({
+      inventory: composition.inventory,
+      target: composition.target,
+      executionBackends: composition.executionBackends,
+      definitions,
+      grant: { id: 'runtime-test-activation-facts', classes: [] },
+      budgets: activationBudget,
+    })
+    try {
+      const lease = await resolver.port.resolve({
+        contract: 'common.runtime/provider',
+        major: 1,
+        facet: { runtimeId: 'reference.counter' },
+      })
+      try {
+        const facts = resolver.activationFacts
+        expect(Object.isFrozen(facts)).toBe(true)
+        expect(Object.isFrozen(facts[0])).toBe(true)
+        expect(() => (facts as unknown[]).push({})).toThrow()
+        expect(resolver.activationFacts).toHaveLength(1)
+        expect(resolver.activationFacts[0]).toMatchObject({
+          executionProfile: 'trusted-in-process',
+          runtimeVariant: 'trusted-node',
+        })
+      } finally {
+        await lease.release()
+      }
+    } finally {
+      await resolver.release()
+    }
+  })
+
+  it.each([
+    ['worker-brokered', 'node-worker'],
+    ['process-brokered', 'native'],
+    ['remote-provider', 'external-tool'],
+  ] as const)(
+    'refuses providerInvocation before createSession for %s providers',
+    async (profile: ExecutionProfile, environment: RuntimeEnvironment) => {
+      const fixtureRoot = join(
+        repoRoot,
+        'packages',
+        'host',
+        'test',
+        'fixtures',
+        'runtime-provider-boundaries',
+      )
+      const providerModule = (await import(
+        pathToFileURL(join(fixtureRoot, 'src', 'provider.js')).href
+      )) as {
+        resetCreateSessionCalls(): void
+        getCreateSessionCalls(): number
+      }
+      providerModule.resetCreateSessionCalls()
+      const extension = await loadExtensionDirectory(fixtureRoot)
+      const inventory = await buildInventory([extension], createHostContributionContractRegistry())
+      const serviceDefinitions = createBundledServiceDefinitionRegistry()
+      await registerServiceDefinitionsOrThrow(inventory, serviceDefinitions)
+      const executionBackends = createExecutionBackendRegistry([
+        {
+          profile,
+          supports: (_target, variant) => variant.executionProfile === profile,
+          async activate(context) {
+            return Object.freeze({
+              module: (await import(context.entrypoint.href)) as Record<string, unknown>,
+              release: async () => undefined,
+            })
+          },
+        },
+      ])
+      const resolution = await openRuntimeSession({
+        services: {
+          inventory,
+          target: { environment, operatingSystem: 'windows', architecture: 'x64' },
+          executionBackends,
+          serviceDefinitions,
+        },
+        runtimeId: 'test.boundary',
+        sessionId: `boundary-${profile}`,
+        budget: { maxWallTimeMs: 5, maxTicks: 6, maxMemoryBytes: 100 },
+        grant: { id: `runtime-boundary-${profile}`, classes: [] },
+        activationBudget,
+        providerInvocation: {
+          resources: Object.freeze({}) as never,
+          inputs: [],
+        },
+      })
+      expect(resolution.state).toBe('unresolved')
+      expect(resolution.diagnostics.map(item => item.code)).toContain(
+        'x3.host/runtime-provider-invocation-boundary',
+      )
+      expect(providerModule.getCreateSessionCalls()).toBe(0)
+    },
+  )
 })

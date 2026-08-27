@@ -199,6 +199,9 @@ importers:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
         version: link:../../codec-kit/codec-kit
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../../packages/sdk
 
   extensions/blizzard/starcraft2-game:
     dependencies:

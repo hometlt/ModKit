@@ -22,7 +22,7 @@
   ],
   "limitations": [
     "The codec recognizes Galaxy runtime programs with a void main() entrypoint and publishes declarations, includes, and statically observed native-call counts.",
-    "Execution, snapshot/restore, catalog-backed simulation, replay assistance, Trigger XML lowering, and host-native bridging require an X3 runtime contribution contract and are explicitly unavailable here."
+    "This inspection codec does not execute. The separate blizzard.starcraft2.galaxy-pure-bounded-v1 provider covers only pure zero-argument Galaxy functions plus deterministic v2 state; catalog simulation, replay assistance, Trigger XML lowering, general Galaxy semantics, and host-native bridging remain unavailable."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "sc2-runtime", "label": "StarCraft II Runtime" }],

@@ -13,8 +13,10 @@ import {
 } from '@modkitx-x3/sdk/runtime'
 import type {
   DefinitionInventoryResult,
+  InputSearchScope,
   Lease,
   PermissionGrant,
+  ResourceSessionPort,
   ResourceBudget,
   RuntimeTarget,
   ServiceContractDefinitionRegistry,
@@ -186,6 +188,26 @@ export interface RuntimeHostServices {
   readonly serviceDefinitions?: ServiceContractDefinitionRegistry
 }
 
+/**
+ * One logical input passed by the host to a trusted in-process runtime provider.
+ *
+ * This stays outside the serializable runtime ABI: the paired ResourceSessionPort owns methods
+ * and leases and therefore must never be cloned into an RPC request.
+ */
+export interface RuntimeProviderLogicalInput {
+  readonly id: string
+  readonly kind: 'source' | 'trigger' | 'definition'
+  readonly logicalId: string
+  readonly scopes: readonly InputSearchScope[]
+  readonly maxBytes: number
+}
+
+/** Host-internal, non-wire invocation context for one runtime provider session. */
+export interface RuntimeProviderInvocationContext {
+  readonly inputs: readonly RuntimeProviderLogicalInput[]
+  readonly resources: ResourceSessionPort
+}
+
 export interface OpenRuntimeSessionRequest extends RuntimeProviderRequestFacet {
   readonly services: RuntimeHostServices
   readonly sessionId: string
@@ -193,6 +215,8 @@ export interface OpenRuntimeSessionRequest extends RuntimeProviderRequestFacet {
   readonly grant: PermissionGrant
   /** Host activation budget; distinct from the executable session's numeric budget. */
   readonly activationBudget: ResourceBudget
+  /** Only trusted in-process providers may receive this non-serializable context. */
+  readonly providerInvocation?: RuntimeProviderInvocationContext
   readonly signal?: AbortSignal
 }
 
@@ -339,11 +363,40 @@ export async function openRuntimeSession(
       ])
     }
 
-    const candidate: unknown = await provider.createSession({
+    const providerActivation = resolver.activationFacts.findLast(
+      fact =>
+        fact.providerId === provider.providerId &&
+        fact.contract === RUNTIME_PROVIDER_CONTRACT &&
+        fact.major === 1,
+    )
+    if (
+      request.providerInvocation !== undefined &&
+      providerActivation?.executionProfile !== 'trusted-in-process'
+    ) {
+      return unresolvedAfterRelease(resolver, [
+        ...resolver.diagnostics,
+        diagnostic(
+          'error',
+          'x3.host/runtime-provider-invocation-boundary',
+          `runtime provider ${provider.providerId} runs as ${providerActivation?.executionProfile ?? 'an unknown execution profile'}; non-serializable ResourceSession invocation context is restricted to gate-admitted trusted-in-process providers`,
+          [provider.providerId],
+          {
+            executionProfile: providerActivation?.executionProfile ?? 'unknown',
+            runtimeVariant: providerActivation?.runtimeVariant ?? 'unknown',
+          },
+        ),
+      ])
+    }
+
+    const createRequest = {
       sessionId: request.sessionId,
       budget: request.budget,
+      ...(request.providerInvocation === undefined
+        ? {}
+        : { providerInvocation: request.providerInvocation }),
       ...(request.signal === undefined ? {} : { signal: request.signal }),
-    })
+    }
+    const candidate: unknown = await provider.createSession(createRequest)
     if (
       !isRuntimeSessionLease(candidate) ||
       candidate.value.sessionId !== request.sessionId ||
