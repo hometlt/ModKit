@@ -63,8 +63,9 @@ function issue(code, message, severity = 'warning', category = 'structure') {
   return Object.freeze({ id: code, code, category, severity, message })
 }
 
-function emptyResult(issues = [], fatal = false) {
+function emptyResult(issues = [], fatal = false, declaredSequences = 0) {
   return Object.freeze({
+    declaredSequences,
     clips: Object.freeze([]),
     timelineContainers: Object.freeze([]),
     supportedChannels: 0,
@@ -400,6 +401,7 @@ export async function decodeM3Animations(bytes, budget, signal) {
         ),
       ],
       true,
+      sequences.length,
     )
   }
 
@@ -439,6 +441,7 @@ export async function decodeM3Animations(bytes, budget, signal) {
           ),
         ],
         true,
+        sequences.length,
       )
     }
     const stg = stgs[sequenceIndex]
@@ -514,6 +517,7 @@ export async function decodeM3Animations(bytes, budget, signal) {
         ),
       ],
       true,
+      sequences.length,
     )
   }
   if (invalidBounds > 0) {
@@ -542,6 +546,7 @@ export async function decodeM3Animations(bytes, budget, signal) {
     )
   }
   return Object.freeze({
+    declaredSequences: sequences.length,
     clips: Object.freeze(clips),
     timelineContainers: Object.freeze(timelineContainers),
     supportedChannels,

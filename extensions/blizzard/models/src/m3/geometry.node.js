@@ -66,7 +66,13 @@ function decodeSections(sections, budget) {
   const vertexSection = sections.getSectionByReference(model.vertices)
   const divisionSection = sections.getSectionByReference(model.divisions)
   if (vertexSection?.rawBytes === null || vertexSection === null || divisionSection === null) {
-    return Object.freeze({ nodes: [], meshes: [], primitives: [], decodedBytes: 0 })
+    return Object.freeze({
+      nodes: [],
+      meshes: [],
+      primitives: [],
+      meshPartitions: 0,
+      decodedBytes: 0,
+    })
   }
   const vertexDescription = M3StructureDescription.getVertexDescription(
     vertexFlags,
@@ -76,12 +82,15 @@ function decodeSections(sections, budget) {
   if (vertexCount > budget.maxNodes) throw new RangeError('M3 vertices exceed maxNodes budget')
   const vertices = vertexDescription.instances(vertexSection.rawBytes, vertexCount)
   const primitives = []
+  let meshPartitions = 0
   let decodedBytes = 0
 
   for (const division of divisionSection.content) {
     const faceSection = sections.getSectionByReference(division.faces)
     const regionSection = sections.getSectionByReference(division.regions)
-    if (faceSection === null || regionSection === null) continue
+    if (regionSection === null) continue
+    meshPartitions += regionSection.content.length
+    if (faceSection === null) continue
     const faces = faceSection.content
     for (const region of regionSection.content) {
       const firstVertexIndex = Number(region.first_vertex_index ?? 0)
@@ -165,6 +174,7 @@ function decodeSections(sections, budget) {
           ],
     meshes,
     primitives,
+    meshPartitions,
     decodedBytes,
     ...(bounds === undefined ? {} : { bounds }),
   })

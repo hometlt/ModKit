@@ -4,6 +4,15 @@ const CLASSIFICATION_RANK = Object.freeze({
   'X3 беднее': 2,
   'нет в X3': 3,
 })
+const M3_COUNTER_SEMANTICS = 'm3-declared-executable-v1'
+const M3_COUNTER_KEYS = Object.freeze([
+  'declaredSequences',
+  'executableClips',
+  'layerRecords',
+  'logicalResources',
+  'meshPartitions',
+  'meshes',
+])
 
 function classification(missing, extra, x3Available = true) {
   if (!x3Available) return 'нет в X3'
@@ -90,6 +99,45 @@ export function classifySourceParity(canonicalSource, x3Source) {
     classification: classification(missing, extra),
     missing,
     extra,
+    ...(x3Source.measurementBasis === undefined
+      ? {}
+      : { measurementBasis: x3Source.measurementBasis }),
+  })
+}
+
+function m3DeclaredModelSource(surface, source) {
+  if (surface.formatId !== 'm3' || source.contract !== 'common.view/model-scene-source') {
+    return source
+  }
+  const metadata = surface.metadata
+  if (
+    metadata === null ||
+    typeof metadata !== 'object' ||
+    metadata.counterState !== 'complete' ||
+    metadata.counterSemantics !== M3_COUNTER_SEMANTICS ||
+    M3_COUNTER_KEYS.some(key => !Number.isSafeInteger(metadata[key]) || Number(metadata[key]) < 0)
+  ) {
+    return source
+  }
+  const measurements = source.measurements ?? {}
+  if (
+    metadata.executableClips > metadata.declaredSequences ||
+    (metadata.meshes > 0 && metadata.meshes > metadata.meshPartitions) ||
+    measurements.animations !== metadata.executableClips ||
+    measurements.textures !== metadata.logicalResources ||
+    measurements.meshes !== metadata.meshes
+  ) {
+    return source
+  }
+  return Object.freeze({
+    ...source,
+    measurementBasis: M3_COUNTER_SEMANTICS,
+    measurements: Object.freeze({
+      ...measurements,
+      animations: metadata.declaredSequences,
+      textures: metadata.layerRecords,
+      meshes: metadata.meshPartitions,
+    }),
   })
 }
 
@@ -103,7 +151,9 @@ export function classifyFormatParity(canonical, x3, x3Available = true) {
     })
   }
   const surface = classifyParity(canonical.features ?? [], x3.features ?? [])
-  const x3Sources = new Map((x3.sources ?? []).map(source => [source.contract, source]))
+  const x3Sources = new Map(
+    (x3.sources ?? []).map(source => [source.contract, m3DeclaredModelSource(x3, source)]),
+  )
   const sources = (canonical.sources ?? [])
     .map(source => classifySourceParity(source, x3Sources.get(source.contract)))
     .sort((a, b) => a.contract.localeCompare(b.contract))
