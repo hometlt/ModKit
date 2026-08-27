@@ -155,7 +155,7 @@ function completeWorkspaceFiles(): Map<string, string> {
   )
   files.set(
     `${roots.core}/base.sc2data/gamedata/effectdata.xml`,
-    '<Catalog><CEffectSet id="RifleImpactSet"><EffectArray value="RifleDamage"/><EffectArray value="ApplyStim"/></CEffectSet><CEffectDamage id="RifleDamage"><Amount value="6"/></CEffectDamage><CEffectApplyBehavior id="ApplyStim"><Behavior value="StimBehavior"/></CEffectApplyBehavior></Catalog>',
+    '<Catalog><CEffectSet id="RifleImpactSet"><EffectArray value="RifleDamage"/><EffectArray value="ApplyStim"/></CEffectSet><CEffectDamage id="RifleDamage"><Amount value="6"/></CEffectDamage><CEffectApplyBehavior id="ApplyStim"><Behavior value="StimBehavior"/></CEffectApplyBehavior><CEffectCreatePersistent id="Pulse"><PeriodicEffectArray value="RifleImpactSet"/><PeriodicEffectArray value="RifleDamage"/></CEffectCreatePersistent><CEffectEnumArea id="Search"><AreaArray index="0" Radius="4" Effect="RifleImpactSet"/><AreaArray index="1" Radius="2" Effect="ApplyStim"/></CEffectEnumArea></Catalog>',
   )
   files.set(
     `${roots.core}/base.sc2data/gamedata/behaviordata.xml`,
@@ -447,6 +447,18 @@ describe('standard data contract and semantic game provider', () => {
             role: 'Behavior',
             dead: false,
           }),
+          expect.objectContaining({
+            from: { namespace: 'Effect', entityId: 'Pulse' },
+            to: { namespace: 'Effect', entityId: 'RifleImpactSet' },
+            role: 'PeriodicEffectArray',
+            dead: false,
+          }),
+          expect.objectContaining({
+            from: { namespace: 'Effect', entityId: 'Search' },
+            to: { namespace: 'Effect', entityId: 'ApplyStim' },
+            role: 'AreaArray.Effect',
+            dead: false,
+          }),
         ]),
       )
       expect(result.snapshot.diagnostics).toEqual(
@@ -529,12 +541,14 @@ describe('standard data contract and semantic game provider', () => {
           {
             rootId: 'active',
             path: 'Active.SC2Data/GameData/EffectData.xml',
-            text: '<Catalog><CEffectSet id="ImpactSet"><EffectArray value="Damage"/><EffectArray value="ApplyBuff"/></CEffectSet><CEffectApplyBehavior id="ApplyBuff"><Behavior value="Buff"/></CEffectApplyBehavior><CEffectDamage id="Damage"><Amount value="10"/></CEffectDamage><CEffectRemoveBehavior id="Unverified"><Behavior value="Buff"/></CEffectRemoveBehavior><CEffectSet><EffectArray value="Damage"/></CEffectSet></Catalog>',
+            text: '<Catalog><CEffectSet id="ImpactSet"><EffectArray value="Damage"/><EffectArray value="ApplyBuff"/></CEffectSet><CEffectApplyBehavior id="ApplyBuff"><Behavior value="Buff"/></CEffectApplyBehavior><CEffectDamage id="Damage"><Amount value="10"/></CEffectDamage><CEffectCreatePersistent id="Pulse"><PeriodicEffectArray value="Search"/><PeriodicEffectArray value="Damage"/></CEffectCreatePersistent><CEffectEnumArea id="Search"><AreaArray index="0" Radius="4" Effect="Damage"/><AreaArray index="1" Radius="2" Effect="ApplyBuff"/></CEffectEnumArea><CEffectRemoveBehavior id="Unverified"><Behavior value="Buff"/></CEffectRemoveBehavior><CEffectSet><EffectArray value="Damage"/></CEffectSet></Catalog>',
           },
         ],
         queries: [
           { namespace: 'Effect', entityId: 'ImpactSet' },
           { namespace: 'Effect', entityId: 'ApplyBuff' },
+          { namespace: 'Effect', entityId: 'Pulse' },
+          { namespace: 'Effect', entityId: 'Search' },
           { namespace: 'Effect', entityId: 'Unverified' },
         ],
         maxDocuments: 1,
@@ -556,6 +570,23 @@ describe('standard data contract and semantic game provider', () => {
             typeId: 'CEffectApplyBehavior',
             entityId: 'ApplyBuff',
             fields: { Behavior: 'Buff' },
+          }),
+          expect.objectContaining({
+            namespace: 'Effect',
+            typeId: 'CEffectCreatePersistent',
+            entityId: 'Pulse',
+            fields: { PeriodicEffectArray: ['Search', 'Damage'] },
+          }),
+          expect.objectContaining({
+            namespace: 'Effect',
+            typeId: 'CEffectEnumArea',
+            entityId: 'Search',
+            fields: {
+              AreaArray: [
+                { index: '0', value: { Radius: 4, Effect: 'Damage' } },
+                { index: '1', value: { Radius: 2, Effect: 'ApplyBuff' } },
+              ],
+            },
           }),
         ]),
       )

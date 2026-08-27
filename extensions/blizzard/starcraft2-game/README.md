@@ -28,8 +28,10 @@ configuration and edit transactions are deliberately outside this first workspac
 The extension also provides `common.data/catalog-analysis@1`. It parses bounded ordered catalog
 XML, applies schema-driven scalar/append/indexed patch rules, resolves parent inheritance and
 returns immutable semantic entities with provenance. The bootstrap schema intentionally covers
-twelve common classes only, including the schema-confirmed effect links on `CEffectSet` and
-`CEffectApplyBehavior`. Its v1 service and result wire remain the legacy bounded query surface.
+fourteen common classes only, including the schema-confirmed effect links on `CEffectSet`,
+`CEffectApplyBehavior`, `CEffectCreatePersistent.PeriodicEffectArray` and
+`CEffectEnumArea.AreaArray.Effect`. Adjacent fields and Effect types remain named remainder. Its v1
+service and result wire remain the legacy bounded query surface.
 
 The additive `common.data/resolved-workspace@1` service plans catalog reads in dependency-first
 `loadOrder` and localization reads in locale-priority, winner-first `logicalRoots` order. The host
