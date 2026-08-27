@@ -44,14 +44,16 @@ Layer-to-resource foreign keys and standard shader semantics therefore remain ex
 evidence and a named `material-layer-facet-fields` remainder rather than a fabricated public shape.
 Exotic M3 material types are counted and named but their renderer-specific parameters remain lost.
 
-M3A is bounded provider foundation, not a production-resolved claim. The service takes exact
-caller-supplied logical IDs, uses `ResourceSessionPort`, releases every lease and requires explicit
-hash intersection, full skeleton compatibility and executable channels. The pinned genuine
-standalone `cybros-cover.m3a` fixture has decoded SHA-256
-`07a632fb165b98e60b0e6803451e92c7d94ec527cae8252ca6ed2a3a0661b9e5`, but its legacy fixture did
-not retain an original CASC logical path or a matching base M3. Its accepted-path test is therefore
-labelled algorithmic E1; a distinct real base is explicitly rejected and ordinary codec open does
-not discover M3A by stem, sibling path or ambient URI.
+M3A remains caller-driven rather than automatically discovered by ordinary codec open. The bounded
+service takes exact logical IDs, uses `ResourceSessionPort`, releases every lease and requires
+explicit hash intersection, full skeleton compatibility and executable channels. The installed SC2
+corpus now pins the genuine `sm_zeratul.m3` + `sm_zeratul_dialogue03.m3a` pair through the product
+CASC namespace. The sidecar is 1,382,592 bytes with SHA-256
+`3549347c81c70f63c72d84ea441b21e6405c6b748001c33f84b8e04c6dba16ad`; it attaches as the
+`Dialogue 03` companion clip with 1,684 timestamp samples and 402 executable channels. Opening that
+M3A directly publishes its animation, 134-bone skeleton and 16 texture references without claiming
+any companion or texture binding, while an unrelated shipped base is rejected by exact hash
+compatibility. Deriving candidate paths automatically from a base M3 remains a named remainder.
 
 The synthetic triangle fixture and live SC2 installation corpus exercise this package. Historical
 conversion decisions and the still-unimplemented writer/export planes are recorded in
