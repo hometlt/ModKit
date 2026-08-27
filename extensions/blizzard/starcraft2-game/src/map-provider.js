@@ -1,8 +1,12 @@
 import { parseXml } from '@rgrove/parse-xml'
-import { MAP_SEMANTIC_ANALYSIS_CONTRACT } from '@modkitx-x3/sdk/maps'
+import {
+  MAP_SEMANTIC_ANALYSIS_CONTRACT,
+  RESOLVED_MAP_WORKSPACE_CONTRACT,
+} from '@modkitx-x3/sdk/maps'
 
 const ANALYZER_ID = 'org.modkitx.blizzard.starcraft2.maps'
 const GAME_ID = 'org.modkitx/starcraft-2'
+export const SC2_WORLD_SCENE_SOURCE_CONTRACT = 'org.modkitx.blizzard.starcraft2/world-scene-source'
 const MAXIMUM_DOCUMENTS = 16
 const MAXIMUM_DOCUMENT_BYTES = 16_777_216
 const MAXIMUM_TOTAL_BYTES = 33_554_432
@@ -11,6 +15,7 @@ const MAXIMUM_REGIONS = 10_000
 const MAXIMUM_TERRAIN_CELLS = 4_194_304
 const MAXIMUM_TERRAIN_SAMPLES = 4_096
 const MAXIMUM_DEPTH = 128
+const MAXIMUM_DIAGNOSTICS = 10_000
 const textDecoder = new TextDecoder()
 
 function recordOf(value) {
@@ -93,6 +98,85 @@ function validateRequest(request) {
 
 function basename(path) {
   return path.replaceAll('\\', '/').split('/').at(-1)?.toLowerCase() ?? ''
+}
+
+function immutablePlanDiagnostic(severity, code, message, path) {
+  return Object.freeze({ severity, code, message, ...(path === undefined ? {} : { path }) })
+}
+
+/** Provider-owned logical document plan; the generic host owns every VFS/ResourceSession read. */
+export async function planStarcraft2Map(request) {
+  request?.signal?.throwIfAborted()
+  const value = recordOf(request)
+  if (value === undefined) throw new TypeError('semantic map plan request must be an object')
+  const workspace = recordOf(value.workspace)
+  if (
+    workspace?.schemaVersion !== 1 ||
+    workspace.gameId !== GAME_ID ||
+    !Array.isArray(workspace.loadOrder)
+  ) {
+    throw new TypeError('workspace must be a StarCraft II ModWorkspaceLock')
+  }
+  const maxRequirements = positiveLimit(value.maxRequirements, 'maxRequirements', 64)
+  const active = workspace.loadOrder.find(root => root?.rootId === workspace.activeRootId)
+  if (active === undefined || typeof active.sourcePath !== 'string') {
+    return Object.freeze({
+      schemaVersion: 1,
+      workspaceId: String(workspace.workspaceId ?? ''),
+      gameId: GAME_ID,
+      mapId: '',
+      analyzerId: ANALYZER_ID,
+      requirements: Object.freeze([]),
+      diagnostics: Object.freeze([
+        immutablePlanDiagnostic(
+          'error',
+          'org.modkitx.blizzard.starcraft2/map-active-root-unavailable',
+          'workspace activeRootId does not name one loadOrder root',
+        ),
+      ]),
+      complete: false,
+    })
+  }
+  const root = nonEmptyString(active.sourcePath, 'workspace active root sourcePath').replaceAll(
+    '\\',
+    '/',
+  )
+  const required = root.toLowerCase().endsWith('.sc2map') || active.kind === 'map'
+  const requested = [
+    ['map-objects', 'objects', 'objects', required],
+    ['map-regions', 'regions', 'regions', required],
+    ['map-terrain-height', 't3heightmap', 'terrain-height', required],
+    ['map-navigation', 't3syncpathinginfo', 'navigation', false],
+  ].map(([requirementId, name, kind, itemRequired]) =>
+    Object.freeze({
+      requirementId,
+      path: `${root}/${name}`,
+      kind,
+      required: itemRequired,
+    }),
+  )
+  const complete = requested.length <= maxRequirements
+  const requirements = Object.freeze(requested.slice(0, maxRequirements))
+  return Object.freeze({
+    schemaVersion: 1,
+    workspaceId: String(workspace.workspaceId),
+    gameId: GAME_ID,
+    mapId: root,
+    analyzerId: ANALYZER_ID,
+    requirements,
+    diagnostics: Object.freeze(
+      complete
+        ? []
+        : [
+            immutablePlanDiagnostic(
+              'error',
+              'org.modkitx.blizzard.starcraft2/map-plan-budget-exceeded',
+              `map plan needs ${requested.length} requirements but maxRequirements is ${maxRequirements}`,
+            ),
+          ],
+    ),
+    complete,
+  })
 }
 
 function elementChildren(node) {
@@ -330,6 +414,77 @@ function parseTerrain(document, request) {
   })
 }
 
+function parseNavigation(document, request) {
+  const bytes = document.bytes
+  if (bytes.byteLength < 32) throw new TypeError(`${document.path}: PATH header is truncated`)
+  if (textDecoder.decode(bytes.subarray(0, 4)) !== 'PATH') {
+    throw new TypeError(`${document.path}: PATH magic is missing`)
+  }
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+  const version = view.getUint32(4, true)
+  const width = view.getUint32(8, true)
+  const height = view.getUint32(12, true)
+  const cellCount = width * height
+  if (!Number.isSafeInteger(cellCount) || cellCount <= 0 || cellCount > request.maxTerrainCells) {
+    throw new TypeError(
+      `${document.path}: navigation cells exceeds maxTerrainCells (${cellCount} > ${request.maxTerrainCells})`,
+    )
+  }
+  const required = 32 + cellCount * 2
+  if (!Number.isSafeInteger(required) || required > bytes.byteLength) {
+    throw new TypeError(`${document.path}: PATH cell array is truncated`)
+  }
+  const sampleCount = Math.min(cellCount, request.maxTerrainSamples)
+  const sampleIndices = new Set()
+  for (let index = 0; index < sampleCount; index += 1) {
+    sampleIndices.add(
+      sampleCount === 1 ? 0 : Math.floor((index * (cellCount - 1)) / (sampleCount - 1)),
+    )
+  }
+  let minimumFlags = 0xffff
+  let maximumFlags = 0
+  const samples = []
+  for (let index = 0; index < cellCount; index += 1) {
+    const flags = view.getUint16(32 + index * 2, true)
+    minimumFlags = Math.min(minimumFlags, flags)
+    maximumFlags = Math.max(maximumFlags, flags)
+    if (sampleIndices.has(index)) {
+      samples.push(Object.freeze({ x: index % width, y: Math.floor(index / width), flags }))
+    }
+  }
+  return Object.freeze({
+    version,
+    width,
+    height,
+    cellCount,
+    minimumFlags,
+    maximumFlags,
+    trailingBytes: bytes.byteLength - required,
+    samples: Object.freeze(samples),
+  })
+}
+
+function duplicateIdentityDiagnostics(items, key, label, path) {
+  const seen = new Set()
+  const diagnostics = []
+  for (const item of items) {
+    const identity = item[key]
+    if (seen.has(identity)) {
+      diagnostics.push(
+        Object.freeze({
+          severity: 'error',
+          code: `org.modkitx.blizzard.starcraft2/map-${label}-id-duplicate`,
+          message: `${path}: duplicate ${label} identity ${String(identity)}`,
+          path,
+          [`${label}Id`]: identity,
+        }),
+      )
+    }
+    seen.add(identity)
+  }
+  return diagnostics
+}
+
 function catalogEntityKey(namespace, entityId) {
   return `${namespace}\u0000${entityId}`
 }
@@ -456,22 +611,204 @@ export async function openStarcraft2Map(request) {
   })
 }
 
+function stringArray(value, label) {
+  if (!Array.isArray(value) || !value.every(item => typeof item === 'string')) {
+    throw new TypeError(`${label} must be an array of strings`)
+  }
+  return value
+}
+
+/** Additive workspace result; the frozen semantic snapshot is produced by the authoritative v1. */
+export async function analyzeStarcraft2MapWorkspace(request) {
+  request?.signal?.throwIfAborted()
+  const value = validateRequest(request)
+  const snapshotId = nonEmptyString(value.snapshotId, 'snapshotId')
+  const unresolvedRequirementIds = stringArray(
+    value.unresolvedRequirementIds,
+    'unresolvedRequirementIds',
+  )
+  const requiredRequirementIds = new Set(
+    stringArray(value.requiredRequirementIds, 'requiredRequirementIds'),
+  )
+  const maxDiagnostics = positiveLimit(value.maxDiagnostics, 'maxDiagnostics', MAXIMUM_DIAGNOSTICS)
+  const semantic = await openStarcraft2Map(request)
+  const documents = new Map(value.documents.map(document => [basename(document.path), document]))
+  const navigationDocument = documents.get('t3syncpathinginfo') ?? documents.get('mappathinginfo')
+  let navigation
+  const diagnostics = []
+  if (navigationDocument === undefined) {
+    diagnostics.push(
+      Object.freeze({
+        severity: 'information',
+        code: 'org.modkitx.blizzard.starcraft2/map-navigation-unavailable',
+        message: 'navigation facet is unavailable because no PATH document resolved',
+      }),
+    )
+  } else {
+    try {
+      navigation = parseNavigation(navigationDocument, value)
+    } catch (error) {
+      diagnostics.push(diagnosticFor(error, navigationDocument.path))
+    }
+  }
+  diagnostics.push(
+    ...duplicateIdentityDiagnostics(
+      semantic.objects,
+      'objectId',
+      'object',
+      documents.get('objects')?.path ?? 'Objects',
+    ),
+    ...duplicateIdentityDiagnostics(
+      semantic.regions,
+      'regionId',
+      'region',
+      documents.get('regions')?.path ?? 'Regions',
+    ),
+  )
+  for (const requirementId of unresolvedRequirementIds) {
+    diagnostics.push(
+      Object.freeze({
+        severity: requiredRequirementIds.has(requirementId) ? 'error' : 'information',
+        code: 'org.modkitx.blizzard.starcraft2/map-planned-resource-unresolved',
+        message: `planned map resource ${requirementId} did not resolve through the resource session`,
+      }),
+    )
+  }
+  const totalDiagnostics = semantic.diagnostics.length + diagnostics.length
+  const diagnosticsTruncated = totalDiagnostics > maxDiagnostics
+  const retained = diagnosticsTruncated ? Math.max(0, maxDiagnostics - 1) : maxDiagnostics
+  const semanticCount = Math.min(semantic.diagnostics.length, retained)
+  const additiveCount = Math.min(diagnostics.length, retained - semanticCount)
+  const boundedSemantic =
+    diagnosticsTruncated || semanticCount !== semantic.diagnostics.length
+      ? Object.freeze({
+          ...semantic,
+          diagnostics: Object.freeze(semantic.diagnostics.slice(0, semanticCount)),
+          complete: false,
+        })
+      : semantic
+  const immutableDiagnostics = Object.freeze([
+    ...diagnostics.slice(0, additiveCount).map(item => Object.freeze(item)),
+    ...(diagnosticsTruncated
+      ? [
+          Object.freeze({
+            severity: 'warning',
+            code: 'org.modkitx.blizzard.starcraft2/map-diagnostics-truncated',
+            message: `workspace map diagnostics were truncated to maxDiagnostics ${maxDiagnostics}`,
+          }),
+        ]
+      : []),
+  ])
+  return Object.freeze({
+    schemaVersion: 1,
+    workspaceId: semantic.workspaceId,
+    gameId: semantic.gameId,
+    mapId: semantic.mapId,
+    analyzerId: ANALYZER_ID,
+    snapshotId,
+    semantic: boundedSemantic,
+    ...(navigation === undefined ? {} : { navigation }),
+    worldCandidate: Object.freeze({
+      contract: SC2_WORLD_SCENE_SOURCE_CONTRACT,
+      major: 1,
+      maturity: 'publisher-candidate',
+      coordinateSpaces: Object.freeze([
+        Object.freeze({
+          id: 'map-native',
+          horizontalAxes: Object.freeze(['x', 'y']),
+          verticalAxis: 'z',
+          handedness: 'native-unspecified',
+          linearUnit: 'sc2-map-unit',
+          rotationUnit: 'native-scalar',
+          origin: 'map-native-unspecified',
+        }),
+        Object.freeze({
+          id: 'height-grid',
+          horizontalAxes: Object.freeze(['column', 'row']),
+          verticalAxis: 'height-pair',
+          handedness: 'array-row-major',
+          linearUnit: 'grid-index',
+          rotationUnit: 'not-applicable',
+          origin: 'grid-zero',
+        }),
+        Object.freeze({
+          id: 'navigation-grid',
+          horizontalAxes: Object.freeze(['column', 'row']),
+          verticalAxis: 'not-applicable',
+          handedness: 'array-row-major',
+          linearUnit: 'grid-index',
+          rotationUnit: 'not-applicable',
+          origin: 'grid-zero',
+        }),
+      ]),
+      crossSpaceTransforms: Object.freeze([
+        Object.freeze({
+          from: 'height-grid',
+          to: 'map-native',
+          state: 'unknown',
+          reason: 'terrain cell size, origin and native height quantization are not normalized',
+        }),
+        Object.freeze({
+          from: 'navigation-grid',
+          to: 'map-native',
+          state: 'unknown',
+          reason: 'navigation cell size and origin are not normalized',
+        }),
+      ]),
+      unknownFacets: Object.freeze([
+        'terrain-material-layers',
+        'water',
+        'cliffs-normalized',
+        'pathing-flag-semantics',
+        'trigger-volumes',
+        'lighting',
+        'physics',
+      ]),
+    }),
+    unresolvedRequirementIds: Object.freeze([...unresolvedRequirementIds]),
+    diagnostics: immutableDiagnostics,
+    diagnosticsTruncated,
+    complete:
+      boundedSemantic.complete &&
+      !diagnosticsTruncated &&
+      immutableDiagnostics.every(item => item.severity !== 'error') &&
+      unresolvedRequirementIds.every(item => !requiredRequirementIds.has(item)),
+  })
+}
+
 export const abiVersion = 1
-export const provides = Object.freeze([MAP_SEMANTIC_ANALYSIS_CONTRACT])
+export const provides = Object.freeze([
+  MAP_SEMANTIC_ANALYSIS_CONTRACT,
+  RESOLVED_MAP_WORKSPACE_CONTRACT,
+])
 
 export function createProvider(selection) {
-  if (selection.contract !== MAP_SEMANTIC_ANALYSIS_CONTRACT || selection.major !== 1) {
+  if (
+    (selection.contract !== MAP_SEMANTIC_ANALYSIS_CONTRACT &&
+      selection.contract !== RESOLVED_MAP_WORKSPACE_CONTRACT) ||
+    selection.major !== 1
+  ) {
     throw new TypeError(
       `unsupported semantic-map selection ${selection.contract}@${selection.major}`,
     )
   }
+  const value =
+    selection.contract === MAP_SEMANTIC_ANALYSIS_CONTRACT
+      ? Object.freeze({
+          contract: MAP_SEMANTIC_ANALYSIS_CONTRACT,
+          analyzerId: ANALYZER_ID,
+          gameIds: Object.freeze([GAME_ID]),
+          open: openStarcraft2Map,
+        })
+      : Object.freeze({
+          contract: RESOLVED_MAP_WORKSPACE_CONTRACT,
+          analyzerId: ANALYZER_ID,
+          gameIds: Object.freeze([GAME_ID]),
+          plan: planStarcraft2Map,
+          analyze: analyzeStarcraft2MapWorkspace,
+        })
   return Object.freeze({
-    value: Object.freeze({
-      contract: MAP_SEMANTIC_ANALYSIS_CONTRACT,
-      analyzerId: ANALYZER_ID,
-      gameIds: Object.freeze([GAME_ID]),
-      open: openStarcraft2Map,
-    }),
+    value,
     release: async () => undefined,
   })
 }

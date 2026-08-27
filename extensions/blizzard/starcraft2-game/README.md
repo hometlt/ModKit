@@ -46,3 +46,14 @@ placed objects, regions and an HMAP terrain summary, publishes the catalog queri
 placed units, and binds them to resolved schema-backed entities when the matching catalog snapshot
 is supplied. Container extraction, other map internals, rendering, triggers, localization, writing
 and packing remain outside this slice.
+
+Block 15 adds `common.map/resolved-workspace@1` without changing that frozen v1 semantic surface.
+The provider plans confined active-root reads and the generic host resolves every byte through a
+revision-pinned `ResourceSessionPort`; the result embeds the authoritative semantic snapshot plus
+bounded native navigation samples and the versioned publisher contract
+`org.modkitx.blizzard.starcraft2/world-scene-source@1`. Its generic structural adapter pages stable
+terrain, object, region, catalog-resource and navigation identities with coordinate, unit, bounds,
+LOD, provenance and loss metadata. It is explicitly a publisher candidate: it is not registered as
+`common.view/world-scene-source@1`, is not a second eager world DTO, and publishes no writer. Block
+18 is the earliest admission boundary; if that block standardizes the common coordinate, this
+publisher must adapt/dual-publish during migration rather than silently changing this contract.

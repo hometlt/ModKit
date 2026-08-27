@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   TRUSTED_IN_PROCESS_EXECUTION_BACKEND,
+  analyzeResolvedMapWorkspace,
   analyzeResolvedDataWorkspace,
   artifactNamespaceSourceFromVfsMount,
   buildInventory,
@@ -28,6 +29,7 @@ import {
   type RasterImageSource,
   type ResourceBudget,
 } from '@modkitx-x3/sdk'
+import { inspectCandidateWorld } from '@modkitx-x3/ui/world'
 import { VirtualFileSystem } from '@modkitx-x3/vfs'
 import { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'
 
@@ -552,39 +554,125 @@ describe('installed StarCraft II CASC product path', () => {
             await runtimeResources.dispose()
           }
 
-          const semanticMap = await mapResolution.analysis.open({
-            workspaceId: workspace.workspaceId,
-            gameId: workspace.gameId,
-            mapId: mapRoot,
-            documents: mapDocuments,
+          const mapResources = createResourceSession({
+            origin: createNamespaceCompanionOrigin({
+              namespace,
+              primaryLogicalId: mapRoot,
+              containerRevision: cascRevision,
+              extract: extractCascBytes,
+            }),
+            revision: cascRevision,
+          })
+          const semanticMap = await analyzeResolvedMapWorkspace({
+            services,
+            grant: { id: 'sc2-casc-real-map-world', classes: [] },
+            budgets: budget,
+            workspace,
+            resources: mapResources,
             catalog,
-            ...mapLimits,
-          })
-          expect(
-            semanticMap.complete,
-            semanticMap.diagnostics.map(item => `${item.code}: ${item.message}`).join('\n'),
-          ).toBe(true)
-          expect(semanticMap.terrain).toMatchObject({
-            version: 101,
-            width: 257,
-            height: 257,
-            cellCount: 66_049,
-          })
-          expect(semanticMap.regions).toContainEqual(
-            expect.objectContaining({ regionId: 1, name: 'Cheer' }),
-          )
-          const placedMarine = semanticMap.objects.find(
-            object => object.kind === 'unit' && object.typeId === 'Marine',
-          )
-          expect(placedMarine).toMatchObject({
-            catalog: {
-              ref: { namespace: 'Unit', entityId: 'Marine' },
-              entity: { typeId: 'CUnit', fields: { Race: 'Terr' } },
+            limits: {
+              ...mapLimits,
+              maxRequirements: 8,
+              maxPageSize: 16,
+              maxDiagnostics: 100,
             },
           })
-          expect(semanticMap.resolvedCatalogObjects).toBe(
-            semanticMap.objects.filter(object => object.kind === 'unit').length,
-          )
+          expect(
+            semanticMap.state,
+            semanticMap.diagnostics.map(item => `${item.code}: ${item.message}`).join('\n'),
+          ).toBe('resolved')
+          if (semanticMap.state !== 'resolved') {
+            await mapResources.dispose()
+            throw new Error('real resolved map workspace did not open')
+          }
+          try {
+            expect(
+              semanticMap.snapshot.complete,
+              [...semanticMap.snapshot.semantic.diagnostics, ...semanticMap.snapshot.diagnostics]
+                .map(item => `${item.code}: ${item.message}`)
+                .join('\n'),
+            ).toBe(true)
+            expect(semanticMap.snapshot.semantic.terrain).toMatchObject({
+              version: 101,
+              width: 257,
+              height: 257,
+              cellCount: 66_049,
+            })
+            expect(semanticMap.snapshot.semantic.regions).toContainEqual(
+              expect.objectContaining({ regionId: 1, name: 'Cheer' }),
+            )
+            const placedMarine = semanticMap.snapshot.semantic.objects.find(
+              object => object.kind === 'unit' && object.typeId === 'Marine',
+            )
+            expect(placedMarine).toMatchObject({
+              catalog: {
+                ref: { namespace: 'Unit', entityId: 'Marine' },
+                entity: { typeId: 'CUnit', fields: { Race: 'Terr' } },
+              },
+            })
+            expect(semanticMap.snapshot.semantic.resolvedCatalogObjects).toBe(
+              semanticMap.snapshot.semantic.objects.filter(object => object.kind === 'unit').length,
+            )
+            expect(mapResources.provenance()).toEqual(
+              expect.arrayContaining(
+                ['objects', 'regions', 't3heightmap'].map(name =>
+                  expect.objectContaining({ logicalId: `${mapRoot}/${name}`, state: 'resolved' }),
+                ),
+              ),
+            )
+            const worldInfo = await semanticMap.world.value.info()
+            expect(worldInfo).toMatchObject({
+              contract: 'org.modkitx.blizzard.starcraft2/world-scene-source',
+              maturity: 'publisher-candidate',
+              mapId: mapRoot,
+            })
+            expect(worldInfo.crossSpaceTransforms).toContainEqual(
+              expect.objectContaining({
+                from: 'height-grid',
+                to: 'map-native',
+                state: 'unknown',
+              }),
+            )
+            const viewer = await inspectCandidateWorld(semanticMap.world.value, {
+              maxLayers: 8,
+              maxItemsPerLayer: 8,
+            })
+            expect(viewer.layers.map(item => item.layer.kind)).toEqual([
+              'terrain',
+              'objects',
+              'regions',
+              'resources',
+              'navigation',
+            ])
+            const resourceLayerId = worldInfo.facets.find(
+              item => item.facet === 'resources',
+            )?.layerId
+            if (resourceLayerId === undefined) throw new Error('world resource layer is absent')
+            const marineResource = (
+              await semanticMap.world.value.page({
+                facet: 'resources',
+                layerId: resourceLayerId,
+                limit: 16,
+              })
+            ).items.find(item => item.facet === 'resources' && item.entityId === 'Marine')
+            expect(marineResource).toMatchObject({ resolved: true })
+            proves({
+              capabilityId: 'format/sc2-map/open-inspect',
+              operation: 'read',
+              note: 'Real installed TArcade bytes traverse CASC, ResourceSession and the resolved map service.',
+            })
+            proves({
+              capabilityId: 'format/sc2-map/open-inspect',
+              operation: 'inspect',
+              note: 'Generic world harness consumes the SC2 publisher candidate with exact resource joins.',
+            })
+            console.info(
+              `[sc2-live] world ${mapRoot}: ${semanticMap.snapshot.semantic.objects.length} objects, ${semanticMap.snapshot.semantic.regions.length} regions, navigation=${String(semanticMap.snapshot.navigation !== undefined)}, candidate=${semanticMap.world.value.contract}@1`,
+            )
+          } finally {
+            await semanticMap.release()
+            await mapResources.dispose()
+          }
 
           const cancelled = new AbortController()
           cancelled.abort()
