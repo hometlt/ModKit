@@ -115,7 +115,8 @@ const definition = Object.freeze({
         'entry-extraction',
         'compressed-or-encrypted-listfiles',
         'high-offset-mpq-tables',
-        'mpq-packing',
+        'native-preserving-mpq-repack',
+        'native-signing',
         'map-launch',
       ],
     }

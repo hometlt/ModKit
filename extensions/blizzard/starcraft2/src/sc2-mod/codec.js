@@ -125,7 +125,8 @@ const definition = Object.freeze({
         'compressed-or-encrypted-listfiles',
         'high-offset-mpq-tables',
         'json-mod-or-components-export',
-        'mpq-packing',
+        'native-preserving-mpq-repack',
+        'native-signing-and-launch',
       ],
     }
   },

@@ -22,7 +22,7 @@
   ],
   "limitations": [
     "Portable packed-map inspection decrypts the real MPQ hash/block tables, reads a stored listfile, validates map document markers, and publishes the archive namespace.",
-    "Mounted-directory inputs, semantic map document decoding, terrain/minimap rendering, catalog-coordinated edits, extraction, MPQ packing, and map launch remain unavailable."
+    "Mounted-directory semantic opening, semantic map document decoding, terrain/minimap rendering, catalog-coordinated edits, extraction, native-preserving MPQ repack, signing, and map launch remain unavailable. The separate MPQ writer can Save As a complete bounded loose workspace as a fresh stored-entry archive."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "sc2-map", "label": "StarCraft II map" }],

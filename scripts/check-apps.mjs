@@ -307,9 +307,9 @@ await checkApplicationSet(
   },
   {
     main: { offers: 'none', active: 'none' },
-    // Two SC2 writer providers are worker-brokered; their per-format offers stay behind each
-    // provider contribution and do not activate in native main/extension-host realms.
-    worker: { offers: 75, active: 75 },
+    // The two SC2 writers and fresh-MPQ Save As writer are worker-brokered; their offers stay
+    // behind each provider contribution and do not activate in native main/extension-host realms.
+    worker: { offers: 76, active: 76 },
   },
 )
 await checkApplicationSet(

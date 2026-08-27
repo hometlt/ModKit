@@ -217,7 +217,7 @@ export const READY_APP_EXTENSIONS = Object.freeze({
   'blizzard-mpq': Object.freeze({
     path: Object.freeze(['blizzard', 'mpq']),
     coordinate: 'org.modkitx.blizzard/mpq',
-    contributions: Object.freeze(['org.modkitx/mpq']),
+    contributions: Object.freeze(['org.modkitx/mpq', 'org.modkitx.blizzard/mpq-fresh-writer']),
   }),
   'blizzard-starcraft2': Object.freeze({
     path: Object.freeze(['blizzard', 'starcraft2']),

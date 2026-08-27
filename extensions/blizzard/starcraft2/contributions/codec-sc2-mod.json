@@ -22,7 +22,7 @@
   ],
   "limitations": [
     "Portable packed-mod inspection decrypts the real MPQ hash/block tables, reads a stored listfile, classifies ComponentList, GameData, layouts, and localized data, and publishes the archive namespace.",
-    "Mounted-directory inputs, dependency overlay resolution, resolved catalog comparison, locale creation, entity renames, extraction/export, and MPQ packing remain unavailable."
+    "Mounted-directory semantic opening, dependency overlay resolution, resolved catalog comparison, locale creation, entity renames, extraction, native-preserving MPQ repack, signing, and launch remain unavailable. The separate MPQ writer can Save As a complete bounded loose workspace as a fresh stored-entry archive."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "sc2-mod", "label": "StarCraft II mod" }],

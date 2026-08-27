@@ -10,6 +10,7 @@ import {
   revisionId,
   type ChangeSet,
   type FidelityEvidence,
+  type NamespaceEntrySource,
   type PayloadStore,
   type PermissionGrant,
   type SubjectEditTarget,
@@ -39,8 +40,12 @@ import { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const extensionRoot = join(repoRoot, 'extensions', 'blizzard', 'starcraft2')
+const mpqExtensionRoot = join(repoRoot, 'extensions', 'blizzard', 'mpq')
 const workspaceWriterUrl = pathToFileURL(
   join(extensionRoot, 'src', 'editing', 'workspace-copy-writer.js'),
+).href
+const freshMpqWriterUrl = pathToFileURL(
+  join(mpqExtensionRoot, 'src', 'mpq', 'fresh-writer.js'),
 ).href
 
 const HOST = 'org.example.app/sc2-writer-host'
@@ -110,9 +115,32 @@ const services = () =>
       policy,
     }))())
 
+let mpqCached: Promise<NodeSubjectServices> | undefined
+const mpqServices = () =>
+  (mpqCached ??= (async () =>
+    createNodeSubjectServices({
+      topology,
+      realms: { host: HOST, workers: WORKERS },
+      extensions: [await linked(mpqExtensionRoot)],
+      policy,
+    }))())
+
 async function resolver() {
   const value = await services()
   if (value.serviceDefinitions === undefined) throw new Error('no service definitions')
+  return createHostServiceResolver({
+    inventory: value.inventory,
+    target: value.target,
+    executionBackends: value.executionBackends,
+    definitions: value.serviceDefinitions,
+    grant: WRITE,
+    budgets: budget,
+  })
+}
+
+async function mpqResolver() {
+  const value = await mpqServices()
+  if (value.serviceDefinitions === undefined) throw new Error('no MPQ service definitions')
   return createHostServiceResolver({
     inventory: value.inventory,
     target: value.target,
@@ -153,6 +181,21 @@ function evidence(writer: Writer, source: string, inputClass?: string): Fidelity
     writer: writer.identity,
     optionsFingerprint: 'complete-snapshot-v1',
     inputClass: inputClass ?? `${writer.identity.formatId}-utf8`,
+    provenAt: '2026-08-27T00:00:00Z',
+  }
+}
+
+function semanticEvidence(writer: Writer, source: string, inputClass: string): FidelityEvidence {
+  return {
+    roundTrip: 'semantic',
+    preservesUnknownData: true,
+    evidenceId: writer.offer.fidelityEvidenceId,
+    corpusId: `modkitX3/packages/host/test/sc2-writers:${writer.identity.formatId}`,
+    corpusDigest: `sha256:${createHash('sha256').update(source).digest('hex')}`,
+    conformanceProfile: 'common.edit/writer-v1' as never,
+    writer: writer.identity,
+    optionsFingerprint: 'fresh-mpq-v0-stored-single-unit',
+    inputClass,
     provenAt: '2026-08-27T00:00:00Z',
   }
 }
@@ -985,4 +1028,549 @@ describe('Block 15E SC2 workspace-copy export', () => {
     await port.release()
     await mount.dispose()
   }, 60_000)
+})
+
+describe('Block 15 fresh MPQ Save As from loose SC2 workspaces', () => {
+  const archiveCases = [
+    {
+      documentKind: 'SC2Map',
+      archiveName: 'Fresh.SC2Map',
+      entries: new Map<string, Uint8Array>([
+        ['MapInfo', new TextEncoder().encode('MapInfo-v1')],
+        ['Objects', new Uint8Array([0, 255, 7, 9])],
+        [
+          'Base.SC2Data/GameData/UnitData.xml',
+          new TextEncoder().encode('<Catalog><CUnit id="FreshMarine"/></Catalog>'),
+        ],
+        ['Script.galaxy', new TextEncoder().encode('void FreshMain() {}\r\n')],
+      ]),
+    },
+    {
+      documentKind: 'SC2Mod',
+      archiveName: 'Fresh.SC2Mod',
+      entries: new Map<string, Uint8Array>([
+        [
+          'ComponentList.SC2Components',
+          new TextEncoder().encode('<Components><DataComponent Type="gada"/></Components>'),
+        ],
+        ['DocumentInfo', new TextEncoder().encode('<DocInfo><Type Value="Mod"/></DocInfo>')],
+        [
+          'Base.SC2Data/GameData/UnitData.xml',
+          new TextEncoder().encode('<Catalog><CUnit id="FreshMarauder"/></Catalog>'),
+        ],
+        ['Opaque.bin', new Uint8Array([1, 0, 254, 4])],
+      ]),
+    },
+    {
+      documentKind: 'SC2Campaign',
+      archiveName: 'Fresh.SC2Campaign',
+      entries: new Map<string, Uint8Array>([
+        [
+          'ComponentList.SC2Components',
+          new TextEncoder().encode('<Components><DataComponent Type="gacp"/></Components>'),
+        ],
+        ['DocumentInfo', new TextEncoder().encode('<DocInfo><Type Value="Campaign"/></DocInfo>')],
+        ['CampaignData/Story.xml', new TextEncoder().encode('<Story opaque="preserve"/>')],
+        ['Opaque.bin', new Uint8Array([9, 3, 255, 0])],
+      ]),
+    },
+  ] as const
+
+  const sourceFor = (prefix: string, entries: ReadonlyMap<string, Uint8Array>) => {
+    const sorted = [...entries].sort(([left], [right]) => (left < right ? -1 : 1))
+    const revision = revisionId(
+      `provider-token:${createHash('sha256')
+        .update(
+          sorted
+            .map(([path, bytes]) => `${path}:${createHash('sha256').update(bytes).digest('hex')}`)
+            .join('|'),
+        )
+        .digest('hex')}`,
+    )
+    return {
+      revision,
+      async currentRevision() {
+        return revision
+      },
+      async list(requestPrefix: string, page: { cursor?: string; limit: number }) {
+        if (requestPrefix !== `${prefix}/`) throw new Error(`unexpected prefix ${requestPrefix}`)
+        const from = page.cursor === undefined ? 0 : Number(page.cursor)
+        const items = sorted.slice(from, from + page.limit).map(([path, bytes]) => ({
+          id: `${prefix}/${path}`,
+          path: `${prefix}/${path}`,
+          kind: 'file' as const,
+          size: BigInt(bytes.byteLength),
+          revision: revisionId(
+            `content-hash.sha256:${createHash('sha256').update(bytes).digest('hex')}`,
+          ),
+        }))
+        return {
+          items,
+          ...(from + items.length < sorted.length
+            ? { nextCursor: String(from + items.length) }
+            : {}),
+        }
+      },
+      async read(path: string) {
+        const relative = path.slice(prefix.length + 1)
+        const bytes = entries.get(relative)
+        if (bytes === undefined) throw new Error(`missing source entry ${relative}`)
+        return bytes.slice()
+      },
+    }
+  }
+
+  it('creates Map/Mod/Campaign MPQ v0 files, reopens all through org.modkitx/mpq, compares every byte, and undoes each destination create', async () => {
+    const module = (await import(freshMpqWriterUrl)) as {
+      snapshotFreshMpq(options: unknown): Promise<ChangeSet>
+    }
+    for (const archiveCase of archiveCases) {
+      const directory = join(scratch, `fresh-mpq-${archiveCase.documentKind}`)
+      mkdirSync(directory)
+      const { opened, mount } = await namespaceTarget(directory)
+      const port = await mpqResolver()
+      const lease = await port.port.resolve({
+        contract: 'common.edit/writer',
+        major: 1,
+        facet: {
+          formatId: 'mpq',
+          representationId: 'source',
+          mutationMode: 'export-only',
+          minimumRoundTrip: 'semantic',
+        },
+      })
+      const writer = lease.value as Writer
+      const backend = createFileEditingBackend({ roots: [directory] })
+      const editing = createSubjectEditing({
+        opened,
+        grant: WRITE,
+        backendFor: () => backend,
+        evidenceFor: () =>
+          semanticEvidence(
+            writer,
+            archiveCase.documentKind,
+            `${archiveCase.documentKind}-complete-loose-workspace`,
+          ),
+        expectedWriter: writer.identity,
+        writer,
+      })
+      const target = editing.targets[0]
+      if (target === undefined) throw new Error('no fresh MPQ destination target')
+      const prefix = `Fresh.${archiveCase.documentKind}`
+      const source = sourceFor(prefix, archiveCase.entries)
+      const change = await module.snapshotFreshMpq({
+        source,
+        sourcePrefix: prefix,
+        sourceMode: 'loose-namespace',
+        target,
+        archiveName: archiveCase.archiveName,
+        pageLimit: 2,
+      })
+      expect(await writer.validate(change)).toEqual({ valid: true, diagnostics: [] })
+      const plan = await writer.plan(change)
+      expect(plan).toMatchObject({
+        semantics: { mutationMode: 'export-only', minimumGuarantee: 'recoverable' },
+        fidelity: { roundTrip: 'semantic', preservesUnknownData: true },
+      })
+      const prepared = await editing.coordinator.prepare(plan, { grant: editing.grantSnapshot })
+      expect(prepared.state, show(prepared)).toBe('ready')
+      if (prepared.state !== 'ready') continue
+      const committed = await editing.coordinator.commit(prepared.prepared, {
+        grant: editing.grantSnapshot,
+      })
+      expect(committed.state, show(committed)).toBe('committed')
+      if (committed.state !== 'committed') continue
+
+      const archivePath = join(directory, archiveCase.archiveName)
+      expect(readFileSync(archivePath).subarray(0, 4).toString('latin1')).toBe('MPQ\u001a')
+      const product = await mpqServices()
+      const reopened = await product.open({
+        source: await openFileArtifactSource(archivePath),
+        path: archivePath,
+        intent: 'full',
+        grant: WRITE,
+        budget,
+      })
+      if (reopened.state !== 'opened') {
+        throw new Error(`fresh MPQ reopen failed: ${show(reopened.diagnostics)}`)
+      }
+      expect(reopened.selected.contributionId).toBe('org.modkitx/mpq')
+      const namespaceLease = await reopened.session.dataSource(
+        'common.view/namespace-entry-source',
+        1,
+      )
+      try {
+        const namespace = namespaceLease.value as NamespaceEntrySource
+        const paths: string[] = []
+        let cursor: string | undefined
+        do {
+          const page = await namespace.list('', {
+            ...(cursor === undefined ? {} : { cursor }),
+            limit: 2,
+          })
+          paths.push(...page.items.map(item => item.path))
+          cursor = page.nextCursor
+        } while (cursor !== undefined)
+        const expectedPaths = [...archiveCase.entries.keys()].sort()
+        expect(paths).toEqual([...expectedPaths, '(listfile)'].sort())
+        for (const path of expectedPaths) {
+          const extracted = await reopened.session.operations().invoke('extract-entry', {
+            entryId: path,
+          })
+          expect(extracted.state, show(extracted)).toBe('ok')
+          if (extracted.state !== 'ok' || extracted.output.kind !== 'bytes') continue
+          expect([...extracted.output.value]).toEqual([
+            ...(archiveCase.entries.get(path) as Uint8Array),
+          ])
+        }
+        const listfile = await reopened.session.operations().invoke('extract-entry', {
+          entryId: '(listfile)',
+        })
+        expect(listfile.state, show(listfile)).toBe('ok')
+        if (listfile.state === 'ok' && listfile.output.kind === 'bytes') {
+          expect(new TextDecoder().decode(listfile.output.value)).toBe(
+            `${expectedPaths.map(path => path.replaceAll('/', '\\')).join('\r\n')}\r\n`,
+          )
+        }
+      } finally {
+        await namespaceLease.release()
+        await reopened.session.dispose()
+      }
+
+      const undone = await editing.coordinator.undo(committed.receipt.transactionId, {
+        grant: editing.grantSnapshot,
+      })
+      expect(undone.state, show(undone)).toBe('committed')
+      expect(readdirSync(directory)).toEqual([])
+      await backend.dispose()
+      await lease.release()
+      await port.release()
+      await mount.dispose()
+    }
+  }, 120_000)
+
+  it('refuses native preservation with a stable code and never overwrites an existing destination', async () => {
+    const module = (await import(freshMpqWriterUrl)) as {
+      MPQ_NATIVE_REPACK_UNSUPPORTED: string
+      snapshotFreshMpq(options: unknown): Promise<ChangeSet>
+    }
+    const directory = join(scratch, 'fresh-mpq-refusals')
+    mkdirSync(directory)
+    const existingPath = join(directory, 'Existing.SC2Map')
+    const sentinel = new Uint8Array([0xde, 0xad, 0xbe, 0xef])
+    writeFileSync(existingPath, sentinel)
+    const { opened, mount } = await namespaceTarget(directory)
+    const port = await mpqResolver()
+    const lease = await port.port.resolve({
+      contract: 'common.edit/writer',
+      major: 1,
+      facet: {
+        formatId: 'mpq',
+        representationId: 'source',
+        mutationMode: 'export-only',
+        minimumRoundTrip: 'semantic',
+      },
+    })
+    const writer = lease.value as Writer
+    const backend = createFileEditingBackend({ roots: [directory] })
+    const editing = createSubjectEditing({
+      opened,
+      grant: WRITE,
+      backendFor: () => backend,
+      evidenceFor: () => semanticEvidence(writer, 'refusal', 'fresh-mpq-refusal'),
+      writer,
+    })
+    const target = editing.targets[0]
+    if (target === undefined) throw new Error('no refusal target')
+    const source = sourceFor(
+      'Existing.SC2Map',
+      new Map([['MapInfo', new TextEncoder().encode('fresh')]]),
+    )
+    let listed = 0
+    const nativeSource = {
+      ...source,
+      async list(prefix: string, page: { cursor?: string; limit: number }) {
+        listed += 1
+        return source.list(prefix, page)
+      },
+    }
+    await expect(
+      module.snapshotFreshMpq({
+        source: nativeSource,
+        sourcePrefix: 'Existing.SC2Map',
+        sourceMode: 'native-mpq',
+        target,
+        archiveName: 'Refused.SC2Map',
+      }),
+    ).rejects.toMatchObject({ code: module.MPQ_NATIVE_REPACK_UNSUPPORTED })
+    expect(listed).toBe(0)
+    expect(readdirSync(directory)).toEqual(['Existing.SC2Map'])
+
+    const valid = await module.snapshotFreshMpq({
+      source,
+      sourcePrefix: 'Existing.SC2Map',
+      sourceMode: 'loose-namespace',
+      target,
+      archiveName: 'Existing.SC2Map',
+    })
+    const nativeRefused = await writer.validate({
+      ...valid,
+      semanticIntent: {
+        ...(valid.semanticIntent as Readonly<Record<string, unknown>>),
+        sourceMode: 'native-mpq',
+        preserveNativeLayout: true,
+        preserveNativeCompression: true,
+        preserveNativeEncryption: true,
+        signForGame: true,
+      },
+    })
+    expect(nativeRefused.valid).toBe(false)
+    expect(nativeRefused.diagnostics).toEqual([
+      expect.objectContaining({ code: module.MPQ_NATIVE_REPACK_UNSUPPORTED }),
+    ])
+
+    const plan = await writer.plan(valid)
+    const prepared = await editing.coordinator.prepare(plan, { grant: editing.grantSnapshot })
+    expect(prepared.state, show(prepared)).toBe('ready')
+    if (prepared.state === 'ready') {
+      const committed = await editing.coordinator.commit(prepared.prepared, {
+        grant: editing.grantSnapshot,
+      })
+      expect(committed).toMatchObject({ state: 'not-applied', reason: 'plan-invalid' })
+    }
+    expect([...readFileSync(existingPath)]).toEqual([...sentinel])
+    expect(readdirSync(directory)).toEqual(['Existing.SC2Map'])
+
+    const collisionSource = {
+      revision: revisionId('provider-token:case-collision'),
+      async currentRevision() {
+        return revisionId('provider-token:case-collision')
+      },
+      async list() {
+        return {
+          items: [
+            { id: 'a', path: 'Case.SC2Map/A.bin', kind: 'file' as const, size: 1n },
+            { id: 'b', path: 'Case.SC2Map/a.bin', kind: 'file' as const, size: 1n },
+          ],
+        }
+      },
+      async read() {
+        return new Uint8Array([1])
+      },
+    }
+    await expect(
+      module.snapshotFreshMpq({
+        source: collisionSource,
+        sourcePrefix: 'Case.SC2Map',
+        sourceMode: 'loose-namespace',
+        target,
+        archiveName: 'Collision.SC2Map',
+      }),
+    ).rejects.toThrow(/case-insensitive/u)
+    expect(readdirSync(directory)).toEqual(['Existing.SC2Map'])
+
+    await backend.dispose()
+    await lease.release()
+    await port.release()
+    await mount.dispose()
+  }, 120_000)
+
+  it('fails closed on hostile loose snapshots, budgets, repeated cursors and stale revisions without destination writes', async () => {
+    const module = (await import(freshMpqWriterUrl)) as {
+      MPQ_SOURCE_SNAPSHOT_UNSTABLE: string
+      snapshotFreshMpq(options: unknown): Promise<ChangeSet>
+    }
+    const directory = join(scratch, 'fresh-mpq-hostile-source')
+    mkdirSync(directory)
+    const existingPath = join(directory, 'Sentinel.SC2Map')
+    const sentinel = new Uint8Array([0x13, 0x37])
+    writeFileSync(existingPath, sentinel)
+    const { opened, mount } = await namespaceTarget(directory)
+    const port = await mpqResolver()
+    const lease = await port.port.resolve({
+      contract: 'common.edit/writer',
+      major: 1,
+      facet: {
+        formatId: 'mpq',
+        representationId: 'source',
+        mutationMode: 'export-only',
+        minimumRoundTrip: 'semantic',
+      },
+    })
+    const writer = lease.value as Writer
+    const backend = createFileEditingBackend({ roots: [directory] })
+    const editing = createSubjectEditing({
+      opened,
+      grant: WRITE,
+      backendFor: () => backend,
+      evidenceFor: () => semanticEvidence(writer, 'hostile', 'fresh-mpq-hostile-source'),
+      writer,
+    })
+    const target = editing.targets[0]
+    if (target === undefined) throw new Error('no hostile-source target')
+    const pinned = revisionId('provider-token:fresh-mpq-hostile')
+    const unchanged = () => {
+      expect(readdirSync(directory)).toEqual(['Sentinel.SC2Map'])
+      expect([...readFileSync(existingPath)]).toEqual([...sentinel])
+    }
+    const stableSource = {
+      revision: pinned,
+      async currentRevision() {
+        return pinned
+      },
+      async list() {
+        return {
+          items: [
+            {
+              id: 'valid',
+              path: 'Bad.SC2Map/valid.bin',
+              kind: 'file' as const,
+              size: 1n,
+              revision: revisionId('provider-token:fresh-mpq-valid'),
+            },
+          ],
+        }
+      },
+      async read() {
+        return new Uint8Array([1])
+      },
+    }
+    const snapshot = (source: unknown, extra: Readonly<Record<string, unknown>> = {}) =>
+      module.snapshotFreshMpq({
+        source,
+        sourcePrefix: 'Bad.SC2Map',
+        sourceMode: 'loose-namespace',
+        target,
+        archiveName: 'Refused.SC2Map',
+        ...extra,
+      })
+
+    let prefixLists = 0
+    let prefixReads = 0
+    await expect(
+      snapshot(
+        {
+          ...stableSource,
+          async list() {
+            prefixLists += 1
+            return { items: [] }
+          },
+          async read() {
+            prefixReads += 1
+            return new Uint8Array()
+          },
+        },
+        { sourcePrefix: '../Bad.SC2Map' },
+      ),
+    ).rejects.toThrow(/traversal/u)
+    expect({ prefixLists, prefixReads }).toEqual({ prefixLists: 0, prefixReads: 0 })
+    unchanged()
+
+    for (const [path, message] of [
+      ['Bad.SC2Map/../escape.bin', /traversal/u],
+      ['Bad.SC2Map/Café.bin', /portable ASCII/u],
+      ['Bad.SC2Map/(listfile)', /reserved internal path/u],
+    ] as const) {
+      await expect(
+        snapshot({
+          ...stableSource,
+          async list() {
+            return {
+              items: [
+                {
+                  id: path,
+                  path,
+                  kind: 'file' as const,
+                  size: 1n,
+                  revision: revisionId('provider-token:fresh-mpq-hostile-path'),
+                },
+              ],
+            }
+          },
+        }),
+      ).rejects.toThrow(message)
+      unchanged()
+    }
+
+    let budgetReads = 0
+    await expect(
+      snapshot(
+        {
+          ...stableSource,
+          async list() {
+            return {
+              items: [
+                {
+                  id: 'large',
+                  path: 'Bad.SC2Map/large.bin',
+                  kind: 'file' as const,
+                  size: 2n,
+                  revision: revisionId('provider-token:fresh-mpq-large'),
+                },
+              ],
+            }
+          },
+          async read() {
+            budgetReads += 1
+            return new Uint8Array([1, 2])
+          },
+        },
+        { maxEntryBytes: 1 },
+      ),
+    ).rejects.toThrow(/maxEntryBytes/u)
+    expect(budgetReads).toBe(0)
+    unchanged()
+
+    let pages = 0
+    await expect(
+      snapshot({
+        ...stableSource,
+        async list() {
+          pages += 1
+          return pages === 1
+            ? { items: (await stableSource.list()).items, nextCursor: 'repeat' }
+            : { items: [], nextCursor: 'repeat' }
+        },
+      }),
+    ).rejects.toThrow(/repeated.*cursor/u)
+    expect(pages).toBe(2)
+    unchanged()
+
+    let revisionChecks = 0
+    await expect(
+      snapshot({
+        ...stableSource,
+        async currentRevision() {
+          revisionChecks += 1
+          return revisionChecks === 1 ? pinned : revisionId('provider-token:fresh-mpq-stale')
+        },
+      }),
+    ).rejects.toMatchObject({ code: module.MPQ_SOURCE_SNAPSHOT_UNSTABLE })
+    unchanged()
+
+    const valid = await snapshot(stableSource, { archiveName: 'Valid.SC2Map' })
+    const magicOnly: ChangeSet = {
+      ...valid,
+      edits: [
+        {
+          operation: 'create',
+          targetId: target.targetId,
+          source: target.ownerSource,
+          newPath: 'Valid.SC2Map',
+          payload: { kind: 'inline' as const, bytes: new Uint8Array([0x4d, 0x50, 0x51, 0x1a]) },
+        },
+      ],
+    }
+    const forged = await writer.validate(magicOnly)
+    expect(forged.valid).toBe(false)
+    expect(forged.diagnostics).toEqual([
+      expect.objectContaining({ code: 'org.modkitx.blizzard/mpq-fresh-export-edit-invalid' }),
+    ])
+    unchanged()
+
+    await backend.dispose()
+    await lease.release()
+    await port.release()
+    await mount.dispose()
+  }, 120_000)
 })
