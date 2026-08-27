@@ -4,7 +4,7 @@
   "entryCount": 67,
   "totals": {
     "modules": 551,
-    "bytes": 6050381
+    "bytes": 6053423
   },
   "entries": [
     {
@@ -146,7 +146,7 @@
       "entry": "packages/host/dist/node/index.js",
       "surface": "host/node",
       "modules": 59,
-      "bytes": 428301,
+      "bytes": 431343,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
