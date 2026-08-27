@@ -33,6 +33,8 @@ import { inspectCandidateWorld } from '@modkitx-x3/ui/world'
 import { VirtualFileSystem } from '@modkitx-x3/vfs'
 import { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'
 
+import { assessCandidateWorldUvwAdmission } from '../src/uvw-materialization.js'
+
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const sc2Override = process.env.MODKITX_SC2_ROOT?.trim()
 const sc2Root = sc2Override ?? ''
@@ -633,6 +635,35 @@ describe('installed StarCraft II CASC product path', () => {
                 state: 'unknown',
               }),
             )
+            const uvwAdmission = await assessCandidateWorldUvwAdmission(semanticMap.world.value, {
+              maxPageItems: 16,
+              maxTerrainItems: 100_000,
+            })
+            expect(uvwAdmission.refusalCodes).toEqual([
+              'terrain-not-exact',
+              'exact-lod-missing',
+              'terrain-bounds-unproven',
+              'coordinate-transform-unproven',
+              'source-unit-unproven',
+              'canonical-origin-unproven',
+              'cell-size-unproven',
+              'vertical-quantization-unproven',
+            ])
+            expect(uvwAdmission).toMatchObject({
+              state: 'refused',
+              source: {
+                contract: 'org.modkitx.blizzard.starcraft2/world-scene-source',
+                snapshotId: semanticMap.snapshot.snapshotId,
+                infoSnapshotId: semanticMap.snapshot.snapshotId,
+              },
+              requestedLod: 'exact',
+              pageRequests: 0,
+              observedTerrainItems: 0,
+              materialized: false,
+              serialized: false,
+              serializedBytes: 0,
+              lostFacetIds: [],
+            })
             const viewer = await inspectCandidateWorld(semanticMap.world.value, {
               maxLayers: 8,
               maxItemsPerLayer: 8,
@@ -667,7 +698,7 @@ describe('installed StarCraft II CASC product path', () => {
               note: 'Generic world harness consumes the SC2 publisher candidate with exact resource joins.',
             })
             console.info(
-              `[sc2-live] world ${mapRoot}: ${semanticMap.snapshot.semantic.objects.length} objects, ${semanticMap.snapshot.semantic.regions.length} regions, navigation=${String(semanticMap.snapshot.navigation !== undefined)}, candidate=${semanticMap.world.value.contract}@1`,
+              `[sc2-live] world ${mapRoot}: ${semanticMap.snapshot.semantic.objects.length} objects, ${semanticMap.snapshot.semantic.regions.length} regions, navigation=${String(semanticMap.snapshot.navigation !== undefined)}, candidate=${semanticMap.world.value.contract}@1, uvw=${uvwAdmission.state}:${uvwAdmission.refusalCodes.join(',')}`,
             )
           } finally {
             await semanticMap.release()

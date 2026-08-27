@@ -25,6 +25,15 @@ import { readFile, readdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import type {
+  CandidateWorldSceneInfo,
+  CandidateWorldSceneSource,
+  WorldSceneItem,
+  WorldScenePage,
+  WorldScenePageRequest,
+} from '@modkitx-x3/sdk/maps'
+
+import { assessCandidateWorldUvwAdmission } from '../src/uvw-materialization.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const specs = join(repoRoot, 'vendor', 'multiverse-specs', 'specs')
@@ -62,6 +71,109 @@ const loadProfile = async (): Promise<UvwProfileTool> =>
 
 const readJson = async <T>(path: string): Promise<T> =>
   JSON.parse(await readFile(path, 'utf8')) as T
+
+const admissionContract = 'example.publisher/world-source'
+const admissionSnapshotId = 'candidate-world-snapshot'
+const admissionTerrainLayerId = `${admissionSnapshotId}:layer:terrain`
+
+function admissionInfo(options?: {
+  readonly snapshotId?: string
+  readonly terrainState?: 'available' | 'unavailable' | 'partial'
+  readonly lods?: readonly string[]
+  readonly transformState?: 'identity' | 'known' | 'unknown'
+  readonly knownBounds?: boolean
+}): CandidateWorldSceneInfo {
+  const snapshotId = options?.snapshotId ?? admissionSnapshotId
+  const knownBounds = options?.knownBounds ?? true
+  return Object.freeze({
+    contract: admissionContract,
+    major: 1,
+    maturity: 'publisher-candidate',
+    snapshotId,
+    mapId: 'example-world',
+    coordinateSpaces: Object.freeze([
+      Object.freeze({
+        id: 'height-grid',
+        horizontalAxes: Object.freeze(['column', 'row'] as const),
+        verticalAxis: 'height-code',
+        handedness: 'array-row-major',
+        linearUnit: 'grid-index',
+        rotationUnit: 'none',
+        origin: 'grid-zero',
+      }),
+    ]),
+    crossSpaceTransforms: Object.freeze([
+      Object.freeze({
+        from: 'height-grid',
+        to: 'map-native',
+        state: options?.transformState ?? 'known',
+      }),
+    ]),
+    bounds: Object.freeze([
+      Object.freeze({
+        facet: 'terrain',
+        coordinateSpaceId: 'height-grid',
+        x: Object.freeze({ state: 'known', minimum: 0, maximum: 1 }),
+        y: Object.freeze({ state: 'known', minimum: 0, maximum: 1 }),
+        z: knownBounds
+          ? Object.freeze({ state: 'known' as const, minimum: 0, maximum: 65_535 })
+          : Object.freeze({ state: 'unknown' as const, reason: 'height unit unproven' }),
+      }),
+    ]),
+    facets: Object.freeze([
+      Object.freeze({
+        facet: 'terrain',
+        layerId: admissionTerrainLayerId,
+        state: options?.terrainState ?? 'available',
+        itemCount: 4,
+        lods: Object.freeze([...(options?.lods ?? ['exact'])]),
+      }),
+    ]),
+    provenance: Object.freeze([]),
+    unknownFacets: Object.freeze(['water']),
+    lossPolicy: 'explicit-partial',
+    complete: true,
+  })
+}
+
+function admissionSource(
+  info: CandidateWorldSceneInfo,
+  page: (
+    request: WorldScenePageRequest,
+    signal?: AbortSignal,
+  ) => Promise<WorldScenePage> = request =>
+    Promise.resolve(
+      Object.freeze({
+        snapshotId: info.snapshotId,
+        facet: request.facet,
+        state: 'available' as const,
+        items: Object.freeze([]),
+      }),
+    ),
+): CandidateWorldSceneSource {
+  return Object.freeze({
+    contract: admissionContract,
+    major: 1,
+    snapshotId: admissionSnapshotId,
+    info: () => Promise.resolve(info),
+    page,
+  })
+}
+
+function exactTerrainItem(id: string): WorldSceneItem {
+  return Object.freeze({
+    facet: 'terrain',
+    id,
+    layerId: admissionTerrainLayerId,
+    coordinateSpaceId: 'height-grid',
+    lod: 'exact',
+    x: 0,
+    y: 0,
+    heightBase: 100,
+    heightAdjustment: 0,
+    mask: 0,
+  }) as unknown as WorldSceneItem
+}
 
 /** Apply one vector mutation. `path` is dot-separated with numeric segments indexing arrays. */
 function setPath(target: unknown, path: string, value: unknown): void {
@@ -267,6 +379,165 @@ describe('12-3 UVW candidate — materialize a synthetic projection and reopen i
     // the source handed the layers over in the opposite order; the document must not notice
     expect(canonical(second)).toBe(canonical(first))
   }, 60_000)
+})
+
+describe('15F UVW candidate — world admission refuses missing exact semantic proof', () => {
+  const semanticRefusals = [
+    'coordinate-transform-unproven',
+    'source-unit-unproven',
+    'canonical-origin-unproven',
+    'cell-size-unproven',
+    'vertical-quantization-unproven',
+  ] as const
+
+  it('refuses the current partial sampled shape before paging or serialization', async () => {
+    let pageCalls = 0
+    const source = admissionSource(
+      admissionInfo({
+        terrainState: 'partial',
+        lods: ['summary', 'sampled'],
+        transformState: 'unknown',
+        knownBounds: false,
+      }),
+      () => {
+        pageCalls += 1
+        return Promise.reject(new Error('partial terrain must not be paged for admission'))
+      },
+    )
+    const report = await assessCandidateWorldUvwAdmission(source, {
+      maxPageItems: 16,
+      maxTerrainItems: 100,
+    })
+
+    expect(report.refusalCodes).toEqual([
+      'terrain-not-exact',
+      'exact-lod-missing',
+      'terrain-bounds-unproven',
+      ...semanticRefusals,
+    ])
+    expect(report).toMatchObject({
+      state: 'refused',
+      requestedLod: 'exact',
+      pageRequests: 0,
+      observedTerrainItems: 0,
+      materialized: false,
+      serialized: false,
+      serializedBytes: 0,
+      lostFacetIds: [],
+    })
+    expect(report.excludedFacetIds).toEqual(
+      expect.arrayContaining([
+        'world.navigation',
+        'world.objects',
+        'world.regions',
+        'world.resources',
+        'world.terrain.heightAdjustment',
+        'world.terrain.mask',
+        'world.unknown.water',
+      ]),
+    )
+    expect(pageCalls).toBe(0)
+  })
+
+  it('names cancellation, stale leases and identity drift without collapsing them', async () => {
+    let infoCalls = 0
+    const cancelled = new AbortController()
+    cancelled.abort()
+    const cancelledReport = await assessCandidateWorldUvwAdmission(
+      {
+        ...admissionSource(admissionInfo()),
+        info: () => {
+          infoCalls += 1
+          return Promise.resolve(admissionInfo())
+        },
+      },
+      { maxPageItems: 1, maxTerrainItems: 1, signal: cancelled.signal },
+    )
+    expect(cancelledReport.refusalCodes).toEqual(['cancelled'])
+    expect(infoCalls).toBe(0)
+
+    const staleReport = await assessCandidateWorldUvwAdmission(
+      {
+        ...admissionSource(admissionInfo()),
+        info: () => Promise.reject(new TypeError('world scene source lease is released or stale')),
+      },
+      { maxPageItems: 1, maxTerrainItems: 1 },
+    )
+    expect(staleReport.refusalCodes).toEqual(['source-stale'])
+
+    const driftReport = await assessCandidateWorldUvwAdmission(
+      admissionSource(admissionInfo({ snapshotId: 'different-snapshot' })),
+      { maxPageItems: 1, maxTerrainItems: 1 },
+    )
+    expect(driftReport.refusalCodes).toEqual(['source-identity-mismatch'])
+  })
+
+  it('keeps cursor and cumulative budget failures distinct from semantic blockers', async () => {
+    const info = admissionInfo()
+    const cursorReport = await assessCandidateWorldUvwAdmission(
+      admissionSource(info, request => {
+        if (request.cursor === undefined) {
+          return Promise.resolve(
+            Object.freeze({
+              snapshotId: admissionSnapshotId,
+              facet: 'terrain',
+              state: 'available' as const,
+              items: Object.freeze([exactTerrainItem('terrain:0')]),
+              nextCursor: 'cursor-1',
+            }),
+          )
+        }
+        return Promise.reject(new TypeError('world cursor is stale'))
+      }),
+      { maxPageItems: 2, maxTerrainItems: 4 },
+    )
+    expect(cursorReport.refusalCodes).toEqual([...semanticRefusals, 'cursor-rejected'])
+    expect(cursorReport).toMatchObject({ pageRequests: 2, observedTerrainItems: 1 })
+
+    const budgetReport = await assessCandidateWorldUvwAdmission(
+      admissionSource(info, () =>
+        Promise.resolve(
+          Object.freeze({
+            snapshotId: admissionSnapshotId,
+            facet: 'terrain',
+            state: 'available' as const,
+            items: Object.freeze([exactTerrainItem('terrain:0'), exactTerrainItem('terrain:1')]),
+          }),
+        ),
+      ),
+      { maxPageItems: 2, maxTerrainItems: 1 },
+    )
+    expect(budgetReport.refusalCodes).toEqual([...semanticRefusals, 'terrain-budget-exceeded'])
+    expect(budgetReport).toMatchObject({ pageRequests: 1, observedTerrainItems: 2 })
+  })
+
+  it('detects page snapshot drift and cancellation during the exact-page probe', async () => {
+    const info = admissionInfo()
+    const driftReport = await assessCandidateWorldUvwAdmission(
+      admissionSource(info, () =>
+        Promise.resolve(
+          Object.freeze({
+            snapshotId: 'stale-page-snapshot',
+            facet: 'terrain',
+            state: 'available' as const,
+            items: Object.freeze([]),
+          }),
+        ),
+      ),
+      { maxPageItems: 1, maxTerrainItems: 1 },
+    )
+    expect(driftReport.refusalCodes).toEqual([...semanticRefusals, 'page-snapshot-mismatch'])
+
+    const cancelled = new AbortController()
+    const cancelledReport = await assessCandidateWorldUvwAdmission(
+      admissionSource(info, () => {
+        cancelled.abort()
+        return Promise.reject(cancelled.signal.reason)
+      }),
+      { maxPageItems: 1, maxTerrainItems: 1, signal: cancelled.signal },
+    )
+    expect(cancelledReport.refusalCodes).toEqual([...semanticRefusals, 'cancelled'])
+  })
 })
 
 describe('12-3 UVW stays a candidate: nothing ships it', () => {

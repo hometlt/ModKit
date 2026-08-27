@@ -18,6 +18,14 @@ export {
   type UvtProjection,
   type UvtSidecar,
 } from './uv-materialization.js'
+export {
+  assessCandidateWorldUvwAdmission,
+  CANDIDATE_WORLD_UVW_PROFILE,
+  type CandidateWorldUvwAdmissionOptions,
+  type CandidateWorldUvwAdmissionReport,
+  type CandidateWorldUvwRefusal,
+  type CandidateWorldUvwRefusalCode,
+} from './uvw-materialization.js'
 export { runMinimalHost, type MinimalHostOptions, type MinimalHostRun } from './minimal-host.js'
 export { offersFromInventory } from '@modkitx-x3/host'
 export {
