@@ -689,6 +689,7 @@ describe('the installed StarCraft II M3', () => {
             expect(verdict.differingFacets).toEqual([])
             expect(verdict.facetPresenceDiff).toEqual([])
             expect(verdict.byteStable).toBe(true)
+            expect(verdict.bytes.byteLength).toBe(28_192)
             expect(verdict.artifactDigest).toMatch(/^sha256:[0-9a-f]{64}$/u)
             expect(unexplainedDifferences(verdict)).toEqual([])
             expect(verdict.receipt.diff).toEqual([])

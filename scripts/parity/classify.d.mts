@@ -7,12 +7,15 @@ export interface SourceObservation {
   readonly state: 'opened' | 'failed' | 'skipped'
   readonly features?: readonly string[]
   readonly measurements?: Readonly<Record<string, ParityMeasurement>>
+  readonly measurementBasis?: string
   readonly detail?: string
 }
 
 export interface ParitySurface {
+  readonly formatId?: string
   readonly features?: readonly string[]
   readonly sources?: readonly SourceObservation[]
+  readonly metadata?: Readonly<Record<string, unknown>>
 }
 
 export interface ParityComparison {
@@ -23,6 +26,7 @@ export interface ParityComparison {
 
 export interface SourceParityComparison extends ParityComparison {
   readonly contract: string
+  readonly measurementBasis?: string
 }
 
 export interface FormatParityComparison extends ParityComparison {

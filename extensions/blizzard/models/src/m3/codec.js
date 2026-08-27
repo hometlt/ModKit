@@ -13,6 +13,7 @@ import {
 
 const ID = 'org.modkitx/m3'
 const TEXTURE_REQUIREMENT = 'textures'
+const COUNTER_SEMANTICS = 'm3-declared-executable-v1'
 /** Bytes `planInput` reads from the front of the file to find its string table. */
 const PLAN_SCAN_BYTES = 512 * 1024
 const MAX_TEXTURE_REFERENCES = 64
@@ -387,6 +388,12 @@ const definition = Object.freeze({
         : decodedSceneOf(geometry, animationCount, materialCount, references.names.length)
     const info = await scene.info()
     const geometryAccess = info.geometryAccess
+    const counterComplete =
+      geometry !== undefined &&
+      animation !== undefined &&
+      !animation.fatal &&
+      material !== undefined &&
+      !material.fatal
     /*
      * The six facet contracts, published as contracts rather than as a shape inside `summary`.
      *
@@ -667,10 +674,13 @@ const definition = Object.freeze({
           label: 'M3 container',
           entries: [
             { key: 'container', value: model.tag },
+            { key: 'counterState', value: counterComplete ? 'complete' : 'unavailable' },
+            ...(counterComplete ? [{ key: 'counterSemantics', value: COUNTER_SEMANTICS }] : []),
             { key: 'indexOffset', value: model.indexOffset },
             { key: 'sections', value: model.sections.length },
             { key: 'geometryAccess', value: geometryAccess },
             { key: 'nodes', value: info.nodes },
+            { key: 'meshPartitions', value: geometry?.meshPartitions ?? 0 },
             { key: 'meshes', value: info.meshes },
             { key: 'primitives', value: info.primitives },
             { key: 'scenes', value: info.scenes },
@@ -679,13 +689,15 @@ const definition = Object.freeze({
             { key: 'animations', value: info.animations },
           ],
         },
-        ...(animation === undefined || animation.clips.length === 0
+        ...(animation === undefined
           ? []
           : [
               {
                 id: 'm3-animation',
                 label: 'M3 animation',
                 entries: [
+                  { key: 'declaredSequences', value: animation.declaredSequences },
+                  { key: 'executableClips', value: animationCount },
                   { key: 'sequences', value: animation.clips.length },
                   { key: 'timelineContainers', value: animation.timelineContainers.length },
                   { key: 'supportedBoneChannels', value: animation.supportedChannels },
@@ -701,13 +713,15 @@ const definition = Object.freeze({
                 ],
               },
             ]),
-        ...(material === undefined || material.materials.length === 0
+        ...(material === undefined
           ? []
           : [
               {
                 id: 'm3-materials',
                 label: 'M3 materials',
                 entries: [
+                  { key: 'layerRecords', value: material.decodedLayers },
+                  { key: 'logicalResources', value: info.textures },
                   { key: 'materialReferences', value: material.materials.length },
                   { key: 'standardMaterials', value: material.standardMaterials },
                   { key: 'exoticMaterials', value: material.exoticMaterials },

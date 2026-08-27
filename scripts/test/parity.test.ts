@@ -127,6 +127,93 @@ describe('parity classification', () => {
       'metadata:nodes',
     ])
   })
+
+  it('compares sealed M3 coarse counters on the declared plane without rewriting raw facts', () => {
+    const canonicalModel = source('common.view/model-scene-source', {
+      animations: 1,
+      meshes: 2,
+      textures: 65,
+    })
+    const rawX3Model = source('common.view/model-scene-source', {
+      animations: 0,
+      meshes: 1,
+      textures: 10,
+    })
+    const metadata = {
+      counterState: 'complete',
+      counterSemantics: 'm3-declared-executable-v1',
+      declaredSequences: 1,
+      executableClips: 0,
+      layerRecords: 65,
+      logicalResources: 10,
+      meshPartitions: 2,
+      meshes: 1,
+    }
+    expect(
+      classifyFormatParity(
+        { sources: [canonicalModel] },
+        { formatId: 'm3', metadata, sources: [rawX3Model] },
+      ),
+    ).toMatchObject({
+      classification: 'паритет',
+      missing: [],
+      extra: [],
+      sources: [
+        {
+          contract: 'common.view/model-scene-source',
+          measurementBasis: 'm3-declared-executable-v1',
+        },
+      ],
+    })
+    expect(rawX3Model.measurements).toEqual({ animations: 0, meshes: 1, textures: 10 })
+    expect(
+      classifyFormatParity(
+        { sources: [canonicalModel] },
+        {
+          formatId: 'm3',
+          metadata: { ...metadata, counterSemantics: 'unknown' },
+          sources: [rawX3Model],
+        },
+      ).classification,
+    ).toBe('X3 беднее')
+    expect(
+      classifyFormatParity(
+        { sources: [canonicalModel] },
+        {
+          formatId: 'm3',
+          metadata: { ...metadata, layerRecords: -1 },
+          sources: [rawX3Model],
+        },
+      ).classification,
+    ).toBe('X3 беднее')
+    expect(
+      classifyFormatParity(
+        { sources: [canonicalModel] },
+        { formatId: 'not-m3', metadata, sources: [rawX3Model] },
+      ).classification,
+    ).toBe('X3 беднее')
+    const missingCounter = Object.fromEntries(
+      Object.entries(metadata).filter(([key]) => key !== 'layerRecords'),
+    )
+    const impossibleExecutable = source('common.view/model-scene-source', {
+      animations: 2,
+      meshes: 1,
+      textures: 10,
+    })
+    for (const [candidate, model] of [
+      [missingCounter, rawX3Model],
+      [{ ...metadata, executableClips: 1 }, rawX3Model],
+      [{ ...metadata, declaredSequences: 1, executableClips: 2 }, impossibleExecutable],
+      [{ ...metadata, meshPartitions: 0 }, rawX3Model],
+    ] as const) {
+      expect(
+        classifyFormatParity(
+          { sources: [canonicalModel] },
+          { formatId: 'm3', metadata: candidate, sources: [model] },
+        ).sources[0],
+      ).not.toHaveProperty('measurementBasis')
+    }
+  })
 })
 
 describe('parity report v2', () => {

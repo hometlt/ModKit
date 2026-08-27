@@ -79,6 +79,34 @@ if (!existsSync(path.join(legacyRoot, '.git'))) {
   environmentRequired('the pinned legacy oracle repository is unavailable')
 }
 
+const animationSemantics = spawnSync(
+  process.execPath,
+  [
+    path.join(repoRoot, 'scripts/parity/check-m3-animation-semantics.mjs'),
+    ...(quiet ? ['--quiet'] : []),
+  ],
+  {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    env: { ...process.env, MODKIT_PARITY_CANON_ROOT: legacyRoot },
+    maxBuffer: 1 << 28,
+  },
+)
+const animationStdout = animationSemantics.stdout?.trim() ?? ''
+const animationStderr = animationSemantics.stderr?.trim() ?? ''
+if (animationSemantics.status !== 0) {
+  console.error(
+    `parity:legacy: the M3 animation semantics check exited ${String(animationSemantics.status)}`,
+  )
+  if (animationSemantics.error !== undefined) console.error(animationSemantics.error.message)
+  if (animationStdout !== '') console.error(animationStdout)
+  if (animationStderr !== '') console.error(animationStderr)
+  process.exit(1)
+}
+if (!quiet && animationStdout !== '') {
+  console.log(animationStdout)
+}
+
 const missing = variables.filter(name => {
   const alias = descriptors[name]?.deprecatedAlias
   const direct = process.env[name]?.trim()
@@ -129,7 +157,8 @@ const normalise = report => {
   const clone = structuredClone(report)
   if (clone.x3 !== undefined) clone.x3 = { ...clone.x3, sha: '<provenance>', root: '<root>' }
   if (clone.canonical !== undefined) clone.canonical = { ...clone.canonical, root: '<root>' }
-  if (clone.corpus !== undefined) clone.corpus = { ...clone.corpus, root: '<root>' }
+  if (typeof clone.corpus === 'string') clone.corpus = '<corpus>'
+  else if (clone.corpus !== undefined) clone.corpus = { ...clone.corpus, root: '<root>' }
   return JSON.parse(
     JSON.stringify(clone).replace(/modkit-library:[0-9a-f-]{36}\//g, 'modkit-library:<grant>/'),
   )

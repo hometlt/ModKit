@@ -17,6 +17,7 @@ import {
   revisionId,
   type ArtifactByteSource,
   type ModelAnimationSource,
+  type ModelSceneSource,
   type ResourceBudget,
 } from '@modkitx-x3/sdk'
 import { proves } from '@modkitx-x3/testkit'
@@ -37,6 +38,16 @@ const grant = { id: 'm3-animation-preflight', classes: ['read-source'] } as cons
 const TEST_PATH = 'extensions/blizzard/models/test/m3-animation.test.ts'
 const MODEL_BYTES = 60_128
 const MODEL_SHA256 = 'fb7680019ca7ec88aeb37591a7477c2555dd674d57f0c7486736ccb11919a436'
+const PARITY_FIXTURE = join(
+  repoRoot,
+  'packages',
+  'testkit',
+  'test',
+  'fixtures',
+  'models',
+  'triangle.m3',
+)
+const PARITY_FIXTURE_SHA256 = 'd34480c1b726c37bfeea9dd75fc71a13ca7e47d6ff15b2d66487c6a4b3369de7'
 const budget: ResourceBudget = {
   maxInputBytes: 268_435_456n,
   maxDepth: 128,
@@ -321,6 +332,7 @@ describe('M3 SEQS/STC decoding', () => {
   it('normalizes native millisecond timestamps into one explicitly targeted BONE channel', async () => {
     const decoded = await decodeM3Animations(await buildAnimationM3(), budget)
     expect(decoded).toMatchObject({
+      declaredSequences: 1,
       fatal: false,
       supportedChannels: 1,
       unsupportedChannels: 0,
@@ -401,12 +413,28 @@ describe('M3 SEQS/STC decoding', () => {
     ['SEQS', 2, 'x3.m3/animation-seqs-truncated'],
     ['STC_', 4, 'x3.m3/animation-stc-truncated'],
   ] as const)('names a truncated %s table before schema parsing', async (_tag, section, code) => {
-    const decoded = await decodeM3Animations(
-      changeRepetitions(await buildAnimationM3(), section, 2),
-      budget,
-    )
+    const bytes = changeRepetitions(await buildAnimationM3(), section, 2)
+    const decoded = await decodeM3Animations(bytes, budget)
     expect(decoded).toMatchObject({ fatal: true, clips: [] })
     expect(decoded.issues).toContainEqual(expect.objectContaining({ code }))
+    if (_tag === 'SEQS') {
+      const opened = await openMemory(bytes)
+      expect(opened.state).toBe('opened')
+      if (opened.state === 'opened') {
+        try {
+          const descriptor = await opened.session.descriptor()
+          const counters = Object.fromEntries(
+            descriptor.metadata
+              .filter(group => ['m3-container', 'm3-animation', 'm3-materials'].includes(group.id))
+              .flatMap(group => group.entries.map(entry => [entry.key, entry.value])),
+          )
+          expect(counters.counterState).toBe('unavailable')
+          expect(counters).not.toHaveProperty('counterSemantics')
+        } finally {
+          await opened.session.dispose()
+        }
+      }
+    }
     proveAnimation(
       `${_tag} truncation is a coded refusal before the schema parser allocates records`,
     )
@@ -448,7 +476,11 @@ describe('M3 SEQS/STC decoding', () => {
 
   it('publishes no animation facet when MODL declares no SEQS records', async () => {
     const bytes = await buildAnimationM3({ emptySequences: true })
-    expect(await decodeM3Animations(bytes, budget)).toMatchObject({ clips: [], fatal: false })
+    expect(await decodeM3Animations(bytes, budget)).toMatchObject({
+      declaredSequences: 0,
+      clips: [],
+      fatal: false,
+    })
     const opened = await openMemory(bytes)
     expect(opened.state).toBe('opened')
     if (opened.state !== 'opened') return
@@ -492,6 +524,50 @@ describe('M3 SEQS/STC decoding', () => {
       decodeM3Animations(await buildAnimationM3(), budget, controller.signal),
     ).rejects.toMatchObject({ name: 'AbortError' })
     proveAnimation('an already-cancelled animation decode performs no schema work')
+  })
+
+  it('separates the pinned declared sequence from executable motion and scene resources', async () => {
+    const bytes = new Uint8Array(await readFile(PARITY_FIXTURE))
+    expect(createHash('sha256').update(bytes).digest('hex')).toBe(PARITY_FIXTURE_SHA256)
+    expect(await decodeM3Animations(bytes, budget)).toMatchObject({
+      declaredSequences: 1,
+      clips: [],
+      supportedChannels: 0,
+      fatal: false,
+    })
+    const opened = await openMemory(bytes)
+    expect(opened.state).toBe('opened')
+    if (opened.state !== 'opened') return
+    try {
+      const descriptor = await opened.session.descriptor()
+      const counters = Object.fromEntries(
+        descriptor.metadata
+          .filter(group => ['m3-container', 'm3-animation', 'm3-materials'].includes(group.id))
+          .flatMap(group => group.entries.map(entry => [entry.key, entry.value])),
+      )
+      expect(counters).toMatchObject({
+        counterState: 'complete',
+        counterSemantics: 'm3-declared-executable-v1',
+        declaredSequences: 1,
+        executableClips: 0,
+        layerRecords: 18,
+        logicalResources: 0,
+        meshPartitions: 1,
+        meshes: 1,
+      })
+      const sceneLease = await opened.session.dataSource('common.view/model-scene-source', 1)
+      try {
+        expect(await (sceneLease.value as ModelSceneSource).info()).toMatchObject({
+          animations: 0,
+          textures: 0,
+          meshes: 1,
+        })
+      } finally {
+        await sceneLease.release()
+      }
+    } finally {
+      await opened.session.dispose()
+    }
   })
 })
 
