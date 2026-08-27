@@ -4532,6 +4532,21 @@ function sc2Triggers() {
   )
 }
 
+/** TriggerData with nested local and external library references. */
+function sc2TriggersExternalLibrary() {
+  return ascii(
+    '<TriggerData>\n' +
+      '  <Library Id="DEMO">\n' +
+      '    <Root><Item Type="Trigger" Id="00000001"/></Root>\n' +
+      '    <Element Type="Trigger" Id="00000001"><Event Type="FunctionCall" Id="00000002"/></Element>\n' +
+      '    <Element Type="FunctionCall" Id="00000002"><FunctionDef Type="FunctionDef" Library="Ntve" Id="00000011"/></Element>\n' +
+      '    <Element Type="FunctionCall" Id="00000003"><FunctionDef Type="FunctionDef" Library="DEMO" Id="00000012"/></Element>\n' +
+      '    <Element Type="FunctionCall" Id="00000004"><FunctionDef Type="FunctionDef" Library="Ntve" Id="00000013"/></Element>\n' +
+      '  </Library>\n' +
+      '</TriggerData>\n',
+  )
+}
+
 /** Galaxy program selected by the runtime surface because it declares void main(). */
 function sc2RuntimeProgram() {
   return ascii(
@@ -4710,6 +4725,7 @@ const FIXTURES = {
   'minimal.SC2Bank': sc2Bank,
   DocumentInfo: sc2DocumentInfo,
   Triggers: sc2Triggers,
+  'Triggers.external-library': sc2TriggersExternalLibrary,
   'minimal-runtime.galaxy': sc2RuntimeProgram,
   'minimal.SC2Map': sc2Map,
   'minimal.SC2Mod': sc2Mod,
