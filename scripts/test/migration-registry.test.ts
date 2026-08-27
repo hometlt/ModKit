@@ -31,6 +31,13 @@ function runGate(registry: string, projections = 'valid.projections.yaml') {
   return { status: result.status, stdout: result.stdout, stderr: result.stderr }
 }
 
+function runCommittedGateWithCorpora(corpora: string) {
+  const result = spawnSync(process.execPath, [gate, '--corpora', join(fixtures, corpora)], {
+    encoding: 'utf8',
+  })
+  return { status: result.status, stdout: result.stdout, stderr: result.stderr }
+}
+
 describe('capability registry gate (plan §3.3–3.4, block 10 works 4–6 and 10–11)', () => {
   it('accepts a registry whose rows are complete and whose inventory is fully accounted for', () => {
     const { status, stdout, stderr } = runGate('valid.capabilities.yaml')
@@ -124,6 +131,21 @@ describe('capability registry gate (plan §3.3–3.4, block 10 works 4–6 and 1
     expect(result.stderr).toBe('')
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('projection planes')
+  })
+
+  it('refuses a readiness environment variable absent from the oracle lock even before the corpus is available', () => {
+    const { status, stderr } = runCommittedGateWithCorpora('unknown-readiness-environment.json')
+    expect(status).toBe(1)
+    expect(stderr).toContain('MODKITX_RA3_UNKNOWN_ROOT')
+    expect(stderr).toContain('is not described in the oracle lock')
+  })
+
+  it('refuses a named-game discovery row bound to another game dialect corpus', () => {
+    const { status, stderr } = runCommittedGateWithCorpora('mismatched-game-discovery-corpus.json')
+    expect(status).toBe(1)
+    expect(stderr).toContain('game/cnc3-tiberium-wars/discover-open')
+    expect(stderr).toContain('must use exact corpus environment MODKITX_CNC3_KW_ROOT')
+    expect(stderr).toContain('found MODKITX_CNC3_TW_ROOT')
   })
 })
 

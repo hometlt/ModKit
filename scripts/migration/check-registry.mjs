@@ -730,6 +730,10 @@ if (isDefaultRegistry) {
       readJson(path.join(repoRoot, corpora.oracleLock)).corpusDescriptors?.variables ?? {},
     ),
   )
+  const capabilityById = new Map(capabilities.map(row => [row.capabilityId, row]))
+  const corpusRootVariables = new Set(
+    [...lockVariables].filter(variable => variable.endsWith('_ROOT')),
+  )
   const seen = new Set()
   for (const entry of corpora.corpora ?? []) {
     const label = `corpus ${entry.id}`
@@ -749,15 +753,41 @@ if (isDefaultRegistry) {
       )
     }
     for (const variable of entry.environmentVariables ?? []) {
-      if (entry.status === 'available' && !lockVariables.has(variable)) {
+      if (!lockVariables.has(variable)) {
         fail(
-          `${label}: ${variable} is published as available but is not described in the oracle lock`,
+          `${label}: ${variable} is published by corpora readiness but is not described in the oracle lock`,
         )
       }
     }
     for (const id of entry.capabilityIds ?? []) {
       if (!capabilityIds.has(id))
         fail(`${label}: capabilityId ${id} does not exist in the registry`)
+
+      if (/^game\/.+\/discover-open$/u.test(id)) {
+        const expectedRootVariables = (entry.environmentVariables ?? []).filter(variable =>
+          variable.endsWith('_ROOT'),
+        )
+        if (expectedRootVariables.length !== 1) {
+          fail(
+            `${label}: named game discovery ${id} requires exactly one *_ROOT environment variable`,
+          )
+          continue
+        }
+        // An E0 row may still have no corpus binding, but once it names one it must not borrow
+        // another named game's root and thereby turn one retail dialect into evidence for another.
+        const declaredRootVariables = (capabilityById.get(id)?.corpusDescriptors ?? []).filter(
+          variable => corpusRootVariables.has(variable),
+        )
+        if (
+          declaredRootVariables.length > 0 &&
+          (declaredRootVariables.length !== 1 ||
+            declaredRootVariables[0] !== expectedRootVariables[0])
+        ) {
+          fail(
+            `${label}: named game discovery ${id} must use exact corpus environment ${expectedRootVariables[0]}, found ${declaredRootVariables.join(', ')}`,
+          )
+        }
+      }
     }
   }
   const expected = {

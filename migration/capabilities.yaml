@@ -15452,7 +15452,7 @@ capabilities:
       liveSources: []
     fixtures: []
     corpusDescriptors:
-      - 'MODKITX_CNC3_KW_ROOT'
+      - 'MODKITX_CNC3_TW_ROOT'
     projection:
       plane: 'world'
       liveProjection: 'none'
