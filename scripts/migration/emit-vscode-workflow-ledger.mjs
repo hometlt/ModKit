@@ -29,6 +29,17 @@ const decisionsPath = path.resolve(
 const manifestPath = path.resolve(
   argValue('--manifest') ?? path.join(repoRoot, 'apps/modkit-vscode/package.json'),
 )
+const extensionSourcePath = path.resolve(
+  argValue('--extension-source') ?? path.join(repoRoot, 'apps/modkit-vscode/src/extension.ts'),
+)
+const vscodeCatalogPath = path.resolve(
+  argValue('--vscode-catalog') ??
+    path.join(repoRoot, 'apps/modkit-vscode/generated/bundled-catalog.json'),
+)
+const publicationInventoryPath = path.resolve(
+  argValue('--publication-inventory') ??
+    path.join(repoRoot, 'apps/modkit-vscode/publication-artifact.v1.json'),
+)
 const targetsPath = path.resolve(
   argValue('--targets') ??
     path.join(repoRoot, 'packages/host/src/commands/subject-command-targets.ts'),
@@ -60,6 +71,9 @@ for (const input of [
   inventoryPath,
   decisionsPath,
   manifestPath,
+  extensionSourcePath,
+  vscodeCatalogPath,
+  publicationInventoryPath,
   targetsPath,
   ...Object.values(pwaCommandProofPaths),
 ]) {
@@ -69,6 +83,9 @@ for (const input of [
 const inventory = readJson(inventoryPath)
 const decisions = readJson(decisionsPath)
 const manifest = readJson(manifestPath)
+const extensionSource = readFileSync(extensionSourcePath, 'utf8')
+const vscodeCatalog = readJson(vscodeCatalogPath)
+const publicationInventory = readJson(publicationInventoryPath)
 const targetSource = readFileSync(targetsPath, 'utf8')
 
 const provePwaCommandCaller = () => {
@@ -148,7 +165,6 @@ const workflowById = new Map()
 const commandWorkflow = new Map()
 const cliWorkflow = new Map()
 const kindWorkflow = new Map()
-const currentCommandWorkflow = new Map()
 
 const claim = (map, key, workflowId, label) => {
   if (map.has(key)) fail(`${label} ${key} is classified by both ${map.get(key)} and ${workflowId}`)
@@ -190,8 +206,6 @@ for (const workflow of decisions.workflows) {
   for (const command of workflow.legacyCliCommands ?? [])
     claim(cliWorkflow, command, id, 'legacy CLI command')
   for (const kind of workflow.unitKinds ?? []) claim(kindWorkflow, kind, id, 'unit kind')
-  for (const command of workflow.currentX3CommandIds ?? [])
-    claim(currentCommandWorkflow, command, id, 'current X3 command')
 }
 
 const findByKindAndKey = (kind, pick) => {
@@ -320,27 +334,352 @@ if (allocationBySourceId.size !== 266)
   fail(`expected 266 allocated units, found ${allocationBySourceId.size}`)
 
 const contributes = manifest.contributes ?? {}
-const currentCommands = (contributes.commands ?? []).map(row => row.command)
-for (const command of currentCommands) {
-  if (!currentCommandWorkflow.has(command)) fail(`current X3 command ${command} is unclassified`)
+const normalizeCommandId = (value, at) => {
+  if (typeof value !== 'string' || value.length === 0) fail(`${at}: command id must be non-empty`)
+  const normalized = value.startsWith('-') ? value.slice(1) : value
+  if (normalized.length === 0) fail(`${at}: command id must remain non-empty after normalization`)
+  return normalized
 }
-for (const command of currentCommandWorkflow.keys()) {
-  if (!currentCommands.includes(command))
-    fail(`classification names unknown current X3 command ${command}`)
+const stablePart = value => encodeURIComponent(value)
+const currentManifestFacts = new Map()
+const addCurrentFact = (kind, key, source) => {
+  if (typeof key !== 'string' || key.length === 0) fail(`${source}: current X3 fact key is empty`)
+  const factId = `x3:${kind}:${key}`
+  if (currentManifestFacts.has(factId)) fail(`duplicate current X3 fact ${factId}`)
+  currentManifestFacts.set(factId, { factId, kind, key, source })
 }
-const currentCounts = {
-  commands: currentCommands.length,
-  customEditors: (contributes.customEditors ?? []).length,
-  languages: (contributes.languages ?? []).length,
-  views: Object.values(contributes.views ?? {}).flat().length,
+
+const currentCommands = (contributes.commands ?? []).map((row, index) => {
+  const command = normalizeCommandId(row?.command, `contributes.commands[${index}]`)
+  addCurrentFact('vscode-command', command, `contributes.commands[${index}]`)
+  return command
+})
+for (const key of Object.keys(contributes.configuration?.properties ?? {})) {
+  addCurrentFact('vscode-configuration-property', key, `contributes.configuration.${key}`)
 }
-const EXPECTED_CURRENT = { commands: 7, customEditors: 1, languages: 0, views: 2 }
-for (const [surface, expected] of Object.entries(EXPECTED_CURRENT)) {
-  if (currentCounts[surface] !== expected) {
-    fail(
-      `current X3 ${surface} count drifted: expected ${expected}, found ${currentCounts[surface]}`,
+for (const [index, row] of (contributes.customEditors ?? []).entries()) {
+  if (typeof row?.viewType !== 'string' || row.viewType.length === 0) {
+    fail(`contributes.customEditors[${index}]: viewType must be non-empty`)
+  }
+  addCurrentFact('vscode-custom-editor', row.viewType, `contributes.customEditors[${index}]`)
+}
+for (const [container, rows] of Object.entries(contributes.views ?? {})) {
+  for (const [index, row] of rows.entries()) {
+    if (typeof row?.id !== 'string' || row.id.length === 0) {
+      fail(`contributes.views.${container}[${index}]: id must be non-empty`)
+    }
+    addCurrentFact('vscode-view', row.id, `contributes.views.${container}[${index}]`)
+  }
+}
+for (const [location, rows] of Object.entries(contributes.viewsContainers ?? {})) {
+  for (const [index, row] of rows.entries()) {
+    if (typeof row?.id !== 'string' || row.id.length === 0) {
+      fail(`contributes.viewsContainers.${location}[${index}]: id must be non-empty`)
+    }
+    addCurrentFact(
+      'vscode-view-container',
+      `${location}/${row.id}`,
+      `contributes.viewsContainers.${location}[${index}]`,
     )
   }
+}
+for (const [index, row] of (contributes.languages ?? []).entries()) {
+  if (typeof row?.id !== 'string' || row.id.length === 0) {
+    fail(`contributes.languages[${index}]: id must be non-empty`)
+  }
+  addCurrentFact('vscode-language', row.id, `contributes.languages[${index}]`)
+}
+
+const menuCommands = []
+for (const [location, rows] of Object.entries(contributes.menus ?? {})) {
+  for (const [index, row] of rows.entries()) {
+    const at = `contributes.menus.${location}[${index}]`
+    const command = normalizeCommandId(row?.command, at)
+    const alt = row?.alt === undefined ? '' : normalizeCommandId(row.alt, `${at}.alt`)
+    const when = typeof row?.when === 'string' ? row.when : ''
+    const group = typeof row?.group === 'string' ? row.group : ''
+    const key = [location, command, alt, when, group].map(stablePart).join('/')
+    addCurrentFact('vscode-menu-item', key, at)
+    menuCommands.push({ command, alt, at })
+  }
+}
+
+const keybindingCommands = []
+for (const [index, row] of (contributes.keybindings ?? []).entries()) {
+  const at = `contributes.keybindings[${index}]`
+  const command = normalizeCommandId(row?.command, at)
+  const key = [
+    command,
+    typeof row?.key === 'string' ? row.key : '',
+    typeof row?.mac === 'string' ? row.mac : '',
+    typeof row?.linux === 'string' ? row.linux : '',
+    typeof row?.win === 'string' ? row.win : '',
+    typeof row?.when === 'string' ? row.when : '',
+  ]
+    .map(stablePart)
+    .join('/')
+  addCurrentFact('vscode-keybinding', key, at)
+  keybindingCommands.push({ command, at })
+}
+
+const activationEvents = manifest.activationEvents ?? []
+if (!Array.isArray(activationEvents)) fail('activationEvents must be an array')
+for (const [index, event] of activationEvents.entries()) {
+  if (typeof event !== 'string' || event.length === 0) {
+    fail(`activationEvents[${index}] must be non-empty`)
+  }
+  if (event.startsWith('onFileSystem:')) {
+    const scheme = event.slice('onFileSystem:'.length)
+    addCurrentFact('vscode-filesystem-scheme', scheme, `activationEvents[${index}]`)
+  }
+}
+
+function readRegisteredCommands(source, file) {
+  const sourceFile = ts.createSourceFile(
+    file,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  )
+  if (sourceFile.parseDiagnostics.length > 0) fail('VS Code extension source has syntax errors')
+  const commands = new Map()
+  const visit = node => {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.name.text === 'registerCommand'
+    ) {
+      const argument = node.arguments[0]
+      if (argument === undefined || !ts.isStringLiteral(argument)) {
+        const position = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile))
+        fail(
+          `runtime command registration must use a string literal at ${position.line + 1}:${position.character + 1}`,
+        )
+      }
+      const command = normalizeCommandId(argument.text, 'runtime command registration')
+      if (commands.has(command)) fail(`runtime command ${command} is registered more than once`)
+      commands.set(command, argument.getStart(sourceFile))
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sourceFile)
+  return commands
+}
+
+const registeredCommands = readRegisteredCommands(extensionSource, extensionSourcePath)
+for (const command of currentCommands) {
+  if (!registeredCommands.has(command)) fail(`contributed command ${command} is not registered`)
+}
+const contributedCommandSet = new Set(currentCommands)
+const runtimeModkitCommands = sorted(
+  [...registeredCommands.keys()].filter(command => command.startsWith('modkit.')),
+)
+const runtimeOnlyCommands = runtimeModkitCommands.filter(
+  command => !contributedCommandSet.has(command),
+)
+
+const commandAllowlists = decisions.commandAllowlists ?? {}
+const internalAllowlist = commandAllowlists.internalRuntimeCommands
+const externalAllowlist = commandAllowlists.externalOrBuiltinCommands
+if (!Array.isArray(internalAllowlist) || !Array.isArray(externalAllowlist)) {
+  fail(
+    'commandAllowlists must contain internalRuntimeCommands and externalOrBuiltinCommands arrays',
+  )
+}
+const validateAllowlist = (rows, label) => {
+  const map = new Map()
+  for (const [index, row] of rows.entries()) {
+    const command = normalizeCommandId(row?.commandId, `${label}[${index}]`)
+    if (typeof row?.reason !== 'string' || row.reason.length < 20) {
+      fail(`${label}[${index}]: reason is required`)
+    }
+    if (map.has(command)) fail(`${label}: duplicate command ${command}`)
+    map.set(command, row.reason)
+  }
+  return map
+}
+const internalCommands = validateAllowlist(internalAllowlist, 'internalRuntimeCommands')
+const externalCommands = validateAllowlist(externalAllowlist, 'externalOrBuiltinCommands')
+if (
+  internalCommands.size !== 1 ||
+  !internalCommands.has('modkit.openResource') ||
+  [...internalCommands.keys()][0] !== 'modkit.openResource'
+) {
+  fail('internal runtime command allowlist must contain exactly modkit.openResource')
+}
+for (const command of runtimeOnlyCommands) {
+  if (!internalCommands.has(command)) fail(`hidden runtime command ${command} is not allowlisted`)
+}
+for (const command of internalCommands.keys()) {
+  if (!runtimeOnlyCommands.includes(command)) {
+    fail(`internal runtime command allowlist contains stale command ${command}`)
+  }
+}
+const resolveManifestCommand = ({ command, at }) => {
+  if (!contributedCommandSet.has(command) && !externalCommands.has(command)) {
+    fail(`${at}: dangling command ${command}`)
+  }
+}
+for (const row of menuCommands) {
+  resolveManifestCommand(row)
+  if (row.alt !== '') resolveManifestCommand({ command: row.alt, at: `${row.at}.alt` })
+}
+for (const row of keybindingCommands) resolveManifestCommand(row)
+
+for (const command of runtimeOnlyCommands) {
+  addCurrentFact('vscode-runtime-only-command', command, 'VS Code runtime registration')
+}
+
+const legacyKeybindings = inventory.units.filter(unit => unit.kind === 'vscode-keybinding').length
+if (legacyKeybindings !== 0) {
+  fail(`legacy VS Code keybinding ratchet drifted: expected 0, found ${legacyKeybindings}`)
+}
+if (menuCommands.length !== 0) {
+  fail(`current X3 menu ratchet drifted: expected 0, found ${menuCommands.length}`)
+}
+if (keybindingCommands.length !== 0) {
+  fail(`current X3 keybinding ratchet drifted: expected 0, found ${keybindingCommands.length}`)
+}
+
+if (!Array.isArray(decisions.currentX3Facts) || decisions.currentX3Facts.length === 0) {
+  fail('currentX3Facts must be a non-empty observed-only allocation')
+}
+const CURRENT_FACT_KEYS = ['factId', 'key', 'kind', 'state', 'workflowId']
+const currentFactAllocations = new Map()
+for (const [index, allocation] of decisions.currentX3Facts.entries()) {
+  if (sorted(Object.keys(allocation)).join('|') !== CURRENT_FACT_KEYS.join('|')) {
+    fail(`currentX3Facts[${index}] must contain only ${CURRENT_FACT_KEYS.join(', ')}`)
+  }
+  const expectedFactId = `x3:${allocation.kind}:${allocation.key}`
+  if (allocation.factId !== expectedFactId) {
+    fail(`${allocation.factId}: stable factId must be ${expectedFactId}`)
+  }
+  if (allocation.state !== 'observed-only') {
+    fail(`${allocation.factId}: current fact state must be observed-only`)
+  }
+  if (!workflowById.has(allocation.workflowId)) {
+    fail(`${allocation.factId}: unknown workflow ${String(allocation.workflowId)}`)
+  }
+  if (currentFactAllocations.has(allocation.factId)) {
+    fail(`${allocation.factId}: current X3 fact is allocated more than once`)
+  }
+  const observed = currentManifestFacts.get(allocation.factId)
+  if (observed === undefined) fail(`allocation names unknown current X3 fact ${allocation.factId}`)
+  if (observed.kind !== allocation.kind || observed.key !== allocation.key) {
+    fail(`${allocation.factId}: current X3 fact kind/key mismatch`)
+  }
+  currentFactAllocations.set(allocation.factId, allocation)
+}
+const unallocatedCurrentFacts = [...currentManifestFacts.keys()].filter(
+  factId => !currentFactAllocations.has(factId),
+)
+if (unallocatedCurrentFacts.length > 0) {
+  fail(`current X3 fact ${sorted(unallocatedCurrentFacts)[0]} is unallocated`)
+}
+if (currentFactAllocations.size !== currentManifestFacts.size) {
+  fail(
+    `current X3 factual join size mismatch: observed ${currentManifestFacts.size}, allocated ${currentFactAllocations.size}`,
+  )
+}
+
+const currentCounts = {
+  commands: currentCommands.length,
+  configurationProperties: Object.keys(contributes.configuration?.properties ?? {}).length,
+  customEditors: (contributes.customEditors ?? []).length,
+  fileSystemSchemes: activationEvents.filter(event => event.startsWith('onFileSystem:')).length,
+  keybindings: keybindingCommands.length,
+  languages: (contributes.languages ?? []).length,
+  menus: menuCommands.length,
+  runtimeOnlyCommands: runtimeOnlyCommands.length,
+  viewContainers: Object.values(contributes.viewsContainers ?? {}).flat().length,
+  views: Object.values(contributes.views ?? {}).flat().length,
+}
+
+const EXPECTED_OWNER_BLOCKERS = [
+  'owner/block-14-legacy-workflow-classification',
+  'owner/block-14d-release-inclusion',
+  'owner/block-14d-vscode-packaging-b-plus-c',
+]
+if (!Array.isArray(decisions.ownerBlockers)) fail('ownerBlockers must be an array')
+const ownerBlockerById = new Map()
+for (const blocker of decisions.ownerBlockers) {
+  if (typeof blocker?.blockerId !== 'string' || blocker.blockerId.length === 0) {
+    fail('every owner blocker needs a blockerId')
+  }
+  if (ownerBlockerById.has(blocker.blockerId)) fail(`duplicate owner blocker ${blocker.blockerId}`)
+  if (blocker.state !== 'owner-blocked') fail(`${blocker.blockerId}: state must be owner-blocked`)
+  if (blocker.owner !== 'modkit-program-owner') {
+    fail(`${blocker.blockerId}: owner must be modkit-program-owner`)
+  }
+  if (typeof blocker.reason !== 'string' || blocker.reason.length < 20) {
+    fail(`${blocker.blockerId}: reason is required`)
+  }
+  if (!Array.isArray(blocker.workflowIds) || blocker.workflowIds.length === 0) {
+    fail(`${blocker.blockerId}: workflowIds must be non-empty`)
+  }
+  const uniqueWorkflows = new Set()
+  for (const workflowId of blocker.workflowIds) {
+    if (!workflowById.has(workflowId)) {
+      fail(`${blocker.blockerId}: unknown workflow ${String(workflowId)}`)
+    }
+    if (uniqueWorkflows.has(workflowId)) {
+      fail(`${blocker.blockerId}: duplicate workflow reference ${workflowId}`)
+    }
+    uniqueWorkflows.add(workflowId)
+  }
+  ownerBlockerById.set(blocker.blockerId, blocker)
+}
+if (sorted(ownerBlockerById.keys()).join('|') !== EXPECTED_OWNER_BLOCKERS.join('|')) {
+  fail(`owner blockers must be exactly ${EXPECTED_OWNER_BLOCKERS.join(', ')}`)
+}
+
+const packagingBoundary = decisions.packagingBoundary ?? {}
+const cataloguedCommonRoots = (vscodeCatalog.roots ?? []).filter(
+  root => typeof root?.directory === 'string' && root.directory.startsWith('common/'),
+).length
+if (
+  publicationInventory.schemaVersion !== 1 ||
+  publicationInventory.artifactKind !== 'deterministic-shell' ||
+  !Array.isArray(publicationInventory.shellEntries) ||
+  !Array.isArray(publicationInventory.packagedCodecRoots)
+) {
+  fail('VS Code publication inventory must be deterministic-shell v1')
+}
+const publicationEntries = [
+  ...publicationInventory.shellEntries,
+  ...publicationInventory.packagedCodecRoots,
+]
+if (
+  publicationEntries.some(entry => typeof entry !== 'string' || entry.length === 0) ||
+  new Set(publicationEntries).size !== publicationEntries.length
+) {
+  fail('VS Code publication inventory entries must be unique non-empty strings')
+}
+const packagedCodecRoots = publicationInventory.packagedCodecRoots.length
+if (
+  vscodeCatalog.schemaVersion !== 1 ||
+  vscodeCatalog.rootCount !== cataloguedCommonRoots ||
+  cataloguedCommonRoots !== 18
+) {
+  fail(
+    `VS Code catalog boundary must contain exactly 18 common roots; found ${String(vscodeCatalog.rootCount)}/${cataloguedCommonRoots}`,
+  )
+}
+if (
+  packagingBoundary.state !== 'owner-blocked' ||
+  packagingBoundary.ownerBlockerId !== 'owner/block-14d-vscode-packaging-b-plus-c' ||
+  packagingBoundary.cataloguedCommonRoots !== cataloguedCommonRoots ||
+  packagingBoundary.packagedCodecRoots !== packagedCodecRoots ||
+  packagedCodecRoots !== 0 ||
+  packagingBoundary.deterministicShellArtifact !== true ||
+  packagingBoundary.provenVsixCodecArtifact !== false ||
+  typeof packagingBoundary.reason !== 'string' ||
+  packagingBoundary.reason.length < 20
+) {
+  fail(
+    'packagingBoundary must record 18 catalogued common roots, 0 packaged codec roots, an owner-blocked B+C decision, and no proven codec-bearing VSIX',
+  )
 }
 
 function readLiteral(node, sourceFile, at) {
@@ -518,6 +857,26 @@ const unitRows = sorted([...allocationBySourceId.keys()]).map(sourceUnitId => {
     classification: workflow.classification,
   }
 })
+const currentFactRows = sorted([...currentManifestFacts.keys()]).map(factId => {
+  const observed = currentManifestFacts.get(factId)
+  const allocation = currentFactAllocations.get(factId)
+  return {
+    factId,
+    sourceFactSha256: sha256(
+      JSON.stringify({
+        factId: observed.factId,
+        kind: observed.kind,
+        key: observed.key,
+        source: observed.source,
+      }),
+    ),
+    kind: observed.kind,
+    key: observed.key,
+    source: observed.source,
+    workflowId: allocation.workflowId,
+    state: allocation.state,
+  }
+})
 const workflowRows = sorted([...workflowById.keys()]).map(workflowId => {
   const workflow = workflowById.get(workflowId)
   const members = unitRows.filter(row => row.workflowId === workflowId)
@@ -532,19 +891,24 @@ const workflowRows = sorted([...workflowById.keys()]).map(workflowId => {
         .map(kind => [kind, members.filter(row => row.kind === kind).length])
         .filter(([, count]) => count > 0),
     ),
-    currentX3CommandIds: sorted(workflow.currentX3CommandIds ?? []),
+    currentX3CommandIds: currentFactRows
+      .filter(row => row.kind === 'vscode-command' && row.workflowId === workflowId)
+      .map(row => row.key),
   }
 })
 
 const document = {
   $comment:
-    'Generated by scripts/migration/emit-vscode-workflow-ledger.mjs. Source facts come only from source-inventory.json; classifications remain owner-pending until an explicit block-14 decision.',
+    'Generated by scripts/migration/emit-vscode-workflow-ledger.mjs. Legacy source facts come only from source-inventory.json and remain owner-pending; current X3 facts are an observed-only join and do not classify or replace legacy units.',
   schemaVersion: 'vscode-workflow-ledger-1',
   generator: 'scripts/migration/emit-vscode-workflow-ledger.mjs',
   inputs: {
     sourceInventorySha256: inputHash(inventoryPath),
     decisionsSha256: inputHash(decisionsPath),
     vscodeManifestSha256: inputHash(manifestPath),
+    vscodeExtensionSourceSha256: inputHash(extensionSourcePath),
+    vscodeCatalogSha256: inputHash(vscodeCatalogPath),
+    vscodePublicationInventorySha256: inputHash(publicationInventoryPath),
     sharedCommandTargetsSha256: inputHash(targetsPath),
   },
   counts: {
@@ -555,6 +919,7 @@ const document = {
     workflows: workflowRows.length,
     decisionRequired: unitRows.filter(row => row.classification.disposition === 'decision-required')
       .length,
+    currentX3ObservedFacts: currentFactRows.length,
   },
   surfaceComparison: {
     legacyVsCode: { commands: 64, customEditors: 11, languages: 8, views: 6 },
@@ -562,8 +927,24 @@ const document = {
   },
   currentX3Commands: sorted(currentCommands).map(commandId => ({
     commandId,
-    workflowId: currentCommandWorkflow.get(commandId),
+    workflowId: currentFactAllocations.get(`x3:vscode-command:${commandId}`).workflowId,
   })),
+  currentX3Facts: currentFactRows,
+  deadCommandRatchet: {
+    publicContributedCommands: sorted(currentCommands),
+    registeredRuntimeCommands: runtimeModkitCommands,
+    internalRuntimeCommands: sorted(internalCommands.keys()),
+    externalOrBuiltinCommands: sorted(externalCommands.keys()),
+    legacyKeybindings,
+    currentX3Menus: menuCommands.length,
+    currentX3Keybindings: keybindingCommands.length,
+  },
+  ownerBlockers: sorted(ownerBlockerById.keys()).map(blockerId => ownerBlockerById.get(blockerId)),
+  packagingBoundary: {
+    ...packagingBoundary,
+    publicationArtifactKind: publicationInventory.artifactKind,
+    publicationShellEntryCount: publicationInventory.shellEntries.length,
+  },
   sharedCommandTargets: targets
     .map(target => ({
       commandId: target.commandId,
@@ -586,9 +967,15 @@ if (check) {
   if (readFileSync(outputPath, 'utf8') !== rendered) {
     fail(`${path.relative(repoRoot, outputPath)} is stale; run pnpm migration:emit`)
   }
-  if (!quiet) console.log('migration:check workflow ledger: 258 VS Code + 8 CLI units up to date')
+  if (!quiet)
+    console.log(
+      `migration:check workflow ledger: 258 VS Code + 8 CLI units and ${currentFactRows.length} observed X3 facts up to date`,
+    )
 } else {
   await mkdir(path.dirname(outputPath), { recursive: true })
   writeFileSync(outputPath, rendered)
-  if (!quiet) console.log('migration:emit workflow ledger: wrote 258 VS Code + 8 CLI units')
+  if (!quiet)
+    console.log(
+      `migration:emit workflow ledger: wrote 258 VS Code + 8 CLI units and ${currentFactRows.length} observed X3 facts`,
+    )
 }

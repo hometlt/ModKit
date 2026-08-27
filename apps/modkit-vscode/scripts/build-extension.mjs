@@ -31,6 +31,45 @@ import { fileURLToPath } from 'node:url'
 const here = dirname(fileURLToPath(import.meta.url))
 const appRoot = resolve(here, '..')
 const repoRoot = resolve(appRoot, '..', '..')
+const publicationInventoryPath = join(appRoot, 'publication-artifact.v1.json')
+const publicationInventory = JSON.parse(readFileSync(publicationInventoryPath, 'utf8'))
+
+if (
+  publicationInventory.schemaVersion !== 1 ||
+  publicationInventory.artifactKind !== 'deterministic-shell' ||
+  !Array.isArray(publicationInventory.shellEntries) ||
+  !Array.isArray(publicationInventory.packagedCodecRoots)
+) {
+  throw new TypeError('VS Code publication artifact inventory must be deterministic-shell v1')
+}
+
+function assertPublicationArtifact(output) {
+  const shellEntries = [...publicationInventory.shellEntries].sort()
+  const packagedCodecRoots = [...publicationInventory.packagedCodecRoots].sort()
+  if (
+    shellEntries.some(
+      (entry, index) =>
+        typeof entry !== 'string' ||
+        entry.length === 0 ||
+        (index > 0 && entry === shellEntries[index - 1]),
+    ) ||
+    packagedCodecRoots.some(
+      (entry, index) =>
+        typeof entry !== 'string' ||
+        entry.length === 0 ||
+        (index > 0 && entry === packagedCodecRoots[index - 1]),
+    )
+  ) {
+    throw new TypeError('VS Code publication artifact entries must be unique non-empty strings')
+  }
+  const expectedEntries = [...shellEntries, ...packagedCodecRoots].sort()
+  const actualEntries = readdirSync(output).sort()
+  if (JSON.stringify(actualEntries) !== JSON.stringify(expectedEntries)) {
+    throw new Error(
+      `VS Code publication artifact inventory drifted: expected ${expectedEntries.join(', ')}, found ${actualEntries.join(', ')}`,
+    )
+  }
+}
 
 /*
  * Where the bundle lands.
@@ -173,6 +212,7 @@ async function buildInto(output, syncManifest) {
       )
     }
   }
+  assertPublicationArtifact(output)
 }
 
 function differingFiles(left, right) {

@@ -1,11 +1,25 @@
 #!/usr/bin/env node
 
 import { readFile, writeFile } from 'node:fs/promises'
+import { isDeepStrictEqual } from 'node:util'
+import path from 'node:path'
 import process from 'node:process'
+import { fileURLToPath } from 'node:url'
 
-const source = new URL('../bundled-contributes.v1.json', import.meta.url)
-const output = new URL('../contributes.generated.json', import.meta.url)
-const check = process.argv.includes('--check')
+const appRoot = path.resolve(fileURLToPath(new URL('..', import.meta.url)))
+const args = process.argv.slice(2)
+const argValue = flag => {
+  const index = args.indexOf(flag)
+  return index === -1 ? undefined : args[index + 1]
+}
+const source = path.resolve(
+  argValue('--authority') ?? path.join(appRoot, 'bundled-contributes.v1.json'),
+)
+const output = path.resolve(
+  argValue('--output') ?? path.join(appRoot, 'contributes.generated.json'),
+)
+const manifestPath = path.resolve(argValue('--manifest') ?? path.join(appRoot, 'package.json'))
+const check = args.includes('--check')
 const compareUtf8 = (left, right) => Buffer.compare(Buffer.from(left), Buffer.from(right))
 const input = JSON.parse(await readFile(source, 'utf8'))
 
@@ -44,11 +58,27 @@ const configuration = {
   properties: sortedKeys(input.configuration.properties),
 }
 
-const rendered = `${JSON.stringify(
-  { commands, configuration, customEditors, views, viewsContainers },
-  null,
-  2,
-)}\n`
+const document = { commands, configuration, customEditors, views, viewsContainers }
+const rendered = `${JSON.stringify(document, null, 2)}\n`
+const fileSystemSchemes = [...(input.fileSystemSchemes ?? [])].sort(compareUtf8)
+if (
+  fileSystemSchemes.some(
+    (scheme, index) =>
+      typeof scheme !== 'string' ||
+      scheme.length === 0 ||
+      (index > 0 && scheme === fileSystemSchemes[index - 1]),
+  )
+) {
+  throw new TypeError('fileSystemSchemes must contain unique non-empty strings')
+}
+const activationEvents = [
+  ...commands.map(row => `onCommand:${row.command}`),
+  ...customEditors.map(row => `onCustomEditor:${row.viewType}`),
+  ...Object.values(views)
+    .flat()
+    .map(row => `onView:${row.id}`),
+  ...fileSystemSchemes.map(scheme => `onFileSystem:${scheme}`),
+]
 
 if (check) {
   let existing = ''
@@ -59,11 +89,32 @@ if (check) {
     console.error('contributes:check: generated static contributions differ')
     process.exit(1)
   }
+  let generated
+  let manifest
+  try {
+    generated = JSON.parse(existing)
+    manifest = JSON.parse(await readFile(manifestPath, 'utf8'))
+  } catch {
+    console.error('contributes:check: generated contributions or package manifest is invalid JSON')
+    process.exit(1)
+  }
+  if (!isDeepStrictEqual(manifest.contributes, generated)) {
+    console.error(
+      'contributes:check: package.json.contributes must exactly equal contributes.generated.json',
+    )
+    process.exit(1)
+  }
+  if (!isDeepStrictEqual(manifest.activationEvents, activationEvents)) {
+    console.error(
+      'contributes:check: package.json.activationEvents must exactly match the derived ordered activation events',
+    )
+    process.exit(1)
+  }
   console.log(
     `contributes:check: ${commands.length} commands, ${customEditors.length} generic editor, ` +
       `${Object.values(views).flat().length} views in ` +
       `${Object.values(viewsContainers).flat().length} container, ` +
-      `${Object.keys(configuration.properties).length} setting`,
+      `${Object.keys(configuration.properties).length} setting, ${activationEvents.length} activation events`,
   )
 } else {
   await writeFile(output, rendered, 'utf8')

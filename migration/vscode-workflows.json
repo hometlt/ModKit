@@ -1,6 +1,179 @@
 {
-  "$comment": "Block 14A workflow classification rules. Unit facts always come from source-inventory.json; this file only names semantic groups and owner-decision state.",
+  "$comment": "Block 14A legacy workflow classification rules plus the Block 14D observed-only join for current X3 VS Code facts. Legacy unit facts still come only from source-inventory.json; no metadata in this file promotes or replaces a legacy fact.",
   "schemaVersion": "vscode-workflow-decisions-1",
+  "currentX3Facts": [
+    {
+      "factId": "x3:vscode-command:modkit.addExtensionFolder",
+      "kind": "vscode-command",
+      "key": "modkit.addExtensionFolder",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.browseContainer",
+      "kind": "vscode-command",
+      "key": "modkit.browseContainer",
+      "workflowId": "vscode/container-vfs-cache",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.explainResolution",
+      "kind": "vscode-command",
+      "key": "modkit.explainResolution",
+      "workflowId": "vscode/diagnostics-resolution-logging",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.openArchiveEntry",
+      "kind": "vscode-command",
+      "key": "modkit.openArchiveEntry",
+      "workflowId": "vscode/container-vfs-cache",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.openWith",
+      "kind": "vscode-command",
+      "key": "modkit.openWith",
+      "workflowId": "vscode/shared-command-shell",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.runCommand",
+      "kind": "vscode-command",
+      "key": "modkit.runCommand",
+      "workflowId": "vscode/shared-command-shell",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.showHostProfile",
+      "kind": "vscode-command",
+      "key": "modkit.showHostProfile",
+      "workflowId": "vscode/diagnostics-resolution-logging",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-configuration-property:modkit.disabledContributions",
+      "kind": "vscode-configuration-property",
+      "key": "modkit.disabledContributions",
+      "workflowId": "vscode/manifest-settings",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-configuration-property:modkit.extensions",
+      "kind": "vscode-configuration-property",
+      "key": "modkit.extensions",
+      "workflowId": "vscode/manifest-settings",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-custom-editor:modkit.genericAssetPreview",
+      "kind": "vscode-custom-editor",
+      "key": "modkit.genericAssetPreview",
+      "workflowId": "vscode/asset-inspect-preview-convert",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-filesystem-scheme:modkit-container",
+      "kind": "vscode-filesystem-scheme",
+      "key": "modkit-container",
+      "workflowId": "vscode/manifest-settings",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-runtime-only-command:modkit.openResource",
+      "kind": "vscode-runtime-only-command",
+      "key": "modkit.openResource",
+      "workflowId": "vscode/asset-inspect-preview-convert",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-view-container:activitybar/modkit",
+      "kind": "vscode-view-container",
+      "key": "activitybar/modkit",
+      "workflowId": "vscode/manifest-settings",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-view:modkit.extensions",
+      "kind": "vscode-view",
+      "key": "modkit.extensions",
+      "workflowId": "vscode/views-workbench",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-view:modkit.host",
+      "kind": "vscode-view",
+      "key": "modkit.host",
+      "workflowId": "vscode/views-workbench",
+      "state": "observed-only"
+    }
+  ],
+  "commandAllowlists": {
+    "internalRuntimeCommands": [
+      {
+        "commandId": "modkit.openResource",
+        "reason": "Internal URI bridge invoked by the container and resource-opening paths; it is intentionally absent from the public command palette."
+      }
+    ],
+    "externalOrBuiltinCommands": []
+  },
+  "ownerBlockers": [
+    {
+      "blockerId": "owner/block-14-legacy-workflow-classification",
+      "state": "owner-blocked",
+      "owner": "modkit-program-owner",
+      "reason": "All 266 legacy units remain pending until the owner classifies replacement and release status.",
+      "workflowIds": [
+        "cli/check",
+        "cli/install",
+        "cli/lsp",
+        "cli/scripts",
+        "cli/texture",
+        "vscode/asset-inspect-preview-convert",
+        "vscode/authoring-language-data-launch",
+        "vscode/container-vfs-cache",
+        "vscode/diagnostics-resolution-logging",
+        "vscode/manifest-settings",
+        "vscode/navigation-relations-refactors",
+        "vscode/shared-command-shell",
+        "vscode/source-workspace-lifecycle",
+        "vscode/views-workbench"
+      ]
+    },
+    {
+      "blockerId": "owner/block-14d-vscode-packaging-b-plus-c",
+      "state": "owner-blocked",
+      "owner": "modkit-program-owner",
+      "reason": "The B plus C packaging topology is an owner decision and has not been implemented by this mechanical slice.",
+      "workflowIds": ["vscode/asset-inspect-preview-convert", "vscode/manifest-settings"]
+    },
+    {
+      "blockerId": "owner/block-14d-release-inclusion",
+      "state": "owner-blocked",
+      "owner": "modkit-program-owner",
+      "reason": "Release inclusion for the observed X3 VS Code surface remains an explicit owner decision.",
+      "workflowIds": [
+        "vscode/asset-inspect-preview-convert",
+        "vscode/authoring-language-data-launch",
+        "vscode/container-vfs-cache",
+        "vscode/diagnostics-resolution-logging",
+        "vscode/manifest-settings",
+        "vscode/navigation-relations-refactors",
+        "vscode/shared-command-shell",
+        "vscode/source-workspace-lifecycle",
+        "vscode/views-workbench"
+      ]
+    }
+  ],
+  "packagingBoundary": {
+    "state": "owner-blocked",
+    "ownerBlockerId": "owner/block-14d-vscode-packaging-b-plus-c",
+    "cataloguedCommonRoots": 18,
+    "packagedCodecRoots": 0,
+    "deterministicShellArtifact": true,
+    "provenVsixCodecArtifact": false,
+    "reason": "The generated catalog names 18 common roots, while the deterministic extension shell packages no runnable codec roots; that shell is not evidence of a codec-bearing VSIX."
+  },
   "workflows": [
     {
       "workflowId": "vscode/asset-inspect-preview-convert",
@@ -21,7 +194,6 @@
         "modkit.unreal.openAudio",
         "modkit.unreal.openVideo"
       ],
-      "currentX3CommandIds": [],
       "unitKinds": ["vscode-custom-editor"],
       "classification": {
         "disposition": "decision-required",
@@ -53,7 +225,6 @@
         "sc2layout.dtree.showInTextEditor",
         "sc2layout.dtree.showProperties"
       ],
-      "currentX3CommandIds": [],
       "unitKinds": ["vscode-language"],
       "classification": {
         "disposition": "decision-required",
@@ -84,7 +255,6 @@
         "modkit.casc.openCacheFolder",
         "modkit.casc.openSettings"
       ],
-      "currentX3CommandIds": ["modkit.browseContainer", "modkit.openArchiveEntry"],
       "unitKinds": [],
       "classification": {
         "disposition": "decision-required",
@@ -107,7 +277,6 @@
         "modkit.openLogsFolder",
         "modkit.showLog"
       ],
-      "currentX3CommandIds": ["modkit.explainResolution", "modkit.showHostProfile"],
       "unitKinds": [],
       "classification": {
         "disposition": "decision-required",
@@ -124,7 +293,6 @@
       "title": "Settings and manifest contributions",
       "plannedSlice": "block-14d",
       "legacyCommandIds": [],
-      "currentX3CommandIds": [],
       "unitKinds": ["vscode-configuration-property", "vscode-contribution"],
       "classification": {
         "disposition": "decision-required",
@@ -148,7 +316,6 @@
         "modkit.modTree.showDeps",
         "modkit.showRelationGraph"
       ],
-      "currentX3CommandIds": [],
       "unitKinds": [],
       "classification": {
         "disposition": "decision-required",
@@ -165,7 +332,6 @@
       "title": "Thin host shell over the shared subject command runtime",
       "plannedSlice": "block-14b",
       "legacyCommandIds": [],
-      "currentX3CommandIds": ["modkit.openWith", "modkit.runCommand"],
       "unitKinds": [],
       "classification": {
         "disposition": "decision-required",
@@ -196,7 +362,6 @@
         "modkit.selectInstall",
         "modkit.unloadMod"
       ],
-      "currentX3CommandIds": ["modkit.addExtensionFolder"],
       "unitKinds": [],
       "classification": {
         "disposition": "decision-required",
@@ -213,7 +378,6 @@
       "title": "Workbench views",
       "plannedSlice": "block-14b",
       "legacyCommandIds": [],
-      "currentX3CommandIds": [],
       "unitKinds": ["vscode-view"],
       "classification": {
         "disposition": "decision-required",
@@ -231,7 +395,6 @@
       "plannedSlice": "block-14d",
       "legacyCommandIds": [],
       "legacyCliCommands": ["check"],
-      "currentX3CommandIds": [],
       "unitKinds": [],
       "classification": {
         "disposition": "decision-required",
@@ -249,7 +412,6 @@
       "plannedSlice": "block-14d",
       "legacyCommandIds": [],
       "legacyCliCommands": ["install"],
-      "currentX3CommandIds": [],
       "unitKinds": [],
       "classification": {
         "disposition": "decision-required",
@@ -267,7 +429,6 @@
       "plannedSlice": "block-14c",
       "legacyCommandIds": [],
       "legacyCliCommands": ["lsp"],
-      "currentX3CommandIds": [],
       "unitKinds": [],
       "classification": {
         "disposition": "decision-required",
@@ -285,7 +446,6 @@
       "plannedSlice": "block-14d",
       "legacyCommandIds": [],
       "legacyCliCommands": ["scripts"],
-      "currentX3CommandIds": [],
       "unitKinds": [],
       "classification": {
         "disposition": "decision-required",
@@ -303,7 +463,6 @@
       "plannedSlice": "block-14d",
       "legacyCommandIds": [],
       "legacyCliCommands": ["texture"],
-      "currentX3CommandIds": [],
       "unitKinds": [],
       "classification": {
         "disposition": "decision-required",

@@ -9,6 +9,9 @@ const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
 const emitter = join(repoRoot, 'scripts', 'migration', 'emit-vscode-workflow-ledger.mjs')
 const inventory = join(repoRoot, 'migration', 'generated', 'source-inventory.json')
 const decisions = join(repoRoot, 'migration', 'vscode-workflows.json')
+const manifest = join(repoRoot, 'apps', 'modkit-vscode', 'package.json')
+const extensionSource = join(repoRoot, 'apps', 'modkit-vscode', 'src', 'extension.ts')
+const publicationInventory = join(repoRoot, 'apps', 'modkit-vscode', 'publication-artifact.v1.json')
 const targets = join(repoRoot, 'packages', 'host', 'src', 'commands', 'subject-command-targets.ts')
 const pwaCommands = join(repoRoot, 'apps', 'web', 'src', 'commands.ts')
 const committedLedger = join(repoRoot, 'migration', 'generated', 'vscode-workflow-ledger.json')
@@ -124,6 +127,7 @@ describe('block 14A VS Code + CLI workflow ledger', () => {
       legacyVsCode: 258,
       legacyCli: 8,
       decisionRequired: 266,
+      currentX3ObservedFacts: 15,
     })
     expect(ledger.counts.byKind).toEqual({
       'cli-command': 5,
@@ -173,13 +177,38 @@ describe('block 14A VS Code + CLI workflow ledger', () => {
           row.classification.targetState === 'decision-required',
       ),
     ).toBe(true)
+    expect(
+      ledger.units.every(
+        (row: {
+          classification: {
+            migrationState: string
+            releaseTrack: string
+            replacementWorkflowId: null
+          }
+        }) =>
+          row.classification.migrationState === 'unknown' &&
+          row.classification.releaseTrack === 'decision-required' &&
+          row.classification.replacementWorkflowId === null,
+      ),
+    ).toBe(true)
   })
 
   it('records the factual 64→7, 11→1, 8→0 and 6→2 surface change', () => {
     const ledger = JSON.parse(readFileSync(committedLedger, 'utf8'))
     expect(ledger.surfaceComparison).toEqual({
       legacyVsCode: { commands: 64, customEditors: 11, languages: 8, views: 6 },
-      currentX3VsCode: { commands: 7, customEditors: 1, languages: 0, views: 2 },
+      currentX3VsCode: {
+        commands: 7,
+        configurationProperties: 2,
+        customEditors: 1,
+        fileSystemSchemes: 1,
+        keybindings: 0,
+        languages: 0,
+        menus: 0,
+        runtimeOnlyCommands: 1,
+        viewContainers: 1,
+        views: 2,
+      },
     })
     expect(ledger.sharedCommandTargets.map((row: { commandId: string }) => row.commandId)).toEqual([
       'subject.convert',
@@ -195,6 +224,50 @@ describe('block 14A VS Code + CLI workflow ledger', () => {
           row.hostCallers.includes('automation') && row.hostCallers.includes('pwa'),
       ),
     ).toBe(true)
+    expect(ledger.currentX3Facts).toHaveLength(15)
+    expect(
+      ledger.currentX3Facts.every((row: { state: string }) => row.state === 'observed-only'),
+    ).toBe(true)
+    expect(ledger.deadCommandRatchet).toEqual({
+      publicContributedCommands: [
+        'modkit.addExtensionFolder',
+        'modkit.browseContainer',
+        'modkit.explainResolution',
+        'modkit.openArchiveEntry',
+        'modkit.openWith',
+        'modkit.runCommand',
+        'modkit.showHostProfile',
+      ],
+      registeredRuntimeCommands: [
+        'modkit.addExtensionFolder',
+        'modkit.browseContainer',
+        'modkit.explainResolution',
+        'modkit.openArchiveEntry',
+        'modkit.openResource',
+        'modkit.openWith',
+        'modkit.runCommand',
+        'modkit.showHostProfile',
+      ],
+      internalRuntimeCommands: ['modkit.openResource'],
+      externalOrBuiltinCommands: [],
+      legacyKeybindings: 0,
+      currentX3Menus: 0,
+      currentX3Keybindings: 0,
+    })
+    expect(ledger.ownerBlockers.map((row: { blockerId: string }) => row.blockerId)).toEqual([
+      'owner/block-14-legacy-workflow-classification',
+      'owner/block-14d-release-inclusion',
+      'owner/block-14d-vscode-packaging-b-plus-c',
+    ])
+    expect(ledger.packagingBoundary).toMatchObject({
+      state: 'owner-blocked',
+      cataloguedCommonRoots: 18,
+      packagedCodecRoots: 0,
+      deterministicShellArtifact: true,
+      provenVsixCodecArtifact: false,
+      publicationArtifactKind: 'deterministic-shell',
+      publicationShellEntryCount: 5,
+    })
   })
 
   it('refuses to promote an unknown workflow to mk3-priority', () => {
@@ -284,16 +357,130 @@ describe('block 14A VS Code + CLI workflow ledger', () => {
     )
   })
 
-  it('refuses a decisions rule that names an unknown current X3 command', () => {
+  it('refuses an allocation that names an unknown current X3 fact', () => {
     const brokenDecisions = JSON.parse(readFileSync(decisions, 'utf8'))
-    brokenDecisions.workflows[0].currentX3CommandIds.push('modkit.commandThatDoesNotExist')
+    brokenDecisions.currentX3Facts[0].key = 'modkit.commandThatDoesNotExist'
+    brokenDecisions.currentX3Facts[0].factId = 'x3:vscode-command:modkit.commandThatDoesNotExist'
     const decisionsPath = tempPath('decisions.json')
     writeFileSync(decisionsPath, JSON.stringify(brokenDecisions))
     const result = run(['--decisions', decisionsPath, '--output', tempPath('ledger.json')])
     expect(result.status).toBe(1)
     expect(result.stderr).toContain(
-      'classification names unknown current X3 command modkit.commandThatDoesNotExist',
+      'allocation names unknown current X3 fact x3:vscode-command:modkit.commandThatDoesNotExist',
     )
+  })
+
+  it('refuses duplicate allocation of one current X3 fact', () => {
+    const brokenDecisions = JSON.parse(readFileSync(decisions, 'utf8'))
+    brokenDecisions.currentX3Facts.push({ ...brokenDecisions.currentX3Facts[0] })
+    const decisionsPath = tempPath('decisions.json')
+    writeFileSync(decisionsPath, JSON.stringify(brokenDecisions))
+
+    const result = run(['--decisions', decisionsPath, '--output', tempPath('ledger.json')])
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('current X3 fact is allocated more than once')
+  })
+
+  it('derives the zero packaged-codec boundary from the publication inventory', () => {
+    const brokenInventory = JSON.parse(readFileSync(publicationInventory, 'utf8'))
+    brokenInventory.packagedCodecRoots.push('extensions/common/images')
+    const inventoryPath = tempPath('publication-artifact.v1.json')
+    writeFileSync(inventoryPath, JSON.stringify(brokenInventory))
+
+    const result = run([
+      '--publication-inventory',
+      inventoryPath,
+      '--output',
+      tempPath('ledger.json'),
+    ])
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain(
+      'packagingBoundary must record 18 catalogued common roots, 0 packaged codec roots',
+    )
+  })
+
+  it('refuses a new unallocated manifest fact', () => {
+    const brokenManifest = JSON.parse(readFileSync(manifest, 'utf8'))
+    brokenManifest.contributes.configuration.properties['modkit.unallocatedSetting'] = {
+      type: 'boolean',
+    }
+    const manifestPath = tempPath('package.json')
+    writeFileSync(manifestPath, JSON.stringify(brokenManifest))
+
+    const result = run(['--manifest', manifestPath, '--output', tempPath('ledger.json')])
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain(
+      'current X3 fact x3:vscode-configuration-property:modkit.unallocatedSetting is unallocated',
+    )
+  })
+
+  it('refuses a contributed command without a runtime registration', () => {
+    const source = readFileSync(extensionSource, 'utf8')
+    const brokenSource = source.replace(
+      "vscode.commands.registerCommand('modkit.showHostProfile'",
+      "vscode.commands.registerCommand('modkit.renamedAtRuntime'",
+    )
+    expect(brokenSource).not.toBe(source)
+    const sourcePath = tempPath('extension.ts')
+    writeFileSync(sourcePath, brokenSource)
+
+    const result = run(['--extension-source', sourcePath, '--output', tempPath('ledger.json')])
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('contributed command modkit.showHostProfile is not registered')
+  })
+
+  it('refuses a hidden runtime modkit command outside the exact internal allowlist', () => {
+    const sourcePath = tempPath('extension.ts')
+    writeFileSync(
+      sourcePath,
+      `${readFileSync(extensionSource, 'utf8')}\nvscode.commands.registerCommand('modkit.hiddenCommand', () => {})\n`,
+    )
+
+    const result = run(['--extension-source', sourcePath, '--output', tempPath('ledger.json')])
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain(
+      'hidden runtime command modkit.hiddenCommand is not allowlisted',
+    )
+  })
+
+  it.each([
+    { surface: 'menu', command: '-modkit.danglingMenu' },
+    { surface: 'keybinding', command: '-modkit.danglingKeybinding' },
+  ] as const)('refuses a dangling normalized $surface command', ({ surface, command }) => {
+    const brokenManifest = JSON.parse(readFileSync(manifest, 'utf8'))
+    if (surface === 'menu') {
+      brokenManifest.contributes.menus = { commandPalette: [{ command }] }
+    } else {
+      brokenManifest.contributes.keybindings = [{ command, key: 'ctrl+alt+m' }]
+    }
+    const manifestPath = tempPath('package.json')
+    writeFileSync(manifestPath, JSON.stringify(brokenManifest))
+
+    const result = run(['--manifest', manifestPath, '--output', tempPath('ledger.json')])
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain(
+      `dangling command ${surface === 'menu' ? 'modkit.danglingMenu' : 'modkit.danglingKeybinding'}`,
+    )
+  })
+
+  it('refuses a dangling normalized alternate menu command', () => {
+    const brokenManifest = JSON.parse(readFileSync(manifest, 'utf8'))
+    brokenManifest.contributes.menus = {
+      commandPalette: [{ command: 'modkit.openWith', alt: '-modkit.danglingAlt' }],
+    }
+    const manifestPath = tempPath('package.json')
+    writeFileSync(manifestPath, JSON.stringify(brokenManifest))
+
+    const result = run(['--manifest', manifestPath, '--output', tempPath('ledger.json')])
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('dangling command modkit.danglingAlt')
   })
 
   it('keeps vscode-workflow-decisions-1 pending-only', () => {

@@ -1,0 +1,13 @@
+{
+  "$comment": "Exact top-level inventory of the deterministic VS Code publication artifact. The build checks every fresh output against this list; named catalog roots are not packaged codec roots.",
+  "schemaVersion": 1,
+  "artifactKind": "deterministic-shell",
+  "shellEntries": [
+    "app.css",
+    "extension.cjs",
+    "modkit-ui.css",
+    "webview.js",
+    "worker-bootstrap.js"
+  ],
+  "packagedCodecRoots": []
+}
