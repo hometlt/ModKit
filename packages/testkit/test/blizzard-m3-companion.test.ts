@@ -611,6 +611,12 @@ describe('the installed StarCraft II M3', () => {
                 record => record.state === 'resolved' && record.revision !== undefined,
               ),
             ).toBe(true)
+            proves({
+              capabilityId: 'block9/m3-texture-resolution-live-sc2',
+              operation: 'read',
+              test: 'packages/testkit/test/blizzard-m3-companion.test.ts',
+              note: 'the pinned retail M3 resolves every one of its 10 logical texture resources through the live SC2 CASC namespace',
+            })
 
             const descriptor = (await nested.result.session.descriptor()) as {
               dataSources: readonly { contract: string }[]

@@ -1042,7 +1042,7 @@ capabilities:
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'partial'
+    migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
     evidenceLevel: 'E3'
@@ -1066,10 +1066,10 @@ capabilities:
       operations:
         inspect: null
         validate: null
-        read: null
+        read: 'packages/testkit/test/blizzard-m3-companion.test.ts'
         materialize: null
     knownLoss:
-      - 'межмодовая ссылка даёт честный reference-only; шов блока 11C0 + game mounts блока 15'
+      - 'pinned retail artifact1.m3 resolves a complete 10-resource closure; absent or unreachable cross-mod references remain explicit reference-only entries rather than invented bytes'
     receipts:
       projection: null
       materialization: null
@@ -1078,6 +1078,7 @@ capabilities:
     closedBy:
       commits: []
       tests:
+        - 'packages/testkit/test/blizzard-m3-companion.test.ts'
         - 'packages/testkit/test/sc2-casc-real.test.ts'
       reports:
         - 'docs/MK3/reports/REPORT_FABLE_BLOCK9_FINAL_2026-08-25.md'
@@ -16479,7 +16480,7 @@ capabilities:
       x3ContributionId: 'org.modkitx.blizzard/starcraft2-installation'
       portFamily: null
       portVerdict: null
-    migrationState: 'partial'
+    migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'node-only'
     evidenceLevel: 'E3'
@@ -16501,11 +16502,12 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'packages/testkit/test/sc2-casc-real.test.ts'
         validate: null
         read: null
         materialize: null
-    knownLoss: []
+    knownLoss:
+      - 'E3 covers local installed Windows CASC discovery and the pinned Map/Campaign/Mod workspace chain; CDN/remote depot retrieval, browser-native discovery and packaged app E5 remain unavailable'
     receipts:
       projection: null
       materialization: null
@@ -16514,6 +16516,7 @@ capabilities:
     closedBy:
       commits: []
       tests:
+        - 'packages/testkit/test/sc2-casc-real.test.ts'
         - 'packages/testkit/test/sc2-real-corpus.test.ts'
       reports:
         - 'docs/MK3/reports/REPORT_FABLE_BLOCK9_FINAL_2026-08-25.md'

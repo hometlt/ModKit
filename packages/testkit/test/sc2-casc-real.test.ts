@@ -272,6 +272,11 @@ describe('installed StarCraft II CASC product path', () => {
             'Liberty.SC2Mod',
             'Core.SC2Mod',
           ])
+          proves({
+            capabilityId: 'game/starcraft-2/discover-open',
+            operation: 'inspect',
+            note: 'the installed SC2 discovery route opens CASC and composes the pinned Map, Campaign and Mod dependency chain',
+          })
 
           const extractCascBytes = async (path: string): Promise<Uint8Array> => {
             const extracted = await cascSession
