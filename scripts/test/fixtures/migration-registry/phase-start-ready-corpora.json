@@ -1,0 +1,57 @@
+{
+  "$comment": "Fixture corpora readiness: every vertical at or before the phase has an accepted evidence path.",
+  "schemaVersion": "corpora-readiness-1",
+  "oracleLock": "migration/oracle/legacy-oracle.lock.json",
+  "statusVocabulary": [
+    "available",
+    "owner-action-required",
+    "legal-alternative-ready",
+    "unavailable"
+  ],
+  "counts": {
+    "corpora": 3,
+    "available": 1,
+    "ownerActionRequired": 1,
+    "legalAlternativeReady": 1,
+    "unavailable": 0
+  },
+  "corpora": [
+    {
+      "id": "retail-ready",
+      "displayName": "Retail ready",
+      "verticalBlock": 15,
+      "status": "available",
+      "environmentVariables": ["MODKITX_RETAIL_READY_ROOT"],
+      "evidence": "Fixture: the retail corpus is verified.",
+      "ownerAction": null,
+      "legalAlternative": null,
+      "capabilityIds": []
+    },
+    {
+      "id": "alternative-ready",
+      "displayName": "Alternative ready",
+      "verticalBlock": 16,
+      "status": "legal-alternative-ready",
+      "environmentVariables": ["MODKITX_ALTERNATIVE_ROOT"],
+      "evidence": "Fixture: the alternative evidence path was accepted before the vertical.",
+      "ownerAction": null,
+      "legalAlternative": {
+        "reachable": true,
+        "kind": "fixture",
+        "note": "Fixture accepted alternative."
+      },
+      "capabilityIds": []
+    },
+    {
+      "id": "owner-action-later",
+      "displayName": "Owner action later",
+      "verticalBlock": 17,
+      "status": "owner-action-required",
+      "environmentVariables": ["MODKITX_FUTURE_ROOT"],
+      "evidence": "Fixture: a later vertical is not due yet.",
+      "ownerAction": "Fixture: provide the corpus before block 17.",
+      "legalAlternative": null,
+      "capabilityIds": []
+    }
+  ]
+}

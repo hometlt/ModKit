@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "corpora-readiness-1",
+  "corpora": [
+    {
+      "id": "missing-block",
+      "status": "available",
+      "environmentVariables": ["MODKITX_MISSING_BLOCK_ROOT"]
+    },
+    {
+      "id": "bad-status",
+      "verticalBlock": 16,
+      "status": "maybe-ready",
+      "environmentVariables": ["MODKITX_BAD_STATUS_ROOT"]
+    },
+    {
+      "verticalBlock": 16,
+      "status": "owner-action-required",
+      "environmentVariables": ["MODKITX_MISSING_ID_ROOT"]
+    }
+  ]
+}
