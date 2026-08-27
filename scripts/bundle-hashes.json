@@ -1,6 +1,6 @@
 {
   "packages/core/dist/index.js": "b64705030409fa47ab0f7639bd5044af95234556dfed1c13492b2841938497fd",
-  "packages/sdk/dist/index.js": "664c50acc79ef10b0bc2bc98d04e4b43258274b85796257492e1dabd2403784b",
+  "packages/sdk/dist/index.js": "af63c8f8fa09bc2dec4bac0020eda66d093134fe5d34dcdd39e5c00738122aa0",
   "packages/sdk/dist/manifest/validators.generated.js": "d243cb6bc1996067de403bf9a5e7d992b2f5abdfdefc864458149abaa7513e09",
   "packages/sdk/dist/subjects/index.js": "408e83d9c81e930a1403968622d89c34744900b9c44fdad0691a366060fb8b0d",
   "packages/sdk/dist/authoring/index.js": "da0ed7d44b1c3a764fc4c267ce1c2596807000b6c88a1368997ebfffcff70e28",
@@ -11,7 +11,7 @@
   "packages/sdk/dist/runtime/index.js": "d25d5787f81361e94f50dd00e6171c411cfdabd03d3e5216322d6f0f0fbc8fb5",
   "packages/sdk/dist/renderer/index.js": "fe6020361835f18dc721765042aee073268138b7c24a78a372986555eaf4c3b2",
   "packages/sdk/dist/games/index.js": "e86780d70d5175a2406b959447fee58763772b509f27c61525b575ce69d52df0",
-  "packages/sdk/dist/mods/index.js": "70d96c4caab1b3163a628caeb9472f52c7a4bacb9d8852662a20318f09309ccd",
+  "packages/sdk/dist/mods/index.js": "64894bc559539e45c76fb2bce73c600c27e89a4842f8d143ab235cb68fb14f3f",
   "packages/sdk/dist/data/index.js": "470dffabc45da500299cc5533b02b9d2f16b5373855a1066a137afeb986051b2",
   "packages/sdk/dist/maps/index.js": "2c756a63c5537359700f96ca210c5e42a185f050a94fce9220f7982eb3d5c78c",
   "packages/sdk/dist/text-data/index.js": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",

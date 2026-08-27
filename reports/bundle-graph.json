@@ -4,7 +4,7 @@
   "entryCount": 67,
   "totals": {
     "modules": 551,
-    "bytes": 6050225
+    "bytes": 6050381
   },
   "entries": [
     {
@@ -258,7 +258,7 @@
       "entry": "packages/sdk/dist/index.js",
       "surface": "sdk",
       "modules": 35,
-      "bytes": 192167,
+      "bytes": 192245,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -293,7 +293,7 @@
       "entry": "packages/sdk/dist/mods/index.js",
       "surface": "sdk/mods",
       "modules": 1,
-      "bytes": 5177,
+      "bytes": 5255,
       "reachesUnits": [],
       "externalUnits": []
     },
