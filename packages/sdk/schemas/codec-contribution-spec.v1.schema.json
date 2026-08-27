@@ -623,6 +623,7 @@
                       "common.view/model-animation-source",
                       "common.view/model-collision-source",
                       "common.view/model-material-source",
+                      "common.view/model-socket-source",
                       "common.view/relation-graph-source",
                       "common.view/subject-facts-source",
                       "common.view/slide-deck-source"
@@ -660,6 +661,7 @@
                         "common.view/model-animation-source",
                         "common.view/model-collision-source",
                         "common.view/model-material-source",
+                        "common.view/model-socket-source",
                         "common.view/relation-graph-source",
                         "common.view/subject-facts-source",
                         "common.view/slide-deck-source"
@@ -1492,6 +1494,7 @@
                       "common.view/model-animation-source",
                       "common.view/model-collision-source",
                       "common.view/model-material-source",
+                      "common.view/model-socket-source",
                       "common.view/relation-graph-source",
                       "common.view/subject-facts-source",
                       "common.view/slide-deck-source"
@@ -1529,6 +1532,7 @@
                         "common.view/model-animation-source",
                         "common.view/model-collision-source",
                         "common.view/model-material-source",
+                        "common.view/model-socket-source",
                         "common.view/relation-graph-source",
                         "common.view/subject-facts-source",
                         "common.view/slide-deck-source"
@@ -2328,6 +2332,7 @@
                       "common.view/model-animation-source",
                       "common.view/model-collision-source",
                       "common.view/model-material-source",
+                      "common.view/model-socket-source",
                       "common.view/relation-graph-source",
                       "common.view/subject-facts-source",
                       "common.view/slide-deck-source"
@@ -2365,6 +2370,7 @@
                         "common.view/model-animation-source",
                         "common.view/model-collision-source",
                         "common.view/model-material-source",
+                        "common.view/model-socket-source",
                         "common.view/relation-graph-source",
                         "common.view/subject-facts-source",
                         "common.view/slide-deck-source"
