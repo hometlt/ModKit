@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest'
 import { uint64 } from '@modkitx-x3/core'
 import {
   TRUSTED_IN_PROCESS_EXECUTION_BACKEND,
+  analyzeResolvedDataWorkspace,
   analyzeResolvedMapWorkspace,
   buildInventory,
   createBundledServiceDefinitionRegistry,
@@ -48,6 +49,10 @@ const MAP_DOCUMENT_PATHS = [
   `${MAP_ROOT}/struct.json`,
   `${MAP_ROOT}/feature.json`,
 ] as const
+const DATA_DOCUMENT_PATHS = Object.freeze({
+  base: ['stats/features.json'],
+  mp: ['stats/templates.json', 'stats/structure.json'],
+})
 const ARCHIVE_DIGEST = 'd698475eaa7b3386c2465e5850e5609b0d524157280c7d659dc5f79cde6e5688'
 const MAP_DIGEST = 'c03e17c13a837339a1b8066047385758539cdc14ef903d806fcf871d30409111'
 const NATIVE_DIGEST = 'bc29f38775548ebf04d37fddf1d2750c4532721afdc9ccae32aebcc2f943c6a2'
@@ -81,6 +86,9 @@ const installation = discovery.installations[0]
 const mpPath = installation?.evidence.find(
   item => item.kind === 'warzone-mp-archive' && item.found,
 )?.path
+const basePath = installation?.evidence.find(
+  item => item.kind === 'warzone-base-archive' && item.found,
+)?.path
 
 const budget: ResourceBudget = {
   maxInputBytes: 16_777_216n,
@@ -88,6 +96,11 @@ const budget: ResourceBudget = {
   maxNodes: 100_000,
   maxScalarBytes: 16_777_216,
   maxDiagnostics: 100,
+}
+const archiveBudget: ResourceBudget = {
+  ...budget,
+  maxInputBytes: 134_217_728n,
+  maxScalarBytes: 134_217_728,
 }
 
 function bytesSource(bytes: Uint8Array, name: string): ArtifactByteSource {
@@ -111,9 +124,12 @@ function bytesSource(bytes: Uint8Array, name: string): ArtifactByteSource {
   return Object.freeze(source)
 }
 
-function mapOrigin(files: ReadonlyMap<string, Uint8Array>): CompanionOrigin {
+function resourceOrigin(
+  files: ReadonlyMap<string, Uint8Array>,
+  primaryLogicalId: string,
+): CompanionOrigin {
   return Object.freeze({
-    primaryLogicalId: MAP_ROOT,
+    primaryLogicalId,
     caseSensitivity: 'sensitive',
     scopes: Object.freeze([
       'current-mount',
@@ -165,12 +181,53 @@ function workspaceLock() {
   })
 }
 
+function dataWorkspaceLock() {
+  return resolveModWorkspaceGraph({
+    workspaceId: 'warzone-live-data-workspace',
+    gameId: GAME_ID,
+    activeRootId: 'mp',
+    sources: [
+      { sourceId: 'base-wz', kind: 'archive', location: basePath ?? 'absent:base.wz' },
+      { sourceId: 'mp-wz', kind: 'archive', location: mpPath ?? 'absent:mp.wz' },
+    ],
+    roots: [
+      {
+        rootId: 'base',
+        sourceId: 'base-wz',
+        sourcePath: 'base',
+        displayName: 'Warzone base data',
+        kind: 'game-data',
+        dependencies: [],
+      },
+      {
+        rootId: 'mp',
+        sourceId: 'mp-wz',
+        sourcePath: 'mp',
+        displayName: 'Warzone multiplayer data',
+        kind: 'game-data',
+        dependencies: [
+          {
+            targetRootId: 'base',
+            ref: 'base.wz',
+            required: true,
+            provenance: 'implicit',
+          },
+        ],
+      },
+    ],
+    maxRoots: 4,
+    maxDepth: 4,
+  })
+}
+
 describe('installed Warzone 2100 map to UVW vertical', () => {
-  it.skipIf(mpPath === undefined || !existsSync(mpPath))(
+  it.skipIf(
+    mpPath === undefined || basePath === undefined || !existsSync(mpPath) || !existsSync(basePath),
+  )(
     'extracts 2c-highground through the archive codec and materializes all 4,608 cells',
     async () => {
-      if (mpPath === undefined || installation === undefined) {
-        throw new Error('Warzone installation discovery did not return mp.wz')
+      if (mpPath === undefined || basePath === undefined || installation === undefined) {
+        throw new Error('Warzone installation discovery did not return base.wz and mp.wz')
       }
       console.info(`[warzone-live] root ${installation.normalizedPath}`)
       console.info(`[warzone-live] ${mpPath} -> ${MAP_PATH}`)
@@ -196,12 +253,13 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
         target: { environment: 'node', operatingSystem, architecture: 'x64' },
         grant: { id: 'warzone-live-mp-wz', classes: ['read-source'] },
         executionBackends: createExecutionBackendRegistry([TRUSTED_IN_PROCESS_EXECUTION_BACKEND]),
-        budget,
+        budget: archiveBudget,
       })
       if (archive.state !== 'opened') {
         throw new Error(`mp.wz did not open through the archive codec: ${archive.reason}`)
       }
       const mapDocuments = new Map<string, Uint8Array>()
+      const dataDocuments = new Map<string, Uint8Array>()
       try {
         expect(archive.descriptor).toMatchObject({
           identity: { codecId: 'org.modkitx/warzone-wz', formatId: 'warzone-wz' },
@@ -225,11 +283,69 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
             }
             mapDocuments.set(path, extracted.output.value)
           }
+          const statsPage = await (namespaceLease.value as NamespaceEntrySource).list('stats/', {
+            limit: 1_024,
+          })
+          for (const path of DATA_DOCUMENT_PATHS.mp) {
+            const entry = statsPage.items.find(item => item.path === path)
+            if (entry === undefined) throw new Error(`${path} is absent from installed mp.wz`)
+            const extracted = await archive.session
+              .operations()
+              .invoke('extract-entry', { entryId: entry.id })
+            if (extracted.state !== 'ok' || extracted.output.kind !== 'bytes') {
+              throw new Error(`installed ${path} extraction did not return bytes`)
+            }
+            dataDocuments.set(`mp/${path}`, extracted.output.value)
+          }
         } finally {
           await namespaceLease.release()
         }
       } finally {
         await archive.session.dispose()
+      }
+
+      const baseBytes = await readFile(basePath)
+      const baseArchive = await openSubject({
+        inventory: archiveInventory,
+        source: bytesSource(baseBytes, 'base.wz'),
+        path: 'base.wz',
+        intent: 'full',
+        target: { environment: 'node', operatingSystem, architecture: 'x64' },
+        grant: { id: 'warzone-live-base-wz', classes: ['read-source'] },
+        executionBackends: createExecutionBackendRegistry([TRUSTED_IN_PROCESS_EXECUTION_BACKEND]),
+        budget: archiveBudget,
+      })
+      if (baseArchive.state !== 'opened') {
+        throw new Error(`base.wz did not open through the archive codec: ${baseArchive.reason}`)
+      }
+      try {
+        expect(baseArchive.descriptor).toMatchObject({
+          identity: { codecId: 'org.modkitx/warzone-wz', formatId: 'warzone-wz' },
+        })
+        const namespaceLease = await baseArchive.session.dataSource(
+          'common.view/namespace-entry-source',
+          1,
+        )
+        try {
+          const statsPage = await (namespaceLease.value as NamespaceEntrySource).list('stats/', {
+            limit: 1_024,
+          })
+          for (const path of DATA_DOCUMENT_PATHS.base) {
+            const entry = statsPage.items.find(item => item.path === path)
+            if (entry === undefined) throw new Error(`${path} is absent from installed base.wz`)
+            const extracted = await baseArchive.session
+              .operations()
+              .invoke('extract-entry', { entryId: entry.id })
+            if (extracted.state !== 'ok' || extracted.output.kind !== 'bytes') {
+              throw new Error(`installed ${path} extraction did not return bytes`)
+            }
+            dataDocuments.set(`base/${path}`, extracted.output.value)
+          }
+        } finally {
+          await namespaceLease.release()
+        }
+      } finally {
+        await baseArchive.session.dispose()
       }
       const gameMapBytes = mapDocuments.get(MAP_PATH)
       if (gameMapBytes === undefined) throw new Error('installed game.map bytes are absent')
@@ -274,8 +390,70 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
       })
       const definitions = createBundledServiceDefinitionRegistry()
       await registerServiceDefinitionsOrThrow(composition.inventory, definitions)
+      const dataNamespaces = new Map([
+        ['base/stats/features.json', 'warzone.features'],
+        ['mp/stats/templates.json', 'warzone.templates'],
+        ['mp/stats/structure.json', 'warzone.structures'],
+      ])
+      const dataQueries = [...dataDocuments.entries()].flatMap(([path, bytes]) => {
+        const parsed = JSON.parse(
+          new TextDecoder('utf-8', { fatal: true }).decode(bytes),
+        ) as Record<string, unknown>
+        const namespace = dataNamespaces.get(path)
+        if (namespace === undefined) throw new Error(`no catalog namespace for ${path}`)
+        return Object.keys(parsed).map(entityId => ({ namespace, entityId }))
+      })
+      expect(dataQueries).toHaveLength(549)
+      const dataRevision = createHash('sha256')
+      for (const [path, bytes] of [...dataDocuments.entries()].sort(([left], [right]) =>
+        left.localeCompare(right),
+      )) {
+        dataRevision.update(path)
+        dataRevision.update(bytes)
+      }
+      const dataResources = createResourceSession({
+        origin: resourceOrigin(dataDocuments, 'mp'),
+        revision: revisionId(`content-hash.sha256:${dataRevision.digest('hex')}`),
+      })
+      const dataResult = await analyzeResolvedDataWorkspace({
+        services: { ...composition, serviceDefinitions: definitions },
+        grant: { id: 'warzone-live-data', classes: [] },
+        budgets: budget,
+        workspace: dataWorkspaceLock(),
+        resources: dataResources,
+        locales: ['enUS'],
+        queries: dataQueries,
+        limits: {
+          maxRequirements: 16,
+          maxDocumentBytes: 4_194_304,
+          maxTextBytes: 8_388_608,
+          maxEntities: 10_000,
+          maxDepth: 32,
+          maxPageSize: 1_000,
+        },
+      })
+      expect(
+        dataResult.state,
+        dataResult.diagnostics.map(item => `${item.code}: ${item.message}`).join('\n'),
+      ).toBe('resolved')
+      if (dataResult.state !== 'resolved') {
+        await dataResources.dispose()
+        throw new Error('installed Warzone data did not resolve')
+      }
+      expect(dataResult.snapshot.definitions).toHaveLength(549)
+      expect(dataResult.snapshot.entities).toHaveLength(549)
+      expect(dataResult.snapshot.namespaces).toEqual([
+        { namespace: 'warzone.features', entityCount: 104 },
+        { namespace: 'warzone.structures', entityCount: 165 },
+        { namespace: 'warzone.templates', entityCount: 280 },
+      ])
+      expect(await dataResult.facets.definitions.value.shape()).toMatchObject({
+        rows: 549,
+        columns: 6,
+      })
+      expect((await dataResult.facets.relations.value.summary()).totalEdges).toBeGreaterThan(0)
       const resources = createResourceSession({
-        origin: mapOrigin(mapDocuments),
+        origin: resourceOrigin(mapDocuments, MAP_ROOT),
         revision: revisionId(`content-hash.sha256:${MAP_DIGEST}`),
       })
       const result = await analyzeResolvedMapWorkspace({
@@ -284,6 +462,7 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
         budgets: budget,
         workspace: workspaceLock(),
         resources,
+        catalog: dataResult.snapshot,
         limits: {
           maxRequirements: 8,
           maxDocumentBytes: 1_000_000,
@@ -323,7 +502,10 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
           result.snapshot.semantic.objects.filter(item => item.kind === 'feature'),
         ).toHaveLength(51)
         expect(result.snapshot.semantic.catalogQueries).toHaveLength(30)
-        expect(result.snapshot.semantic.resolvedCatalogObjects).toBe(0)
+        expect(result.snapshot.semantic.resolvedCatalogObjects).toBe(177)
+        expect(
+          result.snapshot.semantic.objects.every(item => item.catalog?.entity !== undefined),
+        ).toBe(true)
         expect(result.snapshot.terrainTransform).toMatchObject({
           bounds: {
             minimum: { x: 0, y: 0, z: 0 },
@@ -400,6 +582,8 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
       } finally {
         await result.release()
         await resources.dispose()
+        await dataResult.release()
+        await dataResources.dispose()
       }
     },
     120_000,

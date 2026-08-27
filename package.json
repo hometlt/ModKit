@@ -9,7 +9,7 @@
   },
   "scripts": {
     "typecheck": "tsc -b && tsc -p tsconfig.tooling.json",
-    "test": "vitest run",
+    "test": "vitest run --no-file-parallelism",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

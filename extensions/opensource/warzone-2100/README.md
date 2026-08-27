@@ -13,6 +13,11 @@ reuses the bounded common ZIP parser, extracts stored and Deflate entries, reads
 `ruleset.json`, and exposes the last physical entry for every repeated path. WZ container writing
 and the other Warzone staging routes remain outside this package until their own migration slices.
 
+The semantic data provider reads the official JSON tables for droid templates, structures and
+features from ordered workspace roots. It preserves every field observed in Warzone 2100 4.7,
+resolves map object ids to effective definitions, and exposes bounded schema, definition and
+relation views. Other stats tables, localization and JSON writing remain explicit remainder.
+
 The reader publishes decoded geometry, logical texture references and `ANIMOBJECT` tracks. It does
 not infer animation from polygon texture animation flags or directive counts. PIE writing and 3DO
 models are named remainders.

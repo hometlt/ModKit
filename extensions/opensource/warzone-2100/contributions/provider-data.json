@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/service-provider-contribution",
+    "major": 1
+  },
+  "id": "org.modkitx.opensource/warzone2100-data",
+  "displayName": "Warzone 2100 semantic data",
+  "status": "supported",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/data-provider.js",
+      "target": {
+        "environments": ["node"]
+      },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    },
+    {
+      "variantId": "worker-portable",
+      "entrypoint": "./src/data-provider.js",
+      "target": {
+        "environments": ["node-worker", "browser-worker"]
+      },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "provides": [
+      {
+        "offerId": "warzone2100-data-v1",
+        "contract": "common.data/catalog-analysis",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": {
+          "gameIds": ["org.modkitx/warzone-2100"]
+        }
+      }
+    ],
+    "lifecycleScope": "session"
+  },
+  "limitations": [
+    "This slice reads the complete observed fields of stats/templates.json, stats/structure.json and stats/features.json; other stats tables remain named remainder.",
+    "Ordered workspace roots override scalar definitions by publisher key; JSON writing, localization, scripts and full multi-package archive mounting remain outside this provider."
+  ]
+}

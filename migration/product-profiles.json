@@ -112,8 +112,13 @@
           ]
         }
       ],
-      "serviceProviders": ["org.modkitx.opensource/warzone2100-installation"],
-      "note": "Профиль уже использует отдельное игровое расширение для PIE и автоматического поиска установки; остальные форматы карт и данных остаются запланированными до завершения вертикали Warzone."
+      "serviceProviders": [
+        "org.modkitx.opensource/warzone2100-data",
+        "org.modkitx.opensource/warzone2100-installation",
+        "org.modkitx.opensource/warzone2100-map-semantic",
+        "org.modkitx.opensource/warzone2100-resolved-data"
+      ],
+      "note": "Профиль уже использует отдельное игровое расширение для PIE, WZ, поиска установки, карт и основных данных объектов; оставшиеся форматы, данные и запись ждут следующих частей вертикали Warzone."
     },
     {
       "id": "bar-spring-studio",

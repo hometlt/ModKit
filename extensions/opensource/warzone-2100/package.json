@@ -9,6 +9,7 @@
     ".": "./src/provider.js",
     "./pie": "./src/warzone-pie/codec.js",
     "./wz": "./src/warzone-wz/codec.js",
+    "./data": "./src/data-provider.js",
     "./maps": "./src/map-provider.js",
     "./linked": "./src/linked.js",
     "./package.json": "./package.json"
