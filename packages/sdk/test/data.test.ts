@@ -115,4 +115,128 @@ describe('game-neutral data catalog resolution', () => {
       ]),
     )
   })
+
+  it('keeps extended definitions, typed links and winner-first locale provenance additive', () => {
+    const linkedSchemas: readonly DataTypeSchema[] = [
+      { typeId: 'Weapon', fields: [] },
+      {
+        typeId: 'Unit',
+        fields: [
+          {
+            fieldId: 'Weapon',
+            cardinality: 'scalar',
+            linkNamespace: 'Weapon',
+          },
+          { fieldId: 'Name', cardinality: 'scalar', linkNamespace: '' },
+        ],
+      },
+    ]
+    const source = (rootId: string, documentIndex: number) => ({
+      rootId,
+      path: `${rootId}/unit.xml`,
+      documentIndex,
+    })
+    const snapshot = resolveDataCatalog({
+      workspaceId: 'overlay',
+      gameId: 'example/game',
+      analyzerId: 'example/analyzer',
+      schemas: linkedSchemas,
+      patches: [
+        {
+          namespace: 'Unit',
+          typeId: 'Unit',
+          entityId: 'Marine',
+          fields: { Weapon: 'Rifle', Name: 'Unit/Name/Marine' },
+          source: source('core', 0),
+        },
+        {
+          namespace: 'Weapon',
+          typeId: 'Weapon',
+          entityId: 'Rifle',
+          fields: {},
+          source: source('liberty', 1),
+        },
+        {
+          namespace: 'Unit',
+          typeId: 'Unit',
+          entityId: 'Marine',
+          fields: { Weapon: 'Missing' },
+          source: source('workspace', 2),
+        },
+      ],
+      localizationPatches: [
+        {
+          locale: 'enUS',
+          key: 'Unit/Name/Marine',
+          value: 'Workspace Marine',
+          source: source('workspace', 0),
+        },
+        {
+          locale: 'enUS',
+          key: 'Unit/Name/Marine',
+          value: 'Core Marine',
+          source: source('core', 1),
+        },
+      ],
+      localePreferences: ['frFR', 'enUS'],
+      localizationKeys: ['Unit/Name/Marine', 'Unit/Name/Missing'],
+      queries: [{ namespace: 'Unit', entityId: 'Marine' }],
+      snapshotId: 'revision:actual-content',
+      includeWorkspaceFacets: true,
+      maxEntities: 16,
+      maxDepth: 8,
+    })
+
+    expect(snapshot.definitions).toHaveLength(2)
+    expect(snapshot.relations).toEqual([
+      expect.objectContaining({
+        from: { namespace: 'Unit', entityId: 'Marine' },
+        to: { namespace: 'Weapon', entityId: 'Missing' },
+        role: 'Weapon',
+        dead: true,
+      }),
+    ])
+    expect(snapshot.localizedStrings).toEqual([
+      expect.objectContaining({
+        key: 'Unit/Name/Marine',
+        value: 'Workspace Marine',
+        requestedLocale: 'frFR',
+        resolvedLocale: 'enUS',
+        fallback: true,
+        source: expect.objectContaining({ rootId: 'workspace' }),
+      }),
+    ])
+    expect(snapshot.snapshotId).toBe('revision:actual-content')
+    expect(snapshot.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'common.data/relation-target-unavailable' }),
+        expect.objectContaining({ code: 'common.data/localization-fallback' }),
+        expect.objectContaining({ code: 'common.data/localization-key-unavailable' }),
+      ]),
+    )
+
+    const legacy = resolveDataCatalog({
+      workspaceId: 'legacy',
+      gameId: 'example/game',
+      analyzerId: 'old-v1-provider',
+      schemas: linkedSchemas,
+      patches: [],
+      queries: [],
+      maxEntities: 1,
+      maxDepth: 1,
+    })
+    expect(Object.keys(legacy).sort()).toEqual([
+      'analyzerId',
+      'complete',
+      'diagnostics',
+      'entities',
+      'entityCount',
+      'gameId',
+      'namespaces',
+      'patchCount',
+      'schemaVersion',
+      'typeIds',
+      'workspaceId',
+    ])
+  })
 })

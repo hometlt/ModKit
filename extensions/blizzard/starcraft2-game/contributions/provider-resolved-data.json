@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/service-provider-contribution",
+    "major": 1
+  },
+  "id": "org.modkitx.blizzard/starcraft2-resolved-data",
+  "displayName": "StarCraft II resolved workspace data",
+  "status": "supported",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/data-provider.js",
+      "target": {
+        "environments": ["node"]
+      },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    },
+    {
+      "variantId": "worker-portable",
+      "entrypoint": "./src/data-provider.js",
+      "target": {
+        "environments": ["node-worker", "browser-worker"]
+      },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "provides": [
+      {
+        "offerId": "starcraft2-resolved-data-v1",
+        "contract": "common.data/resolved-workspace",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": {
+          "gameIds": ["org.modkitx/starcraft-2"]
+        }
+      }
+    ],
+    "lifecycleScope": "session"
+  },
+  "limitations": [
+    "Live schema, definition, localization and relation facets cover a bounded native bootstrap slice; they are not a portable UVD artifact.",
+    "Catalog kinds outside CUnit, CWeapon, CEffect, CBehavior, CAbil, CActor, CButton and CUpgrade selected fields, schema tokens, field validators, localized data sources other than GameStrings and writers remain named remainder."
+  ]
+}

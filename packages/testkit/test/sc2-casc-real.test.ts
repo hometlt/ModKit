@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   TRUSTED_IN_PROCESS_EXECUTION_BACKEND,
+  analyzeResolvedDataWorkspace,
   artifactNamespaceSourceFromVfsMount,
   buildInventory,
   createBundledServiceDefinitionRegistry,
@@ -30,7 +31,7 @@ import { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const sc2Override = process.env.MODKITX_SC2_ROOT?.trim()
-const sc2Root = sc2Override ? sc2Override : 'C:\\Apps\\StarCraft II'
+const sc2Root = sc2Override ?? ''
 const buildInfoPath = join(sc2Root, '.build.info')
 const m3Path =
   'campaigns/liberty.sc2campaign/base.sc2assets/assets/campaign/terran/artifact1/artifact1.m3'
@@ -48,10 +49,21 @@ const budget: ResourceBudget = {
 }
 
 describe('installed StarCraft II CASC product path', () => {
-  it.skipIf(!existsSync(buildInfoPath))(
+  it.skipIf(sc2Override === undefined)(
     'discovers the install, resolves dependencies and opens a real semantic map through CASC',
     async () => {
+      if (!existsSync(buildInfoPath)) {
+        throw new Error(
+          `configured corpus MODKITX_SC2_ROOT does not contain the required .build.info sentinel: ${buildInfoPath}`,
+        )
+      }
       const before = statSync(buildInfoPath)
+      const corpusDescriptor = Object.freeze({
+        environment: 'MODKITX_SC2_ROOT',
+        sentinel: '.build.info',
+        size: before.size,
+        modifiedMs: before.mtimeMs,
+      })
       const directories = [
         ['blizzard', 'starcraft2-game'],
         ['blizzard', 'casc'],
@@ -328,6 +340,120 @@ describe('installed StarCraft II CASC product path', () => {
             expect.arrayContaining(['LifeMax', 'Race']),
           )
           expect(marine?.sources.length).toBeGreaterThan(0)
+
+          /*
+           * Block 15B product path: the selected provider owns only the plan and parsing.
+           * Every real catalog/localization byte crosses the CASC namespace -> host-owned
+           * ResourceSessionPort seam; neither the host coordinator nor this test imports the
+           * provider implementation or reads an unpacked install child from the filesystem.
+           */
+          const { createNamespaceCompanionOrigin } = (await import(
+            pathToFileURL(join(repoRoot, 'packages', 'host', 'src', 'namespace-origin.js')).href
+          )) as typeof import('../../host/src/namespace-origin.js')
+          const { createResourceSession } = (await import(
+            pathToFileURL(join(repoRoot, 'packages', 'host', 'src', 'resource-session.js')).href
+          )) as typeof import('../../host/src/resource-session.js')
+          const cascRevision = (await cascSession.descriptor()).revision
+          const resources = createResourceSession({
+            origin: createNamespaceCompanionOrigin({
+              namespace,
+              primaryLogicalId: mapRoot,
+              containerRevision: cascRevision,
+              extract: extractCascBytes,
+            }),
+            revision: cascRevision,
+          })
+          const liveData = await analyzeResolvedDataWorkspace({
+            services,
+            grant: { id: 'sc2-casc-real-resolved-data', classes: [] },
+            budgets: budget,
+            workspace,
+            resources,
+            locales: ['enUS'],
+            queries: [{ namespace: 'Unit', entityId: 'Marine' }],
+            localizationKeys: ['Unit/Name/Marine'],
+            limits: {
+              maxRequirements: 64,
+              maxDocumentBytes: 4_194_304,
+              maxTextBytes: 16_777_216,
+              maxEntities: 100_000,
+              maxDepth: 128,
+              maxPageSize: 128,
+            },
+          })
+          expect(
+            liveData.state,
+            liveData.diagnostics.map(item => `${item.code}: ${item.message}`).join('\n'),
+          ).toBe('resolved')
+          if (liveData.state !== 'resolved') {
+            await resources.dispose()
+            throw new Error('real resolved data workspace did not open')
+          }
+          try {
+            const provenance = resources.provenance()
+            for (const path of [
+              'mods/core.sc2mod/base.sc2data/gamedata/unitdata.xml',
+              'mods/liberty.sc2mod/base.sc2data/gamedata/unitdata.xml',
+              'mods/core.sc2mod/enus.sc2data/localizeddata/gamestrings.txt',
+              'mods/liberty.sc2mod/enus.sc2data/localizeddata/gamestrings.txt',
+            ]) {
+              expect(
+                provenance.find(item => item.logicalId === path),
+                `real corpus did not resolve planned Core/Liberty resource ${path}`,
+              ).toMatchObject({ state: 'resolved' })
+            }
+            expect(
+              liveData.plan.requirements
+                .filter(item => item.kind === 'catalog')
+                .slice(0, 16)
+                .map(item => item.rootId),
+            ).toEqual([
+              ...Array(8).fill('retail:core.sc2mod'),
+              ...Array(8).fill('retail:liberty.sc2mod'),
+            ])
+            const liveMarine = liveData.snapshot.definitions.find(
+              entity => entity.namespace === 'Unit' && entity.entityId === 'Marine',
+            )
+            expect(liveMarine).toMatchObject({ typeId: 'CUnit', entityId: 'Marine' })
+            expect(liveMarine?.sources.map(item => item.rootId)).toContain('retail:liberty.sc2mod')
+            const overlaid = liveData.snapshot.definitions.filter(entity => {
+              const sourceRoots = new Set(entity.sources.map(source => source.rootId))
+              return (
+                sourceRoots.has('retail:core.sc2mod') && sourceRoots.has('retail:liberty.sc2mod')
+              )
+            })
+            expect(overlaid.length).toBeGreaterThan(0)
+            const coreUnit = provenance.find(
+              item => item.logicalId === 'mods/core.sc2mod/base.sc2data/gamedata/unitdata.xml',
+            )
+            const libertyUnit = provenance.find(
+              item => item.logicalId === 'mods/liberty.sc2mod/base.sc2data/gamedata/unitdata.xml',
+            )
+            expect(coreUnit?.revision).not.toBe(libertyUnit?.revision)
+            const activeUnit = provenance.find(
+              item => item.logicalId === `${mapRoot}/base.sc2data/gamedata/unitdata.xml`,
+            )
+            expect(activeUnit).toBeDefined()
+            if (activeUnit?.state === 'unresolved') expect(liveData.snapshot.complete).toBe(false)
+            expect(liveData.snapshot.relations.length).toBeGreaterThan(0)
+            expect(liveData.snapshot.localizedStrings).toContainEqual(
+              expect.objectContaining({
+                key: 'Unit/Name/Marine',
+                resolvedLocale: 'enUS',
+              }),
+            )
+            const graph = await liveData.facets.relations.value.summary()
+            expect(graph).toMatchObject({
+              snapshotId: liveData.snapshot.snapshotId,
+              completeness: 'partial',
+            })
+            console.info(
+              `[sc2-live] resolved data ${JSON.stringify(corpusDescriptor)}: ${liveData.snapshot.definitions.length} definitions, ${liveData.snapshot.relations.length} typed relations, ${liveData.snapshot.localizedStrings.length} localized strings; complete=${String(liveData.snapshot.complete)}`,
+            )
+          } finally {
+            await liveData.release()
+            await resources.dispose()
+          }
 
           const semanticMap = await mapResolution.analysis.open({
             workspaceId: workspace.workspaceId,
