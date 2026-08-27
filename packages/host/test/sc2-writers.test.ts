@@ -1521,6 +1521,15 @@ describe('Block 15 fresh MPQ Save As from loose SC2 workspaces', () => {
     expect(budgetReads).toBe(0)
     unchanged()
 
+    await expect(
+      snapshot({
+        revision: stableSource.revision,
+        list: stableSource.list,
+        read: stableSource.read,
+      }),
+    ).rejects.toMatchObject({ code: module.MPQ_SOURCE_SNAPSHOT_UNSTABLE })
+    unchanged()
+
     let pages = 0
     await expect(
       snapshot({
