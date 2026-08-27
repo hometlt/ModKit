@@ -39,7 +39,11 @@ import { RUNTIME_PROVIDER_MATCHER, registerStandardRuntimeDefinitions } from './
 import { SCENE_RENDERER_MATCHER, registerStandardRendererDefinitions } from './renderer/index.js'
 import { GAME_INSTALLATION_MATCHER, registerStandardGameDefinitions } from './games/index.js'
 import { MOD_WORKSPACE_MATCHER, registerStandardModDefinitions } from './mods/index.js'
-import { DATA_CATALOG_MATCHER, registerStandardDataDefinitions } from './data/index.js'
+import {
+  DATA_CATALOG_MATCHER,
+  registerStandardDataDefinitions,
+  RESOLVED_DATA_WORKSPACE_MATCHER,
+} from './data/index.js'
 import { MAP_SEMANTIC_MATCHER, registerStandardMapDefinitions } from './maps/index.js'
 import { openSubject, type OpenSubjectResult, type SubjectInputResolver } from './subject-open.js'
 
@@ -229,6 +233,7 @@ export function createBundledServiceDefinitionRegistry(
       GAME_INSTALLATION_MATCHER,
       MOD_WORKSPACE_MATCHER,
       DATA_CATALOG_MATCHER,
+      RESOLVED_DATA_WORKSPACE_MATCHER,
       MAP_SEMANTIC_MATCHER,
       ...(options.matcherProfiles ?? []),
     ]),

@@ -2,7 +2,15 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { uint64 } from '@modkitx-x3/core'
-import { createHostTopology } from '@modkitx-x3/sdk'
+import {
+  createHostTopology,
+  resolveModWorkspaceGraph,
+  revisionId,
+  type ArtifactSource,
+  type InputSearchScope,
+  type Lease,
+  type ModWorkspaceLock,
+} from '@modkitx-x3/sdk'
 import {
   createBundledServiceDefinitionRegistry,
   createExecutionBackendRegistry,
@@ -13,7 +21,13 @@ import {
   type HostComposition,
   type LinkedExtension,
 } from '@modkitx-x3/host'
-import { resolveDataCatalogAnalysis } from '@modkitx-x3/host/data'
+import {
+  analyzeResolvedDataWorkspace,
+  resolveDataCatalogAnalysis,
+  resolveResolvedDataWorkspace,
+} from '@modkitx-x3/host/data'
+import type { CompanionEnumerationOptions, CompanionOrigin } from '../src/input-resolution.js'
+import { createResourceSession } from '../src/resource-session.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const { starcraft2Game } = (await import(
@@ -53,6 +67,178 @@ const activationBudget = {
   maxNodes: 100_000,
   maxScalarBytes: 4_194_304,
   maxDiagnostics: 100,
+}
+
+const catalogFiles = [
+  'abildata.xml',
+  'actordata.xml',
+  'behaviordata.xml',
+  'buttondata.xml',
+  'effectdata.xml',
+  'unitdata.xml',
+  'upgradedata.xml',
+  'weapondata.xml',
+] as const
+
+const roots = {
+  core: 'mods/core.sc2mod',
+  liberty: 'mods/liberty.sc2mod',
+  active: 'workspace/active.sc2mod',
+} as const
+
+function workspaceLock(): ModWorkspaceLock {
+  return resolveModWorkspaceGraph({
+    workspaceId: 'synthetic-map-workspace',
+    gameId: GAME_ID,
+    activeRootId: 'active',
+    sources: [
+      { sourceId: 'workspace', kind: 'memory', location: 'memory:workspace' },
+      { sourceId: 'retail', kind: 'memory', location: 'memory:retail' },
+    ],
+    roots: [
+      {
+        rootId: 'core',
+        sourceId: 'retail',
+        sourcePath: roots.core,
+        displayName: 'Core',
+        kind: 'dependency',
+        dependencies: [],
+      },
+      {
+        rootId: 'liberty',
+        sourceId: 'retail',
+        sourcePath: roots.liberty,
+        displayName: 'Liberty',
+        kind: 'dependency',
+        dependencies: [
+          { targetRootId: 'core', ref: 'Core.SC2Mod', required: true, provenance: 'declared' },
+        ],
+      },
+      {
+        rootId: 'active',
+        sourceId: 'workspace',
+        sourcePath: roots.active,
+        displayName: 'Active',
+        kind: 'workspace',
+        dependencies: [
+          {
+            targetRootId: 'liberty',
+            ref: 'Liberty.SC2Mod',
+            required: true,
+            provenance: 'declared',
+          },
+        ],
+      },
+    ],
+    maxRoots: 8,
+    maxDepth: 8,
+  })
+}
+
+function completeWorkspaceFiles(): Map<string, string> {
+  const files = new Map<string, string>()
+  for (const root of Object.values(roots)) {
+    for (const file of catalogFiles) {
+      files.set(`${root}/base.sc2data/gamedata/${file}`, '<Catalog/>')
+    }
+    for (const locale of ['frfr', 'enus']) {
+      files.set(`${root}/${locale}.sc2data/localizeddata/gamestrings.txt`, '')
+    }
+  }
+  files.set(
+    `${roots.core}/base.sc2data/gamedata/unitdata.xml`,
+    '<Catalog><CUnit id="Marine"><Name value="Unit/Name/Marine"/><LifeMax value="40"/><WeaponArray index="0" Link="Rifle"/><BehaviorArray index="0" Link="MissingBehavior"/></CUnit><CUnit id="CycleA" parent="CycleB"/><CUnit id="CycleB" parent="CycleA"/><CUnit id="Duplicate"><LifeMax value="1"/></CUnit><CUnit id="Duplicate"><LifeMax value="2"/></CUnit></Catalog>',
+  )
+  files.set(
+    `${roots.core}/base.sc2data/gamedata/weapondata.xml`,
+    '<Catalog><CWeapon id="Rifle"><Effect Link="RifleDamage"/></CWeapon></Catalog>',
+  )
+  files.set(
+    `${roots.core}/base.sc2data/gamedata/effectdata.xml`,
+    '<Catalog><CEffectDamage id="RifleDamage"><Amount value="6"/></CEffectDamage></Catalog>',
+  )
+  files.set(
+    `${roots.liberty}/base.sc2data/gamedata/unitdata.xml`,
+    '<Catalog><CUnit id="Marine"><LifeMax value="45"/></CUnit></Catalog>',
+  )
+  files.set(
+    `${roots.active}/base.sc2data/gamedata/unitdata.xml`,
+    '<Catalog><CUnit id="Marine"><LifeMax value="55"/></CUnit></Catalog>',
+  )
+  files.set(
+    `${roots.core}/enus.sc2data/localizeddata/gamestrings.txt`,
+    'Unit/Name/Marine=Core Marine',
+  )
+  files.set(
+    `${roots.liberty}/enus.sc2data/localizeddata/gamestrings.txt`,
+    'Unit/Name/Marine=Liberty Marine',
+  )
+  files.set(
+    `${roots.active}/enus.sc2data/localizeddata/gamestrings.txt`,
+    'Unit/Name/Marine=<img src=x onerror=alert(1)>',
+  )
+  return files
+}
+
+function memoryOrigin(files: ReadonlyMap<string, string>): CompanionOrigin {
+  const encoder = new TextEncoder()
+  const paths = [...files.keys()].sort()
+  const origin: CompanionOrigin = {
+    primaryLogicalId: 'workspace/active.sc2map',
+    caseSensitivity: 'insensitive',
+    scopes: Object.freeze([
+      'current-mount',
+      'enclosing-container',
+      'workspace-dependency-layer',
+    ] as const),
+    async *enumerate(
+      _scope: InputSearchScope,
+      options: CompanionEnumerationOptions,
+      signal?: AbortSignal,
+    ) {
+      for (const path of paths) {
+        signal?.throwIfAborted()
+        if (!path.startsWith(options.prefix.toLowerCase())) continue
+        yield Object.freeze({
+          logicalId: path,
+          size: BigInt(encoder.encode(files.get(path)).length),
+        })
+      }
+    },
+    open(logicalId: string, signal?: AbortSignal): Promise<Lease<ArtifactSource>> {
+      signal?.throwIfAborted()
+      const path = logicalId.toLowerCase()
+      const text = files.get(path)
+      if (text === undefined) throw new RangeError(`unknown memory resource ${logicalId}`)
+      const bytes = encoder.encode(text)
+      const uri = `memory://resolved-data/${encodeURIComponent(path)}`
+      const source: ArtifactSource = Object.freeze({
+        kind: 'bytes',
+        ref: Object.freeze({ id: uri, uri }),
+        revision: revisionId(
+          `provider-token:${encodeURIComponent(`${path}:${String(bytes.length)}`)}`,
+        ),
+        size: BigInt(bytes.length),
+        read(offset: bigint, length: number, readSignal?: AbortSignal) {
+          readSignal?.throwIfAborted()
+          const start = Number(offset)
+          return Promise.resolve(bytes.slice(start, start + length))
+        },
+        async *stream(
+          _range?: { readonly offset: bigint; readonly length?: bigint },
+          streamSignal?: AbortSignal,
+        ) {
+          streamSignal?.throwIfAborted()
+          yield bytes
+        },
+      })
+      return Promise.resolve({
+        value: source,
+        release: () => Promise.resolve(),
+      })
+    },
+  }
+  return Object.freeze(origin)
 }
 
 let composition: HostComposition
@@ -132,6 +318,25 @@ describe('standard data contract and semantic game provider', () => {
         'active',
         'active',
       ])
+      expect(Object.keys(snapshot).sort()).toEqual([
+        'analyzerId',
+        'complete',
+        'diagnostics',
+        'entities',
+        'entityCount',
+        'gameId',
+        'namespaces',
+        'patchCount',
+        'schemaVersion',
+        'typeIds',
+        'workspaceId',
+      ])
+      expect(Object.keys(resolution.analysis).sort()).toEqual([
+        'analyze',
+        'analyzerId',
+        'contract',
+        'gameIds',
+      ])
     } finally {
       await resolution.release()
     }
@@ -148,5 +353,253 @@ describe('standard data contract and semantic game provider', () => {
     expect(resolution.diagnostics.map(item => item.code)).toContain(
       'x3.host/data-catalog-unresolved',
     )
+  })
+
+  it('runs provider plan through ResourceSession and serves bounded leased live facets', async () => {
+    const workspace = workspaceLock()
+    expect(workspace.loadOrder.map(root => root.rootId)).toEqual(['core', 'liberty', 'active'])
+    expect(workspace.logicalRoots?.map(root => root.rootId)).toEqual(['active', 'liberty', 'core'])
+    const resources = createResourceSession({
+      origin: memoryOrigin(completeWorkspaceFiles()),
+      revision: revisionId('provider-token:resolved-data-workspace-v1'),
+    })
+    const result = await analyzeResolvedDataWorkspace({
+      services: { ...composition, serviceDefinitions: definitions },
+      grant: { id: 'resolved-data-product-path', classes: [] },
+      budgets: activationBudget,
+      workspace,
+      resources,
+      locales: ['fr-FR', 'en-US'],
+      queries: [{ namespace: 'Unit', entityId: 'Marine' }],
+      localizationKeys: ['Unit/Name/Absent'],
+      limits: {
+        maxRequirements: 64,
+        maxDocumentBytes: 65_536,
+        maxTextBytes: 1_048_576,
+        maxEntities: 1_024,
+        maxDepth: 32,
+        maxPageSize: 2,
+      },
+    })
+    expect(
+      result.state,
+      result.diagnostics.map(item => `${item.code}: ${item.message}`).join('\n'),
+    ).toBe('resolved')
+    if (result.state !== 'resolved') throw new Error('resolved data product path failed')
+    try {
+      expect(
+        result.plan.requirements.filter(item => item.kind === 'catalog').map(item => item.rootId),
+      ).toEqual([...Array(8).fill('core'), ...Array(8).fill('liberty'), ...Array(8).fill('active')])
+      expect(
+        result.plan.requirements
+          .filter(item => item.kind === 'localization')
+          .slice(0, 3)
+          .map(item => item.rootId),
+      ).toEqual(['active', 'liberty', 'core'])
+      expect(resources.provenance()).toHaveLength(30)
+
+      const marine = result.snapshot.definitions.find(
+        item => item.namespace === 'Unit' && item.entityId === 'Marine',
+      )
+      expect(marine).toMatchObject({ fields: { LifeMax: 55 } })
+      expect(marine?.sources.map(item => item.rootId)).toEqual(['core', 'liberty', 'active'])
+      expect(result.snapshot.localizedStrings).toContainEqual(
+        expect.objectContaining({
+          key: 'Unit/Name/Marine',
+          value: '<img src=x onerror=alert(1)>',
+          requestedLocale: 'frFR',
+          resolvedLocale: 'enUS',
+          fallback: true,
+          source: expect.objectContaining({ rootId: 'active' }),
+        }),
+      )
+      expect(result.snapshot.relations).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            from: { namespace: 'Unit', entityId: 'Marine' },
+            to: { namespace: 'Weapon', entityId: 'Rifle' },
+            dead: false,
+          }),
+          expect.objectContaining({
+            from: { namespace: 'Unit', entityId: 'Marine' },
+            to: { namespace: 'Behavior', entityId: 'MissingBehavior' },
+            dead: true,
+          }),
+        ]),
+      )
+      expect(result.snapshot.diagnostics).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: 'org.modkitx.blizzard.starcraft2/catalog-id-duplicate',
+          }),
+          expect.objectContaining({ code: 'common.data/entity-inheritance-cycle' }),
+          expect.objectContaining({ code: 'common.data/relation-target-unavailable' }),
+          expect.objectContaining({ code: 'common.data/localization-fallback' }),
+          expect.objectContaining({ code: 'common.data/localization-key-unavailable' }),
+        ]),
+      )
+      expect(result.snapshot.projectionReceipt.planes.map(item => item.state)).toEqual([
+        'normalized',
+        'normalized',
+        'normalized',
+        'normalized',
+      ])
+
+      const root = await result.facets.schemaTree.value.root()
+      expect(
+        (await result.facets.schemaTree.value.children(root, { limit: 2 })).nextCursor,
+      ).toEqual(expect.any(String))
+      const firstRows = await result.facets.definitions.value.rows({
+        kind: 'range',
+        from: 0,
+        count: 1,
+      })
+      expect(firstRows.nextCursor).toEqual(expect.any(String))
+      await expect(
+        result.facets.definitions.value.rows({ kind: 'range', from: 0, count: 3 }),
+      ).rejects.toThrow(/at most 2/u)
+      await expect(
+        result.facets.definitions.value.rows({
+          kind: 'cursor',
+          cursor: 'foreign-snapshot:1',
+          count: 1,
+        }),
+      ).rejects.toThrow(/another source snapshot/u)
+      const relationSummary = await result.facets.relations.value.summary()
+      expect(relationSummary).toMatchObject({
+        snapshotId: result.snapshot.snapshotId,
+        completeness: 'partial',
+      })
+      const edges = await result.facets.relations.value.edges({ limit: 2 })
+      expect(edges.items).toContainEqual(expect.objectContaining({ dead: true }))
+      const cancelled = new AbortController()
+      cancelled.abort()
+      await expect(
+        result.facets.localization.value.rows(
+          { kind: 'range', from: 0, count: 1 },
+          cancelled.signal,
+        ),
+      ).rejects.toThrow()
+    } finally {
+      await result.release()
+      await resources.dispose()
+    }
+    expect(() => result.facets.definitions.value.shape()).toThrow(/lease is released/u)
+  })
+
+  it('fails closed for truncated plans, malformed logical roots, missing reads and stale snapshots', async () => {
+    const resolution = await resolveResolvedDataWorkspace({
+      services: { ...composition, serviceDefinitions: definitions },
+      gameId: GAME_ID,
+      grant: { id: 'resolved-data-negative', classes: [] },
+      budgets: activationBudget,
+    })
+    expect(resolution.state).toBe('resolved')
+    if (resolution.state !== 'resolved') throw new Error('resolved workspace provider unavailable')
+    try {
+      const workspace = workspaceLock()
+      expect(
+        (await resolution.workspace.plan({ workspace, locales: ['enUS'], maxRequirements: 1 }))
+          .complete,
+      ).toBe(false)
+      const core = workspace.loadOrder[0]
+      const active = workspace.loadOrder[2]
+      if (core === undefined || active === undefined) throw new Error('workspace roots are absent')
+      const duplicateLogicalRoots = {
+        ...workspace,
+        logicalRoots: [active, active, core],
+      }
+      await expect(
+        resolution.workspace.plan({
+          workspace: duplicateLogicalRoots,
+          locales: ['enUS'],
+          maxRequirements: 64,
+        }),
+      ).rejects.toThrow(/exactly the loadOrder roots/u)
+      await expect(
+        resolution.workspace.openDefinitionTable({
+          snapshotId: 'stale-count-derived-id',
+          maxPageSize: 1,
+        }),
+      ).rejects.toThrow(/stale, unknown or evicted/u)
+
+      const contentSnapshot = async (life: number) =>
+        resolution.workspace.analyze({
+          workspaceId: workspace.workspaceId,
+          gameId: workspace.gameId,
+          documents: [
+            {
+              rootId: 'active',
+              path: `${roots.active}/base.sc2data/gamedata/unitdata.xml`,
+              text: `<Catalog><CUnit id="Marine"><LifeMax value="${String(life)}"/></CUnit></Catalog>`,
+              revision: revisionId('provider-token:same-declared-revision'),
+            },
+          ],
+          localizationDocuments: [],
+          locales: ['enUS'],
+          localizationKeys: [],
+          queries: [{ namespace: 'Unit', entityId: 'Marine' }],
+          plannedDocumentCount: 1,
+          unresolvedRequirementIds: [],
+          snapshotId: 'provider-token:same-resource-session',
+          maxDocuments: 1,
+          maxTextBytes: 4_096,
+          maxEntities: 8,
+          maxDepth: 8,
+        })
+      const first = await contentSnapshot(40)
+      const second = await contentSnapshot(41)
+      expect(first.snapshotId).not.toBe(second.snapshotId)
+      await contentSnapshot(42)
+      await contentSnapshot(43)
+      await contentSnapshot(44)
+      await expect(
+        resolution.workspace.openDefinitionTable({
+          snapshotId: first.snapshotId,
+          maxPageSize: 1,
+        }),
+      ).rejects.toThrow(/stale, unknown or evicted/u)
+    } finally {
+      await resolution.release()
+    }
+
+    const sparse = new Map<string, string>([
+      [
+        `${roots.core}/base.sc2data/gamedata/unitdata.xml`,
+        '<Catalog><CUnit id="Marine"><LifeMax value="40"/></CUnit></Catalog>',
+      ],
+    ])
+    const resources = createResourceSession({
+      origin: memoryOrigin(sparse),
+      revision: revisionId('provider-token:resolved-data-sparse-v1'),
+    })
+    const result = await analyzeResolvedDataWorkspace({
+      services: { ...composition, serviceDefinitions: definitions },
+      grant: { id: 'resolved-data-missing', classes: [] },
+      budgets: activationBudget,
+      workspace: workspaceLock(),
+      resources,
+      locales: ['enUS'],
+      queries: [{ namespace: 'Unit', entityId: 'Marine' }],
+      limits: {
+        maxRequirements: 64,
+        maxDocumentBytes: 65_536,
+        maxTextBytes: 1_048_576,
+        maxEntities: 1_024,
+        maxDepth: 32,
+        maxPageSize: 2,
+      },
+    })
+    expect(result.state).toBe('resolved')
+    if (result.state === 'resolved') {
+      expect(result.snapshot.complete).toBe(false)
+      expect(result.snapshot.diagnostics).toContainEqual(
+        expect.objectContaining({
+          code: 'org.modkitx.blizzard.starcraft2/data-plan-resources-unresolved',
+        }),
+      )
+      await result.release()
+    }
+    await resources.dispose()
   })
 })

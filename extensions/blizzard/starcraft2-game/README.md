@@ -22,8 +22,18 @@ configuration and edit transactions are deliberately outside this first workspac
 The extension also provides `common.data/catalog-analysis@1`. It parses bounded ordered catalog
 XML, applies schema-driven scalar/append/indexed patch rules, resolves parent inheritance and
 returns immutable semantic entities with provenance. The bootstrap schema intentionally covers ten
-common classes only; generated full-schema coverage, tokens, localization, references, rename and
-export remain explicit follow-up work.
+common classes only. Its v1 service and result wire remain the legacy bounded query surface.
+
+The additive `common.data/resolved-workspace@1` service plans catalog reads in dependency-first
+`loadOrder` and localization reads in locale-priority, winner-first `logicalRoots` order. The host
+executes those confined reads through a revision-pinned `ResourceSessionPort`; the provider then
+publishes immutable effective definitions, explicit localization fallback/provenance and typed
+incoming/outgoing relation facts as bounded leased tree, table and relation sources. Snapshot
+identity hashes the actual document content and revisions, cursors are snapshot-bound, and missing
+planned reads or dead references stay named diagnostics. This is a live normalized projection, not
+a portable UVD artifact. Generated full-schema coverage, omitted catalog kinds and fields, tokens,
+validators, locale enumeration beyond the requested bounded set, rename, writers and export remain
+explicit follow-up work.
 
 The extension also provides `common.map/semantic-analysis@1`. It opens bounded, already-extracted
 placed objects, regions and an HMAP terrain summary, publishes the catalog queries required by

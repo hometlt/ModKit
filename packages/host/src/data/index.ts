@@ -4,20 +4,36 @@ import { contractId, diagnostic, type Diagnostic } from '@modkitx-x3/core'
 import {
   DATA_CATALOG_ANALYSIS_CONTRACT,
   DATA_CATALOG_MATCHER_PROFILE,
+  RESOLVED_DATA_WORKSPACE_CONTRACT,
+  RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE,
   type DataCatalogAnalysis,
+  type DataCatalogDocument,
   type DataCatalogOfferFacet,
   type DataCatalogRequestFacet,
+  type DataEntityRef,
+  type DataLocalizationDocument,
+  type DataWorkspaceDocumentRequirement,
+  type DataWorkspacePlan,
+  type ResolvedDataWorkspace,
+  type ResolvedDataWorkspaceSnapshot,
 } from '@modkitx-x3/sdk/data'
 import type {
   DefinitionInventoryResult,
+  Lease,
+  ModWorkspaceLock,
   PermissionGrant,
+  RelationGraphSource,
   ResourceBudget,
+  ResourceSessionPort,
+  RevisionId,
   RuntimeTarget,
   ServiceContractDefinitionRegistry,
   ServiceContractDefinitionSpecV1Wire,
   ServiceFacetMatchContext,
   ServiceFacetMatchResult,
   ServiceFacetMatcherProfile,
+  TableDataSource,
+  TreeDataSource,
 } from '@modkitx-x3/sdk'
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
 import type { Inventory } from '../inventory.js'
@@ -89,6 +105,13 @@ export const DATA_CATALOG_MATCHER: ServiceFacetMatcherProfile = Object.freeze({
   match: matchDataCatalogFacets,
 })
 
+/** Same exact game-id semantics under an additive workspace-aware coordinate. */
+export const RESOLVED_DATA_WORKSPACE_MATCHER: ServiceFacetMatcherProfile = Object.freeze({
+  profile: contractId(RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE),
+  major: 1,
+  match: matchDataCatalogFacets,
+})
+
 /** Standard bounded semantic catalog-analysis definition. */
 export const DATA_CATALOG_CONTRACT_DEFINITION: ServiceContractDefinitionSpecV1Wire = Object.freeze({
   schemaVersion: 1,
@@ -121,13 +144,76 @@ export const DATA_CATALOG_CONTRACT_DEFINITION: ServiceContractDefinitionSpecV1Wi
   }),
 }) as ServiceContractDefinitionSpecV1Wire
 
+/** Additive workspace/VFS/live-facet service; legacy catalog-analysis@1 is unchanged. */
+export const RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION: ServiceContractDefinitionSpecV1Wire =
+  Object.freeze({
+    schemaVersion: 1,
+    kind: 'service',
+    contract: RESOLVED_DATA_WORKSPACE_CONTRACT,
+    major: 1,
+    offerFacet: Object.freeze({
+      presence: 'required',
+      schema: Object.freeze({
+        $ref: 'https://schemas.modkitx.org/x3/data-catalog-offer.v1.schema.json',
+      }),
+    }),
+    requestFacet: Object.freeze({
+      presence: 'required',
+      schema: Object.freeze({
+        $ref: 'https://schemas.modkitx.org/x3/data-catalog-request.v1.schema.json',
+      }),
+    }),
+    matching: Object.freeze({ profile: RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE, major: 1 }),
+    conformanceProfile: 'common.data/resolved-workspace-v1',
+    surface: Object.freeze({
+      fields: Object.freeze(['contract', 'providerId', 'gameIds']),
+      methods: Object.freeze({
+        plan: Object.freeze({
+          kind: 'value',
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+          limits: Object.freeze({ maxBytes: 4_194_304, maxStringLength: 1_048_576 }),
+        }),
+        analyze: Object.freeze({
+          kind: 'value',
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+          limits: Object.freeze({ maxBytes: 16_777_216, maxStringLength: 4_194_304 }),
+        }),
+        openSchemaTree: Object.freeze({
+          kind: 'lease',
+          wrapper: 'lease',
+          result: Object.freeze({ contract: 'common.view/tree-data-source', major: 1 }),
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+        openDefinitionTable: Object.freeze({
+          kind: 'lease',
+          wrapper: 'lease',
+          result: Object.freeze({ contract: 'common.view/table-data-source', major: 1 }),
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+        openLocalizationTable: Object.freeze({
+          kind: 'lease',
+          wrapper: 'lease',
+          result: Object.freeze({ contract: 'common.view/table-data-source', major: 1 }),
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+        openRelations: Object.freeze({
+          kind: 'lease',
+          wrapper: 'lease',
+          result: Object.freeze({ contract: 'common.view/relation-graph-source', major: 1 }),
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+      }),
+    }),
+  }) as ServiceContractDefinitionSpecV1Wire
+
 /** Register the platform definition before extension-owned definitions are inventoried. */
 export function registerStandardDataDefinitions(
   definitions: ServiceContractDefinitionRegistry,
 ): Promise<DefinitionInventoryResult> {
-  const definition = DATA_CATALOG_CONTRACT_DEFINITION
-  return definitions.replaceOwnerInventory(STANDARD_DATA_OWNER, [
-    {
+  const registered = [DATA_CATALOG_CONTRACT_DEFINITION, RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION]
+  return definitions.replaceOwnerInventory(
+    STANDARD_DATA_OWNER,
+    registered.map(definition => ({
       definition,
       provenance: {
         ownerExtensionId: STANDARD_DATA_OWNER,
@@ -138,8 +224,8 @@ export function registerStandardDataDefinitions(
         artifactRoot: 'host:',
         manifestPath: 'host:standard-data-definitions',
       },
-    },
-  ])
+    })),
+  )
 }
 
 export interface DataHostServices {
@@ -250,6 +336,517 @@ export async function resolveDataCatalogAnalysis(
           `no data catalog provider resolved for ${request.gameId} (${error instanceof Error ? error.message : String(error)})`,
         ),
       ],
+    }
+  }
+}
+
+export type ResolvedDataWorkspaceResolution =
+  | Readonly<{
+      state: 'resolved'
+      workspace: ResolvedDataWorkspace
+      diagnostics: readonly Diagnostic[]
+      release(): Promise<void>
+    }>
+  | Readonly<{
+      state: 'unresolved'
+      diagnostics: readonly Diagnostic[]
+    }>
+
+function isResolvedDataWorkspace(value: unknown): value is ResolvedDataWorkspace {
+  const record = recordOf(value)
+  return (
+    record?.['contract'] === RESOLVED_DATA_WORKSPACE_CONTRACT &&
+    nonEmptyString(record['providerId']) &&
+    stringList(record['gameIds']) !== undefined &&
+    typeof record['plan'] === 'function' &&
+    typeof record['analyze'] === 'function' &&
+    typeof record['openSchemaTree'] === 'function' &&
+    typeof record['openDefinitionTable'] === 'function' &&
+    typeof record['openLocalizationTable'] === 'function' &&
+    typeof record['openRelations'] === 'function'
+  )
+}
+
+/** Resolve the additive workspace/VFS/live-definition provider for one named game. */
+export async function resolveResolvedDataWorkspace(
+  request: ResolveDataCatalogRequest,
+): Promise<ResolvedDataWorkspaceResolution> {
+  const definitions = request.services.serviceDefinitions
+  if (definitions === undefined) {
+    return {
+      state: 'unresolved',
+      diagnostics: [
+        diagnostic(
+          'information',
+          'x3.host/resolved-data-workspace-unavailable',
+          'this host registered no service-contract definitions, so workspace data cannot resolve',
+        ),
+      ],
+    }
+  }
+  const resolver = createHostServiceResolver({
+    inventory: request.services.inventory,
+    target: request.services.target,
+    executionBackends: request.services.executionBackends,
+    definitions,
+    grant: request.grant,
+    budgets: request.budgets,
+    ...(request.signal === undefined ? {} : { signal: request.signal }),
+  })
+  try {
+    const lease = await resolver.port.resolve({
+      contract: RESOLVED_DATA_WORKSPACE_CONTRACT,
+      major: 1,
+      facet: { gameId: request.gameId },
+      ...(request.signal === undefined ? {} : { signal: request.signal }),
+    })
+    if (!isResolvedDataWorkspace(lease.value) || !lease.value.gameIds.includes(request.gameId)) {
+      await resolver.release()
+      return {
+        state: 'unresolved',
+        diagnostics: [
+          ...resolver.diagnostics,
+          diagnostic(
+            'error',
+            'x3.host/resolved-data-workspace-invalid',
+            `the selected provider does not implement ${RESOLVED_DATA_WORKSPACE_CONTRACT}@1 for ${request.gameId}`,
+          ),
+        ],
+      }
+    }
+    return Object.freeze({
+      state: 'resolved',
+      workspace: lease.value,
+      diagnostics: Object.freeze([
+        ...resolver.diagnostics,
+        diagnostic(
+          'information',
+          'x3.host/resolved-data-workspace-selected',
+          `selected ${lease.value.providerId} for ${request.gameId}`,
+        ),
+      ]),
+      release: () => resolver.release(),
+    })
+  } catch (error) {
+    await resolver.release()
+    return {
+      state: 'unresolved',
+      diagnostics: [
+        ...resolver.diagnostics,
+        diagnostic(
+          'information',
+          'x3.host/resolved-data-workspace-unresolved',
+          `no resolved data workspace provider resolved for ${request.gameId} (${error instanceof Error ? error.message : String(error)})`,
+        ),
+      ],
+    }
+  }
+}
+
+export interface ResolvedDataWorkspaceLimits {
+  readonly maxRequirements: number
+  readonly maxDocumentBytes: number
+  readonly maxTextBytes: number
+  readonly maxEntities: number
+  readonly maxDepth: number
+  readonly maxPageSize: number
+}
+
+export interface AnalyzeResolvedDataWorkspaceRequest {
+  readonly services: DataHostServices
+  readonly grant: PermissionGrant
+  readonly budgets: ResourceBudget
+  readonly workspace: ModWorkspaceLock
+  readonly resources: ResourceSessionPort
+  readonly locales: readonly string[]
+  readonly queries: readonly DataEntityRef[]
+  readonly localizationKeys?: readonly string[]
+  readonly limits: ResolvedDataWorkspaceLimits
+  readonly signal?: AbortSignal
+}
+
+export interface ResolvedDataWorkspaceFacets {
+  readonly schemaTree: Lease<TreeDataSource>
+  readonly definitions: Lease<TableDataSource>
+  readonly localization: Lease<TableDataSource>
+  readonly relations: Lease<RelationGraphSource>
+}
+
+export type AnalyzedResolvedDataWorkspace =
+  | Readonly<{
+      state: 'resolved'
+      snapshot: ResolvedDataWorkspaceSnapshot
+      plan: DataWorkspacePlan
+      facets: ResolvedDataWorkspaceFacets
+      diagnostics: readonly Diagnostic[]
+      release(): Promise<void>
+    }>
+  | Readonly<{
+      state: 'unresolved'
+      diagnostics: readonly Diagnostic[]
+    }>
+
+function positiveBound(value: number, label: string): number {
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new TypeError(`${label} must be a positive safe integer`)
+  }
+  return value
+}
+
+function confinedPath(value: string, label: string): string {
+  if (
+    value.includes('\0') ||
+    /^[a-z]:[\\/]/iu.test(value) ||
+    /^[\\/]/u.test(value) ||
+    /^[a-z][a-z0-9+.-]*:/iu.test(value)
+  ) {
+    throw new TypeError(`${label} must be a confined logical path`)
+  }
+  const parts: string[] = []
+  for (const part of value.replace(/\\/gu, '/').split('/')) {
+    if (part === '' || part === '.') continue
+    if (part === '..') throw new TypeError(`${label} must not escape its workspace root`)
+    parts.push(part)
+  }
+  if (parts.length === 0) throw new TypeError(`${label} must name a logical path`)
+  return parts.join('/')
+}
+
+function comparableLocale(value: string): string {
+  return value.replace(/[-_]/gu, '').toLocaleLowerCase()
+}
+
+function validateWorkspacePlan(
+  plan: DataWorkspacePlan,
+  workspace: ModWorkspaceLock,
+  locales: readonly string[],
+  maximum: number,
+): void {
+  if (
+    plan.schemaVersion !== 1 ||
+    plan.workspaceId !== workspace.workspaceId ||
+    plan.gameId !== workspace.gameId ||
+    !Array.isArray(plan.requirements) ||
+    plan.requirements.length > maximum
+  ) {
+    throw new TypeError('resolved data provider returned an invalid or mismatched workspace plan')
+  }
+  const roots = new Map(workspace.loadOrder.map((root, index) => [root.rootId, { root, index }]))
+  const logical = new Map(
+    (workspace.logicalRoots ?? [...workspace.loadOrder].reverse()).map((root, index) => [
+      root.rootId,
+      index,
+    ]),
+  )
+  const localeRanks = new Map(
+    locales.map((locale, index) => [comparableLocale(locale), index] as const),
+  )
+  const requirementIds = new Set<string>()
+  let catalogRank = -1
+  let localizationRank = -1
+  let localizationStarted = false
+  for (const requirement of plan.requirements) {
+    if (requirementIds.has(requirement.requirementId)) {
+      throw new TypeError(`workspace data requirement ${requirement.requirementId} is duplicated`)
+    }
+    requirementIds.add(requirement.requirementId)
+    const root = roots.get(requirement.rootId)
+    if (root === undefined) {
+      throw new TypeError(
+        `workspace data requirement ${requirement.requirementId} names unknown root`,
+      )
+    }
+    const rootPath = confinedPath(root.root.sourcePath, `${requirement.requirementId}.root`)
+    const path = confinedPath(requirement.path, `${requirement.requirementId}.path`)
+    const foldedRoot = rootPath.toLocaleLowerCase()
+    const foldedPath = path.toLocaleLowerCase()
+    if (foldedPath !== foldedRoot && !foldedPath.startsWith(`${foldedRoot}/`)) {
+      throw new TypeError(
+        `workspace data requirement ${requirement.requirementId} escapes its root`,
+      )
+    }
+    if (requirement.kind === 'catalog') {
+      if (localizationStarted) {
+        throw new TypeError('catalog requirements must precede localization requirements')
+      }
+      if (root.index < catalogRank) {
+        throw new TypeError('catalog requirements are not in dependency-first loadOrder')
+      }
+      catalogRank = root.index
+      continue
+    }
+    if (requirement.kind !== 'localization' || requirement.locale === undefined) {
+      throw new TypeError(
+        `workspace data requirement ${requirement.requirementId} has invalid kind`,
+      )
+    }
+    localizationStarted = true
+    const localeRank = localeRanks.get(comparableLocale(requirement.locale))
+    const rootRank = logical.get(requirement.rootId)
+    if (localeRank === undefined || rootRank === undefined) {
+      throw new TypeError(
+        `workspace localization requirement ${requirement.requirementId} is invalid`,
+      )
+    }
+    const rank = localeRank * workspace.loadOrder.length + rootRank
+    if (rank < localizationRank) {
+      throw new TypeError('localization requirements are not locale-first and winner-first')
+    }
+    localizationRank = rank
+  }
+}
+
+async function readResourceText(
+  resources: ResourceSessionPort,
+  requirement: DataWorkspaceDocumentRequirement,
+  maxDocumentBytes: number,
+  signal?: AbortSignal,
+): Promise<
+  | { readonly state: 'resolved'; readonly text: string; readonly revision: RevisionId }
+  | { readonly state: 'unresolved'; readonly diagnostic: Diagnostic }
+> {
+  const resolved = await resources.resolve(
+    {
+      id: requirement.requirementId,
+      logicalId: requirement.path,
+      role: 'buffer',
+      scopes: ['current-mount', 'enclosing-container', 'workspace-dependency-layer'],
+    },
+    signal,
+  )
+  if (resolved.state === 'unresolved') {
+    return { state: 'unresolved', diagnostic: resolved.diagnostic }
+  }
+  try {
+    const source = resolved.lease.value
+    if (source.kind !== 'bytes') {
+      return {
+        state: 'unresolved',
+        diagnostic: diagnostic(
+          'warning',
+          'x3.host/resolved-data-resource-not-bytes',
+          `${requirement.path} resolved to a namespace instead of bytes`,
+        ),
+      }
+    }
+    if (source.size !== undefined && source.size > BigInt(maxDocumentBytes)) {
+      return {
+        state: 'unresolved',
+        diagnostic: diagnostic(
+          'warning',
+          'x3.host/resolved-data-document-budget-exceeded',
+          `${requirement.path} exceeds maxDocumentBytes ${maxDocumentBytes}`,
+        ),
+      }
+    }
+    const chunks: Uint8Array[] = []
+    let bytes = 0
+    for await (const chunk of source.stream(undefined, signal)) {
+      bytes += chunk.byteLength
+      if (bytes > maxDocumentBytes) {
+        return {
+          state: 'unresolved',
+          diagnostic: diagnostic(
+            'warning',
+            'x3.host/resolved-data-document-budget-exceeded',
+            `${requirement.path} exceeds maxDocumentBytes ${maxDocumentBytes}`,
+          ),
+        }
+      }
+      chunks.push(chunk)
+    }
+    const content = new Uint8Array(bytes)
+    let offset = 0
+    for (const chunk of chunks) {
+      content.set(chunk, offset)
+      offset += chunk.byteLength
+    }
+    return {
+      state: 'resolved',
+      text: new TextDecoder('utf-8', { fatal: false }).decode(content),
+      revision: resolved.revision,
+    }
+  } finally {
+    await resolved.lease.release()
+  }
+}
+
+/**
+ * Product path: service resolution -> provider plan -> ResourceSession/VFS reads -> live facets.
+ * The generic host validates order/confinement but contains no StarCraft II ids or paths.
+ */
+export async function analyzeResolvedDataWorkspace(
+  request: AnalyzeResolvedDataWorkspaceRequest,
+): Promise<AnalyzedResolvedDataWorkspace> {
+  const limits = {
+    maxRequirements: positiveBound(request.limits.maxRequirements, 'maxRequirements'),
+    maxDocumentBytes: positiveBound(request.limits.maxDocumentBytes, 'maxDocumentBytes'),
+    maxTextBytes: positiveBound(request.limits.maxTextBytes, 'maxTextBytes'),
+    maxEntities: positiveBound(request.limits.maxEntities, 'maxEntities'),
+    maxDepth: positiveBound(request.limits.maxDepth, 'maxDepth'),
+    maxPageSize: positiveBound(request.limits.maxPageSize, 'maxPageSize'),
+  }
+  if (request.resources.state() !== 'live') {
+    return {
+      state: 'unresolved',
+      diagnostics: [
+        diagnostic(
+          'warning',
+          'x3.host/resolved-data-resource-session-disposed',
+          'workspace data requires a live revision-pinned ResourceSessionPort',
+        ),
+      ],
+    }
+  }
+  const resolution = await resolveResolvedDataWorkspace({
+    services: request.services,
+    gameId: request.workspace.gameId,
+    grant: request.grant,
+    budgets: request.budgets,
+    ...(request.signal === undefined ? {} : { signal: request.signal }),
+  })
+  if (resolution.state === 'unresolved') return resolution
+  const diagnostics: Diagnostic[] = [...resolution.diagnostics]
+  const opened: Lease<unknown>[] = []
+  try {
+    const plan = await resolution.workspace.plan({
+      workspace: request.workspace,
+      locales: request.locales,
+      maxRequirements: limits.maxRequirements,
+      ...(request.signal === undefined ? {} : { signal: request.signal }),
+    })
+    validateWorkspacePlan(plan, request.workspace, request.locales, limits.maxRequirements)
+    diagnostics.push(
+      ...plan.diagnostics.map(item =>
+        diagnostic(item.severity, item.code, item.message, undefined, {
+          analyzerId: plan.analyzerId,
+        }),
+      ),
+    )
+    if (!plan.complete) {
+      await resolution.release()
+      return {
+        state: 'unresolved',
+        diagnostics: Object.freeze(diagnostics),
+      }
+    }
+    let textBytes = 0
+    const documents: DataCatalogDocument[] = []
+    const localizationDocuments: DataLocalizationDocument[] = []
+    const unresolvedRequirementIds: string[] = []
+    const revisions: string[] = []
+    for (const requirement of plan.requirements) {
+      request.signal?.throwIfAborted()
+      const loaded = await readResourceText(
+        request.resources,
+        requirement,
+        limits.maxDocumentBytes,
+        request.signal,
+      )
+      if (loaded.state === 'unresolved') {
+        diagnostics.push(loaded.diagnostic)
+        unresolvedRequirementIds.push(requirement.requirementId)
+        continue
+      }
+      textBytes += new TextEncoder().encode(loaded.text).byteLength
+      if (textBytes > limits.maxTextBytes) {
+        throw new TypeError(`workspace data exceeds maxTextBytes ${limits.maxTextBytes}`)
+      }
+      revisions.push(`${requirement.requirementId}@${String(loaded.revision)}`)
+      const document = {
+        rootId: requirement.rootId,
+        path: requirement.path,
+        text: loaded.text,
+        revision: loaded.revision,
+      }
+      if (requirement.kind === 'catalog') documents.push(document)
+      else localizationDocuments.push({ ...document, locale: requirement.locale as string })
+    }
+    if (documents.length === 0) {
+      await resolution.release()
+      return {
+        state: 'unresolved',
+        diagnostics: Object.freeze([
+          ...diagnostics,
+          diagnostic(
+            'warning',
+            'x3.host/resolved-data-catalog-unavailable',
+            'no planned catalog document resolved through the resource session',
+          ),
+        ]),
+      }
+    }
+    if (request.resources.state() !== 'live') {
+      throw new Error('resource session was disposed while workspace data was loading')
+    }
+    const snapshot = await resolution.workspace.analyze({
+      workspaceId: request.workspace.workspaceId,
+      gameId: request.workspace.gameId,
+      documents,
+      localizationDocuments,
+      locales: request.locales,
+      localizationKeys: request.localizationKeys ?? [],
+      queries: request.queries,
+      plannedDocumentCount: plan.requirements.length,
+      unresolvedRequirementIds,
+      snapshotId: `${String(request.resources.revision)}:${revisions.join('|')}`,
+      maxDocuments: limits.maxRequirements,
+      maxTextBytes: limits.maxTextBytes,
+      maxEntities: limits.maxEntities,
+      maxDepth: limits.maxDepth,
+      ...(request.signal === undefined ? {} : { signal: request.signal }),
+    })
+    if (request.resources.state() !== 'live') {
+      throw new Error('resource session was disposed while workspace data was analyzed')
+    }
+    const facetRequest = {
+      snapshotId: snapshot.snapshotId,
+      maxPageSize: limits.maxPageSize,
+      ...(request.signal === undefined ? {} : { signal: request.signal }),
+    }
+    const schemaTree = await resolution.workspace.openSchemaTree(facetRequest)
+    opened.push(schemaTree)
+    const definitions = await resolution.workspace.openDefinitionTable(facetRequest)
+    opened.push(definitions)
+    const localization = await resolution.workspace.openLocalizationTable(facetRequest)
+    opened.push(localization)
+    const relations = await resolution.workspace.openRelations(facetRequest)
+    opened.push(relations)
+    let released = false
+    return Object.freeze({
+      state: 'resolved',
+      snapshot,
+      plan,
+      facets: Object.freeze({ schemaTree, definitions, localization, relations }),
+      diagnostics: Object.freeze(diagnostics),
+      async release() {
+        if (released) return
+        released = true
+        const results = await Promise.allSettled([
+          relations.release(),
+          localization.release(),
+          definitions.release(),
+          schemaTree.release(),
+          resolution.release(),
+        ])
+        const failure = results.find(result => result.status === 'rejected')
+        if (failure?.status === 'rejected') throw failure.reason
+      },
+    })
+  } catch (error) {
+    await Promise.allSettled([...opened].reverse().map(lease => lease.release()))
+    await resolution.release()
+    if (request.signal?.aborted) throw error
+    return {
+      state: 'unresolved',
+      diagnostics: Object.freeze([
+        ...diagnostics,
+        diagnostic(
+          'warning',
+          'x3.host/resolved-data-workspace-failed',
+          error instanceof Error ? error.message : String(error),
+        ),
+      ]),
     }
   }
 }
