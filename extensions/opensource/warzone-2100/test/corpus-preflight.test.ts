@@ -128,7 +128,7 @@ describe.skipIf(!configured)('Warzone 2100 PIE live corpus', () => {
     const activeArchive = archive
     if (activeArchive === undefined) throw new Error('base.wz was not opened by the fixture setup')
     const archiveDescriptor = await activeArchive.descriptor()
-    expect(archiveDescriptor.identity.codecId).toBe('org.modkitx/archive-zip')
+    expect(archiveDescriptor.identity.codecId).toBe('org.modkitx/warzone-wz')
     const namespaceLease = await activeArchive.dataSource('common.view/namespace-entry-source', 1)
     const entries = await listAll(namespaceLease.value)
     await namespaceLease.release()
@@ -143,7 +143,7 @@ describe.skipIf(!configured)('Warzone 2100 PIE live corpus', () => {
       entryId: candidate.id,
     })
     if (extracted.state !== 'ok' || extracted.output.kind !== 'bytes') {
-      throw new Error('the stock ZIP route refused the pinned PIE entry')
+      throw new Error('the Warzone WZ route refused the pinned PIE entry')
     }
     expect(extracted.output.value).toHaveLength(22_053)
     expect(createHash('sha256').update(extracted.output.value).digest('hex')).toBe(

@@ -27,7 +27,7 @@
         "org.modkitx/xz",
         "org.modkitx/zstd"
       ],
-      "digest": "sha256:b277103dbf49365fa5a01a4c81f460f84d5de17ea2d095846b7bee95e7c5e034"
+      "digest": "sha256:ba9f5523ac2ec9f84abdcd486f29dfc93a4fbfa191f707c39f1fc7075f8c7c66"
     },
     {
       "name": "audio",

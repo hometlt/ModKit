@@ -94,6 +94,7 @@ const RELOCATED_FAMILIES = new Set([
 // coordinates listed here. Entries are `<staging directory>/<codec local id>`.
 const RELOCATED_CODECS = new Set([
   'opensource-warzone-2100/warzone-pie',
+  'opensource-warzone-2100/warzone-wz',
   'uncommon-documents/odp',
   'uncommon-documents/ods',
   'uncommon-documents/odt',

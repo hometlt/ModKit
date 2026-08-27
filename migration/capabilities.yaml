@@ -14053,7 +14053,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/opensource-warzone-2100'
+    owner: 'extensions/opensource/warzone-2100'
     plannedBlock: 17
     dependsOn: []
     sourceUnitIds:
@@ -14066,13 +14066,14 @@ capabilities:
       - 'org.modkitx/warzone-wz'
     mk3Operations:
       - 'asset.validate'
+      - 'container.extract'
       - 'export.raw'
       - 'view.inspect'
     allocation:
       state: 'covered'
       x3ContributionId: 'org.modkitx/warzone-wz'
-      portFamily: 'mk2/opensource-warzone-2100'
-      portVerdict: null
+      portFamily: 'opensource/warzone-2100'
+      portVerdict: 'relocated-and-rewritten'
     migrationState: 'implemented'
     supportState: 'supported'
     runtimeAvailability: 'browser-and-node'

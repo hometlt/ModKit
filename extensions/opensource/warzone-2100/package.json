@@ -8,6 +8,7 @@
   "exports": {
     ".": "./src/provider.js",
     "./pie": "./src/warzone-pie/codec.js",
+    "./wz": "./src/warzone-wz/codec.js",
     "./maps": "./src/map-provider.js",
     "./linked": "./src/linked.js",
     "./package.json": "./package.json"
@@ -21,7 +22,8 @@
     ]
   },
   "dependencies": {
-    "@modkitx-x3/codec-kit": "workspace:*"
+    "@modkitx-x3/codec-kit": "workspace:*",
+    "modkit-extension-x3-archives": "workspace:*"
   },
   "peerDependencies": {
     "@modkitx-x3/host": "workspace:*",

@@ -21,12 +21,11 @@
     }
   ],
   "limitations": [
-    "The portable MK3 reader inventories ordinary ZIP local headers. Streamed data-descriptor entries and compressed-entry extraction remain outside this structural subset.",
-    "Both trusted-node and worker-brokered variants use the same platform-neutral reader and do not import Node filesystem or archive libraries.",
-    "Classification prefers the package's own root `ruleset.json` over any filename rule, and the path over a bare filename. A renamed `base.wz` is still a campaign ruleset, and a mod named `mp.wz` under `mods/` is still a mod.",
-    "The caller supplies `ruleset.json`; this codec does not read it out of the archive itself, so classification degrades to path and filename when it is not provided.",
-    "Read only. Writing a `.wz` back is not implemented.",
-    "`.scd` (Supreme Commander) remains on the common zip codec and is the same shape of misplaced knowledge. Moving it needs a Supreme Commander extension, which does not exist."
+    "Warzone packages use the common bounded ZIP reader; stored and Deflate entries can be extracted in node and worker runtimes.",
+    "Within one archive, repeated normalized paths expose the last physical entry; shadowed entries stay counted in diagnostics but are not exposed as effective files.",
+    "Load-order precedence across multiple .wz packages remains a named VFS-overlay remainder.",
+    "Classification reads the package's effective root ruleset.json before path and filename fallbacks.",
+    "Writing and ZIP64 remain named unavailable operations."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "warzone-wz", "label": "Warzone 2100 package" }],
@@ -41,7 +40,7 @@
         { "from": "start", "offset": 0, "bytesHex": "504b0506" }
       ]
     },
-    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
+    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4 }], "maxBytes": 4 },
     "representations": [
       {
         "id": "archive-namespace",
@@ -74,6 +73,13 @@
       {
         "id": "export.raw",
         "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "container.extract",
+        "handlerId": "extract-entry",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]

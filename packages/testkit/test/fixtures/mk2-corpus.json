@@ -1769,7 +1769,7 @@
       "note": "Warzone resource list with directory-relative model and texture references"
     },
     {
-      "extension": "mk2/opensource-warzone-2100",
+      "extension": "opensource/warzone-2100",
       "contributionId": "org.modkitx/warzone-wz",
       "corpus": "synthetic",
       "sample": "minimal.warzone.wz",

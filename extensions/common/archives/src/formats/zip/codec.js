@@ -122,7 +122,7 @@ function safePath(value) {
   return `${parts.join('/')}${normalized.endsWith('/') && parts.length > 0 ? '/' : ''}`
 }
 
-function parseZip(bytes, maxEntries) {
+export function parseZipArchive(bytes, maxEntries) {
   const eocd = findEocd(bytes)
   if (eocd < 0) throw new TypeError('ZIP end-of-central-directory record is missing')
   if (u16(bytes, eocd + 4) !== 0 || u16(bytes, eocd + 6) !== 0) {
@@ -193,7 +193,7 @@ async function inflateRaw(bytes) {
   return new Uint8Array(await new Response(stream).arrayBuffer())
 }
 
-async function extract(bytes, entry) {
+export async function extractZipArchiveEntry(bytes, entry) {
   if (entry.kind !== 'file') throw new TypeError('directories have no byte payload')
   if ((entry.flags & FLAG_ENCRYPTED) !== 0)
     throw new TypeError('encrypted ZIP entries are unsupported')
@@ -911,7 +911,7 @@ const definition = Object.freeze({
     return { confidence: match ? 0.95 : 0.01, note: match ? 'zip-signature' : 'signature-mismatch' }
   },
   async inspect(bytes, context) {
-    const entries = parseZip(bytes, context.budget.maxNodes)
+    const entries = parseZipArchive(bytes, context.budget.maxNodes)
     const files = entries.filter(entry => entry.kind === 'file')
     const directories = entries.length - files.length
     const uncompressedBytes = files.reduce((total, entry) => total + BigInt(entry.size), 0n)
@@ -985,7 +985,7 @@ const definition = Object.freeze({
           if (entry === undefined || entry.kind !== 'file') {
             throw new TypeError('ZIP file entry id was not found')
           }
-          return { kind: 'bytes', value: await extract(bytes, entry) }
+          return { kind: 'bytes', value: await extractZipArchiveEntry(bytes, entry) }
         },
         'edit-structure': editStructureHandler(
           bytes,

@@ -166,16 +166,15 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
       const archiveBytes = await readFile(mpPath)
       expect(createHash('sha256').update(archiveBytes).digest('hex')).toBe(ARCHIVE_DIGEST)
 
-      const archiveInput = await loadExtensionDirectory(
-        join(repoRoot, 'extensions', 'common', 'archives'),
-      )
+      const archiveInputs = await Promise.all([
+        loadExtensionDirectory(join(repoRoot, 'extensions', 'common', 'archives')),
+        loadExtensionDirectory(join(repoRoot, 'extensions', 'opensource', 'warzone-2100')),
+      ])
       const archiveInventory = await buildInventory(
-        [
-          {
-            ...archiveInput,
-            execution: { origin: 'bundled' as const, allowTrustedInProcess: true },
-          },
-        ],
+        archiveInputs.map(archiveInput => ({
+          ...archiveInput,
+          execution: { origin: 'bundled' as const, allowTrustedInProcess: true },
+        })),
         createHostContributionContractRegistry(),
       )
       const archive = await openSubject({
@@ -193,7 +192,9 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
       }
       let gameMapBytes
       try {
-        expect(archive.descriptor).toMatchObject({ identity: { formatId: 'zip' } })
+        expect(archive.descriptor).toMatchObject({
+          identity: { codecId: 'org.modkitx/warzone-wz', formatId: 'warzone-wz' },
+        })
         const namespaceLease = await archive.session.dataSource(
           'common.view/namespace-entry-source',
           1,
@@ -338,6 +339,16 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
           )
         }
         expect(repeated.artifactBytes).toEqual(first.artifactBytes)
+        proves({
+          contributionId: 'org.modkitx/warzone-wz',
+          operation: 'inspect',
+          note: 'installed Warzone 4.7.0 mp.wz opens through the final game-owned WZ codec',
+        })
+        proves({
+          contributionId: 'org.modkitx/warzone-wz',
+          operation: 'read',
+          note: 'installed mp.wz extracts the pinned Deflate-compressed game.map entry byte-exactly',
+        })
         proves({
           contributionId: 'org.modkitx.opensource/warzone2100-map-semantic',
           operation: 'materialize',
