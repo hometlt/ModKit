@@ -38,7 +38,8 @@ export interface MapSemanticAnalysisRequest {
   readonly signal?: AbortSignal
 }
 
-export type MapSemanticDocumentKind = 'objects' | 'regions' | 'terrain-height' | 'navigation'
+export type MapSemanticDocumentKind =
+  'objects' | 'regions' | 'terrain-height' | 'terrain-native-parameters' | 'navigation'
 
 /** One provider-authored logical read; the host resolves it through ResourceSessionPort. */
 export interface MapSemanticDocumentRequirement {
@@ -130,6 +131,43 @@ export interface MapTerrainSummary {
   readonly samples: readonly MapTerrainSample[]
 }
 
+/**
+ * Exact native terrain mapping admitted only when one structurally valid `t3Terrain.xml` matches
+ * a completely retained HMAP grid. Attribute names mirror their authoritative XML elements; no
+ * engine defaults or canonical/UVW coordinates are inferred.
+ */
+export interface MapTerrainNativeTransform {
+  readonly schemaVersion: 1
+  readonly snapshotId: string
+  readonly descriptorVersion: number
+  readonly source: Readonly<{
+    readonly terrainDocumentPath: string
+    readonly heightDocumentPath: string
+    readonly rootElement: 'terrain'
+    readonly heightMapElement: 'heightMap'
+    readonly quantizationElement: 'vertData'
+  }>
+  readonly heightMap: Readonly<{
+    readonly dim: readonly [number, number]
+    readonly offset: MapPosition
+    readonly scale: MapPosition
+  }>
+  readonly vertData: Readonly<{
+    readonly quantizeBias: number
+    readonly quantizeScale: number
+    readonly standardHeight: number
+  }>
+  readonly mapping: Readonly<{
+    readonly horizontal: 'offset-plus-grid-index-times-scale'
+    readonly vertical: 'dequantized-base-times-scale-plus-offset-plus-dequantized-adjustment'
+  }>
+  readonly bounds: Readonly<{
+    readonly coordinateSpaceId: 'map-native'
+    readonly minimum: MapPosition
+    readonly maximum: MapPosition
+  }>
+}
+
 export interface MapNavigationSample {
   readonly x: number
   readonly y: number
@@ -219,6 +257,7 @@ export interface ResolvedMapWorkspaceSnapshot {
   readonly snapshotId: string
   readonly semantic: MapSemanticSnapshot
   readonly navigation?: MapNavigationSummary
+  readonly terrainTransform?: MapTerrainNativeTransform
   readonly worldCandidate: MapWorldCandidateDescriptor
   readonly unresolvedRequirementIds: readonly string[]
   readonly diagnostics: readonly MapSemanticDiagnostic[]
@@ -260,6 +299,7 @@ export interface CandidateWorldSceneInfo {
   readonly coordinateSpaces: MapWorldCandidateDescriptor['coordinateSpaces']
   readonly crossSpaceTransforms: MapWorldCandidateDescriptor['crossSpaceTransforms']
   readonly bounds: readonly WorldSceneFacetBounds[]
+  readonly terrainTransform?: MapTerrainNativeTransform
   readonly facets: readonly WorldSceneFacetState[]
   readonly provenance: readonly ResourceProvenanceRecord[]
   readonly unknownFacets: readonly string[]
@@ -282,6 +322,8 @@ export interface WorldSceneTerrainItem extends MapTerrainSample {
   readonly id: string
   readonly layerId: string
   readonly coordinateSpaceId: string
+  /** Present only when a validated exact native terrain transform was admitted for this snapshot. */
+  readonly mapNativePosition?: MapPosition
   /**
    * `exact` means the publisher retained every native height-grid tuple. It does not claim that
    * the tuple has been converted into map-native or canonical UVW coordinates.

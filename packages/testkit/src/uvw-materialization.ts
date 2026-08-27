@@ -120,10 +120,48 @@ function isStale(error: unknown): boolean {
   return /\b(?:released|stale)\b/iu.test(String(error))
 }
 
+function hasProvenNativeTerrainTransform(info: CandidateWorldSceneInfo): boolean {
+  const transform = info.terrainTransform
+  if (transform === undefined || transform.snapshotId !== info.snapshotId) return false
+  const finite = (value: number): boolean => Number.isFinite(value)
+  const positive = (value: number): boolean => finite(value) && value > 0
+  const bounds = info.bounds.find(
+    item => item.facet === 'terrain' && item.coordinateSpaceId === 'map-native',
+  )
+  return (
+    transform.schemaVersion === 1 &&
+    Number.isSafeInteger(transform.descriptorVersion) &&
+    transform.descriptorVersion > 0 &&
+    transform.heightMap.dim.length === 2 &&
+    transform.heightMap.dim.every(value => Number.isSafeInteger(value) && value > 0) &&
+    Object.values(transform.heightMap.offset).every(finite) &&
+    Object.values(transform.heightMap.scale).every(positive) &&
+    finite(transform.vertData.quantizeBias) &&
+    positive(transform.vertData.quantizeScale) &&
+    finite(transform.vertData.standardHeight) &&
+    transform.mapping.horizontal === 'offset-plus-grid-index-times-scale' &&
+    transform.mapping.vertical ===
+      'dequantized-base-times-scale-plus-offset-plus-dequantized-adjustment' &&
+    transform.bounds.coordinateSpaceId === 'map-native' &&
+    bounds !== undefined &&
+    bounds.x.state === 'known' &&
+    bounds.y.state === 'known' &&
+    bounds.z.state === 'known' &&
+    bounds.x.minimum === transform.bounds.minimum.x &&
+    bounds.x.maximum === transform.bounds.maximum.x &&
+    bounds.y.minimum === transform.bounds.minimum.y &&
+    bounds.y.maximum === transform.bounds.maximum.y &&
+    bounds.z.minimum === transform.bounds.minimum.z &&
+    bounds.z.maximum === transform.bounds.maximum.z
+  )
+}
+
 /**
  * Assess whether one publisher-qualified world candidate can honestly become the UVW 1.0 base
  * heightfield. This Block 15F seam has no success/artifact branch: the current world ABI cannot
- * prove a canonical origin, scalar cell size, uniform source unit or vertical dequantization.
+ * prove a canonical origin, uniform UVW source unit or map-native-to-UVW transform. A validated
+ * native terrain transform can close the narrower bounds/cell-size/dequantization observations
+ * without making any UVW artifact admissible.
  *
  * The exact-page drain still runs for synthetic future-looking sources which advertise it. That
  * makes snapshot, cursor, cancellation and budget refusals executable without pretending those
@@ -242,6 +280,7 @@ export async function assessCandidateWorldUvwAdmission(
   }
 
   const terrainBounds = info.bounds.find(item => item.facet === 'terrain')
+  const nativeTerrainTransformProven = hasProvenNativeTerrainTransform(info)
   if (
     terrainBounds === undefined ||
     terrainBounds.x.state !== 'known' ||
@@ -285,8 +324,8 @@ export async function assessCandidateWorldUvwAdmission(
     )
   }
 
-  // These facts do not exist in CandidateWorldSceneInfo. Strings such as "grid-index" and
-  // "grid-zero" cannot prove that horizontal indices and uint16 height codes share one UVW unit.
+  // Even a proven publisher-native terrain transform stops at map-native. It does not prove that
+  // native axes share one UVW source unit or define the canonical UVW origin/frame.
   refuse(
     'source-unit-unproven',
     'world candidate metadata does not prove one scalar source unit across all UVW axes',
@@ -297,16 +336,18 @@ export async function assessCandidateWorldUvwAdmission(
     'world candidate metadata has no numeric origin in the UVW canonical frame',
     'info.coordinateSpaces',
   )
-  refuse(
-    'cell-size-unproven',
-    'world candidate metadata has no proven horizontal cell size in the UVW source unit',
-    'info.coordinateSpaces',
-  )
-  refuse(
-    'vertical-quantization-unproven',
-    'world candidate metadata does not define how heightBase becomes an elevation in the UVW source unit',
-    'terrain.heightBase',
-  )
+  if (!nativeTerrainTransformProven) {
+    refuse(
+      'cell-size-unproven',
+      'world candidate metadata has no validated horizontal native cell scale',
+      'info.terrainTransform',
+    )
+    refuse(
+      'vertical-quantization-unproven',
+      'world candidate metadata does not validate how the HMAP height pair becomes a map-native elevation',
+      'info.terrainTransform',
+    )
+  }
 
   if (terrain.state !== 'available' || !hasExactLod) return finish()
 

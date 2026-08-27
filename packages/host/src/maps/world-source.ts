@@ -4,6 +4,8 @@ import type {
   CandidateWorldSceneInfo,
   CandidateWorldSceneSource,
   Lease,
+  MapTerrainNativeTransform,
+  MapTerrainSample,
   ResolvedMapWorkspaceSnapshot,
   ResourceProvenanceRecord,
   WorldSceneFacetState,
@@ -140,6 +142,75 @@ function hasExactTerrainGrid(
   )
 }
 
+function terrainMapNativePosition(
+  sample: MapTerrainSample,
+  transform: MapTerrainNativeTransform,
+): Readonly<{ x: number; y: number; z: number }> {
+  const base =
+    sample.heightBase * transform.vertData.quantizeScale - transform.vertData.quantizeBias
+  const adjustment =
+    sample.heightAdjustment * transform.vertData.quantizeScale - transform.vertData.quantizeBias
+  return Object.freeze({
+    x: transform.heightMap.offset.x + sample.x * transform.heightMap.scale.x,
+    y: transform.heightMap.offset.y + sample.y * transform.heightMap.scale.y,
+    z: base * transform.heightMap.scale.z + transform.heightMap.offset.z + adjustment,
+  })
+}
+
+function admittedTerrainTransform(
+  snapshot: ResolvedMapWorkspaceSnapshot,
+  terrain: ResolvedMapWorkspaceSnapshot['semantic']['terrain'],
+  exact: boolean,
+): MapTerrainNativeTransform | undefined {
+  const transform = snapshot.terrainTransform
+  if (transform === undefined || terrain === undefined || !exact) return undefined
+  const finite = (value: number): boolean => Number.isFinite(value)
+  const positive = (value: number): boolean => finite(value) && value > 0
+  if (
+    transform.schemaVersion !== 1 ||
+    !Number.isSafeInteger(transform.descriptorVersion) ||
+    transform.descriptorVersion <= 0 ||
+    transform.snapshotId !== snapshot.snapshotId ||
+    transform.heightMap.dim.length !== 2 ||
+    transform.heightMap.dim[0] !== terrain.width ||
+    transform.heightMap.dim[1] !== terrain.height ||
+    !Object.values(transform.heightMap.offset).every(finite) ||
+    !Object.values(transform.heightMap.scale).every(positive) ||
+    !finite(transform.vertData.quantizeBias) ||
+    !positive(transform.vertData.quantizeScale) ||
+    !finite(transform.vertData.standardHeight) ||
+    transform.mapping.horizontal !== 'offset-plus-grid-index-times-scale' ||
+    transform.mapping.vertical !==
+      'dequantized-base-times-scale-plus-offset-plus-dequantized-adjustment' ||
+    transform.bounds.coordinateSpaceId !== 'map-native'
+  ) {
+    return undefined
+  }
+  let minimum = { x: Infinity, y: Infinity, z: Infinity }
+  let maximum = { x: -Infinity, y: -Infinity, z: -Infinity }
+  for (const sample of terrain.samples) {
+    const position = terrainMapNativePosition(sample, transform)
+    if (!Object.values(position).every(finite)) return undefined
+    minimum = {
+      x: Math.min(minimum.x, position.x),
+      y: Math.min(minimum.y, position.y),
+      z: Math.min(minimum.z, position.z),
+    }
+    maximum = {
+      x: Math.max(maximum.x, position.x),
+      y: Math.max(maximum.y, position.y),
+      z: Math.max(maximum.z, position.z),
+    }
+  }
+  return (['x', 'y', 'z'] as const).every(
+    axis =>
+      transform.bounds.minimum[axis] === minimum[axis] &&
+      transform.bounds.maximum[axis] === maximum[axis],
+  )
+    ? transform
+    : undefined
+}
+
 /** Creates a lease whose release makes every page/cursor stale immediately. */
 export function createCandidateWorldSceneLease(
   snapshot: ResolvedMapWorkspaceSnapshot,
@@ -155,6 +226,7 @@ export function createCandidateWorldSceneLease(
   const navigationLayerId = layerId(snapshot.snapshotId, 'navigation')
   const terrainSummary = semantic.terrain
   const terrainExact = hasExactTerrainGrid(terrainSummary)
+  const terrainTransform = admittedTerrainTransform(snapshot, terrainSummary, terrainExact)
   const terrainLod = terrainExact ? ('exact' as const) : ('sampled' as const)
   const objectIdentities = new Set<number>()
   const semanticObjects = semantic.objects.filter(item => {
@@ -180,6 +252,9 @@ export function createCandidateWorldSceneLease(
         coordinateSpaceId: 'height-grid',
         lod: terrainLod,
         ...item,
+        ...(terrainTransform === undefined
+          ? {}
+          : { mapNativePosition: terrainMapNativePosition(item, terrainTransform) }),
       }),
     ),
   )
@@ -361,31 +436,61 @@ export function createCandidateWorldSceneLease(
     snapshotId: snapshot.snapshotId,
     mapId: snapshot.mapId,
     coordinateSpaces: snapshot.worldCandidate.coordinateSpaces,
-    crossSpaceTransforms: snapshot.worldCandidate.crossSpaceTransforms,
+    crossSpaceTransforms: Object.freeze(
+      snapshot.worldCandidate.crossSpaceTransforms.map(item =>
+        item.from === 'height-grid' && item.to === 'map-native' && terrainTransform === undefined
+          ? Object.freeze({
+              ...item,
+              state: 'unknown' as const,
+              reason: 'host rejected or did not receive an exact native terrain transform',
+            })
+          : item,
+      ),
+    ),
     bounds: Object.freeze([
       Object.freeze({
         facet: 'terrain' as const,
-        coordinateSpaceId: 'height-grid',
+        coordinateSpaceId: terrainTransform === undefined ? 'height-grid' : 'map-native',
         x:
-          terrainSummary === undefined
-            ? Object.freeze({ state: 'unknown' as const, reason: 'terrain bounds unavailable' })
-            : Object.freeze({
+          terrainTransform !== undefined
+            ? Object.freeze({
                 state: 'known' as const,
-                minimum: 0,
-                maximum: terrainSummary.width - 1,
-              }),
+                minimum: terrainTransform.bounds.minimum.x,
+                maximum: terrainTransform.bounds.maximum.x,
+              })
+            : terrainSummary === undefined
+              ? Object.freeze({ state: 'unknown' as const, reason: 'terrain bounds unavailable' })
+              : Object.freeze({
+                  state: 'known' as const,
+                  minimum: 0,
+                  maximum: terrainSummary.width - 1,
+                }),
         y:
-          terrainSummary === undefined
-            ? Object.freeze({ state: 'unknown' as const, reason: 'terrain bounds unavailable' })
+          terrainTransform !== undefined
+            ? Object.freeze({
+                state: 'known' as const,
+                minimum: terrainTransform.bounds.minimum.y,
+                maximum: terrainTransform.bounds.maximum.y,
+              })
+            : terrainSummary === undefined
+              ? Object.freeze({ state: 'unknown' as const, reason: 'terrain bounds unavailable' })
+              : Object.freeze({
+                  state: 'known' as const,
+                  minimum: 0,
+                  maximum: terrainSummary.height - 1,
+                }),
+        z:
+          terrainTransform === undefined
+            ? Object.freeze({
+                state: 'unknown' as const,
+                reason:
+                  'publisher-native height quantization has no validated exact map-native conversion',
+              })
             : Object.freeze({
                 state: 'known' as const,
-                minimum: 0,
-                maximum: terrainSummary.height - 1,
+                minimum: terrainTransform.bounds.minimum.z,
+                maximum: terrainTransform.bounds.maximum.z,
               }),
-        z: Object.freeze({
-          state: 'unknown' as const,
-          reason: 'publisher-native height quantization has no normalized world-unit conversion',
-        }),
       }),
       Object.freeze({
         facet: 'objects' as const,
@@ -456,6 +561,7 @@ export function createCandidateWorldSceneLease(
         }),
       }),
     ]),
+    ...(terrainTransform === undefined ? {} : { terrainTransform }),
     facets,
     provenance: Object.freeze(provenance.map(item => Object.freeze({ ...item }))),
     unknownFacets: snapshot.worldCandidate.unknownFacets,
@@ -553,6 +659,14 @@ export function createCandidateWorldSceneLease(
                 )
               }
               if (item.facet !== 'terrain' && item.facet !== 'navigation') return false
+              if (item.facet === 'terrain' && item.mapNativePosition !== undefined) {
+                return (
+                  item.mapNativePosition.x >= bounds.minimumX &&
+                  item.mapNativePosition.x <= bounds.maximumX &&
+                  item.mapNativePosition.y >= bounds.minimumY &&
+                  item.mapNativePosition.y <= bounds.maximumY
+                )
+              }
               return (
                 item.x >= bounds.minimumX &&
                 item.x <= bounds.maximumX &&

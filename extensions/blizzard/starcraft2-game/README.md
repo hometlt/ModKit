@@ -57,8 +57,12 @@ bounded native navigation samples and the versioned publisher contract
 `org.modkitx.blizzard.starcraft2/world-scene-source@1`. Its generic structural adapter pages stable
 terrain, object, region, catalog-resource and navigation identities with coordinate, unit, bounds,
 LOD, provenance and loss metadata. When the caller's explicit cell/node budgets retain every HMAP
-tuple, terrain is available as an exact native `height-grid` LOD; cell size, origin, vertical
-quantization and the canonical transform remain unknown. It is explicitly a publisher candidate:
+tuple, terrain is available as an exact native `height-grid` LOD. If a bounded `t3Terrain.xml`
+resource also provides one structurally valid, dimension-matched `heightMap`/`vertData` descriptor,
+the additive resolved-workspace facet publishes its named offset, scale and height-dequantization
+parameters plus derived `map-native` positions and bounds. Missing, malformed, dimension-mismatched
+or sampled inputs publish no partial transform. Source units, canonical origin and the
+`map-native`-to-UVW transform remain unknown. It is explicitly a publisher candidate:
 it is not registered as `common.view/world-scene-source@1`, is not a second eager world DTO, and
 publishes no writer. Block
 18 is the earliest admission boundary; if that block standardizes the common coordinate, this

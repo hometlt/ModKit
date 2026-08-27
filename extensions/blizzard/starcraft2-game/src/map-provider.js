@@ -147,6 +147,7 @@ export async function planStarcraft2Map(request) {
     ['map-objects', 'objects', 'objects', required],
     ['map-regions', 'regions', 'regions', required],
     ['map-terrain-height', 't3heightmap', 'terrain-height', required],
+    ['map-terrain-native-parameters', 't3terrain.xml', 'terrain-native-parameters', false],
     ['map-navigation', 't3syncpathinginfo', 'navigation', false],
   ].map(([requirementId, name, kind, itemRequired]) =>
     Object.freeze({
@@ -418,6 +419,185 @@ function parseTerrain(document, request) {
   })
 }
 
+const DECIMAL_NUMBER = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/u
+
+function requiredAttribute(node, name, label) {
+  const value = node.attributes?.[name]
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new TypeError(`${label}.${name} must be present`)
+  }
+  return value.trim()
+}
+
+function strictFinite(value, label) {
+  if (!DECIMAL_NUMBER.test(value)) throw new TypeError(`${label} must be a decimal finite number`)
+  const number = Number(value)
+  if (!Number.isFinite(number)) throw new TypeError(`${label} must be finite`)
+  return number
+}
+
+function whitespaceVector(value, count, label) {
+  const parts = value.split(/\s+/u)
+  if (parts.length !== count) {
+    throw new TypeError(`${label} must contain exactly ${count} whitespace-separated numbers`)
+  }
+  return parts.map((item, index) => strictFinite(item, `${label}[${index}]`))
+}
+
+function oneChild(parent, name, label) {
+  const matches = elementChildren(parent).filter(
+    child => child.name.toLowerCase() === name.toLowerCase(),
+  )
+  if (matches.length !== 1) {
+    throw new TypeError(`${label} must contain exactly one ${name} element`)
+  }
+  return matches[0]
+}
+
+function exactTerrainGrid(terrain) {
+  if (terrain.samples.length !== terrain.cellCount) return false
+  return terrain.samples.every(
+    (sample, index) =>
+      sample.x === index % terrain.width && sample.y === Math.floor(index / terrain.width),
+  )
+}
+
+function mapNativePosition(sample, heightMap, vertData) {
+  const base = sample.heightBase * vertData.quantizeScale - vertData.quantizeBias
+  const adjustment = sample.heightAdjustment * vertData.quantizeScale - vertData.quantizeBias
+  const position = Object.freeze({
+    x: heightMap.offset.x + sample.x * heightMap.scale.x,
+    y: heightMap.offset.y + sample.y * heightMap.scale.y,
+    z: base * heightMap.scale.z + heightMap.offset.z + adjustment,
+  })
+  if (
+    !Number.isFinite(position.x) ||
+    !Number.isFinite(position.y) ||
+    !Number.isFinite(position.z)
+  ) {
+    throw new TypeError('t3Terrain.xml native terrain mapping produced a non-finite position')
+  }
+  return position
+}
+
+function parseTerrainTransform(document, terrain, heightDocumentPath, snapshotId, request) {
+  const root = xmlRoot(document, 'terrain', request.maxDepth)
+  const descriptorVersion = strictFinite(
+    requiredAttribute(root, 'version', `${document.path}:terrain`),
+    `${document.path}:terrain.version`,
+  )
+  if (!Number.isSafeInteger(descriptorVersion) || descriptorVersion <= 0) {
+    throw new TypeError(`${document.path}:terrain.version must be a positive safe integer`)
+  }
+  const heightMapElement = oneChild(root, 'heightMap', `${document.path}:terrain`)
+  const vertDataElement = oneChild(
+    heightMapElement,
+    'vertData',
+    `${document.path}:terrain.heightMap`,
+  )
+  const dimValues = whitespaceVector(
+    requiredAttribute(heightMapElement, 'dim', `${document.path}:terrain.heightMap`),
+    2,
+    `${document.path}:terrain.heightMap.dim`,
+  )
+  if (!dimValues.every(item => Number.isSafeInteger(item) && item > 0)) {
+    throw new TypeError(
+      `${document.path}:terrain.heightMap.dim must contain positive safe integers`,
+    )
+  }
+  const offsetValues = whitespaceVector(
+    requiredAttribute(heightMapElement, 'offset', `${document.path}:terrain.heightMap`),
+    3,
+    `${document.path}:terrain.heightMap.offset`,
+  )
+  const scaleValues = whitespaceVector(
+    requiredAttribute(heightMapElement, 'scale', `${document.path}:terrain.heightMap`),
+    3,
+    `${document.path}:terrain.heightMap.scale`,
+  )
+  if (!scaleValues.every(item => item > 0)) {
+    throw new TypeError(`${document.path}:terrain.heightMap.scale must contain positive numbers`)
+  }
+  const vertData = Object.freeze({
+    quantizeBias: strictFinite(
+      requiredAttribute(
+        vertDataElement,
+        'quantizeBias',
+        `${document.path}:terrain.heightMap.vertData`,
+      ),
+      `${document.path}:terrain.heightMap.vertData.quantizeBias`,
+    ),
+    quantizeScale: strictFinite(
+      requiredAttribute(
+        vertDataElement,
+        'quantizeScale',
+        `${document.path}:terrain.heightMap.vertData`,
+      ),
+      `${document.path}:terrain.heightMap.vertData.quantizeScale`,
+    ),
+    standardHeight: strictFinite(
+      requiredAttribute(
+        vertDataElement,
+        'standardHeight',
+        `${document.path}:terrain.heightMap.vertData`,
+      ),
+      `${document.path}:terrain.heightMap.vertData.standardHeight`,
+    ),
+  })
+  if (vertData.quantizeScale <= 0) {
+    throw new TypeError(
+      `${document.path}:terrain.heightMap.vertData.quantizeScale must be positive`,
+    )
+  }
+  const dim = Object.freeze([dimValues[0], dimValues[1]])
+  if (dim[0] !== terrain.width || dim[1] !== terrain.height) {
+    throw new TypeError(
+      `${document.path}: terrain dim ${dim.join('x')} does not match HMAP ${terrain.width}x${terrain.height}`,
+    )
+  }
+  const heightMap = Object.freeze({
+    dim,
+    offset: Object.freeze({ x: offsetValues[0], y: offsetValues[1], z: offsetValues[2] }),
+    scale: Object.freeze({ x: scaleValues[0], y: scaleValues[1], z: scaleValues[2] }),
+  })
+  if (!exactTerrainGrid(terrain)) return undefined
+
+  let minimum = Object.freeze({ x: Infinity, y: Infinity, z: Infinity })
+  let maximum = Object.freeze({ x: -Infinity, y: -Infinity, z: -Infinity })
+  for (const sample of terrain.samples) {
+    const position = mapNativePosition(sample, heightMap, vertData)
+    minimum = Object.freeze({
+      x: Math.min(minimum.x, position.x),
+      y: Math.min(minimum.y, position.y),
+      z: Math.min(minimum.z, position.z),
+    })
+    maximum = Object.freeze({
+      x: Math.max(maximum.x, position.x),
+      y: Math.max(maximum.y, position.y),
+      z: Math.max(maximum.z, position.z),
+    })
+  }
+  return Object.freeze({
+    schemaVersion: 1,
+    snapshotId,
+    descriptorVersion,
+    source: Object.freeze({
+      terrainDocumentPath: document.path,
+      heightDocumentPath,
+      rootElement: 'terrain',
+      heightMapElement: 'heightMap',
+      quantizationElement: 'vertData',
+    }),
+    heightMap,
+    vertData,
+    mapping: Object.freeze({
+      horizontal: 'offset-plus-grid-index-times-scale',
+      vertical: 'dequantized-base-times-scale-plus-offset-plus-dequantized-adjustment',
+    }),
+    bounds: Object.freeze({ coordinateSpaceId: 'map-native', minimum, maximum }),
+  })
+}
+
 function parseNavigation(document, request) {
   const bytes = document.bytes
   if (bytes.byteLength < 32) throw new TypeError(`${document.path}: PATH header is truncated`)
@@ -638,7 +818,9 @@ export async function analyzeStarcraft2MapWorkspace(request) {
   const semantic = await openStarcraft2Map(request)
   const documents = new Map(value.documents.map(document => [basename(document.path), document]))
   const navigationDocument = documents.get('t3syncpathinginfo') ?? documents.get('mappathinginfo')
+  const terrainParameterDocument = documents.get('t3terrain.xml')
   let navigation
+  let terrainTransform
   const diagnostics = []
   if (navigationDocument === undefined) {
     diagnostics.push(
@@ -653,6 +835,19 @@ export async function analyzeStarcraft2MapWorkspace(request) {
       navigation = parseNavigation(navigationDocument, value)
     } catch (error) {
       diagnostics.push(diagnosticFor(error, navigationDocument.path))
+    }
+  }
+  if (terrainParameterDocument !== undefined && semantic.terrain !== undefined) {
+    try {
+      terrainTransform = parseTerrainTransform(
+        terrainParameterDocument,
+        semantic.terrain,
+        documents.get('t3heightmap')?.path ?? documents.get('mapheightmap')?.path ?? 't3HeightMap',
+        snapshotId,
+        value,
+      )
+    } catch (error) {
+      diagnostics.push(diagnosticFor(error, terrainParameterDocument.path))
     }
   }
   diagnostics.push(
@@ -712,6 +907,7 @@ export async function analyzeStarcraft2MapWorkspace(request) {
     snapshotId,
     semantic: boundedSemantic,
     ...(navigation === undefined ? {} : { navigation }),
+    ...(terrainTransform === undefined ? {} : { terrainTransform }),
     worldCandidate: Object.freeze({
       contract: SC2_WORLD_SCENE_SOURCE_CONTRACT,
       major: 1,
@@ -749,8 +945,13 @@ export async function analyzeStarcraft2MapWorkspace(request) {
         Object.freeze({
           from: 'height-grid',
           to: 'map-native',
-          state: 'unknown',
-          reason: 'terrain cell size, origin and native height quantization are not normalized',
+          state: terrainTransform === undefined ? 'unknown' : 'known',
+          ...(terrainTransform === undefined
+            ? {
+                reason:
+                  'an exact HMAP grid and matching t3Terrain.xml native parameters are unavailable',
+              }
+            : {}),
         }),
         Object.freeze({
           from: 'navigation-grid',
