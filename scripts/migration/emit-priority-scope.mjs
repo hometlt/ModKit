@@ -22,6 +22,11 @@
 //                       error, so the gate does not block work that is not due yet. The audit walks
 //                       the union of every named closure — see `auditedUnits` for why.
 //
+//                       A vertical whose own block has arrived also needs a corpus published as
+//                       `available` or `legal-alternative-ready`. This is a phase-start rule, not an
+//                       overdue-unit rule: a missing proprietary corpus must stop the vertical
+//                       before codec work starts, even when no capability deadline has passed yet.
+//
 //                       `pnpm check` runs `--phase block-12`, and that number moves when a block
 //                       *closes*, not when one opens: the phase names the last block whose
 //                       deadlines everyone has agreed are behind us. Raising it early would turn
@@ -73,6 +78,7 @@ const byId = new Map(capabilities.map(row => [row.capabilityId, row]))
 
 /** Migration states that still leave a user workflow open. */
 const UNRESOLVED = new Set(['missing', 'blocked', 'partial', 'unknown', 'deferred-post-ga'])
+const PHASE_START_READY = new Set(['available', 'legal-alternative-ready'])
 const RELEASES = {
   'mk3-ga': ['mk3-priority'],
   'mk3-multiverse-ga': ['mk3-priority', 'multiverse-priority'],
@@ -204,10 +210,12 @@ if (check) {
 // --- phase-aware gate --------------------------------------------------------------------------------
 
 let corpora
+let corporaReadError = false
 try {
   corpora = JSON.parse(readFileSync(corporaPath, 'utf8'))
 } catch {
   corpora = { corpora: [] }
+  corporaReadError = true
 }
 const corpusStatus = new Map()
 for (const entry of corpora.corpora ?? []) {
@@ -276,12 +284,46 @@ function phaseAudit(phaseBlock) {
   return overdue
 }
 
+/**
+ * Refuse to enter a corpus-backed vertical before its evidence path is ready.
+ *
+ * This deliberately audits the readiness matrix itself rather than only capability rows. The
+ * matrix is the authority for the plan's pre-start rule, and a named game can require owner action
+ * before any of its capability deadlines are overdue. `legal-alternative-ready` is explicit owner
+ * acceptance of a non-retail evidence path; a merely described or reachable alternative is not.
+ */
+function phaseStartAudit(phaseBlock) {
+  if (corporaReadError) {
+    return [
+      `corpus readiness file ${path.relative(repoRoot, corporaPath)} is unreadable; phase start fails closed`,
+    ]
+  }
+  const blocked = []
+  const entries = [...(corpora.corpora ?? [])].sort((left, right) =>
+    left.verticalBlock !== right.verticalBlock
+      ? left.verticalBlock - right.verticalBlock
+      : compareUtf8(left.id, right.id),
+  )
+  for (const entry of entries) {
+    if (!Number.isInteger(entry.verticalBlock) || entry.verticalBlock > phaseBlock) continue
+    if (PHASE_START_READY.has(entry.status)) continue
+    const variables = (entry.environmentVariables ?? []).join(', ') || 'no environment variable'
+    blocked.push(
+      `block ${entry.verticalBlock} requires corpus ${entry.id} (${variables}), status ${String(entry.status)}; expected available or legal-alternative-ready before the vertical starts`,
+    )
+  }
+  return blocked
+}
+
 if (phase !== undefined) {
   const match = /^block-(\d+)$/.exec(phase)
   if (match === null) fail(`--phase expects block-N, received ${phase}`)
   else {
-    const overdue = phaseAudit(Number(match[1]))
+    const phaseBlock = Number(match[1])
+    const overdue = phaseAudit(phaseBlock)
     for (const line of overdue) fail(`overdue priority unit — ${line}`)
+    const blockedCorpora = phaseStartAudit(phaseBlock)
+    for (const line of blockedCorpora) fail(`phase-start corpus — ${line}`)
   }
 }
 

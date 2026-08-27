@@ -1,0 +1,53 @@
+{
+  "$comment": "Fixture corpora readiness: two verticals have reached their start phase without an accepted evidence path.",
+  "schemaVersion": "corpora-readiness-1",
+  "oracleLock": "migration/oracle/legacy-oracle.lock.json",
+  "statusVocabulary": [
+    "available",
+    "owner-action-required",
+    "legal-alternative-ready",
+    "unavailable"
+  ],
+  "counts": {
+    "corpora": 3,
+    "available": 0,
+    "ownerActionRequired": 2,
+    "legalAlternativeReady": 0,
+    "unavailable": 1
+  },
+  "corpora": [
+    {
+      "id": "owner-action-now",
+      "displayName": "Owner action now",
+      "verticalBlock": 16,
+      "status": "owner-action-required",
+      "environmentVariables": ["MODKITX_OWNER_ACTION_ROOT"],
+      "evidence": "Fixture: the required corpus has not been provided.",
+      "ownerAction": "Fixture: provide the corpus before block 16.",
+      "legalAlternative": null,
+      "capabilityIds": []
+    },
+    {
+      "id": "unavailable-now",
+      "displayName": "Unavailable now",
+      "verticalBlock": 15,
+      "status": "unavailable",
+      "environmentVariables": ["MODKITX_UNAVAILABLE_ROOT"],
+      "evidence": "Fixture: no corpus or accepted alternative exists.",
+      "ownerAction": "Fixture: provide an evidence path.",
+      "legalAlternative": null,
+      "capabilityIds": []
+    },
+    {
+      "id": "owner-action-later",
+      "displayName": "Owner action later",
+      "verticalBlock": 17,
+      "status": "owner-action-required",
+      "environmentVariables": ["MODKITX_FUTURE_ROOT"],
+      "evidence": "Fixture: a later vertical is not due yet.",
+      "ownerAction": "Fixture: provide the corpus before block 17.",
+      "legalAlternative": null,
+      "capabilityIds": []
+    }
+  ]
+}

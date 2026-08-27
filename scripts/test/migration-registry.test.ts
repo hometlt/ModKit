@@ -215,6 +215,46 @@ describe('phase-aware priority gate (plan §3.5, block 10 works 6–7)', () => {
     expect(stderr).toContain('hidden skip, not a pass')
   })
 
+  it('refuses to start a corpus-backed vertical while its evidence path still needs owner action or is unavailable', () => {
+    const { status, stderr } = runPriority('valid.capabilities.yaml', [
+      '--phase',
+      'block-16',
+      '--corpora',
+      join(fixtures, 'phase-start-blocked-corpora.json'),
+    ])
+    expect(status).toBe(1)
+    expect(stderr).toContain('phase-start corpus')
+    expect(stderr).toContain('owner-action-now (MODKITX_OWNER_ACTION_ROOT)')
+    expect(stderr).toContain('status owner-action-required')
+    expect(stderr).toContain('unavailable-now (MODKITX_UNAVAILABLE_ROOT)')
+    expect(stderr).toContain('status unavailable')
+    expect(stderr).not.toContain('owner-action-later')
+  })
+
+  it('accepts available and pre-approved legal-alternative corpora and ignores a later vertical', () => {
+    const { status, stdout, stderr } = runPriority('valid.capabilities.yaml', [
+      '--phase',
+      'block-16',
+      '--corpora',
+      join(fixtures, 'phase-start-ready-corpora.json'),
+    ])
+    expect(stderr).toBe('')
+    expect(status).toBe(0)
+    expect(stdout).toContain('phase block-16 clean')
+  })
+
+  it('fails closed when the phase-start readiness document cannot be read', () => {
+    const { status, stderr } = runPriority('valid.capabilities.yaml', [
+      '--phase',
+      'block-16',
+      '--corpora',
+      join(fixtures, 'missing-phase-start-corpora.json'),
+    ])
+    expect(status).toBe(1)
+    expect(stderr).toContain('phase-start corpus')
+    expect(stderr).toContain('is unreadable; phase start fails closed')
+  })
+
   it('keeps the committed closures fresh and free of overdue units at the current phase', () => {
     const result = spawnSync(process.execPath, [priorityGate, '--check', '--phase', 'block-10'], {
       encoding: 'utf8',
