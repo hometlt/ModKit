@@ -27,6 +27,7 @@ import {
   resolveResolvedMapWorkspace,
 } from '@modkitx-x3/host/maps'
 import type { CompanionEnumerationOptions, CompanionOrigin } from '../src/input-resolution.js'
+import { createCandidateWorldSceneLease } from '../src/maps/world-source.js'
 import { createResourceSession } from '../src/resource-session.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
@@ -404,10 +405,44 @@ describe('standard map contract and semantic game provider', () => {
 
       const terrainLayer = info.facets.find(item => item.facet === 'terrain')
       if (terrainLayer === undefined) throw new Error('terrain layer absent')
+      expect(terrainLayer).toMatchObject({ state: 'available', itemCount: 4, lods: ['exact'] })
+      const terrainSummary = result.snapshot.semantic.terrain
+      if (terrainSummary === undefined) throw new Error('terrain summary absent')
+      const malformedWorld = createCandidateWorldSceneLease(
+        Object.freeze({
+          ...result.snapshot,
+          semantic: Object.freeze({
+            ...result.snapshot.semantic,
+            terrain: Object.freeze({
+              ...terrainSummary,
+              samples: Object.freeze(
+                terrainSummary.samples.map((sample, index) =>
+                  index === terrainSummary.samples.length - 1
+                    ? Object.freeze({ ...sample, x: 0, y: 0 })
+                    : sample,
+                ),
+              ),
+            }),
+          }),
+        }),
+        [],
+        2,
+      )
+      try {
+        expect((await malformedWorld.value.info()).facets).toContainEqual(
+          expect.objectContaining({
+            facet: 'terrain',
+            state: 'partial',
+            lods: ['summary', 'sampled'],
+          }),
+        )
+      } finally {
+        await malformedWorld.release()
+      }
       const terrainPage = await source.page({
         facet: 'terrain',
         layerId: terrainLayer.layerId,
-        lod: 'sampled',
+        lod: 'exact',
         limit: 1,
       })
       expect(terrainPage.items[0]).toMatchObject({
@@ -420,7 +455,7 @@ describe('standard map contract and semantic game provider', () => {
         await source.page({
           facet: 'terrain',
           layerId: terrainLayer.layerId,
-          lod: 'sampled',
+          lod: 'exact',
           bounds: { minimumX: 0, minimumY: 0, maximumX: 0, maximumY: 0 },
           cursor: terrainPage.nextCursor,
           limit: 1,
@@ -446,7 +481,7 @@ describe('standard map contract and semantic game provider', () => {
         source.page({
           facet: 'terrain',
           layerId: terrainLayer.layerId,
-          lod: 'sampled',
+          lod: 'exact',
           cursor: `stale${terrainPage.nextCursor}`,
           limit: 1,
         }),
@@ -491,6 +526,12 @@ describe('standard map contract and semantic game provider', () => {
       const cancelled = new AbortController()
       cancelled.abort()
       await expect(source.info(cancelled.signal)).rejects.toThrow()
+      await expect(
+        source.page(
+          { facet: 'terrain', layerId: terrainLayer.layerId, lod: 'exact', limit: 1 },
+          cancelled.signal,
+        ),
+      ).rejects.toThrow()
     } finally {
       await result.release()
       await resources.dispose()
@@ -512,14 +553,40 @@ describe('standard map contract and semantic game provider', () => {
       workspace: workspaceLock(),
       resources,
       catalog,
-      limits: { ...limits, maxRequirements: 8, maxPageSize: 2, maxDiagnostics: 32 },
+      limits: {
+        ...limits,
+        maxRequirements: 8,
+        maxTerrainSamples: 3,
+        maxPageSize: 2,
+        maxDiagnostics: 32,
+      },
     })
     expect(result.state).toBe('resolved')
     if (result.state === 'resolved') {
       expect(result.snapshot.unresolvedRequirementIds).toEqual(['map-navigation'])
-      expect((await result.world.value.info()).facets).toContainEqual(
+      const sparseInfo = await result.world.value.info()
+      expect(sparseInfo.facets).toContainEqual(
         expect.objectContaining({ facet: 'navigation', state: 'unavailable' }),
       )
+      const sparseTerrain = sparseInfo.facets.find(item => item.facet === 'terrain')
+      expect(sparseTerrain).toMatchObject({
+        state: 'partial',
+        itemCount: 4,
+        lods: ['summary', 'sampled'],
+      })
+      if (sparseTerrain === undefined) throw new Error('sparse terrain layer absent')
+      await expect(
+        result.world.value.page({
+          facet: 'terrain',
+          layerId: sparseTerrain.layerId,
+          lod: 'exact',
+          limit: 2,
+        }),
+      ).resolves.toMatchObject({
+        state: 'unsupported',
+        items: [],
+        reason: expect.stringContaining('sampled'),
+      })
       await result.release()
     }
     await resources.dispose()
@@ -695,6 +762,28 @@ describe('standard map contract and semantic game provider', () => {
         },
       }),
     ).rejects.toThrow(/maxDiagnostics exceeds/u)
+    for (const overBudget of [
+      { maxTerrainCells: activationBudget.maxNodes + 1 },
+      { maxTerrainSamples: activationBudget.maxNodes + 1 },
+    ]) {
+      await expect(
+        analyzeResolvedMapWorkspace({
+          services: { ...composition, serviceDefinitions: definitions },
+          grant: { id: 'maps-terrain-node-budget', classes: [] },
+          budgets: activationBudget,
+          workspace: workspaceLock(),
+          resources: budgetResources,
+          catalog,
+          limits: {
+            ...limits,
+            ...overBudget,
+            maxRequirements: 8,
+            maxPageSize: 2,
+            maxDiagnostics: 32,
+          },
+        }),
+      ).rejects.toThrow(/exceeds ResourceBudget\.maxNodes/u)
+    }
     await budgetResources.dispose()
 
     const duplicateObjects = encoder.encode(

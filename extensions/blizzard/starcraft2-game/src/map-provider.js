@@ -13,7 +13,8 @@ const MAXIMUM_TOTAL_BYTES = 33_554_432
 const MAXIMUM_OBJECTS = 100_000
 const MAXIMUM_REGIONS = 10_000
 const MAXIMUM_TERRAIN_CELLS = 4_194_304
-const MAXIMUM_TERRAIN_SAMPLES = 4_096
+// Full native-grid publication remains caller-bounded by maxTerrainCells and ResourceBudget.maxNodes.
+const MAXIMUM_TERRAIN_SAMPLES = MAXIMUM_TERRAIN_CELLS
 const MAXIMUM_DEPTH = 128
 const MAXIMUM_DIAGNOSTICS = 10_000
 const textDecoder = new TextDecoder()
@@ -365,11 +366,14 @@ function parseTerrain(document, request) {
     throw new TypeError(`${document.path}: HMAP cell array is truncated`)
   }
   const sampleCount = Math.min(cellCount, request.maxTerrainSamples)
+  const retainsFullGrid = sampleCount === cellCount
   const sampleIndices = new Set()
-  for (let index = 0; index < sampleCount; index += 1) {
-    sampleIndices.add(
-      sampleCount === 1 ? 0 : Math.floor((index * (cellCount - 1)) / (sampleCount - 1)),
-    )
+  if (!retainsFullGrid) {
+    for (let index = 0; index < sampleCount; index += 1) {
+      sampleIndices.add(
+        sampleCount === 1 ? 0 : Math.floor((index * (cellCount - 1)) / (sampleCount - 1)),
+      )
+    }
   }
   let minimumHeightBase = 0xffff
   let maximumHeightBase = 0
@@ -387,7 +391,7 @@ function parseTerrain(document, request) {
     minimumHeightAdjustment = Math.min(minimumHeightAdjustment, heightAdjustment)
     maximumHeightAdjustment = Math.max(maximumHeightAdjustment, heightAdjustment)
     if ((mask & 0x9000) !== 0) cliffCellCount += 1
-    if (sampleIndices.has(index)) {
+    if (retainsFullGrid || sampleIndices.has(index)) {
       samples.push(
         Object.freeze({
           x: index % width,

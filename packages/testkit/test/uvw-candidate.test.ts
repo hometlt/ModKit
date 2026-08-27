@@ -172,7 +172,7 @@ function exactTerrainItem(id: string): WorldSceneItem {
     heightBase: 100,
     heightAdjustment: 0,
     mask: 0,
-  }) as unknown as WorldSceneItem
+  })
 }
 
 /** Apply one vector mutation. `path` is dot-separated with numeric segments indexing arrays. */

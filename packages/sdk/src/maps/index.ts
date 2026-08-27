@@ -112,7 +112,10 @@ export interface MapTerrainSample {
   readonly mask: number
 }
 
-/** Bounded summary of a terrain height grid; the full cell array is deliberately not transferred. */
+/**
+ * Bounded native terrain-grid view. `samples` is exact only when it contains the complete ordered
+ * `width × height` grid; a smaller caller budget produces an explicitly sampled view.
+ */
 export interface MapTerrainSummary {
   readonly version: number
   readonly width: number
@@ -279,7 +282,11 @@ export interface WorldSceneTerrainItem extends MapTerrainSample {
   readonly id: string
   readonly layerId: string
   readonly coordinateSpaceId: string
-  readonly lod: 'sampled'
+  /**
+   * `exact` means the publisher retained every native height-grid tuple. It does not claim that
+   * the tuple has been converted into map-native or canonical UVW coordinates.
+   */
+  readonly lod: 'sampled' | 'exact'
 }
 
 export interface WorldSceneNavigationItem extends MapNavigationSample {
