@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/service-provider-contribution",
+    "major": 1
+  },
+  "id": "org.modkitx.test/runtime-provider-boundaries",
+  "displayName": "Runtime provider boundary fixture",
+  "runtimeVariants": [
+    {
+      "variantId": "worker",
+      "entrypoint": "./src/provider.js",
+      "target": { "environments": ["node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": []
+    },
+    {
+      "variantId": "process",
+      "entrypoint": "./src/provider.js",
+      "target": { "environments": ["native"] },
+      "executionProfile": "process-brokered",
+      "requestedPermissionClasses": []
+    },
+    {
+      "variantId": "remote",
+      "entrypoint": "./src/provider.js",
+      "target": { "environments": ["external-tool"] },
+      "executionProfile": "remote-provider",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "provides": [
+      {
+        "offerId": "runtime-provider-boundary-v1",
+        "contract": "common.runtime/provider",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": { "runtimeIds": ["test.boundary"] }
+      }
+    ],
+    "lifecycleScope": "session"
+  }
+}

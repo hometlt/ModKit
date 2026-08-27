@@ -77,7 +77,16 @@ const definition = Object.freeze({
       traits: [
         { id: 'content.text', parameters: { language: 'xml', lines: lineCount(text) } },
         { id: 'structure.hierarchy', parameters: { elements: trigger.authored.length } },
-        { id: 'code.node-graph', parameters: { types: Object.keys(trigger.typeCounts).length } },
+        {
+          id: 'code.node-graph',
+          parameters: {
+            types: Object.keys(trigger.typeCounts).length,
+            authority: 'native',
+            scenarioRole: 'trigger',
+            portableUvArtifact: false,
+            semanticLowering: 'unavailable',
+          },
+        },
         ...(trigger.scriptBlocks === 0
           ? []
           : [{ id: 'content.scripts', parameters: { blocks: trigger.scriptBlocks } }]),

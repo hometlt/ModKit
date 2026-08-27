@@ -10775,6 +10775,7 @@ capabilities:
       - 'read-source'
     mk3Contributions:
       - 'org.modkitx/sc2-runtime'
+      - 'org.modkitx/sc2-runtime-provider'
     mk3Operations:
       - 'asset.validate'
       - 'export.raw'
@@ -10787,7 +10788,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E1'
+    evidenceLevel: 'E4'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -10796,11 +10797,13 @@ capabilities:
       corpusKinds: []
       verdicts: []
       liveSources: []
-    fixtures: []
-    corpusDescriptors: []
+    fixtures:
+      - 'packages/testkit/test/fixtures/sc2-runtime/bounded.galaxy'
+    corpusDescriptors:
+      - 'MODKITX_SC2_ROOT'
     projection:
       plane: 'code'
-      liveProjection: 'planned'
+      liveProjection: 'live'
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
@@ -10810,23 +10813,27 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
-      - 'operation dropped at port: runtime.execute'
+      - 'runtime.execute is replaced only for blizzard.starcraft2.galaxy-pure-bounded-v1; general Galaxy control flow/expressions and catalog mechanics remain unavailable'
       - 'operation dropped at port: runtime.replay-assist'
-      - 'operation dropped at port: runtime.restore'
+      - 'runtime.restore is replaced only by bounded provider-owned v2 state; legacy GalaxyEngine/SimEngine continuation and saves remain unavailable'
       - 'operation dropped at port: runtime.simulation-command'
       - 'operation dropped at port: runtime.simulation-hash'
       - 'operation dropped at port: runtime.simulation-step'
-      - 'operation dropped at port: runtime.snapshot'
-      - 'plane lost at port: node'
+      - 'runtime.snapshot is replaced only by bounded provider-owned v2 state; replay/network/catalog snapshots remain unavailable'
+      - 'Trigger XML is exposed as native authored input but semantic trigger lowering remains unavailable'
+      - 'native signing, launch and playback remain external official-tool/client workflows'
+      - 'node runtime plane exists only for the named bounded profile; full legacy runtime semantics remain unavailable'
       - 'plane lost at port: worker'
     receipts:
       projection: null
       materialization: null
       nativeExport: null
-    replacementWorkflow: null
+    replacementWorkflow: 'Resolve common.runtime/provider@1 for blizzard.starcraft2.galaxy-pure-bounded-v1 on the trusted node host; use the official SC2 tool/client externally for signing, launch and playback.'
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/sc2-runtime-bounded.test.ts'
+        - 'packages/testkit/test/sc2-casc-real.test.ts'
       reports: []
   - capabilityId: 'format/sc2-strings/open-inspect'
     userScenario: 'Открыть «StarCraft II Localization Strings» в MK3 и выполнить asset.validate, edit.content, export.convert, sc2-strings.references, sc2-strings.translate, view.inspect без потери семантики legacy-маршрута.'

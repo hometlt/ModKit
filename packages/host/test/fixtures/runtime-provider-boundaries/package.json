@@ -1,0 +1,17 @@
+{
+  "name": "modkit-extension-x3-runtime-provider-boundaries",
+  "version": "1.0.0",
+  "license": "UNLICENSED",
+  "type": "module",
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "org.modkitx.test",
+    "id": "runtime-provider-boundaries",
+    "contributionManifests": [
+      "./contributions/*.json"
+    ]
+  },
+  "peerDependencies": {
+    "@modkitx-x3/sdk": "workspace:*"
+  }
+}

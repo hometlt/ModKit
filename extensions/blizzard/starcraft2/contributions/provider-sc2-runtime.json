@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/service-provider-contribution",
+    "major": 1
+  },
+  "id": "org.modkitx/sc2-runtime-provider",
+  "displayName": "Bounded StarCraft II Galaxy runtime",
+  "status": "partial",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/sc2-runtime/provider.js",
+      "target": {
+        "environments": ["node"]
+      },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "limitations": [
+    "The org.modkitx.sc2/galaxy-pure-bounded-v1 profile executes only zero-argument Galaxy functions composed from direct calls and literal returns.",
+    "External/native calls are reported as native-unavailable; Trigger XML is retained as native authored input but semantic lowering is unavailable.",
+    "Catalog mechanics, Galaxy control flow and expressions, save/replay/network behavior, native launch/signing/playback, and the Block 19 simulator migration remain unavailable."
+  ],
+  "spec": {
+    "provides": [
+      {
+        "offerId": "sc2-galaxy-pure-bounded-v1",
+        "contract": "common.runtime/provider",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": {
+          "runtimeIds": ["blizzard.starcraft2.galaxy-pure-bounded-v1"]
+        }
+      }
+    ],
+    "lifecycleScope": "session"
+  }
+}

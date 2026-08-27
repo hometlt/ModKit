@@ -1,5 +1,10 @@
 import type { ServiceProviderContributionSpecV1 } from '@modkitx-x3/sdk/formats'
-import type { RuntimeBudget, RuntimeProvider, RuntimeProviderModule } from '@modkitx-x3/sdk/runtime'
+import type {
+  RuntimeBudget,
+  RuntimeExecutionResult,
+  RuntimeProvider,
+  RuntimeProviderModule,
+} from '@modkitx-x3/sdk/runtime'
 import type { TypedServiceContractRequest } from '@modkitx-x3/sdk/service-contracts'
 
 export const counterRoute = {
@@ -34,3 +39,23 @@ export const session = provider.createSession({
   sessionId: 'counter',
   budget: { maxWallTimeMs: 5, maxTicks: 6, maxMemoryBytes: 100 },
 })
+
+/** Compile ratchet for the additive v1 capability-refusal result used by bounded runtimes. */
+export const capabilityRefusal = {
+  state: 'refused',
+  reason: 'native-unavailable',
+  message: 'the selected bounded profile does not implement this native',
+  usage: { wallTimeMs: 0, ticks: 0, memoryBytes: 0 },
+  diagnostics: [],
+} as const satisfies RuntimeExecutionResult
+
+/** The original numeric refusal stays admitted with its exact limit/requested evidence. */
+export const numericRefusal = {
+  state: 'refused',
+  reason: 'max-ticks',
+  message: 'tick budget exceeded',
+  limit: 10,
+  requested: 11,
+  usage: { wallTimeMs: 0, ticks: 0, memoryBytes: 0 },
+  diagnostics: [],
+} as const satisfies RuntimeExecutionResult

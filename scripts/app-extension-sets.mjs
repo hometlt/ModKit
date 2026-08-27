@@ -233,6 +233,7 @@ export const READY_APP_EXTENSIONS = Object.freeze({
       'org.modkitx/sc2-mod',
       'org.modkitx/sc2-replay',
       'org.modkitx/sc2-runtime',
+      'org.modkitx/sc2-runtime-provider',
       'org.modkitx/sc2-strings',
       'org.modkitx/sc2-triggers',
       'org.modkitx.blizzard/sc2-workspace-copy-writer',

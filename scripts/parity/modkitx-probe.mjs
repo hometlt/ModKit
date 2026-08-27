@@ -480,6 +480,40 @@ async function manifestMetadataOnlyResult() {
   return result(manifest.id ?? request.format, [])
 }
 
+/**
+ * Sealed migration oracle for the Block 15G pure Galaxy slice.
+ *
+ * The child process imports the pinned legacy runtime exactly like every other parity adapter; X3
+ * tests never import the owner-dirty legacy tree. Only the bounded observation shared by both
+ * runtimes is returned: a zero-argument entrypoint value and deterministic clock advancement.
+ */
+async function sc2RuntimeBoundedResult() {
+  if (typeof imported.createSc2RuntimeProvider !== 'function') {
+    throw new TypeError('canonical SC2 runtime provider export is missing')
+  }
+  const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+  const provider = imported.createSc2RuntimeProvider()
+  const session = await provider.createSession({
+    sources: [{ fileName: request.publishedFile ?? 'MapScript.galaxy', text }],
+  })
+  const execution = await session.execute({ entrypoint: request.entrypoint, arguments: [] })
+  const steps = Number.isSafeInteger(request.steps) && request.steps >= 0 ? request.steps : 0
+  for (let index = 0; index < steps; index += 1) await session.clock.advance(1 / 16)
+  const snapshot = await session.snapshot()
+  return {
+    profile: 'legacy-sc2-galaxy-engine-oracle',
+    entrypoint: request.entrypoint,
+    execution: {
+      state: execution.state,
+      ...(execution.value === undefined ? {} : { value: execution.value }),
+      diagnostics: execution.diagnostics.map(item => item.code).sort(),
+    },
+    clock: { tick: snapshot.clock.tick, timeSeconds: snapshot.clock.timeSeconds },
+    nativeUsage: session.nativeUsage(),
+    nativeFallbacks: session.nativeFallbacks(),
+  }
+}
+
 const adapters = {
   model: modelResult,
   image: imageResult,
@@ -496,6 +530,7 @@ const adapters = {
   'cnc3-map': cnc3MapResult,
   'sage-skudef': skuDefResult,
   'manifest-metadata-only': manifestMetadataOnlyResult,
+  'sc2-runtime-bounded': sc2RuntimeBoundedResult,
 }
 const adapter = adapters[request.canonicalAdapter ?? 'model']
 if (adapter === undefined)

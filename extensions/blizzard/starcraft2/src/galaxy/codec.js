@@ -207,6 +207,15 @@ const definition = Object.freeze({
       ],
       traits: [
         { id: 'content.text', parameters: { language: 'galaxy', lines: lineCount(text) } },
+        {
+          id: 'code.source',
+          parameters: {
+            language: 'galaxy',
+            authority: 'native',
+            scenarioRole: 'source',
+            portableUvArtifact: false,
+          },
+        },
         { id: 'structure.hierarchy', parameters: { functions: script.functions.length } },
       ],
       text: true,

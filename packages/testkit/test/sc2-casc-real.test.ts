@@ -19,7 +19,9 @@ import {
   resolveMapSemanticAnalysis,
   resolveModWorkspaceComposition,
 } from '@modkitx-x3/host'
+import { openRuntimeSession } from '@modkitx-x3/host/runtime'
 import { loadExtensionDirectory } from '@modkitx-x3/host/node'
+import { proves } from '@modkitx-x3/testkit'
 import {
   type ModelSceneSource,
   type NamespaceEntrySource,
@@ -66,6 +68,7 @@ describe('installed StarCraft II CASC product path', () => {
       })
       const directories = [
         ['blizzard', 'starcraft2-game'],
+        ['blizzard', 'starcraft2'],
         ['blizzard', 'casc'],
         ['blizzard', 'models'],
         ['blizzard', 'mpq'],
@@ -453,6 +456,100 @@ describe('installed StarCraft II CASC product path', () => {
           } finally {
             await liveData.release()
             await resources.dispose()
+          }
+
+          /*
+           * Block 15G retail proof. The source still comes from the live CASC namespace through a
+           * fresh ResourceSessionPort. A pure zero-argument function is executed only when the
+           * retail script actually contains one in the named bounded profile; native paths are
+           * tested separately and must remain a structured refusal, never a claim that the whole
+           * generated map program runs.
+           */
+          const runtimePage = await namespace.list(`${mapRoot}/`, { limit: 128 })
+          const mapScript = runtimePage.items.find(item => /\/mapscript\.galaxy$/iu.test(item.path))
+          expect(mapScript, 'installed TArcade map has no Galaxy source').toBeDefined()
+          if (mapScript === undefined) throw new Error('retail MapScript.galaxy is unavailable')
+          const mapScriptText = new TextDecoder().decode(await extractCascBytes(mapScript.path))
+          const pureFunction = [
+            ...mapScriptText.matchAll(
+              /\b(?:void\s+([A-Za-z_]\w*)\s*\(\s*\)\s*\{\s*\}|(?:int|bool|string)\s+([A-Za-z_]\w*)\s*\(\s*\)\s*\{\s*return\s+(?:-?\d+|true|false|null|"(?:[^"\\]|\\.)*")\s*;\s*\})/gu,
+            ),
+          ]
+            .map(match => match[1] ?? match[2])
+            .find(name => name !== undefined)
+          const runtimeResources = createResourceSession({
+            origin: createNamespaceCompanionOrigin({
+              namespace,
+              primaryLogicalId: mapRoot,
+              containerRevision: cascRevision,
+              extract: extractCascBytes,
+            }),
+            revision: cascRevision,
+            sessionId: 'sc2-casc-real-runtime-resources',
+          })
+          const runtime = await openRuntimeSession({
+            services,
+            runtimeId: 'blizzard.starcraft2.galaxy-pure-bounded-v1',
+            sessionId: 'sc2-casc-real-runtime',
+            budget: { maxWallTimeMs: 100, maxTicks: 1_000, maxMemoryBytes: 16_777_216 },
+            grant: { id: 'sc2-casc-real-runtime', classes: [] },
+            activationBudget: budget,
+            providerInvocation: {
+              resources: runtimeResources,
+              inputs: [
+                {
+                  id: 'retail-map-script',
+                  kind: 'source',
+                  logicalId: mapScript.path,
+                  scopes: ['current-mount'],
+                  maxBytes: 4_194_304,
+                },
+              ],
+            },
+          })
+          expect(
+            runtime.state,
+            runtime.diagnostics.map(item => `${item.code}: ${item.message}`).join('\n'),
+          ).toBe('resolved')
+          if (runtime.state !== 'resolved') {
+            await runtimeResources.dispose()
+            throw new Error('retail bounded runtime did not resolve')
+          }
+          try {
+            if (pureFunction !== undefined) {
+              await expect(
+                runtime.session.execute({
+                  entrypoint: pureFunction,
+                  resources: { wallTimeMs: 1, ticks: 0, memoryBytes: 0 },
+                }),
+              ).resolves.toMatchObject({ state: 'completed' })
+            }
+            let refusedNative: string | undefined
+            for (const entrypoint of ['InitMap', 'InitTriggers', 'main']) {
+              const result = await runtime.session.execute({
+                entrypoint,
+                resources: { wallTimeMs: 1, ticks: 0, memoryBytes: 0 },
+              })
+              if (result.state === 'refused' && result.reason === 'native-unavailable') {
+                refusedNative = entrypoint
+                break
+              }
+            }
+            expect(
+              refusedNative,
+              'retail map did not expose an expected named native-call refusal',
+            ).toBeDefined()
+            proves({
+              capabilityId: 'format/sc2-runtime/open-inspect',
+              operation: 'inspect',
+              note: `retail CASC MapScript executed pure ${pureFunction ?? 'not-present'} and refused native entrypoint ${refusedNative ?? 'missing'}`,
+            })
+            console.info(
+              `[sc2-live] bounded runtime: pure=${pureFunction ?? 'not-present'}; native-refusal=${refusedNative}`,
+            )
+          } finally {
+            await runtime.release()
+            await runtimeResources.dispose()
           }
 
           const semanticMap = await mapResolution.analysis.open({

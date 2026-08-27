@@ -39,6 +39,14 @@ export interface RuntimeExecutionResources {
 
 export type RuntimeBudgetRefusalReason = 'max-wall-time-ms' | 'max-ticks' | 'max-memory-bytes'
 
+/** A request the selected runtime understands but cannot execute under its declared profile. */
+export type RuntimeCapabilityRefusalReason =
+  | 'entrypoint-unavailable'
+  | 'native-unavailable'
+  | 'unsupported-runtime-subset'
+  | 'cancelled'
+  | 'session-disposed'
+
 export type RuntimeDiagnosticSeverity = 'error' | 'warning' | 'information'
 
 export interface RuntimeDiagnostic {
@@ -74,6 +82,13 @@ export type RuntimeExecutionResult =
       message: string
       limit: number
       requested: number
+      usage: RuntimeExecutionUsage
+      diagnostics: readonly RuntimeDiagnostic[]
+    }>
+  | Readonly<{
+      state: 'refused'
+      reason: RuntimeCapabilityRefusalReason
+      message: string
       usage: RuntimeExecutionUsage
       diagnostics: readonly RuntimeDiagnostic[]
     }>

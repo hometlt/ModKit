@@ -14,6 +14,7 @@ import { ModkitError, type Diagnostic } from '@modkitx-x3/core'
 import type {
   ContributionContext,
   ContractResolverPort,
+  ExecutionProfile,
   HostPolicy,
   Lease,
   PermissionGrant,
@@ -52,6 +53,8 @@ export interface ProviderActivationOptions {
 export interface ProviderActivation {
   readonly lease: Lease<unknown>
   readonly effectiveGrant: PermissionGrant
+  /** Exact gate-admitted execution profile; callers must not infer it from the host target. */
+  readonly executionProfile: ExecutionProfile
   /** Releases the provider lease and then the activation (realm); idempotent. */
   release(): Promise<void>
 }
@@ -109,6 +112,7 @@ export async function activateServiceProvider(
   return Object.freeze({
     lease,
     effectiveGrant: activation.effectiveGrant,
+    executionProfile: activation.variant.executionProfile,
     async release() {
       if (released) return
       released = true
@@ -141,7 +145,18 @@ export interface HostServiceResolver {
   /** Provider-policy lock entries of every resolution made through this resolver (audit). */
   readonly locks: readonly ProviderPolicyLockEntry[]
   readonly diagnostics: readonly Diagnostic[]
+  /** Immutable facts recorded for successfully activated providers, in activation order. */
+  readonly activationFacts: readonly ProviderActivationFact[]
   release(): Promise<void>
+}
+
+export interface ProviderActivationFact {
+  readonly providerId: string
+  readonly contract: string
+  readonly major: number
+  readonly offerId: string
+  readonly runtimeVariant: string
+  readonly executionProfile: ExecutionProfile
 }
 
 /**
@@ -163,6 +178,7 @@ export function createHostServiceResolver(
   const activations: ProviderActivation[] = []
   const locks: ProviderPolicyLockEntry[] = []
   const diagnostics: Diagnostic[] = []
+  const activationFacts: ProviderActivationFact[] = []
   const makePort = (grant: PermissionGrant, chain: readonly string[]): ContractResolverPort =>
     createContractResolverPort({
       offers,
@@ -201,6 +217,16 @@ export function createHostServiceResolver(
             }),
         })
         activations.push(activation)
+        activationFacts.push(
+          Object.freeze({
+            providerId: result.selected.offer.providerId,
+            contract: selection.contract,
+            major: selection.major,
+            offerId: selection.offerId,
+            runtimeVariant: result.selected.offer.runtimeVariant,
+            executionProfile: activation.executionProfile,
+          }),
+        )
         return Object.freeze({ value: activation.lease.value, release: () => activation.release() })
       },
     })
@@ -209,6 +235,9 @@ export function createHostServiceResolver(
     port,
     locks,
     diagnostics,
+    get activationFacts(): readonly ProviderActivationFact[] {
+      return Object.freeze([...activationFacts])
+    },
     async release() {
       let firstError: unknown
       for (const activation of activations.splice(0).reverse()) {
