@@ -1,10 +1,12 @@
 import {
   createInspectionCodec,
   createModelAnimationSource,
+  createModelCollisionSource,
   createModelMaterialSource,
   createModelResourceRefsSource,
   createModelSceneSource,
   createModelSkeletonSource,
+  createModelSocketSource,
   createProjectionReceipt,
   createTreeDataSource,
 } from '@modkitx-x3/codec-kit'
@@ -76,7 +78,7 @@ function parseM3(bytes, maxNodes) {
   return Object.freeze({ tag, indexOffset, sections: Object.freeze(sections) })
 }
 
-function metadataSceneOf(model, animations, materials) {
+function metadataSceneOf(model, animations, materials, textures) {
   const sectionNodes = model.sections.map(section => ({
     id: `section/${section.index}`,
     name: `${section.tag} v${section.version}`,
@@ -91,7 +93,7 @@ function metadataSceneOf(model, animations, materials) {
       meshes: 0,
       primitives: 0,
       materials,
-      textures: model.sections.filter(section => section.tag === 'LAYR').length,
+      textures,
       animations,
       geometryAccess: 'metadata-only',
     },
@@ -109,7 +111,7 @@ function metadataSceneOf(model, animations, materials) {
   })
 }
 
-function decodedSceneOf(model, geometry, animations, materials) {
+function decodedSceneOf(geometry, animations, materials, textures) {
   return createModelSceneSource({
     info: {
       scenes: 1,
@@ -117,7 +119,7 @@ function decodedSceneOf(model, geometry, animations, materials) {
       meshes: geometry.meshes.length,
       primitives: geometry.primitives.length,
       materials,
-      textures: model.sections.filter(section => section.tag === 'LAYR').length,
+      textures,
       animations,
       ...(geometry.bounds === undefined ? {} : { bounds: geometry.bounds }),
       geometryAccess: 'decoded',
@@ -150,6 +152,12 @@ async function materialOf(bytes, budget, signal, resourceIds) {
   if (globalThis.process?.versions?.node === undefined) return undefined
   const { decodeM3Materials } = await import('./material.node.js')
   return decodeM3Materials(bytes, budget, signal, resourceIds)
+}
+
+async function attachmentOf(bytes, budget, signal) {
+  if (globalThis.process?.versions?.node === undefined) return undefined
+  const { decodeM3Attachments } = await import('./attachments.node.js')
+  return decodeM3Attachments(bytes, budget, signal)
 }
 
 function geometryWithMaterials(geometry, bindings) {
@@ -313,6 +321,7 @@ const definition = Object.freeze({
     const skeleton = await skeletonOf(bytes, context.budget, context.signal)
     const animation = await animationOf(bytes, context.budget, context.signal)
     const material = await materialOf(bytes, context.budget, context.signal, references.names)
+    const attachments = await attachmentOf(bytes, context.budget, context.signal)
     const skeletonBudgetRefusal = skeleton?.issues.find(
       item => item.code === 'x3.m3/skeleton-budget-exceeded',
     )
@@ -334,10 +343,19 @@ const definition = Object.freeze({
     if (materialBudgetRefusal !== undefined) {
       throw new RangeError(`M3 ${materialBudgetRefusal.message}`)
     }
+    const attachmentBudgetRefusal = attachments?.issues.find(
+      item => item.code === 'x3.m3/attachment-budget-exceeded',
+    )
+    if (attachmentBudgetRefusal !== undefined) {
+      throw new RangeError(`M3 ${attachmentBudgetRefusal.message}`)
+    }
     // A truncated BONE table makes the schema parser unsafe for geometry too: both paths load the
     // same section list. Keep the subject inspectable as a section graph and report the refusal.
     const decodedGeometry =
-      skeleton?.fatal === true || animation?.fatal === true || material?.fatal === true
+      skeleton?.fatal === true ||
+      animation?.fatal === true ||
+      material?.fatal === true ||
+      attachments?.fatal === true
         ? undefined
         : await geometryOf(bytes, context.budget)
     const geometry = geometryWithMaterials(decodedGeometry, material?.primitiveBindings ?? [])
@@ -352,16 +370,12 @@ const definition = Object.freeze({
         preview: `v${section.version}, ${section.repetitions} record(s), ${section.byteLength} bytes`,
       })),
     })
-    const declaredAnimationCount = model.sections
-      .filter(section => section.tag === 'SEQS')
-      .reduce((total, section) => total + section.repetitions, 0)
-    // A SEQS record proves that the source declares an animation even when no SD timestamp can be
-    // represented as a live clip. Keep that structural count in model-scene-source, while the
-    // optional animation facet remains absent and the receipt names the lost executable plane.
-    const animationCount =
-      animation !== undefined && animation.clips.length > 0
-        ? animation.clips.length
-        : declaredAnimationCount
+    /*
+     * The base scene counts executable motion. SEQS-only metadata remains visible in the optional
+     * animation facet, whose `channelled` count names the distinction. Counting an unsupported
+     * timestamp list here made a UVM artifact claim motion it could not truthfully write.
+     */
+    const animationCount = animation?.clips.filter(clip => clip.channels.length > 0).length ?? 0
     const declaredMaterialCount = model.sections
       .filter(section => section.tag === 'MATM')
       .reduce((total, section) => total + section.repetitions, 0)
@@ -369,12 +383,12 @@ const definition = Object.freeze({
       material?.fatal === false ? material.materials.length : declaredMaterialCount
     const scene =
       geometry === undefined || geometry.primitives.length === 0
-        ? metadataSceneOf(model, animationCount, materialCount)
-        : decodedSceneOf(model, geometry, animationCount, materialCount)
+        ? metadataSceneOf(model, animationCount, materialCount, references.names.length)
+        : decodedSceneOf(geometry, animationCount, materialCount, references.names.length)
     const info = await scene.info()
     const geometryAccess = info.geometryAccess
     /*
-     * The five facet contracts, published as contracts rather than as a shape inside `summary`.
+     * The six facet contracts, published as contracts rather than as a shape inside `summary`.
      *
      * M3 fills four of them. Texture *paths* come out of `CHAR`, skeleton bindings follow
      * `MODL.bones → BONE.name → CHAR`. Parent links and flags are validated but stay out of the
@@ -430,6 +444,22 @@ const definition = Object.freeze({
                 id: item.id,
                 ...(item.name === undefined ? {} : { name: item.name }),
               })),
+            }),
+          }
+    const socketFacet =
+      attachments === undefined || attachments.fatal || attachments.sockets.length === 0
+        ? {}
+        : {
+            'common.view/model-socket-source': createModelSocketSource({
+              sockets: attachments.sockets,
+            }),
+          }
+    const collisionFacet =
+      attachments === undefined || attachments.fatal || attachments.volumes.length === 0
+        ? {}
+        : {
+            'common.view/model-collision-source': createModelCollisionSource({
+              volumes: attachments.volumes,
             }),
           }
     const materialComplete =
@@ -545,6 +575,35 @@ const definition = Object.freeze({
           state: 'lost',
           note: `${animation?.unsupportedChannels ?? 0} STC channel(s) remain unsupported; SD keyframes are not decoded`,
         },
+        {
+          planeId: 'attachments',
+          state:
+            attachments !== undefined &&
+            !attachments.fatal &&
+            attachments.rejectedNames === 0 &&
+            attachments.rejectedBones === 0
+              ? 'normalized'
+              : 'lost',
+          note: `${attachments?.sockets.length ?? 0} ATT_ attachment point(s) projected with stable ids and exact bone targets`,
+        },
+        {
+          planeId: 'attachment-orientation',
+          state: 'lost',
+          note: 'ATT_ declares a bone and source name but no portable forward/up axes',
+        },
+        {
+          planeId: 'attachment-volume-fields',
+          state: 'lost',
+          note: `${attachments?.volumes.length ?? 0} ATVL volume(s) retain kind/identity; native matrices, sizes, and vertices are outside model-collision-source@1`,
+        },
+        {
+          planeId: 'external-m3a-sidecars',
+          state: 'lost',
+          note:
+            (attachments?.animationHashes.length ?? 0) === 0
+              ? 'MODL declares no non-zero M3A binding hash'
+              : `${attachments.animationHashes.length} M3A binding hash(es) retained for ResourceSessionPort sidecar projection`,
+        },
       ],
       evidence: [
         {
@@ -558,8 +617,9 @@ const definition = Object.freeze({
             `${model.sections.length} sections indexed, ${references.names.length} texture path(s) read from CHAR, ` +
             `${skeleton?.bindings.length ?? 0} BONE binding(s), ${animation?.clips.length ?? 0} SEQS clip(s), ` +
             `${animation?.supportedChannels ?? 0} BONE channel target(s), ${material?.materials.length ?? 0} MATM material(s), ` +
-            `${material?.decodedLayers ?? 0} LAYR slot(s), ${material?.linkedLayers ?? 0} resource link(s), and ` +
-            `${material?.primitiveBindings.length ?? 0} BAT_ primitive binding(s) decoded`,
+            `${material?.decodedLayers ?? 0} LAYR slot(s), ${material?.linkedLayers ?? 0} resource link(s), ` +
+            `${material?.primitiveBindings.length ?? 0} BAT_ primitive binding(s), ${attachments?.sockets.length ?? 0} ATT_ socket(s), and ` +
+            `${attachments?.volumes.length ?? 0} ATVL volume(s) decoded`,
           bytesRead: BigInt(bytes.byteLength),
         },
         ...(references.truncated
@@ -575,7 +635,8 @@ const definition = Object.freeze({
       confidence:
         geometryAccess === 'decoded' &&
         (skeleton?.issues.length ?? 0) === 0 &&
-        (material?.issues.length ?? 0) === 0
+        (material?.issues.length ?? 0) === 0 &&
+        (attachments?.issues.length ?? 0) === 0
           ? 'high'
           : 'partial',
     })
@@ -719,12 +780,15 @@ const definition = Object.freeze({
         ...skeletonFacet,
         ...animationFacet,
         ...materialFacet,
+        ...socketFacet,
+        ...collisionFacet,
       },
       projectionReceipt,
       diagnostics: [
         ...(skeleton?.issues ?? []),
         ...(animation?.issues ?? []),
         ...(material?.issues ?? []),
+        ...(attachments?.issues ?? []),
       ],
       maxDecodedBytes: BigInt(
         Math.max(
@@ -733,6 +797,7 @@ const definition = Object.freeze({
           skeleton?.decodedBytes ?? 0,
           animation?.decodedBytes ?? 0,
           material?.decodedBytes ?? 0,
+          attachments?.decodedBytes ?? 0,
         ),
       ),
       companions: [
@@ -758,7 +823,9 @@ const definition = Object.freeze({
         'skeleton-rest-pose',
         ...(animation === undefined || animation.clips.length === 0 ? ['animations'] : []),
         'animation-sd-keyframes',
-        'external-m3a-sidecars',
+        ...((attachments?.animationHashes.length ?? 0) === 0
+          ? []
+          : ['external-m3a-sidecars-require-resource-session']),
         'm3-writing',
       ],
     }

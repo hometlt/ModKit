@@ -221,6 +221,38 @@ export interface ModelMaterialSource {
 }
 
 // ---------------------------------------------------------------------------------------------
+// sockets — publisher: M3 (`MODL.attachment_points` → `ATT_`)
+
+export interface ModelSocketOrientation {
+  readonly forward: '+x' | '-x' | '+y' | '-y' | '+z' | '-z'
+  readonly up: '+x' | '-x' | '+y' | '-y' | '+z' | '-z'
+}
+
+export interface ModelSocketRef {
+  /** Stable identity in the publisher's socket space. */
+  readonly id: string
+  /** Target in the publisher's node/part space (`bone/<index>` for M3). */
+  readonly nodeId: string
+  /** Portable role. A publisher uses `attach` when the native name proves no narrower role. */
+  readonly role: string
+  /** The native attachment name, retained because scripts may reference it verbatim. */
+  readonly sourceName?: string
+  /** Present only when the native format explicitly declares both axes. */
+  readonly orientation?: ModelSocketOrientation
+}
+
+export interface ModelSocketInfo {
+  readonly sockets: number
+  readonly byRole: Readonly<Record<string, number>>
+}
+
+/** Attachment points — `common.view/model-socket-source@1`. */
+export interface ModelSocketSource {
+  info(signal?: AbortSignal): Promise<ModelSocketInfo>
+  sockets(page: PageRequest, signal?: AbortSignal): Promise<Page<ModelSocketRef>>
+}
+
+// ---------------------------------------------------------------------------------------------
 // reserved facet ids — named, versioned, and deliberately not contracts yet
 
 /**
@@ -244,16 +276,6 @@ export interface ReservedModelFacetSource {
 }
 
 export const RESERVED_MODEL_FACET_SOURCES: readonly ReservedModelFacetSource[] = Object.freeze([
-  Object.freeze({
-    contract: 'common.view/model-socket-source',
-    major: 1,
-    minimalShape: Object.freeze([
-      'info(): { sockets }',
-      'sockets(page): { id, nodeId, role, orientation? }',
-    ]),
-    blockedBy:
-      'no codec publishes attachment points today: the UVM schema defines UV_game_socket, but the X3 UVM reader does not surface them and no native model codec extracts them',
-  }),
   Object.freeze({
     contract: 'common.view/model-lod-source',
     major: 1,

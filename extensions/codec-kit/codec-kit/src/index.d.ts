@@ -43,6 +43,8 @@ import type {
   ModelSceneInfo,
   ModelSceneSource,
   ModelSkeletonSource,
+  ModelSocketRef,
+  ModelSocketSource,
   OperationDecl,
   PortableSourceIdentity,
   ProjectionReceipt,
@@ -248,6 +250,9 @@ export function createModelMaterialSource(input: {
   readonly materials: readonly ModelMaterialRef[]
   readonly libraries?: number
 }): ModelMaterialSource
+export function createModelSocketSource(input: {
+  readonly sockets: readonly ModelSocketRef[]
+}): ModelSocketSource
 
 export const PROJECTION_RECEIPT_METADATA_ID: 'uv-projection-receipt'
 export function createProjectionReceipt(

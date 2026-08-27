@@ -257,6 +257,28 @@ export async function composeStarcraft2Workspace(request) {
   })
 }
 
+/**
+ * Resource namespace prefixes for a composed StarCraft II workspace.
+ *
+ * This is the game-specific half of resource resolution: SC2 roots expose `Assets/...` below
+ * `base.sc2assets`. The host receives only these ordered prefixes and remains unaware of SC2.
+ */
+export function starcraft2WorkspaceResourceRoots(workspace) {
+  if (workspace?.gameId !== GAME_ID || !Array.isArray(workspace.logicalRoots)) {
+    throw new TypeError(
+      'StarCraft II resource roots require a composed StarCraft II workspace lock',
+    )
+  }
+  return Object.freeze(
+    workspace.logicalRoots.map(root =>
+      Object.freeze({
+        rootId: root.rootId,
+        pathPrefix: `${root.sourcePath.replace(/\/+$/gu, '')}/base.sc2assets`,
+      }),
+    ),
+  )
+}
+
 export const abiVersion = 1
 export const provides = Object.freeze([MOD_WORKSPACE_COMPOSITION_CONTRACT])
 

@@ -89,6 +89,8 @@ describe('descriptor-v2 wire facts', () => {
       'common.view/model-animation-source',
       'common.view/model-collision-source',
       'common.view/model-material-source',
+      // Block 15D: standard wire contract, publisher-candidate until a second native publisher exists.
+      'common.view/model-socket-source',
       'common.view/relation-graph-source',
       'common.view/subject-facts-source',
       // ADR-DOC-001: standard on the wire, `publisher-candidate` in DATA_SOURCE_MATURITY

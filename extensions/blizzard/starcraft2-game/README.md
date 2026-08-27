@@ -16,6 +16,12 @@ workspace lock with unresolved/cycle diagnostics. `loadOrder` is dependency-firs
 merges; `logicalRoots` is the exact reverse, winner-first order for VFS/resolver lookup. Logical
 root and dependency paths reject absolute and parent-escaping paths.
 
+For post-open model resources, the provider also projects that exact winner-first root order into
+bounded namespace prefixes below each root's `base.sc2assets`. The host's generic workspace
+namespace origin consumes those prefixes and resolves exact logical resource IDs through
+`ResourceSessionPort`; neither layer constructs ambient filesystem paths or lets a codec enumerate
+the installation.
+
 Content mounting, DocumentInfo decoding, persistent caches, remote depot downloads, disabled-mod
 configuration and edit transactions are deliberately outside this first workspace slice.
 

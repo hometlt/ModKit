@@ -3,7 +3,9 @@
 Model-family reference extension. OBJ reuses the proven MK2 rules for vertices, groups, materials
 and polygon triangulation. glTF validates the 2.x JSON document and indexes scenes, nodes, meshes,
 materials, textures and animations. UVM validates the Universal Verse core profile, decodes its
-GLB accessors and publishes format-neutral scene primitives.
+GLB accessors, publishes format-neutral scene primitives, and exposes `UV_game_socket` node
+extensions through the generic `model-socket-source@1` facet with stable identity retained in the
+extension's open `extras` object.
 
 Every format remains a separate contribution entrypoint. Loading UVM imports only `codec-kit` and
 its own bounded GLB reader; it does not load OBJ, glTF, or either format's parser. All three project

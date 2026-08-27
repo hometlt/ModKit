@@ -4,7 +4,7 @@
   "entryCount": 67,
   "totals": {
     "modules": 551,
-    "bytes": 6104833
+    "bytes": 6105917
   },
   "entries": [
     {
@@ -211,7 +211,7 @@
       "entry": "packages/sdk/dist/data-sources.js",
       "surface": "sdk/data-sources",
       "modules": 10,
-      "bytes": 63426,
+      "bytes": 63297,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -240,7 +240,7 @@
       "entry": "packages/sdk/dist/formats/index.js",
       "surface": "sdk/formats",
       "modules": 16,
-      "bytes": 80899,
+      "bytes": 80596,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core"
@@ -258,7 +258,7 @@
       "entry": "packages/sdk/dist/index.js",
       "surface": "sdk",
       "modules": 35,
-      "bytes": 198971,
+      "bytes": 198842,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -277,7 +277,7 @@
       "entry": "packages/sdk/dist/manifest/validators.generated.js",
       "surface": "sdk/manifest/validators.generated",
       "modules": 20,
-      "bytes": 2672543,
+      "bytes": 2674794,
       "reachesUnits": [],
       "externalUnits": []
     },
@@ -327,7 +327,7 @@
       "entry": "packages/sdk/dist/subjects/index.js",
       "surface": "sdk/subjects",
       "modules": 16,
-      "bytes": 90704,
+      "bytes": 90401,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -346,7 +346,7 @@
       "entry": "packages/sdk/dist/ui-contracts/index.js",
       "surface": "sdk/ui-contracts",
       "modules": 16,
-      "bytes": 100417,
+      "bytes": 100114,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",

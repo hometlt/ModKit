@@ -112,7 +112,7 @@
         "org.modkitx/ply",
         "org.modkitx/stl"
       ],
-      "digest": "sha256:75ed5f9558d7d971991b737f5d21dc83e88dda5dde7a7fbebb2b134c2da8c637"
+      "digest": "sha256:f03b48ceb046047b02680399b665cb00e5a59a760bc280718ad3987e958a42aa"
     },
     {
       "name": "plain-text",
@@ -235,7 +235,7 @@
         "org.modkitx/uvt-materializer",
         "org.modkitx/uvt-writer"
       ],
-      "digest": "sha256:fba525f787c2632aaa703502adc4a30422ecebe2103ba5d328eb8454a54189c1"
+      "digest": "sha256:96cfb5bdc1a978d4d0bae7152c3d9c8a7b7538c312b3744f0d44fc530185f8d7"
     },
     {
       "name": "vector",

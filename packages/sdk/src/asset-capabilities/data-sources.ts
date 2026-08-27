@@ -48,6 +48,7 @@ import type {
   ModelMaterialSource,
   ModelResourceRefsSource,
   ModelSkeletonSource,
+  ModelSocketSource,
 } from './model-facet-sources.js'
 export {
   isReservedModelFacetSource,
@@ -73,6 +74,10 @@ export {
   type ModelResourceRole,
   type ModelSkeletonInfo,
   type ModelSkeletonSource,
+  type ModelSocketInfo,
+  type ModelSocketOrientation,
+  type ModelSocketRef,
+  type ModelSocketSource,
   type ReservedModelFacetSource,
 } from './model-facet-sources.js'
 export type {
@@ -498,6 +503,7 @@ export interface DataSourceContractMap {
   'common.view/model-animation-source': { 1: ModelAnimationSource }
   'common.view/model-collision-source': { 1: ModelCollisionSource }
   'common.view/model-material-source': { 1: ModelMaterialSource }
+  'common.view/model-socket-source': { 1: ModelSocketSource }
   'common.view/relation-graph-source': { 1: RelationGraphSource }
   'common.view/subject-facts-source': { 1: SubjectFactsSource }
   'common.view/slide-deck-source': { 1: SlideDeckSource }

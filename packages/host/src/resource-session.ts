@@ -406,7 +406,7 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
       }
 
       throwIfAborted(signal)
-      const lease = await origin.open(found, signal)
+      const originLease = await origin.open(found, signal)
       /*
        * The session may have been disposed while this open was in flight.
        *
@@ -418,21 +418,33 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
        * late request would have got.
        */
       if (disposed()) {
-        await lease.release()
+        await originLease.release()
         return unresolved(
           requirement,
           'session-disposed',
           `resource session ${sessionId} was disposed while «${requirement.logicalId}» was being opened`,
         )
       }
-      const size = lease.value.kind === 'bytes' ? (lease.value.size ?? 0n) : 0n
+      const size = originLease.value.kind === 'bytes' ? (originLease.value.size ?? 0n) : 0n
       if (bytes + size > limits.maxBytes) {
-        await lease.release()
+        await originLease.release()
         return unresolved(
           requirement,
           'budget-exceeded',
           `resolving «${requirement.logicalId}» would exceed the session byte budget of ${limits.maxBytes}`,
         )
+      }
+      let released = false
+      const lease: Lease<ArtifactSource> = {
+        value: originLease.value,
+        async release() {
+          if (released) return
+          released = true
+          held.delete(lease)
+          resources -= 1
+          bytes -= size
+          await originLease.release()
+        },
       }
       held.add(lease)
       resources += 1

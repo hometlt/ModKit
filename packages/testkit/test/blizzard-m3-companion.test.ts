@@ -31,12 +31,17 @@ import { createPathSubjectOpener, loadExtensionDirectory } from '@modkitx-x3/hos
 import {
   revisionId,
   type ArtifactByteSource,
+  type ModelResourceRefsSource,
+  type ModelSceneSource,
+  type ModelSocketSource,
   type NamespaceEntrySource,
   type ResourceBudget,
 } from '@modkitx-x3/sdk'
 import {
   drainModelProjection,
+  drainModelResourceClosure,
   materializeAndCompare,
+  proves,
   unexplainedDifferences,
 } from '@modkitx-x3/testkit'
 import { VirtualFileSystem } from '@modkitx-x3/vfs'
@@ -480,23 +485,88 @@ describe('the installed StarCraft II M3', () => {
          * is the whole point of the port. Full resolution needs a game-mount provider that knows
          * SC2's mod dependency chain: blocks 12 and 15.
          */
-        const { createNamespaceCompanionOrigin } = (await import(
+        const { createWorkspaceNamespaceCompanionOrigin } = (await import(
           pathToFileURL(join(repoRoot, 'packages', 'host', 'src', 'namespace-origin.js')).href
         )) as typeof import('../../host/src/namespace-origin.js')
-        const { createResourceSession, RESOURCE_NOT_FOUND } = (await import(
+        const { createResourceSession } = (await import(
           pathToFileURL(join(repoRoot, 'packages', 'host', 'src', 'resource-session.js')).href
         )) as typeof import('../../host/src/resource-session.js')
+        const { composeStarcraft2Workspace, starcraft2WorkspaceResourceRoots } = (await import(
+          pathToFileURL(
+            join(
+              repoRoot,
+              'extensions',
+              'blizzard',
+              'starcraft2-game',
+              'src',
+              'workspace-provider.js',
+            ),
+          ).href
+        )) as {
+          composeStarcraft2Workspace(request: unknown): Promise<{
+            readonly gameId: string
+            readonly logicalRoots?: readonly {
+              readonly rootId: string
+              readonly sourcePath: string
+            }[]
+          }>
+          starcraft2WorkspaceResourceRoots(workspace: unknown): readonly {
+            readonly rootId: string
+            readonly pathPrefix: string
+          }[]
+        }
 
         const namespaceLease = await casc.session.dataSource(
           'common.view/namespace-entry-source',
           1,
         )
         const cascRevision = (await casc.session.descriptor()).revision
+        const workspace = await composeStarcraft2Workspace({
+          workspaceId: 'installed-liberty-artifact1',
+          gameId: 'org.modkitx/starcraft-2',
+          activeRootId: 'retail:liberty.sc2campaign',
+          sources: [
+            {
+              sourceId: 'retail-casc',
+              kind: 'casc',
+              location: pathToFileURL(sc2Root).href,
+            },
+          ],
+          roots: [
+            {
+              rootId: 'retail:core.sc2mod',
+              sourceId: 'retail-casc',
+              sourcePath: 'mods/core.sc2mod',
+              displayName: 'Core.SC2Mod',
+              kind: 'mod',
+              declaredDependencies: [],
+            },
+            {
+              rootId: 'retail:liberty.sc2mod',
+              sourceId: 'retail-casc',
+              sourcePath: 'mods/liberty.sc2mod',
+              displayName: 'Liberty.SC2Mod',
+              kind: 'mod',
+              declaredDependencies: [],
+            },
+            {
+              rootId: 'retail:liberty.sc2campaign',
+              sourceId: 'retail-casc',
+              sourcePath: 'campaigns/liberty.sc2campaign',
+              displayName: 'Liberty.SC2Campaign',
+              kind: 'campaign',
+              declaredDependencies: [],
+            },
+          ],
+          maxRoots: 8,
+          maxDepth: 8,
+        })
         const resources = createResourceSession({
-          origin: createNamespaceCompanionOrigin({
-            namespace: namespaceLease.value,
+          origin: createWorkspaceNamespaceCompanionOrigin({
+            namespace: namespaceLease.value as NamespaceEntrySource,
             primaryLogicalId: modelPath,
             containerRevision: cascRevision,
+            logicalRoots: starcraft2WorkspaceResourceRoots(workspace),
             extract: async (entryId, signal) => {
               const payload = await casc.session
                 .operations()
@@ -508,49 +578,151 @@ describe('the installed StarCraft II M3', () => {
             },
           }),
           revision: cascRevision,
+          // The composed workspace can span several CASC roots. Keep the search finite while
+          // admitting their real texture namespaces instead of relying on the single-container
+          // 4,096 default and turning valid dependency-layer references into synthetic misses.
+          limits: { maxEntries: 100_000 },
         })
         try {
-          const reference = facts.references[0]?.id
-          if (reference === undefined) throw new Error('the M3 named no texture')
-          const first = await resources.resolve({
-            id: 'texture-0',
-            logicalId: reference,
-            role: 'texture',
-            scopes: ['current-mount', 'enclosing-container'],
-          })
-          // whichever way it goes, it is a named outcome carrying provenance — never an absence
-          expect(first.provenance).toMatchObject({
-            requirementId: 'texture-0',
-            logicalId: reference,
-            role: 'texture',
-            cached: false,
-          })
-          if (first.state === 'unresolved') {
-            expect(first.reason).toBe('not-found')
-            expect(first.diagnostic.code).toBe(RESOURCE_NOT_FOUND)
-            // a cross-mod-root reference is a fact about the corpus, not a defect in the model
-            expect(first.diagnostic.severity).toBe('information')
-          } else {
-            expect(first.revision).toBe(first.lease.value.revision)
-            await first.lease.release()
-          }
-
-          // the budget is spent once: asking again is served from the session index, hit or miss
-          const repeat = await resources.resolve({
-            id: 'texture-0-again',
-            logicalId: reference,
-            role: 'texture',
-            scopes: ['current-mount', 'enclosing-container'],
-          })
-          expect(repeat.provenance.cached).toBe(true)
-          expect(repeat.state).toBe(first.state)
-          if (repeat.state === 'resolved') await repeat.lease.release()
-
-          expect(resources.provenance()).toHaveLength(2)
-          console.info(
-            `[sc2-live] ResourceSessionPort «${reference}»: ${first.state}` +
-              (first.state === 'unresolved' ? ` (${first.reason})` : ''),
+          const resourceLease = await nested.result.session.dataSource(
+            'common.view/model-resource-refs-source',
+            1,
           )
+          const modelLease = await nested.result.session.dataSource(
+            'common.view/model-scene-source',
+            1,
+          )
+          const socketLease = await nested.result.session.dataSource(
+            'common.view/model-socket-source',
+            1,
+          )
+          try {
+            const closure = await drainModelResourceClosure(
+              resourceLease.value as ModelResourceRefsSource,
+              resources,
+            )
+            expect(closure.unavailable).toEqual([])
+            expect(closure.closure.entries).toHaveLength(facts.references.length)
+            expect(closure.closure.entries.map(entry => entry.logicalId)).toEqual(
+              facts.references.map(reference => reference.id),
+            )
+            expect(
+              closure.provenance.every(
+                record => record.state === 'resolved' && record.revision !== undefined,
+              ),
+            ).toBe(true)
+
+            const descriptor = (await nested.result.session.descriptor()) as {
+              dataSources: readonly { contract: string }[]
+              metadata: readonly { id: string; entries: readonly { value: unknown }[] }[]
+            }
+            const excludedFacetIds = descriptor.dataSources
+              .map(item => item.contract)
+              .filter(contract =>
+                [
+                  'common.view/model-material-source',
+                  'common.view/model-skeleton-source',
+                  'common.view/model-animation-source',
+                  'common.view/model-socket-source',
+                  'common.view/model-collision-source',
+                ].includes(contract),
+              )
+            const drained = await drainModelProjection(modelLease.value as ModelSceneSource, {
+              maxBytes: budget.maxScalarBytes,
+            })
+            const primitiveJoinCounts = new Map(
+              (drained.primitives ?? []).map(primitive => [primitive.id, 0]),
+            )
+            for (const mesh of drained.meshes) {
+              for (const primitiveId of mesh.primitiveIds) {
+                expect(primitiveJoinCounts.has(primitiveId)).toBe(true)
+                primitiveJoinCounts.set(
+                  primitiveId,
+                  (primitiveJoinCounts.get(primitiveId) ?? 0) + 1,
+                )
+              }
+            }
+            expect([...primitiveJoinCounts.values()].every(count => count === 1)).toBe(true)
+            const socketSource = socketLease.value as ModelSocketSource
+            const socketInfo = await socketSource.info()
+            const sockets = (await socketSource.sockets({ limit: 64 })).items
+            expect(sockets).toHaveLength(socketInfo.sockets)
+            expect(sockets.every(socket => /^bone\/(?:0|[1-9][0-9]*)$/u.test(socket.nodeId))).toBe(
+              true,
+            )
+            // M3's current scene facet has no bone hierarchy. Do not overwrite the exact ATT_
+            // target with a fabricated root child just to make UV_game_socket writable.
+            expect(
+              sockets.some(socket => drained.nodes.some(node => node.id === socket.nodeId)),
+            ).toBe(false)
+            const verdict = await materializeAndCompare(
+              repoRoot,
+              {
+                ...drained,
+                resourceClosure: closure.closure,
+                excludedFacetIds,
+              },
+              {
+                assetId: `sc2/${modelPath}`,
+                sourceFormat: 'm3',
+                subjectRevision: nested.result.session.revision,
+                assetClass: 'unit',
+              },
+            )
+            expect(
+              verdict.exact,
+              JSON.stringify({
+                liveHash: verdict.liveHash,
+                reopenedHash: verdict.reopenedHash,
+                differingFacets: verdict.differingFacets,
+                facetPresenceDiff: verdict.facetPresenceDiff,
+                receipt: verdict.receipt,
+              }),
+            ).toBe(true)
+            expect(verdict.liveHash).toBe(verdict.reopenedHash)
+            expect(verdict.differingFacets).toEqual([])
+            expect(verdict.facetPresenceDiff).toEqual([])
+            expect(verdict.byteStable).toBe(true)
+            expect(verdict.artifactDigest).toMatch(/^sha256:[0-9a-f]{64}$/u)
+            expect(unexplainedDifferences(verdict)).toEqual([])
+            expect(verdict.receipt.diff).toEqual([])
+            expect(verdict.receipt.lostFacetIds).toEqual([])
+            expect(verdict.receipt.excludedFacetIds).toEqual([...excludedFacetIds].sort())
+            expect(verdict.receipt.scope).toMatchObject({ scopeId: 'model-interchange-v1' })
+            proves({
+              contributionId: 'org.modkitx/m3',
+              operation: 'materialize',
+              test: 'packages/testkit/test/blizzard-m3-companion.test.ts',
+              note: 'artifact1.m3 materializes through production UVM, reopens with an exact projection and a complete 10-resource closure',
+            })
+
+            const projectionReceipt = descriptor.metadata.find(
+              group => group.id === 'uv-projection-receipt',
+            )?.entries[0]?.value as {
+              planes: readonly { planeId: string; state: string }[]
+            }
+            expect(
+              projectionReceipt.planes
+                .filter(plane => plane.state === 'lost')
+                .map(plane => plane.planeId),
+            ).toEqual(
+              expect.arrayContaining([
+                'animation-sd-keyframes',
+                'attachment-orientation',
+                'attachment-volume-fields',
+                'external-m3a-sidecars',
+              ]),
+            )
+            console.info(
+              `[sc2-live] materialized artifact1.m3: ${verdict.bytes.byteLength} bytes, ` +
+                `exact=${verdict.exact}, resources=${closure.closure.entries.length}, ` +
+                `digest=${verdict.artifactDigest.slice(0, 23)}`,
+            )
+          } finally {
+            await modelLease.release()
+            await resourceLease.release()
+            await socketLease.release()
+          }
         } finally {
           // nested so a throwing dispose cannot strand the container lease behind it
           try {
@@ -560,41 +732,6 @@ describe('the installed StarCraft II M3', () => {
           }
         }
         expect(resources.state()).toBe('disposed')
-
-        /*
-         * Slice 11C1: the same real model, materialized into UVM through the one materializer.
-         *
-         * M3 names its nodes and meshes after what the format calls them, so the artifact binding
-         * renumbers them and the two hashes are honestly different. What the gate actually demands
-         * is that the difference be *accounted for* — every plane that differs has a receipt entry,
-         * derived independently by the harness rather than read back out of the receipt.
-         */
-        const modelLease = await nested.result.session.dataSource(
-          'common.view/model-scene-source',
-          1,
-        )
-        try {
-          const drained = await drainModelProjection(modelLease.value, {
-            maxBytes: budget.maxScalarBytes,
-          })
-          const verdict = await materializeAndCompare(repoRoot, drained, {
-            assetId: `sc2/${modelPath}`,
-            sourceFormat: 'm3',
-            subjectRevision: nested.result.session.revision,
-            assetClass: 'unit',
-          })
-          expect(verdict.byteStable).toBe(true)
-          expect(verdict.artifactDigest).toMatch(/^sha256:[0-9a-f]{64}$/u)
-          expect(unexplainedDifferences(verdict)).toEqual([])
-          expect(verdict.receipt.scope).toMatchObject({ scopeId: 'model-interchange-v1' })
-          console.info(
-            `[sc2-live] materialized artifact1.m3: ${verdict.bytes.byteLength} bytes, ` +
-              `exact=${verdict.exact}, receipt entries=${verdict.receipt.diff.length}, ` +
-              `digest=${verdict.artifactDigest.slice(0, 23)}`,
-          )
-        } finally {
-          await modelLease.release()
-        }
 
         await nested.result.session.dispose()
       } finally {

@@ -18,6 +18,7 @@ export const STANDARD_DATA_SOURCE_CONTRACTS = Object.freeze([
   'common.view/model-animation-source',
   'common.view/model-collision-source',
   'common.view/model-material-source',
+  'common.view/model-socket-source',
   'common.view/relation-graph-source',
   'common.view/subject-facts-source',
   'common.view/slide-deck-source',
@@ -42,10 +43,14 @@ export type DataSourceMaturity = 'admitted' | 'publisher-candidate'
 /**
  * Maturity of every standard data-source contract.
  *
- * One candidate remains, for a stated reason rather than by default.
+ * Two candidates remain, for stated reasons rather than by default.
  *
  * `common.view/slide-deck-source`: block 11 slice 11B publishes it from ODP alone. Its admission
  * waits for a second, independent slides family (PPTX) plus a generic consumer — block 30.
+ *
+ * `common.view/model-socket-source`: block 15D publishes it from explicit Blizzard M3 ATT_ records.
+ * It stays a publisher-candidate until a second independent native family proves the same
+ * identity/node/role boundary without assigning semantics from a name heuristic.
  *
  * `common.view/model-skeleton-source` was admitted after the independent Blizzard M3 family began
  * decoding `MODL.bones → BONE.name → CHAR` and publishing twelve corpus-backed bindings. W3D/W3X
@@ -87,6 +92,7 @@ export const DATA_SOURCE_MATURITY: Readonly<Record<StandardDataSourceId, DataSou
     'common.view/model-animation-source': 'admitted',
     'common.view/model-collision-source': 'admitted',
     'common.view/model-material-source': 'admitted',
+    'common.view/model-socket-source': 'publisher-candidate',
     'common.view/relation-graph-source': 'admitted',
     'common.view/subject-facts-source': 'admitted',
     'common.view/slide-deck-source': 'publisher-candidate',

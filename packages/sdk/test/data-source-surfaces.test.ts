@@ -265,15 +265,15 @@ describe('NXT-103 — standard data-source surfaces', () => {
     expect(dataSourceMaturity('common.view/slide-deck-source')).toBe('publisher-candidate')
     expect(ADMITTED_DATA_SOURCE_CONTRACTS).not.toContain('common.view/slide-deck-source')
     /*
-     * ODP-only slides is the sole candidate. Skeleton was promoted only after M3 supplied an
-     * independent Blizzard publisher beside the SAGE/Westwood W3D/W3X family.
+     * ODP-only slides and M3-only sockets remain candidates. Skeleton was promoted only after M3
+     * supplied an independent Blizzard publisher beside the SAGE/Westwood W3D/W3X family.
      */
     expect(
       STANDARD_DATA_SOURCE_CONTRACTS.filter(
         contract => DATA_SOURCE_MATURITY[contract] === 'publisher-candidate',
       ),
-    ).toEqual(['common.view/slide-deck-source'])
-    expect(ADMITTED_DATA_SOURCE_CONTRACTS.length).toBe(STANDARD_DATA_SOURCE_CONTRACTS.length - 1)
+    ).toEqual(['common.view/model-socket-source', 'common.view/slide-deck-source'])
+    expect(ADMITTED_DATA_SOURCE_CONTRACTS.length).toBe(STANDARD_DATA_SOURCE_CONTRACTS.length - 2)
     // the base model contract is untouched: a facet beside a contract is not a change to it
     expect(dataSourceMaturity('common.view/model-scene-source')).toBe('admitted')
     for (const contract of ADMITTED_DATA_SOURCE_CONTRACTS) {
@@ -282,6 +282,9 @@ describe('NXT-103 — standard data-source surfaces', () => {
     // a candidate is not a second-class citizen on the wire: it is called like every other source
     expect(standardDataSourceSurfaceFor('common.view/slide-deck-source', 1)).toBe(
       STANDARD_DATA_SOURCE_SURFACES['common.view/slide-deck-source'],
+    )
+    expect(standardDataSourceSurfaceFor('common.view/model-socket-source', 1)).toBe(
+      STANDARD_DATA_SOURCE_SURFACES['common.view/model-socket-source'],
     )
     expect(dataSourceMaturity('org.example/thing-source')).toBeUndefined()
   })

@@ -22,14 +22,16 @@ import {
   type AssetSourceRef,
   type InputSearchScope,
   type Lease,
+  type NamespaceEntry,
   type NamespaceEntrySource,
   type RevisionId,
 } from '@modkitx-x3/sdk'
-import type {
-  CompanionCaseSensitivity,
-  CompanionEnumerationOptions,
-  CompanionOrigin,
-  CompanionOriginEntry,
+import {
+  normalizeCompanionLogicalId,
+  type CompanionCaseSensitivity,
+  type CompanionEnumerationOptions,
+  type CompanionOrigin,
+  type CompanionOriginEntry,
 } from './input-resolution.js'
 
 /** An entry has no directory of its own to be a sibling of; it has the mount it came out of. */
@@ -80,6 +82,24 @@ export interface NamespaceCompanionOriginOptions {
   readonly caseSensitivity?: CompanionCaseSensitivity
   /** Entries per `list` page; the resolver's own entry budget still bounds the total. */
   readonly pageLimit?: number
+}
+
+/** One game-provider-resolved logical root, in VFS overlay precedence. */
+export interface WorkspaceNamespaceLogicalRoot {
+  readonly rootId: string
+  /** Namespace prefix under which the root serves resource-relative ids. */
+  readonly pathPrefix: string
+}
+
+export interface WorkspaceNamespaceCompanionOriginOptions extends Omit<
+  NamespaceCompanionOriginOptions,
+  'primaryLogicalId'
+> {
+  readonly primaryLogicalId: string
+  /** Active root first, then dependency layers; the first matching resource wins. */
+  readonly logicalRoots: readonly WorkspaceNamespaceLogicalRoot[]
+  /** Hard page ceiling across one logical-prefix enumeration. */
+  readonly maxPages?: number
 }
 
 interface IndexedEntry {
@@ -218,6 +238,153 @@ export function createNamespaceCompanionOrigin(
         bytes,
       )
       return Object.freeze({ value: source, release: () => refLease.release() })
+    },
+  })
+}
+
+/**
+ * Project a dependency-composed workspace onto the same host-private `CompanionOrigin` seam.
+ *
+ * The host knows only ordered prefixes. The StarCraft II provider decides that its roots expose
+ * resources below `base.sc2assets`; another game can provide different prefixes without a branch
+ * here. Enumeration strips the prefix before ResourceSession sees it, so a native logical id such
+ * as `Assets/Textures/Foo.dds` stays that id while provenance still comes from the exact namespace
+ * entry selected by workspace precedence.
+ */
+export function createWorkspaceNamespaceCompanionOrigin(
+  options: WorkspaceNamespaceCompanionOriginOptions,
+): CompanionOrigin {
+  const pageLimit = options.pageLimit ?? 256
+  const maxPages = options.maxPages ?? 4096
+  const caseSensitivity = options.caseSensitivity ?? 'insensitive'
+  const fold = (value: string): string =>
+    caseSensitivity === 'insensitive' ? value.toLowerCase() : value
+  const roots = options.logicalRoots.map(root => {
+    const pathPrefix = normalizeCompanionLogicalId(root.pathPrefix).replace(/\/$/u, '')
+    return Object.freeze({ rootId: root.rootId, pathPrefix })
+  })
+  if (roots.length === 0) throw new TypeError('workspace namespace origin requires a logical root')
+  const byLogicalId = new Map<string, IndexedEntry>()
+
+  const pages = async function* (prefix: string, signal?: AbortSignal) {
+    const spellings = [...new Set(prefix === '' ? [''] : [prefix, fold(prefix)])]
+    for (const spelling of spellings) {
+      let cursor: string | undefined
+      let pageCount = 0
+      const seenCursors = new Set<string>()
+      do {
+        throwIfAborted(signal)
+        if (pageCount >= maxPages) {
+          throw new RangeError(`workspace namespace prefix exceeds ${maxPages} pages`)
+        }
+        if (cursor !== undefined) {
+          if (seenCursors.has(cursor)) {
+            throw new RangeError('workspace namespace paging cursor repeated')
+          }
+          seenCursors.add(cursor)
+        }
+        const page = await options.namespace.list(
+          spelling,
+          cursor === undefined ? { limit: pageLimit } : { cursor, limit: pageLimit },
+          signal,
+        )
+        yield* page.items
+        pageCount += 1
+        cursor = page.nextCursor
+      } while (cursor !== undefined)
+    }
+  }
+
+  const actualPrefix = (root: { readonly pathPrefix: string }, logicalPrefix: string): string =>
+    logicalPrefix === '' ? `${root.pathPrefix}/` : `${root.pathPrefix}/${logicalPrefix}`
+
+  const remember = (
+    root: { readonly pathPrefix: string },
+    entry: NamespaceEntry,
+  ): string | undefined => {
+    if (entry.kind !== 'file') return undefined
+    const prefix = `${root.pathPrefix}/`
+    if (!fold(entry.path).startsWith(fold(prefix))) return undefined
+    const logicalId = entry.path.slice(prefix.length)
+    if (logicalId === '') return undefined
+    const key = fold(logicalId)
+    if (!byLogicalId.has(key)) {
+      byLogicalId.set(key, {
+        entryId: entry.id,
+        path: entry.path,
+        ...(entry.size === undefined ? {} : { size: entry.size }),
+        revision: entry.revision,
+      })
+    }
+    return logicalId
+  }
+
+  const find = async (
+    logicalId: string,
+    signal?: AbortSignal,
+  ): Promise<IndexedEntry | undefined> => {
+    const key = fold(logicalId)
+    const cached = byLogicalId.get(key)
+    if (cached !== undefined) return cached
+    for (const root of roots) {
+      for await (const entry of pages(actualPrefix(root, logicalId), signal)) {
+        const remembered = remember(root, entry)
+        if (remembered !== undefined && fold(remembered) === key) return byLogicalId.get(key)
+      }
+    }
+    return undefined
+  }
+
+  return Object.freeze({
+    primaryLogicalId: options.primaryLogicalId,
+    caseSensitivity,
+    scopes: Object.freeze(['workspace-dependency-layer'] as const),
+    async *enumerate(
+      scope: InputSearchScope,
+      enumeration: CompanionEnumerationOptions,
+      signal?: AbortSignal,
+    ): AsyncIterable<CompanionOriginEntry> {
+      if (scope !== 'workspace-dependency-layer') return
+      const yielded = new Set<string>()
+      for (const root of roots) {
+        for await (const entry of pages(actualPrefix(root, enumeration.prefix), signal)) {
+          throwIfAborted(signal)
+          const logicalId = remember(root, entry)
+          if (logicalId === undefined || yielded.has(fold(logicalId))) continue
+          yielded.add(fold(logicalId))
+          yield Object.freeze({
+            logicalId,
+            ...(entry.size === undefined ? {} : { size: entry.size }),
+          })
+        }
+      }
+    },
+    async open(logicalId: string, signal?: AbortSignal): Promise<Lease<ArtifactSource>> {
+      throwIfAborted(signal)
+      const entry = await find(logicalId, signal)
+      if (entry === undefined) {
+        throw new ModkitError({
+          code: NESTED_ENTRY_NOT_FOUND,
+          message: `workspace namespace has no entry «${logicalId}»`,
+          context: { logicalId },
+        })
+      }
+      const refLease = await options.namespace.openEntry(entry.entryId, signal)
+      let bytes: Uint8Array
+      try {
+        bytes = await options.extract(entry.entryId, signal)
+      } catch (error) {
+        await refLease.release()
+        throw error
+      }
+      return Object.freeze({
+        value: containerEntrySource(
+          refLease.value,
+          containerEntryRevision(options.containerRevision, entry.entryId, bytes.byteLength),
+          bytes,
+        ),
+        release: () => refLease.release(),
+      })
     },
   })
 }
