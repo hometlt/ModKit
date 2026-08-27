@@ -525,6 +525,23 @@ export function createModelMaterialSource({ materials, libraries }) {
   return facetSource(info, 'materials', items)
 }
 
+/** `common.view/model-socket-source@1` — stable attachment identity and native source name. */
+export function createModelSocketSource({ sockets }) {
+  const items = sockets.map(socket => ({
+    ...socket,
+    ...(socket.orientation === undefined
+      ? {}
+      : { orientation: Object.freeze({ ...socket.orientation }) }),
+  }))
+  const byRole = {}
+  for (const socket of items) byRole[socket.role] = (byRole[socket.role] ?? 0) + 1
+  return facetSource(
+    Object.freeze({ sockets: items.length, byRole: Object.freeze(byRole) }),
+    'sockets',
+    items,
+  )
+}
+
 // ---------------------------------------------------------------------------------------------
 // ProjectionReceipt — the native → live boundary (§2.6, block 12 item 5)
 

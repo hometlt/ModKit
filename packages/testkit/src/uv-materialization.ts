@@ -20,16 +20,23 @@ import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
+import { throwIfAborted } from '@modkitx-x3/core'
+
 import type {
   MaterializationReceipt,
   ModelMesh,
   ModelNode,
   ModelPrimitive,
+  ModelResourceRefsSource,
   ModelSceneInfo,
   ModelSceneSource,
+  ModelSocketRef,
   Page,
   PageRequest,
   RevisionId,
+  InputSearchScope,
+  ResourceProvenanceRecord,
+  ResourceSessionPort,
   SemanticScopeRef,
 } from '@modkitx-x3/sdk'
 
@@ -39,6 +46,31 @@ export interface DrainedModelProjection {
   readonly nodes: readonly ModelNode[]
   readonly meshes: readonly ModelMesh[]
   readonly primitives?: readonly ModelPrimitive[]
+  /** Optional independent socket facet carried by `UV_game_socket` node extensions. */
+  readonly sockets?: readonly ModelSocketRef[]
+  readonly resourceClosure?: ModelResourceClosure
+  /** Live facets deliberately outside `model-interchange-v1`, carried into the receipt. */
+  readonly excludedFacetIds?: readonly string[]
+}
+
+export interface ModelResourceClosureEntry {
+  readonly role: 'buffer' | 'image' | 'companion'
+  readonly logicalId: string
+  readonly mediaHint: string | null
+  readonly digest: string | null
+}
+
+export interface ModelResourceClosure {
+  readonly mode: 'logical' | 'content-qualified'
+  readonly entries: readonly ModelResourceClosureEntry[]
+  /** Resolution failures are receipt evidence, deliberately outside the hashed closure value. */
+  readonly unavailable?: readonly ResourceProvenanceRecord[]
+}
+
+export interface DrainedModelResourceClosure {
+  readonly closure: ModelResourceClosure
+  readonly provenance: readonly ResourceProvenanceRecord[]
+  readonly unavailable: readonly ResourceProvenanceRecord[]
 }
 
 export interface UvMaterializationVerdict {
@@ -71,6 +103,10 @@ interface SpecTools {
     unpackGlb(bytes: Uint8Array): { document: unknown; binary: Uint8Array }
     projectionFromUvmCore(document: unknown, binary: Uint8Array): DrainedModelProjection
     assertUvmCore(document: unknown): unknown
+    resourceClosureFromUvmCore(
+      document: unknown,
+      options: { mode: ModelResourceClosure['mode']; digests?: Readonly<Record<string, string>> },
+    ): ModelResourceClosure
   }
   readonly materializer: {
     materializeUvmCore(
@@ -179,6 +215,120 @@ export async function drainModelProjection(
   return { info, nodes, meshes, primitives }
 }
 
+function imageMediaHint(logicalId: string): string | null {
+  const extension = /\.([^.\/\\]+)$/u.exec(logicalId)?.[1]?.toLowerCase()
+  if (extension === 'dds') return 'image/vnd-ms.dds'
+  if (extension === 'tga') return 'image/x-tga'
+  if (extension === 'png') return 'image/png'
+  if (extension === 'jpg' || extension === 'jpeg') return 'image/jpeg'
+  return null
+}
+
+/**
+ * Resolve a drained model resource facet through the host-owned post-open port and bind it to the
+ * frozen scope's resource-closure shape. Logical mode still performs every resolution: content
+ * identity does not reach the hash, but success, failure, revision and byte provenance remain
+ * inspectable and no caller is tempted to construct an ambient URI merely because no digest is
+ * required.
+ */
+export async function drainModelResourceClosure(
+  source: ModelResourceRefsSource,
+  session: ResourceSessionPort,
+  options: {
+    readonly mode?: ModelResourceClosure['mode']
+    readonly scopes?: readonly InputSearchScope[]
+    readonly signal?: AbortSignal
+    readonly maxReferences?: number
+    readonly maxBytes?: bigint
+  } = {},
+): Promise<DrainedModelResourceClosure> {
+  const entries: ModelResourceClosureEntry[] = []
+  const unavailable: ResourceProvenanceRecord[] = []
+  const seenReferences = new Set<string>()
+  const seenCursors = new Set<string>()
+  const maxReferences = options.maxReferences ?? 4096
+  const maxBytes = options.maxBytes ?? 256n * 1024n * 1024n
+  let bytesRead = 0n
+  const provenanceStart = session.provenance().length
+  let cursor: string | undefined
+  let index = 0
+  do {
+    throwIfAborted(options.signal)
+    if (cursor !== undefined) {
+      if (seenCursors.has(cursor)) throw new RangeError('model resource paging cursor repeated')
+      seenCursors.add(cursor)
+    }
+    const page = await source.references(
+      cursor === undefined ? { limit: 32 } : { limit: 32, cursor },
+      options.signal,
+    )
+    for (const reference of page.items) {
+      if (index >= maxReferences)
+        throw new RangeError('model resource closure exceeds maxReferences')
+      const closureRole = reference.role === 'texture' ? 'image' : 'companion'
+      const key = `${closureRole}\0${reference.id}`
+      if (seenReferences.has(key)) {
+        throw new TypeError(`model resource source repeats ${closureRole} «${reference.id}»`)
+      }
+      seenReferences.add(key)
+      const resolution = await session.resolve(
+        {
+          id: `model-resource-${provenanceStart + index}`,
+          logicalId: reference.id,
+          role: reference.role,
+          scopes: options.scopes ?? ['workspace-dependency-layer'],
+        },
+        options.signal,
+      )
+      if (resolution.state === 'unresolved') {
+        unavailable.push(resolution.provenance)
+        index += 1
+        continue
+      }
+      try {
+        if (resolution.lease.value.kind !== 'bytes') {
+          throw new TypeError(`model resource «${reference.id}» did not resolve to bytes`)
+        }
+        let digest: string | null = null
+        if ((options.mode ?? 'logical') === 'content-qualified') {
+          const size = resolution.lease.value.size
+          if (size === undefined || size > BigInt(Number.MAX_SAFE_INTEGER)) {
+            throw new RangeError(`model resource «${reference.id}» has no bounded readable size`)
+          }
+          if (bytesRead + size > maxBytes) {
+            throw new RangeError('model resource closure exceeds maxBytes')
+          }
+          const bytes = await resolution.lease.value.read(0n, Number(size), options.signal)
+          if (BigInt(bytes.byteLength) !== size) {
+            throw new TypeError(`model resource «${reference.id}» returned a short read`)
+          }
+          bytesRead += size
+          digest = sha256(bytes)
+        }
+        entries.push({
+          role: closureRole,
+          logicalId: reference.id,
+          mediaHint: reference.role === 'texture' ? imageMediaHint(reference.id) : null,
+          digest,
+        })
+      } finally {
+        await resolution.lease.release()
+      }
+      index += 1
+    }
+    cursor = page.nextCursor
+  } while (cursor !== undefined)
+  return {
+    closure: {
+      mode: options.mode ?? 'logical',
+      entries: Object.freeze(entries),
+      ...(unavailable.length === 0 ? {} : { unavailable: Object.freeze(unavailable) }),
+    },
+    provenance: session.provenance().slice(provenanceStart),
+    unavailable: Object.freeze(unavailable),
+  }
+}
+
 /**
  * Materialize a drained projection, reopen it, and report the verdict.
  *
@@ -218,12 +368,26 @@ export async function materializeAndCompare(
   const unpacked = tools.uvmCore.unpackGlb(first.bytes)
   tools.uvmCore.assertUvmCore(unpacked.document)
   const reopened = tools.uvmCore.projectionFromUvmCore(unpacked.document, unpacked.binary)
+  const reopenedWithClosure: DrainedModelProjection =
+    projection.resourceClosure === undefined
+      ? reopened
+      : {
+          ...reopened,
+          resourceClosure: tools.uvmCore.resourceClosureFromUvmCore(unpacked.document, {
+            mode: projection.resourceClosure.mode,
+            digests: Object.fromEntries(
+              projection.resourceClosure.entries.flatMap(entry =>
+                entry.digest === null ? [] : [[entry.logicalId, entry.digest]],
+              ),
+            ),
+          }),
+        }
 
   const liveHash = tools.modelInterchange.projectionSemanticHash(projection)
-  const reopenedHash = tools.modelInterchange.projectionSemanticHash(reopened)
+  const reopenedHash = tools.modelInterchange.projectionSemanticHash(reopenedWithClosure)
 
   const liveBundle = tools.modelInterchange.buildFacetBundle(projection)
-  const reopenedBundle = tools.modelInterchange.buildFacetBundle(reopened)
+  const reopenedBundle = tools.modelInterchange.buildFacetBundle(reopenedWithClosure)
   const reopenedByKey = new Map(reopenedBundle.facets.map(entry => [entry[0], entry[1]]))
   const differingFacets: string[] = []
   const facetPresenceDiff: string[] = []

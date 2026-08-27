@@ -8,7 +8,8 @@ the portable format would make one format have two owners.
 
 - `src/materializer.js` — a drained faceted model projection to UVM/core 1.0 bytes, deterministic
   and byte-stable, with a `MaterializationReceipt` enumerating everything the profile could not
-  carry. Dependency-free.
+  carry. Independent socket facets bind generically to their projected nodes as standards-defined
+  `UV_game_socket` extensions; there is no game- or codec-specific branch. Dependency-free.
 - `src/provider.js` — `common.uv/model-materializer@1`, the service that produces bytes and receipt.
 - `src/writer.js` — `common.edit/writer@1` at `mutationMode: export-only`, the one durable-write
   route, which validates a `create` of a new artifact and refuses a `replace`.

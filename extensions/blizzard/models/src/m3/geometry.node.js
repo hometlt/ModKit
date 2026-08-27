@@ -75,16 +75,15 @@ function decodeSections(sections, budget) {
   const vertexCount = Math.floor(vertexSection.rawBytes.byteLength / vertexDescription.size)
   if (vertexCount > budget.maxNodes) throw new RangeError('M3 vertices exceed maxNodes budget')
   const vertices = vertexDescription.instances(vertexSection.rawBytes, vertexCount)
-  const meshes = []
   const primitives = []
   let decodedBytes = 0
 
-  for (const [divisionIndex, division] of divisionSection.content.entries()) {
+  for (const division of divisionSection.content) {
     const faceSection = sections.getSectionByReference(division.faces)
     const regionSection = sections.getSectionByReference(division.regions)
     if (faceSection === null || regionSection === null) continue
     const faces = faceSection.content
-    for (const [regionIndex, region] of regionSection.content.entries()) {
+    for (const region of regionSection.content) {
       const firstVertexIndex = Number(region.first_vertex_index ?? 0)
       const count = Number(region.vertex_count ?? 0)
       const firstFaceIndex = Number(region.first_face_index ?? 0)
@@ -126,7 +125,7 @@ function decodeSections(sections, budget) {
       if (decodedBytes > budget.maxScalarBytes) {
         throw new RangeError('M3 decoded geometry exceeds maxScalarBytes budget')
       }
-      const primitiveId = `division-${divisionIndex}-region-${regionIndex}`
+      const primitiveId = `mesh-0-primitive-${primitives.length}`
       primitives.push({
         id: primitiveId,
         topology: 'triangles',
@@ -135,13 +134,21 @@ function decodeSections(sections, budget) {
         ...(normalCount > 0 ? { normals } : {}),
         textureCoordinates,
       })
-      meshes.push({
-        id: primitiveId,
-        name: `M3 region ${regionIndex}`,
-        primitiveIds: [primitiveId],
-      })
     }
   }
+  // REGN is M3's primitive partition, not a second scene-mesh hierarchy. A glTF/UVM node can
+  // reference one mesh containing many primitives, which is also the faithful portable shape for
+  // this single MODL geometry. Keeping one mesh avoids inventing child nodes or dropping regions.
+  const meshes =
+    primitives.length === 0
+      ? []
+      : [
+          {
+            id: 'mesh-0',
+            name: 'M3 model geometry',
+            primitiveIds: primitives.map(primitive => primitive.id),
+          },
+        ]
   const bounds = boundsOf(primitives)
   return Object.freeze({
     nodes:
@@ -149,10 +156,10 @@ function decodeSections(sections, budget) {
         ? []
         : [
             {
-              id: 'model',
+              id: 'node-0',
               name: 'M3 model',
               childIds: [],
-              meshIds: meshes.map(mesh => mesh.id),
+              meshIds: ['mesh-0'],
               transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
             },
           ],

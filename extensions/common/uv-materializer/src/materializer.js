@@ -7,12 +7,10 @@
  * than trusting the convention — because a codec that could also write UVM would be two owners of
  * one format wearing one name.
  *
- * **What it will not do.** It never invents data. A live projection that says it has seven textures
- * and two animations carries no texture URIs and no animation channels on the base model contract,
- * so the materialized document has neither, the structure facet honestly differs, and the receipt
- * says exactly where. Fabricating seven empty texture objects would make a hash comparison succeed
- * while the model lost its textures, which is the one failure mode this whole seam exists to
- * prevent.
+ * **What it will not do.** It never invents data. Texture identity is written only when the live
+ * projection carries the scope's resolved resource closure; a bare count still produces no empty
+ * texture objects. Animation channels remain outside UVM/core unless a future admitted scope says
+ * how to carry them.
  *
  * **Determinism.** Emission order, buffer layout and JSON key order are fixed by this code, not by
  * iteration order of anything. `JSON.stringify` of a freshly built object, a JSON chunk padded with
@@ -23,10 +21,9 @@
  * **Identity.** Reopening a UVM document assigns ids positionally (`node-3`, `mesh-1`,
  * `mesh-1-primitive-0`), because that is the artifact binding the registered
  * `model-interchange-v1` descriptor fixes. A projection whose ids already follow that convention —
- * a UVM or glTF source — round-trips with its identity intact and its scope hash unchanged. A
- * projection that names its nodes `model` and `division-0-region-0`, as M3 does, cannot: the
- * materializer renumbers, and every renumbered plane becomes a diff entry in the receipt. It does
- * not pretend the two hashes match.
+ * a UVM, glTF, or native publisher using that stable artifact convention — round-trips with its
+ * identity intact and its scope hash unchanged. Other identities are renumbered and every affected
+ * plane becomes a diff entry in the receipt. It does not pretend the two hashes match.
  *
  * Dependency-free by design: no crypto, no Node built-ins, browser-safe. The digest of the produced
  * bytes is optional evidence supplied by the caller, exactly as `ProjectionReceipt` treats digests.
@@ -219,7 +216,7 @@ export function materializeUvmCore(projection, request, { digest } = {}) {
 
   const diff = []
   const lostFacetIds = []
-  const excludedFacetIds = []
+  const excludedFacetIds = [...(projection.excludedFacetIds ?? [])]
   const losses = []
 
   const note = (facetId, change, path, message) => {
@@ -413,12 +410,19 @@ export function materializeUvmCore(projection, request, { digest } = {}) {
    * once a publisher exists for it.
    */
   const referenced = [...materialIds]
-  const materialOrder = positionalOrder(referenced, /^material-(\d+)$/u)
   const materialIndexById = new Map()
   const materialCount = Math.max(Number(info.materials ?? 0), referenced.length)
-  if (materialOrder !== null) {
-    for (const [index, id] of materialOrder.entries()) materialIndexById.set(id, index)
-  } else {
+  const positionalMaterials = referenced.every(id => {
+    const match = /^material-(\d+)$/u.exec(id)
+    if (match === null) return false
+    const index = Number(match[1])
+    if (!Number.isSafeInteger(index) || index < 0 || index >= materialCount) return false
+    if ([...materialIndexById.values()].includes(index)) return false
+    materialIndexById.set(id, index)
+    return true
+  })
+  if (!positionalMaterials) {
+    materialIndexById.clear()
     for (const [index, id] of [...referenced].sort(byUtf8).entries())
       materialIndexById.set(id, index)
     if (referenced.length > 0) {
@@ -433,23 +437,60 @@ export function materializeUvmCore(projection, request, { digest } = {}) {
   const materials = Array.from({ length: materialCount }, () => ({
     pbrMetallicRoughness: { metallicFactor: 0, roughnessFactor: 1 },
   }))
-  if (materialCount > 0 && referenced.length === 0) {
-    note(
-      'uv.model/structure@1',
-      'value-differs',
-      '/materials',
-      'materials are reproduced by count only: the base model contract publishes no material definition to carry',
-    )
-  }
-
   // --- planes this profile cannot carry from the base contract alone --------------------------
-  if (Number(info.textures ?? 0) > 0) {
+  const closure = projection.resourceClosure
+  const resourceImages = []
+  if (closure !== undefined && closure !== null) {
+    if (closure.mode !== 'logical' && closure.mode !== 'content-qualified') {
+      fail('resourceClosure.mode must be logical or content-qualified')
+    }
+    for (const entry of closure.entries ?? []) {
+      if (entry?.role !== 'image') continue
+      if (typeof entry.logicalId !== 'string' || entry.logicalId === '') {
+        fail('every image resource-closure entry needs a non-empty logicalId')
+      }
+      resourceImages.push({
+        uri: entry.logicalId,
+        ...(typeof entry.mediaHint === 'string' ? { mimeType: entry.mediaHint } : {}),
+      })
+    }
+    const uncarried = (closure.entries ?? []).filter(entry => entry?.role !== 'image')
+    if (uncarried.length > 0) {
+      lostFacetIds.push('uv.model/resource-closure@1')
+      note(
+        'uv.model/resource-closure@1',
+        'value-differs',
+        undefined,
+        `${uncarried.length} non-image resource closure entry or entries have no UVM/core artifact binding`,
+      )
+    }
+    if ((closure.unavailable ?? []).length > 0) {
+      lostFacetIds.push('uv.model/resource-closure@1')
+      const ids = closure.unavailable.map(entry => entry.logicalId).join(', ')
+      losses.push(`${closure.unavailable.length} resource reference(s) were unavailable: ${ids}`)
+      note(
+        'uv.model/resource-closure@1',
+        'value-differs',
+        undefined,
+        `${closure.unavailable.length} resource reference(s) did not resolve through ResourceSessionPort: ${ids}`,
+      )
+    }
+  }
+  if (Number(info.textures ?? 0) > 0 && closure === undefined) {
     losses.push(`${info.textures} texture reference(s) were not carried`)
     note(
       'uv.model/structure@1',
       'value-differs',
       '/textures',
       'the base model contract publishes a texture count but no texture identity; writing empty texture objects to make the count match would be inventing data',
+    )
+  }
+  if (closure !== undefined && resourceImages.length !== Number(info.textures ?? 0)) {
+    note(
+      'uv.model/structure@1',
+      'value-differs',
+      '/textures',
+      `the resource closure carries ${resourceImages.length} image identity or identities, while the base model contract counts ${Number(info.textures ?? 0)} texture(s)`,
     )
   }
   if (Number(info.animations ?? 0) > 0) {
@@ -467,15 +508,6 @@ export function materializeUvmCore(projection, request, { digest } = {}) {
       'value-differs',
       '/scenes',
       'UVM/core describes a single game object, so exactly one scene is written',
-    )
-  }
-  if (projection.resourceClosure !== undefined && projection.resourceClosure !== null) {
-    lostFacetIds.push('uv.model/resource-closure@1')
-    note(
-      'uv.model/resource-closure@1',
-      'absent-in-artifact',
-      undefined,
-      'this materializer does not consume the resource-refs facet yet, so the closure was not written into the artifact',
     )
   }
   if (primitives === undefined) {
@@ -547,6 +579,40 @@ export function materializeUvmCore(projection, request, { digest } = {}) {
     .filter(node => childless.has(node.id))
     .map(node => nodeIndexById.get(node.id))
 
+  const socketByNodeId = new Map()
+  const roleOrdinals = new Map()
+  for (const socket of projection.sockets ?? []) {
+    if (
+      typeof socket?.id !== 'string' ||
+      socket.id.length === 0 ||
+      typeof socket.nodeId !== 'string' ||
+      typeof socket.role !== 'string' ||
+      socket.role.length === 0
+    ) {
+      fail('every socket needs non-empty id, nodeId and role')
+    }
+    if (!nodeIndexById.has(socket.nodeId)) {
+      fail(`socket «${socket.id}» targets absent node «${socket.nodeId}»`)
+    }
+    if (socketByNodeId.has(socket.nodeId)) {
+      fail(`node «${socket.nodeId}» carries more than one socket`)
+    }
+    const index = roleOrdinals.get(socket.role) ?? 0
+    roleOrdinals.set(socket.role, index + 1)
+    socketByNodeId.set(socket.nodeId, {
+      role: socket.role,
+      index,
+      ...(typeof socket.sourceName === 'string' ? { sourceName: socket.sourceName } : {}),
+      ...(socket.orientation === undefined
+        ? {}
+        : { forward: socket.orientation.forward, up: socket.orientation.up }),
+      // UV_game_socket's open `extras` is the standards-defined place for publisher identity.
+      // The node supplies transform semantics; these two strings make the independent facet's
+      // stable id and target join round-trip without a source-format branch in the reader.
+      extras: { modkitx: { id: socket.id, nodeId: socket.nodeId } },
+    })
+  }
+
   const documentNodes = orderedNodes.map(node => {
     const entry = {}
     if (typeof node.name === 'string') entry.name = node.name
@@ -570,6 +636,8 @@ export function materializeUvmCore(projection, request, { digest } = {}) {
     if (transform.some((value, index) => value !== (index % 5 === 0 ? 1 : 0))) {
       entry.matrix = transform
     }
+    const socket = socketByNodeId.get(node.id)
+    if (socket !== undefined) entry.extensions = { UV_game_socket: socket }
     return entry
   })
 
@@ -591,12 +659,17 @@ export function materializeUvmCore(projection, request, { digest } = {}) {
       generator: `${MATERIALIZER_ID}/${MATERIALIZER_VERSION}`,
       extras: { uv: { format: 'UVM', version: '1.0', profile: 'core' } },
     },
-    extensionsUsed: ['UV_asset', 'UV_provenance'],
+    extensionsUsed: [
+      'UV_asset',
+      'UV_provenance',
+      ...(socketByNodeId.size === 0 ? [] : ['UV_game_socket']),
+    ],
     extensions: {
       UV_asset: {
         id: assetId,
         class: request.options?.assetClass ?? 'prop',
         coreRenderable: emittedPrimitives > 0,
+        ...(socketByNodeId.size === 0 ? {} : { sockets: socketByNodeId.size }),
       },
       UV_provenance: {
         source: { format: sourceFormat },
@@ -609,6 +682,12 @@ export function materializeUvmCore(projection, request, { digest } = {}) {
     nodes: documentNodes,
     meshes: documentMeshes,
     materials,
+    ...(resourceImages.length === 0
+      ? {}
+      : {
+          images: resourceImages,
+          textures: resourceImages.map((_image, index) => ({ source: index })),
+        }),
     accessors,
     bufferViews: buffers.views,
     buffers: [{ byteLength: binary.byteLength }],
@@ -624,8 +703,8 @@ export function materializeUvmCore(projection, request, { digest } = {}) {
     scope: request.scope,
     profile: request.profile ?? PROFILE,
     subjectRevision: request.subjectRevision,
-    lostFacetIds,
-    excludedFacetIds,
+    lostFacetIds: [...new Set(lostFacetIds)].sort(byUtf8),
+    excludedFacetIds: [...new Set(excludedFacetIds)].sort(byUtf8),
     diff,
     ...(digest === undefined ? {} : { artifactDigest: digest(bytes) }),
   }

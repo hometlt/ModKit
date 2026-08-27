@@ -107,6 +107,7 @@ describe('optional model facet sources', () => {
     expect(dataSourceMaturity('common.view/model-collision-source')).toBe('admitted')
     expect(dataSourceMaturity('common.view/model-material-source')).toBe('admitted')
     expect(dataSourceMaturity('common.view/model-skeleton-source')).toBe('admitted')
+    expect(dataSourceMaturity('common.view/model-socket-source')).toBe('publisher-candidate')
     expect(DATA_SOURCE_MATURITY['common.view/model-scene-source']).toBe('admitted')
   })
 
@@ -118,9 +119,8 @@ describe('optional model facet sources', () => {
     }
   })
 
-  it('reserves the four unpublished facets without pretending they are contracts', () => {
+  it('reserves the three unpublished facets without pretending they are contracts', () => {
     expect(RESERVED_MODEL_FACET_SOURCES.map(entry => entry.contract)).toEqual([
-      'common.view/model-socket-source',
       'common.view/model-lod-source',
       'common.view/model-variant-source',
       'common.view/model-effect-source',

@@ -320,7 +320,7 @@ describe('M3 MATM/MAT_/LAYR decoding', () => {
       }),
     ])
     expect(decoded.primitiveBindings).toEqual([
-      { primitiveId: 'division-0-region-0', materialId: 'material-0' },
+      { primitiveId: 'mesh-0-primitive-0', materialId: 'material-0' },
     ])
     proveMaterial(
       'MATM identity, MAT_ semantics, a resource-id LAYR join, and BAT_ binding decode exactly',
@@ -336,7 +336,7 @@ describe('M3 MATM/MAT_/LAYR decoding', () => {
       try {
         expect(await (sceneLease.value as ModelSceneSource).info()).toMatchObject({
           materials: 1,
-          textures: 1,
+          textures: 0,
         })
       } finally {
         await sceneLease.release()
@@ -553,8 +553,8 @@ describe('M3 material corpus preflight', () => {
           '24 - Defaultdark',
         ])
         expect(decoded.primitiveBindings).toEqual([
-          { primitiveId: 'division-0-region-0', materialId: 'material-0' },
-          { primitiveId: 'division-0-region-1', materialId: 'material-3' },
+          { primitiveId: 'mesh-0-primitive-0', materialId: 'material-0' },
+          { primitiveId: 'mesh-0-primitive-1', materialId: 'material-3' },
         ])
 
         const nested = await openNestedSubject({
@@ -599,11 +599,11 @@ describe('M3 material corpus preflight', () => {
             const source = sceneLease.value as ModelSceneSource
             expect(await source.info()).toMatchObject({ materials: 5, primitives: 2 })
             expect(
-              await source.primitive?.('division-0-region-0', { maxBytes: 1_000_000 }),
-            ).toMatchObject({ id: 'division-0-region-0', materialId: 'material-0' })
+              await source.primitive?.('mesh-0-primitive-0', { maxBytes: 1_000_000 }),
+            ).toMatchObject({ id: 'mesh-0-primitive-0', materialId: 'material-0' })
             expect(
-              await source.primitive?.('division-0-region-1', { maxBytes: 1_000_000 }),
-            ).toMatchObject({ id: 'division-0-region-1', materialId: 'material-3' })
+              await source.primitive?.('mesh-0-primitive-1', { maxBytes: 1_000_000 }),
+            ).toMatchObject({ id: 'mesh-0-primitive-1', materialId: 'material-3' })
           } finally {
             await sceneLease.release()
           }

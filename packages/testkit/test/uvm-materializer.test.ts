@@ -22,14 +22,24 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
+import { CANCELLED_CODE } from '@modkitx-x3/core'
 import {
   drainModelProjection,
+  drainModelResourceClosure,
   loadUvTools,
   materializeAndCompare,
   unexplainedDifferences,
   type DrainedModelProjection,
 } from '@modkitx-x3/testkit'
-import type { ModelSceneSource } from '@modkitx-x3/sdk'
+import {
+  revisionId,
+  type ArtifactByteSource,
+  type ModelResourceRef,
+  type ModelResourceRefsSource,
+  type ModelSceneSource,
+  type ResourceProvenanceRecord,
+  type ResourceSessionPort,
+} from '@modkitx-x3/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const fixtureDir = join(repoRoot, 'vendor', 'multiverse-specs', 'specs', 'model', 'fixtures')
@@ -94,6 +104,105 @@ const materialize = async (name: string, projection: DrainedModelProjection) =>
     subjectRevision: 'provider-token:uvm-materializer-test',
   })
 
+function closureSession(bytes: Uint8Array | undefined): {
+  readonly port: ResourceSessionPort
+  readonly releases: () => number
+} {
+  const records: ResourceProvenanceRecord[] = []
+  const resourceRevision = revisionId('provider-token:uvm-resource')
+  let releases = 0
+  const port: ResourceSessionPort = {
+    sessionId: 'uvm-resource-test',
+    revision: revisionId('provider-token:uvm-session'),
+    state: () => 'live',
+    async resolve(requirement) {
+      if (bytes === undefined) {
+        const provenance = Object.freeze({
+          requirementId: requirement.id,
+          logicalId: requirement.logicalId,
+          role: requirement.role,
+          state: 'unresolved' as const,
+          reason: 'not-found' as const,
+          cached: false,
+          scopes: Object.freeze([...requirement.scopes]),
+        })
+        records.push(provenance)
+        return {
+          state: 'unresolved',
+          reason: 'not-found',
+          diagnostic: {
+            id: 'x3.host/resource-not-found',
+            code: 'x3.host/resource-not-found',
+            severity: 'information' as const,
+            category: 'dependency' as const,
+            message: 'missing test image',
+          },
+          provenance,
+        }
+      }
+      const provenance = Object.freeze({
+        requirementId: requirement.id,
+        logicalId: requirement.logicalId,
+        role: requirement.role,
+        state: 'resolved' as const,
+        revision: resourceRevision,
+        bytes: BigInt(bytes.byteLength),
+        cached: false,
+        scopes: Object.freeze([...requirement.scopes]),
+      })
+      records.push(provenance)
+      const value: ArtifactByteSource = {
+        kind: 'bytes',
+        ref: { id: requirement.id, uri: `memory://uvm/${requirement.id}` },
+        revision: resourceRevision,
+        size: BigInt(bytes.byteLength),
+        read: async (offset, length) => bytes.slice(Number(offset), Number(offset) + length),
+        async *stream() {
+          yield bytes
+        },
+      }
+      let released = false
+      return {
+        state: 'resolved',
+        revision: resourceRevision,
+        provenance,
+        lease: {
+          value,
+          async release() {
+            if (released) return
+            released = true
+            releases += 1
+          },
+        },
+      }
+    },
+    provenance: () => Object.freeze([...records]),
+    dispose: async () => undefined,
+  }
+  return { port, releases: () => releases }
+}
+
+function resourceSource(references: readonly ModelResourceRef[]): ModelResourceRefsSource {
+  return {
+    info: () =>
+      Promise.resolve({
+        references: references.length,
+        bound: references.filter(reference => reference.provenance === 'companion').length,
+        truncated: false,
+      }),
+    references: request => {
+      const start = request.cursor === undefined ? 0 : Number(request.cursor)
+      const items = references.slice(start, start + request.limit)
+      return Promise.resolve({
+        items,
+        ...(start + items.length < references.length
+          ? { nextCursor: String(start + items.length) }
+          : {}),
+      })
+    },
+  }
+}
+
 // ---------------------------------------------------------------------------------------------
 
 describe('canonical case — exact semantic equality', () => {
@@ -131,6 +240,145 @@ describe('canonical case — exact semantic equality', () => {
     // one record per page, and the hash is unchanged: paging never reaches it
     expect(fromSource.liveHash).toBe(fromMemory.liveHash)
     expect(fromSource.exact).toBe(true)
+  })
+
+  it('writes UV_game_socket only for an exact existing scene-node join', async () => {
+    const base = await fixtureProjection('uvm-core-triangle')
+    const nodeId = base.nodes[0]?.id
+    if (nodeId === undefined) throw new TypeError('triangle fixture has no node')
+    const tools = await loadUvTools(repoRoot)
+    const request = {
+      scope: { scopeId: 'model-interchange-v1', version: '1.0.0' },
+      profile: 'UVM/core@1.0',
+      subjectRevision: 'provider-token:socket-materialization',
+      options: { assetId: 'fixture/socket', sourceFormat: 'uvm' },
+    }
+    const written = tools.materializer.materializeUvmCore(
+      {
+        ...base,
+        sockets: [
+          {
+            id: 'socket-hardpoint',
+            nodeId,
+            role: 'attach',
+            sourceName: 'Ref_Hardpoint',
+          },
+        ],
+      },
+      request,
+    )
+    tools.uvmCore.assertUvmCore(written.document)
+    const document = written.document as {
+      extensionsUsed: readonly string[]
+      nodes: readonly {
+        extensions?: {
+          UV_game_socket?: {
+            role: string
+            sourceName?: string
+            extras?: { modkitx?: { id: string; nodeId: string } }
+          }
+        }
+      }[]
+    }
+    expect(document.extensionsUsed).toContain('UV_game_socket')
+    expect(document.nodes[0]?.extensions?.UV_game_socket).toEqual(
+      expect.objectContaining({
+        role: 'attach',
+        sourceName: 'Ref_Hardpoint',
+        extras: { modkitx: { id: 'socket-hardpoint', nodeId } },
+      }),
+    )
+    expect(() =>
+      tools.materializer.materializeUvmCore(
+        {
+          ...base,
+          sockets: [{ id: 'missing', nodeId: 'bone/1', role: 'attach' }],
+        },
+        request,
+      ),
+    ).toThrow('targets absent node')
+  })
+
+  it('resolves image identity through ResourceSessionPort and reopens an exact resource closure', async () => {
+    const base = await fixtureProjection('uvm-core-triangle')
+    const source = resourceSource([
+      { id: 'Assets/Textures/Hull.dds', role: 'texture', provenance: 'reference-only' },
+    ])
+    const resources = closureSession(new Uint8Array([0x44, 0x44, 0x53, 0x20]))
+    const resolved = await drainModelResourceClosure(source, resources.port, {
+      mode: 'content-qualified',
+      maxBytes: 4n,
+    })
+    expect(resolved.unavailable).toEqual([])
+    expect(resolved.provenance).toHaveLength(1)
+    expect(resolved.closure.entries).toEqual([
+      {
+        role: 'image',
+        logicalId: 'Assets/Textures/Hull.dds',
+        mediaHint: 'image/vnd-ms.dds',
+        digest: expect.stringMatching(/^sha256:[0-9a-f]{64}$/u),
+      },
+    ])
+    expect(resources.releases()).toBe(1)
+
+    const verdict = await materialize('resource-closure', {
+      ...base,
+      info: { ...base.info, textures: 1 },
+      resourceClosure: resolved.closure,
+    })
+    expect(verdict.exact).toBe(true)
+    expect(verdict.differingFacets).toEqual([])
+    expect(verdict.facetPresenceDiff).toEqual([])
+    expect(verdict.receipt.diff).toEqual([])
+  })
+
+  it('does not fabricate closure identity for an unresolved resource', async () => {
+    const base = await fixtureProjection('uvm-core-triangle')
+    const source = resourceSource([
+      { id: 'Assets/Textures/Missing.dds', role: 'texture', provenance: 'reference-only' },
+    ])
+    const resolved = await drainModelResourceClosure(source, closureSession(undefined).port)
+    expect(resolved.closure.entries).toEqual([])
+    expect(resolved.unavailable).toHaveLength(1)
+    const verdict = await materialize('resource-unavailable', {
+      ...base,
+      info: { ...base.info, textures: 1 },
+      resourceClosure: resolved.closure,
+    })
+    expect(verdict.exact).toBe(false)
+    expect(verdict.receipt.lostFacetIds).toContain('uv.model/resource-closure@1')
+    expect(verdict.receipt.diff).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ facetId: 'uv.model/resource-closure@1' }),
+        expect.objectContaining({ facetId: 'uv.model/structure@1', path: '/textures' }),
+      ]),
+    )
+    expect(unexplainedDifferences(verdict)).toEqual([])
+  })
+
+  it('bounds resource paging and propagates cancellation before resolution', async () => {
+    const source = resourceSource([
+      { id: 'Assets/Textures/A.dds', role: 'texture', provenance: 'reference-only' },
+    ])
+    const controller = new AbortController()
+    controller.abort()
+    await expect(
+      drainModelResourceClosure(source, closureSession(new Uint8Array(1)).port, {
+        signal: controller.signal,
+      }),
+    ).rejects.toMatchObject({ code: CANCELLED_CODE })
+
+    const cyclic = {
+      info: () => Promise.resolve({ references: 1, bound: 0, truncated: false }),
+      references: () =>
+        Promise.resolve({
+          items: [],
+          nextCursor: 'same',
+        }),
+    }
+    await expect(
+      drainModelResourceClosure(cyclic, closureSession(new Uint8Array(1)).port),
+    ).rejects.toThrow('cursor repeated')
   })
 })
 

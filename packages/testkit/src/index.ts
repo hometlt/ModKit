@@ -1,5 +1,6 @@
 export {
   drainModelProjection,
+  drainModelResourceClosure,
   loadUvTools,
   materializeAndCompare,
   materializeTextureAndCompare,
@@ -8,7 +9,10 @@ export {
   TEXTURE_INTERCHANGE_V1,
   unexplainedDifferences,
   type DrainedModelProjection,
+  type DrainedModelResourceClosure,
   type Ktx2ContainerFacts,
+  type ModelResourceClosure,
+  type ModelResourceClosureEntry,
   type UvMaterializationVerdict,
   type UvtMaterializationVerdict,
   type UvtProjection,

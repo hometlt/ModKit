@@ -358,7 +358,8 @@ function primitiveBindingsOf(sections, materials) {
   const bindings = []
   let rejected = 0
   let ambiguous = 0
-  for (const [divisionIndex, division] of divisions.entries()) {
+  let primitiveOffset = 0
+  for (const division of divisions) {
     const batches = declaredRecords(sections, division.batches, 'BAT_')
     const regions = declaredRecords(sections, division.regions, 'REGN')
     if (batches === null || regions === null) {
@@ -392,11 +393,12 @@ function primitiveBindingsOf(sections, materials) {
       const materialIndex = [...candidates][0]
       bindings.push(
         Object.freeze({
-          primitiveId: `division-${divisionIndex}-region-${regionIndex}`,
+          primitiveId: `mesh-0-primitive-${primitiveOffset + regionIndex}`,
           materialId: materialByReference.get(materialIndex).id,
         }),
       )
     }
+    primitiveOffset += regions.length
   }
   bindings.sort((left, right) => left.primitiveId.localeCompare(right.primitiveId))
   return { bindings, rejected, ambiguous }

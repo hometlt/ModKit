@@ -36,7 +36,7 @@ const primitiveIds: Record<Format, string> = {
   dae: 'geometry-0-primitive-0',
   gltf: 'mesh-0-primitive-0',
   uvm: 'mesh-0-primitive-0',
-  m3: 'division-0-region-0',
+  m3: 'mesh-0-primitive-0',
 }
 
 const budget: ResourceBudget = {

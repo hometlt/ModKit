@@ -1,0 +1,305 @@
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
+
+import { CANCELLED_CODE } from '@modkitx-x3/core'
+import { createModelSocketSource } from '@modkitx-x3/codec-kit'
+import {
+  revisionId,
+  type ArtifactByteSource,
+  type LogicalResourceRequirement,
+  type ResourceBudget,
+  type ResourceProvenanceRecord,
+  type ResourceResolution,
+  type ResourceSessionPort,
+} from '@modkitx-x3/sdk'
+import { describe, expect, it } from 'vitest'
+import { decodeM3Attachments } from '../src/m3/attachments.node.js'
+import { resolveM3AnimationSidecars } from '../src/m3/sidecar-projection.node.js'
+
+const repoRoot = join(import.meta.dirname, '..', '..', '..', '..')
+const fixturePath = join(
+  repoRoot,
+  'packages',
+  'testkit',
+  'test',
+  'fixtures',
+  'm3',
+  'cybros-cover.m3a.b64',
+)
+const distinctBasePath = join(
+  repoRoot,
+  'packages',
+  'testkit',
+  'test',
+  'fixtures',
+  'models',
+  'triangle.m3',
+)
+const budget: ResourceBudget = {
+  maxInputBytes: 1_000_000n,
+  maxDepth: 64,
+  maxNodes: 10_000,
+  maxScalarBytes: 1_000_000,
+  maxDiagnostics: 100,
+}
+
+async function fixture(): Promise<Uint8Array> {
+  return Buffer.from(await readFile(fixturePath, 'utf8'), 'base64')
+}
+
+async function baseFixture(): Promise<Uint8Array> {
+  return readFile(distinctBasePath)
+}
+
+/**
+ * Algorithmic E1 base only, deliberately not claimed as an independent production pair.
+ *
+ * The genuine M3A bytes came from the legacy Modkit fixture
+ * `extensions/blizzard/starcraft-2/codecs/m3/test/fixtures/cybros-cover.m3a.b64`; decoded SHA-256
+ * is `07a632fb165b98e60b0e6803451e92c7d94ec527cae8252ca6ed2a3a0661b9e5`. The legacy corpus did
+ * not record its original CASC logical path or a matching base M3. Changing one byte in its
+ * embedded authoring path makes the base byte-distinct while retaining the hash/skeleton facts
+ * needed to exercise the service algorithm. This is provider-foundation evidence, not E3/E4.
+ */
+function algorithmicBase(sidecar: Uint8Array): Uint8Array {
+  const base = Uint8Array.from(sidecar)
+  const marker = Buffer.from(base).indexOf('FrogKey')
+  if (marker < 0) throw new TypeError('pinned M3A authoring-path marker is absent')
+  base[marker] = 'f'.charCodeAt(0)
+  return base
+}
+
+function resourceSession(
+  entries: Readonly<Record<string, Uint8Array>>,
+  options: { readonly revision?: string } = {},
+): { readonly port: ResourceSessionPort; readonly releases: () => number } {
+  const records: ResourceProvenanceRecord[] = []
+  let released = 0
+  const sessionRevision = revisionId('provider-token:m3a-session')
+  const entryRevision = revisionId(options.revision ?? 'provider-token:m3a-fixture')
+  const port: ResourceSessionPort = {
+    sessionId: 'm3a-test',
+    revision: sessionRevision,
+    state: () => 'live',
+    async resolve(requirement: LogicalResourceRequirement): Promise<ResourceResolution> {
+      const bytes = entries[requirement.logicalId]
+      if (bytes === undefined) {
+        const provenance = Object.freeze({
+          requirementId: requirement.id,
+          logicalId: requirement.logicalId,
+          role: requirement.role,
+          state: 'unresolved' as const,
+          reason: 'not-found' as const,
+          cached: false,
+          scopes: Object.freeze([...requirement.scopes]),
+        })
+        records.push(provenance)
+        return {
+          state: 'unresolved',
+          reason: 'not-found',
+          diagnostic: {
+            id: 'x3.host/resource-not-found',
+            code: 'x3.host/resource-not-found',
+            severity: 'information',
+            category: 'dependency',
+            message: 'missing test resource',
+          },
+          provenance,
+        }
+      }
+      const provenance = Object.freeze({
+        requirementId: requirement.id,
+        logicalId: requirement.logicalId,
+        role: requirement.role,
+        state: 'resolved' as const,
+        revision: entryRevision,
+        bytes: BigInt(bytes.byteLength),
+        cached: false,
+        scopes: Object.freeze([...requirement.scopes]),
+      })
+      records.push(provenance)
+      let done = false
+      const value: ArtifactByteSource = {
+        kind: 'bytes',
+        ref: { id: requirement.id, uri: `memory://m3a/${requirement.id}` },
+        revision: entryRevision,
+        size: BigInt(bytes.byteLength),
+        read: async (offset, length) => bytes.slice(Number(offset), Number(offset) + length),
+        async *stream() {
+          yield bytes
+        },
+      }
+      return {
+        state: 'resolved',
+        revision: entryRevision,
+        provenance,
+        lease: {
+          value,
+          async release() {
+            if (done) return
+            done = true
+            released += 1
+          },
+        },
+      }
+    },
+    provenance: () => Object.freeze([...records]),
+    dispose: async () => undefined,
+  }
+  return { port, releases: () => released }
+}
+
+describe('M3 ATT_/ATVL and M3A projection', () => {
+  it('pins stable attachment identity and exact native source names', async () => {
+    const bytes = await fixture()
+    const attachment = await decodeM3Attachments(bytes, budget)
+    expect(attachment.fatal).toBe(false)
+    expect(attachment.sockets).toEqual([
+      {
+        id: 'm3-attachment-0',
+        nodeId: 'bone/1',
+        role: 'attach',
+        sourceName: 'Ref_Hardpoint',
+      },
+    ])
+    expect(attachment.animationHashes).toEqual([3_747_707_700])
+  })
+
+  it('does not overwrite or coalesce multiple attachment identities sharing one bone', async () => {
+    const decoded = await decodeM3Attachments(await fixture(), budget)
+    const first = decoded.sockets[0]
+    if (first === undefined) throw new TypeError('pinned M3A has no attachment')
+    const source = createModelSocketSource({
+      sockets: [first, { ...first, id: 'm3-attachment-1', sourceName: 'Ref_Hardpoint_Second' }],
+    })
+    expect((await source.sockets({ limit: 8 })).items).toEqual([
+      expect.objectContaining({ id: 'm3-attachment-0', nodeId: 'bone/1' }),
+      expect.objectContaining({ id: 'm3-attachment-1', nodeId: 'bone/1' }),
+    ])
+  })
+
+  it('exercises algorithmic E1 binding only through ResourceSessionPort', async () => {
+    const bytes = await fixture()
+    const baseBytes = algorithmicBase(bytes)
+    expect(baseBytes).not.toEqual(bytes)
+    const resources = resourceSession({ 'animations/cybros-cover.m3a': bytes })
+    const result = await resolveM3AnimationSidecars({
+      baseBytes,
+      candidates: [{ logicalId: 'animations/cybros-cover.m3a' }],
+      resources: resources.port,
+      budget,
+    })
+    expect(result.accepted, JSON.stringify(result.diagnostics)).toEqual([
+      expect.objectContaining({
+        logicalId: 'animations/cybros-cover.m3a',
+        hashes: [3_747_707_700],
+        clips: 1,
+      }),
+    ])
+    expect(result.clips).toEqual([
+      expect.objectContaining({
+        id: 'm3a-0-sequence-0',
+        name: 'Cover',
+        provenance: 'companion',
+      }),
+    ])
+    expect(result.references).toEqual([
+      expect.objectContaining({
+        id: 'animations/cybros-cover.m3a',
+        role: 'sidecar',
+        provenance: 'companion',
+      }),
+    ])
+    expect(resources.releases()).toBe(1)
+
+    // A genuinely distinct shipped M3 fixture is not the matching Cybros base and must not be
+    // presented as one: explicit hash compatibility fails closed.
+    const distinct = await resolveM3AnimationSidecars({
+      baseBytes: await baseFixture(),
+      candidates: [{ logicalId: 'animations/cybros-cover.m3a' }],
+      resources: resourceSession({ 'animations/cybros-cover.m3a': bytes }).port,
+      budget,
+    })
+    expect(distinct.accepted).toEqual([])
+    expect(distinct.diagnostics.map(item => item.code)).toContain('x3.m3/m3a-sidecar-hash-mismatch')
+  })
+
+  it('names missing, wrong-hash and stale sidecars without attaching them', async () => {
+    const bytes = await fixture()
+    const baseBytes = algorithmicBase(bytes)
+    const hash = Buffer.from([0x34, 0x7b, 0x61, 0xdf])
+    const wrong = Uint8Array.from(bytes)
+    const hashOffset = Buffer.from(wrong).indexOf(hash)
+    expect(hashOffset).toBeGreaterThanOrEqual(0)
+    wrong[hashOffset] ^= 1
+
+    const wrongResources = resourceSession({ 'animations/wrong.m3a': wrong })
+    const wrongResult = await resolveM3AnimationSidecars({
+      baseBytes,
+      candidates: [{ logicalId: 'animations/wrong.m3a' }],
+      resources: wrongResources.port,
+      budget,
+    })
+    expect(wrongResult.accepted).toEqual([])
+    expect(wrongResult.diagnostics.map(item => item.code)).toContain(
+      'x3.m3/m3a-sidecar-hash-mismatch',
+    )
+
+    const staleResources = resourceSession(
+      { 'animations/stale.m3a': bytes },
+      { revision: 'provider-token:actual' },
+    )
+    const stale = await resolveM3AnimationSidecars({
+      baseBytes,
+      candidates: [
+        {
+          logicalId: 'animations/stale.m3a',
+          expectedRevision: revisionId('provider-token:expected'),
+        },
+      ],
+      resources: staleResources.port,
+      budget,
+    })
+    expect(stale.accepted).toEqual([])
+    expect(stale.diagnostics.map(item => item.code)).toContain('x3.m3/m3a-sidecar-stale')
+
+    const missingResources = resourceSession({})
+    const missing = await resolveM3AnimationSidecars({
+      baseBytes,
+      candidates: [{ logicalId: 'animations/missing.m3a' }],
+      resources: missingResources.port,
+      budget,
+    })
+    expect(missing.accepted).toEqual([])
+    expect(missing.diagnostics.map(item => item.code)).toContain('x3.m3/m3a-sidecar-unavailable')
+  })
+
+  it('fails closed on cancellation and names byte-budget exhaustion', async () => {
+    const bytes = await fixture()
+    const baseBytes = algorithmicBase(bytes)
+    const cancelled = new AbortController()
+    cancelled.abort()
+    const resources = resourceSession({ 'animations/cybros-cover.m3a': bytes })
+    await expect(
+      resolveM3AnimationSidecars({
+        baseBytes,
+        candidates: [{ logicalId: 'animations/cybros-cover.m3a' }],
+        resources: resources.port,
+        budget,
+        signal: cancelled.signal,
+      }),
+    ).rejects.toMatchObject({ code: CANCELLED_CODE })
+
+    const bounded = await resolveM3AnimationSidecars({
+      baseBytes,
+      candidates: [{ logicalId: 'animations/cybros-cover.m3a' }],
+      resources: resources.port,
+      budget: { ...budget, maxInputBytes: 16n },
+    })
+    expect(bounded.accepted).toEqual([])
+    expect(bounded.diagnostics.map(item => item.code)).toContain(
+      'x3.m3/m3a-sidecar-budget-exceeded',
+    )
+    expect(resources.releases()).toBe(1)
+  })
+})

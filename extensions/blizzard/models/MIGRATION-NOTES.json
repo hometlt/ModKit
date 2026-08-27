@@ -9,10 +9,17 @@
   "codecs": {
     "org.modkitx/m3": {
       "verdict": "needs-new-contract",
-      "lostPlanes": [],
+      "lostPlanes": [
+        "attachment orientation and native rest transform",
+        "ATVL native matrix, size and vertex payload",
+        "external M3A production pairing/discovery"
+      ],
       "contractGaps": [
         "capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract",
-        "model-material-source@1 has no layer slots or resource foreign keys: MATM/MAT_/LAYR/BAT_ decoding publishes material identity and primitive materialId, while layer mappings remain receipt evidence"
+        "model-material-source@1 has no layer slots or resource foreign keys: MATM/MAT_/LAYR/BAT_ decoding publishes material identity and primitive materialId, while layer mappings remain receipt evidence",
+        "model-collision-source@1 carries ATVL identity/kind but not native matrices, sizes or vertices; attachment orientation/rest transforms are likewise unavailable",
+        "M3 ATT_ bone/<index> targets have no exact scene-node join until the bone hierarchy is published in model-scene-source; UVM materialization excludes the socket facet instead of fabricating nodes",
+        "M3A ResourceSessionPort projection is provider-foundation only: the genuine standalone fixture has no recorded original CASC logical path or independently pinned compatible base M3"
       ],
       "renames": [],
       "converterDefaults": [

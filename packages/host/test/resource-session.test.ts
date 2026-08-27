@@ -425,6 +425,31 @@ describe('resource session — budgets and cycles', () => {
 })
 
 describe('resource session — lifecycle', () => {
+  it('reclaims resource budget on caller release and never releases it again on dispose', async () => {
+    const origin = fakeOrigin(['textures/a.dds', 'textures/b.dds'])
+    const session = createResourceSession({
+      origin,
+      revision: SESSION_REVISION,
+      limits: { maxResources: 1 },
+    })
+    const first = await session.resolve(requirement('r1', 'textures/a.dds'))
+    expect(first.state).toBe('resolved')
+    if (first.state !== 'resolved') return
+    await first.lease.release()
+    // idempotence belongs to the session's returned lease even if its backend is less defensive
+    await first.lease.release()
+
+    const second = await session.resolve(requirement('r2', 'textures/b.dds'))
+    expect(second.state).toBe('resolved')
+    if (second.state !== 'resolved') return
+    await second.lease.release()
+    expect(origin.counts.releases).toBe(2)
+    expect(origin.outstanding()).toBe(0)
+
+    await session.dispose()
+    expect(origin.counts.releases).toBe(2)
+  })
+
   it('releases every outstanding lease on dispose, and is idempotent', async () => {
     const origin = fakeOrigin(['textures/a.dds', 'textures/b.dds'])
     const session = createResourceSession({ origin, revision: SESSION_REVISION })

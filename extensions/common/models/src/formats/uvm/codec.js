@@ -3,6 +3,7 @@ import {
   createModelCollisionSource,
   createModelMaterialSource,
   createModelSceneSource,
+  createModelSocketSource,
   createProjectionReceipt,
   createTreeDataSource,
 } from '@modkitx-x3/codec-kit'
@@ -208,10 +209,67 @@ function validateUvmDocument(document, binaryByteLength) {
     throw new TypeError('UV_source_blob is declared but absent')
   }
   validateCollisionMetadata(document, used)
+  validateSocketMetadata(document, used)
   validateTeamColorMetadata(document, used)
   validateGameMaterialMetadata(document, used)
   validateEffectsMetadata(document, used)
   validateAnimationPointers(document, used)
+}
+
+function validateSocketMetadata(document, used) {
+  let count = 0
+  const axes = new Set(['+x', '-x', '+y', '-y', '+z', '-z'])
+  for (const [nodeIndex, candidate] of array(document, 'nodes').entries()) {
+    const node = object(candidate, `node ${nodeIndex}`)
+    const candidateSocket = node.extensions?.UV_game_socket
+    if (candidateSocket === undefined) continue
+    count += 1
+    const socket = object(candidateSocket, `node ${nodeIndex} UV_game_socket`)
+    if (!nonBlank(socket.role)) throw new TypeError(`node ${nodeIndex} socket needs a role`)
+    if (socket.index !== undefined && (!Number.isSafeInteger(socket.index) || socket.index < 0)) {
+      throw new RangeError(`node ${nodeIndex} socket index is invalid`)
+    }
+    if (socket.sourceName !== undefined && typeof socket.sourceName !== 'string') {
+      throw new TypeError(`node ${nodeIndex} socket sourceName is invalid`)
+    }
+    if (socket.forward !== undefined && !axes.has(socket.forward)) {
+      throw new TypeError(`node ${nodeIndex} socket forward axis is invalid`)
+    }
+    if (socket.up !== undefined && !axes.has(socket.up)) {
+      throw new TypeError(`node ${nodeIndex} socket up axis is invalid`)
+    }
+    const identity = socket.extras?.modkitx
+    if (identity !== undefined && (!nonBlank(identity.id) || !nonBlank(identity.nodeId))) {
+      throw new TypeError(`node ${nodeIndex} socket Modkit identity is invalid`)
+    }
+  }
+  if (count > 0 && !used.includes('UV_game_socket')) {
+    throw new TypeError('UV_game_socket is not declared in extensionsUsed')
+  }
+  if (count === 0 && used.includes('UV_game_socket')) {
+    throw new TypeError('UV_game_socket is declared but absent')
+  }
+}
+
+function decodeSockets(document) {
+  const sockets = []
+  for (const [nodeIndex, candidate] of array(document, 'nodes').entries()) {
+    const node = object(candidate, `node ${nodeIndex}`)
+    const extension = node.extensions?.UV_game_socket
+    if (extension === undefined) continue
+    const socket = object(extension, `node ${nodeIndex} UV_game_socket`)
+    const identity = socket.extras?.modkitx
+    sockets.push({
+      id: nonBlank(identity?.id) ? identity.id : `uvm-socket-${nodeIndex}`,
+      nodeId: nonBlank(identity?.nodeId) ? identity.nodeId : `node-${nodeIndex}`,
+      role: socket.role,
+      ...(typeof socket.sourceName === 'string' ? { sourceName: socket.sourceName } : {}),
+      ...(socket.forward === undefined || socket.up === undefined
+        ? {}
+        : { orientation: { forward: socket.forward, up: socket.up } }),
+    })
+  }
+  return Object.freeze(sockets)
 }
 
 function validateEffectsMetadata(document, used) {
@@ -1040,6 +1098,7 @@ function inspectUvm(bytes, context) {
   const teamColors = decodeTeamColors(document)
   const advancedMaterials = decodeAdvancedMaterials(document)
   const effects = decodeEffects(document)
+  const sockets = decodeSockets(document)
   const materialRefs = decodeMaterialRefs(document)
   const identity = document.extensions.UV_asset
   const provenance = document.extensions.UV_provenance
@@ -1094,6 +1153,7 @@ function inspectUvm(bytes, context) {
       advancedMaterialContracts: advancedMaterials.total,
       advancedMaterialKinds: advancedMaterials.byContract,
       effects: effects.total,
+      sockets: sockets.length,
       effectProfile: effects.profile,
       effectKinds: effects.byKind,
       animatedEffectProperties: effects.animated,
@@ -1116,6 +1176,7 @@ function inspectUvm(bytes, context) {
           { key: 'teamColorMaterials', value: teamColors.total },
           { key: 'advancedMaterialContracts', value: advancedMaterials.total },
           { key: 'effects', value: effects.total },
+          { key: 'sockets', value: sockets.length },
           { key: 'animatedEffectProperties', value: effects.animated },
           { key: 'preservedSourceBlobs', value: preservedSourceBlobs },
         ],
@@ -1165,6 +1226,11 @@ function inspectUvm(bytes, context) {
           note: `${collisions.total} declared UV_game_collision shape(s)`,
         },
         {
+          planeId: 'attachments',
+          state: sockets.length > 0 ? 'preserved' : 'lost',
+          note: `${sockets.length} UV_game_socket node extension(s) published with stable identity`,
+        },
+        {
           planeId: 'resources',
           state: 'lost',
           note: `${scene.textures} texture(s) are counted from the document; this reader does not surface their references, so no resource facet is published`,
@@ -1190,7 +1256,7 @@ function inspectUvm(bytes, context) {
       evidence: [
         {
           kind: 'observed',
-          statement: `UVM ${document.asset.extras.uv.version}/${document.asset.extras.uv.profile}: ${scene.nodes.length} node(s), ${scene.primitives.length} primitive(s)`,
+          statement: `UVM ${document.asset.extras.uv.version}/${document.asset.extras.uv.profile}: ${scene.nodes.length} node(s), ${scene.primitives.length} primitive(s), ${sockets.length} socket(s)`,
           bytesRead: BigInt(bytes.byteLength),
         },
         {
@@ -1218,6 +1284,11 @@ function inspectUvm(bytes, context) {
             'common.view/model-collision-source': createModelCollisionSource({
               volumes: collisions.volumes,
             }),
+          }),
+      ...(sockets.length === 0
+        ? {}
+        : {
+            'common.view/model-socket-source': createModelSocketSource({ sockets }),
           }),
       ...(materialRefs.length === 0
         ? {}

@@ -46,6 +46,7 @@ import type {
   ModelMaterialSource,
   ModelResourceRefsSource,
   ModelSkeletonSource,
+  ModelSocketSource,
 } from './model-facet-sources.js'
 
 // ---------------------------------------------------------------------------------------------
@@ -237,6 +238,13 @@ const modelMaterialSourceSurface = {
   },
 } as const satisfies SurfaceOf<ModelMaterialSource>
 
+const modelSocketSourceSurface = {
+  methods: {
+    info: cancellableValue,
+    sockets: cancellableValue,
+  },
+} as const satisfies SurfaceOf<ModelSocketSource>
+
 const relationGraphSourceSurface = {
   methods: {
     summary: cancellableValue,
@@ -282,6 +290,7 @@ export const STANDARD_DATA_SOURCE_SURFACES: Readonly<
   'common.view/model-animation-source': modelAnimationSourceSurface,
   'common.view/model-collision-source': modelCollisionSourceSurface,
   'common.view/model-material-source': modelMaterialSourceSurface,
+  'common.view/model-socket-source': modelSocketSourceSurface,
   'common.view/relation-graph-source': relationGraphSourceSurface,
   'common.view/subject-facts-source': subjectFactsSourceSurface,
   'common.view/slide-deck-source': slideDeckSourceSurface,

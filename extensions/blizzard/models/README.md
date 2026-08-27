@@ -18,6 +18,21 @@ the already-published `model-resource-refs-source@1` id, so material decoding ne
 authority for asset paths. DIV_ → BAT_ binds an M3 region primitive to a material only when the
 region and MATM reference are valid and unambiguous.
 
+`MODL.attachment_points` now follows exact ATT_ v1 references and publishes stable attachment
+identity, a portable `attach` role, the exact native source name and exact `bone/<index>` target
+through `common.view/model-socket-source@1`; no role is guessed from that name. ATVL v0 records publish
+stable volume identity and native kind through `model-collision-source@1`. Native attachment bone
+targets remain decode evidence, while missing orientation axes, rest transforms and the ATVL
+matrix/size/vertex payload stay named receipt losses.
+
+Texture closure for the real installed `artifact1.m3` is resolved only through a host-owned
+`ResourceSessionPort` over the dependency-composed SC2 workspace. The production UVM materializer
+then reproduces the frozen `model-interchange-v1` projection exactly. The M3 scene facet does not
+yet publish its bone hierarchy as scene nodes, so its exact `bone/<index>` socket targets are
+excluded from that UVM artifact rather than overwritten with invented root children. The generic
+materializer and reader support standards-defined `UV_game_socket` for projections that do carry
+an exact scene-node join; there is no StarCraft II branch in either common component.
+
 The skeleton facet carries only the v1 contract's index/name bindings. Parent links and named flag
 bits are validated as decode evidence, but the projection receipt still marks hierarchy, flags and
 rest pose as lost because the live contract has no fields for them. Animation receipts keep SD
@@ -28,6 +43,15 @@ The material facet's v1 ABI carries identity, name and optional contract tags, b
 Layer-to-resource foreign keys and standard shader semantics therefore remain explicit receipt
 evidence and a named `material-layer-facet-fields` remainder rather than a fabricated public shape.
 Exotic M3 material types are counted and named but their renderer-specific parameters remain lost.
+
+M3A is bounded provider foundation, not a production-resolved claim. The service takes exact
+caller-supplied logical IDs, uses `ResourceSessionPort`, releases every lease and requires explicit
+hash intersection, full skeleton compatibility and executable channels. The pinned genuine
+standalone `cybros-cover.m3a` fixture has decoded SHA-256
+`07a632fb165b98e60b0e6803451e92c7d94ec527cae8252ca6ed2a3a0661b9e5`, but its legacy fixture did
+not retain an original CASC logical path or a matching base M3. Its accepted-path test is therefore
+labelled algorithmic E1; a distinct real base is explicitly rejected and ordinary codec open does
+not discover M3A by stem, sibling path or ambient URI.
 
 The synthetic triangle fixture and live SC2 installation corpus exercise this package. Historical
 conversion decisions and the still-unimplemented writer/export planes are recorded in
