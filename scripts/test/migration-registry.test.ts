@@ -255,6 +255,39 @@ describe('phase-aware priority gate (plan §3.5, block 10 works 6–7)', () => {
     expect(stderr).toContain('is unreadable; phase start fails closed')
   })
 
+  it('fails closed when the phase-start readiness schema or corpora collection is malformed', () => {
+    const wrongSchema = runPriority('valid.capabilities.yaml', [
+      '--phase',
+      'block-16',
+      '--corpora',
+      join(fixtures, 'phase-start-wrong-schema-corpora.json'),
+    ])
+    expect(wrongSchema.status).toBe(1)
+    expect(wrongSchema.stderr).toContain('schemaVersion must be corpora-readiness-1')
+
+    const missingCorpora = runPriority('valid.capabilities.yaml', [
+      '--phase',
+      'block-16',
+      '--corpora',
+      join(fixtures, 'phase-start-missing-corpora.json'),
+    ])
+    expect(missingCorpora.status).toBe(1)
+    expect(missingCorpora.stderr).toContain('corpora must be an array')
+  })
+
+  it('fails closed on malformed corpus entries instead of silently skipping them', () => {
+    const { status, stderr } = runPriority('valid.capabilities.yaml', [
+      '--phase',
+      'block-16',
+      '--corpora',
+      join(fixtures, 'phase-start-malformed-entry-corpora.json'),
+    ])
+    expect(status).toBe(1)
+    expect(stderr).toContain('corpus missing-block: verticalBlock must be an integer')
+    expect(stderr).toContain('corpus bad-status: unsupported status "maybe-ready"')
+    expect(stderr).toContain('id is required; phase start fails closed')
+  })
+
   it('keeps the committed closures fresh and free of overdue units at the current phase', () => {
     const result = spawnSync(process.execPath, [priorityGate, '--check', '--phase', 'block-10'], {
       encoding: 'utf8',

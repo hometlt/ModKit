@@ -78,6 +78,12 @@ const byId = new Map(capabilities.map(row => [row.capabilityId, row]))
 
 /** Migration states that still leave a user workflow open. */
 const UNRESOLVED = new Set(['missing', 'blocked', 'partial', 'unknown', 'deferred-post-ga'])
+const CORPUS_STATUSES = new Set([
+  'available',
+  'owner-action-required',
+  'legal-alternative-ready',
+  'unavailable',
+])
 const PHASE_START_READY = new Set(['available', 'legal-alternative-ready'])
 const RELEASES = {
   'mk3-ga': ['mk3-priority'],
@@ -217,9 +223,14 @@ try {
   corpora = { corpora: [] }
   corporaReadError = true
 }
+const corpusEntries = Array.isArray(corpora?.corpora) ? corpora.corpora : []
 const corpusStatus = new Map()
-for (const entry of corpora.corpora ?? []) {
-  for (const variable of entry.environmentVariables ?? []) corpusStatus.set(variable, entry.status)
+for (const entry of corpusEntries) {
+  if (entry === null || typeof entry !== 'object' || Array.isArray(entry)) continue
+  if (!Array.isArray(entry.environmentVariables)) continue
+  for (const variable of entry.environmentVariables) {
+    if (typeof variable === 'string') corpusStatus.set(variable, entry.status)
+  }
 }
 
 /**
@@ -299,15 +310,56 @@ function phaseStartAudit(phaseBlock) {
     ]
   }
   const blocked = []
-  const entries = [...(corpora.corpora ?? [])].sort((left, right) =>
+  if (corpora?.schemaVersion !== 'corpora-readiness-1') {
+    blocked.push(
+      `corpus readiness schemaVersion must be corpora-readiness-1, found ${JSON.stringify(corpora?.schemaVersion)}; phase start fails closed`,
+    )
+  }
+  if (!Array.isArray(corpora?.corpora)) {
+    blocked.push('corpus readiness corpora must be an array; phase start fails closed')
+    return blocked
+  }
+  const entries = []
+  for (const [index, entry] of corpora.corpora.entries()) {
+    if (entry === null || typeof entry !== 'object' || Array.isArray(entry)) {
+      blocked.push(
+        `corpus readiness entry ${index + 1} must be an object; phase start fails closed`,
+      )
+      continue
+    }
+    const label =
+      typeof entry.id === 'string' && entry.id.length > 0
+        ? `corpus ${entry.id}`
+        : `corpus readiness entry ${index + 1}`
+    let malformed = false
+    if (typeof entry.id !== 'string' || entry.id.length === 0) {
+      blocked.push(`${label}: id is required; phase start fails closed`)
+      malformed = true
+    }
+    if (!Number.isInteger(entry.verticalBlock)) {
+      blocked.push(`${label}: verticalBlock must be an integer; phase start fails closed`)
+      malformed = true
+    }
+    if (!CORPUS_STATUSES.has(entry.status)) {
+      blocked.push(
+        `${label}: unsupported status ${JSON.stringify(entry.status)}; phase start fails closed`,
+      )
+      malformed = true
+    }
+    if (!malformed) entries.push(entry)
+  }
+  entries.sort((left, right) =>
     left.verticalBlock !== right.verticalBlock
       ? left.verticalBlock - right.verticalBlock
       : compareUtf8(left.id, right.id),
   )
   for (const entry of entries) {
-    if (!Number.isInteger(entry.verticalBlock) || entry.verticalBlock > phaseBlock) continue
+    if (entry.verticalBlock > phaseBlock) continue
     if (PHASE_START_READY.has(entry.status)) continue
-    const variables = (entry.environmentVariables ?? []).join(', ') || 'no environment variable'
+    const variables =
+      Array.isArray(entry.environmentVariables) && entry.environmentVariables.length > 0
+        ? entry.environmentVariables.join(', ')
+        : 'no environment variable'
     blocked.push(
       `block ${entry.verticalBlock} requires corpus ${entry.id} (${variables}), status ${String(entry.status)}; expected available or legal-alternative-ready before the vertical starts`,
     )
