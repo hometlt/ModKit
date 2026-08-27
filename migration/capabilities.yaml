@@ -10605,7 +10605,7 @@ capabilities:
       operations:
         inspect: 'packages/testkit/test/sc2-casc-real.test.ts'
         validate: null
-        read: 'packages/testkit/test/sc2-casc-real.test.ts'
+        read: 'apps/electron/test/subject-open-smoke.test.ts'
         materialize: null
     knownLoss:
       - 'capability «edit»: 13D editing exists for text sources only; binary edit contracts absent'
@@ -10617,7 +10617,7 @@ capabilities:
       - 'operation dropped at port: view.thumbnail'
       - 'world source remains publisher-candidate org.modkitx.blizzard.starcraft2/world-scene-source@1; common.view admission is reserved for block 18'
       - 'the pinned retail TArcade corpus has no PATH document, so real navigation is named unavailable; bounded PATH parsing/paging is synthetic-proof only'
-      - 'terrain is a bounded HMAP summary/sample layer; material, water, normalized cliff and cross-space transforms remain explicit unknown/partial facets'
+      - 'terrain publishes the exact ordered native HMAP height grid only when the complete payload is decoded; material, water, normalized cliff and cross-space transforms remain explicit unknown/partial facets'
     receipts:
       projection: null
       materialization: null
@@ -10626,6 +10626,10 @@ capabilities:
     closedBy:
       commits: []
       tests:
+        - 'apps/electron/test/subject-open-smoke.test.ts'
+        - 'apps/modkit-cli/test/cli.test.ts'
+        - 'apps/modkit-vscode/test/extension-roots.test.ts'
+        - 'apps/web/test/extension-roots.test.ts'
         - 'packages/testkit/test/sc2-casc-real.test.ts'
       reports: []
   - capabilityId: 'format/sc2-mod/open-inspect'
