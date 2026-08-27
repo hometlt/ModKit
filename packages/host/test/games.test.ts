@@ -53,7 +53,8 @@ const activationBudget = {
   maxDiagnostics: 100,
 }
 const temporaryRoots: string[] = []
-const installedRoot = process.env['MODKITX_SC2_INSTALL'] ?? 'C:\\Apps\\StarCraft II'
+const installedRoot =
+  process.env['MODKITX_SC2_ROOT'] ?? process.env['MODKITX_SC2_INSTALL'] ?? 'C:\\Apps\\StarCraft II'
 const installedEvidenceAvailable =
   existsSync(join(installedRoot, '.build.info')) &&
   existsSync(join(installedRoot, 'SC2Data', 'config')) &&
@@ -160,6 +161,61 @@ describe('standard game-installation contract and StarCraft II provider', () => 
       size: before.size,
       mtimeMs: before.mtimeMs,
     })
+  })
+
+  it('prioritizes caller-configured paths over MODKITX_SC2_ROOT', async () => {
+    const environmentRoot = await syntheticInstallation()
+    const manualRoot = await syntheticInstallation()
+    const configuredPaths = Object.freeze([manualRoot])
+    const previousEnvironmentRoot = process.env['MODKITX_SC2_ROOT']
+    process.env['MODKITX_SC2_ROOT'] = environmentRoot
+    const resolution = await resolveStarcraft2()
+    try {
+      const result = await resolution.discovery.discover({
+        gameId: GAME_ID,
+        configuredPaths,
+        maxCandidates: 2,
+      })
+      expect(result.probes.map(item => item.normalizedPath)).toEqual(
+        [manualRoot, environmentRoot].map(path => path.replace(/\\/gu, '/')),
+      )
+      expect(result.installations.map(item => item.origins)).toEqual([
+        ['configured-path'],
+        ['configured-path'],
+      ])
+      expect(configuredPaths).toEqual([manualRoot])
+    } finally {
+      await resolution.release()
+      if (previousEnvironmentRoot === undefined) delete process.env['MODKITX_SC2_ROOT']
+      else process.env['MODKITX_SC2_ROOT'] = previousEnvironmentRoot
+    }
+  })
+
+  it('fails closed for an invalid environment root while retaining a valid manual fallback', async () => {
+    const manualRoot = await syntheticInstallation()
+    const invalidEnvironmentRoot = join(manualRoot, 'not-an-installation')
+    await mkdir(invalidEnvironmentRoot)
+    const previousEnvironmentRoot = process.env['MODKITX_SC2_ROOT']
+    process.env['MODKITX_SC2_ROOT'] = invalidEnvironmentRoot
+    const resolution = await resolveStarcraft2()
+    try {
+      const result = await resolution.discovery.discover({
+        gameId: GAME_ID,
+        configuredPaths: [manualRoot],
+        maxCandidates: 2,
+      })
+      const invalidNormalized = invalidEnvironmentRoot.replace(/\\/gu, '/')
+      const manualNormalized = manualRoot.replace(/\\/gu, '/')
+      expect(result.probes.map(item => [item.normalizedPath, item.confirmed])).toEqual([
+        [manualNormalized, true],
+        [invalidNormalized, false],
+      ])
+      expect(result.installations.map(item => item.normalizedPath)).toEqual([manualNormalized])
+    } finally {
+      await resolution.release()
+      if (previousEnvironmentRoot === undefined) delete process.env['MODKITX_SC2_ROOT']
+      else process.env['MODKITX_SC2_ROOT'] = previousEnvironmentRoot
+    }
   })
 
   it('stays within each configured candidate and never promotes parent markers', async () => {
