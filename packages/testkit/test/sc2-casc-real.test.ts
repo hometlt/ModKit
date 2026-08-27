@@ -382,7 +382,11 @@ describe('installed StarCraft II CASC product path', () => {
             workspace,
             resources,
             locales: ['enUS'],
-            queries: [{ namespace: 'Unit', entityId: 'Marine' }],
+            queries: [
+              { namespace: 'Unit', entityId: 'Marine' },
+              { namespace: 'Effect', entityId: 'Corruption' },
+              { namespace: 'Effect', entityId: 'GuardianShieldSearch' },
+            ],
             localizationKeys: ['Unit/Name/Marine'],
             limits: {
               maxRequirements: 64,
@@ -428,6 +432,49 @@ describe('installed StarCraft II CASC product path', () => {
             )
             expect(liveMarine).toMatchObject({ typeId: 'CUnit', entityId: 'Marine' })
             expect(liveMarine?.sources.map(item => item.rootId)).toContain('retail:liberty.sc2mod')
+            const corruption = liveData.snapshot.definitions.find(
+              entity => entity.namespace === 'Effect' && entity.entityId === 'Corruption',
+            )
+            expect(corruption).toMatchObject({
+              typeId: 'CEffectCreatePersistent',
+              fields: { PeriodicEffectArray: ['CorruptionLaunchMissile'] },
+            })
+            expect(corruption?.sources).toContainEqual(
+              expect.objectContaining({ rootId: 'retail:liberty.sc2mod' }),
+            )
+            const guardianShieldSearch = liveData.snapshot.definitions.find(
+              entity => entity.namespace === 'Effect' && entity.entityId === 'GuardianShieldSearch',
+            )
+            expect(guardianShieldSearch).toMatchObject({
+              typeId: 'CEffectEnumArea',
+              fields: {
+                AreaArray: [
+                  {
+                    index: '0',
+                    value: { Radius: 4, Effect: 'GuardianShieldApplyBehavior' },
+                  },
+                ],
+              },
+            })
+            expect(guardianShieldSearch?.sources).toContainEqual(
+              expect.objectContaining({ rootId: 'retail:liberty.sc2mod' }),
+            )
+            expect(liveData.snapshot.relations).toEqual(
+              expect.arrayContaining([
+                expect.objectContaining({
+                  from: { namespace: 'Effect', entityId: 'Corruption' },
+                  to: { namespace: 'Effect', entityId: 'CorruptionLaunchMissile' },
+                  role: 'PeriodicEffectArray',
+                  dead: true,
+                }),
+                expect.objectContaining({
+                  from: { namespace: 'Effect', entityId: 'GuardianShieldSearch' },
+                  to: { namespace: 'Effect', entityId: 'GuardianShieldApplyBehavior' },
+                  role: 'AreaArray.Effect',
+                  dead: false,
+                }),
+              ]),
+            )
             const overlaid = liveData.snapshot.definitions.filter(entity => {
               const sourceRoots = new Set(entity.sources.map(source => source.rootId))
               return (
