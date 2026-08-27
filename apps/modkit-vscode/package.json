@@ -23,6 +23,7 @@
     "prepack": "pnpm ext:build",
     "vscode:prepublish": "pnpm ext:build",
     "smoke:vscode": "node test-e2e/run-smoke.mjs",
+    "smoke:vscode:lifecycle": "node test-e2e/run-lifecycle-smoke.mjs",
     "dist-app:check": "node scripts/build-extension.mjs --check"
   },
   "dependencies": {
