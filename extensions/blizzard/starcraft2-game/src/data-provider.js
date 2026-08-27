@@ -93,6 +93,16 @@ export const STARCRAFT2_DATA_SCHEMAS = Object.freeze([
   }),
   Object.freeze({ typeId: 'CEffect', parentTypeId: 'CBase', fields: Object.freeze([]) }),
   Object.freeze({
+    typeId: 'CEffectSet',
+    parentTypeId: 'CEffect',
+    fields: Object.freeze([append('EffectArray', 'Effect')]),
+  }),
+  Object.freeze({
+    typeId: 'CEffectApplyBehavior',
+    parentTypeId: 'CEffect',
+    fields: Object.freeze([scalar('Behavior', 'Behavior')]),
+  }),
+  Object.freeze({
     typeId: 'CEffectDamage',
     parentTypeId: 'CEffect',
     fields: Object.freeze([scalar('Amount'), scalar('Kind'), scalar('Death', '')]),
@@ -140,6 +150,8 @@ const TYPE_NAMESPACES = Object.freeze({
   CUnit: 'Unit',
   CWeapon: 'Weapon',
   CEffect: 'Effect',
+  CEffectSet: 'Effect',
+  CEffectApplyBehavior: 'Effect',
   CEffectDamage: 'Effect',
   CBehavior: 'Behavior',
   CAbil: 'Abil',
@@ -788,7 +800,7 @@ async function analyzeStarcraft2DataInternal(request, includeWorkspaceFacets) {
         severity: 'information',
         code: 'org.modkitx.blizzard.starcraft2/data-schema-coverage-bounded',
         message:
-          'live facets cover CUnit/CWeapon/CEffect/CBehavior/CAbil/CActor/CButton/CUpgrade selected fields; tokens, validators and remaining catalogs are named remainder',
+          'live facets cover selected fields for CUnit/CWeapon/CEffect/CEffectDamage/CEffectSet/CEffectApplyBehavior/CBehavior/CAbil/CActor/CButton/CUpgrade (plus CBase); tokens, validators and remaining catalogs are named remainder',
       }),
     )
   }
