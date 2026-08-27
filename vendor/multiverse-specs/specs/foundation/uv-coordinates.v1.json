@@ -26,6 +26,11 @@
       "planeState": "inferred",
       "note": "a value computed because the source did not state it is not the same fact as a value converted from one that did"
     },
+    "gridRelationshipWithoutPhysicalScale": {
+      "basis": { "unit": "source-unit", "sourceUnit": "the source's native world unit", "unitsPerCell": "the measured grid relationship" },
+      "planeState": "inferred",
+      "rule": "grid-implied is an evidence situation, not a ProjectionBasis.unit value; metersPerUnit stays absent until a physical scale is documented"
+    },
     "absent": {
       "basis": { "unit": "source-unit", "sourceUnit": "the source's own unit name, verbatim" },
       "planeState": "normalized",
@@ -49,6 +54,18 @@
       "unit": "absent",
       "sourceUnit": "sc2-game-unit",
       "measuredIn": "SPEC_UVM_CONVERSION.md#3"
+    },
+    {
+      "id": "sc2-map-native",
+      "label": "StarCraft II map-native terrain",
+      "from": { "handedness": "right", "upAxis": "z", "forwardAxis": "+y" },
+      "map": "(x, y, z) -> (x, z, -y)",
+      "selfInverse": true,
+      "unit": "gridRelationshipWithoutPhysicalScale",
+      "sourceUnit": "sc2-game-unit",
+      "unitsPerCell": "t3Terrain heightMap.scale.x when it exactly equals heightMap.scale.y; otherwise the scalar-cell-size UVW profile refuses materialization",
+      "origin": "heightfield origin = (offset.x, 0, -(offset.y + (rows - 1) * scale.y)); source rows are reversed so serialized rows advance along canonical +Z",
+      "measuredIn": "../world/ADR-WORLD-001-sc2-map-native-to-uvw.md"
     },
     {
       "id": "s3o",

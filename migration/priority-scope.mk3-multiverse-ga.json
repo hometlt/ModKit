@@ -2665,7 +2665,7 @@
       "evidenceLevel": "E2",
       "allocationState": "absent",
       "portFamily": null,
-      "corpusDescriptors": [],
+      "corpusDescriptors": ["MODKITX_SC2_ROOT"],
       "dependsOn": ["uv/projection-abi/receipts", "uv/uvd/definitions"],
       "requiredBy": [
         "vertical/beyond-all-reason/neutral-definitions-world",

@@ -3,16 +3,16 @@
   "schemaVersion": "multiverse-specs-pin-1",
   "source": {
     "repository": "multiverse (sibling repository)",
-    "commit": "5dc8c40abff3e19e80f7d6018ad9e82827dc3afa",
-    "subject": "specs: кандидатный UVW — схема heightfield-мира, фикстуры и исполняемые векторы",
-    "committedOn": "2026-08-26T05:27:07+04:00"
+    "commit": "21ac5088b2bd86a3aa41f9d1646dc09fad6d7a30",
+    "subject": "spec(world): define measured SC2 map coordinates",
+    "committedOn": "2026-08-27T23:26:07+04:00"
   },
   "generator": "scripts/specs-pin.mjs",
   "generatedFrom": "git objects, not the sibling working tree",
   "prefix": "specs/",
   "counts": {
-    "files": 56,
-    "bytes": 498095
+    "files": 57,
+    "bytes": 505843
   },
   "files": [
     {
@@ -62,8 +62,8 @@
     },
     {
       "path": "specs/foundation/SPEC_UV_COORDINATES.md",
-      "bytes": 5800,
-      "digest": "sha256:8b571046f44f6b56123a5ea754190231b4368b2363fe4c3df4ada55d2a210554"
+      "bytes": 6815,
+      "digest": "sha256:598523238a6e24c73787098cc32b5d0fc807a587e42fc60462c30f2205e60067"
     },
     {
       "path": "specs/foundation/SPEC_UV_FOUNDATION.md",
@@ -82,8 +82,8 @@
     },
     {
       "path": "specs/foundation/uv-coordinates.v1.json",
-      "bytes": 4093,
-      "digest": "sha256:ad8b125f4a1afb874c5a5b868eaf6acd76bebfd91fcfbfbef52a488b50207412"
+      "bytes": 5193,
+      "digest": "sha256:7093b48ea1078f2e683b905cfd10e1c25f1b25cfedac6954152d41913bf0b11e"
     },
     {
       "path": "specs/model/SPEC_UVM.md",
@@ -276,9 +276,14 @@
       "digest": "sha256:defcdc12404384f43439f4b0c35a285b242c982c6d1f3a27b7e0baff5a4742f2"
     },
     {
+      "path": "specs/world/ADR-WORLD-001-sc2-map-native-to-uvw.md",
+      "bytes": 4875,
+      "digest": "sha256:ff44e0b7c99c324a031868fc72afca87652f92b8b4babd95b32f123744876ab8"
+    },
+    {
       "path": "specs/world/SPEC_UVW.md",
-      "bytes": 5041,
-      "digest": "sha256:05840edb8bdc78bb9d1c313be944eeb5991460de32e6f75fe12d50f5c8a0bbfc"
+      "bytes": 5799,
+      "digest": "sha256:5f3012cffc722668be93261ddbf0202601c7d361bc02491ca45dfa6efab4189d"
     },
     {
       "path": "specs/world/fixtures/uvw-heightfield-basic.uvw.json",

@@ -598,6 +598,74 @@ function parseTerrainTransform(document, terrain, heightDocumentPath, snapshotId
   })
 }
 
+const SC2_WORLD_ORACLE = Object.freeze({
+  kind: 'adapter-qualification',
+  method: 'sealed-legacy-differential',
+  oracle: 'modkitx@1a14ba4eddd0ae88de273348ebd44cfb98a0581d',
+  corpus: 'StarCraft II 5.0.16.97563/TArcade.SC2Map',
+  sourceDigests: Object.freeze({
+    t3HeightMap: 'sha256:e4223f50d2350a350ac046395368470540f63b02cfa281ec4732d5c47738e83e',
+    t3Terrain: 'sha256:994658707b6a56dd2b6261e9114b61ee10095a0801d57cbdc0dcec82181bcc6f',
+  }),
+  tupleCount: 66_049,
+  comparison: 'ieee-754-binary64-exact',
+  nativeTupleDigest: 'sha256:c3419baf0f7834682342035b3d1d485a21a0f30adc7712e6a7424dc3c075e8e7',
+  presentationTupleDigest:
+    'sha256:4befdf3b649b32c3e9f96c927df9a18b73f35a2c49db57148056ba5d6422794a',
+  canonicalTupleDigest: 'sha256:dc1cb1b5d7a09b797721b79f158039141828cb567f2b8fd733d0a2dff108ba5b',
+})
+
+/** Candidate transform ratified by multiverse/specs world ADR-WORLD-001. */
+function sc2WorldCanonicalTransform(transform) {
+  const { dim, offset, scale } = transform.heightMap
+  if (scale.x !== scale.y) return undefined
+  const canonicalNumber = value => (value === 0 ? 0 : value)
+  return Object.freeze({
+    schemaVersion: 1,
+    snapshotId: transform.snapshotId,
+    sourceCoordinateSpaceId: 'map-native',
+    targetCoordinateSpaceId: 'uvw-canonical',
+    basis: Object.freeze({
+      handedness: 'right',
+      upAxis: 'y',
+      forwardAxis: '+z',
+      unit: 'source-unit',
+      sourceUnit: 'sc2-game-unit',
+      unitsPerCell: scale.x,
+    }),
+    axes: Object.freeze({
+      x: Object.freeze({ sourceAxis: 'x', scale: 1, offset: 0 }),
+      y: Object.freeze({ sourceAxis: 'z', scale: 1, offset: 0 }),
+      z: Object.freeze({ sourceAxis: 'y', scale: -1, offset: 0 }),
+    }),
+    heightfield: Object.freeze({
+      columns: dim[0],
+      rows: dim[1],
+      cellSize: scale.x,
+      origin: Object.freeze([
+        canonicalNumber(offset.x),
+        0,
+        canonicalNumber(-(offset.y + (dim[1] - 1) * scale.y)),
+      ]),
+      sourceRowOrder: 'reverse',
+    }),
+    bounds: Object.freeze({
+      coordinateSpaceId: 'uvw-canonical',
+      minimum: Object.freeze({
+        x: canonicalNumber(transform.bounds.minimum.x),
+        y: canonicalNumber(transform.bounds.minimum.z),
+        z: canonicalNumber(-transform.bounds.maximum.y),
+      }),
+      maximum: Object.freeze({
+        x: canonicalNumber(transform.bounds.maximum.x),
+        y: canonicalNumber(transform.bounds.maximum.z),
+        z: canonicalNumber(-transform.bounds.minimum.y),
+      }),
+    }),
+    proof: SC2_WORLD_ORACLE,
+  })
+}
+
 function parseNavigation(document, request) {
   const bytes = document.bytes
   if (bytes.byteLength < 32) throw new TypeError(`${document.path}: PATH header is truncated`)
@@ -821,6 +889,7 @@ export async function analyzeStarcraft2MapWorkspace(request) {
   const terrainParameterDocument = documents.get('t3terrain.xml')
   let navigation
   let terrainTransform
+  let uvwTransform
   const diagnostics = []
   if (navigationDocument === undefined) {
     diagnostics.push(
@@ -846,6 +915,20 @@ export async function analyzeStarcraft2MapWorkspace(request) {
         snapshotId,
         value,
       )
+      if (terrainTransform !== undefined) {
+        uvwTransform = sc2WorldCanonicalTransform(terrainTransform)
+        if (uvwTransform === undefined) {
+          diagnostics.push(
+            Object.freeze({
+              severity: 'information',
+              code: 'org.modkitx.blizzard.starcraft2/uvw-non-uniform-cell-size',
+              message:
+                'UVW candidate materialization requires equal t3Terrain horizontal scale.x and scale.y',
+              path: terrainParameterDocument.path,
+            }),
+          )
+        }
+      }
     } catch (error) {
       diagnostics.push(diagnosticFor(error, terrainParameterDocument.path))
     }
@@ -908,6 +991,7 @@ export async function analyzeStarcraft2MapWorkspace(request) {
     semantic: boundedSemantic,
     ...(navigation === undefined ? {} : { navigation }),
     ...(terrainTransform === undefined ? {} : { terrainTransform }),
+    ...(uvwTransform === undefined ? {} : { uvwTransform }),
     worldCandidate: Object.freeze({
       contract: SC2_WORLD_SCENE_SOURCE_CONTRACT,
       major: 1,
@@ -917,10 +1001,19 @@ export async function analyzeStarcraft2MapWorkspace(request) {
           id: 'map-native',
           horizontalAxes: Object.freeze(['x', 'y']),
           verticalAxis: 'z',
-          handedness: 'native-unspecified',
-          linearUnit: 'sc2-map-unit',
+          handedness: 'right',
+          linearUnit: 'sc2-game-unit',
           rotationUnit: 'native-scalar',
-          origin: 'map-native-unspecified',
+          origin: 't3terrain-heightmap-offset',
+        }),
+        Object.freeze({
+          id: 'uvw-canonical',
+          horizontalAxes: Object.freeze(['x', 'z']),
+          verticalAxis: 'y',
+          handedness: 'right',
+          linearUnit: 'sc2-game-unit',
+          rotationUnit: 'radian',
+          origin: 'adr-world-001-heightfield-origin',
         }),
         Object.freeze({
           id: 'height-grid',
@@ -958,6 +1051,17 @@ export async function analyzeStarcraft2MapWorkspace(request) {
           to: 'map-native',
           state: 'unknown',
           reason: 'navigation cell size and origin are not normalized',
+        }),
+        Object.freeze({
+          from: 'map-native',
+          to: 'uvw-canonical',
+          state: uvwTransform === undefined ? 'unknown' : 'known',
+          ...(uvwTransform === undefined
+            ? {
+                reason:
+                  'a validated exact native terrain transform with uniform horizontal cell size is unavailable',
+              }
+            : {}),
         }),
       ]),
       unknownFacets: Object.freeze([

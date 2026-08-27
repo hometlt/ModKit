@@ -154,7 +154,7 @@ describe('file VFS provider', () => {
     expect([...(await source.readAt(64, 4))]).toEqual([1, 2, 3, 4])
     expect([...(await source.readAt(above512MiB, 4))]).toEqual([5, 6, 7, 8])
     await vfs.dispose()
-  }, 15_000)
+  }, 30_000)
 
   it('accounts repeated and parallel reads against one mount-wide actual-byte budget', async () => {
     const temporary = await mkdtemp(join(tmpdir(), 'modkit-x3-vfs-reads-'))

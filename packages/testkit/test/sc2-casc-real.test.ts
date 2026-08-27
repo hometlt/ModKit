@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { existsSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -25,6 +26,8 @@ import { loadExtensionDirectory } from '@modkitx-x3/host/node'
 import { proves } from '@modkitx-x3/testkit'
 import {
   type ModelSceneSource,
+  type MapTerrainNativeTransform,
+  type MapTerrainSample,
   type NamespaceEntrySource,
   type RasterImageSource,
   type ResourceBudget,
@@ -45,6 +48,65 @@ const ddsPath = 'campaigns/liberty.sc2campaign/base.sc2assets/assets/textures/al
 const mpqPath =
   'mods/liberty.sc2mod/base.sc2data/battlenetcache/fc2161abf876306f1a0467cfacf5e513cba4281fdc13532b440e8c8abb8835ac.s2ma'
 const mapRoot = 'campaigns/liberty.sc2campaign/base.sc2maps/maps/campaign/tarcade.sc2map'
+
+const SC2_WORLD_ORACLE = Object.freeze({
+  native: 'c3419baf0f7834682342035b3d1d485a21a0f30adc7712e6a7424dc3c075e8e7',
+  renderer: '4befdf3b649b32c3e9f96c927df9a18b73f35a2c49db57148056ba5d6422794a',
+  canonical: 'dc1cb1b5d7a09b797721b79f158039141828cb567f2b8fd733d0a2dff108ba5b',
+})
+
+function sc2WorldTupleDigests(
+  samples: readonly MapTerrainSample[],
+  transform: MapTerrainNativeTransform,
+): Readonly<{ native: string; renderer: string; canonical: string }> {
+  const count = transform.heightMap.dim[0] * transform.heightMap.dim[1]
+  if (samples.length !== count) throw new TypeError('SC2 world oracle requires the exact HMAP grid')
+  const positions = new Array<readonly [number, number, number]>(count)
+  const native = new Uint8Array(count * 3 * 8)
+  const renderer = new Uint8Array(count * 3 * 4)
+  const canonical = new Uint8Array(count * 3 * 8)
+  const nativeView = new DataView(native.buffer)
+  const rendererView = new DataView(renderer.buffer)
+  const canonicalView = new DataView(canonical.buffer)
+  const columns = transform.heightMap.dim[0]
+  const rows = transform.heightMap.dim[1]
+  for (let index = 0; index < count; index += 1) {
+    const sample = samples[index]
+    if (sample === undefined) throw new TypeError(`SC2 world oracle sample ${String(index)} absent`)
+    const base =
+      sample.heightBase * transform.vertData.quantizeScale - transform.vertData.quantizeBias
+    const adjustment =
+      sample.heightAdjustment * transform.vertData.quantizeScale - transform.vertData.quantizeBias
+    const position = Object.freeze([
+      transform.heightMap.offset.x + sample.x * transform.heightMap.scale.x,
+      transform.heightMap.offset.y + sample.y * transform.heightMap.scale.y,
+      base * transform.heightMap.scale.z + transform.heightMap.offset.z + adjustment,
+    ] as const)
+    positions[index] = position
+    for (const [axis, value] of position.entries()) {
+      nativeView.setFloat64((index * 3 + axis) * 8, value, true)
+      rendererView.setFloat32((index * 3 + axis) * 4, value, true)
+    }
+  }
+  for (let outputRow = 0; outputRow < rows; outputRow += 1) {
+    const sourceRow = rows - 1 - outputRow
+    for (let column = 0; column < columns; column += 1) {
+      const outputIndex = outputRow * columns + column
+      const position = positions[sourceRow * columns + column]
+      if (position === undefined) throw new TypeError('SC2 canonical oracle position absent')
+      const values = [position[0], position[2], position[1] === 0 ? 0 : -position[1]]
+      for (const [axis, value] of values.entries()) {
+        canonicalView.setFloat64((outputIndex * 3 + axis) * 8, value, true)
+      }
+    }
+  }
+  const digest = (bytes: Uint8Array): string => createHash('sha256').update(bytes).digest('hex')
+  return Object.freeze({
+    native: digest(native),
+    renderer: digest(renderer),
+    canonical: digest(canonical),
+  })
+}
 
 const budget: ResourceBudget = {
   maxInputBytes: 268_435_456n,
@@ -694,6 +756,52 @@ describe('installed StarCraft II CASC product path', () => {
             expect(Number.isFinite(semanticMap.snapshot.terrainTransform?.bounds.maximum.z)).toBe(
               true,
             )
+            const exactTerrain = semanticMap.snapshot.semantic.terrain
+            const nativeTransform = semanticMap.snapshot.terrainTransform
+            if (exactTerrain === undefined || nativeTransform === undefined) {
+              throw new Error('retail SC2 terrain oracle inputs are unavailable')
+            }
+            expect(sc2WorldTupleDigests(exactTerrain.samples, nativeTransform)).toEqual(
+              SC2_WORLD_ORACLE,
+            )
+            expect(semanticMap.snapshot.uvwTransform).toMatchObject({
+              schemaVersion: 1,
+              snapshotId: semanticMap.snapshot.snapshotId,
+              sourceCoordinateSpaceId: 'map-native',
+              targetCoordinateSpaceId: 'uvw-canonical',
+              basis: {
+                handedness: 'right',
+                upAxis: 'y',
+                forwardAxis: '+z',
+                unit: 'source-unit',
+                sourceUnit: 'sc2-game-unit',
+                unitsPerCell: 1,
+              },
+              axes: {
+                x: { sourceAxis: 'x', scale: 1, offset: 0 },
+                y: { sourceAxis: 'z', scale: 1, offset: 0 },
+                z: { sourceAxis: 'y', scale: -1, offset: 0 },
+              },
+              heightfield: {
+                columns: 257,
+                rows: 257,
+                cellSize: 1,
+                origin: [0, 0, -256],
+                sourceRowOrder: 'reverse',
+              },
+              bounds: {
+                coordinateSpaceId: 'uvw-canonical',
+                minimum: { x: 0, z: -256 },
+                maximum: { x: 256, z: 0 },
+              },
+              proof: {
+                kind: 'adapter-qualification',
+                tupleCount: 66_049,
+                nativeTupleDigest: `sha256:${SC2_WORLD_ORACLE.native}`,
+                presentationTupleDigest: `sha256:${SC2_WORLD_ORACLE.renderer}`,
+                canonicalTupleDigest: `sha256:${SC2_WORLD_ORACLE.canonical}`,
+              },
+            })
             expect(semanticMap.snapshot.snapshotId).toContain(
               '#sha256:994658707b6a56dd2b6261e9114b61ee10095a0801d57cbdc0dcec82181bcc6f',
             )
@@ -733,6 +841,14 @@ describe('installed StarCraft II CASC product path', () => {
               }),
             )
             expect(worldInfo.terrainTransform).toEqual(semanticMap.snapshot.terrainTransform)
+            expect(worldInfo.uvwTransform).toEqual(semanticMap.snapshot.uvwTransform)
+            expect(worldInfo.crossSpaceTransforms).toContainEqual(
+              expect.objectContaining({
+                from: 'map-native',
+                to: 'uvw-canonical',
+                state: 'known',
+              }),
+            )
             expect(worldInfo.bounds).toContainEqual(
               expect.objectContaining({
                 facet: 'terrain',
@@ -754,13 +870,9 @@ describe('installed StarCraft II CASC product path', () => {
               maxPageItems: 4_096,
               maxTerrainItems: 100_000,
             })
-            expect(uvwAdmission.refusalCodes).toEqual([
-              'coordinate-transform-unproven',
-              'source-unit-unproven',
-              'canonical-origin-unproven',
-            ])
+            expect(uvwAdmission.refusalCodes).toEqual([])
             expect(uvwAdmission).toMatchObject({
-              state: 'refused',
+              state: 'materialized-candidate',
               source: {
                 contract: 'org.modkitx.blizzard.starcraft2/world-scene-source',
                 snapshotId: semanticMap.snapshot.snapshotId,
@@ -769,11 +881,59 @@ describe('installed StarCraft II CASC product path', () => {
               requestedLod: 'exact',
               pageRequests: 17,
               observedTerrainItems: 66_049,
-              materialized: false,
-              serialized: false,
-              serializedBytes: 0,
+              materialized: true,
+              serialized: true,
               lostFacetIds: [],
+              receipt: {
+                canonicalTupleDigest: `sha256:${SC2_WORLD_ORACLE.canonical}`,
+                admissionGate: 'second-family-required',
+                planes: [{ planeId: 'heightfield-base', state: 'inferred' }],
+              },
             })
+            if (uvwAdmission.state !== 'materialized-candidate') {
+              throw new Error('retail TArcade UVW candidate did not materialize')
+            }
+            expect(uvwAdmission.serializedBytes).toBeGreaterThan(1_000_000)
+            expect(uvwAdmission.serializedBytes).toBe(uvwAdmission.artifactBytes.byteLength)
+            expect(uvwAdmission.document).toMatchObject({
+              basis: {
+                unit: 'source-unit',
+                sourceUnit: 'sc2-game-unit',
+                unitsPerCell: 1,
+              },
+              bounds: {
+                min: [0, 2.9961863570000027, -256],
+                max: [256, 11.996261475500003, 0],
+              },
+              layers: [
+                {
+                  columns: 257,
+                  rows: 257,
+                  cellSize: 1,
+                  origin: [0, 0, -256],
+                },
+              ],
+            })
+            const uvwSamples = uvwAdmission.document.layers[0]?.samples
+            expect(uvwSamples?.[0]?.[0]).toBe(2.9961863570000027)
+            expect(uvwSamples?.[135]?.[185]).toBe(11.996261475500003)
+            expect(uvwSamples?.[256]?.[256]).toBe(2.9961863570000027)
+            const uvwProfile = (await import(
+              pathToFileURL(
+                join(repoRoot, 'vendor', 'multiverse-specs', 'specs', 'tools', 'uvw-profile.mjs'),
+              ).href
+            )) as { readonly assertUvwProfile: (document: unknown) => unknown }
+            expect(() => uvwProfile.assertUvwProfile(uvwAdmission.document)).not.toThrow()
+            const repeatedUvw = await assessCandidateWorldUvwAdmission(semanticMap.world.value, {
+              maxPageItems: 2_048,
+              maxTerrainItems: 100_000,
+            })
+            expect(repeatedUvw.state).toBe('materialized-candidate')
+            if (repeatedUvw.state !== 'materialized-candidate') {
+              throw new Error('repeat retail TArcade UVW candidate did not materialize')
+            }
+            expect(repeatedUvw.artifactBytes).toEqual(uvwAdmission.artifactBytes)
+            expect(repeatedUvw.receipt.artifactDigest).toBe(uvwAdmission.receipt.artifactDigest)
             const viewer = await inspectCandidateWorld(semanticMap.world.value, {
               maxLayers: 8,
               maxItemsPerLayer: 8,

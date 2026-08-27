@@ -83,10 +83,12 @@ function admissionInfo(options?: {
   readonly transformState?: 'identity' | 'known' | 'unknown'
   readonly knownBounds?: boolean
   readonly nativeTransform?: boolean
+  readonly canonicalTransform?: boolean
 }): CandidateWorldSceneInfo {
   const snapshotId = options?.snapshotId ?? admissionSnapshotId
   const knownBounds = options?.knownBounds ?? true
   const nativeTransform = options?.nativeTransform ?? false
+  const canonicalTransform = options?.canonicalTransform ?? false
   return Object.freeze({
     contract: admissionContract,
     major: 1,
@@ -116,6 +118,19 @@ function admissionInfo(options?: {
             }),
           ]
         : []),
+      ...(canonicalTransform
+        ? [
+            Object.freeze({
+              id: 'uvw-canonical',
+              horizontalAxes: Object.freeze(['x', 'z'] as const),
+              verticalAxis: 'y',
+              handedness: 'right',
+              linearUnit: 'example-native-unit',
+              rotationUnit: 'radian',
+              origin: 'numeric-origin',
+            }),
+          ]
+        : []),
     ]),
     crossSpaceTransforms: Object.freeze([
       Object.freeze({
@@ -123,6 +138,15 @@ function admissionInfo(options?: {
         to: 'map-native',
         state: options?.transformState ?? 'known',
       }),
+      ...(canonicalTransform
+        ? [
+            Object.freeze({
+              from: 'map-native',
+              to: 'uvw-canonical',
+              state: 'known' as const,
+            }),
+          ]
+        : []),
     ]),
     bounds: Object.freeze([
       Object.freeze({
@@ -131,7 +155,11 @@ function admissionInfo(options?: {
         x: Object.freeze({ state: 'known', minimum: 0, maximum: 1 }),
         y: Object.freeze({ state: 'known', minimum: 0, maximum: 1 }),
         z: knownBounds
-          ? Object.freeze({ state: 'known' as const, minimum: 0, maximum: 65_535 })
+          ? Object.freeze({
+              state: 'known' as const,
+              minimum: 0,
+              maximum: canonicalTransform ? 3 : 65_535,
+            })
           : Object.freeze({ state: 'unknown' as const, reason: 'height unit unproven' }),
       }),
     ]),
@@ -166,7 +194,53 @@ function admissionInfo(options?: {
             bounds: Object.freeze({
               coordinateSpaceId: 'map-native' as const,
               minimum: Object.freeze({ x: 0, y: 0, z: 0 }),
-              maximum: Object.freeze({ x: 1, y: 1, z: 65_535 }),
+              maximum: Object.freeze({ x: 1, y: 1, z: canonicalTransform ? 3 : 65_535 }),
+            }),
+          }),
+        }
+      : {}),
+    ...(canonicalTransform
+      ? {
+          uvwTransform: Object.freeze({
+            schemaVersion: 1 as const,
+            snapshotId,
+            sourceCoordinateSpaceId: 'map-native',
+            targetCoordinateSpaceId: 'uvw-canonical' as const,
+            basis: Object.freeze({
+              handedness: 'right' as const,
+              upAxis: 'y' as const,
+              forwardAxis: '+z' as const,
+              unit: 'source-unit' as const,
+              sourceUnit: 'example-native-unit',
+              unitsPerCell: 1,
+            }),
+            axes: Object.freeze({
+              x: Object.freeze({ sourceAxis: 'x' as const, scale: 1, offset: 0 }),
+              y: Object.freeze({ sourceAxis: 'z' as const, scale: 1, offset: 0 }),
+              z: Object.freeze({ sourceAxis: 'y' as const, scale: -1, offset: 0 }),
+            }),
+            heightfield: Object.freeze({
+              columns: 2,
+              rows: 2,
+              cellSize: 1,
+              origin: Object.freeze([0, 0, -1] as const),
+              sourceRowOrder: 'reverse' as const,
+            }),
+            bounds: Object.freeze({
+              coordinateSpaceId: 'uvw-canonical' as const,
+              minimum: Object.freeze({ x: 0, y: 0, z: -1 }),
+              maximum: Object.freeze({ x: 1, y: 3, z: 0 }),
+            }),
+            proof: Object.freeze({
+              kind: 'adapter-qualification' as const,
+              method: 'sealed-legacy-differential' as const,
+              oracle: 'example-sealed-oracle',
+              corpus: 'example-2x2',
+              sourceDigests: Object.freeze({ input: `sha256:${'1'.repeat(64)}` as const }),
+              tupleCount: 4,
+              comparison: 'ieee-754-binary64-exact' as const,
+              nativeTupleDigest: `sha256:${'2'.repeat(64)}` as const,
+              canonicalTupleDigest: `sha256:${'3'.repeat(64)}` as const,
             }),
           }),
         }
@@ -223,6 +297,23 @@ function exactTerrainItem(id: string): WorldSceneItem {
     heightBase: 100,
     heightAdjustment: 0,
     mask: 0,
+  })
+}
+
+function canonicalTerrainItem(x: number, y: number, z: number): WorldSceneItem {
+  return Object.freeze({
+    facet: 'terrain',
+    id: `terrain:${String(x)}:${String(y)}`,
+    layerId: admissionTerrainLayerId,
+    coordinateSpaceId: 'height-grid',
+    lod: 'exact',
+    x,
+    y,
+    heightBase: z,
+    heightAdjustment: 0,
+    mask: 0,
+    mapNativePosition: Object.freeze({ x, y, z }),
+    uvwPosition: Object.freeze({ x, y: z, z: y === 0 ? 0 : -y }),
   })
 }
 
@@ -507,6 +598,79 @@ describe('15F UVW candidate — world admission refuses missing exact semantic p
       materialized: false,
       serialized: false,
     })
+  })
+
+  it('materializes, reopens and receipts a fully measured canonical heightfield', async () => {
+    const info = admissionInfo({ nativeTransform: true, canonicalTransform: true })
+    const items = [
+      canonicalTerrainItem(0, 0, 0),
+      canonicalTerrainItem(1, 0, 1),
+      canonicalTerrainItem(0, 1, 2),
+      canonicalTerrainItem(1, 1, 3),
+    ]
+    const source = admissionSource(info, request => {
+      const start = request.cursor === undefined ? 0 : Number(request.cursor)
+      const page = items.slice(start, start + 2)
+      const next = start + page.length
+      return Promise.resolve(
+        Object.freeze({
+          snapshotId: admissionSnapshotId,
+          facet: 'terrain' as const,
+          state: 'available' as const,
+          items: Object.freeze(page),
+          ...(next < items.length ? { nextCursor: String(next) } : {}),
+        }),
+      )
+    })
+    const first = await assessCandidateWorldUvwAdmission(source, {
+      maxPageItems: 2,
+      maxTerrainItems: 4,
+    })
+    expect(first.state).toBe('materialized-candidate')
+    if (first.state !== 'materialized-candidate') throw new Error('synthetic UVW did not build')
+    expect(first).toMatchObject({
+      pageRequests: 2,
+      observedTerrainItems: 4,
+      materialized: true,
+      serialized: true,
+      refusalCodes: [],
+      receipt: {
+        admissionGate: 'second-family-required',
+        planes: [{ planeId: 'heightfield-base', state: 'inferred' }],
+      },
+    })
+    expect(first.serializedBytes).toBe(first.artifactBytes.byteLength)
+    expect(first.document).toMatchObject({
+      basis: {
+        unit: 'source-unit',
+        sourceUnit: 'example-native-unit',
+        unitsPerCell: 1,
+      },
+      bounds: { min: [0, 0, -1], max: [1, 3, 0] },
+      layers: [
+        {
+          columns: 2,
+          rows: 2,
+          cellSize: 1,
+          origin: [0, 0, -1],
+          samples: [
+            [2, 3],
+            [0, 1],
+          ],
+        },
+      ],
+    })
+    const { assertUvwProfile } = await loadProfile()
+    expect(() => assertUvwProfile(first.document)).not.toThrow()
+
+    const second = await assessCandidateWorldUvwAdmission(source, {
+      maxPageItems: 2,
+      maxTerrainItems: 4,
+    })
+    expect(second.state).toBe('materialized-candidate')
+    if (second.state !== 'materialized-candidate') throw new Error('repeat UVW did not build')
+    expect(second.artifactBytes).toEqual(first.artifactBytes)
+    expect(second.receipt).toEqual(first.receipt)
   })
 
   it('names cancellation, stale leases and identity drift without collapsing them', async () => {

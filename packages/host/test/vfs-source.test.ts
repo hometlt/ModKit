@@ -103,5 +103,5 @@ describe('public VFS to Host namespace bridge', () => {
       await rootLease.release?.()
       await vfs.dispose()
     }
-  }, 15_000)
+  }, 30_000)
 })

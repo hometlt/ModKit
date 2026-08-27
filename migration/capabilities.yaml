@@ -17542,7 +17542,8 @@ capabilities:
       verdicts: []
       liveSources: []
     fixtures: []
-    corpusDescriptors: []
+    corpusDescriptors:
+      - 'MODKITX_SC2_ROOT'
     projection:
       plane: 'world'
       liveProjection: 'planned'
@@ -17557,8 +17558,9 @@ capabilities:
     knownLoss:
       - 'слайс 12-3 добавил кандидатный артефактный профиль: схема heightfield-мира, две фикстуры, валидатор uvw-profile.mjs и девять исполняемых векторов (2 accept, 7 reject) в multiverse/specs; в X3 они прогоняются из запиненного snapshot'
       - 'материализация только testkit-уровня и намеренно: публичной операции и вклада, публикующего UVW, нет до admission блока 18, и это утверждается тестом, а не намерением'
-      - 'живого источника мира нет ни в одном host (семейства карт — блоки 15-16), поэтому все входы синтетические: это свидетельство о ФОРМАТЕ, а не об игре, и именно поэтому профиль кандидатный'
-      - 'семантический scope world-interchange-v1 не чеканится и остаётся reserved: scope называет фасеты, по которым берётся хеш, а публиковать живой мировой фасет некому'
+      - 'SC2 теперь публикует живой кандидат мира: retail TArcade.SC2Map преобразован в UVW по 66 049 измеренным точкам, записан каноническими байтами, снова открыт валидатором профиля и повторён с другим разбиением страниц без изменения байт или хеша'
+      - 'это пока только первое игровое семейство и testkit-материализация: публичной операции и зарегистрированного вклада UVW нет, а допуск world-interchange-v1 остаётся закрыт до независимого совпадения Warzone 2100'
+      - 'семантический scope world-interchange-v1 не чеканится и остаётся reserved до второго семейства; SC2 receipt прямо называет admissionGate second-family-required'
     receipts:
       projection: null
       materialization: null
@@ -17568,6 +17570,7 @@ capabilities:
       commits: []
       tests:
         - 'packages/testkit/test/uvw-candidate.test.ts'
+        - 'packages/testkit/test/sc2-casc-real.test.ts'
       reports: []
   - capabilityId: 'vertical/beyond-all-reason/deterministic-playable-subset'
     userScenario: 'Для «Beyond All Reason» получить детерминированный воспроизводимый playable subset.'

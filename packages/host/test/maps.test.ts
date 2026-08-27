@@ -421,6 +421,7 @@ describe('standard map contract and semantic game provider', () => {
       expect(source.contract).toBe('org.modkitx.blizzard.starcraft2/world-scene-source')
       expect(info.coordinateSpaces.map(item => item.id)).toEqual([
         'map-native',
+        'uvw-canonical',
         'height-grid',
         'navigation-grid',
       ])
@@ -428,6 +429,16 @@ describe('standard map contract and semantic game provider', () => {
         expect.objectContaining({ from: 'height-grid', to: 'map-native', state: 'known' }),
       )
       expect(info.terrainTransform).toEqual(result.snapshot.terrainTransform)
+      expect(result.snapshot.uvwTransform).toBeUndefined()
+      expect(info.uvwTransform).toBeUndefined()
+      expect(info.crossSpaceTransforms).toContainEqual(
+        expect.objectContaining({ from: 'map-native', to: 'uvw-canonical', state: 'unknown' }),
+      )
+      expect(result.snapshot.diagnostics).toContainEqual(
+        expect.objectContaining({
+          code: 'org.modkitx.blizzard.starcraft2/uvw-non-uniform-cell-size',
+        }),
+      )
       expect(info.bounds).toContainEqual(
         expect.objectContaining({
           facet: 'terrain',

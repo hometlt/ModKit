@@ -6,6 +6,7 @@ import type {
   Lease,
   MapTerrainNativeTransform,
   MapTerrainSample,
+  MapWorldCanonicalTransform,
   ResolvedMapWorkspaceSnapshot,
   ResourceProvenanceRecord,
   WorldSceneFacetState,
@@ -157,6 +158,18 @@ function terrainMapNativePosition(
   })
 }
 
+function canonicalPosition(
+  position: Readonly<{ x: number; y: number; z: number }>,
+  transform: MapWorldCanonicalTransform,
+): Readonly<{ x: number; y: number; z: number }> {
+  const axis = (output: 'x' | 'y' | 'z'): number => {
+    const mapping = transform.axes[output]
+    const value = position[mapping.sourceAxis] * mapping.scale + mapping.offset
+    return value === 0 ? 0 : value
+  }
+  return Object.freeze({ x: axis('x'), y: axis('y'), z: axis('z') })
+}
+
 function admittedTerrainTransform(
   snapshot: ResolvedMapWorkspaceSnapshot,
   terrain: ResolvedMapWorkspaceSnapshot['semantic']['terrain'],
@@ -211,6 +224,96 @@ function admittedTerrainTransform(
     : undefined
 }
 
+function admittedWorldCanonicalTransform(
+  snapshot: ResolvedMapWorkspaceSnapshot,
+  terrainTransform: MapTerrainNativeTransform | undefined,
+): MapWorldCanonicalTransform | undefined {
+  const transform = snapshot.uvwTransform
+  if (transform === undefined || terrainTransform === undefined) return undefined
+  const finite = (value: number): boolean => Number.isFinite(value)
+  const positive = (value: number): boolean => finite(value) && value > 0
+  const basis = transform.basis
+  const axes = Object.values(transform.axes)
+  const sourceAxes = axes.map(item => item.sourceAxis)
+  if (
+    transform.schemaVersion !== 1 ||
+    transform.snapshotId !== snapshot.snapshotId ||
+    transform.sourceCoordinateSpaceId !== 'map-native' ||
+    transform.targetCoordinateSpaceId !== 'uvw-canonical' ||
+    basis.handedness !== 'right' ||
+    basis.upAxis !== 'y' ||
+    basis.forwardAxis !== '+z' ||
+    (basis.unit !== 'meter' && basis.unit !== 'source-unit') ||
+    (basis.unit === 'source-unit' &&
+      (basis.sourceUnit === undefined ||
+        basis.sourceUnit.length === 0 ||
+        basis.metersPerUnit !== undefined)) ||
+    (basis.unitsPerCell !== undefined && !positive(basis.unitsPerCell)) ||
+    axes.some(item => !finite(item.scale) || item.scale === 0 || !finite(item.offset)) ||
+    new Set(sourceAxes).size !== 3 ||
+    !Number.isSafeInteger(transform.heightfield.columns) ||
+    !Number.isSafeInteger(transform.heightfield.rows) ||
+    transform.heightfield.columns !== terrainTransform.heightMap.dim[0] ||
+    transform.heightfield.rows !== terrainTransform.heightMap.dim[1] ||
+    !positive(transform.heightfield.cellSize) ||
+    (basis.unitsPerCell !== undefined && basis.unitsPerCell !== transform.heightfield.cellSize) ||
+    transform.heightfield.origin.length !== 3 ||
+    !transform.heightfield.origin.every(finite) ||
+    transform.heightfield.sourceRowOrder !== 'reverse' ||
+    transform.bounds.coordinateSpaceId !== 'uvw-canonical' ||
+    !Object.values(transform.bounds.minimum).every(finite) ||
+    !Object.values(transform.bounds.maximum).every(finite) ||
+    !(['x', 'y', 'z'] as const).every(
+      axis => transform.bounds.minimum[axis] <= transform.bounds.maximum[axis],
+    ) ||
+    !Number.isSafeInteger(transform.proof.tupleCount) ||
+    transform.proof.tupleCount <= 0 ||
+    transform.proof.kind !== 'adapter-qualification' ||
+    transform.proof.oracle.length === 0 ||
+    transform.proof.corpus.length === 0 ||
+    Object.keys(transform.proof.sourceDigests).length === 0 ||
+    !Object.values(transform.proof.sourceDigests).every(value =>
+      /^sha256:[0-9a-f]{64}$/u.test(value),
+    ) ||
+    !/^sha256:[0-9a-f]{64}$/u.test(transform.proof.nativeTupleDigest) ||
+    (transform.proof.presentationTupleDigest !== undefined &&
+      !/^sha256:[0-9a-f]{64}$/u.test(transform.proof.presentationTupleDigest)) ||
+    !/^sha256:[0-9a-f]{64}$/u.test(transform.proof.canonicalTupleDigest) ||
+    transform.proof.comparison !== 'ieee-754-binary64-exact'
+  ) {
+    return undefined
+  }
+
+  const nativeBounds = terrainTransform.bounds
+  const corners = [nativeBounds.minimum.x, nativeBounds.maximum.x].flatMap(x =>
+    [nativeBounds.minimum.y, nativeBounds.maximum.y].flatMap(y =>
+      [nativeBounds.minimum.z, nativeBounds.maximum.z].map(z => ({ x, y, z })),
+    ),
+  )
+  let minimum = { x: Infinity, y: Infinity, z: Infinity }
+  let maximum = { x: -Infinity, y: -Infinity, z: -Infinity }
+  for (const corner of corners) {
+    const value = canonicalPosition(corner, transform)
+    minimum = {
+      x: Math.min(minimum.x, value.x),
+      y: Math.min(minimum.y, value.y),
+      z: Math.min(minimum.z, value.z),
+    }
+    maximum = {
+      x: Math.max(maximum.x, value.x),
+      y: Math.max(maximum.y, value.y),
+      z: Math.max(maximum.z, value.z),
+    }
+  }
+  return (['x', 'y', 'z'] as const).every(
+    axis =>
+      transform.bounds.minimum[axis] === minimum[axis] &&
+      transform.bounds.maximum[axis] === maximum[axis],
+  )
+    ? transform
+    : undefined
+}
+
 /** Creates a lease whose release makes every page/cursor stale immediately. */
 export function createCandidateWorldSceneLease(
   snapshot: ResolvedMapWorkspaceSnapshot,
@@ -227,6 +330,7 @@ export function createCandidateWorldSceneLease(
   const terrainSummary = semantic.terrain
   const terrainExact = hasExactTerrainGrid(terrainSummary)
   const terrainTransform = admittedTerrainTransform(snapshot, terrainSummary, terrainExact)
+  const uvwTransform = admittedWorldCanonicalTransform(snapshot, terrainTransform)
   const terrainLod = terrainExact ? ('exact' as const) : ('sampled' as const)
   const objectIdentities = new Set<number>()
   const semanticObjects = semantic.objects.filter(item => {
@@ -244,19 +348,24 @@ export function createCandidateWorldSceneLease(
   const duplicateRegionCount = semantic.regions.length - semanticRegions.length
 
   const terrain: readonly WorldSceneItem[] = Object.freeze(
-    (semantic.terrain?.samples ?? []).map(item =>
-      Object.freeze({
+    (semantic.terrain?.samples ?? []).map(item => {
+      const mapNativePosition =
+        terrainTransform === undefined
+          ? undefined
+          : terrainMapNativePosition(item, terrainTransform)
+      return Object.freeze({
         facet: 'terrain' as const,
         id: `${terrainLayerId}:sample:${String(item.x)}:${String(item.y)}`,
         layerId: terrainLayerId,
         coordinateSpaceId: 'height-grid',
         lod: terrainLod,
         ...item,
-        ...(terrainTransform === undefined
+        ...(mapNativePosition === undefined ? {} : { mapNativePosition }),
+        ...(mapNativePosition === undefined || uvwTransform === undefined
           ? {}
-          : { mapNativePosition: terrainMapNativePosition(item, terrainTransform) }),
-      }),
-    ),
+          : { uvwPosition: canonicalPosition(mapNativePosition, uvwTransform) }),
+      })
+    }),
   )
   const objects: readonly WorldSceneItem[] = Object.freeze(
     semanticObjects.map(item => {
@@ -437,15 +546,31 @@ export function createCandidateWorldSceneLease(
     mapId: snapshot.mapId,
     coordinateSpaces: snapshot.worldCandidate.coordinateSpaces,
     crossSpaceTransforms: Object.freeze(
-      snapshot.worldCandidate.crossSpaceTransforms.map(item =>
-        item.from === 'height-grid' && item.to === 'map-native' && terrainTransform === undefined
-          ? Object.freeze({
-              ...item,
-              state: 'unknown' as const,
-              reason: 'host rejected or did not receive an exact native terrain transform',
-            })
-          : item,
-      ),
+      snapshot.worldCandidate.crossSpaceTransforms.map(item => {
+        if (
+          item.from === 'height-grid' &&
+          item.to === 'map-native' &&
+          terrainTransform === undefined
+        ) {
+          return Object.freeze({
+            ...item,
+            state: 'unknown' as const,
+            reason: 'host rejected or did not receive an exact native terrain transform',
+          })
+        }
+        if (
+          item.from === 'map-native' &&
+          item.to === 'uvw-canonical' &&
+          uvwTransform === undefined
+        ) {
+          return Object.freeze({
+            ...item,
+            state: 'unknown' as const,
+            reason: 'host rejected or did not receive a measured canonical world transform',
+          })
+        }
+        return item
+      }),
     ),
     bounds: Object.freeze([
       Object.freeze({
@@ -562,6 +687,7 @@ export function createCandidateWorldSceneLease(
       }),
     ]),
     ...(terrainTransform === undefined ? {} : { terrainTransform }),
+    ...(uvwTransform === undefined ? {} : { uvwTransform }),
     facets,
     provenance: Object.freeze(provenance.map(item => Object.freeze({ ...item }))),
     unknownFacets: snapshot.worldCandidate.unknownFacets,

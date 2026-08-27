@@ -46,6 +46,12 @@ Three unit situations exist and they must not be confused:
    unit verbatim. **No metre factor is invented.** A consumer that needs physical scale must ask
    the project, not the artifact.
 
+A grid relationship can be exact while its physical scale is unknown. In that case it is recorded
+as `unit: "source-unit"`, `sourceUnit` names the native world unit, and `unitsPerCell` records the
+measured grid relationship; `metersPerUnit` remains absent and the affected plane is `inferred`.
+`grid-implied` names this evidence situation in prose — it is not a third value of
+`ProjectionBasis.unit`.
+
 The third case is the common one for models pulled out of games, and pretending otherwise is the
 single most tempting lie in this whole area: a plausible-looking `metersPerUnit` that nobody
 measured propagates into every downstream consumer as though it had been.
@@ -90,7 +96,16 @@ The world plane adds two rules the model plane does not need:
 Unknown facets follow the foundation rule: they are preserved and reported, never invented and
 never silently dropped.
 
-## 6. Machine form
+## 6. Measured world source frames
+
+World-frame entries are accepted only with a numeric mapping, a numeric origin rule and an
+executable oracle. The first accepted entry is StarCraft II map-native terrain, recorded by
+[`../world/ADR-WORLD-001-sc2-map-native-to-uvw.md`](../world/ADR-WORLD-001-sc2-map-native-to-uvw.md).
+Its right-handed Z-up frame maps to the canonical frame as `(x, y, z) -> (x, z, -y)`. Because a
+heightfield advances rows along canonical `+Z`, an SC2 HMAP is serialized with its source rows in
+reverse order. Its grid relationship is exact, but no public physical metre scale is asserted.
+
+## 7. Machine form
 
 `uv-coordinates.v1.json` beside this file carries the canonical basis and one entry per known
 source frame. A converter reads it rather than this prose; a reviewer checks the prose against it.

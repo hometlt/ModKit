@@ -123,13 +123,13 @@ planes:
       - 'defer'
     plannedBlock: 22
     knownLoss:
-      - 'UVW schema живёт в docs и не имеет исполняемого MK3-контракта'
-      - 'ни одна игра не публикует нейтральный world; уровень neutral-definitions-world у всех шести вертикалей — E0'
+      - 'SC2 публикует живой кандидат мира и TArcade.SC2Map повторяемо материализуется в UVW по 66 049 точкам, но путь пока доступен только через testkit, без публичной операции MK3'
+      - 'world-interchange-v1 остаётся закрыт до независимого совпадения второго семейства Warzone 2100; остальные игровые вертикали не получают зрелость из доказательства SC2'
     resourceDependencies:
       - 'карта ссылается на моды и ассеты игры; разрешение требует game mount вертикали'
     corpusEvidence:
       - 'MODKITX_SC2_ROOT'
-      - 'MODKITX_CNC3_KW_ROOT'
+      - 'MODKITX_WARZONE_ROOT'
     capabilityIds:
       - 'format/sc2-map/open-inspect'
       - 'uv/uvw/world-materialization'

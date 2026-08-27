@@ -23,8 +23,12 @@ export {
   CANDIDATE_WORLD_UVW_PROFILE,
   type CandidateWorldUvwAdmissionOptions,
   type CandidateWorldUvwAdmissionReport,
+  type CandidateWorldUvwDocument,
+  type CandidateWorldUvwMaterializationReceipt,
+  type CandidateWorldUvwMaterializedReport,
   type CandidateWorldUvwRefusal,
   type CandidateWorldUvwRefusalCode,
+  type CandidateWorldUvwRefusalReport,
 } from './uvw-materialization.js'
 export { runMinimalHost, type MinimalHostOptions, type MinimalHostRun } from './minimal-host.js'
 export { offersFromInventory } from '@modkitx-x3/host'

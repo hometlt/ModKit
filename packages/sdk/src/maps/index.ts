@@ -1,6 +1,7 @@
 /** Protocol-neutral contracts for bounded semantic map opening. */
 
 import type { DataCatalogSnapshot, DataEntityRef, DataResolvedEntity } from '../data/index.js'
+import type { ProjectionBasis } from '../asset-capabilities/uv-projection.js'
 import type { ModWorkspaceLock } from '../mods/index.js'
 import type { ResourceProvenanceRecord } from '../resource-session.js'
 import type { ServiceProviderModule } from '../runtime-abi.js'
@@ -168,6 +169,58 @@ export interface MapTerrainNativeTransform {
   }>
 }
 
+export type MapCoordinateAxis = 'x' | 'y' | 'z'
+
+/** One numeric output axis of a measured source-space to canonical-space transform. */
+export interface MapSignedAxisTransform {
+  readonly sourceAxis: MapCoordinateAxis
+  readonly scale: number
+  readonly offset: number
+}
+
+/**
+ * Measured map-native to canonical UVW transform.
+ *
+ * This is additive candidate metadata, not an admitted `world-interchange-v1` contract. A host
+ * validates every numeric field before exposing it to a materializer.
+ */
+export interface MapWorldCanonicalTransform {
+  readonly schemaVersion: 1
+  readonly snapshotId: string
+  readonly sourceCoordinateSpaceId: string
+  readonly targetCoordinateSpaceId: 'uvw-canonical'
+  readonly basis: ProjectionBasis
+  readonly axes: Readonly<{
+    readonly x: MapSignedAxisTransform
+    readonly y: MapSignedAxisTransform
+    readonly z: MapSignedAxisTransform
+  }>
+  readonly heightfield: Readonly<{
+    readonly columns: number
+    readonly rows: number
+    readonly cellSize: number
+    readonly origin: readonly [number, number, number]
+    readonly sourceRowOrder: 'forward' | 'reverse'
+  }>
+  readonly bounds: Readonly<{
+    readonly coordinateSpaceId: 'uvw-canonical'
+    readonly minimum: MapPosition
+    readonly maximum: MapPosition
+  }>
+  readonly proof: Readonly<{
+    readonly kind: 'adapter-qualification'
+    readonly method: 'sealed-legacy-differential' | 'official-reference-differential'
+    readonly oracle: string
+    readonly corpus: string
+    readonly sourceDigests: Readonly<Record<string, `sha256:${string}`>>
+    readonly tupleCount: number
+    readonly comparison: 'ieee-754-binary64-exact'
+    readonly nativeTupleDigest: `sha256:${string}`
+    readonly presentationTupleDigest?: `sha256:${string}`
+    readonly canonicalTupleDigest: `sha256:${string}`
+  }>
+}
+
 export interface MapNavigationSample {
   readonly x: number
   readonly y: number
@@ -258,6 +311,7 @@ export interface ResolvedMapWorkspaceSnapshot {
   readonly semantic: MapSemanticSnapshot
   readonly navigation?: MapNavigationSummary
   readonly terrainTransform?: MapTerrainNativeTransform
+  readonly uvwTransform?: MapWorldCanonicalTransform
   readonly worldCandidate: MapWorldCandidateDescriptor
   readonly unresolvedRequirementIds: readonly string[]
   readonly diagnostics: readonly MapSemanticDiagnostic[]
@@ -300,6 +354,7 @@ export interface CandidateWorldSceneInfo {
   readonly crossSpaceTransforms: MapWorldCandidateDescriptor['crossSpaceTransforms']
   readonly bounds: readonly WorldSceneFacetBounds[]
   readonly terrainTransform?: MapTerrainNativeTransform
+  readonly uvwTransform?: MapWorldCanonicalTransform
   readonly facets: readonly WorldSceneFacetState[]
   readonly provenance: readonly ResourceProvenanceRecord[]
   readonly unknownFacets: readonly string[]
@@ -324,6 +379,8 @@ export interface WorldSceneTerrainItem extends MapTerrainSample {
   readonly coordinateSpaceId: string
   /** Present only when a validated exact native terrain transform was admitted for this snapshot. */
   readonly mapNativePosition?: MapPosition
+  /** Present only when the host validated a measured map-native to canonical UVW transform. */
+  readonly uvwPosition?: MapPosition
   /**
    * `exact` means the publisher retained every native height-grid tuple. It does not claim that
    * the tuple has been converted into map-native or canonical UVW coordinates.
