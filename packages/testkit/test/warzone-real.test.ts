@@ -167,27 +167,6 @@ function workspaceLock() {
     workspaceId: 'warzone-live-workspace',
     gameId: GAME_ID,
     activeRootId: 'active',
-    sources: [{ sourceId: 'mp-wz', kind: 'archive', location: mpPath ?? 'absent:mp.wz' }],
-    roots: [
-      {
-        rootId: 'active',
-        sourceId: 'mp-wz',
-        sourcePath: MAP_ROOT,
-        displayName: '2c-highground',
-        kind: 'map',
-        dependencies: [],
-      },
-    ],
-    maxRoots: 4,
-    maxDepth: 4,
-  })
-}
-
-function dataWorkspaceLock() {
-  return resolveModWorkspaceGraph({
-    workspaceId: 'warzone-live-data-workspace',
-    gameId: GAME_ID,
-    activeRootId: 'mp',
     sources: [
       { sourceId: 'base-wz', kind: 'archive', location: basePath ?? 'absent:base.wz' },
       { sourceId: 'mp-wz', kind: 'archive', location: mpPath ?? 'absent:mp.wz' },
@@ -211,6 +190,21 @@ function dataWorkspaceLock() {
           {
             targetRootId: 'base',
             ref: 'base.wz',
+            required: true,
+            provenance: 'implicit',
+          },
+        ],
+      },
+      {
+        rootId: 'active',
+        sourceId: 'mp-wz',
+        sourcePath: MAP_ROOT,
+        displayName: '2c-highground',
+        kind: 'map',
+        dependencies: [
+          {
+            targetRootId: 'mp',
+            ref: 'mp.wz',
             required: true,
             provenance: 'implicit',
           },
@@ -406,27 +400,29 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
         return Object.keys(parsed).map(entityId => ({ namespace, entityId }))
       })
       expect(dataQueries).toHaveLength(549)
-      const dataRevision = createHash('sha256')
-      for (const [path, bytes] of [...dataDocuments.entries()].sort(([left], [right]) =>
+      const workspaceDocuments = new Map([...dataDocuments, ...mapDocuments])
+      const workspaceRevision = createHash('sha256')
+      for (const [path, bytes] of [...workspaceDocuments.entries()].sort(([left], [right]) =>
         left.localeCompare(right),
       )) {
-        dataRevision.update(path)
-        dataRevision.update(bytes)
+        workspaceRevision.update(path)
+        workspaceRevision.update(bytes)
       }
-      const dataResources = createResourceSession({
-        origin: resourceOrigin(dataDocuments, 'mp'),
-        revision: revisionId(`content-hash.sha256:${dataRevision.digest('hex')}`),
+      const resources = createResourceSession({
+        origin: resourceOrigin(workspaceDocuments, MAP_ROOT),
+        revision: revisionId(`content-hash.sha256:${workspaceRevision.digest('hex')}`),
       })
+      const workspace = workspaceLock()
       const dataResult = await analyzeResolvedDataWorkspace({
         services: { ...composition, serviceDefinitions: definitions },
         grant: { id: 'warzone-live-data', classes: [] },
         budgets: budget,
-        workspace: dataWorkspaceLock(),
-        resources: dataResources,
+        workspace,
+        resources,
         locales: ['enUS'],
         queries: dataQueries,
         limits: {
-          maxRequirements: 16,
+          maxRequirements: 64,
           maxDocumentBytes: 4_194_304,
           maxTextBytes: 8_388_608,
           maxEntities: 10_000,
@@ -439,7 +435,7 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
         dataResult.diagnostics.map(item => `${item.code}: ${item.message}`).join('\n'),
       ).toBe('resolved')
       if (dataResult.state !== 'resolved') {
-        await dataResources.dispose()
+        await resources.dispose()
         throw new Error('installed Warzone data did not resolve')
       }
       expect(dataResult.snapshot.definitions).toHaveLength(549)
@@ -454,15 +450,12 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
         columns: 6,
       })
       expect((await dataResult.facets.relations.value.summary()).totalEdges).toBeGreaterThan(0)
-      const resources = createResourceSession({
-        origin: resourceOrigin(mapDocuments, MAP_ROOT),
-        revision: revisionId(`content-hash.sha256:${MAP_DIGEST}`),
-      })
+      await dataResult.release()
       const result = await openMapPreviewAssetSession({
         services: { ...composition, serviceDefinitions: definitions },
         grant: { id: 'warzone-live-map', classes: [] },
         budgets: budget,
-        workspace: workspaceLock(),
+        workspace,
         resources,
         subjectUri: `warzone-map:${MAP_ROOT}`,
         catalog: dataResult.snapshot,
@@ -605,8 +598,6 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
       } finally {
         await worldLease.release()
         await result.session.dispose()
-        await dataResult.release()
-        await dataResources.dispose()
       }
     },
     120_000,
